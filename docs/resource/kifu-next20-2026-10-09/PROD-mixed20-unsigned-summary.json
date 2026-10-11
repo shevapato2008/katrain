@@ -1,0 +1,20 @@
+{
+  "bundle_sha256": "a5abce84c7daeef1337dca515591b0066825f25e7df2f04b7cbc6b25f85ee690",
+  "environment": "PROD",
+  "evidence_sha256": "4058299392a82000fa5063e9c5ac9abfef243af19df9681c958f158fa7cbc384",
+  "input_sha256": "5fd963ed40ce123d73df153b4479569e0c0569d008a1f15dec3fd3ea722a6789",
+  "status": "dependencies_approved_outer_execution_unsigned",
+  "validation": {
+    "approved": 20,
+    "candidate_count": 20,
+    "errors": [],
+    "inventory_sha256": "e038934b83c2733b02b6f3ab9b1e1da3e435eccc5ebf3d4c0d05080ce94e390a",
+    "member_count": 20,
+    "missing": 0,
+    "pending": 0,
+    "ready": true,
+    "rejected": 0,
+    "write_errors": [],
+    "write_ready": true
+  }
+}

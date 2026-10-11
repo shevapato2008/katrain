@@ -1,0 +1,77 @@
+{
+  "pilot": "five_value_name_first_time_timed_pilot",
+  "date_utc": "2026-10-04",
+  "read_only": true,
+  "sample": {
+    "selection": "Three safe6 newly preprocessed, identity-confirmed PROD IDs: 4112, 4344, 586.",
+    "selection_bias": "All three selected owners are Japanese professionals; this is deliberate for clean ID and official-profile verification but underrepresents Chinese/Korean source complexity and likely makes the estimate optimistic for a mixed-origin batch.",
+    "verified_name_row_check": {
+      "snapshot": "docs/resource/kifu-player-safe6-PROD-fresh-full-preimages-astra-2026-10-04.json.gz",
+      "snapshot_sha256": "0a6f05b99a922ae5b14eb4e30860b0a5459ddbb80a1df2e12c759ab2b99e54c6",
+      "result": "IDs 4112 and 4344 had no catalog.names rows; ID 586 had five legacy rows, all status=review and verified_at=null. Therefore zero existing verified rows for all three IDs."
+    }
+  },
+  "timer": {
+    "first_external_lookup_start_utc": "2026-10-04T12:11:07.855Z",
+    "final_bundle_end_utc": "2026-10-04T12:12:58.337Z",
+    "wall_elapsed_ms": 110482,
+    "tool_latency_ms": {"initial_search": 2342, "language_search": 2171, "shared_open_batch": 2447, "korean_followup": 2469, "per_player_lookup": {"4112": 2272, "4344": 10214, "586": 3316}, "final_bundle": 82, "total_measured_tool_ms": 25313},
+    "unattributed_human_reasoning_reading_or_orchestration_ms": 85169,
+    "timing_note": "Tool latency is measured around web/exec calls. The residual is wall time minus measured tool time; it includes reading, source comparison, normalization decisions, and orchestration. It is not keystroke-only typing time."
+  },
+  "players": [
+    {
+      "raw_name": "吉原由香里",
+      "player_id": 4112,
+      "identity_basis": "safe6 official Nihon Ki-in profile; old surname 梅泽/梅沢 is documented and identity is clear",
+      "identity_confidence": "high",
+      "values": {
+        "cn": {"display_name": "吉原由香里", "source_url": "https://zh.wikipedia.org/wiki/%E5%90%89%E5%8E%9F%E7%94%B1%E9%A6%99%E9%87%8C", "confidence": "high"},
+        "tw": {"display_name": "吉原由香里", "source_url": "https://zh.wikipedia.org/wiki/%E5%90%89%E5%8E%9F%E7%94%B1%E9%A6%99%E9%87%8C", "confidence": "medium", "note": "Same Chinese Wikipedia title; no Taiwan-specific source required for this name form in this timing pilot."},
+        "jp": {"display_name": "吉原 由香里", "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000346.htm", "confidence": "high"},
+        "ko": {"display_name": "요시하라 유카리", "source_url": "https://ko.wikipedia.org/wiki/%EC%9A%94%EC%8B%9C%ED%95%98%EB%9D%BC_%EC%9C%A0%EC%B9%B4%EB%A6%AC", "confidence": "high"},
+        "en": {"display_name": "Yukari Yoshihara", "source_url": "https://en.wikipedia.org/wiki/Yukari_Yoshihara", "confidence": "high"}
+      },
+      "lookup_window": {"start_utc": "2026-10-04T12:12:37.568Z", "end_utc": "2026-10-04T12:12:39.840Z", "tool_ms": 2272}
+    },
+    {
+      "raw_name": "冈田结美子",
+      "player_id": 4344,
+      "identity_basis": "safe6 official Nihon Ki-in profile; safe6 decision records old surname 安倍 and exact PROD ID 4344",
+      "identity_confidence": "high",
+      "values": {
+        "cn": {"display_name": null, "source_url": null, "confidence": "missing", "note": "No dedicated Chinese Wikipedia/official Chinese Go source captured in this bounded pass."},
+        "tw": {"display_name": null, "source_url": null, "confidence": "missing", "note": "No Traditional Chinese source captured in this bounded pass."},
+        "jp": {"display_name": "岡田 結美子", "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000293.htm", "confidence": "high"},
+        "ko": {"display_name": null, "source_url": null, "confidence": "missing", "note": "Guessed Korean URL returned an error; no name is fabricated."},
+        "en": {"display_name": "Yumiko Okada", "source_url": "https://en.wikipedia.org/wiki/Yumiko_Okada", "confidence": "high"}
+      },
+      "lookup_window": {"start_utc": "2026-10-04T12:12:39.840Z", "end_utc": "2026-10-04T12:12:50.054Z", "tool_ms": 10214}
+    },
+    {
+      "raw_name": "村松大树",
+      "player_id": 586,
+      "identity_basis": "safe6 official Nihon Ki-in profile; Japanese official name 村松大樹 / reading ムラマツ ヒロキ",
+      "identity_confidence": "high",
+      "values": {
+        "cn": {"display_name": null, "source_url": null, "confidence": "missing", "note": "Only a legacy unverified catalog row exists; no Chinese source was treated as evidence."},
+        "tw": {"display_name": null, "source_url": null, "confidence": "missing", "note": "Only a legacy unverified catalog row exists; no Traditional Chinese source was treated as evidence."},
+        "jp": {"display_name": "村松 大樹", "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000424.htm", "confidence": "high"},
+        "ko": {"display_name": null, "source_url": null, "confidence": "missing", "note": "Guessed Korean Wikipedia URL returned an error; no name is fabricated."},
+        "en": {"display_name": "Hiroki Muramatsu", "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000424.htm", "confidence": "medium", "note": "Official profile provides romanized MURAMATSU, Hiroki; no English Wikipedia page was found in the bounded lookup."}
+      },
+      "lookup_window": {"start_utc": "2026-10-04T12:12:50.054Z", "end_utc": "2026-10-04T12:12:53.370Z", "tool_ms": 3316}
+    }
+  ],
+  "summary": {
+    "complete_five_value_bundles": 1,
+    "partial_bundles": 2,
+    "per_name_wall_projection_ms": 36827.33,
+    "per_name_wall_projection_seconds": 36.827,
+    "per_name_direct_lookup_tool_latency_mean_ms": 5267.33,
+    "per_name_tool_latency_median_ms": 3316,
+    "per_name_tool_latency_range_ms": [2272, 10214],
+    "honest_projection": "This first-time, Japanese-only sample took 110.482 s wall / 3 = 36.827 s per name including source lookup and reasoning, excluding DB import. Treat as an upper-bound pilot estimate for this workflow, not a universal rate."
+  },
+  "no_hold_identity": "No person identity was ambiguous. Missing cells remain missing; no transliteration was invented."
+}

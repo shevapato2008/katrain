@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja"><head><title>李楊</title><link rel="icon" type="image/png" href="/apple-touch-icon.png"/><link href="/css/nv.d3.min.css" rel="stylesheet">
+<script src="/javascript/d3.min.js" charset="utf-8"></script>
+<script src="/javascript/nv.d3.min.js" charset="utf-8"></script>
+<meta name=viewport content="width=device-width, initial-scale=1"><meta charset="UTF-8"><style>
+body
+{
+ font-family: sans-serif;
+}
+
+p
+{
+ text-align:center;
+}
+
+h1,h2,h3
+{
+ color: #fff;
+ background-color: #777;
+ padding: 0.3em;
+ text-align: center;
+}
+
+table
+{
+ margin: 0px auto;
+ border-collapse: collapse;
+ color: black;
+ background-color: white;
+}
+
+th
+{
+ padding-left: 0.2em;
+ padding-right: 0.2em;
+ color: black;
+ background-color: #ccc;
+ font-family: sans-serif;
+ font-weight: bold;
+ border: 1px solid white;
+}
+
+th.missing
+{
+ background-color: white;
+}
+
+td
+{
+ padding-left:0.2em;
+ padding-right:0.2em;
+ border:1px solid white;
+ color:black;
+ background-color:#eee;
+ white-space:nowrap;
+}
+
+th.r
+{
+ text-align:right;
+}
+
+td.r
+{
+ text-align:right;
+}
+
+td.c
+{
+ text-align:center;
+}
+
+td.w
+{
+ color: white;
+ background-color: white;
+ border: none;
+}
+
+#graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#history-graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    width:100%;
+    height:75vh;
+}
+
+#chartContainer
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#lang-ctn
+{
+  padding: 10px;
+  text-align: center;
+}
+
+#lang-ctn div
+{
+ background-color: #ccc;
+ display: inline-block;
+ padding-top: 10px;
+ padding-bottom: 5px;
+ padding-right: 5px;
+ padding-left: 5px;
+}
+
+.flag-lang
+{
+  margin-left: 3px;
+  margin-right: 3px;
+  width: 30px;
+  height: 20px;
+}
+
+.banner-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+  margin: 12px auto;
+  background-color: #eee;
+  padding: 1rem;
+}
+
+.banner-container > * {
+  flex: 1 1 25rem;
+  min-width: 16rem;
+}
+
+.banner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.store-badge {
+  height: 3em;
+  width: auto;
+  max-width: 100%;
+  margin: auto 6px;
+}
+
+.review-stars {
+  color: #f5c518;
+}
+</style></head><body><h1>李楊</h1><div id="lang-ctn"><div><a href="../../en/players/708.html"><img alt="en translation" class="flag-lang" src="/flags/en.svg" /></a><a href="../../zh/players/708.html"><img alt="zh translation" class="flag-lang" src="/flags/zh.svg" /></a><a href="../../ja/players/708.html"><img alt="ja translation" class="flag-lang" src="/flags/ja.svg" /></a><a href="../../ko/players/708.html"><img alt="ko translation" class="flag-lang" src="/flags/ko.svg" /></a></div></div><p><a href="..">トップへ戻る</a></p><h2>推移グラフ</h2>
+<div id='chartContainer'>
+<svg id='graph' style='height:450px; width:600px'> </svg>
+</div>
+<script type="text/javascript">
+var format = d3.time.format("%Y-%m-%d");
+var format2 = d3.time.format("%Y/%m/%d");
+d3.json('/players-json/data-708.json', function(data) {
+nv.addGraph(function() {
+var chart = nv.models.lineChart()
+.x(function(d) { return format.parse(d[0]) })
+.y(function(d) { return d[1] })
+.margin({top:20, left: 50, right:50})
+.useInteractiveGuideline(true)
+.showYAxis(true)
+.showXAxis(true)
+.showLegend(false)
+;
+
+ chart.xAxis
+.tickFormat(function(d) {
+return format(new Date(d))
+});
+d3.select('#chartContainer svg')
+.datum(data)
+.call(chart);
+nv.utils.windowResize(function() { chart.update() });
+return chart;
+});
+});
+</script>
+<h2>データ</h2><table><tr><th class="r">勝利</th><td class="r">4</td></tr><tr><th class="r">敗北</th><td class="r">5</td></tr><tr><th class="r">合計</th><td class="r">9</td></tr><tr><th class="r">リンク</th><td class="r" style="text-align: left;"><a href="https://kansaikiin.jp/kisi_prof/riyou.html">https://kansaikiin.jp/kis...</a></td></tr><tr><th class="r">生年月日</th><td class="r">1962-09-16</td></tr></table><h2>対局データ</h2><table><tr><th>日付</th><th>レーティング</th><th>手番</th><th>対局結果</th><th colspan="4">対局相手</th><th>棋譜</th></tr><tr><td>2002-06-02</td><td>2859</td>
+<td>黒番</td>
+<td>敗北</td>
+<td><a href="705.html">佃亜紀子</a></td>
+<td>2801</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/80453">go4go</a> | </td>
+</tr>
+<tr><td>2002-04-07</td><td>2860</td>
+<td>黒番</td>
+<td>勝利</td>
+<td><a href="1247.html">木谷好美</a></td>
+<td>2355</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/80448">go4go</a> | </td>
+</tr>
+<tr><td>1998-12-21</td><td>2886</td>
+<td>黒番</td>
+<td>敗北</td>
+<td><a href="308.html">加藤朋子</a></td>
+<td>2915</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/39002">go4go</a> | </td>
+</tr>
+<tr><td>1998-12-07</td><td>2886</td>
+<td>黒番</td>
+<td>勝利</td>
+<td><a href="139.html">知念かおり</a></td>
+<td>3007</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/39187">go4go</a> | </td>
+</tr>
+<tr><td>1998-11-13</td><td>2887</td>
+<td>白番</td>
+<td>勝利</td>
+<td><a href="334.html">大澤奈留美</a></td>
+<td>2801</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/39182">go4go</a> | </td>
+</tr>
+<tr><td>1988-05-19</td><td>2889</td>
+<td>黒番</td>
+<td>敗北</td>
+<td><a href="115.html">ゼイ廼偉</a></td>
+<td>3136</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/38339">go4go</a> | </td>
+</tr>
+<tr><td>1985-05-05</td><td>2899</td>
+<td>白番</td>
+<td>敗北</td>
+<td><a href="85.html">杨晖</a></td>
+<td>3082</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/71865">go4go</a> | </td>
+</tr>
+<tr><td>1985-04-25</td><td>2899</td>
+<td>白番</td>
+<td>敗北</td>
+<td><a href="109.html">張セン</a></td>
+<td>3078</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/71772">go4go</a> | </td>
+</tr>
+<tr><td>1984-02-29</td><td>2910</td>
+<td>黒番</td>
+<td>勝利</td>
+<td><a href="177.html">郭鹃</a></td>
+<td>2860</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/76213">go4go</a> | </td>
+</tr>
+</table>
+<p><small>問合せ先： <a href="https://www.remi-coulom.fr/">Rémi Coulom</a>. Powered by <a href="https://github.com/Remi-Coulom/joedb">joedb, the C++ database</a>.</small></p></body></html>

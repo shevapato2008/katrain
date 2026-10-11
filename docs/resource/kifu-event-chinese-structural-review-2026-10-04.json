@@ -1,0 +1,3212 @@
+{
+  "version": "kifu-event-chinese-structural-review-v1",
+  "inventory_sha256": "dcc4f547ec196bbe850b79b6ce11a97dfda64e92343fcb2640dbd1aebaaad743",
+  "all_candidate_plan_sha256": "d05f8d5af68846134d21e6d3bbb820505159fa6a7c6c701d07e1b9560a66c5a8",
+  "selection": {
+    "selected_types": 237,
+    "selected_albums": 64327,
+    "excluded_games_by_reason": {
+      "below_frequency_floor": 46732,
+      "edition_link_held_raw_games": 31,
+      "edition_year_conflict": 67,
+      "exact_raw_anomaly": 3,
+      "legacy_raw_event_id": 22,
+      "old_meijin_exact_raw": 17,
+      "type_boundary_or_script_unclear": 55066
+    },
+    "year_hint_count": 317,
+    "plan_sha256": "d05f8d5af68846134d21e6d3bbb820505159fa6a7c6c701d07e1b9560a66c5a8",
+    "minimum_games_per_type": 50,
+    "selection_status": "structural_candidates_pending_review"
+  },
+  "types": [
+    {
+      "type_candidate": "日本龙星战",
+      "games": 2681,
+      "raw_value_count": 1263,
+      "edition_keys": 34,
+      "examples": [
+        "日本第11期龙星战",
+        "日本第13期龙星战",
+        "日本第12期龙星战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本名人战",
+      "games": 2237,
+      "raw_value_count": 764,
+      "edition_keys": 52,
+      "examples": [
+        "第38期日本名人战预选",
+        "第40期日本名人战预选",
+        "第42期日本名人战预选"
+      ],
+      "batch": "existing-only",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本棋圣战",
+      "games": 2022,
+      "raw_value_count": 310,
+      "edition_keys": 49,
+      "examples": [
+        "第50期日本棋圣战循环圈C",
+        "第49期日本棋圣战循环圈C",
+        "第44期日本棋圣战循环圈B组"
+      ],
+      "batch": "existing-only",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本本因坊战",
+      "games": 1885,
+      "raw_value_count": 636,
+      "edition_keys": 81,
+      "examples": [
+        "第75期日本本因坊战预选",
+        "第70期日本本因坊战预选",
+        "第74期日本本因坊战预选"
+      ],
+      "batch": "existing-only",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本天元战",
+      "games": 1868,
+      "raw_value_count": 316,
+      "edition_keys": 41,
+      "examples": [
+        "第45期日本天元战预选",
+        "第41期日本天元战预选",
+        "第44期日本天元战预选"
+      ],
+      "batch": "existing-only",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本十段战",
+      "games": 1730,
+      "raw_value_count": 380,
+      "edition_keys": 64,
+      "examples": [
+        "第57期日本十段战预选",
+        "第58期日本十段战预选",
+        "第52期日本十段战预选"
+      ],
+      "batch": "existing-only",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本碁圣战",
+      "games": 1592,
+      "raw_value_count": 266,
+      "edition_keys": 48,
+      "examples": [
+        "第38期日本碁圣战预选",
+        "第44期日本碁圣战预选",
+        "第42期日本碁圣战预选"
+      ],
+      "batch": "existing-only",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本王座战",
+      "games": 1535,
+      "raw_value_count": 313,
+      "edition_keys": 61,
+      "examples": [
+        "第67期日本王座战预选",
+        "第66期日本王座战预选",
+        "第61期日本王座战预选"
+      ],
+      "batch": "existing-only",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国围棋联赛",
+      "games": 1113,
+      "raw_value_count": 348,
+      "edition_keys": 9,
+      "examples": [
+        "2013韩国围棋联赛",
+        "2010韩国围棋联赛",
+        "2004韩国围棋联赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国女子联赛",
+      "games": 976,
+      "raw_value_count": 363,
+      "edition_keys": 9,
+      "examples": [
+        "第9届韩国女子联赛第12轮",
+        "第9届韩国女子联赛第11轮",
+        "第4届韩国女子联赛第4轮（忠南-京畿湖畔）"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本新人王战",
+      "games": 971,
+      "raw_value_count": 240,
+      "edition_keys": 47,
+      "examples": [
+        "第36期日本新人王战本赛",
+        "第35期日本新人王战本赛",
+        "第38期日本新人王战本赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "金立手机杯围甲联赛",
+      "games": 955,
+      "raw_value_count": 90,
+      "edition_keys": 6,
+      "examples": [
+        "2008金立手机杯围甲联赛第一轮",
+        "2009金立手机杯围甲联赛第八轮",
+        "2010金立手机杯围甲联赛第17轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾海峰杯职业围棋赛",
+      "games": 943,
+      "raw_value_count": 100,
+      "edition_keys": 17,
+      "examples": [
+        "第13届台湾海峰杯职业围棋赛64强战",
+        "第14届台湾海峰杯职业围棋赛64强战",
+        "第10届台湾海峰杯职业围棋赛64强战"
+      ],
+      "batch": "unique-sponsor",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "华为手机围甲",
+      "games": 911,
+      "raw_value_count": 883,
+      "edition_keys": 1,
+      "examples": [
+        "24届华为手机围甲12轮加加食品天津-民生信用卡北京4",
+        "24届华为手机围甲14轮拉萨棋院-江苏神兽腓腓主将",
+        "24届华为手机围甲1轮拉萨棋院-上海建桥学院4台"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本女子本因坊战",
+      "games": 900,
+      "raw_value_count": 221,
+      "edition_keys": 40,
+      "examples": [
+        "第38期日本女子本因坊战预选",
+        "第44期日本女子本因坊战预选",
+        "第13期日本女子本因坊战预选"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国围甲",
+      "games": 848,
+      "raw_value_count": 201,
+      "edition_keys": 4,
+      "examples": [
+        "201714届韩国围甲3轮正官庄-浦项",
+        "2016韩国围甲2轮tBroad-SK能源",
+        "第14届韩国围甲第14轮tBroad-SK能源"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾棋王赛",
+      "games": 800,
+      "raw_value_count": 142,
+      "edition_keys": 16,
+      "examples": [
+        "第13届台湾棋王赛资格赛胜部第一回",
+        "第11届台湾棋王赛资格赛胜部第1轮",
+        "第14届台湾棋王赛资格赛胜部第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国元老联赛",
+      "games": 769,
+      "raw_value_count": 185,
+      "edition_keys": 6,
+      "examples": [
+        "第10届韩国元老联赛第3轮",
+        "第8届韩国元老联赛第10轮",
+        "第8届韩国元老联赛第11轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "华为手机杯中国围甲联赛",
+      "games": 768,
+      "raw_value_count": 571,
+      "edition_keys": 2,
+      "examples": [
+        "2019第21届华为手机杯中国围甲联赛季后赛争冠组第2轮第1回合（上海建桥学院-龙元明城杭州）",
+        "2019第21届华为手机杯中国围甲联赛季后赛争冠组第2轮第1回合（江苏-成都懿锦控股）",
+        "2019第21届华为手机杯中国围甲联赛季后赛争冠组第3轮第1回合（江苏-苏泊尔杭州）"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本大手合",
+      "games": 721,
+      "raw_value_count": 39,
+      "edition_keys": 38,
+      "examples": [
+        "1967年日本大手合",
+        "1987年日本大手合",
+        "1986年日本大手合"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本女子名人战",
+      "games": 715,
+      "raw_value_count": 155,
+      "edition_keys": 37,
+      "examples": [
+        "第1期日本女子名人战预选",
+        "第2期日本女子名人战预选",
+        "第27期日本女子名人战循环圈赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "金立杯中国围甲",
+      "games": 714,
+      "raw_value_count": 331,
+      "edition_keys": 2,
+      "examples": [
+        "19届2017金立杯中国围甲17轮",
+        "2017第19届金立杯中国围甲1轮",
+        "2017第19届金立杯中国围甲2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国围甲",
+      "games": 672,
+      "raw_value_count": 506,
+      "edition_keys": 2,
+      "examples": [
+        "2017第19届中国围甲第18轮（上海建桥学院-华泰证券江苏）",
+        "2018第20届中国围甲第11轮(华泰证券江苏-龙元明城杭州)",
+        "2018第20届中国围甲第11轮(山东景芝酒业-重庆爱普地产）"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中信置业杯中国女子围甲联赛",
+      "games": 660,
+      "raw_value_count": 265,
+      "edition_keys": 7,
+      "examples": [
+        "第3届中信置业杯中国女子围甲联赛第10轮",
+        "第4届中信置业杯中国女子围甲联赛第18轮",
+        "2019第7届中信置业杯中国女子围甲联赛第12轮（山西书海路鑫-广东东湖棋院）"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国围甲联赛",
+      "games": 622,
+      "raw_value_count": 82,
+      "edition_keys": 5,
+      "examples": [
+        "2014韩国围甲联赛",
+        "2015韩国围甲联赛第1轮SK-物价",
+        "2017第14届韩国围甲联赛第6轮新安--kixx"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国围乙联赛",
+      "games": 618,
+      "raw_value_count": 77,
+      "edition_keys": 7,
+      "examples": [
+        "2014韩国围乙联赛",
+        "2023年度韩国围乙联赛",
+        "2013韩国围乙联赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本首相杯争夺战",
+      "games": 593,
+      "raw_value_count": 77,
+      "edition_keys": 17,
+      "examples": [
+        "第23期日本首相杯争夺战第1轮",
+        "第19期日本首相杯争夺战第1轮",
+        "第20期日本首相杯争夺战第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国名人战",
+      "games": 590,
+      "raw_value_count": 330,
+      "edition_keys": 26,
+      "examples": [
+        "第33届韩国名人战本赛",
+        "第38届韩国名人战循环圈赛",
+        "第31期韩国名人战循环圈"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "金立智能手机杯围甲",
+      "games": 525,
+      "raw_value_count": 48,
+      "edition_keys": 4,
+      "examples": [
+        "2014金立智能手机杯围甲第16轮",
+        "2014金立智能手机杯围甲第3轮",
+        "2013金立智能手机杯围甲第15轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾国手赛",
+      "games": 523,
+      "raw_value_count": 131,
+      "edition_keys": 12,
+      "examples": [
+        "第16届台湾国手赛第1轮",
+        "第17届台湾国手赛第1轮",
+        "第20届台湾国手赛本赛第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "金立杯围甲联赛",
+      "games": 520,
+      "raw_value_count": 23,
+      "edition_keys": 2,
+      "examples": [
+        "2007金立杯围甲联赛第11轮",
+        "2007金立杯围甲联赛第14轮",
+        "2007金立杯围甲联赛第15轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中信置业中国女子围甲",
+      "games": 516,
+      "raw_value_count": 176,
+      "edition_keys": 4,
+      "examples": [
+        "第4届中信置业中国女子围甲11轮",
+        "第4届中信置业中国女子围甲14轮",
+        "第4届中信置业中国女子围甲15轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "同里杯中国天元战",
+      "games": 497,
+      "raw_value_count": 109,
+      "edition_keys": 19,
+      "examples": [
+        "38届同里杯中国天元战32强",
+        "第27届同里杯中国天元战32强赛",
+        "第29届同里杯中国天元战32强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "澳特来围甲联赛",
+      "games": 457,
+      "raw_value_count": 29,
+      "edition_keys": 1,
+      "examples": [
+        "2005年澳特来围甲联赛第20轮",
+        "2005澳特来围甲联赛第9轮",
+        "2005澳特来围甲联赛第六轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本关西棋院第一位决定战",
+      "games": 452,
+      "raw_value_count": 156,
+      "edition_keys": 44,
+      "examples": [
+        "第43期日本关西棋院第一位决定战本战第1轮",
+        "第44期日本关西棋院第一位决定战本战第1轮",
+        "第45期日本关西棋院第一位决定战本战第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国围乙",
+      "games": 443,
+      "raw_value_count": 135,
+      "edition_keys": 4,
+      "examples": [
+        "19届韩国围乙8轮",
+        "19届韩国围乙6轮",
+        "19届韩国围乙2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国龙星战",
+      "games": 440,
+      "raw_value_count": 168,
+      "edition_keys": 10,
+      "examples": [
+        "12届中国龙星战预选",
+        "第12届中国龙星战预选赛第1轮",
+        "第8届中国龙星战预选"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "三星火灾杯",
+      "games": 407,
+      "raw_value_count": 90,
+      "edition_keys": 12,
+      "examples": [
+        "第10届三星火灾杯第一轮",
+        "第11届三星火灾杯第一轮",
+        "第2届三星火灾杯第一轮"
+      ],
+      "batch": "samsung-cup",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中日围棋对抗赛",
+      "games": 401,
+      "raw_value_count": 65,
+      "edition_keys": 19,
+      "examples": [
+        "中日围棋对抗赛",
+        "第2届中日围棋对抗赛第1轮",
+        "第2届中日围棋对抗赛第4轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本女子棋圣战",
+      "games": 393,
+      "raw_value_count": 149,
+      "edition_keys": 29,
+      "examples": [
+        "第11期日本女子棋圣战本赛第1轮",
+        "第19期日本女子棋圣战本赛第1轮",
+        "第21期日本女子棋圣战第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾中环碁圣赛",
+      "games": 393,
+      "raw_value_count": 47,
+      "edition_keys": 10,
+      "examples": [
+        "第7届台湾中环碁圣赛第1轮",
+        "第6届台湾中环碁圣赛第1轮",
+        "第5届台湾中环碁圣赛第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本阿含桐山杯",
+      "games": 391,
+      "raw_value_count": 122,
+      "edition_keys": 23,
+      "examples": [
+        "第18期日本阿含桐山杯预选",
+        "第17期日本阿含桐山杯预选",
+        "第21期日本阿含桐山杯预选"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国和围甲联赛",
+      "games": 389,
+      "raw_value_count": 26,
+      "edition_keys": 1,
+      "examples": [
+        "2006中国和围甲联赛第09轮",
+        "2006中国和围甲联赛第10轮",
+        "2006中国和围甲联赛第11轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "三国赤壁古战场杯围甲",
+      "games": 388,
+      "raw_value_count": 388,
+      "edition_keys": 1,
+      "examples": [
+        "27届三国赤壁古战场杯围甲10轮山东银丰-深圳聂道厚势1台",
+        "27届三国赤壁古战场杯围甲10轮山东银丰-深圳聂道厚势2台",
+        "27届三国赤壁古战场杯围甲10轮山东银丰-深圳聂道厚势3台"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "富士通杯",
+      "games": 384,
+      "raw_value_count": 104,
+      "edition_keys": 23,
+      "examples": [
+        "第11届富士通杯第二轮",
+        "第12届富士通杯第二轮",
+        "第14届富士通杯第二轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "金立智能手机中国围甲",
+      "games": 374,
+      "raw_value_count": 49,
+      "edition_keys": 2,
+      "examples": [
+        "2015金立智能手机中国围甲16轮",
+        "2015金立智能手机中国围甲17轮",
+        "2015金立智能手机中国围甲18轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国围棋名人战",
+      "games": 362,
+      "raw_value_count": 42,
+      "edition_keys": 18,
+      "examples": [
+        "第9届中国围棋名人战",
+        "第8届中国围棋名人战",
+        "第6届中国围棋名人战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国女子国手战",
+      "games": 357,
+      "raw_value_count": 144,
+      "edition_keys": 27,
+      "examples": [
+        "第25届韩国女子国手战预选决赛",
+        "第26届韩国女子国手战预选决赛",
+        "第24届韩国女子国手战预选决赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "金立智能手机杯围甲联赛",
+      "games": 354,
+      "raw_value_count": 32,
+      "edition_keys": 4,
+      "examples": [
+        "2011金立智能手机杯围甲联赛第18轮",
+        "2011金立智能手机杯围甲联赛第20轮",
+        "2011金立智能手机杯围甲联赛第22轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国全国围棋甲级联赛",
+      "games": 344,
+      "raw_value_count": 59,
+      "edition_keys": 7,
+      "examples": [
+        "1999年中国全国围棋甲级联赛第10轮",
+        "1999年中国全国围棋甲级联赛第16轮",
+        "1999年中国全国围棋甲级联赛第12轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "倡棋杯",
+      "games": 324,
+      "raw_value_count": 92,
+      "edition_keys": 13,
+      "examples": [
+        "18届倡棋杯本赛第1轮",
+        "第10届倡棋杯本赛第1轮",
+        "第9届倡棋杯本赛第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾国手战",
+      "games": 319,
+      "raw_value_count": 82,
+      "edition_keys": 16,
+      "examples": [
+        "第14届台湾国手战第1轮",
+        "第12届台湾国手战循环圈",
+        "第13届台湾国手战第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "三星车险杯",
+      "games": 306,
+      "raw_value_count": 61,
+      "edition_keys": 10,
+      "examples": [
+        "29届三星车险杯32强",
+        "27届三星车险杯32强赛",
+        "28届三星车险杯32强赛"
+      ],
+      "batch": "samsung-cup",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国女子围棋联赛",
+      "games": 301,
+      "raw_value_count": 68,
+      "edition_keys": 5,
+      "examples": [
+        "第9届韩国女子围棋联赛第7轮",
+        "第11届韩国女子围棋联赛第15轮",
+        "第11届韩国女子围棋联赛第16轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "好猫杯围棋甲级联赛",
+      "games": 300,
+      "raw_value_count": 23,
+      "edition_keys": 1,
+      "examples": [
+        "2003年好猫杯围棋甲级联赛第七轮",
+        "2003年好猫杯围棋甲级联赛第八轮",
+        "2003年好猫杯围棋甲级联赛第11轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国倡棋杯",
+      "games": 297,
+      "raw_value_count": 74,
+      "edition_keys": 10,
+      "examples": [
+        "第18届中国倡棋杯预选赛第1轮",
+        "第11届中国倡棋杯本赛第1轮",
+        "第13届中国倡棋杯本赛第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国围棋段位赛",
+      "games": 294,
+      "raw_value_count": 39,
+      "edition_keys": 7,
+      "examples": [
+        "2001年中国围棋段位赛",
+        "2007年中国围棋段位赛第一轮",
+        "2007年中国围棋段位赛第12轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国围棋天元战",
+      "games": 287,
+      "raw_value_count": 52,
+      "edition_keys": 23,
+      "examples": [
+        "第10届中国围棋天元战",
+        "第11届中国围棋天元战",
+        "中国围棋天元战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国围棋全国个人赛",
+      "games": 286,
+      "raw_value_count": 6,
+      "edition_keys": 4,
+      "examples": [
+        "中国围棋全国个人赛",
+        "2002年中国围棋全国个人赛",
+        "1977年中国围棋全国个人赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾天元赛",
+      "games": 277,
+      "raw_value_count": 76,
+      "edition_keys": 15,
+      "examples": [
+        "第7届台湾天元赛预赛",
+        "第5届台湾天元赛循环圈",
+        "第6届台湾天元赛循环圈"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本王冠战",
+      "games": 271,
+      "raw_value_count": 114,
+      "edition_keys": 44,
+      "examples": [
+        "第30期日本王冠战本战第1轮",
+        "第61期日本王冠战第2轮",
+        "第67期日本王冠战预选A"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国围棋甲级联赛",
+      "games": 270,
+      "raw_value_count": 58,
+      "edition_keys": 10,
+      "examples": [
+        "2001年中国围棋甲级联赛第17轮",
+        "2001年中国围棋甲级联赛第1轮",
+        "2001年中国围棋甲级联赛第14轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾棋王战",
+      "games": 269,
+      "raw_value_count": 101,
+      "edition_keys": 13,
+      "examples": [
+        "第3届台湾棋王战资格赛第一轮",
+        "第5届台湾棋王战循环圈赛",
+        "第13届台湾棋王战资格赛败部决赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国十段战",
+      "games": 267,
+      "raw_value_count": 56,
+      "edition_keys": 9,
+      "examples": [
+        "第7届韩国十段战",
+        "第6届韩国十段战",
+        "第8届韩国十段战第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国国手战",
+      "games": 262,
+      "raw_value_count": 114,
+      "edition_keys": 21,
+      "examples": [
+        "韩国国手战",
+        "第46届韩国国手战本赛",
+        "第57期韩国国手战预选决赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国围棋团体赛",
+      "games": 256,
+      "raw_value_count": 13,
+      "edition_keys": 6,
+      "examples": [
+        "中国围棋团体赛",
+        "1997年中国围棋团体赛",
+        "1982中国围棋团体赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "招商银行杯电视快棋赛",
+      "games": 253,
+      "raw_value_count": 30,
+      "edition_keys": 9,
+      "examples": [
+        "第7届招商银行杯电视快棋赛第一轮",
+        "第三届招商银行杯电视快棋赛",
+        "第五届招商银行杯电视快棋赛第一轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾天元战",
+      "games": 252,
+      "raw_value_count": 107,
+      "edition_keys": 16,
+      "examples": [
+        "第18届台湾天元战循环圈",
+        "第15届台湾天元战循环圈",
+        "第21届台湾天元战预选"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本大和证券杯",
+      "games": 252,
+      "raw_value_count": 47,
+      "edition_keys": 8,
+      "examples": [
+        "第5届日本大和证券杯预选赛",
+        "第4届日本大和证券杯预选赛",
+        "第3期日本大和证券杯预选"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "国际新锐对抗赛",
+      "games": 249,
+      "raw_value_count": 31,
+      "edition_keys": 10,
+      "examples": [
+        "2008国际新锐对抗赛第一轮",
+        "2008国际新锐对抗赛第三轮",
+        "2008国际新锐对抗赛第二轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国围棋霸王战",
+      "games": 243,
+      "raw_value_count": 4,
+      "edition_keys": 3,
+      "examples": [
+        "第三届中国围棋霸王战",
+        "第二届中国围棋霸王战",
+        "第一届中国围棋霸王战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中信和业女子围甲",
+      "games": 234,
+      "raw_value_count": 234,
+      "edition_keys": 2,
+      "examples": [
+        "10届中信和业女子围甲15轮上海清一-山西书海路鑫1",
+        "10届中信和业女子围甲15轮上海清一-山西书海路鑫2",
+        "10届中信和业女子围甲15轮上海清一-山西书海路鑫3"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中信置业杯女子围甲",
+      "games": 229,
+      "raw_value_count": 39,
+      "edition_keys": 5,
+      "examples": [
+        "首届中信置业杯女子围甲第5轮",
+        "2013中信置业杯女子围甲第13轮",
+        "2013首届中信置业杯女子围甲第10轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本国家队新浪网络训练赛",
+      "games": 222,
+      "raw_value_count": 2,
+      "edition_keys": 2,
+      "examples": [
+        "2014日本国家队新浪网络训练赛",
+        "2015日本国家队新浪网络训练赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "三星财产杯",
+      "games": 221,
+      "raw_value_count": 43,
+      "edition_keys": 4,
+      "examples": [
+        "第15届三星财产杯32强双败淘汰赛第一轮",
+        "第16届三星财产杯32强双败淘汰赛",
+        "第17届三星财产杯32强双败淘汰赛第1轮"
+      ],
+      "batch": "samsung-cup",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾新人王赛",
+      "games": 210,
+      "raw_value_count": 58,
+      "edition_keys": 6,
+      "examples": [
+        "第8届台湾新人王赛本赛16强战",
+        "第9届台湾新人王赛本赛16强战",
+        "第10届台湾新人王赛本赛16强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国霸王战",
+      "games": 210,
+      "raw_value_count": 84,
+      "edition_keys": 16,
+      "examples": [
+        "韩国霸王战",
+        "第37届韩国霸王战本赛",
+        "第21届韩国霸王战循环圈"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国麦馨杯九段战",
+      "games": 209,
+      "raw_value_count": 58,
+      "edition_keys": 11,
+      "examples": [
+        "第20届韩国麦馨杯九段战32强战",
+        "25届韩国麦馨杯九段战32强",
+        "第19届韩国麦馨杯九段战32强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国天元战",
+      "games": 208,
+      "raw_value_count": 90,
+      "edition_keys": 16,
+      "examples": [
+        "韩国天元战",
+        "第8届韩国天元战本赛",
+        "第7届韩国天元战本赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "华为手机杯中国围棋甲级联赛",
+      "games": 205,
+      "raw_value_count": 160,
+      "edition_keys": 2,
+      "examples": [
+        "第23届华为手机杯中国围棋甲级联赛季后赛第3轮第2回合",
+        "第23届华为手机杯中国围棋甲级联赛季后赛第2轮第2回合",
+        "第23届华为手机杯中国围棋甲级联赛季后赛第2轮第1回合"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中信杯女子围甲",
+      "games": 203,
+      "raw_value_count": 202,
+      "edition_keys": 1,
+      "examples": [
+        "12届中信杯女子围甲7轮上海星小目-上海清一1台",
+        "12届中信杯女子围甲10轮上海星小目-浙江体彩1台",
+        "12届中信杯女子围甲10轮上海星小目-浙江体彩2台"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "全国围棋个人赛",
+      "games": 198,
+      "raw_value_count": 58,
+      "edition_keys": 16,
+      "examples": [
+        "2000年全国围棋个人赛",
+        "全国围棋个人赛",
+        "1981年全国围棋个人赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾王座赛",
+      "games": 197,
+      "raw_value_count": 87,
+      "edition_keys": 5,
+      "examples": [
+        "第3届台湾王座赛循环圈",
+        "第2届台湾王座赛预赛胜部第1轮",
+        "第1届台湾王座赛预赛胜部第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "雅居乐清水湾围甲",
+      "games": 197,
+      "raw_value_count": 197,
+      "edition_keys": 0,
+      "examples": [
+        "雅居乐清水湾围甲10轮上海建桥学院-山西元工弘奕1台",
+        "雅居乐清水湾围甲10轮上海建桥学院-山西元工弘奕4台",
+        "雅居乐清水湾围甲10轮上海建桥学院-山西元工弘奕主将"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "春兰杯",
+      "games": 194,
+      "raw_value_count": 66,
+      "edition_keys": 12,
+      "examples": [
+        "第1届春兰杯第一轮",
+        "第1届春兰杯第二轮",
+        "第4届春兰杯第一轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国新人王战",
+      "games": 192,
+      "raw_value_count": 59,
+      "edition_keys": 15,
+      "examples": [
+        "第11期韩国新人王战",
+        "第13届韩国新人王战本赛",
+        "第14届韩国新人王战本赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国棋圣战",
+      "games": 192,
+      "raw_value_count": 57,
+      "edition_keys": 15,
+      "examples": [
+        "韩国棋圣战",
+        "第3期韩国棋圣战循环圈",
+        "第4期韩国棋圣战循环圈"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾快棋争霸战",
+      "games": 192,
+      "raw_value_count": 24,
+      "edition_keys": 4,
+      "examples": [
+        "第4届台湾快棋争霸战资格赛第1轮",
+        "第5届台湾快棋争霸战本赛48强战",
+        "第4届台湾快棋争霸战32强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国物价信息杯",
+      "games": 186,
+      "raw_value_count": 50,
+      "edition_keys": 10,
+      "examples": [
+        "第5届韩国物价信息杯本赛",
+        "第7届韩国物价信息杯",
+        "第9届韩国物价信息杯本赛"
+      ],
+      "batch": "unique-sponsor",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾中环碁圣战",
+      "games": 185,
+      "raw_value_count": 44,
+      "edition_keys": 11,
+      "examples": [
+        "第12届台湾中环碁圣战本赛第1轮",
+        "第11届台湾中环碁圣战第1轮",
+        "第12届台湾中环碁圣战本赛第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "三星杯",
+      "games": 181,
+      "raw_value_count": 77,
+      "edition_keys": 19,
+      "examples": [
+        "第13届三星杯第一轮",
+        "第12届三星杯预选决赛",
+        "第14届三星杯32强赛第二轮"
+      ],
+      "batch": "samsung-cup",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国平江杯元老联赛",
+      "games": 180,
+      "raw_value_count": 63,
+      "edition_keys": 1,
+      "examples": [
+        "2021第6届韩国平江杯元老联赛季后赛第1轮（釜山KH能源队-九田鹿角队）",
+        "2021第6届韩国平江杯元老联赛季后赛第2轮第1回合（首尔数据流队-九田鹿角队）",
+        "2021第6届韩国平江杯元老联赛季后赛第2轮第2回合（首尔数据流队-九田鹿角队）"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国龙星战",
+      "games": 179,
+      "raw_value_count": 89,
+      "edition_keys": 6,
+      "examples": [
+        "第4届韩国龙星战32强战",
+        "第3届韩国龙星战32强战双败淘汰第1轮",
+        "第4届韩国龙星战16强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "同里杯中国升段赛",
+      "games": 177,
+      "raw_value_count": 12,
+      "edition_keys": 1,
+      "examples": [
+        "2015同里杯中国升段赛第12轮",
+        "2015同里杯中国升段赛第2轮",
+        "2015同里杯中国升段赛第3轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "理光杯",
+      "games": 175,
+      "raw_value_count": 28,
+      "edition_keys": 8,
+      "examples": [
+        "第10届理光杯第二轮",
+        "第12届理光杯第1轮",
+        "第13届理光杯第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国扁钢杯元老联赛",
+      "games": 173,
+      "raw_value_count": 59,
+      "edition_keys": 1,
+      "examples": [
+        "第7届韩国扁钢杯元老联赛季后赛决赛第1回合（京畿高阳市-釜山KH能源）",
+        "第7届韩国扁钢杯元老联赛季后赛半决赛第2回合（釜山KH能源-明星永川）",
+        "第7届韩国扁钢杯元老联赛季后赛第1轮（首尔数据流-釜山KH能源）"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中日围棋友谊赛",
+      "games": 170,
+      "raw_value_count": 65,
+      "edition_keys": 23,
+      "examples": [
+        "中日围棋友谊赛",
+        "1978年中日围棋友谊赛",
+        "1977年中日围棋友谊赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "洛阳龙门杯中国棋圣战",
+      "games": 170,
+      "raw_value_count": 16,
+      "edition_keys": 2,
+      "examples": [
+        "第1届洛阳龙门杯中国棋圣战预选第2轮",
+        "第1届洛阳龙门杯中国棋圣战预选第3轮",
+        "第1届洛阳龙门杯中国棋圣战预选第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中日对抗赛",
+      "games": 169,
+      "raw_value_count": 1,
+      "edition_keys": 0,
+      "examples": [
+        "中日对抗赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本广岛铝制杯若鲤战",
+      "games": 168,
+      "raw_value_count": 41,
+      "edition_keys": 11,
+      "examples": [
+        "第20期日本广岛铝制杯若鲤战预选",
+        "第16期日本广岛铝制杯若鲤战预选决赛",
+        "第17期日本广岛铝制杯若鲤战预选决赛"
+      ],
+      "batch": "unique-sponsor",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国麦馨杯九段最强战",
+      "games": 166,
+      "raw_value_count": 71,
+      "edition_keys": 14,
+      "examples": [
+        "第8届韩国麦馨杯九段最强战",
+        "第13届韩国麦馨杯九段最强战",
+        "第7届韩国麦馨杯九段最强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "东洋证券杯",
+      "games": 159,
+      "raw_value_count": 54,
+      "edition_keys": 7,
+      "examples": [
+        "东洋证券杯",
+        "第八届东洋证券杯第二轮",
+        "第九届东洋证券杯第二轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中信置业杯中国女子围甲",
+      "games": 155,
+      "raw_value_count": 18,
+      "edition_keys": 2,
+      "examples": [
+        "第3届中信置业杯中国女子围甲11轮",
+        "第3届中信置业杯中国女子围甲12轮",
+        "第3届中信置业杯中国女子围甲13轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国阿含桐山杯",
+      "games": 154,
+      "raw_value_count": 51,
+      "edition_keys": 17,
+      "examples": [
+        "23届中国阿含桐山杯预选1轮",
+        "第14届中国阿含桐山杯16强赛",
+        "第17届中国阿含桐山杯16强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "永城杯中国名人战",
+      "games": 154,
+      "raw_value_count": 22,
+      "edition_keys": 5,
+      "examples": [
+        "第21届永城杯中国名人战预选赛第一轮",
+        "第21届永城杯中国名人战本赛第一轮",
+        "第21届永城杯中国名人战预选赛第二轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本帝警杯俊英战",
+      "games": 146,
+      "raw_value_count": 36,
+      "edition_keys": 4,
+      "examples": [
+        "第5期日本帝警杯俊英战预选",
+        "第2期日本帝警杯俊英战循环圈B",
+        "第4期日本帝警杯俊英战预选"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本首相杯",
+      "games": 139,
+      "raw_value_count": 73,
+      "edition_keys": 23,
+      "examples": [
+        "第6期日本首相杯第1轮",
+        "第8期日本首相杯第2轮",
+        "第6期日本首相杯第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "百灵杯世界公开赛",
+      "games": 139,
+      "raw_value_count": 23,
+      "edition_keys": 2,
+      "examples": [
+        "第3届百灵杯世界公开赛64强赛",
+        "第2届百灵杯世界公开赛64强赛",
+        "第2届百灵杯世界公开赛32强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾名人赛",
+      "games": 138,
+      "raw_value_count": 34,
+      "edition_keys": 5,
+      "examples": [
+        "第6届台湾名人赛本赛32强战",
+        "第7届台湾名人赛资格赛",
+        "第3届台湾名人赛本赛32强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中信置业女子围甲",
+      "games": 137,
+      "raw_value_count": 135,
+      "edition_keys": 1,
+      "examples": [
+        "10届中信置业女子围甲3轮成都银行-杭州云林决破3",
+        "10届中信置业女子围甲5轮成都银行-上海星小目2",
+        "10届中信置业女子围甲1轮上海清一-成都银行1"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "职业棋手精英赛",
+      "games": 137,
+      "raw_value_count": 1,
+      "edition_keys": 1,
+      "examples": [
+        "2013职业棋手精英赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本幽玄杯精锐循环赛",
+      "games": 134,
+      "raw_value_count": 5,
+      "edition_keys": 4,
+      "examples": [
+        "第2期日本幽玄杯精锐循环赛",
+        "第2届日本幽玄杯精锐循环赛",
+        "第1期日本幽玄杯精锐循环赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾联电杯职业围棋赛",
+      "games": 133,
+      "raw_value_count": 56,
+      "edition_keys": 4,
+      "examples": [
+        "第2届台湾联电杯职业围棋赛循环圈",
+        "第1届台湾联电杯职业围棋赛循环圈",
+        "第1届台湾联电杯职业围棋赛循环圈赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国新锐连胜最强战",
+      "games": 133,
+      "raw_value_count": 30,
+      "edition_keys": 6,
+      "examples": [
+        "第4届韩国新锐连胜最强战本赛",
+        "第3届韩国新锐连胜最强战",
+        "第6届韩国新锐连胜最强战本赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "威孚房开杯",
+      "games": 130,
+      "raw_value_count": 23,
+      "edition_keys": 7,
+      "examples": [
+        "16届威孚房开杯32强",
+        "第7届威孚房开杯预赛",
+        "第5届威孚房开杯预选赛第一轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国国棋战",
+      "games": 130,
+      "raw_value_count": 80,
+      "edition_keys": 10,
+      "examples": [
+        "韩国国棋战",
+        "第19期韩国国棋战第1轮",
+        "第13届韩国国棋战第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国王位战",
+      "games": 127,
+      "raw_value_count": 76,
+      "edition_keys": 15,
+      "examples": [
+        "韩国王位战",
+        "第36届韩国王位战本赛",
+        "第39届韩国王位战16强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本东京精密杯女子最强战",
+      "games": 127,
+      "raw_value_count": 33,
+      "edition_keys": 8,
+      "examples": [
+        "第6期日本东京精密杯女子最强战第1轮",
+        "第2期日本东京精密杯女子最强战第2轮",
+        "第5期日本东京精密杯女子最强战第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本女子鹤圣战",
+      "games": 126,
+      "raw_value_count": 46,
+      "edition_keys": 18,
+      "examples": [
+        "第3期日本女子鹤圣战第1轮",
+        "第4期日本女子鹤圣战第1轮",
+        "第5期日本女子鹤圣战第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "职业精英网络赛",
+      "games": 125,
+      "raw_value_count": 1,
+      "edition_keys": 1,
+      "examples": [
+        "2013职业精英网络赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本大师赛",
+      "games": 124,
+      "raw_value_count": 42,
+      "edition_keys": 8,
+      "examples": [
+        "第3期日本大师赛第1轮",
+        "第4期日本大师赛本赛第1轮",
+        "第7期日本大师赛1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "建桥杯中国女子围棋公开赛",
+      "games": 123,
+      "raw_value_count": 37,
+      "edition_keys": 8,
+      "examples": [
+        "第18届建桥杯中国女子围棋公开赛预选赛第1轮",
+        "第18届建桥杯中国女子围棋公开赛预选赛第2轮",
+        "第18届建桥杯中国女子围棋公开赛本战32强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中日围棋擂台赛",
+      "games": 122,
+      "raw_value_count": 122,
+      "edition_keys": 11,
+      "examples": [
+        "中日围棋擂台赛",
+        "第10届中日围棋擂台赛第一局",
+        "第10届中日围棋擂台赛第七局"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本福荫杯",
+      "games": 122,
+      "raw_value_count": 31,
+      "edition_keys": 7,
+      "examples": [
+        "第6期日本福荫杯预选",
+        "第7期日本福荫杯预选",
+        "第8期日本福荫杯预选"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国名人战",
+      "games": 121,
+      "raw_value_count": 53,
+      "edition_keys": 12,
+      "examples": [
+        "中国名人战",
+        "第14届中国名人战本赛第一轮",
+        "第14届中国名人战本赛第二轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国新秀联赛",
+      "games": 121,
+      "raw_value_count": 55,
+      "edition_keys": 4,
+      "examples": [
+        "2020韩国新秀联赛",
+        "2022韩国新秀联赛",
+        "2019韩国新秀联赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "建桥杯中国新人王战",
+      "games": 120,
+      "raw_value_count": 39,
+      "edition_keys": 8,
+      "examples": [
+        "第21届建桥杯中国新人王战32强赛",
+        "第19届建桥杯中国新人王战第1轮",
+        "第22届建桥杯中国新人王战第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本国家队网络训练赛",
+      "games": 119,
+      "raw_value_count": 2,
+      "edition_keys": 2,
+      "examples": [
+        "2013日本国家队网络训练赛",
+        "2014日本国家队网络训练赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国最强棋手战",
+      "games": 119,
+      "raw_value_count": 20,
+      "edition_keys": 4,
+      "examples": [
+        "3届韩国最强棋手战循环圈",
+        "5届韩国最强棋手战循环圈",
+        "4届韩国最强棋手战循环圈"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "湾区杯中国大棋士战",
+      "games": 118,
+      "raw_value_count": 28,
+      "edition_keys": 5,
+      "examples": [
+        "1届湾区杯中国大棋士战32强",
+        "2届湾区杯中国大棋士战32强",
+        "2届湾区杯中国大棋士战16强"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国王中王战",
+      "games": 118,
+      "raw_value_count": 36,
+      "edition_keys": 5,
+      "examples": [
+        "第5届韩国王中王战预选赛",
+        "第2届韩国王中王战本赛32强赛",
+        "第5届韩国王中王战本赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国女子名人战",
+      "games": 115,
+      "raw_value_count": 54,
+      "edition_keys": 13,
+      "examples": [
+        "第11届韩国女子名人战本赛",
+        "第17届韩国女子名人战16强赛",
+        "第5届韩国女子名人战本赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "洛阳白云山杯中国棋圣战",
+      "games": 114,
+      "raw_value_count": 39,
+      "edition_keys": 3,
+      "examples": [
+        "第4届洛阳白云山杯中国棋圣战资格赛第2轮",
+        "第4届洛阳白云山杯中国棋圣战资格赛第1轮",
+        "第4届洛阳白云山杯中国棋圣战本赛第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "衢州烂柯杯",
+      "games": 114,
+      "raw_value_count": 20,
+      "edition_keys": 5,
+      "examples": [
+        "第3届衢州烂柯杯本赛第一轮",
+        "第4届衢州烂柯杯32强赛",
+        "第二届衢州烂柯杯本赛第一轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中信银行杯电视快棋赛",
+      "games": 113,
+      "raw_value_count": 12,
+      "edition_keys": 3,
+      "examples": [
+        "第1届中信银行杯电视快棋赛第1轮",
+        "第2届中信银行杯电视快棋赛第1轮",
+        "第2届中信银行杯电视快棋赛第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "农心杯三国擂台赛",
+      "games": 113,
+      "raw_value_count": 113,
+      "edition_keys": 11,
+      "examples": [
+        "23届农心杯三国擂台赛10局",
+        "23届农心杯三国擂台赛11局",
+        "23届农心杯三国擂台赛12局"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "全国围棋锦标赛",
+      "games": 110,
+      "raw_value_count": 36,
+      "edition_keys": 6,
+      "examples": [
+        "全国围棋锦标赛",
+        "2003年全国围棋锦标赛第三轮",
+        "2003年全国围棋锦标赛第四轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "应氏杯",
+      "games": 110,
+      "raw_value_count": 48,
+      "edition_keys": 8,
+      "examples": [
+        "第7届应氏杯16强赛",
+        "第三届应氏杯第二轮",
+        "第二届应氏杯第一轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "新体育杯",
+      "games": 108,
+      "raw_value_count": 11,
+      "edition_keys": 3,
+      "examples": [
+        "新体育杯",
+        "第6届新体育杯决赛第一局",
+        "第6届新体育杯决赛第三局"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾海峰杯",
+      "games": 108,
+      "raw_value_count": 44,
+      "edition_keys": 8,
+      "examples": [
+        "第2届台湾海峰杯第一轮",
+        "第2届台湾海峰杯第二轮",
+        "第1届台湾海峰杯16强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "春兰杯世界锦标赛",
+      "games": 105,
+      "raw_value_count": 23,
+      "edition_keys": 6,
+      "examples": [
+        "14届春兰杯世界锦标赛16强",
+        "14届春兰杯世界锦标赛1轮",
+        "15届春兰杯世界锦标赛16强"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国名人赛",
+      "games": 104,
+      "raw_value_count": 4,
+      "edition_keys": 3,
+      "examples": [
+        "第10届中国名人赛",
+        "第11届中国名人赛",
+        "中国第九届名人赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本快棋选手权战",
+      "games": 103,
+      "raw_value_count": 49,
+      "edition_keys": 28,
+      "examples": [
+        "第33期日本快棋选手权战第1轮",
+        "第10期日本快棋选手权战第1轮",
+        "第34期日本快棋选手权战第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国大王战",
+      "games": 102,
+      "raw_value_count": 40,
+      "edition_keys": 10,
+      "examples": [
+        "韩国大王战",
+        "第4届韩国大王战预选决赛",
+        "第3届韩国大王战本战16强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "洛阳龙门杯棋圣战",
+      "games": 102,
+      "raw_value_count": 11,
+      "edition_keys": 1,
+      "examples": [
+        "第2届洛阳龙门杯棋圣战预选第1轮",
+        "第2届洛阳龙门杯棋圣战预选第2轮",
+        "第2届洛阳龙门杯棋圣战32强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本扇兴杯女子最强战",
+      "games": 101,
+      "raw_value_count": 32,
+      "edition_keys": 10,
+      "examples": [
+        "第10期日本扇兴杯女子最强战预选",
+        "第10期日本扇兴杯女子最强战第1轮",
+        "第5期日本扇兴杯女子最强战第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本最高位战",
+      "games": 98,
+      "raw_value_count": 16,
+      "edition_keys": 6,
+      "examples": [
+        "第3期日本最高位战循环圈",
+        "第1期日本最高位战循环圈",
+        "第1届日本最高位战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国招商银行杯电视快棋赛",
+      "games": 98,
+      "raw_value_count": 8,
+      "edition_keys": 2,
+      "examples": [
+        "第10届中国招商银行杯电视快棋赛第一轮",
+        "第9届中国招商银行杯电视快棋赛第一轮",
+        "第10届中国招商银行杯电视快棋赛32强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国巴克斯杯",
+      "games": 98,
+      "raw_value_count": 32,
+      "edition_keys": 11,
+      "examples": [
+        "第3届韩国巴克斯杯预选决赛",
+        "第1届韩国巴克斯杯16强战",
+        "第4届韩国巴克斯杯预选赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "四城市新锐对抗赛",
+      "games": 96,
+      "raw_value_count": 6,
+      "edition_keys": 2,
+      "examples": [
+        "2010四城市新锐对抗赛第一轮",
+        "2010四城市新锐对抗赛第三轮",
+        "2010四城市新锐对抗赛第二轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本天元赛",
+      "games": 96,
+      "raw_value_count": 26,
+      "edition_keys": 24,
+      "examples": [
+        "日本第07届天元赛",
+        "日本第08届天元赛",
+        "日本第13届天元赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾名人冠军赛",
+      "games": 96,
+      "raw_value_count": 24,
+      "edition_keys": 3,
+      "examples": [
+        "第3届台湾名人冠军赛预选",
+        "第2届台湾名人冠军赛32强战",
+        "第1届台湾名人冠军赛本赛32强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "钻石杯中国龙星战",
+      "games": 96,
+      "raw_value_count": 17,
+      "edition_keys": 3,
+      "examples": [
+        "第4届钻石杯中国龙星战本赛第1轮",
+        "第3届钻石杯中国龙星战第二轮",
+        "第4届钻石杯中国龙星战本赛第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "农心杯世界团体赛",
+      "games": 95,
+      "raw_value_count": 94,
+      "edition_keys": 10,
+      "examples": [
+        "26届农心杯世界团体赛5局",
+        "24届农心杯世界团体赛10局",
+        "24届农心杯世界团体赛11局"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "三星车险杯世界大师赛",
+      "games": 94,
+      "raw_value_count": 54,
+      "edition_keys": 6,
+      "examples": [
+        "201520届三星车险杯世界大师赛16强赛",
+        "第19届三星车险杯世界大师赛16强赛",
+        "第23届三星车险杯世界大师赛16强战"
+      ],
+      "batch": "samsung-cup",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "丰田杯世界王座战",
+      "games": 92,
+      "raw_value_count": 18,
+      "edition_keys": 4,
+      "examples": [
+        "第1届丰田杯世界王座战第一轮",
+        "第3届丰田杯世界王座战第一轮",
+        "第4届丰田杯世界王座战第一轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本升段赛",
+      "games": 91,
+      "raw_value_count": 21,
+      "edition_keys": 20,
+      "examples": [
+        "日本升段赛",
+        "1968年日本升段赛",
+        "1969年日本升段赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾东钢杯职业围棋赛",
+      "games": 91,
+      "raw_value_count": 21,
+      "edition_keys": 4,
+      "examples": [
+        "第5届台湾东钢杯职业围棋赛本战第1轮",
+        "第6届台湾东钢杯职业围棋赛第1轮",
+        "第6届台湾东钢杯职业围棋赛第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾友士杯十段赛",
+      "games": 90,
+      "raw_value_count": 18,
+      "edition_keys": 6,
+      "examples": [
+        "第13届台湾友士杯十段赛资格赛",
+        "第12届台湾友士杯十段赛资格赛",
+        "第14届台湾友士杯十段赛资格赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本岩本薰纪念益田杯",
+      "games": 89,
+      "raw_value_count": 13,
+      "edition_keys": 3,
+      "examples": [
+        "2023日本岩本薰纪念益田杯第1轮",
+        "2023日本岩本薰纪念益田杯第2轮",
+        "2023日本岩本薰纪念益田杯第3轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本小棋圣战",
+      "games": 87,
+      "raw_value_count": 35,
+      "edition_keys": 12,
+      "examples": [
+        "日本小棋圣战",
+        "日本第16届小棋圣战",
+        "日本小棋圣战本战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国衢州烂柯杯",
+      "games": 87,
+      "raw_value_count": 15,
+      "edition_keys": 5,
+      "examples": [
+        "第5届中国衢州烂柯杯32强赛",
+        "第7届中国衢州烂柯杯32强战",
+        "第6届中国衢州烂柯杯32强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾霸王赛",
+      "games": 86,
+      "raw_value_count": 16,
+      "edition_keys": 2,
+      "examples": [
+        "第1届台湾霸王赛循环圈第1轮",
+        "第1届台湾霸王赛循环圈第2轮",
+        "第1届台湾霸王赛循环圈第3轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "亚洲杯电视快棋赛",
+      "games": 85,
+      "raw_value_count": 40,
+      "edition_keys": 19,
+      "examples": [
+        "第8届亚洲杯电视快棋赛",
+        "第9届亚洲杯电视快棋赛",
+        "第12届亚洲杯电视快棋赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国大舟杯元老女子赛",
+      "games": 84,
+      "raw_value_count": 28,
+      "edition_keys": 8,
+      "examples": [
+        "第7届韩国大舟杯元老女子赛16强战",
+        "第9届韩国大舟杯元老女子赛第1轮",
+        "第5届韩国大舟杯元老女子赛16强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本关西女子围棋锦标赛",
+      "games": 84,
+      "raw_value_count": 24,
+      "edition_keys": 6,
+      "examples": [
+        "第3期日本关西女子围棋锦标赛第1轮",
+        "第5期日本关西女子围棋锦标赛第1轮",
+        "第6期日本关西女子围棋锦标赛第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国最强棋士战",
+      "games": 84,
+      "raw_value_count": 47,
+      "edition_keys": 4,
+      "examples": [
+        "第3届韩国最强棋士战预选第4轮",
+        "第2届韩国最强棋士战预选最终小组赛",
+        "第3届韩国最强棋士战预选第5轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国天元战",
+      "games": 83,
+      "raw_value_count": 40,
+      "edition_keys": 12,
+      "examples": [
+        "第19届中国天元战第二轮",
+        "第8届中国天元战",
+        "第19届中国天元战预选赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国女子棋圣战",
+      "games": 83,
+      "raw_value_count": 45,
+      "edition_keys": 10,
+      "examples": [
+        "7届韩国女子棋圣战16强",
+        "8届韩国女子棋圣战16强",
+        "6届韩国女子棋圣战16强"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "围甲联赛",
+      "games": 82,
+      "raw_value_count": 60,
+      "edition_keys": 12,
+      "examples": [
+        "2009围甲联赛第15轮山东联通队VS贵州百灵队",
+        "2005围甲联赛第13轮",
+        "2007围甲联赛第七轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国网站联赛",
+      "games": 82,
+      "raw_value_count": 3,
+      "edition_keys": 1,
+      "examples": [
+        "2012韩国网站联赛第3轮",
+        "2012韩国网站联赛",
+        "2012韩国网站联赛第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "嫘祖杯中国名人战",
+      "games": 82,
+      "raw_value_count": 23,
+      "edition_keys": 4,
+      "examples": [
+        "嫘祖杯第29届中国名人战32强赛",
+        "第31届嫘祖杯中国名人战32强战",
+        "第31届嫘祖杯中国名人战16强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "无锡威孚房开杯",
+      "games": 82,
+      "raw_value_count": 15,
+      "edition_keys": 4,
+      "examples": [
+        "第6届无锡威孚房开杯第一轮",
+        "第10届无锡威孚房开杯32强赛",
+        "第8届无锡威孚房开杯预赛第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本关西棋院联赛",
+      "games": 80,
+      "raw_value_count": 68,
+      "edition_keys": 2,
+      "examples": [
+        "2016日本关西棋院联赛决赛",
+        "2016日本关西棋院联赛半决赛",
+        "2017日本关西棋院联赛1轮三将"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "正官庄杯三国擂台赛",
+      "games": 79,
+      "raw_value_count": 79,
+      "edition_keys": 7,
+      "examples": [
+        "第3届正官庄杯三国擂台赛第11局",
+        "第3届正官庄杯三国擂台赛第12局",
+        "第3届正官庄杯三国擂台赛第13局"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾精锐日本精锐交流赛",
+      "games": 77,
+      "raw_value_count": 8,
+      "edition_keys": 2,
+      "examples": [
+        "2018台湾精锐日本精锐交流赛第1轮",
+        "2018台湾精锐日本精锐交流赛第5轮",
+        "2017台湾精锐日本精锐交流赛5轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "阿含桐山杯",
+      "games": 76,
+      "raw_value_count": 23,
+      "edition_keys": 11,
+      "examples": [
+        "第11届阿含桐山杯本赛第一轮",
+        "23届阿含桐山杯预选决赛",
+        "26届阿含桐山杯16强"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国新锐十杰战",
+      "games": 75,
+      "raw_value_count": 25,
+      "edition_keys": 9,
+      "examples": [
+        "第7届韩国新锐十杰战",
+        "第12届韩国新锐十杰战本赛",
+        "第6届韩国新锐十杰战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "众安杯中国全国围棋锦标赛男子乙级团体赛",
+      "games": 75,
+      "raw_value_count": 37,
+      "edition_keys": 1,
+      "examples": [
+        "2020众安杯中国全国围棋锦标赛男子乙级团体赛第1轮（中日友好-北京棋院）",
+        "2020众安杯中国全国围棋锦标赛男子乙级团体赛第2轮（台湾中环队-中日友好队）",
+        "2020众安杯中国全国围棋锦标赛男子乙级团体赛第3轮（中日友好队-上海清一队）"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "女流本因坊战",
+      "games": 75,
+      "raw_value_count": 30,
+      "edition_keys": 7,
+      "examples": [
+        "43期女流本因坊战16强",
+        "42期女流本因坊战16强",
+        "41期女流本因坊战16强"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾棋院杯职业围棋赛",
+      "games": 75,
+      "raw_value_count": 10,
+      "edition_keys": 2,
+      "examples": [
+        "第3届台湾棋院杯职业围棋赛循环圈",
+        "第3届台湾棋院杯职业围棋赛预选",
+        "第4届台湾棋院杯职业围棋赛循环圈"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "惠山古镇杯中国围乙",
+      "games": 74,
+      "raw_value_count": 8,
+      "edition_keys": 1,
+      "examples": [
+        "2016惠山古镇杯中国围乙8轮",
+        "2016惠山古镇杯中国围乙7轮",
+        "2016惠山古镇杯中国围乙2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中信杯中国女子围甲联赛",
+      "games": 74,
+      "raw_value_count": 18,
+      "edition_keys": 1,
+      "examples": [
+        "第12届中信杯中国女子围甲联赛第2轮",
+        "第12届中信杯中国女子围甲联赛第4轮",
+        "第12届中信杯中国女子围甲联赛第6轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "新闻棋战",
+      "games": 73,
+      "raw_value_count": 1,
+      "edition_keys": 0,
+      "examples": [
+        "新闻棋战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "野狐围棋研究会循环赛",
+      "games": 72,
+      "raw_value_count": 1,
+      "edition_keys": 1,
+      "examples": [
+        "2025野狐围棋研究会循环赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国新人王战",
+      "games": 71,
+      "raw_value_count": 34,
+      "edition_keys": 12,
+      "examples": [
+        "第16届中国新人王战第一轮",
+        "中国新人王战",
+        "第16届中国新人王战第二轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国无锡威孚房开杯",
+      "games": 71,
+      "raw_value_count": 13,
+      "edition_keys": 3,
+      "examples": [
+        "第13届中国无锡威孚房开杯32强战",
+        "第14届中国无锡威孚房开杯32强战",
+        "第11届中国无锡威孚房开杯16强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台日精锐交流赛",
+      "games": 70,
+      "raw_value_count": 8,
+      "edition_keys": 2,
+      "examples": [
+        "2015年台日精锐交流赛第3轮",
+        "2015年台日精锐交流赛第4轮",
+        "2015年台日精锐交流赛第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "围乙",
+      "games": 70,
+      "raw_value_count": 53,
+      "edition_keys": 2,
+      "examples": [
+        "2021围乙1轮上海清一青年队-台湾中环",
+        "2021围乙2轮宁夏天元锰业-台湾中环",
+        "2021围乙5轮台湾中环-河北"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国棋王赛",
+      "games": 70,
+      "raw_value_count": 18,
+      "edition_keys": 5,
+      "examples": [
+        "第5届中国棋王赛",
+        "第6届中国棋王赛第一轮",
+        "第2届中国棋王赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "春茧杯中国名人战",
+      "games": 69,
+      "raw_value_count": 10,
+      "edition_keys": 3,
+      "examples": [
+        "春茧杯第27届中国名人战32强赛",
+        "春茧杯第28届中国名人战32强赛",
+        "春茧杯第26届中国名人战16强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "建桥杯女子围棋公开赛",
+      "games": 69,
+      "raw_value_count": 27,
+      "edition_keys": 5,
+      "examples": [
+        "第2届建桥杯女子围棋公开赛第一轮",
+        "第五届建桥杯女子围棋公开赛本赛第一轮",
+        "第五届建桥杯女子围棋公开赛预选第二轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "福荫杯世界新锐对抗赛",
+      "games": 68,
+      "raw_value_count": 10,
+      "edition_keys": 3,
+      "examples": [
+        "第2届福荫杯世界新锐对抗赛第3轮",
+        "第3届福荫杯世界新锐对抗赛1轮",
+        "第3届福荫杯世界新锐对抗赛2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "台湾新人王战",
+      "games": 67,
+      "raw_value_count": 26,
+      "edition_keys": 6,
+      "examples": [
+        "2020第5届台湾新人王战循环圈A组第1轮",
+        "2020第5届台湾新人王战循环圈A组第2轮",
+        "2020第5届台湾新人王战循环圈A组第3轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "古井贡酒年份原浆杯中国围乙",
+      "games": 67,
+      "raw_value_count": 8,
+      "edition_keys": 1,
+      "examples": [
+        "2018古井贡酒年份原浆杯中国围乙第4轮",
+        "2018古井贡酒年份原浆杯中国围乙第5轮",
+        "2018古井贡酒年份原浆杯中国围乙第6轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本鹤圣战",
+      "games": 66,
+      "raw_value_count": 34,
+      "edition_keys": 19,
+      "examples": [
+        "日本鹤圣战",
+        "第7期日本鹤圣战",
+        "第12期日本鹤圣战第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本棋院选手权战",
+      "games": 65,
+      "raw_value_count": 47,
+      "edition_keys": 19,
+      "examples": [
+        "第2届日本棋院选手权战",
+        "第4届日本棋院选手权战",
+        "第5届日本棋院选手权战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国职业围棋联赛",
+      "games": 65,
+      "raw_value_count": 4,
+      "edition_keys": 4,
+      "examples": [
+        "2008韩国职业围棋联赛",
+        "2010韩国职业围棋联赛",
+        "2007韩国职业围棋联赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国全国围棋乙级联赛",
+      "games": 65,
+      "raw_value_count": 17,
+      "edition_keys": 3,
+      "examples": [
+        "2019年中国全国围棋乙级联赛第5轮",
+        "2019年中国全国围棋乙级联赛第3轮",
+        "2019年中国全国围棋乙级联赛第7轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "衢州烂柯杯世界公开赛",
+      "games": 65,
+      "raw_value_count": 13,
+      "edition_keys": 2,
+      "examples": [
+        "2届衢州烂柯杯世界公开赛32强",
+        "3届衢州烂柯杯世界公开赛32强赛",
+        "2届衢州烂柯杯世界公开赛16强"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国造纸女子棋圣战",
+      "games": 65,
+      "raw_value_count": 24,
+      "edition_keys": 5,
+      "examples": [
+        "第2届韩国造纸女子棋圣战16强战",
+        "第4届韩国造纸女子棋圣战16强战",
+        "第5届韩国造纸女子棋圣战16强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "嫘祖杯中国围棋名人战",
+      "games": 65,
+      "raw_value_count": 6,
+      "edition_keys": 2,
+      "examples": [
+        "第30届嫘祖杯中国围棋名人战预选第2轮",
+        "第30届嫘祖杯中国围棋名人战预选第3轮",
+        "第30届嫘祖杯中国围棋名人战预选第4轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "北海新绎杯世界公开赛",
+      "games": 63,
+      "raw_value_count": 7,
+      "edition_keys": 1,
+      "examples": [
+        "1届北海新绎杯世界公开赛64强",
+        "1届北海新绎杯世界公开赛32强",
+        "1届北海新绎杯世界公开赛16强"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "应氏杯世界职业锦标赛",
+      "games": 62,
+      "raw_value_count": 10,
+      "edition_keys": 1,
+      "examples": [
+        "10届应氏杯世界职业锦标赛资格赛1轮",
+        "10届应氏杯世界职业锦标赛资格赛2轮",
+        "10届应氏杯世界职业锦标赛16强"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "众安杯中国全国围棋锦标赛女子乙级团体赛",
+      "games": 62,
+      "raw_value_count": 49,
+      "edition_keys": 1,
+      "examples": [
+        "2020众安杯中国全国围棋锦标赛女子乙级团体赛第3轮（友士女子宝岛队-福建博思软件队）",
+        "2020众安杯中国全国围棋锦标赛女子乙级团体赛第4轮（友士女子宝岛队-江苏慕道亿高队）",
+        "2020众安杯中国全国围棋锦标赛女子乙级团体赛第5轮（中国平煤神马集团-友士女子宝岛队）"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国围甲联赛",
+      "games": 61,
+      "raw_value_count": 45,
+      "edition_keys": 3,
+      "examples": [
+        "2006中国围甲联赛第二轮",
+        "第20届2018中国围甲联赛第10轮(中信北京-山东景芝酒业)",
+        "第20届2018中国围甲联赛第10轮(天津四建-上海建桥学院）"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "三国赤壁古战场围甲",
+      "games": 61,
+      "raw_value_count": 59,
+      "edition_keys": 1,
+      "examples": [
+        "27届三国赤壁古战场围甲13轮成都-浙江浙商证券3台",
+        "27届三国赤壁古战场围甲13轮福建刺桐棋院-江苏洋河股份1台",
+        "27届三国赤壁古战场围甲10轮福建刺桐棋院0-3苏泊尔杭州4"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "三星保险杯",
+      "games": 61,
+      "raw_value_count": 19,
+      "edition_keys": 4,
+      "examples": [
+        "第12届三星保险杯第一轮",
+        "第12届三星保险杯第二轮",
+        "第12届三星保险杯预选赛第五轮"
+      ],
+      "batch": "samsung-cup",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国最高位战",
+      "games": 60,
+      "raw_value_count": 18,
+      "edition_keys": 6,
+      "examples": [
+        "韩国最高位战",
+        "第24期韩国最高位战本战预选赛",
+        "第25届韩国最高位战预选决赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "御美健杯中国个人赛",
+      "games": 59,
+      "raw_value_count": 15,
+      "edition_keys": 1,
+      "examples": [
+        "2017御美健杯中国个人赛第13轮",
+        "2017御美健杯中国个人赛第2轮",
+        "2017御美健杯中国个人赛第3轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "理光杯围棋赛",
+      "games": 59,
+      "raw_value_count": 11,
+      "edition_keys": 5,
+      "examples": [
+        "第14届理光杯围棋赛第2轮",
+        "第14届理光杯围棋赛第1轮",
+        "第14届理光杯围棋赛16强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国挑战联赛",
+      "games": 58,
+      "raw_value_count": 39,
+      "edition_keys": 1,
+      "examples": [
+        "2025韩国挑战联赛第8轮（围棋的品格队-晋南土建队）",
+        "2025韩国挑战联赛第8轮（教育城市春川队-釜山利鹏奖学会队）",
+        "2025韩国挑战联赛第8轮（韩国围棋初高中队-网络举报队）"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "吴清源杯世界女子赛",
+      "games": 58,
+      "raw_value_count": 15,
+      "edition_keys": 5,
+      "examples": [
+        "6届吴清源杯世界女子赛16强",
+        "4届吴清源杯世界女子赛1轮",
+        "第2届吴清源杯世界女子赛16强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "广岛铝制杯若鲤战",
+      "games": 58,
+      "raw_value_count": 20,
+      "edition_keys": 6,
+      "examples": [
+        "第4届广岛铝制杯若鲤战第二轮",
+        "第4届广岛铝制杯若鲤战第一轮",
+        "第6期广岛铝制杯若鲤战16强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "弈城中韩冠军争霸赛",
+      "games": 57,
+      "raw_value_count": 12,
+      "edition_keys": 1,
+      "examples": [
+        "2022年弈城中韩冠军争霸赛32强战2番棋第2局",
+        "2022年弈城中韩冠军争霸赛32强战2番棋第1局",
+        "2022年弈城中韩冠军争霸赛16强战2番棋第1局"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中信和业杯中国女子围甲联赛",
+      "games": 57,
+      "raw_value_count": 34,
+      "edition_keys": 2,
+      "examples": [
+        "第11届中信和业杯中国女子围甲联赛第9轮",
+        "第11届中信和业杯中国女子围甲联赛第12轮",
+        "第11届中信和业杯中国女子围甲联赛第15轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本专业十杰战",
+      "games": 56,
+      "raw_value_count": 54,
+      "edition_keys": 12,
+      "examples": [
+        "第9期日本专业十杰战第2轮",
+        "日本第11期专业十杰战",
+        "日本第1期专业十杰战半决赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "亚洲电视快棋赛",
+      "games": 56,
+      "raw_value_count": 30,
+      "edition_keys": 13,
+      "examples": [
+        "第13届亚洲电视快棋赛",
+        "第14届亚洲电视快棋赛",
+        "第22届亚洲电视快棋赛第一轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "中国阿含桐山杯快棋赛",
+      "games": 56,
+      "raw_value_count": 23,
+      "edition_keys": 11,
+      "examples": [
+        "第20届中国阿含桐山杯快棋赛16强战",
+        "第21届中国阿含桐山杯快棋赛16强战",
+        "第3届中国阿含桐山杯快棋赛第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "藤泽秀行团中日青年围棋友谊赛",
+      "games": 55,
+      "raw_value_count": 8,
+      "edition_keys": 2,
+      "examples": [
+        "1984年藤泽秀行团中日青年围棋友谊赛第4轮",
+        "1984年藤泽秀行团中日青年围棋友谊赛第1轮",
+        "1985年藤泽秀行团中日青年围棋友谊赛第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "新天一杯中国个人赛",
+      "games": 55,
+      "raw_value_count": 9,
+      "edition_keys": 1,
+      "examples": [
+        "2015新天一杯中国个人赛第8轮",
+        "2015新天一杯中国个人赛第6轮",
+        "2015新天一杯中国个人赛第5轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国麦馨咖啡杯九段战",
+      "games": 55,
+      "raw_value_count": 45,
+      "edition_keys": 3,
+      "examples": [
+        "第21届韩国麦馨咖啡杯九段战16强战",
+        "第21届韩国麦馨咖啡杯九段战8强战",
+        "第21届韩国麦馨咖啡杯九段战半决赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国围棋大师赛三国志战",
+      "games": 54,
+      "raw_value_count": 4,
+      "edition_keys": 2,
+      "examples": [
+        "2005韩国围棋大师赛三国志战",
+        "韩国围棋大师赛三国志战",
+        "2005年韩国围棋大师赛三国志战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "岛新安元老赛",
+      "games": 54,
+      "raw_value_count": 15,
+      "edition_keys": 4,
+      "examples": [
+        "2届1004岛新安元老赛16强",
+        "3届1004岛新安元老赛16强",
+        "5届1004岛新安元老赛16强"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国国手山脉杯",
+      "games": 54,
+      "raw_value_count": 13,
+      "edition_keys": 2,
+      "examples": [
+        "第6届韩国国手山脉杯32强战",
+        "第6届韩国国手山脉杯16强战",
+        "第5届韩国国手山脉杯8强战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "小棋圣战",
+      "games": 53,
+      "raw_value_count": 47,
+      "edition_keys": 15,
+      "examples": [
+        "小棋圣战",
+        "15期小棋圣战第一轮",
+        "17期小棋圣战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "金立智能手机杯中国围甲",
+      "games": 52,
+      "raw_value_count": 8,
+      "edition_keys": 3,
+      "examples": [
+        "2014金立智能手机杯中国围甲第1轮",
+        "2014金立智能手机杯中国围甲第2轮",
+        "2016金立智能手机杯中国围甲1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "韩国职业业余联赛",
+      "games": 52,
+      "raw_value_count": 29,
+      "edition_keys": 1,
+      "examples": [
+        "2018韩国职业业余联赛8轮KIBA-全南",
+        "2018韩国职业业余联赛5轮青石-乌鹭",
+        "2018韩国职业业余联赛6轮KIBA-元封"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "建桥杯女子公开赛",
+      "games": 51,
+      "raw_value_count": 15,
+      "edition_keys": 6,
+      "examples": [
+        "19届建桥杯女子公开赛32强",
+        "第14届建桥杯女子公开赛16强赛",
+        "18届建桥杯女子公开赛32强"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "理光杯新秀赛",
+      "games": 51,
+      "raw_value_count": 17,
+      "edition_keys": 7,
+      "examples": [
+        "第3届理光杯新秀赛第一轮",
+        "第7届理光杯新秀赛第1轮",
+        "第8届理光杯新秀赛16强赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本关西棋院第一位战",
+      "games": 51,
+      "raw_value_count": 27,
+      "edition_keys": 11,
+      "examples": [
+        "第58期日本关西棋院第一位战第2轮",
+        "第59期日本关西棋院第一位战第1轮",
+        "第59期日本关西棋院第一位战第2轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "国家队网络训练赛",
+      "games": 51,
+      "raw_value_count": 5,
+      "edition_keys": 0,
+      "examples": [
+        "国家队网络训练赛第四轮",
+        "国家队网络训练赛第五轮",
+        "国家队网络训练赛第六轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本女流选手权战",
+      "games": 51,
+      "raw_value_count": 47,
+      "edition_keys": 18,
+      "examples": [
+        "第20期日本女流选手权战循环圈",
+        "第21期日本女流选手权战循环圈",
+        "第22期日本女流选手权战循环圈"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本会津中央病院女子立葵杯",
+      "games": 51,
+      "raw_value_count": 13,
+      "edition_keys": 5,
+      "examples": [
+        "第12期日本会津中央病院女子立葵杯预选",
+        "第12期日本会津中央病院女子立葵杯第1轮",
+        "第8期日本会津中央病院女子立葵杯预选"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "小银星弘毅鹏智杯职业棋手邀请赛",
+      "games": 51,
+      "raw_value_count": 2,
+      "edition_keys": 1,
+      "examples": [
+        "第3届小银星弘毅鹏智杯职业棋手邀请赛",
+        "第3届小银星弘毅鹏智杯职业棋手邀请赛半决赛"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本女流名人战",
+      "games": 50,
+      "raw_value_count": 14,
+      "edition_keys": 6,
+      "examples": [
+        "34期日本女流名人战循环圈",
+        "36期日本女流名人战循环圈",
+        "日本女流名人战"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    },
+    {
+      "type_candidate": "日本扇兴杯女子赛",
+      "games": 50,
+      "raw_value_count": 15,
+      "edition_keys": 4,
+      "examples": [
+        "第2期日本扇兴杯女子赛1轮",
+        "第3期日本扇兴杯女子赛第1轮",
+        "第4期日本扇兴杯女子赛第1轮"
+      ],
+      "batch": "review-pending",
+      "review_status": "structural_candidate_pending_identity_review"
+    }
+  ],
+  "possible_sponsor_or_alias_families": [
+    {
+      "label": "三星冠名",
+      "type_candidates": [
+        "三星火灾杯",
+        "三星车险杯",
+        "三星财产杯",
+        "三星杯",
+        "三星车险杯世界大师赛",
+        "三星保险杯"
+      ],
+      "games": 1270,
+      "status": "review_only_no_merge"
+    },
+    {
+      "label": "金立围甲",
+      "type_candidates": [
+        "金立手机杯围甲联赛",
+        "金立杯中国围甲",
+        "金立智能手机杯围甲",
+        "金立杯围甲联赛",
+        "金立智能手机中国围甲",
+        "金立智能手机杯围甲联赛",
+        "金立智能手机杯中国围甲"
+      ],
+      "games": 3494,
+      "status": "review_only_no_merge"
+    },
+    {
+      "label": "华为围甲",
+      "type_candidates": [
+        "华为手机围甲",
+        "华为手机杯中国围甲联赛",
+        "华为手机杯中国围棋甲级联赛"
+      ],
+      "games": 1884,
+      "status": "review_only_no_merge"
+    },
+    {
+      "label": "中信女子围甲",
+      "type_candidates": [
+        "中信置业杯中国女子围甲联赛",
+        "中信置业中国女子围甲",
+        "中信和业女子围甲",
+        "中信置业杯女子围甲",
+        "中信杯女子围甲",
+        "中信置业杯中国女子围甲",
+        "中信置业女子围甲",
+        "中信银行杯电视快棋赛",
+        "中信杯中国女子围甲联赛",
+        "中信和业杯中国女子围甲联赛"
+      ],
+      "games": 2378,
+      "status": "review_only_no_merge"
+    },
+    {
+      "label": "台湾棋王",
+      "type_candidates": [
+        "台湾棋王赛",
+        "台湾棋王战"
+      ],
+      "games": 1069,
+      "status": "review_only_no_merge"
+    },
+    {
+      "label": "台湾国手",
+      "type_candidates": [
+        "台湾国手赛",
+        "台湾国手战"
+      ],
+      "games": 842,
+      "status": "review_only_no_merge"
+    },
+    {
+      "label": "台湾天元",
+      "type_candidates": [
+        "台湾天元赛",
+        "台湾天元战"
+      ],
+      "games": 529,
+      "status": "review_only_no_merge"
+    },
+    {
+      "label": "韩国围棋联赛",
+      "type_candidates": [
+        "韩国围棋联赛",
+        "韩国围甲",
+        "韩国围甲联赛",
+        "韩国职业围棋联赛"
+      ],
+      "games": 2648,
+      "status": "review_only_no_merge"
+    },
+    {
+      "label": "春兰杯",
+      "type_candidates": [
+        "春兰杯",
+        "春兰杯世界锦标赛"
+      ],
+      "games": 299,
+      "status": "review_only_no_merge"
+    },
+    {
+      "label": "农心杯",
+      "type_candidates": [
+        "农心杯三国擂台赛",
+        "农心杯世界团体赛"
+      ],
+      "games": 208,
+      "status": "review_only_no_merge"
+    }
+  ],
+  "edition_link_held_exact_raw": [
+    "第2届台湾海峰杯职业围棋赛16强战",
+    "第2届台湾海峰杯职业围棋赛32强战",
+    "第2届台湾海峰杯职业围棋赛8强战",
+    "第2届台湾海峰杯职业围棋赛决赛3番棋第1局",
+    "第2届台湾海峰杯职业围棋赛决赛3番棋第2局",
+    "第2届台湾海峰杯职业围棋赛半决赛"
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "format": "kifu-player-unanchored-top8-independent-sources-v1",
+  "sources": [
+    {
+      "key": "nihon-iwamoto",
+      "url": "https://archive.nihonkiin.or.jp/player/htm/ki001002.htm",
+      "resolved_url": "https://archive.nihonkiin.or.jp/player/htm/ki001002.htm",
+      "retrieved_utc": "2026-10-04T12:29:19.375627+00:00",
+      "http_status": 200,
+      "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/nihon-iwamoto.html",
+      "sha256": "6f1ffcba546b2525ded8e2a60da66252298b282ebde54b1fceaf6fa75b95550b",
+      "text_path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/nihon-iwamoto.txt",
+      "text_sha256": "eebebfcf174d8f4352c6c7d39d19a5616566684dab86e0236c708f5b395baa59",
+      "bytes": 9278
+    },
+    {
+      "key": "nihon-yoshida",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000023.htm",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000023.htm",
+      "retrieved_utc": "2026-10-04T12:29:19.540468+00:00",
+      "http_status": 200,
+      "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/nihon-yoshida.html",
+      "sha256": "8c286a88c0a868a3fc1f952469511e56eeea78573d671cd56b190c7507eaf72c",
+      "text_path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/nihon-yoshida.txt",
+      "text_sha256": "b5440fe9d999675c1d14321f0161c9bea4b68f73c6b674766f70c0db6f622d48",
+      "bytes": 35327
+    },
+    {
+      "key": "wikipedia-ja-maeda",
+      "url": "https://ja.wikipedia.org/wiki/前田陳爾",
+      "error": "HTTPSConnectionPool(host='ja.wikipedia.org', port=443): Max retries exceeded with url: /wiki/%E5%89%8D%E7%94%B0%E9%99%B3%E7%88%BE (Caused by ConnectTimeoutError(<HTTPSConnection(host='ja.wikipedia.org', port=443) at 0x1035067b0>, 'Connection to ja.wikipedia.org timed out. (connect timeout=40)'))"
+    },
+    {
+      "key": "wikipedia-en-maeda",
+      "url": "https://en.wikipedia.org/wiki/Nobuaki_Maeda",
+      "resolved_url": "https://en.wikipedia.org/wiki/Nobuaki_Maeda",
+      "retrieved_utc": "2026-10-04T12:29:19.354932+00:00",
+      "http_status": 200,
+      "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/wikipedia-en-maeda.html",
+      "sha256": "c054a146fcd89dba9b49d5f906014e1ca1a4545b6fac1fe71acaa86dba2c4354",
+      "text_path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/wikipedia-en-maeda.txt",
+      "text_sha256": "b6abda58206f978aa52a0576b784dfa32c9ed06c98d149d79613110528fe0697",
+      "bytes": 114024
+    },
+    {
+      "key": "haifong-lin",
+      "url": "https://haifong.org/profession/venue/AE4B5AB0DFEB900CDE0CBD2979FAFEA0",
+      "error": "HTTPSConnectionPool(host='haifong.org', port=443): Max retries exceeded with url: /profession/venue/AE4B5AB0DFEB900CDE0CBD2979FAFEA0 (Caused by ConnectTimeoutError(<HTTPSConnection(host='haifong.org', port=443) at 0x1035ede50>, 'Connection to haifong.org timed out. (connect timeout=40)'))"
+    },
+    {
+      "key": "taiwan-lin-admission",
+      "url": "https://taiwangorg.blogspot.com/2017/01/2017.html",
+      "resolved_url": "https://taiwangorg.blogspot.com/2017/01/2017.html",
+      "retrieved_utc": "2026-10-04T12:29:21.178244+00:00",
+      "http_status": 200,
+      "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/taiwan-lin-admission.html",
+      "sha256": "1f0674f745d3a697e42ca0e7f2574d2ea2c449cf081947d28808fb6d3a4df2c8",
+      "text_path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/taiwan-lin-admission.txt",
+      "text_sha256": "c06d100a3a03b6d12fe2f2e115e288660c3cc6a8bf43688821f74150617256fd",
+      "bytes": 57508
+    },
+    {
+      "key": "wikipedia-zh-hosai",
+      "url": "https://zh.wikipedia.org/wiki/藤泽朋斋",
+      "resolved_url": "https://zh.wikipedia.org/wiki/%E8%97%A4%E6%B3%BD%E6%9C%8B%E6%96%8B",
+      "retrieved_utc": "2026-10-04T12:29:21.095578+00:00",
+      "http_status": 200,
+      "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/wikipedia-zh-hosai.html",
+      "sha256": "d0b1e7d57dd975c77b93498e6b4a64d4c3c059dc09bba79e5b2db5aaa1c4a502",
+      "text_path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/wikipedia-zh-hosai.txt",
+      "text_sha256": "1ed5a1428ca18afc95d00104a5dd5c1e3b3a004ff938a751f797946a926a27fa",
+      "bytes": 85280
+    },
+    {
+      "key": "nihon-hosai",
+      "url": "https://www.nihonkiin.or.jp/event/area/online/post_1294.html",
+      "resolved_url": "https://www.nihonkiin.or.jp/event/area/online/post_1294.html",
+      "retrieved_utc": "2026-10-04T12:29:23.126507+00:00",
+      "http_status": 200,
+      "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/nihon-hosai.html",
+      "sha256": "f7d00209ef9125d2f8115003b47f15e02ef18fac044efc255a131ef411ea3ebb",
+      "text_path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/nihon-hosai.txt",
+      "text_sha256": "9cf362f21d716c6b35640ae787cdcac837bbb1b6b5afe1e2b0a03559d285ebcf",
+      "bytes": 54729
+    },
+    {
+      "key": "korea-kanghoon-senior",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000015",
+      "retrieved_utc": "2026-10-04T09:31:49.343673+00:00",
+      "path": "docs/resource/kifu-player-new33-independent-sources-2026-10-04/korea-kanghoon-senior.html",
+      "sha256": "c33561694680662d41f2ea8a250e5cb22e0f4856ff0796b551a18125059df2b9",
+      "bytes": 23572,
+      "http_status": 200,
+      "resolved_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000015",
+      "text_path": "docs/resource/kifu-player-new33-independent-sources-2026-10-04/korea-kanghoon-senior.txt",
+      "text_sha256": "8ef48a403b253f4ee36f3f5169309bba26b0f2e418b99d2e4647c4be971756b3",
+      "reused_pinned_same_day_source": true
+    },
+    {
+      "key": "korea-kanghoon-junior",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000590",
+      "retrieved_utc": "2026-10-04T09:31:49.344091+00:00",
+      "path": "docs/resource/kifu-player-new33-independent-sources-2026-10-04/korea-kanghoon-junior.html",
+      "sha256": "873bfb637575096784b265096013c07f8fcd43edbe1d0f4b52a2d0628caca020",
+      "bytes": 21328,
+      "http_status": 200,
+      "resolved_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000590",
+      "text_path": "docs/resource/kifu-player-new33-independent-sources-2026-10-04/korea-kanghoon-junior.txt",
+      "text_sha256": "9927b7c91497fc8c99c3e5cbc7095dcd57738e5e9165e22dd89770d5e2659a6a",
+      "reused_pinned_same_day_source": true
+    },
+    {
+      "key": "cwa-CWA000061",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000061",
+      "retrieved_utc": "2026-10-04T09:32:00.739112+00:00",
+      "path": "docs/resource/kifu-player-new33-independent-sources-2026-10-04/cwa-CWA000061.json",
+      "sha256": "cf0d54daea287dc44a9578b49863c19dc26565be58dbcbd320fbea9ffa6b3bf9",
+      "bytes": 1336,
+      "http_status": 200,
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000061",
+      "reused_pinned_same_day_source": true
+    },
+    {
+      "key": "cwa-CWA000059",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000059",
+      "retrieved_utc": "2026-10-04T09:32:02.210113+00:00",
+      "path": "docs/resource/kifu-player-new33-independent-sources-2026-10-04/cwa-CWA000059.json",
+      "sha256": "6ccd943d1ad91c2b3c9c1ffd01660568edf7cadec8339d68526d82048805538e",
+      "bytes": 1784,
+      "http_status": 200,
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000059",
+      "reused_pinned_same_day_source": true
+    },
+    {
+      "key": "haifong-lin-www",
+      "url": "https://www.haifong.org/profession/venue/AE4B5AB0DFEB900CDE0CBD2979FAFEA0",
+      "resolved_url": "https://www.haifong.org/profession/venue/AE4B5AB0DFEB900CDE0CBD2979FAFEA0",
+      "retrieved_utc": "2026-10-04T12:31:17.670281+00:00",
+      "http_status": 200,
+      "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/haifong-lin-www.html",
+      "sha256": "0c2830478c8f2fcdde7c025900ec1f4a84f59c65c19bdeb670faf3275dce4ff7",
+      "text_path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/haifong-lin-www.txt",
+      "text_sha256": "9c659ac6ac5d413a99a6cbf04d3fdd509298deeef9ae06fff077ad6dd3f8dbdc"
+    },
+    {
+      "key": "web-open-maeda-lin",
+      "urls": [
+        "https://ja.wikipedia.org/wiki/前田陳爾",
+        "https://haifong.org/profession/venue/AE4B5AB0DFEB900CDE0CBD2979FAFEA0"
+      ],
+      "retrieved_utc": "2026-10-04T12:34:07.101380+00:00",
+      "capture_kind": "web.run open result body, exact tool output; not an HTTP-body hash",
+      "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/web-open-maeda-lin.json",
+      "sha256": "5b0aa9d39d143e64132f9ad61a4e790b00d300816b99c3e43ce7d49d4d8a3623"
+    },
+    {
+      "key": "wikipedia-zh-iwamoto",
+      "url": "https://zh.wikipedia.org/wiki/岩本薰",
+      "error": "HTTPSConnectionPool(host='zh.wikipedia.org', port=443): Max retries exceeded with url: /wiki/%E5%B2%A9%E6%9C%AC%E8%96%B0 (Caused by ConnectTimeoutError(<HTTPSConnection(host='zh.wikipedia.org', port=443) at 0x105039950>, 'Connection to zh.wikipedia.org timed out. (connect timeout=15)'))"
+    },
+    {
+      "key": "publisher-maeda",
+      "url": "https://www.tsogen.co.jp/np/author/794",
+      "resolved_url": "https://www.tsogen.co.jp/np/author/794",
+      "retrieved_utc": "2026-10-04T12:38:36.113884+00:00",
+      "http_status": 200,
+      "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/publisher-maeda.html",
+      "sha256": "77973228b9700c113b5744a9c936c8f2b4eb748d6577751a48c45639493cea69",
+      "text_path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/publisher-maeda.txt",
+      "text_sha256": "2896237064ccce2f1e0ae6ee68791c08e67a0348d53a8d5879af1932951dbc30",
+      "encoding": "cp932"
+    },
+    {
+      "key": "wikipedia-ja-maeda-web",
+      "retrieved_utc": "2026-10-04T12:34:07.101380+00:00",
+      "capture_kind": "web.run open result body, exact tool output; not an HTTP-body hash",
+      "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/web-open-maeda-lin.json",
+      "sha256": "5b0aa9d39d143e64132f9ad61a4e790b00d300816b99c3e43ce7d49d4d8a3623",
+      "url": "https://ja.wikipedia.org/wiki/前田陳爾"
+    }
+  ],
+  "capture_script": {
+    "path": "docs/resource/kifu-player-unanchored-top8-independent-sources-2026-10-04/read_only_capture.py",
+    "sha256": "06d8da15ae62b1959716ed4aca97709ff53f5ac48952af6bd034e71cea0f0186"
+  }
+}

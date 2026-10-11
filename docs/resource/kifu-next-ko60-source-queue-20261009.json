@@ -1,0 +1,924 @@
+{
+  "read_only": true,
+  "latest_batch": 597,
+  "selection": "KO NULL plus four physical verified primary rows, source shortlist only, not current qualification proof",
+  "rows": [
+    {
+      "id": 6531,
+      "canonical_name": "黄家胤",
+      "authoritative_pages": [
+        {
+          "url": "https://haifong.org/profession/venue/A3086B92CB5CF060FA04DDA30E0A2058",
+          "source_id": "ret99-haifong-bare",
+          "language": "zh-Hant",
+          "role": "official",
+          "evidence_ids": [
+            59738,
+            59739
+          ]
+        },
+        {
+          "url": "https://kifudepot.net/kifucontents.php?id=hItQkO%2FmK5vm8K0QqfueJw%3D%3D",
+          "source_id": "ret99-kifudepot-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            59740
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            59738
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            59739
+          ]
+        },
+        {
+          "url": "https://taiwangorg.blogspot.com/2022/12/blog-post_91.html",
+          "source_id": "ret151-taiwan-kiin-legacy-profile",
+          "language": "en",
+          "role": "official",
+          "evidence_ids": [
+            63459
+          ]
+        }
+      ],
+      "slots": 29,
+      "names": {
+        "cn": "黄家胤",
+        "en": "Huang Jia-Yin",
+        "jp": "黄家胤",
+        "tw": "黃家胤"
+      }
+    },
+    {
+      "id": 5806,
+      "canonical_name": "萧睿杉",
+      "authoritative_pages": [
+        {
+          "url": "https://haifong.org/profession/venue/8AB03BA6DA9332148C3AC88706421907",
+          "source_id": "ret101-haifong-bare",
+          "language": "zh-Hant",
+          "role": "official",
+          "evidence_ids": [
+            59790,
+            59791
+          ]
+        },
+        {
+          "url": "https://taiwangorg.blogspot.com/2021/12/blog-post_85.html",
+          "source_id": "ret101-taiwan-kiin-blog",
+          "language": "en",
+          "role": "official",
+          "evidence_ids": [
+            59792
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            59790
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            59791
+          ]
+        },
+        {
+          "url": "https://kifudepot.net/index.php?player=%E8%95%AD%E7%9D%BF%E6%9D%89",
+          "source_id": "ret157-kifudepot-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            63981
+          ]
+        }
+      ],
+      "slots": 19,
+      "names": {
+        "cn": "萧睿杉",
+        "en": "Wesley Hsiao",
+        "jp": "蕭睿杉",
+        "tw": "蕭睿杉"
+      }
+    },
+    {
+      "id": 5115,
+      "canonical_name": "杨以伦",
+      "authoritative_pages": [
+        {
+          "url": "https://db.u-go.net/2275/",
+          "source_id": "ret97-ugo-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            60320,
+            60321,
+            60323
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            60320
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            60321
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/ja/players/1604.html",
+          "source_id": "ret100-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            60322
+          ]
+        }
+      ],
+      "slots": 17,
+      "names": {
+        "cn": "杨以伦",
+        "en": "Yang Yilun",
+        "jp": "杨以伦",
+        "tw": "楊以倫"
+      }
+    },
+    {
+      "id": 5214,
+      "canonical_name": "柯沛辰",
+      "authoritative_pages": [
+        {
+          "url": "https://goratings.org/zh/players/2480.html",
+          "source_id": "ret110-goratings-zh",
+          "language": "zh-Hans",
+          "role": "language_go",
+          "evidence_ids": [
+            61338
+          ]
+        },
+        {
+          "url": "https://www.haifong.org/profession",
+          "source_id": "haifong",
+          "language": "zh-Hant",
+          "role": "official",
+          "evidence_ids": [
+            61339
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/en/players/2480.html",
+          "source_id": "ret110-goratings-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61341
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/ja/players/2480.html",
+          "source_id": "ret110-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            61340
+          ]
+        }
+      ],
+      "slots": 16,
+      "names": {
+        "cn": "柯沛辰",
+        "en": "Ke Peichen",
+        "jp": "柯沛辰",
+        "tw": "柯沛辰"
+      }
+    },
+    {
+      "id": 5543,
+      "canonical_name": "王紫涵",
+      "authoritative_pages": [
+        {
+          "url": "https://www.goratings.org/en/players/2445.html",
+          "source_id": "ret110-goratings-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61601
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/ja/players/2445.html",
+          "source_id": "ret110-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            61600
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/zh/players/2445.html",
+          "source_id": "ret110-goratings-zh",
+          "language": "zh-Hans",
+          "role": "language_go",
+          "evidence_ids": [
+            61598
+          ]
+        },
+        {
+          "url": "https://www.haifong.org/profession/venue/B15AD71345F8FF8D7E2E8FC2D7037F82",
+          "source_id": "haifong",
+          "language": "zh-Hant",
+          "role": "official",
+          "evidence_ids": [
+            61599
+          ]
+        }
+      ],
+      "slots": 14,
+      "names": {
+        "cn": "王紫涵",
+        "en": "Wang Zihan",
+        "jp": "王紫涵",
+        "tw": "王紫涵"
+      }
+    },
+    {
+      "id": 5814,
+      "canonical_name": "董天怡",
+      "authoritative_pages": [
+        {
+          "url": "https://goratings.org/ja/players/2062.html",
+          "source_id": "ret104-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            60331
+          ]
+        },
+        {
+          "url": "https://goratings.org/zh/players/2062.html",
+          "source_id": "ret104-goratings-zh",
+          "language": "zh-Hans",
+          "role": "language_go",
+          "evidence_ids": [
+            60329,
+            60330
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            60329
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            60330
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/en/players/1961.html",
+          "source_id": "ret104-goratings-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            60332
+          ]
+        }
+      ],
+      "slots": 14,
+      "names": {
+        "cn": "董天怡",
+        "en": "Dong Tianyi",
+        "jp": "董天怡",
+        "tw": "董天怡"
+      }
+    },
+    {
+      "id": 6045,
+      "canonical_name": "郑铭琦",
+      "authoritative_pages": [
+        {
+          "url": "https://www.igorating.com/players/meiki-tei",
+          "source_id": "igorating",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            57761,
+            57762,
+            57763
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-cn",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            57761
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-tw",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            57762
+          ]
+        }
+      ],
+      "slots": 12,
+      "names": {
+        "cn": "郑铭琦",
+        "en": "Cheng Ming Chi",
+        "jp": "鄭銘琦",
+        "tw": "鄭銘琦"
+      }
+    },
+    {
+      "id": 5940,
+      "canonical_name": "赵之云",
+      "authoritative_pages": [
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61217
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61218
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/ja/players/cwa_CWA001092.html",
+          "source_id": "ret110-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            61219
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/zh/players/cwa_CWA001092.html",
+          "source_id": "ret110-goratings-zh",
+          "language": "zh-Hans",
+          "role": "language_go",
+          "evidence_ids": [
+            61217,
+            61218
+          ]
+        },
+        {
+          "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/index.html",
+          "source_id": "cwi-go",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            63984
+          ]
+        }
+      ],
+      "slots": 11,
+      "names": {
+        "cn": "赵之云",
+        "en": "Zhao Zhiyun",
+        "jp": "赵之云",
+        "tw": "趙之雲"
+      }
+    },
+    {
+      "id": 6345,
+      "canonical_name": "陈明进",
+      "authoritative_pages": [
+        {
+          "url": "https://db.u-go.net/playerdb/players/2085/",
+          "source_id": "ret97-ugo-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61323,
+            61324,
+            61325
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61323
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61324
+          ]
+        },
+        {
+          "url": "https://kifudepot.net/index.php?player=%E9%99%B3%E6%98%8E%E9%80%B2",
+          "source_id": "ret157-kifudepot-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            63988
+          ]
+        }
+      ],
+      "slots": 10,
+      "names": {
+        "cn": "陈明进",
+        "en": "Chen Mingjin",
+        "jp": "陳明進",
+        "tw": "陳明進"
+      }
+    },
+    {
+      "id": 6356,
+      "canonical_name": "陈永奇",
+      "authoritative_pages": [
+        {
+          "url": "https://db.u-go.net/playerdb/players/2084/",
+          "source_id": "ret97-ugo-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61326,
+            61327,
+            61329
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61326
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61327
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/ja/players/565.html",
+          "source_id": "ret100-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            61328
+          ]
+        }
+      ],
+      "slots": 10,
+      "names": {
+        "cn": "陈永奇",
+        "en": "Chen Yongqi",
+        "jp": "陳永奇",
+        "tw": "陳永奇"
+      }
+    },
+    {
+      "id": 3857,
+      "canonical_name": "付斌芳",
+      "authoritative_pages": [
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/全国围棋段位赛",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61312
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/en/players/510.html",
+          "source_id": "ret110-goratings-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61314
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/ja/players/510.html",
+          "source_id": "ret110-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            61313
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/zh/players/510.html",
+          "source_id": "ret110-goratings-zh",
+          "language": "zh-Hans",
+          "role": "language_go",
+          "evidence_ids": [
+            61311,
+            61312
+          ]
+        }
+      ],
+      "slots": 9,
+      "names": {
+        "cn": "付斌芳",
+        "en": "Fu Binfang",
+        "jp": "付斌芳",
+        "tw": "付斌芳"
+      }
+    },
+    {
+      "id": 4100,
+      "canonical_name": "史干生",
+      "authoritative_pages": [
+        {
+          "url": "https://db.u-go.net/playerdb/players/691/",
+          "source_id": "ret97-ugo-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61509,
+            61510
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/en/players/1523.html",
+          "source_id": "ret100-goratings-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61511
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61509
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61510
+          ]
+        },
+        {
+          "url": "https://kifudepot.net/index.php?player=%E5%8F%B2%E5%B9%B2%E7%94%9F",
+          "source_id": "ret157-kifudepot-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            63991
+          ]
+        }
+      ],
+      "slots": 9,
+      "names": {
+        "cn": "史干生",
+        "en": "Gansheng Shi",
+        "jp": "史干生",
+        "tw": "史干生"
+      }
+    },
+    {
+      "id": 4208,
+      "canonical_name": "唐锦潮",
+      "authoritative_pages": [
+        {
+          "url": "https://db.u-go.net/playerdb/players/1905/",
+          "source_id": "ret97-ugo-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61528,
+            61529,
+            61531
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/ja/players/519.html",
+          "source_id": "ret100-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            61530
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61528
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61529
+          ]
+        }
+      ],
+      "slots": 9,
+      "names": {
+        "cn": "唐锦潮",
+        "en": "Tang Jinchao",
+        "jp": "唐锦潮",
+        "tw": "唐錦潮"
+      }
+    },
+    {
+      "id": 5038,
+      "canonical_name": "李杨",
+      "authoritative_pages": [
+        {
+          "url": "https://db.u-go.net/playerdb/players/2178/",
+          "source_id": "ret97-ugo-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61931,
+            61932,
+            61934
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/ja/players/708.html",
+          "source_id": "ret100-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            61933
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-cn",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61931
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-tw",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61932
+          ]
+        }
+      ],
+      "slots": 8,
+      "names": {
+        "cn": "李杨",
+        "en": "Ri Yo",
+        "jp": "李楊",
+        "tw": "李楊"
+      }
+    },
+    {
+      "id": 6062,
+      "canonical_name": "郭求真",
+      "authoritative_pages": [
+        {
+          "url": "https://db.u-go.net/playerdb/players/1161/",
+          "source_id": "ret97-ugo-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61965,
+            61966
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/en/players/1127.html",
+          "source_id": "ret100-goratings-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            61968
+          ]
+        },
+        {
+          "url": "https://www.igorating.com/players/kyushin-kaku",
+          "source_id": "igorating",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            61967
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-cn",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61965
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-tw",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            61966
+          ]
+        }
+      ],
+      "slots": 8,
+      "names": {
+        "cn": "郭求真",
+        "en": "Kuo Chyo Ching",
+        "jp": "郭求真",
+        "tw": "郭求真"
+      }
+    },
+    {
+      "id": 6298,
+      "canonical_name": "陈佳",
+      "authoritative_pages": [
+        {
+          "url": "https://www.goratings.org/en/players/425.html",
+          "source_id": "ret110-goratings-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            62801
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/ja/players/425.html",
+          "source_id": "ret110-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            62800
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/zh/players/425.html",
+          "source_id": "ret110-goratings-zh",
+          "language": "zh-Hans",
+          "role": "language_go",
+          "evidence_ids": [
+            62798,
+            62799
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            62798
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            62799
+          ]
+        }
+      ],
+      "slots": 5,
+      "names": {
+        "cn": "陈佳",
+        "en": "Chen Jia",
+        "jp": "陈佳",
+        "tw": "陳佳"
+      }
+    },
+    {
+      "id": 4993,
+      "canonical_name": "李天竹",
+      "authoritative_pages": [
+        {
+          "url": "https://goratings.org/ja/players/450.html",
+          "source_id": "ret110-goratings-ja",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            62809
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/en/players/450.html",
+          "source_id": "ret110-goratings-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            62810
+          ]
+        },
+        {
+          "url": "https://www.goratings.org/zh/players/450.html",
+          "source_id": "ret110-goratings-zh",
+          "language": "zh-Hans",
+          "role": "language_go",
+          "evidence_ids": [
+            62807,
+            62808
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            62807
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            62808
+          ]
+        }
+      ],
+      "slots": 4,
+      "names": {
+        "cn": "李天竹",
+        "en": "Li Tianzhu",
+        "jp": "李天竹",
+        "tw": "李天竹"
+      }
+    }
+  ]
+}

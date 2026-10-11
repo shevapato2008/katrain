@@ -1,0 +1,916 @@
+{
+  "format": "kifu-player-highfreq-ranks51-100-identity-research-v1",
+  "generated_utc": "2026-10-04T10:00:14.398386+00:00",
+  "read_only": true,
+  "input_manifest": "docs/resource/kifu-player-highfreq-ranks51-100-2026-10-04.json",
+  "input_sha256": "332c3c4abb0a52bc2a8fe520238e98f6b24d8ab827d5724380a111942018b939",
+  "scope": "50 exact raw names / 4711 PROD NULL slots; no FK decision",
+  "policy": "Research leads only. VERIFIED means a Wikimedia Go identity anchor, not slot approval. HOLD requires Astra review and exact game evidence.",
+  "verified_count": 9,
+  "hold_count": 41,
+  "entries": [
+    {
+      "rank": 51,
+      "raw": "谷口彻",
+      "prod_null_slots": 140,
+      "proposed_chinese_canonical": "谷口彻",
+      "status": "VERIFIED_WIKIMEDIA_GO_IDENTITY",
+      "confidence": "medium",
+      "test_normalized_catalog_owners": [
+        157
+      ],
+      "prod_normalized_catalog_owners": [
+        156
+      ],
+      "official_or_reliable_source_urls": [
+        "https://www.wikidata.org/wiki/Q25252676",
+        "https://zh.wikipedia.org/w/index.php?search=%E8%B0%B7%E5%8F%A3%E5%BD%BB"
+      ],
+      "identity_label_or_anchor": "Tooru Taniguchi",
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata describes a Go player; match SGF country/era/rank before any slot decision."
+    },
+    {
+      "rank": 52,
+      "raw": "赵哲伦",
+      "prod_null_slots": 140,
+      "proposed_chinese_canonical": "赵哲伦",
+      "status": "VERIFIED_WIKIMEDIA_GO_IDENTITY",
+      "confidence": "medium",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://www.wikidata.org/wiki/Q104726960",
+        "https://zh.wikipedia.org/w/index.php?search=%E8%B5%B5%E5%93%B2%E4%BC%A6"
+      ],
+      "identity_label_or_anchor": "Zhao Zhelun",
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata describes a Go player; match SGF country/era/rank before any slot decision."
+    },
+    {
+      "rank": 53,
+      "raw": "沼馆沙辉哉",
+      "prod_null_slots": 139,
+      "proposed_chinese_canonical": "沼馆沙辉哉",
+      "status": "VERIFIED_WIKIMEDIA_GO_IDENTITY",
+      "confidence": "medium",
+      "test_normalized_catalog_owners": [
+        1016
+      ],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://www.wikidata.org/wiki/Q11554629",
+        "https://zh.wikipedia.org/w/index.php?search=%E6%B2%BC%E9%A6%86%E6%B2%99%E8%BE%89%E5%93%89"
+      ],
+      "identity_label_or_anchor": "Sakiya Numadate",
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata describes a Go player; match SGF country/era/rank before any slot decision."
+    },
+    {
+      "rank": 54,
+      "raw": "梅泽由香里",
+      "prod_null_slots": 138,
+      "proposed_chinese_canonical": "梅泽由香里",
+      "status": "VERIFIED_WIKIMEDIA_GO_IDENTITY",
+      "confidence": "medium",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://www.wikidata.org/wiki/Q2599301",
+        "https://zh.wikipedia.org/w/index.php?search=%E6%A2%85%E6%B3%BD%E7%94%B1%E9%A6%99%E9%87%8C"
+      ],
+      "identity_label_or_anchor": "Yukari Yoshihara",
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata describes a Go player; match SGF country/era/rank before any slot decision."
+    },
+    {
+      "rank": 55,
+      "raw": "冈田结美子",
+      "prod_null_slots": 127,
+      "proposed_chinese_canonical": "冈田结美子",
+      "status": "VERIFIED_WIKIMEDIA_GO_IDENTITY",
+      "confidence": "medium",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://www.wikidata.org/wiki/Q8061124",
+        "https://zh.wikipedia.org/w/index.php?search=%E5%86%88%E7%94%B0%E7%BB%93%E7%BE%8E%E5%AD%90"
+      ],
+      "identity_label_or_anchor": "Yumiko Okada",
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata describes a Go player; match SGF country/era/rank before any slot decision."
+    },
+    {
+      "rank": 56,
+      "raw": "村松大树",
+      "prod_null_slots": 127,
+      "proposed_chinese_canonical": "村松大树",
+      "status": "VERIFIED_WIKIMEDIA_GO_IDENTITY",
+      "confidence": "medium",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://www.wikidata.org/wiki/Q25252528",
+        "https://zh.wikipedia.org/w/index.php?search=%E6%9D%91%E6%9D%BE%E5%A4%A7%E6%A0%91"
+      ],
+      "identity_label_or_anchor": "Hiroki Muramatsu",
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata describes a Go player; match SGF country/era/rank before any slot decision."
+    },
+    {
+      "rank": 57,
+      "raw": "陈嘉锐",
+      "prod_null_slots": 125,
+      "proposed_chinese_canonical": "陈嘉锐",
+      "status": "VERIFIED_WIKIMEDIA_GO_IDENTITY",
+      "confidence": "medium",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://www.wikidata.org/wiki/Q9367031",
+        "https://zh.wikipedia.org/w/index.php?search=%E9%99%88%E5%98%89%E9%94%90"
+      ],
+      "identity_label_or_anchor": "Chin Kaei",
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata describes a Go player; match SGF country/era/rank before any slot decision."
+    },
+    {
+      "rank": 58,
+      "raw": "黄宰渊",
+      "prod_null_slots": 125,
+      "proposed_chinese_canonical": "黄宰渊",
+      "status": "VERIFIED_WIKIMEDIA_GO_IDENTITY",
+      "confidence": "medium",
+      "test_normalized_catalog_owners": [
+        216
+      ],
+      "prod_normalized_catalog_owners": [
+        215
+      ],
+      "official_or_reliable_source_urls": [
+        "https://www.wikidata.org/wiki/Q22975402",
+        "https://zh.wikipedia.org/w/index.php?search=%E9%BB%84%E5%AE%B0%E6%B8%8A"
+      ],
+      "identity_label_or_anchor": "Hwang Jaeyeon",
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata describes a Go player; match SGF country/era/rank before any slot decision."
+    },
+    {
+      "rank": 59,
+      "raw": "石田笃司",
+      "prod_null_slots": 124,
+      "proposed_chinese_canonical": "石田笃司",
+      "status": "VERIFIED_WIKIMEDIA_GO_IDENTITY",
+      "confidence": "medium",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://www.wikidata.org/wiki/Q25252691",
+        "https://zh.wikipedia.org/w/index.php?search=%E7%9F%B3%E7%94%B0%E7%AC%83%E5%8F%B8"
+      ],
+      "identity_label_or_anchor": "Atsushi Ishida",
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata describes a Go player; match SGF country/era/rank before any slot decision."
+    },
+    {
+      "rank": 60,
+      "raw": "李相勋",
+      "prod_null_slots": 117,
+      "proposed_chinese_canonical": "李相勋",
+      "status": "HOLD_HOMONYM",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://www.wikidata.org/wiki/Q11266025",
+        "https://zh.wikipedia.org/w/index.php?search=%E6%9D%8E%E7%9B%B8%E5%8B%8B"
+      ],
+      "identity_label_or_anchor": "Lee Sanghun (1973 candidate; another same-name Go player exists)",
+      "homonym_era_collision_flag": "high",
+      "research_note": "Wikidata search returns at least two Lee Sanghun Go players (1973/1975); HOLD until era disambiguation."
+    },
+    {
+      "rank": 61,
+      "raw": "萧爱霖",
+      "prod_null_slots": 117,
+      "proposed_chinese_canonical": "萧爱霖",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E8%90%A7%E7%88%B1%E9%9C%96"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 62,
+      "raw": "横塚力",
+      "prod_null_slots": 115,
+      "proposed_chinese_canonical": "横塚力",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        245
+      ],
+      "prod_normalized_catalog_owners": [
+        244
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%A8%AA%E5%A1%9A%E5%8A%9B"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 63,
+      "raw": "陈一纯",
+      "prod_null_slots": 115,
+      "proposed_chinese_canonical": "陈一纯",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        20
+      ],
+      "prod_normalized_catalog_owners": [
+        20
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%99%88%E4%B8%80%E7%BA%AF"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 64,
+      "raw": "田中康湧",
+      "prod_null_slots": 113,
+      "proposed_chinese_canonical": "田中康湧",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        631
+      ],
+      "prod_normalized_catalog_owners": [
+        630
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E7%94%B0%E4%B8%AD%E5%BA%B7%E6%B9%A7"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 65,
+      "raw": "河灿锡",
+      "prod_null_slots": 112,
+      "proposed_chinese_canonical": "河灿锡",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        12413
+      ],
+      "prod_normalized_catalog_owners": [
+        6644
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%B2%B3%E7%81%BF%E9%94%A1"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 66,
+      "raw": "青木绅一",
+      "prod_null_slots": 112,
+      "proposed_chinese_canonical": "青木绅一",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%9D%92%E6%9C%A8%E7%BB%85%E4%B8%80"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 67,
+      "raw": "韩晗",
+      "prod_null_slots": 110,
+      "proposed_chinese_canonical": "韩晗",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%9F%A9%E6%99%97"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 68,
+      "raw": "桥本雄二郎",
+      "prod_null_slots": 104,
+      "proposed_chinese_canonical": "桥本雄二郎",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%A1%A5%E6%9C%AC%E9%9B%84%E4%BA%8C%E9%83%8E"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 69,
+      "raw": "权孝珍",
+      "prod_null_slots": 102,
+      "proposed_chinese_canonical": "权孝珍",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%9D%83%E5%AD%9D%E7%8F%8D"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 70,
+      "raw": "长谷川直",
+      "prod_null_slots": 102,
+      "proposed_chinese_canonical": "长谷川直",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%95%BF%E8%B0%B7%E5%B7%9D%E7%9B%B4"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 71,
+      "raw": "宫崎志摩子",
+      "prod_null_slots": 96,
+      "proposed_chinese_canonical": "宫崎志摩子",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E5%AE%AB%E5%B4%8E%E5%BF%97%E6%91%A9%E5%AD%90"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 72,
+      "raw": "高梨圣健",
+      "prod_null_slots": 93,
+      "proposed_chinese_canonical": "高梨圣健",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%AB%98%E6%A2%A8%E5%9C%A3%E5%81%A5"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 73,
+      "raw": "有村比吕司",
+      "prod_null_slots": 89,
+      "proposed_chinese_canonical": "有村比吕司",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%9C%89%E6%9D%91%E6%AF%94%E5%90%95%E5%8F%B8"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 74,
+      "raw": "王硕",
+      "prod_null_slots": 88,
+      "proposed_chinese_canonical": "王硕",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E7%8E%8B%E7%A1%95"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 75,
+      "raw": "韩钟振",
+      "prod_null_slots": 88,
+      "proposed_chinese_canonical": "韩钟振",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        167
+      ],
+      "prod_normalized_catalog_owners": [
+        166
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%9F%A9%E9%92%9F%E6%8C%AF"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 76,
+      "raw": "村岛谊纪",
+      "prod_null_slots": 83,
+      "proposed_chinese_canonical": "村岛谊纪",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        12370
+      ],
+      "prod_normalized_catalog_owners": [
+        6606
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%9D%91%E5%B2%9B%E8%B0%8A%E7%BA%AA"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 77,
+      "raw": "松冈秀树",
+      "prod_null_slots": 83,
+      "proposed_chinese_canonical": "松冈秀树",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        1064
+      ],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%9D%BE%E5%86%88%E7%A7%80%E6%A0%91"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 78,
+      "raw": "酒井真树",
+      "prod_null_slots": 81,
+      "proposed_chinese_canonical": "酒井真树",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%85%92%E4%BA%95%E7%9C%9F%E6%A0%91"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 79,
+      "raw": "吕立言",
+      "prod_null_slots": 80,
+      "proposed_chinese_canonical": "吕立言",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        177
+      ],
+      "prod_normalized_catalog_owners": [
+        176
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E5%90%95%E7%AB%8B%E8%A8%80"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 80,
+      "raw": "朴只玹",
+      "prod_null_slots": 80,
+      "proposed_chinese_canonical": "朴只玹",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        767
+      ],
+      "prod_normalized_catalog_owners": [
+        766
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%9C%B4%E5%8F%AA%E7%8E%B9"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 81,
+      "raw": "伊藤优诗",
+      "prod_null_slots": 79,
+      "proposed_chinese_canonical": "伊藤优诗",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E4%BC%8A%E8%97%A4%E4%BC%98%E8%AF%97"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 82,
+      "raw": "朴升哲",
+      "prod_null_slots": 79,
+      "proposed_chinese_canonical": "朴升哲",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%9C%B4%E5%8D%87%E5%93%B2"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 83,
+      "raw": "下岛阳平",
+      "prod_null_slots": 78,
+      "proposed_chinese_canonical": "下岛阳平",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        518
+      ],
+      "prod_normalized_catalog_owners": [
+        517
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E4%B8%8B%E5%B2%9B%E9%98%B3%E5%B9%B3"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 84,
+      "raw": "萧钰洋",
+      "prod_null_slots": 76,
+      "proposed_chinese_canonical": "萧钰洋",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        765
+      ],
+      "prod_normalized_catalog_owners": [
+        764
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E8%90%A7%E9%92%B0%E6%B4%8B"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 85,
+      "raw": "安倍吉辉",
+      "prod_null_slots": 74,
+      "proposed_chinese_canonical": "安倍吉辉",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        12359
+      ],
+      "prod_normalized_catalog_owners": [
+        6593
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E5%AE%89%E5%80%8D%E5%90%89%E8%BE%89"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 86,
+      "raw": "柳泽理志",
+      "prod_null_slots": 74,
+      "proposed_chinese_canonical": "柳泽理志",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%9F%B3%E6%B3%BD%E7%90%86%E5%BF%97"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 87,
+      "raw": "莊承濬",
+      "prod_null_slots": 74,
+      "proposed_chinese_canonical": "莊承濬",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E8%8E%8A%E6%89%BF%E6%BF%AC"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 88,
+      "raw": "久岛国夫",
+      "prod_null_slots": 73,
+      "proposed_chinese_canonical": "久岛国夫",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        12438
+      ],
+      "prod_normalized_catalog_owners": [
+        6669
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E4%B9%85%E5%B2%9B%E5%9B%BD%E5%A4%AB"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 89,
+      "raw": "铃木嘉伦",
+      "prod_null_slots": 73,
+      "proposed_chinese_canonical": "铃木嘉伦",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%93%83%E6%9C%A8%E5%98%89%E4%BC%A6"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 90,
+      "raw": "桑原树",
+      "prod_null_slots": 72,
+      "proposed_chinese_canonical": "桑原树",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        100
+      ],
+      "prod_normalized_catalog_owners": [
+        99
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%A1%91%E5%8E%9F%E6%A0%91"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 91,
+      "raw": "黄孟正",
+      "prod_null_slots": 72,
+      "proposed_chinese_canonical": "黄孟正",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%BB%84%E5%AD%9F%E6%AD%A3"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 92,
+      "raw": "茂吕有纱",
+      "prod_null_slots": 71,
+      "proposed_chinese_canonical": "茂吕有纱",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        143
+      ],
+      "prod_normalized_catalog_owners": [
+        142
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E8%8C%82%E5%90%95%E6%9C%89%E7%BA%B1"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 93,
+      "raw": "金昇珍",
+      "prod_null_slots": 71,
+      "proposed_chinese_canonical": "金昇珍",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        232
+      ],
+      "prod_normalized_catalog_owners": [
+        231
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%87%91%E6%98%87%E7%8F%8D"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 94,
+      "raw": "白大铉",
+      "prod_null_slots": 70,
+      "proposed_chinese_canonical": "白大铉",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E7%99%BD%E5%A4%A7%E9%93%89"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 95,
+      "raw": "郑铭瑝",
+      "prod_null_slots": 70,
+      "proposed_chinese_canonical": "郑铭瑝",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%83%91%E9%93%AD%E7%91%9D"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 96,
+      "raw": "金湊笌",
+      "prod_null_slots": 70,
+      "proposed_chinese_canonical": "金湊笌",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        138
+      ],
+      "prod_normalized_catalog_owners": [
+        137
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E9%87%91%E6%B9%8A%E7%AC%8C"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    },
+    {
+      "rank": 97,
+      "raw": "元齐焄",
+      "prod_null_slots": 69,
+      "proposed_chinese_canonical": "元齐焄",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E5%85%83%E9%BD%90%E7%84%84"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 98,
+      "raw": "朴升贤",
+      "prod_null_slots": 69,
+      "proposed_chinese_canonical": "朴升贤",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E6%9C%B4%E5%8D%87%E8%B4%A4"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 99,
+      "raw": "田中康涌",
+      "prod_null_slots": 67,
+      "proposed_chinese_canonical": "田中康涌",
+      "status": "HOLD_NO_PRIMARY_ANCHOR",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [],
+      "prod_normalized_catalog_owners": [],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E7%94%B0%E4%B8%AD%E5%BA%B7%E6%B6%8C"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "No primary Go association or dedicated identity page verified in this pass; do not bind by name alone."
+    },
+    {
+      "rank": 100,
+      "raw": "藤井浩贵",
+      "prod_null_slots": 65,
+      "proposed_chinese_canonical": "藤井浩贵",
+      "status": "HOLD_EXISTING_OWNER_REVIEW",
+      "confidence": "low",
+      "test_normalized_catalog_owners": [
+        159
+      ],
+      "prod_normalized_catalog_owners": [
+        158
+      ],
+      "official_or_reliable_source_urls": [
+        "https://zh.wikipedia.org/w/index.php?search=%E8%97%A4%E4%BA%95%E6%B5%A9%E8%B4%B5"
+      ],
+      "identity_label_or_anchor": null,
+      "homonym_era_collision_flag": "high",
+      "research_note": "Normalized/near exact catalog owner exists; identity reuse must be reviewed against names, aliases, and SGF era."
+    }
+  ],
+  "safe_capture_subset": [
+    "赵哲伦",
+    "梅泽由香里",
+    "冈田结美子",
+    "村松大树",
+    "陈嘉锐",
+    "石田笃司"
+  ],
+  "caveats": [
+    "Catalog owner scans use existing17 full TEST/PROD snapshots and normalized canonical/alias clues; they are not FK approval.",
+    "TEST/PROD snapshots predate later batches; refresh before capture.",
+    "Wikidata and Wikipedia search URLs are identity leads; association profile, birth/pro rank, and SGF chronology remain required."
+  ]
+}

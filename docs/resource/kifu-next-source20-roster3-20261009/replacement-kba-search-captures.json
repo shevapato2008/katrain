@@ -1,0 +1,80 @@
+[
+  {
+    "id": "kba-search-cheon",
+    "url": "https://www.baduk.or.kr/record/player_in.asp",
+    "method": "POST",
+    "request_body": "pageNo=1&keyColumn=2&keyWord=%EC%B2%9C&etcKey=&etcKey2=A&etcKey3=",
+    "fetched_at_utc": "2026-10-08T21:24:54.824067+00:00",
+    "http_status": 200,
+    "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+    "content_type": "text/html; Charset=UTF-8",
+    "response_body_file": "captures/replacement-kba-surname-cheon.body",
+    "response_body_bytes": 11328,
+    "response_body_sha256": "a1ca2f153f219b2c43b29147b5be8f62a881ffdfa12f5b5372ed0eee615c7c5f"
+  },
+  {
+    "id": "kba-search-fu",
+    "url": "https://www.baduk.or.kr/record/player_in.asp",
+    "method": "POST",
+    "request_body": "pageNo=1&keyColumn=2&keyWord=%ED%91%B8&etcKey=&etcKey2=A&etcKey3=",
+    "fetched_at_utc": "2026-10-08T21:24:56.705282+00:00",
+    "http_status": 200,
+    "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+    "content_type": "text/html; Charset=UTF-8",
+    "response_body_file": "captures/replacement-kba-surname-fu.body",
+    "response_body_bytes": 5572,
+    "response_body_sha256": "7ede70915c2d610bfcf99aa28d96c04ac31764cb966029bc7dc031f694faec8d"
+  },
+  {
+    "id": "kba-search-tang",
+    "url": "https://www.baduk.or.kr/record/player_in.asp",
+    "method": "POST",
+    "request_body": "pageNo=1&keyColumn=2&keyWord=%ED%83%95&etcKey=&etcKey2=A&etcKey3=",
+    "fetched_at_utc": "2026-10-08T21:24:58.443920+00:00",
+    "http_status": 200,
+    "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+    "content_type": "text/html; Charset=UTF-8",
+    "response_body_file": "captures/replacement-kba-surname-tang.body",
+    "response_body_bytes": 6396,
+    "response_body_sha256": "6a406963e609c2db90a061dbdf583bbdb15617dce3d34e02d4780616dee5c445"
+  },
+  {
+    "id": "kba-search-weng",
+    "url": "https://www.baduk.or.kr/record/player_in.asp",
+    "method": "POST",
+    "request_body": "pageNo=1&keyColumn=2&keyWord=%EC%9B%A1&etcKey=&etcKey2=A&etcKey3=",
+    "fetched_at_utc": "2026-10-08T21:25:00.147821+00:00",
+    "http_status": 200,
+    "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+    "content_type": "text/html; Charset=UTF-8",
+    "response_body_file": "captures/replacement-kba-surname-weng.body",
+    "response_body_bytes": 3228,
+    "response_body_sha256": "ccd56ef34448ee19faeffee8fc7c567d0b41523cd51cfed7dae3736643218cf0"
+  },
+  {
+    "id": "kba-search-wang",
+    "url": "https://www.baduk.or.kr/record/player_in.asp",
+    "method": "POST",
+    "request_body": "pageNo=1&keyColumn=2&keyWord=%EC%99%95&etcKey=&etcKey2=A&etcKey3=",
+    "fetched_at_utc": "2026-10-08T21:25:01.825742+00:00",
+    "http_status": 200,
+    "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+    "content_type": "text/html; Charset=UTF-8",
+    "response_body_file": "captures/replacement-kba-surname-wang.body",
+    "response_body_bytes": 13363,
+    "response_body_sha256": "51f527dd2d5718b8f26ee5b5dea39b93e2fae2aa36f37cf13620b921db0a1c5e"
+  },
+  {
+    "id": "kba-search-li",
+    "url": "https://www.baduk.or.kr/record/player_in.asp",
+    "method": "POST",
+    "request_body": "pageNo=1&keyColumn=2&keyWord=%EB%A6%AC&etcKey=&etcKey2=A&etcKey3=",
+    "fetched_at_utc": "2026-10-08T21:25:03.722354+00:00",
+    "http_status": 200,
+    "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+    "content_type": "text/html; Charset=UTF-8",
+    "response_body_file": "captures/replacement-kba-surname-li.body",
+    "response_body_bytes": 12486,
+    "response_body_sha256": "970d354edd8c885647161cc3ebd76f264f2080e56ac590441c269baf5c2de70e"
+  }
+]

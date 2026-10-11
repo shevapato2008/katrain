@@ -1,0 +1,47 @@
+{
+  "format": "kifu-event-after-korean-two-next-review-bundle-v1",
+  "database_writes": 0,
+  "decision": {
+    "path": "docs/resource/kifu-event-after-korean-two-next-independent-decision-astra-2026-10-04.json",
+    "file_sha256": "264606394e2ad40dfec332ae660f8b281372cd4b6d30e6e8d646962ed487289b",
+    "bytes": 5628774
+  },
+  "markdown": {
+    "path": "docs/resource/kifu-event-after-korean-two-next-independent-decision-astra-2026-10-04.md",
+    "file_sha256": "f259fccd5d9c431fb5841c7f6bfcba1aa598cce8e73038b7b41ef4eb8117afb6",
+    "bytes": 6498
+  },
+  "mainline_audit": {
+    "path": "docs/resource/kifu-event-after-korean-two-next-independent-mainline-audit-astra-2026-10-04.json",
+    "file_sha256": "923ed47e068a4e886f868ffef0a94d5cc79d918a7a2aeddc3a579d5c70f8b133",
+    "bytes": 2688343
+  },
+  "sources": {
+    "path": "docs/resource/kifu-event-after-korean-two-next-independent-sources-astra-2026-10-04.json",
+    "file_sha256": "55e99d3bf69fecbd7630bd92538d89f8508169e3e03e6608900347c7ec7a8489",
+    "bytes": 7662
+  },
+  "preimages": {
+    "TEST": {
+      "path": "docs/resource/kifu-event-after-korean-two-next-TEST-independent-full-preimage-astra-2026-10-04.json.gz",
+      "file_sha256": "1c7eea811ecf6122e3ebb6cd565d7ba92647eb87302aff75362fe69c92ccbb6d",
+      "bytes": 811254
+    },
+    "PROD": {
+      "path": "docs/resource/kifu-event-after-korean-two-next-PROD-independent-full-preimage-astra-2026-10-04.json.gz",
+      "file_sha256": "1ca0670bf2c336e750f06478a7732ec2d30f504f02fa53176db0c1f9fe50253b",
+      "bytes": 811171
+    }
+  },
+  "counts": {
+    "candidate": 1685,
+    "approved": 1209,
+    "held": 476,
+    "event_types_to_create": 3,
+    "event_edition_creations": 0,
+    "event_edition_links": 0,
+    "alias_writes": 0,
+    "prior_hold_count": 4292,
+    "post_review_hold_union": 4768
+  }
+}

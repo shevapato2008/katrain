@@ -1,0 +1,480 @@
+{
+  "artifact_kind": "ko_name_source_only_research",
+  "queue_player_id": 4993,
+  "queue_order_slots": 4,
+  "selection_scope": "Batch 597 read-only shortlist: KO missing and four physically verified primary rows; this shortlist is not final qualification proof.",
+  "owner_binding": {
+    "status": "placeholder_not_validated_not_eligible",
+    "queue_id_read_only": 4993,
+    "note": "Fresh CN/EN anchor bindings and latest owner preimages are intentionally left for root to bind from the new current capture; this source packet does not qualify the owner."
+  },
+  "canonical_name": "李天竹",
+  "available_non_ko_anchor_names": {
+    "cn": "李天竹",
+    "en": "Li Tianzhu",
+    "jp": "李天竹",
+    "tw": "李天竹",
+    "binding_status": "queue labels only; not current owner preimages"
+  },
+  "status": "pending_no_direct_same_person_Korean_Hangul_name_identified_in_bounded_sources",
+  "scope": {
+    "shortlist_context": "queue selection is prioritization only",
+    "language_scope": "not assigned from name characters alone",
+    "eligibility": "not established by this source-only packet"
+  },
+  "identity": {
+    "capture": [
+      {
+        "player_id": 4993,
+        "canonical_name": "李天竹",
+        "published_latin": "Li Tianzhu",
+        "source_id": "ret110-goratings-ja",
+        "source_language": "ja",
+        "source_role": "language_go",
+        "url": "https://goratings.org/ja/players/450.html",
+        "evidence_ids": [
+          62809
+        ],
+        "method": "GET",
+        "http_status": 200,
+        "final_url": "https://www.goratings.org/ja/players/450.html",
+        "content_type": "text/html",
+        "request_started_at_utc": "2026-10-08T23:08:03.133379+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:06.245939+00:00",
+        "body_bytes": 5492,
+        "body_sha256": "c381f381cb3411c40fb14170828db91eaa772137df29eb1d994cf2d69e2a09e7",
+        "body_file": "captures/4993-authority-ret110-goratings-ja.body",
+        "publisher": "Go Ratings",
+        "body_text_excerpt": "李天竹 李天竹 トップへ戻る 推移グラフ データ 勝利 0 敗北 3 合計 3 生年月日 1986-10-25 対局データ 日付 レーティング 手番 対局結果 対局相手 棋譜 2006-10-10 2733 黒番 敗北 唐盈 2889 ♀ | go4go | 2006-07-27 2734 黒番 敗北 杨梓 2941 ♀ | cwa | go4go | 2004-10-27 2745 黒番 敗北 黄佳 2883 ♀ | cwa | go4go | 問合せ先： Rémi Coulom . Powered by joedb, the C++ database .",
+        "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+        "subject_role": "target_same_person_profile_or_roster",
+        "capture_kind": "authority_page_capture"
+      }
+    ],
+    "conclusion": "Captured Go-source bodies associate the queue Han spelling with the profiled Go player. A Latin form is described only when it appears in that specific captured body; otherwise the queue Latin string remains a search term only. Binding the profile to the current owner remains pending root validation."
+  },
+  "reading": {
+    "capture": [
+      {
+        "capture": {
+          "player_id": 4993,
+          "canonical_name": "李天竹",
+          "published_latin": "Li Tianzhu",
+          "source_id": "GoRatings-Korean-language-path",
+          "source_language": "ko",
+          "source_role": "language_go_localized_profile",
+          "url": "https://www.goratings.org/ko/players/450.html",
+          "derived_from_capture_url": "https://www.goratings.org/ja/players/450.html",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.goratings.org/ko/players/450.html",
+          "content_type": "text/html",
+          "request_started_at_utc": "2026-10-08T23:08:26.145005+00:00",
+          "fetched_at_utc": "2026-10-08T23:08:27.706691+00:00",
+          "body_bytes": 5459,
+          "body_sha256": "0c8df2f316a8807b83a948e2b3312cccdbb09cb90e7735415c787e76e8be3928",
+          "body_file": "captures/4993-authority-goratings-ko.body",
+          "publisher": "Go Ratings",
+          "body_text_excerpt": "Li Tianzhu Li Tianzhu 메인 페이지로 돌아가기 그래프 데이터 승리 0 패배 3 합계 3 생년월일 1986-10-25 대국 기록 날짜 레이팅 흑백 결과 상대 기보 2006-10-10 2733 흑번 패 탕잉 2889 ♀ | go4go | 2006-07-27 2734 흑번 패 양쯔 2941 ♀ | cwa | go4go | 2004-10-27 2745 흑번 패 Huang Jia 2883 ♀ | cwa | go4go | 문의 Rémi Coulom . Powered by joedb, the C++ database .",
+          "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+          "subject_role": "target_same_person_localized_path_check",
+          "capture_kind": "authority_page_capture"
+        },
+        "observation": "Korean-locale page heading is the same profile rendered as Latin; it does not publish a Korean Hangul player name.",
+        "observed_profile_heading_excerpt": "Li Tianzhu Li Tianzhu"
+      }
+    ],
+    "published_latin": null,
+    "status": "No Korean reading or Hangul form is established. The Latin string is included solely as the queue-provided exact search query; this packet does not claim it was published as the player preferred spelling.",
+    "note": "The Korean-locale GoRatings pages captured here use Latin or Han fallback for the profile name, not a Hangul transliteration.",
+    "queue_latin_query": "Li Tianzhu"
+  },
+  "rule": {
+    "capture": {
+      "status": "not_applied_to_this_owner",
+      "source_basis": "normative_zh_ko_v1",
+      "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+      "decision_reference": "docs/resource/kifu-zh-ko-firstbatch-20261009/source-and-rule-decision.json",
+      "decision_sha256": "dca4e25367ede21a4b162e7ebe4551d6a13a499b084322ebcd44c04f43cdee00",
+      "rule_capture_index": "docs/resource/kifu-nikl-cn-ko-research-20261009/capture-index.json",
+      "rule_capture_index_sha256": "38cacb787678bec8e6d051d90c957f1ea203c2bcb6d58b94eec620f780763609",
+      "pinned_full_rule_body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "approved_owner_ids_in_rule_decision": [
+        5498,
+        5739
+      ],
+      "note": "The finite six-map approval is specific to two different owners and their reviewed readings. No spelling/output has been generated or declared verified for this queue owner; any future rule extension is separate.",
+      "normative_source_capture": {
+        "id": "foreign-regulation-full",
+        "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "method": "GET",
+        "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+        "http_status": 200,
+        "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "content_type": "text/html;charset=UTF-8",
+        "body_bytes": 456809,
+        "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+        "body_file": "captures/foreign-regulation-full.html"
+      },
+      "rule_excerpt_locator": "Foreign-language table 5 at saved original HTML line 1573; notation note at line 1578. The six approved mappings apply only to owners 5498 and 5739 in source-and-rule-decision.json; no mapping is applied here.",
+      "original_rule_excerpt": "The saved NIKL full-body response is the normative reference. This packet intentionally records no generated reading/output for this owner."
+    }
+  },
+  "contrary_checks": {
+    "saved_roster_scans": [
+      {
+        "publisher": "Korean Baduk Association",
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+        "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+        "body_bytes": 80097,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+        "source_role": "official_China_player_roster_bounded_literal_scan",
+        "literal_scan_terms": [
+          "李天竹",
+          "Li Tianzhu"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 李天竹; Li Tianzhu. Exact matching strings present: []."
+      },
+      {
+        "publisher": "TVBaduk",
+        "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+        "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+        "body_bytes": 119151,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+        "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+        "literal_scan_terms": [
+          "李天竹",
+          "Li Tianzhu"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 李天竹; Li Tianzhu. Exact matching strings present: []."
+      },
+      {
+        "publisher": "Daum Cafe community roster (2012)",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+        "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "body_bytes": 153004,
+        "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+        "source_role": "community_reference_only_not_official",
+        "literal_scan_terms": [
+          "李天竹",
+          "Li Tianzhu"
+        ],
+        "exact_matches_present": [
+          "李天竹"
+        ],
+        "status": "found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 李天竹; Li Tianzhu. Exact matching strings present: [\"李天竹\"]."
+      }
+    ],
+    "web_search_captures": [
+      {
+        "player_id": 4993,
+        "engine": "naver",
+        "query": "\"李天竹\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22%E6%9D%8E%E5%A4%A9%E7%AB%B9%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22%E6%9D%8E%E5%A4%A9%E7%AB%B9%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 403,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:13.182906+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:14.559880+00:00",
+        "body_bytes": 28561,
+        "body_sha256": "07b9c120a94b8d6a89ea13763f6462e139927589caf7a9b7bc4bb7e785981439",
+        "body_file": "captures/4993-search-naver-han.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+        "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+        "relevance_assessment": "unavailable_http_403",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 4993,
+        "engine": "naver",
+        "query": "\"Li Tianzhu\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22Li%20Tianzhu%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22Li%20Tianzhu%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 403,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:13.700303+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:15.108965+00:00",
+        "body_bytes": 28563,
+        "body_sha256": "ce998ec230b79a29eb424b6aa9978b7efad3714833b8d865e09c9d5d38d2d5d1",
+        "body_file": "captures/4993-search-naver-latin.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+        "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+        "relevance_assessment": "unavailable_http_403",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 4993,
+        "engine": "bing",
+        "query": "\"李天竹\" 바둑",
+        "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+        "url": "https://www.bing.com/search?q=%22%E6%9D%8E%E5%A4%A9%E7%AB%B9%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://www.bing.com/search?q=%22%E6%9D%8E%E5%A4%A9%E7%AB%B9%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "request_started_at_utc": "2026-10-08T23:08:56.925893+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:58.230848+00:00",
+        "body_bytes": 118347,
+        "body_sha256": "b20f5f4c28d2515cbaaa68e2b631fb97cd8c26aaf7bb5b6eaf388837e5f209b4",
+        "body_file": "captures/4993-search-bing-han.html",
+        "publisher": "Bing search",
+        "body_text_excerpt": "\"李天竹\" 바둑 - Search Skip to content Accessibility Feedback All Search Images Videos Maps News More Shopping Flights Tools About 66 results Open links in new tab Any time fremonttoyota.com https://www.fremonttoyota.com Toyota Dealer | New and Used Cars Fremont, CA | Fremont Toyota Fremont Toyota in Fremont, CA offers new and used Toyota cars, trucks, and SUVs to our customers. Visit us for sales, financing, … fremonttoyota.com https://www.fremonttoyota.com › service-appointment Schedule Vehicle Service Appointment - Fremont Toyota Schedule a service appointment at Fremont Toyota for your new or used vehicle, located in Fremont, California. fremonttoyota.com https://autoparts.fremonttoyota.com Fremont Toyota - Genuine Toyota Parts and Accessories: Official Online ... Hit the road confidently this fall. Shop parts and accessories for maintenance, comfort and adventure gear. fremonttoyota.com https://autoparts.fremonttoyota.com › products › product Toyota Ashtray Kit Part #PT45A-08080 | Autoparts.toyota.com Toyota Genuine Ashtray Kit keeps your cabin tidy with a compact, integrated fit. Backed by Toyota’s genuine parts warranty. fremonttoyota.com https://www.fremonttoyota.com › service-de",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 4993,
+        "engine": "bing",
+        "query": "\"Li Tianzhu\" 바둑",
+        "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+        "url": "https://www.bing.com/search?q=%22Li%20Tianzhu%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://www.bing.com/search?q=%22Li%20Tianzhu%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "request_started_at_utc": "2026-10-08T23:08:56.990064+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:58.267181+00:00",
+        "body_bytes": 119853,
+        "body_sha256": "deb3447acef8b895f25beb1eb13c3d8cfb2cef99cd55579565c33505f457c32e",
+        "body_file": "captures/4993-search-bing-latin.html",
+        "publisher": "Bing search",
+        "body_text_excerpt": "\"Li Tianzhu\" 바둑 - Search Skip to content Accessibility Feedback All Web Search Images Videos Maps More News Shopping Flights Tools About 498,000 results Open links in new tab Any time linkedin.com https://www.linkedin.com LinkedIn: Log In or Sign Up Discover relevant posts and expert insights — curated by topic and in one place. Connect with buyers who have first-hand … wikipedia.org https://en.m. wikipedia.org › wiki › Lithium Lithium - Wikipedia Lithium (from Ancient Greek: λίθος, líthos, 'stone') is a chemical element; it has symbol Li and atomic number 3. It is a soft, silvery … lichess.org https:// lichess .org lichess .org • Free Online Chess Play chess in a clean interface. No registration, no ads, no plugin required. Play chess with the computer, friends or random opponents. lichess.org https:// li chess.org › login Sign in • lichess.org Free online chess server. Play chess in a clean interface. No registration, no ads, no plugin required. Play chess with the computer, … wikipedia.org https://en.m. wikipedia.org › wiki › Li Li - Wikipedia This disambiguation page lists articles associated with the title Li. If an internal link incorrectly led you here, you may wish to change",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      }
+    ],
+    "coverage_note": "Exact Han and exact published Latin searches were captured where available. HTTP 403 is preserved as unavailable; an alternative Bing capture is included when available. Results are bounded and do not support global absence. Similar names were not accepted without a same-person Go identity bridge."
+  },
+  "source_reading": {
+    "queue_latin_query": "Li Tianzhu",
+    "queue_string_source": "read-only shortlist row, not current source/owner binding",
+    "observed_romanization": null,
+    "interpretation": "No Korean spelling or reading generated or inferred. The literal queue Latin string is used only as the second search query."
+  },
+  "identity_bridges": [
+    {
+      "player_id": 4993,
+      "canonical_name": "李天竹",
+      "published_latin": "Li Tianzhu",
+      "source_id": "ret110-goratings-ja",
+      "source_language": "ja",
+      "source_role": "language_go",
+      "url": "https://goratings.org/ja/players/450.html",
+      "evidence_ids": [
+        62809
+      ],
+      "method": "GET",
+      "http_status": 200,
+      "final_url": "https://www.goratings.org/ja/players/450.html",
+      "content_type": "text/html",
+      "request_started_at_utc": "2026-10-08T23:08:03.133379+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:06.245939+00:00",
+      "body_bytes": 5492,
+      "body_sha256": "c381f381cb3411c40fb14170828db91eaa772137df29eb1d994cf2d69e2a09e7",
+      "body_file": "captures/4993-authority-ret110-goratings-ja.body",
+      "publisher": "Go Ratings",
+      "body_text_excerpt": "李天竹 李天竹 トップへ戻る 推移グラフ データ 勝利 0 敗北 3 合計 3 生年月日 1986-10-25 対局データ 日付 レーティング 手番 対局結果 対局相手 棋譜 2006-10-10 2733 黒番 敗北 唐盈 2889 ♀ | go4go | 2006-07-27 2734 黒番 敗北 杨梓 2941 ♀ | cwa | go4go | 2004-10-27 2745 黒番 敗北 黄佳 2883 ♀ | cwa | go4go | 問合せ先： Rémi Coulom . Powered by joedb, the C++ database .",
+      "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+      "subject_role": "target_same_person_profile_or_roster",
+      "capture_kind": "authority_page_capture"
+    }
+  ],
+  "searches": [
+    {
+      "player_id": 4993,
+      "engine": "naver",
+      "query": "\"李天竹\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22%E6%9D%8E%E5%A4%A9%E7%AB%B9%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22%E6%9D%8E%E5%A4%A9%E7%AB%B9%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 403,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:13.182906+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:14.559880+00:00",
+      "body_bytes": 28561,
+      "body_sha256": "07b9c120a94b8d6a89ea13763f6462e139927589caf7a9b7bc4bb7e785981439",
+      "body_file": "captures/4993-search-naver-han.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+      "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+      "relevance_assessment": "unavailable_http_403",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query used the exact queue Han or Latin string plus 바둑. HTTP 403 means unavailable for content review, not no results.",
+      "exact_latin_name_also_searched": "Li Tianzhu",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 4993,
+      "engine": "naver",
+      "query": "\"Li Tianzhu\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22Li%20Tianzhu%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22Li%20Tianzhu%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 403,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:13.700303+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:15.108965+00:00",
+      "body_bytes": 28563,
+      "body_sha256": "ce998ec230b79a29eb424b6aa9978b7efad3714833b8d865e09c9d5d38d2d5d1",
+      "body_file": "captures/4993-search-naver-latin.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+      "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+      "relevance_assessment": "unavailable_http_403",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query used the exact queue Han or Latin string plus 바둑. HTTP 403 means unavailable for content review, not no results.",
+      "exact_latin_name_also_searched": "Li Tianzhu",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 4993,
+      "engine": "bing",
+      "query": "\"李天竹\" 바둑",
+      "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+      "url": "https://www.bing.com/search?q=%22%E6%9D%8E%E5%A4%A9%E7%AB%B9%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://www.bing.com/search?q=%22%E6%9D%8E%E5%A4%A9%E7%AB%B9%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "request_started_at_utc": "2026-10-08T23:08:56.925893+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:58.230848+00:00",
+      "body_bytes": 118347,
+      "body_sha256": "b20f5f4c28d2515cbaaa68e2b631fb97cd8c26aaf7bb5b6eaf388837e5f209b4",
+      "body_file": "captures/4993-search-bing-han.html",
+      "publisher": "Bing search",
+      "body_text_excerpt": "\"李天竹\" 바둑 - Search Skip to content Accessibility Feedback All Search Images Videos Maps News More Shopping Flights Tools About 66 results Open links in new tab Any time fremonttoyota.com https://www.fremonttoyota.com Toyota Dealer | New and Used Cars Fremont, CA | Fremont Toyota Fremont Toyota in Fremont, CA offers new and used Toyota cars, trucks, and SUVs to our customers. Visit us for sales, financing, … fremonttoyota.com https://www.fremonttoyota.com › service-appointment Schedule Vehicle Service Appointment - Fremont Toyota Schedule a service appointment at Fremont Toyota for your new or used vehicle, located in Fremont, California. fremonttoyota.com https://autoparts.fremonttoyota.com Fremont Toyota - Genuine Toyota Parts and Accessories: Official Online ... Hit the road confidently this fall. Shop parts and accessories for maintenance, comfort and adventure gear. fremonttoyota.com https://autoparts.fremonttoyota.com › products › product Toyota Ashtray Kit Part #PT45A-08080 | Autoparts.toyota.com Toyota Genuine Ashtray Kit keeps your cabin tidy with a compact, integrated fit. Backed by Toyota’s genuine parts warranty. fremonttoyota.com https://www.fremonttoyota.com › service-de",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Li Tianzhu",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 4993,
+      "engine": "bing",
+      "query": "\"Li Tianzhu\" 바둑",
+      "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+      "url": "https://www.bing.com/search?q=%22Li%20Tianzhu%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://www.bing.com/search?q=%22Li%20Tianzhu%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "request_started_at_utc": "2026-10-08T23:08:56.990064+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:58.267181+00:00",
+      "body_bytes": 119853,
+      "body_sha256": "deb3447acef8b895f25beb1eb13c3d8cfb2cef99cd55579565c33505f457c32e",
+      "body_file": "captures/4993-search-bing-latin.html",
+      "publisher": "Bing search",
+      "body_text_excerpt": "\"Li Tianzhu\" 바둑 - Search Skip to content Accessibility Feedback All Web Search Images Videos Maps More News Shopping Flights Tools About 498,000 results Open links in new tab Any time linkedin.com https://www.linkedin.com LinkedIn: Log In or Sign Up Discover relevant posts and expert insights — curated by topic and in one place. Connect with buyers who have first-hand … wikipedia.org https://en.m. wikipedia.org › wiki › Lithium Lithium - Wikipedia Lithium (from Ancient Greek: λίθος, líthos, 'stone') is a chemical element; it has symbol Li and atomic number 3. It is a soft, silvery … lichess.org https:// lichess .org lichess .org • Free Online Chess Play chess in a clean interface. No registration, no ads, no plugin required. Play chess with the computer, friends or random opponents. lichess.org https:// li chess.org › login Sign in • lichess.org Free online chess server. Play chess in a clean interface. No registration, no ads, no plugin required. Play chess with the computer, … wikipedia.org https://en.m. wikipedia.org › wiki › Li Li - Wikipedia This disambiguation page lists articles associated with the title Li. If an internal link incorrectly led you here, you may wish to change",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Li Tianzhu",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    }
+  ],
+  "additional_bounded_cross_checks": [
+    {
+      "publisher": "Korean Baduk Association",
+      "url": "https://www.baduk.or.kr/record/player_in.asp",
+      "method": "POST",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+      "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+      "body_bytes": 80097,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+      "source_role": "official_China_player_roster_bounded_literal_scan",
+      "literal_scan_terms": [
+        "李天竹",
+        "Li Tianzhu"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 李天竹; Li Tianzhu. Exact matching strings present: []."
+    },
+    {
+      "publisher": "TVBaduk",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "body_bytes": 119151,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+      "literal_scan_terms": [
+        "李天竹",
+        "Li Tianzhu"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 李天竹; Li Tianzhu. Exact matching strings present: []."
+    },
+    {
+      "publisher": "Daum Cafe community roster (2012)",
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "body_bytes": 153004,
+      "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "source_role": "community_reference_only_not_official",
+      "literal_scan_terms": [
+        "李天竹",
+        "Li Tianzhu"
+      ],
+      "exact_matches_present": [
+        "李天竹"
+      ],
+      "status": "found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 李天竹; Li Tianzhu. Exact matching strings present: [\"李天竹\"]."
+    }
+  ],
+  "conclusion": "Source-only research packet. No Korean name candidate, reviewer signature, eligibility claim, or target preimage validation.",
+  "review_status": "source assembly only; independent candidate review/signature not performed"
+}

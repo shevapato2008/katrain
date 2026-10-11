@@ -1,0 +1,15 @@
+{
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T21:11:09.242348+00:00",
+  "allow_apply": true,
+  "plan_sha256": "62d704619d1ffe74deaa537f6c9789eb6b66cc76ef03ab2c9e116377c90d6681",
+  "preview_sha256": {
+    "TEST": "63d32d86780f196aca43b419618187c19fe1f156c8fcf492fa3ebdc6ba2e590f",
+    "PROD": "823aa68c346bf75faf21b9a30aab1383f6a1afb6c2f8b4f63720cc9efebcf100"
+  },
+  "bundle_sha256": {
+    "TEST": "e13e4eb7a338450304141601cd7b3c89a500e59daf4e0fb4cf9fb55d633413d5",
+    "PROD": "ebc710e18a440e875a6e7d0d6fc3e86aaac647fc956f853440c942903622d1aa"
+  }
+}

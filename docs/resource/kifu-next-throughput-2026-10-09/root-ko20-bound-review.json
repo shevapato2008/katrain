@@ -1,0 +1,21 @@
+{
+  "reviewer_id": "/root",
+  "reviewed_at": "2026-10-08T18:55:16.533475+00:00",
+  "result": "approved_post589_actual_bindings_and_unchanged_source_review",
+  "environments": [
+    {
+      "environment": "TEST",
+      "count": 20,
+      "actual_binding_request_sha256": "0a376de097e82c2464fc5468f5077a25b2b06e1629e9f2f22648802d22c1e461",
+      "approved_candidates_sha256": "48d4b1c5f12fa19e27ee4426ebf38777cec8852a82d9ee6ea6e5795aa77fb1ad",
+      "bound_at": "2026-10-08T18:53:25.939652+00:00"
+    },
+    {
+      "environment": "PROD",
+      "count": 20,
+      "actual_binding_request_sha256": "b1df7cba849660324dfdcea47827eb5d8e32bc3077f0da2ed650c0240d116991",
+      "approved_candidates_sha256": "469c1cf306326fc094ca94b92b18cd85247192356a6dd0b7de5759b3a0eda2c9",
+      "bound_at": "2026-10-08T18:53:00.487737+00:00"
+    }
+  ]
+}

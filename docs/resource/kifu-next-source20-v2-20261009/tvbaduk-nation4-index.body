@@ -1,0 +1,749 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta name="title" content="바둑TV">
+	<meta name="description" content="바둑TV 공식 홈페이지, 국내외 프로 바둑 대국 생중계, 바둑 강좌, 다시보기 제공">
+	<meta name="keywords" content="한국기원, 바둑, 프로기사, 바둑뉴스, 기보, 대국, 랭킹">
+	<meta name="robots" content="index,follow">
+
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="바둑TV">
+	<meta property="og:url" content="https://www.tvbaduk.com/">
+	<meta property="og:title" content="바둑TV">
+	<meta property="og:description" content="바둑TV 공식 홈페이지, 국내외 프로 바둑 대국 생중계, 바둑 강좌, 다시보기 제공">
+	<meta property="og:image" content="https://www.tvbaduk.com/images/common/baduktv_card_og_2026.jpg"> 
+	<meta property="og:image:width" content="600">
+	<meta property="og:image:height" content="315">
+	<meta property="og:image:alt" content="바둑TV 공식 홈페이지">
+	<meta property="og:locale" content="ko_KR">
+
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title" content="바둑TV">
+	<meta name="twitter:description" content="바둑TV 공식 홈페이지, 국내외 프로 바둑 대국 생중계, 바둑 강좌, 다시보기 제공">
+	<meta name="twitter:image" content="https://www.tvbaduk.com/images/common/baduktv_card_og_2026.jpg">
+	
+
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>바둑TV</title>
+	<link href="/tvbaduk.ico" rel="shortcut icon">
+	<link href="/common/common.css" type="text/css" rel="stylesheet" />
+	<link href="/common/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/COMMON/common.js"></script>
+	<script>window.name = "baduktv"</script>
+</head>
+<body>
+
+<div id="wrap">
+	<div id="header_wrap">
+		<div id="header">
+        	   <!-- sns아이콘 추가 -->
+        	<div class="sns">
+             <table class="sns_icon"  style="width:105px; position:absolute;top:2px;left:-22px">
+                	<tr>
+                    <td><a href="https://www.facebook.com/tvbaduk/" target="_blank"><img src="/images/common/icon_facebook.png" alt="바둑TV페이스북"></a></td>
+                    <td><a href="https://www.youtube.com/@baduk_tv" target="_blank"><img src="/images/common/icon_youtube.png" alt="바둑TV유튜브"></a></td>
+                    <td><a href="http://tvcast.naver.com/tvbaduk" target="_blank"><img src="/images/common/icon_navercast.png" alt="바둑TV네이버캐스트"></a></td>
+                    <td><a href="http://post.naver.com/my.nhn?memberNo=29950897" target="_blank"><img src="/images/common/icon_naverpost.png" alt="바둑TV네이버포스트"></a></td>
+                    <td><a href="http://blog.naver.com/tvbaduk" target="_blank"><img src="/images/common/icon_blog.png" alt="바둑TV네이버블로그"></a></td>
+                    <td><a href="http://plus.kakao.com/home/@바둑tv" target="_blank"><img src="/images/common/icon_kakao.png" alt="바둑TV카카오톡 옐로우아이디"></a></td>
+                    <td><a href="https://www.instagram.com/tvbaduk/" target="_blank"><img src="/images/common/icon_instargram.png" alt="바둑TV인스타그램"></a></td>
+                    </tr>
+                    </table>
+                    </div>              
+			<div class="header_menu">
+				
+					<span class="txt_time">2026.10.09 05:21</span>
+					<img src="/images/common/h_vl.gif" /> <a href="/member/join_step1.asp"><span class="txt_name">회원가입</span></a>
+					<a href="/member/login.asp"><img src="/images/common/h_login.gif" alt="로그인" /></a>
+				
+				<span><a href="/tv/charge_info.asp">이용권구매</a></span>
+				<img src="/images/common/h_vl.gif" />
+               	<span><a href="/tv/tv_schedule.asp">편성표</a></span>
+                
+			</div>
+		</div>
+	</div>
+	
+	<div id="container">
+
+		<div class="logoa">
+			<div class="hg_logo"> 
+				<a href="https://www.baduk.or.kr/" target="_blank"><img src="/images/common/hg_logo.png" alt="한국기원" /></a>
+			</div>
+			<a href="https://www.tvbaduk.com"><img src="/images/common/bdtv_logo.jpg" alt="바둑TV" border="0" /></a>
+			<a href="/tv/onair.asp"><img src="/images/common/onair.png" alt="on air" border="0" /></a>
+			<!--
+            <div style="position:absolute;top:6px;left:376px">
+                <a href="https://www.tvbaduk.com/" target="_self"><img src="/images/common/bdtv_logo_226.png" alt="생각을 담다 바둑tv" /></a>
+            </div>
+			-->
+		</div>
+       
+
+	<!--좌측배너-->
+		
+
+		<div id="menu">
+			<div class="more_wrap"><h3 class="hidden">주요 서비스</h3></div>
+			<ul class="gnb_menu">
+				<li><a href="/tv/tvPro_list.asp"               class="a">프로그램</a></li>
+				<li><a href="/news/news2_list.asp"             class="b">바둑뉴스</a></li>
+				<li><a href="/info/gisa_info.asp"              class="c_s">바둑정보</a></li>
+				<li><a href="/tv/event_list.asp"               class="d">이벤트</a></li>
+				<li><a href="/board/board_list.asp?bd_multi=1" class="e">커뮤니티</a></li>
+			</ul>
+		</div>
+		
+		<div id="box3col">
+			<div id="snb_menu">
+				<ul class="mt50">
+					
+						<li class="lnb_s"><a href="/info/gisa_info.asp">기사정보</a></li>
+						<li ><a href="/info/schedule.asp">대국일정</a></li>
+						<li ><a href="/record/gisa_rank.asp">기사랭킹</a></li>
+						<li ><a href="/record/years_rank.asp">연도별순위</a></li>
+						<li ><a href="/record/total_rank.asp">통산순위</a></li>
+						<li ><a href="/record/year_rank.asp">단일연도순</a></li>
+						<li ><a href="/record/diary_list.asp">대국일지</a></li>
+
+					
+					
+				</ul>
+			</div>
+
+<div id="content">
+	<div class="cnt_topa" style="background:url(/images/common/topimg3.gif)">
+		<div class="cnt_toptt"><strong>바둑정보</strong></div>
+		<div class="cnt_toppath"><img src="/images/common/home.gif" alt="home" /> Home &gt; 바둑정보 &gt; <strong>기사정보</strong></div>            
+	</div>
+
+	<!-- 내용 -->
+	<div id="cnt_main" class="mt12">
+		
+		<!-- 탭메뉴 및 검색 -->
+		
+
+<form name="s1" action="gisa_info.asp" method="post">
+<input type="hidden" name="S_nation" value="4">
+<input type="hidden" name="S_ob_forc" value="">
+<input type="hidden" name="S_sort_mode" value="A">
+<input type="hidden" name="prpl_code">
+
+<table width="600" border="0" cellspacing="0" cellpadding="0" class="tab_basic">
+<tr>
+	<td  onclick="location='gisa_info.asp?S_nation=1'" class="ltline" >한국</a></td>
+	<td  onclick="location='gisa_info.asp?S_nation=2'">중국</a></td>
+	<td  onclick="location='gisa_info.asp?S_nation=3'">일본</a></td>
+	<td class="tab_sel" onclick="location='gisa_info.asp?S_nation=4'">대만</a></td>
+	<td  onclick="location='gisa_info.asp?S_nation=5'">기타국가</a></td>
+	<td  onclick="location='gisa_info.asp?S_nation=6'">북미유럽</a></td>
+	<td  onclick="location='gisa_info.asp?S_nation=8'" class="rtline" >은퇴기사</a></td>
+</tr>
+</table>
+
+<div class="gisainfo_tt mt18">
+	<ul>
+		<li class="pr9 "><a href="javascript:search('','R')">서열순</a></li>
+		<li class="pr9">|</li>            
+		<li class="pr9 gisainfo_tt_sel"><a href="javascript:search('','A')">가나다순</a></li>
+		<li class="pr9">|</li>            
+		<li class="pr9 gisainfo_tt_sel"><a href="javascript:search('', 'A')">전체보기</a></li> 
+		<li class="pr9">|</li>            
+		<li class="pr5 "><a href="javascript:search('9', 'A')">9段</a></li>
+		<li class="pr5">|</li>            
+		<li class="pr5 "><a href="javascript:search('8', 'A')">8段</a></li>
+		<li class="pr5">|</li>            
+		<li class="pr5 "><a href="javascript:search('7', 'A')">7段</a></li>
+		<li class="pr5">|</li>            
+		<li class="pr5 "><a href="javascript:search('6', 'A')">6段</a></li>
+		<li class="pr5">|</li>            
+		<li class="pr5 "><a href="javascript:search('5', 'A')">5段</a></li>
+		<li class="pr5">|</li>            
+		<li class="pr5 "><a href="javascript:search('4', 'A')">4段</a></li>
+		<li class="pr5">|</li>            
+		<li class="pr5 "><a href="javascript:search('3', 'A')">3段</a></li>
+		<li class="pr5">|</li>            
+		<li class="pr5 "><a href="javascript:search('2', 'A')">2段</a></li>
+		<li class="pr5">|</li>            
+		<li class="pr5 "><a href="javascript:search('1', 'A')">初단</a></li>
+	</ul>
+</div>
+<div align="right" class="pb10">  
+	<table border="0" cellspacing="0" cellpadding="0">
+	<tr>
+		<td><input name="S_prpl_name" value="" type="text" style="border:1px solid #ddd;width:60px;height:18px;padding:1px 0;ime-mode:active" class="ml3" /></td>
+		<td><a href="javascript:search('','A')" class="ml3"><img src="/images/bt/bt_search.gif" alt="검색" align="absmiddle" /></a></td>
+	</tr>
+	</table>
+</div>
+	
+</form>
+
+<script>
+	//검색
+	function search(str1, str2){
+		document.s1.S_ob_forc.value = str1;
+		document.s1.S_sort_mode.value = str2;
+		document.s1.action = "gisa_info.asp";
+		document.s1.submit();
+	}
+	
+	//상세보기
+	function view(prpl_code){
+		document.s1.prpl_code.value = prpl_code;
+		document.s1.action = "gisa_view.asp";
+		document.s1.submit();
+	}
+</script>
+
+		<div class="tbstyle02">
+		
+				<div class="facetop mt12">
+					<span class="l">9段</span>
+					<span class="r" id="cnt9" style="font-weight:bold"></span>
+				</div>
+				<table width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr align="center">
+			
+			
+			<td width="16.6%"><a href="javascript:view('10000852')" style="color:">라이쥔푸</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000410')" style="color:">린리샹</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000052')" style="color:">린성셴</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000248')" style="color:">린수양</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000534')" style="color:">린쥔옌</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('10000283')" style="color:">린즈한</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000205')" style="color:">샤오정하오</a></td>
+
+			</tr><tr align=center>
+			
+			<td width="16.6%"><a href="javascript:view('20001051')" style="color:">쉬하오훙</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('10000531')" style="color:">왕위안쥔</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000010')" style="color:">저우쥔쉰</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000150')" style="color:">천스위안</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000798')" style="color:">천치루이</a></td>
+
+			<td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><script>document.all.cnt9.innerHTML = '12명'</script>
+				<div class="facetop mt12">
+					<span class="l">8段</span>
+					<span class="r" id="cnt8" style="font-weight:bold"></span>
+				</div>
+				<table width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr align="center">
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000868')" style="color:">린스쉰</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000177')" style="color:">린즈위안</a></td>
+
+			<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><script>document.all.cnt8.innerHTML = '2명'</script>
+				<div class="facetop mt12">
+					<span class="l">7段</span>
+					<span class="r" id="cnt7" style="font-weight:bold"></span>
+				</div>
+				<table width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr align="center">
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000412')" style="color:">다이자선</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001255')" style="color:">루이취안</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000863')" style="color:">리웨이</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001833')" style="color:">쉬징언</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001054')" style="color:">젠징팅</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000086')" style="color:">천창칭</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('10000591')" style="color:#779df3">헤이자자</a></td>
+
+			</tr><tr align=center></tr></tbody></table><script>document.all.cnt7.innerHTML = '7명'</script>
+				<div class="facetop mt12">
+					<span class="l">6段</span>
+					<span class="r" id="cnt6" style="font-weight:bold"></span>
+				</div>
+				<table width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr align="center">
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000373')" style="color:">류야오원</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000465')" style="color:">린슈핑</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000227')" style="color:">샤다밍</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000559')" style="color:">양보웨이</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001644')" style="color:#779df3">양쯔쉔</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000236')" style="color:">저우핑창</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000159')" style="color:">황샹런</a></td>
+
+			</tr><tr align=center></tr></tbody></table><script>document.all.cnt6.innerHTML = '7명'</script>
+				<div class="facetop mt12">
+					<span class="l">5段</span>
+					<span class="r" id="cnt5" style="font-weight:bold"></span>
+				</div>
+				<table width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr align="center">
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001752')" style="color:">뉴스터</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002146')" style="color:#779df3">루위화</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001676')" style="color:">린옌청</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000407')" style="color:">장저하오</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('10000405')" style="color:#779df3">장카이신</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000249')" style="color:">저우인난</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000129')" style="color:">천궈싱</a></td>
+
+			</tr><tr align=center>
+			
+			<td width="16.6%"><a href="javascript:view('20000078')" style="color:">천융안</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000032')" style="color:">펑징화</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001052')" style="color:">황스위안</a></td>
+
+			<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><script>document.all.cnt5.innerHTML = '10명'</script>
+				<div class="facetop mt12">
+					<span class="l">4段</span>
+					<span class="r" id="cnt4" style="font-weight:bold"></span>
+				</div>
+				<table width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr align="center">
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000482')" style="color:">리이슈</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000371')" style="color:">린위샹</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001750')" style="color:#779df3">바이신후이</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000548')" style="color:#779df3">쑤성팡</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000446')" style="color:">양멍윈</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000131')" style="color:">양즈더</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('10000847')" style="color:#779df3">위리쥔</a></td>
+
+			</tr><tr align=center>
+			
+			<td width="16.6%"><a href="javascript:view('20000290')" style="color:">저우커핑</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000061')" style="color:">저우쿠이훙</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001677')" style="color:">천웨이팅</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000344')" style="color:">천펑</a></td>
+
+			<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><script>document.all.cnt4.innerHTML = '11명'</script>
+				<div class="facetop mt12">
+					<span class="l">3段</span>
+					<span class="r" id="cnt3" style="font-weight:bold"></span>
+				</div>
+				<table width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr align="center">
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000489')" style="color:">딩사오제</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002213')" style="color:#779df3">리자신</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000765')" style="color:">린제한</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002619')" style="color:">스징야오</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000479')" style="color:">왕샹제</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002436')" style="color:">우옌천</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('10000154')" style="color:#779df3">장정핑</a></td>
+
+			</tr><tr align=center>
+			
+			<td width="16.6%"><a href="javascript:view('20000319')" style="color:">장화이이</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001012')" style="color:">차이텅웨이</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001753')" style="color:">천샤오촨</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002434')" style="color:">황쉬푸</a></td>
+
+			<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><script>document.all.cnt3.innerHTML = '11명'</script>
+				<div class="facetop mt12">
+					<span class="l">2段</span>
+					<span class="r" id="cnt2" style="font-weight:bold"></span>
+				</div>
+				<table width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr align="center">
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001825')" style="color:">뉴스스</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000297')" style="color:">라오루이융</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000470')" style="color:">랴오관훙</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001071')" style="color:">린스민</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002120')" style="color:#779df3">린위딩</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('10000529')" style="color:#779df3">샤오아이린</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002620')" style="color:">쑨리옌</a></td>
+
+			</tr><tr align=center>
+			
+			<td width="16.6%"><a href="javascript:view('10000418')" style="color:">웨이하오팅</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002435')" style="color:">위하오위</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000409')" style="color:">자오페이저</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000507')" style="color:">장위안룽</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002504')" style="color:">정위하오</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001053')" style="color:">좡청준</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002497')" style="color:">천잉자</a></td>
+
+			</tr><tr align=center>
+			
+			<td width="16.6%"><a href="javascript:view('20000922')" style="color:">천추룽</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001612')" style="color:">천칭위</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002437')" style="color:#779df3">천핀화</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001611')" style="color:">펑준더</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000764')" style="color:">황옌청</a></td>
+
+			<td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><script>document.all.cnt2.innerHTML = '19명'</script>
+				<div class="facetop mt12">
+					<span class="l">1段</span>
+					<span class="r" id="cnt1" style="font-weight:bold"></span>
+				</div>
+				<table width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr align="center">
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000688')" style="color:">거우위방</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000358')" style="color:">당시윈</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002262')" style="color:#779df3">리자치(여)</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000927')" style="color:">리쿠이한</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001013')" style="color:">린신웨이</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000690')" style="color:">린팅이</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001766')" style="color:">림백우</a></td>
+
+			</tr><tr align=center>
+			
+			<td width="16.6%"><a href="javascript:view('20001056')" style="color:">사동림</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000372')" style="color:">쉬창정</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002519')" style="color:">왕둔카이</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000326')" style="color:">왕윈중</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001662')" style="color:">왕즈홍</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002562')" style="color:">우쥔청</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001238')" style="color:">위빙황</a></td>
+
+			</tr><tr align=center>
+			
+			<td width="16.6%"><a href="javascript:view('20000490')" style="color:#779df3">이정빈</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000533')" style="color:">이진웅</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001794')" style="color:">장자환</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('10000532')" style="color:">젠리천</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001252')" style="color:">젠지홍</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001649')" style="color:">증계덕</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000503')" style="color:">천관웨이</a></td>
+
+			</tr><tr align=center>
+			
+			<td width="16.6%"><a href="javascript:view('20001746')" style="color:">천쇼우렌</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('10000369')" style="color:">천이다</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000315')" style="color:">천이샹</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20000283')" style="color:">판양보</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001003')" style="color:">황도륭</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20002592')" style="color:">황바이런</a></td>
+
+			
+			
+			<td width="16.6%"><a href="javascript:view('20001792')" style="color:">황웨이</a></td>
+
+			</tr><tr align=center>
+			
+			<td width="16.6%"><a href="javascript:view('20000357')" style="color:">황청이</a></td>
+
+			<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><script>document.all.cnt1.innerHTML = '29명'</script>
+		</div>
+
+	</div>
+	<!-- 내용 끝 -->
+</div>
+			
+
+
+<div id="aside">
+
+<div class='lsa'>	<div class='ls_tt'>		<a href='/tv/relay.asp'><img src='/images/main/ls_tt.gif' alt='생중계일정' border='0' /></a>	</div><div class='ls_list_btm pb5'>	<a href='/tv/relay.asp'><strong>[2026-10-09&nbsp;&nbsp;13:30]</strong><br>제4회 취저우 란커배 세계바둑오픈 본선 16강<br>신진서 vs 양카이원</a></div><div class='ls_list_btm pb5'>	<a href='/tv/relay.asp'><strong>[2026-10-09&nbsp;&nbsp;19:00]</strong><br>2026 NH농협은행 한국여자바둑리그 포스트시즌 플레이오프 2차전<br>삼척 vs 철원</a></div></div><div class='aside_lista'>	<div class='aside_listtt'>		<div class='aside_listtt_txt'>			<img src='/images/common/asidett_gisarank.gif' alt='기사랭킹' />		</div>		<div class='aside_listtt_bt'>			<a href='/record/gisa_rank.asp'><img src='/images/bt/bt_aside_more.gif' alt='더보기' /></a>		</div>	</div>	<table width='100%' cellspacing='0' cellpadding='0' class='aside_gra_tb'>	<caption>기사랭킹</caption>	<thead>	<tr>		<th width='60'>순위</th>		<th>이름</th>		<th>랭킹점수</th>		<th width='70'>점수변동</th>	</tr>	</thead>	<tbody><tr>	<td width=50><img src='/images/common/m_no1.gif' /></td>	<td width=50><a href=javascript:gisa_popup2('신진서')>신진서</a></td>	<td>10,426</td>	<td><img src='/images/common/nocng.gif' width='8' height='2' /></td></tr><tr>	<td width=50><img src='/images/common/m_no2.gif' /></td>	<td width=50><a href=javascript:gisa_popup2('박정환')>박정환</a></td>	<td>9,958</td>	<td><img src='/images/common/nocng.gif' width='8' height='2' /></td></tr><tr>	<td width=50><img src='/images/common/m_no3.gif' /></td>	<td width=50><a href=javascript:gisa_popup2('신민준')>신민준</a></td>	<td>9,951</td>	<td><img src='/images/common/nocng.gif' width='8' height='2' /></td></tr><tr>	<td width=50><img src='/images/common/m_no4.gif' /></td>	<td width=50><a href=javascript:gisa_popup2('변상일')>변상일</a></td>	<td>9,863</td>	<td><img src='/images/common/nocng.gif' width='8' height='2' /></td></tr><tr>	<td width=50><img src='/images/common/m_no5.gif' /></td>	<td width=50><a href=javascript:gisa_popup2('강동윤')>강동윤</a></td>	<td>9,746</td>	<td><img src='/images/common/nocng.gif' width='8' height='2' /></td></tr><tr>	<td width=50><img src='/images/common/m_no6.gif' /></td>	<td width=50><a href=javascript:gisa_popup2('김명훈')>김명훈</a></td>	<td>9,716</td>	<td><span class='sort2'><img src='/images/common/arrow_up.gif' />1</span></td></tr><tr>	<td width=50><img src='/images/common/m_no7.gif' /></td>	<td width=50><a href=javascript:gisa_popup2('이지현(남)')>이지현(남)</a></td>	<td>9,710</td>	<td><span class='sort2'><img src='/images/common/arrow_up.gif' />2</span></td></tr><tr>	<td width=50><img src='/images/common/m_no8.gif' /></td>	<td width=50><a href=javascript:gisa_popup2('김지석')>김지석</a></td>	<td>9,709</td>	<td><img src='/images/common/nocng.gif' width='8' height='2' /></td></tr><tr>	<td width=50><img src='/images/common/m_no9.gif' /></td>	<td width=50><a href=javascript:gisa_popup2('안성준')>안성준</a></td>	<td>9,698</td>	<td><span class='sort1'><img src='/images/common/arrow_down.gif' />3</span></td></tr><tr>	<td width=50><img src='/images/common/m_no10.gif' /></td>	<td width=50><a href=javascript:gisa_popup2('한승주')>한승주</a></td>	<td>9,661</td>	<td><img src='/images/common/nocng.gif' width='8' height='2' /></td></tr>	</tbody>	</table></div><div class='aside_bna'>	<div class='aside_bn'>		<ul><li><a href='https://www.tvbaduk.com/tv/tvPro_vod_list.asp?tv_div=1&tv_num=683' target=''><img src='/FileUpDown/banner/프로 vs 아마 자비는 없다.jpg' width='270' /></a></li>		</ul>	</div></div><div class='aside_bna'>	<div class='aside_bn'>		<ul><li><a href='https://www.tvbaduk.com/tv/tvPro_vod_list.asp?tv_div=1&tv_num=686' target=''><img src='/FileUpDown/banner/2026 한국여자바둑리그.jpg' width='270' /></a></li>		</ul>	</div></div><div class='aside_bna'>	<div class='aside_bn'>		<ul><li><a href='https://www.tvbaduk.com/news/news2_list.asp' target=''><img src='/FileUpDown/banner/추천뉴스우측배너.gif' width='270' /></a></li>		</ul>	</div></div>
+
+</div>
+
+
+
+		</div>
+	</div>
+	<div id="footer">
+	<!--	<img src="/images/common/footer.gif"  alt="copyright (c) 한국기원 All rights reserved" /> -->
+		<div style="color:#b4b2b3;padding-top:6px"><a href="/tv/guide.asp">시청채널</a> <span class="div_line">|</span> <a href="/etc/quetone.asp">큐톤표</a> <span class="div_line">|</span> <a href="/member/personal.asp?mode=1">개인정보취급방침</a> <span class="div_line">|</span> <a href="/member/personal.asp?mode=2">이용약관</a> <span class="div_line">|</span> <a href="mailto:tvbaduk@baduk.or.kr">광고 및 기타문의</a></div> <br/><br/>
+        <div style="color:#b4b2b3;padding-top:6px">(재)한국기원 바둑TV 04707 서울시 성동구 마장로 210 재단법인한국기원 5F<span class="div_line">|</span> 대표 : 정태순 <span class="div_line">|</span> 사업자등록번호 : 206-82-03412<br/>통신판매업신고번호 : 성동-1653 <span class="div_line">|</span> 연락처 : 02-3407-3858 <span class="div_line">|</span> 문의 : <a href="mailto:tvbaduk@baduk.or.kr">tvbaduk@baduk.or.kr</a></div><br/>
+        <div style="color:#b4b2b3;padding-top:6px">Copyright ⓒ 재단법인 한국기원 All Rights Reserved.</div>
+
+		
+        
+	</div>
+</div>
+
+<script>
+	//구글 애널리틱스 추적 코드
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-80983915-1', 'auto');
+	ga('send', 'pageview');
+</script>
+
+</body>
+</html>

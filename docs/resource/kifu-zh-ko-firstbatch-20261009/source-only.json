@@ -1,0 +1,322 @@
+{
+  "artifact_kind": "zh_ko_firstbatch_source_only",
+  "created_at_utc": "2026-10-08T21:50:15Z",
+  "status": "source research only; no generated candidate approval, signature, batch, SQL, cloud, Git or deployment",
+  "scope": "Modern Chinese Go players with qualified CN+EN and missing KO in the pre-592 global snapshot; all 592-completed IDs and approved upcoming16 IDs excluded. No candidate approvals or global negative closure.",
+  "source_basis": "normative_zh_ko_v1",
+  "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+  "nikl_capture": {
+    "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+    "body_file": "../kifu-nikl-cn-ko-research-20261009/captures/foreign-regulation-full.html",
+    "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+    "locator": "Chinese foreign transcription rule, modern personal names; Table 5 initials/finals; tones not distinguished; specific vowel rule. Actual syllable mapping entries listed separately in rule-findings.json."
+  },
+  "finite_syllables": {
+    "hai": {
+      "hangul": "하이",
+      "basis": "Table5: h=ㅎ + ai=아이; composed"
+    },
+    "hong": {
+      "hangul": "훙",
+      "basis": "Table5: h=ㅎ + ong represented in weng(ong) row; composed"
+    },
+    "jian": {
+      "hangul": "젠",
+      "basis": "Table5: j=ㅈ + yan(ian)=옌; composed"
+    },
+    "li": {
+      "hangul": "리",
+      "basis": "Table5: l=ㄹ + yi(i)=이; composed"
+    },
+    "qing": {
+      "hangul": "칭",
+      "basis": "Table5: q=ㅊ + ying(ing)=잉; composed"
+    },
+    "wang": {
+      "hangul": "왕",
+      "basis": "Table5 explicit wang(uang)=왕"
+    },
+    "wei": {
+      "hangul": "웨이",
+      "basis": "Table5 wei(ui)=웨이"
+    },
+    "weng": {
+      "hangul": "웡",
+      "basis": "Table5 explicit weng(ong)=웡(웅)"
+    },
+    "xu": {
+      "hangul": "쉬",
+      "basis": "Table5 x=ㅅ + yu(u)=위; composed"
+    },
+    "ying": {
+      "hangul": "잉",
+      "basis": "Table5 ying(ing)=잉"
+    },
+    "zi": {
+      "hangul": "쯔",
+      "basis": "Table5 z[zi]=ㅉ[쯔]"
+    },
+    "yu": {
+      "hangul": "위",
+      "basis": "Table5 yu(u)=위"
+    }
+  },
+  "records": [
+    {
+      "id": 5890,
+      "han": "许俭颖",
+      "latin": "Xu Jianying",
+      "split": [
+        [
+          "xu"
+        ],
+        [
+          "jian",
+          "ying"
+        ]
+      ],
+      "ugo": "500",
+      "status": "zh_ko_candidate_source_ready_pending_contrary_checks",
+      "ko_render": "쉬젠잉",
+      "note": "U-Go same row publishes Latin and Han name, CHN citizenship; 2025 national individual championship source confirms contemporary active China pro identity. No matching name in saved Daum Korean-player list. This is not a negative Korean-usage closure.",
+      "owner": {
+        "kind": "player",
+        "id": 5890
+      },
+      "current_catalog_anchor_snapshot": {
+        "cn": {
+          "display_name": "许俭颖",
+          "name_sha256": "e11eec75d5ed8171a4e93cffbb9345b07f8560f9b253a3eb1d1c395d743ec721",
+          "evidence_sha256": "cd089afe96ba2df88f17e89bc3c21170117bbab1261e570777b17c5d72210be6",
+          "decision_kind": "conventional"
+        },
+        "en": {
+          "display_name": "Xu Jianying",
+          "name_sha256": "1774336e332fe973a41a7593ea4c3e1edc7f1cb23a33cdb11a662c98c816e8ba",
+          "evidence_sha256": "93212cd04c771ba5d00ef81d7ba0c5c3c75101daed38466abc6b38e84b4c33ba",
+          "decision_kind": "conventional"
+        }
+      },
+      "ko_target_snapshot": "missing; PROD post-591 pre-592 global snapshot; owner excluded from 592 done list and ready16 list",
+      "sources": [
+        {
+          "capture_id": "ugo-5890-search",
+          "role": "original Go database same-person Han+Latin row; Latin matches unambiguous Hanyu Pinyin",
+          "locator": "search results table row linking /500/; row includes Xu Jianying and 许俭颖"
+        },
+        {
+          "capture_id": "ugo-5890-profile",
+          "role": "same-owner Go database citizenship and canonical player detail",
+          "locator": "detail /500/; name, citizenship CHN and U-Go ID 500"
+        }
+      ]
+    },
+    {
+      "id": 5101,
+      "han": "李青海",
+      "latin": "Li Qinghai",
+      "split": [
+        [
+          "li"
+        ],
+        [
+          "qing",
+          "hai"
+        ]
+      ],
+      "ugo": "1816",
+      "status": "hold_diaspora_language_basis",
+      "ko_render": "리칭하이",
+      "note": "U-Go row publishes Han and Latin form and CHN citizenship; official Chinese association list includes him. Separate sources say he moved to Japan / lived in Japan, so current language and actual pronunciation need explicit resolution before automatic Mandarin generation. No matching name in saved Daum Korean-player list.",
+      "owner": {
+        "kind": "player",
+        "id": 5101
+      },
+      "current_catalog_anchor_snapshot": {
+        "cn": {
+          "display_name": "李青海",
+          "name_sha256": "b5019361daa732656d2dd3fed16cc6facecf981f822c65128d21db259a644ef0",
+          "evidence_sha256": "413b5526895e55deb321e644c9d57e7d03459b848c2f32436c9cf97ae534e780",
+          "decision_kind": "conventional"
+        },
+        "en": {
+          "display_name": "Li Qinghai",
+          "name_sha256": "4beb2333d9bfe74fe51c414497ae82edfe49ee4abd0f5b20a13e8ad716e4b6ad",
+          "evidence_sha256": "08ade507e4a3c2fe5bd68ff19c9da9fbc868a0c620c36876765441edacb1c63b",
+          "decision_kind": "conventional"
+        }
+      },
+      "ko_target_snapshot": "missing; PROD post-591 pre-592 global snapshot; owner excluded from 592 done list and ready16 list",
+      "sources": [
+        {
+          "capture_id": "ugo-5101-search",
+          "role": "original Go database same-person Han+Latin row; Latin matches unambiguous Hanyu Pinyin",
+          "locator": "search results table row linking /1816/; row includes Li Qinghai and 李青海"
+        },
+        {
+          "capture_id": "ugo-5101-profile",
+          "role": "same-owner Go database citizenship and canonical player detail",
+          "locator": "detail /1816/; name, citizenship CHN and U-Go ID 1816"
+        }
+      ]
+    },
+    {
+      "id": 5498,
+      "han": "王宏伟",
+      "latin": "Wang Hongwei",
+      "split": [
+        [
+          "wang"
+        ],
+        [
+          "hong",
+          "wei"
+        ]
+      ],
+      "ugo": "1923",
+      "status": "known_community_ko_usage_requires_contrary_review",
+      "ko_render": "왕훙웨이",
+      "note": "U-Go same row publishes Han and Latin name, CHN citizenship. Saved Daum community roster has exact Hangul/Han pair at line 893. Record the known reference usage. It is not a qualifying official name source by itself; any later generated review must preserve this positive hit and resolve it explicitly.",
+      "owner": {
+        "kind": "player",
+        "id": 5498
+      },
+      "current_catalog_anchor_snapshot": {
+        "cn": {
+          "display_name": "王宏伟",
+          "name_sha256": "ec298331e038bd2ec38a546fac1cfb77196faf26b10e9380b5b962c1441014cb",
+          "evidence_sha256": "73bcca61670642c62d22dcf1557002359564e602aeb1ad6caf0767409c061dd1",
+          "decision_kind": "conventional"
+        },
+        "en": {
+          "display_name": "Wang Hongwei",
+          "name_sha256": "216917247199c43509e27a4dec337fea25f822f9dbc65e3f50e65f0a7db880fc",
+          "evidence_sha256": "e52c4c95c63408242d5b210573a428aed91ea5b512c48afd633ca7b96068c2ca",
+          "decision_kind": "conventional"
+        }
+      },
+      "ko_target_snapshot": "missing; PROD post-591 pre-592 global snapshot; owner excluded from 592 done list and ready16 list",
+      "sources": [
+        {
+          "capture_id": "ugo-5498-search",
+          "role": "original Go database same-person Han+Latin row; Latin matches unambiguous Hanyu Pinyin",
+          "locator": "search results table row linking /1923/; row includes Wang Hongwei and 王宏伟"
+        },
+        {
+          "capture_id": "ugo-5498-profile",
+          "role": "same-owner Go database citizenship and canonical player detail",
+          "locator": "detail /1923/; name, citizenship CHN and U-Go ID 1923"
+        },
+        {
+          "capture_id": "saved-daum-korean-player-list",
+          "role": "community conventional-usage check; not official association",
+          "locator": "raw response line 893; exact Hangul/Han pair",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+          "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00"
+        }
+      ]
+    },
+    {
+      "id": 5739,
+      "han": "翁子瑜",
+      "latin": "Weng Ziyu",
+      "split": [
+        [
+          "weng"
+        ],
+        [
+          "zi",
+          "yu"
+        ]
+      ],
+      "ugo": "1942",
+      "status": "known_community_ko_usage_requires_contrary_review",
+      "ko_render": "웡쯔위",
+      "note": "U-Go same row publishes Han and Latin name, CHN citizenship. Saved Daum community roster has exact Hangul/Han pair at line 925. Record the known reference usage. It is not a qualifying official name source by itself; any later generated review must preserve this positive hit and resolve it explicitly.",
+      "owner": {
+        "kind": "player",
+        "id": 5739
+      },
+      "current_catalog_anchor_snapshot": {
+        "cn": {
+          "display_name": "翁子瑜",
+          "name_sha256": "2c85aae26d6635b3c2d4fb058516778098d7e793216357857433c85203d3ab60",
+          "evidence_sha256": "80652a031842d724cdb795f769eae580965fbe9b6a46c21957929608015f5bf3",
+          "decision_kind": "conventional"
+        },
+        "en": {
+          "display_name": "Weng Ziyu",
+          "name_sha256": "50dd54e7bc581afc64d20ceb472b1d76c7b53e4a052f90638c8ad0688e66db54",
+          "evidence_sha256": "2620c3f84996c6411856b1771a2411698c46666fdd95e984110ded81c035bab8",
+          "decision_kind": "conventional"
+        }
+      },
+      "ko_target_snapshot": "missing; PROD post-591 pre-592 global snapshot; owner excluded from 592 done list and ready16 list",
+      "sources": [
+        {
+          "capture_id": "ugo-5739-search",
+          "role": "original Go database same-person Han+Latin row; Latin matches unambiguous Hanyu Pinyin",
+          "locator": "search results table row linking /1942/; row includes Weng Ziyu and 翁子瑜"
+        },
+        {
+          "capture_id": "ugo-5739-profile",
+          "role": "same-owner Go database citizenship and canonical player detail",
+          "locator": "detail /1942/; name, citizenship CHN and U-Go ID 1942"
+        },
+        {
+          "capture_id": "saved-daum-korean-player-list",
+          "role": "community conventional-usage check; not official association",
+          "locator": "raw response line 925; exact Hangul/Han pair",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+          "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00"
+        }
+      ]
+    }
+  ],
+  "exclusions": {
+    "batch592_done_ids": [
+      3771,
+      6642,
+      5094,
+      368,
+      3820,
+      4634,
+      5133,
+      5473,
+      5675,
+      5790,
+      6296,
+      6378,
+      6547,
+      5351,
+      4340,
+      4041,
+      3844,
+      696,
+      6635,
+      4568
+    ],
+    "ready16_ids": [
+      6366,
+      5349,
+      5952,
+      6322,
+      6550,
+      4593,
+      6571,
+      5915,
+      6367,
+      6278,
+      5912,
+      5350,
+      4031,
+      5034,
+      5296,
+      5036
+    ],
+    "rule": "No excluded owners are in records."
+  },
+  "remaining_work": "Fresh post-592 exact owner/current target bindings; targeted original-Han+verified-Pinyin Go-context and proposed-Hangul Go-context searches; preserve unavailable status distinctly from no-result; review official-name-source status; preserve the Daum positive usage hits and decide whether those low-authority community readings qualify for any separate conventional path. 5101 remains held pending actual current-language resolution."
+}

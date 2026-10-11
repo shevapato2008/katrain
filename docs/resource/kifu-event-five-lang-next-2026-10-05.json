@@ -1,0 +1,788 @@
+{
+  "schema_version": 1,
+  "title": "Five-language names for top 20 linked tournament types",
+  "created_date": "2026-10-05",
+  "source_snapshot": {
+    "environment": "PROD",
+    "read_only": true,
+    "capture_file": "kifu-event-display-weighted-prod-capture-2026-10-04.json",
+    "captured_at": "2026-10-04 15:58:00.134597+00",
+    "database_writes": 0,
+    "catalog_record_source": "events array in the read-only capture"
+  },
+  "ranking_method": "Sum games in raw_groups by non-null event_id; sort descending game count, then event_id. These counts are linked album/game weights, not edition or raw-label counts.",
+  "language_order": [
+    "zh_cn",
+    "zh_tw",
+    "ja",
+    "ko",
+    "en"
+  ],
+  "events": [
+    {
+      "event_id": 41,
+      "canonical_chinese": "中国围棋甲级联赛",
+      "weighted_games_prod": 12828,
+      "names": {
+        "zh_cn": {
+          "name": "中国围棋甲级联赛",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "中國圍棋甲級聯賽",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "中国囲碁甲級リーグ",
+          "source_url": "https://en.wikipedia.org/wiki/Chinese_Weiqi_League",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "중국 바둑 갑조리그",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Chinese Weiqi A League",
+          "source_url": null,
+          "method": "descriptive_english_fallback",
+          "fallback_reason": "No English interlanguage article or official English event title was verified for this exact type in this pass; the label is a descriptive rendering of the Chinese type name."
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 22,
+      "canonical_chinese": "大手合",
+      "weighted_games_prod": 8173,
+      "names": {
+        "zh_cn": {
+          "name": "大手合",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "大手合",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "大手合",
+          "source_url": "https://ja.wikipedia.org/wiki/%E5%A4%A7%E6%89%8B%E5%90%88",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "오테아이",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Oteai",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 50,
+      "canonical_chinese": "韩国围棋联赛",
+      "weighted_games_prod": 6180,
+      "names": {
+        "zh_cn": {
+          "name": "韩国围棋联赛",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "韓國圍棋聯賽",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "韓国囲碁リーグ",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "ko": {
+          "name": "바둑리그",
+          "source_url": "https://kbleague.baduk.or.kr/",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "en": {
+          "name": "Korean Baduk League",
+          "source_url": "https://en.wikipedia.org/wiki/Korean_Baduk_League",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 24,
+      "canonical_chinese": "日本本因坊战",
+      "weighted_games_prod": 5638,
+      "names": {
+        "zh_cn": {
+          "name": "日本本因坊战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "日本本因坊戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "本因坊戦",
+          "source_url": "https://www.nihonkiin.or.jp/match/honinbo/archive.html",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "일본 본인방전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Honinbo tournament",
+          "source_url": "https://en.wikipedia.org/wiki/Honinbo_(competition)",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 25,
+      "canonical_chinese": "日本十段战",
+      "weighted_games_prod": 4427,
+      "names": {
+        "zh_cn": {
+          "name": "日本十段战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "日本十段戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "十段戦",
+          "source_url": "https://archive.nihonkiin.or.jp/match/jyudan/",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "일본 십단전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Judan tournament",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 28,
+      "canonical_chinese": "日本王座战",
+      "weighted_games_prod": 3926,
+      "names": {
+        "zh_cn": {
+          "name": "日本王座战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "日本王座戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "王座戦",
+          "source_url": "https://www.nihonkiin.or.jp/match/oza/archive.html",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "일본 왕좌전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Oza tournament",
+          "source_url": "https://en.wikipedia.org/wiki/%C5%8Cza_(Go)",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 26,
+      "canonical_chinese": "日本棋圣战",
+      "weighted_games_prod": 3656,
+      "names": {
+        "zh_cn": {
+          "name": "日本棋圣战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "日本棋聖戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "棋聖戦",
+          "source_url": "https://www.nihonkiin.or.jp/match/kisei/archive.html",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "일본 기성전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Kisei tournament",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 27,
+      "canonical_chinese": "日本名人战",
+      "weighted_games_prod": 3448,
+      "names": {
+        "zh_cn": {
+          "name": "日本名人战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "日本名人戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "名人戦",
+          "source_url": "https://www.nihonkiin.or.jp/match/meijin/archive.html",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "일본 명인전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Meijin tournament",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 29,
+      "canonical_chinese": "日本天元战",
+      "weighted_games_prod": 3029,
+      "names": {
+        "zh_cn": {
+          "name": "日本天元战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "日本天元戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "天元戦",
+          "source_url": "https://www.nihonkiin.or.jp/match/tengen/archive.html",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "일본 천원전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Tengen tournament",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 42,
+      "canonical_chinese": "中国女子围棋甲级联赛",
+      "weighted_games_prod": 2680,
+      "names": {
+        "zh_cn": {
+          "name": "中国女子围棋甲级联赛",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "中國女子圍棋甲級聯賽",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "中国女子囲碁甲級リーグ",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "ko": {
+          "name": "중국 여자 바둑 갑조리그",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Chinese Women’s Weiqi A League",
+          "source_url": null,
+          "method": "descriptive_english_fallback",
+          "fallback_reason": "No English interlanguage article or official English event title was verified for this exact type in this pass; the label is a descriptive rendering of the Chinese type name."
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 40,
+      "canonical_chinese": "日本龙星战",
+      "weighted_games_prod": 2678,
+      "names": {
+        "zh_cn": {
+          "name": "日本龙星战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "日本龍星戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "竜星戦",
+          "source_url": "https://www.nihonkiin.or.jp/match/ryusei/archive.html",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "일본 용성전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Ryusei tournament",
+          "source_url": "https://senseis.xmp.net/?Ryusei",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 23,
+      "canonical_chinese": "日本碁圣战",
+      "weighted_games_prod": 2396,
+      "names": {
+        "zh_cn": {
+          "name": "日本碁圣战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "日本碁聖戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "碁聖戦",
+          "source_url": "https://www.nihonkiin.or.jp/match/gosei/archive.html",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "고세이전",
+          "source_url": null,
+          "method": "romanized_japanese_title",
+          "fallback_reason": "Korean source usage for this Japanese title was not independently verified; uses the Japanese title reading Gosei in Hangul to distinguish it from Kisei (棋聖戦)."
+        },
+        "en": {
+          "name": "Gosei tournament",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 43,
+      "canonical_chinese": "三星杯世界围棋大师赛",
+      "weighted_games_prod": 2287,
+      "names": {
+        "zh_cn": {
+          "name": "三星杯世界围棋大师赛",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "三星杯世界圍棋大師賽",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "三星火災杯ワールド囲碁マスターズ",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "ko": {
+          "name": "삼성화재배 월드바둑마스터스",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Samsung Cup World Go Championship",
+          "source_url": "https://en.wikipedia.org/wiki/Samsung_Cup_(Go)",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 51,
+      "canonical_chinese": "韩国女子围棋联赛",
+      "weighted_games_prod": 1999,
+      "names": {
+        "zh_cn": {
+          "name": "韩国女子围棋联赛",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "韓國女子圍棋聯賽",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "韓国女子囲碁リーグ",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "ko": {
+          "name": "여자바둑리그",
+          "source_url": "https://www.baduk.or.kr/",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "en": {
+          "name": "Korean Women’s Baduk League",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 53,
+      "canonical_chinese": "台湾棋王赛",
+      "weighted_games_prod": 1926,
+      "names": {
+        "zh_cn": {
+          "name": "台湾棋王赛",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "台灣棋王賽",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "台湾棋王戦",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "ko": {
+          "name": "대만 기왕전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Taiwan Kiwang tournament",
+          "source_url": null,
+          "method": "descriptive_english_fallback",
+          "fallback_reason": "No English interlanguage article or official English event title was verified for this exact type in this pass; the label is a descriptive rendering of the Chinese type name."
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 70,
+      "canonical_chinese": "日本NHK杯电视围棋锦标赛",
+      "weighted_games_prod": 1845,
+      "names": {
+        "zh_cn": {
+          "name": "日本NHK杯电视围棋锦标赛",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "日本NHK盃電視圍棋錦標賽",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "NHK杯テレビ囲碁トーナメント",
+          "source_url": "https://archive.nihonkiin.or.jp/match/nhk/",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "NHK배 바둑 TV 토너먼트",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "NHK Cup TV Go Tournament",
+          "source_url": "https://en.wikipedia.org/wiki/NHK_Cup_(Go)",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 66,
+      "canonical_chinese": "LG杯世界棋王赛",
+      "weighted_games_prod": 1840,
+      "names": {
+        "zh_cn": {
+          "name": "LG杯世界棋王赛",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "LG杯世界棋王賽",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "LG杯世界棋王戦",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "ko": {
+          "name": "LG배 세계기왕전",
+          "source_url": "https://www.baduk.or.kr/",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "en": {
+          "name": "LG Cup World Baduk Championship",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 65,
+      "canonical_chinese": "中国围棋名人战",
+      "weighted_games_prod": 1744,
+      "names": {
+        "zh_cn": {
+          "name": "中国围棋名人战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "中國圍棋名人戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "中国囲碁名人戦",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "ko": {
+          "name": "중국 바둑 명인전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "China Meijin tournament",
+          "source_url": null,
+          "method": "descriptive_english_fallback",
+          "fallback_reason": "No English interlanguage article or official English event title was verified for this exact type in this pass; the label is a descriptive rendering of the Chinese type name."
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 30,
+      "canonical_chinese": "日本旧名人战",
+      "weighted_games_prod": 1689,
+      "names": {
+        "zh_cn": {
+          "name": "日本旧名人战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "日本舊名人戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "日本旧名人戦",
+          "source_url": "https://ja.wikipedia.org/wiki/%E5%90%8D%E4%BA%BA_(%E5%9B%B2%E7%A2%81)",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        },
+        "ko": {
+          "name": "일본 구 명인전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "Old Japanese Meijin tournament",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "method": "source_attested_or_standard_event_name",
+          "fallback_reason": null
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    },
+    {
+      "event_id": 58,
+      "canonical_chinese": "中国围棋天元战",
+      "weighted_games_prod": 1583,
+      "names": {
+        "zh_cn": {
+          "name": "中国围棋天元战",
+          "source_url": null,
+          "method": "verified_catalog_canonical",
+          "fallback_reason": "Copied verbatim from the current PROD event catalog; translation is not applicable."
+        },
+        "zh_tw": {
+          "name": "中國圍棋天元戰",
+          "source_url": null,
+          "method": "traditional_chinese_conversion",
+          "fallback_reason": "No distinct Taiwan official form was verified in this pass; converted from the PROD canonical Chinese name, retaining Taiwan’s established traditional characters where relevant."
+        },
+        "ja": {
+          "name": "中国囲碁天元戦",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "ko": {
+          "name": "중국 바둑 천원전",
+          "source_url": null,
+          "method": "literal_translation_or_transliteration",
+          "fallback_reason": "No language-specific primary/interlanguage source was verified in this pass; this is a clearly marked descriptive rendering from the canonical type name and standard event nomenclature."
+        },
+        "en": {
+          "name": "China Tengen tournament",
+          "source_url": null,
+          "method": "descriptive_english_fallback",
+          "fallback_reason": "No English interlanguage article or official English event title was verified for this exact type in this pass; the label is a descriptive rendering of the Chinese type name."
+        }
+      },
+      "scope_note": "Tournament type identity only; edition, year, match stage, and round are excluded."
+    }
+  ],
+  "limitations": [
+    "Chinese (Simplified) names are exact current PROD catalog canonical names.",
+    "Traditional Chinese forms and languages without a language-specific source URL are explicitly marked as conversions or descriptive fallbacks.",
+    "Names identify event series/types only; the catalog canonical Chinese text may itself include edition/stage information for other catalog rows, but these selected 20 are type-level identities."
+  ]
+}

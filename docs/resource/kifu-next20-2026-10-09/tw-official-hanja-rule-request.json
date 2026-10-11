@@ -1,0 +1,19 @@
+{
+  "content": {
+    "lang": "tw",
+    "preservation": "exact_codepoints",
+    "reference_kind": "official_hanja_preserved",
+    "source_lang": "ko",
+    "source_script": "Hanja",
+    "target_region": "TW",
+    "target_script": "Hanja",
+    "version": "primary-orthographic-v1"
+  },
+  "production": {
+    "content_sha256": "5d5bbaba44f70d1f293eb17d813ea8c368278e08e6685707a2045b2e902ab48a",
+    "produced_at": "2026-10-08T19:11:34.154223+00:00",
+    "producer_id": "/root/next_batch_source_recovery",
+    "producer_model": "GPT-6; exact runtime variant unavailable"
+  },
+  "status": "pending_independent_rule_approval"
+}

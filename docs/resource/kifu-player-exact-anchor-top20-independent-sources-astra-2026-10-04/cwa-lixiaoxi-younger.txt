@@ -1,0 +1,117 @@
+{
+  "code": 0,
+  "data": {
+    "checkTeam": 2,
+    "chessPlayer": 1,
+    "createTime": "2024-05-06 16:38:31",
+    "dataStatus": 0,
+    "lastDate": 202608,
+    "playerAwards": [
+      {
+        "awardsChampion": 4,
+        "awardsChampionValue": "8强",
+        "awardsDate": "2024-10-21",
+        "awardsEvents": "第4届女子名人战",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000756"
+      },
+      {
+        "awardsChampion": 0,
+        "awardsChampionValue": "",
+        "awardsDate": "2023-12-18",
+        "awardsEvents": "第10届女子围甲季军成员",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000756"
+      },
+      {
+        "awardsChampion": 3,
+        "awardsChampionValue": "4强",
+        "awardsDate": "2023-08-15",
+        "awardsEvents": "第3届女子名人战",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000756"
+      },
+      {
+        "awardsChampion": 4,
+        "awardsChampionValue": "8强",
+        "awardsDate": "2023-04-01",
+        "awardsEvents": "第3届女子国手赛",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000756"
+      },
+      {
+        "awardsChampion": 99,
+        "awardsChampionValue": "金牌",
+        "awardsDate": "2019-11-12",
+        "awardsEvents": "第4届智运会业余女子组",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000756"
+      }
+    ],
+    "playerBirthday": "2005-09-06",
+    "playerCity": "泰安市",
+    "playerEmail": "",
+    "playerExperiences": [
+      {
+        "playerNo": "CWA000756",
+        "upgradeDate": "2026-05-15",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z06"
+      },
+      {
+        "playerNo": "CWA000756",
+        "upgradeDate": "2023-12-17",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z05"
+      },
+      {
+        "playerNo": "CWA000756",
+        "upgradeDate": "2023-04-16",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z04"
+      },
+      {
+        "playerNo": "CWA000756",
+        "upgradeDate": "2022-08-13",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z03"
+      },
+      {
+        "playerNo": "CWA000756",
+        "upgradeDate": "2021-03-29",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z02"
+      },
+      {
+        "playerNo": "CWA000756",
+        "upgradeDate": "2019-08-23",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z01"
+      }
+    ],
+    "playerGender": 2,
+    "playerGrade": "Z06",
+    "playerIdType": 1,
+    "playerImage": "https://www.cwql.org.cn/file/player/17470348475898265928604.jpg",
+    "playerLabels": [],
+    "playerName": "李小溪(小)",
+    "playerNameEn": "Li Xiaoxi",
+    "playerNameNa": "",
+    "playerNo": "CWA000756",
+    "playerProfile": "",
+    "playerProvince": "山东省",
+    "playerRating": "2390.90",
+    "playerStartDate": "2019-08-23",
+    "playerStatus": 1,
+    "playerType": 1,
+    "playerUnit": "",
+    "ratingRank": 108,
+    "updateTime": "2026-09-03 10:22:12"
+  },
+  "msg": "操作成功"
+}

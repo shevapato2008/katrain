@@ -1,0 +1,57 @@
+{
+  "batch_id": 588,
+  "bounded_delta": {
+    "bounded_tw20": {
+      "affected_games": 1158,
+      "affected_slots": 1185,
+      "both_players": 644,
+      "formal_cards": 15,
+      "formal_event_games": 18,
+      "hidden_event_both_players": 19,
+      "raw_cards": 102,
+      "raw_event_games": 151
+    },
+    "full_native": {
+      "affected_games": 173025,
+      "affected_slots": 0,
+      "both_players": 128805,
+      "formal_cards": 11427,
+      "formal_event_games": 13478,
+      "hidden_event_both_players": 710,
+      "raw_cards": 30615,
+      "raw_event_games": 38915
+    },
+    "old_ko_without_native_proof": [
+      3771,
+      3778,
+      3792,
+      3900,
+      3902,
+      4121,
+      4266,
+      4421,
+      4499,
+      4568,
+      4587,
+      4842,
+      5158,
+      5237,
+      5244,
+      5413,
+      5877,
+      6252,
+      6260,
+      6261,
+      6270,
+      6496,
+      6581,
+      6608,
+      6627,
+      6631,
+      6635,
+      6642
+    ]
+  },
+  "bundle_sha256": "f3dd90706ac81fa93cbb24624765ffc3a4420a07fc68fffc8b56b60a879e833b",
+  "environment": "PROD"
+}

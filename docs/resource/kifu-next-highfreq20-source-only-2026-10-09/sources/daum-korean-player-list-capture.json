@@ -1,0 +1,10 @@
+{
+  "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+  "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+  "http_status": 200,
+  "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+  "raw_body_file": "sources/daum-korean-player-list.body",
+  "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+  "raw_body_bytes": 153004,
+  "content_type": "text/html;charset=UTF-8"
+}

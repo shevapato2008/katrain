@@ -1,0 +1,31 @@
+{
+  "no_database_write": true,
+  "allowlist_sha256": "edd2640dfb81619fe836cb88290f5a2c5442764bb2d69ff80e3fdfc572c43772",
+  "focused_tests": "2 passed",
+  "environments": {
+    "test": {
+      "plan_sha256": "4aa59c839ff269ea5a9db585707d7ca4edb04e54b574596d615f8c82aab0e862",
+      "file_sha256": "ff8369a7438874339e8aa32bb993f8e9a6bb173b9754a5186671d3c144621840",
+      "albums": 1532,
+      "held_albums": 132,
+      "missing_approved_ids": [],
+      "target_event_id": 1,
+      "dry_run": "passed",
+      "extra_null_album_ids": [],
+      "extra_all_album_ids": []
+    },
+    "prod": {
+      "plan_sha256": "dfdce8dd0297750f687c520407d963480e345dfa1c6e86f710b6258402e83042",
+      "file_sha256": "10fb840c1a0cfcb3586daf54efeff55d4c82738d045ede61a6ab68d2a61fe781",
+      "albums": 1532,
+      "held_albums": 132,
+      "missing_approved_ids": [],
+      "target_event_id": 22,
+      "dry_run": "passed",
+      "extra_null_album_ids": [],
+      "extra_all_album_ids": []
+    }
+  },
+  "script_sha256": "0c0d718e74abdd76873d1e51ca4208d06d53f7deec94b3c8f86266755dead08e",
+  "dry_run_description": "Read-only exact scope/target/held-preimage validation; no update SQL executed"
+}

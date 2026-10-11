@@ -1,0 +1,137 @@
+[
+  {
+    "key": "cn-men-agile",
+    "url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c27590557/content.html",
+    "final_url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c27590557/content.html",
+    "supports": "Agile Clearwater Bay title is Chinese A league, including championship final.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/cn-men-agile.html",
+    "file_sha256": "c5dd537d077ee39a2c894c552c8ba96d628ebb750543d599bd682a8688e39341",
+    "bytes": 16312,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:38:53.129708+00:00"
+  },
+  {
+    "key": "cn-men-gionee",
+    "url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c22858923/content.html",
+    "final_url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c22858923/content.html",
+    "supports": "Gionee sponsorship and separate male/female Chinese A leagues.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/cn-men-gionee.html",
+    "file_sha256": "d58db4d10d07ed757722d30d0662a57e03dcf53d92fe7185776d13ed1d8da5bf",
+    "bytes": 18829,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:38:53.178408+00:00"
+  },
+  {
+    "key": "cn-men-lejule",
+    "url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c28410417/content.html",
+    "final_url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c28410417/content.html",
+    "supports": "2024 Lejule Cup is Chinese A league, including playoffs/final.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/cn-men-lejule.html",
+    "file_sha256": "b06dc256d83b704bbc86063b30150fa85b7ad095b23c45ce0bface00232d311b",
+    "bytes": 16210,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:38:53.057536+00:00"
+  },
+  {
+    "key": "cn-men-origin-huawei",
+    "url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c22790540/content.html",
+    "final_url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c22790540/content.html",
+    "supports": "China A league founded 1999; Huawei exclusive title sponsorship in 2018.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/cn-men-origin-huawei.html",
+    "file_sha256": "b26c87c104b82fb9a1b6642bced92e8f386f2ddb2a7c295f05e96f8eff281777",
+    "bytes": 17029,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:38:53.083365+00:00"
+  },
+  {
+    "key": "cn-women-citic",
+    "url": "https://www.citic.com/html/2025/News_0516/2922.html",
+    "supports": "CITIC sponsored Chinese Women A league, current sponsor Zhongxin Heye.",
+    "status": "capture_failed",
+    "error": "HTTP Error 521: "
+  },
+  {
+    "key": "cn-women-citic-2013",
+    "url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c23088495/content.html",
+    "final_url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c23088495/content.html",
+    "supports": "First 2013 CITIC Properties Cup Chinese Women A league; exact Chinese sponsored family.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/cn-women-citic-2013.html",
+    "file_sha256": "a937f5fc5d9e4427da0cb2ee7f4df1fe9e0bb727b5486b25d9e70334949d680b",
+    "bytes": 14905,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:40:32.602917+00:00"
+  },
+  {
+    "key": "kr-futures-separate",
+    "url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=942",
+    "final_url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=942",
+    "supports": "KB main league and separate Futures player structure; title similarity cannot establish a specific game division.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/kr-futures-separate.html",
+    "file_sha256": "853c6e9c588f92a2a0c9b1c41cff0de9ff00d1213b35668493dbfbb64e8ea0d8",
+    "bytes": 119239,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:39:08.293743+00:00"
+  },
+  {
+    "key": "kr-main-2021-22",
+    "url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=3983",
+    "final_url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=3983",
+    "supports": "2021-22 KB main league team names, five boards, and postseason.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/kr-main-2021-22.html",
+    "file_sha256": "141e203984dfc6bb1296f729a9a4ec23ccb5fdd4c77af458997d5452869a0b2a",
+    "bytes": 15605,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:39:06.413756+00:00"
+  },
+  {
+    "key": "kr-senior-nh2020",
+    "url": "https://www.baduk.or.kr/news/report_view.asp?news_no=3638",
+    "supports": "2020 NH Senior league distinct three-board team event, roster and postseason.",
+    "status": "capture_failed",
+    "error": "<urlopen error timed out>"
+  },
+  {
+    "key": "kr-senior-origin",
+    "url": "https://m.baduk.or.kr/news/B02_view.asp?news_sum_no=5974",
+    "final_url": "https://m.baduk.or.kr/news/B02_view.asp?news_sum_no=5974",
+    "supports": "Senior league began 2016; NH sponsorship in 2019-20.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/kr-senior-origin.html",
+    "file_sha256": "dadab9b0f79af981278cf63a66192d158d068ddee6b6e814f190351fe048cf9e",
+    "bytes": 63119,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:39:08.143623+00:00"
+  },
+  {
+    "key": "kr-women-album1-anchor",
+    "url": "https://w.baduk.or.kr/common/pop_gisa_info.asp?gisa_code=10000466",
+    "final_url": "https://w.baduk.or.kr/common/pop_gisa_info.asp?gisa_code=10000466",
+    "supports": "Official 2022-08-04 Park Jiyeon vs Oh Yujin 278-move record anchors exact raw 韩女联 and album1.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/kr-women-album1-anchor.html",
+    "file_sha256": "312fd79b8993cb871747a12a8df14cdcf558df391e5062715fb40ca8fff84579",
+    "bytes": 11883,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:39:06.835101+00:00"
+  },
+  {
+    "key": "kr-women-mdm",
+    "url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=1187",
+    "final_url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=1187",
+    "supports": "First 2015 MDM Korean Women league.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/kr-women-mdm.html",
+    "file_sha256": "5d7ad7b87edb4fe447a73579e4cd487bd2e861b3aecbcfebf22dd25386837772",
+    "bytes": 19563,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:39:06.471167+00:00"
+  },
+  {
+    "key": "kr-women-nh2022",
+    "url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=4354",
+    "final_url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=4354",
+    "supports": "2022 NH Women league team names and playoff format.",
+    "file": "docs/resource/kifu-event-after743-leagues-independent-sources-2026-10-04/kr-women-nh2022.html",
+    "file_sha256": "3fa06dbca3498067518db6c87a9c9b60ffd273bac6b8d7f1f602814c12011580",
+    "bytes": 16690,
+    "status": "captured",
+    "retrieved_at": "2026-10-04T08:39:06.364533+00:00"
+  }
+]

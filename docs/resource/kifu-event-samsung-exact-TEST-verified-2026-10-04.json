@@ -1,0 +1,22 @@
+{
+  "coverage": {
+    "edition_linked": 79661,
+    "event_linked": 84475,
+    "total": 173025
+  },
+  "database": "katrain_db",
+  "edition_links": 1011,
+  "event_links": 1017,
+  "plan_sha256": "af969a53de3f112a7548d7556be951899f04ebb48e9d253a7c145ed3a67185d1",
+  "samsung_linked_total": 2287,
+  "seven_field_postimages_match": true,
+  "training_holds_unchanged": 13,
+  "type_only_ids": [
+    28773,
+    84471,
+    92080,
+    97284,
+    119166,
+    138885
+  ]
+}

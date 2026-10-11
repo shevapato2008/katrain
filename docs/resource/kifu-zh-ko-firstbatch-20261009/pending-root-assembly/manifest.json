@@ -1,0 +1,12 @@
+{
+  "artifact_kind": "zh_ko_first2_pending_root_manifest",
+  "produced_at": "2026-10-08T22:32:05Z",
+  "producer_id": "zh-ko-task2-implementation",
+  "producer_model": "gpt-6-sol",
+  "registry_sha256": "744a0def31ff0528f881943345e1385472c2012cbc67064ddaeece6b512fed2c",
+  "files": {
+    "registry-proposal.json": "01ea56f086d5170b2bf2e9a65e6871aa600ec73e4745760776928fc20d0962d6",
+    "PROD-pending.json": "d762a02d53b700c65a5b3c3fc2d6289332c668412b44677ed86ea3bcf98ad82b",
+    "TEST-pending.json": "78e03570b098f7703caeb8716200cd45a34abf170bda1ac62587ebb8d85a2285"
+  }
+}

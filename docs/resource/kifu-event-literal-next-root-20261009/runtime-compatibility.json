@@ -1,0 +1,16 @@
+{
+  "status": "unsigned_read_only_import_check",
+  "environment": "TEST",
+  "native_r4_image_id": "sha256:b606992b2f6c6ce6a7c00bd6c49f1a9fcc7330fc5ee44dd426bd6ecf30267e48",
+  "native_raw_event_translation_sha256": "d97e8e88a4e484b684106e0b06296b372066645961b79647425154b5c5102499",
+  "local_head_raw_event_translation_sha256": "5806eddd74484a1ecae40c81f8e67a13120b28d3afb30e2b793b27e87d423507",
+  "observed_difference": "Native r4 sgf_chinese_mixed accepts core/year/edition/round only; local HEAD additionally accepts game and mixed round forms.",
+  "first_rejected_raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第10局",
+  "first_rejected_parts": [
+    {"kind": "edition", "text": "第9届"},
+    {"kind": "core", "text": "姜堰黄龙士精锻科技杯世界女子团体赛"},
+    {"kind": "game", "text": "第10局"}
+  ],
+  "database_scan_started": false,
+  "decision": "Hold v1 C76/Han source-only selection; use v2 finite 150 English selection under existing native sgf_english profile."
+}

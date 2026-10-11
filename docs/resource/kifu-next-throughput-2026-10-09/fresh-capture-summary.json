@@ -1,0 +1,162 @@
+[
+  {
+    "prod_id": 3778,
+    "status": "captured",
+    "reading": "ナカオカ ジロウ",
+    "display_name": "나카오카 지로",
+    "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000070.htm",
+    "source_body_sha256": "f2e06d807356e72f70d29eecaf79be90baa3e5d3c1cf2fe35c5a01ef986b3d05"
+  },
+  {
+    "prod_id": 3792,
+    "status": "captured",
+    "reading": "なかがわ しんじ",
+    "display_name": "나카가와 신지",
+    "source_url": "https://www.igorating.com/players/shinji-nakagawa",
+    "source_body_sha256": "82b0e5d81b159cf51812a75693a8d6b351eddd2e6ac43801adb8e088fc7fc851"
+  },
+  {
+    "prod_id": 3902,
+    "status": "captured",
+    "reading": "サトウ カオル",
+    "display_name": "사토 가오루",
+    "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000109.htm",
+    "source_body_sha256": "c038a0181e312ec5476c869d2e746887f7f2a14ab836316bb7a05ba767e2e1bf"
+  },
+  {
+    "prod_id": 4121,
+    "status": "captured",
+    "reading": "むかい かずお",
+    "display_name": "무카이 가즈오",
+    "source_url": "https://www.igorating.com/players/kazuo-mukai",
+    "source_body_sha256": "4f23a1620dda00fcb6927fa5813a72d173f0135140c606d618d698ff52bd314b"
+  },
+  {
+    "prod_id": 4421,
+    "status": "captured",
+    "reading": "こすぎ きよし",
+    "display_name": "고스기 기요시",
+    "source_url": "https://www.igorating.com/players/kiyoshi-kosugi",
+    "source_body_sha256": "51d9d8c05568a84a1308add794c0cd0167d9ad840abe41674a30bc839792f959"
+  },
+  {
+    "prod_id": 4499,
+    "status": "captured",
+    "reading": "ヤマザキ マスオ",
+    "display_name": "야마자키 마스오",
+    "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000071.htm",
+    "source_body_sha256": "955cbcb220a54878da05a3f65791ed980bca066ea82d95f8cee509fc8178c2b7"
+  },
+  {
+    "prod_id": 4587,
+    "status": "captured",
+    "reading": "ヒロエ カツヒコ",
+    "display_name": "히로에 가쓰히코",
+    "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000086.html",
+    "source_body_sha256": "eb74e0880be03aca922898f246a326b82c87d36c484d0ab54a66615545d29bdb"
+  },
+  {
+    "prod_id": 4842,
+    "status": "captured",
+    "reading": "ほんま あきお",
+    "display_name": "혼마 아키오",
+    "source_url": "https://www.igorating.com/players/akio-honma",
+    "source_body_sha256": "ccd425f8fdf0d71ba10ad32c2fdf4350c47896792e759e1fba1f9df0ee820de1"
+  },
+  {
+    "prod_id": 5158,
+    "status": "captured",
+    "reading": "マツモト トクジ",
+    "display_name": "마쓰모토 도쿠지",
+    "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000069.html",
+    "source_body_sha256": "3aabdff123bb5ee9220189531e9daeb851c733affaed75bcf01a550a088e0343"
+  },
+  {
+    "prod_id": 5237,
+    "status": "captured",
+    "reading": "くわはら むねひさ",
+    "display_name": "구와하라 무네히사",
+    "source_url": "https://www.igorating.com/players/munehisa-kuwahara",
+    "source_body_sha256": "e1f3043ed60f09c7b0aec09b1e3f46229e5411eaa243551900eab9dafcc038b3"
+  },
+  {
+    "prod_id": 5244,
+    "status": "captured",
+    "reading": "ハシモト ヨシミ",
+    "display_name": "하시모토 요시미",
+    "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000021.htm",
+    "source_body_sha256": "5a6e23d15aad4f169b87133177c6f0a07003d42a22f493111f74a974dae465f6"
+  },
+  {
+    "prod_id": 5413,
+    "status": "captured",
+    "reading": "ワタナベ ヒデオ",
+    "display_name": "와타나베 히데오",
+    "source_url": "https://www.nihonkiin.or.jp/player/htm/ki001011.htm",
+    "source_body_sha256": "9f066cfe721f95ee5e2bb7800d8d03ae4d500fd99a7a510c1b6fbd3730210b7f"
+  },
+  {
+    "prod_id": 5877,
+    "status": "captured",
+    "reading": "ニシガミ ヨシヒコ",
+    "display_name": "니시가미 요시히코",
+    "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000081.htm",
+    "source_body_sha256": "47abf5b9f3287292f756ab4342cf14da150dd735463160565db86ab76524105a"
+  },
+  {
+    "prod_id": 6252,
+    "status": "captured",
+    "reading": "すずき ごろう",
+    "display_name": "스즈키 고로",
+    "source_url": "https://igorating.com/players/goro-suzuki",
+    "source_body_sha256": "17eae8ba6fc04fb564b68ae54d39f58f4d54e511df8decd22602566e50bc80d2"
+  },
+  {
+    "prod_id": 6260,
+    "status": "captured",
+    "reading": "なべしま いちろう",
+    "display_name": "나베시마 이치로",
+    "source_url": "https://igorating.com/players/ichiro-nabeshima",
+    "source_body_sha256": "4b5cd9ed60575405652dd345f4a3805e05dffbcf6caebf8c980c62fd90f75acc"
+  },
+  {
+    "prod_id": 6261,
+    "status": "captured",
+    "reading": "ナベシマ アキラ",
+    "display_name": "나베시마 아키라",
+    "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000074.html",
+    "source_body_sha256": "6fdc94735c05ee7f53ee94a61bd609f5b8cdb9ca088632d7a0de38d99b6ea740"
+  },
+  {
+    "prod_id": 6270,
+    "status": "captured",
+    "reading": "ハセガワ アキラ",
+    "display_name": "하세가와 아키라",
+    "source_url": "https://kotobank.jp/word/%E9%95%B7%E8%B0%B7%E5%B7%9D%E7%AB%A0-1100972",
+    "source_body_sha256": "b78f86dce9e1e87aab799ee6851e2bcf8816033ff6025518bfe553971cd20f09"
+  },
+  {
+    "prod_id": 6496,
+    "status": "captured",
+    "reading": "たかみざわ ただお",
+    "display_name": "다카미자와 다다오",
+    "source_url": "https://www.igorating.com/players/tadao-takamizawa",
+    "source_body_sha256": "21a049a5c10da7b94b245bf42a21d20cd4620fa43ad63908b4dd5af762be3636"
+  },
+  {
+    "prod_id": 6581,
+    "status": "captured",
+    "reading": "ほしの とし",
+    "display_name": "호시노 도시",
+    "source_url": "https://igorating.com/players/toshi-hoshino",
+    "source_body_sha256": "b81ed37961e857c61d7fc5a1940c79060b4dd7e2f73507a2fb66069ded6ca6e4"
+  },
+  {
+    "prod_id": 6608,
+    "status": "captured",
+    "reading": "ほそかわ せんじん",
+    "display_name": "호소카와 센진",
+    "source_url": "https://igorating.com/players/senjin-hosokawa",
+    "source_body_sha256": "6c14e4af019f2ed038264f2981a7a44a91f919156676f609fd027be632a6c0a0"
+  }
+]

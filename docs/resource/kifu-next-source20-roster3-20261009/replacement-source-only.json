@@ -1,0 +1,920 @@
+{
+  "artifact_kind": "roster3_replacement_source_only",
+  "status": "no fresh eligible replacements found",
+  "captured_at_utc": "2026-10-08T21:26:43.366868+00:00",
+  "scope": "Source-only search for replacement Korean-language names among strict post-591 four-language owners missing ko, matched against Daum full Hangul-Hanzi rows; excluded IDs from pending batch 592 and sibling roster3 scope.",
+  "source_boundary": "No SQL/SSH/database write, source approval, build, or Git operation performed. Daum is identity-bridge evidence only, not an authority by itself.",
+  "official_kba_china_roster_capture": {
+    "id": "kba-china-player-roster",
+    "url": "https://www.baduk.or.kr/record/player_in.asp",
+    "method": "POST",
+    "request_body": "pageNo=1&keyColumn=2&keyWord=&etcKey=&etcKey2=A&etcKey3=",
+    "request_parameters": {
+      "pageNo": "1",
+      "keyColumn": "2 (Chinese roster)",
+      "keyWord": "",
+      "etcKey": "",
+      "etcKey2": "A",
+      "etcKey3": ""
+    },
+    "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+    "http_status": 200,
+    "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+    "content_type": "text/html; Charset=UTF-8",
+    "response_body_file": "captures/replacement-kba-china-list.body",
+    "response_body_bytes": 80097,
+    "response_body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+    "parsed_profile_count": 904
+  },
+  "daum_identity_bridge_source": {
+    "id": "daum-korean-list",
+    "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+    "method": "GET",
+    "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+    "http_status": 200,
+    "body_bytes": 153004,
+    "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+    "body_file": "captures/daum-korean-list.html.gz",
+    "raw_decompressed_body_file": "../kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body"
+  },
+  "join_result": {
+    "kba_profile_names_parsed": 904,
+    "daum_hangul_hanja_rows_parsed": 631,
+    "strict_four_language_missing_ko_exact_identity_matches": 18,
+    "fresh_eligible_matches": 0,
+    "match_rows": [
+      {
+        "prod_player_id": 6366,
+        "game_slots": 30,
+        "kba_profile_code": "20002017",
+        "kba_list_name": "천루이",
+        "daum_row": {
+          "ko": "천루이",
+          "cn": "陈瑞",
+          "hanja": "陳瑞",
+          "raw_hanja": "陈瑞/陳瑞"
+        },
+        "qualified_names": {
+          "cn": [
+            "陈瑞"
+          ],
+          "en": [
+            "Chen Rui"
+          ],
+          "jp": [
+            "陳瑞"
+          ],
+          "tw": [
+            "陳瑞"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 6547,
+        "game_slots": 28,
+        "kba_profile_code": "20002045",
+        "kba_list_name": "황량위",
+        "daum_row": {
+          "ko": "황량위",
+          "cn": "黄良玉",
+          "hanja": "黄良玉",
+          "raw_hanja": "黄良玉/黄良玉"
+        },
+        "qualified_names": {
+          "cn": [
+            "黄良玉"
+          ],
+          "en": [
+            "Huang Liangyu"
+          ],
+          "jp": [
+            "黄良玉"
+          ],
+          "tw": [
+            "黃良玉"
+          ]
+        },
+        "exclusion_bucket": "already_pending_batch592"
+      },
+      {
+        "prod_player_id": 3820,
+        "game_slots": 22,
+        "kba_profile_code": "20000613",
+        "kba_list_name": "차오스야오",
+        "daum_row": {
+          "ko": "차오스야오",
+          "cn": "乔诗尧",
+          "hanja": "喬詩堯",
+          "raw_hanja": "乔诗尧/喬詩堯"
+        },
+        "qualified_names": {
+          "cn": [
+            "乔诗尧"
+          ],
+          "en": [
+            "Qiao Shiyao"
+          ],
+          "jp": [
+            "乔诗尧"
+          ],
+          "tw": [
+            "喬詩堯"
+          ]
+        },
+        "exclusion_bucket": "already_pending_batch592"
+      },
+      {
+        "prod_player_id": 368,
+        "game_slots": 18,
+        "kba_profile_code": "20000734",
+        "kba_list_name": "자오젠난",
+        "daum_row": {
+          "ko": "자오젠난",
+          "cn": "赵健男",
+          "hanja": "趙健男",
+          "raw_hanja": "赵健男/趙健男"
+        },
+        "qualified_names": {
+          "cn": [
+            "赵健男"
+          ],
+          "en": [
+            "Zhao Jiannan"
+          ],
+          "jp": [
+            "趙健男"
+          ],
+          "tw": [
+            "趙健男"
+          ]
+        },
+        "exclusion_bucket": "already_pending_batch592"
+      },
+      {
+        "prod_player_id": 5473,
+        "game_slots": 18,
+        "kba_profile_code": "20002077",
+        "kba_list_name": "왕보강",
+        "daum_row": {
+          "ko": "왕보강",
+          "cn": "王伯刚",
+          "hanja": "王伯剛",
+          "raw_hanja": "王伯刚/王伯剛"
+        },
+        "qualified_names": {
+          "cn": [
+            "王伯刚"
+          ],
+          "en": [
+            "Wang Bogang"
+          ],
+          "jp": [
+            "王伯刚"
+          ],
+          "tw": [
+            "王伯剛"
+          ]
+        },
+        "exclusion_bucket": "already_pending_batch592"
+      },
+      {
+        "prod_player_id": 5349,
+        "game_slots": 15,
+        "kba_profile_code": "20002031",
+        "kba_list_name": "선징",
+        "daum_row": {
+          "ko": "선징",
+          "cn": "沈静",
+          "hanja": "沈靜",
+          "raw_hanja": "沈静/沈靜"
+        },
+        "qualified_names": {
+          "cn": [
+            "沈静"
+          ],
+          "en": [
+            "Shen Jing"
+          ],
+          "jp": [
+            "沈静"
+          ],
+          "tw": [
+            "沈靜"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 5952,
+        "game_slots": 15,
+        "kba_profile_code": "20002000",
+        "kba_list_name": "자오쯔지",
+        "daum_row": {
+          "ko": "자오쯔지",
+          "cn": "赵子骥",
+          "hanja": "趙子驥",
+          "raw_hanja": "赵子骥/趙子驥"
+        },
+        "qualified_names": {
+          "cn": [
+            "赵子骥"
+          ],
+          "en": [
+            "Zhao Ziji"
+          ],
+          "jp": [
+            "赵子骥"
+          ],
+          "tw": [
+            "趙子驥"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 5790,
+        "game_slots": 14,
+        "kba_profile_code": "20001948",
+        "kba_list_name": "판시위",
+        "daum_row": {
+          "ko": "판시위",
+          "cn": "范希钰",
+          "hanja": "范希鈺",
+          "raw_hanja": "范希钰/范希鈺"
+        },
+        "qualified_names": {
+          "cn": [
+            "范希钰"
+          ],
+          "en": [
+            "Fan Xiyu"
+          ],
+          "jp": [
+            "范希鈺"
+          ],
+          "tw": [
+            "范希鈺"
+          ]
+        },
+        "exclusion_bucket": "already_pending_batch592"
+      },
+      {
+        "prod_player_id": 6322,
+        "game_slots": 12,
+        "kba_profile_code": "20002015",
+        "kba_list_name": "천더룽",
+        "daum_row": {
+          "ko": "천더룽",
+          "cn": "陈德龙",
+          "hanja": "陳德龍",
+          "raw_hanja": "陈德龙/陳德龍"
+        },
+        "qualified_names": {
+          "cn": [
+            "陈德龙"
+          ],
+          "en": [
+            "Chen Delong"
+          ],
+          "jp": [
+            "陈德龙"
+          ],
+          "tw": [
+            "陳德龍"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 6550,
+        "game_slots": 12,
+        "kba_profile_code": "20002047",
+        "kba_list_name": "황번",
+        "daum_row": {
+          "ko": "황번",
+          "cn": "黄贲",
+          "hanja": "黃賁",
+          "raw_hanja": "黄贲/黃賁"
+        },
+        "qualified_names": {
+          "cn": [
+            "黄贲"
+          ],
+          "en": [
+            "Huang Bi"
+          ],
+          "jp": [
+            "黄贲"
+          ],
+          "tw": [
+            "黃賁"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 4593,
+        "game_slots": 11,
+        "kba_profile_code": "20001947",
+        "kba_list_name": "팡옌",
+        "daum_row": {
+          "ko": "팡옌",
+          "cn": "庞延",
+          "hanja": "龐延",
+          "raw_hanja": "庞延/龐延"
+        },
+        "qualified_names": {
+          "cn": [
+            "庞延"
+          ],
+          "en": [
+            "Pang Yan"
+          ],
+          "jp": [
+            "庞延"
+          ],
+          "tw": [
+            "龐延"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 6571,
+        "game_slots": 10,
+        "kba_profile_code": "20001900",
+        "kba_list_name": "궁스윈",
+        "daum_row": {
+          "ko": "궁스윈",
+          "cn": "龚世运",
+          "hanja": "龔世運",
+          "raw_hanja": "龚世运/龔世運"
+        },
+        "qualified_names": {
+          "cn": [
+            "龚世运"
+          ],
+          "en": [
+            "Gong Shiyun"
+          ],
+          "jp": [
+            "龚世运"
+          ],
+          "tw": [
+            "龔世運"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 5915,
+        "game_slots": 7,
+        "kba_profile_code": "20001952",
+        "kba_list_name": "셰위궈",
+        "daum_row": {
+          "ko": "셰위궈",
+          "cn": "谢裕国",
+          "hanja": "謝裕國",
+          "raw_hanja": "谢裕国/謝裕國"
+        },
+        "qualified_names": {
+          "cn": [
+            "谢裕国"
+          ],
+          "en": [
+            "Xie Yuguo"
+          ],
+          "jp": [
+            "谢裕国"
+          ],
+          "tw": [
+            "謝裕國"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 5350,
+        "game_slots": 6,
+        "kba_profile_code": "20002030",
+        "kba_list_name": "선잉",
+        "daum_row": {
+          "ko": "선잉",
+          "cn": "沈颖",
+          "hanja": "沈潁",
+          "raw_hanja": "沈颖/沈潁"
+        },
+        "qualified_names": {
+          "cn": [
+            "沈颖"
+          ],
+          "en": [
+            "Shen Ying"
+          ],
+          "jp": [
+            "沈颖"
+          ],
+          "tw": [
+            "沈穎"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 5912,
+        "game_slots": 6,
+        "kba_profile_code": "20001951",
+        "kba_list_name": "셰펑",
+        "daum_row": {
+          "ko": "셰펑",
+          "cn": "谢峰",
+          "hanja": "謝峰",
+          "raw_hanja": "谢峰/謝峰"
+        },
+        "qualified_names": {
+          "cn": [
+            "谢峰"
+          ],
+          "en": [
+            "Xie Feng"
+          ],
+          "jp": [
+            "谢峰"
+          ],
+          "tw": [
+            "謝峰"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 6278,
+        "game_slots": 6,
+        "kba_profile_code": "20001969",
+        "kba_list_name": "옌안",
+        "daum_row": {
+          "ko": "옌안",
+          "cn": "阎安",
+          "hanja": "閻安",
+          "raw_hanja": "阎安/閻安"
+        },
+        "qualified_names": {
+          "cn": [
+            "阎安"
+          ],
+          "en": [
+            "Yan An"
+          ],
+          "jp": [
+            "阎安"
+          ],
+          "tw": [
+            "閻安"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 6367,
+        "game_slots": 6,
+        "kba_profile_code": "20002019",
+        "kba_list_name": "천잉",
+        "daum_row": {
+          "ko": "천잉",
+          "cn": "陈盈",
+          "hanja": "陳盈",
+          "raw_hanja": "陈盈/陳盈"
+        },
+        "qualified_names": {
+          "cn": [
+            "陈盈"
+          ],
+          "en": [
+            "Chen Ying"
+          ],
+          "jp": [
+            "陈盈"
+          ],
+          "tw": [
+            "陳盈"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      },
+      {
+        "prod_player_id": 4031,
+        "game_slots": 5,
+        "kba_profile_code": "20002099",
+        "kba_list_name": "류위신",
+        "daum_row": {
+          "ko": "류위신",
+          "cn": "刘禹欣",
+          "hanja": "劉禹欣(여)",
+          "raw_hanja": "刘禹欣/劉禹欣(여)"
+        },
+        "qualified_names": {
+          "cn": [
+            "刘禹欣"
+          ],
+          "en": [
+            "Liu Yuxin"
+          ],
+          "jp": [
+            "刘禹欣"
+          ],
+          "tw": [
+            "劉禹欣"
+          ]
+        },
+        "exclusion_bucket": "already_in_parallel_roster3"
+      }
+    ],
+    "exclusion_sets": {
+      "pending_batch592_ids": [
+        368,
+        696,
+        3771,
+        3820,
+        3844,
+        4041,
+        4340,
+        4568,
+        4634,
+        5094,
+        5133,
+        5351,
+        5473,
+        5675,
+        5790,
+        6296,
+        6378,
+        6547,
+        6635,
+        6642
+      ],
+      "parallel_roster3_scope_ids": [
+        4031,
+        4071,
+        4331,
+        4593,
+        5034,
+        5036,
+        5296,
+        5349,
+        5350,
+        5495,
+        5912,
+        5915,
+        5952,
+        6278,
+        6322,
+        6329,
+        6366,
+        6367,
+        6550,
+        6571
+      ]
+    }
+  },
+  "additional_candidates_attempted": [
+    {
+      "prod_player_id": 6356,
+      "candidate_game_slots": 10,
+      "expected_hangul": "천융치",
+      "chinese_identity_anchor": "陈永奇",
+      "daum_full_row": {
+        "ko": "천융치",
+        "cn": "陈永奇",
+        "hanja": "陈永奇",
+        "raw_hanja": "陈永奇"
+      },
+      "existing_qualified_names": {
+        "cn": [
+          "陈永奇"
+        ],
+        "en": [
+          "Chen Yongqi"
+        ],
+        "jp": [
+          "陳永奇"
+        ],
+        "tw": [
+          "陳永奇"
+        ]
+      },
+      "official_query": {
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "request_body": "pageNo=1&keyColumn=2&keyWord=%EC%B2%9C%EC%9C%B5%EC%B9%98&etcKey=&etcKey2=A&etcKey3=",
+        "request_parameters": {
+          "pageNo": "1",
+          "keyColumn": "2 (Chinese roster)",
+          "keyWord": "천융치",
+          "etcKey": "",
+          "etcKey2": "A",
+          "etcKey3": ""
+        },
+        "http_status": 200,
+        "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+        "response_body_file": "replacement-kba-6356.body",
+        "response_body_bytes": 3288,
+        "response_body_sha256": "1ce9b6763c8c0ef3f3b18b5503fd828348df9394c508643c7f89a750f843aa13",
+        "captured_at_note": "filesystem mtime 2026-10-09T05:23:20.185951+08:00; request start time was not persisted separately"
+      },
+      "same_hangul_profile_results": [],
+      "decision": "hold_no_same_hangul_kba_profile",
+      "reason": "KBA query response returned no same-Hangul profile. Query `천자` returned three similarly prefixed but different profiles; none is identity-matched to 陈佳."
+    },
+    {
+      "prod_player_id": 3857,
+      "candidate_game_slots": 9,
+      "expected_hangul": "푸빈팡",
+      "chinese_identity_anchor": "付斌芳",
+      "daum_full_row": {
+        "ko": "푸빈팡",
+        "cn": "付斌芳",
+        "hanja": "付斌芳",
+        "raw_hanja": "付斌芳/付斌芳"
+      },
+      "existing_qualified_names": {
+        "cn": [
+          "付斌芳"
+        ],
+        "en": [
+          "Fu Binfang"
+        ],
+        "jp": [
+          "付斌芳"
+        ],
+        "tw": [
+          "付斌芳"
+        ]
+      },
+      "official_query": {
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "request_body": "pageNo=1&keyColumn=2&keyWord=%ED%91%B8%EB%B9%88%ED%8C%A1&etcKey=&etcKey2=A&etcKey3=",
+        "request_parameters": {
+          "pageNo": "1",
+          "keyColumn": "2 (Chinese roster)",
+          "keyWord": "푸빈팡",
+          "etcKey": "",
+          "etcKey2": "A",
+          "etcKey3": ""
+        },
+        "http_status": 200,
+        "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+        "response_body_file": "replacement-kba-3857.body",
+        "response_body_bytes": 3288,
+        "response_body_sha256": "cc2f96e489d34ef1bf30e0a577760497d872ab4fb529de2f319aa57ecc5c6660",
+        "captured_at_note": "filesystem mtime 2026-10-09T05:23:21.895748+08:00; request start time was not persisted separately"
+      },
+      "same_hangul_profile_results": [],
+      "decision": "hold_no_same_hangul_kba_profile",
+      "reason": "KBA query response returned no same-Hangul profile. Query `천자` returned three similarly prefixed but different profiles; none is identity-matched to 陈佳."
+    },
+    {
+      "prod_player_id": 4208,
+      "candidate_game_slots": 9,
+      "expected_hangul": "탕진차오",
+      "chinese_identity_anchor": "唐锦潮",
+      "daum_full_row": {
+        "ko": "탕진차오",
+        "cn": "唐锦潮",
+        "hanja": "唐錦潮",
+        "raw_hanja": "唐锦潮/唐錦潮"
+      },
+      "existing_qualified_names": {
+        "cn": [
+          "唐锦潮"
+        ],
+        "en": [
+          "Tang Jinchao"
+        ],
+        "jp": [
+          "唐锦潮"
+        ],
+        "tw": [
+          "唐錦潮"
+        ]
+      },
+      "official_query": {
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "request_body": "pageNo=1&keyColumn=2&keyWord=%ED%83%95%EC%A7%84%EC%B0%A8%EC%98%A4&etcKey=&etcKey2=A&etcKey3=",
+        "request_parameters": {
+          "pageNo": "1",
+          "keyColumn": "2 (Chinese roster)",
+          "keyWord": "탕진차오",
+          "etcKey": "",
+          "etcKey2": "A",
+          "etcKey3": ""
+        },
+        "http_status": 200,
+        "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+        "response_body_file": "replacement-kba-4208.body",
+        "response_body_bytes": 3318,
+        "response_body_sha256": "c92fdad9201e7a8b32f062df0ed9b764681ac30121ea65192b5045185f9e8d57",
+        "captured_at_note": "filesystem mtime 2026-10-09T05:23:23.591717+08:00; request start time was not persisted separately"
+      },
+      "same_hangul_profile_results": [],
+      "decision": "hold_no_same_hangul_kba_profile",
+      "reason": "KBA query response returned no same-Hangul profile. Query `천자` returned three similarly prefixed but different profiles; none is identity-matched to 陈佳."
+    },
+    {
+      "prod_player_id": 5739,
+      "candidate_game_slots": 8,
+      "expected_hangul": "웡쯔위",
+      "chinese_identity_anchor": "翁子瑜",
+      "daum_full_row": {
+        "ko": "웡쯔위",
+        "cn": "翁子瑜",
+        "hanja": "翁子瑜",
+        "raw_hanja": "翁子瑜/翁子瑜"
+      },
+      "existing_qualified_names": {
+        "cn": [
+          "翁子瑜"
+        ],
+        "en": [
+          "Weng Ziyu"
+        ],
+        "jp": [
+          "翁子瑜"
+        ],
+        "tw": [
+          "翁子瑜"
+        ]
+      },
+      "official_query": {
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "request_body": "pageNo=1&keyColumn=2&keyWord=%EC%9B%A1%EC%AF%94%EC%9C%84&etcKey=&etcKey2=A&etcKey3=",
+        "request_parameters": {
+          "pageNo": "1",
+          "keyColumn": "2 (Chinese roster)",
+          "keyWord": "웡쯔위",
+          "etcKey": "",
+          "etcKey2": "A",
+          "etcKey3": ""
+        },
+        "http_status": 200,
+        "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+        "response_body_file": "replacement-kba-5739.body",
+        "response_body_bytes": 3288,
+        "response_body_sha256": "8af043984fd1ef48bc72eed89140874380e765ab3f31283e5d9f472d88751ede",
+        "captured_at_note": "filesystem mtime 2026-10-09T05:23:25.294389+08:00; request start time was not persisted separately"
+      },
+      "same_hangul_profile_results": [],
+      "decision": "hold_no_same_hangul_kba_profile",
+      "reason": "KBA query response returned no same-Hangul profile. Query `천자` returned three similarly prefixed but different profiles; none is identity-matched to 陈佳."
+    },
+    {
+      "prod_player_id": 5498,
+      "candidate_game_slots": 7,
+      "expected_hangul": "왕훙웨이",
+      "chinese_identity_anchor": "王宏伟",
+      "daum_full_row": {
+        "ko": "왕훙웨이",
+        "cn": "王宏伟",
+        "hanja": "王宏偉",
+        "raw_hanja": "王宏伟/王宏偉"
+      },
+      "existing_qualified_names": {
+        "cn": [
+          "王宏伟"
+        ],
+        "en": [
+          "Wang Hongwei"
+        ],
+        "jp": [
+          "王宏伟"
+        ],
+        "tw": [
+          "王宏偉"
+        ]
+      },
+      "official_query": {
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "request_body": "pageNo=1&keyColumn=2&keyWord=%EC%99%95%ED%9B%99%EC%9B%A8%EC%9D%B4&etcKey=&etcKey2=A&etcKey3=",
+        "request_parameters": {
+          "pageNo": "1",
+          "keyColumn": "2 (Chinese roster)",
+          "keyWord": "왕훙웨이",
+          "etcKey": "",
+          "etcKey2": "A",
+          "etcKey3": ""
+        },
+        "http_status": 200,
+        "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+        "response_body_file": "replacement-kba-5498.body",
+        "response_body_bytes": 3318,
+        "response_body_sha256": "03e6b80aaa651d1c56d24e57aba21a10cb72ce21f8dcca15653b93c5c35f83a1",
+        "captured_at_note": "filesystem mtime 2026-10-09T05:23:26.952421+08:00; request start time was not persisted separately"
+      },
+      "same_hangul_profile_results": [],
+      "decision": "hold_no_same_hangul_kba_profile",
+      "reason": "KBA query response returned no same-Hangul profile. Query `천자` returned three similarly prefixed but different profiles; none is identity-matched to 陈佳."
+    },
+    {
+      "prod_player_id": 6298,
+      "candidate_game_slots": 5,
+      "expected_hangul": "천자",
+      "chinese_identity_anchor": "陈佳",
+      "daum_full_row": {
+        "ko": "천자",
+        "cn": "陈佳",
+        "hanja": "陳佳",
+        "raw_hanja": "陈佳/陳佳"
+      },
+      "existing_qualified_names": {
+        "cn": [
+          "陈佳"
+        ],
+        "en": [
+          "Chen Jia"
+        ],
+        "jp": [
+          "陈佳"
+        ],
+        "tw": [
+          "陳佳"
+        ]
+      },
+      "official_query": {
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "request_body": "pageNo=1&keyColumn=2&keyWord=%EC%B2%9C%EC%9E%90&etcKey=&etcKey2=A&etcKey3=",
+        "request_parameters": {
+          "pageNo": "1",
+          "keyColumn": "2 (Chinese roster)",
+          "keyWord": "천자",
+          "etcKey": "",
+          "etcKey2": "A",
+          "etcKey3": ""
+        },
+        "http_status": 200,
+        "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+        "response_body_file": "replacement-kba-6298.body",
+        "response_body_bytes": 4110,
+        "response_body_sha256": "b0d845f8a9a15c32d39fd86bc551d33bcf4e46870e9e36a9972d98a282f04c46",
+        "captured_at_note": "filesystem mtime 2026-10-09T05:23:28.624995+08:00; request start time was not persisted separately"
+      },
+      "same_hangul_profile_results": [],
+      "decision": "hold_no_same_hangul_kba_profile",
+      "reason": "KBA query response returned no same-Hangul profile. Query `천자` returned three similarly prefixed but different profiles; none is identity-matched to 陈佳."
+    },
+    {
+      "prod_player_id": 4993,
+      "candidate_game_slots": 4,
+      "expected_hangul": "리톈주",
+      "chinese_identity_anchor": "李天竹",
+      "daum_full_row": {
+        "ko": "리톈주",
+        "cn": "李天竹",
+        "hanja": "李天竹",
+        "raw_hanja": "李天竹/李天竹"
+      },
+      "existing_qualified_names": {
+        "cn": [
+          "李天竹"
+        ],
+        "en": [
+          "Li Tianzhu"
+        ],
+        "jp": [
+          "李天竹"
+        ],
+        "tw": [
+          "李天竹"
+        ]
+      },
+      "official_query": {
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "request_body": "pageNo=1&keyColumn=2&keyWord=%EB%A6%AC%ED%86%88%EC%A3%BC&etcKey=&etcKey2=A&etcKey3=",
+        "request_parameters": {
+          "pageNo": "1",
+          "keyColumn": "2 (Chinese roster)",
+          "keyWord": "리톈주",
+          "etcKey": "",
+          "etcKey2": "A",
+          "etcKey3": ""
+        },
+        "http_status": 200,
+        "final_url": "https://www.baduk.or.kr/record/player_in.asp",
+        "response_body_file": "replacement-kba-4993.body",
+        "response_body_bytes": 3288,
+        "response_body_sha256": "527d76cbb6d6555b752f4d210d3a75cfe9320c656a23a7e326e2ad219eb939ea",
+        "captured_at_note": "filesystem mtime 2026-10-09T05:23:30.335229+08:00; request start time was not persisted separately"
+      },
+      "same_hangul_profile_results": [],
+      "decision": "hold_no_same_hangul_kba_profile",
+      "reason": "KBA query response returned no same-Hangul profile. Query `천자` returned three similarly prefixed but different profiles; none is identity-matched to 陈佳."
+    }
+  ],
+  "surname_broad_search_capture_index": "replacement-kba-search-captures.json",
+  "disposition": "All exact positive intersections found in the official KBA Chinese roster and Daum bridge are already excluded by the current pending batch or the parallel roster3 scope. Seven additional high-frequency Daum candidates were searched by their expected Hangul; no fresh exact KBA profile was found. Keep all seven on hold."
+}

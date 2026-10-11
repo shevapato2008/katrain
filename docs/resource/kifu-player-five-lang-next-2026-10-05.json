@@ -1,0 +1,934 @@
+{
+  "scope": {
+    "source": "read-only PROD inventory snapshot /tmp/kifu-five-prod-inventory-post7.json.gz and catalog snapshot 2026-10-04",
+    "languages": [
+      "cn",
+      "tw",
+      "ja",
+      "ko",
+      "en"
+    ],
+    "player_count": 20,
+    "covered_game_slots": 28632,
+    "definition": "sum of exact raw inventory occurrences matching observed canonical/raw aliases; excludes other unmatched spellings"
+  },
+  "policy": "Research-only translation proposal. Existing player IDs are from the catalog snapshot; no DB writes. Wikipedia exact interlanguage titles used when exposed; entries without one disclose fallback and still need source validation.",
+  "players": [
+    {
+      "rank": 1,
+      "canonical": "吴清源",
+      "canonical_player_id": 1,
+      "raw_aliases": [
+        {
+          "raw": "Go Seigen",
+          "slots": 949
+        },
+        {
+          "raw": "吴清源",
+          "slots": 109
+        }
+      ],
+      "frequency_slots": 1058,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {
+          "display_name": "吴清源",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%90%B3%E6%B8%85%E6%BA%90",
+          "article_title": "吳清源",
+          "fallback_reason": null
+        },
+        "tw": {
+          "display_name": "吳清源",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%90%B3%E6%B8%85%E6%BA%90",
+          "article_title": "吳清源",
+          "fallback_reason": null
+        },
+        "ja": {
+          "display_name": "呉清源",
+          "source_url": "https://ja.wikipedia.org/wiki/%E5%91%89%E6%B8%85%E6%BA%90",
+          "article_title": "呉清源",
+          "fallback_reason": null
+        },
+        "ko": {
+          "display_name": "우칭위안",
+          "source_url": "https://ko.wikipedia.org/wiki/%EC%98%A4%EC%B2%AD%EC%9B%90",
+          "article_title": "오청원",
+          "fallback_reason": null
+        },
+        "en": {
+          "display_name": "Go Seigen",
+          "source_url": "https://en.wikipedia.org/wiki/Go_Seigen",
+          "article_title": "Go Seigen",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 2,
+      "canonical": "木谷实",
+      "canonical_player_id": 5,
+      "raw_aliases": [
+        {
+          "raw": "木谷实",
+          "slots": 637
+        }
+      ],
+      "frequency_slots": 637,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {
+          "display_name": "木谷实",
+          "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%A8%E8%B0%B7%E5%AE%9E",
+          "article_title": "木谷实",
+          "fallback_reason": null
+        },
+        "tw": {
+          "display_name": "木谷實",
+          "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%A8%E8%B0%B7%E5%AE%9E",
+          "article_title": "木谷实",
+          "fallback_reason": null
+        },
+        "ja": {
+          "display_name": "木谷實",
+          "source_url": "https://ja.wikipedia.org/wiki/%E6%9C%A8%E8%B0%B7%E5%AF%A6",
+          "article_title": "木谷實",
+          "fallback_reason": null
+        },
+        "ko": {
+          "display_name": "기타니 미노루",
+          "source_url": "https://ko.wikipedia.org/wiki/%EA%B8%B0%ED%83%80%EB%8B%88_%EB%AF%B8%EB%85%B8%EB%A3%A8",
+          "article_title": "기타니 미노루",
+          "fallback_reason": null
+        },
+        "en": {
+          "display_name": "Minoru Kitani",
+          "source_url": "https://en.wikipedia.org/wiki/Minoru_Kitani",
+          "article_title": "Minoru Kitani",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 3,
+      "canonical": "李昌镐",
+      "canonical_player_id": 143,
+      "raw_aliases": [
+        {
+          "raw": "李昌镐",
+          "slots": 2140
+        }
+      ],
+      "frequency_slots": 2140,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {
+          "display_name": "李昌镐",
+          "source_url": "https://zh.wikipedia.org/wiki/%E6%9D%8E%E6%98%8C%E9%8E%AC",
+          "article_title": "李昌鎬",
+          "fallback_reason": null
+        },
+        "tw": {
+          "display_name": "李昌昊",
+          "source_url": "https://zh.wikipedia.org/wiki/%E6%9D%8E%E6%98%8C%E9%8E%AC",
+          "article_title": "李昌鎬",
+          "fallback_reason": null
+        },
+        "ja": {
+          "display_name": "李昌鎬",
+          "source_url": "https://ja.wikipedia.org/wiki/%E6%9D%8E%E6%98%8C%E9%8E%AC",
+          "article_title": "李昌鎬",
+          "fallback_reason": null
+        },
+        "ko": {
+          "display_name": "이창호",
+          "source_url": "https://ko.wikipedia.org/wiki/%EC%9D%B4%EC%B0%BD%ED%98%B8",
+          "article_title": "이창호",
+          "fallback_reason": null
+        },
+        "en": {
+          "display_name": "Lee Chang-ho",
+          "source_url": "https://en.wikipedia.org/wiki/Lee_Chang-ho",
+          "article_title": "Lee Chang-ho",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 4,
+      "canonical": "赵治勋",
+      "canonical_player_id": 608,
+      "raw_aliases": [
+        {
+          "raw": "Cho Chikun",
+          "slots": 223
+        },
+        {
+          "raw": "赵治勋",
+          "slots": 2052
+        }
+      ],
+      "frequency_slots": 2275,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {
+          "display_name": "赵治勋",
+          "source_url": "https://en.wikipedia.org/wiki/Cho_Chikun",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "趙治勳",
+          "source_url": "https://en.wikipedia.org/wiki/Cho_Chikun",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "趙 治勲",
+          "source_url": "https://en.wikipedia.org/wiki/Cho_Chikun",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "조치훈",
+          "source_url": "https://en.wikipedia.org/wiki/Cho_Chikun",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Cho Chikun",
+          "source_url": "https://en.wikipedia.org/wiki/Cho_Chikun",
+          "article_title": "Cho Chikun",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 5,
+      "canonical": "曹薰铉",
+      "canonical_player_id": 46,
+      "raw_aliases": [
+        {
+          "raw": "曹薰铉",
+          "slots": 1937
+        }
+      ],
+      "frequency_slots": 1937,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {
+          "display_name": "曹薰铉",
+          "source_url": "https://en.wikipedia.org/wiki/Cho_Hun-hyun",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "曹薰鉉",
+          "source_url": "https://en.wikipedia.org/wiki/Cho_Hun-hyun",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "曺薰鉉",
+          "source_url": "https://en.wikipedia.org/wiki/Cho_Hun-hyun",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "조훈현",
+          "source_url": "https://en.wikipedia.org/wiki/Cho_Hun-hyun",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Cho Hun-hyun",
+          "source_url": "https://en.wikipedia.org/wiki/Cho_Hun-hyun",
+          "article_title": "Cho Hun-hyun",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 6,
+      "canonical": "小林光一",
+      "canonical_player_id": 82,
+      "raw_aliases": [
+        {
+          "raw": "小林光一",
+          "slots": 1630
+        }
+      ],
+      "frequency_slots": 1630,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {
+          "display_name": "小林光一",
+          "source_url": "https://en.wikipedia.org/wiki/Koichi_Kobayashi",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "小林光一",
+          "source_url": "https://en.wikipedia.org/wiki/Koichi_Kobayashi",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "小林光一",
+          "source_url": "https://en.wikipedia.org/wiki/Koichi_Kobayashi",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "고바야시 고이치",
+          "source_url": "https://en.wikipedia.org/wiki/Koichi_Kobayashi",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Koichi Kobayashi",
+          "source_url": "https://en.wikipedia.org/wiki/Koichi_Kobayashi",
+          "article_title": "Koichi Kobayashi",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 7,
+      "canonical": "朴廷桓",
+      "canonical_player_id": 54,
+      "raw_aliases": [
+        {
+          "raw": "朴廷桓",
+          "slots": 1526
+        }
+      ],
+      "frequency_slots": 1526,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {
+          "display_name": "朴廷桓",
+          "source_url": "https://en.wikipedia.org/wiki/Park_Junghwan",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "朴廷桓",
+          "source_url": "https://en.wikipedia.org/wiki/Park_Junghwan",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "朴廷桓",
+          "source_url": "https://en.wikipedia.org/wiki/Park_Junghwan",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "박정환",
+          "source_url": "https://en.wikipedia.org/wiki/Park_Junghwan",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Park Junghwan",
+          "source_url": "https://en.wikipedia.org/wiki/Park_Junghwan",
+          "article_title": "Park Junghwan",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 8,
+      "canonical": "井山裕太",
+      "canonical_player_id": 56,
+      "raw_aliases": [
+        {
+          "raw": "井山裕太",
+          "slots": 1276
+        }
+      ],
+      "frequency_slots": 1276,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "井山裕太",
+          "source_url": "https://en.wikipedia.org/wiki/Yuta_Iyama",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "井山裕太",
+          "source_url": "https://en.wikipedia.org/wiki/Yuta_Iyama",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "井山裕太",
+          "source_url": "https://en.wikipedia.org/wiki/Yuta_Iyama",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "이야마 유타",
+          "source_url": "https://en.wikipedia.org/wiki/Yuta_Iyama",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Yuta Iyama",
+          "source_url": "https://en.wikipedia.org/wiki/Yuta_Iyama",
+          "article_title": "Yuta Iyama",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 9,
+      "canonical": "依田纪基",
+      "canonical_player_id": 57,
+      "raw_aliases": [
+        {
+          "raw": "Yoda Norimoto",
+          "slots": 1
+        },
+        {
+          "raw": "依田纪基",
+          "slots": 1385
+        }
+      ],
+      "frequency_slots": 1386,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "依田纪基",
+          "source_url": "https://en.wikipedia.org/wiki/Yoda_Norimoto",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "依田紀基",
+          "source_url": "https://en.wikipedia.org/wiki/Yoda_Norimoto",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "依田紀基",
+          "source_url": "https://en.wikipedia.org/wiki/Yoda_Norimoto",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "요다 노리모토",
+          "source_url": "https://en.wikipedia.org/wiki/Yoda_Norimoto",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Yoda Norimoto",
+          "source_url": "https://en.wikipedia.org/wiki/Yoda_Norimoto",
+          "article_title": "Yoda Norimoto",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 10,
+      "canonical": "刘昌赫",
+      "canonical_player_id": 69,
+      "raw_aliases": [
+        {
+          "raw": "刘昌赫",
+          "slots": 1291
+        }
+      ],
+      "frequency_slots": 1291,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "刘昌赫",
+          "source_url": "https://en.wikipedia.org/wiki/Yoo_Chang-hyuk",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "劉昌赫",
+          "source_url": "https://en.wikipedia.org/wiki/Yoo_Chang-hyuk",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "劉昌赫",
+          "source_url": "https://en.wikipedia.org/wiki/Yoo_Chang-hyuk",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "유창혁",
+          "source_url": "https://en.wikipedia.org/wiki/Yoo_Chang-hyuk",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Yoo Chang-hyuk",
+          "source_url": "https://en.wikipedia.org/wiki/Yoo_Chang-hyuk",
+          "article_title": "Yoo Chang-hyuk",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 11,
+      "canonical": "张栩",
+      "canonical_player_id": 80,
+      "raw_aliases": [
+        {
+          "raw": "张栩",
+          "slots": 1269
+        }
+      ],
+      "frequency_slots": 1269,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "张栩",
+          "source_url": "https://en.wikipedia.org/wiki/Zhang_Xu_%28Go_player%29",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "張栩",
+          "source_url": "https://en.wikipedia.org/wiki/Zhang_Xu_%28Go_player%29",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "張栩",
+          "source_url": "https://en.wikipedia.org/wiki/Zhang_Xu_%28Go_player%29",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "쵸우 우",
+          "source_url": "https://en.wikipedia.org/wiki/Zhang_Xu_%28Go_player%29",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Zhang Xu (Go player)",
+          "source_url": "https://en.wikipedia.org/wiki/Zhang_Xu_%28Go_player%29",
+          "article_title": "Zhang Xu (Go player)",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 12,
+      "canonical": "徐奉洙",
+      "canonical_player_id": 108,
+      "raw_aliases": [
+        {
+          "raw": "徐奉洙",
+          "slots": 1257
+        }
+      ],
+      "frequency_slots": 1257,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "徐奉洙",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%BE%90%E5%A5%89%E6%B4%99",
+          "article_title": "徐奉洙",
+          "fallback_reason": null
+        },
+        "tw": {
+          "display_name": "徐奉洙",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%BE%90%E5%A5%89%E6%B4%99",
+          "article_title": "徐奉洙",
+          "fallback_reason": null
+        },
+        "ja": {
+          "display_name": "徐奉洙",
+          "source_url": "https://ja.wikipedia.org/wiki/%E5%BE%90%E5%A5%89%E6%B4%99",
+          "article_title": "徐奉洙",
+          "fallback_reason": null
+        },
+        "ko": {
+          "display_name": "서봉수",
+          "source_url": "https://ko.wikipedia.org/wiki/%EC%84%9C%EB%B4%89%EC%88%98",
+          "article_title": "서봉수",
+          "fallback_reason": null
+        },
+        "en": {
+          "display_name": "Seo Bong-soo",
+          "source_url": "https://en.wikipedia.org/wiki/Seo_Bong-soo",
+          "article_title": "Seo Bong-soo",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 13,
+      "canonical": "王立诚",
+      "canonical_player_id": 17,
+      "raw_aliases": [
+        {
+          "raw": "王立诚",
+          "slots": 1237
+        }
+      ],
+      "frequency_slots": 1237,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "王立诚",
+          "source_url": "https://zh.wikipedia.org/wiki/%E7%8E%8B%E7%AB%8B%E8%AF%9A",
+          "article_title": "王立诚",
+          "fallback_reason": null
+        },
+        "tw": {
+          "display_name": "王立誠",
+          "source_url": "https://zh.wikipedia.org/wiki/%E7%8E%8B%E7%AB%8B%E8%AF%9A",
+          "article_title": "王立诚",
+          "fallback_reason": null
+        },
+        "ja": {
+          "display_name": "王立誠",
+          "source_url": "https://ja.wikipedia.org/wiki/%E7%8E%8B%E7%AB%8B%E8%AA%A0",
+          "article_title": "王立誠",
+          "fallback_reason": null
+        },
+        "ko": {
+          "display_name": "왕리청",
+          "source_url": "https://ko.wikipedia.org/wiki/%EC%99%95%EB%A6%AC%EC%B2%AD",
+          "article_title": "왕리청",
+          "fallback_reason": null
+        },
+        "en": {
+          "display_name": "Ō Rissei",
+          "source_url": "https://en.wikipedia.org/wiki/%C5%8C_Rissei",
+          "article_title": "Ō Rissei",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 14,
+      "canonical": "古力",
+      "canonical_player_id": 201,
+      "raw_aliases": [
+        {
+          "raw": "古力",
+          "slots": 1353
+        }
+      ],
+      "frequency_slots": 1353,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "古力",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%8F%A4%E5%8A%9B",
+          "article_title": "古力",
+          "fallback_reason": null
+        },
+        "tw": {
+          "display_name": "古力",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%8F%A4%E5%8A%9B",
+          "article_title": "古力",
+          "fallback_reason": null
+        },
+        "ja": {
+          "display_name": "古力",
+          "source_url": "https://ja.wikipedia.org/wiki/%E5%8F%A4%E5%8A%9B",
+          "article_title": "古力",
+          "fallback_reason": null
+        },
+        "ko": {
+          "display_name": "구리",
+          "source_url": "https://ko.wikipedia.org/wiki/%EA%B5%AC%EB%A6%AC_%28%EB%B0%94%EB%91%91_%EA%B8%B0%EC%82%AC%29",
+          "article_title": "구리 (바둑 기사)",
+          "fallback_reason": null
+        },
+        "en": {
+          "display_name": "Gu Li (Go player)",
+          "source_url": "https://en.wikipedia.org/wiki/Gu_Li_%28Go_player%29",
+          "article_title": "Gu Li (Go player)",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 15,
+      "canonical": "山下敬吾",
+      "canonical_player_id": 242,
+      "raw_aliases": [
+        {
+          "raw": "山下敬吾",
+          "slots": 1371
+        }
+      ],
+      "frequency_slots": 1371,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "山下敬吾",
+          "source_url": "https://en.wikipedia.org/wiki/Yamashita_Keigo_%28Go_player%29",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "山下敬吾",
+          "source_url": "https://en.wikipedia.org/wiki/Yamashita_Keigo_%28Go_player%29",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "山下敬吾",
+          "source_url": "https://en.wikipedia.org/wiki/Yamashita_Keigo_%28Go_player%29",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "야마시타 게이고",
+          "source_url": "https://en.wikipedia.org/wiki/Yamashita_Keigo_%28Go_player%29",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Yamashita Keigo (Go player)",
+          "source_url": "https://en.wikipedia.org/wiki/Yamashita_Keigo_%28Go_player%29",
+          "article_title": "Yamashita Keigo (Go player)",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 16,
+      "canonical": "常昊",
+      "canonical_player_id": 877,
+      "raw_aliases": [
+        {
+          "raw": "常昊",
+          "slots": 1319
+        }
+      ],
+      "frequency_slots": 1319,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "常昊",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%B8%B8%E6%98%8A",
+          "article_title": "常昊",
+          "fallback_reason": null
+        },
+        "tw": {
+          "display_name": "常昊",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%B8%B8%E6%98%8A",
+          "article_title": "常昊",
+          "fallback_reason": null
+        },
+        "ja": {
+          "display_name": "常昊",
+          "source_url": "https://ja.wikipedia.org/wiki/%E5%B8%B8%E6%98%8A",
+          "article_title": "常昊",
+          "fallback_reason": null
+        },
+        "ko": {
+          "display_name": "창하오",
+          "source_url": "https://ko.wikipedia.org/wiki/%EC%B0%BD%ED%95%98%EC%98%A4_%28%EB%B0%94%EB%91%91_%EA%B8%B0%EC%82%AC%29",
+          "article_title": "창하오 (바둑 기사)",
+          "fallback_reason": null
+        },
+        "en": {
+          "display_name": "Chang Hao (Go player)",
+          "source_url": "https://en.wikipedia.org/wiki/Chang_Hao_%28Go_player%29",
+          "article_title": "Chang Hao (Go player)",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 17,
+      "canonical": "加藤正夫",
+      "canonical_player_id": 878,
+      "raw_aliases": [
+        {
+          "raw": "加藤正夫",
+          "slots": 1189
+        }
+      ],
+      "frequency_slots": 1189,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "加藤正夫",
+          "source_url": "https://en.wikipedia.org/wiki/Masao_Kato",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "加藤正夫",
+          "source_url": "https://en.wikipedia.org/wiki/Masao_Kato",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "加藤正夫",
+          "source_url": "https://en.wikipedia.org/wiki/Masao_Kato",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "가토 마사오",
+          "source_url": "https://en.wikipedia.org/wiki/Masao_Kato",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Masao Kato",
+          "source_url": "https://en.wikipedia.org/wiki/Masao_Kato",
+          "article_title": "Masao Kato",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 18,
+      "canonical": "大竹英雄",
+      "canonical_player_id": 879,
+      "raw_aliases": [
+        {
+          "raw": "大竹英雄",
+          "slots": 1303
+        }
+      ],
+      "frequency_slots": 1303,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "大竹英雄",
+          "source_url": "https://en.wikipedia.org/wiki/Hideo_Otake",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "tw": {
+          "display_name": "大竹英雄",
+          "source_url": "https://en.wikipedia.org/wiki/Hideo_Otake",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ja": {
+          "display_name": "大竹英雄",
+          "source_url": "https://en.wikipedia.org/wiki/Hideo_Otake",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "ko": {
+          "display_name": "오타케 히데오",
+          "source_url": "https://en.wikipedia.org/wiki/Hideo_Otake",
+          "article_title": null,
+          "fallback_reason": "No corresponding interlanguage article exposed by the English Wikipedia langlinks API; display form retained from established Go-player usage and requires independent association/source capture."
+        },
+        "en": {
+          "display_name": "Hideo Otake",
+          "source_url": "https://en.wikipedia.org/wiki/Hideo_Otake",
+          "article_title": "Hideo Otake",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 19,
+      "canonical": "藤泽秀行",
+      "canonical_player_id": 880,
+      "raw_aliases": [
+        {
+          "raw": "藤泽秀行",
+          "slots": 1258
+        }
+      ],
+      "frequency_slots": 1258,
+      "identity_confidence": "medium-high",
+      "values": {
+        "cn": {
+          "display_name": "藤泽秀行",
+          "source_url": "https://zh.wikipedia.org/wiki/%E8%97%A4%E6%B3%BD%E7%A7%80%E8%A1%8C",
+          "article_title": "藤泽秀行",
+          "fallback_reason": null
+        },
+        "tw": {
+          "display_name": "藤澤秀行",
+          "source_url": "https://zh.wikipedia.org/wiki/%E8%97%A4%E6%B3%BD%E7%A7%80%E8%A1%8C",
+          "article_title": "藤泽秀行",
+          "fallback_reason": null
+        },
+        "ja": {
+          "display_name": "藤澤秀行",
+          "source_url": "https://ja.wikipedia.org/wiki/%E8%97%A4%E6%B2%A2%E7%A7%80%E8%A1%8C",
+          "article_title": "藤沢秀行",
+          "fallback_reason": null
+        },
+        "ko": {
+          "display_name": "후지사와 히데유키",
+          "source_url": "https://ko.wikipedia.org/wiki/%ED%9B%84%EC%A7%80%EC%82%AC%EC%99%80_%ED%9E%88%EB%8D%B0%EC%9C%A0%ED%82%A4",
+          "article_title": "후지사와 히데유키",
+          "fallback_reason": null
+        },
+        "en": {
+          "display_name": "Hideyuki Fujisawa",
+          "source_url": "https://en.wikipedia.org/wiki/Hideyuki_Fujisawa",
+          "article_title": "Hideyuki Fujisawa",
+          "fallback_reason": null
+        }
+      }
+    },
+    {
+      "rank": 20,
+      "canonical": "林海峰",
+      "canonical_player_id": 299,
+      "raw_aliases": [
+        {
+          "raw": "Rin Kaiho",
+          "slots": 251
+        },
+        {
+          "raw": "林海峰",
+          "slots": 1669
+        }
+      ],
+      "frequency_slots": 1920,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {
+          "display_name": "林海峰",
+          "source_url": "https://zh.wikipedia.org/wiki/%E6%9E%97%E6%B5%B7%E5%B3%B0_%28%E5%9B%B4%E6%A3%8B%29",
+          "article_title": "林海峰 (围棋)",
+          "fallback_reason": null
+        },
+        "tw": {
+          "display_name": "林海峰",
+          "source_url": "https://zh.wikipedia.org/wiki/%E6%9E%97%E6%B5%B7%E5%B3%B0_%28%E5%9B%B4%E6%A3%8B%29",
+          "article_title": "林海峰 (围棋)",
+          "fallback_reason": null
+        },
+        "ja": {
+          "display_name": "林海峰",
+          "source_url": "https://ja.wikipedia.org/wiki/%E6%9E%97%E6%B5%B7%E5%B3%B0",
+          "article_title": "林海峰",
+          "fallback_reason": null
+        },
+        "ko": {
+          "display_name": "린하이펑",
+          "source_url": "https://ko.wikipedia.org/wiki/%EB%A6%B0%ED%95%98%EC%9D%B4%ED%8E%91",
+          "article_title": "린하이펑",
+          "fallback_reason": null
+        },
+        "en": {
+          "display_name": "Rin Kaiho",
+          "source_url": "https://en.wikipedia.org/wiki/Rin_Kaiho",
+          "article_title": "Rin Kaiho",
+          "fallback_reason": null
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "pilot": "five_value_name_timed_pilot",
+  "date_utc": "2026-10-04",
+  "scope": "Exactly three existing, identity-clear Go professionals; cn/tw/jp/ko/en bundles; read-only research.",
+  "no_writes": true,
+  "players": [
+    {
+      "raw_name": "吴清源",
+      "canonical": "Go Seigen",
+      "existing_player_id": 1,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {"display_name": "吴清源", "source_url": "https://wqwh.weiqi.org.cn/%E7%AC%AC%E4%B8%80%E4%BD%8D%E5%A5%B3%E4%B9%9D%E6%AE%B5%EF%BC%8C%E8%8A%AE%E8%BF%BA%E4%BC%9F%E7%9A%84%E4%BC%A0%E5%A5%87/", "basis": "official China Weiqi Association source", "confidence": "high"},
+        "tw": {"display_name": "吳清源", "source_url": "https://zh.wikipedia.org/wiki/%E5%90%B3%E6%B8%85%E6%BA%90", "basis": "Chinese Wikipedia rendered title", "confidence": "high"},
+        "jp": {"display_name": "呉清源", "source_url": "https://ja.wikipedia.org/wiki/%E5%91%89%E6%B8%85%E6%BA%90", "basis": "Japanese Wikipedia title; Nihon Ki-in profile also captured in repo", "confidence": "high"},
+        "ko": {"display_name": "우칭위안", "source_url": "https://ko.wikipedia.org/wiki/%EC%9A%B0%EC%B9%AD%EC%9C%84%EC%95%88", "basis": "Korean Wikipedia title; KBA record in repo also records 우칭위안/오청원", "confidence": "high"},
+        "en": {"display_name": "Go Seigen", "source_url": "https://en.wikipedia.org/wiki/Go_Seigen", "basis": "English Wikipedia title", "confidence": "high"}
+      },
+      "timing": {"lookup_start_utc": "2026-10-04T12:07:12.988Z", "lookup_end_utc": "2026-10-04T12:07:15.071Z", "lookup_ms": 2083, "identity_verification_ms": 97, "normalization_ms": 101, "final_bundle_ms": 79, "measured_phase_sum_ms": 2360}
+    },
+    {
+      "raw_name": "赵治勋",
+      "canonical": "Cho Chikun",
+      "existing_player_id": 608,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {"display_name": "赵治勋", "source_url": "https://zh.wikipedia.org/wiki/%E8%B6%99%E6%B2%BB%E5%8B%B3", "basis": "Chinese Wikipedia article with simplified title redirect/variant rendering; mainland official source remains a source-quality caveat", "confidence": "medium"},
+        "tw": {"display_name": "趙治勳", "source_url": "https://news.pts.org.tw/article/341333", "basis": "PTS Taiwan Traditional Chinese report", "confidence": "high"},
+        "jp": {"display_name": "趙 治勲", "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000004_2.html", "basis": "Nihon Ki-in official profile", "confidence": "high"},
+        "ko": {"display_name": "조치훈", "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000020", "basis": "Korea Baduk Association official player record", "confidence": "high"},
+        "en": {"display_name": "Cho Chikun", "source_url": "https://en.wikipedia.org/wiki/Cho_Chikun", "basis": "English Wikipedia title", "confidence": "high"}
+      },
+      "timing": {"lookup_start_utc": "2026-10-04T12:07:15.071Z", "lookup_end_utc": "2026-10-04T12:07:25.031Z", "lookup_ms": 9960, "identity_verification_ms": 94, "normalization_ms": 76, "final_bundle_ms": 79, "measured_phase_sum_ms": 10209},
+      "warning": "Japanese Wikipedia open returned an internal error in this run; official Nihon Ki-in and KBA captures identify the same person. No identity ambiguity; cn source quality is medium pending a verified mainland official body capture."
+    },
+    {
+      "raw_name": "李昌镐",
+      "canonical": "Lee Chang-ho",
+      "existing_player_id": 143,
+      "identity_confidence": "high",
+      "values": {
+        "cn": {"display_name": "李昌镐", "source_url": "https://wqwh.weiqi.org.cn/%E7%9F%B3%E4%BD%9B%E6%9D%8E%E6%98%8C%E9%95%90%E7%9A%84%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AF%EF%BC%88%E4%B8%80%EF%BC%89/", "basis": "China Weiqi Association Simplified Chinese report", "confidence": "high"},
+        "tw": {"display_name": "李昌鎬", "source_url": "https://www.haifong.org/news/content/15EE67D3992682B5D3F462451173543C", "basis": "Haifong Go Institute Traditional Chinese report", "confidence": "high"},
+        "jp": {"display_name": "イ・チャンホ（李昌鎬）", "source_url": "https://kotobank.jp/word/%E3%81%84%E3%81%A1%E3%82%83%E3%82%93%E3%81%BB-2103593", "basis": "Japanese Kotobank reference entry", "confidence": "high"},
+        "ko": {"display_name": "이창호", "source_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000001", "basis": "Korea Baduk Association official player profile", "confidence": "high"},
+        "en": {"display_name": "Lee Chang-ho", "source_url": "https://en.wikipedia.org/wiki/Lee_Chang-ho", "basis": "English Wikipedia title", "confidence": "high"}
+      },
+      "timing": {"lookup_start_utc": "2026-10-04T12:07:25.031Z", "lookup_end_utc": "2026-10-04T12:07:27.223Z", "lookup_ms": 2192, "identity_verification_ms": 81, "normalization_ms": 76, "final_bundle_ms": 75, "measured_phase_sum_ms": 2424}
+    }
+  ],
+  "timing_summary": {
+    "measured_phase_sum_ms_total": 14993,
+    "measured_phase_sum_ms_mean_per_player": 4997.67,
+    "pilot_wall_start_utc": "2026-10-04T12:07:12.988Z",
+    "pilot_wall_end_utc": "2026-10-04T12:07:54.194Z",
+    "pilot_wall_elapsed_ms": 41206,
+    "pilot_wall_mean_per_player_ms": 13735.33,
+    "interpretation": "Phase sums are measured tool-operation latency. Wall time includes sequential orchestration and gaps between calls; it is the closer human elapsed estimate for this run."
+  },
+  "source_reuse": [
+    "docs/resource/kifu-name-wu-evidence-status.md",
+    "docs/resource/kifu-name-zhao-608-east-followup-2026-10-02.md",
+    "docs/resource/kifu-name-zhao-11lang-matrix.md",
+    "docs/resource/kifu-name-lee-chang-ho-research-pilot.md",
+    "docs/resource/kifu-name-lee-34-current-preimages-2026-10-02.md"
+  ]
+}

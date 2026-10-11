@@ -1,0 +1,493 @@
+{
+  "format": "kifu-player-nonhan-ranks-361-380-review-v1",
+  "scope": "frozen post7 inventory exact raw ranks 361–380; earlier ranks excluded",
+  "snapshot_note": "2026-10-04 TEST/PROD read-only SQL; all selected FK NULL and review state pending. Before any write, regenerate live snapshot and rebind catalog IDs.",
+  "snapshot_sha256": "fef903328d92fa45680e0ebe5b094750671ae3f30f60c42d8cbdb4b5c37596f5",
+  "summary": {
+    "raw_values": 20,
+    "slots_each_environment": 423,
+    "approved_raw_values": 15,
+    "approved_slots_each_environment": 316,
+    "held_raw_values": 5,
+    "held_slots_each_environment": 107,
+    "new_catalog_players": 5
+  },
+  "rows": [
+    {
+      "rank": 361,
+      "raw_value": "IshiiShinzo",
+      "slots_each_environment": 22,
+      "current_unlinked_slots_each_environment": 22,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1900-01-01",
+      "last_raw_date": "1988-04-01",
+      "canonical_chinese_name": "石井新藏",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [
+          5635,
+          5636
+        ],
+        "test": [
+          11408,
+          11409
+        ]
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "现有石井新蔵/石井新藏两个目录 ID；同一姓名的规范字形与旧 FK 归并未审，先保留未关联。",
+      "normalized_siblings": [
+        {
+          "raw_value": "Ishii Shinzo",
+          "slots": 28
+        },
+        {
+          "raw_value": "Ishii Shinzo?",
+          "slots": 2
+        }
+      ]
+    },
+    {
+      "rank": 362,
+      "raw_value": "Kano Kazuo",
+      "slots_each_environment": 22,
+      "current_unlinked_slots_each_environment": 22,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1962-04-22",
+      "last_raw_date": "1978-06-15",
+      "canonical_chinese_name": "加纳一夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 直列加納一夫/Kano Kazuo；1962–1978 棋谱与职业期间一致。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 363,
+      "raw_value": "Murashima Yoshikatsu",
+      "slots_each_environment": 22,
+      "current_unlinked_slots_each_environment": 22,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1925-08-26",
+      "last_raw_date": "None",
+      "canonical_chinese_name": "村岛谊纪",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6606
+        ],
+        "test": [
+          12370
+        ]
+      },
+      "proposed_catalog_action": "reuse_existing_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "村島義勝为村島誼紀旧名，来源同列 Yoshikatsu/Yoshinori；复用已建 ID。",
+      "normalized_siblings": [
+        {
+          "raw_value": "MurashimaYoshikatsu",
+          "slots": 2
+        }
+      ]
+    },
+    {
+      "rank": 364,
+      "raw_value": "Nagasaka Inosuke",
+      "slots_each_environment": 22,
+      "current_unlinked_slots_each_environment": 22,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1807-07-23",
+      "last_raw_date": "1823-07",
+      "canonical_chinese_name": "长坂猪之助",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+      "identity_note": "CWI 本因坊丈和棋谱直列長坂猪之助/Nagasaka Inosuke，且有1807–1808年21局对局。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 365,
+      "raw_value": "Nie Weiping",
+      "slots_each_environment": 22,
+      "current_unlinked_slots_each_environment": 22,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1973-07-24",
+      "last_raw_date": "1978-08-15",
+      "canonical_chinese_name": "聂卫平",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5744
+        ],
+        "test": [
+          11513
+        ]
+      },
+      "proposed_catalog_action": "reuse_existing_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/event/amakisen/worldama/41/history.html",
+      "identity_note": "日本棋院1979世界业余赛史料直列聶衛平与英文姓/名；复用简中目录 ID。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 366,
+      "raw_value": "Seki Genkichi",
+      "slots_each_environment": 22,
+      "current_unlinked_slots_each_environment": 22,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1882-01",
+      "last_raw_date": "1906-08-27..09-11",
+      "canonical_chinese_name": "关源吉",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.ndl.go.jp/kaleido/e/entry/22/3.html",
+      "identity_note": "日本国会图书馆直列関源吉/SEKI Genkichi及生卒年1856–1925。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 367,
+      "raw_value": "Wu Songsheng",
+      "slots_each_environment": 22,
+      "current_unlinked_slots_each_environment": 22,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1963-09-15",
+      "last_raw_date": "1978-06-17",
+      "canonical_chinese_name": "吴淞笙",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [
+          4150,
+          4151
+        ],
+        "test": [
+          9945,
+          9946
+        ]
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://db.u-go.net/",
+      "identity_note": "吴淞生/吴淞笙两个现存目录 ID；优先清理旧名字和旧 FK，再选唯一目标。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 368,
+      "raw_value": "林海峰RinKaiho",
+      "slots_each_environment": 22,
+      "current_unlinked_slots_each_environment": 22,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1979-05-17",
+      "last_raw_date": "1994-03-31",
+      "canonical_chinese_name": "林海峰",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [
+          298,
+          5193
+        ],
+        "test": [
+          299,
+          10973
+        ]
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://archive.nihonkiin.or.jp/90anniversary/message/index.html",
+      "identity_note": "林海峰与误字林海蜂、名誉称号目录历史及多个罗马原值交织；避免越过家族去重审查。",
+      "normalized_siblings": [
+        {
+          "raw_value": "Rin Kaiho",
+          "slots": 251
+        },
+        {
+          "raw_value": "RinKaiho",
+          "slots": 38
+        },
+        {
+          "raw_value": "RinKaiho林海峰",
+          "slots": 3
+        }
+      ]
+    },
+    {
+      "rank": 369,
+      "raw_value": "CheongHyeon-san",
+      "slots_each_environment": 21,
+      "current_unlinked_slots_each_environment": 21,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1990-04-10",
+      "last_raw_date": "1999-04-26",
+      "canonical_chinese_name": "丁铉山",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3741
+        ],
+        "test": [
+          9539
+        ]
+      },
+      "proposed_catalog_action": "reuse_existing_catalog_player",
+      "evidence_url": "https://db.u-go.net/?page=20",
+      "identity_note": "棋手索引直列 Cheong Hyeon-san / Jeong Hyeonsan / 丁铉山；复用目录 ID。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 370,
+      "raw_value": "CheongTae-sang",
+      "slots_each_environment": 21,
+      "current_unlinked_slots_each_environment": 21,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1985-05-27",
+      "last_raw_date": "2002-01-10",
+      "canonical_chinese_name": "郑大相",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6020
+        ],
+        "test": [
+          11788
+        ]
+      },
+      "proposed_catalog_action": "reuse_existing_catalog_player",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000043",
+      "identity_note": "u-go 名字索引确认 Cheong Tae-sang/Jeong Daesang/鄭大相；韩国棋院确认鄭大相。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 371,
+      "raw_value": "Kanai Shinichi",
+      "slots_each_environment": 21,
+      "current_unlinked_slots_each_environment": 21,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1946-04-24,25",
+      "last_raw_date": "1972-11-23",
+      "canonical_chinese_name": "金井新一",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 直列金井新一/Kanai Shinichi，生于1919、卒于1979；1946–1972棋谱吻合。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 372,
+      "raw_value": "KimSeungJoon",
+      "slots_each_environment": 21,
+      "current_unlinked_slots_each_environment": 21,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1990-09-11",
+      "last_raw_date": "2002-01-16",
+      "canonical_chinese_name": "金承俊",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          163
+        ],
+        "test": [
+          164
+        ]
+      },
+      "proposed_catalog_action": "reuse_existing_catalog_player",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000059",
+      "identity_note": "与已关联 KimSeung-chun 同一金承俊，韩国棋院姓名及棋历吻合；复用同一 ID。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 373,
+      "raw_value": "Murakami Bunsho",
+      "slots_each_environment": 21,
+      "current_unlinked_slots_each_environment": 21,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1956-02",
+      "last_raw_date": "1978-11-29",
+      "canonical_chinese_name": "村上文祥",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/event/amakisen/worldama/41/history.html",
+      "identity_note": "日本棋院世界业余赛史料直列村上文祥/Bunsho MURAKAMI；业余棋手亦为人物。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 374,
+      "raw_value": "OGyuCheol",
+      "slots_each_environment": 21,
+      "current_unlinked_slots_each_environment": 21,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1986-07-16",
+      "last_raw_date": "2000-03-13",
+      "canonical_chinese_name": "吴圭喆",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [
+          4138,
+          4139
+        ],
+        "test": [
+          9934,
+          9935
+        ]
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://db.u-go.net/",
+      "identity_note": "现有吴圭哲/吴圭喆两个目录 ID；先审规范字形与旧 FK。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 375,
+      "raw_value": "Yokoyama Kunitada",
+      "slots_each_environment": 21,
+      "current_unlinked_slots_each_environment": 21,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-27,28",
+      "last_raw_date": "1974-08-22",
+      "canonical_chinese_name": "横山国忠",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5285
+        ],
+        "test": [
+          11063
+        ]
+      },
+      "proposed_catalog_action": "reuse_existing_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 职业段位表直列横山国忠/Yokoyama Kunitada。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 376,
+      "raw_value": "ChenYongan",
+      "slots_each_environment": 20,
+      "current_unlinked_slots_each_environment": 20,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1900-01-01",
+      "last_raw_date": "2003-12-26",
+      "canonical_chinese_name": "陈永安",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6358
+        ],
+        "test": [
+          12124
+        ]
+      },
+      "proposed_catalog_action": "reuse_existing_catalog_player",
+      "evidence_url": "https://db.u-go.net/?page=18",
+      "identity_note": "u-go 索引直列 Chen Yongan/陳永安；1900-01-01 为资料占位日期，2003棋谱吻合。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 377,
+      "raw_value": "Hiki Genjiro",
+      "slots_each_environment": 20,
+      "current_unlinked_slots_each_environment": 20,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1835-07",
+      "last_raw_date": "1872-09-28",
+      "canonical_chinese_name": null,
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Shusaku/Shusaku-number/shusaku-number.html",
+      "identity_note": "只找到 Hiki Genjiro 罗马拼写，未有可靠汉字姓名，不建立猜测性的中文人物。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 378,
+      "raw_value": "Hua Yigang",
+      "slots_each_environment": 20,
+      "current_unlinked_slots_each_environment": 20,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1973-07-24",
+      "last_raw_date": "1978-12-05",
+      "canonical_chinese_name": "华以刚",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4070
+        ],
+        "test": [
+          9866
+        ]
+      },
+      "proposed_catalog_action": "reuse_existing_catalog_player",
+      "evidence_url": "https://sports.sina.com.cn/star/huayigang/",
+      "identity_note": "棋手资料页直列华以刚/hua yigang；复用已建 ID。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 379,
+      "raw_value": "Inoue Gennan Inseki",
+      "slots_each_environment": 20,
+      "current_unlinked_slots_each_environment": 20,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1825-01-05",
+      "last_raw_date": "1855-04-22,24,26,27,05-05",
+      "canonical_chinese_name": "井上幻庵因硕",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6665
+        ],
+        "test": [
+          12434
+        ]
+      },
+      "proposed_catalog_action": "reuse_existing_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+      "identity_note": "CWI 直列井上幻庵因碩/Inoue Gennan Inseki；复用先批同一人物 ID。",
+      "normalized_siblings": []
+    },
+    {
+      "rank": 380,
+      "raw_value": "KimHeui-chung",
+      "slots_each_environment": 20,
+      "current_unlinked_slots_each_environment": 20,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1971-03-26",
+      "last_raw_date": "1997-12-16",
+      "canonical_chinese_name": "金熙中",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6197
+        ],
+        "test": [
+          11964
+        ]
+      },
+      "proposed_catalog_action": "reuse_existing_catalog_player",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000007",
+      "identity_note": "韩国棋院确认김희중/金熙中；复用已建 ID。",
+      "normalized_siblings": [
+        {
+          "raw_value": "金熙中KimHeui-chung",
+          "slots": 2
+        }
+      ]
+    }
+  ]
+}

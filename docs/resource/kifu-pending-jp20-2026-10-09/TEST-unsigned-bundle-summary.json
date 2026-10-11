@@ -1,0 +1,29 @@
+{
+  "CN_to_TW_count": 1,
+  "JP_to_CN_count": 19,
+  "approved_name_snapshot_sha256": "b627ada77c155e9031bdf8e47bb188436d373d4b7b581f892b89635178069a2e",
+  "bundle_sha256": "b374af6d2845011e11439c8e7a893e1b3698ffaabbcb8ba875d3b6f5419acfdf",
+  "catalog_sha256": "aedaab6720cf4035533827d63dc90669e3b5ee35e97855e5b72e02c42616a9d2",
+  "context_refreshed_at": "2026-10-08T18:12:18.892077+00:00",
+  "distinct_players": 20,
+  "environment": "TEST",
+  "inner_batches": 2,
+  "inner_rules": 2,
+  "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+  "name_writes": 20,
+  "registry_sha256": "e82b7fce9527f199005bba0b2aabf84f230018a8cbbaad64fe5a0a63af0b8ee9",
+  "status": "root_dependencies_signed_outer_execution_unsigned",
+  "validation": {
+    "approved": 20,
+    "candidate_count": 20,
+    "errors": [],
+    "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+    "member_count": 20,
+    "missing": 0,
+    "pending": 0,
+    "ready": true,
+    "rejected": 0,
+    "write_errors": [],
+    "write_ready": true
+  }
+}

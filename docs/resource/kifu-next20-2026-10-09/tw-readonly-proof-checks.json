@@ -1,0 +1,16 @@
+{
+  "same_original_game_scope_all17": true,
+  "slots": 1583,
+  "qualified_source_rows_all17_both_environments": true,
+  "JP9_physical_NULL": true,
+  "CN7_actual_REVIEW_rows": true,
+  "KBA446_actual_ko_html_language": true,
+  "KBA446_exact_complete_Korean_Hanja_same_paragraph": true,
+  "KBA446_stable_diary_person_id": true,
+  "KBA446_BODY_sha256": "fa26ec696d5c9b53fa81dfd797e412363ad89e427aee451ef88499f0cf101bfe",
+  "source_captured_at": {
+    "PROD": "2026-10-08T19:10:01.970663+00:00",
+    "TEST": "2026-10-08T19:10:08.411106+00:00"
+  },
+  "final_global_context_deferred": true
+}

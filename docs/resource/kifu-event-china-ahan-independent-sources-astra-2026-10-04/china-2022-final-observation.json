@@ -1,0 +1,15 @@
+{
+  "url": "https://ent.people.com.cn/n1/2022/1217/c1012-32588804.html",
+  "method": "web__run search rendered full article; requests direct capture unavailable due TLS hostname mismatch",
+  "access_date": "2026-10-04",
+  "publisher": "People.cn syndication of Xinhua reporting Chinese Weiqi Association information",
+  "facts": {
+    "date_played": "2022-12-16",
+    "event": "第23届阿含·桐山杯中国围棋快棋赛决赛",
+    "black": "李钦诚",
+    "white": "谢尔豪",
+    "move_count": 219,
+    "result": "black wins by resignation",
+    "next_day_separate_event": "China-Japan champions match against 平田智也"
+  }
+}

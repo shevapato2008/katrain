@@ -1,0 +1,202 @@
+[
+  {
+    "prod_id": 3792,
+    "canonical_name": "中川新之",
+    "current_ko": "나카가와 신지",
+    "original_name": "中川新之",
+    "archival_reading": "なかがわ しんじ",
+    "reading_source_url": "https://www.igorating.com/players/shinji-nakagawa",
+    "old_explanation": "な→나; か→카; が→가; わ→와; し→시; ん→ㄴ; じ→지. Segments: なかがわ→나카가와; しんじ→신지.",
+    "games": 397
+  },
+  {
+    "prod_id": 5237,
+    "canonical_name": "桑原宗久",
+    "current_ko": "구와하라 무네히사",
+    "original_name": "桑原宗久",
+    "archival_reading": "くわはら むねひさ",
+    "reading_source_url": "https://www.igorating.com/players/munehisa-kuwahara",
+    "old_explanation": "く→구 at word start; わ→와; は→하; ら→라; む→무; ね→네; ひ→히; さ→사. Segments くわはら→구와하라; むねひさ→무네히사.",
+    "games": 345
+  },
+  {
+    "prod_id": 6270,
+    "canonical_name": "长谷川章",
+    "current_ko": "하세가와 아키라",
+    "original_name": "長谷川章",
+    "archival_reading": "ハセガワ アキラ",
+    "reading_source_url": "https://kotobank.jp/word/%E9%95%B7%E8%B0%B7%E5%B7%9D%E7%AB%A0-1100972",
+    "old_explanation": "ハ→하 (word initial); セ→세; ガ→가; ワ→와; ア→아; キ→키; ラ→라. No sokuon or long vowel occurs.",
+    "games": 334
+  },
+  {
+    "prod_id": 5244,
+    "canonical_name": "桥本谊",
+    "current_ko": "하시모토 요시미",
+    "original_name": "橋本 誼",
+    "archival_reading": "ハシモト ヨシミ",
+    "reading_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000021.htm",
+    "old_explanation": "ハ→하; シ→시; モ→모; ト→토; ヨ→요; シ→시; ミ→미. No sokuon or long vowel.",
+    "games": 333
+  },
+  {
+    "prod_id": 6260,
+    "canonical_name": "锅岛一郎",
+    "current_ko": "나베시마 이치로",
+    "original_name": "鍋島一郎",
+    "archival_reading": "ナベシマ イチロウ",
+    "reading_source_url": "https://igorating.com/players/ichiro-nabeshima",
+    "old_explanation": "ナ→나; ベ→베; シ→시; マ→마; イ→이; チ→치 (within the given-name word); ロ→로; ウ is a long-vowel marker and is not separately written.",
+    "games": 329
+  },
+  {
+    "prod_id": 6252,
+    "canonical_name": "铃木五良",
+    "current_ko": "스즈키 고로",
+    "original_name": "鈴木五良",
+    "archival_reading": "スズキ ゴロウ",
+    "reading_source_url": "https://igorating.com/players/goro-suzuki",
+    "old_explanation": "ス→스; ズ→즈; キ→키; ゴ→고; ロ→로; ウ is a long-vowel marker and is not separately written.",
+    "games": 313
+  },
+  {
+    "prod_id": 6581,
+    "canonical_name": "星野纪",
+    "current_ko": "호시노 도시",
+    "original_name": "星野紀",
+    "archival_reading": "ホシノ トシ",
+    "reading_source_url": "https://igorating.com/players/toshi-hoshino",
+    "old_explanation": "ホ→호; シ→시; ノ→노; ト→도; シ→시. No sokuon or long vowel.",
+    "games": 311
+  },
+  {
+    "prod_id": 4121,
+    "canonical_name": "向井一男",
+    "current_ko": "무카이 가즈오",
+    "original_name": "向井一男",
+    "archival_reading": "むかい かずお",
+    "reading_source_url": "https://www.igorating.com/players/kazuo-mukai",
+    "old_explanation": "む→무; word-medial か in むかい→카; い→이; word-initial か in かずお→가; ず→즈; お→오. Segments むかい→무카이; かずお→가즈오. Reviewer to verify actual NIKL rule.",
+    "games": 308
+  },
+  {
+    "prod_id": 5158,
+    "canonical_name": "松本笃二",
+    "current_ko": "마쓰모토 도쿠지",
+    "original_name": "松本篤二",
+    "archival_reading": "マツモト トクジ",
+    "reading_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000069.html",
+    "old_explanation": "ま→마; つ→쓰; も→모; と→토; く→쿠; じ→지. For マツモト, word-medial ツ→쓰; for the second reading word トクジ, word-initial ト→도, ク→쿠, and ジ→지. No う occurs in the captured reading. The output is 마쓰모토 도쿠지.",
+    "games": 294
+  },
+  {
+    "prod_id": 3778,
+    "canonical_name": "中冈二郎",
+    "current_ko": "나카오카 지로",
+    "original_name": "中岡二郎",
+    "archival_reading": "ナカオカ ジロウ",
+    "reading_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000070.htm",
+    "old_explanation": "な→나; か→카; お→오; じ→지; ろ→로. Segment-initial voicing maps ジロウ→지로; final う is omitted by the transcription convention, yielding 나카오카 지로.",
+    "games": 293
+  },
+  {
+    "prod_id": 4499,
+    "canonical_name": "山崎祐男",
+    "current_ko": "야마자키 마스오",
+    "original_name": "山崎祐男",
+    "archival_reading": "やまざき ますお",
+    "reading_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000071.htm",
+    "old_explanation": "や→야; word-medial ま→마; ざ→자; き→키; word-initial ま→마; す→스; お→오. やまざき→야마자키; ますお→마스오. Reviewer verifies against saved NIKL rule.",
+    "games": 255
+  },
+  {
+    "prod_id": 5413,
+    "canonical_name": "渡边英夫",
+    "current_ko": "와타나베 히데오",
+    "original_name": "渡辺英夫",
+    "archival_reading": "わたなべ ひでお",
+    "reading_source_url": "https://www.nihonkiin.or.jp/player/htm/ki001011.htm",
+    "old_explanation": "わ→와; た→타; な→나; べ→베; ひ→히; で→데; お→오. わたなべ→와타나베; ひでお→히데오. Reviewer verifies against saved NIKL rule.",
+    "games": 223
+  },
+  {
+    "prod_id": 4842,
+    "canonical_name": "本间明男",
+    "current_ko": "혼마 아키오",
+    "original_name": "本間明男",
+    "archival_reading": "ほんま あきお",
+    "reading_source_url": "https://www.igorating.com/players/akio-honma",
+    "old_explanation": "ほ→호; ん→ㄴ; ま→마; あ→아; き→키; お→오. ほんま→혼마; あきお→아키오. Reviewer verifies saved NIKL rule.",
+    "games": 203
+  },
+  {
+    "prod_id": 4421,
+    "canonical_name": "小杉清",
+    "current_ko": "고스기 기요시",
+    "original_name": "小杉清",
+    "archival_reading": "こすぎ きよし",
+    "reading_source_url": "https://www.igorating.com/players/kiyoshi-kosugi",
+    "old_explanation": "Word-initial こ→고; す→스; ぎ→기; き→기; よ→요; し→시. こすぎ→고스기; きよし→기요시. Reviewer verifies saved NIKL rule.",
+    "games": 198
+  },
+  {
+    "prod_id": 3902,
+    "canonical_name": "佐藤馨",
+    "current_ko": "사토 가오루",
+    "original_name": "佐藤馨",
+    "archival_reading": "さとう かおる",
+    "reading_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000109.htm",
+    "old_explanation": "さ→사; と→토; う lengthens preceding vowel; か→가; お→오; る→루. さとう→사토; かおる→가오루. Reviewer verifies saved NIKL rule.",
+    "games": 190
+  },
+  {
+    "prod_id": 5877,
+    "canonical_name": "西上好彦",
+    "current_ko": "니시가미 요시히코",
+    "original_name": "西上好彦",
+    "archival_reading": "にしがみ よしひこ",
+    "reading_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000081.htm",
+    "old_explanation": "に→니; し→시; が→가; み→미; よ→요; し→시; ひ→히; こ→코. にしがみ→니시가미; よしひこ→요시히코. Reviewer verifies saved NIKL rule.",
+    "games": 176
+  },
+  {
+    "prod_id": 6608,
+    "canonical_name": "细川千仞",
+    "current_ko": "호소카와 센진",
+    "original_name": "細川千仭",
+    "archival_reading": "ほそかわ せんじん",
+    "reading_source_url": "https://igorating.com/players/senjin-hosokawa",
+    "old_explanation": "ほ→호; そ→소; か→카; わ→와; せ→세; ん→ㄴ; じ→지; ん→ㄴ. ほそかわ→호소카와; せんじん→센진. Reviewer verifies saved NIKL rule.",
+    "games": 150
+  },
+  {
+    "prod_id": 4587,
+    "canonical_name": "广江胜彦",
+    "current_ko": "히로에 가쓰히코",
+    "original_name": "広江勝彦",
+    "archival_reading": "ひろえ かつひこ",
+    "reading_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000086.html",
+    "old_explanation": "ひ→히; ろ→로; え→에; か→가; つ→쓰; ひ→히; こ→코. ひろえ→히로에; かつひこ→가쓰히코. Reviewer verifies saved NIKL rule.",
+    "games": 137
+  },
+  {
+    "prod_id": 6261,
+    "canonical_name": "锅岛昭",
+    "current_ko": "나베시마 아키라",
+    "original_name": "鍋島昭",
+    "archival_reading": "なべしま あきら",
+    "reading_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000074.html",
+    "old_explanation": "な→나; べ→베; し→시; ま→마; あ→아; き→키; ら→라. なべしま→나베시마; あきら→아키라. Reviewer verifies saved NIKL rule.",
+    "games": 128
+  },
+  {
+    "prod_id": 6496,
+    "canonical_name": "高见泽忠夫",
+    "current_ko": "다카미자와 다다오",
+    "original_name": "高見沢忠夫",
+    "archival_reading": "たかみざわ ただお",
+    "reading_source_url": "https://www.igorating.com/players/tadao-takamizawa",
+    "old_explanation": "た→다 (surname initial); か→카; み→미; ざ→자; わ→와; た→다 (given-name initial); だ→다; お→오. たかみざわ→다카미자와; ただお→다다오. Reviewer verifies saved NIKL rule.",
+    "games": 127
+  }
+]

@@ -1,0 +1,516 @@
+17th Japan-China Go Exchange, 1989
+Up
+Prev
+Next
+17th Japan-China Go Exchange, 1989
+Go World 55 writes:
+This year an eight-member Japanese team of
+young players whose average age was 20 toured
+China for two weeks in the middle of May. The
+host country also fielded young players, and by
+coincidence the average age of the 41 players in
+the Chinese teams was also 20. The result of the
+seven matches was a narrow victory for the touring side,
+which scored 29 wins to 27 losses.
+The stars for the touring side were Morita 4-dan and
+Miss Aoki Kikuyo 2-dan, both of whom scored 6-1.
+1: 5/10
+2: 5/11
+3: 5/13
+4: 5/14
+5: 5/17
+6: 5/18
+7: 5/20
+Score
+Komatsu 6p
+Zhang W.
+−
+Zhang Xu.
++
+Yang H.
++
+Wang J.
+−
+Wu
++
+Yu Bin
++
+Liang
+−
+4-3
+Yuki 6p
+Che
++
+Wang G.
+−
+Wu
+−
+Hua W.
+−
+Ni
++
+Zheng
+−
+Ma
++
+3-4
+Yamada W. 5p
+Yan
+−
+Yang S.
+−
+Wang Ho.
+−
+Che
+−
+Hua X.
+−
+Ma
+−
+Liao
+−
+0-7
+Shinoda 4p
+Yang S.
+−
+Liu Bo
++
+Zhong
+−
+Chang
++
+Ma
++
+Jin
++
+Zheng
+−
+4-3
+Morita 4p
+Liu J.
++
+Che
+−
+Duan
++
+Shao
++
+Qiu
++
+Fang
++
+Wu
++
+6-1
+Mimura 4p
+Shao
+−
+Zhang W.
++
+Pang
++
+Li Y.
+−
+Xie
++
+Wang Y.
+−
+Liu K.
++
+4-3
+Aoki K. 2p
+Yang H.
+−
+Yu Ping
++
+Feng
++
+Huang
++
+Wang Hui
++
+Xu
++
+Liu Y.
++
+6-1
+Miyazaki 2p
+Zhang Xu.
+−
+Zhou
+−
+Li L.
+−
+Zhong
++
+Fu
++
+Zhang Xin
+−
+Hua X.
+−
+2-5
+Result
+2-6
+4-4
+4-4
+4-4
+7-1
+4-4
+4-4
+29-27
+The players here were Komatsu Hideki, Yuki Satoshi,
+Yamada Wakio, Shinoda Hideyuki, Morita Michihiro, Mimura Tomoyasu,
+Aoki Kikuyo, Miyazaki Shimako on the Japanese side, and
+Chang Hao, Che Zewu, Duan Rong, Fang Jie, Feng Yun,
+Fu Li, Hua Weirong, Hua Xueming, Huang Yan, Jin Weibin,
+Li Liang, Li Yuchuan, Liang Weitang, Liao Guiyong, Liu Bo,
+Liu Jing, Liu Kunpeng, Liu Yiyi, Ma Shi, Ni Linqiang,
+Pang Yan, Qiu Jihong, Shao Weigang, Wang Guanjun, Wang Hongjun,
+Wang Hui, Wang Jianhong, Wang Yimin, Wu Zhaoyi, Xie Feng,
+Xu Ying, Yan An, Yang Hui, Yang Shihai, Yu Bin, Yu Ping,
+Zhang Wendong, Zhang Xin, Zhang Xuan, Zheng Hong, Zhong Chenguang,
+Zhou Heyang on the Chinese side (42 players).
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1989-05-10
+Yan An
+Yamada Wakio
+B+R
+145
+sgf
+1989-05-10
+Mimura Tomoyasu
+Shao Weigang
+W+R
+182
+sgf
+1989-05-10
+Yuki Satoshi
+Che Zewu
+B+R
+183
+sgf
+1989-05-10
+Liu Jing
+Morita Michihiro
+W+R
+196
+sgf
+1989-05-10
+Zhang Xuan
+Miyazaki Shimako
+B+R
+221
+sgf
+1989-05-10
+Aoki Kikuyo
+Yang Hui
+W+R
+226
+sgf
+1989-05-10
+Komatsu Hideki
+Zhang Wendong
+W+0.5
+234
+sgf
+1989-05-10
+Yang Shihai
+Shinoda Hideyuki
+B+R
+87
+sgf
+1989-05-11
+Che Zewu
+Morita Michihiro
+B+R
+103
+sgf
+1989-05-11
+Wang Guanjun
+Yuki Satoshi
+B+R
+119
+sgf
+1989-05-11
+Yamada Wakio
+Yang Shihai
+W+R
+158
+sgf
+1989-05-11
+Miyazaki Shimako
+Zhou Heyang
+W+1.5
+189
+sgf
+1989-05-11
+Mimura Tomoyasu
+Zhang Wendong
+B+R
+217
+sgf
+1989-05-11
+Shinoda Hideyuki
+Liu Bo
+B+R
+221
+sgf
+1989-05-11
+Yu Ping
+Aoki Kikuyo
+W+10.5
+239
+sgf
+1989-05-11
+Zhang Xuan
+Komatsu Hideki
+W+R
+246
+sgf
+1989-05-13
+Yuki Satoshi
+Wu Zhaoyi
+W+R
+140
+sgf
+1989-05-13
+Wang Hongjun
+Yamada Wakio
+B+R
+163
+sgf
+1989-05-13
+Morita Michihiro
+Duan Rong
+B+R
+179
+sgf
+1989-05-13
+Aoki Kikuyo
+Feng Yun
+B+R
+181
+sgf
+1989-05-13
+Zhong Chenguang
+Shinoda Hideyuki
+B+R
+191
+sgf
+1989-05-13
+Pang Yan
+Mimura Tomoyasu
+W+R
+222
+sgf
+1989-05-13
+Li Liang
+Miyazaki Shimako
+B+R
+251
+sgf
+1989-05-13
+Komatsu Hideki
+Yang Hui
+B+5.5
+257
+sgf
+1989-05-14
+Mimura Tomoyasu
+Li Yuchuan
+W+R
+144
+sgf
+1989-05-14
+Shinoda Mitsuaki
+Chang Hao
+B+R
+93
+sgf
+1989-05-14
+Yamada Wakio
+Che Zewu
+W+R
+188
+sgf
+1989-05-14
+Miyazaki Shimako
+Zhong Chenguang
+B+R
+249
+sgf
+1989-05-14
+Shao Weigang
+Morita Michihiro
+W+R
+172
+sgf
+1989-05-14
+Wang Jianhong
+Komatsu Hideki
+B+R
+169
+sgf
+1989-05-14
+Hua Weirong
+Yuki Satoshi
+B+R
+175
+sgf
+1989-05-14
+Huang Yan
+Aoki Kikuyo
+W+0.5
+304
+sgf
+1989-05-17
+Morita Michihiro
+Qiu Jihong
+B+R
+205
+sgf
+1989-05-17
+Fu Li
+Miyazaki Shimako
+W+R
+152
+sgf
+1989-05-17
+Aoki Kikuyo
+Wang Hui
+B+R
+163
+sgf
+1989-05-17
+Yuki Satoshi
+Ni Linqiang
+B+R
+127
+sgf
+1989-05-17
+Ma Shi
+Shinoda Mitsuaki
+W+0.5
+198
+sgf
+1989-05-17
+Hua Xueming
+Yamada Wakio
+B+R
+161
+sgf
+1989-05-17
+Xie Feng
+Mimura Tomoyasu
+W+R
+206
+sgf
+1989-05-17
+Komatsu Hideki
+Wu Zhaoyi
+B+R
+217
+sgf
+1989-05-18
+Yu Bin
+Komatsu Hideki
+W+10.5
+222
+sgf
+1989-05-18
+Zheng Hong
+Yuki Satoshi
+B+7.5
+237
+sgf
+1989-05-18
+Yamada Wakio
+Ma Shi
+W+R
+202
+sgf
+1989-05-18
+Mimura Tomoyasu
+Wang Yimin
+W+2.5
+278
+sgf
+1989-05-18
+Fang Jie
+Morita Michihiro
+W+R
+236
+sgf
+1989-05-18
+Miyazaki Shimako
+Zhang Xin
+W+2.5
+78
+sgf
+1989-05-18
+Shinoda Mitsuaki
+Jin Weibin
+B+3.5
+260
+sgf
+1989-05-18
+Xu Ying
+Aoki Kikuyo
+W+R
+242
+sgf
+1989-05-20
+Morita Michihiro
+Wu Zhaoyi
+B+R
+143
+sgf
+1989-05-20
+Zheng Hong
+Shinoda Hideyuki
+B+R
+165
+sgf
+1989-05-20
+Aoki Kikuyo
+Liu Yiyi
+B+R
+219
+sgf
+1989-05-20
+Liu Kunpeng
+Mimura Tomoyasu
+W+R
+164
+sgf
+1989-05-20
+Hua Xueming
+Miyazaki Shimako
+B+5.5
+230
+sgf
+1989-05-20
+Komatsu Hideki
+Liang Weitang
+W+2.5
+250
+sgf
+1989-05-20
+Yuki Satoshi
+Ma Shi
+B+R
+105
+sgf
+1989-05-20
+Liao Guiyong
+Yamada Wakio
+B+R
+97
+sgf

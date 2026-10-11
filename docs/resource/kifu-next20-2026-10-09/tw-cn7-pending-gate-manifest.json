@@ -1,0 +1,430 @@
+{
+  "notes": [
+    "P662 retained 彦 exactly; Unihan17 kTraditionalVariant includes self U+5F66 alongside U+5F65. No conventional Taiwanese spelling claim.",
+    "No SQL or source rewriting; all seven existing REVIEW row bytes preserved as actual preimages."
+  ],
+  "rows": [
+    {
+      "display_name": "肖澤彬",
+      "environment": "PROD",
+      "original_name": "肖泽彬",
+      "owner": {
+        "id": 600,
+        "kind": "player"
+      },
+      "prod_id": 600,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "e78bac526f2fd2646e64b687e411a33cd84c6335f8c6673fde6d76141923ccc2",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:33:22.552065+00:00",
+        "decision_kind": null,
+        "display_name": "肖澤彬",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 2995,
+        "lang": "tw",
+        "player_id": 600,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "7a2a6d6e3ac1627125de3149f9fa0ebe595450d8c29563c50fb2048ec3bd8e67",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "葉子萌",
+      "environment": "PROD",
+      "original_name": "叶子萌",
+      "owner": {
+        "id": 229,
+        "kind": "player"
+      },
+      "prod_id": 229,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "368bec4e67e429548e2e3dd4710dd5bd9b647976664f7af177eccd031829dba8",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "decision_kind": null,
+        "display_name": "叶子萌",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1140,
+        "lang": "tw",
+        "player_id": 229,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "fbfd4761f1785cecaa9463a378db041b75020814d469b41c9375e8446ac4e28b",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "周雨萱",
+      "environment": "PROD",
+      "original_name": "周雨萱",
+      "owner": {
+        "id": 595,
+        "kind": "player"
+      },
+      "prod_id": 595,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "b97028fd23bb51bf4c24edabea4bf7c51bb457f8d871906dc50ed8c481517c90",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:33:22.552065+00:00",
+        "decision_kind": null,
+        "display_name": "周雨萱",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 2970,
+        "lang": "tw",
+        "player_id": 595,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "56ad49d6990da19854b9837265ebae7b100f4f3567444a53752cfd8771703507",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "行泓丞",
+      "environment": "PROD",
+      "original_name": "行泓丞",
+      "owner": {
+        "id": 385,
+        "kind": "player"
+      },
+      "prod_id": 385,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "7a89146fee4fac11f7643c00046cf9cdb4f2f504ff9908e1edd04e52b657b224",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "decision_kind": null,
+        "display_name": "行泓丞",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1920,
+        "lang": "tw",
+        "player_id": 385,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "9593962ac687a208b7ae2780b9868fce604e9307e37e4fb2dee629449f11ba09",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "朱彦臻",
+      "environment": "PROD",
+      "original_name": "朱彦臻",
+      "owner": {
+        "id": 662,
+        "kind": "player"
+      },
+      "prod_id": 662,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "c0d5196c32610dc6d19fdadefe9a41f86c701a21718130700f650b0969ed9de0",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:33:22.552065+00:00",
+        "decision_kind": null,
+        "display_name": "朱彥臻",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 3305,
+        "lang": "tw",
+        "player_id": 662,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "b2c944f589927b2aec4e37431f5e2cd42880a0bf1eea3b6820d3b1bde6dba68a",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "桂詩雲",
+      "environment": "PROD",
+      "original_name": "桂诗云",
+      "owner": {
+        "id": 320,
+        "kind": "player"
+      },
+      "prod_id": 320,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "9ebf47fbd77d65cb4c5f5007e20016d903102ba686d569fa188a408eacea3670",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "decision_kind": null,
+        "display_name": "桂詩雲",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1595,
+        "lang": "tw",
+        "player_id": 320,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "543d1e9bbb2ab62fde2e2ec2fe63f4e1a3003f994da37bf4ff3044072a3c7962",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "王琛",
+      "environment": "PROD",
+      "original_name": "王琛",
+      "owner": {
+        "id": 391,
+        "kind": "player"
+      },
+      "prod_id": 391,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "3a18e1fb0c6cbf01b5471ad760365c230929ddf5258fa9e22a8580973ba3be80",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "decision_kind": null,
+        "display_name": "王琛",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1950,
+        "lang": "tw",
+        "player_id": 391,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "0397bfb16856d49a88bc4d3a32e616bac7d9373aeeaa41a5f9a751a70e52782b",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "肖澤彬",
+      "environment": "TEST",
+      "original_name": "肖泽彬",
+      "owner": {
+        "id": 601,
+        "kind": "player"
+      },
+      "prod_id": 600,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "0dc1befae8bab045eab2d6a55e30e55b805ee142b0e74a69f1522133e7fa12b3",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:52:38.079214+00:00",
+        "decision_kind": null,
+        "display_name": "肖澤彬",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 3000,
+        "lang": "tw",
+        "player_id": 601,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "bbc67ad6cf96d2ad085fd5f7b640a3e06c82ee1184464a104d1b6ff9b74395ac",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "葉子萌",
+      "environment": "TEST",
+      "original_name": "叶子萌",
+      "owner": {
+        "id": 230,
+        "kind": "player"
+      },
+      "prod_id": 229,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "1e360f7d7d2fde031ab7ce6facaaeee19573108211c9fe7f4a07b1356fb660b6",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:52:34.382137+00:00",
+        "decision_kind": null,
+        "display_name": "叶子萌",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1145,
+        "lang": "tw",
+        "player_id": 230,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "ef6a3282aa7e455337044e96fc2870e3be7b6ad05865fb332021b15d682b95e4",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "周雨萱",
+      "environment": "TEST",
+      "original_name": "周雨萱",
+      "owner": {
+        "id": 596,
+        "kind": "player"
+      },
+      "prod_id": 595,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "2385de3372815b655f15b07bffd1a6fc25032c0bc012309c408557d5e107ab14",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:52:38.079214+00:00",
+        "decision_kind": null,
+        "display_name": "周雨萱",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 2975,
+        "lang": "tw",
+        "player_id": 596,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "6457ba7ddadb289fae92447869c25551b72aeaa0a4be5e92363daf9cd9b1cb20",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "行泓丞",
+      "environment": "TEST",
+      "original_name": "行泓丞",
+      "owner": {
+        "id": 386,
+        "kind": "player"
+      },
+      "prod_id": 385,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "c2f401776c80fb80588ee4db93408818f628d4d531661a2d09855aeda54f7e28",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:52:34.382137+00:00",
+        "decision_kind": null,
+        "display_name": "行泓丞",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1925,
+        "lang": "tw",
+        "player_id": 386,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "38d36aeb65634ef753eea0da29837ce3fb9499e92fbdab15af21a245cdc721e7",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "朱彦臻",
+      "environment": "TEST",
+      "original_name": "朱彦臻",
+      "owner": {
+        "id": 663,
+        "kind": "player"
+      },
+      "prod_id": 662,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "624de7229ec2f8d5470db8903a6d671957fba3db674e02ac07b3419aff962763",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:52:38.079214+00:00",
+        "decision_kind": null,
+        "display_name": "朱彥臻",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 3310,
+        "lang": "tw",
+        "player_id": 663,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "d41d108665eee9bb92dedb1470603fe896b786ef647b403cfad2dec40f3d8aba",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "桂詩雲",
+      "environment": "TEST",
+      "original_name": "桂诗云",
+      "owner": {
+        "id": 321,
+        "kind": "player"
+      },
+      "prod_id": 320,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "8086a4254a038afa862fb9176b97537d231964c4f6b8908ea3ddec06cfcdee68",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:52:34.382137+00:00",
+        "decision_kind": null,
+        "display_name": "桂詩雲",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1600,
+        "lang": "tw",
+        "player_id": 321,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "a1a98c1063568eb5e9ff7ecde25d0fe1380c0d6f5d73c32a37abbd5ed3972f72",
+      "verified_source_live": true
+    },
+    {
+      "display_name": "王琛",
+      "environment": "TEST",
+      "original_name": "王琛",
+      "owner": {
+        "id": 392,
+        "kind": "player"
+      },
+      "prod_id": 391,
+      "ready_under_current_gate": false,
+      "source_anchor_content_sha256": "60ccaeb92280b670b446dbe60341d23c9a3e9e26c212f8b0cc7a16c4822eafa9",
+      "source_qualified_product_gate": true,
+      "target_preimage": {
+        "created_at": "2026-09-30T19:52:34.382137+00:00",
+        "decision_kind": null,
+        "display_name": "王琛",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1955,
+        "lang": "tw",
+        "player_id": 392,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "target_preimage_sha256": "7e4e7bc29750808fcb42a19247383e54090667d5fbdc7f81160c3c7e6b8f5145",
+      "verified_source_live": true
+    }
+  ],
+  "rule_sha256": "8a77c6083544b635353dea0a7c0d2e8753ccfb8f176cddd2b96471b3ad7ebfb5",
+  "status": "NOT_ready_under_current_NULL_only_gate"
+}

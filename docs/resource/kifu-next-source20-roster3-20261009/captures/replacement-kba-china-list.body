@@ -1,0 +1,2016 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>한국기원</title>
+	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/css/common.css" type="text/css" rel="stylesheet" />
+	<link href="/css/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/js/common.js"></script>
+	<script language="javascript" src="/js/prototype.js"></script>
+</head>
+
+
+<form method="post" name="s1">
+<input type="hidden" name="S_sort_mode" value="A">
+<input type="hidden" name="prpl_code">
+
+<ul class="sortMode">
+	<li class="on"><button type="button" onclick="pageMove_search4('2','','','A')">✔가나다순</button></li>
+	<li ><button type="button" onclick="pageMove_search4('2','','','R')">✔서열순</button></li>
+</ul>                                                
+<div class="searchOptions frt">
+	<div class="select">
+		<select name="S_nation">
+			<option value="ALL" >구분</option>
+			
+				<option value="1" >한국</option>
+			
+				<option value="2"  selected >중국</option>
+			
+				<option value="3" >일본</option>
+			
+				<option value="4" >대만</option>
+			
+				<option value="6" >북미/유럽</option>
+			
+				<option value="7" >은퇴</option>
+			
+		</select>
+	</div>
+	<div class="select bdlt_no">
+		<select name="S_ob_forc">
+			<option value=""  selected >단</option>
+			
+				<option value="9" >9단</option>
+			
+				<option value="8" >8단</option>
+			
+				<option value="7" >7단</option>
+			
+				<option value="6" >6단</option>
+			
+				<option value="5" >5단</option>
+			
+				<option value="4" >4단</option>
+			
+				<option value="3" >3단</option>
+			
+				<option value="2" >2단</option>
+			
+				<option value="1" >1단</option>
+			
+		</select>
+	</div>                                                             	
+	<input type="text" placeholder="기사명" class="player" name="S_prpl_name" value="" >
+	<button type="button" class="search" onclick="pageMove_search4(S_nation.value, S_prpl_name.value, S_ob_forc.value, 'A')">검색</button>
+</div>
+</form>
+
+<div class="recordTab">
+	<ul>
+		<li><button type="button"  onclick="pageMove_search4('1','','','A')">한국</button></li>
+		<li><button type="button" class="on" onclick="pageMove_search4('2','','','A')">중국</button></li>
+		<li><button type="button"  onclick="pageMove_search4('3','','','A')">일본</button></li>
+		<li><button type="button"  onclick="pageMove_search4('4','','','A')">대만</button></li>
+		<!--<li><button type="button"  onclick="pageMove_search4('5','','','A')">기타</button></li>-->
+		<li><button type="button"  onclick="pageMove_search4('6','','','A')">북미/유럽</button></li>
+		<li><button type="button"  onclick="pageMove_search4('7','','','A')">은퇴</button></li>
+	</ul>
+</div>
+
+
+	<div class="playerArea">
+		<ul>
+			
+			<li class="lvList">
+				<div class="lv">
+					<dl>
+						<dt><span>9</span>段</dt>
+						<dd id="cnt9"></dd>
+					</dl>
+				</div>
+				<div class="players">
+					<ul>
+						
+							<li><a onclick="viewPage_player('20000151')">구리</a></li>
+							
+							<li><a onclick="viewPage_player('20000312')">구링이</a></li>
+							
+							<li><a onclick="viewPage_player('20000629')">구쯔하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000031')">녜웨이핑</a></li>
+							
+							<li><a onclick="viewPage_player('20000536')">당이페이</a></li>
+							
+							<li><a onclick="viewPage_player('20000125')">딩웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20000987')">딩하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000951')">랴오위안허</a></li>
+							
+							<li><a onclick="viewPage_player('20000880')">량웨이탕</a></li>
+							
+							<li><a onclick="viewPage_player('20000527')">롄샤오</a></li>
+							
+							<li><a onclick="viewPage_player('10000186')">루이나이웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20000059')">뤄시허</a></li>
+							
+							<li><a onclick="viewPage_player('20000123')">뤄젠원</a></li>
+							
+							<li><a onclick="viewPage_player('20000001')">류샤오광</a></li>
+							
+							<li><a onclick="viewPage_player('20001652')">류위항</a></li>
+							
+							<li><a onclick="viewPage_player('10000553')">리쉬안하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000990')">리웨이칭</a></li>
+							
+							<li><a onclick="viewPage_player('20000526')">리친청</a></li>
+							
+							<li><a onclick="viewPage_player('20000002')">마샤오춘</a></li>
+							
+							<li><a onclick="viewPage_player('20000492')">미위팅</a></li>
+							
+							<li><a onclick="viewPage_player('20000004')">사오웨이강</a></li>
+							
+							<li><a onclick="viewPage_player('20000920')">사오전중</a></li>
+							
+							<li><a onclick="viewPage_player('20000646')">셰얼하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000962')">셰커</a></li>
+							
+							<li><a onclick="viewPage_player('10000359')">셰허</a></li>
+							
+							<li><a onclick="viewPage_player('20000856')">쉬자양</a></li>
+							
+							<li><a onclick="viewPage_player('20000375')">스웨</a></li>
+							
+							<li><a onclick="viewPage_player('20000777')">쑹쉐린</a></li>
+							
+							<li><a onclick="viewPage_player('20000525')">양딩신</a></li>
+							
+							<li><a onclick="viewPage_player('20000848')">양카이원</a></li>
+							
+							<li><a onclick="viewPage_player('10000360')">왕시</a></li>
+							
+							<li><a onclick="viewPage_player('20001653')">왕싱하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000042')">왕젠훙</a></li>
+							
+							<li><a onclick="viewPage_player('20000124')">우자오이</a></li>
+							
+							<li><a onclick="viewPage_player('20000003')">위빈</a></li>
+							
+							<li><a onclick="viewPage_player('20000467')">위샤오강</a></li>
+							
+							<li><a onclick="viewPage_player('20000970')">이링타오</a></li>
+							
+							<li><a onclick="viewPage_player('20001697')">인간팀(중국)</a></li>
+							
+							<li><a onclick="viewPage_player('20000664')">자오천위</a></li>
+							
+							<li><a onclick="viewPage_player('20000217')">장원둥</a></li>
+							
+							<li><a onclick="viewPage_player('20000493')">장웨이제</a></li>
+							
+							<li><a onclick="viewPage_player('10000185')">장주주</a></li>
+							
+							<li><a onclick="viewPage_player('20000355')">저우루이양</a></li>
+							
+							<li><a onclick="viewPage_player('20000022')">저우허양</a></li>
+							
+							<li><a onclick="viewPage_player('20000012')">정훙</a></li>
+							
+							<li><a onclick="viewPage_player('20001778')">진위청</a></li>
+							
+							<li><a onclick="viewPage_player('20000021')">차오다위안</a></li>
+							
+							<li><a onclick="viewPage_player('20000043')">창하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000087')">천린신</a></li>
+							
+							<li><a onclick="viewPage_player('20000251')">천야오예</a></li>
+							
+							<li><a onclick="viewPage_player('20000128')">천쭈더</a></li>
+							
+							<li><a onclick="viewPage_player('20000033')">첸위핑</a></li>
+							
+							<li><a onclick="viewPage_player('20000015')">추쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20000553')">커제</a></li>
+							
+							<li><a onclick="viewPage_player('20000105')">쿵제</a></li>
+							
+							<li><a onclick="viewPage_player('20000500')">타오신란</a></li>
+							
+							<li><a onclick="viewPage_player('20000387')">탄샤오</a></li>
+							
+							<li><a onclick="viewPage_player('20000537')">탕웨이싱</a></li>
+							
+							<li><a onclick="viewPage_player('20001244')">투샤오위</a></li>
+							
+							<li><a onclick="viewPage_player('20000386')">퉈자시</a></li>
+							
+							<li><a onclick="viewPage_player('20000295')">파오원야오</a></li>
+							
+							<li><a onclick="viewPage_player('20000737')">판인</a></li>
+							
+							<li><a onclick="viewPage_player('20000580')">판팅위</a></li>
+							
+							<li><a onclick="viewPage_player('20000354')">펑리야오</a></li>
+							
+							<li><a onclick="viewPage_player('20000080')">펑윈(豊雲)</a></li>
+							
+							<li><a onclick="viewPage_player('20000552')">황윈쑹</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt9.innerHTML = "66명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>8</span>段</dt>
+												<dd id="cnt8"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000228')">돤룽</a></li>
+							
+							<li><a onclick="viewPage_player('10001249')">돤보야오</a></li>
+							
+							<li><a onclick="viewPage_player('20000806')">룽이</a></li>
+							
+							<li><a onclick="viewPage_player('20000041')">류징</a></li>
+							
+							<li><a onclick="viewPage_player('20001779')">리하오퉁</a></li>
+							
+							<li><a onclick="viewPage_player('10000533')">멍타이링</a></li>
+							
+							<li><a onclick="viewPage_player('20000538')">샤천쿤</a></li>
+							
+							<li><a onclick="viewPage_player('20001134')">션페이란</a></li>
+							
+							<li><a onclick="viewPage_player('20001035')">쉐관화</a></li>
+							
+							<li><a onclick="viewPage_player('10000382')">양스하이</a></li>
+							
+							<li><a onclick="viewPage_player('20000064')">양후이</a></li>
+							
+							<li><a onclick="viewPage_player('20002136')">예창신</a></li>
+							
+							<li><a onclick="viewPage_player('20000491')">옌환</a></li>
+							
+							<li><a onclick="viewPage_player('20000007')">왕레이</a></li>
+							
+							<li><a onclick="viewPage_player('20000147')">왕루난</a></li>
+							
+							<li><a onclick="viewPage_player('20001033')">왕스이</a></li>
+							
+							<li><a onclick="viewPage_player('20002161')">왕추쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20002134')">왕춘후이</a></li>
+							
+							<li><a onclick="viewPage_player('20000595')">왕췬</a></li>
+							
+							<li><a onclick="viewPage_player('20000560')">위즈잉</a></li>
+							
+							<li><a onclick="viewPage_player('20000141')">위핑</a></li>
+							
+							<li><a onclick="viewPage_player('20000127')">장쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20000961')">장치룬</a></li>
+							
+							<li><a onclick="viewPage_player('20000650')">장타오(濤)</a></li>
+							
+							<li><a onclick="viewPage_player('20000628')">저우전위</a></li>
+							
+							<li><a onclick="viewPage_player('20001822')">정자이샹</a></li>
+							
+							<li><a onclick="viewPage_player('20000675')">천셴(賢)</a></li>
+							
+							<li><a onclick="viewPage_player('20000959')">천위눙</a></li>
+							
+							<li><a onclick="viewPage_player('20000844')">천정쉰</a></li>
+							
+							<li><a onclick="viewPage_player('20000845')">천쯔젠</a></li>
+							
+							<li><a onclick="viewPage_player('20001852')">쿵샹밍</a></li>
+							
+							<li><a onclick="viewPage_player('20000722')">퉁멍청</a></li>
+							
+							<li><a onclick="viewPage_player('20000528')">판윈뤄</a></li>
+							
+							<li><a onclick="viewPage_player('20000710')">팡톈펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002158')">푸젠헝</a></li>
+							
+							<li><a onclick="viewPage_player('20000643')">한이저우</a></li>
+							
+							<li><a onclick="viewPage_player('20001659')">허양</a></li>
+							
+							<li><a onclick="viewPage_player('20000055')">화이강</a></li>
+							
+							<li><a onclick="viewPage_player('20001658')">황밍위</a></li>
+							
+							<li><a onclick="viewPage_player('20000214')">후야오위</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt8.innerHTML = "40명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>7</span>段</dt>
+												<dd id="cnt7"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('10000363')">뉴위톈</a></li>
+							
+							<li><a onclick="viewPage_player('20000190')">둥옌</a></li>
+							
+							<li><a onclick="viewPage_player('20000494')">랴오싱원</a></li>
+							
+							<li><a onclick="viewPage_player('20001001')">루민취안</a></li>
+							
+							<li><a onclick="viewPage_player('20000243')">류스전</a></li>
+							
+							<li><a onclick="viewPage_player('10000353')">류싱</a></li>
+							
+							<li><a onclick="viewPage_player('20001727')">리쩌루이</a></li>
+							
+							<li><a onclick="viewPage_player('20001079')">리청선</a></li>
+							
+							<li><a onclick="viewPage_player('20000867')">마이차오</a></li>
+							
+							<li><a onclick="viewPage_player('20002201')">마징위안</a></li>
+							
+							<li><a onclick="viewPage_player('20002135')">쉬이디</a></li>
+							
+							<li><a onclick="viewPage_player('20000486')">쑨텅위</a></li>
+							
+							<li><a onclick="viewPage_player('20000708')">안둥쉬</a></li>
+							
+							<li><a onclick="viewPage_player('20002064')">왕숴03</a></li>
+							
+							<li><a onclick="viewPage_player('20000956')">왕시루</a></li>
+							
+							<li><a onclick="viewPage_player('20000145')">왕위후이</a></li>
+							
+							<li><a onclick="viewPage_player('10000351')">왕이민</a></li>
+							
+							<li><a onclick="viewPage_player('20000589')">왕젠쿤</a></li>
+							
+							<li><a onclick="viewPage_player('20000804')">왕쩌진</a></li>
+							
+							<li><a onclick="viewPage_player('20000331')">왕하오양</a></li>
+							
+							<li><a onclick="viewPage_player('10000551')">우광야</a></li>
+							
+							<li><a onclick="viewPage_player('20001776')">우이밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002198')">자오페이</a></li>
+							
+							<li><a onclick="viewPage_player('20000803')">장창</a></li>
+							
+							<li><a onclick="viewPage_player('20000540')">저우허시</a></li>
+							
+							<li><a onclick="viewPage_player('20001261')">저우훙위</a></li>
+							
+							<li><a onclick="viewPage_player('20002090')">진웨이빈</a></li>
+							
+							<li><a onclick="viewPage_player('20000469')">처쩌우</a></li>
+							
+							<li><a onclick="viewPage_player('20001808')">천이춘</a></li>
+							
+							<li><a onclick="viewPage_player('20001675')">천하오신</a></li>
+							
+							<li><a onclick="viewPage_player('20002200')">추위란</a></li>
+							
+							<li><a onclick="viewPage_player('20001829')">탕자원</a></li>
+							
+							<li><a onclick="viewPage_player('10000354')">팡제</a></li>
+							
+							<li><a onclick="viewPage_player('20000029')">펑취안</a></li>
+							
+							<li><a onclick="viewPage_player('20002175')">한모양</a></li>
+							
+							<li><a onclick="viewPage_player('20000974')">허위한</a></li>
+							
+							<li><a onclick="viewPage_player('20000065')">화쉐밍</a></li>
+							
+							<li><a onclick="viewPage_player('20000655')">황신</a></li>
+							
+							<li><a onclick="viewPage_player('10000352')">황이중</a></li>
+							
+							<li><a onclick="viewPage_player('20001777')">후쯔하오</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt7.innerHTML = "40명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>6</span>段</dt>
+												<dd id="cnt6"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000958')">고정옌</a></li>
+							
+							<li><a onclick="viewPage_player('20000666')">궈위정</a></li>
+							
+							<li><a onclick="viewPage_player('20002323')">다이치가오</a></li>
+							
+							<li><a onclick="viewPage_player('20000475')">딩례</a></li>
+							
+							<li><a onclick="viewPage_player('20000858')">딩스슝</a></li>
+							
+							<li><a onclick="viewPage_player('20001775')">루리옌</a></li>
+							
+							<li><a onclick="viewPage_player('20001260')">뤄추웨</a></li>
+							
+							<li><a onclick="viewPage_player('20000623')">류자오저</a></li>
+							
+							<li><a onclick="viewPage_player('20001208')">류치펑</a></li>
+							
+							<li><a onclick="viewPage_player('20000451')">리밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002111')">리샤오시05</a></li>
+							
+							<li><a onclick="viewPage_player('20000585')">리샹위</a></li>
+							
+							<li><a onclick="viewPage_player('20001615')">리싱</a></li>
+							
+							<li><a onclick="viewPage_player('20002109')">리쓰쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20000229')">리저</a></li>
+							
+							<li><a onclick="viewPage_player('20000422')">리캉</a></li>
+							
+							<li><a onclick="viewPage_player('20000359')">리허</a></li>
+							
+							<li><a onclick="viewPage_player('20002203')">린쯔제</a></li>
+							
+							<li><a onclick="viewPage_player('20000161')">린차오화</a></li>
+							
+							<li><a onclick="viewPage_player('20000788')">린펑</a></li>
+							
+							<li><a onclick="viewPage_player('20000869')">슈이샤오</a></li>
+							
+							<li><a onclick="viewPage_player('20000421')">양이80</a></li>
+							
+							<li><a onclick="viewPage_player('20000766')">옌자이밍</a></li>
+							
+							<li><a onclick="viewPage_player('20000790')">왕둥량</a></li>
+							
+							<li><a onclick="viewPage_player('20000318')">왕레이(雷)</a></li>
+							
+							<li><a onclick="viewPage_player('20002356')">왕순보</a></li>
+							
+							<li><a onclick="viewPage_player('20000979')">왕숴94</a></li>
+							
+							<li><a onclick="viewPage_player('10000357')">왕야오</a></li>
+							
+							<li><a onclick="viewPage_player('20000384')">왕천싱</a></li>
+							
+							<li><a onclick="viewPage_player('20000463')">왕타오</a></li>
+							
+							<li><a onclick="viewPage_player('20000797')">우신위</a></li>
+							
+							<li><a onclick="viewPage_player('20000749')">잉이타오</a></li>
+							
+							<li><a onclick="viewPage_player('20001043')">자오이페이</a></li>
+							
+							<li><a onclick="viewPage_player('20000478')">장리</a></li>
+							
+							<li><a onclick="viewPage_player('20002170')">장바이칭</a></li>
+							
+							<li><a onclick="viewPage_player('10000364')">장쉐빈</a></li>
+							
+							<li><a onclick="viewPage_player('20002204')">장신위</a></li>
+							
+							<li><a onclick="viewPage_player('20000314')">장웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20001032')">장쯔량</a></li>
+							
+							<li><a onclick="viewPage_player('20002271')">저우쯔이</a></li>
+							
+							<li><a onclick="viewPage_player('10000356')">주쑹리</a></li>
+							
+							<li><a onclick="viewPage_player('20000402')">중원징</a></li>
+							
+							<li><a onclick="viewPage_player('20000047')">쩌우쥔제</a></li>
+							
+							<li><a onclick="viewPage_player('20000862')">차오쯔젠</a></li>
+							
+							<li><a onclick="viewPage_player('10000552')">차이징</a></li>
+							
+							<li><a onclick="viewPage_player('20000865')">천위썬</a></li>
+							
+							<li><a onclick="viewPage_player('20002403')">천자루이(瑞)</a></li>
+							
+							<li><a onclick="viewPage_player('20000524')">천하오(浩)</a></li>
+							
+							<li><a onclick="viewPage_player('20001654')">천한치</a></li>
+							
+							<li><a onclick="viewPage_player('20000598')">친웨신</a></li>
+							
+							<li><a onclick="viewPage_player('20002333')">톈무무</a></li>
+							
+							<li><a onclick="viewPage_player('20001720')">팡뤄시</a></li>
+							
+							<li><a onclick="viewPage_player('20000488')">푸충</a></li>
+							
+							<li><a onclick="viewPage_player('20000955')">황징위안</a></li>
+							
+							<li><a onclick="viewPage_player('20002339')">황추쉔</a></li>
+							
+							<li><a onclick="viewPage_player('20000746')">후웨펑</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt6.innerHTML = "56명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>5</span>段</dt>
+												<dd id="cnt5"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000805')">가오싱</a></li>
+							
+							<li><a onclick="viewPage_player('20000684')">간쓰양</a></li>
+							
+							<li><a onclick="viewPage_player('20000748')">궈신이</a></li>
+							
+							<li><a onclick="viewPage_player('10000528')">궈원차오</a></li>
+							
+							<li><a onclick="viewPage_player('20000097')">궈쥐안</a></li>
+							
+							<li><a onclick="viewPage_player('20002122')">딩커원</a></li>
+							
+							<li><a onclick="viewPage_player('20000859')">러우뤄닝</a></li>
+							
+							<li><a onclick="viewPage_player('20001201')">뤄옌</a></li>
+							
+							<li><a onclick="viewPage_player('20000793')">류시</a></li>
+							
+							<li><a onclick="viewPage_player('20001872')">류시(2)</a></li>
+							
+							<li><a onclick="viewPage_player('20001715')">류윈청</a></li>
+							
+							<li><a onclick="viewPage_player('20000505')">리샤오시94</a></li>
+							
+							<li><a onclick="viewPage_player('20002162')">리신천</a></li>
+							
+							<li><a onclick="viewPage_player('20000231')">리제</a></li>
+							
+							<li><a onclick="viewPage_player('20000094')">리춘화</a></li>
+							
+							<li><a onclick="viewPage_player('20000721')">리하오제</a></li>
+							
+							<li><a onclick="viewPage_player('20001031')">마광쯔</a></li>
+							
+							<li><a onclick="viewPage_player('20000385')">마오루이룽</a></li>
+							
+							<li><a onclick="viewPage_player('20002142')">샤오쩌빈</a></li>
+							
+							<li><a onclick="viewPage_player('20002515')">쉬롱뤄</a></li>
+							
+							<li><a onclick="viewPage_player('20000107')">쉬잉</a></li>
+							
+							<li><a onclick="viewPage_player('20002499')">싱훙청</a></li>
+							
+							<li><a onclick="viewPage_player('20000487')">쑨리</a></li>
+							
+							<li><a onclick="viewPage_player('20002491')">쑨이거</a></li>
+							
+							<li><a onclick="viewPage_player('20000418')">쑹룽후이</a></li>
+							
+							<li><a onclick="viewPage_player('20000818')">야오정</a></li>
+							
+							<li><a onclick="viewPage_player('20000599')">양이94</a></li>
+							
+							<li><a onclick="viewPage_player('20000096')">예구이</a></li>
+							
+							<li><a onclick="viewPage_player('20002338')">왕뤄위</a></li>
+							
+							<li><a onclick="viewPage_player('20000627')">왕솽</a></li>
+							
+							<li><a onclick="viewPage_player('10000358')">왕양</a></li>
+							
+							<li><a onclick="viewPage_player('20000709')">왕옌하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000976')">왕위보</a></li>
+							
+							<li><a onclick="viewPage_player('20001721')">왕쩌위</a></li>
+							
+							<li><a onclick="viewPage_player('20002328')">우쥔이</a></li>
+							
+							<li><a onclick="viewPage_player('20000794')">웨이이보</a></li>
+							
+							<li><a onclick="viewPage_player('20002332')">위자부</a></li>
+							
+							<li><a onclick="viewPage_player('20001717')">인쑹타오</a></li>
+							
+							<li><a onclick="viewPage_player('20002171')">인청즈</a></li>
+							
+							<li><a onclick="viewPage_player('20000739')">인항</a></li>
+							
+							<li><a onclick="viewPage_player('20001062')">자오둥</a></li>
+							
+							<li><a onclick="viewPage_player('20000785')">자오서우쉰</a></li>
+							
+							<li><a onclick="viewPage_player('20000687')">자오스웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20001245')">자오위차이</a></li>
+							
+							<li><a onclick="viewPage_player('20000651')">장둥웨</a></li>
+							
+							<li><a onclick="viewPage_player('20000609')">장신</a></li>
+							
+							<li><a onclick="viewPage_player('20001613')">장웨이진</a></li>
+							
+							<li><a onclick="viewPage_player('20000240')">장잉팅</a></li>
+							
+							<li><a onclick="viewPage_player('20000864')">저우위안쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20000605')">정먀오신</a></li>
+							
+							<li><a onclick="viewPage_player('20000861')">정쉬</a></li>
+							
+							<li><a onclick="viewPage_player('20000789')">주옌밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002302')">주옌쩐</a></li>
+							
+							<li><a onclick="viewPage_player('20000335')">주위안하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000782')">주이</a></li>
+							
+							<li><a onclick="viewPage_player('20001724')">지샹</a></li>
+							
+							<li><a onclick="viewPage_player('20001728')">쩡위안하이</a></li>
+							
+							<li><a onclick="viewPage_player('20000711')">차오샤오양</a></li>
+							
+							<li><a onclick="viewPage_player('20001073')">천비선</a></li>
+							
+							<li><a onclick="viewPage_player('20000549')">천이밍</a></li>
+							
+							<li><a onclick="viewPage_player('20000081')">천후이팡</a></li>
+							
+							<li><a onclick="viewPage_player('20001716')">청자예</a></li>
+							
+							<li><a onclick="viewPage_player('20000600')">추이찬</a></li>
+							
+							<li><a onclick="viewPage_player('20000787')">추페이</a></li>
+							
+							<li><a onclick="viewPage_player('20000669')">타오신</a></li>
+							
+							<li><a onclick="viewPage_player('20000419')">탕이</a></li>
+							
+							<li><a onclick="viewPage_player('20002334')">투지캉</a></li>
+							
+							<li><a onclick="viewPage_player('20000702')">판페이</a></li>
+							
+							<li><a onclick="viewPage_player('20001809')">한은이</a></li>
+							
+							<li><a onclick="viewPage_player('20000662')">한한</a></li>
+							
+							<li><a onclick="viewPage_player('20000108')">허샤런</a></li>
+							
+							<li><a onclick="viewPage_player('20000337')">황천</a></li>
+							
+							<li><a onclick="viewPage_player('20001133')">후아오화</a></li>
+							
+							<li><a onclick="viewPage_player('20000807')">후위한</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt5.innerHTML = "74명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>4</span>段</dt>
+												<dd id="cnt4"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000743')">구이원보</a></li>
+							
+							<li><a onclick="viewPage_player('20000817')">궈베이야</a></li>
+							
+							<li><a onclick="viewPage_player('20001828')">딩밍쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20000447')">란톈</a></li>
+							
+							<li><a onclick="viewPage_player('20001657')">루쥔런</a></li>
+							
+							<li><a onclick="viewPage_player('10000572')">뤄더룽</a></li>
+							
+							<li><a onclick="viewPage_player('20000796')">류윈룽</a></li>
+							
+							<li><a onclick="viewPage_player('20000612')">류판</a></li>
+							
+							<li><a onclick="viewPage_player('20002065')">리둥팡</a></li>
+							
+							<li><a onclick="viewPage_player('20000716')">리러</a></li>
+							
+							<li><a onclick="viewPage_player('20002370')">리린푸</a></li>
+							
+							<li><a onclick="viewPage_player('20002329')">리싱퉁</a></li>
+							
+							<li><a onclick="viewPage_player('20001719')">리위앙</a></li>
+							
+							<li><a onclick="viewPage_player('20002335')">리충더</a></li>
+							
+							<li><a onclick="viewPage_player('20000719')">리화쑹</a></li>
+							
+							<li><a onclick="viewPage_player('20002304')">린자쉔</a></li>
+							
+							<li><a onclick="viewPage_player('20000316')">마샤오빙</a></li>
+							
+							<li><a onclick="viewPage_player('20002174')">마솨이</a></li>
+							
+							<li><a onclick="viewPage_player('20001616')">무샤오훙</a></li>
+							
+							<li><a onclick="viewPage_player('20002112')">쉬징치</a></li>
+							
+							<li><a onclick="viewPage_player('20002116')">쉬하이저</a></li>
+							
+							<li><a onclick="viewPage_player('20001207')">쉬한원</a></li>
+							
+							<li><a onclick="viewPage_player('20001070')">스저우</a></li>
+							
+							<li><a onclick="viewPage_player('20000699')">양둥</a></li>
+							
+							<li><a onclick="viewPage_player('20001663')">양륜동</a></li>
+							
+							<li><a onclick="viewPage_player('20002159')">양즈원</a></li>
+							
+							<li><a onclick="viewPage_player('20002330')">양하오저</a></li>
+							
+							<li><a onclick="viewPage_player('20002358')">예쯔멍</a></li>
+							
+							<li><a onclick="viewPage_player('20002340')">예쯔한</a></li>
+							
+							<li><a onclick="viewPage_player('20002128')">옌시무</a></li>
+							
+							<li><a onclick="viewPage_player('20002199')">완언쩌</a></li>
+							
+							<li><a onclick="viewPage_player('20000348')">왕샹윈</a></li>
+							
+							<li><a onclick="viewPage_player('20000695')">왕웨이(&#29614;)</a></li>
+							
+							<li><a onclick="viewPage_player('20002082')">왕이페이</a></li>
+							
+							<li><a onclick="viewPage_player('20002074')">왕자난</a></li>
+							
+							<li><a onclick="viewPage_player('20001265')">왕쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20002376')">왕쩌쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20000657')">우수하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000973')">우전위(震)</a></li>
+							
+							<li><a onclick="viewPage_player('20002501')">우하오쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20002137')">웨자옌</a></li>
+							
+							<li><a onclick="viewPage_player('20001666')">인취</a></li>
+							
+							<li><a onclick="viewPage_player('20000272')">자오저룬</a></li>
+							
+							<li><a onclick="viewPage_player('20001200')">자오중쉔</a></li>
+							
+							<li><a onclick="viewPage_player('20000607')">자이판</a></li>
+							
+							<li><a onclick="viewPage_player('20002202')">장뤄즈신</a></li>
+							
+							<li><a onclick="viewPage_player('20002114')">장멍야오</a></li>
+							
+							<li><a onclick="viewPage_player('20001824')">장밍캉</a></li>
+							
+							<li><a onclick="viewPage_player('20002336')">장쉬안밍</a></li>
+							
+							<li><a onclick="viewPage_player('20000602')">장야보</a></li>
+							
+							<li><a onclick="viewPage_player('20001981')">장원야오</a></li>
+							
+							<li><a onclick="viewPage_player('20000706')">장웨이(소)</a></li>
+							
+							<li><a onclick="viewPage_player('20000983')">장자오</a></li>
+							
+							<li><a onclick="viewPage_player('20000822')">장쯔한</a></li>
+							
+							<li><a onclick="viewPage_player('20000608')">장처</a></li>
+							
+							<li><a onclick="viewPage_player('20002582')">장친</a></li>
+							
+							<li><a onclick="viewPage_player('20000681')">장하오</a></li>
+							
+							<li><a onclick="viewPage_player('20001642')">저우시엔헝</a></li>
+							
+							<li><a onclick="viewPage_player('20000778')">저우쿠이</a></li>
+							
+							<li><a onclick="viewPage_player('20000686')">좡위안</a></li>
+							
+							<li><a onclick="viewPage_player('20000852')">쩡즈하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000420')">차오요우인</a></li>
+							
+							<li><a onclick="viewPage_player('20000780')">차오헝팅</a></li>
+							
+							<li><a onclick="viewPage_player('20000476')">차이비한</a></li>
+							
+							<li><a onclick="viewPage_player('20000644')">차이원츠</a></li>
+							
+							<li><a onclick="viewPage_player('20000728')">천샤오난</a></li>
+							
+							<li><a onclick="viewPage_player('20000992')">천샤오톈</a></li>
+							
+							<li><a onclick="viewPage_player('20002317')">천이저</a></li>
+							
+							<li><a onclick="viewPage_player('20001817')">천이푸</a></li>
+							
+							<li><a onclick="viewPage_player('20002287')">천투리</a></li>
+							
+							<li><a onclick="viewPage_player('20002025')">천하오둥</a></li>
+							
+							<li><a onclick="viewPage_player('20001030')">첸류루</a></li>
+							
+							<li><a onclick="viewPage_player('20001780')">추커얼</a></li>
+							
+							<li><a onclick="viewPage_player('20000672')">퉁위린</a></li>
+							
+							<li><a onclick="viewPage_player('20000563')">판양</a></li>
+							
+							<li><a onclick="viewPage_player('20001187')">판팅위(潘)</a></li>
+							
+							<li><a onclick="viewPage_player('20000637')">팡하오</a></li>
+							
+							<li><a onclick="viewPage_player('20001247')">펑샤오펑</a></li>
+							
+							<li><a onclick="viewPage_player('10001143')">펑윈자</a></li>
+							
+							<li><a onclick="viewPage_player('20001811')">한줘란</a></li>
+							
+							<li><a onclick="viewPage_player('20000461')">항톈펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002337')">황쓰위안</a></li>
+							
+							<li><a onclick="viewPage_player('20001670')">황쯔핑</a></li>
+							
+							<li><a onclick="viewPage_player('20000539')">후란민</a></li>
+							
+							<li><a onclick="viewPage_player('20001823')">후샤오</a></li>
+							
+							<li><a onclick="viewPage_player('20002342')">후쯔위</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt4.innerHTML = "86명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>3</span>段</dt>
+												<dd id="cnt3"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000704')">가오위</a></li>
+							
+							<li><a onclick="viewPage_player('20002374')">가오칸</a></li>
+							
+							<li><a onclick="viewPage_player('20001726')">구루이쩌</a></li>
+							
+							<li><a onclick="viewPage_player('10001229')">구이쓰윈</a></li>
+							
+							<li><a onclick="viewPage_player('20000846')">궁옌위</a></li>
+							
+							<li><a onclick="viewPage_player('20000752')">궈톈루이</a></li>
+							
+							<li><a onclick="viewPage_player('20000960')">다이쯔톈</a></li>
+							
+							<li><a onclick="viewPage_player('20000610')">단쯔텅</a></li>
+							
+							<li><a onclick="viewPage_player('20002343')">덩요우자</a></li>
+							
+							<li><a onclick="viewPage_player('20000611')">두양</a></li>
+							
+							<li><a onclick="viewPage_player('20002604')">두텐루이</a></li>
+							
+							<li><a onclick="viewPage_player('20000866')">둥밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002503')">량징신</a></li>
+							
+							<li><a onclick="viewPage_player('20000380')">루자</a></li>
+							
+							<li><a onclick="viewPage_player('20002169')">류옌창</a></li>
+							
+							<li><a onclick="viewPage_player('20000535')">류위</a></li>
+							
+							<li><a onclick="viewPage_player('20001640')">류후이링</a></li>
+							
+							<li><a onclick="viewPage_player('20000963')">리비치</a></li>
+							
+							<li><a onclick="viewPage_player('20000703')">리샹</a></li>
+							
+							<li><a onclick="viewPage_player('20000816')">리슈촨</a></li>
+							
+							<li><a onclick="viewPage_player('20001754')">리신이</a></li>
+							
+							<li><a onclick="viewPage_player('20000614')">리앙</a></li>
+							
+							<li><a onclick="viewPage_player('20000723')">리충</a></li>
+							
+							<li><a onclick="viewPage_player('20002442')">린이팅</a></li>
+							
+							<li><a onclick="viewPage_player('20000459')">마루롱</a></li>
+							
+							<li><a onclick="viewPage_player('20002117')">마오옌신</a></li>
+							
+							<li><a onclick="viewPage_player('20002438')">마자터</a></li>
+							
+							<li><a onclick="viewPage_player('20000808')">멍레이</a></li>
+							
+							<li><a onclick="viewPage_player('20000635')">바이광위안</a></li>
+							
+							<li><a onclick="viewPage_player('20000616')">샤오웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20002371')">수이칭한</a></li>
+							
+							<li><a onclick="viewPage_player('20000953')">쉬저신</a></li>
+							
+							<li><a onclick="viewPage_player('20000853')">쉬전위</a></li>
+							
+							<li><a onclick="viewPage_player('20001655')">스위라이</a></li>
+							
+							<li><a onclick="viewPage_player('20002176')">스즈은</a></li>
+							
+							<li><a onclick="viewPage_player('20002290')">쑤광웨</a></li>
+							
+							<li><a onclick="viewPage_player('20000784')">쑨멍샤</a></li>
+							
+							<li><a onclick="viewPage_player('20000971')">쑨위안</a></li>
+							
+							<li><a onclick="viewPage_player('20000588')">양샤오톈</a></li>
+							
+							<li><a onclick="viewPage_player('20001661')">양원카이</a></li>
+							
+							<li><a onclick="viewPage_player('20001805')">양중위</a></li>
+							
+							<li><a onclick="viewPage_player('20000619')">양첸</a></li>
+							
+							<li><a onclick="viewPage_player('20002490')">예즈첸</a></li>
+							
+							<li><a onclick="viewPage_player('20000089')">예진진</a></li>
+							
+							<li><a onclick="viewPage_player('20001074')">왕루</a></li>
+							
+							<li><a onclick="viewPage_player('20000148')">왕루이</a></li>
+							
+							<li><a onclick="viewPage_player('20002408')">왕수야오</a></li>
+							
+							<li><a onclick="viewPage_player('20000388')">왕여우샤</a></li>
+							
+							<li><a onclick="viewPage_player('20000624')">왕위쯔</a></li>
+							
+							<li><a onclick="viewPage_player('20000707')">왕이신</a></li>
+							
+							<li><a onclick="viewPage_player('20000854')">왕이천</a></li>
+							
+							<li><a onclick="viewPage_player('10000714')">왕저밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002363')">왕쥔량</a></li>
+							
+							<li><a onclick="viewPage_player('20001075')">왕쯔앙</a></li>
+							
+							<li><a onclick="viewPage_player('10000715')">왕천판</a></li>
+							
+							<li><a onclick="viewPage_player('20000620')">우쯔톈</a></li>
+							
+							<li><a onclick="viewPage_player('20000843')">우카이</a></li>
+							
+							<li><a onclick="viewPage_player('20002600')">웨이샤오린</a></li>
+							
+							<li><a onclick="viewPage_player('20001854')">웨이신퉁</a></li>
+							
+							<li><a onclick="viewPage_player('20001668')">위하오란</a></li>
+							
+							<li><a onclick="viewPage_player('20000814')">자강루</a></li>
+							
+							<li><a onclick="viewPage_player('10001230')">자신이</a></li>
+							
+							<li><a onclick="viewPage_player('20000989')">자오관루(여)</a></li>
+							
+							<li><a onclick="viewPage_player('20000673')">자오싱화</a></li>
+							
+							<li><a onclick="viewPage_player('20002493')">자오옌</a></li>
+							
+							<li><a onclick="viewPage_player('20001827')">장신위에</a></li>
+							
+							<li><a onclick="viewPage_player('20002320')">장옌디</a></li>
+							
+							<li><a onclick="viewPage_player('20000692')">장이밍</a></li>
+							
+							<li><a onclick="viewPage_player('20001067')">장자야오</a></li>
+							
+							<li><a onclick="viewPage_player('20000649')">장자하오</a></li>
+							
+							<li><a onclick="viewPage_player('20001669')">장쥔저</a></li>
+							
+							<li><a onclick="viewPage_player('20000736')">장츠</a></li>
+							
+							<li><a onclick="viewPage_player('20000735')">장훙제</a></li>
+							
+							<li><a onclick="viewPage_player('20000991')">정위항</a></li>
+							
+							<li><a onclick="viewPage_player('20001821')">정쯔젠</a></li>
+							
+							<li><a onclick="viewPage_player('20000733')">주젠순</a></li>
+							
+							<li><a onclick="viewPage_player('10001215')">주페이홍</a></li>
+							
+							<li><a onclick="viewPage_player('20000697')">지리리</a></li>
+							
+							<li><a onclick="viewPage_player('20001614')">징상</a></li>
+							
+							<li><a onclick="viewPage_player('20000857')">차오란</a></li>
+							
+							<li><a onclick="viewPage_player('20001673')">천둥루</a></li>
+							
+							<li><a onclick="viewPage_player('20002110')">천만치</a></li>
+							
+							<li><a onclick="viewPage_player('20001205')">천쉬둥</a></li>
+							
+							<li><a onclick="viewPage_player('20002344')">천신양</a></li>
+							
+							<li><a onclick="viewPage_player('20000594')">천양</a></li>
+							
+							<li><a onclick="viewPage_player('20001004')">천원정</a></li>
+							
+							<li><a onclick="viewPage_player('20001250')">청관</a></li>
+							
+							<li><a onclick="viewPage_player('20001042')">청훙하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000604')">추이차오</a></li>
+							
+							<li><a onclick="viewPage_player('20000744')">추진보</a></li>
+							
+							<li><a onclick="viewPage_player('20002292')">취밍</a></li>
+							
+							<li><a onclick="viewPage_player('20000462')">치리허</a></li>
+							
+							<li><a onclick="viewPage_player('20000813')">타오란</a></li>
+							
+							<li><a onclick="viewPage_player('20001242')">탕인샤오</a></li>
+							
+							<li><a onclick="viewPage_player('20000811')">탕징쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20000668')">톈루이치</a></li>
+							
+							<li><a onclick="viewPage_player('20000786')">톈저우</a></li>
+							
+							<li><a onclick="viewPage_player('20000603')">투칭</a></li>
+							
+							<li><a onclick="viewPage_player('20000350')">판웨이징</a></li>
+							
+							<li><a onclick="viewPage_player('20000591')">펑웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20000656')">하오지에</a></li>
+							
+							<li><a onclick="viewPage_player('20000633')">한강</a></li>
+							
+							<li><a onclick="viewPage_player('20001813')">항샤오퉁</a></li>
+							
+							<li><a onclick="viewPage_player('20000593')">허신</a></li>
+							
+							<li><a onclick="viewPage_player('20001197')">호우징저</a></li>
+							
+							<li><a onclick="viewPage_player('20001254')">황이밍</a></li>
+							
+							<li><a onclick="viewPage_player('20000670')">후솨이</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt3.innerHTML = "107명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>2</span>段</dt>
+												<dd id="cnt2"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20001812')">가오뤄환</a></li>
+							
+							<li><a onclick="viewPage_player('20000851')">가오톈량</a></li>
+							
+							<li><a onclick="viewPage_player('20000742')">겅원빈</a></li>
+							
+							<li><a onclick="viewPage_player('20001723')">구완산</a></li>
+							
+							<li><a onclick="viewPage_player('20000547')">두위펑</a></li>
+							
+							<li><a onclick="viewPage_player('20001803')">둥쿤</a></li>
+							
+							<li><a onclick="viewPage_player('20000980')">랑제</a></li>
+							
+							<li><a onclick="viewPage_player('20000781')">량보차오</a></li>
+							
+							<li><a onclick="viewPage_player('10000393')">량야디</a></li>
+							
+							<li><a onclick="viewPage_player('20000653')">레이전쿤</a></li>
+							
+							<li><a onclick="viewPage_player('10000641')">루톈성</a></li>
+							
+							<li><a onclick="viewPage_player('20002278')">류루이즈</a></li>
+							
+							<li><a onclick="viewPage_player('20000661')">류위안보</a></li>
+							
+							<li><a onclick="viewPage_player('20000847')">류진밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002373')">류쯔자</a></li>
+							
+							<li><a onclick="viewPage_player('20002300')">류탕하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000677')">류퉁</a></li>
+							
+							<li><a onclick="viewPage_player('20000812')">리둥</a></li>
+							
+							<li><a onclick="viewPage_player('20000855')">리완펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002279')">리위안치</a></li>
+							
+							<li><a onclick="viewPage_player('20000783')">리이</a></li>
+							
+							<li><a onclick="viewPage_player('20000565')">리잉70</a></li>
+							
+							<li><a onclick="viewPage_player('20000654')">리장위안</a></li>
+							
+							<li><a onclick="viewPage_player('20000850')">리젠위</a></li>
+							
+							<li><a onclick="viewPage_player('20002057')">리쩌하오</a></li>
+							
+							<li><a onclick="viewPage_player('20002305')">리청저</a></li>
+							
+							<li><a onclick="viewPage_player('20001068')">리판</a></li>
+							
+							<li><a onclick="viewPage_player('20001618')">마위안위안</a></li>
+							
+							<li><a onclick="viewPage_player('20002341')">마창하오</a></li>
+							
+							<li><a onclick="viewPage_player('20001625')">멍자오위</a></li>
+							
+							<li><a onclick="viewPage_player('20000685')">볜즈원</a></li>
+							
+							<li><a onclick="viewPage_player('20002601')">서자하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000676')">셰사오보</a></li>
+							
+							<li><a onclick="viewPage_player('20002346')">셰쯔멍</a></li>
+							
+							<li><a onclick="viewPage_player('20001087')">솨이잉춘</a></li>
+							
+							<li><a onclick="viewPage_player('20001061')">쉬거</a></li>
+							
+							<li><a onclick="viewPage_player('20001072')">쉬둔</a></li>
+							
+							<li><a onclick="viewPage_player('20001257')">쉬자웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20002369')">쉬자하오</a></li>
+							
+							<li><a onclick="viewPage_player('20001236')">쉬페이란</a></li>
+							
+							<li><a onclick="viewPage_player('20001732')">쑨펑위</a></li>
+							
+							<li><a onclick="viewPage_player('20001637')">야오샤오퉁</a></li>
+							
+							<li><a onclick="viewPage_player('20000590')">양솽</a></li>
+							
+							<li><a onclick="viewPage_player('20000444')">양쯔</a></li>
+							
+							<li><a onclick="viewPage_player('20000726')">옌닝</a></li>
+							
+							<li><a onclick="viewPage_player('20001034')">왕뤄란</a></li>
+							
+							<li><a onclick="viewPage_player('20001204')">왕쓰인</a></li>
+							
+							<li><a onclick="viewPage_player('20002322')">왕원충</a></li>
+							
+							<li><a onclick="viewPage_player('20002113')">왕위청</a></li>
+							
+							<li><a onclick="viewPage_player('20001256')">왕인링쉐이</a></li>
+							
+							<li><a onclick="viewPage_player('20001065')">왕즈궈</a></li>
+							
+							<li><a onclick="viewPage_player('20000449')">왕판</a></li>
+							
+							<li><a onclick="viewPage_player('20002294')">왕펑페이</a></li>
+							
+							<li><a onclick="viewPage_player('20000671')">왕후이</a></li>
+							
+							<li><a onclick="viewPage_player('20000750')">우전위(振)</a></li>
+							
+							<li><a onclick="viewPage_player('20001063')">우톈</a></li>
+							
+							<li><a onclick="viewPage_player('20002072')">우하오</a></li>
+							
+							<li><a onclick="viewPage_player('20002168')">원자오징</a></li>
+							
+							<li><a onclick="viewPage_player('20000809')">웨이창</a></li>
+							
+							<li><a onclick="viewPage_player('20001085')">위안웨이훙</a></li>
+							
+							<li><a onclick="viewPage_player('20000694')">위안쩌</a></li>
+							
+							<li><a onclick="viewPage_player('20001086')">위안탕위</a></li>
+							
+							<li><a onclick="viewPage_player('20001725')">위푸린</a></li>
+							
+							<li><a onclick="viewPage_player('20002366')">자더이</a></li>
+							
+							<li><a onclick="viewPage_player('20000756')">자오바오룽</a></li>
+							
+							<li><a onclick="viewPage_player('20001240')">자오원동</a></li>
+							
+							<li><a onclick="viewPage_player('20001639')">자오이팡</a></li>
+							
+							<li><a onclick="viewPage_player('20000734')">자오젠난</a></li>
+							
+							<li><a onclick="viewPage_player('20001722')">자오쥔저</a></li>
+							
+							<li><a onclick="viewPage_player('20002361')">자오첸웨</a></li>
+							
+							<li><a onclick="viewPage_player('20001060')">잔잉</a></li>
+							
+							<li><a onclick="viewPage_player('10000730')">장녠츠</a></li>
+							
+							<li><a onclick="viewPage_player('20002359')">장중헝</a></li>
+							
+							<li><a onclick="viewPage_player('20001199')">장지또우</a></li>
+							
+							<li><a onclick="viewPage_player('20000740')">장차오</a></li>
+							
+							<li><a onclick="viewPage_player('20001807')">장치(張岐)</a></li>
+							
+							<li><a onclick="viewPage_player('20000640')">장타오(&#24354;)</a></li>
+							
+							<li><a onclick="viewPage_player('20002355')">장허위안</a></li>
+							
+							<li><a onclick="viewPage_player('20002291')">저우룬민</a></li>
+							
+							<li><a onclick="viewPage_player('20002118')">저우위쉔</a></li>
+							
+							<li><a onclick="viewPage_player('20000253')">정옌</a></li>
+							
+							<li><a onclick="viewPage_player('20001617')">젠잉</a></li>
+							
+							<li><a onclick="viewPage_player('20000678')">주런쿤</a></li>
+							
+							<li><a onclick="viewPage_player('20000659')">진징</a></li>
+							
+							<li><a onclick="viewPage_player('20000792')">징스</a></li>
+							
+							<li><a onclick="viewPage_player('20002574')">쩌우쯔양</a></li>
+							
+							<li><a onclick="viewPage_player('20002167')">쩡추뎬</a></li>
+							
+							<li><a onclick="viewPage_player('20001656')">차이원신</a></li>
+							
+							<li><a onclick="viewPage_player('20001819')">천레이</a></li>
+							
+							<li><a onclick="viewPage_player('20000705')">천룬타오</a></li>
+							
+							<li><a onclick="viewPage_player('20000456')">천보야</a></li>
+							
+							<li><a onclick="viewPage_player('20001667')">천셴(玄)</a></li>
+							
+							<li><a onclick="viewPage_player('20000969')">천쓰위안</a></li>
+							
+							<li><a onclick="viewPage_player('20000747')">추단윈</a></li>
+							
+							<li><a onclick="viewPage_player('20001082')">추이닝</a></li>
+							
+							<li><a onclick="viewPage_player('20000562')">추이보둥</a></li>
+							
+							<li><a onclick="viewPage_player('20002179')">친쓰웨</a></li>
+							
+							<li><a onclick="viewPage_player('20000617')">타오한원</a></li>
+							
+							<li><a onclick="viewPage_player('20000642')">텅청</a></li>
+							
+							<li><a onclick="viewPage_player('20001040')">판신웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20001198')">판웨이젠</a></li>
+							
+							<li><a onclick="viewPage_player('20002319')">허톈위</a></li>
+							
+							<li><a onclick="viewPage_player('20002160')">화창</a></li>
+							
+							<li><a onclick="viewPage_player('20002597')">황관원</a></li>
+							
+							<li><a onclick="viewPage_player('20002513')">황위</a></li>
+							
+							<li><a onclick="viewPage_player('20001781')">황춘치</a></li>
+							
+							<li><a onclick="viewPage_player('20001083')">후빈팡</a></li>
+							
+							<li><a onclick="viewPage_player('20000700')">후이징천</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt2.innerHTML = "108명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>1</span>段</dt>
+												<dd id="cnt1"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20001898')">가오유퉁</a></li>
+							
+							<li><a onclick="viewPage_player('20002301')">가오이뎬</a></li>
+							
+							<li><a onclick="viewPage_player('20001897')">가오펑</a></li>
+							
+							<li><a onclick="viewPage_player('20001895')">강지강</a></li>
+							
+							<li><a onclick="viewPage_player('20001869')">거판판</a></li>
+							
+							<li><a onclick="viewPage_player('20001902')">관이신</a></li>
+							
+							<li><a onclick="viewPage_player('20001899')">구핑</a></li>
+							
+							<li><a onclick="viewPage_player('20001900')">궁스윈</a></li>
+							
+							<li><a onclick="viewPage_player('20001901')">궈톈눙</a></li>
+							
+							<li><a onclick="viewPage_player('20002056')">김산</a></li>
+							
+							<li><a onclick="viewPage_player('20001972')">뉴거</a></li>
+							
+							<li><a onclick="viewPage_player('20001893')">니린창</a></li>
+							
+							<li><a onclick="viewPage_player('20002092')">닝쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20001909')">다이껑위</a></li>
+							
+							<li><a onclick="viewPage_player('20001638')">다이쓰위안</a></li>
+							
+							<li><a onclick="viewPage_player('20002439')">다이이한</a></li>
+							
+							<li><a onclick="viewPage_player('20001906')">당긍</a></li>
+							
+							<li><a onclick="viewPage_player('20002284')">덩웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20002350')">덩이룬</a></li>
+							
+							<li><a onclick="viewPage_player('20001912')">두안수</a></li>
+							
+							<li><a onclick="viewPage_player('20002348')">둥신이</a></li>
+							
+							<li><a onclick="viewPage_player('20001911')">둥이페이</a></li>
+							
+							<li><a onclick="viewPage_player('20001993')">딩밍</a></li>
+							
+							<li><a onclick="viewPage_player('20001996')">딩보</a></li>
+							
+							<li><a onclick="viewPage_player('20001922')">랴오구이융</a></li>
+							
+							<li><a onclick="viewPage_player('20001923')">랴오융푸</a></li>
+							
+							<li><a onclick="viewPage_player('20001941')">랴오융푸</a></li>
+							
+							<li><a onclick="viewPage_player('20001916')">량즈민</a></li>
+							
+							<li><a onclick="viewPage_player('20001917')">량춘천</a></li>
+							
+							<li><a onclick="viewPage_player('20001918')">량허녠</a></li>
+							
+							<li><a onclick="viewPage_player('20002126')">런커</a></li>
+							
+							<li><a onclick="viewPage_player('20001978')">런훙위</a></li>
+							
+							<li><a onclick="viewPage_player('20001921')">레이전티</a></li>
+							
+							<li><a onclick="viewPage_player('20001920')">루디</a></li>
+							
+							<li><a onclick="viewPage_player('20002599')">루쉰펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002073')">루안윈성</a></li>
+							
+							<li><a onclick="viewPage_player('20001915')">루안추청</a></li>
+							
+							<li><a onclick="viewPage_player('20002577')">루정이</a></li>
+							
+							<li><a onclick="viewPage_player('20001919')">루젠</a></li>
+							
+							<li><a onclick="viewPage_player('20001873')">루쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20001971')">룽젠항</a></li>
+							
+							<li><a onclick="viewPage_player('20001913')">뤄자</a></li>
+							
+							<li><a onclick="viewPage_player('20001914')">뤄젠위안</a></li>
+							
+							<li><a onclick="viewPage_player('20002060')">뤼숴</a></li>
+							
+							<li><a onclick="viewPage_player('20002097')">류리</a></li>
+							
+							<li><a onclick="viewPage_player('20001871')">류보</a></li>
+							
+							<li><a onclick="viewPage_player('20002578')">류빙신</a></li>
+							
+							<li><a onclick="viewPage_player('20001731')">류쓰쟈</a></li>
+							
+							<li><a onclick="viewPage_player('20002098')">류야제</a></li>
+							
+							<li><a onclick="viewPage_player('20002099')">류위신</a></li>
+							
+							<li><a onclick="viewPage_player('20002362')">류쯔멍</a></li>
+							
+							<li><a onclick="viewPage_player('20002096')">류첸리</a></li>
+							
+							<li><a onclick="viewPage_player('20001870')">류칭린</a></li>
+							
+							<li><a onclick="viewPage_player('20002095')">류쿤펑</a></li>
+							
+							<li><a onclick="viewPage_player('20001942')">류타오</a></li>
+							
+							<li><a onclick="viewPage_player('20002352')">류화펑</a></li>
+							
+							<li><a onclick="viewPage_player('20001877')">리둥양</a></li>
+							
+							<li><a onclick="viewPage_player('20001878')">리량</a></li>
+							
+							<li><a onclick="viewPage_player('20002321')">리보타오</a></li>
+							
+							<li><a onclick="viewPage_player('20001887')">리쉰정</a></li>
+							
+							<li><a onclick="viewPage_player('20002277')">리쉰펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002605')">리신</a></li>
+							
+							<li><a onclick="viewPage_player('20001880')">리야춘</a></li>
+							
+							<li><a onclick="viewPage_player('20000755')">리웨이한</a></li>
+							
+							<li><a onclick="viewPage_player('20000988')">리위안쿤</a></li>
+							
+							<li><a onclick="viewPage_player('20001882')">리위촨</a></li>
+							
+							<li><a onclick="viewPage_player('20001883')">리윈성</a></li>
+							
+							<li><a onclick="viewPage_player('20001881')">리융강</a></li>
+							
+							<li><a onclick="viewPage_player('20000977')">리이롱</a></li>
+							
+							<li><a onclick="viewPage_player('20001886')">리잉80</a></li>
+							
+							<li><a onclick="viewPage_player('20002377')">리자이</a></li>
+							
+							<li><a onclick="viewPage_player('20000849')">리자치</a></li>
+							
+							<li><a onclick="viewPage_player('20000975')">리젠</a></li>
+							
+							<li><a onclick="viewPage_player('20001885')">리주</a></li>
+							
+							<li><a onclick="viewPage_player('20001875')">리쥔카이</a></li>
+							
+							<li><a onclick="viewPage_player('20001879')">리천숴</a></li>
+							
+							<li><a onclick="viewPage_player('20001874')">리쿠이</a></li>
+							
+							<li><a onclick="viewPage_player('20001943')">리하이</a></li>
+							
+							<li><a onclick="viewPage_player('20002569')">린무러</a></li>
+							
+							<li><a onclick="viewPage_player('20001868')">링후자쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20002591')">마나터</a></li>
+							
+							<li><a onclick="viewPage_player('20002531')">마나트</a></li>
+							
+							<li><a onclick="viewPage_player('20002100')">마스</a></li>
+							
+							<li><a onclick="viewPage_player('20001945')">마오위헝</a></li>
+							
+							<li><a onclick="viewPage_player('20002088')">마칭칭</a></li>
+							
+							<li><a onclick="viewPage_player('20002101')">메이옌</a></li>
+							
+							<li><a onclick="viewPage_player('20001889')">민나</a></li>
+							
+							<li><a onclick="viewPage_player('20000667')">바이위린</a></li>
+							
+							<li><a onclick="viewPage_player('20002053')">사성우</a></li>
+							
+							<li><a onclick="viewPage_player('20001038')">상하오저</a></li>
+							
+							<li><a onclick="viewPage_player('20001672')">샤오치</a></li>
+							
+							<li><a onclick="viewPage_player('20002492')">샤쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20002028')">선궈쑨</a></li>
+							
+							<li><a onclick="viewPage_player('20002029')">선망룽</a></li>
+							
+							<li><a onclick="viewPage_player('20002032')">선쉐원</a></li>
+							
+							<li><a onclick="viewPage_player('20002030')">선잉</a></li>
+							
+							<li><a onclick="viewPage_player('20002031')">선징</a></li>
+							
+							<li><a onclick="viewPage_player('20001952')">셰위궈</a></li>
+							
+							<li><a onclick="viewPage_player('20002406')">셰자옌</a></li>
+							
+							<li><a onclick="viewPage_player('20002567')">셰치선</a></li>
+							
+							<li><a onclick="viewPage_player('20001950')">셰탕</a></li>
+							
+							<li><a onclick="viewPage_player('20001951')">셰펑</a></li>
+							
+							<li><a onclick="viewPage_player('20001891')">수레이</a></li>
+							
+							<li><a onclick="viewPage_player('20000998')">수수</a></li>
+							
+							<li><a onclick="viewPage_player('20001890')">수치웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20001957')">쉐레이</a></li>
+							
+							<li><a onclick="viewPage_player('20001810')">쉐훙저</a></li>
+							
+							<li><a onclick="viewPage_player('20001954')">쉬롱신</a></li>
+							
+							<li><a onclick="viewPage_player('20002036')">쉬망</a></li>
+							
+							<li><a onclick="viewPage_player('20002037')">쉬수샹</a></li>
+							
+							<li><a onclick="viewPage_player('20002038')">쉬신</a></li>
+							
+							<li><a onclick="viewPage_player('10001374')">쉬위하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000820')">쉬젠잉</a></li>
+							
+							<li><a onclick="viewPage_player('20001955')">쉬중화</a></li>
+							
+							<li><a onclick="viewPage_player('20001956')">쉬진</a></li>
+							
+							<li><a onclick="viewPage_player('20001953')">쉬진양</a></li>
+							
+							<li><a onclick="viewPage_player('20000634')">쉬진하오</a></li>
+							
+							<li><a onclick="viewPage_player('20002598')">슝밍루이</a></li>
+							
+							<li><a onclick="viewPage_player('20001818')">스기</a></li>
+							
+							<li><a onclick="viewPage_player('20001960')">스민</a></li>
+							
+							<li><a onclick="viewPage_player('20001949')">스진보</a></li>
+							
+							<li><a onclick="viewPage_player('20002345')">신톈웨</a></li>
+							
+							<li><a onclick="viewPage_player('20001671')">쑨관췬</a></li>
+							
+							<li><a onclick="viewPage_player('20001958')">쑨단</a></li>
+							
+							<li><a onclick="viewPage_player('20002087')">쑨밍제</a></li>
+							
+							<li><a onclick="viewPage_player('20002357')">쑨쓰잉</a></li>
+							
+							<li><a onclick="viewPage_player('20001892')">쑨잔보</a></li>
+							
+							<li><a onclick="viewPage_player('20000860')">쑨치루이</a></li>
+							
+							<li><a onclick="viewPage_player('20002351')">쑨핑안</a></li>
+							
+							<li><a onclick="viewPage_player('20002440')">쑹루이라이</a></li>
+							
+							<li><a onclick="viewPage_player('20001959')">쑹쯔루이</a></li>
+							
+							<li><a onclick="viewPage_player('20001970')">야오샤오민</a></li>
+							
+							<li><a onclick="viewPage_player('20001963')">양룽</a></li>
+							
+							<li><a onclick="viewPage_player('20001962')">양수오</a></li>
+							
+							<li><a onclick="viewPage_player('20000725')">양징</a></li>
+							
+							<li><a onclick="viewPage_player('20001837')">양치치</a></li>
+							
+							<li><a onclick="viewPage_player('20002181')">옌구윈치</a></li>
+							
+							<li><a onclick="viewPage_player('20001969')">옌안</a></li>
+							
+							<li><a onclick="viewPage_player('20002051')">오개군</a></li>
+							
+							<li><a onclick="viewPage_player('20001241')">완러치</a></li>
+							
+							<li><a onclick="viewPage_player('20002075')">왕관쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20000815')">왕니차오</a></li>
+							
+							<li><a onclick="viewPage_player('20002530')">왕뤄시</a></li>
+							
+							<li><a onclick="viewPage_player('20002115')">왕메이청</a></li>
+							
+							<li><a onclick="viewPage_player('20002289')">왕미엔</a></li>
+							
+							<li><a onclick="viewPage_player('20002077')">왕보강</a></li>
+							
+							<li><a onclick="viewPage_player('20002079')">왕빈</a></li>
+							
+							<li><a onclick="viewPage_player('20002571')">왕샤오룽</a></li>
+							
+							<li><a onclick="viewPage_player('20000754')">왕샹루</a></li>
+							
+							<li><a onclick="viewPage_player('20002080')">왕예훙이</a></li>
+							
+							<li><a onclick="viewPage_player('20001610')">왕웨이(偉)</a></li>
+							
+							<li><a onclick="viewPage_player('20002081')">왕위안</a></li>
+							
+							<li><a onclick="viewPage_player('10001256')">왕이</a></li>
+							
+							<li><a onclick="viewPage_player('20002589')">왕이(逸)</a></li>
+							
+							<li><a onclick="viewPage_player('20002177')">왕이루</a></li>
+							
+							<li><a onclick="viewPage_player('20001196')">왕자바오</a></li>
+							
+							<li><a onclick="viewPage_player('20001203')">왕자치</a></li>
+							
+							<li><a onclick="viewPage_player('20000932')">왕쥔치</a></li>
+							
+							<li><a onclick="viewPage_player('20002367')">왕징레이</a></li>
+							
+							<li><a onclick="viewPage_player('20001855')">왕쩐</a></li>
+							
+							<li><a onclick="viewPage_player('20001729')">왕쯔선</a></li>
+							
+							<li><a onclick="viewPage_player('20001080')">왕차오</a></li>
+							
+							<li><a onclick="viewPage_player('20002083')">왕청</a></li>
+							
+							<li><a onclick="viewPage_player('20001762')">왕첸위</a></li>
+							
+							<li><a onclick="viewPage_player('20001806')">왕췬샤오</a></li>
+							
+							<li><a onclick="viewPage_player('20002078')">왕판(凡)</a></li>
+							
+							<li><a onclick="viewPage_player('20002086')">왕하오</a></li>
+							
+							<li><a onclick="viewPage_player('20001816')">왕하오톈</a></li>
+							
+							<li><a onclick="viewPage_player('20002085')">왕하이쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20002052')">왕혜</a></li>
+							
+							<li><a onclick="viewPage_player('20002076')">왕훙위에</a></li>
+							
+							<li><a onclick="viewPage_player('20002102')">왕훙쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20002068')">우다오밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002069')">우베이쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20002070')">우위린</a></li>
+							
+							<li><a onclick="viewPage_player('20001888')">우쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20002071')">우쥔하오</a></li>
+							
+							<li><a onclick="viewPage_player('20002066')">우치(吳琪)</a></li>
+							
+							<li><a onclick="viewPage_player('20002067')">우치(吳麒)</a></li>
+							
+							<li><a onclick="viewPage_player('20001831')">원자오이</a></li>
+							
+							<li><a onclick="viewPage_player('20001961')">웨쑹</a></li>
+							
+							<li><a onclick="viewPage_player('20001974')">웨이밍루이</a></li>
+							
+							<li><a onclick="viewPage_player('20000460')">웨이쯔샹</a></li>
+							
+							<li><a onclick="viewPage_player('20002534')">위루이린</a></li>
+							
+							<li><a onclick="viewPage_player('20001964')">위메이링</a></li>
+							
+							<li><a onclick="viewPage_player('20001968')">위샤오단</a></li>
+							
+							<li><a onclick="viewPage_player('20001966')">위쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20001967')">위시멍</a></li>
+							
+							<li><a onclick="viewPage_player('20001973')">위안시</a></li>
+							
+							<li><a onclick="viewPage_player('20000698')">위안이톈</a></li>
+							
+							<li><a onclick="viewPage_player('20001832')">위안제</a></li>
+							
+							<li><a onclick="viewPage_player('20002312')">위징둥</a></li>
+							
+							<li><a onclick="viewPage_player('20001965')">위페이</a></li>
+							
+							<li><a onclick="viewPage_player('20001975')">위핑(?)</a></li>
+							
+							<li><a onclick="viewPage_player('20002180')">인자웨</a></li>
+							
+							<li><a onclick="viewPage_player('20001977')">인젠</a></li>
+							
+							<li><a onclick="viewPage_player('20001976')">인쿼</a></li>
+							
+							<li><a onclick="viewPage_player('20001802')">자오방차오</a></li>
+							
+							<li><a onclick="viewPage_player('20001815')">자오웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20001999')">자오위훙</a></li>
+							
+							<li><a onclick="viewPage_player('20002495')">자오이캉</a></li>
+							
+							<li><a onclick="viewPage_player('20002000')">자오쯔지</a></li>
+							
+							<li><a onclick="viewPage_player('20002533')">자오캉이</a></li>
+							
+							<li><a onclick="viewPage_player('20002165')">자오푸쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20001982')">자우언화</a></li>
+							
+							<li><a onclick="viewPage_player('20000641')">자첸</a></li>
+							
+							<li><a onclick="viewPage_player('20001979')">장레이</a></li>
+							
+							<li><a onclick="viewPage_player('20000665')">장루이</a></li>
+							
+							<li><a onclick="viewPage_player('20001983')">장민</a></li>
+							
+							<li><a onclick="viewPage_player('20002178')">장시위안</a></li>
+							
+							<li><a onclick="viewPage_player('20001986')">장썬</a></li>
+							
+							<li><a onclick="viewPage_player('20001988')">장옌추</a></li>
+							
+							<li><a onclick="viewPage_player('20002603')">장원정</a></li>
+							
+							<li><a onclick="viewPage_player('20000639')">장웨란</a></li>
+							
+							<li><a onclick="viewPage_player('20002502')">장이먀오</a></li>
+							
+							<li><a onclick="viewPage_player('20002059')">장자호</a></li>
+							
+							<li><a onclick="viewPage_player('20001989')">장천중</a></li>
+							
+							<li><a onclick="viewPage_player('20001987')">장청화</a></li>
+							
+							<li><a onclick="viewPage_player('20002602')">장첸</a></li>
+							
+							<li><a onclick="viewPage_player('20001076')">장쳰</a></li>
+							
+							<li><a onclick="viewPage_player('20000691')">장치(張啓)</a></li>
+							
+							<li><a onclick="viewPage_player('20001678')">장치(張祺)</a></li>
+							
+							<li><a onclick="viewPage_player('20001718')">장타이위</a></li>
+							
+							<li><a onclick="viewPage_player('20000997')">장톈거</a></li>
+							
+							<li><a onclick="viewPage_player('20001990')">장톈치</a></li>
+							
+							<li><a onclick="viewPage_player('20001984')">장펑</a></li>
+							
+							<li><a onclick="viewPage_player('20001985')">장페이페이(斐)</a></li>
+							
+							<li><a onclick="viewPage_player('20000630')">장페이페이(佩)</a></li>
+							
+							<li><a onclick="viewPage_player('20001820')">장하오웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20000819')">장한천</a></li>
+							
+							<li><a onclick="viewPage_player('20002055')">장혁초</a></li>
+							
+							<li><a onclick="viewPage_player('20002004')">저우밍성</a></li>
+							
+							<li><a onclick="viewPage_player('20002010')">저우보</a></li>
+							
+							<li><a onclick="viewPage_player('20001259')">저우쉬엔</a></li>
+							
+							<li><a onclick="viewPage_player('20002349')">저우웨이핑</a></li>
+							
+							<li><a onclick="viewPage_player('20001826')">저우위샨</a></li>
+							
+							<li><a onclick="viewPage_player('20002003')">저우쥐페이</a></li>
+							
+							<li><a onclick="viewPage_player('20001830')">정신이</a></li>
+							
+							<li><a onclick="viewPage_player('20001995')">정처</a></li>
+							
+							<li><a onclick="viewPage_player('20000821')">정훙이</a></li>
+							
+							<li><a onclick="viewPage_player('20001980')">좡메이빈</a></li>
+							
+							<li><a onclick="viewPage_player('20002027')">주리리</a></li>
+							
+							<li><a onclick="viewPage_player('20002006')">주바오신</a></li>
+							
+							<li><a onclick="viewPage_player('20002008')">주아이</a></li>
+							
+							<li><a onclick="viewPage_player('20001674')">주예밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002005')">주원신</a></li>
+							
+							<li><a onclick="viewPage_player('20002009')">주위촨</a></li>
+							
+							<li><a onclick="viewPage_player('20002498')">주이카이</a></li>
+							
+							<li><a onclick="viewPage_player('20002002')">주제</a></li>
+							
+							<li><a onclick="viewPage_player('20000870')">주쥔환</a></li>
+							
+							<li><a onclick="viewPage_player('20002532')">주지에이</a></li>
+							
+							<li><a onclick="viewPage_player('20002007')">주펑이</a></li>
+							
+							<li><a onclick="viewPage_player('20002011')">중천광</a></li>
+							
+							<li><a onclick="viewPage_player('20002575')">중하오린</a></li>
+							
+							<li><a onclick="viewPage_player('20001896')">지룽창</a></li>
+							
+							<li><a onclick="viewPage_player('20002063')">진가림</a></li>
+							
+							<li><a onclick="viewPage_player('20001905')">진레이</a></li>
+							
+							<li><a onclick="viewPage_player('20002089')">진셩위</a></li>
+							
+							<li><a onclick="viewPage_player('20002091')">진첸첸</a></li>
+							
+							<li><a onclick="viewPage_player('20002061')">진혁림</a></li>
+							
+							<li><a onclick="viewPage_player('20002012')">쩡빙취안</a></li>
+							
+							<li><a onclick="viewPage_player('20000613')">차오스야오</a></li>
+							
+							<li><a onclick="viewPage_player('20002001')">차오충</a></li>
+							
+							<li><a onclick="viewPage_player('20001998')">차오훙위</a></li>
+							
+							<li><a onclick="viewPage_player('20002015')">천더룽</a></li>
+							
+							<li><a onclick="viewPage_player('20002017')">천루이</a></li>
+							
+							<li><a onclick="viewPage_player('20002016')">천밍촨</a></li>
+							
+							<li><a onclick="viewPage_player('20002026')">천샤오신</a></li>
+							
+							<li><a onclick="viewPage_player('20002018')">천안치</a></li>
+							
+							<li><a onclick="viewPage_player('20001041')">천야펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002020')">천웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20002583')">천위다</a></li>
+							
+							<li><a onclick="viewPage_player('20002019')">천잉</a></li>
+							
+							<li><a onclick="viewPage_player('20002021')">천자오펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002013')">천쟈</a></li>
+							
+							<li><a onclick="viewPage_player('20002014')">천쟈밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002022')">천즈강</a></li>
+							
+							<li><a onclick="viewPage_player('20002166')">천천</a></li>
+							
+							<li><a onclick="viewPage_player('20002023')">천첸웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20002058')">천하오(昊)</a></li>
+							
+							<li><a onclick="viewPage_player('20001997')">청샤오류</a></li>
+							
+							<li><a onclick="viewPage_player('20001994')">청정위</a></li>
+							
+							<li><a onclick="viewPage_player('20001992')">첸춘레이</a></li>
+							
+							<li><a onclick="viewPage_player('20001904')">추위민</a></li>
+							
+							<li><a onclick="viewPage_player('20002477')">추이쉬</a></li>
+							
+							<li><a onclick="viewPage_player('20001903')">추치항</a></li>
+							
+							<li><a onclick="viewPage_player('20002024')">친츠위안</a></li>
+							
+							<li><a onclick="viewPage_player('20002298')">캉루이</a></li>
+							
+							<li><a onclick="viewPage_player('20001894')">캉펑</a></li>
+							
+							<li><a onclick="viewPage_player('20001928')">타오젠하이</a></li>
+							
+							<li><a onclick="viewPage_player('20002093')">탄옌위</a></li>
+							
+							<li><a onclick="viewPage_player('20001907')">탕리</a></li>
+							
+							<li><a onclick="viewPage_player('20001908')">탕이(毅)</a></li>
+							
+							<li><a onclick="viewPage_player('10000392')">탕잉</a></li>
+							
+							<li><a onclick="viewPage_player('20002094')">탕자룽</a></li>
+							
+							<li><a onclick="viewPage_player('20002307')">탕톈위안</a></li>
+							
+							<li><a onclick="viewPage_player('20001991')">톈예</a></li>
+							
+							<li><a onclick="viewPage_player('20002480')">퉁루이</a></li>
+							
+							<li><a onclick="viewPage_player('20001851')">퉁톈이</a></li>
+							
+							<li><a onclick="viewPage_player('20002360')">판메이린</a></li>
+							
+							<li><a onclick="viewPage_player('20001814')">판빙쉬</a></li>
+							
+							<li><a onclick="viewPage_player('20001948')">판시위</a></li>
+							
+							<li><a onclick="viewPage_player('20001946')">판펑</a></li>
+							
+							<li><a onclick="viewPage_player('20001947')">팡옌</a></li>
+							
+							<li><a onclick="viewPage_player('20002121')">펑성징웨</a></li>
+							
+							<li><a onclick="viewPage_player('20000968')">펑하오</a></li>
+							
+							<li><a onclick="viewPage_player('20002484')">하신</a></li>
+							
+							<li><a onclick="viewPage_player('20002034')">하오밍샤</a></li>
+							
+							<li><a onclick="viewPage_player('20002035')">한쉰</a></li>
+							
+							<li><a onclick="viewPage_player('20000791')">한예</a></li>
+							
+							<li><a onclick="viewPage_player('20002585')">한진스</a></li>
+							
+							<li><a onclick="viewPage_player('20002033')">허쉬광</a></li>
+							
+							<li><a onclick="viewPage_player('20002045')">황량위</a></li>
+							
+							<li><a onclick="viewPage_player('20002046')">황먀오링</a></li>
+							
+							<li><a onclick="viewPage_player('20002047')">황번</a></li>
+							
+							<li><a onclick="viewPage_player('20002050')">황시원</a></li>
+							
+							<li><a onclick="viewPage_player('20002441')">황쓰웨</a></li>
+							
+							<li><a onclick="viewPage_player('20002043')">황자</a></li>
+							
+							<li><a onclick="viewPage_player('20002062')">황자이</a></li>
+							
+							<li><a onclick="viewPage_player('20002044')">황저쉰</a></li>
+							
+							<li><a onclick="viewPage_player('20002049')">황중잉</a></li>
+							
+							<li><a onclick="viewPage_player('20002048')">황진쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20002039')">후레이</a></li>
+							
+							<li><a onclick="viewPage_player('20002041')">후샤오링</a></li>
+							
+							<li><a onclick="viewPage_player('20002040')">후원쑹</a></li>
+							
+							<li><a onclick="viewPage_player('20000795')">후쯔양</a></li>
+							
+							<li><a onclick="viewPage_player('20002042')">훙옌</a></li>
+							
+						<script>document.all.cnt1.innerHTML = "327명"</script>
+					</ul>
+				</div>
+			</li>
+		</ul>
+	</div>
+
+
+<script>
+	document.all.search_loading.style.display = 'none';
+</script>
+
+

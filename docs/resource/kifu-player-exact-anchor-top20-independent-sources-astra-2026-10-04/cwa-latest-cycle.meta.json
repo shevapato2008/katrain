@@ -1,0 +1,11 @@
+{
+  "key": "cwa-latest-cycle",
+  "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-latest-cycle.json",
+  "raw_sha256": "181ca6d2929d069e3dcbf06ba4a4d7930d523c00b2861ec622f7ac9c573c33ac",
+  "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/latest/update/cycle",
+  "retrieved_at_utc": "2026-10-04T12:10:37.337065+00:00",
+  "status": 200,
+  "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-latest-cycle.txt",
+  "text_sha256": "49a13affd9f7f262ae947edcb7416b8ab62804c39212de1efa54d5e626dfce9a",
+  "url": "https://wqapi.cwql.org.cn/playerInfo/latest/update/cycle"
+}

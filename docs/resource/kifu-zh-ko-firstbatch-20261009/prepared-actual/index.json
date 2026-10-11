@@ -1,0 +1,14 @@
+{
+  "artifact_kind": "zh_ko_prepared_actual_source_component_index",
+  "status": "source-only; root owner preimages pending; no candidate approval or signature",
+  "files": [
+    "owner-5498.json",
+    "owner-5739.json"
+  ],
+  "scope_decision_path": "../source-and-rule-decision.json",
+  "capture_index_path": "../capture-index.json",
+  "note": "All capture timestamps are copied from their corresponding saved source metadata. Captures with only filesystem mtime are labelled as such.",
+  "prepared_at_utc": "2026-10-08T22:26:22Z",
+  "producer_model": "gpt-6-luna",
+  "prepared_at_note": "Packet assembly time after inspecting the saved original response bodies; not a web capture time."
+}

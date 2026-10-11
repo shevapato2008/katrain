@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh"><head><title>李钢</title><link rel="icon" type="image/png" href="/apple-touch-icon.png"/><link href="/css/nv.d3.min.css" rel="stylesheet">
+<script src="/javascript/d3.min.js" charset="utf-8"></script>
+<script src="/javascript/nv.d3.min.js" charset="utf-8"></script>
+<meta name=viewport content="width=device-width, initial-scale=1"><meta charset="UTF-8"><style>
+body
+{
+ font-family: sans-serif;
+}
+
+p
+{
+ text-align:center;
+}
+
+h1,h2,h3
+{
+ color: #fff;
+ background-color: #777;
+ padding: 0.3em;
+ text-align: center;
+}
+
+table
+{
+ margin: 0px auto;
+ border-collapse: collapse;
+ color: black;
+ background-color: white;
+}
+
+th
+{
+ padding-left: 0.2em;
+ padding-right: 0.2em;
+ color: black;
+ background-color: #ccc;
+ font-family: sans-serif;
+ font-weight: bold;
+ border: 1px solid white;
+}
+
+th.missing
+{
+ background-color: white;
+}
+
+td
+{
+ padding-left:0.2em;
+ padding-right:0.2em;
+ border:1px solid white;
+ color:black;
+ background-color:#eee;
+ white-space:nowrap;
+}
+
+th.r
+{
+ text-align:right;
+}
+
+td.r
+{
+ text-align:right;
+}
+
+td.c
+{
+ text-align:center;
+}
+
+td.w
+{
+ color: white;
+ background-color: white;
+ border: none;
+}
+
+#graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#history-graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    width:100%;
+    height:75vh;
+}
+
+#chartContainer
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#lang-ctn
+{
+  padding: 10px;
+  text-align: center;
+}
+
+#lang-ctn div
+{
+ background-color: #ccc;
+ display: inline-block;
+ padding-top: 10px;
+ padding-bottom: 5px;
+ padding-right: 5px;
+ padding-left: 5px;
+}
+
+.flag-lang
+{
+  margin-left: 3px;
+  margin-right: 3px;
+  width: 30px;
+  height: 20px;
+}
+
+.banner-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+  margin: 12px auto;
+  background-color: #eee;
+  padding: 1rem;
+}
+
+.banner-container > * {
+  flex: 1 1 25rem;
+  min-width: 16rem;
+}
+
+.banner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.store-badge {
+  height: 3em;
+  width: auto;
+  max-width: 100%;
+  margin: auto 6px;
+}
+
+.review-stars {
+  color: #f5c518;
+}
+</style></head><body><h1>李钢</h1><div id="lang-ctn"><div><a href="../../en/players/524.html"><img alt="en translation" class="flag-lang" src="/flags/en.svg" /></a><a href="../../zh/players/524.html"><img alt="zh translation" class="flag-lang" src="/flags/zh.svg" /></a><a href="../../ja/players/524.html"><img alt="ja translation" class="flag-lang" src="/flags/ja.svg" /></a><a href="../../ko/players/524.html"><img alt="ko translation" class="flag-lang" src="/flags/ko.svg" /></a></div></div><p><a href="..">返回首页</a></p><h2>等级分曲线</h2>
+<div id='chartContainer'>
+<svg id='graph' style='height:450px; width:600px'> </svg>
+</div>
+<script type="text/javascript">
+var format = d3.time.format("%Y-%m-%d");
+var format2 = d3.time.format("%Y/%m/%d");
+d3.json('/players-json/data-524.json', function(data) {
+nv.addGraph(function() {
+var chart = nv.models.lineChart()
+.x(function(d) { return format.parse(d[0]) })
+.y(function(d) { return d[1] })
+.margin({top:20, left: 50, right:50})
+.useInteractiveGuideline(true)
+.showYAxis(true)
+.showXAxis(true)
+.showLegend(false)
+;
+
+ chart.xAxis
+.tickFormat(function(d) {
+return format(new Date(d))
+});
+d3.select('#chartContainer svg')
+.datum(data)
+.call(chart);
+nv.utils.windowResize(function() { chart.update() });
+return chart;
+});
+});
+</script>
+<h2>数据</h2><table><tr><th class="r">胜</th><td class="r">6</td></tr><tr><th class="r">负</th><td class="r">13</td></tr><tr><th class="r">总计</th><td class="r">19</td></tr><tr><th class="r">链接</th><td class="r" style="text-align: left;"><a href="http://senseis.xmp.net/?LiGang">http://senseis.xmp.net/?L...</a></td></tr><tr><th class="r">生日</th><td class="r">1954-01-28</td></tr></table><h2>对局列表</h2><table><tr><th>日期</th><th>等级分</th><th>黑白</th><th>对局结果</th><th colspan="4">对手</th><th>棋谱</th></tr><tr><td>2000-08-17</td><td>2906</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="166.html">丁伟</a></td>
+<td>3287</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>1998-10-28</td><td>2908</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="91.html">余平</a></td>
+<td>3201</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/1998100000003455">cwa</a> | </td>
+</tr>
+<tr><td>1998-07-19</td><td>2909</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="228.html">谭炎午</a></td>
+<td>3002</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/1998070000003161">cwa</a> | </td>
+</tr>
+<tr><td>1998-07-18</td><td>2909</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="168.html">董彦</a></td>
+<td>3254</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/1998070000003158">cwa</a> | </td>
+</tr>
+<tr><td>1998-07-09</td><td>2910</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="69.html">王磊</a></td>
+<td>3295</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/1998070000003078">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/71231">go4go</a> | </td>
+</tr>
+<tr><td>1997-03-14</td><td>2925</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="170.html">方天丰</a></td>
+<td>3050</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/1997030000002003">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/75991">go4go</a> | </td>
+</tr>
+<tr><td>1996-08-25</td><td>2934</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="401.html">李海</a></td>
+<td>2821</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>1996-04-20</td><td>2938</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="43.html">罗洗河</a></td>
+<td>3235</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/1996040000001332">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/31365">go4go</a> | </td>
+</tr>
+<tr><td>1996-04-19</td><td>2938</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="29.html">刘菁</a></td>
+<td>3211</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/1996040000001329">cwa</a> | </td>
+</tr>
+<tr><td>1996-03-15</td><td>2938</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="153.html">陈祖德</a></td>
+<td>3112</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/1996030000001161">cwa</a> | </td>
+</tr>
+<tr><td>1995-04-06</td><td>2944</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="228.html">谭炎午</a></td>
+<td>3014</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/1995040000000213">cwa</a> | </td>
+</tr>
+<tr><td>1995-04-05</td><td>2944</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="403.html">陆军</a></td>
+<td>2950</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/1995040000000197">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/36153">go4go</a> | </td>
+</tr>
+<tr><td>1995-03-07</td><td>2944</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="131.html">朱毅</a></td>
+<td>3089</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>1995-03-06</td><td>2945</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="424.html">王一飞</a></td>
+<td>2910</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>1993-06-14</td><td>2948</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="37.html">梁伟棠</a></td>
+<td>3113</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/40649">go4go</a> | </td>
+</tr>
+<tr><td>1993-01-03</td><td>2951</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="523.html">沈果孙</a></td>
+<td>2891</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/40462">go4go</a> | </td>
+</tr>
+<tr><td>1992-09-01</td><td>2951</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="385.html">金伟斌</a></td>
+<td>3017</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/40346">go4go</a> | </td>
+</tr>
+<tr><td>1991-09-07</td><td>2958</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="7.html">马石</a></td>
+<td>3004</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/40264">go4go</a> | </td>
+</tr>
+<tr><td>1990-11-13</td><td>2957</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="27.html">刘轶一</a></td>
+<td>3202</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/38270">go4go</a> | </td>
+</tr>
+</table>
+<p><small>联系：<a href="https://www.remi-coulom.fr/">Rémi Coulom</a>. Powered by <a href="https://www.joedb.org/intro.html">joedb, the C++ database</a>.</small></p></body></html>

@@ -1,0 +1,21 @@
+{
+  "status": "template_only_not_approved",
+  "required_status_after_root_plan_review": "approved_owner_plan_execution",
+  "allow_apply": false,
+  "reviewer_id": null,
+  "reviewer_model": null,
+  "reviewed_at": null,
+  "review_conclusion": null,
+  "environments": {
+    "TEST": {
+      "image_id": "sha256:82124209ad6425190d587fec10b06eb7cab8b80067cd345cc523bd9a760523c4",
+      "manifest_canonical_sha256": "aa8e33006d43f0b23736555a4b0a072e0f3c1311354a703f55d3ff300816f2e4",
+      "plan_canonical_sha256": null
+    },
+    "PROD": {
+      "image_id": "sha256:6eb7597b5b478c082fe91405c0223531a46380bf53b9d7dc33e8e74cfb642b02",
+      "manifest_canonical_sha256": "aa8e33006d43f0b23736555a4b0a072e0f3c1311354a703f55d3ff300816f2e4",
+      "plan_canonical_sha256": null
+    }
+  }
+}

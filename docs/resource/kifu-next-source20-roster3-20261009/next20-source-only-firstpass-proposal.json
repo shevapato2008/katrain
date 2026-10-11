@@ -1,0 +1,1343 @@
+{
+  "artifact_kind": "source_only_next20_proposal",
+  "status": "20 independently passed at source level in the documented pragmatic identity decision; pending current owner/CAS and registry binding by root",
+  "basis": "post591 PROD strict approved snapshot and local album association inventory; batch592 candidates excluded",
+  "snapshot_captured_at": "2026-10-08T20:49:29.266394+00:00",
+  "source_role_note": "TVBaduk POST and KBA same-code GET are one Korea Baduk Association data family; UGo is Chinese/Latin identity anchor; Daum is published community list and its tier needs review, not official Go authority.",
+  "source_boundary": "No SQL, Git, signature, owner CAS, registry mutation, or deployment. Source-level reviewer recommendation is not root approval.",
+  "records": [
+    {
+      "prod_player_id": 6366,
+      "missing_language": "ko",
+      "proposed_display_name": "천루이",
+      "linked_slots_post591": 30,
+      "existing_qualified_names": {
+        "cn": "陈瑞",
+        "en": "Chen Rui",
+        "jp": "陳瑞",
+        "tw": "陳瑞"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Published TVBaduk POST and KBA same stable code; original Chinese identity anchor and complete Hanzi/Hangul pairing are in captured Daum paragraph. One-dan/blank dates are roster metadata, not a full rank history.",
+      "sources": [
+        {
+          "prod_player_id": 6366,
+          "name_in_index": "천루이",
+          "prpl_code": "20002017",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20002017"
+          },
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "http_status": 200,
+          "fetched_at": "2026-10-08T20:21:12.633364+00:00",
+          "body_bytes": 15798,
+          "body_sha256": "4d4578355e7f22ad959227212b8963b44d6d93daaf680aae1517f3e9c4b0f252",
+          "id": "tvbaduk-player-6366",
+          "role": "independent Korean Go roster profile",
+          "body_file": "captures/tvbaduk-6366.body",
+          "body_excerpt": "소속 : 중국기원 이름 : 천루이 1段 [] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스트시"
+        },
+        {
+          "id": "chen-rui-ugo",
+          "url": "https://db.u-go.net/?page=16",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://db.u-go.net/?page=16",
+          "fetched_at_utc": "2026-10-08T21:00:40.765453+00:00",
+          "content_type": "text/html; charset=utf-8",
+          "body_bytes": 43479,
+          "body_sha256": "5c4168a41971d8840ec000bfd45c0ba8e84c8becdf7ed78d00383bd386d8bcb6",
+          "body_file": "captures/chen-rui-ugo.html.gz",
+          "gzip_bytes": 7551
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        },
+        {
+          "id": "kba-player-6366",
+          "role": "official Korea Baduk Association player profile",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002017",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002017",
+          "fetched_at_utc": "2026-10-08T21:06:24.236719+00:00",
+          "content_type": "text/html; Charset=UTF-8",
+          "body_bytes": 15676,
+          "body_sha256": "c81c810f1272fd22d8a6219d64af11737608f51f477f876063fd42352495a6c4",
+          "body_file": "captures/kba-player-6366.html.gz",
+          "gzip_bytes": 4199,
+          "pkey": "20002017"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 5349,
+      "missing_language": "ko",
+      "proposed_display_name": "선징",
+      "linked_slots_post591": 15,
+      "existing_qualified_names": {
+        "cn": "沈静",
+        "en": "Shen Jing",
+        "jp": "沈静",
+        "tw": "沈靜"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Published TVBaduk POST and KBA same stable code; original Chinese identity anchor and complete Hanzi/Hangul pairing are in captured Daum paragraph. One-dan/blank dates are roster metadata, not a full rank history.",
+      "sources": [
+        {
+          "prod_player_id": 5349,
+          "name_in_index": "선징",
+          "prpl_code": "20002031",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20002031"
+          },
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "http_status": 200,
+          "fetched_at": "2026-10-08T20:21:14.263614+00:00",
+          "body_bytes": 15800,
+          "body_sha256": "5af786a81ef4b6d8e6c00345cc9bf507b2f6a7f221af67950b2628a0a6af49d6",
+          "id": "tvbaduk-player-5349",
+          "role": "independent Korean Go roster profile",
+          "body_file": "captures/tvbaduk-5349.body",
+          "body_excerpt": "소속 : 중국기원 이름 : 선징 1段 [沈? ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스"
+        },
+        {
+          "id": "shen-jing-ugo",
+          "role": "Go player database identity bridge",
+          "url": "https://db.u-go.net/?q=Shen+Jing",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://db.u-go.net/?q=Shen+Jing",
+          "fetched_at_utc": "2026-10-08T21:04:30.127954+00:00",
+          "content_type": "text/html; charset=utf-8",
+          "body_bytes": 23781,
+          "body_sha256": "d26e4f8930e66edfc143a7299406ffa16b4af3599d3b1eb51afc06f66c350b8e",
+          "body_file": "captures/shen-jing-ugo.html.gz",
+          "gzip_bytes": 6479
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        },
+        {
+          "id": "kba-player-5349",
+          "role": "official Korea Baduk Association player profile",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002031",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002031",
+          "fetched_at_utc": "2026-10-08T21:06:27.136856+00:00",
+          "content_type": "text/html; Charset=UTF-8",
+          "body_bytes": 15678,
+          "body_sha256": "6bf3e93910bc9f28b34f33b58278049281bf3b055a3ed6266ef5ac603053716e",
+          "body_file": "captures/kba-player-5349.html.gz",
+          "gzip_bytes": 4202,
+          "pkey": "20002031"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 5952,
+      "missing_language": "ko",
+      "proposed_display_name": "자오쯔지",
+      "linked_slots_post591": 15,
+      "existing_qualified_names": {
+        "cn": "赵子骥",
+        "en": "Zhao Ziji",
+        "jp": "赵子骥",
+        "tw": "趙子驥"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Published TVBaduk POST and KBA same stable code; original Chinese identity anchor and complete Hanzi/Hangul pairing are in captured Daum paragraph. One-dan/blank dates are roster metadata, not a full rank history.",
+      "sources": [
+        {
+          "prod_player_id": 5952,
+          "name_in_index": "자오쯔지",
+          "prpl_code": "20002000",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20002000"
+          },
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "http_status": 200,
+          "fetched_at": "2026-10-08T20:21:15.885743+00:00",
+          "body_bytes": 15801,
+          "body_sha256": "9aaafd54cc1b29e64e4def4ef1c182d2eff6b95b9e4a38b9110cfa83ddf5f702",
+          "id": "tvbaduk-player-5952",
+          "role": "independent Korean Go roster profile",
+          "body_file": "captures/tvbaduk-5952.body",
+          "body_excerpt": "소속 : 중국기원 이름 : 자오쯔지 1段 [] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스트"
+        },
+        {
+          "id": "zhao-ziji-ugo",
+          "url": "https://db.u-go.net/?page=242&q=",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://db.u-go.net/?page=242&q=",
+          "fetched_at_utc": "2026-10-08T20:59:57.389603+00:00",
+          "content_type": "text/html; charset=utf-8",
+          "body_bytes": 41305,
+          "body_sha256": "b77ec6d1ded958882b487bf87bab30dcba64793ac8073e02c7573d49aac0d442",
+          "body_file": "captures/zhao-ziji-ugo.html.gz",
+          "gzip_bytes": 7387
+        },
+        {
+          "id": "zhao-ziji-goratings",
+          "url": "https://www.goratings.org/en/players/497.html",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.goratings.org/en/players/497.html",
+          "fetched_at_utc": "2026-10-08T20:59:54.924876+00:00",
+          "content_type": "text/html",
+          "body_bytes": 15504,
+          "body_sha256": "1a7d2acfa463e0edc03737a0a20a9b2a2ab8feb34255cfd39ce483ebaf83a7c6",
+          "body_file": "captures/zhao-ziji-goratings.html.gz",
+          "gzip_bytes": 2768
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        },
+        {
+          "id": "kba-player-5952",
+          "role": "official Korea Baduk Association player profile",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002000",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002000",
+          "fetched_at_utc": "2026-10-08T21:06:30.083199+00:00",
+          "content_type": "text/html; Charset=UTF-8",
+          "body_bytes": 15679,
+          "body_sha256": "760ddb5b90c1daa22e25cfa7f6aae10bbccdbe8b6550acc4bfa3aa9166d4008d",
+          "body_file": "captures/kba-player-5952.html.gz",
+          "gzip_bytes": 4200,
+          "pkey": "20002000"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 6322,
+      "missing_language": "ko",
+      "proposed_display_name": "천더룽",
+      "linked_slots_post591": 12,
+      "existing_qualified_names": {
+        "cn": "陈德龙",
+        "en": "Chen Delong",
+        "jp": "陈德龙",
+        "tw": "陳德龍"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Published TVBaduk POST and KBA same stable code; original Chinese identity anchor and complete Hanzi/Hangul pairing are in captured Daum paragraph. One-dan/blank dates are roster metadata, not a full rank history.",
+      "sources": [
+        {
+          "prod_player_id": 6322,
+          "name_in_index": "천더룽",
+          "prpl_code": "20002015",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20002015"
+          },
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "http_status": 200,
+          "fetched_at": "2026-10-08T20:21:15.963098+00:00",
+          "body_bytes": 15802,
+          "body_sha256": "5dc6f8a0b7a491ccf2c7c9c678e3585ed25811a9819162169f7768c3137ecf0c",
+          "id": "tvbaduk-player-6322",
+          "role": "independent Korean Go roster profile",
+          "body_file": "captures/tvbaduk-6322.body",
+          "body_excerpt": "소속 : 중국기원 이름 : 천더룽 1段 [德 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스"
+        },
+        {
+          "id": "chen-delong-ugo",
+          "role": "Go player database identity bridge",
+          "url": "https://db.u-go.net/?q=Chen+Delong",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://db.u-go.net/?q=Chen+Delong",
+          "fetched_at_utc": "2026-10-08T21:04:31.478562+00:00",
+          "content_type": "text/html; charset=utf-8",
+          "body_bytes": 23582,
+          "body_sha256": "2b94f52325930e530cdda390ec1625dc65f67e79b58db101ab49342abafd19b6",
+          "body_file": "captures/chen-delong-ugo.html.gz",
+          "gzip_bytes": 6445
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        },
+        {
+          "id": "kba-player-6322",
+          "role": "official Korea Baduk Association player profile",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002015",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002015",
+          "fetched_at_utc": "2026-10-08T21:06:32.984089+00:00",
+          "content_type": "text/html; Charset=UTF-8",
+          "body_bytes": 15680,
+          "body_sha256": "086e4f25dcc8f57f29efaf00e4985193fbdccc5f120dfdb79d0dbc10153ec956",
+          "body_file": "captures/kba-player-6322.html.gz",
+          "gzip_bytes": 4206,
+          "pkey": "20002015"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 6550,
+      "missing_language": "ko",
+      "proposed_display_name": "황번",
+      "linked_slots_post591": 12,
+      "existing_qualified_names": {
+        "cn": "黄贲",
+        "en": "Huang Bi",
+        "jp": "黄贲",
+        "tw": "黃賁"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Published TVBaduk POST and KBA same stable code; original Chinese identity anchor and complete Hanzi/Hangul pairing are in captured Daum paragraph. One-dan/blank dates are roster metadata, not a full rank history. u-go.net lists Huang Ben as the main English name and Huang Bi as an alternate; use the complete Daum 黄贲/黃賁 + 황번 pairing for the Korean display.",
+      "sources": [
+        {
+          "prod_player_id": 6550,
+          "name_in_index": "황번",
+          "prpl_code": "20002047",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20002047"
+          },
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "http_status": 200,
+          "fetched_at": "2026-10-08T20:21:15.968933+00:00",
+          "body_bytes": 15798,
+          "body_sha256": "cea9966d603849ab3aeaffd86918531fc13bf0d05bccf9e19dbd24bda4a0e3e6",
+          "id": "tvbaduk-player-6550",
+          "role": "independent Korean Go roster profile",
+          "body_file": "captures/tvbaduk-6550.body",
+          "body_excerpt": "소속 : 중국기원 이름 : 황번 1段 [?? ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스"
+        },
+        {
+          "id": "huang-bi-ugo",
+          "role": "Go player database identity bridge",
+          "url": "https://db.u-go.net/?q=Huang+Bi",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://db.u-go.net/?q=Huang+Bi",
+          "fetched_at_utc": "2026-10-08T21:04:32.828417+00:00",
+          "content_type": "text/html; charset=utf-8",
+          "body_bytes": 23675,
+          "body_sha256": "37626d65120653b632b14dbcbb92ab4285e29f0ca95c9a0030b392e261dac23a",
+          "body_file": "captures/huang-bi-ugo.html.gz",
+          "gzip_bytes": 6449
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        },
+        {
+          "id": "kba-player-6550",
+          "role": "official Korea Baduk Association player profile",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002047",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002047",
+          "fetched_at_utc": "2026-10-08T21:06:35.850718+00:00",
+          "content_type": "text/html; Charset=UTF-8",
+          "body_bytes": 15676,
+          "body_sha256": "8e8e7eba84b8e4d4c3178fdec7c32ddbc8878c92cc2c1943ddd372e2b518c69c",
+          "body_file": "captures/kba-player-6550.html.gz",
+          "gzip_bytes": 4197,
+          "pkey": "20002047"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 4593,
+      "missing_language": "ko",
+      "proposed_display_name": "팡옌",
+      "linked_slots_post591": 11,
+      "existing_qualified_names": {
+        "cn": "庞延",
+        "en": "Pang Yan",
+        "jp": "庞延",
+        "tw": "龐延"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Captured 2012 Go community roster pairs the exact Korean display with the complete Chinese original on one line; independently captured TVBaduk POST and KBA GET publish the same Korean name under one stable code, with partial Hanja only. u-go.net publishes the exact Chinese original. Community publication is not represented as KBA approval or independently corroborated official Hanja.",
+      "sources": [
+        {
+          "pid": 4593,
+          "english": "Pang Yan",
+          "kind": "TV",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20001947"
+          },
+          "status": 200,
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "fetched_at_utc": "2026-10-08T21:10:03.959669+00:00",
+          "body_file": "captures/roster3-4593-tv.body.gz",
+          "body_bytes": 15800,
+          "body_sha256": "8133a088975802b3684cc310c98d18a302a804c14ab09fc0e888fd6d5474a033",
+          "excerpt": "이름 : 팡옌 1段 [?延 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이"
+        },
+        {
+          "pid": 4593,
+          "english": "Pang Yan",
+          "kind": "KBA",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001947",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001947",
+          "fetched_at_utc": "2026-10-08T21:10:05.202844+00:00",
+          "body_file": "captures/roster3-4593-kba.body.gz",
+          "body_bytes": 15678,
+          "body_sha256": "d3fa27de33b6eff3a283d5deab42244850f96211cd7a68debed351cdfa2ffd0a",
+          "excerpt": "기사정보 상세 팡옌( ?延 ) 1단 생년월일 소속 중국 통산전적 기사랭킹 승률 0전 0승 0패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / / 경력사항 한국기원소개 찾아오시는길 이용약관 개"
+        },
+        {
+          "pid": 4593,
+          "english": "Pang Yan",
+          "kind": "UGO",
+          "url": "https://db.u-go.net/?q=Pang%20Yan",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Pang%20Yan",
+          "fetched_at_utc": "2026-10-08T21:10:03.647824+00:00",
+          "body_file": "captures/roster3-4593-ugo.body.gz",
+          "body_bytes": 23572,
+          "body_sha256": "d957f1583b508c69b2394224940ac97fce7761d6d566377eb0bfd5027d9ec428",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Pang Yan g 庞延 CHN 1 (1 entries) Show 12 25 50 100 items.* L"
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        }
+      ]
+    },
+    {
+      "prod_player_id": 6571,
+      "missing_language": "ko",
+      "proposed_display_name": "궁스윈",
+      "linked_slots_post591": 10,
+      "existing_qualified_names": {
+        "cn": "龚世运",
+        "en": "Gong Shiyun",
+        "jp": "龚世运",
+        "tw": "龔世運"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Captured 2012 Go community roster pairs the exact Korean display with the complete Chinese original on one line; independently captured TVBaduk POST and KBA GET publish the same Korean name under one stable code, with partial Hanja only. u-go.net publishes the exact Chinese original. Community publication is not represented as KBA approval or independently corroborated official Hanja.",
+      "sources": [
+        {
+          "pid": 6571,
+          "english": "Gong Shiyun",
+          "kind": "TV",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20001900"
+          },
+          "status": 200,
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "fetched_at_utc": "2026-10-08T21:10:03.952593+00:00",
+          "body_file": "captures/roster3-6571-tv.body.gz",
+          "body_bytes": 15804,
+          "body_sha256": "4399991240cbea9452bb81bac0778359505fdb5563716565ce0e46c4f44a921e",
+          "excerpt": "이름 : 궁스윈 1段 [?世? ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양"
+        },
+        {
+          "pid": 6571,
+          "english": "Gong Shiyun",
+          "kind": "KBA",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001900",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001900",
+          "fetched_at_utc": "2026-10-08T21:10:05.185928+00:00",
+          "body_file": "captures/roster3-6571-kba.body.gz",
+          "body_bytes": 15682,
+          "body_sha256": "2bb07629fbea77977147c44b44c07154cb5643a37c5432349a58d3f070c79e00",
+          "excerpt": "기사정보 상세 궁스윈( ?世? ) 1단 생년월일 소속 중국 통산전적 기사랭킹 승률 0전 0승 0패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / / 경력사항 한국기원소개 찾아오시는길 이용약관"
+        },
+        {
+          "pid": 6571,
+          "english": "Gong Shiyun",
+          "kind": "UGO",
+          "url": "https://db.u-go.net/?q=Gong%20Shiyun",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Gong%20Shiyun",
+          "fetched_at_utc": "2026-10-08T21:10:03.657279+00:00",
+          "body_file": "captures/roster3-6571-ugo.body.gz",
+          "body_bytes": 23684,
+          "body_sha256": "e553f7117cb2c53dbdade653335abb3fccbe37dfc25225db26cde5fc25e79c75",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Gong Shiyun g4 Ji Shiyun • 龚世运 CHN 1 (1 entries) Show 12 25"
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        }
+      ]
+    },
+    {
+      "prod_player_id": 5915,
+      "missing_language": "ko",
+      "proposed_display_name": "셰위궈",
+      "linked_slots_post591": 7,
+      "existing_qualified_names": {
+        "cn": "谢裕国",
+        "en": "Xie Yuguo",
+        "jp": "谢裕国",
+        "tw": "謝裕國"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Captured 2012 Go community roster pairs the exact Korean display with the complete Chinese original on one line; independently captured TVBaduk POST and KBA GET publish the same Korean name under one stable code, with partial Hanja only. u-go.net publishes the exact Chinese original. Community publication is not represented as KBA approval or independently corroborated official Hanja.",
+      "sources": [
+        {
+          "pid": 5915,
+          "english": "Xie Yuguo",
+          "kind": "TV",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20001952"
+          },
+          "status": 200,
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "fetched_at_utc": "2026-10-08T21:10:03.903831+00:00",
+          "body_file": "captures/roster3-5915-tv.body.gz",
+          "body_bytes": 15804,
+          "body_sha256": "d3565830cd6282322a6f47c7cdcf119c358e45db9557c2ea52efe3780307d5cf",
+          "excerpt": "이름 : 셰위궈 1段 [?裕? ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양"
+        },
+        {
+          "pid": 5915,
+          "english": "Xie Yuguo",
+          "kind": "KBA",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001952",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001952",
+          "fetched_at_utc": "2026-10-08T21:10:05.194239+00:00",
+          "body_file": "captures/roster3-5915-kba.body.gz",
+          "body_bytes": 15682,
+          "body_sha256": "c4dc27d3ea04b644db8eecbb56b264411c388e6b1b15006f083624558641b331",
+          "excerpt": "기사정보 상세 셰위궈( ?裕? ) 1단 생년월일 소속 중국 통산전적 기사랭킹 승률 0전 0승 0패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / / 경력사항 한국기원소개 찾아오시는길 이용약관"
+        },
+        {
+          "pid": 5915,
+          "english": "Xie Yuguo",
+          "kind": "UGO",
+          "url": "https://db.u-go.net/?q=Xie%20Yuguo",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Xie%20Yuguo",
+          "fetched_at_utc": "2026-10-08T21:10:04.998737+00:00",
+          "body_file": "captures/roster3-5915-ugo.body.gz",
+          "body_bytes": 23577,
+          "body_sha256": "66819af380e196c5dbbb1c28f5e30c3b7968e1b80dbbaec03d17feb4d522ee16",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Xie Yuguo g 谢裕国 CHN 1 (1 entries) Show 12 25 50 100 items.*"
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        }
+      ]
+    },
+    {
+      "prod_player_id": 6367,
+      "missing_language": "ko",
+      "proposed_display_name": "천잉",
+      "linked_slots_post591": 6,
+      "existing_qualified_names": {
+        "cn": "陈盈",
+        "en": "Chen Ying",
+        "jp": "陈盈",
+        "tw": "陳盈"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Captured 2012 Go community roster pairs the exact Korean display with the complete Chinese original on one line; independently captured TVBaduk POST and KBA GET publish the same Korean name under one stable code, with partial Hanja only. u-go.net publishes the exact Chinese original. Community publication is not represented as KBA approval or independently corroborated official Hanja.",
+      "sources": [
+        {
+          "pid": 6367,
+          "english": "Chen Ying",
+          "kind": "TV",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20002019"
+          },
+          "status": 200,
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "fetched_at_utc": "2026-10-08T21:10:05.376017+00:00",
+          "body_file": "captures/roster3-6367-tv.body.gz",
+          "body_bytes": 15800,
+          "body_sha256": "6a4623ae80c87e73254807c51f8bcd8edf396ebaec8f27f10c3ceb8d6912a21d",
+          "excerpt": "이름 : 천잉 1段 [?盈 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이"
+        },
+        {
+          "pid": 6367,
+          "english": "Chen Ying",
+          "kind": "KBA",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002019",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002019",
+          "fetched_at_utc": "2026-10-08T21:10:06.926501+00:00",
+          "body_file": "captures/roster3-6367-kba.body.gz",
+          "body_bytes": 15678,
+          "body_sha256": "e74fc94a44deaf52ca7f97e3e111f4605286bad391e6cd97b9e52ee3ea249fe0",
+          "excerpt": "기사정보 상세 천잉( ?盈 ) 1단 생년월일 소속 중국 통산전적 기사랭킹 승률 0전 0승 0패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / / 경력사항 한국기원소개 찾아오시는길 이용약관 개"
+        },
+        {
+          "pid": 6367,
+          "english": "Chen Ying",
+          "kind": "UGO",
+          "url": "https://db.u-go.net/?q=Chen%20Ying",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Chen%20Ying",
+          "fetched_at_utc": "2026-10-08T21:10:05.280382+00:00",
+          "body_file": "captures/roster3-6367-ugo.body.gz",
+          "body_bytes": 23575,
+          "body_sha256": "58a4cea768d3dd1f6c7a4d0355446c76d8ebe944f6278c72a24f9d7d363c4e40",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Chen Ying g4 陈盈 CHN 1 (1 entries) Show 12 25 50 100 items.*"
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        }
+      ]
+    },
+    {
+      "prod_player_id": 6278,
+      "missing_language": "ko",
+      "proposed_display_name": "옌안",
+      "linked_slots_post591": 6,
+      "existing_qualified_names": {
+        "cn": "阎安",
+        "en": "Yan An",
+        "jp": "阎安",
+        "tw": "閻安"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Captured 2012 Go community roster pairs the exact Korean display with the complete Chinese original on one line; independently captured TVBaduk POST and KBA GET publish the same Korean name under one stable code, with partial Hanja only. u-go.net publishes the exact Chinese original. Community publication is not represented as KBA approval or independently corroborated official Hanja.",
+      "sources": [
+        {
+          "pid": 6278,
+          "english": "Yan An",
+          "kind": "TV",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20001969"
+          },
+          "status": 200,
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "fetched_at_utc": "2026-10-08T21:10:05.602665+00:00",
+          "body_file": "captures/roster3-6278-tv.body.gz",
+          "body_bytes": 15800,
+          "body_sha256": "9d78d8a4a4612c0db655f1e15e56c87bd8a97976c1214fd26cd9c3677797c991",
+          "excerpt": "이름 : 옌안 1段 [?安 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이"
+        },
+        {
+          "pid": 6278,
+          "english": "Yan An",
+          "kind": "KBA",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001969",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001969",
+          "fetched_at_utc": "2026-10-08T21:10:08.109913+00:00",
+          "body_file": "captures/roster3-6278-kba.body.gz",
+          "body_bytes": 15678,
+          "body_sha256": "9177a7823356620780f054555fa07198e51f5a255dfb4c5bc1889c2c0e5fa020",
+          "excerpt": "기사정보 상세 옌안( ?安 ) 1단 생년월일 소속 중국 통산전적 기사랭킹 승률 0전 0승 0패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / / 경력사항 한국기원소개 찾아오시는길 이용약관 개"
+        },
+        {
+          "pid": 6278,
+          "english": "Yan An",
+          "kind": "UGO",
+          "url": "https://db.u-go.net/?q=Yan%20An",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Yan%20An",
+          "fetched_at_utc": "2026-10-08T21:10:06.510046+00:00",
+          "body_file": "captures/roster3-6278-ugo.body.gz",
+          "body_bytes": 23769,
+          "body_sha256": "b6a7e7cf9b95bc696f63cdcf67e4280520bd0a7f85ee446801b1d58b26f01685",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Yan An g4 阎安 CHN SL 1 (1 entries) Show 12 25 50 100 items.*"
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        }
+      ]
+    },
+    {
+      "prod_player_id": 5912,
+      "missing_language": "ko",
+      "proposed_display_name": "셰펑",
+      "linked_slots_post591": 6,
+      "existing_qualified_names": {
+        "cn": "谢峰",
+        "en": "Xie Feng",
+        "jp": "谢峰",
+        "tw": "謝峰"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Captured 2012 Go community roster pairs the exact Korean display with the complete Chinese original on one line; independently captured TVBaduk POST and KBA GET publish the same Korean name under one stable code, with partial Hanja only. u-go.net publishes the exact Chinese original. Community publication is not represented as KBA approval or independently corroborated official Hanja.",
+      "sources": [
+        {
+          "pid": 5912,
+          "english": "Xie Feng",
+          "kind": "TV",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20001951"
+          },
+          "status": 200,
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "fetched_at_utc": "2026-10-08T21:10:06.905711+00:00",
+          "body_file": "captures/roster3-5912-tv.body.gz",
+          "body_bytes": 15800,
+          "body_sha256": "33e15651e68996c77b4b1c9ff2ab38d3322cbc17fb43103782b9f7ae672b27a3",
+          "excerpt": "이름 : 셰펑 1段 [?峰 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이"
+        },
+        {
+          "pid": 5912,
+          "english": "Xie Feng",
+          "kind": "KBA",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001951",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001951",
+          "fetched_at_utc": "2026-10-08T21:10:08.292434+00:00",
+          "body_file": "captures/roster3-5912-kba.body.gz",
+          "body_bytes": 15678,
+          "body_sha256": "7eb26def67adc29e9a2da095fdba72942d54beb6d4b00fe734d77e411959f517",
+          "excerpt": "기사정보 상세 셰펑( ?峰 ) 1단 생년월일 소속 중국 통산전적 기사랭킹 승률 0전 0승 0패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / / 경력사항 한국기원소개 찾아오시는길 이용약관 개"
+        },
+        {
+          "pid": 5912,
+          "english": "Xie Feng",
+          "kind": "UGO",
+          "url": "https://db.u-go.net/?q=Xie%20Feng",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Xie%20Feng",
+          "fetched_at_utc": "2026-10-08T21:10:06.587430+00:00",
+          "body_file": "captures/roster3-5912-ugo.body.gz",
+          "body_bytes": 23572,
+          "body_sha256": "bc7576337c4ed686860121aaf244b53dbdda367715d6e25f1ed1770f107c3acd",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Xie Feng g 谢峰 CHN 1 (1 entries) Show 12 25 50 100 items.* L"
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        }
+      ]
+    },
+    {
+      "prod_player_id": 5350,
+      "missing_language": "ko",
+      "proposed_display_name": "선잉",
+      "linked_slots_post591": 6,
+      "existing_qualified_names": {
+        "cn": "沈颖",
+        "en": "Shen Ying",
+        "jp": "沈颖",
+        "tw": "沈穎"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Captured 2012 Go community roster pairs the exact Korean display with the complete Chinese original on one line; independently captured TVBaduk POST and KBA GET publish the same Korean name under one stable code, with partial Hanja only. u-go.net publishes the exact Chinese original. Community publication is not represented as KBA approval or independently corroborated official Hanja.",
+      "sources": [
+        {
+          "pid": 5350,
+          "english": "Shen Ying",
+          "kind": "TV",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20002030"
+          },
+          "status": 200,
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "fetched_at_utc": "2026-10-08T21:10:07.055756+00:00",
+          "body_file": "captures/roster3-5350-tv.body.gz",
+          "body_bytes": 15800,
+          "body_sha256": "0d37823d79f31091f4e27923f2c87ad1f9a30642fae44273770f46a1957b2975",
+          "excerpt": "이름 : 선잉 1段 [沈? ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이"
+        },
+        {
+          "pid": 5350,
+          "english": "Shen Ying",
+          "kind": "KBA",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002030",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002030",
+          "fetched_at_utc": "2026-10-08T21:10:08.678194+00:00",
+          "body_file": "captures/roster3-5350-kba.body.gz",
+          "body_bytes": 15678,
+          "body_sha256": "3a7bae1acb3195d3119493f41b58dc53997c26545ff939fc4993451300c82885",
+          "excerpt": "기사정보 상세 선잉( 沈? ) 1단 생년월일 소속 중국 통산전적 기사랭킹 승률 0전 0승 0패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / / 경력사항 한국기원소개 찾아오시는길 이용약관 개"
+        },
+        {
+          "pid": 5350,
+          "english": "Shen Ying",
+          "kind": "UGO",
+          "url": "https://db.u-go.net/?q=Shen%20Ying",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Shen%20Ying",
+          "fetched_at_utc": "2026-10-08T21:10:07.837042+00:00",
+          "body_file": "captures/roster3-5350-ugo.body.gz",
+          "body_bytes": 23575,
+          "body_sha256": "1c29ed8b2d2ed32752bb71549d5bff7b69cd5d6b1a113811bbcc487a1c4cd2f1",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Shen Ying g4 沈颖 CHN 1 (1 entries) Show 12 25 50 100 items.*"
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        }
+      ]
+    },
+    {
+      "prod_player_id": 4031,
+      "missing_language": "ko",
+      "proposed_display_name": "류위신",
+      "linked_slots_post591": 5,
+      "existing_qualified_names": {
+        "cn": "刘禹欣",
+        "en": "Liu Yuxin",
+        "jp": "刘禹欣",
+        "tw": "劉禹欣"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "KBA page lists two Asian Games games against Ueno Risa and Oh Yujin; these distinctive event/opponents match this owner’s local SGF slots. Partial Hanja 禹欣 and the captured Daum complete pair 류위신 刘禹欣/劉禹欣(여) agree with the owner’s original. The KBA profile body itself does not state the 2023-10-02 SGF date.",
+      "sources": [
+        {
+          "pid": 4031,
+          "kind": "TV",
+          "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "method": "POST",
+          "post_data": {
+            "S_nation": "2",
+            "S_ob_forc": "",
+            "S_sort_mode": "A",
+            "prpl_code": "20002099"
+          },
+          "status": 200,
+          "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+          "fetched_at_utc": "2026-10-08T21:11:16.568033+00:00",
+          "body_file": "captures/roster3-4031-tv.body.gz",
+          "body_bytes": 15805,
+          "body_sha256": "3354a494c2b6c0be192a6bda57a53dc50e4f1bef65892cb724e6f82e4e1426fa",
+          "excerpt": "이름 : 류위신 1段 [禹欣 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스트시즌 "
+        },
+        {
+          "pid": 4031,
+          "kind": "KBA",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002099",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002099",
+          "fetched_at_utc": "2026-10-08T21:11:19.618561+00:00",
+          "body_file": "captures/roster3-4031-kba.body.gz",
+          "body_bytes": 17450,
+          "body_sha256": "5f05fd1277b2a2934f4214a433bcb4fd1df5ba1560d18ec6ba732cdfbfd4dfb1",
+          "excerpt": "기사정보 상세 류위신( 禹欣 ) 1단 생년월일 소속 중국 통산전적 기사랭킹 승률 0전 0승 0패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / / 경력사항 최근기보 더보기 제19회 아시안게임 여자단체3위결정전 우에노 리사 VS 류위신 181수 "
+        },
+        {
+          "pid": 4031,
+          "kind": "UGO",
+          "url": "https://db.u-go.net/?q=Liu+Yuxin",
+          "method": "GET",
+          "post_data": null,
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Liu+Yuxin",
+          "fetched_at_utc": "2026-10-08T21:11:20.959554+00:00",
+          "body_file": "captures/roster3-4031-ugo.body.gz",
+          "body_bytes": 23578,
+          "body_sha256": "bf45ab9fe37558e3d795a23bd3738b1ab4db23f6a764a1834ca127ae0b14c769",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Liu Yuxin g4 刘禹欣 CHN 1 (1 entries) Show 12 25 50 100 items.* Language data* * We use a cookie "
+        },
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        }
+      ]
+    },
+    {
+      "prod_player_id": 5034,
+      "missing_language": "jp",
+      "proposed_display_name": "李晨碩",
+      "linked_slots_post591": 5,
+      "existing_qualified_names": {
+        "cn": "李晨硕",
+        "en": "Li Chenshuo",
+        "ko": "리천숴",
+        "tw": "李晨碩"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Japanese Kifudepot SGF explicitly has 2010-09-11 PW 李晨碩 versus PB 朴鋕恩, same event/date/opponent/ranks as this owner’s local SGF.",
+      "sources": [
+        {
+          "pid": 5034,
+          "kind": "kifudepot-jp",
+          "url": "https://kifudepot.net/kifucontents.php?id=GU0anneFeRnP%2BSHKyee0nw%3D%3D",
+          "method": "GET",
+          "status": 200,
+          "final_url": "https://kifudepot.net/kifucontents.php?id=GU0anneFeRnP%2BSHKyee0nw%3D%3D",
+          "fetched_at_utc": "2026-10-08T21:13:23.063353+00:00",
+          "body_file": "captures/roster3-5034-kifudepot-jp.body.gz",
+          "body_bytes": 62193,
+          "body_sha256": "dd6b3c474a7307958d558025debef443ebd0c5e5890b36f00d9ffedf2f134450",
+          "excerpt": "kifudepot｜朴鋕恩-李晨碩 第1回穹窿山兵聖杯世界女子囲碁選手権1回戦 トップページ 手順検索 ▼その他 棋譜まとめ（一般棋戦） AI棋譜まとめ 棋戦カレンダー プロ棋士アカウント お問合せ ≡ トップページ 手順検索 棋譜まとめ（一般棋戦） AI棋譜まとめ 棋戦カレンダー プロ棋士アカウント お問合せ ホーム 第1回穹窿山兵聖杯世界女子囲碁選手権1回戦 第1回穹窿山兵聖杯世界",
+          "sgf_exact_match": true
+        }
+      ]
+    },
+    {
+      "prod_player_id": 5036,
+      "missing_language": "en",
+      "proposed_display_name": "Li Jingbin",
+      "linked_slots_post591": 7,
+      "existing_qualified_names": {
+        "cn": "李晶彬",
+        "jp": "李晶彬",
+        "ko": "이정빈",
+        "tw": "李晶彬"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "English u-go.net Li Jingbin TWN player record plus Haifong 李晶彬初段 profile and 2016 women Go event versus Dang Xiyun; owner SGF has same 2016 date/opponent.",
+      "sources": [
+        {
+          "pid": 5036,
+          "kind": "ugo-english",
+          "url": "https://db.u-go.net/?q=Li+Jingbin",
+          "method": "GET",
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Li+Jingbin",
+          "fetched_at_utc": "2026-10-08T21:11:55.695357+00:00",
+          "body_file": "captures/roster3-5036-ugo-english.body.gz",
+          "body_bytes": 23471,
+          "body_sha256": "b990891cd63e8c3f2973749716b08385eab78915fa45dc26b93be572aff203cb",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Li Jingbin TWN SL 1 (1 entries) Show 12 25 50 100 items.* Language data* * We use a cookie to store your preference. Exp"
+        },
+        {
+          "pid": 5036,
+          "kind": "ugo-english-detail",
+          "url": "https://db.u-go.net/2082/",
+          "method": "GET",
+          "status": 200,
+          "final_url": "https://db.u-go.net/2082/",
+          "fetched_at_utc": "2026-10-08T21:12:05.114055+00:00",
+          "body_file": "captures/roster3-5036-ugo-detail.body.gz",
+          "body_bytes": 3958,
+          "body_sha256": "a2e9ed7f1814ae1591ace84cbcec64066394cf3c0a85b95a1cbd9ac4593a124b",
+          "excerpt": "u-go.net List of all players Li Jingbin Li Jingbin Key name (used for sorting): Li Jingbin Citizenship: TWN Affiliation: Unknown Links SL http://senseis.xmp.net/?LiJingbin ID: 2082. Last changed: Dec. 12, 2016, 9:15 p.m. by ug. Send feedback"
+        },
+        {
+          "pid": 5036,
+          "kind": "haifong-profile",
+          "url": "https://haifong.org/venue/13457E7445F9AFA1EFBB5651322429FE",
+          "method": "GET",
+          "status": 200,
+          "final_url": "https://haifong.org/venue/13457E7445F9AFA1EFBB5651322429FE",
+          "fetched_at_utc": "2026-10-08T21:12:56.225919+00:00",
+          "body_file": "captures/roster3-5036-haifong-profile.body.gz",
+          "body_bytes": 18623,
+          "body_sha256": "f86a1efb11c891099acb02ed85bac579a1e98e114b43236034e163219f4a5fb5",
+          "excerpt": "海峰棋院-李晶彬 棋譜 關於海峰 最新消息 職業棋士 世界賽 職業賽 院生天地 業餘賽 相關活動 其它 精銳隊/道場 影片專區 關於海峰 關於海峰 創辦人簡介 大事紀 行事曆 聯絡方式 最新消息 職業棋士 世界賽 職業賽 院生天地 業餘賽 相關活動 其它 精銳隊/道場 "
+        },
+        {
+          "pid": 5036,
+          "kind": "haifong-2016-news",
+          "url": "https://www.haifong.org/news/content/0BBF8AB9E726D26C7D0D5E8FF2BFDCDF",
+          "method": "GET",
+          "status": 200,
+          "final_url": "https://www.haifong.org/news/content/0BBF8AB9E726D26C7D0D5E8FF2BFDCDF",
+          "fetched_at_utc": "2026-10-08T21:12:58.473160+00:00",
+          "body_file": "captures/roster3-5036-haifong-2016-news.body.gz",
+          "body_bytes": 20037,
+          "body_sha256": "10f508a33bb84ea20d406bb0e97879566b856ddeb402daa8f3c9a6cd5701662f",
+          "excerpt": "麗的比賽「女子圍棋最強戰」第二屆將於明天上午10:00亮麗登場！本賽集合了國內所有女子職業棋士，以及今年全國女子賽6-7段組優勝的業餘高手，加上旅日王景怡及韓籍李晶彬，可說是目前台灣最強的女子圍棋陣容。 明天上午第一場比賽，除了黨希昀與李晶彬一局是職業對抗外，另七局是職業與業餘棋士的對陣。去年業餘棋士表現不錯，今年業餘棋士如何突破職業棋士的壁壘，仍是大家關心的焦點。 海峰棋院為服務棋友，每場比賽將選四局在棋城網路直播"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 5296,
+      "missing_language": "tw",
+      "proposed_display_name": "武珺",
+      "linked_slots_post591": 7,
+      "existing_qualified_names": {
+        "cn": "武珺",
+        "en": "Wu Jun",
+        "jp": "武君",
+        "ko": "우쥔"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Taiwan Chi Yuan publisher blog uses Traditional Chinese 武珺(二) in 2009 professional team roster; local owner SGF and name match.",
+      "sources": [
+        {
+          "pid": 5296,
+          "kind": "taiwan-kiin-event",
+          "url": "https://taiwangorg.blogspot.com/2009/05/513.html",
+          "method": "GET",
+          "status": 200,
+          "final_url": "https://taiwangorg.blogspot.com/2009/05/513.html",
+          "fetched_at_utc": "2026-10-08T21:11:54.351999+00:00",
+          "body_file": "captures/roster3-5296-taiwan-kiin-event.body.gz",
+          "body_bytes": 45954,
+          "body_sha256": "61d4a790c63189eece68fdb44e5b2ec6ead28bd7640cff4d83b20ab3083aea7f",
+          "excerpt": "圍棋俱樂部 國宇征(初)、趙寶龍(初)、吳梓天(初)、杜陽(初) 8、中國煤礦棋院 岳亮(四)、朱毅(五)、李聰(二)、李樂(二) 9、德州豪門集團圍棋俱樂部 武珺(二)、崔博東(二)、陳陽(二)、陳浩(初) 10、陳瑞圍棋道場 劉雲龍(三)、張昊(二)、華昱廷(初)、張超(初) 11、北京西藏藥業隊 鄭弘(九)、郭天瑞(三)、陳潤韜(初)、馬天放(6) 12、黑龍江省圍棋隊 朱燕銘(五)、潘文君"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 4071,
+      "missing_language": "ko",
+      "proposed_display_name": "화웨이룽",
+      "linked_slots_post591": 38,
+      "existing_qualified_names": {
+        "cn": "华伟荣",
+        "en": "Hua Weirong",
+        "jp": "华伟荣",
+        "tw": "華偉榮"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Daum community roster prints full Korean 화웨이룽 with Chinese 华伟荣/華偉榮; Hotongo independently anchors Chinese seven-dan Go professional. Independent reviewer accepted as a published 2012 Go community roster plus separate Go-player identity anchor; community is not claimed to be KBA or source original institution.",
+      "sources": [
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        },
+        {
+          "id": "hua-weirong-hotongo",
+          "url": "http://www.hotongo.com/playerinfor.jsp?id=110",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "http://www.hotongo.com/playerinfor.jsp?id=110",
+          "fetched_at_utc": "2026-10-08T20:59:50.106764+00:00",
+          "content_type": "text/html;charset=GBK",
+          "body_bytes": 18486,
+          "body_sha256": "fa705bca007ee4cb1ad12c88a4c5096be13575ef33d6af613736ae975ad7a241",
+          "body_file": "captures/hua-weirong-hotongo.html.gz",
+          "gzip_bytes": 5022
+        }
+      ]
+    },
+    {
+      "prod_player_id": 6329,
+      "missing_language": "ko",
+      "proposed_display_name": "천후이민",
+      "linked_slots_post591": 22,
+      "existing_qualified_names": {
+        "cn": "陈惠民",
+        "en": "Chen Huimin",
+        "jp": "陳惠民",
+        "tw": "陳惠民"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Daum community roster prints 천후이민 with 陳惠民/陳惠民; u-go.net independently prints Chen Huimin/陈惠民. Independent reviewer accepted as a published 2012 Go community roster plus separate Go-player identity anchor; community is not claimed to be KBA or source original institution.",
+      "sources": [
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        },
+        {
+          "pid": 6329,
+          "url": "https://db.u-go.net/?q=Chen%20Huimin",
+          "method": "GET",
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Chen%20Huimin",
+          "fetched_at_utc": "2026-10-08T21:14:13.667269+00:00",
+          "body_file": "captures/roster3-6329-ugo-identity.body.gz",
+          "body_bytes": 23791,
+          "body_sha256": "9401247bfb413b14cdcbc6223dc083e7fa3fd92244c31aa8f0b06aaa014ce36d",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Chen Huimin g 陈惠民 TWN SL 1 (1 entries) Show 12 25 50 100 items.* Language data* * We use a cookie to store your preference. Expla"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 5495,
+      "missing_language": "ko",
+      "proposed_display_name": "왕쉐촨",
+      "linked_slots_post591": 19,
+      "existing_qualified_names": {
+        "cn": "王学传",
+        "en": "Wang Xuezhuan",
+        "jp": "王學傳",
+        "tw": "王學傳"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Daum community roster prints 왕쉐촨 with 王學傳/王學傳; u-go.net independently prints Wang Xuezhuan/王学传. Independent reviewer accepted as a published 2012 Go community roster plus separate Go-player identity anchor; community is not claimed to be KBA or source original institution.",
+      "sources": [
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        },
+        {
+          "pid": 5495,
+          "url": "https://db.u-go.net/?q=Wang%20Xuezhuan",
+          "method": "GET",
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Wang%20Xuezhuan",
+          "fetched_at_utc": "2026-10-08T21:14:14.965176+00:00",
+          "body_file": "captures/roster3-5495-ugo-identity.body.gz",
+          "body_bytes": 23906,
+          "body_sha256": "41aa704b3719b10b9eceefda9c16bc9a0641c7317264ac092596efa20f6ef0a3",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Wang Xuezhuan g Wang Xuechuan 4 • 王学传 TWN SL 1 (1 entries) Show 12 25 50 100 items.* Language data* * We use a cookie to store yo"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 4331,
+      "missing_language": "ko",
+      "proposed_display_name": "멍판슝",
+      "linked_slots_post591": 11,
+      "existing_qualified_names": {
+        "cn": "孟繁雄",
+        "en": "Meng Fanxiong",
+        "jp": "孟繁雄",
+        "tw": "孟繁雄"
+      },
+      "status": "independent_source_level_pass_pending_root_binding",
+      "identity_note": "Daum community roster prints 멍판슝 with 孟繁雄/孟繁雄; u-go.net independently prints Meng Fanxiong/孟繁雄. Independent reviewer accepted as a published 2012 Go community roster plus separate Go-player identity anchor; community is not claimed to be KBA or source original institution.",
+      "sources": [
+        {
+          "id": "daum-korean-list",
+          "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+          "fetched_at_utc": "2026-10-08T20:59:49.643751+00:00",
+          "content_type": "text/html;charset=UTF-8",
+          "body_bytes": 153004,
+          "body_sha256": "19f1312b4f32d60a4926d24e15c9344b267ebbe3c70c8e2ddf91413fd1cf959b",
+          "body_file": "captures/daum-korean-list.html.gz",
+          "gzip_bytes": 22551
+        },
+        {
+          "pid": 4331,
+          "url": "https://db.u-go.net/?q=Meng+Fanxiong",
+          "method": "GET",
+          "status": 200,
+          "final_url": "https://db.u-go.net/?q=Meng+Fanxiong",
+          "fetched_at_utc": "2026-10-08T21:14:30.866659+00:00",
+          "body_file": "captures/roster3-4331-ugo-identity.body.gz",
+          "body_bytes": 23585,
+          "body_sha256": "30f4e607113198f9f76840ec6bdd984783ca470855f8099f42ea0b66c0497018",
+          "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Meng Fanxiong g 孟繁雄 CHN 1 (1 entries) Show 12 25 50 100 items.* Language data* * We use a cookie to store your preference. Explan"
+        }
+      ]
+    }
+  ],
+  "independent_decision_file": "astra-pragmatic-identity-decision.md"
+}

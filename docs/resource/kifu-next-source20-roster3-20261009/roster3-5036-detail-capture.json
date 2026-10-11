@@ -1,0 +1,13 @@
+{
+  "pid": 5036,
+  "kind": "ugo-english-detail",
+  "url": "https://db.u-go.net/2082/",
+  "method": "GET",
+  "status": 200,
+  "final_url": "https://db.u-go.net/2082/",
+  "fetched_at_utc": "2026-10-08T21:12:05.114055+00:00",
+  "body_file": "captures/roster3-5036-ugo-detail.body.gz",
+  "body_bytes": 3958,
+  "body_sha256": "a2e9ed7f1814ae1591ace84cbcec64066394cf3c0a85b95a1cbd9ac4593a124b",
+  "excerpt": "u-go.net List of all players Li Jingbin Li Jingbin Key name (used for sorting): Li Jingbin Citizenship: TWN Affiliation: Unknown Links SL http://senseis.xmp.net/?LiJingbin ID: 2082. Last changed: Dec. 12, 2016, 9:15 p.m. by ug. Send feedback"
+}

@@ -1,0 +1,3215 @@
+{
+  "meta": {
+    "status": "unsigned_source_only",
+    "saved_inventory_snapshot_time": "2026-10-08T17:32:17.791507Z",
+    "saved_inventory_sha256": "e038934b83c2733b02b6f3ab9b1e1da3e435eccc5ebf3d4c0d05080ce94e390a",
+    "provenance": "2026-10-09 PROD saved album association/source-path inventory, 2026-10-04 old raw owner/parser hints, 93 actual PROD event-title name-apply archives excluded, C76 excluded",
+    "readiness": "Every title passed existing sgf_chinese_mixed pure validator with archived parts; live owner status, SGF first GN/EV, hidden/selection, actual name preimages, collision and TEST/PROD scopes remain unverified. Saved game count is not live coverage or completion.",
+    "scope": "Literal title translations only; sponsor and series strings do not assert formal event identity."
+  },
+  "counts": {
+    "raw_titles": 174,
+    "saved_inventory_games": 198,
+    "source_refs": 198
+  },
+  "records": [
+    {
+      "raw_value": "2012年弘通杯国家围棋队擂台赛第10局",
+      "raw_owner_id_hint_2026_10_04": 56374,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 122869,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41441140.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "2012年弘通杯国家围棋队擂台赛第11局",
+      "raw_owner_id_hint_2026_10_04": 56375,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 103091,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41407768.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "2012年弘通杯国家围棋队擂台赛第12局",
+      "raw_owner_id_hint_2026_10_04": 56376,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 96009,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41396197.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "2012年弘通杯国家围棋队擂台赛第13局",
+      "raw_owner_id_hint_2026_10_04": 56377,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 69014,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41355016.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "2012年弘通杯国家围棋队擂台赛第5局",
+      "raw_owner_id_hint_2026_10_04": 56378,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 117677,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41434401.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "2012年弘通杯国家围棋队擂台赛第一局",
+      "raw_owner_id_hint_2026_10_04": 56379,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45763,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41327023.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届弘通杯国家围棋队擂台赛第10局",
+      "raw_owner_id_hint_2026_10_04": 85953,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 79178,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41370225.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届弘通杯国家围棋队擂台赛第11局",
+      "raw_owner_id_hint_2026_10_04": 85954,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 79179,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41370226.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届弘通杯国家围棋队擂台赛第16局",
+      "raw_owner_id_hint_2026_10_04": 85955,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45913,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41327182.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届弘通杯国家围棋队擂台赛第4局",
+      "raw_owner_id_hint_2026_10_04": 85956,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 95033,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41395080.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届弘通杯国家围棋队擂台赛第5局",
+      "raw_owner_id_hint_2026_10_04": 85957,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 95037,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41395084.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届弘通杯国家围棋队擂台赛第7局",
+      "raw_owner_id_hint_2026_10_04": 85958,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 60312,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41344507.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届弘通杯国家围棋队擂台赛第9局",
+      "raw_owner_id_hint_2026_10_04": 85959,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 79177,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41370224.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届弘通杯国家围棋队擂台赛第十七局",
+      "raw_owner_id_hint_2026_10_04": 85961,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45912,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41327181.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届弘通杯国家围棋队擂台赛第十九局",
+      "raw_owner_id_hint_2026_10_04": 85962,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45915,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41327184.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届弘通杯国家围棋队擂台赛第十八局",
+      "raw_owner_id_hint_2026_10_04": 85964,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45914,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41327183.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台10局",
+      "raw_owner_id_hint_2026_10_04": 52108,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 26092,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/14555923.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台11局",
+      "raw_owner_id_hint_2026_10_04": 52109,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 26170,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/14859297.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台12局",
+      "raw_owner_id_hint_2026_10_04": 52110,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 26211,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/14901499.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台13局",
+      "raw_owner_id_hint_2026_10_04": 52111,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 26287,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/15225586.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台15局",
+      "raw_owner_id_hint_2026_10_04": 52112,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 26355,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/15659436.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台16局",
+      "raw_owner_id_hint_2026_10_04": 52113,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 106,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/15996187.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台17局",
+      "raw_owner_id_hint_2026_10_04": 52114,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 145,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/16042799.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台18局",
+      "raw_owner_id_hint_2026_10_04": 52115,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 280,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/16395248.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台19局",
+      "raw_owner_id_hint_2026_10_04": 52116,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 291,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/16446812.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台20局",
+      "raw_owner_id_hint_2026_10_04": 52117,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 339,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/16809830.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台6局",
+      "raw_owner_id_hint_2026_10_04": 52120,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25870,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/13906084.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台8局",
+      "raw_owner_id_hint_2026_10_04": 52121,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25987,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/14217889.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台9局",
+      "raw_owner_id_hint_2026_10_04": 52122,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 26075,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/14512470.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台赛1局",
+      "raw_owner_id_hint_2026_10_04": 52124,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25747,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/13311828.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台赛2局",
+      "raw_owner_id_hint_2026_10_04": 52125,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25751,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/13349383.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台赛3局",
+      "raw_owner_id_hint_2026_10_04": 52126,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25801,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/13582082.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "16届GG拍卖杯绅士淑女擂台赛4局",
+      "raw_owner_id_hint_2026_10_04": 52127,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25819,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/13618204.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "18届GG拍卖杯绅士淑女擂台赛16局",
+      "raw_owner_id_hint_2026_10_04": 52266,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 13856,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/47083923.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "18届GG拍卖杯绅士淑女擂台赛17局",
+      "raw_owner_id_hint_2026_10_04": 52267,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 13916,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/47388295.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "18届GG拍卖杯绅士淑女擂台赛18局",
+      "raw_owner_id_hint_2026_10_04": 52268,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 13958,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/47440523.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "18届GG拍卖杯绅士淑女擂台赛19局",
+      "raw_owner_id_hint_2026_10_04": 52269,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 14014,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/47755237.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "18届GG拍卖杯绅士淑女擂台赛20局",
+      "raw_owner_id_hint_2026_10_04": 52270,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 14017,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/47807617.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "18届GG拍卖杯绅士淑女擂台赛21局",
+      "raw_owner_id_hint_2026_10_04": 52271,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 14127,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/48139509.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "18届GG拍卖杯绅士淑女擂台赛22局",
+      "raw_owner_id_hint_2026_10_04": 52272,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 14143,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/48196865.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "18届GG拍卖杯绅士淑女擂台赛23局",
+      "raw_owner_id_hint_2026_10_04": 52273,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 14197,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/48530746.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第11届韩国新人王战决赛第一局",
+      "raw_owner_id_hint_2026_10_04": 76051,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 147174,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41601260.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第11届韩国新人王战决赛第二局",
+      "raw_owner_id_hint_2026_10_04": 76052,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 147173,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41601259.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第13届韩国新人王战决赛第一局",
+      "raw_owner_id_hint_2026_10_04": 77005,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 103752,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41408633.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第13届韩国新人王战决赛第二局",
+      "raw_owner_id_hint_2026_10_04": 77006,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 103753,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41408634.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第14届韩国新人王战决赛第一局",
+      "raw_owner_id_hint_2026_10_04": 77592,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 29400,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41291107.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第14届韩国新人王战决赛第三局",
+      "raw_owner_id_hint_2026_10_04": 77593,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 29403,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41291111.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第14届韩国新人王战决赛第二局",
+      "raw_owner_id_hint_2026_10_04": 77594,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 29402,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41291110.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第15届韩国新人王战决赛第一局",
+      "raw_owner_id_hint_2026_10_04": 78232,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 87756,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41383057.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第15届韩国新人王战决赛第三局",
+      "raw_owner_id_hint_2026_10_04": 78233,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 87754,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41383055.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第15届韩国新人王战决赛第二局",
+      "raw_owner_id_hint_2026_10_04": 78234,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 87755,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41383056.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第16届韩国新人王战决赛第一局",
+      "raw_owner_id_hint_2026_10_04": 78711,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 144807,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41571953.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第16届韩国新人王战决赛第二局",
+      "raw_owner_id_hint_2026_10_04": 78712,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 144808,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41571955.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国新人王战决赛",
+      "raw_owner_id_hint_2026_10_04": 99970,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 29401,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41291108.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届乐百氏杯决赛第一局",
+      "raw_owner_id_hint_2026_10_04": 80514,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39828,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304296.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届乐百氏杯决赛第三局",
+      "raw_owner_id_hint_2026_10_04": 80515,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39830,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304299.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届乐百氏杯决赛第二局",
+      "raw_owner_id_hint_2026_10_04": 80516,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39829,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304298.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届乐百氏杯决赛第一局",
+      "raw_owner_id_hint_2026_10_04": 85620,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39831,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304300.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届乐百氏杯决赛第三局",
+      "raw_owner_id_hint_2026_10_04": 85621,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39833,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304302.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届乐百氏杯决赛第二局",
+      "raw_owner_id_hint_2026_10_04": 85622,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39832,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304301.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第3届乐百氏杯决赛第三局",
+      "raw_owner_id_hint_2026_10_04": 89157,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39834,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304303.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第3届乐百氏杯决赛第四局",
+      "raw_owner_id_hint_2026_10_04": 89158,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39835,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304304.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第4届乐百氏杯决赛第一局",
+      "raw_owner_id_hint_2026_10_04": 91695,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39836,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304305.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第4届乐百氏杯决赛第三局",
+      "raw_owner_id_hint_2026_10_04": 91696,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39838,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304308.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第4届乐百氏杯决赛第二局",
+      "raw_owner_id_hint_2026_10_04": 91697,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39837,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304306.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第5届乐百氏杯决赛第一局",
+      "raw_owner_id_hint_2026_10_04": 93433,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39839,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304310.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第5届乐百氏杯决赛第二局",
+      "raw_owner_id_hint_2026_10_04": 93434,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 39840,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41304311.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届韩国棋圣战循环圈第13局",
+      "raw_owner_id_hint_2026_10_04": 81394,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 84525,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41378263.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届韩国棋圣战循环圈第16局",
+      "raw_owner_id_hint_2026_10_04": 81395,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 30319,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41292211.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届韩国棋圣战循环圈第1局",
+      "raw_owner_id_hint_2026_10_04": 81396,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 30318,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41292210.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届韩国棋圣战循环圈第23局",
+      "raw_owner_id_hint_2026_10_04": 81397,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 84526,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41378264.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届韩国棋圣战循环圈第27局",
+      "raw_owner_id_hint_2026_10_04": 81398,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 30320,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41292212.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届韩国棋圣战循环圈第6局",
+      "raw_owner_id_hint_2026_10_04": 81399,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 106007,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41418503.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届韩国棋圣战循环圈第1局",
+      "raw_owner_id_hint_2026_10_04": 86389,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 87751,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41383049.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届韩国棋圣战循环圈第25局",
+      "raw_owner_id_hint_2026_10_04": 86390,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 57892,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41341667.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届韩国棋圣战循环圈第28局",
+      "raw_owner_id_hint_2026_10_04": 86391,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 105876,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41418362.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届韩国棋圣战循环圈第5局",
+      "raw_owner_id_hint_2026_10_04": 86392,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 57890,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41341665.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第2届韩国棋圣战循环圈第7局",
+      "raw_owner_id_hint_2026_10_04": 86393,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 87752,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41383051.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第4期韩国棋圣战循环圈第5局",
+      "raw_owner_id_hint_2026_10_04": 92531,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 57897,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41341672.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7期韩国棋圣战循环圈",
+      "raw_owner_id_hint_2026_10_04": 96841,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 48483,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41330197.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第46届韩国国手战挑战者决定战第一局",
+      "raw_owner_id_hint_2026_10_04": 90911,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 37413,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41301598.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第46届韩国国手战挑战者决定战第二局",
+      "raw_owner_id_hint_2026_10_04": 90912,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 37367,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41301551.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第47届韩国国手战挑战者决定战第一局",
+      "raw_owner_id_hint_2026_10_04": 91034,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 50074,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41332240.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第47届韩国国手战挑战者决定战第二局",
+      "raw_owner_id_hint_2026_10_04": 91035,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 50075,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41332241.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第48届韩国国手战挑战者决定战第一局",
+      "raw_owner_id_hint_2026_10_04": 91163,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 97470,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41398889.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第48届韩国国手战挑战者决定战第三局",
+      "raw_owner_id_hint_2026_10_04": 91164,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 97468,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41398885.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第48届韩国国手战挑战者决定战第二局",
+      "raw_owner_id_hint_2026_10_04": 91165,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 97469,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41398888.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第49届韩国国手战挑战者决定战第一局",
+      "raw_owner_id_hint_2026_10_04": 91263,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 97465,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41398882.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第49届韩国国手战挑战者决定战第二局",
+      "raw_owner_id_hint_2026_10_04": 91264,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 97463,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41398880.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第50届韩国国手战挑战者决定战第一局",
+      "raw_owner_id_hint_2026_10_04": 92541,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 123127,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41441473.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第50届韩国国手战挑战者决定战第二局",
+      "raw_owner_id_hint_2026_10_04": 92542,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 123128,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41441474.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第59届韩国国手战挑战者决定战1局",
+      "raw_owner_id_hint_2026_10_04": 93115,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 101709,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41405179.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第59届韩国国手战挑战者决定战2局",
+      "raw_owner_id_hint_2026_10_04": 93116,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 101710,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41405180.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第10局",
+      "raw_owner_id_hint_2026_10_04": 100086,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 87540,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41382803.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第13局",
+      "raw_owner_id_hint_2026_10_04": 100087,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 92087,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41390408.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第14局",
+      "raw_owner_id_hint_2026_10_04": 100088,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 87541,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41382804.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第1局",
+      "raw_owner_id_hint_2026_10_04": 100089,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 75245,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41363404.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第20局",
+      "raw_owner_id_hint_2026_10_04": 100090,
+      "saved_inventory_game_count": 2,
+      "album_sources": [
+        {
+          "album_id": 92089,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41390410.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 144230,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41570461.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第3局",
+      "raw_owner_id_hint_2026_10_04": 100091,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 87538,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41382801.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第4局",
+      "raw_owner_id_hint_2026_10_04": 100092,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 102612,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41407021.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第5局",
+      "raw_owner_id_hint_2026_10_04": 100093,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 75246,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41363405.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第6局",
+      "raw_owner_id_hint_2026_10_04": 100094,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 87539,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41382802.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第7局",
+      "raw_owner_id_hint_2026_10_04": 100095,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 92086,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41390407.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第8局",
+      "raw_owner_id_hint_2026_10_04": 100096,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 144229,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41570460.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "韩国第27期国手战循环圈第9局",
+      "raw_owner_id_hint_2026_10_04": 100097,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 75247,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41363406.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1届湖盘杯首尔新闻世界女子争霸赛2局",
+      "raw_owner_id_hint_2026_10_04": 53491,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25605,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/12416057.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛10局",
+      "raw_owner_id_hint_2026_10_04": 81057,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 758,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/19258471.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛11局",
+      "raw_owner_id_hint_2026_10_04": 81058,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 760,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/19295165.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛12局",
+      "raw_owner_id_hint_2026_10_04": 81059,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 763,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/19333222.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛13局",
+      "raw_owner_id_hint_2026_10_04": 81060,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 767,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/19368783.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛3局",
+      "raw_owner_id_hint_2026_10_04": 81061,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25606,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/12454378.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛4局",
+      "raw_owner_id_hint_2026_10_04": 81062,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25613,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/12490953.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛5局",
+      "raw_owner_id_hint_2026_10_04": 81063,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25621,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/12526199.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛6局",
+      "raw_owner_id_hint_2026_10_04": 81064,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25627,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/12572202.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛7局",
+      "raw_owner_id_hint_2026_10_04": 81065,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 25631,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/12624037.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛8局",
+      "raw_owner_id_hint_2026_10_04": 81066,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 754,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/19175851.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第1届湖盘杯首尔新闻世界女子争霸赛9局",
+      "raw_owner_id_hint_2026_10_04": 81067,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 757,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/19222056.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第12届中韩天元对抗赛三番棋第一局",
+      "raw_owner_id_hint_2026_10_04": 76327,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 68392,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41354351.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第12届中韩天元对抗赛三番棋第二局",
+      "raw_owner_id_hint_2026_10_04": 76328,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 68394,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41354353.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第13届中韩天元对抗赛三番棋第一局",
+      "raw_owner_id_hint_2026_10_04": 76806,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45426,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41326670.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第13届中韩天元对抗赛三番棋第三局",
+      "raw_owner_id_hint_2026_10_04": 76807,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45432,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41326676.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第13届中韩天元对抗赛三番棋第二局",
+      "raw_owner_id_hint_2026_10_04": 76808,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45430,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41326674.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第14届中韩天元对抗赛三番棋第一局",
+      "raw_owner_id_hint_2026_10_04": 77258,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45657,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41326912.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第14届中韩天元对抗赛三番棋第三局",
+      "raw_owner_id_hint_2026_10_04": 77259,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45660,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41326916.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第14届中韩天元对抗赛三番棋第二局",
+      "raw_owner_id_hint_2026_10_04": 77260,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45658,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41326913.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第15届中韩天元对抗赛三番棋第一局",
+      "raw_owner_id_hint_2026_10_04": 77868,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45722,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41326981.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第15届中韩天元对抗赛三番棋第二局",
+      "raw_owner_id_hint_2026_10_04": 77869,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45723,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41326982.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第16届中韩天元对抗赛三番棋第一局",
+      "raw_owner_id_hint_2026_10_04": 78517,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45792,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41327054.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第16届中韩天元对抗赛三番棋第二局",
+      "raw_owner_id_hint_2026_10_04": 78518,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 45793,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41327056.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "27期日本小棋圣战挑战赛第一局",
+      "raw_owner_id_hint_2026_10_04": 65140,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 85441,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41379975.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "28期日本小棋圣战挑战赛第一局",
+      "raw_owner_id_hint_2026_10_04": 65240,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 142509,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41567280.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "29期日本小棋圣战挑战赛第一局",
+      "raw_owner_id_hint_2026_10_04": 65341,
+      "saved_inventory_game_count": 2,
+      "album_sources": [
+        {
+          "album_id": 128926,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41538395.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 128959,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41538430.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "29期日本小棋圣战挑战赛第二局",
+      "raw_owner_id_hint_2026_10_04": 65342,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 128927,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41538396.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第27期日本小棋圣战挑战赛第三局",
+      "raw_owner_id_hint_2026_10_04": 84646,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 85446,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41379982.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第27期日本小棋圣战挑战赛第二局",
+      "raw_owner_id_hint_2026_10_04": 84647,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 85440,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41379974.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第27期日本小棋圣战挑战赛第四局",
+      "raw_owner_id_hint_2026_10_04": 84648,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 85445,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41379981.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第28期日本小棋圣战挑战赛第三局",
+      "raw_owner_id_hint_2026_10_04": 84938,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 142507,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41567278.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第28期日本小棋圣战挑战赛第二局",
+      "raw_owner_id_hint_2026_10_04": 84939,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 142508,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41567279.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第28期日本小棋圣战挑战赛第五局",
+      "raw_owner_id_hint_2026_10_04": 84940,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 142511,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41567282.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第28期日本小棋圣战挑战赛第四局",
+      "raw_owner_id_hint_2026_10_04": 84941,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 142510,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41567281.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第10局",
+      "raw_owner_id_hint_2026_10_04": 52739,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 57886,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41341661.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第11局",
+      "raw_owner_id_hint_2026_10_04": 52740,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 57885,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41341660.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第1局",
+      "raw_owner_id_hint_2026_10_04": 52741,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 87381,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41382603.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第2局",
+      "raw_owner_id_hint_2026_10_04": 52742,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 90238,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41387469.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第3局",
+      "raw_owner_id_hint_2026_10_04": 52743,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 40931,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41305517.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第4局",
+      "raw_owner_id_hint_2026_10_04": 52744,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 40933,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41305519.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第5局",
+      "raw_owner_id_hint_2026_10_04": 52745,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 48509,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41330237.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第6局",
+      "raw_owner_id_hint_2026_10_04": 52746,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 48510,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41330238.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第7局",
+      "raw_owner_id_hint_2026_10_04": 52747,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 48511,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41330239.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第8局",
+      "raw_owner_id_hint_2026_10_04": 52748,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 48508,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41330236.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "1989年韩国旋风大赛第9局",
+      "raw_owner_id_hint_2026_10_04": 52749,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 57889,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41341664.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第10局",
+      "raw_owner_id_hint_2026_10_04": 96709,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 99472,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41401353.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第11局",
+      "raw_owner_id_hint_2026_10_04": 96710,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 99473,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41401354.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第12局",
+      "raw_owner_id_hint_2026_10_04": 96711,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 99474,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41401356.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第13局",
+      "raw_owner_id_hint_2026_10_04": 96712,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 141004,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41564618.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第1局",
+      "raw_owner_id_hint_2026_10_04": 96713,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 133225,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41544233.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第2局",
+      "raw_owner_id_hint_2026_10_04": 96714,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 119534,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41436963.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第3局",
+      "raw_owner_id_hint_2026_10_04": 96715,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 89221,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41385936.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第4局",
+      "raw_owner_id_hint_2026_10_04": 96716,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 89222,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41385937.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第7局",
+      "raw_owner_id_hint_2026_10_04": 96717,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 141133,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41564912.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第8局",
+      "raw_owner_id_hint_2026_10_04": 96718,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 114815,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41430610.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第7届黄龙士精锻科技世界女子擂台赛第9局",
+      "raw_owner_id_hint_2026_10_04": 96719,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 135549,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41550003.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第10届韩国麦馨杯九段最强战决赛三番棋第二局",
+      "raw_owner_id_hint_2026_10_04": 75507,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 50030,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41332191.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第11届韩国麦馨杯九段最强战决赛三番棋第三局",
+      "raw_owner_id_hint_2026_10_04": 76074,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 50297,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41332477.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第11届韩国麦馨杯九段最强战决赛三番棋第二局",
+      "raw_owner_id_hint_2026_10_04": 76075,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 50296,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41332476.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第12届韩国麦馨杯九段最强战决赛三番棋第一局",
+      "raw_owner_id_hint_2026_10_04": 76589,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 98032,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41399493.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第13届韩国麦馨杯九段最强战决赛三番棋第一局",
+      "raw_owner_id_hint_2026_10_04": 77025,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 50464,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41332696.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第13届韩国麦馨杯九段最强战决赛三番棋第二局",
+      "raw_owner_id_hint_2026_10_04": 77026,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 50465,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41332697.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第15届韩国麦馨杯九段最强战决赛三番棋第二局",
+      "raw_owner_id_hint_2026_10_04": 78257,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 98033,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41399494.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第9届韩国麦馨杯九段最强战决赛三番棋第一局",
+      "raw_owner_id_hint_2026_10_04": 98159,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 118578,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41435879.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第9届韩国麦馨杯九段最强战决赛三番棋第三局",
+      "raw_owner_id_hint_2026_10_04": 98160,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 118580,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41435881.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "第9届韩国麦馨杯九段最强战决赛三番棋第二局",
+      "raw_owner_id_hint_2026_10_04": 98161,
+      "saved_inventory_game_count": 1,
+      "album_sources": [
+        {
+          "album_id": 118579,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41435880.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "2022年弈城中韩冠军争霸赛32强战2番棋第1局",
+      "raw_owner_id_hint_2026_10_04": 62449,
+      "saved_inventory_game_count": 11,
+      "album_sources": [
+        {
+          "album_id": 34967,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41298436.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 49984,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41332131.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 74344,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41362173.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 76277,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41365083.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 88909,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41385293.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 92461,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41391087.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 98429,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41399930.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 104418,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41409412.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 113442,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41428838.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 126534,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41445649.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 145973,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41577136.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raw_value": "2022年弈城中韩冠军争霸赛32强战2番棋第2局",
+      "raw_owner_id_hint_2026_10_04": 62450,
+      "saved_inventory_game_count": 13,
+      "album_sources": [
+        {
+          "album_id": 34968,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41298437.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 44268,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41324580.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 49986,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41332133.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 57587,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41341309.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 74349,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41362179.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 76278,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41365084.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 88910,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41385294.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 92462,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41391089.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 98430,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41399931.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 104419,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41409413.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 113443,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41428839.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 126535,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41445650.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        },
+        {
+          "album_id": 145974,
+          "sources": [
+            {
+              "source_path": "data/kifu-album/19x19/41577137.sgf",
+              "source_type": "19x19",
+              "match_method": "source_path"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

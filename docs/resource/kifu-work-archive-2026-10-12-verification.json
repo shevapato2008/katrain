@@ -1,0 +1,42 @@
+{
+  "format": "kifu-work-archive-verification-v1",
+  "baseline_commit": "a53f20678d099ae7304e425a0b944802a7890186",
+  "review": {
+    "scope": "Previously untracked kifu modules, migration scripts and their tests",
+    "independent_reviewer": "archive_merge_code_review",
+    "result": "approved_no_blocking_findings",
+    "automatic_runtime_or_database_changes": false
+  },
+  "historical_test_fixture_repairs": {
+    "production_guards_or_pinned_evidence_changed": false,
+    "changes": [
+      "Historical album-scope tests explicitly model the reviewed 26-column schema",
+      "Current-schema rejection remains covered before database access or writes",
+      "Three player fixtures create the current KifuPlayer model table"
+    ],
+    "focused_result": "39 passed in 43.46s"
+  },
+  "final_test_run": {
+    "test_files": "All 40 previously untracked test files plus test_kifu_catalog_album_cleanup.py and test_admin_kifu_search.py",
+    "result": "232 passed in 84.74s",
+    "exit_code": 0,
+    "database": "local temporary test databases; no cloud writes"
+  },
+  "data_status": {
+    "latest_name_batch": 724,
+    "public_complete_cards_per_environment": 171013,
+    "public_cards_per_environment": 171013,
+    "new_database_migrations_executed_during_archiving": false,
+    "name_coverage_is_not_full_manual_semantic_verification": true
+  },
+  "docker_context_check": {
+    "result": "independently_reviewed_no_missing_runtime_resources",
+    "git_archives_retained": true,
+    "preserved_defaults": [
+      "docs/resource/kifu-name-source-registry.json",
+      "docs/resource/kifu-name-seed.json"
+    ],
+    "runtime_glossaries_preserved": "katrain/web/kifu/data/",
+    "production_code_changed": false
+  }
+}

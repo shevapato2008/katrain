@@ -1,0 +1,40 @@
+{
+  "mode": "actual_transaction_rollback_dry_run",
+  "applied": false,
+  "environments": {
+    "test": {
+      "plan_sha256": "aaf832ccb09d96ba312ebad5cf27d8431fa602b3332f164814c8cceb93de52d7",
+      "review_sha256": "361c5d5d499d2108f892f4ad1636f426c5f968627e77c4adcb4c65bdd89f1fc0",
+      "counts": {
+        "held_slots": 25,
+        "new_fk_slots": 2927,
+        "protected_slots": 0,
+        "raw_values": 11
+      },
+      "protected_catalog_ids": [
+        291,
+        298,
+        307,
+        428
+      ],
+      "postrollback_capture_same_plan": true
+    },
+    "prod": {
+      "plan_sha256": "febd86d8d1c64110ea551ca470e85a38e1aaa2ecd071705bcdf4091a0caea7e3",
+      "review_sha256": "8d679e6e16e1b54a7fb853eb5e2411671c69e1c77184a260928e8430364354f0",
+      "counts": {
+        "held_slots": 25,
+        "new_fk_slots": 2927,
+        "protected_slots": 0,
+        "raw_values": 11
+      },
+      "protected_catalog_ids": [
+        290,
+        297,
+        306,
+        427
+      ],
+      "postrollback_capture_same_plan": true
+    }
+  }
+}

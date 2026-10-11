@@ -1,0 +1,277 @@
+{
+  "version": 1,
+  "reason": "Hold 30 Japanese title edition links with impossible dates against official Nihon Ki-in championship years; retain 27 supported event types and hold 3 doubtful types",
+  "expected_total_albums": 173025,
+  "rows": [
+    {
+      "album_id": 31009,
+      "raw_event": "第31期日本天元战预选赛",
+      "date_played": "2006-09-21",
+      "event_id": 29,
+      "event_edition_id": 362,
+      "event_name": "日本天元战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 32664,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-06-16",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 32665,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-07-28",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 33874,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-07-24",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 33875,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-08-04",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 54391,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-06-30",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 54392,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-08-25",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 54534,
+      "raw_event": "45thOza",
+      "date_played": "1998-02-06",
+      "event_id": 28,
+      "event_edition_id": 276,
+      "event_name": "日本王座战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 58575,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-09-08",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 63983,
+      "raw_event": "Meijin,14th",
+      "date_played": "1974-01-16",
+      "event_id": 27,
+      "event_edition_id": 171,
+      "event_name": "日本名人战",
+      "retain_event_type": false
+    },
+    {
+      "album_id": 66460,
+      "raw_event": "Honinbo,13th",
+      "date_played": "1954-03-17",
+      "event_id": 24,
+      "event_edition_id": 40,
+      "event_name": "日本本因坊战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 82318,
+      "raw_event": "6thKisei",
+      "date_played": "1991-05-01",
+      "event_id": 26,
+      "event_edition_id": 134,
+      "event_name": "日本棋圣战",
+      "retain_event_type": false
+    },
+    {
+      "album_id": 101422,
+      "raw_event": "12thKisei",
+      "date_played": "2000-11-10",
+      "event_id": 26,
+      "event_edition_id": 140,
+      "event_name": "日本棋圣战",
+      "retain_event_type": false
+    },
+    {
+      "album_id": 124320,
+      "raw_event": "Judan,4th",
+      "date_played": "1966-09-18",
+      "event_id": 25,
+      "event_edition_id": 91,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 124341,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-06-09",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 124342,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-10-13",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 124343,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-11-10",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 128390,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-09-29",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 130126,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-09-08",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 130127,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-10-27",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 131890,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-07-14",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 140418,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-06-30",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 140419,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-08-18",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 140420,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-11-03",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 140421,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-12-15",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 141416,
+      "raw_event": "38thJudan",
+      "date_played": "1990-02-01",
+      "event_id": 25,
+      "event_edition_id": 124,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 142448,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-08-04",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 142778,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-11-17",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 143135,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-08-18",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    },
+    {
+      "album_id": 145039,
+      "raw_event": "Judan,32nd",
+      "date_played": "1983-07-28",
+      "event_id": 25,
+      "event_edition_id": 118,
+      "event_name": "日本十段战",
+      "retain_event_type": true
+    }
+  ]
+}

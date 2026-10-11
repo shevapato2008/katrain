@@ -1,0 +1,42 @@
+{
+  "3771": {
+    "content_type": "text/html",
+    "fetched_at": "2026-10-08T20:01:02.007645+00:00",
+    "final_url": "https://www.igorating.com/players/akio-shimohira",
+    "http_status": 200,
+    "raw_body_bytes": 26798,
+    "raw_body_file": "sources/3771-igo.body",
+    "raw_body_sha256": "b0c8fe4fbeb9461dc3960f67299768f962ce5d4ff73d3325347be7a3a1c170ea",
+    "url": "https://www.igorating.com/players/akio-shimohira"
+  },
+  "4568": {
+    "content_type": "text/html",
+    "fetched_at": "2026-10-08T20:01:02.042644+00:00",
+    "final_url": "https://www.igorating.com/players/masamichi-kawamura",
+    "http_status": 200,
+    "raw_body_bytes": 26809,
+    "raw_body_file": "sources/4568-igo.body",
+    "raw_body_sha256": "27aceb647dca2926a3aa98047ad87487fe2890bcd56438d13e2ff9a671395b29",
+    "url": "https://www.igorating.com/players/masamichi-kawamura"
+  },
+  "6635": {
+    "content_type": "text/html",
+    "fetched_at": "2026-10-08T20:01:02.044105+00:00",
+    "final_url": "https://www.igorating.com/players/shingo-maetani",
+    "http_status": 200,
+    "raw_body_bytes": 24154,
+    "raw_body_file": "sources/6635-igo.body",
+    "raw_body_sha256": "dcdc6876ff0162f9b7a952797b7cb0f7a0635cc600c4618dbc36ecdebe224139",
+    "url": "https://www.igorating.com/players/shingo-maetani"
+  },
+  "6642": {
+    "content_type": "text/html",
+    "fetched_at": "2026-10-08T20:01:02.057238+00:00",
+    "final_url": "https://www.igorating.com/players/shin-tainaka",
+    "http_status": 200,
+    "raw_body_bytes": 24925,
+    "raw_body_file": "sources/6642-igo.body",
+    "raw_body_sha256": "a54235494905a7a925c60337cd95ee549d7bd342939fe6065769197777f75ac5",
+    "url": "https://www.igorating.com/players/shin-tainaka"
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "code": 0,
+  "data": {
+    "checkTeam": 2,
+    "chessPlayer": 1,
+    "createTime": "2024-04-15 16:33:54",
+    "dataStatus": 0,
+    "lastDate": 202608,
+    "playerAwards": [
+      {
+        "awardsChampion": 0,
+        "awardsChampionValue": "",
+        "awardsDate": "2020-01-01",
+        "awardsEvents": "女子围甲第8届季军成员",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000409"
+      },
+      {
+        "awardsChampion": 99,
+        "awardsChampionValue": "金牌",
+        "awardsDate": "2019-12-01",
+        "awardsEvents": "智运会围棋女子个人赛",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000409"
+      },
+      {
+        "awardsChampion": 0,
+        "awardsChampionValue": "",
+        "awardsDate": "2016-01-01",
+        "awardsEvents": "女子围甲第4届亚军成员",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000409"
+      },
+      {
+        "awardsChampion": 1,
+        "awardsChampionValue": "冠军",
+        "awardsDate": "2016-01-01",
+        "awardsEvents": "2016年全国大学生赛女子组",
+        "awardsRank": 1,
+        "awardsType": 300000,
+        "playerNo": "CWA000409"
+      },
+      {
+        "awardsChampion": 99,
+        "awardsChampionValue": "第4名",
+        "awardsDate": "2012-01-01",
+        "awardsEvents": "2012年全国个人赛女子组",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000409"
+      },
+      {
+        "awardsChampion": 2,
+        "awardsChampionValue": "亚军",
+        "awardsDate": "2011-02-20",
+        "awardsEvents": "第5届女子新人王赛",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000409"
+      },
+      {
+        "awardsChampion": 2,
+        "awardsChampionValue": "亚军",
+        "awardsDate": "2010-01-01",
+        "awardsEvents": "2010年理光混双赛（与孔杰合作）",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000409"
+      },
+      {
+        "awardsChampion": 99,
+        "awardsChampionValue": "季军",
+        "awardsDate": "2009-08-01",
+        "awardsEvents": "全国少年儿童赛女子少年组",
+        "awardsRank": 0,
+        "awardsType": 300000,
+        "playerNo": "CWA000409"
+      }
+    ],
+    "playerBirthday": "1994-03-01",
+    "playerCity": "",
+    "playerEmail": "",
+    "playerExperiences": [
+      {
+        "playerNo": "CWA000409",
+        "upgradeDate": "2025-04-26",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z05"
+      },
+      {
+        "playerNo": "CWA000409",
+        "upgradeDate": "2019-12-15",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z04"
+      },
+      {
+        "playerNo": "CWA000409",
+        "upgradeDate": "2018-06-11",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z03"
+      },
+      {
+        "playerNo": "CWA000409",
+        "upgradeDate": "2015-07-27",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z02"
+      },
+      {
+        "playerNo": "CWA000409",
+        "upgradeDate": "2008-07-23",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z01"
+      }
+    ],
+    "playerGender": 2,
+    "playerGrade": "Z05",
+    "playerIdType": 1,
+    "playerImage": "https://www.cwql.org.cn/file/player/17261945824742912665747.PNG",
+    "playerLabels": [],
+    "playerName": "李小溪(大)",
+    "playerNameEn": "LI/xiaoxi",
+    "playerNameNa": "",
+    "playerNo": "CWA000409",
+    "playerProfile": "1994年3月1日生，辽宁鞍山人。2008年初段，2019年四段。",
+    "playerProvince": "",
+    "playerRating": "2242.50",
+    "playerStartDate": "2008-07-23",
+    "playerStatus": 1,
+    "playerType": 1,
+    "playerUnit": "",
+    "ratingRank": 236,
+    "updateTime": "2026-09-03 10:22:12"
+  },
+  "msg": "操作成功"
+}

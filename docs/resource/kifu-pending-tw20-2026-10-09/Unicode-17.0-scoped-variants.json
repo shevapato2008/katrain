@@ -1,0 +1,919 @@
+{
+  "moe_changed_mapping_locators": [
+    {
+      "extracted_line": "亏－虧        云－雲云        凤－ 鳳",
+      "input": "云",
+      "output": "雲",
+      "pdf_page": 4
+    },
+    {
+      "extracted_line": "亏－虧        云－雲云        凤－ 鳳",
+      "input": "凤",
+      "output": "鳳",
+      "pdf_page": 4
+    },
+    {
+      "extracted_line": "伙－夥伙   刘－ 劉        农－ 農",
+      "input": "刘",
+      "output": "劉",
+      "pdf_page": 7
+    },
+    {
+      "extracted_line": "实－實    肃－ 肅        驻－ 駐",
+      "input": "实",
+      "output": "實",
+      "pdf_page": 13
+    },
+    {
+      "extracted_line": "帅－帥     闪－ 閃        边－ 邊",
+      "input": "帅",
+      "output": "帥",
+      "pdf_page": 5
+    },
+    {
+      "extracted_line": "怀－懷    灵－ 靈        纳－ 納",
+      "input": "怀",
+      "output": "懷",
+      "pdf_page": 10
+    },
+    {
+      "extracted_line": "时－時    针－ 針        饪－ 飪",
+      "input": "时",
+      "output": "時",
+      "pdf_page": 9
+    },
+    {
+      "extracted_line": "贻－貽   笃－ 篤        饶－ 饒",
+      "input": "笃",
+      "output": "篤",
+      "pdf_page": 15
+    },
+    {
+      "extracted_line": "怀－懷    灵－ 靈        纳－ 納",
+      "input": "纳",
+      "output": "納",
+      "pdf_page": 10
+    },
+    {
+      "extracted_line": "贯－貫        荣－ 榮        残－ 殘",
+      "input": "荣",
+      "output": "榮",
+      "pdf_page": 14
+    },
+    {
+      "extracted_line": "骆－駱      挚－摯         贾－ 賈",
+      "input": "贾",
+      "output": "賈",
+      "pdf_page": 17
+    },
+    {
+      "extracted_line": "珑－瓏        荪－ 蓀        轶－ 軼",
+      "input": "轶",
+      "output": "軼",
+      "pdf_page": 14
+    },
+    {
+      "extracted_line": "启－啟    陈－ 陳        纺－ 紡",
+      "input": "陈",
+      "output": "陳",
+      "pdf_page": 10
+    },
+    {
+      "extracted_line": "厂－廠        马－ 馬        币－ 幣",
+      "input": "马",
+      "output": "馬",
+      "pdf_page": 4
+    }
+  ],
+  "moe_source_sha256": "5e7173d5aa11064d3d5662d5ce4723626f2b4d2122da264f7d63e946a5815434",
+  "moe_source_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+  "moe_title": "臺灣教育部《簡化字對照標準字表》筆畫序",
+  "normative_version": "Unicode 17.0.0",
+  "scoped_characters": [
+    {
+      "examples": [
+        {
+          "player_id": 6765,
+          "position": 2
+        },
+        {
+          "player_id": 6768,
+          "position": 3
+        },
+        {
+          "player_id": 5211,
+          "position": 2
+        }
+      ],
+      "input": "一",
+      "moe_locator": null,
+      "output": "一",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6713,
+          "position": 0
+        }
+      ],
+      "input": "中",
+      "moe_locator": null,
+      "output": "中",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 3906,
+          "position": 2
+        }
+      ],
+      "input": "予",
+      "moe_locator": null,
+      "output": "予",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 3993,
+          "position": 1
+        }
+      ],
+      "input": "云",
+      "moe_locator": {
+        "extracted_line": "亏－虧        云－雲云        凤－ 鳳",
+        "input": "云",
+        "output": "雲",
+        "pdf_page": 4
+      },
+      "output": "雲",
+      "unihan_line": "U+4E91\tkTraditionalVariant\tU+4E91 U+96F2"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6768,
+          "position": 1
+        }
+      ],
+      "input": "井",
+      "moe_locator": null,
+      "output": "井",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 3906,
+          "position": 0
+        }
+      ],
+      "input": "何",
+      "moe_locator": null,
+      "output": "何",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6752,
+          "position": 1
+        }
+      ],
+      "input": "保",
+      "moe_locator": null,
+      "output": "保",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6458,
+          "position": 1
+        }
+      ],
+      "input": "光",
+      "moe_locator": null,
+      "output": "光",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6713,
+          "position": 2
+        }
+      ],
+      "input": "凤",
+      "moe_locator": {
+        "extracted_line": "亏－虧        云－雲云        凤－ 鳳",
+        "input": "凤",
+        "output": "鳳",
+        "pdf_page": 4
+      },
+      "output": "鳳",
+      "unihan_line": "U+51E4\tkTraditionalVariant\tU+51E4 U+9CF3"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 3993,
+          "position": 0
+        }
+      ],
+      "input": "出",
+      "moe_locator": null,
+      "output": "出",
+      "unihan_line": "U+51FA\tkTraditionalVariant\tU+51FA U+9F63"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4023,
+          "position": 0
+        }
+      ],
+      "input": "刘",
+      "moe_locator": {
+        "extracted_line": "伙－夥伙   刘－ 劉        农－ 農",
+        "input": "刘",
+        "output": "劉",
+        "pdf_page": 7
+      },
+      "output": "劉",
+      "unihan_line": "U+5218\tkTraditionalVariant\tU+5218 U+5289"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6765,
+          "position": 0
+        }
+      ],
+      "input": "加",
+      "moe_locator": null,
+      "output": "加",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6376,
+          "position": 2
+        }
+      ],
+      "input": "哲",
+      "moe_locator": null,
+      "output": "哲",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5581,
+          "position": 2
+        }
+      ],
+      "input": "善",
+      "moe_locator": null,
+      "output": "善",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6752,
+          "position": 0
+        }
+      ],
+      "input": "塙",
+      "moe_locator": null,
+      "output": "塙",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4572,
+          "position": 3
+        }
+      ],
+      "input": "士",
+      "moe_locator": null,
+      "output": "士",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 3906,
+          "position": 1
+        }
+      ],
+      "input": "天",
+      "moe_locator": null,
+      "output": "天",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6765,
+          "position": 3
+        }
+      ],
+      "input": "夫",
+      "moe_locator": null,
+      "output": "夫",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4552,
+          "position": 2
+        }
+      ],
+      "input": "奎",
+      "moe_locator": null,
+      "output": "奎",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5365,
+          "position": 2
+        }
+      ],
+      "input": "实",
+      "moe_locator": {
+        "extracted_line": "实－實    肃－ 肅        驻－ 駐",
+        "input": "实",
+        "output": "實",
+        "pdf_page": 13
+      },
+      "output": "實",
+      "unihan_line": "U+5B9E\tkTraditionalVariant\tU+5B9E U+5BE6"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4552,
+          "position": 0
+        }
+      ],
+      "input": "崔",
+      "moe_locator": null,
+      "output": "崔",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4572,
+          "position": 0
+        }
+      ],
+      "input": "川",
+      "moe_locator": null,
+      "output": "川",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6447,
+          "position": 1
+        }
+      ],
+      "input": "帅",
+      "moe_locator": {
+        "extracted_line": "帅－帥     闪－ 閃        边－ 邊",
+        "input": "帅",
+        "output": "帥",
+        "pdf_page": 5
+      },
+      "output": "帥",
+      "unihan_line": "U+5E05\tkTraditionalVariant\tU+5E25"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4801,
+          "position": 1
+        }
+      ],
+      "input": "志",
+      "moe_locator": null,
+      "output": "志",
+      "unihan_line": "U+5FD7\tkTraditionalVariant\tU+5FD7 U+8A8C"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4023,
+          "position": 2
+        }
+      ],
+      "input": "怀",
+      "moe_locator": {
+        "extracted_line": "怀－懷    灵－ 靈        纳－ 納",
+        "input": "怀",
+        "output": "懷",
+        "pdf_page": 10
+      },
+      "output": "懷",
+      "unihan_line": "U+6000\tkTraditionalVariant\tU+6000 U+61F7"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5933,
+          "position": 2
+        }
+      ],
+      "input": "怡",
+      "moe_locator": null,
+      "output": "怡",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5893,
+          "position": 1
+        }
+      ],
+      "input": "才",
+      "moe_locator": null,
+      "output": "才",
+      "unihan_line": "U+624D\tkTraditionalVariant\tU+624D U+7E94"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6768,
+          "position": 2
+        }
+      ],
+      "input": "新",
+      "moe_locator": null,
+      "output": "新",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6752,
+          "position": 2
+        }
+      ],
+      "input": "时",
+      "moe_locator": {
+        "extracted_line": "时－時    针－ 針        饪－ 飪",
+        "input": "时",
+        "output": "時",
+        "pdf_page": 9
+      },
+      "output": "時",
+      "unihan_line": "U+65F6\tkTraditionalVariant\tU+65F6 U+6642"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6458,
+          "position": 2
+        }
+      ],
+      "input": "明",
+      "moe_locator": null,
+      "output": "明",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4801,
+          "position": 0
+        }
+      ],
+      "input": "曹",
+      "moe_locator": null,
+      "output": "曹",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5040,
+          "position": 0
+        }
+      ],
+      "input": "李",
+      "moe_locator": null,
+      "output": "李",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4801,
+          "position": 2
+        }
+      ],
+      "input": "林",
+      "moe_locator": null,
+      "output": "林",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5211,
+          "position": 0
+        }
+      ],
+      "input": "染",
+      "moe_locator": null,
+      "output": "染",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5040,
+          "position": 1
+        }
+      ],
+      "input": "柱",
+      "moe_locator": null,
+      "output": "柱",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6713,
+          "position": 1
+        }
+      ],
+      "input": "根",
+      "moe_locator": null,
+      "output": "根",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4023,
+          "position": 1
+        }
+      ],
+      "input": "棣",
+      "moe_locator": null,
+      "output": "棣",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 3993,
+          "position": 3
+        },
+        {
+          "player_id": 6713,
+          "position": 3
+        }
+      ],
+      "input": "次",
+      "moe_locator": null,
+      "output": "次",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5933,
+          "position": 1
+        }
+      ],
+      "input": "欣",
+      "moe_locator": null,
+      "output": "欣",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4552,
+          "position": 1
+        }
+      ],
+      "input": "殷",
+      "moe_locator": null,
+      "output": "殷",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5581,
+          "position": 1
+        }
+      ],
+      "input": "永",
+      "moe_locator": null,
+      "output": "永",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5365,
+          "position": 0
+        }
+      ],
+      "input": "泉",
+      "moe_locator": null,
+      "output": "泉",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5893,
+          "position": 2
+        }
+      ],
+      "input": "源",
+      "moe_locator": null,
+      "output": "源",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5581,
+          "position": 0
+        }
+      ],
+      "input": "田",
+      "moe_locator": null,
+      "output": "田",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6215,
+          "position": 1
+        }
+      ],
+      "input": "秀",
+      "moe_locator": null,
+      "output": "秀",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4572,
+          "position": 1
+        }
+      ],
+      "input": "端",
+      "moe_locator": null,
+      "output": "端",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4572,
+          "position": 2
+        }
+      ],
+      "input": "笃",
+      "moe_locator": {
+        "extracted_line": "贻－貽   笃－ 篤        饶－ 饒",
+        "input": "笃",
+        "output": "篤",
+        "pdf_page": 15
+      },
+      "output": "篤",
+      "unihan_line": "U+7B03\tkTraditionalVariant\tU+7BE4"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6765,
+          "position": 1
+        }
+      ],
+      "input": "纳",
+      "moe_locator": {
+        "extracted_line": "怀－懷    灵－ 靈        纳－ 納",
+        "input": "纳",
+        "output": "納",
+        "pdf_page": 10
+      },
+      "output": "納",
+      "unihan_line": "U+7EB3\tkTraditionalVariant\tU+7D0D"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6215,
+          "position": 2
+        }
+      ],
+      "input": "英",
+      "moe_locator": null,
+      "output": "英",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 3993,
+          "position": 2
+        }
+      ],
+      "input": "荣",
+      "moe_locator": {
+        "extracted_line": "贯－貫        荣－ 榮        残－ 殘",
+        "input": "荣",
+        "output": "榮",
+        "pdf_page": 14
+      },
+      "output": "榮",
+      "unihan_line": "U+8363\tkTraditionalVariant\tU+69AE U+8363"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5040,
+          "position": 2
+        }
+      ],
+      "input": "衡",
+      "moe_locator": null,
+      "output": "衡",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5893,
+          "position": 0
+        }
+      ],
+      "input": "許",
+      "moe_locator": null,
+      "output": "許",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5365,
+          "position": 1
+        },
+        {
+          "player_id": 5211,
+          "position": 1
+        }
+      ],
+      "input": "谷",
+      "moe_locator": null,
+      "output": "谷",
+      "unihan_line": "U+8C37\tkTraditionalVariant\tU+7A40 U+8C37"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5933,
+          "position": 0
+        }
+      ],
+      "input": "贾",
+      "moe_locator": {
+        "extracted_line": "骆－駱      挚－摯         贾－ 賈",
+        "input": "贾",
+        "output": "賈",
+        "pdf_page": 17
+      },
+      "output": "賈",
+      "unihan_line": "U+8D3E\tkTraditionalVariant\tU+8CC8"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6376,
+          "position": 1
+        }
+      ],
+      "input": "轶",
+      "moe_locator": {
+        "extracted_line": "珑－瓏        荪－ 蓀        轶－ 軼",
+        "input": "轶",
+        "output": "軼",
+        "pdf_page": 14
+      },
+      "output": "軼",
+      "unihan_line": "U+8F76\tkTraditionalVariant\tU+8EFC"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6713,
+          "position": 4
+        }
+      ],
+      "input": "郎",
+      "moe_locator": null,
+      "output": "郎",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6768,
+          "position": 0
+        },
+        {
+          "player_id": 6215,
+          "position": 0
+        }
+      ],
+      "input": "金",
+      "moe_locator": null,
+      "output": "金",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6376,
+          "position": 0
+        }
+      ],
+      "input": "陈",
+      "moe_locator": {
+        "extracted_line": "启－啟    陈－ 陳        纺－ 紡",
+        "input": "陈",
+        "output": "陳",
+        "pdf_page": 10
+      },
+      "output": "陳",
+      "unihan_line": "U+9648\tkTraditionalVariant\tU+9673"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 5211,
+          "position": 3
+        }
+      ],
+      "input": "雄",
+      "moe_locator": null,
+      "output": "雄",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6447,
+          "position": 0
+        }
+      ],
+      "input": "马",
+      "moe_locator": {
+        "extracted_line": "厂－廠        马－ 馬        币－ 幣",
+        "input": "马",
+        "output": "馬",
+        "pdf_page": 4
+      },
+      "output": "馬",
+      "unihan_line": "U+9A6C\tkTraditionalVariant\tU+99AC"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 6458,
+          "position": 0
+        }
+      ],
+      "input": "高",
+      "moe_locator": null,
+      "output": "高",
+      "unihan_line": null
+    }
+  ],
+  "source_file": "Unihan_Variants.txt",
+  "source_sha256": "f7a48b2b545acfaa77b2d607ae28747404ce02baefee16396c5d2d7a8ef34b5e",
+  "source_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip"
+}

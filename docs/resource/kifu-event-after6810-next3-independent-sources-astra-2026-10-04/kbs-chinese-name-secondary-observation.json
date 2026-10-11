@@ -1,0 +1,7 @@
+{
+  "key": "kbs-chinese-name-secondary",
+  "url": "https://zh.wikipedia.org/wiki/KBS%E6%9D%AF",
+  "access_method": "web__run open/search rendered content; direct requests GET returned HTTP 403 and no HTML archive is asserted",
+  "observation": "The Chinese article introduction uses KBS杯围棋王战. Used only as secondary evidence for Chinese display wording; its year table is not used for edition linking.",
+  "access_date": "2026-10-04"
+}

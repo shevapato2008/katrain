@@ -1,0 +1,21 @@
+{
+  "status": "approved_name_bundle_execution",
+  "allow_apply": true,
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T21:31:32.400648+00:00",
+  "review_conclusion": "Both actual native dry runs PASS: each exact 610 reviewed literal display cells, 122 existing approved owners/938 public original-GN SGFs, null name/evidence CAS; full physical scope/current catalog and format4 inventory unchanged. Reviewed public apply_bundle keeps table lock/journal/CAS plus wrapper complete physical guard under locks. Astra max wrapper PASS; root applies TEST/verify then PROD/verify; no formal event identity or FK/SGF/rank edits.",
+  "request_canonical_sha256": "a4f25eebdae53307c2b2a147981c57a53e6f244be9f8c00ebde1c4936b55f536",
+  "environments": {
+    "TEST": {
+      "image_id": "sha256:61ffcb3f86e9733b63eb7b25c2e34005e651e5ab1da4e7ad353d64f5815df1f1",
+      "approved_artifact_canonical_sha256": "150c69a6336d0c99ee8031187d219147b94f488908f550de60abac3d83a0b7bc",
+      "bundle_canonical_sha256": "3f4bce8080497462d17e175fbfd8def9835f54428281b602796c2bccacec5e5d"
+    },
+    "PROD": {
+      "image_id": "sha256:6ffe9b6dad44ae280dc756d8468f1695337ca786541976413b515e614ebab3c5",
+      "approved_artifact_canonical_sha256": "582bdc1eadd3b6662d2aab9188965e3e9d2359896166ee9c0fa9a4c63e76d8c9",
+      "bundle_canonical_sha256": "4911de05449dbc0577eb3270cea1eb0f14bcb940e716b580e9e02b8e767d3eef"
+    }
+  }
+}

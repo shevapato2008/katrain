@@ -1,0 +1,309 @@
+{
+  "count": 20,
+  "game_slots": 4663,
+  "research_array_sha256": "3b4ffeea0d138105af67c86958d9ade1423f7229af4938eb68c013587a9145fa",
+  "records": [
+    {
+      "prod_id": 3792,
+      "name": "나카가와 신지",
+      "original_name": "中川新之",
+      "reading": "なかがわ しんじ",
+      "reading_source_url": "https://www.igorating.com/players/shinji-nakagawa",
+      "games": 397,
+      "research_sha256": "0a66e02d2b896fe68cb86a9d6954891c051717b158d1f57985de8966623cd443",
+      "conflict_result_counts": [
+        0,
+        1
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 5237,
+      "name": "구와하라 무네히사",
+      "original_name": "桑原宗久",
+      "reading": "くわはら むねひさ",
+      "reading_source_url": "https://www.igorating.com/players/munehisa-kuwahara",
+      "games": 345,
+      "research_sha256": "89e923666b74cfa29af23070c6180b7c7e0e1e4f326400a71d94b8aa3374e018",
+      "conflict_result_counts": [
+        0,
+        1
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 6270,
+      "name": "하세가와 아키라",
+      "original_name": "長谷川章",
+      "reading": "ハセガワ アキラ",
+      "reading_source_url": "https://kotobank.jp/word/%E9%95%B7%E8%B0%B7%E5%B7%9D%E7%AB%A0-1100972",
+      "games": 334,
+      "research_sha256": "1219d5128a1809706333673c82273e4a1cd2144dbd51c4ed2739745c48fb3141",
+      "conflict_result_counts": [
+        4,
+        2
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 6260,
+      "name": "나베시마 이치로",
+      "original_name": "鍋島一郎",
+      "reading": "なべしま いちろう",
+      "reading_source_url": "https://igorating.com/players/ichiro-nabeshima",
+      "games": 329,
+      "research_sha256": "d0dd15273331b693dcd8496bf35dcfe63ed0516f41064037a76f9c25299a85f5",
+      "conflict_result_counts": [
+        0,
+        1
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 6252,
+      "name": "스즈키 고로",
+      "original_name": "鈴木五良",
+      "reading": "すずき ごろう",
+      "reading_source_url": "https://igorating.com/players/goro-suzuki",
+      "games": 313,
+      "research_sha256": "7d6a07e6ce5a4a0d032cf0724d8696bb87dd340181235ad8d6116d7febf3a920",
+      "conflict_result_counts": [
+        0,
+        1
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 6581,
+      "name": "호시노 도시",
+      "original_name": "星野紀",
+      "reading": "ほしの とし",
+      "reading_source_url": "https://igorating.com/players/toshi-hoshino",
+      "games": 311,
+      "research_sha256": "3ae0e149c525581667323b92376ada0597452bbae1f1cb9b3ce9c920e857cd27",
+      "conflict_result_counts": [
+        0,
+        0
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 4121,
+      "name": "무카이 가즈오",
+      "original_name": "向井一男",
+      "reading": "むかい かずお",
+      "reading_source_url": "https://www.igorating.com/players/kazuo-mukai",
+      "games": 308,
+      "research_sha256": "3e5a696513fd49b0ff6d599583fc20c93eb74fb61a6958f6b7688940d740422a",
+      "conflict_result_counts": [
+        3,
+        3
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 5158,
+      "name": "마쓰모토 도쿠지",
+      "original_name": "松本篤二",
+      "reading": "まつもと とくじ",
+      "reading_source_url": "https://www.igorating.com/players/tokuji-matsumoto",
+      "games": 294,
+      "research_sha256": "9cb058e825cb1971e86b86196267370d61080d7633ce9e7aa2e816000dedd23f",
+      "conflict_result_counts": [
+        0,
+        1
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 3778,
+      "name": "나카오카 지로",
+      "original_name": "中岡二郎",
+      "reading": "なかおか じろう",
+      "reading_source_url": "https://www.igorating.com/players/jiro-nakaoka",
+      "games": 293,
+      "research_sha256": "895cb4dc676c8c9cc2985ddfbd7b2eaeab9f004f5aae1c8f50be1eb665726c57",
+      "conflict_result_counts": [
+        0,
+        2
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 5413,
+      "name": "와타나베 히데오",
+      "original_name": "渡辺英夫",
+      "reading": "わたなべ ひでお",
+      "reading_source_url": "https://www.igorating.com/players/hideo-watanabe",
+      "games": 223,
+      "research_sha256": "ae02e2a554a31a7a06aed4fe8079a9062310d09d4f2892b3e13909ab38dbfddd",
+      "conflict_result_counts": [
+        0,
+        2
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 4842,
+      "name": "혼마 아키오",
+      "original_name": "本間明男",
+      "reading": "ほんま あきお",
+      "reading_source_url": "https://www.igorating.com/players/akio-honma",
+      "games": 203,
+      "research_sha256": "f3c51eab614c462a7ad8026d69c17335be3fabecc78c27dd22e3a7bf486d4407",
+      "conflict_result_counts": [
+        0,
+        0
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 4421,
+      "name": "고스기 기요시",
+      "original_name": "小杉清",
+      "reading": "こすぎ きよし",
+      "reading_source_url": "https://www.igorating.com/players/kiyoshi-kosugi",
+      "games": 198,
+      "research_sha256": "9bfc46b8429f36dad4efdce315a292f3e57d5a108a06c7a6c6c38efbddb2c8fd",
+      "conflict_result_counts": [
+        0,
+        6
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 3902,
+      "name": "사토 가오루",
+      "original_name": "佐藤馨",
+      "reading": "さとう かおる",
+      "reading_source_url": "https://www.igorating.com/players/kaoru-sato",
+      "games": 190,
+      "research_sha256": "31b78fae9a249c8c0f7676ddfacbcccb282870e9ca8abbbcf62b7d44ac242f55",
+      "conflict_result_counts": [
+        0,
+        1
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 5877,
+      "name": "니시가미 요시히코",
+      "original_name": "西上好彦",
+      "reading": "にしがみ よしひこ",
+      "reading_source_url": "https://www.igorating.com/players/yoshihiko-nishigami",
+      "games": 176,
+      "research_sha256": "388a00d4ebce627798d66b8203d75b67db02df770d767a9918e8178e46561eda",
+      "conflict_result_counts": [
+        0,
+        3
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 6608,
+      "name": "호소카와 센진",
+      "original_name": "細川千仭",
+      "reading": "ほそかわ せんじん",
+      "reading_source_url": "https://igorating.com/players/senjin-hosokawa",
+      "games": 150,
+      "research_sha256": "f1f0941a221880412d0770d8035c986432eb9d5703b0bd1f5b7f11c9a06baaa7",
+      "conflict_result_counts": [
+        0,
+        2
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 4587,
+      "name": "히로에 가쓰히코",
+      "original_name": "広江勝彦",
+      "reading": "ひろえ かつひこ",
+      "reading_source_url": "https://www.igorating.com/players/katsuhiko-hiroe",
+      "games": 137,
+      "research_sha256": "ad855181fe63df0fd2a5c765adc3295ff45cbbb95ee16dc109b4806d1532d6cd",
+      "conflict_result_counts": [
+        0,
+        2
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 6261,
+      "name": "나베시마 아키라",
+      "original_name": "鍋島昭",
+      "reading": "なべしま あきら",
+      "reading_source_url": "https://www.igorating.com/players/akira-nabeshima",
+      "games": 128,
+      "research_sha256": "51368c111d14ce87c076b79c146ccfcad6b415f2e191836883a7d60296cdc769",
+      "conflict_result_counts": [
+        0,
+        0
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 6627,
+      "name": "오노다 지요타로",
+      "original_name": "小野田千代太郎",
+      "reading": "おのだ ちよたろう",
+      "reading_source_url": "https://www.igorating.com/players/chiyotaro-onoda",
+      "games": 118,
+      "research_sha256": "9646a77f51b6bed72f0bb1a86288089226765ad1eda75b6d3b0f892a8d2e2264",
+      "conflict_result_counts": [
+        0,
+        0
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 4266,
+      "name": "아마야케 노부오",
+      "original_name": "天宅信雄",
+      "reading": "あまやけ のぶお",
+      "reading_source_url": "https://www.igorating.com/players/nobuo-amayake",
+      "games": 111,
+      "research_sha256": "25220fe0d08400a116ea305f153f3bdfc40e1a38b763df6441e92dd2d1bec5fb",
+      "conflict_result_counts": [
+        0,
+        2
+      ],
+      "status": "unsigned_pending_independent_review"
+    },
+    {
+      "prod_id": 6631,
+      "name": "사카이 도시오",
+      "original_name": "酒井利雄",
+      "reading": "さかい としお",
+      "reading_source_url": "https://www.igorating.com/players/toshio-sakai",
+      "games": 105,
+      "research_sha256": "51731de92bf1adb884e80aee5aa42c6ece3d028d0b6858d03914a8eba61dfec6",
+      "conflict_result_counts": [
+        2,
+        2
+      ],
+      "status": "unsigned_pending_independent_review"
+    }
+  ],
+  "held": [
+    {
+      "prod_id": 4499,
+      "reason": "Actual NIH spelling includes surname/given whitespace; alternative Igo compact spelling differs and identity bridge held"
+    },
+    {
+      "prod_id": 5244,
+      "reason": "Actual NIH spelling includes surname/given whitespace, incompatible with current positive visible-name comparison; alternative Igo 橋本善美 identity bridge held"
+    },
+    {
+      "prod_id": 6496,
+      "reason": "Hangame conventional 타다오 differs from existing generated 다다오"
+    },
+    {
+      "prod_id": 3900,
+      "reason": "Korean Wikipedia pupil article conventional 사토우 스나오 differs from existing generated 사토 스나오"
+    }
+  ],
+  "limitations": [
+    "Two bounded actual first-page queries per owner; no universal absence claim.",
+    "All records remain unsigned pending root review and current environment preimage binding."
+  ]
+}

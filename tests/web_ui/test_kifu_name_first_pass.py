@@ -1161,6 +1161,202 @@ def _one_shared_raw_event_bundle(bundle, records, index):
     return one, [records[index]]
 
 
+def _corrected_raw_event_bundle(engine, prior_bundle, prior_research, prior_batch_id, display):
+    from katrain.web.core.models_db import KifuNameBatch
+
+    old = prior_bundle["candidates"][0]
+    owner = old["owner"]
+    with engine.connect() as conn:
+        name_row = conn.execute(KifuRawEventName.__table__.select().where(
+            KifuRawEventName.raw_event_id == owner["id"], KifuRawEventName.lang == old["lang"]
+        )).mappings().one()
+        name = _image(conn, KifuRawEventName.__table__, name_row["id"])
+        evidence = _image(conn, KifuNameResearchEvidence.__table__, name["evidence_id"])
+        batch = _image(conn, KifuNameBatch.__table__, prior_batch_id)
+    marker = {
+        "version": "generated-raw-event-semantic-correction-v1",
+        "owner": owner, "lang": old["lang"], "raw_value": old["raw_value"],
+        "name_preimage_sha256": canonical_sha256(name),
+        "prior_name_revision": name["revision"],
+        "prior_candidate_sha256": canonical_sha256(old),
+        "prior_evidence_sha256": canonical_sha256(evidence),
+        "prior_batch_id": prior_batch_id, "prior_bundle_sha256": batch["bundle_sha256"],
+    }
+    research = deepcopy(prior_research)
+    research["candidate_name"] = display
+    candidate = deepcopy(old)
+    candidate.update(display_name=display, name_preimage_sha256=marker["name_preimage_sha256"],
+                     research_sha256=canonical_sha256(research), first_pass_correction=marker)
+    candidate["generated_review"].update(display_name=display,
+                                         research_sha256=candidate["research_sha256"])
+    candidate["preimage_binding"].update(name_preimage_sha256=marker["name_preimage_sha256"])
+    corrected = deepcopy(prior_bundle)
+    corrected["candidates"] = [candidate]
+    return corrected, research
+
+
+def test_generated_raw_event_semantic_correction_twice_keeps_reader_and_journal(engine):
+    from katrain.web.kifu import name_batch
+
+    inv, bundle, records = bound_shared_raw_event_bundle(engine)
+    first, first_records = _one_shared_raw_event_bundle(bundle, records, 0)
+    first_result = apply_bundle(engine, first, db_registry(), inv, first_records)
+    prior_bundle, prior_research, prior_batch_id = first, first_records[0], first_result["batch_id"]
+    old_corrections = []
+    for display in ("28th Honinbo Championship", "28th Honinbo Championship Finals"):
+        corrected, research = _corrected_raw_event_bundle(
+            engine, prior_bundle, prior_research, prior_batch_id, display)
+        assert dry_run_bundle(engine, corrected, db_registry(), inv, [research])["ready"]
+        result = apply_bundle(engine, corrected, db_registry(), inv, [research])
+        with engine.connect() as conn:
+            changes = conn.execute(KifuNameChange.__table__.select().where(
+                KifuNameChange.batch_id == result["batch_id"])).mappings().all()
+            name_change = next(change for change in changes if change["target_table"] == "kifu_raw_event_names")
+            evidence_change = next(change for change in changes
+                                   if change["target_table"] == "kifu_name_research_evidence")
+            assert name_change["before_image"]["display_name"] == prior_bundle["candidates"][0]["display_name"]
+            assert name_change["after_image"]["display_name"] == display
+            assert evidence_change["before_image"] is None
+            assert evidence_change["after_image"]["candidate_name"] == display
+        with Session(engine) as db:
+            names = _approved_raw_event_names(db, values={"28th Honinbo"}, lang="en")
+            assert len(names) == 1 and names[0][0].display_name == display
+        old_corrections.append(deepcopy(corrected["candidates"][0]))
+        prior_bundle, prior_research, prior_batch_id = corrected, research, result["batch_id"]
+    with engine.connect() as conn:
+        latest = conn.execute(KifuRawEventName.__table__.select().where(
+            KifuRawEventName.raw_event_id == 20, KifuRawEventName.lang == "en"
+        )).mappings().one()
+        latest_sha = canonical_sha256(_image(conn, KifuRawEventName.__table__, latest["id"]))
+        for stale in old_corrections:
+            with pytest.raises(BatchError, match="name preimage changed"):
+                _check_name_preimages(conn, [stale], db_registry())
+            forged_cas = deepcopy(stale)
+            forged_cas["name_preimage_sha256"] = latest_sha
+            with pytest.raises(BatchError, match="marker or target differs"):
+                name_batch._check_first_pass_correction(conn, forged_cas, db_registry())
+
+
+@pytest.mark.parametrize("drift", [
+    "prior_name_revision", "prior_candidate_sha256", "prior_evidence_sha256",
+    "prior_batch_id", "prior_bundle_sha256", "name_preimage_sha256", "owner_kind",
+    "non_generated_name", "non_generated_evidence", "unapproved_evidence", "other_generation_rule",
+])
+def test_generated_raw_event_correction_rejects_stale_or_authoritative_preimage(engine, drift):
+    from katrain.web.kifu import name_batch
+
+    inv, bundle, records = bound_shared_raw_event_bundle(engine)
+    first, first_records = _one_shared_raw_event_bundle(bundle, records, 0)
+    result = apply_bundle(engine, first, db_registry(), inv, first_records)
+    corrected, _research = _corrected_raw_event_bundle(
+        engine, first, first_records[0], result["batch_id"], "28th Honinbo Championship")
+    candidate = corrected["candidates"][0]
+    marker = candidate["first_pass_correction"]
+    if drift in {"prior_name_revision", "prior_batch_id"}:
+        marker[drift] += 1
+    elif drift in {"prior_candidate_sha256", "prior_evidence_sha256", "prior_bundle_sha256"}:
+        marker[drift] = "b" * 64
+    elif drift == "name_preimage_sha256":
+        marker[drift] = "b" * 64
+    elif drift == "owner_kind":
+        candidate["owner"] = {"kind": "raw_player", "id": candidate["owner"]["id"]}
+    else:
+        with engine.begin() as conn:
+            name = conn.execute(KifuRawEventName.__table__.select()).mappings().one()
+            if drift == "non_generated_name":
+                conn.execute(KifuRawEventName.__table__.update().where(
+                    KifuRawEventName.id == name["id"]).values(decision_kind="conventional"))
+            else:
+                change = ({"non_generated_evidence": {"decision_kind": "conventional"},
+                           "unapproved_evidence": {"review_status": "pending"},
+                           "other_generation_rule": {"generation_rule_version": "other-v1"}}[drift])
+                conn.execute(KifuNameResearchEvidence.__table__.update().where(
+                    KifuNameResearchEvidence.id == name["evidence_id"]).values(**change))
+        with engine.connect() as conn:
+            name = conn.execute(KifuRawEventName.__table__.select()).mappings().one()
+            image = _image(conn, KifuRawEventName.__table__, name["id"])
+            evidence = _image(conn, KifuNameResearchEvidence.__table__, name["evidence_id"])
+            candidate["name_preimage_sha256"] = marker["name_preimage_sha256"] = canonical_sha256(image)
+            marker["prior_evidence_sha256"] = canonical_sha256(evidence)
+    with engine.connect() as conn, pytest.raises(BatchError):
+        name_batch._check_first_pass_correction(conn, candidate, db_registry())
+
+
+@pytest.mark.parametrize("drift", ["method", "scope", "owner_source"])
+def test_generated_raw_event_correction_requires_new_literal_translation_scope(engine, drift):
+    inv, bundle, records = bound_shared_raw_event_bundle(engine)
+    first, first_records = _one_shared_raw_event_bundle(bundle, records, 0)
+    result = apply_bundle(engine, first, db_registry(), inv, first_records)
+    corrected, research = _corrected_raw_event_bundle(
+        engine, first, first_records[0], result["batch_id"], "28th Honinbo Championship")
+    if drift == "method":
+        research["generation"]["method"] = "transliteration"
+    elif drift == "scope":
+        research["raw_scope"]["slots"] = [{**research["raw_scope"]["slots"][0], "album_id": 999}]
+    else:
+        research["source_input"]["owner_preimage_sha256"] = "b" * 64
+    candidate = corrected["candidates"][0]
+    candidate["research_sha256"] = canonical_sha256(research)
+    candidate["generated_review"]["research_sha256"] = candidate["research_sha256"]
+    with engine.connect() as conn, pytest.raises(BatchError):
+        _check_first_pass_sources(conn, [candidate], {candidate["research_sha256"]: research},
+                                  corrected["owners"])
+
+
+def test_generated_raw_event_correction_rejects_changed_live_scope(engine):
+    inv, bundle, records = bound_shared_raw_event_bundle(engine)
+    first, first_records = _one_shared_raw_event_bundle(bundle, records, 0)
+    result = apply_bundle(engine, first, db_registry(), inv, first_records)
+    corrected, research = _corrected_raw_event_bundle(
+        engine, first, first_records[0], result["batch_id"], "28th Honinbo Championship")
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=88, player_black="Black", player_white="White", event="28th Honinbo",
+            sgf_content="(;EV[28th Honinbo])", source_path="late-raw-event.sgf"))
+    candidate = corrected["candidates"][0]
+    with engine.connect() as conn, pytest.raises(BatchError, match="occurrence scope changed"):
+        _check_first_pass_sources(conn, [candidate], {candidate["research_sha256"]: research},
+                                  corrected["owners"])
+
+
+def test_generated_raw_event_correction_rejects_existing_locale_source(engine):
+    inv, bundle, records = bound_shared_raw_event_bundle(engine)
+    first, first_records = _one_shared_raw_event_bundle(bundle, records, 0)
+    result = apply_bundle(engine, first, db_registry(), inv, first_records)
+    corrected, research = _corrected_raw_event_bundle(
+        engine, first, first_records[0], result["batch_id"], "28th Honinbo Championship")
+    with Session(engine) as db:
+        source_evidence = _evidence(db, "raw_event", 20, "cn", "28th Honinbo")
+        db.add(KifuRawEventName(raw_event_id=20, lang="cn", display_name="28th Honinbo",
+                                status="verified", decision_kind="conventional",
+                                generation_rule_version="test-v1", revision=1,
+                                evidence_id=source_evidence.id))
+        db.commit()
+    with engine.connect() as conn:
+        source_name = conn.execute(KifuRawEventName.__table__.select().where(
+            KifuRawEventName.raw_event_id == 20, KifuRawEventName.lang == "cn"
+        )).mappings().one()
+        source_name_image = _image(conn, KifuRawEventName.__table__, source_name["id"])
+        source_evidence_image = _image(conn, KifuNameResearchEvidence.__table__, source_name["evidence_id"])
+    research["source_input"] = {
+        "kind": "existing_locale", "owner": research["owner"], "text": "28th Honinbo",
+        "owner_preimage_sha256": research["source_input"]["owner_preimage_sha256"],
+        "lang": "cn", "name_id": source_name["id"],
+        "name_preimage_sha256": canonical_sha256(source_name_image),
+        "evidence_preimage_sha256": canonical_sha256(source_evidence_image),
+    }
+    candidate = corrected["candidates"][0]
+    candidate.pop("collision_decision")
+    candidate.pop("collision_basis")
+    candidate["research_sha256"] = canonical_sha256(research)
+    candidate["generated_review"]["research_sha256"] = candidate["research_sha256"]
+    assert validate_research_record(research, db_registry())
+    assert validate_candidate(candidate, research, db_registry(), inv)
+    with engine.connect() as conn, pytest.raises(BatchError, match="literal translation research"):
+        _check_first_pass_sources(conn, [candidate], {candidate["research_sha256"]: research},
+                                  corrected["owners"])
+
+
 def test_first_pass_shared_raw_event_same_bundle_and_finite_search(engine):
     from katrain.web.kifu.identity import strict_matching_names
 

@@ -279,12 +279,15 @@ def name_preimage_sha256(engine, owner: dict, lang: str) -> str | None:
 
 
 def _check_first_pass_correction(conn, candidate: dict, registry: dict | None) -> None:
-    """Allow only the reviewed 712 cells when the live old value is a journaled first pass."""
+    """Validate the reviewed player exception or a signed generated raw-title revision."""
     from katrain.web.kifu.name_evidence import EvidenceError, _validate_check
     from katrain.web.kifu.name_first_pass import persisted_eligible
 
     owner, lang = candidate["owner"], candidate["lang"]
     marker = candidate.get("first_pass_correction")
+    if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-semantic-correction-v1":
+        _check_generated_raw_event_correction(conn, candidate, marker)
+        return
     allowed = _FIRST_PASS_CORRECTION_CELLS.get((owner.get("id"), lang)) if owner.get("kind") == "raw_player" else None
     _fail(allowed is not None and isinstance(marker, dict) and set(marker) == {
         "version", "prior_batch_id", "prior_name_revision", "prior_candidate_sha256",
@@ -358,6 +361,77 @@ def _check_first_pass_correction(conn, candidate: dict, registry: dict | None) -
           "first-pass correction old name lacks complete generated journal proof")
 
 
+def _check_generated_raw_event_correction(conn, candidate: dict, marker: dict) -> None:
+    """Correct only the current signed generated raw title and its exact journaled revision."""
+    from katrain.web.kifu.name_first_pass import VERSION, persisted_eligible
+
+    owner, lang = candidate["owner"], candidate["lang"]
+    _fail(set(marker) == {
+        "version", "owner", "lang", "raw_value", "name_preimage_sha256",
+        "prior_name_revision", "prior_candidate_sha256", "prior_evidence_sha256",
+        "prior_batch_id", "prior_bundle_sha256",
+    } and owner.get("kind") == "raw_event" and marker["owner"] == owner
+          and marker["lang"] == lang and marker["raw_value"] == candidate.get("raw_value")
+          and marker["name_preimage_sha256"] == candidate.get("name_preimage_sha256")
+          and candidate.get("decision_kind") == "generated"
+          and candidate.get("generation_rule_version") == VERSION
+          and candidate.get("review_status") == "approved"
+          and all(type(marker[key]) is int and marker[key] > 0
+                  for key in ("prior_name_revision", "prior_batch_id"))
+          and all(isinstance(marker[key], str) and _SHA256.fullmatch(marker[key])
+                  for key in ("name_preimage_sha256", "prior_candidate_sha256",
+                              "prior_evidence_sha256", "prior_bundle_sha256")),
+          "generated raw-event correction marker or target differs")
+    table = KifuRawEventName.__table__
+    current = conn.execute(select(table).where(table.c.raw_event_id == owner["id"],
+                                               table.c.lang == lang)).mappings().one_or_none()
+    _fail(current is not None and current["status"] == "verified"
+          and current["decision_kind"] == "generated"
+          and current["generation_rule_version"] == VERSION
+          and current["revision"] == marker["prior_name_revision"]
+          and current["evidence_id"] is not None,
+          "generated raw-event correction old live name or revision differs")
+    name = _image(conn, table, current["id"])
+    _fail(canonical_sha256(name) == marker["name_preimage_sha256"],
+          "generated raw-event correction name preimage changed")
+    evidence = _image(conn, KifuNameResearchEvidence.__table__, current["evidence_id"])
+    _fail(evidence is not None and evidence["review_status"] == "approved"
+          and evidence["decision_kind"] == "generated"
+          and evidence["generation_rule_version"] == VERSION
+          and canonical_sha256(evidence) == marker["prior_evidence_sha256"],
+          "generated raw-event correction old evidence or status differs")
+    payload = evidence.get("research_payload")
+    old_candidate = payload.get("candidate") if isinstance(payload, dict) else None
+    proof = payload.get("first_pass") if isinstance(payload, dict) else None
+    _fail(isinstance(old_candidate, dict) and isinstance(proof, dict)
+          and canonical_sha256(old_candidate) == marker["prior_candidate_sha256"]
+          and proof.get("batch_id") == marker["prior_batch_id"],
+          "generated raw-event correction old candidate or batch proof differs")
+    batch = _image(conn, KifuNameBatch.__table__, marker["prior_batch_id"])
+    artifact = batch.get("reviewed_artifact") if batch else None
+    bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+    _fail(batch is not None and batch["status"] == "applied"
+          and isinstance(bundle, dict)
+          and batch["bundle_sha256"] == marker["prior_bundle_sha256"] == canonical_sha256(bundle),
+          "generated raw-event correction prior signed bundle differs")
+    changes = {(change["target_table"], change["target_row_id"]): dict(change) for change in
+               conn.execute(select(KifuNameChange.__table__).where(
+                   KifuNameChange.batch_id == marker["prior_batch_id"],
+                   or_(
+                       (KifuNameChange.target_table == KifuRawEventName.__tablename__)
+                       & (KifuNameChange.target_row_id == name["id"]),
+                       (KifuNameChange.target_table == KifuNameResearchEvidence.__tablename__)
+                       & (KifuNameChange.target_row_id == evidence["id"]),
+                   ))).mappings()}
+    members = ({canonical_sha256(item) for item in bundle.get("candidates", ())},
+               set(artifact.get("research_hashes", ())))
+    live_owner = _image(conn, KifuRawEventValue.__table__, owner["id"])
+    _fail(live_owner is not None and live_owner["raw_value"] == marker["raw_value"]
+          and persisted_eligible(name, evidence, "raw_event", live_owner, batch, changes,
+                                 batch_members=members),
+          "generated raw-event correction lacks current generated journal proof")
+
+
 def _check_name_preimages(conn, candidates: list[dict], registry: dict | None = None) -> None:
     from katrain.web.kifu.name_first_pass import VERSION as FIRST_PASS_VERSION
     for candidate in candidates:
@@ -416,6 +490,10 @@ def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: di
         _fail(live_owner is not None and canonical_sha256(live_owner) == source["owner_preimage_sha256"],
               "first-pass source owner changed")
         kind = source["kind"]
+        marker = candidate.get("first_pass_correction")
+        if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-semantic-correction-v1":
+            _fail(kind == "raw_event_literal" and research["generation"].get("method") == "translation",
+                  "generated raw-event correction needs literal translation research")
         if kind == "catalog_canonical":
             _fail(live_owner["canonical_name"] == source["text"], "first-pass canonical source changed")
         elif kind == "raw_event_literal":

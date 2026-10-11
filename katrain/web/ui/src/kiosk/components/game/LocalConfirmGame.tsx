@@ -75,16 +75,16 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
         : reason === 'illegal_move' ? t('game:local_illegal_move', '请重新选择落点')
           : reason === 'unavailable' ? t('game:local_prepare_title', '请先准备好实体盘')
           : t('game:local_retry_title', '这一手尚未确认');
-  const errorBody = reason === 'multiple_stones' ? t('game:local_multiple_steps', '拿回多下的棋子，移开双手后重新确认。')
-    : reason === 'capture_remaining' ? t('game:local_capture_steps', '拿除橙色叉号处的棋子，再重新确认。')
-      : reason === 'no_stone' ? t('game:local_no_stone_steps', '请落下一颗棋子，移开双手后重新确认。')
-        : reason === 'unavailable' && input === 'physical' ? t('game:local_prepare_retry', '先将实体盘整理成屏幕盘面，再按确认重新准备；请检查相机和标定。')
-          : input === 'screen' ? t('game:local_screen_retry', '仍是你的回合。可以改选位置，或重新确认。')
-          : t('game:local_physical_retry', '仍是你的回合。移开双手，待盘面稳定后重试。');
+  const errorBody = reason === 'multiple_stones' ? t('game:local_multiple_steps', '拿回多下的棋子，再确认。')
+    : reason === 'capture_remaining' ? t('game:local_capture_steps', '拿除叉号处的棋子，再确认。')
+      : reason === 'no_stone' ? t('game:local_no_stone_steps', '落下一颗棋子，再确认。')
+        : reason === 'unavailable' && input === 'physical' ? t('game:local_prepare_retry', '整理盘面，检查相机与标定。')
+          : input === 'screen' ? t('game:local_screen_retry', '可改选位置，再确认。')
+          : t('game:local_physical_retry', '移开双手，盘面稳定后重试。');
 
   const header = <div className="lc-header">
     <strong>{t('game:local_pvp', '本地对局')}</strong>
-    <span>{t('game:local_move_number', '第 {n} 手').replace('{n}', String(gameState.current_node_index))} · {size} {t('game:board_lines', '路')}</span>
+    <span>{t('game:local_move_number', '第 {n} 手').replace('{n}', String(gameState.current_node_index))} · {t('game:board_lines', '{n} 路').replace('{n}', String(size))}</span>
     <button type="button" onClick={() => setDialog('guide')}><Icon name="speaker-high" />{t('game:local_guide', '落子说明')}</button>
     <button type="button" disabled={busy} onClick={onExit}><Icon name="arrow-left" />{t('game:exit_game', '退出对局')}</button>
   </div>;
@@ -96,9 +96,11 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
     const other = color === 'B' ? t('game:white_side', '白方') : t('game:black_side', '黑方');
     const clock = busy && frozen ? frozen[color] : color === 'B' ? blackClock : whiteClock;
     const running = active && !busy && gameState.timer?.paused === false;
-    return <section key={color} aria-label={`${label}玩家面板`} className={`lc-seat ${active ? 'is-active' : 'is-waiting'}${busy ? ' is-busy' : ''}${ownError ? ' is-error' : ''}`}>
-      <div className="lc-seat-head"><span className={`lc-stone-disc${color === 'W' ? ' is-white' : ''}`} aria-hidden="true" />
-        <div><div className="lc-side">{label}<span className="lc-pill">{busy ? active ? t('game:local_confirming', '确认中') : t('game:local_wait_short', '请稍候') : active ? t('game:local_playing', '走棋中') : t('game:local_waiting', '等待中')}</span></div>
+    const copy = busy ? t('game:local_both_paused', '双方计时已暂停')
+      : !active ? null : ownError ? errorBody : selected ? t('game:local_change_selection', '可改选位置') : null;
+    return <section key={color} aria-label={`${label}玩家面板`} className={`lc-seat ${active ? 'is-active' : 'is-waiting'}${busy && active ? ' is-busy' : ''}${ownError ? ' is-error' : ''}`}>
+      <div className="lc-seat-head"><span className="lc-stone-disc" aria-hidden="true"><img src={`/assets/img/${color}_stone.png`} alt="" /></span>
+        <div><div className="lc-side">{label}<span className="lc-pill">{busy ? active ? t('game:local_confirming', '确认中') : t('game:local_wait_short', '请稍候') : ownError ? t('game:local_needs_attention', '待处理') : active ? t('game:local_playing', '走棋中') : t('game:local_waiting', '等待中')}</span></div>
           <div className="lc-name">{gameState.players_info[color].name || label}</div></div>
       </div>
       <div className={`lc-clock-block${clock?.byoLeft != null ? ' is-byoyomi' : ''}`}>
@@ -106,25 +108,29 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
           <span className={running ? 'is-running' : ''}>{running ? t('game:local_clock_running', '计时中') : t('game:local_clock_paused', '已暂停')}</span></div>
         <div className="lc-clock">{clock ? clockText(clock.byoLeft ?? clock.mainLeft) : t('game:untimed', '不限时')}</div>
         <div className="lc-clock-sub">{clock?.byoLeft != null ? `${t('game:local_periods_left', '剩 {n} 次').replace('{n}', String(clock.periodsLeft))} · ${gameState.timer?.settings.byo_length} ${t('game:seconds', '秒')}`
-          : clock ? `${t('game:local_byoyomi', '读秒')} ${gameState.timer?.settings.byo_length} ${t('game:seconds', '秒')} × ${gameState.timer?.settings.byo_periods} ${t('game:times', '次')}` : t('game:local_move_number', '第 {n} 手').replace('{n}', String(gameState.current_node_index))}</div>
+          : clock ? `${t('game:local_byoyomi', '读秒')} ${gameState.timer?.settings.byo_length} ${t('game:seconds', '秒')} × ${gameState.timer?.settings.byo_periods} ${t('game:times', '次')}` : null}</div>
       </div>
       <div className="lc-instruction" aria-live={active ? 'polite' : undefined}>
         <h2>{busy ? active ? input === 'physical' ? t('game:local_recognizing', '正在识别') : t('game:local_submitting', '正在确认') : t('game:local_wait_short', '请稍候')
           : !active ? `${t('game:local_wait', '等待')}${other}` : ownError ? errorTitle : selected ? `${t('game:local_selected', '已选')} ${selected}` : t('game:local_your_turn', '轮到你落子')}</h2>
-        <p>{busy ? active ? t('game:local_pause_body', '双方计时已暂停，请勿继续落子。') : t('game:local_opponent_confirming', '对方正在确认，请勿落子。')
-          : !active ? t('game:local_wait_body', '听到确认提示后，再下下一手。') : ownError ? errorBody : guidance}</p>
-        <small>{ownError ? t('game:local_not_committed', '本手未入谱 · 仍是你的回合') : !capable && active ? t('game:local_unavailable', '暂时无法确认，请检查连接')
-          : active ? countAvailable ? t('game:local_count_available', '可申请数子') : t('game:local_count_threshold', '数子需满 {n} 手').replace('{n}', String(minMoves)) : t('game:local_move_number', '当前第 {n} 手').replace('{n}', String(gameState.current_node_index))}</small>
+        {copy && <p>{copy}</p>}
+      </div>
+      <div className="lc-view-toggles" aria-label={t('game:local_board_display', '棋盘显示')}>
+        {['coords', 'numbers'].map(key => <button key={key} type="button" aria-pressed={!!analysisToggles[key]} onClick={() => onToggle(key)}>
+          <Icon name={key === 'coords' ? 'grid-nine' : 'list-numbers'} />
+          <span>{key === 'coords' ? t('Coordinates', '坐标') : t('Move Numbers', '手数')}</span>
+          <span className="lc-toggle-state">{analysisToggles[key] ? t('On', '开') : t('Off', '关')}</span>
+        </button>)}
       </div>
       <div className="lc-actions">
-        <button type="button" disabled={!active || busy || !capable} onClick={() => setDialog('pass')}>{t('Pass', '停一手')}</button>
-        <button type="button" disabled={!active || busy || blocked || !countAvailable} onClick={onCount}>{t('game:count_stones', '数子')}</button>
+        <button type="button" disabled={!active || busy || !capable} onClick={() => setDialog('pass')}>{t('game:pass', '停一手')}</button>
+        <button type="button" title={!countAvailable ? t('game:local_count_threshold', '数子需满 {n} 手').replace('{n}', String(minMoves)) : undefined} disabled={!active || busy || blocked || !countAvailable} onClick={onCount}>{t('game:count_stones', '数子')}</button>
         <button type="button" className="lc-resign" disabled={busy || blocked} onClick={() => setDialog(color)}>{t('Resign', '认输')}</button>
       </div>
       <button type="button" className="lc-confirm" disabled={!active || busy || !capable || (input === 'screen' && !point)} onClick={beginConfirm}>
-        <span className="lc-confirm-label">{busy && active ? <span className="lc-spinner" aria-hidden="true" /> : active ? <span aria-hidden="true">✓</span> : null}
+        <span className="lc-confirm-label">{busy && active ? <span className="lc-spinner" aria-hidden="true" /> : active ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg> : null}
           {busy ? active ? input === 'physical' ? t('game:local_recognizing', '正在识别') : t('game:local_submitting', '正在确认') : t('game:local_wait_short', '请稍候') : active ? ownError ? t('game:local_confirm_again', '重新确认') : t('game:local_confirm_move', '确认落子') : `${t('game:local_wait', '等待')}${other}`}</span>
-        <small>{busy ? t('game:local_both_paused', '双方计时已暂停') : active ? selected ? `${selected} · ${t('game:local_confirm_switch', '确认后换方')}` : input === 'screen' ? t('game:local_select_first', '请先点击棋盘选点') : t('game:local_confirm_switch', '确认后换方') : t('game:local_wait_confirm', '对方确认后再落子')}</small>
+        <small>{busy ? t('game:local_both_paused', '双方计时已暂停') : active ? selected ? `${selected} · ${t('game:local_confirm_switch', '确认后换方')}` : input === 'screen' ? t('game:local_select_first', '先在棋盘选点') : t('game:local_confirm_switch', '确认后换方') : t('game:local_wait_confirm', '对方确认后再落子')}</small>
       </button>
     </section>;
   };
@@ -154,7 +160,6 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
         <p>{dialog === 'guide' ? guidance : dialog === 'pass' ? point ? t('game:local_pass_discard', '停一手会放弃当前预选位置。') : input === 'physical' ? t('game:local_pass_physical', '请确认实体盘没有尚未确认的落子。') : t('game:local_pass_body', '停一手后将轮到对方。') : t('game:resign_local_body', '对方记中盘胜，这局会存进历史对局。')}</p>
         {dialog === 'guide' && <>
           <p>{t('game:local_guide_clock', '确认时双方计时暂停，成功后对方计时；失败仍由本方计时。听到确认音、对方区域亮起后，再下下一手。')}</p>
-          <div className="lc-display-options">{['coords', 'numbers'].map((key) => <label key={key}><input type="checkbox" checked={!!analysisToggles[key]} onChange={() => onToggle(key)} />{key === 'coords' ? t('game:coordinates', '坐标') : t('game:move_numbers', '手数')}</label>)}</div>
         </>}
       </DialogContent>
       <DialogActions>

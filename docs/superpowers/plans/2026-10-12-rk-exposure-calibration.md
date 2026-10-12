@@ -61,20 +61,24 @@
 
 ### Task 4: 集成及最终独立审核
 
-- [ ] 删除所有预览Fixture/凭据；用真实API/WS核对曝光phase→闪灯，失败stopped_phase、取消/恢复、屏幕改选/确认/一次落子音仍保持。未知或pending不能假绿，不将模拟光照测值写生产状态。
+- [x] 删除所有预览Fixture/凭据；用真实API/WS核对曝光phase→闪灯、屏幕改选/确认/一次落子音；失败stopped_phase及取消/恢复由聚焦回归核对。未知或pending不能假绿，不将模拟光照测值写生产状态。
 - [x] 由独立GPT-6-astra进行最终code review，按实际问题修复并复审**直到通过**。审查重点限于等待/取消/恢复、真实帧和gate、所有phase消费者、episode语音去重及权威确认不入坏帧；先spec合规再quality。已有充分测试不重复扩张证据体系。
-- [ ] 一次1024×600实际集成图核对曝光阶段和可达按钮，沿用前一步警告预览，无实质变化不重复全状态视觉审核；用户授权max代理决策。
+- [x] 一次1024×600实际集成图核对曝光阶段和可达按钮，沿用前一步警告预览，无实质变化不重复全状态视觉审核；用户授权max代理决策。
 
 ### Task 5: 合并、发布与RK实机验收
 
-- [ ] fetch最新develop合入feature，相关差异验证、正常推送feature/develop；在干净SmartBox工作树只更新精确vendor/katrain gitlink并推送，保留其它人的工作区变化。
-- [ ] 最终源码构建full与strict SmartBox 2D，manifest边界检查；候选与rollback放RK数据盘 `/mnt/data/smartbox-deployments/`，不删除历史文件腾根盘，不把本轮扩成磁盘清理。
-- [ ] 按实际现役运行时做KaTrain-only差量：源码目标同目录temp+replace避开hardlink；静态新assets先行index-last，保留旧hash资源。记录实际source覆盖范围，不声称整个板端源码统一。仅在安全空闲重启smartbox-katrain.service，用户已允许指定AI局不保留；切换前确认无后来另起在用局。
-- [ ] 两云按AGENTS完整发布链执行最小web更新（不动GPU/DB/cron/admin配置），确认空闲、保存有效compose/env/volumes和旧image；无真人会话才切，home通过才ucloud，诚实记录后端实际增量版本。
-- [ ] RK唯一renderer：曝光阶段真实显示、实际13点灯定位/geometry ready或准确失败原因、旧锁不被失败覆盖、UI退出/重试、实际音频资产可播。记录相机/LED/health和SHA；若仍有真实物理失败，保留证据进一步查具体原因，不以测试替代实机成功。
-- [ ] 更新计划checkbox/根因/发布记录并提交推送；关闭测试browser/隧道，删除临时Fixture，交用户检查。
+- [x] fetch最新develop合入feature，相关差异验证、正常推送feature/develop；在干净SmartBox工作树只更新精确vendor/katrain gitlink并推送，保留其它人的工作区变化。
+- [x] 最终源码构建full与strict SmartBox 2D，manifest边界检查；候选与rollback放RK数据盘 `/mnt/data/smartbox-deployments/`，不删除历史文件腾根盘，不把本轮扩成磁盘清理。
+- [x] 按实际现役运行时做KaTrain-only差量：源码目标同目录temp+replace避开hardlink；静态新assets先行index-last，保留旧hash资源。记录实际source覆盖范围，不声称整个板端源码统一。仅在安全空闲重启smartbox-katrain.service，用户已允许指定AI局不保留；切换前确认无后来另起在用局。
+- [x] 两云按AGENTS完整发布链执行最小web更新（不动GPU/DB/cron/admin配置），确认空闲、保存有效compose/env/volumes和旧image；无真人会话才切，home通过才ucloud，诚实记录后端实际增量版本。
+- [x] RK唯一renderer：曝光阶段真实显示、实际13点灯定位/geometry ready或准确失败原因、旧锁不被失败覆盖、UI退出/重试、实际音频资产可播。记录相机/LED/health和SHA；若仍有真实物理失败，保留证据进一步查具体原因，不以测试替代实机成功。
+- [x] 更新计划checkbox/根因/发布记录并提交推送；关闭测试browser/隧道，删除临时Fixture，交用户检查。
 
 ## 计划审核记录
 
 - [x] 第1轮：独立 GPT-6-astra / max，NOT GO；3组必要修正：控制早失败的lighting出口、未confirmed严重帧被普通差异提前拒绝、API/episode/单路voice。已在本计划对应Task1/2/3补齐，见 `EXPOSURE-PLAN-REVIEW.md`。
 - [x] 第2轮：独立GPT-6-astra/max正式GO，R1–R3已形成可执行契约；批准按subagent-driven-development进入执行。最多2轮已完成，不增加第三轮计划审核。
+
+## 完成回执
+
+产品 `754c24b2e` 已合入、推送并发布两云/RK；实机五步曝光、13/13 LED 标定、真实 BIND 首手确认可用及空盘识别、屏幕改选/一手确认/一次落子音均核验。失败/取消/严重光照边界由聚焦回归及获批预览验证，未人为制造生产光照故障。实体摆子提交需用户实际摆子，未冒充 agent 已完成物理动作。保存棋谱与报告完整；详见 `docs/design/local-confirm-2026-10-12-v2/EXPOSURE-RELEASE.md`。

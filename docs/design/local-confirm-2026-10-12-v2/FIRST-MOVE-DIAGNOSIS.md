@@ -61,3 +61,7 @@ root 提供的只读现场证据：session `cfb261c7d58743d3b934ee4ad6b1fc73`，
 ### root 实机临时恢复回执
 
 root 按上面顺序执行了精确当前局 physical `/api/local/ready` 校验，HTTP 200；复核相同 game/node/session 后一次 pose-lock/confirm 返回 HTTP 200 / ok=true。设备实际状态变为 locked/synced，黑方确认按钮 disabled=false。前后仍 node=0、stones=[]、player=B，未代用户确认落子、未重启服务。这同时证明本局已有真实参考帧，并非相机没认出第一手；永久修复仍待开发与审核。
+
+### 永久修复发布后的核验
+
+随后永久修复及最终独立 Astra max 审核已完成，`754c24b2e` 部署 RK。新建空盘实体本地局在真实 bind 完成后自动 locked/synced，首手确认键正常可用，未手动调用 pose-lock/confirm。空盘确认返回真实 no_stone，仍第 0 手且黑方行棋；屏幕改选确认只提交最后 K10 一手，设备实际一次落子音。测试局已退出且不保存；用户完成的 101 手棋谱和报告 22 均保留。详细范围及物理摆子验收边界见 [EXPOSURE-RELEASE.md](EXPOSURE-RELEASE.md)。

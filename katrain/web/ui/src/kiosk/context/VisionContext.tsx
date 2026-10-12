@@ -15,7 +15,7 @@ interface VisionContextType {
   visionStatus: VisionStatus;
   loaded: boolean;
   isVisionEnabled: boolean;
-  refreshStatus: () => Promise<void>;
+  refreshStatus: () => Promise<VisionStatus | null>;
 }
 
 const DEFAULT_STATUS: VisionStatus = {
@@ -49,11 +49,14 @@ export const VisionProvider = ({ children }: { children: ReactNode }) => {
   const refreshStatus = useCallback(async () => {
     try {
       const response = await API.visionStatus();
-      setVisionStatus(mapResponse(response));
+      const next = mapResponse(response);
+      setVisionStatus(next);
       setLoaded(true);
+      return next;
     } catch (err) {
       console.error('Failed to fetch vision status', err);
       setVisionStatus((previous) => ({ ...previous, ledConnected: null }));
+      return null;
     }
   }, []);
 

@@ -426,6 +426,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     const response = await API.getState(sessionId, token ?? undefined);
     if (recoveryCurrent.current.scope !== scope || recoveryCurrent.current.revision !== bindRevision
       || response.state.game_id !== session.gameState?.game_id || response.state.local_confirmation?.reason === 'unavailable') return false;
+    // Geometry can be ready before bind has prepared this game's reference. Publish
+    // post-bind hardware snapshots before clearing recovery, so an older unlocked
+    // pose cannot re-arm the recovery latch on the next render.
+    const [boundGeometry, boundVision] = await Promise.all([geometry?.refresh(), refreshStatus()]);
+    if (recoveryCurrent.current.scope !== scope || recoveryCurrent.current.revision !== bindRevision
+      || !boundGeometry || boundGeometry.geometry_revision !== bindRevision || boundGeometry.phase !== 'ready'
+      || !boundGeometry.session_calibrated || !boundGeometry.capabilities.geometry_ready
+      || !boundGeometry.capabilities.recognition_ready || boundGeometry.capabilities.model_ready === false
+      || !boundVision?.cameraConnected || !boundVision.poseLocked || !boundVision.recognitionReady
+      || boundVision.boundSessionId !== sessionId) return false;
     session.setGameState(response.state);
     setLocalRecovery({ scope, required: false, calibration: false, revision: bindRevision });
     return true;

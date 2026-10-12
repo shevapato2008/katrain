@@ -72,9 +72,9 @@ const { writeActiveSession, clearActiveSession, readActiveSession } = vi.hoisted
 // 走回落到偏好的那一支 —— 即合并前本文件各用例依赖的行为。
 vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession, readActiveSession }));
 
-const { mockCalibrate, mockRelocate, geometryState } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolvedValue({}), mockRelocate: vi.fn().mockResolvedValue(undefined), geometryState: { phase: 'ready', revision: 3, loaded: true } }));
+const { mockCalibrate, mockRelocate, mockGeometryRefresh, geometryState } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolvedValue({}), mockRelocate: vi.fn().mockResolvedValue(undefined), mockGeometryRefresh: vi.fn(), geometryState: { phase: 'ready', revision: 3, loaded: true } }));
 vi.mock('../context/GeometryContext', () => ({ useOptionalGeometry: () => ({
-  startCalibration: mockCalibrate, completeRecalibration: vi.fn(), loaded: geometryState.loaded, refresh: vi.fn(), relocate: mockRelocate,
+  startCalibration: mockCalibrate, completeRecalibration: vi.fn(), loaded: geometryState.loaded, refresh: mockGeometryRefresh, relocate: mockRelocate,
   status: { phase: geometryState.phase, session_calibrated: geometryState.phase === 'ready', geometry_revision: geometryState.revision, capabilities: { geometry_ready: geometryState.phase === 'ready', recognition_ready: true, model_ready: true } },
 }) }));
 vi.mock('../components/vision/GeometryCalibrationScreen', () => ({ default: ({ onBack }: { onBack: () => void }) => <div data-testid="calib-screen"><button onClick={onBack}>返回原局</button></div> }));
@@ -86,11 +86,13 @@ vi.mock('../shell/boxUrls', () => ({ get isStrictBoxKiosk() { return strictBox.v
 let mockIsVisionEnabled = false;
 let mockVisionLoaded = true;
 let mockPoseLocked = true;
+const mockRefreshStatus = vi.fn();
+const currentVisionStatus = () => ({ enabled: mockIsVisionEnabled, cameraConnected: true, poseLocked: mockPoseLocked, syncState: 'idle', boundSessionId: 'test-session', recognitionReady: true, ledConnected: null });
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
-    visionStatus: { enabled: mockIsVisionEnabled, cameraConnected: true, poseLocked: mockPoseLocked, syncState: 'idle', boundSessionId: null, ledConnected: null },
+    visionStatus: currentVisionStatus(),
     isVisionEnabled: mockIsVisionEnabled, loaded: mockVisionLoaded,
-    refreshStatus: vi.fn(),
+    refreshStatus: mockRefreshStatus,
   }),
 }));
 
@@ -216,6 +218,8 @@ describe('GamePage', () => {
     vi.clearAllMocks();
     mockIsVisionEnabled = false;
     geometryState.phase = 'ready'; geometryState.revision = 3; geometryState.loaded = true;
+    mockRefreshStatus.mockImplementation(async () => currentVisionStatus());
+    mockGeometryRefresh.mockImplementation(async () => ({ phase: geometryState.phase, session_calibrated: geometryState.phase === 'ready', geometry_revision: geometryState.revision, capabilities: { camera_ready: true, geometry_ready: geometryState.phase === 'ready', recognition_ready: true, model_ready: true } }));
     mockRetryBind.mockResolvedValue(true);
     mockRelocate.mockResolvedValue(undefined);
     vi.spyOn(API, 'getState').mockImplementation(async id => ({ session_id: id, state: mockGameState! }));
@@ -414,6 +418,35 @@ describe('GamePage', () => {
     expect(API.getState).toHaveBeenCalledWith('test-session', 'mock-token');
     expect(mockOnMove).not.toHaveBeenCalled();
   });
+  it('one recovery click finishes after bind publishes pose readiness despite an earlier stale pose poll', async () => {
+    mockIsVisionEnabled = true; mockPoseLocked = false;
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 3,
+      local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    let resolveState!: (value: { session_id: string; state: GameState }) => void;
+    vi.mocked(API.getState).mockReturnValueOnce(new Promise(r => { resolveState = r; }));
+    let bound = false;
+    mockRetryBind.mockImplementationOnce(async () => { bound = true; return true; });
+    const view = renderPage('/kiosk/play/pvp/local/game/test-session');
+    mockRefreshStatus.mockImplementation(async () => {
+      mockPoseLocked = bound;
+      view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+      return currentVisionStatus();
+    });
+    fireEvent.click(screen.getByRole('button', { name: '重新检查' }));
+    await waitFor(() => expect(API.getState).toHaveBeenCalledTimes(1));
+    // The ordinary poll still carries the pre-bind, unlocked pose while GET state is pending.
+    mockPoseLocked = false;
+    view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+    await act(async () => resolveState({ session_id: 'test-session', state: mockGameState! }));
+    // A later normal poll is ready; no second user click or bind is permitted.
+    mockPoseLocked = true;
+    view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+    expect(screen.getAllByRole('button', { name: /停一手/, hidden: true }).some(b => !(b as HTMLButtonElement).disabled)).toBe(true);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(mockRetryBind).toHaveBeenCalledTimes(1);
+    expect(mockRefreshStatus).toHaveBeenCalledTimes(2);
+  });
   it('local full calibration replaces visible content within the original game and returns to recovery', async () => {
     mockIsVisionEnabled = true; mockPoseLocked = false; geometryState.phase = 'degraded';
     mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 3,
@@ -503,6 +536,8 @@ describe('GamePage', () => {
     it('does not show the instruction for screen-only play', () => {
       mockIsVisionEnabled = false;
     geometryState.phase = 'ready'; geometryState.revision = 3; geometryState.loaded = true;
+    mockRefreshStatus.mockImplementation(async () => currentVisionStatus());
+    mockGeometryRefresh.mockImplementation(async () => ({ phase: geometryState.phase, session_calibrated: geometryState.phase === 'ready', geometry_revision: geometryState.revision, capabilities: { camera_ready: true, geometry_ready: geometryState.phase === 'ready', recognition_ready: true, model_ready: true } }));
     mockRetryBind.mockResolvedValue(true);
     mockRelocate.mockResolvedValue(undefined);
     vi.spyOn(API, 'getState').mockImplementation(async id => ({ session_id: id, state: mockGameState! }));

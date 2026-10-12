@@ -21,7 +21,7 @@ interface GeometryContextValue {
    * 少了这个布尔,那条注释在标定屏上就落不了地。
    */
   loaded: boolean;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<GeometryStatus | null>;
   preflight: () => Promise<GeometryPreflightResult>;
   startCalibration: (trigger: 'auto' | 'manual', resetSessionId?: string, gameType?: GameType) => Promise<void>;
   /** Called only after the original game's vision bind succeeds. */
@@ -74,18 +74,23 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
 
   const refresh = useCallback(async () => {
     try {
-      applyStatus(await GeometryAPI.status());
+      const next = await GeometryAPI.status();
+      applyStatus(next);
       setLoaded(true);
+      return next;
     } catch (error) {
       pendingReset.current = null;
       if (error instanceof Error && error.message.includes('404')) {
         // 404 = 这台盒子压根没起 capture 服务。**这是一个读到了的结论**,不是没读到 ⇒ 也算 loaded。
-        applyStatus({ ...DEFAULT_STATUS, phase: 'disabled' });
+        const next: GeometryStatus = { ...DEFAULT_STATUS, phase: 'disabled' };
+        applyStatus(next);
         setLoaded(true);
+        return next;
       } else {
         setStatus((previous) => ({
           ...previous, capabilities: { ...previous.capabilities, led_ready: null },
         }));
+        return null;
       }
     }
   }, [applyStatus]);

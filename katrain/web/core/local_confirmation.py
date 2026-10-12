@@ -79,6 +79,9 @@ class LocalConfirmationController:
             ):
                 raise LocalConfirmationConflict("Physical recognition is not ready")
             self.ready_game_id, self.input = game_id, input_mode
+            state = katrain.local_confirmation_state
+            if input_mode == "physical" and state.get("status") == "idle" and state.get("reason") == "unavailable":
+                katrain.local_confirmation_state = {"status": "idle", "reason": None, "points": []}
             katrain.start_clock()
             katrain.update_state()
 
@@ -200,6 +203,26 @@ class LocalConfirmationController:
                         continue
                     last_seq = obs.observation_seq
                     last_camera_seq = obs.camera_seq
+                    exposure = getattr(obs, "exposure", None)
+                    if isinstance(exposure, dict) and exposure.get("reason") in (
+                        "frame_overexposed",
+                        "frame_underexposed",
+                    ):
+                        points = []
+                        error_key, error_count = None, 0
+                        reason = "timeout"
+                        if (
+                            exposure.get("confirmed") is True
+                            and isinstance(exposure.get("bad_frames"), int)
+                            and exposure["bad_frames"] >= 3
+                            and isinstance(exposure.get("span_ms"), (int, float))
+                            and np.isfinite(exposure["span_ms"])
+                            and exposure["span_ms"] >= 1000
+                        ):
+                            reason = exposure["reason"]
+                            return False
+                        await asyncio.sleep(0.05)
+                        continue
                     board = np.asarray(obs.board, dtype=int)
                     if board.shape != expected.shape:
                         continue

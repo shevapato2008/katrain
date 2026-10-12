@@ -95,3 +95,4 @@ class LocalWindowObservation:
     pending: bool = False
     ambiguous_points: list[list[int]] = field(default_factory=list)
     session_id: str | None = None
+    exposure: dict[str, Any] | None = None

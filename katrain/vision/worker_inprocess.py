@@ -33,7 +33,7 @@ from katrain.vision.gating import (
     should_feed_sync_frame,
 )
 from katrain.vision.ipc import CommandType, ConfirmedMove, LocalWindowObservation, WorkerCommand, WorkerStatus
-from katrain.vision.led_geometry_calibrator import ROI_CELLS, ROI_RADIUS_MIN_PX, detect_led_centroid
+from katrain.vision.led_geometry_calibrator import ROI_CELLS, ROI_RADIUS_MIN_PX, check_frame_exposure, detect_led_centroid
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
 from katrain.vision.parallax import ParallaxParams, mount_parallax_for_lock
@@ -115,6 +115,10 @@ class _LocalWindow:
     expected_color: int
     geometry: Any
     last_camera_seq: int = 0
+    last_camera_ts: float = 0.0
+    light_reason: str | None = None
+    light_bad_frames: int = 0
+    light_first_camera_ts: float | None = None
     candidate: ConfirmedMove | None = None
     ambiguous_points: set[tuple[int, int]] = field(default_factory=set)
     raw_voted: np.ndarray | None = None
@@ -122,6 +126,28 @@ class _LocalWindow:
     gray: np.ndarray | None = None
     vetoing: bool = False
     lit: bool = False
+
+    def reset_lighting(self) -> None:
+        self.light_reason = None
+        self.light_bad_frames = 0
+        self.light_first_camera_ts = None
+
+    def observe_lighting(self, reason, stats, camera_ts, controls_pending) -> dict:
+        if reason is None or controls_pending or reason != self.light_reason:
+            self.reset_lighting()
+        if reason is not None and not controls_pending:
+            self.light_reason = reason
+            self.light_bad_frames += 1
+            if self.light_first_camera_ts is None:
+                self.light_first_camera_ts = camera_ts
+        span_ms = 0.0 if self.light_first_camera_ts is None else (camera_ts - self.light_first_camera_ts) * 1000
+        return {
+            **stats,
+            "reason": reason,
+            "bad_frames": self.light_bad_frames,
+            "span_ms": span_ms,
+            "confirmed": self.light_bad_frames >= 3 and span_ms >= 1000,
+        }
 
 
 def _glow_roi(frame: np.ndarray, geometry, row: int, col: int):
@@ -1007,9 +1033,10 @@ class InProcessAdapter:
     def is_alive(self) -> bool:
         return self._thread is not None and self._thread.is_alive()
 
-    def _reset_local_accumulators(self) -> None:
+    def _reset_local_accumulators(self, *, reset_motion=True) -> None:
         self._averager.reset()
-        self._motion_filter.reset()
+        if reset_motion:
+            self._motion_filter.reset()
         self._prev_observed_board = None
         self._last_stable_board = None
         self._prev_conf_map = {}
@@ -1079,6 +1106,7 @@ class InProcessAdapter:
 
             local_inference = True
             local_active = False
+            local_exposure = None
             if self._local_confirmation_mode:
                 window = self._local_window
                 local_active = window is not None or self._local_bootstrap_state == "bootstrap"
@@ -1087,17 +1115,26 @@ class InProcessAdapter:
                     after = window.opened_monotonic if window is not None else self._local_bootstrap_started
                     last_seq = window.last_camera_seq if window is not None else self._local_last_camera_seq
                     local_inference = bool(
-                        camera_seq is not None and camera_ts is not None and camera_ts > after and camera_seq > last_seq
+                        camera_seq is not None
+                        and camera_ts is not None
+                        and camera_ts > after
+                        and camera_seq > last_seq
+                        and (window is None or camera_ts > window.last_camera_ts)
                     )
                     if local_inference:
                         self._local_last_camera_seq = int(camera_seq)
                         if window is not None:
                             window.last_camera_seq = int(camera_seq)
+                            window.last_camera_ts = float(camera_ts)
                             window.ambiguous_points.clear()
+                    elif window is not None:
+                        window.reset_lighting()
 
             motion_stable = False
             if frame is not None and (not local_active or local_inference):
                 motion_stable = self._motion_is_stable(frame)
+            if self._local_window is not None and (frame is None or not motion_stable):
+                self._local_window.reset_lighting()
             if self._glow_pending and frame is not None and motion_stable:
                 if self._glow_wait > 0:
                     self._glow_wait -= 1
@@ -1118,6 +1155,44 @@ class InProcessAdapter:
                         # Meter the raw warped frame (pre-average, pre-CLAHE) — the reading
                         # must reflect the actual sensor exposure, not our processing.
                         self._run_ae(meter_brightness(warped))
+                    window = self._local_window
+                    if window is not None and local_inference:
+                        _ok, light_reason, light_stats = check_frame_exposure(warped)
+                        # Real camera owners use None while runtime controls are unknown/pending.
+                        # Cameras without a controls interface retain the AE-off compatibility path.
+                        controls_pending = (
+                            callable(getattr(self._camera, "request_controls", None))
+                            and getattr(self._camera, "controls_effective", None) is None
+                        )
+                        local_exposure = window.observe_lighting(light_reason, light_stats, camera_ts, controls_pending)
+                        if light_reason is not None or controls_pending:
+                            # No board can be trusted here. Clear the candidate on the first bad
+                            # frame and send honest lighting-only evidence before board inference.
+                            window.candidate = None
+                            window.raw_voted = window.raw_observed = window.gray = None
+                            window.ambiguous_points.clear()
+                            self._reset_local_accumulators(reset_motion=False)
+                            if self._expected_np is not None:
+                                self._move_detector.force_sync(self._expected_np)
+                            self._observation_seq += 1
+                            self._event_queue.put(
+                                LocalWindowObservation(
+                                    token=window.token,
+                                    board=[],
+                                    observation_seq=self._observation_seq,
+                                    camera_seq=int(camera_seq),
+                                    camera_ts=float(camera_ts),
+                                    session_id=self._local_confirmation_session_id,
+                                    exposure=local_exposure,
+                                )
+                            )
+                            self._maybe_send_preview(warped)
+                            self._publish_status(None)
+                            self._last_raw = frame
+                            elapsed = time.monotonic() - loop_start
+                            if target_interval > elapsed:
+                                time.sleep(target_interval - elapsed)
+                            continue
                     if tr:
                         tr.mark("ae")
                     if not local_inference:
@@ -1485,6 +1560,7 @@ class InProcessAdapter:
                                 ),
                                 ambiguous_points=[list(cell) for cell in sorted(local_window.ambiguous_points)],
                                 session_id=self._local_confirmation_session_id,
+                                exposure=local_exposure,
                             )
                         )
 
@@ -1493,6 +1569,9 @@ class InProcessAdapter:
                     self._maybe_send_preview(warped, all_detections)
                     if tr:
                         tr.mark("preview")
+
+                elif self._local_window is not None:
+                    self._local_window.reset_lighting()
 
             elif frame is None:
                 # Camera dropout has no motion-frame decision to reset the average for us.
@@ -1552,6 +1631,22 @@ class InProcessAdapter:
         # as a property, never called) — mirror that tolerance here.
         c = self._camera.is_connected
         camera_connected = bool(c() if callable(c) else c)
+        local_ready = bool(
+            self._local_confirmation_mode
+            and self._bound
+            and self._local_confirmation_session_id is not None
+            and self._local_bootstrap_state == "ready"
+            and self._reference is not None
+            and camera_connected
+            and self._geometry is not None
+        )
+        if self._local_confirmation_mode:
+            # Bootstrap validates the real reference against the current game. Local idle
+            # deliberately never feeds _sync.update, so finish its pose transition here.
+            if local_ready:
+                self._sync.confirm_pose_lock()
+            else:
+                self._sync.bind()
         self._status = WorkerStatus(
             camera_status="connected" if camera_connected else "disconnected",
             pose_lock_status=(
@@ -1569,13 +1664,7 @@ class InProcessAdapter:
             local_confirmation_session_id=self._local_confirmation_session_id,
             local_confirmation_game_id=self._local_confirmation_game_id,
             local_confirmation_mode_generation=self._local_mode_generation,
-            local_confirmation_ready=bool(
-                self._local_confirmation_mode
-                and self._local_bootstrap_state == "ready"
-                and self._reference is not None
-                and camera_connected
-                and self._geometry is not None
-            ),
+            local_confirmation_ready=local_ready,
             local_confirmation_bootstrap_state=self._local_bootstrap_state,
         )
 
@@ -1677,6 +1766,7 @@ class InProcessAdapter:
                     expected_color=int(cmd.data["expected_color"]),
                     geometry=self._geometry,
                     last_camera_seq=self._local_last_camera_seq,
+                    last_camera_ts=cmd.data["opened_monotonic"],
                 )
             elif cmd.action == CommandType.CANCEL_LOCAL_WINDOW:
                 if self._local_window is not None and self._local_window.token == cmd.data["token"]:

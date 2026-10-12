@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from katrain.vision.board_state import BoardStateExtractor
 from katrain.vision.config import BoardConfig, DEFAULT_MARGIN_CELLS
@@ -56,7 +57,7 @@ def detection(row=3, col=3, color=1, confidence=0.9):
     )
 
 
-def worker():
+def worker(*, pose_locked=True):
     camera = Camera()
     with patch("katrain.vision.worker_inprocess.StoneDetector"):
         result = InProcessAdapter(
@@ -69,7 +70,8 @@ def worker():
     result._expected_np = board()
     result._move_detector.force_sync(board())
     result._sync.bind()
-    result._sync.confirm_pose_lock()
+    if pose_locked:
+        result._sync.confirm_pose_lock()
     result._warp_frame = lambda image: (image, True)
     result._motion_is_stable = MagicMock(return_value=True)
     result._maybe_send_preview = MagicMock()
@@ -430,3 +432,177 @@ def test_explicit_bootstrap_retry_waits_for_the_new_attempt_instead_of_old_unava
     assert service.local_confirmation_bootstrap_state == "bootstrap"
     run(result, camera)
     assert service.local_confirmation_ready
+
+
+def bound_local(result, session_id="session", game_id="game"):
+    service = VisionService(VisionServiceConfig(enabled=True))
+    service._worker = result
+    service.bind_session(session_id)
+    service.set_expected_from_stones([], expected_node_id=12)
+    service.set_local_confirmation_mode(True, session_id=session_id, game_id=game_id)
+    result._drain_commands()
+    return service
+
+
+def test_real_bind_bootstrap_locks_pose_then_first_confirmation_closes_without_idle_inference():
+    result, camera = worker(pose_locked=False)
+    service = bound_local(result)
+    assert result._sync.state.value == "calibrating"
+    run(result, camera, n=4)
+    assert result._reference is not None and service.local_confirmation_ready
+    assert result.get_status().pose_lock_status == "locked"
+    assert result.get_status().sync_state == "synced"
+    assert result._detector.detect.call_count == 1 and events(result) == []
+
+    opened = time.monotonic()
+    assert service.open_local_window(
+        "first", board(), expected_node_id=12, expected_color=1, deadline_monotonic=opened + 8
+    )
+    result._drain_commands()
+    result._detector.detect.return_value = [detection()]
+    changed = frame().copy()
+    changed[35:65, 35:65] = 15
+    run(result, camera, n=3, image=changed)
+    observation = service.get_local_window_observation("first")
+    assert observation.candidate is not None
+    service.complete_local_window("first", board([(3, 3, 1)]), expected_node_id=13)
+    result._drain_commands()
+    assert result._local_window is None
+    inferences = result._detector.detect.call_count
+    run(result, camera, n=3, image=changed)
+    assert result._detector.detect.call_count == inferences and events(result) == []
+
+
+def test_early_first_stone_rejects_reference_then_explicit_retry_prepares_real_empty_reference():
+    result, camera = worker(pose_locked=False)
+    service = bound_local(result)
+    result._detector.detect.return_value = [detection()]
+    run(result, camera, n=2)
+    assert result._reference is None and not service.local_confirmation_ready
+    result._local_bootstrap_deadline = time.monotonic() - 1
+    run(result, camera)
+    assert service.local_confirmation_bootstrap_state == "unavailable"
+    assert result.get_status().pose_lock_status == "unlocked"
+    result._detector.detect.return_value = []
+    service.set_local_confirmation_mode(False, session_id="session", game_id="game")
+    service.set_local_confirmation_mode(True, session_id="session", game_id="game")
+    result._drain_commands()
+    run(result, camera, n=3)
+    assert service.local_confirmation_ready and np.array_equal(result._reference.board, board())
+    assert result.get_status().pose_lock_status == "locked"
+    assert result.get_status().sync_state == "synced" and events(result) == []
+
+
+@pytest.mark.parametrize("value,reason", [(255, "frame_overexposed"), (10, "frame_underexposed")])
+def test_severe_raw_window_frames_emit_honest_lighting_evidence_and_clear_candidate_immediately(value, reason):
+    result, camera = worker()
+    prepare(result, camera)
+    opened = time.monotonic()
+    open_window(result, opened=opened)
+    result._local_window.candidate = ConfirmedMove(col=3, row=3, color=1)
+    severe = np.full_like(frame(), value)
+    run(result, camera, identities=[(101 + i, opened + t, severe) for i, t in enumerate((0.01, 0.2, 0.4, 1.02))])
+    local = events(result)
+    assert len(local) == 4
+    assert all(event.candidate is None and event.board == [] for event in local)
+    assert [event.exposure["confirmed"] for event in local] == [False, False, False, True]
+    assert local[-1].exposure["reason"] == reason
+    assert local[-1].exposure["bad_frames"] == 4
+    assert local[-1].exposure["span_ms"] >= 1000
+    result._detector.detect.assert_not_called()
+
+
+@pytest.mark.parametrize("interrupt", ["normal", "motion", "missing", "duplicate", "late", "direction", "controls"])
+def test_lighting_continuity_is_reset_by_raw_worker_interruptions(interrupt):
+    result, camera = worker()
+    prepare(result, camera)
+    opened = time.monotonic()
+    open_window(result, opened=opened)
+    severe = np.full_like(frame(), 255)
+    run(result, camera, identities=[(101, opened + 0.01, severe), (102, opened + 0.2, severe)])
+    events(result)
+    image, seq, ts = severe, 103, opened + 0.4
+    if interrupt == "normal":
+        image = frame()
+    elif interrupt == "motion":
+        result._motion_is_stable.return_value = False
+    elif interrupt == "missing":
+        image = None
+    elif interrupt == "duplicate":
+        seq, ts = 102, opened + 0.2
+    elif interrupt == "late":
+        ts = opened - 0.1
+    elif interrupt == "direction":
+        image = np.full_like(frame(), 10)
+    elif interrupt == "controls":
+        camera.controls_effective = None
+        camera.request_controls = MagicMock()
+    run(result, camera, identities=[(seq, ts, image)])
+    events(result)
+    result._motion_is_stable.return_value = True
+    camera.controls_effective = True
+    run(result, camera, identities=[(104, opened + 1.5, severe), (105, opened + 2, severe)])
+    local = events(result)
+    assert local[-1].exposure["bad_frames"] == 2
+    assert local[-1].exposure["confirmed"] is False
+
+
+@pytest.mark.parametrize("value", [100, 190])
+def test_mild_exposure_outside_ae_target_preserves_the_normal_board_pipeline(value):
+    result, camera = worker()
+    prepare(result, camera)
+    open_window(result)
+    run(result, camera, image=np.full_like(frame(), value))
+    local = events(result)
+    assert len(local) == 1 and local[0].exposure["reason"] is None
+    assert local[0].board == board().tolist()
+    result._detector.detect.assert_called_once()
+
+
+def test_lighting_uses_raw_board_warp_before_average_and_enhancement():
+    result, camera = worker()
+    prepare(result, camera)
+    open_window(result)
+    severe = np.full_like(frame(), 255)
+    result._warp_frame = lambda image: (severe, True)
+    with patch("katrain.vision.worker_inprocess.enhance_for_inference", return_value=frame()) as enhance:
+        run(result, camera, image=frame())
+    local = events(result)
+    assert local[0].exposure["reason"] == "frame_overexposed"
+    assert local[0].exposure["median"] == 255
+    enhance.assert_not_called()
+
+
+def test_old_mode_generation_and_geometry_loss_cannot_publish_local_pose_ready():
+    result, camera = worker(pose_locked=False)
+    service = bound_local(result)
+    run(result, camera)
+    generation = result._local_mode_generation
+    service.set_local_confirmation_mode(True, session_id="session", game_id="new-game")
+    result._drain_commands()
+    command(
+        result,
+        "SET_LOCAL_CONFIRMATION_MODE",
+        enabled=True,
+        session_id="session",
+        game_id="game",
+        mode_generation=generation,
+    )
+    assert not service.local_confirmation_ready and result._reference is None
+    assert result.get_status().pose_lock_status == "unlocked"
+    run(result, camera)
+    assert service.local_confirmation_ready
+    result.set_geometry(None)
+    result._publish_status(None)
+    assert not service.local_confirmation_ready
+    assert result.get_status().pose_lock_status == "unlocked"
+
+
+def test_lighting_metadata_is_optional_and_survives_ipc_pickle_roundtrip():
+    import pickle
+    from katrain.vision.ipc import LocalWindowObservation
+
+    observation = LocalWindowObservation(token="turn", board=[], observation_seq=1, camera_seq=1, camera_ts=1)
+    assert observation.exposure is None
+    observation.exposure = {"reason": "frame_overexposed", "bad_frames": 3, "span_ms": 1000, "confirmed": True}
+    assert pickle.loads(pickle.dumps(observation)).exposure == observation.exposure

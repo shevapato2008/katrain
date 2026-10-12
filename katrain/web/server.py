@@ -917,6 +917,7 @@ async def _lifespan_board(app: FastAPI, log):
         def invalidate_geometry():
             # Drift mid-session (board/camera bumped): drop the stale warp so recognition_ready
             # falls and physical surfaces stop judging on a wrong grid until re-calibration.
+            _set_bound_local_geometry_pause(app, True)
             app.state.geometry = None
             vision_service = getattr(app.state, "vision", None)
             if vision_service is not None and hasattr(vision_service, "set_geometry"):
@@ -927,6 +928,7 @@ async def _lifespan_board(app: FastAPI, log):
             # (~1 core) — it would otherwise recognise a board being re-locked, starving the
             # calibration compute + status poll + kiosk UI. Unlike invalidate_geometry this keeps
             # app.state.geometry as the fallback that resume_vision re-arms the worker with.
+            _set_bound_local_geometry_pause(app, True)
             vision_service = getattr(app.state, "vision", None)
             if vision_service is not None and hasattr(vision_service, "set_geometry"):
                 vision_service.set_geometry(None)
@@ -4601,6 +4603,30 @@ def _vision_needs_frames(app: FastAPI) -> bool:
     """
     vision = getattr(app.state, "vision", None)
     return True if vision is None else vision.needs_frames()
+
+
+def _set_bound_local_geometry_pause(app: FastAPI, paused: bool) -> None:
+    """Pause only the physical local game whose controller owns the vision binding."""
+    vision = getattr(app.state, "vision", None)
+    session_id = getattr(vision, "bound_session_id", None)
+    if not session_id:
+        return
+    try:
+        session = app.state.session_manager.get_session(session_id)
+    except KeyError:
+        return
+    with session.lock:
+        if getattr(vision, "bound_session_id", None) != session_id:
+            return
+        katrain = session.katrain
+        controller = getattr(session, "local_confirmation_controller", None)
+        if (
+            controller is None
+            or getattr(controller, "input", None) != "physical"
+            or getattr(controller, "ready_game_id", None) != getattr(katrain.game, "game_id", None)
+        ):
+            return
+        katrain.set_local_geometry_paused(paused, expected_game_id=controller.ready_game_id)
 
 
 async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):

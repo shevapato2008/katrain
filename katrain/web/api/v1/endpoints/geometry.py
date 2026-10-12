@@ -166,6 +166,48 @@ async def geometry_relocate(request: Request):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+def _with_vision_capabilities(request: Request, result: dict) -> dict:
+    capabilities = result.setdefault("capabilities", {})
+    vision = getattr(request.app.state, "vision", None)
+    try:
+        if vision is None:
+            raise RuntimeError("vision unavailable")
+        vision.refresh_status()
+        capabilities.update(
+            model_ready=bool(vision._latest_status.model_ready),
+            recognition_ready=bool(vision._latest_status.recognition_ready),
+        )
+    except Exception:
+        capabilities.update(model_ready=False, recognition_ready=False)
+    return result
+
+
+@router.post("/preflight")
+async def geometry_preflight(request: Request):
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is None:
+        raise HTTPException(status_code=404, detail="geometry calibration not enabled")
+    from katrain.web.core.geometry_calibration_service import CalibrationBusy
+
+    try:
+        result = await asyncio.to_thread(calibration.preflight)
+    except CalibrationBusy as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    result["status"] = _with_vision_capabilities(request, result["status"])
+    capabilities = result["status"]["capabilities"]
+    if not all(capabilities.get(key) is True for key in ("camera_ready", "model_ready", "recognition_ready")):
+        result["ready"] = False
+        result["reason"] = result.get("reason") or "recognition_unavailable"
+    if (
+        result["status"].get("phase") != "ready"
+        or result["status"].get("locked") is not True
+        or result["status"].get("session_calibrated") is not True
+    ):
+        result["ready"] = False
+        result["reason"] = result.get("reason") or "geometry_required"
+    return result
+
+
 @router.get("/stream")
 async def geometry_stream(request: Request, scale: int = 1):
     capture = _get_capture(request)
@@ -325,18 +367,7 @@ async def geometry_lock(request: Request):
 async def geometry_status(request: Request):
     calibration = getattr(request.app.state, "geometry_calibration", None)
     if calibration is not None:
-        result = calibration.status()
-        capabilities = result.setdefault("capabilities", {})
-        vision = getattr(request.app.state, "vision", None)
-        if vision is not None:
-            vision.refresh_status()
-            capabilities.update(
-                model_ready=bool(vision._latest_status.model_ready),
-                recognition_ready=bool(vision._latest_status.recognition_ready),
-            )
-        else:
-            capabilities.update(model_ready=False, recognition_ready=False)
-        return result
+        return _with_vision_capabilities(request, calibration.status())
     lock = getattr(request.app.state, "geometry", None)
     led = getattr(request.app.state, "led", None)
     capabilities = {"led_ready": led.is_board_connected() if led is not None else None}

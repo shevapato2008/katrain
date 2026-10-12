@@ -266,6 +266,7 @@ class WebKaTrain(KaTrainBase):
         self.analysis_engine_instance = None
         self.pondering = False
         self.timer_paused = True
+        self.local_geometry_paused = False
         self.local_confirmation_in_progress = False
         self.local_confirmation_state = {"status": "idle", "reason": None, "points": []}
         # A18:这一局的时限是不是**开局设置**写的(`/api/game/setup`、升降级 `/start` 都经 update_config("timer/…"))。
@@ -718,6 +719,7 @@ class WebKaTrain(KaTrainBase):
             },
             "timer": {
                 "paused": self.timer_paused
+                or self.local_geometry_paused
                 or self.local_confirmation_in_progress
                 or (self.game_type == "pvp_local" and not self.clock_started),
                 "main_time_used": self.main_time_used_by_player.get(cn.next_player, 0),
@@ -812,6 +814,7 @@ class WebKaTrain(KaTrainBase):
             # and settled into the promotion ledger.
             self.game_type = game_type if game_type is not None else "free"
             self.local_confirmation_in_progress = False
+            self.local_geometry_paused = False
             self.local_confirmation_state = {"status": "idle", "reason": None, "points": []}
             # G1/G2: a brand new game is never engine-controlled until a platform explicitly
             # says otherwise (via edit_game's platform_engine_color kwarg). Without this reset,
@@ -1091,6 +1094,20 @@ class WebKaTrain(KaTrainBase):
             self.last_timer_update = time.time()
             return True
 
+    def set_local_geometry_paused(self, paused: bool, *, expected_game_id, expected_node_id=None) -> bool:
+        """Set the geometry reason only for the still-current local game."""
+        with self.ai_ladder_commit_lock:
+            if self.game_type != "pvp_local" or not self.game or self.game.game_id != expected_game_id:
+                return False
+            if expected_node_id is not None and id(self.game.current_node) != expected_node_id:
+                return False
+            if self.local_geometry_paused == paused:
+                return True
+            self.update_timer()  # settle play before pausing; discard the paused interval before resuming
+            self.local_geometry_paused = paused
+            self.update_state()
+            return True
+
     def update_timer(self):
         # r1:整段进对局提交锁。`get_state` 会被广播线程、引擎回调线程、请求线程并发调用;两次结算读到同一个
         # `last_timer_update` 会把同一段 dt 记两遍 —— 超时由服务端时钟核实(Task 6)以后,这就是「提前判负」。
@@ -1112,6 +1129,7 @@ class WebKaTrain(KaTrainBase):
                     return
             if (
                 self.timer_paused
+                or self.local_geometry_paused
                 or self.local_confirmation_in_progress
                 or self.play_analyze_mode != MODE_PLAY
                 or not self.game
@@ -1499,6 +1517,8 @@ class WebKaTrain(KaTrainBase):
             game = self.game
             current_node = game and self.game.current_node
             if guard and current_node:
+                if self.game_type == "pvp_local" and self.local_geometry_paused:
+                    raise EndgameConflict("geometry_unavailable")
                 if getattr(self, "ai_ladder_remote_ended", False):
                     raise EndgameConflict("remote_ended")
                 if current_node.end_state or game.ended_at(current_node):
@@ -1849,6 +1869,7 @@ class WebKaTrain(KaTrainBase):
             self.update_timer()
             if (
                 self.timer_paused
+                or self.local_geometry_paused
                 or self.local_confirmation_in_progress
                 or self.play_analyze_mode != MODE_PLAY
                 or not self.game

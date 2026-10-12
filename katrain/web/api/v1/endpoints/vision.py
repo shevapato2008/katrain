@@ -278,7 +278,10 @@ async def bind_session(
         deadline = asyncio.get_running_loop().time() + 8.5
         while not vision.local_confirmation_ready:
             if (
-                vision.local_confirmation_bootstrap_state == "unavailable"
+                vision.bound_session_id != body.session_id
+                or session.katrain.game.game_id != game_state["game_id"]
+                or id(session.katrain.game.current_node) != game_state["current_node_id"]
+                or vision.local_confirmation_bootstrap_state == "unavailable"
                 or asyncio.get_running_loop().time() >= deadline
             ):
                 session.katrain.local_confirmation_state = {"status": "idle", "reason": "unavailable", "points": []}
@@ -287,7 +290,18 @@ async def bind_session(
                     status_code=409, detail="Reference frame preparation failed; clear the board and retry"
                 )
             await asyncio.sleep(0.05)
+        if (
+            vision.bound_session_id != body.session_id
+            or session.katrain.game.game_id != game_state["game_id"]
+            or id(session.katrain.game.current_node) != game_state["current_node_id"]
+        ):
+            raise HTTPException(status_code=409, detail="Local game changed during vision bind")
         local_confirmation_for(session).ready(game_state["game_id"], "physical", vision)
+        restored = session.katrain.set_local_geometry_paused(
+            False, expected_game_id=game_state["game_id"], expected_node_id=game_state["current_node_id"]
+        )
+        if not restored or vision.bound_session_id != body.session_id:
+            raise HTTPException(status_code=409, detail="Local game changed during vision bind")
     elif session.katrain.start_clock():
         logger.info("Clock started for session %s (vision bound)", body.session_id)
 

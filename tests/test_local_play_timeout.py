@@ -89,6 +89,49 @@ def _recorded_results(client):
     return [call.kwargs["result"] for call in client.app.state.user_game_repo.create.call_args_list]
 
 
+def test_local_geometry_pause_discards_only_paused_interval(client, monkeypatch):
+    session = _start_pvp_local(client, monkeypatch, time_enabled=True, main_time=10)
+    katrain = session.katrain
+    katrain.timer_paused = False
+    katrain.start_clock()
+    before = katrain.main_time_used_by_player["B"]
+    katrain.last_timer_update -= 4
+    assert katrain.set_local_geometry_paused(True, expected_game_id=katrain.game.game_id)
+    settled = katrain.main_time_used_by_player["B"]
+    assert settled >= before + 4
+    assert katrain.get_state()["timer"]["paused"] is True
+    katrain.last_timer_update -= 80
+    katrain.update_timer()
+    assert katrain.main_time_used_by_player["B"] == settled
+    assert katrain.clock_exhausted() is False
+    katrain.set_local_geometry_paused(False, expected_game_id=katrain.game.game_id)
+    assert katrain.main_time_used_by_player["B"] == settled
+    assert katrain.timer_paused is False
+    katrain.timer_paused = True
+    katrain.set_local_geometry_paused(True, expected_game_id=katrain.game.game_id)
+    katrain.set_local_geometry_paused(False, expected_game_id=katrain.game.game_id)
+    assert katrain.get_state()["timer"]["paused"] is True
+
+
+def test_geometry_callback_pauses_only_current_bound_physical_local_game(client, monkeypatch):
+    from katrain.web.server import _set_bound_local_geometry_pause
+
+    session = _start_pvp_local(client, monkeypatch, time_enabled=True)
+    app = client.app
+    app.state.vision = types.SimpleNamespace(bound_session_id=session.session_id, stop=lambda: None)
+    controller = types.SimpleNamespace(ready_game_id=session.katrain.game.game_id, input="physical", close=lambda: None)
+    session.local_confirmation_controller = controller
+    controller.input = "screen"
+    _set_bound_local_geometry_pause(app, True)
+    assert session.katrain.local_geometry_paused is False
+    controller.input = "physical"
+    _set_bound_local_geometry_pause(app, True)
+    assert session.katrain.local_geometry_paused is True
+    controller.ready_game_id = "old-game"
+    _set_bound_local_geometry_pause(app, False)
+    assert session.katrain.local_geometry_paused is True
+
+
 def test_timeout_judges_loss_when_clock_exhausted(client, monkeypatch):
     session = _start_pvp_local(client, monkeypatch, time_enabled=True, main_time=1, byo_length=30, byo_periods=1)
     turn_player = session.katrain.next_player_info.player

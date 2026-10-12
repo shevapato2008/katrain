@@ -438,6 +438,40 @@ def test_physical_ready_clears_only_stale_unavailable_after_authoritative_succes
     assert session.katrain.game.current_node.is_root
 
 
+def test_geometry_pause_rejects_physical_pass_without_touching_node(client, monkeypatch):
+    session = start(client, monkeypatch, timed=True)
+    vision = WindowVision(session, [])
+    client.app.state.vision = vision
+    ready = client.post(
+        "/api/local/ready",
+        json={"session_id": session.session_id, "expected_game_id": session.katrain.game.game_id, "input": "physical"},
+    )
+    assert ready.status_code == 200
+    session.katrain.set_local_geometry_paused(True, expected_game_id=session.katrain.game.game_id)
+    node = session.katrain.game.current_node
+    result = client.post(
+        "/api/local/confirm",
+        json=request_for(session, input="physical", action="pass", coords=None),
+    )
+    assert result.status_code == 409
+    assert session.katrain.game.current_node is node
+    assert session.katrain.local_confirmation_in_progress is False
+
+
+def test_real_bind_ready_clears_geometry_pause_for_same_game(client, monkeypatch):
+    session = start(client, monkeypatch, timed=True)
+    vision = WindowVision(session, [])
+    vision.bind_session = lambda session_id: setattr(vision, "bound_session_id", session_id)
+    vision.set_expected_from_stones = lambda *args, **kwargs: None
+    vision.set_local_confirmation_mode = lambda *args, **kwargs: True
+    vision.local_confirmation_bootstrap_state = "ready"
+    client.app.state.vision = vision
+    session.katrain.set_local_geometry_paused(True, expected_game_id=session.katrain.game.game_id)
+    result = client.post("/api/v1/vision/bind", json={"session_id": session.session_id})
+    assert result.status_code == 200, result.text
+    assert session.katrain.local_geometry_paused is False
+
+
 @pytest.mark.parametrize("status,reason", [("idle", "frame_overexposed"), ("recognizing", "unavailable")])
 def test_ready_preserves_other_result_or_recognizing_state(client, monkeypatch, status, reason):
     session = start(client, monkeypatch)

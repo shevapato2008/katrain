@@ -123,6 +123,8 @@ class LocalConfirmationController:
                 raise LocalConfirmationConflict("Game, node or turn is no longer current")
             if (self.ready_game_id, self.input) != (request.expected_game_id, request.input):
                 raise LocalConfirmationConflict("Input is not ready")
+            if request.input == "physical" and katrain.local_geometry_paused:
+                raise LocalConfirmationConflict("Physical geometry is unavailable")
             if request.action == "pass" and request.coords is not None:
                 raise LocalConfirmationConflict("Pass cannot have coordinates")
             if request.action == "move" and ((request.input == "screen") != (request.coords is not None)):
@@ -277,6 +279,9 @@ class LocalConfirmationController:
                     return False
             with self.session.lock, katrain.ai_ladder_commit_lock:
                 if not self._current(request):
+                    reason = "unavailable"
+                    return False
+                if request.input == "physical" and katrain.local_geometry_paused:
                     reason = "unavailable"
                     return False
                 if coords is not None:

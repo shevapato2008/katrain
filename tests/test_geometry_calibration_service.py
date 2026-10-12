@@ -89,6 +89,124 @@ class FakeDrift:
         self.response = response
 
 
+def test_preflight_requires_new_stable_evidence_without_changing_geometry(tmp_path):
+    from katrain.vision.geometry_drift import GeometryDriftMonitor
+
+    frame = np.random.default_rng(12).integers(0, 255, (96, 96, 3), dtype=np.uint8)
+
+    class Capture(FakeCapture):
+        def __init__(self):
+            self.seq = 0
+
+        def grab_fresh(self, **kwargs):
+            self.seq += 1
+            return frame.copy(), self.seq, time.monotonic()
+
+    capture, led = Capture(), FakeLed()
+    service = GeometryCalibrationService(led=led, capture=capture, save_path=tmp_path / "g.npz")
+    service.current_lock = object()
+    service._drift_monitor = GeometryDriftMonitor(frame, cell_spacing_px=20)
+    service._status.update(phase="ready", session_calibrated=True)
+    result = service.preflight()
+    assert result["ready"] is True
+    assert capture.seq >= 4  # MotionFilter's first image is only its baseline.
+    assert service.status()["geometry_revision"] == 0
+    assert led.clear_calls == 0
+    assert not (tmp_path / "g.npz").exists()
+    service.stop()
+
+
+def test_preflight_confirms_real_drift_but_not_unknown_frames(tmp_path):
+    import cv2
+    from katrain.vision.geometry_drift import GeometryDriftMonitor
+
+    frame = np.random.default_rng(13).integers(0, 255, (96, 96, 3), dtype=np.uint8)
+    moved = cv2.warpAffine(frame, np.float32([[1, 0, 8], [0, 1, 0]]), (96, 96))
+
+    class Capture(FakeCapture):
+        def __init__(self, image):
+            self.image, self.seq = image, 0
+
+        def grab_fresh(self, **kwargs):
+            self.seq += 1
+            return self.image.copy(), self.seq, time.monotonic()
+
+    for image, expected_phase in ((moved, "degraded"), (np.zeros_like(frame), "ready")):
+        capture = Capture(image)
+        service = GeometryCalibrationService(led=FakeLed(), capture=capture, save_path=tmp_path / "g.npz")
+        service.current_lock = object()
+        service._drift_monitor = GeometryDriftMonitor(frame, cell_spacing_px=20)
+        service._status.update(phase="ready", session_calibrated=True)
+        service.PREFLIGHT_TIMEOUT_S = 0.1
+        result = service.preflight()
+        assert result["ready"] is False
+        assert service.status()["phase"] == expected_phase
+        assert service.status()["error"] == ("board_moved" if expected_phase == "degraded" else None)
+        service.stop()
+
+
+@pytest.mark.parametrize("kind", ["stale", "motion", "missing"])
+def test_preflight_does_not_accept_untrusted_camera_evidence(tmp_path, kind):
+    from katrain.vision.geometry_drift import GeometryDriftMonitor
+
+    reference = np.random.default_rng(15).integers(0, 255, (96, 96, 3), dtype=np.uint8)
+
+    class Capture(FakeCapture):
+        def __init__(self):
+            self.seq = 0
+
+        def grab_fresh(self, **kwargs):
+            self.seq += 1
+            if kind == "missing":
+                return None, self.seq, time.monotonic()
+            if kind == "stale":
+                return reference.copy(), 1, 0.0
+            image = np.random.default_rng(self.seq).integers(0, 255, reference.shape, dtype=np.uint8)
+            return image, self.seq, time.monotonic()
+
+    service = GeometryCalibrationService(led=FakeLed(), capture=Capture(), save_path=tmp_path / "g.npz")
+    service.current_lock = object()
+    service._drift_monitor = GeometryDriftMonitor(reference, cell_spacing_px=20)
+    service._status.update(phase="ready", session_calibrated=True)
+    service.PREFLIGHT_TIMEOUT_S = 0.05
+    result = service.preflight()
+    assert result["ready"] is False
+    assert service.status()["phase"] == "ready"
+    assert service.status()["error"] is None
+    service.stop()
+
+
+def test_preflight_blocks_other_geometry_operations_until_it_finishes(tmp_path):
+    from katrain.vision.geometry_drift import GeometryDriftMonitor
+
+    frame = np.random.default_rng(16).integers(0, 255, (96, 96, 3), dtype=np.uint8)
+    entered, release = threading.Event(), threading.Event()
+
+    class Capture(FakeCapture):
+        def grab_fresh(self, **kwargs):
+            entered.set()
+            release.wait(timeout=1)
+            return frame.copy(), 1, time.monotonic()
+
+    service = GeometryCalibrationService(led=FakeLed(), capture=Capture(), save_path=tmp_path / "g.npz")
+    service.current_lock = object()
+    service._drift_monitor = GeometryDriftMonitor(frame, cell_spacing_px=20)
+    service._status.update(phase="ready", session_calibrated=True)
+    service.PREFLIGHT_TIMEOUT_S = 0.05
+    worker = threading.Thread(target=service.preflight, daemon=True)
+    worker.start()
+    assert entered.wait(timeout=1)
+    try:
+        with pytest.raises(CalibrationBusy):
+            service.start(trigger="manual", empty_confirmed=True)
+        with pytest.raises(ValueError, match="preflight in progress"):
+            service.confirm_existing()
+    finally:
+        release.set()
+        worker.join(timeout=1)
+        service.stop()
+
+
 def test_success_atomically_promotes_new_lock(tmp_path):
     lock = _synth()
     promoted = []

@@ -130,6 +130,8 @@ class GeometryCalibrationService:
         self.on_resume = on_resume or (lambda: None)
         self.calibrator_factory = calibrator_factory
         self._lock = threading.Lock()
+        self._monitor_update_lock = threading.Lock()
+        self._preflighting = False
         self._cancel_event = threading.Event()
         self._publish_started = False
         self._thread = None
@@ -174,7 +176,7 @@ class GeometryCalibrationService:
         with self._lock:
             if self._thread is not None and self._thread.is_alive():
                 raise CalibrationBusy("geometry calibration already running")
-            if self._relocating:
+            if self._relocating or self._preflighting:
                 raise CalibrationBusy("geometry relocation in progress")
             self._cancel_event = threading.Event()
             self._publish_started = False
@@ -240,11 +242,135 @@ class GeometryCalibrationService:
     # 那一态是「这份几何已知是错的」,它的出路是重定位(relocate),不是确认沿用。
     _REUSABLE_PHASES = frozenset({"required", "failed", "cancelled"})
 
+    PREFLIGHT_TIMEOUT_S = 8.0
+
+    def preflight(self) -> dict:
+        """Check the existing reference against fresh, still camera frames on demand."""
+        from katrain.vision.motion_filter import MotionFilter
+
+        started = time.monotonic()
+        deadline = started + self.PREFLIGHT_TIMEOUT_S
+        with self._lock:
+            if self._preflighting or self._relocating or (self._thread is not None and self._thread.is_alive()):
+                raise CalibrationBusy("geometry operation in progress")
+            available = (
+                self._status["phase"] == "ready"
+                and self._status["session_calibrated"]
+                and not self._status["lock_moved"]
+                and self.current_lock is not None
+                and self._drift_monitor is not None
+            )
+            if available:
+                self._preflighting = True
+                lock, revision, monitor = self.current_lock, self._geometry_revision, self._drift_monitor
+        if not available:
+            return {"ready": False, "reason": "geometry_required", "status": self.status()}
+
+        reason = "timeout"
+        stable_count = 0
+        drift_count = 0
+        last_seq, last_ts = -1, started
+        motion = MotionFilter()
+        first_frame = True
+        try:
+            if not self._is_ready(self.capture):
+                reason = "camera_unavailable"
+            else:
+                while time.monotonic() < deadline:
+                    if not self._is_ready(self.capture):
+                        reason = "camera_unavailable"
+                        break
+                    frame, seq, ts = self.capture.grab_fresh(
+                        after_ts=last_ts, settle_ms=0.0, timeout=min(0.5, max(0.0, deadline - time.monotonic()))
+                    )
+                    if time.monotonic() >= deadline:
+                        break
+                    with self._lock:
+                        current = (
+                            self._status["phase"] == "ready"
+                            and self.current_lock is lock
+                            and self._geometry_revision == revision
+                            and self._drift_monitor is monitor
+                        )
+                    if not current:
+                        reason = "stale_geometry"
+                        break
+                    if frame is None:
+                        reason = "camera_unavailable"
+                        break
+                    if seq is None or ts is None or seq <= last_seq or ts <= last_ts:
+                        reason = "stale_frame"
+                        continue
+                    last_seq, last_ts = seq, ts
+                    still = motion.is_stable(frame)
+                    if first_frame:
+                        first_frame = False
+                        continue
+                    if not still:
+                        stable_count = 0
+                        drift_count = 0
+                        reason = "motion"
+                        continue
+                    with self._monitor_update_lock:
+                        drift = monitor.update(frame)
+                    if drift.response < 0.05:
+                        stable_count = 0
+                        drift_count = 0
+                        reason = "low_correlation"
+                        continue
+                    if drift.shift_cells > monitor.threshold_cells:
+                        stable_count = 0
+                        drift_count += 1
+                        reason = "drift_pending"
+                    else:
+                        drift_count = 0
+                    if drift_count >= max(3, monitor.consecutive_frames) and drift.degraded:
+                        self._apply_drift(drift, monitor=monitor)
+                        if self.status()["phase"] == "degraded":
+                            logger.warning(
+                                "geometry preflight degraded source=preflight revision=%s shift_cells=%.3f response=%.3f seq=%s ts=%.3f",
+                                revision,
+                                drift.shift_cells,
+                                drift.response,
+                                seq,
+                                ts,
+                            )
+                            reason = "board_moved"
+                        else:
+                            reason = "stale_geometry"
+                        break
+                    if drift_count:
+                        continue
+                    stable_count += 1
+                    if stable_count >= max(3, monitor.consecutive_frames):
+                        reason = None
+                        break
+            with self._lock:
+                current = (
+                    self._status["phase"] == "ready"
+                    and self.current_lock is lock
+                    and self._geometry_revision == revision
+                    and self._drift_monitor is monitor
+                )
+            if not current and reason is None:
+                reason = "stale_geometry"
+            if reason is None and not self._is_ready(self.capture):
+                reason = "camera_unavailable"
+        finally:
+            with self._lock:
+                self._preflighting = False
+        status = self.status()
+        if reason is None and (status["phase"] != "ready" or status["geometry_revision"] != revision):
+            reason = "stale_geometry"
+        return {"ready": reason is None, "reason": reason, "status": status}
+
     def confirm_existing(self) -> dict:
         """Promote a persisted lock for this process after operator inspection."""
         with self._lock:
             if self._relocating:
                 raise ValueError("relocation in progress")
+            if self._preflighting:
+                raise ValueError("preflight in progress")
             if self._status["phase"] not in self._REUSABLE_PHASES:
                 raise ValueError(
                     "existing geometry can only be confirmed after restart, a failed run, or a cancelled run"
@@ -748,7 +874,7 @@ class GeometryCalibrationService:
         期间 start / confirm_existing / 另一次 relocate 都进不来 —— 否则两边会互相覆盖 current_lock、phase 与错误。
         """
         with self._lock:
-            if self._relocating or (self._thread is not None and self._thread.is_alive()):
+            if self._preflighting or self._relocating or (self._thread is not None and self._thread.is_alive()):
                 raise CalibrationBusy("geometry calibration or relocation already running")
             if self._status["phase"] not in allowed_phases:
                 raise ValueError("relocate is only available after drift, cancel or failure")
@@ -879,13 +1005,18 @@ class GeometryCalibrationService:
             if self._drift_needed is not None and not self._drift_needed():
                 continue
             with self._lock:
-                if self._status["phase"] != "ready":
+                if self._status["phase"] != "ready" or self._preflighting:
                     continue
             try:
                 frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
                 if frame is None:
                     continue
-                self._apply_drift(monitor.update(frame), monitor=monitor)
+                with self._lock:
+                    if self._preflighting or self._status["phase"] != "ready" or monitor is not self._drift_monitor:
+                        continue
+                with self._monitor_update_lock:
+                    drift = monitor.update(frame)
+                self._apply_drift(drift, monitor=monitor)
             except Exception:
                 time.sleep(0.1)
 

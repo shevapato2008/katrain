@@ -40,9 +40,9 @@ class GeometryDriftMonitor:
     def update(self, frame) -> DriftResult:
         current = self._features(frame)
         if current.shape != self.reference.shape:
-            self._over_threshold += 1
+            self._over_threshold = 0
             return DriftResult(
-                degraded=self._over_threshold >= self.consecutive_frames,
+                degraded=False,
                 shift_px=float("inf"),
                 shift_cells=float("inf"),
                 response=0.0,

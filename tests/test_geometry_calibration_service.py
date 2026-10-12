@@ -224,6 +224,57 @@ def test_preflight_monitor_lock_wait_uses_remaining_budget(tmp_path):
         service.stop()
 
 
+def test_preflight_cleanup_cannot_turn_an_expired_result_ready(tmp_path):
+    from katrain.vision.geometry_drift import GeometryDriftMonitor
+
+    frame = np.random.default_rng(23).integers(0, 255, (96, 96, 3), dtype=np.uint8)
+    trigger, acquired, release = threading.Event(), threading.Event(), threading.Event()
+
+    class Capture(FakeCapture):
+        def __init__(self):
+            self.seq = 0
+
+        def grab_fresh(self, **kwargs):
+            self.seq += 1
+            return frame.copy(), self.seq, time.monotonic()
+
+    capture = Capture()
+    service = GeometryCalibrationService(led=FakeLed(), capture=capture, save_path=tmp_path / "g.npz")
+    service.current_lock = object()
+    service._drift_monitor = GeometryDriftMonitor(frame, cell_spacing_px=20)
+    service._status.update(phase="ready", session_calibrated=True)
+    service.PREFLIGHT_TIMEOUT_S = 0.05
+    original_ready = service._is_ready
+    triggered = False
+
+    def ready_then_hold_monitor(value):
+        nonlocal triggered
+        if capture.seq >= 4 and not triggered:
+            triggered = True
+            trigger.set()
+            assert acquired.wait(timeout=1)
+        return original_ready(value)
+
+    def holder():
+        trigger.wait(timeout=1)
+        with service._monitor_update_lock:
+            acquired.set()
+            release.wait(timeout=1)
+
+    service._is_ready = ready_then_hold_monitor
+    worker = threading.Thread(target=holder, daemon=True)
+    worker.start()
+    try:
+        result = service.preflight()
+        assert triggered
+        assert result["ready"] is False
+        assert result["reason"] == "timeout"
+    finally:
+        release.set()
+        worker.join(timeout=1)
+        service.stop()
+
+
 def test_preflight_confirms_real_drift_but_not_unknown_frames(tmp_path):
     import cv2
     from katrain.vision.geometry_drift import GeometryDriftMonitor

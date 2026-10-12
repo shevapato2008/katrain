@@ -397,6 +397,8 @@ class GeometryCalibrationService:
         status = self.status()
         if reason is None and (status["phase"] != "ready" or status["geometry_revision"] != revision):
             reason = "stale_geometry"
+        if reason is None and time.monotonic() >= deadline:
+            reason = "timeout"
         return {"ready": reason is None, "reason": reason, "status": status}
 
     def confirm_existing(self) -> dict:

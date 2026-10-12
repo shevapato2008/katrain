@@ -105,6 +105,7 @@ def test_success_atomically_promotes_new_lock(tmp_path):
 
     status = service.status()
     assert status["phase"] == "ready"
+    assert status["stopped_phase"] is None
     assert status["session_calibrated"] is True
     assert promoted == [lock]
     assert (tmp_path / "geometry.npz").exists()
@@ -351,6 +352,7 @@ def test_confirm_existing_recovers_from_failed_calibration_when_lock_is_valid(tm
     )
     service._status["phase"] = "failed"
     service._status["error"] = "anchor_not_found:15,15"
+    service._status["stopped_phase"] = "verifying"
 
     status = service.confirm_existing()
 
@@ -358,6 +360,7 @@ def test_confirm_existing_recovers_from_failed_calibration_when_lock_is_valid(tm
     assert status["session_calibrated"] is True
     assert status["trigger"] == "operator_reuse"
     assert status["error"] is None
+    assert status["stopped_phase"] is None
     assert promoted == [old]
     assert capture.grab_calls == 1
 
@@ -591,6 +594,7 @@ class FakeAutoExposureCapture(FakeCapture):
         self.grab_calls = 0
         self._auto_on = False
         self.controls_effective = None
+        self.current_auto_exposure = CAMERA_AUTO_EXPOSURE_OFF
 
     def is_connected(self):
         return True
@@ -599,7 +603,7 @@ class FakeAutoExposureCapture(FakeCapture):
         self.grab_calls += 1
         level = 150 if (self._auto_on and self.converges) else self.initial_level
         self.events.append(("grab", level))
-        return np.full((64, 64, 3), level, np.uint8), self.grab_calls, float(self.grab_calls)
+        return np.full((64, 64, 3), level, np.uint8), self.grab_calls, time.monotonic()
 
     def request_controls(self, exposure=None, auto_exposure=None):
         self.control_calls.append((exposure, auto_exposure))
@@ -607,8 +611,11 @@ class FakeAutoExposureCapture(FakeCapture):
         if auto_exposure is not None and auto_exposure >= CAMERA_AUTO_EXPOSURE_ON:
             self._auto_on = True
             self.controls_effective = True
+            self.current_auto_exposure = auto_exposure
         elif auto_exposure == CAMERA_AUTO_EXPOSURE_OFF:
             self.controls_effective = self.manual_lock_succeeds
+            if self.manual_lock_succeeds:
+                self.current_auto_exposure = auto_exposure
 
 
 class RestoringFakeCapture(FakeCapture):
@@ -657,7 +664,7 @@ class RestoringFakeCapture(FakeCapture):
                     self.current_exposure = 140.0
                 self.controls_effective = True
         level = 150 if self.current_auto_exposure == CAMERA_AUTO_EXPOSURE_ON else self.initial_level
-        return np.full((64, 64, 3), level, np.uint8), self.grab_calls, float(self.grab_calls)
+        return np.full((64, 64, 3), level, np.uint8), self.grab_calls, time.monotonic()
 
 
 def _stopped_calibrator_factory(events):
@@ -828,7 +835,7 @@ def test_restore_rejects_success_readback_for_competing_control_request(
     class CompetingControlCapture(RestoringFakeCapture):
         def grab_fresh(self, after_ts=None, settle_ms=150.0):
             result = super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
-            if self.control_calls and self.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF):
+            if len(self.control_calls) >= 2 and self.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF):
                 self.current_auto_exposure = competing_auto_exposure
                 self.current_exposure = competing_exposure
                 self.controls_effective = True
@@ -1392,7 +1399,8 @@ def test_in_band_exposure_is_still_locked_to_manual_before_calibration():
     service.start(trigger="manual", empty_confirmed=True)
     assert service.wait(timeout=5) is True
 
-    assert capture.control_calls == [(None, CAMERA_AUTO_EXPOSURE_OFF)]
+    controls_before_calibration = [event for event in events[: events.index("calibrate")] if event[0] == "controls"]
+    assert controls_before_calibration == [("controls", CAMERA_AUTO_EXPOSURE_OFF)]
     assert events.index(("controls", CAMERA_AUTO_EXPOSURE_OFF)) < events.index("calibrate")
     service.stop()
 
@@ -1451,8 +1459,371 @@ def test_manual_exposure_readback_waits_for_the_reader_thread():
     assert service.wait(timeout=5) is True
 
     assert "calibrate" in events
-    assert capture.grab_calls == 3  # initial meter + two frames before readback arrived
+    grabs_before_calibration = [event for event in events[: events.index("calibrate")] if event[0] == "grab"]
+    assert len(grabs_before_calibration) == 3  # initial meter + two frames before readback arrived
     service.stop()
+
+
+def test_manual_exposure_waits_past_three_stale_frames_for_hardware_lock():
+    events = []
+
+    class SlowHardwareLockCapture(FakeAutoExposureCapture):
+        remaining = 0
+
+        def request_controls(self, exposure=None, auto_exposure=None):
+            super().request_controls(exposure=exposure, auto_exposure=auto_exposure)
+            if auto_exposure == CAMERA_AUTO_EXPOSURE_OFF:
+                self.controls_effective = None
+                self.remaining = 5
+
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            frame, seq, ts = super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+            if self.remaining:
+                self.remaining -= 1
+                if self.remaining:
+                    # CameraManager returns the cached frame while the reader
+                    # is still inside its hardware-AE-and-lock procedure.
+                    return frame, 1, 1.0
+                self.controls_effective = True
+            return frame, seq, ts
+
+    capture = SlowHardwareLockCapture(initial_level=150, events=events)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path="/tmp/unused.npz",
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+    assert "calibrate" in events
+    assert service.status()["error"] == "stopped"
+    service.stop()
+
+
+@pytest.mark.parametrize("mode", [CAMERA_AUTO_EXPOSURE_ON, float("nan"), None])
+def test_successful_control_readback_in_auto_mode_does_not_start_calibration(mode):
+    events = []
+
+    class WrongModeCapture(FakeAutoExposureCapture):
+        def request_controls(self, exposure=None, auto_exposure=None):
+            super().request_controls(exposure=exposure, auto_exposure=auto_exposure)
+            self.current_auto_exposure = mode
+
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=WrongModeCapture(initial_level=150, events=events),
+        save_path="/tmp/unused.npz",
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5)
+    assert "calibrate" not in events
+    assert service.status()["error"] == "manual exposure lock readback failed"
+    service.stop()
+
+
+def test_cancel_pending_exposure_keeps_geometry_and_restores_controls(tmp_path):
+    events = []
+
+    class CancellingCapture(RestoringFakeCapture):
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            if self._pending_controls == (None, CAMERA_AUTO_EXPOSURE_OFF):
+                service.cancel()
+                return np.full((64, 64, 3), 150, np.uint8), 1, 1.0
+            return super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+
+    capture = CancellingCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
+    persisted = []
+    old_lock = _synth()
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        initial_lock=old_lock,
+        persist_state=lambda *args: persisted.append(args),
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5)
+    assert service.status()["phase"] == "cancelled"
+    assert service.status()["stopped_phase"] == "converging_exposure"
+    assert "calibrate" not in events
+    assert not persisted
+    assert service.current_lock is old_lock
+    assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_ON
+    assert capture.controls_effective is True
+    service.stop()
+
+
+def test_cancel_after_suspend_never_enters_calibrator(tmp_path):
+    events = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FakeAutoExposureCapture(initial_level=150, events=events),
+        save_path=tmp_path / "unused.npz",
+        on_suspend=lambda: service.cancel(),
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=1)
+    assert service.status()["phase"] == "cancelled"
+    assert service.status()["stopped_phase"] == "converging_exposure"
+    assert "calibrate" not in events
+    service.stop()
+
+
+def test_pending_controls_time_out_without_led_or_light_diagnosis(tmp_path):
+    events = []
+
+    class PendingCapture(FakeAutoExposureCapture):
+        def request_controls(self, exposure=None, auto_exposure=None):
+            super().request_controls(exposure=exposure, auto_exposure=auto_exposure)
+            if len(self.control_calls) == 1:
+                self.controls_effective = None
+                self.initial_level = 253
+
+    capture = PendingCapture(initial_level=150, events=events)
+    old_lock = _synth()
+    persisted = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        initial_lock=old_lock,
+        persist_state=lambda *args: persisted.append(args),
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.EXPOSURE_CONTROL_VERIFY_TIMEOUT_S = 0.02
+    service.EXPOSURE_CONTROL_VERIFY_POLL_S = 0.001
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=1)
+    status = service.status()
+    assert status["error"] == "manual exposure lock readback failed"
+    assert status["stopped_phase"] == "converging_exposure"
+    assert "exposure" not in status["metrics"]
+    assert "calibrate" not in events
+    assert not persisted
+    assert service.current_lock is old_lock
+    assert capture.controls_effective is True  # the independent rollback completed
+    service.stop()
+
+
+def test_control_completion_after_deadline_does_not_start_calibration(tmp_path):
+    events = []
+
+    class LateControlsCapture(FakeAutoExposureCapture):
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            if len(self.control_calls) == 1:
+                time.sleep(0.03)  # one bounded primitive can cross the overall deadline
+            return super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=LateControlsCapture(initial_level=150, events=events),
+        save_path=tmp_path / "unused.npz",
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.EXPOSURE_CONTROL_VERIFY_TIMEOUT_S = 0.01
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=1)
+    assert service.status()["error"] == "manual exposure lock readback failed"
+    assert "exposure" not in service.status()["metrics"]
+    assert "calibrate" not in events
+    service.stop()
+
+
+def test_cancel_waking_wait_after_deadline_is_still_cancelled(tmp_path):
+    events = []
+
+    class DelayedCancelEvent(threading.Event):
+        def wait(self, timeout=None):
+            self.set()
+            time.sleep(0.02)  # the waiting thread resumes after its deadline
+            return True
+
+    class PendingCapture(FakeAutoExposureCapture):
+        def request_controls(self, exposure=None, auto_exposure=None):
+            super().request_controls(exposure=exposure, auto_exposure=auto_exposure)
+            if len(self.control_calls) == 1:
+                self.controls_effective = None
+
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=PendingCapture(initial_level=150, events=events),
+        save_path=tmp_path / "unused.npz",
+        calibrator_factory=_stopped_calibrator_factory(events),
+        on_suspend=lambda: setattr(service, "_cancel_event", DelayedCancelEvent()),
+    )
+    service.EXPOSURE_CONTROL_VERIFY_TIMEOUT_S = 0.01
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=1)
+    assert service.status()["phase"] == "cancelled"
+    assert service.status()["stopped_phase"] == "converging_exposure"
+    assert "calibrate" not in events
+    service.stop()
+
+
+@pytest.mark.parametrize(
+    ("level", "freshness", "effective", "mode", "reason"),
+    [
+        (253, "fresh", False, CAMERA_AUTO_EXPOSURE_OFF, "frame_overexposed"),
+        (0, "fresh", False, CAMERA_AUTO_EXPOSURE_OFF, "frame_underexposed"),
+        (253, "fresh", True, CAMERA_AUTO_EXPOSURE_ON, "frame_overexposed"),
+        (150, "fresh", False, CAMERA_AUTO_EXPOSURE_OFF, None),
+        (253, "cached", False, CAMERA_AUTO_EXPOSURE_OFF, None),
+        (253, "old_distinct", False, CAMERA_AUTO_EXPOSURE_OFF, None),
+        (253, "during_request", False, CAMERA_AUTO_EXPOSURE_OFF, None),
+        (253, "insufficient", False, CAMERA_AUTO_EXPOSURE_OFF, None),
+    ],
+)
+def test_control_failure_only_reports_confirmed_fresh_severe_exposure(
+    tmp_path, level, freshness, effective, mode, reason
+):
+    events = []
+
+    class FailedControlsCapture(FakeAutoExposureCapture):
+        def __init__(self):
+            super().__init__(initial_level=150, events=events)
+            self.before_request = time.monotonic() - 1.0
+
+        def request_controls(self, exposure=None, auto_exposure=None):
+            super().request_controls(exposure=exposure, auto_exposure=auto_exposure)
+            if len(self.control_calls) == 1:
+                self.controls_effective = effective
+                self.current_auto_exposure = mode
+                self.initial_level = level
+                if freshness == "during_request":
+                    self.during_request_ts = time.monotonic()
+                    time.sleep(0.002)
+
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            frame, seq, ts = super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+            if len(self.control_calls) == 1:
+                if freshness == "cached":
+                    return frame, 1, self.before_request
+                if freshness == "old_distinct":
+                    return frame, seq, self.before_request + seq * 0.001
+                if freshness == "during_request":
+                    return frame, seq, self.during_request_ts + seq * 0.00001
+                if freshness == "insufficient" and seq >= 4:
+                    return frame, 3, self.before_request
+            return frame, seq, ts
+
+    capture = FailedControlsCapture()
+    old_lock = _synth()
+    persisted = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        initial_lock=old_lock,
+        persist_state=lambda *args: persisted.append(args),
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=1)
+    status = service.status()
+    assert status["phase"] == "failed"
+    assert status["error"] == "manual exposure lock readback failed"
+    assert "calibrate" not in events
+    assert not persisted
+    assert service.current_lock is old_lock
+    if reason is None:
+        assert "exposure" not in status["metrics"]
+    else:
+        stats = check_frame_exposure(np.full((64, 64, 3), level, np.uint8))[2]
+        assert status["metrics"]["exposure"] == {**stats, "reason": reason, "confirmed": True}
+    service.stop()
+
+
+@pytest.mark.parametrize("restore_pending_forever", [False, True])
+@pytest.mark.parametrize("cancelled", [False, True])
+def test_rollback_waits_independently_and_preserves_stopped_stage(tmp_path, caplog, restore_pending_forever, cancelled):
+
+    class DelayedRestoreCapture(RestoringFakeCapture):
+        def __init__(self):
+            super().__init__(current_exposure=5000.0)
+            self.restore_frames = 0
+
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            if len(self.control_calls) == 2 and self._pending_controls is not None:
+                self.restore_frames += 1
+                if self.restore_frames < 5 or restore_pending_forever:
+                    return np.full((64, 64, 3), 150, np.uint8), 1, 1.0
+            return super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+
+    def factory(**kwargs):
+        class StopsAfterVerifying:
+            def calibrate(self):
+                kwargs["progress"]("verifying", 7, 13)
+                if cancelled:
+                    kwargs["cancel_event"].set()
+                return CalibrationResult(ok=False, reason="stopped")
+
+        return StopsAfterVerifying()
+
+    capture = DelayedRestoreCapture()
+    old_lock = _synth()
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        initial_lock=old_lock,
+        save_path=tmp_path / "unused.npz",
+        calibrator_factory=factory,
+    )
+    service.EXPOSURE_CONTROL_VERIFY_TIMEOUT_S = 0.05
+    service.EXPOSURE_CONTROL_VERIFY_POLL_S = 0.001
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=1)
+    status = service.status()
+    assert status["phase"] == ("cancelled" if cancelled else "failed")
+    assert status["error"] == (None if cancelled else "stopped")
+    assert status["stopped_phase"] == "verifying"
+    assert status["progress"] == {"current": 7, "total": 13}
+    assert capture.restore_frames >= 5
+    assert capture.controls_effective is (None if restore_pending_forever else True)
+    assert capture.current_exposure == 5000.0
+    assert all(exposure is None for exposure, _ in capture.control_calls)
+    assert service.current_lock is old_lock
+    assert any("restore readback failed" in r.getMessage() for r in caplog.records) is restore_pending_forever
+    service.stop()
+
+
+def test_converging_phase_is_visible_and_old_lock_cannot_be_reused(tmp_path):
+    entered = threading.Event()
+    release = threading.Event()
+    old_lock = _synth()
+    suspended = []
+
+    class PausedCapture(FakeAutoExposureCapture):
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            entered.set()
+            assert release.wait(timeout=1)
+            return super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=PausedCapture(initial_level=150),
+        initial_lock=old_lock,
+        save_path=tmp_path / "unused.npz",
+        on_suspend=lambda: suspended.append(True),
+        calibrator_factory=_stopped_calibrator_factory([]),
+    )
+    service._status["stopped_phase"] = "verifying"
+    service.start(trigger="manual", empty_confirmed=True)
+    try:
+        assert entered.wait(timeout=1)
+        status = service.status()
+        assert suspended == [True]
+        assert status["phase"] == "converging_exposure"
+        assert status["stopped_phase"] is None
+        assert status["progress"] == {"current": 0, "total": 13}
+        assert status["phase"] in GeometryCalibrationService.ACTIVE_PHASES
+        assert service.current_lock is old_lock
+        with pytest.raises(ValueError):
+            service.confirm_existing()
+    finally:
+        release.set()
+        service.wait(timeout=1)
+        service.stop()
 
 
 def test_exposure_is_actuated_before_calibration_when_there_is_no_geometry_lock():
@@ -1553,9 +1924,11 @@ def test_exposure_gate_probe_is_taken_after_convergence_not_before():
     assert service.wait(timeout=5) is True
 
     gate_index = events.index(("gate", True))  # 闸没过就根本没有这一项 ⇒ 直接 ValueError
-    control_indices = [i for i, event in enumerate(events) if event[0] == "controls"]
-    assert control_indices, "一次都没作动曝光"
-    assert max(control_indices) < gate_index, f"曝光闸的探针取在收敛之前了: {events}"
+    assert (
+        events.index(("controls", CAMERA_AUTO_EXPOSURE_ON))
+        < events.index(("controls", CAMERA_AUTO_EXPOSURE_OFF))
+        < gate_index
+    ), f"曝光闸的探针取在收敛之前了: {events}"
     assert service.status()["error"] != "frame_overexposed"
     service.stop()
 

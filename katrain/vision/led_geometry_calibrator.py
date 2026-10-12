@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
+import time
 from dataclasses import dataclass
 from threading import Event
 from typing import Callable
@@ -132,20 +133,38 @@ def check_frame_exposure(frame: np.ndarray) -> tuple[bool, str | None, dict]:
     return True, None, stats
 
 
-def probe_frame_exposure(capture) -> tuple[bool, str | None, dict] | None:
+def probe_frame_exposure(
+    capture, *, after_ts: float | None = None, cancel_event: Event | None = None
+) -> tuple[bool, str | None, dict] | None:
     """连取 EXPOSURE_PROBE_FRAMES 帧,按整帧 median 取**中位数那一帧**的判决。
 
     判决跟着多数派走 —— 不是「有一帧行就行」,也不是「有一帧不行就毙」。
     这里**不**等 AE 稳定、**不**重试:「等」是标定入口那次曝光收敛
     (GeometryCalibrationService._converge_exposure)的职责,两处都做会等两遍。
-    这一层只保证不被单帧骗到。返回 None 表示一帧都没抓到(上游报 no_frames)。"""
+    CameraManager 超时会退回缓存帧，因此三帧必须有递增 seq/ts，且晚于探针开始
+    (或调用者提供的控制请求时刻)。不足三张新帧返回 None，上游报 no_frames。
+    最多三次取帧，每次沿用相机自身有界 timeout，不再添加等待或重试。"""
     samples = []
+    cutoff = time.monotonic() if after_ts is None else after_ts
+    last_seq = -1
     for _ in range(EXPOSURE_PROBE_FRAMES):
-        frame, _seq, _ts = capture.grab_fresh(settle_ms=0.0)
-        if frame is None:
-            break
+        if cancel_event is not None and cancel_event.is_set():
+            return None
+        frame, seq, ts = capture.grab_fresh(after_ts=cutoff, settle_ms=0.0)
+        if cancel_event is not None and cancel_event.is_set():
+            return None
+        if (
+            frame is None
+            or not isinstance(seq, (int, np.integer))
+            or seq <= last_seq
+            or not isinstance(ts, (int, float, np.number))
+            or not np.isfinite(ts)
+            or ts <= cutoff
+        ):
+            continue
         samples.append(check_frame_exposure(frame))
-    if not samples:
+        last_seq, cutoff = seq, ts
+    if len(samples) != EXPOSURE_PROBE_FRAMES:
         return None
     samples.sort(key=lambda sample: sample[2]["median"])
     return samples[len(samples) // 2]
@@ -359,7 +378,9 @@ class LedGeometryCalibrator:
         detected = []
         attempts = []
         try:
-            probed = probe_frame_exposure(self.capture)
+            probed = probe_frame_exposure(self.capture, cancel_event=self.cancel_event)
+            if self.cancel_event.is_set():
+                return CalibrationResult(ok=False, reason="cancelled")
             if probed is None:
                 return CalibrationResult(ok=False, reason="no_frames")
             ok, reason, stats = probed

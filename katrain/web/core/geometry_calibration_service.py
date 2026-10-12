@@ -18,7 +18,7 @@ from katrain.vision.camera import (
     _auto_exposure_readback_matches,
 )
 from katrain.vision.geometry_lock import save_geometry_lock
-from katrain.vision.led_geometry_calibrator import LedGeometryCalibrator, check_frame_exposure
+from katrain.vision.led_geometry_calibrator import LedGeometryCalibrator, check_frame_exposure, probe_frame_exposure
 from katrain.web.core.hardware_vision_state import CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,14 @@ class LegacyPublishRollbackError(RuntimeError):
 
 
 class GeometryCalibrationService:
-    ACTIVE_PHASES = {"waiting_empty", "dark_reference", "flashing_corners", "verifying", "building_baseline"}
+    ACTIVE_PHASES = {
+        "waiting_empty",
+        "converging_exposure",
+        "dark_reference",
+        "flashing_corners",
+        "verifying",
+        "building_baseline",
+    }
 
     # 标定入口那次曝光收敛的边界。用户正站在标定屏前等,不能无限等:超了就带着当前
     # 曝光继续往下走 —— 真收不回来,后面的曝光闸会诚实拒绝,不会伪装成功。
@@ -76,10 +83,11 @@ class GeometryCalibrationService:
     # 目标带与 auto_exposure.ExposureController 的默认带同源(spec:中位落在 [120,170])。
     EXPOSURE_TARGET_LO = 120.0
     EXPOSURE_TARGET_HI = 170.0
-    # request_controls is consumed by the camera reader between reads. If the request
-    # lands while a read is already in flight, the first fresh frame can legitimately
-    # arrive before its readback; allow the next two frames before declaring failure.
-    EXPOSURE_CONTROL_VERIFY_MAX_FRAMES = 3
+    # Hardware auto-then-lock runs inside the camera reader. During convergence,
+    # grab_fresh can time out with the same cached frame; a frame count is not a
+    # control-completion deadline. None means pending, not a failed driver readback.
+    EXPOSURE_CONTROL_VERIFY_TIMEOUT_S = 30.0
+    EXPOSURE_CONTROL_VERIFY_POLL_S = 0.05
 
     def __init__(
         self,
@@ -143,6 +151,7 @@ class GeometryCalibrationService:
             "last_valid": initial_lock is not None,
             "trigger": None,
             "error": None,
+            "stopped_phase": None,
             "metrics": {},
             "relocate_error": None,  # 最近一次重定位为什么没成(字符串);metrics 是数值型,不放这里
             # current_lock 已知对不上盘(降级过)。phase 会被之后的 start → cancel / failed 覆盖掉,
@@ -176,6 +185,7 @@ class GeometryCalibrationService:
                 progress={"current": 0, "total": 13},
                 trigger=trigger,
                 error=None,
+                stopped_phase=None,
                 metrics={},
                 relocate_error=None,
             )
@@ -255,6 +265,7 @@ class GeometryCalibrationService:
                 last_valid=True,
                 trigger="operator_reuse",
                 error=None,
+                stopped_phase=None,
                 metrics={},
                 relocate_error=None,
             )
@@ -317,11 +328,14 @@ class GeometryCalibrationService:
         if grab is None or request is None or self._cancel_event.is_set():
             return  # 没有运行时控制的相机(macOS 上 UVC 写入被静默拒绝):没什么可收敛的
         stats = self._measure_exposure(grab)
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled while measuring exposure")
         if stats is None or self._in_target_band(stats):
             # 亮度合格不代表曝光已经锁住。标定的 lit-dark 差分要求两帧使用同一曝光，
             # 所以这条短路也必须切到手动并验证驱动读回，而不是直接进入锚点循环。
             request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
-            settled = self._wait_for_manual_exposure_readback(grab)
+            requested_after = time.monotonic()
+            settled = self._wait_for_manual_exposure_readback(grab, requested_after=requested_after)
             logger.info(
                 "geometry exposure lock: median %s -> manual verified, median now %s",
                 None if stats is None else round(stats["median"]),
@@ -349,6 +363,8 @@ class GeometryCalibrationService:
                     break
                 steps += 1
                 stats = self._measure_exposure(grab)
+                if self._cancel_event.is_set():
+                    raise CalibrationCancelled("calibration cancelled while measuring exposure")
                 if stats is None:
                     outcome = "no_frame"
                     break
@@ -365,7 +381,8 @@ class GeometryCalibrationService:
             # phase=failed。日志那几行故意留在 finally 外面 —— 它们要再取一帧,在异常
             # 传播途中取帧再抛就会用新异常盖掉真正的那个。
             request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
-        settled = self._wait_for_manual_exposure_readback(grab)
+            requested_after = time.monotonic()
+        settled = self._wait_for_manual_exposure_readback(grab, requested_after=requested_after)
         # 一行里四件事,每件都在回答一个自己回答不了的问题:
         #  - 交接前后两个 median:两个数接近 ⇒ 驱动保留了 AE 收敛值;后一个跳回高位
         #    ⇒ 「驱动把曝光弹回 default」的指纹。否则 journal 里只有一个
@@ -391,17 +408,66 @@ class GeometryCalibrationService:
         )
 
     def _verify_manual_exposure_lock(self) -> None:
-        if getattr(self.capture, "controls_effective", None) is not True:
+        mode = self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None))
+        if (
+            getattr(self.capture, "controls_effective", None) is not True
+            or mode is None
+            or not _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, mode)
+        ):
             raise RuntimeError("manual exposure lock readback failed")
 
-    def _wait_for_manual_exposure_readback(self, grab) -> dict | None:
-        settled = None
-        for _attempt in range(self.EXPOSURE_CONTROL_VERIFY_MAX_FRAMES):
-            settled = self._measure_exposure(grab)
-            if getattr(self.capture, "controls_effective", None) is not None:
-                break
-        self._verify_manual_exposure_lock()
+    def _wait_for_manual_exposure_readback(self, grab, *, requested_after: float) -> dict | None:
+        settled, completed = self._wait_for_exposure_controls(grab, cancellable=True)
+        if not completed:
+            raise RuntimeError("manual exposure lock readback failed")
+        try:
+            self._verify_manual_exposure_lock()
+        except RuntimeError:
+            # A final driver failure is still the error. Only independent evidence
+            # from three fresh frames can additionally explain severe illumination.
+            if getattr(self.capture, "controls_effective", None) is not None and self._is_ready(self.capture):
+                try:
+                    probed = probe_frame_exposure(
+                        self.capture, after_ts=requested_after, cancel_event=self._cancel_event
+                    )
+                except Exception as exc:
+                    logger.warning("geometry exposure failure probe failed: %s", exc)
+                    probed = None
+                if self._cancel_event.is_set():
+                    raise CalibrationCancelled("calibration cancelled during exposure diagnosis")
+                if probed is not None:
+                    ok, reason, stats = probed
+                    if not ok:
+                        with self._lock:
+                            self._status["metrics"]["exposure"] = {**stats, "reason": reason, "confirmed": True}
+            raise
         return settled
+
+    def _wait_for_exposure_controls(self, grab, *, cancellable: bool) -> tuple[dict | None, bool]:
+        deadline = time.monotonic() + self.EXPOSURE_CONTROL_VERIFY_TIMEOUT_S
+        settled = None
+        while time.monotonic() < deadline:
+            if cancellable and self._cancel_event.is_set():
+                raise CalibrationCancelled("calibration cancelled while waiting for exposure controls")
+            settled = self._measure_exposure(grab)
+            if cancellable and self._cancel_event.is_set():
+                raise CalibrationCancelled("calibration cancelled while waiting for exposure controls")
+            if time.monotonic() >= deadline:
+                break
+            if getattr(self.capture, "controls_effective", None) is not None:
+                return settled, True
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            delay = min(self.EXPOSURE_CONTROL_VERIFY_POLL_S, remaining)
+            if cancellable:
+                self._cancel_event.wait(delay)
+            else:
+                # Rollback must complete even when the operator cancelled the run.
+                time.sleep(delay)
+        if cancellable and self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled while waiting for exposure controls")
+        return settled, False
 
     @staticmethod
     def _measure_exposure(grab) -> dict | None:
@@ -442,22 +508,20 @@ class GeometryCalibrationService:
             return
 
         grab = getattr(self.capture, "grab_fresh", None)
-        for _attempt in range(self.EXPOSURE_CONTROL_VERIFY_MAX_FRAMES):
-            effective = getattr(self.capture, "controls_effective", None)
-            if effective is not None or grab is None:
-                break
-            grab(settle_ms=0.0)
+        completed = True
+        if grab is not None:
+            _settled, completed = self._wait_for_exposure_controls(grab, cancellable=False)
         effective = getattr(self.capture, "controls_effective", None)
         current_auto_exposure = self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None))
         restored = (
-            effective is True
+            completed
+            and effective is True
             and current_auto_exposure is not None
             and _auto_exposure_readback_matches(target_auto_exposure, current_auto_exposure)
         )
         if not restored:
             logger.warning(
-                "geometry exposure restore readback failed: controls_effective=%r "
-                "target_auto=%r current_auto=%r",
+                "geometry exposure restore readback failed: controls_effective=%r target_auto=%r current_auto=%r",
                 effective,
                 target_auto_exposure,
                 current_auto_exposure,
@@ -467,6 +531,7 @@ class GeometryCalibrationService:
         if not self._cancel_event.is_set():
             return False
         with self._lock:
+            self._status["stopped_phase"] = self._status["phase"]
             self._status["phase"] = "cancelled"
         return True
 
@@ -533,7 +598,10 @@ class GeometryCalibrationService:
             self.on_suspend()
             # 挂起 worker 之后、跑锚点循环之前:把曝光收敛一次(见 _converge_exposure)。
             # 顺序是判据的一部分 —— 标定自己的曝光闸必须量在收敛之后的那一帧上。
+            self._progress("converging_exposure", 0, 13)
             self._converge_exposure()
+            if self._cancel_if_requested():
+                return
             calibrator = self.calibrator_factory(
                 led=self.led,
                 capture=self.capture,
@@ -542,12 +610,16 @@ class GeometryCalibrationService:
                 anchor_observer=self._anchor_observed,
             )
             result = calibrator.calibrate()
-            if self._cancel_if_requested() or result.reason == "cancelled":
+            if self._cancel_if_requested():
+                return
+            if result.reason == "cancelled":
                 with self._lock:
+                    self._status["stopped_phase"] = self._status["phase"]
                     self._status["phase"] = "cancelled"
                 return
             if not result.ok or result.lock is None:
                 with self._lock:
+                    self._status["stopped_phase"] = self._status["phase"]
                     self._status["phase"] = "failed"
                     self._status["error"] = result.reason or "calibration_failed"
                     # 失败诊断是这一层唯一的可观测出口 —— 丢掉它,任何人都分不清
@@ -597,6 +669,7 @@ class GeometryCalibrationService:
                     session_calibrated=True,
                     last_valid=True,
                     error=None,
+                    stopped_phase=None,
                     metrics=metrics,
                     relocate_error=None,
                     lock_moved=False,
@@ -607,10 +680,12 @@ class GeometryCalibrationService:
                 logger.warning("geometry calibration on_success failed after commit: %s", exc)
         except CalibrationCancelled:
             with self._lock:
+                self._status["stopped_phase"] = self._status["phase"]
                 self._status["phase"] = "cancelled"
         except LegacyPublishRollbackError as exc:
             logger.error("legacy geometry rollback failed; invalidating runtime geometry: %s", exc)
             with self._lock:
+                self._status["stopped_phase"] = self._status["phase"]
                 self.current_lock = None
                 self._drift_monitor = None
                 self._status.update(
@@ -629,6 +704,7 @@ class GeometryCalibrationService:
                 logger.warning("geometry calibration post-commit update failed: %s", exc)
             else:
                 with self._lock:
+                    self._status["stopped_phase"] = self._status["phase"]
                     self._status["phase"] = "failed"
                     self._status["error"] = str(exc)
         finally:
@@ -768,6 +844,7 @@ class GeometryCalibrationService:
                 last_valid=True,
                 trigger=trigger,
                 error=None,
+                stopped_phase=None,
                 relocate_error=None,
                 lock_moved=False,
             )

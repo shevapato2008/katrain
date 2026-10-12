@@ -71,4 +71,4 @@
 ## 计划审核记录
 
 - [x] 第1轮：独立 GPT-6-astra / max，NOT GO；3组必要修正：控制早失败的lighting出口、未confirmed严重帧被普通差异提前拒绝、API/episode/单路voice。已在本计划对应Task1/2/3补齐，见 `EXPOSURE-PLAN-REVIEW.md`。
-- [ ] 第2轮（仅需要时）：修正后独立复核；**最多2轮**。第二轮未过则带具体未决项找用户，不继续堆审核轮数或擅自开发。
+- [x] 第2轮：独立GPT-6-astra/max正式GO，R1–R3已形成可执行契约；批准按subagent-driven-development进入执行。最多2轮已完成，不增加第三轮计划审核。

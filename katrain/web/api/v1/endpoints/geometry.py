@@ -24,7 +24,7 @@ DEFAULT_GEOMETRY_PATH = Path("~/.katrain/geometry_lock.npz").expanduser()
 # the JPEG encode (backend) and decode (kiosk chromium) so the flash loop and progress
 # counter stay responsive (the "卡在 N/13" freeze); the preview returns to 5fps afterwards.
 _ACTIVE_CALIBRATION_PHASES = frozenset(
-    {"waiting_empty", "dark_reference", "flashing_corners", "verifying", "building_baseline"}
+    {"waiting_empty", "converging_exposure", "dark_reference", "flashing_corners", "verifying", "building_baseline"}
 )
 _STREAM_INTERVAL_ACTIVE_S = 0.5
 _STREAM_INTERVAL_IDLE_S = 0.2

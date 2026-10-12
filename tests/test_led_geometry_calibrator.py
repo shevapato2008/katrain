@@ -1,4 +1,5 @@
 import logging
+import time
 from threading import Event
 
 import cv2
@@ -138,7 +139,7 @@ class FakeCapture:
 
     def grab_fresh(self, after_ts=None, settle_ms=150.0):
         self.seq += 1
-        return self._frame(), self.seq, float(self.seq + 10)
+        return self._frame(), self.seq, time.monotonic()
 
     def grab_burst(self, n=8, interval=0.1):
         current = self.led.current
@@ -711,6 +712,57 @@ def test_exposure_gate_still_rejects_when_two_of_three_frames_are_blown():
     assert result.reason == "frame_overexposed"
     assert led.attempts == []
     assert result.exposure_stats["median"] == pytest.approx(253, abs=1)
+
+
+@pytest.mark.parametrize("freshness", ["cached", "old_distinct", "insufficient", "same_seq", "same_ts"])
+def test_exposure_gate_requires_three_frames_captured_after_probe_started(freshness):
+    led = FakeLed()
+
+    class StaleCapture(FakeCapture):
+        def __init__(self):
+            super().__init__(led, _synthetic_camera_points())
+            self.old_ts = time.monotonic() - 1.0
+            self.first_ts = None
+
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            frame, seq, ts = super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+            if freshness == "cached":
+                return frame, 1, self.old_ts
+            if freshness == "old_distinct":
+                return frame, seq, self.old_ts + seq * 0.001
+            if freshness == "same_seq":
+                return frame, 1, ts
+            if freshness == "same_ts":
+                self.first_ts = ts if self.first_ts is None else self.first_ts
+                return frame, seq, self.first_ts
+            if seq >= 2:
+                return frame, 1, self.old_ts
+            return frame, seq, ts
+
+    result = LedGeometryCalibrator(led=led, capture=StaleCapture()).calibrate()
+
+    assert result.ok is False
+    assert result.reason == "no_frames"
+    assert result.exposure_stats is None
+    assert led.attempts == []
+
+
+def test_exposure_probe_cancellation_does_not_flash_leds_or_collect_more_frames():
+    led = FakeLed()
+    cancel = Event()
+
+    class CancellingCapture(FakeCapture):
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            result = super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+            cancel.set()
+            return result
+
+    capture = CancellingCapture(led, _synthetic_camera_points())
+    result = LedGeometryCalibrator(led=led, capture=capture, cancel_event=cancel).calibrate()
+
+    assert result.reason == "cancelled"
+    assert capture.seq == 1
+    assert led.attempts == []
 
 
 class TransientCapture(FakeCapture):

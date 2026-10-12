@@ -329,3 +329,4 @@ def test_stream_interval_throttles_only_during_active_calibration():
     assert geometry._stream_interval_s("ready") == pytest.approx(0.2)
     assert geometry._stream_interval_s("required") == pytest.approx(0.2)
     assert geometry._stream_interval_s("") == pytest.approx(0.2)
+    assert geometry._stream_interval_s("converging_exposure") == pytest.approx(0.5)

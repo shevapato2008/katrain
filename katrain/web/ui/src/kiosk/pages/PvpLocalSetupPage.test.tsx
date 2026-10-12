@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -18,6 +18,7 @@ vi.mock('../../api', () => ({
   API: {
     createSession: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
     gameSetup: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
+    deleteSession: vi.fn().mockResolvedValue(undefined),
   },
 }));
 const { writeActiveSession } = vi.hoisted(() => ({ writeActiveSession: vi.fn() }));
@@ -25,10 +26,14 @@ vi.mock('../utils/activeSession', () => ({ writeActiveSession, readActiveSession
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 'tok', user: { username: 'u' } }) }));
 
 // 「怎么落子」的**设备那一段**由它给(用户那一段在 `utils/playInput`)。
-const vision = { enabled: false };
+const vision = { enabled: false, loaded: true };
+const ready = { phase: 'ready', session_calibrated: true, last_valid: true, capabilities: { camera_ready: true, geometry_ready: true, recognition_ready: true, model_ready: true } };
+const geometry = { status: ready, loaded: true, preflight: vi.fn() };
+vi.mock('../context/GeometryContext', () => ({ useGeometry: () => geometry }));
+vi.mock('../components/vision/GeometryCalibrationScreen', () => ({ default: ({ onBack }: { onBack: () => void }) => <div data-testid="calib-screen"><button onClick={onBack}>返回设置</button></div> }));
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
-    visionStatus: { enabled: vision.enabled }, isVisionEnabled: vision.enabled, refreshStatus: vi.fn(),
+    visionStatus: { enabled: vision.enabled }, loaded: vision.loaded, isVisionEnabled: vision.enabled, refreshStatus: vi.fn(),
   }),
 }));
 
@@ -49,6 +54,9 @@ beforeEach(() => {
   localStorage.removeItem('kiosk_audio_sfx');
   localStorage.removeItem('kioskPlaySound');
   vision.enabled = false;
+  vision.loaded = true;
+  geometry.status = ready;
+  geometry.preflight.mockReset().mockResolvedValue({ ready: true, status: ready });
 });
 
 describe('PvpLocalSetupPage', () => {
@@ -227,5 +235,121 @@ describe('PvpLocalSetupPage', () => {
     expect(note).not.toHaveTextContent('自己确认');
     expect(note).not.toHaveTextContent('在线大厅');
     expect(note).not.toHaveTextContent('由 AI 估算胜负');
+  });
+});
+
+
+describe('physical local preflight', () => {
+  it.each(['required', 'degraded', 'failed', 'cancelled'])('%s preserves setup without starting', async phase => {
+    vision.enabled = true;
+    geometry.preflight.mockImplementation(async () => {
+      geometry.status = { ...ready, phase };
+      return { ready: false, reason: 'geometry_not_ready', status: geometry.status };
+    });
+    renderPage();
+    await userEvent.type(screen.getByTestId('black-name-input'), '小明');
+    await pick(userEvent.setup(), 'setup-rules', 'japanese');
+    await pick(userEvent.setup(), 'setup-clock', '60');
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    expect(await screen.findByTestId('calib-screen')).toBeInTheDocument();
+    expect(API.createSession).not.toHaveBeenCalled();
+    expect(writeActiveSession).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '返回设置' }));
+    expect(screen.getByTestId('black-name-input')).toHaveValue('小明');
+    expect(screen.getByTestId('setup-rules-value')).toHaveTextContent('日本');
+    expect(screen.getByTestId('setup-clock-value')).toHaveTextContent('60分');
+    expect(API.createSession).not.toHaveBeenCalled();
+  });
+  it('successful calibration returns to retained setup without automatically starting', async () => {
+    vision.enabled = true;
+    geometry.status = { ...ready, phase: 'required' };
+    geometry.preflight.mockResolvedValue({ ready: false, status: geometry.status });
+    const view = renderPage();
+    await userEvent.type(screen.getByTestId('black-name-input'), '小明');
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    expect(screen.getByTestId('calib-screen')).toBeInTheDocument();
+    geometry.status = ready;
+    view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter><PvpLocalSetupPage /></MemoryRouter></ThemeProvider>);
+    expect(screen.getByTestId('black-name-input')).toHaveValue('小明');
+    expect(API.createSession).not.toHaveBeenCalled();
+    expect(writeActiveSession).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+  it('pending check prevents duplicate creation until ready', async () => {
+    vision.enabled = true;
+    let resolve!: (value: { ready: boolean; status: typeof ready }) => void;
+    geometry.preflight.mockReturnValue(new Promise(r => { resolve = r; }));
+    renderPage();
+    fireEvent.click(screen.getByTestId('local-start-action'));
+    expect(screen.getByTestId('local-start-action')).toHaveTextContent('检查棋盘');
+    expect(screen.getByTestId('local-start-action')).toBeDisabled();
+    fireEvent.click(screen.getByTestId('local-start-action'));
+    expect(API.createSession).not.toHaveBeenCalled();
+    await act(async () => resolve({ ready: true, status: ready }));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
+    expect(geometry.preflight).toHaveBeenCalledTimes(1);
+    expect(API.createSession).toHaveBeenCalledTimes(1);
+    expect(API.gameSetup).toHaveBeenCalledTimes(1);
+    expect(writeActiveSession).toHaveBeenCalledTimes(1);
+  });
+  it('network failure leaves setup retryable without movement or lighting claims', async () => {
+    vision.enabled = true;
+    geometry.preflight.mockRejectedValue(new Error('timeout'));
+    renderPage();
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('检查棋盘失败');
+    expect(screen.queryByTestId('calib-screen')).not.toBeInTheDocument();
+    expect(API.createSession).not.toHaveBeenCalled();
+    expect(writeActiveSession).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.getByTestId('local-start-action')).toBeEnabled();
+  });
+  it('late ready result after leaving cannot create a session', async () => {
+    vision.enabled = true;
+    let resolve!: (value: { ready: boolean; status: typeof ready }) => void;
+    geometry.preflight.mockReturnValue(new Promise(r => { resolve = r; }));
+    const view = renderPage();
+    fireEvent.click(screen.getByTestId('local-start-action'));
+    view.unmount();
+    await act(async () => resolve({ ready: true, status: ready }));
+    expect(API.createSession).not.toHaveBeenCalled();
+    expect(writeActiveSession).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+  it('only cleans this attempt’s new session if creation finishes after leaving', async () => {
+    vision.enabled = true;
+    let resolve!: (value: { session_id: string; state: object }) => void;
+    vi.mocked(API.createSession).mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    const view = renderPage();
+    fireEvent.click(screen.getByTestId('local-start-action'));
+    await waitFor(() => expect(API.createSession).toHaveBeenCalled());
+    view.unmount();
+    await act(async () => resolve({ session_id: 'new-only', state: {} }));
+    expect(API.deleteSession).toHaveBeenCalledWith('new-only');
+    expect(API.gameSetup).not.toHaveBeenCalled();
+    expect(writeActiveSession).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+  it('unknown status cannot silently create a screen game for physical intent', async () => {
+    vision.loaded = false;
+    renderPage();
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    expect(API.createSession).not.toHaveBeenCalled();
+    expect(writeActiveSession).not.toHaveBeenCalled();
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent('实体盘');
+  });
+  it('screen choice and non-19 games skip preflight', async () => {
+    vision.enabled = true;
+    renderPage();
+    await pick(userEvent.setup(), 'setup-input', 'screen');
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    await waitFor(() => expect(writeActiveSession).toHaveBeenCalled());
+    expect(geometry.preflight).not.toHaveBeenCalled();
+    await pick(userEvent.setup(), 'setup-input', 'board');
+    await pick(userEvent.setup(), 'setup-size', '9');
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    await waitFor(() => expect(writeActiveSession).toHaveBeenCalledTimes(2));
+    expect(geometry.preflight).not.toHaveBeenCalled();
   });
 });

@@ -109,7 +109,16 @@ const json = async <T>(res: Response): Promise<T> => {
   return res.json();
 };
 
+export interface GeometryPreflightResult {
+  ready: boolean;
+  reason?: string;
+  status: GeometryStatus;
+}
+
 export const GeometryAPI = {
+  preflight: async (): Promise<GeometryPreflightResult> => json(await fetch(`${API_BASE}/preflight`, {
+    method: 'POST', signal: AbortSignal.timeout(15000),
+  })),
   lock: async (): Promise<GeometryLockResult> => {
     const res = await fetch(`${API_BASE}/lock`, { method: 'POST' });
     if (!res.ok) throw new Error(`geometry/lock failed ${res.status}`);

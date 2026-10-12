@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { API, type GameType } from '../../api';
-import { GeometryAPI, type GeometryPhase, type GeometryStatus } from '../../api/geometryApi';
+import { GeometryAPI, type GeometryPhase, type GeometryStatus, type GeometryPreflightResult } from '../../api/geometryApi';
 
 const DEFAULT_STATUS: GeometryStatus = {
   phase: 'required',
@@ -22,6 +22,7 @@ interface GeometryContextValue {
    */
   loaded: boolean;
   refresh: () => Promise<void>;
+  preflight: () => Promise<GeometryPreflightResult>;
   startCalibration: (trigger: 'auto' | 'manual', resetSessionId?: string, gameType?: GameType) => Promise<void>;
   /** Called only after the original game's vision bind succeeds. */
   completeRecalibration: (sessionId: string) => Promise<void>;
@@ -89,6 +90,13 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [applyStatus]);
 
+  const preflight = useCallback(async () => {
+    const result = await GeometryAPI.preflight();
+    applyStatus(result.status);
+    setLoaded(true);
+    return result;
+  }, [applyStatus]);
+
   const startCalibration = useCallback(async (trigger: 'auto' | 'manual', resetSessionId?: string, gameType?: GameType) => {
     pendingReset.current = resetSessionId ? {
       sessionId: resetSessionId, gameType, revision: statusRef.current.geometry_revision ?? 0, pathname: pathnameRef.current,
@@ -131,7 +139,7 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
   }, [refresh, status.phase]);
 
   return (
-    <GeometryContext.Provider value={{ status, loaded, refresh, startCalibration, completeRecalibration, confirmExisting, cancelCalibration, relocate }}>
+    <GeometryContext.Provider value={{ status, loaded, refresh, preflight, startCalibration, completeRecalibration, confirmExisting, cancelCalibration, relocate }}>
       {children}
     </GeometryContext.Provider>
   );

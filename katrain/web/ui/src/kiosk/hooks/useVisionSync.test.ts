@@ -44,6 +44,18 @@ describe('vision binding preparation', () => {
     expect(result.current.bindState).toBe('ready');
   });
 
+  it('retry reports actual bind success and does not resolve true while preparation is pending', async () => {
+    const binding = deferred();
+    vi.spyOn(API, 'visionBind').mockResolvedValueOnce(undefined).mockReturnValueOnce(binding.promise);
+    const { result } = renderHook(() => useVisionSync('original'));
+    await waitFor(() => expect(result.current.bindState).toBe('ready'));
+    let retry!: Promise<boolean>;
+    act(() => { retry = result.current.retryBind(); });
+    expect(result.current.bindState).toBe('preparing');
+    await act(async () => binding.resolve());
+    expect(await retry).toBe(true);
+  });
+
   it('a late bind from the previous session cannot complete the new session', async () => {
     const old = deferred();
     vi.spyOn(API, 'visionBind').mockReturnValueOnce(old.promise).mockResolvedValue(undefined);

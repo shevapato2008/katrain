@@ -37,7 +37,7 @@ export interface VisionSyncState {
    *  fans out to already-registered connections, so events fired earlier are lost. */
   connected: boolean;
   bindState: 'idle' | 'preparing' | 'ready' | 'error';
-  retryBind: () => void;
+  retryBind: () => Promise<boolean>;
 }
 
 // ---- Hook ------------------------------------------------------------------
@@ -51,7 +51,7 @@ export function useVisionSync(sessionId: string | null, onBound?: (sessionId: st
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [connected, setConnected] = useState(false);
   const [bindState, setBindState] = useState<VisionSyncState['bindState']>(sessionId ? 'preparing' : 'idle');
-  const retryBindRef = useRef<() => void>(() => {});
+  const retryBindRef = useRef<() => Promise<boolean>>(async () => false);
   const retryBind = useCallback(() => retryBindRef.current(), []);
 
   const onBoundRef = useRef(onBound);
@@ -89,22 +89,25 @@ export function useVisionSync(sessionId: string | null, onBound?: (sessionId: st
 
     let binding = false;
     const bind = async () => {
-      if (!sessionId || binding || cancelled) return;
+      if (!sessionId || binding || cancelled) return false;
       binding = true;
       setBindState('preparing');
       try {
         await API.visionBind(sessionId);
-        if (cancelled) return;
+        if (cancelled) return false;
         await onBoundRef.current?.(sessionId);
-        if (!cancelled) setBindState('ready');
+        if (cancelled) return false;
+        setBindState('ready');
+        return true;
       } catch (err) {
         if (!cancelled) setBindState('error');
         console.error('Vision bind failed', err);
+        return false;
       } finally {
         binding = false;
       }
     };
-    retryBindRef.current = () => { void bind(); };
+    retryBindRef.current = bind;
 
     const connect = async () => {
       if (sessionId) await bind();
@@ -124,7 +127,7 @@ export function useVisionSync(sessionId: string | null, onBound?: (sessionId: st
 
     return () => {
       cancelled = true;
-      retryBindRef.current = () => {};
+      retryBindRef.current = async () => false;
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;

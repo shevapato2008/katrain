@@ -137,7 +137,8 @@ export const KioskRoutes = () => {
               选了下在屏幕上」。开局设置屏那颗「屏幕 / 实体盘」不接到这儿的话,人选了屏幕
               进来还是被推去标定工作台,开关只做了半截。偏好默认开 ⇒ 对现有行为零影响。
               **不要退回裸的 `PhysicalBoardGuard`。** */}
-          <Route path="play/pvp/local/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
+          {/* Local recovery stays inside GamePage so geometry loss cannot unmount the original session. */}
+          <Route path="play/pvp/local/game/:sessionId" element={<GamePage />} />
           <Route path="play/pvp/room/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
           <Route path="play/cross-platform/engine/game/:sessionId" element={<PlayInputGuard><GamePage engineMode /></PlayInputGuard>} />
           <Route path="play/cross-platform/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />

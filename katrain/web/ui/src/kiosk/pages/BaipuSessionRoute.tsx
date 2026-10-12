@@ -10,11 +10,11 @@ import { KioskPagebar } from '../shell/KioskPagebar';
 import BaipuSessionPage from './BaipuSessionPage';
 
 /**
- * 标定线程还在跑的那五个 phase。与 `GeometryContext.tsx` 的 `ACTIVE`、服务端
+ * 标定线程还在跑的 phase。与 `GeometryContext.tsx` 的 `ACTIVE`、服务端
  * `GeometryCalibrationService.ACTIVE_PHASES` 是同一份名单(那两处都没导出,这里不为它改别人的文件)。
  */
 const CALIBRATION_RUNNING: readonly GeometryPhase[] = [
-  'waiting_empty', 'dark_reference', 'flashing_corners', 'verifying', 'building_baseline',
+  'waiting_empty', 'dark_reference', 'converging_exposure', 'flashing_corners', 'verifying', 'building_baseline',
 ];
 
 /**

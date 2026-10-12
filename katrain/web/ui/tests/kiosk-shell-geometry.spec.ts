@@ -1693,13 +1693,13 @@ test('§11 研究屏:AI 推荐表装不下时,滚的是表自己,动作区照旧
  * 那一个状态下**勉强平:失败时要多一张诊断卡,当场顶破。
  *
  * ⇒ 结构改成头(三格 56)尾(按钮 44)固定、中间那块滚。这样账本只依赖四个共享 token
- * (56 / 44 / 两个 8),中段是多少都顶不破。删掉稿子那个不存在的第 2 步又还回 60。
+ * (56 / 44 / 两个 8),中段是多少都顶不破。曝光收敛作为真实第 2 步，占用中段高度。
  *
  * 这一关量三件事,**第三件是这里唯一分得出真假的那件**:
  *  ① 五段加起来正好 460(关系式,不是硬编码);
- *  ② 四行步骤各 52 —— `.kiosk-row` 的 `flex:none` 在一个**会滚的**容器里必须还在。
+ *  ② 五行步骤各 52 —— `.kiosk-row` 的 `flex:none` 在一个**会滚的**容器里必须还在。
  *     那条注释警告过:不写死的话 flex 会先把行压扁再滚(2026-07-29 量到 18 行被压成 33)。
- *     而这四行现在**真的**住在会滚的容器里,正是它描述的场景。
+ *     而这五行现在**真的**住在会滚的容器里,正是它描述的场景。
  *  ③ **失败态**下中段真的滚得动,而按钮**没有被顶出右栏**。
  *
  * 变异实测(2026-08-24)两发,**两条预测都被推翻了**,而且推翻的方式各自都有教训:
@@ -1755,7 +1755,7 @@ const calibBoxes = (page: Page) => page.evaluate(() => {
   };
 });
 
-test('§11 标定屏:头尾钉死、四行不被压扁,右栏总高正好 460', async ({ page }) => {
+test('§11 标定屏:头尾钉死、五行不被压扁,右栏总高正好 460', async ({ page }) => {
   await bootCalib(page, {});
   const m = await calibBoxes(page);
 
@@ -1768,10 +1768,8 @@ test('§11 标定屏:头尾钉死、四行不被压扁,右栏总高正好 460', 
   expect(m.acts.bottom, '按钮行没贴右栏底 —— 它是固定尾,不靠 margin-top:auto').toBe(m.rail.bottom);
   expect(m.status.h + m.zone.h + m.acts.h + 16, '五段加起来 ≠ 右栏高度').toBe(m.rail.h);
 
-  // ── 四行不许被压扁 ──
-  expect(m.rows, '步骤行被压扁了 —— `.kiosk-row` 的 flex:none 掉了').toEqual([52, 52, 52, 52]);
-  // 常态装得下 ⇒ **不许**有 data-at(挂一条永远亮着的渐隐等于谎报下面还有东西)
-  expect(m.overflow, '常态就溢出了 —— 那本账已经不对了').toBeLessThanOrEqual(0);
+  // 五步保持行高；中段允许滚动，新增曝光步骤不能挤走固定头尾。
+  expect(m.rows, '步骤行被压扁了 —— `.kiosk-row` 的 flex:none 掉了').toEqual([52, 52, 52, 52, 52]);
 });
 
 test('§11 标定屏:失败时多一张诊断卡,中段自己滚,按钮一颗都不许被顶出去', async ({ page }) => {
@@ -1782,7 +1780,7 @@ test('§11 标定屏:失败时多一张诊断卡,中段自己滚,按钮一颗都
 
   expect(m.rail.h, '右栏高度被诊断卡顶变了').toBe(460);
   expect(m.acts.bottom, '按钮被顶出右栏了 —— 键还在 DOM 里,但手指够不到').toBe(m.rail.bottom);
-  expect(m.rows, '失败态下步骤行被压扁了').toEqual([52, 52, 52, 52]);
+  expect(m.rows, '失败态下步骤行被压扁了').toEqual([52, 52, 52, 52, 52]);
   expect(m.overflow, '诊断卡没把中段撑到溢出 —— 下面那条滚动断言是空的').toBeGreaterThan(0);
 
   // 唯一分得出「有没有出路」的那一条:**真滚轮**。合成事件 Chromium 不认,
@@ -1844,7 +1842,7 @@ for (const lang of ['cn', 'de', 'ru', 'ua', 'en', 'es', 'fr', 'tr', 'jp', 'ko', 
     expect(m.rail.h, '右栏高度被诊断卡顶变了').toBe(460);
     expect(m.acts.bottom, '按钮被顶出右栏了').toBe(m.rail.bottom);
     expect(m.acts.h, '三颗键折成两行了 —— 按钮区不再是固定尾').toBe(44);
-    expect(m.rows, '步骤行被压扁了').toEqual([52, 52, 52, 52]);
+    expect(m.rows, '步骤行被压扁了').toEqual([52, 52, 52, 52, 52]);
     expect(m.overflow, '没造到会溢出 —— 下面的滚动断言是空的').toBeGreaterThan(0);
     // 每颗键的字都装得下(`.calib-acts` 是等宽三列,约 146px;德文最容易撑破)
     const clipped = await acts.locator('.kiosk-btn').evaluateAll((els) =>

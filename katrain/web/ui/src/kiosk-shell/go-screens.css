@@ -1832,11 +1832,11 @@ button.kiosk-row.figrow { flex: none; }
 .calib-acts .kiosk-btn:disabled { opacity: .45; cursor: default; }
 .calib-diag__raw { font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); opacity: .7; }
 
-/* 标定五步 → **四步**(见 `GeometryCalibrationScreen.tsx` 页头注)。
+/* 标定五步(准备空盘、曝光、四角、星位、基线)。
    用共享 `.kiosk-row` 的骨架,只换序号那一格:稿子要圆的 26×26,不是等宽数字。
    ⚠️ **绝不覆盖 `.kiosk-row` 的 `flex` 和 `height`** —— 那条 `flex:none` 的注释写着
    「不写死的话 flex 会先把它们压扁再滚(2026-07-29 真浏览器量出来 18 行被压成 33px)」,
-   而这四行现在**真的住在一个会滚的容器里**,正是那条注释描述的场景。 */
+   而这五行现在**真的住在一个会滚的容器里**,正是那条注释描述的场景。 */
 .kiosk-row--step > .kiosk-row__lead {
   width: 26px; height: 26px; flex: none; display: grid; place-items: center;
   border-radius: 50%; border: 1px solid var(--hair); background: var(--panel);

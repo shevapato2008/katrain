@@ -19,6 +19,7 @@ import KioskResultBadge from '../components/game/KioskResultBadge';
 import RecalibrationModal from '../components/game/RecalibrationModal';
 import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
 import { useVoice } from '../hooks/useVoice';
+import { useOptionalGeometry } from '../context/GeometryContext';
 import { useVision } from '../context/VisionContext';
 import { readSessionPlayOnBoard } from '../utils/playInput';
 import { useVisionSync } from '../hooks/useVisionSync';
@@ -347,7 +348,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
   const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
 
-  const { visionStatus, isVisionEnabled } = useVision();
+  const { visionStatus, isVisionEnabled, loaded: visionLoaded } = useVision();
 
   // ── 这一局到底落在哪儿 ────────────────────────────────────────────────
   // **`isVisionEnabled` 只是设备那一段。** 2026-08-23 起开局设置屏上有一颗真的
@@ -374,7 +375,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     try { sessionStorage.setItem(screenFallbackKey, '1'); } catch { /* 本页仍降级，刷新后可能无法保留 */ }
     setPhysicalSession((previous) => ({ ...previous, screenFallback: true }));
   }, [screenFallbackKey]);
-  const physicalPlay = !physicalSession.screenFallback && isVisionEnabled
+  const physicalPlay = !physicalSession.screenFallback && (isVisionEnabled || (playOnBoard.fromSession && visionLoaded === false))
     && playOnBoard.onBoard
     && (playOnBoard.fromSession || (session.gameState?.board_size?.[0] ?? 19) === 19);
   const poseEverLocked = physicalSession.poseEverLocked;
@@ -382,7 +383,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   if (physicalSession.sessionId === sessionId && physicalPlay && visionStatus.poseLocked && !poseEverLocked) {
     setPhysicalSession({ ...physicalSession, poseEverLocked: true });
   }
-  const visionSync = useVisionSync(physicalPlay ? sessionId ?? null : null);
+  const geometry = useOptionalGeometry();
+  const visionSync = useVisionSync(physicalPlay && visionLoaded !== false ? sessionId ?? null : null, geometry?.completeRecalibration);
+  const physicalPreparation = visionSync.bindState === 'error' ? 'error'
+    : visionSync.bindState === 'ready' && visionLoaded !== false && visionStatus.cameraConnected && visionStatus.poseLocked ? 'ready' : 'preparing';
   const confirmationGame = session.gameState;
   const confirmationScope = `${sessionId}|${confirmationGame?.game_id}|${confirmationGame?.current_node_id}|${confirmationGame?.player_to_move}|${physicalPlay}`;
   const latestConfirmationScope = useRef(confirmationScope);
@@ -412,7 +416,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     input: physicalPlay ? 'physical' : 'screen',
     enabled: confirmationGame?.game_type === 'pvp_local' && confirmationGame.local_confirmation?.enabled === true
       && !sessionIsGameOver && !confirmationGame.awaiting_count && !session.connectionLost
-      && (!physicalPlay || (visionStatus.cameraConnected && visionStatus.poseLocked)),
+      && (!physicalPlay || physicalPreparation === 'ready'),
     recognizing: confirmationGame?.local_confirmation?.status === 'recognizing',
     submit: async (request) => {
       if (!sessionId || !confirmationGame) throw new Error('No active game');
@@ -1374,6 +1378,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           precedence comment above recalOpen. */}
       {physicalPlay && (
         <RecalibrationModal
+          gameType={session.gameState?.game_type}
           key={String(visionStatus.poseLocked)}
           open={recalOpen && !escalationOpen}
           // Intentionally inert: RecalibrationModal is not fully controlled — it owns its
@@ -1397,6 +1402,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <LocalConfirmGame key={`${sessionId}|${gameState.game_id}`}
           gameState={gameState} input={physicalPlay ? 'physical' : 'screen'}
           point={localConfirmation.point} busy={localConfirmation.busy} failed={localConfirmation.failed}
+          physicalPreparation={physicalPlay ? physicalPreparation : undefined}
+          onRetryPreparation={!session.connectionLost && !counting && visionStatus.cameraConnected ? visionSync.retryBind : undefined}
           analysisToggles={analysisToggles}
           onToggle={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
           onSelect={handleBoardMove} onConfirm={() => { void localConfirmation.confirm(); }}

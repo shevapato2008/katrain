@@ -1,4 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
+import { API, type GameType } from '../../api';
 import { GeometryAPI, type GeometryPhase, type GeometryStatus } from '../../api/geometryApi';
 
 const DEFAULT_STATUS: GeometryStatus = {
@@ -20,28 +22,64 @@ interface GeometryContextValue {
    */
   loaded: boolean;
   refresh: () => Promise<void>;
-  startCalibration: (trigger: 'auto' | 'manual') => Promise<void>;
+  startCalibration: (trigger: 'auto' | 'manual', resetSessionId?: string, gameType?: GameType) => Promise<void>;
+  /** Called only after the original game's vision bind succeeds. */
+  completeRecalibration: (sessionId: string) => Promise<void>;
   confirmExisting: () => Promise<void>;
   cancelCalibration: () => Promise<void>;
   relocate: () => Promise<void>;
 }
 
 const GeometryContext = createContext<GeometryContextValue | null>(null);
-const ACTIVE: GeometryPhase[] = ['waiting_empty', 'dark_reference', 'flashing_corners', 'verifying', 'building_baseline'];
+const ACTIVE: GeometryPhase[] = [
+  'waiting_empty', 'dark_reference', 'converging_exposure', 'flashing_corners', 'verifying', 'building_baseline',
+];
 
 export const GeometryProvider = ({ children }: { children: ReactNode }) => {
+  const { pathname } = useLocation();
+  const pendingReset = useRef<{ sessionId: string; revision: number; pathname: string; gameType?: GameType } | null>(null);
+  const statusRef = useRef<GeometryStatus>(DEFAULT_STATUS);
+  const pathnameRef = useRef(pathname);
   const [status, setStatus] = useState<GeometryStatus>(DEFAULT_STATUS);
   const [loaded, setLoaded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const applyStatus = useCallback((next: GeometryStatus) => {
+    statusRef.current = next;
+    if (['failed', 'cancelled', 'disabled'].includes(next.phase)) pendingReset.current = null;
+    setStatus(next);
+  }, []);
+
+  // A deferred reset belongs to the route where the user requested it.
+  useEffect(() => {
+    pathnameRef.current = pathname;
+    if (pendingReset.current?.pathname !== pathname) pendingReset.current = null;
+  }, [pathname]);
+
+  const completeRecalibration = useCallback(async (sessionId: string) => {
+    const pending = pendingReset.current;
+    const current = statusRef.current;
+    if (!pending) return;
+    if (pending.sessionId !== sessionId || pending.pathname !== pathnameRef.current) {
+      pendingReset.current = null;
+      return;
+    }
+    if (current.phase !== 'ready' || !current.session_calibrated
+      || !current.capabilities.geometry_ready || (current.geometry_revision ?? 0) <= pending.revision) return;
+    pendingReset.current = null;
+    // Local bind prepares a fresh reference; RESET_SYNC would immediately invalidate it.
+    if (pending.gameType !== 'pvp_local') await API.visionResetSync();
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
-      setStatus(await GeometryAPI.status() as GeometryStatus);
+      applyStatus(await GeometryAPI.status());
       setLoaded(true);
     } catch (error) {
+      pendingReset.current = null;
       if (error instanceof Error && error.message.includes('404')) {
         // 404 = 这台盒子压根没起 capture 服务。**这是一个读到了的结论**,不是没读到 ⇒ 也算 loaded。
-        setStatus({ ...DEFAULT_STATUS, phase: 'disabled' });
+        applyStatus({ ...DEFAULT_STATUS, phase: 'disabled' });
         setLoaded(true);
       } else {
         setStatus((previous) => ({
@@ -49,23 +87,34 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
         }));
       }
     }
-  }, []);
+  }, [applyStatus]);
 
-  const startCalibration = useCallback(async (trigger: 'auto' | 'manual') => {
-    setStatus(await GeometryAPI.calibrate(trigger));
-  }, []);
+  const startCalibration = useCallback(async (trigger: 'auto' | 'manual', resetSessionId?: string, gameType?: GameType) => {
+    pendingReset.current = resetSessionId ? {
+      sessionId: resetSessionId, gameType, revision: statusRef.current.geometry_revision ?? 0, pathname: pathnameRef.current,
+    } : null;
+    try {
+      applyStatus(await GeometryAPI.calibrate(trigger));
+    } catch (error) {
+      pendingReset.current = null;
+      throw error;
+    }
+  }, [applyStatus]);
 
   const cancelCalibration = useCallback(async () => {
-    setStatus(await GeometryAPI.cancel());
-  }, []);
+    pendingReset.current = null;
+    applyStatus(await GeometryAPI.cancel());
+  }, [applyStatus]);
 
   const confirmExisting = useCallback(async () => {
-    setStatus(await GeometryAPI.confirmExisting());
-  }, []);
+    pendingReset.current = null;
+    applyStatus(await GeometryAPI.confirmExisting());
+  }, [applyStatus]);
 
   const relocate = useCallback(async () => {
-    setStatus(await GeometryAPI.relocate());
-  }, []);
+    pendingReset.current = null;
+    applyStatus(await GeometryAPI.relocate());
+  }, [applyStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,7 +131,7 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
   }, [refresh, status.phase]);
 
   return (
-    <GeometryContext.Provider value={{ status, loaded, refresh, startCalibration, confirmExisting, cancelCalibration, relocate }}>
+    <GeometryContext.Provider value={{ status, loaded, refresh, startCalibration, completeRecalibration, confirmExisting, cancelCalibration, relocate }}>
       {children}
     </GeometryContext.Provider>
   );

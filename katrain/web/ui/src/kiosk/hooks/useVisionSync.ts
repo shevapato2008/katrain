@@ -36,19 +36,26 @@ export interface VisionSyncState {
   /** WS open. Consumers must not arm setup/move detection before this — the pump only
    *  fans out to already-registered connections, so events fired earlier are lost. */
   connected: boolean;
+  bindState: 'idle' | 'preparing' | 'ready' | 'error';
+  retryBind: () => void;
 }
 
 // ---- Hook ------------------------------------------------------------------
 
 const MAX_EVENTS = 100;
 
-export function useVisionSync(sessionId: string | null): VisionSyncState {
+export function useVisionSync(sessionId: string | null, onBound?: (sessionId: string) => Promise<void>): VisionSyncState {
   const [syncEvents, setSyncEvents] = useState<VisionSyncEvent[]>([]);
   const [latestEvent, setLatestEvent] = useState<VisionSyncEvent | null>(null);
   const [setupProgress, setSetupProgress] = useState<{ matched: number; total: number; missing: Array<[number, number]>; extra: Array<[number, number, number]> } | null>(null);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [bindState, setBindState] = useState<VisionSyncState['bindState']>(sessionId ? 'preparing' : 'idle');
+  const retryBindRef = useRef<() => void>(() => {});
+  const retryBind = useCallback(() => retryBindRef.current(), []);
 
+  const onBoundRef = useRef(onBound);
+  useEffect(() => { onBoundRef.current = onBound; }, [onBound]);
   const wsRef = useRef<WebSocket | null>(null);
   const nextSeqRef = useRef(0);
 
@@ -80,14 +87,27 @@ export function useVisionSync(sessionId: string | null): VisionSyncState {
   useEffect(() => {
     let cancelled = false;
 
-    const connect = async () => {
-      if (sessionId) {
-        try {
-          await API.visionBind(sessionId);
-        } catch (err) {
-          console.error('Vision bind failed', err);
-        }
+    let binding = false;
+    const bind = async () => {
+      if (!sessionId || binding || cancelled) return;
+      binding = true;
+      setBindState('preparing');
+      try {
+        await API.visionBind(sessionId);
+        if (cancelled) return;
+        await onBoundRef.current?.(sessionId);
+        if (!cancelled) setBindState('ready');
+      } catch (err) {
+        if (!cancelled) setBindState('error');
+        console.error('Vision bind failed', err);
+      } finally {
+        binding = false;
       }
+    };
+    retryBindRef.current = () => { void bind(); };
+
+    const connect = async () => {
+      if (sessionId) await bind();
       if (cancelled) return;
 
       /* `/ws/vision` 是盒端本地通道，服务端不鉴权（server.py 的 vision_websocket
@@ -104,6 +124,7 @@ export function useVisionSync(sessionId: string | null): VisionSyncState {
 
     return () => {
       cancelled = true;
+      retryBindRef.current = () => {};
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
@@ -116,8 +137,9 @@ export function useVisionSync(sessionId: string | null): VisionSyncState {
       setSetupProgress(null);
       setIsSetupComplete(false);
       setConnected(false);
+      setBindState('idle');
     };
   }, [sessionId, handleMessage]);
 
-  return { syncEvents, latestEvent, setupProgress, isSetupComplete, connected };
+  return { syncEvents, latestEvent, setupProgress, isSetupComplete, connected, bindState, retryBind };
 }

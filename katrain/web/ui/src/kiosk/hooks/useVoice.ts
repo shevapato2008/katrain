@@ -19,7 +19,9 @@ export type VoiceName =
   | 'board_mismatch'
   | 'judge_undecided'
   | 'local_confirm_physical'
-  | 'local_confirm_screen';
+  | 'local_confirm_screen'
+  | 'lighting_overexposed'
+  | 'lighting_underexposed';
 
 export function useVoice() {
   // Only one voice line at a time — new line interrupts the previous.

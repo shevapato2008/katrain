@@ -13,7 +13,7 @@ export interface GeometryLockResult {
 }
 
 export type GeometryPhase =
-  | 'disabled' | 'required' | 'waiting_empty' | 'dark_reference'
+  | 'disabled' | 'required' | 'waiting_empty' | 'dark_reference' | 'converging_exposure'
   | 'flashing_corners' | 'verifying' | 'building_baseline'
   | 'ready' | 'degraded' | 'failed' | 'cancelled';
 
@@ -46,13 +46,49 @@ export interface GeometryLayout {
   points: [number, number][][];
 }
 
+export type LightingReason = 'frame_overexposed' | 'frame_underexposed';
+
+export interface GeometryExposureMetrics {
+  median: number;
+  clip_frac: number;
+  shadow_frac: number;
+  reason?: LightingReason | null;
+  confirmed?: boolean;
+}
+
+export interface GeometryAnchorAttempt {
+  row: number;
+  col: number;
+  color: string;
+  level: number;
+  ok?: boolean;
+  peak?: number | null;
+  area?: number | null;
+  margin?: number | null;
+  reason?: string | null;
+  roi_fallback?: boolean;
+}
+
+export interface GeometryMetrics {
+  inlier_count?: number | null;
+  rms_residual?: number | null;
+  max_residual?: number | null;
+  exposure?: GeometryExposureMetrics | null;
+  attempts?: GeometryAnchorAttempt[];
+  relocated?: number;
+  shift_cells?: number;
+  drift_response?: number;
+}
+
 export interface GeometryStatus {
   phase: GeometryPhase;
+  /** 失败或取消前的真实阶段；旧服务端可能不提供。 */
+  stopped_phase?: GeometryPhase | null;
   session_calibrated: boolean;
   last_valid: boolean;
   progress?: { current: number; total: number };
   error?: string | null;
-  metrics?: Record<string, number | null>;
+  metrics?: GeometryMetrics;
   geometry_revision?: number;
   detected_anchors?: GeometryAnchor[];
   /** 最近一次外框重定位为什么没成(`no_board_detected` / `orientation_ambiguous` / `moved_too_far` / `delivery_failed` …);成了或没试过为 null。 */

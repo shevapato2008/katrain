@@ -18,7 +18,8 @@ export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_l
 export interface LocalConfirmationState {
   enabled: boolean;
   status: 'idle' | 'recognizing';
-  reason?: 'no_stone' | 'multiple_stones' | 'capture_remaining' | 'timeout' | 'illegal_move' | 'unavailable' | null;
+  reason?: 'no_stone' | 'multiple_stones' | 'capture_remaining' | 'timeout' | 'illegal_move' | 'unavailable'
+    | 'frame_overexposed' | 'frame_underexposed' | null;
   points?: { row: number; col: number }[];
 }
 

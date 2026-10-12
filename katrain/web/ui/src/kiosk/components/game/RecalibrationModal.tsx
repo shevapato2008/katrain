@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 import { Warning as WarningIcon } from '@mui/icons-material';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { GeometryAPI } from '../../../api/geometryApi';
-import { API } from '../../../api';
+import type { GameType } from '../../../api';
+import { useParams } from 'react-router-dom';
+import { useOptionalGeometry } from '../../context/GeometryContext';
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  gameType?: GameType;
 }
 
 /** State B (design.md §5.1): blocking amber modal shown when board pose is lost mid-game.
@@ -22,21 +24,21 @@ interface Props {
  * won't itself change just because the user clicked through. GamePage remounts this component
  * with `key={String(visionStatus.poseLocked)}` so a fresh pose-loss cycle clears the dismiss
  * (React's "reset state via key" pattern — avoids a useEffect/ref reset). */
-const RecalibrationModal = ({ open, onClose }: Props) => {
+const RecalibrationModal = ({ open, onClose, gameType }: Props) => {
   const { t } = useTranslation();
+  const geometry = useOptionalGeometry();
+  const { sessionId } = useParams<{ sessionId: string }>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
-  // Lifted verbatim from PoseLostBanner.tsx (pre-B1.4).
+  // Shared guard takes over while calibration runs; reset follows the original bind.
   const recalibrate = async () => {
     setBusy(true);
     setError(null);
     try {
-      // 签名 calibrate(trigger: 'auto' | 'manual') — geometryApi.ts:85（评审 Codex I4）。
-      // 'manual' 显式声明这是用户触发（D2③ 硬规则的代码级痕迹）。
-      await GeometryAPI.calibrate('manual'); // POST /api/v1/geometry/calibrate (202)
-      await API.visionResetSync();
+      if (!geometry) throw new Error('Geometry provider unavailable');
+      await geometry.startCalibration('manual', sessionId, gameType);
     } catch {
       setError(t('Re-align failed — try again', '重新定位失败，请重试'));
     } finally {

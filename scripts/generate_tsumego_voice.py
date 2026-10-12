@@ -2,6 +2,10 @@
 
 Usage: uv run --no-sync python scripts/generate_tsumego_voice.py
 Output: katrain/sounds/voice/<name>.mp3 (committed to the repo)
+
+The two committed lighting_* clips use macOS Tingting Mandarin (2026-10-12),
+as an offline fallback after Microsoft synthesis repeatedly returned HTTP 403.
+This generator keeps Xiaoxiao as its default voice.
 """
 
 import asyncio
@@ -25,6 +29,8 @@ LINES = {
     "judge_undecided": "星阵数子还有归属未定的位置，请查看棋盘并继续收官。",
     "local_confirm_physical": "请双方每次只下一手。落子并拿除提子后，移开双手，点击本方确认。听到落子音效、对方区域亮起后，对方再下下一手。",
     "local_confirm_screen": "请点击棋盘选择落子位置，可以再次点击调整。选好后，点击本方确认。听到落子音效、对方区域亮起后，对方再下下一手。",
+    "lighting_overexposed": "画面过亮，无法可靠识别棋盘。请移开遮挡。如果提示仍未消失，请换到光线均匀、合适的地方下棋。",
+    "lighting_underexposed": "画面过暗，无法可靠识别棋盘。请移开遮挡。如果提示仍未消失，请换到光线均匀、合适的地方下棋。",
 }
 
 

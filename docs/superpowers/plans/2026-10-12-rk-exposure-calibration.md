@@ -16,29 +16,35 @@
 
 此切片覆盖标定和本地实体逐手确认时的光照检查；不承诺摄像头未运行时监控光线，也不为其它对局另造全天候monitor。静止遮挡尚无法可靠区分，所以文案先要求移开遮挡，持续不合适再换位置，不能断言必为环境光。
 
+用户补充：曝光准备必须覆盖所有实体棋盘的标定入口。设置页、自由/人机/本地对局、做题、摆谱共用几何标定服务；对局中主动“重新标定”也展示同一五步流程并等待真正 ready。旧 `/geometry/lock` 在启用标定服务时同样进入该流程。逐帧的无灯外框漂移修正只消费现有画面，不另发曝光控制请求。
+
+执行中用户新增首手故障：真实 BIND 后本地参考帧 ready，但旧同步机仍 CALIBRATING，前端据此禁用确认。独立 Astra max 已诊断并批准最小修复，见 `FIRST-MOVE-DIAGNOSIS.md`；这不是原曝光计划的第三轮审核。Task2 增补准备中/失败/独立重新准备的可达入口，开局引导等待真实准备成功。Task3 在真实几何与参考帧准备完成时交付诚实的 pose/sync 就绪状态，继续禁止本地自动落子/同步；新增真实 BIND 起步的回归，不能预先手工 confirm_pose_lock。
+
+新增两条光照语音的 Microsoft Xiaoxiao 服务持续 403，独立 Astra max 批准仅这两条使用已安装的 Mac 普通话 Tingting 离线生成。保留原生成脚本的 Xiaoxiao 默认和两条文案，准确记录此次二进制来源，旧提示音频不重生成。
+
 ## Chunk 1: 曝光准备成为真实且可取消的标定阶段
 
 ### Task 1: 最小共享后端基础（独立实现agent）
 
 **Files:** `katrain/web/core/geometry_calibration_service.py`、`katrain/web/api/v1/endpoints/geometry.py`；tests `tests/test_geometry_calibration_service.py`、`tests/test_geometry_api.py`。
 
-- [ ] 核对草稿、运行新增延迟5旧帧回归的已有RED证据；增加真实False/模式仍3/超时/等待时取消及延迟恢复的聚焦用例。取消不得进入calibrator或持久化，保留旧geometry并执行恢复。
-- [ ] 将3帧等待改成条件等待：`deadline=monotonic()+30`；None继续等、False立即失败、True还需actual current_auto_exposure接近native manual1。取帧前后检查cancel，用短Event.wait避免忙循环；到期失败，不把超时当成功。rollback独立有界等待，已置位cancel不跳过恢复，恢复失败保留原失败并写warning。
-- [ ] 控制最终False或读回非manual时不进入LED。若已不再pending、camera正常产帧，可用同一个严格曝光probe取得3个不同、请求后新鲜seq/ts；只有足够证据且严重gate拒绝才额外写 `metrics.exposure={median,clip_frac,shadow_frac,reason,confirmed:true}`。原manual读回错误保留。pending、超时缓存、不足新帧不能映射光照异常；测试真实严重画面能在控制早失败分支产生告警，而普通亮度/缺帧不会。
-- [ ] `_run` suspend后、收敛前发布 `converging_exposure`，progress.current仍0/total13；所有backend ACTIVE判据包含该阶段，维持preview节流及旧几何不可使用。
-- [ ] 在failed/cancelled前、同锁记录 `stopped_phase`（原活动phase）；start/ready/operator_reuse清空。rollback不能覆盖原停止阶段。保留所有原子发布、取消边界和worker恢复行为。
-- [ ] Run `CI=true .venv/bin/python -m pytest tests/test_geometry_calibration_service.py tests/test_geometry_api.py -q`，全部通过；格式与diff-check。独立spec核对后再code-quality核对，无问题方可进入下一任务。
+- [x] 核对草稿、运行新增延迟5旧帧回归的已有RED证据；增加真实False/模式仍3/超时/等待时取消及延迟恢复的聚焦用例。取消不得进入calibrator或持久化，保留旧geometry并执行恢复。
+- [x] 将3帧等待改成条件等待：`deadline=monotonic()+30`；None继续等、False立即失败、True还需actual current_auto_exposure接近native manual1。取帧前后检查cancel，用短Event.wait避免忙循环；到期失败，不把超时当成功。rollback独立有界等待，已置位cancel不跳过恢复，恢复失败保留原失败并写warning。
+- [x] 控制最终False或读回非manual时不进入LED。若已不再pending、camera正常产帧，可用同一个严格曝光probe取得3个不同、请求后新鲜seq/ts；只有足够证据且严重gate拒绝才额外写 `metrics.exposure={median,clip_frac,shadow_frac,reason,confirmed:true}`。原manual读回错误保留。pending、超时缓存、不足新帧不能映射光照异常；测试真实严重画面能在控制早失败分支产生告警，而普通亮度/缺帧不会。
+- [x] `_run` suspend后、收敛前发布 `converging_exposure`，progress.current仍0/total13；所有backend ACTIVE判据包含该阶段，维持preview节流及旧几何不可使用。
+- [x] 在failed/cancelled前、同锁记录 `stopped_phase`（原活动phase）；start/ready/operator_reuse清空。rollback不能覆盖原停止阶段。保留所有原子发布、取消边界和worker恢复行为。
+- [x] Run `CI=true .venv/bin/python -m pytest tests/test_geometry_calibration_service.py tests/test_geometry_api.py -q`，全部通过；格式与diff-check。独立spec核对后再code-quality核对，无问题方可进入下一任务。
 
 ### Task 2: 五步UI和光照提示前端（独立实现agent）
 
 **Files:** `katrain/web/ui/src/api.ts`（LocalConfirmationState.reason加入两项）、`katrain/web/ui/src/api/geometryApi.ts`（metrics准确表达nested exposure/attempts，保留原残差字段）、`src/kiosk/context/GeometryContext.tsx`、`src/kiosk/pages/BaipuSessionRoute.tsx`、`src/kiosk/components/vision/GeometryCalibrationScreen.tsx`、`src/kiosk/components/game/LocalConfirmGame.tsx`、`src/kiosk/components/vision/LightingWarningDialog.tsx`（仅若共享显示确需）、`src/kiosk/hooks/useVoice.ts`；现有对应tests。音频 `katrain/sounds/voice/lighting_overexposed.mp3` / `lighting_underexposed.mp3`，来源脚本 `scripts/generate_tsumego_voice.py` 增加两条，不重生成旧音频。
 
-- [ ] 审查五步草稿和49项测试证据，加入曝光active/失败/取消的真实语义；现有布局测试四行断言改五行，但本轮只实际跑一个1024×600代表viewport，不重拍11语种/全状态。
-- [ ] 五步依次空盘、曝光收敛并锁定、四角、九星、基线；新phase是真正第2/5。优先stopped_phase标停止阶段，旧响应用曝光error兼容fallback，其余anchors规则保留。不虚构曝光百分比，13仍仅锚点。ACTIVE消费点全部包含新phase：geometryApi类型、context300ms轮询、Baipu守卫、screen。active不能继续/沿用/重开，只能取消；固定底部按钮可达，中间沿用scroll。
-- [ ] manual readback失败短诊断“曝光没有锁定”，不是“光线太强”。标定 `metrics.exposure.reason`+confirmed（含控制早失败的fresh probe）、正常标定严格gate的 `frame_overexposed`/`frame_underexposed`及可信exposure证据、或确认window权威严重reason出现时，打开MUI弹窗；主标题“画面过亮/过暗，暂时无法可靠识别”，正文“请移开遮挡；仍有提示时，请换到光线均匀、合适的地方再试”。只有确认严重失败才提示，pending/普通timeout不触发。
-- [ ] VoiceName增两项，使用现有useVoice和语音偏好；每提示episode一次自动语音，可关闭并停止。LocalConfirmGame复用页面已有同一个speak/stop，警告打断开局/说明，不开第二条同时播语音；几何页可独占自己的voice。local episode按game_id+current_node_id+reason去重，recognizing临时reason=null和request_id变化不能重置，成功换节点允许新提醒；标定按本次页面geometry_revision+reason去重，明确产品规则：同页同revision同方向失败重试时保留诊断但不重复弹窗/播语音；成功（revision变化）、换方向或重新进入页面可再次提示。它不是后端attemptID，不声称每次尝试都是新episode，不新增后端ID。弹窗不变更棋局/重启服务，关闭后可从原页面重试。
-- [ ] 以隔离的短Fixture/组件真实浏览器预览核对1024×600五步和一张警告弹窗，独立Astra max视觉GO后进入当前光照backend切片；Fixture放ignored output、真实集成前删除。仅适配既有设计，不另起Artifact/大改布局。
-- [ ] Run聚焦 GeometryCalibrationScreen/BaipuSessionRoute/LocalConfirmGame/新dialog tests、`npx tsc -b`及targeted eslint。生成两段mp3并检查有效音频时长/实际播放，不在RK依赖speechSynthesis。
+- [x] 审查五步草稿和49项测试证据，加入曝光active/失败/取消的真实语义；现有布局测试四行断言改五行，但本轮只实际跑一个1024×600代表viewport，不重拍11语种/全状态。
+- [x] 五步依次空盘、曝光收敛并锁定、四角、九星、基线；新phase是真正第2/5。优先stopped_phase标停止阶段，旧响应用曝光error兼容fallback，其余anchors规则保留。不虚构曝光百分比，13仍仅锚点。ACTIVE消费点全部包含新phase：geometryApi类型、context300ms轮询、Baipu守卫、screen。active不能继续/沿用/重开，只能取消；固定底部按钮可达，中间沿用scroll。
+- [x] manual readback失败短诊断“曝光没有锁定”，不是“光线太强”。标定 `metrics.exposure.reason`+confirmed（含控制早失败的fresh probe）、正常标定严格gate的 `frame_overexposed`/`frame_underexposed`及可信exposure证据、或确认window权威严重reason出现时，打开MUI弹窗；主标题“画面过亮/过暗，暂时无法可靠识别”，正文“请移开遮挡；仍有提示时，请换到光线均匀、合适的地方再试”。只有确认严重失败才提示，pending/普通timeout不触发。
+- [x] VoiceName增两项，使用现有useVoice和语音偏好；每提示episode一次自动语音，可关闭并停止。LocalConfirmGame复用页面已有同一个speak/stop，警告打断开局/说明，不开第二条同时播语音；几何页可独占自己的voice。local episode按game_id+current_node_id+reason去重，recognizing临时reason=null和request_id变化不能重置，成功换节点允许新提醒；标定按本次页面geometry_revision+reason去重，明确产品规则：同页同revision同方向失败重试时保留诊断但不重复弹窗/播语音；成功（revision变化）、换方向或重新进入页面可再次提示。它不是后端attemptID，不声称每次尝试都是新episode，不新增后端ID。弹窗不变更棋局/重启服务，关闭后可从原页面重试。
+- [x] 以隔离的短Fixture/组件真实浏览器预览核对1024×600五步和一张警告弹窗，独立Astra max视觉GO后进入当前光照backend切片；Fixture放ignored output、真实集成前删除。仅适配既有设计，不另起Artifact/大改布局。
+- [x] Run聚焦 GeometryCalibrationScreen/BaipuSessionRoute/LocalConfirmGame/新dialog tests、`npx tsc -b`及targeted eslint。生成两段mp3并检查有效音频时长/实际播放，不在RK依赖speechSynthesis。
 
 ## Chunk 2: 确认时使用真实新鲜曝光证据
 

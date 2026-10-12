@@ -39,6 +39,7 @@
 .is-waiting .lc-resign:not(:disabled) { color:#c5a5a0; border-color:#51423e; }
 .lc-confirm { height:108px; flex:none; display:flex; align-items:center; justify-content:center; gap:10px; flex-direction:column; border:1px solid var(--accent); background:var(--accent); color:#101a14; border-radius:12px; padding:12px; touch-action:manipulation; cursor:pointer; font:inherit; }
 .lc-confirm-label { font-size:28px; font-weight:600; line-height:1.2; display:flex; align-items:center; justify-content:center; gap:10px; white-space:nowrap; }
+.lc-confirm.is-preparation .lc-confirm-label { font-size:22px; white-space:normal; text-align:center; }
 .lc-confirm-label svg { width:25px; height:25px; stroke:currentColor; stroke-width:2; fill:none; }
 .lc-confirm small { font-size:14px; line-height:20px; }
 .lc-confirm:disabled { background:#202d26; color:var(--lc-sub); border-color:#35473c; cursor:default; }

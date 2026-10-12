@@ -7,7 +7,10 @@ import { KioskScrollZone } from '../../shell/KioskScrollZone';
 import GeometryVideoPanel from './GeometryVideoPanel';
 import CameraGeometryOverlay from './CameraGeometryOverlay';
 import { useGeometry } from '../../context/GeometryContext';
-import { GeometryAPI, type GeometryLayout } from '../../../api/geometryApi';
+import { GeometryAPI, type GeometryLayout, type GeometryPhase, type GeometryStatus, type LightingReason } from '../../../api/geometryApi';
+import LightingWarningDialog from './LightingWarningDialog';
+import { useVoice } from '../../hooks/useVoice';
+import { useLightingWarning } from '../../hooks/useLightingWarning';
 import { useTranslation } from '../../../hooks/useTranslation';
 import {
   buildAnchorGeometryModel, buildRawGeometryModel, buildWarpedGeometryModel,
@@ -30,26 +33,13 @@ import {
  * 差的只是壳上那四个字。**不能让两条路共用同一句「← 设置」**:guard 是从做题/摆谱里被拦下的,
  * 写「设置」是对来路撒谎,按下去还会把人扔进设置页。
  *
- * ## 稿子原来在这一屏有一处硬不成立:第 2 步(2026-09-24 稿子已照这里改成四步)
- *
- * 稿子原来画五步,其中第 2 步「采集熄灯参考帧 / 先拍一张全灭的，作对照」对应 `dark_reference`,
- * 而**全仓没有任何地方写入这个 phase** —— 它只活在两处「哪些 phase 算进行中」的常量集合里
- * (`geometry_calibration_service.py:20`、`endpoints/geometry.py:27`)。
- *
- * 那件事确实在做,但**不是一个步**:`_locate_anchor`(`led_geometry_calibrator.py:221-255`)
- * 对**每一个**锚点都先 `led.clear()` 拍一张熄灯帧、再点亮拍一张,然后做差分 —— 13+ 次、
- * 与亮灯帧交替,没有独立的开始和结束。⇒ 画成一行,要么和第 3 步同一瞬间从「未开始」跳到
- * 「完成」、要么一直挂着「完成」,**两种都在对顺序撒谎**。删掉这一行,把机制写进
- * 步骤下面的旁注。省下的 60px(52 + 8)正好给失败时的诊断卡。
- *
- * 真正会被报出来的只有三个:`flashing_corners`(第 1–4 个锚点)、`verifying`(第 5–13 个)、
- * `building_baseline`。`waiting_empty` 只在服务启动线程那一瞬设一次,一个轮询周期内就被盖掉 ——
- * 它作为「按下之后的状态」不可见,作为「按下之前的指令」才是这一屏的全部内容。
+ * 曝光收敛和锁定有独立的 `converging_exposure` 阶段，放在定位四角之前。
+ * 每个锚点分别采集的熄灯参考帧仍不是独立步骤；进度计数始终只统计四角 + 九星 13 个锚点。
  */
 
-/** 四步。**不是五步** —— 见页头注。 */
 const STEPS = [
   { key: 'empty', title: '准备空盘标定', hint: '确认盘上一颗子都没有' },
+  { key: 'exposure', title: '曝光收敛并锁定', hint: '摄像头适应光线后固定曝光' },
   { key: 'corners', title: '定位棋盘四角', hint: '四角的灯逐个点亮' },
   { key: 'stars', title: '定位九个星位', hint: '九个星位的灯逐个点亮' },
   { key: 'baseline', title: '生成空盘基线', hint: '之后识子都拿它作底' },
@@ -62,7 +52,32 @@ const STEPS = [
  */
 const RAW_STREAM_SCALE = 3;
 const WARPED_STREAM_SCALE = 2;
-const ACTIVE_PHASES = new Set(['waiting_empty', 'dark_reference', 'flashing_corners', 'verifying', 'building_baseline']);
+const ACTIVE_PHASES = new Set<GeometryPhase>([
+  'waiting_empty', 'dark_reference', 'converging_exposure', 'flashing_corners', 'verifying', 'building_baseline',
+]);
+
+const stepForPhase = (phase?: GeometryPhase | null): number | undefined => {
+  if (phase === 'waiting_empty') return 0;
+  if (phase === 'converging_exposure') return 1;
+  if (phase === 'flashing_corners') return 2;
+  if (phase === 'verifying') return 3;
+  if (phase === 'building_baseline') return 4;
+  return undefined;
+};
+
+const isExposureError = (error?: string | null) =>
+  Boolean(error && (/exposure/i.test(error) || error === 'frame_overexposed' || error === 'frame_underexposed'));
+
+function lightingReason(status: GeometryStatus): LightingReason | null {
+  const exposure = status.metrics?.exposure;
+  if (status.phase !== 'failed' || !exposure
+    || !Number.isFinite(exposure.median) || exposure.median < 0 || exposure.median > 255
+    || !Number.isFinite(exposure.clip_frac) || exposure.clip_frac < 0 || exposure.clip_frac > 1
+    || !Number.isFinite(exposure.shadow_frac) || exposure.shadow_frac < 0 || exposure.shadow_frac > 1) return null;
+  if (exposure.confirmed === true
+    && (exposure.reason === 'frame_overexposed' || exposure.reason === 'frame_underexposed')) return exposure.reason;
+  return status.error === 'frame_overexposed' || status.error === 'frame_underexposed' ? status.error : null;
+}
 
 const GTP_LETTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
 const gtpPoint = (row: number, col: number) => `${GTP_LETTERS[col] ?? '?'}${19 - row}`;
@@ -73,8 +88,32 @@ interface Diagnostic { title: string; body: string; action: string; detail?: str
  * 「失败时给**诊断**不给『重试』」是稿子写在屏上的承诺。兑现它的方式是失败那一刻出现的是
  * 一张**点名具体原因**的卡,而不是一颗孤零零的重试键。这段逐字保留自上一版,一个分支没删。
  */
-function buildDiagnostic(error?: string | null): Diagnostic {
+function buildDiagnostic(error?: string | null, stoppedPhase?: GeometryPhase | null): Diagnostic {
   const raw = error ?? '';
+  if (/manual exposure lock|verified manual exposure/.test(raw)) {
+    return {
+      title: '摄像头曝光没有锁定',
+      body: '没能确认固定曝光状态，这次标定已停止。',
+      action: '检查摄像头连接，再重新开始标定。',
+      detail: raw,
+    };
+  }
+  if (raw === 'frame_overexposed' || raw === 'frame_underexposed') {
+    return {
+      title: raw === 'frame_overexposed' ? '摄像头画面过亮' : '摄像头画面过暗',
+      body: '盘面细节看不清，这次标定无法继续。',
+      action: '换到光线合适的位置，再重新开始标定。',
+      detail: raw,
+    };
+  }
+  if (stoppedPhase === 'converging_exposure' || isExposureError(raw)) {
+    return {
+      title: '曝光收敛没有完成',
+      body: '摄像头未能完成曝光调整和锁定。',
+      action: '检查摄像头连接，再重新开始标定。',
+      detail: raw || undefined,
+    };
+  }
   const anchor = raw.match(/^anchor_not_found:(\d+),(\d+)$/);
   if (anchor) {
     const row = Number(anchor[1]);
@@ -132,6 +171,8 @@ export function GeometryCalibrationScreen({
 }: GeometryCalibrationScreenProps) {
   const { status, loaded, startCalibration, confirmExisting, cancelCalibration, relocate } = useGeometry();
   const { t } = useTranslation();
+  const voice = useVoice();
+  const lightingWarning = useLightingWarning(lightingReason(status), String(status.geometry_revision ?? 'unknown'), voice);
 
   const [layout, setLayout] = useState<GeometryLayout | null>(null);
   const [rawFrame, setRawFrame] = useState<{ width: number; height: number } | null>(null);
@@ -247,21 +288,17 @@ export function GeometryCalibrationScreen({
 
   useEffect(() => { setRelocateError(null); }, [phase]);
 
-  // ── 四步的状态 ─────────────────────────────────────────────────────────────
+  // ── 五步的状态 ─────────────────────────────────────────────────────────────
   //
   // 相位 → 第几步(0 基)。`waiting_empty` 与所有非运行态一样落在第 1 步:
   // 清空棋盘这个动作**本来就是操作员在按下之前做的**。
-  const runningStep = phase === 'flashing_corners' ? 1
-    : phase === 'verifying' ? 2
-      : phase === 'building_baseline' ? 3
-        : 0;
+  const runningStep = stepForPhase(phase) ?? 0;
 
   /**
-   * 失败 / 取消断在哪一步:**由 `detected_anchors` 的长度判,不靠错误串**。
-   * 「这次运行确实走到了那儿」是能从数据说出来的事实;而错误串只说明**最后一下**出了什么问题,
-   * 它反推不出前面走了多远(一条否定的答复不携带原因)。
+   * 优先使用服务端保存的失败 / 取消前阶段。旧响应才通过曝光错误或锚点计数回落。
    */
-  const brokenStep = anchorCount < 4 ? 1 : anchorCount < 13 ? 2 : 3;
+  const brokenStep = stepForPhase(status.stopped_phase)
+    ?? (isExposureError(status.error) ? 1 : anchorCount < 4 ? 2 : anchorCount < 13 ? 3 : 4);
   const failed = phase === 'failed';
   const cancelled = phase === 'cancelled';
   const stopped = failed || cancelled;
@@ -277,7 +314,7 @@ export function GeometryCalibrationScreen({
   };
 
   const stepState = (i: number): 'done' | 'now' | 'bad' | 'warn' | 'todo' | 'plain' => {
-    if (phase === 'ready') return i === 3 ? qualityTone() : 'done';
+    if (phase === 'ready') return i === 4 ? qualityTone() : 'done';
     if (stopped) {
       if (i < brokenStep) return 'done';
       if (i === brokenStep) return failed ? 'bad' : 'warn';
@@ -306,10 +343,10 @@ export function GeometryCalibrationScreen({
   };
 
   const stepHint = (i: number): string => {
-    // 跑到第 3 步(星位)时说「正在点第 N 个」—— N 从权威计数来,不估。
-    if (i === 2 && phase === 'verifying') return `正在点第 ${Math.min(anchorCount - 4 + 1, 9)} 个`;
-    if (i === 1 && phase === 'flashing_corners') return `正在点第 ${Math.min(anchorCount + 1, 4)} 个角`;
-    if (i === 3 && phase === 'ready') return qualityLine();
+    // 星位 / 四角序号从权威计数来，曝光步骤只显示阶段状态。
+    if (i === 3 && phase === 'verifying') return `正在点第 ${Math.min(anchorCount - 4 + 1, 9)} 个`;
+    if (i === 2 && phase === 'flashing_corners') return `正在点第 ${Math.min(anchorCount + 1, 4)} 个角`;
+    if (i === 4 && phase === 'ready') return qualityLine();
     return STEPS[i].hint;
   };
 
@@ -318,9 +355,9 @@ export function GeometryCalibrationScreen({
     if (state === 'plain') return { text: '完成', cls: '' };
     if (state === 'now') return { text: '进行中', cls: '' };
     if (state === 'bad') return { text: '失败', cls: 'kiosk-tag--bad' };
-    // 第 4 步的 warn 是「完成但点数不足」,别的步骤的 warn 是「已取消」—— 两回事,别共用一句。
+    // 第 5 步的 warn 是「完成但点数不足」,别的步骤的 warn 是「已取消」。
     if (state === 'warn') {
-      return i === 3 && phase === 'ready'
+      return i === 4 && phase === 'ready'
         ? { text: `完成 · ${inliers} / 13`, cls: 'kiosk-tag--warn' }
         : { text: '已取消', cls: 'kiosk-tag--warn' };
     }
@@ -337,8 +374,8 @@ export function GeometryCalibrationScreen({
   const capRight = (): string => {
     if (phase === 'ready') return '已完成';
     if (stopped) return `停在第 ${brokenStep + 1} 步`;
-    if (active) return `第 ${runningStep + 1} / 4 步`;
-    return '第 1 / 4 步';
+    if (active) return `第 ${runningStep + 1} / ${STEPS.length} 步`;
+    return `第 1 / ${STEPS.length} 步`;
   };
 
   // ── 三格状态 ───────────────────────────────────────────────────────────────
@@ -381,7 +418,7 @@ export function GeometryCalibrationScreen({
   // 刚按的「对齐外框」没成,排在最前;原来那条链接在它后面,一字不改。
   const diagnostic: Diagnostic | null = relocateError
     ? { kind: 'relocate', title: t('vision:relocate_failed_title', '没对上'), body: relocateError, action: '' }
-    : failed ? buildDiagnostic(status.error)
+    : failed ? buildDiagnostic(status.error, status.stopped_phase)
       : phase === 'degraded' ? buildDiagnostic('board_moved')
         : actionError ? { title: '操作没有生效', body: actionError, action: '再试一次；一直不行就检查摄像头和灯带的接线。' }
           : null;
@@ -425,7 +462,7 @@ export function GeometryCalibrationScreen({
 
   /**
    * 这台盒子压根没有摄像头(`/status` 404 ⇒ `disabled`)。
-   * 那台机器上 `/geometry/stream` 会 404、`/calibrate` 会 404、四步一步都不会走 ——
+   * 那台机器上 `/geometry/stream` 会 404、`/calibrate` 会 404、五步一步都不会走 ——
    * **把这些控件摆出来全是假的。** 页控条照旧(返回必须在)。
    */
   if (phase === 'disabled') {
@@ -440,7 +477,8 @@ export function GeometryCalibrationScreen({
     );
   }
 
-  return (
+  return (<>
+    <LightingWarningDialog {...lightingWarning} />
     <div className="calib-screen" data-testid="calib-screen">
       {pagebar}
       <div className="calib-body">
@@ -558,7 +596,7 @@ export function GeometryCalibrationScreen({
                   </button>
                 )}
                 {/* `last_valid` 为假 = **从来没成功标定过** ⇒ 这颗键不渲染,主行动满宽。
-                    「没有上一次可沿用」屏上已经有三处在说(状态格「未标定」、四步全「未开始」、
+                    「没有上一次可沿用」屏上已经有三处在说(状态格「未标定」、步骤未开始、
                     主键满宽),再摆一颗永远按不亮、还要配一行解释的键是往加的方向走。 */}
                 {status.last_valid && (
                   <button
@@ -584,7 +622,7 @@ export function GeometryCalibrationScreen({
         </div>
       </div>
     </div>
-  );
+  </>);
 }
 
 export default GeometryCalibrationScreen;

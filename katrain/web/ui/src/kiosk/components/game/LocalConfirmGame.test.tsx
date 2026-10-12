@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameState } from '../../../api';
 import { i18n } from '../../../i18n';
 import LocalConfirmGame from './LocalConfirmGame';
 
 vi.mock('../../../components/Board', () => ({ default: () => <div>BOARD</div> }));
-vi.mock('../../hooks/useVoice', () => ({ useVoice: () => ({ speak: vi.fn(), stop: vi.fn() }) }));
+const voice = vi.hoisted(() => ({ speak: vi.fn(), stop: vi.fn() }));
+vi.mock('../../hooks/useVoice', () => ({ useVoice: () => voice }));
 const game = {
-  game_id: 'g', current_node_id: 33, current_node_index: 33, player_to_move: 'B',
+  game_id: 'g', current_node_id: 33, current_node_index: 33, handicap: 0, player_to_move: 'B',
   board_size: [19, 19], children: [], end_result: null, game_type: 'pvp_local', count_min_moves: 100,
   players_info: { B: { name: '张三', main_time_used: 0, periods_used: 0 }, W: { name: '李四', main_time_used: 0, periods_used: 0 } },
   local_confirmation: { enabled: true, status: 'idle' },
@@ -18,6 +19,81 @@ const props = () => ({ gameState: game, input: 'screen' as const, point: null, b
   onPass: vi.fn(), onCount: vi.fn(), onResign: vi.fn(), onExit: vi.fn(), onPaintedNode: vi.fn(), onExpired: vi.fn() });
 
 describe('local confirmation panels', () => {
+  beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
+
+  it('physical preparation disables confirmation and delays the opening voice until readiness', () => {
+    const p = props();
+    const opening = { ...game, current_node_index: 0 };
+    const view = render(<LocalConfirmGame {...p} input="physical" gameState={opening} physicalPreparation="preparing" />);
+    expect(screen.getByText('正在准备实体盘')).toBeInTheDocument();
+    expect(screen.getByText('请先清空棋盘并移开双手，准备好后再落子。')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /准备中/ })).toBeDisabled();
+    expect(voice.speak).not.toHaveBeenCalled();
+    view.rerender(<LocalConfirmGame {...p} input="physical" gameState={opening} physicalPreparation="ready" />);
+    expect(voice.speak).toHaveBeenCalledWith('local_confirm_physical');
+    expect(screen.getByRole('button', { name: /确认落子/ })).toBeEnabled();
+  });
+
+
+  it('preparation in an existing game asks for the electronic position without clearing confirmed stones', () => {
+    render(<LocalConfirmGame {...props()} input="physical" physicalPreparation="preparing" />);
+    expect(screen.getByText('对齐电子棋谱，拿回未确认棋子，再移开双手。')).toBeInTheDocument();
+    expect(screen.queryByText(/清空棋盘/)).not.toBeInTheDocument();
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
+  it('failed preparation has a separate retry even while pose blocks confirmation', () => {
+    const p = props();
+    const retry = vi.fn();
+    const failedGame = { ...game, current_node_index: 0, local_confirmation: { enabled: true, status: 'idle' as const, reason: 'unavailable' as const } };
+    const view = render(<LocalConfirmGame {...p} input="physical" gameState={failedGame}
+      blocked physicalPreparation="error" onRetryPreparation={retry} />);
+    expect(screen.getByText('先拿回尚未确认的棋子，再移开双手，重新准备实体盘。')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /重新准备实体盘/ }));
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(p.onConfirm).not.toHaveBeenCalled();
+    expect(p.onPass).not.toHaveBeenCalled();
+    view.rerender(<LocalConfirmGame {...p} input="physical" gameState={game} physicalPreparation="ready" />);
+    expect(screen.queryByText('实体盘准备失败')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /确认落子/ })).toBeEnabled();
+  });
+  it('严重光照提示使用同一语音实例打断开局引导，关闭后停止，不触发对局动作', () => {
+    const p = props();
+    const opening = { ...game, current_node_index: 0, handicap: 0 };
+    const view = render(<LocalConfirmGame {...p} input="physical" gameState={opening} />);
+    expect(voice.speak).toHaveBeenLastCalledWith('local_confirm_physical');
+    view.rerender(<LocalConfirmGame {...p} input="physical" gameState={{ ...opening,
+      local_confirmation: { enabled: true, status: 'idle', reason: 'frame_overexposed' } }} />);
+    expect(screen.getByRole('dialog')).toHaveTextContent('画面过亮，暂时无法可靠识别');
+    expect(voice.speak).toHaveBeenLastCalledWith('lighting_overexposed');
+    fireEvent.click(screen.getByRole('button', { name: '知道了' }));
+    expect(voice.stop).toHaveBeenCalledTimes(1);
+    for (const action of [p.onConfirm, p.onPass, p.onCount, p.onResign, p.onExit]) expect(action).not.toHaveBeenCalled();
+  });
+  it('同一节点识别中的空reason不会重置提示，成功换节点后允许再提示', async () => {
+    const p = props();
+    const severe = { ...game, local_confirmation: { enabled: true, status: 'idle' as const, reason: 'frame_underexposed' as const } };
+    const view = render(<LocalConfirmGame {...p} input="physical" gameState={severe} />);
+    expect(voice.speak).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: '知道了' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    view.rerender(<LocalConfirmGame {...p} input="physical" busy gameState={{ ...game,
+      local_confirmation: { enabled: true, status: 'recognizing', reason: null } }} />);
+    view.rerender(<LocalConfirmGame {...p} input="physical" gameState={severe} />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(voice.speak).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('画面过暗')).toBeInTheDocument();
+    expect(screen.getByText('移开遮挡；仍有提示请换个位置。')).toBeInTheDocument();
+    view.rerender(<LocalConfirmGame {...p} input="physical" gameState={{ ...game, current_node_id: 34 }} />);
+    view.rerender(<LocalConfirmGame {...p} input="physical" gameState={{ ...severe, current_node_id: 34 }} />);
+    expect(screen.getByRole('dialog')).toHaveTextContent('画面过暗，暂时无法可靠识别');
+    expect(voice.speak).toHaveBeenCalledTimes(2);
+  });
+  it('普通超时不给严重光照提示', () => {
+    render(<LocalConfirmGame {...props()} input="physical" gameState={{ ...game,
+      local_confirmation: { enabled: true, status: 'idle', reason: 'timeout' } }} />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
   it('requires a screen selection and makes the selected point explicit', () => {
     const p = props();
     const { rerender } = render(<LocalConfirmGame {...p} />);

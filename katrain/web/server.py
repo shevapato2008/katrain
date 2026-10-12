@@ -4606,7 +4606,7 @@ def _vision_needs_frames(app: FastAPI) -> bool:
 
 
 def _set_bound_local_geometry_pause(app: FastAPI, paused: bool) -> None:
-    """Pause only the physical local game whose controller owns the vision binding."""
+    """Pause the bound physical local game, including its first reference bootstrap."""
     vision = getattr(app.state, "vision", None)
     session_id = getattr(vision, "bound_session_id", None)
     if not session_id:
@@ -4620,13 +4620,16 @@ def _set_bound_local_geometry_pause(app: FastAPI, paused: bool) -> None:
             return
         katrain = session.katrain
         controller = getattr(session, "local_confirmation_controller", None)
-        if (
-            controller is None
-            or getattr(controller, "input", None) != "physical"
-            or getattr(controller, "ready_game_id", None) != getattr(katrain.game, "game_id", None)
-        ):
+        game = katrain.game
+        if katrain.game_type != "pvp_local" or not game or game.board_size != (19, 19):
             return
-        katrain.set_local_geometry_paused(paused, expected_game_id=controller.ready_game_id)
+        if controller is not None:
+            ready_game_id, input_mode = getattr(controller, "ready_game_id", None), getattr(controller, "input", None)
+            if ready_game_id == game.game_id and input_mode == "screen":
+                return
+            if ready_game_id not in (None, game.game_id) or input_mode not in (None, "physical"):
+                return
+        katrain.set_local_geometry_paused(paused, expected_game_id=game.game_id)
 
 
 async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):

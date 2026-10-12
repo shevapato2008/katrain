@@ -29,7 +29,7 @@ def client(isolated_session_factory):
             app.state.session_manager.remove_session(session.session_id)
 
 
-def start(client, monkeypatch, *, timed=False):
+def start(client, monkeypatch, *, timed=False, size=9, ready_screen=True):
     session = client.app.state.session_manager.create_session()
     monkeypatch.setattr(session.katrain, "save_config", lambda *a, **k: None)
     r = client.post(
@@ -38,7 +38,7 @@ def start(client, monkeypatch, *, timed=False):
             "session_id": session.session_id,
             "mode": "pvp_local",
             "settings": {
-                "board_size": 9,
+                "board_size": size,
                 "handicap": 0,
                 "time_enabled": timed,
                 "main_time": 10,
@@ -48,11 +48,16 @@ def start(client, monkeypatch, *, timed=False):
         },
     )
     assert r.status_code == 200, r.text
-    r = client.post(
-        "/api/local/ready",
-        json={"session_id": session.session_id, "expected_game_id": session.katrain.game.game_id, "input": "screen"},
-    )
-    assert r.status_code == 200, r.text
+    if ready_screen:
+        r = client.post(
+            "/api/local/ready",
+            json={
+                "session_id": session.session_id,
+                "expected_game_id": session.katrain.game.game_id,
+                "input": "screen",
+            },
+        )
+        assert r.status_code == 200, r.text
     return session
 
 
@@ -479,7 +484,7 @@ def test_bind_does_not_clear_pause_after_geometry_invalidates_during_ready(
     from katrain.web.core.local_confirmation import local_confirmation_for
     from katrain.web.server import _set_bound_local_geometry_pause
 
-    session = start(client, monkeypatch, timed=True)
+    session = start(client, monkeypatch, timed=True, size=19)
     vision = WindowVision(session, [])
     vision.bind_session = lambda session_id: setattr(vision, "bound_session_id", session_id)
     vision.set_expected_from_stones = lambda *args, **kwargs: None
@@ -505,6 +510,53 @@ def test_bind_does_not_clear_pause_after_geometry_invalidates_during_ready(
     assert result.status_code == 409
     assert session.katrain.local_geometry_paused is True
     assert session.katrain.game.current_node is node
+
+
+def test_first_physical_bind_invalidated_before_ready_keeps_clock_stopped(client, monkeypatch):
+    from katrain.web.server import _set_bound_local_geometry_pause
+
+    session = start(client, monkeypatch, timed=True, size=19, ready_screen=False)
+    vision = WindowVision(session, [])
+    vision.bind_session = lambda session_id: setattr(vision, "bound_session_id", session_id)
+    vision.set_expected_from_stones = lambda *args, **kwargs: None
+    vision.local_confirmation_bootstrap_state = "ready"
+    phase = {"value": "ready"}
+    client.app.state.geometry_calibration = SimpleNamespace(
+        status=lambda: {"phase": phase["value"], "geometry_revision": 4}, stop=lambda: None
+    )
+    client.app.state.vision = vision
+
+    def invalidate_before_ready(*args, **kwargs):
+        _set_bound_local_geometry_pause(client.app, True)
+        phase["value"] = "degraded"
+        return True
+
+    vision.set_local_confirmation_mode = invalidate_before_ready
+    node = session.katrain.game.current_node
+    result = client.post("/api/v1/vision/bind", json={"session_id": session.session_id})
+    assert result.status_code == 409
+    assert session.katrain.clock_started is False
+    assert session.katrain.local_geometry_paused is True
+    assert session.katrain.get_state()["timer"]["paused"] is True
+    assert session.katrain.game.current_node is node
+
+
+def test_first_physical_bind_starts_clock_after_reference_is_ready(client, monkeypatch):
+    session = start(client, monkeypatch, timed=True, size=19, ready_screen=False)
+    vision = WindowVision(session, [])
+    vision.bind_session = lambda session_id: setattr(vision, "bound_session_id", session_id)
+    vision.set_expected_from_stones = lambda *args, **kwargs: None
+    vision.set_local_confirmation_mode = lambda *args, **kwargs: True
+    vision.local_confirmation_bootstrap_state = "ready"
+    client.app.state.vision = vision
+    client.app.state.geometry_calibration = SimpleNamespace(
+        status=lambda: {"phase": "ready", "geometry_revision": 4}, stop=lambda: None
+    )
+    assert session.katrain.clock_started is False
+    result = client.post("/api/v1/vision/bind", json={"session_id": session.session_id})
+    assert result.status_code == 200, result.text
+    assert session.katrain.clock_started is True
+    assert session.katrain.get_state()["timer"]["paused"] is False
 
 
 @pytest.mark.parametrize("status,reason", [("idle", "frame_overexposed"), ("recognizing", "unavailable")])

@@ -62,7 +62,7 @@ class LocalConfirmationController:
         # The bounded waiter sees _closed on its next tick and returns a normal
         # rejected result; cancelling its task would also cancel the HTTP response.
 
-    def ready(self, game_id, input_mode, vision=None):
+    def ready(self, game_id, input_mode, vision=None, *, before_start=None):
         katrain = self.session.katrain
         with self.session.lock, katrain.ai_ladder_commit_lock:
             if self._closed or katrain.game_type != "pvp_local" or katrain.game.game_id != game_id:
@@ -78,6 +78,8 @@ class LocalConfirmationController:
                 and vision.local_confirmation_ready
             ):
                 raise LocalConfirmationConflict("Physical recognition is not ready")
+            if before_start is not None:
+                before_start()
             self.ready_game_id, self.input = game_id, input_mode
             state = katrain.local_confirmation_state
             if input_mode == "physical" and state.get("status") == "idle" and state.get("reason") == "unavailable":

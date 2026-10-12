@@ -131,6 +131,7 @@ class GeometryCalibrationService:
         self.calibrator_factory = calibrator_factory
         self._lock = threading.Lock()
         self._monitor_update_lock = threading.Lock()
+        self._monitor_reset_pending = None
         self._preflighting = False
         self._cancel_event = threading.Event()
         self._publish_started = False
@@ -299,10 +300,15 @@ class GeometryCalibrationService:
                         reason = "camera_unavailable"
                         break
                     if seq is None or ts is None or seq <= last_seq or ts <= last_ts:
+                        stable_count = 0
+                        drift_count = 0
                         reason = "stale_frame"
                         continue
                     last_seq, last_ts = seq, ts
                     still = motion.is_stable(frame)
+                    if time.monotonic() >= deadline:
+                        reason = "timeout"
+                        break
                     if first_frame:
                         first_frame = False
                         continue
@@ -311,8 +317,22 @@ class GeometryCalibrationService:
                         drift_count = 0
                         reason = "motion"
                         continue
-                    with self._monitor_update_lock:
+                    if not self._monitor_update_lock.acquire(timeout=max(0.0, deadline - time.monotonic())):
+                        reason = "timeout"
+                        break
+                    try:
+                        if time.monotonic() >= deadline:
+                            reason = "timeout"
+                            break
+                        if self._monitor_reset_pending is monitor:
+                            monitor.reset_streak()
+                            self._monitor_reset_pending = None
                         drift = monitor.update(frame)
+                    finally:
+                        self._monitor_update_lock.release()
+                    if time.monotonic() >= deadline:
+                        reason = "timeout"
+                        break
                     if drift.response < 0.05:
                         stable_count = 0
                         drift_count = 0
@@ -325,6 +345,9 @@ class GeometryCalibrationService:
                     else:
                         drift_count = 0
                     if drift_count >= max(3, monitor.consecutive_frames) and drift.degraded:
+                        if time.monotonic() >= deadline:
+                            reason = "timeout"
+                            break
                         self._apply_drift(drift, monitor=monitor)
                         if self.status()["phase"] == "degraded":
                             logger.warning(
@@ -356,7 +379,19 @@ class GeometryCalibrationService:
                 reason = "stale_geometry"
             if reason is None and not self._is_ready(self.capture):
                 reason = "camera_unavailable"
+            if reason is None and time.monotonic() >= deadline:
+                reason = "timeout"
         finally:
+            if reason != "board_moved":
+                if self._monitor_update_lock.acquire(timeout=max(0.0, deadline - time.monotonic())):
+                    try:
+                        monitor.reset_streak()
+                        if self._monitor_reset_pending is monitor:
+                            self._monitor_reset_pending = None
+                    finally:
+                        self._monitor_update_lock.release()
+                else:
+                    self._monitor_reset_pending = monitor
             with self._lock:
                 self._preflighting = False
         status = self.status()
@@ -1015,6 +1050,10 @@ class GeometryCalibrationService:
                     if self._preflighting or self._status["phase"] != "ready" or monitor is not self._drift_monitor:
                         continue
                 with self._monitor_update_lock:
+                    if self._monitor_reset_pending is monitor:
+                        monitor.reset_streak()
+                        self._monitor_reset_pending = None
+                        continue
                     drift = monitor.update(frame)
                 self._apply_drift(drift, monitor=monitor)
             except Exception:

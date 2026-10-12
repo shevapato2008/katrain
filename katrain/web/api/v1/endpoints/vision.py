@@ -253,6 +253,10 @@ async def bind_session(
     #  那段时间用户还在标定屏,却已经被扣时。)`start_clock` 幂等,重连再绑不会重置。
     # Set expected board from current game state
     game_state = session.katrain.get_state()
+    geometry_pause_epoch = getattr(session.katrain, "local_geometry_pause_epoch", 0)
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    geometry_status = calibration.status() if calibration is not None else None
+    geometry_revision = geometry_status.get("geometry_revision") if geometry_status is not None else None
     if game_state and "stones" in game_state:
         vision.set_expected_from_stones(
             game_state["stones"],
@@ -267,6 +271,8 @@ async def bind_session(
     if game_state.get("game_type") == "pvp_local" and not game_state.get("end_result"):
         from katrain.web.core.local_confirmation import local_confirmation_for
 
+        if geometry_status is not None and geometry_status.get("phase") != "ready":
+            raise HTTPException(status_code=409, detail="Physical geometry is unavailable")
         if not vision.supports_local_confirmation:
             session.katrain.local_confirmation_state = {"status": "idle", "reason": "unavailable", "points": []}
             session.katrain.update_state()
@@ -297,11 +303,24 @@ async def bind_session(
         ):
             raise HTTPException(status_code=409, detail="Local game changed during vision bind")
         local_confirmation_for(session).ready(game_state["game_id"], "physical", vision)
-        restored = session.katrain.set_local_geometry_paused(
-            False, expected_game_id=game_state["game_id"], expected_node_id=game_state["current_node_id"]
-        )
-        if not restored or vision.bound_session_id != body.session_id:
-            raise HTTPException(status_code=409, detail="Local game changed during vision bind")
+        with session.lock:
+            if vision.bound_session_id != body.session_id or not vision.local_confirmation_ready:
+                raise HTTPException(status_code=409, detail="Physical reference changed during vision bind")
+            if calibration is not None:
+                current_geometry = calibration.status()
+                if (
+                    current_geometry.get("phase") != "ready"
+                    or current_geometry.get("geometry_revision") != geometry_revision
+                ):
+                    raise HTTPException(status_code=409, detail="Physical geometry changed during vision bind")
+            restored = session.katrain.set_local_geometry_paused(
+                False,
+                expected_game_id=game_state["game_id"],
+                expected_node_id=game_state["current_node_id"],
+                expected_epoch=geometry_pause_epoch,
+            )
+            if not restored:
+                raise HTTPException(status_code=409, detail="Local game changed during vision bind")
     elif session.katrain.start_clock():
         logger.info("Clock started for session %s (vision bound)", body.session_id)
 

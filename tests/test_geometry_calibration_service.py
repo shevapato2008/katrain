@@ -116,6 +116,114 @@ def test_preflight_requires_new_stable_evidence_without_changing_geometry(tmp_pa
     service.stop()
 
 
+@pytest.mark.parametrize("shifted", [False, True])
+@pytest.mark.parametrize("duplicate", ["seq", "timestamp"])
+def test_preflight_duplicate_frame_breaks_consecutive_evidence(tmp_path, shifted, duplicate):
+    import cv2
+    from katrain.vision.geometry_drift import GeometryDriftMonitor
+
+    reference = np.random.default_rng(20).integers(0, 255, (96, 96, 3), dtype=np.uint8)
+    image = cv2.warpAffine(reference, np.float32([[1, 0, 8], [0, 1, 0]]), (96, 96)) if shifted else reference
+
+    class Capture(FakeCapture):
+        def __init__(self):
+            self.index = 0
+            self.last_ts = None
+
+        def grab_fresh(self, **kwargs):
+            self.index += 1
+            if self.index > 5:
+                return None, self.index, time.monotonic()
+            seq = 3 if duplicate == "seq" and self.index == 4 else self.index
+            ts = self.last_ts if duplicate == "timestamp" and self.index == 4 else time.monotonic()
+            self.last_ts = ts
+            return image.copy(), seq, ts
+
+    service = GeometryCalibrationService(led=FakeLed(), capture=Capture(), save_path=tmp_path / "g.npz")
+    service.current_lock = object()
+    service._drift_monitor = GeometryDriftMonitor(reference, cell_spacing_px=20)
+    service._status.update(phase="ready", session_calibrated=True)
+    result = service.preflight()
+    assert result["ready"] is False
+    assert service.status()["phase"] == "ready"
+    service.stop()
+
+
+@pytest.mark.parametrize("shifted", [False, True])
+def test_preflight_does_not_publish_after_slow_monitor_update_crosses_deadline(tmp_path, shifted):
+    import cv2
+    from katrain.vision.geometry_drift import GeometryDriftMonitor
+
+    reference = np.random.default_rng(21).integers(0, 255, (96, 96, 3), dtype=np.uint8)
+    image = cv2.warpAffine(reference, np.float32([[1, 0, 8], [0, 1, 0]]), (96, 96)) if shifted else reference
+
+    class Capture(FakeCapture):
+        def __init__(self):
+            self.seq = 0
+
+        def grab_fresh(self, **kwargs):
+            self.seq += 1
+            return image.copy(), self.seq, time.monotonic()
+
+    service = GeometryCalibrationService(led=FakeLed(), capture=Capture(), save_path=tmp_path / "g.npz")
+    service.current_lock = object()
+    monitor = GeometryDriftMonitor(reference, cell_spacing_px=20)
+    original_update = monitor.update
+    calls = 0
+
+    def slow_third_update(frame):
+        nonlocal calls
+        calls += 1
+        if calls == 3:
+            time.sleep(0.08)
+        return original_update(frame)
+
+    monitor.update = slow_third_update
+    service._drift_monitor = monitor
+    service._status.update(phase="ready", session_calibrated=True)
+    service.PREFLIGHT_TIMEOUT_S = 0.05
+    result = service.preflight()
+    assert result["ready"] is False
+    assert service.status()["phase"] == "ready"
+    service.stop()
+
+
+def test_preflight_monitor_lock_wait_uses_remaining_budget(tmp_path):
+    from katrain.vision.geometry_drift import GeometryDriftMonitor
+
+    frame = np.random.default_rng(22).integers(0, 255, (96, 96, 3), dtype=np.uint8)
+    second_frame = threading.Event()
+
+    class Capture(FakeCapture):
+        def __init__(self):
+            self.seq = 0
+
+        def grab_fresh(self, **kwargs):
+            self.seq += 1
+            if self.seq == 2:
+                second_frame.set()
+            return frame.copy(), self.seq, time.monotonic()
+
+    service = GeometryCalibrationService(led=FakeLed(), capture=Capture(), save_path=tmp_path / "g.npz")
+    service.current_lock = object()
+    service._drift_monitor = GeometryDriftMonitor(frame, cell_spacing_px=20)
+    service._status.update(phase="ready", session_calibrated=True)
+    service.PREFLIGHT_TIMEOUT_S = 0.05
+    result = {}
+    service._monitor_update_lock.acquire()
+    worker = threading.Thread(target=lambda: result.update(service.preflight()), daemon=True)
+    worker.start()
+    try:
+        assert second_frame.wait(timeout=1)
+        worker.join(timeout=0.15)
+        assert not worker.is_alive(), "preflight waited past its deadline for the monitor lock"
+        assert result["ready"] is False
+    finally:
+        service._monitor_update_lock.release()
+        worker.join(timeout=1)
+        service.stop()
+
+
 def test_preflight_confirms_real_drift_but_not_unknown_frames(tmp_path):
     import cv2
     from katrain.vision.geometry_drift import GeometryDriftMonitor

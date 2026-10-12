@@ -27,6 +27,10 @@ class GeometryDriftMonitor:
         self.consecutive_frames = int(consecutive_frames)
         self._over_threshold = 0
 
+    def reset_streak(self) -> None:
+        """Discard drift evidence after a gap or an untrusted frame."""
+        self._over_threshold = 0
+
     @staticmethod
     def _features(frame):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if frame.ndim == 3 else frame

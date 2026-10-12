@@ -267,6 +267,7 @@ class WebKaTrain(KaTrainBase):
         self.pondering = False
         self.timer_paused = True
         self.local_geometry_paused = False
+        self.local_geometry_pause_epoch = 0
         self.local_confirmation_in_progress = False
         self.local_confirmation_state = {"status": "idle", "reason": None, "points": []}
         # A18:这一局的时限是不是**开局设置**写的(`/api/game/setup`、升降级 `/start` 都经 update_config("timer/…"))。
@@ -815,6 +816,7 @@ class WebKaTrain(KaTrainBase):
             self.game_type = game_type if game_type is not None else "free"
             self.local_confirmation_in_progress = False
             self.local_geometry_paused = False
+            self.local_geometry_pause_epoch = 0
             self.local_confirmation_state = {"status": "idle", "reason": None, "points": []}
             # G1/G2: a brand new game is never engine-controlled until a platform explicitly
             # says otherwise (via edit_game's platform_engine_color kwarg). Without this reset,
@@ -1094,13 +1096,19 @@ class WebKaTrain(KaTrainBase):
             self.last_timer_update = time.time()
             return True
 
-    def set_local_geometry_paused(self, paused: bool, *, expected_game_id, expected_node_id=None) -> bool:
+    def set_local_geometry_paused(
+        self, paused: bool, *, expected_game_id, expected_node_id=None, expected_epoch=None
+    ) -> bool:
         """Set the geometry reason only for the still-current local game."""
         with self.ai_ladder_commit_lock:
             if self.game_type != "pvp_local" or not self.game or self.game.game_id != expected_game_id:
                 return False
             if expected_node_id is not None and id(self.game.current_node) != expected_node_id:
                 return False
+            if expected_epoch is not None and self.local_geometry_pause_epoch != expected_epoch:
+                return False
+            if paused:
+                self.local_geometry_pause_epoch += 1
             if self.local_geometry_paused == paused:
                 return True
             self.update_timer()  # settle play before pausing; discard the paused interval before resuming

@@ -29,7 +29,7 @@ The kiosk guard invokes the same endpoint with `trigger=auto` after the operator
 
 1. Log in, open **Settings**, then choose **Recalibrate board**. The grid icon in the top status bar opens the same `/kiosk/vision/setup` page.
 2. Clear all stones from the physical board. The page shows the raw HBV camera stream and the square perspective-corrected stream side by side on a wide display, or stacked on a narrow display.
-3. Confirm the empty board to start calibration. The four corners and nine star points are flashed in sequence; detected anchors appear on the raw stream as progress advances from 0/13 to 13/13.
+3. Confirm the empty board to start calibration. The camera waits for a stable, visible grid before the first LED lights. Four corners and the center light in sequence; detected anchors appear on the raw stream as progress advances from 0/5 to 5/5. If the board is obstructed, the LED turns off and calibration resumes at the unfinished point when the grid is stable again.
 4. A successful calibration shows four corner labels, 38 grid lines, and 361 intersections in green on both streams. The page also reports the RMS and maximum fit residual.
 5. Selecting **Recalibrate** from a ready state only opens the empty-board warning. LEDs do not flash until **Empty board, start automatic calibration** is selected.
 6. If camera or board drift invalidates the geometry, physical-board modules pause and show the stale grid in red. Clear the board and confirm recalibration to restore the ready state.

@@ -9,12 +9,137 @@ import pytest
 from katrain.vision import led_geometry_calibrator, stone_classifier
 from katrain.vision.led_geometry_calibrator import (
     CALIBRATION_ANCHORS,
+    FIVE_POINT_ANCHORS,
+    FivePointLedGeometryCalibrator,
+    CalibrationInterrupted,
     LedGeometryCalibrator,
     check_frame_exposure,
     detect_led_centroid,
     first_nondegenerate_quad,
     fit_geometry_from_anchors,
+    fit_five_point_geometry,
 )
+
+
+def test_five_point_fit_checks_center_and_rejects_clumped_corners():
+    good = [((0, 0), (505, 977)), ((0, 18), (258, 100)),
+            ((18, 18), (1647, 101)), ((18, 0), (1395, 993)), ((9, 9), (951, 600))]
+    # Exact perspective center, rather than the arithmetic mean of corners.
+    corners = np.asarray([point for _coord, point in good[:4]], np.float32)
+    H = cv2.getPerspectiveTransform(np.array([[0, 0], [949, 0], [949, 949], [0, 949]], np.float32), corners)
+    center = cv2.perspectiveTransform(np.array([[[474.5, 474.5]]], np.float32), H)[0, 0]
+    good[4] = ((9, 9), center)
+    assert fit_five_point_geometry(good, frame_shape=(1080, 1920)).ok
+    shifted = good.copy()
+    shifted[4] = ((9, 9), center + (45, 0))
+    assert fit_five_point_geometry(shifted, frame_shape=(1080, 1920)).reason == "center_mismatch"
+    bad = good.copy()
+    bad[:4] = [((0, 0), (361, 881)), ((0, 18), (163, 1024)),
+               ((18, 18), (179, 947)), ((18, 0), (1394, 992))]
+    assert fit_five_point_geometry(bad, frame_shape=(1080, 1920)).reason == "corner_geometry_invalid"
+
+
+def test_five_point_calibrator_only_flashes_five_positions():
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    calibrator = FivePointLedGeometryCalibrator(led=led, capture=capture)
+    calibrator.anchor_roi = lambda row, col: (*_synthetic_camera_points()[(row, col)], 80)
+    result = calibrator.calibrate()
+    assert result.ok
+    assert [coord for coord, _rgb in led.attempts] == list(FIVE_POINT_ANCHORS)
+
+
+def test_five_point_baseline_retries_a_short_camera_burst():
+    led = FakeLed()
+
+    class ShortBurstCapture(FakeCapture):
+        burst_calls = 0
+
+        def grab_burst(self, n=8, interval=0.1):
+            self.burst_calls += 1
+            frames = super().grab_burst(n=n, interval=interval)
+            return frames[:-1] if self.burst_calls == 1 else frames
+
+    capture = ShortBurstCapture(led, _synthetic_camera_points())
+    calibrator = FivePointLedGeometryCalibrator(led=led, capture=capture)
+    calibrator.anchor_roi = lambda row, col: (*_synthetic_camera_points()[(row, col)], 80)
+
+    result = calibrator.calibrate()
+
+    assert result.ok
+    assert capture.burst_calls == 2
+
+
+def test_five_point_baseline_retries_shadow_held_out_failure_without_reflashing():
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    calibrator = FivePointLedGeometryCalibrator(led=led, capture=capture)
+    calibrator.anchor_roi = lambda row, col: (*_synthetic_camera_points()[(row, col)], 80)
+    build_lock = calibrator._build_lock
+    builds = 0
+
+    def one_shadow_failure(fit, frames, detected, attempts):
+        nonlocal builds
+        builds += 1
+        if builds == 1:
+            raise led_geometry_calibrator.BaselineNotEmpty("empty baseline held-out check failed: black=0, white=5")
+        return build_lock(fit, frames, detected, attempts)
+
+    calibrator._build_lock = one_shadow_failure
+    result = calibrator.calibrate()
+
+    assert result.ok
+    assert builds == 2
+    assert [coord for coord, _rgb in led.attempts] == list(FIVE_POINT_ANCHORS)
+
+
+def test_five_point_interruption_retries_only_unconfirmed_position():
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    seen = []
+    calibrator = FivePointLedGeometryCalibrator(led=led, capture=capture,
+        anchor_observer=lambda row, col, _point, _color: seen.append((row, col)))
+    interrupted = False
+
+    def guard(_frame, dark):
+        nonlocal interrupted
+        if dark and len(seen) == 3 and not interrupted:
+            interrupted = True
+            raise CalibrationInterrupted("board_occluded")
+
+    calibrator.anchor_roi = lambda row, col: (*_synthetic_camera_points()[(row, col)], 80)
+    calibrator.frame_guard = guard
+    result = calibrator.calibrate()
+    assert result.ok and interrupted
+    assert seen == list(FIVE_POINT_ANCHORS)
+    assert [coord for coord, _rgb in led.attempts] == list(FIVE_POINT_ANCHORS)
+
+
+def test_five_point_retries_one_ambiguous_flash_without_discarding_confirmed_points():
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    seen = []
+    calibrator = FivePointLedGeometryCalibrator(
+        led=led, capture=capture,
+        anchor_observer=lambda row, col, _point, _color: seen.append((row, col)),
+    )
+    calibrator.anchor_roi = lambda row, col: (*_synthetic_camera_points()[(row, col)], 80)
+    locate = calibrator._locate_anchor
+    calls = []
+
+    def locate_with_one_ambiguous_flash(row, col, attempts, roi=None):
+        calls.append((row, col))
+        if (row, col) == FIVE_POINT_ANCHORS[1] and calls.count((row, col)) == 1:
+            attempts.append({"row": row, "col": col, "reason": "ambiguous_blobs"})
+            return None
+        return locate(row, col, attempts, roi=roi)
+
+    calibrator._locate_anchor = locate_with_one_ambiguous_flash
+    result = calibrator.calibrate()
+
+    assert result.ok
+    assert calls == [FIVE_POINT_ANCHORS[0], FIVE_POINT_ANCHORS[1], FIVE_POINT_ANCHORS[1], *FIVE_POINT_ANCHORS[2:]]
+    assert seen == list(FIVE_POINT_ANCHORS)
 
 
 def test_detect_led_centroid_rejects_reflection_and_returns_main_blob():
@@ -122,6 +247,7 @@ class FakeCapture:
         self.camera_points = camera_points
         self.green_missing_for = green_missing_for
         self.seq = 0
+        self.started_at = time.monotonic() + 1
 
     def _frame(self):
         frame = np.full((900, 1000, 3), 90, np.uint8)

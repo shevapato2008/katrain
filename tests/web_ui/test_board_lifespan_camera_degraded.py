@@ -85,6 +85,9 @@ class _Led:
     def start(self):
         self.started = True
 
+    def is_board_connected(self):
+        return self.started
+
 
 class _LedBusy(_Led):
     def start(self):

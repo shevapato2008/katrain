@@ -73,4 +73,12 @@ describe('GeometryAPI', () => {
     await expect(GeometryAPI.relocate()).resolves.toMatchObject({ phase: 'ready' });
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/geometry/relocate', { method: 'POST' });
   });
+
+  it('requests a lighting recheck without restarting calibration', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ phase: 'lighting_rechecking' }), { status: 202 }),
+    );
+    await expect(GeometryAPI.recheckLighting()).resolves.toMatchObject({ phase: 'lighting_rechecking' });
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/geometry/recheck-lighting', { method: 'POST' });
+  });
 });

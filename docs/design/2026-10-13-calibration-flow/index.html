@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>棋盘标定 · 遮挡与光线提示交互稿</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root { color-scheme: dark; font-family: "SmartBox Sans", "PingFang SC", "Microsoft YaHei", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #111916; color: #eef3f1; }
+    button { font: inherit; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #b4e5bf; outline-offset: 2px; }
+    .studio { width: min(1024px, 100%); margin: 0 auto; padding: 18px 0 28px; }
+    .studio-head { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 12px; gap: 12px; }
+    .studio-head strong { font-size: 15px; font-weight: 650; }
+    .studio-head span { font-size: 12px; color: #a5b6aa; }
+    .scenarios { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 2px 12px; }
+    .scenarios button { min-height: 40px; padding: 0 13px; border: 1px solid #3c5347; border-radius: 9px; background: #1a2720; color: #d5e4da; font-size: 13px; }
+    .scenarios button[aria-pressed="true"] { background: #58b57a; color: #0f1712; border-color: #58b57a; font-weight: 700; }
+    .device { position: relative; width: 1024px; height: 600px; overflow: hidden; border: 1px solid #415349; background: #0f1416; box-shadow: 0 24px 70px #0008; transform-origin: top left; }
+    .topbar { height: 56px; padding: 0 23px; display: flex; align-items: center; border-bottom: 1px solid #2a3a34; background: #17201d; }
+    .brand-glyph { font-family: Georgia, serif; font-size: 28px; color: #e6eee8; margin-right: 13px; }
+    .brand { font-family: "Kaiti SC", Georgia, serif; font-size: 18px; letter-spacing: .08em; white-space: nowrap; }
+    .brand em { font-family: Georgia, serif; font-size: 12px; letter-spacing: 0; color: #9bac9f; margin-left: 7px; }
+    .top-rule { width: 1px; height: 20px; background: #52665a; margin: 0 13px; }
+    .game-name { color: #68bc87; font-size: 14px; }
+    .user { margin-left: auto; font-size: 12px; color: #d6e1d9; }
+    .avatar { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: 7px; border-radius: 50%; background: #58b57a; color: #0f1712; font-weight: 700; }
+    .clock { margin-left: 15px; font-family: ui-monospace, monospace; font-size: 13px; }
+    .content { padding: 14px 16px 16px; height: 544px; }
+    .pagebar { height: 44px; display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .back { width: 110px; height: 36px; border: 1px solid #33483d; border-radius: 10px; background: #1b2923; color: #eef3f1; }
+    .page-title { font-size: 14px; font-weight: 650; white-space: nowrap; }
+    .page-sub { color: #97a99d; font-size: 11px; white-space: nowrap; }
+    .seg { margin-left: auto; display: flex; gap: 2px; padding: 2px; border: 1px solid #304339; background: #19231e; border-radius: 9px; }
+    .seg span { padding: 6px 13px; border-radius: 7px; color: #96aa9d; font-size: 11px; }
+    .seg span:first-child { background: #24352a; color: #69bd89; }
+    .body-grid { display: grid; grid-template-columns: 516px 460px; gap: 16px; height: 460px; }
+    .camera { position: relative; overflow: hidden; border: 1px solid #31473a; border-radius: 9px; background: radial-gradient(circle at 50% 4%, #31443b, #0b1211 80%); }
+    .cam-board { position: absolute; left: 51px; top: 9px; width: 413px; height: 435px; background: #bc9767; border: 18px solid #c49e6b; box-shadow: 0 0 0 1px #65543d, 0 0 45px #0008; transform: perspective(900px) rotateX(4deg); }
+    .grid { position: absolute; inset: 10px 8px; background: repeating-linear-gradient(90deg, #30271f 0 1px, transparent 1px 20.7px), repeating-linear-gradient(0deg, #30271f 0 1px, transparent 1px 20.7px); border-right: 1px solid #30271f; border-top: 1px solid #30271f; opacity: .8; }
+    .star { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #453525; }
+    .s1 { left: 25%; top: 25%; } .s2 { left: 50%; top: 25%; } .s3 { left: 75%; top: 25%; }
+    .s4 { left: 25%; top: 50%; } .s5 { left: 50%; top: 50%; } .s6 { left: 75%; top: 50%; }
+    .s7 { left: 25%; top: 75%; } .s8 { left: 50%; top: 75%; } .s9 { left: 75%; top: 75%; }
+    .cam-board::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, #fff2, transparent 30%, #0001 80%); pointer-events: none; }
+    .cam-label { position: absolute; left: 12px; top: 12px; z-index: 2; padding: 5px 9px; border: 1px solid #536355; border-radius: 6px; background: #122017e8; color: #e6f2e9; font-size: 11px; font-weight: 650; }
+    .cam-label .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: #58b57a; }
+    .marker { position: absolute; z-index: 2; width: 18px; height: 18px; border: 2px solid #64d995; border-radius: 50%; background: #13291a88; box-shadow: 0 0 0 4px #59d88e33; }
+    .marker::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: #6ade9e; }
+    .m1 { left: 63px; top: 22px; }.m2 { left: 434px; top: 22px; }.m3 { left: 434px; top: 409px; }.m4 { left: 63px; top: 409px; }.m5 { left: 250px; top: 219px; }
+    .status-banner { position: absolute; z-index: 3; top: 45px; left: 13px; right: 13px; display: flex; align-items: center; gap: 9px; min-height: 40px; padding: 8px 11px; border-radius: 8px; border: 1px solid #63806c; background: #10251cdd; color: #ebf9ed; font-size: 12px; }
+    .status-banner b { font-size: 12px; }.status-banner small { margin-left: auto; color: #c0d4c5; }
+    .status-banner.warn { border-color: #b48543; background: #3a2819eb; color: #fff2dc; }
+    .status-banner.warn small { color: #f2d7ae; }
+    .cap { position: absolute; z-index: 4; bottom: 12px; left: 12px; right: 12px; height: 34px; padding: 0 11px; border: 1px solid #334639; border-radius: 9px; background: #0b1211e0; display: flex; align-items: center; font-size: 11px; color: #aebcb1; }
+    .cap strong { margin-left: auto; font-family: ui-monospace, monospace; color: #6cc48b; font-size: 11px; }
+    .rail { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .stat { height: 56px; border: 1px solid #31463a; border-radius: 9px; background: #1a2620; padding: 9px 11px; font-size: 11px; color: #aebeb2; }
+    .stat b { display: block; margin-top: 4px; color: #edf2ee; font-size: 12px; font-weight: 600; }
+    .stat i { color: #6fc48b; font-style: normal; margin-right: 5px; }
+    .step-list { min-height: 0; overflow: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; scrollbar-width: thin; }
+    .step { display: flex; align-items: center; height: 51px; flex: none; gap: 10px; padding: 8px 11px; border: 1px solid #304037; border-radius: 10px; background: #1a2620; }
+    .step.current { border-color: #5abb7c; }.step.paused { border-color: #d9a359; }.step.done { border-color: #365b42; }
+    .step-num { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border: 1px solid #3b5144; border-radius: 50%; color: #a9b7ac; font: 11px ui-monospace, monospace; }
+    .step.current .step-num { background: #58b57a; border-color: #58b57a; color: #0e1711; font-weight: 800; }
+    .step.done .step-num { color: #67c687; border-color: #477655; }.step.paused .step-num { color: #f4c788; border-color: #d9a359; }
+    .step-text { min-width: 0; }.step-text b { display: block; font-size: 12px; font-weight: 650; }.step-text small { display: block; color: #98a99d; font-size: 10px; margin-top: 3px; }
+    .step-tag { margin-left: auto; padding: 5px 8px; border: 1px solid #354b3e; border-radius: 12px; color: #98aa9e; font-size: 10px; white-space: nowrap; }
+    .step.current .step-tag { color: #68c589; }.step.paused .step-tag { color: #f0c17e; border-color: #8c673a; }
+    .note { margin: 0; color: #a1b0a4; font-size: 10px; line-height: 1.35; }
+    .note b { color: #d8e6dc; }
+    .actions { display: flex; flex: none; }.actions button { height: 44px; border-radius: 10px; width: 100%; font-size: 13px; }
+    .primary { background: #58b57a; border: 1px solid #58b57a; color: #0e1711; font-weight: 700; }
+    .secondary { background: transparent; border: 1px solid #58705d; color: #d9e7dd; }
+    .danger { background: transparent; border: 1px solid #e27373; color: #e27373; font-weight: 650; }
+    .scrim { position: absolute; inset: 56px 0 0; z-index: 8; background: #050907b9; display: grid; place-items: center; }
+    .scrim[hidden] { display: none; }
+    .dialog { width: 455px; border-radius: 16px; border: 1px solid #ad7a3a; background: #1c2620; box-shadow: 0 18px 60px #000b; padding: 22px 24px 20px; }
+    .dialog .eyebrow { color: #efbc75; font-size: 11px; letter-spacing: .09em; }
+    .dialog h2 { font-size: 22px; line-height: 1.25; margin: 10px 0 10px; }.dialog p { font-size: 14px; line-height: 1.58; color: #dbe5dc; margin: 0 0 18px; }
+    .dialog .voice-copy { border-left: 3px solid #d49e58; padding: 7px 0 7px 10px; margin-bottom: 17px; background: #2b3026; color: #d9ddcf; font-size: 11px; line-height: 1.45; }
+    .dialog-actions { display: flex; gap: 10px; }.dialog-actions button { min-height: 44px; border-radius: 9px; padding: 0 15px; }
+    .dialog-actions .secondary { margin-right: auto; }
+    .voice-note { margin: 13px 2px 0; padding: 11px 13px; border: 1px solid #354a3d; border-radius: 10px; background: #1b2921; color: #d3dfd5; display: flex; align-items: center; gap: 10px; font-size: 12px; line-height: 1.5; }
+    .voice-note b { color: #83d69e; white-space: nowrap; }.voice-note span { flex: 1; }.voice-note button { min-width: 80px; min-height: 40px; border: 1px solid #5d886a; color: #daf2de; background: #25432f; border-radius: 8px; }
+    .voice-source { margin: 8px 2px 0; color: #94a79a; font-size: 11px; }
+    @media (max-width: 1024px) { .studio { overflow: hidden; } }
+    @media (prefers-reduced-motion: no-preference) { .marker.active { animation: glow 1.8s ease-in-out infinite; } @keyframes glow { 50% { box-shadow: 0 0 0 9px #59d88e20; } } }
+  </style>
+</head>
+<body>
+  <div class="studio">
+    <div class="studio-head"><strong>棋盘标定 · 交互预览</strong><span>1024 × 600 设备画布 · 示意相机画面 · 可切换状态</span></div>
+    <nav class="scenarios" aria-label="选择预览状态">
+      <button data-state="waiting">移手等待</button><button data-state="calibrating">正在标定</button><button data-state="paused">遮挡暂停</button><button data-state="over">光线过亮</button><button data-state="under">光线过暗</button><button data-state="done">标定完成</button>
+    </nav>
+    <main class="device" id="device" aria-label="标定页面设计预览">
+      <div class="topbar"><span class="brand-glyph" aria-hidden="true">◈</span><span class="brand">智星盒 <em>StellaBox</em></span><span class="top-rule"></span><span class="game-name">围棋</span><span class="user"><span class="avatar">预</span>预览用户</span><span class="clock">14:48</span></div>
+      <div class="content">
+        <div class="pagebar"><button class="back" type="button">←　返回设置</button><span class="page-title">先检查棋盘标定</span><span class="page-sub">标定完成后返回设置，再开始对局</span><div class="seg"><span>原始画面</span><span>俯视矫正</span></div></div>
+        <div class="body-grid">
+          <section class="camera" aria-label="示意相机画面">
+            <div class="cam-board"><div class="grid"></div><i class="star s1"></i><i class="star s2"></i><i class="star s3"></i><i class="star s4"></i><i class="star s5"></i><i class="star s6"></i><i class="star s7"></i><i class="star s8"></i><i class="star s9"></i></div>
+            <span class="cam-label"><span class="dot"></span><span id="cam-label">等待棋盘稳定</span></span>
+            <div id="markers"></div><div class="status-banner" id="banner"></div>
+            <div class="cap"><span id="cap-left">请移开手，保持空盘</span><strong id="cap-right">0 / 5</strong></div>
+          </section>
+          <aside class="rail">
+            <div class="stats"><div class="stat"><i>●</i>摄像头<b>已连接</b></div><div class="stat">标定<b id="stat-calib">等待稳定</b></div><div class="stat"><i>●</i>LED<b>已连接</b></div></div>
+            <div class="step-list" id="step-list"></div>
+            <p class="note"><b>LED 只在棋盘稳定后亮。</b> 遮挡时灯先熄灭；移开手后，从未完成的点继续。异常光线会暂停并提示调整。</p>
+            <div class="actions"><button class="danger" id="calibration-action" type="button">取消标定</button></div>
+          </aside>
+        </div>
+      </div>
+      <div class="scrim" id="scrim" hidden><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><span class="eyebrow">光线提醒 · 标定已暂停</span><h2 id="dialog-title"></h2><p id="dialog-body"></p><div class="voice-copy"><b>语音提示</b>　<span id="dialog-voice"></span></div><div class="dialog-actions"><button class="secondary" type="button" id="dialog-cancel">取消标定</button><button class="primary" type="button" id="dialog-check">调整后重新检测</button></div></section></div>
+    </main>
+    <div class="voice-note"><b>提示文案</b><span id="voice-line"></span><button id="play-voice" type="button">试听现有音色</button></div>
+    <p class="voice-source">试听播放围棋模块已有的音色样本「请清空棋盘」；新文案待按相同音色录制。正式页面沿用「设置 → 声音 → 语音提示」开关。</p>
+  </div>
+  <script>
+    const $ = id => document.getElementById(id);
+    const steps = [
+      ['等待棋盘稳定', '移开双手，空盘保持稳定'],
+      ['确认并锁定曝光', '拍摄 LED 亮灭帧时使用同一曝光'],
+      ['定位棋盘', '五个灯依次点亮，完成后自动校验'],
+      ['生成空盘基线', '完成后恢复实时自动曝光']
+    ];
+    const states = {
+      idle: { current: -1, count: 0, label: '标定已取消', banner: '标定已取消', detail: '可重新开始', stat: '已取消', left: '请清空棋盘后重新标定', right: '0 / 5', voice: '—' },
+      waiting: { current: 0, count: 0, label: '等待棋盘稳定', banner: '请把手移开棋盘上方', detail: '稳定后自动开始', stat: '等待稳定', left: '双手离开后自动点灯', right: '0 / 5', voice: '请移开手，保持棋盘上方无遮挡。' },
+      calibrating: { current: 2, count: 3, label: '正在标定', banner: '正在标定', detail: '已完成 3 / 5', stat: '标定中', left: '已完成 3 个点', right: '3 / 5', voice: '正在标定，请不要遮挡棋盘。' },
+      paused: { current: 2, count: 3, label: '已暂停', banner: '检测到遮挡，标定已暂停', detail: '3 点已保留', stat: '等待移手', left: '已完成 3 个点 · 灯已熄灭', right: '3 / 5', voice: '检测到遮挡，请移开手。' },
+      resuming: { current: 2, count: 4, label: '正在标定', banner: '正在标定', detail: '已完成 4 / 5', stat: '标定中', left: '已完成 4 个点 · 继续标定', right: '4 / 5', voice: '继续标定。' },
+      over: { current: 2, count: 4, label: '光线过亮', banner: '光线过亮，标定已暂停', detail: '已完成 4 / 5', stat: '等待调光', left: '已完成 4 个点 · 灯已熄灭', right: '4 / 5', voice: '光线太亮，请拉上窗帘，避开直射光。' },
+      under: { current: 2, count: 4, label: '光线过暗', banner: '光线过暗，标定已暂停', detail: '已完成 4 / 5', stat: '等待调光', left: '已完成 4 个点 · 灯已熄灭', right: '4 / 5', voice: '光线太暗，请打开室内灯。' },
+      done: { current: 4, count: 5, label: '标定完成', banner: '五个定位点校验通过', detail: '可开始对局', stat: '已标定', left: '5 / 5 已定位', right: '已完成', voice: '棋盘标定完成。' }
+    };
+    let state = new URLSearchParams(location.search).get('state') || 'waiting';
+    if (!states[state]) state = 'waiting';
+    const markerNames = ['m1','m2','m3','m4','m5'];
+    function render() {
+      const s = states[state];
+      document.querySelectorAll('.scenarios button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.state === state)));
+      $('cam-label').textContent = s.label;
+      $('banner').innerHTML = `<b>${s.banner}</b><small>${s.detail}</small>`;
+      $('banner').classList.toggle('warn', ['paused','over','under'].includes(state));
+      $('cap-left').textContent = s.left; $('cap-right').textContent = s.right; $('stat-calib').textContent = s.stat;
+      $('markers').innerHTML = markerNames.slice(0,s.count).map((name,i) => `<span class="marker ${name} ${['calibrating','resuming'].includes(state) && i===s.count-1 ? 'active' : ''}" aria-hidden="true"></span>`).join('');
+      $('step-list').innerHTML = steps.map(([title, hint],i) => {
+        let kind = i < s.current ? 'done' : i === s.current && state !== 'done' ? ['paused','over','under'].includes(state) ? 'paused' : 'current' : '';
+        let tag = kind === 'done' ? '已完成' : kind === 'paused' ? '已暂停' : kind === 'current' ? state==='waiting' ? '等待中' : '进行中' : '未开始';
+        return `<div class="step ${kind}"><span class="step-num">${i+1}</span><span class="step-text"><b>${title}</b><small>${hint}</small></span><span class="step-tag">${tag}</span></div>`;
+      }).join('');
+      $('voice-line').textContent = s.voice;
+      $('calibration-action').textContent = state === 'done' ? '重新标定棋盘' : state === 'idle' ? '重新开始标定' : '取消标定';
+      $('calibration-action').className = ['done','idle'].includes(state) ? 'primary' : 'danger';
+      const isLight = state === 'over' || state === 'under';
+      $('scrim').hidden = !isLight;
+      if (isLight) {
+        $('dialog-title').textContent = state === 'over' ? '画面过亮，棋盘细节可能看不清' : '画面过暗，棋盘细节可能看不清';
+        $('dialog-body').textContent = state === 'over' ? '请拉上窗帘，避开阳光直射棋盘。调整后重新检测光线，已完成的四个点会保留。' : '请打开室内灯，或换到光线均匀的位置。调整后重新检测光线，已完成的四个点会保留。';
+        $('dialog-voice').textContent = s.voice;
+      }
+    }
+    document.querySelectorAll('.scenarios button').forEach(b => b.addEventListener('click', () => { state = b.dataset.state; render(); }));
+    $('dialog-check').addEventListener('click', () => { state='resuming'; render(); });
+    $('dialog-cancel').addEventListener('click', () => { state='idle'; render(); });
+    $('calibration-action').addEventListener('click', () => { state=['done','idle'].includes(state) ? 'waiting' : 'idle'; render(); });
+    let previewAudio;
+    $('play-voice').addEventListener('click', () => {
+      if (previewAudio) previewAudio.pause();
+      previewAudio = new Audio('voice/sample_clear_board.mp3');
+      previewAudio.play().catch(() => { $('play-voice').textContent = '音频无法播放'; });
+    });
+    function resize() { $('device').style.transform = `scale(${Math.min(1,(window.innerWidth-16)/1024)})`; const scale=Math.min(1,(window.innerWidth-16)/1024); $('device').style.marginBottom=`${Math.round(600*(scale-1))}px`; }
+    addEventListener('resize', resize); resize(); render();
+  </script>
+</body>
+</html>

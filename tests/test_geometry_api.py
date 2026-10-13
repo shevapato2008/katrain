@@ -61,6 +61,22 @@ def _ok_lock(*, out_size=950, M=None, corners=None, points=None):
 
 
 class TestGeometryEndpoint:
+    def test_snapshot_returns_latest_jpeg_without_cache(self):
+        first = np.full((60, 90, 3), 25, np.uint8)
+        latest = np.full((60, 90, 3), 175, np.uint8)
+        app, c = _client(capture=FakeCapture([first, latest]))
+
+        response = c.get("/geometry/snapshot?view=raw&scale=3")
+
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "no-store"
+        image = cv2.imdecode(np.frombuffer(response.content, np.uint8), cv2.IMREAD_COLOR)
+        assert image.shape[:2] == (20, 30)
+        assert abs(float(np.median(image)) - 175) < 3
+
+    def test_snapshot_warped_requires_geometry(self):
+        _, c = _client(capture=FakeCapture([np.zeros((60, 90, 3), np.uint8)]))
+        assert c.get("/geometry/snapshot?view=warped&scale=2").status_code == 409
     def test_preflight_requires_camera_model_and_recognition_capabilities(self):
         class Calibration:
             def preflight(self):

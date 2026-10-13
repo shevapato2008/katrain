@@ -89,6 +89,15 @@ describe('摆谱入口:拍不拍照决定要不要先标定(K4)', () => {
     expect(sessionRendered).not.toHaveBeenCalled();
   });
 
+  it.each(['waiting_stable', 'obstructed', 'lighting_paused', 'lighting_rechecking'] as const)(
+    '%s 时摆谱页仍不可挂载抢 LED', async (phase) => {
+      modeMock.mockResolvedValue({ collect: false });
+      vi.mocked(GeometryAPI.status).mockResolvedValue(geo(phase));
+      renderRoute();
+      expect(await screen.findByTestId('calib-running')).toBeInTheDocument();
+      expect(sessionRendered).not.toHaveBeenCalled();
+    },
+  );
   it('曝光收敛期间保留进行中守卫，不能挂摆谱页点灯', async () => {
     modeMock.mockResolvedValue({ collect: false });
     vi.mocked(GeometryAPI.status).mockResolvedValue(geo('converging_exposure'));

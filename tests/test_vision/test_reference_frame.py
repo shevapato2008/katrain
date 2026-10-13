@@ -413,6 +413,24 @@ def test_the_reference_is_taken_only_when_nothing_can_be_hiding_in_it():
     assert adapter._reference is not None and adapter._reference.board[4][4] == BLACK
 
 
+def test_new_geometry_replaces_reference_with_current_nonempty_game_position():
+    adapter = _with_reference("on", _board_frame(), _empty_board())
+    position = _empty_board()
+    position[4][4] = BLACK
+    position[5][5] = WHITE
+    adapter._expected_np = position.copy()
+    current = to_gray(_board_frame([(4, 4, BLACK), (5, 5, WHITE)]))
+
+    adapter.set_geometry(SimpleNamespace(points=None))
+    assert adapter._reference is None
+    adapter._maybe_capture_reference(position, position, current)
+
+    assert adapter._reference is not None
+    np.testing.assert_array_equal(adapter._reference.board, position)
+    assert adapter._reference.similarity(current)[4][4] > 0.99
+    assert adapter._reference.similarity(current)[5][5] > 0.99
+
+
 def test_monitor_mode_can_capture_and_apply_the_same_reference_filter():
     adapter = _adapter("shadow")
     adapter._bound = False

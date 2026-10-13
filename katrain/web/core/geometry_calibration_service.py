@@ -18,7 +18,11 @@ from katrain.vision.camera import (
     _auto_exposure_readback_matches,
 )
 from katrain.vision.geometry_lock import save_geometry_lock
-from katrain.vision.led_geometry_calibrator import LedGeometryCalibrator, check_frame_exposure, probe_frame_exposure
+from katrain.vision.calibration_stability import CalibrationStabilityGate, check_grid_lighting
+from katrain.vision.led_geometry_calibrator import (
+    CalibrationInterrupted, FivePointLedGeometryCalibrator, LightingInterrupted,
+    check_frame_exposure, probe_frame_exposure,
+)
 from katrain.web.core.hardware_vision_state import CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK
 
 logger = logging.getLogger(__name__)
@@ -55,14 +59,9 @@ class LegacyPublishRollbackError(RuntimeError):
 
 
 class GeometryCalibrationService:
-    ACTIVE_PHASES = {
-        "waiting_empty",
-        "converging_exposure",
-        "dark_reference",
-        "flashing_corners",
-        "verifying",
-        "building_baseline",
-    }
+    ACTIVE_PHASES = {"waiting_empty", "waiting_stable", "converging_exposure", "dark_reference",
+                     "flashing_corners", "verifying", "building_baseline", "obstructed",
+                     "lighting_paused", "lighting_rechecking"}
 
     # 标定入口那次曝光收敛的边界。用户正站在标定屏前等,不能无限等:超了就带着当前
     # 曝光继续往下走 —— 真收不回来,后面的曝光闸会诚实拒绝,不会伪装成功。
@@ -80,9 +79,9 @@ class GeometryCalibrationService:
     # 而 outcome 会报 timeout 而不是 max_steps —— 两个上限并存时小的那个说了算,
     # 这正是上一版 12s < 20s 会踩的坑。
     EXPOSURE_CONVERGE_TIMEOUT_S = 30.0
-    # 目标带与 auto_exposure.ExposureController 的默认带同源(spec:中位落在 [120,170])。
+    # HBV 硬件 AE 在日光下可稳定于 172；这仍可用于标定差分。
     EXPOSURE_TARGET_LO = 120.0
-    EXPOSURE_TARGET_HI = 170.0
+    EXPOSURE_TARGET_HI = 190.0
     # Hardware auto-then-lock runs inside the camera reader. During convergence,
     # grab_fresh can time out with the same cached frame; a frame count is not a
     # control-completion deadline. None means pending, not a failed driver readback.
@@ -101,7 +100,7 @@ class GeometryCalibrationService:
         on_degraded=None,
         on_suspend=None,
         on_resume=None,
-        calibrator_factory=LedGeometryCalibrator,
+        calibrator_factory=FivePointLedGeometryCalibrator,
         drift_needed=None,  # develop 275625ec 加的,原样保留
         selector=None,
         auto_relocate=AUTO_RELOCATE_ON_DRIFT,
@@ -134,6 +133,7 @@ class GeometryCalibrationService:
         self._monitor_reset_pending = None
         self._preflighting = False
         self._cancel_event = threading.Event()
+        self._lighting_recheck = threading.Event()
         self._publish_started = False
         self._thread = None
         self._geometry_revision = 0
@@ -149,7 +149,8 @@ class GeometryCalibrationService:
         self._drift_thread.start()
         self._status = {
             "phase": "required",
-            "progress": {"current": 0, "total": 13},
+            "progress": {"current": 0, "total": 5},
+            "pause_reason": None,
             "session_calibrated": False,
             "last_valid": initial_lock is not None,
             "trigger": None,
@@ -180,12 +181,14 @@ class GeometryCalibrationService:
             if self._relocating or self._preflighting:
                 raise CalibrationBusy("geometry relocation in progress")
             self._cancel_event = threading.Event()
+            self._lighting_recheck = threading.Event()
             self._publish_started = False
             self._drift_monitor = None
             self._detected_anchors = []
             self._status.update(
                 phase="waiting_empty",
-                progress={"current": 0, "total": 13},
+                progress={"current": 0, "total": 5},
+                pause_reason=None,
                 trigger=trigger,
                 error=None,
                 stopped_phase=None,
@@ -199,6 +202,7 @@ class GeometryCalibrationService:
         with self._lock:
             if not self._publish_started:
                 self._cancel_event.set()
+                self._lighting_recheck.set()
         if self.led is not None:
             try:
                 self.led.clear(strict=True)
@@ -210,6 +214,14 @@ class GeometryCalibrationService:
         self.wait(timeout=5)
         self._drift_stop.set()
         self._drift_thread.join(timeout=2)
+
+    def recheck_lighting(self) -> dict:
+        with self._lock:
+            if self._status["phase"] != "lighting_paused":
+                raise ValueError("lighting is not paused")
+            self._status["phase"] = "lighting_rechecking"
+            self._lighting_recheck.set()
+        return self.status()
 
     def wait(self, timeout=None) -> bool:
         thread = self._thread
@@ -444,6 +456,7 @@ class GeometryCalibrationService:
         with self._lock:
             self._status["phase"] = phase
             self._status["progress"] = {"current": current, "total": total}
+            self._status["pause_reason"] = None
 
     def _anchor_observed(self, row: int, col: int, point: tuple[float, float], color: str) -> None:
         with self._lock:
@@ -457,7 +470,14 @@ class GeometryCalibrationService:
                 }
             )
 
-    def _converge_exposure(self) -> None:
+    def _lock_preconverged_exposure(self, request) -> None:
+        handoff = getattr(self.capture, "lock_preconverged", None)
+        if callable(handoff):
+            handoff()
+        else:
+            request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
+
+    def _converge_exposure(self, *, force_auto: bool = False) -> None:
         """标定开始前把曝光收敛一次。无几何锁时,这是**唯一**会去动曝光的地方。
 
         根因(spec §2.1 + 终审 F1):CameraHub 在 open() 时关掉硬件 AE,而软件 AE 只在
@@ -493,10 +513,10 @@ class GeometryCalibrationService:
         stats = self._measure_exposure(grab)
         if self._cancel_event.is_set():
             raise CalibrationCancelled("calibration cancelled while measuring exposure")
-        if stats is None or self._in_target_band(stats):
+        if stats is None or (self._in_target_band(stats) and not force_auto):
             # 亮度合格不代表曝光已经锁住。标定的 lit-dark 差分要求两帧使用同一曝光，
             # 所以这条短路也必须切到手动并验证驱动读回，而不是直接进入锚点循环。
-            request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
+            self._lock_preconverged_exposure(request)
             requested_after = time.monotonic()
             settled = self._wait_for_manual_exposure_readback(grab, requested_after=requested_after)
             logger.info(
@@ -543,7 +563,7 @@ class GeometryCalibrationService:
             # 只把关闭动作放进来,**不吞异常**:异常照旧往上抛,由 _run 的 except 变成
             # phase=failed。日志那几行故意留在 finally 外面 —— 它们要再取一帧,在异常
             # 传播途中取帧再抛就会用新异常盖掉真正的那个。
-            request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
+            self._lock_preconverged_exposure(request)
             requested_after = time.monotonic()
         settled = self._wait_for_manual_exposure_readback(grab, requested_after=requested_after)
         # 一行里四件事,每件都在回答一个自己回答不了的问题:
@@ -752,6 +772,87 @@ class GeometryCalibrationService:
                 # staging cleanup must not make callers infer the opposite state.
                 logger.warning("legacy geometry staging cleanup failed at %s: %s", staging_path, cleanup_exc)
 
+    def _wait_lighting(self, reason: str, gate: CalibrationStabilityGate) -> None:
+        self.led.clear(strict=True)
+        while not self._cancel_event.is_set():
+            with self._lock:
+                self._status["phase"] = "lighting_paused"
+                self._status["pause_reason"] = reason
+            self._lighting_recheck.wait(0.2)
+            if not self._lighting_recheck.is_set() or self._cancel_event.is_set():
+                continue
+            self._lighting_recheck.clear()
+            self._converge_exposure(force_auto=True)
+            gate.reset()
+            frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
+            if frame is None:
+                reason = "frame_underexposed"
+                continue
+            whole_ok, whole_reason, _ = check_frame_exposure(frame)
+            if not whole_ok:
+                reason = whole_reason
+                continue
+            visible, grid_reason = gate.observe(frame)
+            if grid_reason == "board_occluded":
+                return  # regular stable wait explains the occlusion after recheck
+            issue, _stats = check_grid_lighting(frame, gate.quad)
+            reason = issue
+            if reason is None:
+                return
+
+    def _wait_stable(self, gate: CalibrationStabilityGate, resume_phase: str, current: int) -> None:
+        self.led.clear(strict=True)
+        gate.reset()
+        last_logged = 0.0
+        with self._lock:
+            self._status["phase"] = "waiting_stable"
+            self._status["pause_reason"] = "board_motion"
+        while not self._cancel_event.is_set():
+            frame, _seq, _ts = self.capture.grab_fresh(settle_ms=120.0)
+            if frame is None:
+                continue
+            whole_ok, whole_reason, _ = check_frame_exposure(frame)
+            if not whole_ok:
+                self._wait_lighting(whole_reason, gate)
+                gate.reset()
+                continue
+            ready, reason = gate.observe(frame)
+            if not ready:
+                now = time.monotonic()
+                if now - last_logged >= 2.0:
+                    logger.info("geometry stability wait phase=%s point=%d reason=%s stable=%d motion=%s",
+                                resume_phase, current, reason, gate.stable_frames, gate.last_motion_ratios)
+                    last_logged = now
+                with self._lock:
+                    self._status["phase"] = "obstructed" if reason == "board_occluded" else "waiting_stable"
+                    self._status["pause_reason"] = reason
+                continue
+            issue, _stats = check_grid_lighting(frame, gate.quad)
+            if issue is not None:
+                self._wait_lighting(issue, gate)
+                gate.reset()
+                continue
+            self._progress(resume_phase, current, 5)
+            logger.info("geometry stability ready phase=%s point=%d motion=%s",
+                        resume_phase, current, gate.last_motion_ratios)
+            gate.capture_motion.reset()
+            return
+
+    def _guard_live_frame(self, gate: CalibrationStabilityGate, frame, dark: bool) -> None:
+        whole_ok, whole_reason, _ = check_frame_exposure(frame)
+        if not whole_ok:
+            raise LightingInterrupted(whole_reason)
+        reason = gate.capture_reason(frame)
+        if reason is not None:
+            logger.info("geometry capture interrupted phase=%s point=%d reason=%s dark=%s",
+                        self._status["phase"], self._status["progress"]["current"], reason, dark)
+            raise CalibrationInterrupted(reason)
+        # Assess lighting on dark frames. The LED is intentionally absent from this sample.
+        if dark:
+            issue, _stats = check_grid_lighting(frame, gate.quad)
+            if issue is not None:
+                raise LightingInterrupted(issue)
+
     def _run(self) -> None:
         exposure_snapshot = self._snapshot_exposure_controls()
         committed = False
@@ -759,12 +860,8 @@ class GeometryCalibrationService:
             # Free the CPU the vision worker hogs for the whole run; on_resume (finally)
             # re-arms it on the new lock (success) or the previous one (failure/cancel).
             self.on_suspend()
-            # 挂起 worker 之后、跑锚点循环之前:把曝光收敛一次(见 _converge_exposure)。
-            # 顺序是判据的一部分 —— 标定自己的曝光闸必须量在收敛之后的那一帧上。
-            self._progress("converging_exposure", 0, 13)
-            self._converge_exposure()
-            if self._cancel_if_requested():
-                return
+            # Exposure can be too dark for the grid to be visible at all. Brighten
+            # first without flashing, then require a clear, stable grid before LED.
             calibrator = self.calibrator_factory(
                 led=self.led,
                 capture=self.capture,
@@ -772,6 +869,27 @@ class GeometryCalibrationService:
                 progress=self._progress,
                 anchor_observer=self._anchor_observed,
             )
+            if hasattr(calibrator, "configure_live"):
+                gate = CalibrationStabilityGate()
+                calibrator.configure_live(
+                    before_capture=lambda phase, current, _total: self._wait_stable(gate, phase, current),
+                    frame_guard=lambda frame, dark: self._guard_live_frame(gate, frame, dark),
+                    anchor_roi=gate.anchor_roi,
+                    on_lighting=lambda reason: self._wait_lighting(reason, gate),
+                )
+            self._progress("converging_exposure", 0, 5)
+            self._converge_exposure()
+            if hasattr(calibrator, "configure_live"):
+                self._wait_stable(gate, "dark_reference", 0)
+                if self._cancel_if_requested():
+                    return
+                # A hand could have biased the first AE pass; meter once more on
+                # the now-visible empty board, then discard the exposure transition.
+                self._progress("converging_exposure", 0, 5)
+                self._converge_exposure()
+                self._wait_stable(gate, "dark_reference", 0)
+            if self._cancel_if_requested():
+                return
             result = calibrator.calibrate()
             if self._cancel_if_requested():
                 return
@@ -828,7 +946,8 @@ class GeometryCalibrationService:
                 self._geometry_revision += 1
                 self._status.update(
                     phase="ready",
-                    progress={"current": 13, "total": 13},
+                    progress={"current": 5, "total": 5},
+                    pause_reason=None,
                     session_calibrated=True,
                     last_valid=True,
                     error=None,

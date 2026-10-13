@@ -1109,6 +1109,28 @@ def test_success_keeps_new_manual_exposure(tmp_path):
     service.stop()
 
 
+def test_success_restores_hardware_auto_exposure_for_live_recognition(tmp_path):
+    capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_ON, current_exposure=140.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=_synth())),
+        restore_auto_exposure_on_success=True,
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert service.status()["phase"] == "ready"
+    assert capture.control_calls[-2:] == [
+        (None, CAMERA_AUTO_EXPOSURE_OFF),
+        (None, CAMERA_AUTO_EXPOSURE_ON),
+    ]
+    assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_ON
+    service.stop()
+
+
 def test_failed_calibration_restores_original_hardware_auto_mode_only(tmp_path):
     capture = RestoringFakeCapture(current_auto_exposure=3.005, current_exposure=323.0)
     service = GeometryCalibrationService(

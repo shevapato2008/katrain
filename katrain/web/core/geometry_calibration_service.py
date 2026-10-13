@@ -104,9 +104,11 @@ class GeometryCalibrationService:
         drift_needed=None,  # develop 275625ec 加的,原样保留
         selector=None,
         auto_relocate=AUTO_RELOCATE_ON_DRIFT,
+        restore_auto_exposure_on_success=False,
     ):
         self.led = led
         self.capture = capture
+        self.restore_auto_exposure_on_success = restore_auto_exposure_on_success
         # 有人用摄像头时才做漂移检测(每次 ~0.5 s CPU)。None = 一直检测(旧行为)。
         self._drift_needed = drift_needed
         if save_path is None and persist_state is None:
@@ -990,7 +992,12 @@ class GeometryCalibrationService:
                     self._status["phase"] = "failed"
                     self._status["error"] = str(exc)
         finally:
-            if not committed:
+            if committed and self.restore_auto_exposure_on_success:
+                try:
+                    self._restore_exposure_controls(CAMERA_AUTO_EXPOSURE_ON)
+                except Exception as exc:
+                    logger.warning("geometry hardware auto exposure resume failed: %s", exc)
+            elif not committed:
                 try:
                     self._restore_exposure_controls(exposure_snapshot)
                 except Exception as exc:

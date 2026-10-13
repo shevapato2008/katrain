@@ -1,27 +1,20 @@
 /**
  * 棋盘页右栏的显示开关组 —— 直播观战页与复盘·报告详情页共用。
  *
- * 两页的显示开关是同一组（试下 / 领地 / 手数 / 建议 / 坐标），所以共用一个组件；
- * 复盘页迁统一版式（S3）时不再另写一份，直接消费这里。
- *
- * 2026-08-22 换成工具格：四个开关做成 `ToolGridButton` 的四列一行，坐标单独一行开关，
- * 与死活题页右栏逐格相同。依据是 Fan 的裁定「除『离开对局』这种按钮和滑轨类以外，
- * 其他按钮一律按对局室右栏那种带标签的方格键来设计」。原来是两列的 `ToggleButton`，
- * 那是这条裁定之前的写法。
- *
- * 坐标为什么不进工具格：它和另外四个不是一类 —— 那四个改的是**棋盘上画什么分析信息**，
- * 坐标改的是棋盘本身的刻度。死活题页已经是「四格 + 一条坐标开关」，这里跟它对齐。
+ * 试下、领地、支招、清空属于操作区；手数、坐标、3D 属于棋盘显示区。
+ * 报告和直播复用相同按钮，显示区也与对弈页共用 BoardDisplayControls。
  */
 
-import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import MapIcon from '@mui/icons-material/Map';
 import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
-import { Box, Button, Divider, Switch, Typography } from '@mui/material';
+import ClearIcon from '@mui/icons-material/Clear';
+import { Box, Typography } from '@mui/material';
 
 import ToolGridButton from '../../components/board/ToolGridButton';
+import BoardDisplayControls from '../../components/board/BoardDisplayControls';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { railToggleRowSx, toolGridSx } from '../../../components/railStyles';
+import { boardControlGridSx } from '../../../components/railStyles';
 
 export interface LiveMatchDisplayControlsProps {
   tryMoveMode: boolean;
@@ -29,6 +22,7 @@ export interface LiveMatchDisplayControlsProps {
   showMoveNumbers: boolean;
   showAiMarkers: boolean;
   showCoordinates: boolean;
+  view3d: boolean;
   ownershipAvailable: boolean;
   tryMoves: string[];
   onTryMoveToggle: () => void;
@@ -36,7 +30,9 @@ export interface LiveMatchDisplayControlsProps {
   onMoveNumbersToggle: () => void;
   onAiMarkersToggle: () => void;
   onCoordinatesToggle: () => void;
+  on3dToggle: () => void;
   onClearTryMoves: () => void;
+  reportMode?: boolean;
 }
 
 export default function LiveMatchDisplayControls({
@@ -45,6 +41,7 @@ export default function LiveMatchDisplayControls({
   showMoveNumbers,
   showAiMarkers,
   showCoordinates,
+  view3d,
   ownershipAvailable,
   tryMoves,
   onTryMoveToggle,
@@ -52,17 +49,31 @@ export default function LiveMatchDisplayControls({
   onMoveNumbersToggle,
   onAiMarkersToggle,
   onCoordinatesToggle,
+  on3dToggle,
   onClearTryMoves,
+  reportMode = false,
 }: LiveMatchDisplayControlsProps) {
   const { t } = useTranslation();
   const territoryLabel = t('live:territory', 'Territory');
-  const coordinatesLabel = t('Coordinates', 'Coordinates');
+  const displayControls = <BoardDisplayControls numbers={showMoveNumbers} coordinates={showCoordinates} view3d={view3d} onNumbers={onMoveNumbersToggle} onCoordinates={onCoordinatesToggle} on3d={on3dToggle} />;
+
+  if (reportMode) return (
+    <Box data-testid="report-display-controls" sx={{ display: 'grid', gridTemplateRows: '40px 40px', gap: '14px', minHeight: 0 }}>
+      <Box sx={boardControlGridSx}>
+        <ToolGridButton icon={<TouchAppIcon />} label={t('live:try', '试下')} toggle active={tryMoveMode} onClick={onTryMoveToggle} />
+        <ToolGridButton icon={<MapIcon />} label={territoryLabel} tooltip={ownershipAvailable ? territoryLabel : t('live:territory_needs_analysis', '领地需要分析结果')} toggle active={showTerritory} disabled={!ownershipAvailable} onClick={onTerritoryToggle} />
+        <ToolGridButton icon={<TipsAndUpdatesIcon />} label={t('Advice', '支招')} toggle active={showAiMarkers} onClick={onAiMarkersToggle} />
+        <ToolGridButton icon={<ClearIcon />} label={t('live:clear', '清空')} disabled={!tryMoveMode || tryMoves.length === 0} onClick={onClearTryMoves} />
+      </Box>
+      {displayControls}
+    </Box>
+  );
 
   return (
     <Box sx={{ py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
       <Box
         data-testid="live-match-display-controls-grid"
-        sx={toolGridSx}
+        sx={boardControlGridSx}
       >
         <ToolGridButton
           icon={<TouchAppIcon />}
@@ -87,14 +98,6 @@ export default function LiveMatchDisplayControls({
           onClick={onTerritoryToggle}
         />
         <ToolGridButton
-          icon={<FormatListNumberedIcon />}
-          label={t('live:move_numbers', 'Numbers')}
-          ariaLabel={t('live:move_numbers', 'Move Numbers')}
-          toggle
-          active={showMoveNumbers}
-          onClick={onMoveNumbersToggle}
-        />
-        <ToolGridButton
           icon={<TipsAndUpdatesIcon />}
           label={t('Advice', 'Advice')}
           /* 标签不随状态变（格子宽度不能跳），随状态变的只有可及名。 */
@@ -105,6 +108,7 @@ export default function LiveMatchDisplayControls({
           active={showAiMarkers}
           onClick={onAiMarkersToggle}
         />
+        <ToolGridButton icon={<ClearIcon />} label={t('live:clear', '清空')} disabled={!tryMoveMode || tryMoves.length === 0} onClick={onClearTryMoves} />
       </Box>
 
       {tryMoveMode && tryMoves.length > 0 && (
@@ -112,24 +116,10 @@ export default function LiveMatchDisplayControls({
           <Typography variant="caption" color="text.secondary" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
             {t('live:try', 'TRY')}: {tryMoves.join(' → ')}
           </Typography>
-          <Button size="small" onClick={onClearTryMoves} sx={{ minHeight: 40, flexShrink: 0 }}>
-            {t('live:clear', 'Clear')}
-          </Button>
         </Box>
       )}
 
-      <Divider sx={{ mt: 1.5, mx: -2 }} />
-      <Box sx={{ mt: 0.5, ...railToggleRowSx }}>
-        <Typography variant="body2" color="text.secondary">{coordinatesLabel}</Typography>
-        <Switch
-          data-testid="live-coordinate-toggle"
-          size="small"
-          checked={showCoordinates}
-          onChange={onCoordinatesToggle}
-          /* MUI v7：`inputProps` 到不了里面那个 input，可及名要走 `slotProps.input`。 */
-          slotProps={{ input: { 'aria-label': coordinatesLabel } }}
-        />
-      </Box>
+      <Box sx={{ mt: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>{displayControls}</Box>
     </Box>
   );
 }

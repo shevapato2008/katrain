@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>智星盒管理后台 · 定时任务最终实现对照</title>
+  <style>
+    @import url('../../../../../katrain/web/ui/src/admin/AdminApp.css');
+    @import url('../../../../../katrain/web/ui/src/admin/cron/CronPage.css');
+    html,body { margin:0; min-height:100%; }
+    .admin-app { height:100vh; }
+    .admin-brand-cn { font-family:'Galaxy Long Cang',serif; }
+    .cron-icon { display:inline-block; width:18px; height:18px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vertical-align:-3px; }
+    .cron-process-strong .cron-icon { width:25px; height:25px; }
+    .cron-sample-hint .cron-icon,.cron-summary-chip .cron-icon { width:18px; height:18px; }
+    .cron-job .cron-status { width:100%; }
+    .design-preview-controls { position:fixed; right:14px; bottom:13px; z-index:10; display:flex; gap:8px; padding:7px; border:1px solid var(--admin-line); border-radius:8px; background:var(--admin-bar); box-shadow:0 8px 24px #0005; font-size:14px; }
+    .design-preview-controls button { padding:5px 10px; border:1px solid var(--admin-line); border-radius:6px; color:var(--admin-text); background:var(--admin-panel); }
+    body[data-capture="true"] .design-preview-controls { display:none; }
+    body[data-drawer="closed"] .cron-backdrop,body[data-drawer="closed"] .cron-history { display:none; }
+  </style>
+</head>
+<body class="admin-app admin-app-cron" data-drawer="closed">
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute"><defs>
+    <symbol id="pulse" viewBox="0 0 24 24"><path d="M2 12h4l3-7 5 14 3-7h5"/></symbol>
+    <symbol id="book" viewBox="0 0 24 24"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1m0-15c3-2 6-2 9-1v15c-3-1-6-1-9 1m0-15v15"/></symbol>
+    <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="fail" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></symbol>
+    <symbol id="warn" viewBox="0 0 24 24"><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5m0 3h.01"/></symbol>
+    <symbol id="wait" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/><path d="M12 7v5l3 2"/></symbol>
+  </defs></svg>
+  <header class="admin-top"><div class="admin-brand"><img src="../../../../../katrain/img/logo-white.png" alt=""><span class="admin-brand-cn">智星盒</span><span class="admin-brand-en">StellaBox</span><span class="admin-brand-admin">管理后台</span></div><div class="admin-topright"><span class="admin-env">本机环境</span><span>admin:fan</span><button type="button">退出</button></div></header>
+  <div class="admin-wrap"><aside class="admin-side"><div class="admin-sidehead">内容与服务</div><div class="admin-nav"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#book"/></svg>教程管理</div><div class="admin-nav active"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#clock"/></svg>定时任务</div><div class="admin-sidefoot">当前环境：本机环境<br>此页面只读，不会运行或暂停任务。</div></aside>
+    <main class="cron-page"><div class="cron-heading"><div><h1>定时任务</h1><div class="cron-sub">观察 cron 进程、任务和分析队列</div></div><div class="cron-heading-actions"><span>采样于 15:35:50 · 每 15 秒刷新</span><button class="cron-refresh" type="button">刷新状态</button></div></div>
+      <div class="cron-content">
+        <div class="cron-process"><div class="cron-overview-card"><div class="cron-eyebrow">CRON 进程</div><div class="cron-process-strong online"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#pulse"/></svg>进程在线</div><div class="cron-process-small">心跳 5 秒前 · 11:52 启动</div></div><div class="cron-overview-card"><div class="cron-eyebrow">任务概况 · 9 项</div><div class="cron-summary-chips"><span class="cron-summary-chip failed"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#fail"/></svg>1 失败</span><span class="cron-summary-chip errors"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#warn"/></svg>1 报错</span><span class="cron-summary-chip overdue"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#clock"/></svg>2 逾期</span><span class="cron-summary-chip pending"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#wait"/></svg>3 待首跑</span><span class="cron-summary-chip ok"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#check"/></svg>2 正常</span></div></div><div class="cron-overview-card"><div class="cron-eyebrow">最近采样</div><div class="cron-sample-time">15:35:50</div><div class="cron-sample-hint"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#clock"/></svg>15 秒自动刷新</div></div></div>
+        <div class="cron-queues"><div class="cron-queue"><div><strong>直播分析队列</strong><span>待处理 0 · 暂无等待</span></div><b>0</b></div><div class="cron-queue"><div><strong>复盘队列</strong><span>待处理 0 · 暂无等待</span></div><b>0</b></div></div>
+        <section class="cron-table-panel"><div class="cron-table-heading"><h2>任务状态</h2><small>共 9 项 · 按异常优先显示</small></div><div class="cron-table-scroll"><div class="cron-columns"><span>任务</span><span>状态</span><span>上次运行</span><span>耗时</span><span>连续失败</span><span>类型</span><span>最近错误</span><span></span></div>
+          <button class="cron-job" id="open-drawer" type="button"><span><span class="cron-job-name">系统 - 数据清理</span><span class="cron-job-code">cleanup</span></span><span class="cron-status failed">失败</span><span>11:52:41</span><span>1 ms</span><span>1</span><span>间隔 · 1 天</span><span class="cron-error-summary">RuntimeError: 本机合成：数据库连接超时</span><span class="cron-arrow">›</span></button>
+          <button class="cron-job" type="button"><span><span class="cron-job-name">直播 - 赛事列表</span><span class="cron-job-code">fetch_list</span></span><span class="cron-status errors">有报错</span><span>11:52:41</span><span>1 ms</span><span>1</span><span>间隔 · 30 分</span><span class="cron-error-summary">[cron.local_preview] 上游超时</span><span class="cron-arrow">›</span></button>
+          <button class="cron-job" type="button"><span><span class="cron-job-name">直播 - 赛事预告</span><span class="cron-job-code">fetch_upcoming</span></span><span class="cron-status overdue">该跑没跑</span><span>11:52:41</span><span>1 ms</span><span>0</span><span>间隔 · 15 分</span><span class="cron-error-summary muted">—</span><span class="cron-arrow">›</span></button>
+          <button class="cron-job" type="button"><span><span class="cron-job-name">直播 - 落子轮询</span><span class="cron-job-code">poll_moves</span></span><span class="cron-status overdue">该跑没跑</span><span>11:52:41</span><span>1 ms</span><span>0</span><span>间隔 · 3 秒</span><span class="cron-error-summary muted">—</span><span class="cron-arrow">›</span></button>
+          <button class="cron-job" type="button"><span><span class="cron-job-name">直播 - 分析</span><span class="cron-job-code">analyze</span></span><span class="cron-status ok">正常</span><span>—</span><span>循环中</span><span>0</span><span>常驻循环</span><span class="cron-error-summary muted">—</span><span class="cron-arrow">›</span></button>
+          <button class="cron-job" type="button"><span><span class="cron-job-name">直播 - Pandanet 对局</span><span class="cron-job-code">poll_pandanet</span></span><span class="cron-status pending">等待首次运行</span><span>—</span><span>—</span><span>0</span><span>间隔 · 5 分</span><span class="cron-error-summary muted">—</span><span class="cron-arrow">›</span></button>
+          <button class="cron-job" type="button"><span><span class="cron-job-name">复盘 - 分析</span><span class="cron-job-code">report_analyze</span></span><span class="cron-status ok">正常</span><span>—</span><span>循环中</span><span>0</span><span>常驻循环</span><span class="cron-error-summary muted">—</span><span class="cron-arrow">›</span></button>
+          <button class="cron-job" type="button"><span><span class="cron-job-name">直播 - 棋手译名</span><span class="cron-job-code">translate</span></span><span class="cron-status pending">等待首次运行</span><span>—</span><span>—</span><span>0</span><span>间隔 · 1 小时</span><span class="cron-error-summary muted">—</span><span class="cron-arrow">›</span></button>
+          <button class="cron-job" type="button"><span><span class="cron-job-name">教程 - 备份</span><span class="cron-job-code">tutorial_backup</span></span><span class="cron-status pending">等待首次运行</span><span>—</span><span>—</span><span>0</span><span>间隔 · 1 天</span><span class="cron-error-summary muted">—</span><span class="cron-arrow">›</span></button>
+        </div></section>
+      </div>
+      <div class="cron-backdrop" id="backdrop"></div><aside class="cron-history" aria-label="任务运行历史"><div class="cron-history-head"><div><div class="cron-detail-kicker">任务详情 <span class="cron-summary-chip failed"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#fail"/></svg>失败</span></div><h2>系统 - 数据清理</h2><code>cleanup</code></div><button id="close-drawer" aria-label="关闭运行历史">×</button></div><div class="cron-history-scroll"><p class="cron-detail-purpose">定期清理过期对局、孤立分析结果、已过期赛事预告和旧 cron 运行记录。</p><div class="cron-detail-label">当前状态</div><div class="cron-detail-reason failed"><svg class="cron-icon" viewBox="0 0 24 24"><use href="#fail"/></svg><span>连续 1 次不成功，最近一次抛出了异常。</span></div><div class="cron-detail-facts"><div><small>运行方式</small><strong>每 1 天执行</strong></div><div><small>上次运行</small><strong>09/25 11:52:41</strong></div><div><small>上次成功</small><strong>暂无记录</strong></div><div><small>本次耗时</small><strong>1 ms</strong></div></div><div class="cron-detail-label">最近错误</div><div class="cron-detail-error">RuntimeError: 本机合成：数据库连接超时</div><section class="cron-detail-runs"><h3>运行历史</h3><p class="cron-detail-runs-caption">最近 1 条 · 单次最多显示 200 条</p><div class="cron-run"><div class="cron-run-head"><time>09/25 11:52:41</time><span class="cron-status failed">失败</span></div><div class="cron-run-info">1 ms · 1 条 ERROR</div></div></section></div><div class="cron-history-foot">仅显示最近记录 · 状态和错误均来自 cron 记录器</div></aside>
+    </main>
+  </div>
+  <div class="design-preview-controls"><button id="toggle-drawer" type="button">切换详情抽屉</button></div>
+  <script>
+    const params=new URLSearchParams(location.search);document.body.dataset.drawer=params.get('drawer')==='1'?'open':'closed';document.body.dataset.capture=params.get('capture')==='true'?'true':'false';
+    const toggle=()=>{document.body.dataset.drawer=document.body.dataset.drawer==='open'?'closed':'open';};document.getElementById('toggle-drawer').addEventListener('click',toggle);document.getElementById('open-drawer').addEventListener('click',toggle);document.getElementById('close-drawer').addEventListener('click',toggle);document.getElementById('backdrop').addEventListener('click',toggle);
+  </script>
+</body>
+</html>

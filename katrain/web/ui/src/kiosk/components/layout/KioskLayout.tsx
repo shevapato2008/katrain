@@ -37,17 +37,17 @@ const SELF_LAYOUT_ROUTES = ['/kiosk/report', '/kiosk/settings'];
  * **判据只写在这一处** —— banner 自己不重复判,别处也不再判一次。
  */
 const ENGINE_BANNER_SUPPRESSED_PREFIX = '/kiosk/play/cross-platform';
-interface KioskLayoutProps { username?: string }
+interface KioskLayoutProps { username?: string; accessBlocked?: boolean }
 
-const KioskShell = ({ username }: KioskLayoutProps) => {
+const KioskShell = ({ username, accessBlocked = false }: KioskLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
 
   // 层级**只**由 dockRoutes 的词典说了算,不由路由前缀说了算。
   // 一个真相来源:Dock 出不出、中间区 434 还是 516、主页键给不给,全从这一个数派生。
   const level = dockLevelOf(location.pathname);
-  const showRail = level === 1 && RAIL_ROUTES.includes(location.pathname);
-  const showEngineBanner = !location.pathname.startsWith(ENGINE_BANNER_SUPPRESSED_PREFIX);
+  const showRail = !accessBlocked && level === 1 && RAIL_ROUTES.includes(location.pathname);
+  const showEngineBanner = !accessBlocked && !location.pathname.startsWith(ENGINE_BANNER_SUPPRESSED_PREFIX);
 
   return (
     <KioskFrame
@@ -104,6 +104,6 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
   );
 };
 
-const KioskLayout = ({ username }: KioskLayoutProps) => <KioskShell username={username} />;
+const KioskLayout = ({ username, accessBlocked = false }: KioskLayoutProps) => <KioskShell username={username} accessBlocked={accessBlocked} />;
 
 export default KioskLayout;

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "339-jstart",
+    "url": "https://jstart.co.kr/bbs/board.php?bo_table=news&page=3&wr_id=342",
+    "method": "GET",
+    "http_status": 200,
+    "final_url": "https://jstart.co.kr/bbs/board.php?bo_table=news&page=3&wr_id=342",
+    "fetched_at": "2026-10-08T20:23:03.343074+00:00",
+    "body_file": "339-jstart.body",
+    "body_bytes": 175116,
+    "body_sha256": "4327a3b3f23a75e0f1f8ddf2b4b1dc7c63fbd0dfaeb6f71fbe922408e4b28253",
+    "content_type": "text/html; charset=utf-8"
+  },
+  {
+    "id": "3844-zhtw-wiki",
+    "url": "https://zh.wikipedia.org/zh-hant/%E7%AC%AC%E5%9B%9B%E5%B1%86%E4%B8%96%E7%95%8C%E6%99%BA%E5%8A%9B%E7%B2%BE%E8%8B%B1%E8%BF%90%E5%8A%A8%E6%9C%83",
+    "method": "GET",
+    "http_status": 403,
+    "final_url": "https://zh.wikipedia.org/zh-hant/%E7%AC%AC%E5%9B%9B%E5%B1%86%E4%B8%96%E7%95%8C%E6%99%BA%E5%8A%9B%E7%B2%BE%E8%8B%B1%E8%BF%90%E5%8A%A8%E6%9C%83",
+    "fetched_at": "2026-10-08T20:23:00.756407+00:00",
+    "body_file": null,
+    "body_bytes": 126,
+    "body_sha256": "165da4d5af47d0a2008597750d184a3cef870aff9d0a5005b71d6bd17a75672e",
+    "content_type": "text/plain"
+  },
+  {
+    "id": "4041-igo",
+    "url": "https://www.igorating.com/players/ryo-maeda",
+    "method": "GET",
+    "http_status": 200,
+    "final_url": "https://www.igorating.com/players/ryo-maeda",
+    "fetched_at": "2026-10-08T20:23:00.010775+00:00",
+    "body_file": "4041-igo.body",
+    "body_bytes": 32037,
+    "body_sha256": "5fbfb592be7e2c137db1d74dd74a7489ed2eb66bfc6d03bc45a9b49a40a4eebc",
+    "content_type": "text/html"
+  },
+  {
+    "id": "4340-kansai",
+    "url": "https://kansaikiin.jp/kisi_prof/andohinata.html",
+    "method": "GET",
+    "http_status": 200,
+    "final_url": "https://kansaikiin.jp/kisi_prof/andohinata.html",
+    "fetched_at": "2026-10-08T20:23:01.356278+00:00",
+    "body_file": "4340-kansai.body",
+    "body_bytes": 16692,
+    "body_sha256": "acc4ec6d1b4f3c48b978406b870e8df78e2d414fd9c3b3a7f2a67570a6f43982",
+    "content_type": "text/html; charset=UTF-8"
+  },
+  {
+    "id": "5094-kowiki",
+    "url": "https://ko.wikipedia.org/w/index.php?title=%EB%A6%AC%EA%B0%95&oldid=36505438",
+    "method": "GET",
+    "http_status": 403,
+    "final_url": "https://ko.wikipedia.org/w/index.php?title=%EB%A6%AC%EA%B0%95&oldid=36505438",
+    "fetched_at": "2026-10-08T20:22:59.701774+00:00",
+    "body_file": null,
+    "body_bytes": 126,
+    "body_sha256": "165da4d5af47d0a2008597750d184a3cef870aff9d0a5005b71d6bd17a75672e",
+    "content_type": "text/plain"
+  },
+  {
+    "id": "5351-pairgo",
+    "url": "https://www.pairgo.or.jp/amateur/26th/worldstudents/index_e.htm",
+    "method": "GET",
+    "http_status": 200,
+    "final_url": "https://www.pairgo.or.jp/amateur/26th/worldstudents/index_e.htm",
+    "fetched_at": "2026-10-08T20:23:00.937597+00:00",
+    "body_file": "5351-pairgo.body",
+    "body_bytes": 33624,
+    "body_sha256": "98321548e3eda94569aadb1e92ffcb1928f584dabbd40c07bc358c3be96aac7c",
+    "content_type": "text/html"
+  },
+  {
+    "id": "5351-sina",
+    "url": "https://blog.sina.com.cn/s/blog_53a2e03d0102wg73.html",
+    "method": "GET",
+    "http_status": 200,
+    "final_url": "https://blog.sina.com.cn/s/blog_53a2e03d0102wg73.html",
+    "fetched_at": "2026-10-08T20:22:58.913388+00:00",
+    "body_file": "5351-sina.body",
+    "body_bytes": 211861,
+    "body_sha256": "56e8fd7d3065ad20284be8ef68ce3a1844ad873ca6377e203ae7a89f2360addd",
+    "content_type": "text/html"
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "PROD": {
+    "path": "PROD-post591-final20-native-pending-unsigned-draft.json.gz",
+    "sha256": "eb73e1c833cda68377c96b999592b86b5ef771ab3b8601d1d56746d4bc8faed8",
+    "candidates": 20,
+    "native_pending_validated": true
+  },
+  "TEST": {
+    "path": "TEST-post591-final20-native-pending-unsigned-draft.json.gz",
+    "sha256": "9f2461eaa4056b446bddbfe42f2445ac851be812e268e384b297607e6b3698af",
+    "candidates": 20,
+    "native_pending_validated": true
+  }
+}

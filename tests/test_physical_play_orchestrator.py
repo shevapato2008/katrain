@@ -12,6 +12,28 @@ import pytest
 from katrain.web.core.physical_play import BLACK, WHITE, PhysicalPlayConfig
 from katrain.web.core.physical_play_orchestrator import PhysicalPlayOrchestrator
 
+
+def test_pvp_lobby_guides_opponent_stones_even_when_both_seats_are_human():
+    state = {
+        "game_type": "pvp_lobby",
+        "platform_my_color": "W",
+        "players_info": {"B": {"player_type": "human"}, "W": {"player_type": "human"}},
+    }
+    assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == {1}
+
+
+def test_remote_pvp_outage_pauses_detection_until_authoritative_state_returns():
+    orch, led, vision, _ = _orch()
+    orch.on_game_state(state([]))
+
+    orch.enter_remote_disconnected()
+    assert vision.paused is True
+    assert orch.board_caught_up is False
+    assert led.calls[-1] == ("clear",)
+
+    orch.on_game_state({**state([]), "game_type": "pvp_lobby", "platform_my_color": "B"})
+    assert vision.paused is False
+
 # Task 1 contract fixture: a real engine-game get_state() dump (both players marked
 # "human"; platform_engine_color:"W" is the only signal that W is the remote Golaxy AI).
 ENGINE_GAME_STATE_FIXTURE_PATH = os.path.join(
@@ -262,6 +284,95 @@ class TestHint:
             assert vision.paused is False
             assert vision.lit == []
             assert led.calls[-1] == ("clear",)
+
+        asyncio.run(run())
+
+
+class TestAttention:
+    def test_violet_blink_masks_vision_without_pausing_and_restores_guidance(self):
+        orch, led, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, attention_timeout_s=0.06)
+        orch.on_game_state(state([["B", [3, 15], None, 1]]))
+        orch._tick_once()
+        assert vision.lit == [(3, 3)]
+        vision.calls.clear()
+
+        async def run():
+            orch.show_attention([(4, 5)], source="vision")
+            assert vision.lit == [(4, 5)]
+            assert vision.calls == []
+            await asyncio.sleep(0.01)
+            assert ("set_rgb_points", [{"row": 4, "col": 5, "rgb": (160, 64, 255)}]) in led.calls
+            await asyncio.sleep(0.10)
+
+        asyncio.run(run())
+        assert led.calls[-1] == ("set_points", [{"row": 3, "col": 3, "color": "black"}])
+        assert vision.lit == [(3, 3)]
+        assert vision.calls == []
+
+    def test_same_issue_does_not_restart_until_source_clears(self):
+        orch, led, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, attention_timeout_s=0.04)
+
+        async def run():
+            orch.show_attention([(18, 4), (4, 5)], source="vision")
+            first_task = orch._attention_task
+            orch.show_attention([(4, 5), (18, 4)], source="vision")
+            assert orch._attention_task is first_task
+            await asyncio.sleep(0.07)
+            assert orch._attention_task is None
+            writes = len([call for call in led.calls if call[0] == "set_rgb_points"])
+            orch.show_attention([(4, 5), (18, 4)], source="vision")
+            assert orch._attention_task is None
+            assert len([call for call in led.calls if call[0] == "set_rgb_points"]) == writes
+            orch.clear_attention("vision")
+            orch.show_attention([(4, 5), (18, 4)], source="vision")
+            assert orch._attention_task is not None
+            orch.on_unbind()
+            assert vision.lit == []
+
+        asyncio.run(run())
+
+    def test_board_motion_dismisses_attention_early(self):
+        orch, _, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, attention_timeout_s=30.0)
+
+        async def run():
+            orch.show_attention([(4, 5)], source="judge")
+            await asyncio.sleep(0.02)
+            vision.last_motion_at = time.monotonic()
+            await asyncio.sleep(0.03)
+            assert orch._attention_task is None
+            assert vision.lit == []
+
+        asyncio.run(run())
+
+    def test_new_judge_tap_repeats_the_same_point_hint(self):
+        orch, led, _, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, attention_timeout_s=0.04)
+
+        async def run():
+            orch.show_attention([(4, 5)], source="judge")
+            await asyncio.sleep(0.07)
+            first_writes = len([call for call in led.calls if call[0] == "set_rgb_points"])
+            orch.show_attention([(4, 5)], source="judge")
+            await asyncio.sleep(0.02)
+            assert len([call for call in led.calls if call[0] == "set_rgb_points"]) > first_writes
+            orch.on_unbind()
+
+        asyncio.run(run())
+
+    def test_active_attention_owns_lamps_and_unbind_blanks_without_restoring_old_guidance(self):
+        orch, led, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, attention_timeout_s=30.0)
+        orch.on_game_state(state([["B", [3, 15], None, 1]]))
+        orch._tick_once()
+
+        async def run():
+            orch.show_attention([(4, 5)], source="vision")
+            await asyncio.sleep(0.01)
+            before = len(led.calls)
+            orch._tick_once()
+            assert len(led.calls) == before
+            orch.on_unbind()
+            assert not any(call[0] == "set_points" for call in led.calls[before:])
+            assert led.calls[-1] == ("clear",)
+            assert vision.lit == []
 
         asyncio.run(run())
 

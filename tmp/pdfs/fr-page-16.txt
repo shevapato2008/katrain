@@ -1,0 +1,207 @@
+Lexique de base
+des Termes japonais
+
+Les mots en majuscules reprennent le
+&lossaire de base du joueur de go que devrait
+connaitre tout débutant connaissant au
+moins les notions fondamentales (telles seki,
+ko, liberté...}, Les autre mots s‘adressent aux.
+Joueurs moyens ou contirmés.
+
+AJ: littéralement "arriére-goat”; possibilité
+dutiliser directement ou indirectement des
+pierres faibles ou mortes
+
+aji-keshi: mauvaise
+utilisation, gaspillage
+dun *ajit (exemple: v.
+dia 1: aprés !échange
+1.2, Noir a perdu la
+possibilité de jouer en
+
+DAME: a) une intersection libre adjacente 4
+une pierre; 6) point neutre (ne constituant
+pas de territoire ni pour un jouer ni pour
+fautre) a la fin d'une partie
+
+DAMEZUMARI: {vulgairement appellé en
+Belgique "dammezumme’) asphyxie: situa-
+tion ob un groupe est menacé d'étre capturé
+par manque de libertés,
+
+furikawari: échange (exemple: dia 3)
+
+Ol ri9e
+
+“a
+
+ATARI: mettre une pierre ou un groupe de
+pierres en échec
+
+boshi: coup “de cha-
+peau’; utilisé pour
+réduire un tertitoire
+ennemi menacant de
+gonfler exagérément (v.
+dia 2)
+
+19
+
+byo-yomi: dans les
+tournois, sytéme od,
+ayant épuisé son temps
+de réflexion principal
+(ex: 1 heure}, le joueur
+doit jouer ou bien jouer une pierre en maxi-
+mum x secondes (ex: 30 secondes) (systme
+traditionnel) ou bien jouer un certain nombre
+de pierres en un certain nombre de minutes
+(par exemple 20 pierres en 5 minutes)
+{nouveau systéme dit byo-yomi canadien}.
+
+Dia. 2
+
+CHUBAN: phase de milieu de partie (en
+général des coups 40-50 4 100-120) {v. aussi
+“fuseki* et *yose")
+
+Dia. 3
+
+FUSEKI: phase de début de la partie
+(essentiellement stratégique) s'étendant en
+général sur les 40-50 premiers coups de la
+partie (v. aussi "chuban" et
+
+"yose")
+
+GETA: technique de cap-
+ture telle quillustrée au dia.
+4
+
+GOTE: perte du trait (avoir
+le wait étre a sontourde pia 4
+jouer) .
+
+hamete: coup piége
+
+HANE: coup en diagonale adjacent 4 un
+pierre adverse
+
+hasami (ou "basami*): tenaille
+
+honte: le bon coup, le coup “authentique"
+(en général, coup calme mais efficace)
+
+hori-komi: sacrifice dune pierre pour réduire
+
+[belgo-46- 4/97
+
+p28 |
+
+fe nombre doeil ou de
+liberté du groupe ad-
+verse (v. exemple dia. 5}
+
+HOSHE: un des endroits
+marqués d'un point plus
+épais sur le “ go-ban *
+{clest la que se placent py ¢
+les pierres de handicap)
+
+IKKEN: espace d'une intersection
+a ikken-tobi: saut d'un espace vers le cen-
+tre (v. aussi "tobi" = saut vers le centre)
+& — ikken-basami: tenaille “proche” (a un
+espace de la pierre tenaillée)
+
+(basami* = tenaille}
+
+insei: apprenti professionnel
+JIGO: partie nulle
+
+JOSEKI; une suite de coups constituant une
+séquence classique (généralement dans les
+coins mais aussi sur les bords, le plus
+fréquement pendant le * fuseki *}
+
+kakari: atlaque d'une pierre de coin
+
+kata-tsuki: attaque dune pierre un point en
+dessus et en diagonale de celle-ci (attaque
+dite "A lépaule")
+
+keima: extension sur le
+modéle du saut du cavalier
+des échecs (sauf précision,
+synonyme de "kogeima")
+
+&  kogeima: saut de J
+cheval LEE
+@& — ogeima: grand saut de Dia. 6
+cheval (2 fois en ligne .
+droite, 1 fois en diagonale)
+
+kikashi: coup obligeant l'adversaire a
+répondre
+
+kodate: menace de ko
+KOMI: quantité de points attribuée +/-
+
+arbitrairement au joueur blanc dans les par-
+ties sans handicap pour compenser le fait
+
+que son adversaire joue le premier coup
+(généralement d'une valeur de 5,5 points; le
+demi-paint empéchant le “jigo")
+
+komoku: les points 3-4 du coin
+kosumi: coup en diagonale
+me: oeil
+
+MIA: situation ot si un des joueurs joue en
+un point (par exemple “a"), san adversaire
+répond en un autre point produisant les
+mémes résultats ou du moins d'une valeur
+équivalente que s'il avait joué luiméme en
+oa
+
+mochikomi: invasion
+
+loupée
+
+MOYO: territoire
+potentiel, esquisse de
+lerritoire
+
+nidan-bane: double
+“hane*
+
+NIKKEN: espace de 2
+
+points
+
+& — nikken-tobi: saut avec espace de 2
+points vers le centre
+
+a nikken-biraki: extension de 2 espace
+A nikken-basami: tenaille "moyenne”, a2
+espace de la pierre tenaillée
+
+nobi: extension solide (exemple: dia. 6)
+
+noeud de bambou: connection représentée
+au dia. 7
+
+nozoki: "peep-move”
+(exemple: dia. 8)
+
+oba: point stratégique im-
+portant
+
+oi-otoshi: capturer en
+créant un manque de
+liberté en sacrifiant une
+ou plusieurs pierres
+
+[belgo 46-497
+

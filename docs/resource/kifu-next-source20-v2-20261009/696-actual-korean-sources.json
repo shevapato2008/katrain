@@ -1,0 +1,28 @@
+[
+  {
+    "id": "696-kba-opponent",
+    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002408",
+    "method": "GET",
+    "http_status": 200,
+    "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002408",
+    "fetched_at": "2026-10-08T20:36:53.184189+00:00",
+    "body_sha256": "22743051f9363704a9f24df36b501588a1d4c12063f558ae0882a6766c7c443d",
+    "body_bytes": 18036,
+    "body_file": "696-kba-opponent.body",
+    "body_excerpt": "2024.06.04 / ◆ 3단 / 2026.04.08 / 경력사항 최근대국 더보기 제6회 몽백합배 세계바둑오픈전 여자조 예선 3회차 가오뤄환 VS 왕수야오 0수 흑 집승 제6회 몽백합배 세계바둑오픈전 여자조 예선 2회차 왕수야오 VS 김민서 0수 흑 집승 제4회 취저우 란커배 세계바둑오픈전 통합예선 2회차(여자1조) 최서비 VS 왕수야오 0수 흑 집승 한국기원소개 찾아오시는길 이용약관 개인정보처리방침 주소 : 서울시",
+    "content_type": "text/html; Charset=UTF-8"
+  },
+  {
+    "id": "696-cyberoro-news",
+    "url": "https://www.cyberoro.com/news/N_news_view.oro?cmt_n=&div_no=A1&num=530349&pageNo=",
+    "method": "GET",
+    "http_status": 200,
+    "final_url": "https://www.cyberoro.com/news/N_news_view.oro?cmt_n=&div_no=A1&num=530349&pageNo=",
+    "fetched_at": "2026-10-08T20:36:55.613695+00:00",
+    "body_sha256": "167e02a6b207301697222b9dbd21e81f2e570cab5d3819cee551a7b89a3b4d2b",
+    "body_bytes": 54728,
+    "body_file": "696-cyberoro-news.body",
+    "body_excerpt": "있을 것 같다. 많이 응원 부탁드린다.”고 소감을 말했다. ▲ 후지사와 리나-최정(승). ▲ 국후 복기. ▲ 녜웨이핑 9단(오른쪽)과 가오뤄환 초단의 공개해설 두 사람의 상대전적은 최정 9단이 1승을 추가하며 12승 4패로 한발 더 앞서 갔다. 오청원배 결승2국은 3일 같은 장소에서 속행된다. 최정 9단은 이번 대회를 포함한 여섯 번의 오청원배에서 총 4번 결승 무대에 올랐다. 1회 대회에서는 준우승을 차지했으며, 2",
+    "content_type": "text/html"
+  }
+]

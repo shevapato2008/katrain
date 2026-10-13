@@ -56,7 +56,7 @@ function worstDropIndex(points: readonly WinratePoint[]): number | null {
 }
 
 export function ReviewWinratePlot({
-  points, empty, axisTop, axisMid, axisBottom, label, cursor, onPick, lead,
+  points, empty, axisTop, axisMid, axisBottom, label, cursor, onPick, lead, totalMoves,
 }: {
   points: readonly WinratePoint[];
   /**
@@ -75,6 +75,8 @@ export function ReviewWinratePlot({
    * galaxy 的走势 tab(`renderDualChart`)画的就是这两条,盒上跟着画同样两条。
    */
   lead?: readonly LeadPoint[];
+  /** Report plots retain the full SGF move range while analysis is still arriving. */
+  totalMoves?: number;
   /**
    * 点曲线跳到那一手。**不是锦上添花**:187 手的谱靠四个翻手键一手一手挪走不到第 120 手,
    * 而稿子把滑块拿掉了 —— 这条是那个滑块的替代品(`TrendChart` 原来就有)。
@@ -98,7 +100,7 @@ export function ReviewWinratePlot({
     );
   }
 
-  const lastMove = points[points.length - 1].moveNumber || 1;
+  const lastMove = Math.max(1, totalMoves ?? points[points.length - 1].moveNumber);
   const x = (p: WinratePoint) => (p.moveNumber / lastMove) * W;
   const y = (p: WinratePoint) => (1 - p.winrate) * H;
   const path = (from: number, to: number) =>

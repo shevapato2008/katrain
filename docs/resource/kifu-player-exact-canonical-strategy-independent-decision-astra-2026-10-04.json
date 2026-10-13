@@ -1,0 +1,274 @@
+{
+  "date": "2026-10-04",
+  "decision": "Reject unrestricted exact-canonical auto-link; approve only the two frozen 1529-slot reviews after ordinary fresh CAS execution gates.",
+  "decision_sha256": "b7cf57f908c9f3dea30ac54b1af507832e12e749a36fe49a8899aa89a54162ed",
+  "evidence_directory": "/Users/fan/.local/share/kifu-name-audit/2026-10-04/player-exact-canonical-strategy-independent",
+  "format": "kifu-player-exact-canonical-strategy-decision-v1",
+  "known_global_counterexamples": [
+    {
+      "album_id": 39168,
+      "issue": "1971-04-28 predates official 1975-05-12 birth and GN mixes Korea Meijin with Japan Oteai",
+      "raw": "崔明勋",
+      "side": "white",
+      "source": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000065"
+    },
+    {
+      "album_id": 93943,
+      "issue": "same literal person on both sides",
+      "raw": "井山裕太",
+      "sides": [
+        "black",
+        "white"
+      ]
+    },
+    {
+      "catalog_id": 1074,
+      "environment": "TEST",
+      "issue": "known two-player concatenation; historical exact rollback exclusion",
+      "raw": "丁浩周泓余",
+      "slots": [
+        [
+          18704,
+          "white"
+        ],
+        [
+          18709,
+          "black"
+        ],
+        [
+          25115,
+          "white"
+        ]
+      ]
+    }
+  ],
+  "reserved_batch_11_names": [
+    "吴依铭",
+    "鲁佳",
+    "伊凌涛",
+    "孙喆",
+    "卢钰桦",
+    "蒋其润",
+    "福冈航太朗",
+    "大竹优",
+    "刘宇航",
+    "酒井佑规",
+    "寺山怜"
+  ],
+  "reviews": {
+    "PROD": {
+      "approved_slot_sha256": "b205a2925dfa64e18343583936f9670f5f48c02b8ae5d7d704e6b09af13d3632",
+      "counts": {
+        "approved_albums": 1527,
+        "approved_by_name": {
+          "周鹤洋": 644,
+          "工藤纪夫": 335,
+          "赵善津": 550
+        },
+        "approved_slots": 1529,
+        "examined_albums": 2105,
+        "examined_null_slots": 2109,
+        "held_albums": 578,
+        "held_by_name": {
+          "周鹤洋": 216,
+          "工藤纪夫": 235,
+          "赵善津": 129
+        },
+        "held_slots": 580,
+        "hold_reason_overlapping_counts": {
+          "EV_GN_missing_or_different_titles": 553,
+          "before_full_year_after_official_pro_start": 4,
+          "date_unknown_or_noncanonical": 12,
+          "handicap": 3,
+          "mixed_or_teaching_or_study_scope": 3,
+          "official_result_conflict": 2,
+          "official_termination_reason_conflict": 1,
+          "rank_not_simple_professional": 4,
+          "rank_precedes_official_promotion_year": 1,
+          "root_DT_conflict_or_missing": 4,
+          "root_RE_inconsistent_or_missing": 1,
+          "root_SO_conflict_or_missing": 1,
+          "source_not_frozen_19x19": 1
+        }
+      },
+      "file": "docs/resource/kifu-player-exact-canonical-three-frozen-review-prod-2026-10-04.json",
+      "file_sha256": "49379c3cca58c3a65b732c7775c22a251d04455d589847f4a9ec03be58f59ef6",
+      "held_slot_sha256": "26df0a8c9279d4878a27cd881a1b1b3c2286a38d33b79514eb2184c77e920ccf",
+      "review_sha256": "47113ae15d1b82ea5e474b472c412f4e5ba7e7fc552b85955281fd510c8937a6"
+    },
+    "TEST": {
+      "approved_slot_sha256": "497e6881cd0d6d50b46e05b89667f7fbb0f25d82f1d28f01137510a9574649f8",
+      "counts": {
+        "approved_albums": 1527,
+        "approved_by_name": {
+          "周鹤洋": 644,
+          "工藤纪夫": 335,
+          "赵善津": 550
+        },
+        "approved_slots": 1529,
+        "examined_albums": 2105,
+        "examined_null_slots": 2109,
+        "held_albums": 578,
+        "held_by_name": {
+          "周鹤洋": 216,
+          "工藤纪夫": 235,
+          "赵善津": 129
+        },
+        "held_slots": 580,
+        "hold_reason_overlapping_counts": {
+          "EV_GN_missing_or_different_titles": 553,
+          "before_full_year_after_official_pro_start": 4,
+          "date_unknown_or_noncanonical": 12,
+          "handicap": 3,
+          "mixed_or_teaching_or_study_scope": 3,
+          "official_result_conflict": 2,
+          "official_termination_reason_conflict": 1,
+          "rank_not_simple_professional": 4,
+          "rank_precedes_official_promotion_year": 1,
+          "root_DT_conflict_or_missing": 4,
+          "root_RE_inconsistent_or_missing": 1,
+          "root_SO_conflict_or_missing": 1,
+          "source_not_frozen_19x19": 1
+        }
+      },
+      "file": "docs/resource/kifu-player-exact-canonical-three-frozen-review-test-2026-10-04.json",
+      "file_sha256": "e2e4599263d88cf931cf9e0ac454b1f46fe7353fbc11af918c82ff7d8f8d2092",
+      "held_slot_sha256": "c115cd6edf3ddbc028802fdd5116e43ea3c6a133fdf9cb86fc809d453c8fce68",
+      "review_sha256": "c4cc59abf65e3465306e679c67a45ceb8f13895c94d5fee9ad026478cf25981a"
+    }
+  },
+  "scope_rules": {
+    "catalog": "Each environment resolves exact canonical uniquely; NFKC/OpenCC t2s/casefold canonical, alias and legacy cn/tw/jp names have no other owner for these three targets. Normalization is collision detection only, never write selection.",
+    "date": "Real YYYY-MM-DD, equals date_sort and every DT value, not 1900-01-01, at/after the first full calendar year following official pro year, no later than 2026-10-04. Ambiguous/pro-start-year rows held.",
+    "event_context": "EV and GN combined are nonempty and every value exactly equals album.event. All differing titles held, including possibly valid translations. Mixed-pair, teaching/study/training, exhibition, memorial and handicap records held by conservative scope.",
+    "execution": "Fresh per-environment capture, correct current_database, exact member-set and catalog checks, table/row locking and CAS against full album preimage plus SGF SHA; recheck all held/protected records and untouched columns after dry rollback and apply. Intervening mixed11 opponent FK changes require fresh explicit preimages, never member expansion.",
+    "external_conflicts": "Known official contradictions 148086/W,148087/B,65957/W held. External per-game matching is not an approval gate; no claim of full independent move matching or error-free source metadata.",
+    "game_integrity": "19x19 board, at least 40 mainline moves, exact computed mainline count equals move_count, every RE equals database result; whole SGF and whole album JSON hashes fixed.",
+    "identity": "Reuse independent catalog identity decision a2a444ceeb7895ab03ba7a912c823431adb30b9e84f5e73c0f2389024888d1ef and official person anchors; this is bounded identity inference for the frozen records, not proof of every original game fact.",
+    "matching": "Only exact source strings 周鹤洋, 赵善津, 工藤纪夫 and NULL target-side FK, in explicit frozen [album_id,side] members.",
+    "rank": "If present, target rank matches every corresponding BR/WR root value and is a simple 1-9 pro rank; no rank before official promotion year. Zhou 9-dan lower bound is 2001. Missing rank accepted as absence, not affirmative identity evidence.",
+    "root_players": "All PB and PW property values are present and equal their corresponding database raw fields; same-value repeated properties permitted. No self-play by literal name, canonical/alias normalization or opponent FK.",
+    "source": "album.source and every SO value equal https://19x19.com; source_path matches data/kifu-album/19x19/[0-9]+.sgf; all source-link and source-row preimages frozen.",
+    "writes": "Only approved NULL black_player_id/white_player_id to the environment-specific target; no raw JSON/status, names, aliases, catalog deletion, event/date/source/result/SGF text changes."
+  },
+  "strategy_counts": {
+    "PROD": {
+      "gate_stages": [
+        {
+          "reason": "reserved_11_person_batch",
+          "remaining": 10162,
+          "remaining_names": 103,
+          "removed": 2953
+        },
+        {
+          "reason": "canonical_alias_or_legacy_cn_tw_jp_cross_id",
+          "remaining": 8268,
+          "remaining_names": 68,
+          "removed": 1894
+        },
+        {
+          "reason": "canonical_not_simplified_han",
+          "remaining": 7995,
+          "remaining_names": 51,
+          "removed": 273
+        },
+        {
+          "reason": "existing_exact_raw_nonnull_fk_conflict",
+          "remaining": 7995,
+          "remaining_names": 51,
+          "removed": 0
+        },
+        {
+          "reason": "non_19x19_source_or_path",
+          "remaining": 7917,
+          "remaining_names": 51,
+          "removed": 78
+        },
+        {
+          "reason": "invalid_placeholder_or_mismatched_date",
+          "remaining": 7862,
+          "remaining_names": 49,
+          "removed": 55
+        },
+        {
+          "reason": "same_person_opponents",
+          "remaining": 7860,
+          "remaining_names": 48,
+          "removed": 2
+        },
+        {
+          "reason": "known_prebirth_chwe_myeonghun_1971",
+          "remaining": 7859,
+          "remaining_names": 48,
+          "removed": 1
+        },
+        {
+          "reason": "previous_exact_nonperson_rollback",
+          "remaining": 7859,
+          "remaining_names": 48,
+          "removed": 0
+        }
+      ],
+      "planning_queue_slots_not_approved": 7859,
+      "remaining_null_slots": 54365,
+      "unique_han_canonical_candidate_slots": 13115,
+      "unique_han_canonical_names": 115
+    },
+    "TEST": {
+      "gate_stages": [
+        {
+          "reason": "reserved_11_person_batch",
+          "remaining": 12726,
+          "remaining_names": 120,
+          "removed": 2953
+        },
+        {
+          "reason": "canonical_alias_or_legacy_cn_tw_jp_cross_id",
+          "remaining": 8241,
+          "remaining_names": 65,
+          "removed": 4485
+        },
+        {
+          "reason": "canonical_not_simplified_han",
+          "remaining": 7997,
+          "remaining_names": 51,
+          "removed": 244
+        },
+        {
+          "reason": "non_19x19_source_or_path",
+          "remaining": 7919,
+          "remaining_names": 51,
+          "removed": 78
+        },
+        {
+          "reason": "invalid_placeholder_or_mismatched_date",
+          "remaining": 7864,
+          "remaining_names": 49,
+          "removed": 55
+        },
+        {
+          "reason": "same_person_opponents",
+          "remaining": 7862,
+          "remaining_names": 48,
+          "removed": 2
+        },
+        {
+          "reason": "known_prebirth_chwe_myeonghun_1971",
+          "remaining": 7861,
+          "remaining_names": 48,
+          "removed": 1
+        },
+        {
+          "reason": "previous_exact_nonperson_rollback",
+          "remaining": 7858,
+          "remaining_names": 47,
+          "removed": 3
+        }
+      ],
+      "planning_queue_slots_not_approved": 7858,
+      "remaining_null_slots": 55970,
+      "unique_han_canonical_candidate_slots": 15679,
+      "unique_han_canonical_names": 132
+    }
+  }
+}

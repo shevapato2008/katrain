@@ -529,8 +529,8 @@ test('§5 承重:把三格的值撑到会溢出,外框 296×434 一动不动', a
 // 顶栏在所有层级恒为品牌态,返回 / 视图切换 / 上下文标题全部下放到这条控件带。
 // 位置写死是**判据本身**:两种布局下纵向位置完全相同,有盘页和无盘页来回切时不上下跳。
 
-test('§11 布局 B:页控条通栏 x16–1008、y70–114、高 44,返回键高 36', async ({ page }) => {
-  await boot(page, '/kiosk/play/cross-platform');
+test('§11 星阵专页布局 B:页控条通栏 x16–1008、y70–114、高 44,返回键高 36', async ({ page }) => {
+  await boot(page, '/kiosk/play/cross-platform/golaxy');
   const screen = await box(page, '.kiosk-screen');
   const bar = await box(page, '.kiosk-pagebar');
   const back = await box(page, '.kiosk-pagebar__back');
@@ -543,8 +543,8 @@ test('§11 布局 B:页控条通栏 x16–1008、y70–114、高 44,返回键高
   expect(back.x).toBe(bar.x);
 });
 
-test('§11 有盘页与无盘页来回切,页控条的纵向位置一模一样', async ({ page }) => {
-  await boot(page, '/kiosk/play/cross-platform');           // 布局 B
+test('§11 有盘页与 OGS 专页来回切,页控条的纵向位置一模一样', async ({ page }) => {
+  await boot(page, '/kiosk/play/cross-platform/ogs');       // 布局 B
   const b = await box(page, '.kiosk-pagebar');
   await boot(page, '/kiosk/play/ai/setup/free');            // 布局 A
   const a = await box(page, '.kiosk-pagebar');
@@ -555,7 +555,7 @@ test('§11 有盘页与无盘页来回切,页控条的纵向位置一模一样',
 });
 
 test('§11 长标题不许把返回键挤成两行 —— 触点位置在每一屏都一样', async ({ page }) => {
-  await boot(page, '/kiosk/play/cross-platform');
+  await boot(page, '/kiosk/play/cross-platform/golaxy');
   const shortBack = await box(page, '.kiosk-pagebar__back');
   const shortBar = await box(page, '.kiosk-pagebar');
   // 把数据造到会溢出 —— 装得下的长度下量出来的数一概不算
@@ -1292,14 +1292,14 @@ test('§11 复盘报告:两块折叠各自展开时,右栏都是 516、翻手键
   expect(dist.navBottom, '分布视图:翻手键没贴右栏底').toBe(dist.railBottom);
 });
 
-// ── D2 稿外三屏:只接壳,不推导版式 ──────────────────────────────────────
+// ── D2 层级屏:共享外壳 ──────────────────────────────────────────────────
 
 /**
- * 研究 / 跨平台 / 标定 —— 稿子没画这三屏。**没有参照物就没有四图闸**,
+ * 研究 / 星阵专页 / OGS 专页 / 标定 —— 专页另有已批准的四图闸,
  * (摆谱选谱页 `/kiosk/baipu` 2026-09-14 改成重定向到棋谱屏 —— 它不再是一屏,从名单里拿掉。)
  * 所以它们的验收只有这一条:**共享外壳这一层是对的,切模块的时候不跳**。
  *
- * 三条判据合起来就是「切模块不跳」在这三屏上的全部要求:
+ * 三条判据合起来就是「切模块不跳」在这些屏上的共享外壳要求:
  *   ① 顶栏 1024×56 贴在 (0,0) —— 规范 §5 防跳铁律 1
  *   ② 内容区左缘 x16、通栏 992 —— 外边距 16 是规范开头明写「全部用 px」的那几个之一
  *   ③ 这三屏都不是 Dock 项 ⇒ `dockLevelOf` 判 2 ⇒ 没有 Dock ⇒ 内容区下缘贴画布底 600
@@ -1310,7 +1310,8 @@ test('§11 复盘报告:两块折叠各自展开时,右栏都是 516、翻手键
  */
 const D2_SCREENS: readonly [string, string][] = [
   ['/kiosk/research', '研究'],
-  ['/kiosk/play/cross-platform', '跨平台'],
+  ['/kiosk/play/cross-platform/golaxy', '星阵专页'],
+  ['/kiosk/play/cross-platform/ogs', 'OGS 专页'],
   ['/kiosk/vision/setup', '标定'],
 ];
 
@@ -1334,7 +1335,7 @@ for (const [path, name] of D2_SCREENS) {
     // 差的正好是 `--content-pad-y` 的 14。两套数不矛盾,别混着读。
     expect(content.y, '内容区上缘没接顶栏下沿').toBe(topbar.h);
 
-    // 这三屏都不在 Dock 词典里 ⇒ L2 ⇒ 没有 Dock ⇒ 内容区一路到画布下缘。
+    // 这些屏都不在 Dock 词典里 ⇒ L2 ⇒ 没有 Dock ⇒ 内容区一路到画布下缘。
     const dock = await page.evaluate(() => document.querySelectorAll('.kiosk-dock').length);
     expect(dock, `${name} 出了 Dock —— 它不在 Dock 词典里`).toBe(0);
     expect(content.bottom, '没有 Dock,内容区下缘就该贴画布底 600').toBe(600);
@@ -1692,13 +1693,13 @@ test('§11 研究屏:AI 推荐表装不下时,滚的是表自己,动作区照旧
  * 那一个状态下**勉强平:失败时要多一张诊断卡,当场顶破。
  *
  * ⇒ 结构改成头(三格 56)尾(按钮 44)固定、中间那块滚。这样账本只依赖四个共享 token
- * (56 / 44 / 两个 8),中段是多少都顶不破。删掉稿子那个不存在的第 2 步又还回 60。
+ * (56 / 44 / 两个 8),中段是多少都顶不破。曝光收敛作为真实第 2 步，占用中段高度。
  *
  * 这一关量三件事,**第三件是这里唯一分得出真假的那件**:
  *  ① 五段加起来正好 460(关系式,不是硬编码);
- *  ② 四行步骤各 52 —— `.kiosk-row` 的 `flex:none` 在一个**会滚的**容器里必须还在。
+ *  ② 五行步骤各 52 —— `.kiosk-row` 的 `flex:none` 在一个**会滚的**容器里必须还在。
  *     那条注释警告过:不写死的话 flex 会先把行压扁再滚(2026-07-29 量到 18 行被压成 33)。
- *     而这四行现在**真的**住在会滚的容器里,正是它描述的场景。
+ *     而这五行现在**真的**住在会滚的容器里,正是它描述的场景。
  *  ③ **失败态**下中段真的滚得动,而按钮**没有被顶出右栏**。
  *
  * 变异实测(2026-08-24)两发,**两条预测都被推翻了**,而且推翻的方式各自都有教训:
@@ -1754,7 +1755,7 @@ const calibBoxes = (page: Page) => page.evaluate(() => {
   };
 });
 
-test('§11 标定屏:头尾钉死、四行不被压扁,右栏总高正好 460', async ({ page }) => {
+test('§11 标定屏:头尾钉死、五行不被压扁,右栏总高正好 460', async ({ page }) => {
   await bootCalib(page, {});
   const m = await calibBoxes(page);
 
@@ -1767,10 +1768,8 @@ test('§11 标定屏:头尾钉死、四行不被压扁,右栏总高正好 460', 
   expect(m.acts.bottom, '按钮行没贴右栏底 —— 它是固定尾,不靠 margin-top:auto').toBe(m.rail.bottom);
   expect(m.status.h + m.zone.h + m.acts.h + 16, '五段加起来 ≠ 右栏高度').toBe(m.rail.h);
 
-  // ── 四行不许被压扁 ──
-  expect(m.rows, '步骤行被压扁了 —— `.kiosk-row` 的 flex:none 掉了').toEqual([52, 52, 52, 52]);
-  // 常态装得下 ⇒ **不许**有 data-at(挂一条永远亮着的渐隐等于谎报下面还有东西)
-  expect(m.overflow, '常态就溢出了 —— 那本账已经不对了').toBeLessThanOrEqual(0);
+  // 五步保持行高；中段允许滚动，新增曝光步骤不能挤走固定头尾。
+  expect(m.rows, '步骤行被压扁了 —— `.kiosk-row` 的 flex:none 掉了').toEqual([52, 52, 52, 52, 52]);
 });
 
 test('§11 标定屏:失败时多一张诊断卡,中段自己滚,按钮一颗都不许被顶出去', async ({ page }) => {
@@ -1781,7 +1780,7 @@ test('§11 标定屏:失败时多一张诊断卡,中段自己滚,按钮一颗都
 
   expect(m.rail.h, '右栏高度被诊断卡顶变了').toBe(460);
   expect(m.acts.bottom, '按钮被顶出右栏了 —— 键还在 DOM 里,但手指够不到').toBe(m.rail.bottom);
-  expect(m.rows, '失败态下步骤行被压扁了').toEqual([52, 52, 52, 52]);
+  expect(m.rows, '失败态下步骤行被压扁了').toEqual([52, 52, 52, 52, 52]);
   expect(m.overflow, '诊断卡没把中段撑到溢出 —— 下面那条滚动断言是空的').toBeGreaterThan(0);
 
   // 唯一分得出「有没有出路」的那一条:**真滚轮**。合成事件 Chromium 不认,
@@ -1843,7 +1842,7 @@ for (const lang of ['cn', 'de', 'ru', 'ua', 'en', 'es', 'fr', 'tr', 'jp', 'ko', 
     expect(m.rail.h, '右栏高度被诊断卡顶变了').toBe(460);
     expect(m.acts.bottom, '按钮被顶出右栏了').toBe(m.rail.bottom);
     expect(m.acts.h, '三颗键折成两行了 —— 按钮区不再是固定尾').toBe(44);
-    expect(m.rows, '步骤行被压扁了').toEqual([52, 52, 52, 52]);
+    expect(m.rows, '步骤行被压扁了').toEqual([52, 52, 52, 52, 52]);
     expect(m.overflow, '没造到会溢出 —— 下面的滚动断言是空的').toBeGreaterThan(0);
     // 每颗键的字都装得下(`.calib-acts` 是等宽三列,约 146px;德文最容易撑破)
     const clipped = await acts.locator('.kiosk-btn').evaluateAll((els) =>

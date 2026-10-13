@@ -1,199 +1,258 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
+import type { PlatformChallenge } from '../../api';
 import PlatformLobbyPage from './PlatformLobbyPage';
 
-/**
- * 屏 08 跨平台 · 大厅的**行为**那一半。版式归四图,一条几何都不断言。
- *
- * 断言四件事:
- *   ① **回车才搜**。旧实现是 400ms 防抖 —— 每敲一个字向**外部平台**发一次搜索,
- *      而屏上那行字写的是「输入之后回车」。两处必须说同一件事。
- *   ② **对局中的人不摆按钮**,摆状态标 —— 那个人现在收不到挑战,灰按钮会让人一直按。
- *   ③ **挑战前确认一次**,发出去的条件和屏上那行只读读数**同源**(19 路 / 中国规则 / 计分局)。
- *   ④ **自动匹配那一段按能力出现**:平台不支持就整段不渲染,不是灰一颗按钮。
- */
-
-const { platformStatus, platformUsers, platformSendChallenge, platformStartAutomatch, platformCancelAutomatch } =
-  vi.hoisted(() => ({
-    platformStatus: vi.fn(),
-    platformUsers: vi.fn(),
-    platformSendChallenge: vi.fn(),
-    platformStartAutomatch: vi.fn(),
-    platformCancelAutomatch: vi.fn(),
-  }));
-vi.mock('../../api', () => ({
-  API: { platformStatus, platformUsers, platformSendChallenge, platformStartAutomatch, platformCancelAutomatch },
+const { platformStatus, platformUsers, platformSendChallenge, platformDeclineChallenge, platformChallenges, platformAcceptChallenge, platformActiveGame, getState, writeActiveSession } = vi.hoisted(() => ({
+  platformStatus: vi.fn(), platformUsers: vi.fn(), platformSendChallenge: vi.fn(), platformChallenges: vi.fn(),
+  platformDeclineChallenge: vi.fn(), platformAcceptChallenge: vi.fn(), platformActiveGame: vi.fn(), getState: vi.fn(), writeActiveSession: vi.fn(),
 }));
-vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 'tok', user: { id: 1, username: 'u' }, isAuthenticated: true }) }));
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return { ...actual, useNavigate: () => mockNavigate };
-});
+vi.mock('../../api', () => ({ API: { platformStatus, platformUsers, platformSendChallenge, platformDeclineChallenge, platformChallenges, platformAcceptChallenge, platformActiveGame, getState } }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 'tok', isAuthenticated: true }) }));
+vi.mock('../context/VisionContext', () => ({ useVision: () => ({ isVisionEnabled: true }) }));
+vi.mock('../utils/activeSession', () => ({ writeActiveSession, readActiveSession: () => null }));
+const navigate = vi.fn();
+vi.mock('react-router-dom', async () => ({
+  ...await vi.importActual('react-router-dom'), useNavigate: () => navigate,
+}));
 
-const USERS = [
-  { user_id: '1', username: 'stone_walker', rank: '4d', status: 'idle' },
-  { user_id: '2', username: 'mokuhazushi', rank: '1k', status: 'seeking' },
-  { user_id: '3', username: 'tenuki_now', rank: '2d', status: 'playing' },
+const platformHomeChallenges: PlatformChallenge[] = [
+  { platform: 'ogs', challenge_id: 'sample-1', from_user: { platform: 'ogs', user_id: '1', username: 'stone_walker', rank: '4d', rank_numeric: 34, status: 'idle' }, board_size: 19, time_control: { system: 'byoyomi', main_time: 600, period_time: 30, periods: 5 }, rules: 'chinese', ranked: true, handicap: 0, komi: null },
+  { platform: 'ogs', challenge_id: 'sample-2', from_user: { platform: 'ogs', user_id: '2', username: 'kosumi', rank: '8k', rank_numeric: 22, status: 'idle' }, board_size: 19, time_control: { system: 'byoyomi', main_time: 1200, period_time: 30, periods: 5 }, rules: 'chinese', ranked: false, handicap: -1, komi: null },
+  { platform: 'ogs', challenge_id: 'sample-3', from_user: { platform: 'ogs', user_id: '3', username: 'tenuki_now', rank: '2d', rank_numeric: 32, status: 'idle' }, board_size: 13, time_control: { system: 'absolute', main_time: 180 }, rules: 'chinese', ranked: false, handicap: 0, komi: null },
 ];
 
-const withAutomatch = (yes: boolean) => ({
-  platforms: [{
-    platform: 'ogs', connected: true, saved_username: 'me',
-    supports_live_play: true, supports_automatch: yes,
-    supports_rooms: false, supports_seek_graph: true, supports_engine_play: false,
-  }],
-});
-
-const renderPage = (search = '?platform=ogs') => render(
+const renderPage = () => render(
   <ThemeProvider theme={kioskTheme}>
-    <MemoryRouter initialEntries={[`/kiosk/play/cross-platform/lobby${search}`]}>
+    <MemoryRouter initialEntries={['/kiosk/play/cross-platform/ogs']}>
       <PlatformLobbyPage />
     </MemoryRouter>
   </ThemeProvider>,
 );
 
-const rowOf = (name: string) =>
-  screen.getAllByTestId('platform-user').find((r) => within(r).queryByText(name))!;
-
 beforeEach(() => {
   vi.clearAllMocks();
-  platformStatus.mockResolvedValue(withAutomatch(true));
-  platformUsers.mockResolvedValue({ users: USERS });
-  platformSendChallenge.mockResolvedValue({});
-  platformStartAutomatch.mockResolvedValue({});
-  platformCancelAutomatch.mockResolvedValue({});
+  platformStatus.mockResolvedValue({ platforms: [{ platform: 'ogs', connected: true, saved_username: 'my_ogs_account', supports_automatch: true }] });
+  platformUsers.mockResolvedValue({ users: [{ user_id: '1', username: 'stone_walker', rank: '4d', status: 'idle' }] });
+  platformSendChallenge.mockResolvedValue({ challenge_id: 'direct-4' });
+  platformDeclineChallenge.mockResolvedValue({ status: 'declined' });
+  platformChallenges.mockResolvedValue({ challenges: [] });
+  platformAcceptChallenge.mockResolvedValue({ session_id: 'ogs-s1', game: {} });
+  platformActiveGame.mockResolvedValue({ session_id: null });
+  getState.mockResolvedValue({ state: { board_size: [19, 19] } });
+  localStorage.clear();
 });
+afterEach(() => vi.restoreAllMocks());
 
-describe('屏 08 跨平台 · 大厅', () => {
-  it('回车才搜:边打字不发请求', async () => {
+describe('OGS 专属页', () => {
+  it('treats a connected account with no saved username as connected', async () => {
+    platformStatus.mockResolvedValue({ platforms: [{ platform: 'ogs', connected: true }] });
     renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('platform-user')).toHaveLength(3));
+    expect(await screen.findByText('账号名未返回')).toBeInTheDocument();
+    expect(screen.getByTestId('platform-lobby-page')).toHaveTextContent('已连接');
+    expect(screen.queryByText('OGS 尚未连接。请先连接账号。')).not.toBeInTheDocument();
+  });
+
+  it('shows an explicit disconnected state after a disconnected response', async () => {
+    platformStatus.mockResolvedValue({ platforms: [{ platform: 'ogs', connected: false, saved_username: 'old_name' }] });
+    renderPage();
+    expect(await screen.findByText('OGS 尚未连接。请先连接账号。')).toBeInTheDocument();
+    expect(screen.queryByText('old_name')).not.toBeInTheDocument();
+    expect(screen.queryByText('正在读取账号')).not.toBeInTheDocument();
+  });
+
+  it('keeps status loading distinct from disconnected while the request is pending', () => {
+    platformStatus.mockReturnValue(new Promise(() => {}));
+    renderPage();
+    expect(screen.getByText('正在读取账号')).toBeInTheDocument();
+    expect(screen.queryByText('OGS 尚未连接。请先连接账号。')).not.toBeInTheDocument();
+  });
+
+  it('shows the account, input choice, and three mode cards with honest availability', async () => {
+    renderPage();
+    expect(await screen.findByText('my_ogs_account')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /返回对弈/ })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: '落子方式' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '快速匹配' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '发起挑战' })).toBeDisabled();
+    expect(screen.getAllByText('盒上尚未接通')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: '找人下' })).toBeEnabled();
+    expect(screen.queryByText('按 OGS 段位匹配')).not.toBeInTheDocument();
+  });
+
+  it('renders typed challenge rows and only supported filters', async () => {
+    platformChallenges.mockResolvedValue({ challenges: platformHomeChallenges });
+    renderPage();
+    expect(await screen.findByTestId('platform-challenge-sample-1')).toHaveTextContent('stone_walker');
+    expect(screen.getAllByTestId(/^platform-challenge-sample-/)).toHaveLength(3);
+    expect(screen.getByRole('button', { name: '全部实时局' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '19 路' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: '同级别' })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('搜索用户名或对局')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('搜索用户名')).toBeInTheDocument();
+    expect(within(screen.getByTestId('platform-challenge-sample-3')).getByText('实体盘只下 19 路')).toBeInTheDocument();
+    expect(within(screen.getByTestId('platform-challenge-sample-1')).getByRole('button', { name: '接受' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: '19 路' }));
+    expect(screen.getAllByTestId(/^platform-challenge-sample-/)).toHaveLength(2);
+    await userEvent.type(screen.getByPlaceholderText('搜索用户名'), 'kosumi');
+    expect(screen.getAllByTestId(/^platform-challenge-sample-/)).toHaveLength(1);
+  });
+
+  it('loads only actual OGS open challenges in production mode', async () => {
+    platformChallenges.mockResolvedValue({ challenges: [platformHomeChallenges[0]] });
+    renderPage();
+    expect(await screen.findByTestId('platform-challenge-sample-1')).toHaveTextContent('stone_walker');
+    expect(platformChallenges).toHaveBeenCalledWith('ogs', 'tok');
+    expect(screen.queryByText('kosumi')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('platform-challenge-sample-2')).not.toBeInTheDocument();
+  });
+
+  it('distinguishes a real empty list from an upstream error and can retry', async () => {
+    platformChallenges.mockRejectedValueOnce(new Error('upstream 502')).mockResolvedValueOnce({ challenges: [] });
+    renderPage();
+    expect(await screen.findByRole('alert')).toHaveTextContent('没能取回公开挑战');
+    expect(screen.queryByText('暂无公开挑战')).not.toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: '重试' }));
+    expect(await screen.findByText('暂无公开挑战')).toBeInTheDocument();
+    expect(platformChallenges).toHaveBeenCalledTimes(2);
+  });
+
+  it('lets the user refresh a list that was already loaded', async () => {
+    platformChallenges.mockResolvedValueOnce({ challenges: [platformHomeChallenges[0]] })
+      .mockResolvedValueOnce({ challenges: [platformHomeChallenges[1]] });
+    renderPage();
+    expect(await screen.findByTestId('platform-challenge-sample-1')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '刷新公开挑战' }));
+    expect(await screen.findByTestId('platform-challenge-sample-2')).toBeInTheDocument();
+    expect(screen.queryByTestId('platform-challenge-sample-1')).not.toBeInTheDocument();
+    expect(platformChallenges).toHaveBeenCalledTimes(2);
+  });
+
+  it('accepts a 19路 challenge after confirmation and records the physical board session', async () => {
+    platformChallenges.mockResolvedValue({ challenges: platformHomeChallenges });
+    renderPage();
+    const row = await screen.findByTestId('platform-challenge-sample-1');
+    await userEvent.click(within(row).getByRole('button', { name: '接受' }));
+    expect(platformAcceptChallenge).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: '确认接受' }));
+    await waitFor(() => expect(platformAcceptChallenge).toHaveBeenCalledWith('ogs', 'sample-1', 'tok'));
+    expect(writeActiveSession).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'game', route: '/kiosk/play/cross-platform/game/ogs-s1', onBoard: true,
+    }));
+    expect(navigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/game/ogs-s1', expect.anything());
+  });
+
+  it('keeps 13路 unavailable on the physical board but accepts it in screen mode', async () => {
+    platformChallenges.mockResolvedValue({ challenges: platformHomeChallenges });
+    renderPage();
+    const row = await screen.findByTestId('platform-challenge-sample-3');
+    expect(within(row).getByText('实体盘只下 19 路')).toBeInTheDocument();
+    expect(within(row).queryByRole('button', { name: '接受' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '屏幕' }));
+    await userEvent.click(within(row).getByRole('button', { name: '接受' }));
+    await userEvent.click(screen.getByRole('button', { name: '确认接受' }));
+    await waitFor(() => expect(writeActiveSession).toHaveBeenCalledWith(expect.objectContaining({ onBoard: false })));
+  });
+
+  it('guards duplicate accepts while pending, then leaves the dialog open for retry on failure', async () => {
+    platformChallenges.mockResolvedValue({ challenges: [platformHomeChallenges[0]] });
+    let rejectFirst!: (error: Error) => void;
+    platformAcceptChallenge.mockReturnValueOnce(new Promise((_, reject) => { rejectFirst = reject; }))
+      .mockResolvedValueOnce({ session_id: 'ogs-s2' });
+    renderPage();
+    await userEvent.click(within(await screen.findByTestId('platform-challenge-sample-1')).getByRole('button', { name: '接受' }));
+    const confirm = screen.getByRole('button', { name: '确认接受' });
+    await userEvent.click(confirm);
+    expect(confirm).toBeDisabled();
+    expect(platformAcceptChallenge).toHaveBeenCalledTimes(1);
+    rejectFirst(new Error('OGS unavailable'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('OGS unavailable');
+    expect(navigate).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: '重试接受' }));
+    await waitFor(() => expect(platformAcceptChallenge).toHaveBeenCalledTimes(2));
+    expect(navigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/game/ogs-s2', expect.anything());
+  });
+
+  it('offers a deliberate Continue action for an active OGS game without auto-navigation', async () => {
+    platformActiveGame.mockResolvedValue({ session_id: 'ongoing-1' });
+    renderPage();
+    const continueButton = await screen.findByRole('button', { name: '继续对局' });
+    expect(navigate).not.toHaveBeenCalled();
+    await userEvent.click(continueButton);
+    expect(getState).toHaveBeenCalledWith('ongoing-1', 'tok');
+    expect(writeActiveSession).toHaveBeenCalledWith(expect.objectContaining({
+      route: '/kiosk/play/cross-platform/game/ongoing-1', onBoard: true,
+    }));
+    expect(navigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/game/ongoing-1', expect.anything());
+  });
+
+  it('resumes a 13-road OGS game on screen even when physical play was selected', async () => {
+    platformActiveGame.mockResolvedValue({ session_id: 'ongoing-13' });
+    getState.mockResolvedValue({ state: { board_size: [13, 13] } });
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: '继续对局' }));
+    expect(writeActiveSession).toHaveBeenCalledWith(expect.objectContaining({ onBoard: false }));
+  });
+
+  it('shows an error and does not enter when the authoritative board size is unavailable', async () => {
+    platformActiveGame.mockResolvedValue({ session_id: 'ongoing-unknown' });
+    getState.mockRejectedValue(new Error('502'));
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: '继续对局' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('没能确认这局的棋盘路数');
+    expect(writeActiveSession).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('shows an active-game request error distinctly and can retry', async () => {
+    platformActiveGame.mockRejectedValueOnce(new Error('upstream')).mockResolvedValueOnce({ session_id: 'ongoing-2' });
+    renderPage();
+    const error = await screen.findByText('没能读取进行中的 OGS 对局');
+    await userEvent.click(within(error.parentElement as HTMLElement).getByRole('button', { name: '重试' }));
+    expect(await screen.findByRole('button', { name: '继续对局' })).toBeInTheDocument();
+    expect(platformActiveGame).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the existing username challenge confirmation and only searches on Enter', async () => {
+    let pending = false;
+    platformActiveGame.mockImplementation(async () => ({ session_id: null, pending_challenge_id: pending ? 'direct-4' : null }));
+    platformSendChallenge.mockImplementation(async () => { pending = true; return { challenge_id: 'direct-4' }; });
+    platformDeclineChallenge.mockImplementation(async () => { pending = false; return { status: 'declined' }; });
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: '找人下' }));
+    const input = screen.getByTestId('platform-search');
+    await waitFor(() => expect(screen.getByTestId('platform-user')).toBeInTheDocument());
     const calls = platformUsers.mock.calls.length;
-
-    await userEvent.type(screen.getByTestId('platform-search'), 'stone');
-    expect(platformUsers.mock.calls.length, '边打字就发了请求 —— 屏上写的是「输入之后回车」')
-      .toBe(calls);
-
+    await userEvent.type(input, 'stone');
+    expect(platformUsers).toHaveBeenCalledTimes(calls);
     await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(platformUsers).toHaveBeenLastCalledWith('ogs', 'tok', 'stone'));
-  });
-
-  it('对局中那一行不摆按钮,摆状态标', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('platform-user')).toHaveLength(3));
-    const busy = rowOf('tenuki_now');
-    expect(within(busy).queryByRole('button', { name: '挑战' })).not.toBeInTheDocument();
-    expect(within(busy).getAllByText('对局中').length).toBeGreaterThan(0);
-    expect(within(rowOf('stone_walker')).getByRole('button', { name: '挑战' })).toBeEnabled();
-  });
-
-  it('挑战先确认一次,发出去的条件和屏上那行读数同源', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('platform-user')).toHaveLength(3));
-    await userEvent.click(within(rowOf('stone_walker')).getByRole('button', { name: '挑战' }));
-
-    const dlg = await screen.findByTestId('platform-challenge-confirm');
-    expect(within(dlg).getByText('向 stone_walker 发起挑战？')).toBeInTheDocument();
-    expect(dlg).toHaveTextContent('不会回到这台盒子');
-    expect(platformSendChallenge, '还没确认就发出去了').not.toHaveBeenCalled();
-
-    await userEvent.click(within(dlg).getByRole('button', { name: '发出挑战' }));
-    await waitFor(() => expect(platformSendChallenge).toHaveBeenCalledWith(
-      'ogs', { user_id: '1', board_size: 19, rules: 'chinese', ranked: true }, 'tok',
-    ));
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('不会回到这台盒子'));
-  });
-
-  it('确认框里按取消:一条都不发', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('platform-user')).toHaveLength(3));
-    await userEvent.click(within(rowOf('stone_walker')).getByRole('button', { name: '挑战' }));
-    const dlg = await screen.findByTestId('platform-challenge-confirm');
-    await userEvent.click(within(dlg).getByRole('button', { name: '取消' }));
-    await waitFor(() => expect(screen.queryByTestId('platform-challenge-confirm')).not.toBeInTheDocument());
+    await userEvent.click(within(screen.getByTestId('platform-user')).getByRole('button', { name: '挑战' }));
     expect(platformSendChallenge).not.toHaveBeenCalled();
+    await userEvent.click(within(screen.getByTestId('platform-challenge-confirm')).getByRole('button', { name: '发出挑战' }));
+    await waitFor(() => expect(platformSendChallenge).toHaveBeenCalledWith('ogs', { user_id: '1', board_size: 19, rules: 'chinese', ranked: true }, 'tok'));
+    expect(await screen.findByText('等待 stone_walker 接受挑战')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '取消约战' }));
+    await waitFor(() => expect(platformDeclineChallenge).toHaveBeenCalledWith('ogs', 'direct-4', 'tok'));
+    expect(screen.queryByText('等待 stone_walker 接受挑战')).not.toBeInTheDocument();
   });
 
-  it('自动匹配那一段按能力出现:平台不支持就整段不渲染', async () => {
-    platformStatus.mockResolvedValue(withAutomatch(false));
+  it('restores an outgoing invitation on return and clears it after remote rejection', async () => {
+    let poll!: () => void;
+    vi.spyOn(window, 'setInterval').mockImplementation((handler, timeout) => {
+      if (timeout === 15000) poll = handler as () => void;
+      return 1;
+    });
+    platformActiveGame.mockResolvedValueOnce({ session_id: null, pending_challenge_id: 'direct-4' })
+      .mockResolvedValue({ session_id: null, pending_challenge_id: null });
     renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('platform-user')).toHaveLength(3));
-    expect(screen.queryByTestId('platform-automatch')).not.toBeInTheDocument();
-  });
-
-  it('开始匹配 → 再按变成取消匹配', async () => {
-    renderPage();
-    const action = await screen.findByTestId('platform-automatch-action');
-    expect(action).toHaveTextContent('开始匹配');
-    await userEvent.click(action);
-    await waitFor(() => expect(platformStartAutomatch).toHaveBeenCalledWith('ogs', { board_size: 19 }, 'tok'));
-    expect(action).toHaveTextContent('取消匹配');
-    await userEvent.click(action);
-    await waitFor(() => expect(platformCancelAutomatch).toHaveBeenCalledWith('ogs', 'tok'));
-  });
-
-  /**
-   * 稿子把「自动匹配」画了两处(搜索行行尾一颗 + 底下一整段),两颗打同一个接口。
-   * 这一屏不滚,两颗同屏可见 ⇒ 排队中会同时挂着「取消匹配」和「开始匹配」。
-   * **一个状态摆两个地方,必有一个在撒谎。**
-   */
-  it('全屏只有一处能开匹配,按下之后「开始匹配」一个字都不许再出现', async () => {
-    const { container } = renderPage();
-    const action = await screen.findByTestId('platform-automatch-action');
-    expect(screen.getAllByRole('button', { name: '开始匹配' })).toHaveLength(1);
-    // 搜索那一行的行尾只剩输入框。
-    const searchEnd = container.querySelector('.kiosk-row--search .kiosk-row__end')!;
-    expect(searchEnd.querySelectorAll('button')).toHaveLength(0);
-
-    await userEvent.click(action);
-    // 键换成「取消匹配」—— 它说的是**按下去会发生什么**,而且不留着就撤不回已发出的排队。
-    await waitFor(() => expect(screen.getByRole('button', { name: '取消匹配' })).toBeInTheDocument());
-    expect(container.textContent).not.toContain('开始匹配');
-  });
-
-  /**
-   * 「排队中」那枚标和「配上就自动进对局」那句话**都撤了**(2026-08-25,S1)。
-   *
-   * 后半句是**平的假话**:OGS 适配器收 `automatch/start` 后会
-   * `_emit("automatch_found", …)`,但 `on_automatch_found` **全仓零订阅者**
-   * ⇒ 平台真给你配上局了,这台盒子永远不会知道。前半句「排队中」也没人维护:
-   * 纯前端本地状态,刷一下页面就没了,而 OGS 那边还排着。
-   *
-   * 这条守的是**两态都不许再出现那些词** —— 只查按下之前那一帧的话,
-   * 撤了一半也是绿的。
-   */
-  it('不摆「排队中」这种没人维护的状态,也不承诺配上会自己回来', async () => {
-    const { container } = renderPage();
-    const action = await screen.findByTestId('platform-automatch-action');
-    const box = screen.getByTestId('platform-automatch');
-
-    for (const phase of ['按下之前', '按下之后']) {
-      expect(box, phase).not.toHaveTextContent('排队中');
-      expect(box, phase).not.toHaveTextContent('自动进对局');
-      expect(container.querySelector('.kiosk-tag--warn'), phase).toBeNull();
-      if (phase === '按下之前') await userEvent.click(action);
-    }
-    // 换上的那句话两态都在,而且把「配上之后要去哪」说清楚了。
-    expect(box).toHaveTextContent('不会自动回到这台盒子');
-  });
-
-  it('名单取不回来:说出来,不摆一张空名单冒充「那边没人」', async () => {
-    platformUsers.mockRejectedValue(new Error('boom'));
-    renderPage();
-    expect(await screen.findByText('没能从平台取回名单')).toBeInTheDocument();
-    expect(screen.queryAllByTestId('platform-user')).toHaveLength(0);
-  });
-
-  it('搜了但那边没这个人,和「还没搜」是两句话', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('platform-user')).toHaveLength(3));
-    platformUsers.mockResolvedValue({ users: [] });
-    await userEvent.type(screen.getByTestId('platform-search'), 'nobody{Enter}');
-    expect(await screen.findByText('那边没有这个人')).toBeInTheDocument();
+    expect(await screen.findByText('等待对方接受挑战')).toBeInTheDocument();
+    await act(async () => { poll(); });
+    await waitFor(() => expect(screen.queryByText('等待对方接受挑战')).not.toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: '取消约战' })).not.toBeInTheDocument();
   });
 });

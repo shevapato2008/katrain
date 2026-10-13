@@ -577,6 +577,9 @@ msgstr "級"
 msgid "strength:dan"
 msgstr "段"
 
+msgid "strength:professional_dan_format"
+msgstr "職業{rank}段"
+
 msgid "ai:default"
 msgstr "推薦 (Recommended)"
 
@@ -2200,6 +2203,12 @@ msgstr "地點"
 msgid "kifu:source"
 msgstr "來源"
 
+msgid "kifu:source_golaxy"
+msgstr "星陣"
+
+msgid "kifu:source_unknown"
+msgstr "來源待核實"
+
 msgid "kifu:open_in_research"
 msgstr "在研究中開啟"
 
@@ -3309,7 +3318,7 @@ msgid "grade:histogram_aria"
 msgstr "七檔發揮水準分佈，黑柱為黑方、白柱為白方，各自歸一"
 
 msgid "grade:def_brilliant"
-msgstr "走出引擎首選，且連引擎自己都沒想到（先驗 < 10%）"
+msgstr "走出AI深入計算後的首選，且AI初選機率低於10%（官子低於6%）"
 
 msgid "grade:def_best"
 msgstr "走出引擎首選"
@@ -3324,7 +3333,10 @@ msgid "grade:def_unrated"
 msgstr "上一手沒分析或搜尋量不足，判不了"
 
 msgid "grade:brilliance_entry"
-msgstr "入選要同時滿足三條：走出引擎首選、該首選的 policy 先驗 < 10%（連引擎直覺都沒想到）、局面還沒定。"
+msgstr "妙手需滿足：實戰走出AI深入計算後的首選；AI初選機率低於10%（官子低於6%）；局面勝負尚未確定。"
+
+msgid "grade:initial_probability_help"
+msgstr "AI初選機率指AI深入計算前對這步棋的選擇機率，不是勝率，也不是人類落子機率。初選機率很低的招法，也可能在深入計算後成為首選。"
 
 msgid "grade:match_timeline_legend"
 msgstr "滿格實色 = 走中一選，半高淺色 = 進前三，底色 = 其他"
@@ -3883,7 +3895,7 @@ msgid "grade:sel_bad"
 msgstr "第 {n} 手 {m} · {s} · {g} · 目損 {x} 目"
 
 msgid "grade:sel_brilliant"
-msgstr "第 {n} 手 {m} · {s} · 妙度 {k} —— 走的就是引擎首選，而引擎自己只給了 {p}% 先驗（越低越妙）"
+msgstr "第 {n} 手 {m} · {s} · 妙度 {k} —— AI初選機率僅為 {p}%，深入計算後成為首選"
 
 msgid "grade:truncated_plot"
 msgstr "圖上每方最多畫 {k} 條，另有 {n} 處未畫出"
@@ -6764,16 +6776,22 @@ msgid "baipu:wrong_title"
 msgstr "放錯了 · 應該在 {c}"
 
 msgid "kifu:detail_offline"
-msgstr "這一局要連網才能讀"
+msgstr "無法連線至棋譜庫"
 
 msgid "kifu:detail_offline_hint"
-msgstr "棋譜庫在雲端，這台盒子現在連不上。"
+msgstr "請檢查網路連線，或稍後再試。"
 
 msgid "kifu:list_offline"
-msgstr "棋譜庫要連網才能搜"
+msgstr "無法連線至棋譜庫"
 
 msgid "kifu:list_offline_hint"
-msgstr "這台盒子現在連不上雲端。擺過的譜和匯入的 SGF 不受影響。"
+msgstr "請檢查網路連線，或稍後再試。"
+
+msgid "kifu:service_unavailable"
+msgstr "棋譜庫暫時無法使用"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "雲端服務暫時出了問題，請稍後再試。"
 
 msgid "kifu:wrong_size_reason"
 msgstr "這是 {n} 路的譜 —— 實體盤只擺得了 19 路"
@@ -6930,3 +6948,6 @@ msgstr "確認登入失敗"
 
 msgid "vision:not_a_stone"
 msgstr "不是落子"
+
+msgid "report:score_difference"
+msgstr "目差"

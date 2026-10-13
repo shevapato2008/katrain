@@ -1,0 +1,19 @@
+{
+  "status": "pending_independent_root_name_review",
+  "producer_id": "/root/next_chinese_event_native_prep",
+  "producer_model": "gpt-6-sol",
+  "produced_at": "2026-10-08T22:53:00.501465+00:00",
+  "raw_owners": 150,
+  "proposed_name_cells": 750,
+  "source_matrix_canonical_sha256": "5ff473a4fe24c7aedfc6b5283601d7996b2343341445ebb36fe50496de6a635d",
+  "owner_manifest_canonical_sha256": "aa8e33006d43f0b23736555a4b0a072e0f3c1311354a703f55d3ff300816f2e4",
+  "postowner_capture_file_sha256": {
+    "TEST": "c161ea2358a9abb93ea26e488f9d20828bafc0a02bc93c84026d52fe45499ebf",
+    "PROD": "efa88e62e7949a00ef46f0addf668eb8b0764a41fa0ecc02aebece3e9a352ee0"
+  },
+  "pending_artifact_canonical_sha256": {
+    "TEST": "c367fc4092344ee821f19b982ef35f8d4f28877d506a7b1b56704881778bdc2f",
+    "PROD": "289e5413e29f426f6b7668978185e7c51880c6e3e722f6ae4fb06c84e512aa46"
+  },
+  "approval": null
+}

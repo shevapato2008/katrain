@@ -42,3 +42,14 @@ def test_large_shift_requires_three_consecutive_frames():
     assert second.degraded is False
     assert third.degraded is True
     assert third.shift_cells > 0.20
+
+
+def test_wrong_size_frame_is_uncertain_and_does_not_count_toward_drift():
+    reference = _grid()
+    monitor = GeometryDriftMonitor(reference, cell_spacing_px=40)
+    for _ in range(3):
+        assert monitor.update(reference[:100, :100]).degraded is False
+    shifted = _translate(reference, 9, 0)
+    assert monitor.update(shifted).degraded is False
+    assert monitor.update(shifted).degraded is False
+    assert monitor.update(shifted).degraded is True

@@ -12,7 +12,6 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
-  Paper,
   Skeleton,
   Stack,
   Typography,
@@ -74,8 +73,8 @@ const Stone = ({ white = false }: { white?: boolean }) => (
   <Box
     aria-hidden
     sx={{
-      width: 84,
-      height: 84,
+      width: 64,
+      height: 64,
       borderRadius: '50%',
       flex: '0 0 auto',
       bgcolor: white ? '#e8e8e2' : '#090a09',
@@ -171,25 +170,25 @@ const AiLadderRatedSetup = ({
 
   if (lifecycleReceipt && status.view_state !== 'ready') {
     return (
-      <Paper component="section" sx={{ width: '100%', p: { xs: 3, md: 4 }, borderRadius: 3 }}>
+      <Box component="section" className="galaxy-play-stage galaxy-play-stage__main">
         <Typography sx={{ fontSize: 34, lineHeight: 1.15, fontWeight: 800 }}>结算已完成</Typography>
         <Alert severity={lifecycleReceipt.counted ? 'success' : 'warning'} sx={{ mt: 3 }}>
           {receiptMessage(lifecycleReceipt.counted, lifecycleReceipt.reason)}
         </Alert>
-      </Paper>
+      </Box>
     );
   }
 
   if (status.view_state === 'loading') {
-    return <Paper sx={{ p: 4, borderRadius: 3 }}><Skeleton height={420} /></Paper>;
+    return <Box className="galaxy-play-stage galaxy-play-stage__main"><Skeleton height={420} /></Box>;
   }
 
   if (status.view_state === 'error') {
     return (
-      <Paper sx={{ p: 4, borderRadius: 3 }}>
+      <Box className="galaxy-play-stage galaxy-play-stage__main">
         <Alert severity="error" sx={{ mb: 2 }}>{status.message || AI_LADDER_COPY.loadError}</Alert>
-        <Button variant="outlined" onClick={onRetry}>重试</Button>
-      </Paper>
+        <Button variant="outlined" onClick={onRetry} sx={{ minHeight: 44 }}>重试</Button>
+      </Box>
     );
   }
 
@@ -213,7 +212,7 @@ const AiLadderRatedSetup = ({
   if (lifecycleReceipt) {
     challengeContent = (
       <>
-        <Typography color="text.secondary" fontWeight={650}>本局挑战</Typography>
+        <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600 }}>本局挑战</Typography>
         <Box sx={{ my: 'auto', py: 6 }}>
           <Typography sx={{ fontSize: 34, lineHeight: 1.15, fontWeight: 800 }}>结算已完成</Typography>
           <Alert severity={lifecycleReceipt.counted ? 'success' : 'warning'} sx={{ mt: 3 }}>
@@ -236,8 +235,8 @@ const AiLadderRatedSetup = ({
 
     challengeContent = (
       <>
-        <Typography color="text.secondary" fontWeight={650}>未完成对局</Typography>
-        <Stack direction="row" alignItems="center" gap={3} sx={{ mt: 3 }}>
+        <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600 }}>未完成对局</Typography>
+        <Stack direction="row" alignItems="center" gap={2}>
           <Stone white={blockingGame.user_color === 'W'} />
           <Box>
             <Typography variant="h6" fontWeight={800}>智星棋手</Typography>
@@ -274,7 +273,7 @@ const AiLadderRatedSetup = ({
               onClick={() => blockingGame.session_id && onContinue?.(blockingGame.session_id)}
               disabled={lifecyclePending || !onContinue}
               startIcon={lifecyclePending ? <CircularProgress size={18} color="inherit" /> : undefined}
-              sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
+              sx={{ minHeight: 44, fontSize: 16, fontWeight: 600 }}
             >
               继续对局
             </Button>
@@ -287,7 +286,7 @@ const AiLadderRatedSetup = ({
               onClick={() => onRetrySettlement?.(blockingGame.game_id)}
               disabled={syncRetryPending}
               startIcon={syncRetryPending ? <CircularProgress size={18} color="inherit" /> : undefined}
-              sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
+              sx={{ minHeight: 44, fontSize: 16, fontWeight: 600 }}
             >
               {syncRetryPending ? '正在重试…' : '立即重试'}
             </Button>
@@ -300,7 +299,7 @@ const AiLadderRatedSetup = ({
               color={displace.color}
               onClick={() => setArmedGameId(blockingGame.game_id)}
               disabled={lifecyclePending || !onEndGame}
-              sx={{ minHeight: 48, fontWeight: 750 }}
+              sx={{ minHeight: 44, fontWeight: 600 }}
             >
               {displace.button}
             </Button>
@@ -333,7 +332,7 @@ const AiLadderRatedSetup = ({
     // 不是没接线。所以这里不修前端,修的是上线顺序。
     challengeContent = (
       <>
-        <Typography color="text.secondary" fontWeight={650}>未完成对局</Typography>
+        <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600 }}>未完成对局</Typography>
         <Box sx={{ my: 'auto', py: 6 }}>
           <Typography sx={{ fontSize: 24, lineHeight: 1.4, fontWeight: 800 }}>
             这一局已经下完，成绩还没送到云端。
@@ -351,7 +350,7 @@ const AiLadderRatedSetup = ({
           onClick={onRetry}
           disabled={lifecyclePending}
           startIcon={lifecyclePending ? <CircularProgress size={18} color="inherit" /> : undefined}
-          sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
+          sx={{ minHeight: 44, fontSize: 16, fontWeight: 600 }}
         >
           刷新状态
         </Button>
@@ -360,28 +359,28 @@ const AiLadderRatedSetup = ({
   } else {
     challengeContent = (
       <>
-        <Typography color="text.secondary" fontWeight={650}>本局挑战</Typography>
-        <Stack direction="row" alignItems="center" gap={3} sx={{ mt: 3 }}>
+        <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600 }}>本局挑战</Typography>
+        <Stack direction="row" alignItems="center" gap={2}>
           <Stone white={color === 'W'} />
           <Box>
             <Typography variant="h6" fontWeight={800}>智星棋手</Typography>
             <Typography sx={{ mt: 0.5, fontSize: 34, lineHeight: 1.1, fontWeight: 800 }}>{opponent?.rank_name ?? '—'}</Typography>
-            <Stack direction="row" gap={1} sx={{ mt: 1.5 }}>
+            <Stack direction="row" gap={1} sx={{ mt: 1.5, flexWrap: 'wrap' }}>
               <Chip size="small" label={opponent?.certification_status === 'certified' ? '已认证' : '暂定'} variant="outlined" color="success" />
               <Chip size="small" label="计入升降级" variant="outlined" color="success" />
             </Stack>
           </Box>
         </Stack>
 
-        <Divider sx={{ my: 3 }} />
+        <Divider />
         <Conditions mainTime={mainTime} byoLength={byoLength} byoPeriods={byoPeriods} />
-        <Divider sx={{ my: 3 }} />
+        <Divider />
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
+        <Stack gap={1}>
           <Typography color="text.secondary">选择执子</Typography>
           <Stack direction="row" sx={{ p: 0.5, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-            <Button onClick={() => onColorChange('B')} variant={color === 'B' ? 'contained' : 'text'} color="inherit" sx={{ minWidth: 76 }}>● 黑棋</Button>
-            <Button onClick={() => onColorChange('W')} variant={color === 'W' ? 'contained' : 'text'} color="inherit" sx={{ minWidth: 76 }}>○ 白棋</Button>
+            <Button aria-pressed={color === 'B'} onClick={() => onColorChange('B')} variant={color === 'B' ? 'contained' : 'text'} color="inherit" sx={{ minHeight: 44, flex: 1 }}>● 黑棋</Button>
+            <Button aria-pressed={color === 'W'} onClick={() => onColorChange('W')} variant={color === 'W' ? 'contained' : 'text'} color="inherit" sx={{ minHeight: 44, flex: 1 }}>○ 白棋</Button>
           </Stack>
         </Stack>
 
@@ -393,7 +392,7 @@ const AiLadderRatedSetup = ({
         )}
         {block === 'rung_not_certified' && <Alert severity="warning" sx={{ mt: 2 }}>{AI_LADDER_COPY.unavailable}</Alert>}
 
-        <Box sx={{ mt: 'auto', pt: 4 }}>
+        <Box sx={{ mt: 'auto', pt: 1 }}>
           <Button
             fullWidth
             size="large"
@@ -401,7 +400,7 @@ const AiLadderRatedSetup = ({
             onClick={onStart}
             disabled={block !== null || startPending}
             startIcon={startPending ? <CircularProgress size={18} color="inherit" /> : undefined}
-            sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
+            sx={{ minHeight: 44, fontSize: 16, fontWeight: 600 }}
           >
             {startPending ? '正在开始…' : '开始正式对局'}
           </Button>
@@ -416,28 +415,19 @@ const AiLadderRatedSetup = ({
 
   return (
     <>
-      <Paper
+      <Box
         component="section"
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) minmax(340px, 402px)' },
-          overflow: 'hidden',
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
-          boxShadow: '0 18px 50px rgba(0,0,0,.18)',
-        }}
+        className="galaxy-play-stage galaxy-play-stage--split"
       >
-      <Box sx={{ p: { xs: 3, md: 4 }, minHeight: { lg: 560 }, display: 'flex', flexDirection: 'column' }}>
+      <Box className="galaxy-play-stage__main" sx={{ minHeight: 480, display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 3, flexWrap: 'wrap' }}>
           <Box>
             <Typography color="text.secondary" fontWeight={650}>当前段位</Typography>
-            <Stack direction="row" alignItems="baseline" gap={1.5} sx={{ mt: 1 }}>
-              <Typography data-testid="current-rank" sx={{ fontSize: { xs: 64, md: 88 }, lineHeight: 1, fontWeight: 800, letterSpacing: '-0.07em' }}>
+            <Stack direction="row" alignItems="baseline" gap={1.5} sx={{ mt: 1, flexWrap: 'wrap' }}>
+              <Typography data-testid="current-rank" sx={{ fontSize: 66, lineHeight: 1.25, fontWeight: 600 }}>
                 {publicRank}
               </Typography>
-              {placed && <Typography color="text.secondary" sx={{ fontSize: 22, fontWeight: 700 }}>41 阶棋力体系</Typography>}
+              {placed && <Typography color="text.secondary" sx={{ fontSize: 16 }}>41 阶棋力体系</Typography>}
             </Stack>
             {!placed && (
               <Typography sx={{ mt: 2, color: 'text.secondary' }}>
@@ -446,7 +436,7 @@ const AiLadderRatedSetup = ({
             )}
           </Box>
 
-          <Box sx={{ minWidth: 220 }}>
+          <Box sx={{ minWidth: 128, textAlign: 'right' }}>
             <Typography color="text.secondary" fontWeight={650}>最近五局</Typography>
             <Typography sx={{ mt: 1.25, wordSpacing: 12, fontWeight: 750 }}>{resultText || '暂无记录'}</Typography>
           </Box>
@@ -455,10 +445,10 @@ const AiLadderRatedSetup = ({
         <Box sx={{ mt: 'auto', pt: 6 }}>
           <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={2}>
             <Box>
-              <Typography sx={{ fontSize: 20, fontWeight: 800 }}>本阶进度</Typography>
+              <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600 }}>本阶进度</Typography>
               <Typography variant="body2" color="text.secondary">最近对局只作展示，净胜分决定晋降级</Typography>
             </Box>
-            <Typography sx={{ fontSize: 46, lineHeight: 1, fontWeight: 800, color: 'success.light' }}>
+            <Typography sx={{ fontSize: 36, lineHeight: 1, fontWeight: 600, color: 'success.light' }}>
               {status.net_score > 0 ? '+' : ''}{status.net_score}
             </Typography>
           </Stack>
@@ -481,10 +471,10 @@ const AiLadderRatedSetup = ({
         </Box>
       </Box>
 
-      <Box sx={{ p: { xs: 3, md: 4 }, borderLeft: { lg: '1px solid' }, borderTop: { xs: '1px solid', lg: 0 }, borderColor: 'divider !important', display: 'flex', flexDirection: 'column' }}>
+      <Box component="aside" className="galaxy-play-stage__side">
         {challengeContent}
       </Box>
-      </Paper>
+      </Box>
 
       {/* 标题、正文、确认按钮全部按 `armedGame` 现算 —— 同一块弹窗要说两件不同的事:
           有棋盘的那两格是「认输、记一场负」,`reserved` 那格是「让掉、不记成绩」。
@@ -494,7 +484,7 @@ const AiLadderRatedSetup = ({
         <DialogContent>
           <DialogContentText>{armedGame && displaceCopy(armedGame).body}</DialogContentText>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ '& .MuiButton-root': { minHeight: 44 } }}>
           <Button autoFocus onClick={() => setArmedGameId(null)}>取消</Button>
           <Button
             color={armedGame ? displaceCopy(armedGame).color : 'error'}

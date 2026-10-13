@@ -7,9 +7,11 @@ mapping, the strict SHOW-ack path, queue-full dropping, and reconnect.
 
 import importlib.util
 import logging
+import subprocess
 import sys
 import threading
 import time
+import uuid
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -240,6 +242,227 @@ def _make_service(ack="OK", clock=None):
     return svc, fake
 
 
+def test_same_led_port_is_busy_until_owner_stops():
+    port = f"led-{uuid.uuid4().hex}"
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    second_open_calls = []
+
+    def second_factory():
+        second_open_calls.append(True)
+        return FakeSerial()
+
+    second = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=second_factory)
+    first.start()
+    try:
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            second.start()
+        assert second_open_calls == []
+    finally:
+        first.stop()
+    second.start()
+    try:
+        assert second.is_connected()
+    finally:
+        second.stop()
+
+
+def test_different_led_ports_do_not_block_each_other():
+    port = uuid.uuid4().hex
+    first = LedService(LedServiceConfig(enabled=True, serial_port=f"{port}-1"), serial_factory=FakeSerial)
+    second = LedService(LedServiceConfig(enabled=True, serial_port=f"{port}-2"), serial_factory=FakeSerial)
+    first.start()
+    try:
+        second.start()
+        assert second.is_connected()
+    finally:
+        second.stop()
+        first.stop()
+
+
+def test_failed_led_open_releases_port_for_another_service():
+    port = f"led-{uuid.uuid4().hex}"
+
+    def fail_open():
+        raise OSError("serial unplugged")
+
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=fail_open, clock=lambda: 0.0)
+    first.start()
+    try:
+        assert not first.is_connected()
+        second = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+        second.start()
+        try:
+            assert second.is_connected()
+        finally:
+            second.stop()
+    finally:
+        first.stop()
+
+
+def test_led_reconnect_conflict_requires_explicit_stop_start_after_peer_releases():
+    port = f"led-{uuid.uuid4().hex}"
+    clock = FakeClock()
+    clock.t = 0.0
+    state = {"available": False, "open_calls": 0}
+
+    def factory():
+        state["open_calls"] += 1
+        if not state["available"]:
+            raise OSError("serial unplugged")
+        return FakeSerial()
+
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=factory, clock=clock)
+    peer = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    first.start()
+    peer.start()
+    try:
+        state["available"] = True
+        clock.advance(10)
+        assert first.clear(strict=True)["ok"] is False  # Worker reconnect encounters the peer's lease.
+        peer.stop()
+        clock.advance(10)
+
+        assert first.clear(strict=True)["ok"] is False
+        assert first.is_connected() is False
+        assert state["open_calls"] == 1
+
+        first.stop()
+        first.start()
+        assert first.clear(strict=True)["ok"] is True
+        assert state["open_calls"] == 2
+    finally:
+        peer.stop()
+        first.stop()
+
+
+def test_led_stop_keeps_lease_until_blocked_reconnect_finishes(monkeypatch):
+    port = f"led-{uuid.uuid4().hex}"
+    reconnect_entered = threading.Event()
+    reconnect_resume = threading.Event()
+    fake = FakeSerial()
+    calls = []
+
+    def factory():
+        calls.append(True)
+        if len(calls) == 1:
+            raise OSError("serial unplugged")
+        reconnect_entered.set()
+        assert reconnect_resume.wait(timeout=5)
+        return fake
+
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=factory)
+    peer = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    first.start()
+    worker = first._thread
+    original_join = worker.join
+    try:
+        assert reconnect_entered.wait(timeout=2)
+        monkeypatch.setattr(first, "clear", lambda **kwargs: {"ok": False})
+        monkeypatch.setattr(worker, "join", lambda timeout=None: original_join(timeout=0.01))
+        first.stop()
+
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        assert first.is_connected() is False
+
+        reconnect_resume.set()
+        original_join(timeout=2)
+        assert not worker.is_alive()
+        assert fake.closed is True
+        assert fake.written == []
+        assert first.is_connected() is False
+        peer.start()
+        assert peer.is_connected() is True
+    finally:
+        reconnect_resume.set()
+        original_join(timeout=2)
+        peer.stop()
+        first.stop()
+
+
+def test_led_explicit_restart_discards_previous_worker_stop_sentinel(monkeypatch):
+    entered = threading.Event()
+    resume = threading.Event()
+
+    class BlockedSerial(FakeSerial):
+        def write(self, data):
+            if data == b"CLEAR\n" and not resume.is_set():
+                entered.set()
+                assert resume.wait(timeout=5)
+            super().write(data)
+
+    serials = [BlockedSerial(), FakeSerial()]
+    svc = LedService(
+        LedServiceConfig(enabled=True, serial_port=f"led-{uuid.uuid4().hex}"),
+        serial_factory=lambda: serials.pop(0),
+    )
+    svc.start()
+    worker = svc._thread
+    original_join = worker.join
+    original_clear = svc.clear
+    try:
+        svc.set_points([], strict=False)
+        assert entered.wait(timeout=2)
+        monkeypatch.setattr(svc, "clear", lambda **kwargs: {"ok": False})
+        monkeypatch.setattr(worker, "join", lambda timeout=None: original_join(timeout=0.01))
+        svc.stop()
+        resume.set()
+        original_join(timeout=2)
+        assert not worker.is_alive()
+        assert svc._queue.qsize() == 1  # Stop sentinel was never consumed by the old worker.
+
+        monkeypatch.setattr(svc, "clear", original_clear)
+        svc.start()
+        assert svc.clear(strict=True)["ok"] is True
+    finally:
+        resume.set()
+        original_join(timeout=2)
+        monkeypatch.setattr(svc, "clear", lambda **kwargs: {"ok": False})
+        svc.stop()
+
+
+def test_led_worker_start_failure_releases_port(monkeypatch):
+    port = f"led-{uuid.uuid4().hex}"
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    original_start = threading.Thread.start
+
+    def fail_thread_start(_thread):
+        raise RuntimeError("worker could not start")
+
+    monkeypatch.setattr(threading.Thread, "start", fail_thread_start)
+    with pytest.raises(RuntimeError, match="worker could not start"):
+        first.start()
+    monkeypatch.setattr(threading.Thread, "start", original_start)
+
+    second = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    second.start()
+    try:
+        assert second.is_connected()
+    finally:
+        second.stop()
+
+
+def test_led_port_lease_blocks_another_process():
+    port = f"led-{uuid.uuid4().hex}"
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    script = """import sys
+from katrain.web.core.device_lease import DeviceBusy, DeviceLease
+try:
+    lease = DeviceLease.acquire('led', sys.argv[1])
+except DeviceBusy:
+    sys.exit(0)
+else:
+    lease.release()
+    sys.exit(1)
+"""
+    first.start()
+    try:
+        result = subprocess.run([sys.executable, "-c", script, port], capture_output=True, text=True, timeout=5)
+        assert result.returncode == 0, result.stderr
+    finally:
+        first.stop()
+
+
 class TestColorsAndProtocol:
     def test_rgb_frame_can_show_blackout_and_new_points_in_one_batch(self):
         svc, fake = _make_service()
@@ -251,9 +474,7 @@ class TestColorsAndProtocol:
                 blank_before=True,
             )
             assert result["ok"] is True
-            assert fake.written[1:6] == [
-                "CLEAR", "SHOW", "CLEAR", f"SETI {rc2idx(3, 16)} 0 96 0", "SHOW"
-            ]
+            assert fake.written[1:6] == ["CLEAR", "SHOW", "CLEAR", f"SETI {rc2idx(3, 16)} 0 96 0", "SHOW"]
         finally:
             svc.stop()
 
@@ -727,9 +948,16 @@ def _capturing_service():
 def test_guidance_brightness_scales_every_lamp_and_never_turns_a_lit_channel_off():
     svc, sent = _capturing_service()
     svc.set_guidance_scale(0.5)
-    svc.set_points([{"row": 3, "col": 3, "color": "white"}, {"row": 4, "col": 4, "color": "hint"}])
+    svc.set_points(
+        [
+            {"row": 3, "col": 3, "color": "white"},
+            {"row": 4, "col": 4, "color": "hint"},
+            {"row": 5, "col": 5, "color": "black"},
+        ]
+    )
     assert sent[-1][1] == f"SETI {rc2idx(3, 3)} 0 128 0"
     assert sent[-1][2] == f"SETI {rc2idx(4, 4)} 128 128 128"
+    assert sent[-1][3] == f"SETI {rc2idx(5, 5)} 128 0 0"
     svc.set_guidance_scale(0.0)  # clamped to the floor; a lit channel stays lit
     svc.set_points([{"row": 3, "col": 3, "color": "white"}])
     green = int(sent[-1][1].split()[3])
@@ -752,3 +980,247 @@ def test_calibration_lamps_are_never_scaled():
     svc.set_guidance_scale(0.25)
     svc.set_rgb_points([{"row": 9, "col": 9, "rgb": (0, 255, 0)}])
     assert sent[-1][1] == f"SETI {rc2idx(9, 9)} 0 255 0"
+
+
+class LinkSerial(FakeSerial):
+    """Production LINK emits one standalone status line, without an OK."""
+
+    def __init__(self, response, clock):
+        super().__init__()
+        self.response = response
+        self.clock = clock
+        self.timeout = 2.0
+        self.read_timeouts = []
+        self.late = None
+        self.command_threads = []
+
+    def reset_input_buffer(self):
+        self._buf.clear()
+
+    def write(self, data):
+        command = data.decode("ascii").strip()
+        self.command_threads.append(threading.current_thread().name)
+        self.written.append(command)
+        if command == "LINK":
+            if self.response:
+                self._buf.append((self.response + "\n").encode("ascii"))
+        else:
+            if self.late:
+                self._buf.append((self.late + "\n").encode("ascii"))
+                self.late = None
+            self._buf.append(b"OK\n")
+
+    def readline(self):
+        self.read_timeouts.append(self.timeout)
+        if not self._buf:
+            self.clock.advance(self.timeout)
+        return super().readline()
+
+    def read(self, size=1):
+        self.read_timeouts.append(self.timeout)
+        if not self._buf:
+            self.clock.advance(self.timeout)
+            return b""
+        data = self._buf[0][:size]
+        self._buf[0] = self._buf[0][size:]
+        if not self._buf[0]:
+            self._buf.pop(0)
+        return data
+
+
+def _link_service(response):
+    clock = FakeClock()
+    serial = LinkSerial(response, clock)
+    svc = LedService(LedServiceConfig(enabled=True, serial_port="fake"), clock=clock)
+    svc._serial = serial
+    svc._connected = True  # Board B handshake succeeded, independently of Board A.
+    return svc, serial, clock
+
+
+def _link_line(cc="RD", ack="OK", link="UP"):
+    return f"LINK cc={cc} cc_raw=1234 cc_mv=1500 ack={ack} ack_raw=3000 ack_mv=2900 link={link}"
+
+
+@pytest.mark.parametrize(
+    "cc,ack,link,expected",
+    [
+        ("RD", "OK", "UP", True),
+        ("RA", "OK", "UP", True),
+        ("OPEN", "OK", "UP", True),
+        ("OPEN", "ABSENT", "DOWN", False),
+        ("OPEN", "WEAK", "DOWN", False),
+        ("RD", "WEAK", "CABLE_ONLY", False),
+        ("RA", "ABSENT", "CABLE_ONLY", False),
+    ],
+)
+def test_board_a_status_uses_firmware_ack_priority(cc, ack, link, expected):
+    svc, serial, clock = _link_service(_link_line(cc, ack, link))
+    assert svc.is_board_connected() is None
+    svc._poll_board_link()
+    assert svc.is_connected() is True
+    assert svc.is_board_connected() is expected
+    assert svc.board_status() == {"connected": expected, "board_link": link, "cc": cc, "ack": ack}
+    assert serial.timeout == 2.0
+    assert serial.read_timeouts
+    assert all(0 < timeout <= 0.2 + 0.0001 for timeout in serial.read_timeouts)
+    writes = list(serial.written)
+    clock.advance(6.1)
+    assert svc.is_board_connected() is None
+    assert serial.written == writes  # Status getters never touch serial.
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        "",
+        "ERR cmd",
+        "LINK cc=RD ack=OK link=UP",
+        _link_line("RD", "ABSENT", "UP"),
+        _link_line("OPEN", "OK", "DOWN"),
+        _link_line("OPEN", "ABSENT", "CABLE_ONLY"),
+        _link_line("RD", "ABSENT", "DOWN"),
+        _link_line("UNKNOWN", "OK", "UP"),
+        _link_line("RD", "UNKNOWN", "UP"),
+        _link_line("RD", "OK", "UNKNOWN"),
+        _link_line().replace("ack_raw=3000", "ack_raw=bad"),
+    ],
+)
+def test_board_a_missing_or_invalid_status_is_unknown(response):
+    svc, serial, clock = _link_service(response)
+    svc._poll_board_link()
+    assert svc.is_board_connected() is None
+    assert svc.is_connected() is True
+    assert serial.timeout == 2.0
+    assert clock() <= 1000.2 + 0.0001
+
+
+def test_board_a_cache_invalidates_on_failure_disconnect_and_reopen():
+    svc, serial, _ = _link_service(_link_line())
+    svc._poll_board_link()
+    assert svc.is_board_connected() is True
+    serial.response = "ERR cmd"
+    svc._poll_board_link()
+    assert svc.is_board_connected() is None
+    serial.response = _link_line()
+    svc._poll_board_link()
+    svc._close_serial()
+    assert svc.is_board_connected() is None
+    replacement = FakeSerial()
+    svc._serial_factory = lambda: replacement
+    svc._open_serial()
+    try:
+        assert svc.is_connected() is True
+        assert svc.is_board_connected() is None
+    finally:
+        svc._close_serial()
+
+
+def test_next_link_poll_discards_buffered_late_status_instead_of_refreshing_it():
+    svc, serial, _ = _link_service("")
+    svc._poll_board_link()
+    serial._buf.append((_link_line() + "\n").encode("ascii"))
+    serial.response = _link_line("OPEN", "ABSENT", "DOWN")
+    svc._poll_board_link()
+    assert svc.is_board_connected() is False
+
+
+def test_link_read_budget_is_total_even_when_bytes_arrive_slowly():
+    svc, serial, clock = _link_service(_link_line())
+
+    def read_one(_size):
+        # A partial line trickles in; each byte uses some of the remaining budget.
+        clock.advance(min(serial.timeout, 0.08))
+        return b"L"
+
+    def unbounded_readline():
+        clock.advance(1.0)
+        return (_link_line() + "\n").encode("ascii")
+
+    serial.read = read_one
+    serial.readline = unbounded_readline
+    svc._poll_board_link()
+    assert svc.is_board_connected() is None
+    assert clock() <= 1000.2 + 0.0001
+    assert serial.timeout == 2.0
+
+
+@pytest.mark.parametrize("late", [_link_line(), "ERR cmd"])
+def test_late_link_response_does_not_consume_clear_or_show_ack(late):
+    svc, serial, _ = _link_service("")
+    svc._poll_board_link()
+    serial.late = late
+    batch = _led_service._Batch(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=True)
+    svc._run_batch(batch)
+    assert batch.result["ok"] is True
+    assert batch.result["shown_at"] is not None
+    assert svc.is_board_connected() is None
+    assert serial.written == ["LINK", "CLEAR", "SETI 0 255 0 0", "SHOW"]
+
+
+@pytest.mark.parametrize("show_ack", [False, True])
+@pytest.mark.parametrize("tail_reads", [1, 2])
+def test_truncated_link_ack_tail_cannot_shift_command_acknowledgements(show_ack, tail_reads):
+    svc, serial, clock = _link_service("")
+    prefix, tail = _link_line().split("ack=", 1)
+
+    def write(data):
+        command = data.decode("ascii").strip()
+        serial.written.append(command)
+        if command == "LINK":
+            serial._buf.append((prefix + "ack=").encode("ascii"))  # No newline before the 200ms deadline.
+        elif command == "CLEAR":
+            if tail_reads == 2:
+                serial._buf.append(b"OK")  # The late tail can itself span a read timeout.
+                remaining_tail = tail[2:]
+            else:
+                remaining_tail = tail
+            serial._buf.extend([(remaining_tail + "\n").encode("ascii"), b"OK\n"])
+        elif command != "SHOW" or show_ack:
+            serial._buf.append(b"OK\n")
+
+    serial.write = write
+    svc._poll_board_link()
+    assert svc.is_board_connected() is None
+    assert clock() <= 1000.2 + 0.0001
+    assert serial.timeout == 2.0
+    batch = _led_service._Batch(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=True)
+    svc._run_batch(batch)
+    assert batch.result["ok"] is show_ack
+    if show_ack:
+        assert batch.result["shown_at"] is not None
+        assert batch.result["errors"] == []
+        assert serial._buf == []  # SHOW consumed its own ACK, not a shifted earlier one.
+    else:
+        assert batch.result["shown_at"] is None
+        assert batch.result["errors"] == ["SHOW -> no-ack"]
+
+
+@pytest.mark.parametrize("response,poll_interval", [(_link_line(), 2.0), ("ERR cmd", 10.0)])
+def test_worker_polls_link_between_complete_batches_and_backs_off_old_firmware(response, poll_interval):
+    svc, serial, clock = _link_service(response)
+    first = _led_service._Batch(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=True)
+    second = _led_service._Batch(["CLEAR", "SHOW"], strict=True)
+    svc._queue.put(first)
+    svc._queue.put(second)
+    worker = threading.Thread(target=svc._worker, name="led-serial")
+    worker.start()
+    try:
+        assert first.event.wait(1)
+        assert second.event.wait(1)
+        deadline = time.monotonic() + 1
+        while serial.written.count("LINK") < 1 and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert serial.written == ["CLEAR", "SETI 0 255 0 0", "SHOW", "CLEAR", "SHOW", "LINK"]
+        clock.advance(poll_interval - 0.1)
+        time.sleep(0.25)
+        assert serial.written.count("LINK") == 1
+        clock.advance(0.2)
+        deadline = time.monotonic() + 1
+        while serial.written.count("LINK") < 2 and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert serial.written.count("LINK") == 2
+        assert set(serial.command_threads) == {"led-serial"}
+    finally:
+        svc._stop.set()
+        svc._queue.put(_led_service._SENTINEL)
+        worker.join(timeout=1)

@@ -88,3 +88,12 @@ test('对局屏有顶栏、没 Dock', () => {
   expect(screen.getByTestId('kiosk-brand-zh')).toBeInTheDocument();
   expect(screen.queryByRole('navigation', { name: '主导航' })).not.toBeInTheDocument();
 });
+
+test('gated page suppresses the private console rail and engine feedback', () => {
+  render(<EngineReadinessContext.Provider value="warming"><MemoryRouter initialEntries={['/kiosk/kifu']}><Routes>
+    <Route element={<KioskLayout username="身份待确认" accessBlocked />}><Route path="/kiosk/kifu" element={<div>gate</div>} /></Route>
+  </Routes></MemoryRouter></EngineReadinessContext.Provider>);
+  expect(document.querySelector('.kiosk-console')).not.toBeInTheDocument();
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  expect(screen.getByTestId('header-username')).toHaveTextContent('身份待确认');
+});

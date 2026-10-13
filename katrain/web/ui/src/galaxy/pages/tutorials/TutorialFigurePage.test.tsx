@@ -6,6 +6,9 @@ import TutorialFigurePage from './TutorialFigurePage';
 import { TutorialAPI } from '../../api/tutorialApi';
 import { useAuth } from '../../../context/AuthContext';
 
+const playStone = vi.hoisted(() => vi.fn());
+vi.mock('../../../hooks/useSound', () => ({ useSound: () => ({ play: playStone }) }));
+
 vi.mock('../../api/tutorialApi', () => ({
   TutorialAPI: {
     getSection: vi.fn(),
@@ -31,8 +34,9 @@ vi.mock('../../context/GameNavigationContext', () => ({
   useGameNavigation: () => ({ registerActiveGame: vi.fn(), unregisterActiveGame: vi.fn(), requestNavigation: vi.fn() }),
 }));
 
-vi.mock('../../components/tutorials/SGFBoard', () => ({
-  default: () => <div data-testid="sgf-board" />,
+vi.mock('../../components/tutorials/SGFBoard', async () => ({
+  ...(await vi.importActual<typeof import('../../components/tutorials/SGFBoard')>('../../components/tutorials/SGFBoard')),
+  default: ({ last }: { last?: [number, number] | null }) => <div data-testid="sgf-board" data-last={last?.join(',') ?? ''} />,
 }));
 
 vi.mock('../../components/tutorials/BoardEditToolbar', () => ({
@@ -115,6 +119,27 @@ describe('TutorialFigurePage', () => {
       narration: '新的讲解',
       audio_asset: 'tutorial_assets/test-buju/audio/fig_7.mp3',
     });
+  });
+
+  it('keeps initial figures silent and sounds only when the user selects an existing numbered stone', async () => {
+    (TutorialAPI.getSection as Mock).mockResolvedValue({ ...sectionResponse, figures: [
+      { ...sectionResponse.figures[0], board_payload: { size: 19, stones: { B: [[3, 3]], W: [[4, 4]] }, labels: { '3,3': '1', '4,4': '2', '5,5': '4' } } },
+    ] });
+    renderPage();
+    await screen.findByRole('slider', { name: '手数' });
+    expect(playStone).not.toHaveBeenCalled();
+    expect(screen.getByTestId('sgf-board')).toHaveAttribute('data-last', '');
+    fireEvent.change(screen.getByRole('slider', { name: '手数' }), { target: { value: 3 } });
+    expect(playStone).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole('slider', { name: '手数' }), { target: { value: 2 } });
+    expect(playStone).toHaveBeenCalledExactlyOnceWith('stone');
+    expect(screen.getByTestId('sgf-board')).toHaveAttribute('data-last', '4,4');
+    fireEvent.change(screen.getByRole('slider', { name: '手数' }), { target: { value: 1 } });
+    expect(playStone).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('sgf-board')).toHaveAttribute('data-last', '3,3');
+    fireEvent.change(screen.getByRole('slider', { name: '手数' }), { target: { value: 0 } });
+    expect(playStone).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('sgf-board')).toHaveAttribute('data-last', '');
   });
 
   it('lets the user edit narration and regenerate audio', async () => {

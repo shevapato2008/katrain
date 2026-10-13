@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智星盒 · 星阵大厅与实时观战 · 1024 × 600 审核稿</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../../katrain/web/ui/src/kiosk-shell/fonts.css">
+  <style>
+    :root { --bg:#0e1514; --top:#17221e; --panel:#17211f; --raise:#1e2b26; --line:#34473c; --text:#edf4ef; --muted:#a8b8af; --green:#6ac48c; --green-dark:#193b2a; --gold:#dfbc76; --red:#ed755e; --font:"SmartBox Sans","SmartBox Kai",system-ui,sans-serif; --serif:"SmartBox Serif","SmartBox Kai",Georgia,serif; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; background:#0a100e; color:var(--text); font-family:var(--font); }
+    button { font:inherit; color:inherit; cursor:pointer; touch-action:manipulation; }
+    button:focus-visible { outline:2px solid #a6efbd; outline-offset:2px; }
+    button:active { transform:scale(.98); }
+    [hidden] { display:none !important; }
+    .review { max-width:1120px; margin:0 auto; padding:24px 22px 42px; }
+    .review-head h1 { margin:0; font:600 26px/1.2 var(--serif); }
+    .review-head p { margin:8px 0 16px; color:#a6bab0; font-size:14px; line-height:1.55; }
+    .review-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 14px; }
+    .review-tabs button,.demo-btn { min-height:44px; padding:0 16px; border:1px solid #365244; border-radius:9px; background:#17241e; font-size:13px; }
+    .review-tabs button[aria-selected="true"] { background:#28583e; border-color:#70c791; color:#f4fff6; font-weight:700; }
+    .device-wrap { overflow:auto; padding-bottom:4px; }
+    .device { position:relative; width:1024px; height:600px; overflow:hidden; border:1px solid #44614e; background:var(--bg); box-shadow:0 20px 50px #0007; }
+    .device-top { display:flex; align-items:center; gap:10px; height:56px; padding:0 24px; background:var(--top); border-bottom:1px solid var(--line); }
+    .brand-mark { width:32px; height:32px; object-fit:contain; }
+    .brand { font:600 20px "SmartBox Brand LongCang",var(--serif); letter-spacing:.07em; white-space:nowrap; }
+    .brand-en { color:#a2b6aa; font:italic 11px var(--serif); }
+    .top-divider { width:1px; height:22px; margin:0 4px; background:#54715d; }
+    .device-top__mode { color:var(--green); font-size:13px; }
+    .device-top__clock { margin-left:auto; color:#b4c4bb; font:12px var(--font); font-variant-numeric:tabular-nums; }
+    .page { height:544px; padding:10px 16px 12px; }
+    .pagebar { position:relative; z-index:2; display:flex; align-items:center; gap:10px; height:48px; }
+    .back { flex:none; height:44px; min-width:108px; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--raise); font-size:13px; }
+    .pagebar .platform-mark { width:30px; height:30px; object-fit:contain; border-radius:7px; }
+    .page-title { min-width:0; font:600 17px var(--serif); white-space:nowrap; }
+    .pagebar__spacer { flex:1; }
+    .connected { display:flex; align-items:center; gap:6px; color:var(--green); font-size:12px; white-space:nowrap; }
+    .connected::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--green); }
+    .account-trigger { display:flex; align-items:center; gap:7px; height:44px; max-width:218px; padding:0 12px; border:1px solid #496b54; border-radius:9px; background:#1c3024; font-size:12px; }
+    .account-trigger b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+    .account-trigger svg { flex:none; width:12px; }
+    .section-label { display:flex; align-items:center; gap:8px; height:19px; margin:8px 0 6px; }
+    .section-label strong { font-size:13px; }
+    .section-label em { color:#8ea298; font:italic 11px var(--serif); }
+    .section-label::after { content:""; height:1px; flex:1; background:var(--line); }
+    .start-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .start-card { display:flex; align-items:center; gap:11px; height:68px; padding:0 13px; border:1px solid var(--line); border-radius:11px; background:var(--raise); text-align:left; }
+    .start-card:hover,.room-card:hover,.player-card:hover { border-color:#72c48d; background:#26382d; }
+    .start-icon { display:grid; place-items:center; width:38px; height:38px; flex:none; border:1px solid #3d6049; border-radius:9px; background:#182920; color:var(--green); font-size:20px; }
+    .start-card b { display:block; font:600 15px var(--serif); }
+    .start-card small { display:block; margin-top:3px; color:var(--muted); font-size:11px; }
+    .lobby { height:330px; display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--line); border-radius:11px; background:#141e1b; }
+    .lobby-bar { display:flex; align-items:center; gap:8px; flex:none; height:48px; padding:2px 7px; border-bottom:1px solid var(--line); }
+    .lobby-bar button { height:44px; min-width:114px; padding:0 13px; border:0; border-radius:8px; background:transparent; color:var(--muted); font-size:12px; }
+    .lobby-bar button[aria-selected="true"] { background:#2b4836; color:#d8f4dd; font-weight:700; }
+    .lobby-bar__hint { margin-left:auto; color:#a7b9ac; font-size:11px; }
+    .lobby-body { flex:1; min-height:0; overflow-y:auto; padding:7px; scrollbar-color:#577462 transparent; scrollbar-width:thin; }
+    .room-grid,.player-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .room-card { height:90px; min-width:0; padding:7px 10px; border:1px solid var(--line); border-radius:9px; background:var(--raise); text-align:left; }
+    .room-top { display:flex; align-items:center; gap:6px; height:20px; white-space:nowrap; }
+    .room-top b { font-size:13px; }
+    .tag { padding:2px 6px; border:1px solid #5a634c; border-radius:5px; color:#ebcc8b; font-size:11px; line-height:1.1; }
+    .tag--quiet { border-color:#41614b; color:#bedfc3; }
+    .viewers { margin-left:auto; color:#b2c6b7; font-size:12px; font-variant-numeric:tabular-nums; }
+    .room-mid { display:grid; grid-template-columns:minmax(0,1fr) 62px minmax(0,1fr); gap:5px; align-items:center; height:51px; }
+    .seat { display:flex; align-items:center; gap:7px; min-width:0; }
+    .seat--white { flex-direction:row-reverse; text-align:right; }
+    .seat-name { min-width:0; }
+    .seat-name b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:600; }
+    .seat-name small { display:block; margin-top:2px; color:#91d9a4; font-size:12px; }
+    .face { position:relative; display:grid; place-items:center; width:34px; height:34px; flex:none; border:1px solid #526e58; border-radius:7px; background:#31483a; color:#e5f3e6; font-size:13px; }
+    .face--circle { border-radius:50%; }
+    .seat .face::after { content:""; position:absolute; right:-3px; bottom:-3px; width:10px; height:10px; border:1px solid #91a79a; border-radius:50%; background:#101715; }
+    .seat--white .face::after { right:auto; left:-3px; background:#fffdf4; }
+    .mini-board { position:relative; display:block; width:28px; height:28px; margin:auto; border:1px solid #a67a42; border-radius:3px; background:#d7a35f; background-image:linear-gradient(#986b3f 1px,transparent 1px),linear-gradient(90deg,#986b3f 1px,transparent 1px); background-size:6px 6px; background-position:2px 2px; }
+    .mini-board::after { content:""; position:absolute; left:8px; top:8px; width:7px; height:7px; border-radius:50%; background:#101615; box-shadow:7px 7px 0 #fbf8eb; }
+    .room-progress { color:#b7c4b8; text-align:center; font-size:11px; }
+    .player-filters { display:flex; gap:8px; align-items:center; height:50px; padding-bottom:6px; }
+    .player-filters button { height:44px; min-width:80px; padding:0 10px; border:1px solid var(--line); border-radius:7px; background:#17241e; color:var(--muted); font-size:11px; }
+    .player-filters button[aria-pressed="true"] { background:#2c4b37; border-color:#73bd86; color:#eaf9ec; }
+    .player-filters small { margin-left:auto; color:#9fb4a5; font-size:10px; }
+    .player-card { display:flex; align-items:center; gap:9px; height:55px; min-width:0; width:100%; padding:5px 10px; border:1px solid var(--line); border-radius:8px; background:var(--raise); text-align:left; }
+    .player-card .face { width:35px; height:35px; }
+    .player-name { min-width:0; flex:1; }
+    .player-name b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+    .player-name small { display:block; margin-top:2px; color:#9fd8ad; font-size:11px; }
+    .player-card .record { flex:none; color:#c0d0c4; font-size:12px; font-variant-numeric:tabular-nums; }
+    .state { flex:none; min-width:42px; padding:3px 5px; border:1px solid #456e50; border-radius:5px; color:#82d99a; text-align:center; font-size:11px; }
+    .state--busy { border-color:#84654b; color:#e8c487; }
+    .state--muted { border-color:#526057; color:#c1c9c1; }
+    .account-menu { position:absolute; z-index:10; top:60px; right:16px; width:276px; padding:14px; border:1px solid #6da77a; border-radius:10px; background:#20342a; box-shadow:0 14px 32px #0008; }
+    .account-menu h3 { margin:0 0 4px; font-size:14px; }
+    .account-menu p { margin:0 0 12px; color:#b4c7b9; font-size:11px; line-height:1.45; }
+    .account-actions { display:flex; gap:8px; }
+    .account-actions button { height:44px; flex:1; padding:0 6px; border:1px solid #6aa279; border-radius:8px; background:#294737; font-size:12px; }
+    .account-actions button:last-child { border-color:#8f7060; background:#3a302b; }
+    .account-confirm { margin-top:10px; padding:9px; border:1px solid #6d885f; border-radius:8px; background:#18271f; }
+    .account-confirm button { height:44px; padding:0 10px; border:1px solid #79bf8e; border-radius:7px; background:#31583b; font-size:11px; }
+    .account-confirm button + button { margin-left:5px; background:transparent; border-color:#53705b; }
+    .profile-layer { position:absolute; z-index:20; inset:0; display:grid; place-items:center; background:#050a08ba; }
+    .profile-dialog { display:flex; flex-direction:column; width:524px; max-height:510px; overflow:hidden; border:1px solid #78aa83; border-radius:13px; background:#1b2922; box-shadow:0 22px 60px #000a; }
+    .profile-head { display:flex; align-items:center; gap:10px; min-height:50px; padding:0 14px; border-bottom:1px solid var(--line); }
+    .profile-head strong { font:600 17px var(--serif); }
+    .profile-head small { color:#b6c9ba; font-size:11px; }
+    .profile-head button { width:44px; height:44px; margin-left:auto; border:0; border-radius:7px; background:transparent; font-size:23px; }
+    .profile-body { min-height:0; overflow:auto; padding:14px; }
+    .profile-hero { display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--line); border-radius:9px; background:#24362b; }
+    .profile-hero .face { width:54px; height:54px; font-size:22px; }
+    .profile-hero__main { min-width:0; flex:1; }
+    .profile-hero__main b { display:block; font-size:18px; }
+    .profile-hero__main span { display:block; margin-top:4px; color:#acd8b2; font-size:12px; }
+    .profile-hero .state { padding:5px 8px; font-size:12px; }
+    .profile-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px; }
+    .profile-fact { min-height:62px; padding:9px 11px; border:1px solid var(--line); border-radius:8px; background:#203027; }
+    .profile-fact small { display:block; color:#aabdaf; font-size:11px; }
+    .profile-fact b { display:block; margin-top:5px; font-size:13px; font-variant-numeric:tabular-nums; }
+    .profile-foot { display:flex; gap:8px; padding:12px 14px; border-top:1px solid var(--line); }
+    .profile-foot button,.profile-actions button,.invite-modes button,.kifu-back { min-height:44px; border:1px solid #58765f; border-radius:8px; background:#294434; font-size:12px; }
+    .profile-foot button { flex:1; }
+    .profile-foot .primary,.profile-actions .primary { border-color:#81d19a; background:#377b4e; color:#fff; font-weight:700; }
+    .profile-foot button:disabled { border-color:#435349; background:#26312a; color:#8f9c92; cursor:default; }
+    .profile-subtitle { margin:0 0 12px; color:#d8e6d9; font-size:14px; line-height:1.45; }
+    .invite-peer { display:flex; align-items:center; gap:9px; min-height:50px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#26372d; font-size:13px; }
+    .invite-peer .face { width:32px; height:32px; }
+    .invite-peer small { margin-left:auto; color:#a9d7b1; font-size:11px; }
+    .invite-label { margin:14px 0 7px; font-size:12px; color:#bbcebf; }
+    .invite-modes { display:flex; gap:8px; }
+    .invite-modes button { flex:1; background:#202e25; }
+    .invite-modes button[aria-pressed="true"] { border-color:#82d397; background:#345840; color:#f0fff1; font-weight:700; }
+    .invite-note { margin:13px 0 0; color:#aabdaf; font-size:11px; line-height:1.55; }
+    .invite-pending { display:grid; justify-items:center; gap:9px; padding:18px 8px; text-align:center; }
+    .invite-pending__ring { display:grid; place-items:center; width:44px; height:44px; border:2px solid #6baf7b; border-radius:50%; color:#b8edc1; font-size:22px; }
+    .invite-pending strong { font-size:16px; }
+    .invite-pending p { margin:0; max-width:360px; color:#bacabd; font-size:12px; line-height:1.5; }
+    .kifu-list { display:grid; gap:7px; }
+    .kifu-item { display:flex; align-items:center; gap:8px; padding:10px; border:1px solid var(--line); border-radius:8px; background:#26362b; font-size:12px; }
+    .kifu-item small { margin-left:auto; color:#afc2b2; font-size:11px; }
+    .profile-actions { display:flex; gap:8px; margin-top:14px; }
+    .profile-actions button { flex:1; }
+    .spectator-layout { display:grid; grid-template-columns:474px minmax(0,1fr); grid-template-rows:minmax(0,1fr); gap:12px; height:474px; }
+    .board-panel,.watch-panel { min-width:0; border:1px solid var(--line); border-radius:11px; background:var(--panel); }
+    .board-panel { display:grid; place-items:center; padding:3px; }
+    .board-panel svg { width:466px; height:466px; border:7px solid #a77840; border-radius:5px; box-shadow:0 8px 20px #0007; }
+    .watch-panel { display:flex; flex-direction:column; gap:8px; padding:10px; }
+    .watch-head { display:flex; align-items:center; gap:7px; min-height:24px; font-size:11px; }
+    .watch-head b { font-size:14px; }
+    .live { display:inline-flex; align-items:center; gap:5px; margin-left:auto; padding:3px 7px; border:1px solid #70ba83; border-radius:4px; color:#a6edb5; font-size:10px; font-weight:700; letter-spacing:.03em; }
+    .live::before { content:""; width:6px; height:6px; border-radius:50%; background:#7fe39b; }
+    .clocks { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .clock-card { height:97px; padding:9px; border:1px solid #50614e; border-radius:9px; background:#223029; }
+    .clock-card--turn { border-color:#76cd8d; box-shadow:inset 0 0 0 1px #76cd8d; }
+    .clock-card__name { display:flex; align-items:center; gap:6px; min-width:0; font-size:12px; }
+    .clock-card__name b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .stone-key { display:inline-block; width:12px; height:12px; flex:none; border:1px solid #99ad9d; border-radius:50%; background:#111715; }
+    .stone-key--white { background:#f5f3e9; }
+    .clock-card strong { display:block; margin:4px 0 1px; font-size:27px; line-height:1; font-variant-numeric:tabular-nums; }
+    .clock-card--turn strong { color:#a9edb7; }
+    .clock-card small { color:#c2d0c3; font-size:11px; }
+    .latest { display:flex; align-items:center; gap:8px; min-height:45px; padding:7px 10px; border:1px solid #80684c; border-radius:8px; background:#302d24; }
+    .latest__dot { display:grid; place-items:center; width:25px; height:25px; border:1px solid #d8c29a; border-radius:50%; background:#141918; color:#fa725e; font-size:17px; }
+    .latest b { display:block; font-size:12px; }
+    .latest small { display:block; color:#cfcbba; font-size:11px; }
+    .members-head { display:flex; align-items:center; gap:8px; min-height:22px; color:#c8d9ca; font-size:12px; }
+    .members-head strong { font-size:13px; }
+    .members-head span { margin-left:auto; color:#a9bbac; font-size:11px; }
+    .members { display:grid; gap:5px; flex:1; min-height:0; overflow-y:auto; scrollbar-color:#577462 transparent; scrollbar-width:thin; }
+    .member { display:flex; align-items:center; gap:8px; min-height:34px; padding:4px 8px; border:1px solid #304239; border-radius:7px; background:#1e2b25; }
+    .member .face { width:25px; height:25px; font-size:10px; }
+    .member b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:600; }
+    .member small { margin-left:auto; color:#9ac8a3; font-size:10px; }
+    .watch-footer { display:flex; gap:8px; min-height:44px; }
+    .watch-footer button { min-height:44px; padding:0 10px; border:1px solid #4f7157; border-radius:8px; background:#223a2a; font-size:11px; white-space:nowrap; }
+    .watch-footer .return-live { flex:1; background:#34784c; border-color:#72c887; color:#fff; font-weight:700; }
+    .watch-footer .return-live:disabled { color:#c7dfcc; background:#284938; opacity:.75; cursor:default; }
+    .muted-note { color:#abc1ae; font-size:10px; }
+    .review-tools { display:flex; align-items:center; gap:10px; margin:13px 0; color:#a6bdae; font-size:12px; }
+    .review-tools .demo-btn { margin-left:auto; }
+    .notes { border:1px solid #365142; border-radius:10px; background:#14211a; padding:15px 18px; }
+    .notes h2 { margin:0 0 9px; font-size:15px; }
+    .notes p { margin:0 0 10px; color:#bdcfc0; font-size:12px; line-height:1.55; }
+    .notes ul { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px 20px; margin:0; padding-left:17px; color:#bdcfc0; font-size:12px; line-height:1.55; }
+    .notes b { color:#e2f2e5; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    @media (max-width:1060px) { .review { padding:16px 12px; } }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; } }
+  </style>
+</head>
+<body>
+  <div class="review">
+    <header class="review-head">
+      <h1>星阵大厅与实时观战 · 7 英寸审核稿</h1>
+      <p>下方是固定 1024 × 600 的智星盒界面。切换状态，查看大厅、棋友资料与邀请、实时观战，以及星阵账号切换入口。</p>
+    </header>
+    <nav class="review-tabs" aria-label="设计状态">
+      <button type="button" data-review="rooms" aria-selected="true">全部对局</button>
+      <button type="button" data-review="players" aria-selected="false">在线棋友</button>
+      <button type="button" data-review="profile" aria-selected="false">棋友资料与邀请</button>
+      <button type="button" data-review="spectate" aria-selected="false">实时观战</button>
+      <button type="button" data-review="account" aria-selected="false">切换账号</button>
+    </nav>
+    <div class="device-wrap"><div class="device" id="device">
+      <header class="device-top">
+        <img class="brand-mark" src="../../katrain/img/logo-white.png" alt=""><span class="brand">智星盒</span><span class="brand-en">StellaBox</span><span class="top-divider"></span><span class="device-top__mode">围棋 · 星阵</span>
+        <span class="device-top__clock">14:58</span>
+      </header>
+      <main class="page" id="home-page">
+        <div class="pagebar">
+          <button type="button" class="back">← 返回对弈</button>
+          <img class="platform-mark" src="../../katrain/web/ui/src/kiosk/assets/platform-marks/golaxy.png" alt="">
+          <span class="page-title">星阵围棋</span>
+          <span class="pagebar__spacer"></span>
+          <span class="connected">已连接</span>
+          <button type="button" class="account-trigger" id="account-trigger" aria-haspopup="true" aria-expanded="false"><span>当前账号</span><b>棋友甲</b><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+        </div>
+        <div class="section-label"><strong>开一局</strong><em>Start</em></div>
+        <div class="start-cards">
+          <button type="button" class="start-card"><span class="start-icon" aria-hidden="true">◈</span><span><b>快速匹配</b><small>按星阵规则匹配棋友</small></span></button>
+          <button type="button" class="start-card"><span class="start-icon" aria-hidden="true">▦</span><span><b>房间</b><small>创建或按房号加入</small></span></button>
+          <button type="button" class="start-card"><span class="start-icon" aria-hidden="true">✦</span><span><b>人机对弈</b><small>星阵 AI · 选档开局</small></span></button>
+        </div>
+        <div class="section-label"><strong>对战大厅</strong><em>Lobby</em></div>
+        <section class="lobby" aria-label="星阵对战大厅">
+          <div class="lobby-bar" role="tablist" aria-label="大厅视图">
+            <button type="button" id="rooms-tab" role="tab" aria-selected="true" data-home-tab="rooms">全部对局</button>
+            <button type="button" id="players-tab" role="tab" aria-selected="false" data-home-tab="players">在线棋友</button>
+            <span class="lobby-bar__hint" id="lobby-hint">点选一局进入只读观战 · 按星阵状态更新</span>
+          </div>
+          <div class="lobby-body" id="rooms-panel" role="tabpanel" aria-labelledby="rooms-tab"><div class="room-grid" id="room-grid"></div></div>
+          <div class="lobby-body" id="players-panel" role="tabpanel" aria-labelledby="players-tab" hidden>
+            <div class="player-filters"><button type="button" aria-pressed="true" data-filter="all">全部棋友</button><button type="button" aria-pressed="false" data-filter="peers">同级别</button><button type="button" aria-pressed="false" data-filter="follow">我的关注</button><small>胜负与状态以星阵为准</small></div>
+            <div class="player-grid" id="player-grid"></div>
+          </div>
+        </section>
+      </main>
+      <main class="page" id="spectator-page" hidden>
+        <div class="pagebar">
+          <button type="button" class="back" id="back-to-lobby">← 对战大厅</button>
+          <img class="platform-mark" src="../../katrain/web/ui/src/kiosk/assets/platform-marks/golaxy.png" alt="">
+          <span class="page-title">9348 房 · 对局观战</span>
+          <span class="pagebar__spacer"></span>
+          <span class="muted-note">升降战 · 分先 · 19 路</span>
+          <span class="live">实时同步</span>
+        </div>
+        <div class="spectator-layout">
+          <section class="board-panel" aria-label="只读观战棋盘"><svg id="go-board" viewBox="0 0 460 460" role="img" aria-label="19 路棋盘，最新一手为黑 K6"></svg></section>
+          <aside class="watch-panel" aria-label="对局与观战信息">
+            <div class="watch-head"><b>9348 房</b><span>升降战 · 分先</span><span class="live">直播中</span></div>
+            <div class="clocks">
+              <div class="clock-card" id="black-card"><div class="clock-card__name"><i class="stone-key"></i><b>黑 · 棋手甲</b><span>准 6 段</span></div><strong id="black-clock">00:11</strong><small>读秒 30 秒 · 剩余 2 次</small></div>
+              <div class="clock-card clock-card--turn" id="white-card"><div class="clock-card__name"><i class="stone-key stone-key--white"></i><b>白 · 棋手乙</b><span>准 6 段</span></div><strong id="white-clock">00:28</strong><small>读秒 30 秒 · 剩余 3 次</small></div>
+            </div>
+            <div class="latest" aria-live="polite"><span class="latest__dot">•</span><span><b id="latest-text">最新：黑 K6 · 第 145 手</b><small id="latest-time">已收到星阵新落子 · 轮到白方</small></span></div>
+            <div class="members-head"><strong>房间成员</strong><span>对局双方与观战棋友 · 13 人</span></div>
+            <div class="members" id="members-list"></div>
+            <div class="watch-footer"><button type="button" id="sound-toggle" aria-pressed="true">落子音：开</button><button type="button" id="previous-move">上一手</button><button type="button" class="return-live" id="return-live" disabled>正在看最新 · 145 手</button></div>
+          </aside>
+        </div>
+      </main>
+      <div class="account-menu" id="account-menu" hidden>
+        <h3>星阵账号 · 棋友甲</h3><p>当前账号已连接。切换账号会先断开当前星阵连接，再进入星阵登录页。</p>
+        <div class="account-actions"><button type="button" data-account-action="switch">切换账号</button><button type="button" data-account-action="logout">退出星阵</button></div>
+        <div class="account-confirm" id="account-confirm" hidden><p id="account-confirm-text"></p><button type="button" id="account-confirm-go">确认</button><button type="button" id="account-confirm-cancel">取消</button></div>
+      </div>
+      <div class="profile-layer" id="profile-layer" hidden>
+        <section class="profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+          <div class="profile-head"><strong id="profile-title">棋友资料</strong><small id="profile-stage-label">星阵在线棋友</small><button type="button" id="profile-close" aria-label="关闭棋友资料">×</button></div>
+          <div class="profile-body" id="profile-main">
+            <div class="profile-hero"><span class="face face--circle" id="profile-avatar">丙</span><div class="profile-hero__main"><b id="profile-name">棋友丙</b><span id="profile-rank">准 6 段</span></div><span class="state" id="profile-status">空闲</span></div>
+            <div class="profile-facts"><div class="profile-fact"><small>星阵号</small><b id="profile-code">示意 · 60000123</b></div><div class="profile-fact"><small>地区</small><b>上海 · 上海</b></div><div class="profile-fact"><small>对弈战绩</small><b id="profile-record">237 胜 · 220 负</b></div><div class="profile-fact"><small>邀请状态</small><b id="profile-invite-status">可邀请对局</b></div></div>
+          </div>
+          <div class="profile-body" id="profile-invite" hidden>
+            <p class="profile-subtitle">邀请这位棋友进行星阵人人对弈</p>
+            <div class="invite-peer"><span class="face face--circle" id="invite-avatar">丙</span><b id="invite-name">棋友丙</b><small id="invite-rank">准 6 段 · 空闲</small></div>
+            <div class="invite-label">本机落子方式</div><div class="invite-modes"><button type="button" data-invite-mode="screen" aria-pressed="false">屏幕落子</button><button type="button" data-invite-mode="physical" aria-pressed="true">实体棋盘</button></div>
+            <p class="invite-note">邀请与对局规则由星阵确认。发送后等待对方接受；拒绝、超时或取消时返回棋友资料。这里只演示界面，不向星阵发送请求。</p>
+          </div>
+          <div class="profile-body" id="profile-pending" hidden><div class="invite-pending"><span class="invite-pending__ring">⋯</span><strong id="pending-title">邀请已发送 · 等待棋友丙回应</strong><p>接受后进入星阵对局；拒绝、超时或取消后会显示明确结果。本审核稿仅演示等待状态。</p></div></div>
+          <div class="profile-body" id="profile-kifu" hidden><p class="profile-subtitle" id="kifu-title">棋友丙的棋谱</p><div class="kifu-list"><div class="kifu-item"><b>示意棋谱 · 第 1 局</b><small>星阵历史对局</small></div><div class="kifu-item"><b>示意棋谱 · 第 2 局</b><small>星阵历史对局</small></div></div><p class="invite-note">正式版按星阵棋谱接口返回展示；没有记录时显示空状态。</p></div>
+          <div class="profile-foot" id="profile-main-actions"><button type="button" class="primary" id="profile-invite-btn">邀请对局</button><button type="button" id="profile-kifu-btn">查看棋谱</button><button type="button" id="profile-follow-btn" aria-pressed="false">添加关注</button></div>
+          <div class="profile-foot" id="profile-invite-actions" hidden><button type="button" id="profile-invite-back">返回资料</button><button type="button" class="primary" id="profile-send-invite">发送邀请</button></div>
+          <div class="profile-foot" id="profile-pending-actions" hidden><button type="button" id="profile-cancel-invite">取消邀请</button></div>
+          <div class="profile-foot" id="profile-kifu-actions" hidden><button type="button" id="profile-kifu-back">返回资料</button></div>
+        </section>
+      </div>
+      <div class="sr-only" aria-live="polite" id="announcement"></div>
+    </div></div>
+    <div class="review-tools"><span>审核说明：房号、姓名、星阵号、地区、战绩、棋谱和时钟均为隔离示意数据。</span><button type="button" class="demo-btn" id="demo-move">模拟星阵新落子并试听音效</button></div>
+    <section class="notes" aria-label="接口与交互核对">
+      <h2>设计接线清单</h2>
+      <p>现有房间快照提供有序棋谱，但每 10 秒轮询会漏掉即时反馈。正式版需要以星阵的房间/棋局事件推动落子和计时，断线重连后再用权威完整快照补帧；不能只把轮询改得更频繁。</p>
+      <ul>
+        <li><b>账号：</b>复用现有断开接口，切换时清除旧账号的大厅、棋盘与观战状态，再进入登录。</li>
+        <li><b>最新一手：</b>显示颜色、坐标、手数与棋盘圈点；追看旧手时提供“回到最新”。新手只播一次落子音。</li>
+        <li><b>计时：</b>星阵原始棋局已有双方剩余时间、读秒次数和时间戳；需核对单位、当前走棋方与事件时序后才显示动态读秒。</li>
+        <li><b>观战名单：</b>房间列表现有 onlineUserCount 只是房内总人数。姓名、观战身份与人数需房间成员列表/事件确认，不直接用总数冒充观战人数。</li>
+        <li><b>对局卡：</b>房间类型、双方等级在原始响应中；需核对升降战等枚举与等级映射，补上真实观战数和手数。</li>
+        <li><b>在线棋友：</b>原始列表含等级、胜/负场次和连接/邀请状态；需核对状态码、同级与关注筛选的服务端语义后展示。</li>
+        <li><b>资料与邀请：</b>星阵官方前端含个人资料、关注和邀请接口。当前盒端未接；邀请必须核实实时连接、忙碌检查、发出/取消/接受/拒绝/超时事件，并用两账号完成一次真实联调。</li>
+        <li><b>棋谱：</b>官方前端有按棋友打开棋谱的入口；需核实分页、对局详情和棋谱权限后接入。资料页的数据不能只用大厅列表字段填充。</li>
+      </ul>
+    </section>
+  </div>
+  <audio id="stone-audio" preload="none" src="../../katrain/sounds/stone4.wav"></audio>
+  <script>
+    const rooms = [
+      ['9348','升降战','分先','11','棋手甲','准 6 段','棋手乙','准 6 段','145 手'],
+      ['9361','升降战','让先','4','棋手丙','7 段','棋手丁','准 7 段','82 手'],
+      ['9385','自由战','分先','2','棋手戊','5 段','棋手己','5 段','63 手'],
+      ['9398','升降战','分先','8','棋手庚','准 6 段','棋手辛','准 6 段','102 手'],
+      ['9402','自由战','让先','3','棋手壬','4 段','棋手癸','5 段','37 手'],
+      ['9411','升降战','分先','6','棋手子','6 段','棋手丑','6 段','129 手']
+    ];
+    const players = [
+      ['棋友甲','星阵 3 星','184 胜 · 167 负','空闲'],['棋友乙','星阵 3 星','2463 胜 · 2517 负','对弈中'],
+      ['棋友丙','准 6 段','237 胜 · 220 负','空闲'],['棋友丁','星阵 2 星','1333 胜 · 1457 负','拒邀'],
+      ['棋友戊','4 段','70 胜 · 52 负','空闲'],['棋友己','准 5 段','159 胜 · 109 负','忙碌'],
+      ['棋友庚','星阵 3 星','389 胜 · 1001 负','对弈中'],['棋友辛','5 段','446 胜 · 127 负','空闲']
+    ];
+    const members = [['棋手甲','对局 · 黑'],['棋手乙','对局 · 白'],['棋友丙','观战'],['棋友丁','观战'],['棋友戊','观战'],['棋友己','观战'],['棋友庚','观战'],['棋友辛','观战'],['棋友壬','观战'],['棋友癸','观战'],['棋友子','观战'],['棋友丑','观战'],['棋友寅','观战']];
+    const followedPlayers = new Set([0,4]);
+    const esc = (value) => String(value).replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    document.getElementById('room-grid').innerHTML = rooms.map((r) => `<button class="room-card" type="button" data-open-room="${r[0]}" aria-label="${r[0]} 房，进入观战"><div class="room-top"><b>${r[0]} 房</b><span class="tag">${r[1]}</span><span class="tag tag--quiet">${r[2]}</span><span class="viewers">◉ ${r[3]} 人在看</span></div><div class="room-mid"><div class="seat"><span class="face">${esc(r[4].slice(-1))}</span><span class="seat-name"><b>${esc(r[4])}</b><small>${esc(r[5])}</small></span></div><div><i class="mini-board" aria-hidden="true"></i><div class="room-progress">${r[8]}</div></div><div class="seat seat--white"><span class="face">${esc(r[6].slice(-1))}</span><span class="seat-name"><b>${esc(r[6])}</b><small>${esc(r[7])}</small></span></div></div></button>`).join('');
+    const stateClass = (state) => state === '空闲' ? '' : state === '拒邀' ? 'state--muted' : 'state--busy';
+    const renderPlayers = (filter='all') => {
+      const chosen = filter === 'all' ? players : filter === 'peers' ? players.filter(p => p[1].includes('星阵 3')) : players.filter((_,i) => followedPlayers.has(i));
+      document.getElementById('player-grid').innerHTML = chosen.map((p) => `<button type="button" class="player-card" data-open-profile="${players.indexOf(p)}" aria-label="查看${esc(p[0])}的个人资料"><span class="face face--circle">${esc(p[0].slice(-1))}</span><span class="player-name"><b>${esc(p[0])}</b><small>${esc(p[1])}</small></span><span class="record">${esc(p[2])}</span><span class="state ${stateClass(p[3])}">${esc(p[3])}</span></button>`).join('');
+    };
+    renderPlayers();
+    document.getElementById('members-list').innerHTML = members.map((m) => `<div class="member"><span class="face face--circle">${esc(m[0].slice(-1))}</span><b>${esc(m[0])}</b><small>${esc(m[1])}</small></div>`).join('');
+    let currentView = 'rooms'; let currentMove = 145; let currentLatest = '黑 K6'; let soundOn = true; let whiteTime = 28; let blackTime = 11; let activeColor = 'white'; let accountIntent = ''; let selectedPlayerIndex = 2;
+    const announce = (message) => { document.getElementById('announcement').textContent=message; };
+    function profileStage(stage) {
+      for(const name of ['main','invite','pending','kifu']) { document.getElementById(`profile-${name}`).hidden=name!==stage; document.getElementById(`profile-${name}-actions`).hidden=name!==stage; }
+      document.getElementById('profile-stage-label').textContent={main:'星阵在线棋友',invite:'发送对局邀请',pending:'等待对方回应',kifu:'历史棋谱'}[stage];
+    }
+    function renderProfile() {
+      const p=players[selectedPlayerIndex]; const canInvite=p[3]==='空闲';
+      document.getElementById('profile-avatar').textContent=p[0].slice(-1);
+      document.getElementById('profile-name').textContent=p[0];
+      document.getElementById('profile-rank').textContent=p[1];
+      document.getElementById('profile-record').textContent=p[2];
+      document.getElementById('profile-status').textContent=p[3];
+      document.getElementById('profile-status').className=`state ${stateClass(p[3])}`;
+      document.getElementById('profile-code').textContent=`示意 · ${60000123+selectedPlayerIndex}`;
+      document.getElementById('profile-invite-status').textContent=canInvite?'可邀请对局':`${p[3]} · 暂不可邀请`;
+      document.getElementById('profile-invite-btn').disabled=!canInvite;
+      document.getElementById('profile-invite-btn').title=canInvite?'邀请这位棋友':'星阵状态显示暂不可邀请';
+      document.getElementById('invite-avatar').textContent=p[0].slice(-1);
+      document.getElementById('invite-name').textContent=p[0];
+      document.getElementById('invite-rank').textContent=`${p[1]} · ${p[3]}`;
+      document.getElementById('pending-title').textContent=`邀请已发送 · 等待${p[0]}回应`;
+      document.getElementById('kifu-title').textContent=`${p[0]}的棋谱`;
+      const isFollowed=followedPlayers.has(selectedPlayerIndex);
+      document.getElementById('profile-follow-btn').textContent=isFollowed?'取消关注':'添加关注';
+      document.getElementById('profile-follow-btn').setAttribute('aria-pressed',String(isFollowed));
+      profileStage('main');
+    }
+    function show(view) {
+      currentView=view;
+      const spectator=view==='spectate';
+      document.getElementById('home-page').hidden=spectator;
+      document.getElementById('spectator-page').hidden=!spectator;
+      document.getElementById('account-menu').hidden=view!=='account';
+      document.getElementById('profile-layer').hidden=view!=='profile';
+      document.getElementById('account-trigger').setAttribute('aria-expanded',String(view==='account'));
+      const homeTab=view==='players'||view==='profile'?'players':'rooms';
+      document.querySelectorAll('[data-home-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.homeTab===homeTab)));
+      document.getElementById('rooms-panel').hidden=homeTab!=='rooms';
+      document.getElementById('players-panel').hidden=homeTab!=='players';
+      document.getElementById('lobby-hint').textContent=homeTab==='rooms'?'点选一局进入只读观战 · 按星阵状态更新':'级别、胜负和状态以星阵返回为准';
+      document.querySelectorAll('[data-review]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.review===view)));
+      if(view==='profile') renderProfile();
+    }
+    document.querySelectorAll('[data-review]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.review)));
+    document.querySelectorAll('[data-home-tab]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.homeTab)));
+    document.querySelectorAll('[data-open-room]').forEach(b=>b.addEventListener('click',()=>show('spectate')));
+    document.getElementById('back-to-lobby').addEventListener('click',()=>show('rooms'));
+    document.getElementById('account-trigger').addEventListener('click',()=>show(currentView==='account'?'rooms':'account'));
+    document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); renderPlayers(b.dataset.filter); }));
+    document.getElementById('player-grid').addEventListener('click',(event)=>{ const card=event.target.closest('[data-open-profile]'); if(!card)return; selectedPlayerIndex=Number(card.dataset.openProfile); show('profile'); });
+    document.getElementById('profile-close').addEventListener('click',()=>show('players'));
+    document.getElementById('profile-layer').addEventListener('click',(event)=>{ if(event.target.id==='profile-layer')show('players'); });
+    document.getElementById('profile-invite-btn').addEventListener('click',()=>profileStage('invite'));
+    document.getElementById('profile-invite-back').addEventListener('click',()=>profileStage('main'));
+    document.getElementById('profile-send-invite').addEventListener('click',()=>{ profileStage('pending'); announce('设计示意：星阵对局邀请等待对方回应'); });
+    document.getElementById('profile-cancel-invite').addEventListener('click',()=>{ profileStage('main'); announce('设计示意：已取消对局邀请'); });
+    document.getElementById('profile-kifu-btn').addEventListener('click',()=>profileStage('kifu'));
+    document.getElementById('profile-kifu-back').addEventListener('click',()=>profileStage('main'));
+    document.getElementById('profile-follow-btn').addEventListener('click',()=>{ if(followedPlayers.has(selectedPlayerIndex))followedPlayers.delete(selectedPlayerIndex); else followedPlayers.add(selectedPlayerIndex); const activeFilter=document.querySelector('[data-filter][aria-pressed="true"]').dataset.filter; renderPlayers(activeFilter); renderProfile(); });
+    document.querySelectorAll('[data-invite-mode]').forEach(b=>b.addEventListener('click',()=>document.querySelectorAll('[data-invite-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))));
+    document.querySelectorAll('[data-account-action]').forEach(b=>b.addEventListener('click',()=>{ accountIntent=b.dataset.accountAction; document.getElementById('account-confirm').hidden=false; document.getElementById('account-confirm-text').textContent=accountIntent==='switch'?'确认断开棋友甲并前往星阵登录页？':'确认退出当前星阵账号？'; }));
+    document.getElementById('account-confirm-cancel').addEventListener('click',()=>{document.getElementById('account-confirm').hidden=true;});
+    document.getElementById('account-confirm-go').addEventListener('click',()=>{ document.getElementById('account-confirm').hidden=true; announce(accountIntent==='switch'?'设计示意：下一步进入星阵登录页':'设计示意：星阵账号已退出'); });
+    document.getElementById('sound-toggle').addEventListener('click',(event)=>{ soundOn=!soundOn; event.currentTarget.setAttribute('aria-pressed',String(soundOn)); event.currentTarget.textContent=`落子音：${soundOn?'开':'关'}`; });
+    function setMove(mode) {
+      const previous=mode==='previous';
+      document.getElementById('return-live').disabled=!previous;
+      document.getElementById('return-live').textContent=previous?`回到最新 · ${currentMove} 手`:`正在看最新 · ${currentMove} 手`;
+      document.getElementById('latest-time').textContent=previous?'回看棋谱时仍接收新落子':`已收到星阵新落子 · 轮到${currentLatest.startsWith('白')?'黑':'白'}方`;
+    }
+    document.getElementById('previous-move').addEventListener('click',()=>setMove('previous'));
+    document.getElementById('return-live').addEventListener('click',()=>setMove('live'));
+    document.getElementById('demo-move').addEventListener('click',()=>{ show('spectate'); if(currentLatest==='白 P6')return; currentMove++; currentLatest='白 P6'; whiteTime=29; activeColor='black'; document.getElementById('black-card').classList.add('clock-card--turn'); document.getElementById('white-card').classList.remove('clock-card--turn'); document.getElementById('white-clock').textContent='00:29'; document.getElementById('latest-text').textContent=`最新：${currentLatest} · 第 ${currentMove} 手`; document.getElementById('latest-time').textContent='刚刚收到星阵新落子 · 轮到黑方'; document.getElementById('go-board').setAttribute('aria-label',`19 路棋盘，最新一手为${currentLatest}`); document.getElementById('return-live').disabled=true; document.getElementById('return-live').textContent=`正在看最新 · ${currentMove} 手`; const [x,y]=point('P6'); document.getElementById('latest-marker').remove(); const svg=document.getElementById('go-board'); const stone=document.createElementNS('http://www.w3.org/2000/svg','circle'); stone.setAttribute('cx',x); stone.setAttribute('cy',y); stone.setAttribute('r',10.2); stone.setAttribute('class','stone-white'); svg.append(stone); const marker=document.createElementNS('http://www.w3.org/2000/svg','circle'); marker.setAttribute('id','latest-marker'); marker.setAttribute('cx',x); marker.setAttribute('cy',y); marker.setAttribute('r',4.2); marker.setAttribute('fill','#ed604f'); marker.setAttribute('stroke','#ffe3ce'); marker.setAttribute('stroke-width',1.1); svg.append(marker); if(soundOn){const audio=document.getElementById('stone-audio'); audio.currentTime=0; audio.play().catch(()=>{});} announce(`第 ${currentMove} 手：白 P6`); });
+    setInterval(()=>{ if(currentView!=='spectate' || document.hidden)return; if(activeColor==='white' && whiteTime>0){ whiteTime--; document.getElementById('white-clock').textContent=`00:${String(whiteTime).padStart(2,'0')}`; } else if(activeColor==='black' && blackTime>0){ blackTime--; document.getElementById('black-clock').textContent=`00:${String(blackTime).padStart(2,'0')}`; } },1000);
+    const board=document.getElementById('go-board'); const cols='ABCDEFGHJKLMNOPQRST';
+    const black='D4 Q16 C17 F17 J16 K16 L16 N15 C14 D14 E13 H13 Q13 C12 F12 B10 H11 Q10 C9 F9 K9 Q9 C8 G8 J8 Q8 B7 E7 F7 R7 B6 E6 J6 K6 R6 B5 G5 R5 B4 F4 K4 L3 M3 D2 F2 G1 C16 C15 D15 Q15 R15 S16 J17 K17'.split(' ');
+    const white='Q4 R4 S4 G19 G18 H18 J18 K18 L18 C18 D18 D17 E17 F17 C15 E15 G14 Q14 R13 S13 K12 S12 D11 S11 D10 F10 G10 H10 J10 K10 D9 E9 D8 D7 C7 D6 K5 G4 H4 J4 D4 E4 H2 J2 K2 L2 M2 Q18 Q17 P17 P16 Q16 R15'.split(' ');
+    const occupied=new Set(); const point=(coord)=>{const col=cols.indexOf(coord[0]); const row=Number(coord.slice(1)); return [27+col*22.55,433-(row-1)*22.55];};
+    const lines=[]; for(let n=0;n<19;n++){const p=27+n*22.55; lines.push(`<line x1="27" y1="${p}" x2="433" y2="${p}"/><line x1="${p}" y1="27" x2="${p}" y2="433"/>`);} const stars=[]; for(const x of [3,9,15])for(const y of [3,9,15])stars.push(`<circle cx="${27+x*22.55}" cy="${27+y*22.55}" r="2.6"/>`);
+    const labels=[]; for(let n=0;n<19;n++){const p=27+n*22.55; labels.push(`<text x="${p}" y="16" text-anchor="middle">${cols[n]}</text><text x="11" y="${p+3}" text-anchor="middle">${19-n}</text>`);}
+    const stones=[]; for(const [array,color] of [[black,'black'],[white,'white']])for(const coord of array){if(occupied.has(coord))continue;occupied.add(coord);const [x,y]=point(coord); stones.push(`<circle cx="${x}" cy="${y}" r="10.2" class="stone-${color}"/>`);} const [lx,ly]=point('K6');
+    board.innerHTML=`<defs><linearGradient id="wood" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#deb072"/><stop offset="1" stop-color="#ce9556"/></linearGradient><radialGradient id="black-stone"><stop stop-color="#414541"/><stop offset=".75" stop-color="#111614"/></radialGradient><radialGradient id="white-stone"><stop stop-color="#fffef6"/><stop offset="1" stop-color="#d5d6cb"/></radialGradient></defs><style>line{stroke:#79572f;stroke-width:1}text{font:10px sans-serif;fill:#5f4327}.stone-black{fill:url(#black-stone);stroke:#0c0f0d;stroke-width:.8}.stone-white{fill:url(#white-stone);stroke:#bcb9aa;stroke-width:.8}</style><rect width="460" height="460" fill="url(#wood)"/>${lines.join('')}${stars.join('')}${labels.join('')}${stones.join('')}<circle id="latest-marker" cx="${lx}" cy="${ly}" r="4.2" fill="#ed604f" stroke="#ffe3ce" stroke-width="1.1"/>`;
+  </script>
+</body>
+</html>

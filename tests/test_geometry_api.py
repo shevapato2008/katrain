@@ -3,6 +3,7 @@
 import cv2
 import numpy as np
 import pytest
+from types import SimpleNamespace
 
 pytest.importorskip("fastapi")
 from fastapi import FastAPI
@@ -76,6 +77,82 @@ class TestGeometryEndpoint:
     def test_snapshot_warped_requires_geometry(self):
         _, c = _client(capture=FakeCapture([np.zeros((60, 90, 3), np.uint8)]))
         assert c.get("/geometry/snapshot?view=warped&scale=2").status_code == 409
+    def test_preflight_requires_camera_model_and_recognition_capabilities(self):
+        class Calibration:
+            def preflight(self):
+                return {
+                    "ready": True,
+                    "reason": None,
+                    "status": {"phase": "ready", "capabilities": {"camera_ready": True}},
+                }
+
+        app, c = _client()
+        app.state.geometry_calibration = Calibration()
+        app.state.vision = SimpleNamespace(
+            refresh_status=lambda: None,
+            _latest_status=SimpleNamespace(model_ready=True, recognition_ready=False),
+        )
+        result = c.post("/geometry/preflight")
+        assert result.status_code == 200
+        assert result.json()["ready"] is False
+        assert result.json()["status"]["capabilities"]["recognition_ready"] is False
+
+    def test_preflight_busy_is_conflict(self):
+        from katrain.web.core.geometry_calibration_service import CalibrationBusy
+
+        class Calibration:
+            def preflight(self):
+                raise CalibrationBusy("geometry operation in progress")
+
+        app, c = _client()
+        app.state.geometry_calibration = Calibration()
+        assert c.post("/geometry/preflight").status_code == 409
+
+    def test_preflight_never_reports_ready_without_a_confirmed_lock(self):
+        class Calibration:
+            def preflight(self):
+                return {
+                    "ready": True,
+                    "reason": None,
+                    "status": {
+                        "phase": "ready",
+                        "locked": False,
+                        "session_calibrated": False,
+                        "capabilities": {"camera_ready": True},
+                    },
+                }
+
+        app, c = _client()
+        app.state.geometry_calibration = Calibration()
+        app.state.vision = SimpleNamespace(
+            refresh_status=lambda: None,
+            _latest_status=SimpleNamespace(model_ready=True, recognition_ready=True),
+        )
+        assert c.post("/geometry/preflight").json()["ready"] is False
+
+    def test_preflight_reports_ready_with_confirmed_lock_and_live_capabilities(self):
+        class Calibration:
+            def preflight(self):
+                return {
+                    "ready": True,
+                    "reason": None,
+                    "status": {
+                        "phase": "ready",
+                        "locked": True,
+                        "session_calibrated": True,
+                        "capabilities": {"camera_ready": True},
+                    },
+                }
+
+        app, c = _client()
+        app.state.geometry_calibration = Calibration()
+        app.state.vision = SimpleNamespace(
+            refresh_status=lambda: None,
+            _latest_status=SimpleNamespace(model_ready=True, recognition_ready=True),
+        )
+        result = c.post("/geometry/preflight")
+        assert result.status_code == 200
+        assert result.json()["ready"] is True
 
     def test_async_calibration_start_and_status(self):
         class FakeCalibration:
@@ -143,7 +220,20 @@ class TestGeometryEndpoint:
 
     def test_status_unlocked(self):
         _, c = _client(capture=FakeCapture([]))
-        assert c.get("/geometry/status").json() == {"locked": False, "capabilities": {"led_ready": None}}
+        assert c.get("/geometry/status").json() == {
+            "locked": False,
+            "capabilities": {"led_ready": None},
+        }
+
+    @pytest.mark.parametrize("board_connected", [True, False, None])
+    def test_status_without_capture_preserves_board_a_cache(self, board_connected):
+        from types import SimpleNamespace
+
+        led = SimpleNamespace(is_connected=lambda: True, is_board_connected=lambda: board_connected)
+        _, client = _client(led=led)
+        body = client.get("/geometry/status").json()
+        assert body["locked"] is False
+        assert body["capabilities"]["led_ready"] is board_connected
 
     def test_no_frames(self):
         _, c = _client(capture=FakeCapture([]), led=FakeLed())
@@ -333,3 +423,4 @@ def test_stream_interval_throttles_only_during_active_calibration():
     assert geometry._stream_interval_s("ready") == pytest.approx(0.2)
     assert geometry._stream_interval_s("required") == pytest.approx(0.2)
     assert geometry._stream_interval_s("") == pytest.approx(0.2)
+    assert geometry._stream_interval_s("converging_exposure") == pytest.approx(0.5)

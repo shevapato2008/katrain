@@ -1,0 +1,577 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="title" content="한국기원">
+	<meta name="description" content="한국기원 공식 홈페이지. 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta name="keywords" content="한국기원, 바둑, 프로기사, 바둑뉴스, 기보, 대국, 랭킹">
+	<meta name="robots" content="index,follow">
+
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="한국기원">
+	<meta property="og:url" content="https://www.baduk.or.kr/">
+	<meta property="og:title" content="한국기원">
+	<meta property="og:description" content="한국기원 공식 홈페이지, 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta property="og:image" content="https://www.baduk.or.kr/images/common/baduk_card_og_2026.png"> 
+	<meta property="og:image:width" content="600">
+	<meta property="og:image:height" content="315">
+	<meta property="og:image:alt" content="한국기원 공식 홈페이지">
+	<meta property="og:locale" content="ko_KR">
+
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title" content="한국기원">
+	<meta name="twitter:description" content="한국기원 공식 홈페이지, 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta name="twitter:image" content="https://www.baduk.or.kr/images/common/baduk_card_og_2026.png">
+
+	<link rel="canonical" href="https://www.baduk.or.kr/">
+	<link rel="alternate" media="only screen and (max-width: 640px)" href="https://m.baduk.or.kr/">
+
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		"name": "한국기원",
+		"url": "https://www.baduk.or.kr/",
+		"logo": "https://www.baduk.or.kr/images/common/logo.png"
+	}
+	</script>
+
+
+
+	
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>한국기원</title>
+	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/css/common.css" type="text/css" rel="stylesheet" />
+	<link href="/css/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/js/common.js?ver=1"></script>
+	<script language="javascript" src="/js/jquery-3.7.1.min.js"></script>
+	<script language="javascript" src="/js/swiper.jquery.min.js"></script>
+	<script language="javascript" src="/js/prototype.js"></script>
+</head>
+
+<body>
+
+<div id="wrap">
+
+	<div class="eventWrap" id="topPopup" >
+		
+		
+
+<link rel="stylesheet" href="/common/swiper.min.css">
+
+<div class="innerEvent">	
+	<div class="swiper-container">
+		<div class="swiper-wrapper">
+			
+				<div class="swiper-slide">
+					<a href="https://w.baduk.or.kr/" target="_blank"><img src="https://www.baduk.or.kr/FileUpDown/homepage/banner/무제-1.jpg" style="width:320px;height:150px"></a>
+				</div>
+				
+				<div class="swiper-slide">
+					<a href="https://badukland.co.kr" target="_blank"><img src="https://www.baduk.or.kr/FileUpDown/homepage/banner/배너 시안 2.png" style="width:320px;height:150px"></a>
+				</div>
+				
+		</div>
+	</div>
+
+	<span class="btn_slide prev"><button type="button" class="PP"></button></span>
+	<span class="btn_slide next"><button type="button" class="NN"></button></span> 
+</div>
+
+<script>
+	var swiper = new Swiper('.swiper-container', {
+		loop: true,
+		pagination: '.swiper-pagination',
+		slidesPerView: 3,
+		paginationClickable: true,
+		prevButton: '.PP',
+		nextButton: '.NN'
+	});
+</script>
+
+	</div>
+
+	<div id="header_wrap">
+		<div class="header_topa">
+			<div class="gnb_sub" id="allMenu" style="display:none" onclick="allMenuOnOff()">
+                <div class="innerContents">
+                    <dl>
+                        <dt >
+							<a href="/about/history.asp">기원소개</a>
+						</dt>
+                        <dd>
+                            <ul>
+								<li><a href="/about/history.asp"      >한국기원약사</a></li>
+								<li><a href="/about/business.asp"     >주요사업</a></li>
+								<li><a href="/about/management.asp"   >경영공시</a></li>
+								<li><a href="/about/since.asp"        >연혁</a></li>
+								<li><a href="/about/ceo.asp"          >역대총재/이사장</a></li>
+								<li><a href="/about/executive.asp"    >임원명단</a></li>
+								<li><a href="/about/organization.asp" >조직도</a></li>
+								<li><a href="/about/charactor.asp"    >캐릭터/CI</a></li>
+								<li><a href="/about/igf.asp"          >IGF</a></li>
+								<li><a href="/about/contact.asp"      >찾아오시는길</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt class="nuxt-link-active">
+							<a href="/news/report.asp">바둑뉴스</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/news/report.asp"     >보도자료</a></li>
+								<li><a href="/news/summary.asp"    class="nuxt-link-exact-active nuxt-link-active">바둑뉴스</a></li>
+								<li><a href="/news/monthly.asp"    >월간바둑</a></li>
+								<li><a href="/news/picture.asp"    >사진아카이브</a></li>
+								<li><a href="/news/newspaper.asp"  >언론사뉴스</a></li>
+								<!--<li><a href="http://oldmagazine.baduk.or.kr/" target="_blank">과거바둑잡지</a></li>-->
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+                            <a href="/record/diary.asp">기록실</a>
+                        </dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/record/diary.asp"         >대국결과</a></li>
+								<li><a href="/record/schedule.asp"      >대국일정</a></li>
+								<li><a href="/record/rankingPlayer.asp" >기사랭킹</a></li>
+								<!--<li><a href="/record/rankingMoney.asp"  >상금랭킹</a></li>-->
+								<li><a href="/record/rankingYears.asp"  >연도별순위</a></li>
+								<li><a href="/record/rankingYear.asp"   >단일연도순위</a></li>
+								<li><a href="/record/player.asp"        >기사정보</a></li>
+								<li><a href="/record/title.asp"         >타이틀현황</a></li>
+								<li><a href="/record/titleGain.asp"     >타이틀기록</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+                            <a href="/gibo/gibo.asp">기보감상</a>
+                        </dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/gibo/gibo.asp" >전체기보</a></li>
+								<li><a href="https://goldengibo.baduk.or.kr/" target="_blank">도약기 기보</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/game/game.asp?etcKey=1">기전정보</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/game/game.asp?etcKey=1" >현행 기전</a></li>
+								<li><a href="/game/game.asp?etcKey=2" >중단 기전</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/square/board.asp">바둑인광장</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/square/board.asp"        >공지사항</a></li>
+								<li><a href="/square/amaApply.asp"     >아마단급</a></li>
+								<li><a href="/square/amaGame.asp"      >대회참가신청</a></li>
+								<li><a href="/square/explain.asp"      >공개해설신청</a></li>
+								<li><a href="/square/talk.asp"         >바둑토크</a></li>
+								<li><a href="/square/studentScore.asp" >통합연구생리그</a></li>
+								<li><a href="/square/site.asp"         >관련사이트</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/story/about.asp">바둑이야기</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/story/about.asp"     >바둑이란</a></li>
+								<li><a href="/story/bHistory.asp"  >바둑의 역사</a></li>
+								<li><a href="/story/howto.asp"     >대국방법</a></li>
+								<li><a href="/story/manner.asp"    >대국예절</a></li>
+								<li><a href="/story/badukRule.asp" >바둑규칙</a></li>
+								<li><a href="/story/gameRule.asp"  >경기규정</a></li>
+								<li><a href="/story/keyword.asp"   >바둑용어</a></li>
+								<!--<li><a href="https://archives.baduk.or.kr/archives/" target="_blank">바둑아카이브즈</a></li>-->
+                            </ul>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+			<div class="gnba">
+				<div class="popup_isShow">
+					<button type="button" id="topPopupBT" onclick="topPopupToggle('X')" >팝업닫기<span class="close"></span></button>
+					<button type="button" id="topPopupBT" onclick="topPopupToggle('')"  style="display:none">팝업열기<span class="open"></span></button>
+				</div>
+				<div class="gnb">
+					<form action="/etc/search.asp" method="post" name="sForm">
+					<fieldset class="searchW">
+						<legend class="hidden">통함검색</legend>
+						<dl>
+							<dt>통합검색</dt>
+							<dd class="searchWa"><span class="inputa"><input type="searchW" name="searchKey" value="" placeholder="검색어를 입력하세요"></span><span class="btn_searcha"><button type="button" onclick="sForm.submit()"></button></span></dd>
+						</dl>
+					</fieldset>
+					</form>
+					<ul class="links">
+						<li><a href="https://www.tvbaduk.com/" target="_blank">바둑TV</a></li>
+						<li><a href="/news/monthly.asp">월간바둑</a></li>
+						<li><a href="https://www.badukmall.co.kr/" target="_blank">바둑몰</a></li>
+						<li><a href="https://badukland.co.kr/" target="_blank">바둑랜드</a></li>
+						<li><a href="https://www.facebook.com/KoreaBadukAssociation/" target="_blank" class="facebook"></a></li>
+						<li><a href="https://www.instagram.com/korea_baduk_association/" target="_blank" class="insta"></a></li>
+						<li class="spread" onclick="allMenuOnOff()"><button type="button"></button></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="header">
+			
+			
+
+			<div class="logo">
+				<h1><a href="/"><img src="/images/common/logo.png" alt="한국기원" /></a></h1>
+			</div>
+			<div class="navia">
+				<ul class="navi">
+					<li ><a href="/about/history.asp">기원소개</a></li>
+					<li class="selected"><a href="/news/report.asp">바둑뉴스</a></li>
+					<li ><a href="/record/diary.asp">기록실</a></li>
+					<li ><a href="/gibo/gibo.asp">기보감상</a></li>
+					<li ><a href="/game/game.asp">기전정보</a></li>
+					<li ><a href="/square/board.asp">바둑인광장</a></li>
+					<li ><a href="/story/about.asp">바둑이야기</a></li>
+				</ul>
+			</div> 
+		</div>
+	</div>
+
+<div id="container">  
+          
+	<div class="subVisaul02">
+		<div class="subTitle">바둑뉴스</div>
+	</div>
+
+	<div class="contents_wrap">
+		
+		
+
+<div class="lnb">
+	<ul>
+		
+
+			<li><a href="/news/report.asp"     >보도자료</a></li>
+			<li><a href="/news/summary.asp"    class="lnb_on">바둑뉴스</a></li>
+			<li><a href="/news/monthly.asp"    >월간바둑</a></li>
+			<li><a href="/news/picture.asp"    >사진아카이브</a></li>
+			<li><a href="/news/newspaper.asp"  >언론사뉴스</a></li>
+			<!--<li><a href="http://oldmagazine.baduk.or.kr/" target="_blank">과거바둑잡지</a></li>-->
+
+		
+	</ul>
+</div>
+
+
+		<div class="pageTitle">            
+			<h2>
+				<div class="ttbar"></div>
+				바둑뉴스
+			</h2>
+		</div>
+		
+		<div class="contents">
+			
+			<div class="subTab">
+				<ul>
+					<li><a onclick="tebMenu('')"     class="subTab_on">전체</a></li>
+					<li><a onclick="tebMenu('BTV')"  >바둑TV뉴스</a></li>
+					<li><a onclick="tebMenu('KBL')"  >한국바둑리그</a></li>
+					<li><a onclick="tebMenu('SBA')"  >레전드바둑리그</a></li>
+					<li><a onclick="tebMenu('WBA')"  >여자바둑리그</a></li>
+					<li><a onclick="tebMenu('KBCL')" >챌린지바둑리그</a></li>
+				</ul>
+			</div> 
+				
+			<div class="newsView">
+				<div class="newsViewArea">
+					<div class="newsViewTop">
+						<h3>전주, 포스트시즌 고지전 "4위 사수"</h3>
+						<dl>
+							<dt>등록일</dt>
+							<dd>2026-01-24</dd>
+							<dt class="hit">조회수</dt>
+							<dd>1,085</dd>
+						</dl>
+					</div>
+					<div class="newsViewBody">
+						<div class="newsDetailMain">
+							<table>
+							<tbody>
+							<tr><td><img src="https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[크기변환]강유택.JPG" alt=""></td></tr>
+							
+								<tr><td class="mainCaption">▲ 심재익(現 마한의 심장 영암)이 보유한 5지명 최다 연승 기록을 5년 만에 경신한 강유택(한옥마을 전주)</td></tr>
+							
+							</tbody>
+							</table>
+						</div>
+						변상일과 강유택이 이끄는 한옥마을 전주가 포스트시즌 경쟁에서 한 발 앞서갔다. 23일(금) 한국기원 바둑TV 스튜디오에서 열린 2025-2026 KB국민은행 바둑리그 12라운드 2경기에서 한옥마을 전주가 수려한 합천을 3-1로 제쳤다.<br>
+<br>
+포스트시즌 한 자리를 놓고 다투는 4위 한옥마을 전주와 5위 수려한 합천이 맞붙었다. 이날 경기의 승자는 포스트시즌 진출의 유리한 고지를 점령하고, 패자는 험난한 여정을 각오해야 한다. 서로 양보할 수 없는 운명의 한판이다.<br>
+<br>
+<b><font color=brown> 1국 한옥마을 전주 변상일(1지명) vs 수려한 합천 이창석(2지명) </b></font><br>
+<b><font color=orange> 변상일, 232수 백 불계승. 한옥마을 전주 1-0 수려한 합천 </b></font><br>
+<br>
+개막 5연승으로 출발했던 변상일이 최근 3경기에서 연패에 빠졌다. 더욱 심각한 문제는 이름값을 하지 못하는 대국 내용이었다. 중요한 길목에서 만난 승부에서 변상일이 슬럼프를 탈출할 수 있을까. <br>
+<br>
+서로 큰 모양으로 맞선 바둑. 변상일의 가벼운 응수 타진에 이창석이 적지 않은 시간을 들였지만 결과가 좋지 않았다. 승기를 잡은 변상일이 실리와 세력에서 우위를 보이며 격차를 벌려갔다. 열세를 느낀 이창석이 옥쇄를 각오하고 반격을 노렸지만 반전은 없었다. 변상일의 쾌승으로 한옥마을 전주가 선제점을 올렸다.<br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][크기변환]1국.JPG' /></div><div class=caption style='width:560px; margin:0 auto'></div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][크기변환]변상일.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 세 차례 선발로 나선 경기에서 전승을 거둔 변상일(한옥마을 전주). 시즌 8승 4패.</div><br>
+<br>
+<b><font color=brown> 2국 수려한 합천 신민준(1지명) vs 한옥마을 전주 한상조(4지명) </b></font><br>
+<b><font color=orange> 신민준, 210수 백 불계승. 수려한 합천 1-1 한옥마을 전주 </b></font><br>
+<br>
+LG배 우승 직후 원익전을 승리한 후 "남은 경기를 모두 이겨서 포스트시즌에 진출하겠다"며 강한 의지를 밝혔던 신민준이 2국에 나섰다. 상대는 공격력이 강한 한상조.<br>
+<br>
+반상 곳곳에서 크고 작은 전투가 벌어졌다. 어느 한쪽으로 쉽게 기울지 않은 형세 속 승부처는 대마의 사활이었다. 한상조가 상대 진영에서 돌을 움직이며 수상전까지 끌고 갔지만, 신민준의 정교한 수순 앞에 무릎을 꿇었다. 신민준의 반격으로 승부는 1-1 원점이 되었다.<br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][크기변환]2국.JPG' /></div><div class=caption style='width:560px; margin:0 auto'></div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][크기변환]신민준.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 2지명부터 외국인 선수까지 맞붙은 8명을 상대로 전승을 거두고 있는 '하위 지명 킬러' 신민준(수려한 합천). 시즌 8승 4패.</div><br>
+<br>
+<b><font color=brown> 3국 한옥마을 전주 강유택(5지명) vs 수려한 합천 김승진(3지명) </b></font><br>
+<b><font color=orange> 강유택, 250수 백 불계승. 한옥마을 전주 2-1 수려한 합천 </b></font><br>
+<br>
+승부의 갈림길이 된 3국. 한옥마을 전주는 무패 행진 중인 '우승 청부사' 강유택을 투입했다. 지난주 신진서(마한의 심장 영암)마저 제압한 강유택(랭킹 31위)은 전체 기전 15연승을 기록하며, 2개월 만에 랭킹이 15계단이나 수직 상승했다. 수려한 합천은 '젊은 피' 김승진(랭킹 30위)으로 맞불을 놓았다. 두 선수의 맞대결은 강유택이 3전 전승으로 압도하고 있다.<br>
+<br>
+김승진이 감각적인 행마로 초반 국면을 주도했다. 그러나 우변에서 불필요한 손찌검이 화를 불렀다. 전세가 역전된 이후, 노련한 강유택이 안정적으로 마무리하며 불계승을 거뒀다. 8연승을 완성한 강유택은 5지명 최다 연승 신기록을 작성했다. 종전 기록은 2020-2021 시즌 심재익(컴투스 타이젬)의 7연승. 강유택의 기록 경신과 함께 한옥마을 전주가 2-1로 앞서갔다.<br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][크기변환]3국.JPG' /></div><div class=caption style='width:560px; margin:0 auto'></div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][수정]DSC_2430.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 전반기에 이은 리턴 매치에서 김승진(수려한 합천)에게 또다시 패배를 안긴 강유택(한옥마을 전주). 시즌 8전 전승.</div><br>
+<br>
+<b><font color=brown> 4국 한옥마을 전주 안정기(2지명) vs 수려한 합천 김형우(5지명) vs</b></font><br>
+<b><font color=orange> 안정기, 297수 흑 1.5집 승. 한옥마을 전주 3-1 수려한 합천 </b></font><br>
+<br>
+강유택의 MVP급 활약에 가려졌지만, 수려한 합천 5지명 김형우의 선전도 만만치 않다. 3차례 결승점을 포함한 시즌 4승 3패, 팀의 소방수 역할을 톡톡히 해냈다. 한옥마을 전주는 2지명 안정기를 마무리로 투입했다.<br>
+<br>
+잠잠하던 국면이 우하귀 패싸움으로 요동쳤다. 패를 이긴 안정기가 상당한 성과를 올렸다. 하지만 상대는 '끈기의 화신' 김형우. 불리한 바둑을 집요하게 추격하며 결국 미세한 승부로 끌고 갔다. 승부는 끝내기에서 갈렸다. 김형우는 결정적인 기회를 놓친 반면, 안정기는 빈틈없는 끝내기로 1.5집을 남겼다. 한옥마을 전주가 수려한 합천을 3-1로 따돌렸다.<br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][크기변환]4국.JPG' /></div><div class=caption style='width:560px; margin:0 auto'></div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][크기변환]안정기.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 고향 팀 전주의 귀중한 결승점을 책임진 안정기(한옥마을 전주). 시즌 3승 5패.</div><br>
+<br>
+24일(토) 12라운드 3경기는 2위 원익과 6위 GS칼텍스의 대결이다. 원익은 2지명 이지현을, GS칼텍스는 주장 원성진을 선발로 예고했다. 상대 전적은 원성진이 8승 6패로 근소하게 우세하다.<br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][수정]결과.jpg' /></div><div class=caption style='width:295px; margin:0 auto'></div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][수정]순위.jpg' /></div><div class=caption style='width:480px; margin:0 auto'></div><br>
+<br>
+○● 2025-2026 KB국민은행 바둑리그는 8개 팀이 더블리그 방식으로 총 14라운드 56경기를 치른다. 정규리그 상위 4개 팀이 포스트시즌에 진출해 우승 상금 2억 5,000만원을 놓고 최종 대결을 펼친다. 매 경기 5판 3선승제로 진행되며, 기본 시간 1분에 착수할 때마다 15초가 추가되는 피셔 룰 방식이 적용된다.<br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][크기변환]합천.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 이창석을 중심으로 주장 신민준의 2국을 검토하고 있는 수려한 합천 선수단</div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][크기변환]조한승.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 수려한 합천 검토실을 방문한 조한승 신임 프로기사협회 회장(가운데)이 선수들과 대화를 나누고 있다.</div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[848][크기변환]전주.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ '정중동(靜中動)' 한옥마을 전주의 검토실은 차분하고 조용하다. 양건 감독과 변상일을 비롯한 선수들이 대체로 말수가 적고 점잖다. '양반의 고장' 전주다운 풍경. </div><br>
+
+					</div>
+					<button type="button" class="listBack" onclick="listPage()">목록</button>
+				</div>
+
+				<div class="newsViewSide">
+					
+
+<div class="sideList">
+	<h2>보도자료</h2>
+	<ul>
+		
+			<li>
+				<a onclick="viewPage_report('5967')">
+				<figure><img src="https://www.baduk.or.kr/FileUpDown/homepage/news/casdfdf.jpg"></figure>
+				<dl class="article">
+					<dt>하나은행, 한국바둑리그 새로운 타이틀 스폰서로 나선다!</dt>
+					<dd>하나은행이 한국기원과 「2026-2027 하나은행 한국바둑리그」 타이틀 스폰서 조인식을 갖고 새 시즌 공식 후원사로 나섰다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a onclick="viewPage_report('5966')">
+				<figure><img src="https://www.baduk.or.kr/FileUpDown/homepage/news/ascdssfdsf.jpg"></figure>
+				<dl class="article">
+					<dt>김은지·김채영, IBK기업은행배 4강 동반 진출</dt>
+					<dd>김은지 9단과 김채영 9단이 4강에 오르며 IBK기업은행배 초대 우승을 향한 도전을 이어가게 됐다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a onclick="viewPage_report('5965')">
+				<figure><img src="https://www.baduk.or.kr/FileUpDown/homepage/news/acdfdsf.jpg"></figure>
+				<dl class="article">
+					<dt>독보적 1위 신진서, 82개월 연속 정상 질주</dt>
+					<dd>신진서 9단이 82개월 연속 랭킹 정상을 지켰다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a onclick="viewPage_report('5964')">
+				<figure><img src="https://www.baduk.or.kr/FileUpDown/homepage/news/asddsafdsf.jpg"></figure>
+				<dl class="article">
+					<dt>한국 원투펀치 김은지ㆍ최정, IBK기업은행배 8강 진출</dt>
+					<dd>한국 여자랭킹 1위 김은지 9단과 2위 최정 9단이 IBK기업은행배 16강 둘째 날 경기에서 나란히 승리하며 8강에 안착했다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a onclick="viewPage_report('5963')">
+				<figure><img src="https://www.baduk.or.kr/FileUpDown/homepage/news/2026 IBK기업은행배 16강1 오전 대국 전경(웹).JPG"></figure>
+				<dl class="article">
+					<dt>스미레ㆍ김채영, IBK기업은행배 8강 진출</dt>
+					<dd>여자랭킹 3위 스미레 6단과 5위 김채영 9단이 2026 IBK기업은행배 여자바둑 월드마스터스 8강에 진출했다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+	</ul>
+</div>
+
+<form method="post" name="f_report">	
+	<input type="hidden" name="news_no">
+</form>
+
+<script>
+	function viewPage_report(news_no){
+		f_report.news_no.value = news_no;
+		f_report.action = "report_view.asp";
+		f_report.submit();
+	}
+</script>
+
+
+<div class="sideList">
+	<h2>언론사뉴스</h2>
+	<ul>
+		
+			<li>
+				<a href="https://m.sports.naver.com/general/article/003/0014234092" target="_blank">
+				<dl>
+					<dt>김은지·김채영, IBK배 여자바둑 월드마스터스 준결승 진출</dt>
+					<dd>김은지는 우에노, 김채영은 탕자원 격파
+내년 1월 속개…5일 준결승·6~8일 결승
+</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a href="https://www.ppss.kr/news/articleView.html?idxno=314033" target="_blank">
+				<dl>
+					<dt>IBK기업은행배 4강 멤버 한·중 2-2로 압축</dt>
+					<dd>김은지-위즈잉, 김채영-리샤오시 내년 1월 결승행 다퉈
+</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a href="https://m.sports.naver.com/general/article/023/0004002232" target="_blank">
+				<dl>
+					<dt>김은지·김채영, 4강 진출… 2대2 韓·中 맞대결</dt>
+					<dd>‘IBK배 여자바둑 월드마스터스’ 8강
+내년 1월 위즈잉·리샤오시와 준결승</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a href="https://m.sports.naver.com/general/article/472/0000041810" target="_blank">
+				<dl>
+					<dt>'한국 바둑 에이스' 신진서 9단, 82개월 연속 랭킹 1위</dt>
+					<dd>한국 바둑의 절대 강자 신진서 9단이 82개월 연속 정상을 지켰다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a href="https://www.kukinews.com/article/view/kuk202610050044" target="_blank">
+				<dl>
+					<dt>최정, 위즈잉에 패해 탈락…4강 오른 ‘바둑 여왕’ 김은지, ‘우승 2억원’ IBK배 책임진다</dt>
+					<dd>김은지·김채영 9단, IBK기업은행배 4강 동반 진출
+최정, ‘라이벌’ 위즈잉에게 완패 당하며 8강서 탈락
+준결승전에서 김은지-위즈잉, 김채영-리샤오시 격돌
+내년 1월5일 4강, 6∼8일 결승 3번기로 챔피언 결정</dd>
+				</dl>
+				</a>
+			</li>
+			
+	</ul>
+</div>
+				</div>
+			</div>
+		</div> 
+
+	</div>
+</div>
+
+
+	
+	<div id="footer">
+		<div class="innerFoot">
+            <ul class="footerLinks">
+				<li><a href="/about/history.asp">한국기원소개</a></li>
+				<li><a href="/about/contact.asp">찾아오시는길</a></li>
+				<li><a href="/member/provision.asp">이용약관</a></li>
+				<li><a href="/member/privacy.asp">개인정보처리방침</a></li>
+            </ul>
+            <address>
+                주소 : 서울시 성동구 마장로 210 전화 : 02-3407-3800 팩스 : 02-3407-3875 이메일 : webmaster@baduk.or.kr 사업자등록번호 : 206-82-03412
+                출판 : 1967년 7월 7일 등록(라-906호)<br />
+                (재)한국기원 대표자: 정태순<br />
+                ⓒ 2010 ~ 2026 KOREA BADUK ASSOCIATION. All rights reserved.
+            </address>
+        </div>
+	</div>
+
+</div>
+
+</body>
+</html>
+
+<form method="post" name="s1">	
+	<input type="hidden" name="keyColumn" value="">
+	<input type="hidden" name="keyWord"   value="">
+	<input type="hidden" name="pageNo"    value="">
+	<input type="hidden" name="etcKey"    value="">
+</form>
+
+<script>
+	function listPage(){
+		s1.action = "summary.asp?#pageFocus";
+		s1.submit();
+	}
+	
+	//view에서 탭메뉴
+	function tebMenu(str){
+		s1.pageNo.value = "1";
+		s1.etcKey.value = str;
+		s1.action = "summary.asp?#pageFocus";
+		s1.submit();
+	}
+</script>

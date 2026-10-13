@@ -1,0 +1,394 @@
+{
+  "title": "Read-only timed pilot: missing unlinked readable player raws",
+  "date": "2026-10-04",
+  "environment": "PROD ucloud-v100 / katrain-ucloud-katrain-web-1",
+  "scope": {
+    "inventory_context": "3,007 readable raws / 30,621 null-FK slots (supplied scope)",
+    "sample_size_raw_values": 20,
+    "sampled_unlinked_slots": 2945,
+    "selection": "Top 10 still-null readable raws by frequency, excluding exact raw names in reviewed top-8 decision; plus first 10 eligible 1–30-slot raws ordered by PostgreSQL md5(raw). Placeholder Unknown/Black/White excluded from hash band.",
+    "hash_band_method": "row_number() over (order by md5(raw)) among grouped raws with 1 <= count(*) <= 30 and raw not matching ^(unknown|black|white)$",
+    "top10_excluded_previous_top8": true
+  },
+  "timing": {
+    "first_production_query": "First successful production query; wall timestamp not separately recorded",
+    "bundle_completed_at_utc": "2026-10-04T14:06:16Z",
+    "elapsed_wall_seconds_estimate": 765,
+    "elapsed_wall_note": "Retrospective estimate from first successful production query through bundle completion; per-item source lookups were not stopwatch-instrumented. Per-item values are estimates, not direct measurements.",
+    "per_item_time_seconds_estimate_total": 950
+  },
+  "results": {
+    "REUSE_EXISTING_ID": 6,
+    "NEW_CHINESE_CANONICAL": 3,
+    "HOLD_HOMONYM_OR_INSUFFICIENT": 11,
+    "identity_decisions_candidate_count": 9,
+    "writes": 0,
+    "translations": 0,
+    "authoritative_fk_approvals": 0
+  },
+  "items": [
+    {
+      "raw": "小松英树",
+      "unlinked_slots": 445,
+      "sample_stratum": "top",
+      "representative_game": {
+        "album_id": 5554,
+        "date_played": "2023-09-25",
+        "opponent_raw": "安达利昌",
+        "source_path": "data/kifu-album/19x19/41288532.sgf"
+      },
+      "catalog_candidate_player_id": 535,
+      "decision": "REUSE_EXISTING_ID",
+      "rationale": "Catalog 535 小松英樹 exact; Nihon Ki-in confirms 小松英樹 / KOMATSU, Hideki.",
+      "evidence_urls": [
+        "https://www.nihonkiin.or.jp/player/htm/ki000148.htm"
+      ],
+      "item_time_seconds_estimate": 60
+    },
+    {
+      "raw": "韩升周",
+      "unlinked_slots": 317,
+      "sample_stratum": "top",
+      "representative_game": {
+        "album_id": 413,
+        "date_played": "2022-08-29",
+        "opponent_raw": "金庭贤",
+        "source_path": "data/kifu-album/19x19/17189794.sgf"
+      },
+      "catalog_candidate_player_id": 513,
+      "decision": "REUSE_EXISTING_ID",
+      "rationale": "Catalog 513 韩升周 exact; Korean Baduk Association identifies 한승주 (韓昇周).",
+      "evidence_urls": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10000744"
+      ],
+      "item_time_seconds_estimate": 60
+    },
+    {
+      "raw": "Ito Tomoe",
+      "unlinked_slots": 301,
+      "sample_stratum": "top",
+      "representative_game": {
+        "album_id": 153089,
+        "date_played": "1934-10-03,04",
+        "opponent_raw": "Shimamura Toshihiro",
+        "source_path": "data/kifu-album/CWI_History_Full/Oteai/1934/180.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "Likely 伊藤友恵, but competing catalog owners 伊藤友恵 / 伊藤友惠 (IDs 3878, 3879); no owner decision.",
+      "evidence_urls": [
+        "https://kotobank.jp/word/%E4%BC%8A藤友恵-1055196"
+      ],
+      "item_time_seconds_estimate": 60
+    },
+    {
+      "raw": "鹤山淳志",
+      "unlinked_slots": 280,
+      "sample_stratum": "top",
+      "representative_game": {
+        "album_id": 507,
+        "date_played": "2022-09-08",
+        "opponent_raw": "平田智也",
+        "source_path": "data/kifu-album/19x19/17641288.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "NEW_CHINESE_CANONICAL",
+      "rationale": "Raw Chinese form corresponds to official 鶴山淳志 / Tsuruyama Atsushi; no exact/near catalog candidate found in targeted scan.",
+      "evidence_urls": [
+        "https://www.nihonkiin.or.jp/player/htm/ki000365.htm"
+      ],
+      "item_time_seconds_estimate": 60
+    },
+    {
+      "raw": "杨一",
+      "unlinked_slots": 272,
+      "sample_stratum": "top",
+      "representative_game": {
+        "album_id": 9621,
+        "date_played": "2022-11-15",
+        "opponent_raw": "林立祥",
+        "source_path": "data/kifu-album/19x19/41421915.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "Sources identify at least two professionals named 杨一 (1984 and 1995); one context cannot partition all 272 slots.",
+      "evidence_urls": [
+        "https://zh.wikipedia.org/wiki/%E6%9D%A8%E4%B8%80_%281984%E5%B9%B4%29",
+        "https://zh.wikipedia.org/wiki/%E6%9D%A8%E4%B8%80_%281995%E5%B9%B4%29"
+      ],
+      "item_time_seconds_estimate": 60
+    },
+    {
+      "raw": "Okubo Ichigen",
+      "unlinked_slots": 268,
+      "sample_stratum": "top",
+      "representative_game": {
+        "album_id": 24966,
+        "date_played": "1968-01-11",
+        "opponent_raw": "Go Seigen",
+        "source_path": "data/kifu-album/Go_Seigen/1968-01-11.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "Go ratings lists a player under this romanization; no authoritative Japanese/Chinese identity form or catalog owner established.",
+      "evidence_urls": [
+        "https://www.goratings.org/en/players/1376.html"
+      ],
+      "item_time_seconds_estimate": 60
+    },
+    {
+      "raw": "尹灿熙",
+      "unlinked_slots": 263,
+      "sample_stratum": "top",
+      "representative_game": {
+        "album_id": 993,
+        "date_played": "2022-12-05",
+        "opponent_raw": "金彩瑛",
+        "source_path": "data/kifu-album/19x19/21186427.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "NEW_CHINESE_CANONICAL",
+      "rationale": "KBA confirms 윤찬희 and Korean coverage supplies 尹燦熙; raw is simplified Chinese form. No exact catalog candidate found.",
+      "evidence_urls": [
+        "https://m.tvbaduk.com/info/info_gisa_view.asp?prpl_code=10000465",
+        "https://www.nocutnews.co.kr/news/5531320"
+      ],
+      "item_time_seconds_estimate": 60
+    },
+    {
+      "raw": "Kano Yoshinori",
+      "unlinked_slots": 256,
+      "sample_stratum": "top",
+      "representative_game": {
+        "album_id": 24825,
+        "date_played": "1956-08-06,07",
+        "opponent_raw": "Go Seigen",
+        "source_path": "data/kifu-album/Go_Seigen/1956-08-06.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "Official profile identifies 加納嘉徳 / Kano Yoshinori; catalog has competing near variants 加纳嘉徳 (4048) and 加纳嘉德 (4049).",
+      "evidence_urls": [
+        "https://www.nihonkiin.or.jp/player/htm/ki000015.html"
+      ],
+      "item_time_seconds_estimate": 60
+    },
+    {
+      "raw": "Iwata Tatsuaki",
+      "unlinked_slots": 255,
+      "sample_stratum": "top",
+      "representative_game": {
+        "album_id": 24915,
+        "date_played": "1961-12-20,21",
+        "opponent_raw": "Go Seigen",
+        "source_path": "data/kifu-album/Go_Seigen/1961-12-20.sgf"
+      },
+      "catalog_candidate_player_id": 4519,
+      "decision": "REUSE_EXISTING_ID",
+      "rationale": "Official profile identifies 岩田達明; catalog 4519 岩田达明 has alias 岩田正男.",
+      "evidence_urls": [
+        "https://www.nihonkiin.or.jp/player/htm/ki000016.htm"
+      ],
+      "item_time_seconds_estimate": 60
+    },
+    {
+      "raw": "Sumino Tsunehiro",
+      "unlinked_slots": 252,
+      "sample_stratum": "top",
+      "representative_game": {
+        "album_id": 156750,
+        "date_played": "1941-04-30,05-01",
+        "opponent_raw": "Takagawa Kaku",
+        "source_path": "data/kifu-album/CWI_History_Full/people/Takagawa/Tak-0201.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "No credible association or dedicated identity page found for this romanization; kanji/Chinese canonical not established.",
+      "evidence_urls": [
+        "https://www.goratings.org/"
+      ],
+      "item_time_seconds_estimate": 60
+    },
+    {
+      "raw": "Aoyagi Hideo",
+      "unlinked_slots": 14,
+      "sample_stratum": "hashband",
+      "representative_game": {
+        "album_id": 157117,
+        "date_played": "1973-08-02",
+        "opponent_raw": "Takemiya Masaki",
+        "source_path": "data/kifu-album/CWI_1950_1978/AJ1st/04/24.sgf"
+      },
+      "catalog_candidate_player_id": 6400,
+      "decision": "REUSE_EXISTING_ID",
+      "rationale": "Kansai Ki-in roster identifies 青柳英雄; exact catalog 6400 青柳英雄.",
+      "evidence_urls": [
+        "https://kansaikiin.jp/wp/prokisi/",
+        "https://www.igorating.com/players/hideo-aoyagi"
+      ],
+      "item_time_seconds_estimate": 35
+    },
+    {
+      "raw": "王祥云初段",
+      "unlinked_slots": 8,
+      "sample_stratum": "hashband",
+      "representative_game": {
+        "album_id": 37877,
+        "date_played": "2007-05-30",
+        "opponent_raw": "曹又尹初段",
+        "source_path": "data/kifu-album/19x19/41302094.sgf"
+      },
+      "catalog_candidate_player_id": 559,
+      "decision": "REUSE_EXISTING_ID",
+      "rationale": "Identity page confirms 王祥云; catalog 559 王祥云.",
+      "evidence_urls": [
+        "https://zh.wikipedia.org/wiki/%E7%8E%8B%E7%A5%A5%E4%BA%91"
+      ],
+      "item_time_seconds_estimate": 35
+    },
+    {
+      "raw": "Hayashi Tennyu",
+      "unlinked_slots": 6,
+      "sample_stratum": "hashband",
+      "representative_game": {
+        "album_id": 155635,
+        "date_played": "1750-12-15",
+        "opponent_raw": "Honinbo Hakugen",
+        "source_path": "data/kifu-album/CWI_History_Full/ancient/castle/cg163.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "Historical romanization lacks reliable identity/kanji disambiguation in this pass.",
+      "evidence_urls": [
+        "https://en.wikipedia.org/wiki/Hayashi_%28Go%29"
+      ],
+      "item_time_seconds_estimate": 35
+    },
+    {
+      "raw": "OnoYutaka",
+      "unlinked_slots": 2,
+      "sample_stratum": "hashband",
+      "representative_game": {
+        "album_id": 143513,
+        "date_played": "1968-09-25",
+        "opponent_raw": "ChoChikun",
+        "source_path": "data/kifu-album/19x19/41569053.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "Romanization-only raw; no credible dedicated Go identity page found.",
+      "evidence_urls": [
+        "https://www.goratings.org/"
+      ],
+      "item_time_seconds_estimate": 35
+    },
+    {
+      "raw": "Koga Yoshio",
+      "unlinked_slots": 1,
+      "sample_stratum": "hashband",
+      "representative_game": {
+        "album_id": 24844,
+        "date_played": "1957-06-02",
+        "opponent_raw": "Go Seigen",
+        "source_path": "data/kifu-album/Go_Seigen/1957-06-02.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "SGF rank says 5d ama; no identity evidence to assign a Chinese canonical.",
+      "evidence_urls": [
+        "https://www.goratings.org/"
+      ],
+      "item_time_seconds_estimate": 35
+    },
+    {
+      "raw": "Nikkai, 1st Honinbo Sansa",
+      "unlinked_slots": 1,
+      "sample_stratum": "hashband",
+      "representative_game": {
+        "album_id": 154458,
+        "date_played": "1582-06-20",
+        "opponent_raw": "Kashio Rigen",
+        "source_path": "data/kifu-album/CWI_History_Full/ancient/Honinbo_Sansa/1.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "NEW_CHINESE_CANONICAL",
+      "rationale": "Dedicated page ties Nikkai to Honinbo Sansa, 本因坊算砂, and the 1582 game context; no exact catalog candidate found.",
+      "evidence_urls": [
+        "https://en.wikipedia.org/wiki/Hon%27inb%C5%8D_Sansa"
+      ],
+      "item_time_seconds_estimate": 35
+    },
+    {
+      "raw": "OkumuraNoboru",
+      "unlinked_slots": 1,
+      "sample_stratum": "hashband",
+      "representative_game": {
+        "album_id": 29761,
+        "date_played": "1977-09-21",
+        "opponent_raw": "横山孝一",
+        "source_path": "data/kifu-album/19x19/41291526.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "Go ratings lists the romanization, but no credible identity page or Chinese/Japanese name was established.",
+      "evidence_urls": [
+        "https://www.goratings.org/en/players/1883.html"
+      ],
+      "item_time_seconds_estimate": 35
+    },
+    {
+      "raw": "YamaguchiShigeharu",
+      "unlinked_slots": 1,
+      "sample_stratum": "hashband",
+      "representative_game": {
+        "album_id": 51153,
+        "date_played": "1941-07-31",
+        "opponent_raw": "村岛谊纪",
+        "source_path": "data/kifu-album/19x19/41333423.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "Romanization is not disambiguated by a credible Go identity source.",
+      "evidence_urls": [
+        "https://www.goratings.org/"
+      ],
+      "item_time_seconds_estimate": 35
+    },
+    {
+      "raw": "久島国夫",
+      "unlinked_slots": 1,
+      "sample_stratum": "hashband",
+      "representative_game": {
+        "album_id": 94444,
+        "date_played": "1991-07-21",
+        "opponent_raw": "彦坂直人",
+        "source_path": "data/kifu-album/19x19/41394166.sgf"
+      },
+      "catalog_candidate_player_id": 6669,
+      "decision": "REUSE_EXISTING_ID",
+      "rationale": "Nihon Ki-in confirms 久島国夫 / Hisajima Kunio; catalog 6669 久岛国夫 is simplified orthographic match.",
+      "evidence_urls": [
+        "https://www.nihonkiin.or.jp/player/htm/ki000056.htm"
+      ],
+      "item_time_seconds_estimate": 35
+    },
+    {
+      "raw": "小山滿鶴",
+      "unlinked_slots": 1,
+      "sample_stratum": "hashband",
+      "representative_game": {
+        "album_id": 58040,
+        "date_played": "2001-12-05",
+        "opponent_raw": "佃亜紀子",
+        "source_path": "data/kifu-album/19x19/41341848.sgf"
+      },
+      "catalog_candidate_player_id": null,
+      "decision": "HOLD_HOMONYM_OR_INSUFFICIENT",
+      "rationale": "Profile says 小山滿鶴 is a former name of 小山栄美; production candidate-owner follow-up timed out, so retain HOLD pending owner check.",
+      "evidence_urls": [
+        "https://igo-kifu.com/en/player/239"
+      ],
+      "item_time_seconds_estimate": 35
+    }
+  ]
+}

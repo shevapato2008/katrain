@@ -1,4 +1,5 @@
-export type CronHealth = 'ok' | 'running' | 'errors' | 'failed' | 'offline' | 'stuck' | 'overdue' | 'disabled' | 'pending';
+export type CronHealth = 'ok' | 'running' | 'errors' | 'failed' | 'offline' | 'stuck' | 'overdue' | 'disabled' | 'paused' | 'pending';
+export type CronCommand = { id: number; state: 'pending' | 'done' | 'rejected'; requested_at: string; requested_by: string; handled_at: string | null; note: string | null };
 export type CronJob = {
   name: string;
   kind: 'interval' | 'loop';
@@ -10,14 +11,20 @@ export type CronJob = {
   last_started_at: string | null;
   last_finished_at: string | null;
   last_success_at: string | null;
-  last_status: 'running' | 'success' | 'errors' | 'failed' | null;
+  last_status: 'running' | 'success' | 'errors' | 'failed' | 'paused' | null;
   last_duration_ms: number | null;
   last_error: string | null;
   consecutive_failures: number;
   loop_iteration_at: string | null;
   loop_stats: { in_flight: number; capacity: number; errors_total: number; last_error_at: string | null } | null;
+  paused?: boolean;
+  pause_reason?: string | null;
+  paused_by?: string | null;
+  paused_at?: string | null;
+  pending_run?: CronCommand | null;
+  last_command?: CronCommand | null;
 };
-export type CronRun = { id: number; started_at: string; finished_at: string | null; status: 'running' | 'success' | 'errors' | 'failed'; duration_ms: number | null; error_count: number; error: string | null };
+export type CronRun = { id: number; started_at: string; finished_at: string | null; status: 'running' | 'success' | 'errors' | 'failed' | 'paused'; duration_ms: number | null; error_count: number; error: string | null };
 export type CronQueue = { by_status: Record<string, number>; oldest_pending_at: string | null };
 export type CronJobsResponse = { observed_at: string; jobs: CronJob[] };
 export type CronRunsResponse = { runs: CronRun[]; next_before_id: number | null };

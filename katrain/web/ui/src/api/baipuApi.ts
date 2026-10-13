@@ -44,6 +44,7 @@ export interface BaipuStep {
 export interface BaipuMeta {
   player_black: string;
   player_white: string;
+  result: string;
   handicap: number;
   komi: number;
   ruleset: string;

@@ -1,0 +1,215 @@
+{
+  "status": "producer-pending-independent-review",
+  "producer_id": "/root/event10_review_apply",
+  "producer_model": "gpt-6-astra",
+  "reasoning_effort": "max",
+  "produced_at": "2026-10-05T10:28:26.117449+00:00",
+  "database_writes": false,
+  "event_ids": [
+    75,
+    80,
+    34,
+    48,
+    72
+  ],
+  "languages": [
+    "cn",
+    "tw",
+    "jp",
+    "ko",
+    "en"
+  ],
+  "candidate_count": 25,
+  "conventional_count": 9,
+  "translated_count": 16,
+  "targets": {
+    "TEST": {
+      "captured_at": "2026-10-05T10:19:18.874269+00:00",
+      "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+      "catalog_sha256": "f2e4d322966039cd8fba4dba45dad952b9f2f24611c633ebc5c61384945b7079",
+      "catalog_hash_basis_capture": "/tmp/kifu-event-next-high5-20261005/TEST/current.json",
+      "bundle_sha256": "939296aee4acd7ef3247dff638eb42a4bdbe1e50c9bd4cf11674adb227e60ba3",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "75": {
+          "event_id": 75,
+          "linked_rows": 783,
+          "unique_games": 783,
+          "visible_unique_games": 783
+        },
+        "80": {
+          "event_id": 80,
+          "linked_rows": 748,
+          "unique_games": 748,
+          "visible_unique_games": 748
+        },
+        "34": {
+          "event_id": 34,
+          "linked_rows": 705,
+          "unique_games": 705,
+          "visible_unique_games": 705
+        },
+        "48": {
+          "event_id": 48,
+          "linked_rows": 670,
+          "unique_games": 670,
+          "visible_unique_games": 670
+        },
+        "72": {
+          "event_id": 72,
+          "linked_rows": 670,
+          "unique_games": 670,
+          "visible_unique_games": 670
+        }
+      },
+      "unique_visible_games": 3576
+    },
+    "PROD": {
+      "captured_at": "2026-10-05T10:19:17.837725+00:00",
+      "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+      "catalog_sha256": "03cca482ef1dc3e52a109ed0a758e1fdc3f7c4a3dc061aa433b3def1e07df1a4",
+      "catalog_hash_basis_capture": "/tmp/kifu-event-next-high5-20261005/PROD/current.json",
+      "bundle_sha256": "5a16fc67750a7225f648769f1986162326e10b6400b29f340a9254e008c36024",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "75": {
+          "event_id": 75,
+          "linked_rows": 783,
+          "unique_games": 783,
+          "visible_unique_games": 783
+        },
+        "80": {
+          "event_id": 80,
+          "linked_rows": 748,
+          "unique_games": 748,
+          "visible_unique_games": 748
+        },
+        "34": {
+          "event_id": 34,
+          "linked_rows": 705,
+          "unique_games": 705,
+          "visible_unique_games": 705
+        },
+        "48": {
+          "event_id": 48,
+          "linked_rows": 670,
+          "unique_games": 670,
+          "visible_unique_games": 670
+        },
+        "72": {
+          "event_id": 72,
+          "linked_rows": 670,
+          "unique_games": 670,
+          "visible_unique_games": 670
+        }
+      },
+      "unique_visible_games": 3576
+    }
+  },
+  "events": [
+    {
+      "event_id": 75,
+      "canonical_name": "中日围棋对抗赛",
+      "unique_visible_games": 783,
+      "names": {
+        "cn": "中日围棋对抗赛",
+        "tw": "中日圍棋對抗賽",
+        "jp": "日中囲碁対抗戦",
+        "ko": "중일 바둑 대항전",
+        "en": "Japan-China Go Exchange"
+      }
+    },
+    {
+      "event_id": 80,
+      "canonical_name": "韩国KBS杯围棋王战",
+      "unique_visible_games": 748,
+      "names": {
+        "cn": "KBS围棋王战",
+        "tw": "KBS圍棋王戰",
+        "jp": "KBS囲碁王戦",
+        "ko": "KBS바둑왕전",
+        "en": "KBS Cup"
+      }
+    },
+    {
+      "event_id": 34,
+      "canonical_name": "日本女子名人战",
+      "unique_visible_games": 705,
+      "names": {
+        "cn": "日本女子名人战",
+        "tw": "日本女子名人戰",
+        "jp": "女流名人戦",
+        "ko": "일본 여류명인전",
+        "en": "Women's Meijin"
+      }
+    },
+    {
+      "event_id": 48,
+      "canonical_name": "韩国王位战",
+      "unique_visible_games": 670,
+      "names": {
+        "cn": "韩国王位战",
+        "tw": "韓國王位戰",
+        "jp": "韓国王位戦",
+        "ko": "왕위전",
+        "en": "Wangwi"
+      }
+    },
+    {
+      "event_id": 72,
+      "canonical_name": "中国全国围棋个人赛",
+      "unique_visible_games": 670,
+      "names": {
+        "cn": "全国围棋个人赛",
+        "tw": "中國全國圍棋個人賽",
+        "jp": "中国全国囲碁個人戦",
+        "ko": "중국 전국바둑개인전",
+        "en": "Chinese National Individual Go Championship"
+      }
+    }
+  ],
+  "translation_notes": {
+    "75-tw": "Convert 中日围棋对抗赛 into Traditional Chinese 中日圍棋對抗賽, preserving the two-country regular representative exchange identity.",
+    "75-jp": "Render 围棋对抗赛 as 囲碁対抗戦, with 日中 naming Japan and China in Japanese order. This is regular bilateral representative exchange, not 日中スーパー囲碁.",
+    "75-ko": "Render 中日 as 중일, 围棋 as 바둑 and 对抗赛 as 대항전. Scope is the regular representative exchange series, not a later relay or youth event.",
+    "80-cn": "Preserve broadcaster KBS; translate 바둑왕전 directly as 围棋王战. No sponsor era, year or match round is added.",
+    "80-tw": "Preserve KBS and translate 바둑왕전 as 圍棋王戰 in Traditional Chinese.",
+    "80-jp": "Preserve KBS and translate 바둑왕전 as 囲碁王戦 in Japanese.",
+    "34-cn": "Render native 女流名人戦 as 女子名人战, adding 日本 to distinguish the Japanese title from Korean and Taiwanese events.",
+    "34-tw": "Render 女流名人戦 as 女子名人戰 in Traditional Chinese, with 日本 identity qualifier.",
+    "34-ko": "Render 女流名人戦 in Korean as 여류명인전 and add 일본 to distinguish the Japanese professional title from the Korean women’s Myeongin event.",
+    "48-cn": "Translate 왕위전 as 王位战, adding 韩国 to preserve its country-specific professional identity.",
+    "48-tw": "Translate 왕위전 as 王位戰 with 韓國 in Traditional Chinese.",
+    "48-jp": "Translate 왕위전 as 王位戦 with 韓国 in Japanese; this is the Korean Go title, not Japanese shogi Oi.",
+    "72-tw": "Convert 全国围棋个人赛 to Traditional Chinese 全國圍棋個人賽 and retain explicit 中國 country scope.",
+    "72-jp": "Render 全国围棋个人赛 as 全国囲碁個人戦 and add 中国, preserving individual competition rather than team or qualification events.",
+    "72-ko": "Render 中国全国围棋个人赛 as 중국 전국바둑개인전, preserving China/national/Go/individual scope and both men's and women's divisions.",
+    "72-en": "Render the official Chinese national individual Go competition as Chinese National Individual Go Championship. Preserve individual scope; do not narrow it to men or confuse it with qualification/dan events."
+  },
+  "scope_note": "Names and evidence for existing event types only. No album links, owners, aliases or raw EV text change. Existing type identity/linked rows are reused.",
+  "reader_note": "Existing strict display reads approved type names. Generic raw EV year/edition/round decoration is not added by this data batch."
+}

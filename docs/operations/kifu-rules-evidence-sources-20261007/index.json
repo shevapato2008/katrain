@@ -1,0 +1,167 @@
+{
+  "fetched_at": "2026-10-06T18:10:11.100935+00:00",
+  "notes": [
+    "Prior source review used the web tool; no earlier local original-response files existed.",
+    "Saved files below are newly archived direct response bytes from the same already reviewed source URLs. Failed downloads are listed honestly; no synthetic original files were created.",
+    "Use the 51-entry evidence artifact for proof scopes and limitations; source availability alone does not establish an event rule."
+  ],
+  "sources": [
+    {
+      "url": "https://haifong.org/news/content/22EF19BA83B481381AF2AD202F19366E",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/01-ff5fc69fe2.html",
+      "sha256": "36195d3011070ee3d4db4744fd13aa0132404f419a34f85569f7ab8b1be440d8",
+      "bytes": 22964,
+      "content_type": "text/html; charset=UTF-8",
+      "final_url": "https://haifong.org/news/content/22EF19BA83B481381AF2AD202F19366E"
+    },
+    {
+      "url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=5769",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/02-41d7a47e8d.html",
+      "sha256": "f08c7b3480f7a52b522e466c37d6fc4036677c40e83b86d2dae7c275b80db2fd",
+      "bytes": 54651,
+      "content_type": "text/html; Charset=UTF-8",
+      "final_url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=5769"
+    },
+    {
+      "url": "https://m.bjnews.com.cn/detail/174583306119104.html",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/03-bce4b9f531.html",
+      "sha256": "0fe5745c5e29c49783757b8accee7e5ee28818059ae19f47fcdd5a67a265afa2",
+      "bytes": 49424,
+      "content_type": "text/html; charset=UTF-8",
+      "final_url": "https://m.bjnews.com.cn/detail/174583306119104.html"
+    },
+    {
+      "url": "https://u-gen.nihonkiin.or.jp/topics/view.asp?tp_id=23420",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/04-8f51d80dc8.html",
+      "sha256": "43b366cb0a3464bedf8edaa17f41c3870ed787001d83a0b228938fa03e7daa25",
+      "bytes": 21717,
+      "content_type": "text/html; Charset=UTF-8",
+      "final_url": "https://u-gen.nihonkiin.or.jp/topics/view.asp?tp_id=23420"
+    },
+    {
+      "url": "https://www.baduk.or.kr/FileUpDown/homepage/notice/%EB%B0%94%EB%91%91%20%EA%B2%BD%EA%B8%B0%20%EA%B7%9C%EC%A0%95(250701).pdf",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "fetch_failed",
+      "error": "URLError: <urlopen error timed out>"
+    },
+    {
+      "url": "https://www.baduk.or.kr/news/report_view.asp?news_no=5676",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/06-7cf6189d92.html",
+      "sha256": "b18fa3d907fe8df54244f8fe91e1de24e7d2dc81cb46781bb885c461aae144d4",
+      "bytes": 23567,
+      "content_type": "text/html; Charset=UTF-8",
+      "final_url": "https://www.baduk.or.kr/news/report_view.asp?news_no=5676"
+    },
+    {
+      "url": "https://www.baduk.or.kr/news/summary_view.asp?news_div=KBL&news_no=848",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/07-3c7ed8c01d.html",
+      "sha256": "ebe6a6f3a9727ae0ab21de87687afe867405133d7dbd889e1b227c58385a50d8",
+      "bytes": 28733,
+      "content_type": "text/html; Charset=UTF-8",
+      "final_url": "https://www.baduk.or.kr/news/summary_view.asp?news_div=KBL&news_no=848"
+    },
+    {
+      "url": "https://www.baduk.or.kr/news/summary_view.asp?news_div=KBL&news_no=849",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "fetch_failed",
+      "error": "URLError: <urlopen error timed out>"
+    },
+    {
+      "url": "https://www.baduk.or.kr/news/summary_view.asp?news_div=KBL&news_no=850",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/09-b72a928c1b.html",
+      "sha256": "8524333b93931c00962bef20b21cdedc75d581532941f0b304215c98c5de6e6a",
+      "bytes": 31482,
+      "content_type": "text/html; Charset=UTF-8",
+      "final_url": "https://www.baduk.or.kr/news/summary_view.asp?news_div=KBL&news_no=850"
+    },
+    {
+      "url": "https://www.haifong.org/news/content/58AE566E6ED7F6175431B3A8BAB17BA0",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/10-f849f5c862.html",
+      "sha256": "1ef1038180ef95a7955350e1a84444efa8058e10bd61ceaf7f776be61972ea4a",
+      "bytes": 23511,
+      "content_type": "text/html; charset=UTF-8",
+      "final_url": "https://www.haifong.org/news/content/58AE566E6ED7F6175431B3A8BAB17BA0"
+    },
+    {
+      "url": "https://www.nihonkiin.or.jp/match/fmeijin/037.html",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/11-e7fa57a83e.html",
+      "sha256": "9fd0558eb4e03f9c539ed594946400a7bf5c5125d08d4c48c82394c0090b493c",
+      "bytes": 99358,
+      "content_type": "text/html",
+      "final_url": "https://www.nihonkiin.or.jp/match/fmeijin/037.html"
+    },
+    {
+      "url": "https://www.nihonkiin.or.jp/match/honinbo/081.html",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/12-1269a74bc4.html",
+      "sha256": "e5c94a97fe6d3b7598c198d2f6d4104f91664d8579072636126dda6c7238497b",
+      "bytes": 223428,
+      "content_type": "text/html",
+      "final_url": "https://www.nihonkiin.or.jp/match/honinbo/081.html"
+    },
+    {
+      "url": "https://www.nihonkiin.or.jp/match/kisei/050.html",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/13-4244d543f5.html",
+      "sha256": "a852881a8edad309772edd1b832ef9e370a7f2ee7c36a7ee2838027abbe612d5",
+      "bytes": 304252,
+      "content_type": "text/html",
+      "final_url": "https://www.nihonkiin.or.jp/match/kisei/050.html"
+    },
+    {
+      "url": "https://www.nihonkiin.or.jp/match/kiyaku/zenbun.htm",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/14-6995b06aa4.html",
+      "sha256": "b2de73a22399dea3395b7b071ee8f824b9527b2c6264c529202f8be8973ca888",
+      "bytes": 40285,
+      "content_type": "text/html",
+      "final_url": "https://www.nihonkiin.or.jp/match/kiyaku/zenbun.htm"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/lightvector/KataGo/fd0723fdbc/cpp/game/rules.cpp",
+      "requested_at": "2026-10-06T18:10:11.100935+00:00",
+      "archive_type": "direct HTTP response body; not a reconstructed quotation",
+      "status": "saved",
+      "file": "/Users/fan/Repositories/katrain/.worktrees/transformer-kifu-analysis/docs/operations/kifu-rules-evidence-sources-20261007/15-4be874f52f.cpp",
+      "sha256": "87cec3456eb5d250102607c41f87f1b253c0985f24acd5bf08abb3132474ca29",
+      "bytes": 23766,
+      "content_type": "text/plain; charset=utf-8",
+      "final_url": "https://raw.githubusercontent.com/lightvector/KataGo/fd0723fdbc/cpp/game/rules.cpp"
+    }
+  ]
+}

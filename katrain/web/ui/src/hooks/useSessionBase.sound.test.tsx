@@ -6,7 +6,7 @@ import type { GameState } from '../api';
 import { API } from '../api';
 import { useSessionBase } from './useSessionBase';
 
-vi.mock('../api', () => ({ API: { getState: vi.fn() } }));
+vi.mock('../api', async (importOriginal) => ({ ...(await importOriginal<typeof import('../api')>()), API: { getState: vi.fn() } }));
 
 const state = () => ({ game_id: 'g1', current_node_id: 1 }) as GameState;
 
@@ -66,5 +66,25 @@ describe('useSessionBase 的落子声认「落子音效」开关', () => {
   it('从没设置过(缺键)时照响 —— 出厂是开的,galaxy 从不写这把键', async () => {
     sendStone(await connect());
     expect(played).toEqual(['stone.wav']);
+  });
+});
+
+
+describe('verified spectator membership metadata', () => {
+  beforeEach(() => {
+    vi.clearAllMocks(); sockets.length = 0;
+    vi.mocked(API.getState).mockResolvedValue({ session_id: 'session-1', state: state() } as never);
+    vi.stubGlobal('WebSocket', MockWebSocket);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+  it('keeps the legacy raw sockets count and the additive verified field independently', async () => {
+    const hook = renderHook(() => useSessionBase({ token: 'token' }));
+    act(() => hook.result.current.setSessionId('session-1'));
+    await waitFor(() => expect(sockets).toHaveLength(1));
+    act(() => sockets[0].onmessage?.({ data: JSON.stringify({ type: 'spectator_count', count: 8, spectator_count: 2 }) } as MessageEvent));
+    expect(hook.result.current.gameState).toMatchObject({ sockets_count: 8, spectator_count: 2 });
+    act(() => sockets[0].onmessage?.({ data: JSON.stringify({ type: 'spectator_count', count: 9 }) } as MessageEvent));
+    expect(hook.result.current.gameState?.sockets_count).toBe(9);
+    expect(hook.result.current.gameState?.spectator_count).toBeUndefined();
   });
 });

@@ -1,0 +1,28 @@
+[
+  {
+    "pid": 5296,
+    "kind": "taiwan-kiin-event",
+    "url": "https://taiwangorg.blogspot.com/2009/05/513.html",
+    "method": "GET",
+    "status": 200,
+    "final_url": "https://taiwangorg.blogspot.com/2009/05/513.html",
+    "fetched_at_utc": "2026-10-08T21:11:54.351999+00:00",
+    "body_file": "captures/roster3-5296-taiwan-kiin-event.body.gz",
+    "body_bytes": 45954,
+    "body_sha256": "61d4a790c63189eece68fdb44e5b2ec6ead28bd7640cff4d83b20ab3083aea7f",
+    "excerpt": "圍棋俱樂部 國宇征(初)、趙寶龍(初)、吳梓天(初)、杜陽(初) 8、中國煤礦棋院 岳亮(四)、朱毅(五)、李聰(二)、李樂(二) 9、德州豪門集團圍棋俱樂部 武珺(二)、崔博東(二)、陳陽(二)、陳浩(初) 10、陳瑞圍棋道場 劉雲龍(三)、張昊(二)、華昱廷(初)、張超(初) 11、北京西藏藥業隊 鄭弘(九)、郭天瑞(三)、陳潤韜(初)、馬天放(6) 12、黑龍江省圍棋隊 朱燕銘(五)、潘文君"
+  },
+  {
+    "pid": 5036,
+    "kind": "ugo-english",
+    "url": "https://db.u-go.net/?q=Li+Jingbin",
+    "method": "GET",
+    "status": 200,
+    "final_url": "https://db.u-go.net/?q=Li+Jingbin",
+    "fetched_at_utc": "2026-10-08T21:11:55.695357+00:00",
+    "body_file": "captures/roster3-5036-ugo-english.body.gz",
+    "body_bytes": 23471,
+    "body_sha256": "b990891cd63e8c3f2973749716b08385eab78915fa45dc26b93be572aff203cb",
+    "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Li Jingbin TWN SL 1 (1 entries) Show 12 25 50 100 items.* Language data* * We use a cookie to store your preference. Exp"
+  }
+]

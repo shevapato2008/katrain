@@ -17,7 +17,7 @@ const BRAND_SERIF = KIOSK_SERIF;
 // instead of rendering a dead username/password form nobody can submit.
 const LoginPage = () => {
   const theme = useTheme();
-  const { login, isAuthenticated, isLoading, isStrictBoxKiosk } = useAuth();
+  const { login, isAuthenticated, isLoading, isStrictBoxKiosk, isGuest } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
@@ -89,7 +89,7 @@ const LoginPage = () => {
   // 就把人弹到这里(守卫等 isLoading,但 `navigate('/kiosk/login')` 那几个调用点不等),
   // 非盒端则是「cookie 还有效却手敲了 /kiosk/login」。少了它,这一屏对已登录用户
   // 也是死的 —— 表单在盒端注定抛,在非盒端要他把已经有效的密码再输一遍。
-  if (!isLoading && isAuthenticated) return <Navigate to="/kiosk/play" replace />;
+  if (!isLoading && isAuthenticated && !isGuest) return <Navigate to="/kiosk/play" replace />;
 
   return (
     <Box

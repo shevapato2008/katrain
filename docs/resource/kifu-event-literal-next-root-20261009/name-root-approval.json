@@ -1,0 +1,9 @@
+{
+  "status": "approved_literal_name_review",
+  "request_canonical_sha256": "a4f25eebdae53307c2b2a147981c57a53e6f244be9f8c00ebde1c4936b55f536",
+  "allow_name_assembly": true,
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T21:26:53.785554+00:00",
+  "review_conclusion": "Root reviews exact 13-core English literal lexicon and finite round/year title templates in cn/tw/jp/ko/en; no inferred formal event/edition identity. Fresh post593 captures prove 122 approved raw owners, 938 original first-GN/empty-EV public null-event SGFs, all physical fields unchanged, 610 empty name/evidence cells and no normalized-name collision. Each exact display matches reviewed source matrix; provenance includes SGF refs and owner scope. Separate live dry-run/root execution approval required before TEST then PROD writes."
+}

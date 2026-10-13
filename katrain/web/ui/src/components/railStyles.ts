@@ -84,6 +84,11 @@ export const toolGridSx: SxProps<Theme> = {
   [RAIL_WIDE]: { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
 };
 
+/** Board display toggles occupy three of the same four action columns. */
+export const boardControlGridSx: SxProps<Theme> = {
+  display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: '6px', minWidth: 0,
+};
+
 /** 栏内左右内边距 —— **全档、全页面只有这一个值**（Fan 2026-09-01 拍板）。
  *
  * 改之前一栏里同时有四个：模块牌 0（标题贴着左框，就是他报的那一条）、

@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException
 
 from katrain.web.api.v1.endpoints import baipu as baipu_api
 from katrain.web.core import baipu_capture, capture_service
+from katrain.web.core.device_lease import DeviceBusy
 from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
 from katrain.web.api.v1.endpoints.vision import vision_status
 
@@ -67,6 +68,12 @@ class _CameraAvailable(_CameraUnavailable):
         self.started = True
 
 
+class _CameraBusy(_CameraUnavailable):
+    def start(self, *, allow_unavailable=False):
+        self.started = True
+        raise DeviceBusy("camera device 0 is busy (occupied)")
+
+
 class _Led:
     instances = []
 
@@ -77,6 +84,15 @@ class _Led:
 
     def start(self):
         self.started = True
+
+    def is_board_connected(self):
+        return self.started
+
+
+class _LedBusy(_Led):
+    def start(self):
+        self.started = True
+        raise DeviceBusy("led device fake is busy (occupied)")
 
 
 class _OptionalService:
@@ -96,8 +112,13 @@ class _OptionalService:
 
 
 class _Manager:
+    on_session_removed = None
+
     def attach_loop(self, loop):
         self.loop = loop
+
+    def remove_session(self, session_id):
+        pass
 
 
 def _package(name):
@@ -227,6 +248,11 @@ def _install_board_startup_fakes(monkeypatch):
         ),
     )
     monkeypatch.setitem(sys.modules, "katrain.web.core.router", SimpleNamespace(build_router=lambda *args: object()))
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.pvp_box_bridge",
+        SimpleNamespace(PvpBoxBridge=lambda *args: SimpleNamespace(), PvpBoxRooms=lambda: SimpleNamespace()),
+    )
     monkeypatch.setitem(
         sys.modules,
         "katrain.web.core.box_sso",
@@ -385,7 +411,7 @@ async def test_board_lifespan_keeps_camera_consumers_available_during_initial_ab
     )
     monkeypatch.setattr(_Led, "is_connected", lambda self: True, raising=False)
 
-    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager(), box_sso=SimpleNamespace()))
     try:
         await server._lifespan_board(app, server.logging.getLogger("test.camera-degraded"))
         assert _Led.instances[0].started is True
@@ -410,6 +436,89 @@ async def test_board_lifespan_keeps_camera_consumers_available_during_initial_ab
     finally:
         await _cancel_startup_tasks(app)
         hub.stop()
+
+
+@pytest.mark.asyncio
+async def test_board_lifespan_degrades_on_camera_lease_conflict(server_module, monkeypatch, caplog):
+    server = server_module
+    _install_board_startup_fakes(monkeypatch)
+    monkeypatch.setattr(sys.modules["katrain.web.core.camera_hub"], "CameraHub", _CameraBusy)
+    monkeypatch.setattr(server, "_init_platform_manager", lambda *args: None)
+    monkeypatch.setattr(server.settings, "DEVICE_ID", "device-1")
+    monkeypatch.setattr(server.settings, "REMOTE_API_URL", "https://remote.example")
+    monkeypatch.setattr(
+        server.settings,
+        "_vision_config",
+        SimpleNamespace(enabled=True, camera_device=0, camera_width=1280, camera_height=720),
+        raising=False,
+    )
+    monkeypatch.setattr(server.settings, "_capture_config", SimpleNamespace(enabled=False), raising=False)
+    monkeypatch.setattr(
+        server.settings, "_led_config", SimpleNamespace(enabled=True, serial_port="fake"), raising=False
+    )
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager(), box_sso=SimpleNamespace()))
+
+    await server._lifespan_board(app, server.logging.getLogger("test.camera-busy"))
+
+    assert app.state.camera_hub is None
+    assert app.state.vision is None
+    assert isinstance(app.state.led, _Led)
+    assert "camera device 0 is busy" in caplog.text.lower()
+    await _cancel_startup_tasks(app)
+
+
+@pytest.mark.asyncio
+async def test_board_lifespan_degrades_on_led_lease_conflict_with_camera_running(server_module, monkeypatch, caplog):
+    server = server_module
+    _install_board_startup_fakes(monkeypatch)
+    monkeypatch.setattr(sys.modules["katrain.web.core.camera_hub"], "CameraHub", _CameraAvailable)
+    monkeypatch.setattr(sys.modules["katrain.web.core.led_service"], "LedService", _LedBusy)
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.capture_service",
+        SimpleNamespace(CaptureService=lambda *args, **kwargs: SimpleNamespace(start=lambda: None)),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.baipu_capture",
+        SimpleNamespace(resolve_baipu_collect=lambda *args: False, resolve_fiducial_mode=lambda *args: "auto"),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.geometry_calibration_service",
+        SimpleNamespace(GeometryCalibrationService=lambda **kwargs: SimpleNamespace()),
+    )
+    monkeypatch.setattr(server, "_init_platform_manager", lambda *args: None)
+    monkeypatch.setattr(server.settings, "DEVICE_ID", "device-1")
+    monkeypatch.setattr(server.settings, "REMOTE_API_URL", "https://remote.example")
+    monkeypatch.setattr(server.settings, "_vision_config", SimpleNamespace(enabled=False), raising=False)
+    monkeypatch.setattr(
+        server.settings,
+        "_capture_config",
+        SimpleNamespace(
+            enabled=True,
+            camera_device=0,
+            width=1280,
+            height=720,
+            lock_exposure=False,
+            exposure=None,
+            lock_awb=False,
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        server.settings, "_led_config", SimpleNamespace(enabled=True, serial_port="fake"), raising=False
+    )
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager(), box_sso=SimpleNamespace()))
+
+    await server._lifespan_board(app, server.logging.getLogger("test.led-busy"))
+
+    assert isinstance(app.state.camera_hub, _CameraAvailable)
+    assert app.state.capture is not None
+    assert app.state.led is None
+    assert getattr(app.state, "led_failsafe_task", None) is None
+    assert "led device fake is busy" in caplog.text.lower()
+    await _cancel_startup_tasks(app)
 
 
 @pytest.mark.asyncio
@@ -442,7 +551,7 @@ async def test_board_lifespan_keeps_shared_camera_config_mismatch_fatal(server_m
     )
     monkeypatch.setattr(server.settings, "_led_config", SimpleNamespace(enabled=False), raising=False)
 
-    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager(), box_sso=SimpleNamespace()))
     with pytest.raises(RuntimeError, match="Vision and capture must use the same camera device"):
         await server._lifespan_board(app, server.logging.getLogger("test.camera-config"))
 
@@ -487,7 +596,7 @@ async def test_baipu_collect_startup_wiring(server_module, monkeypatch, tmp_path
     )
     monkeypatch.setattr(server, "Path", lambda _path: tmp_path / "geometry_lock.npz")
 
-    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager(), box_sso=SimpleNamespace()))
     served_apps = []
     monkeypatch.setattr(server, "create_app", lambda **kwargs: app)
     monkeypatch.setattr(server, "build_frontend", lambda **kwargs: None)
@@ -586,7 +695,7 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
             CameraProfile=lambda **kwargs: SimpleNamespace(**kwargs),
         ),
     )
-    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager(), box_sso=SimpleNamespace()))
     await server._lifespan_board(app, server.logging.getLogger("test.hardware-vision-startup"))
 
     assert FakeHardwareVisionStore.instances[0].load_calls == [("/dev/video73", 1280, 720)]
@@ -720,7 +829,7 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
         SimpleNamespace(DefaultHintGate=lambda _engine: SimpleNamespace()),
     )
 
-    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager(), box_sso=SimpleNamespace()))
     await server._lifespan_board(app, server.logging.getLogger("test.vision-only-hardware-state"))
 
     try:
@@ -835,7 +944,7 @@ async def test_capture_startup_forwards_publish_gate_to_hardware_store(server_mo
         SimpleNamespace(GeometryCalibrationService=GeometryCalibrationService),
     )
 
-    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager(), box_sso=SimpleNamespace()))
     await server._lifespan_board(app, server.logging.getLogger("test.hardware-state-persist-hook"))
 
     lock = object()

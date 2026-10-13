@@ -1,0 +1,10 @@
+{
+  "committed": true,
+  "database": "katrain_prod_20260725",
+  "edition_links": 1011,
+  "mode": "apply",
+  "plan_sha256": "c34294b5fa19f1e9526a928559d40ba0d866e565062eb97fe0801252da6f9041",
+  "protected_fields_unchanged": true,
+  "training_holds": 13,
+  "updated_albums": 1017
+}

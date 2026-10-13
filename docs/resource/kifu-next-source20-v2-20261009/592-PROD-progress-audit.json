@@ -1,0 +1,24 @@
+{
+  "base_entity_names_games": 84503,
+  "batch_id": 592,
+  "bounded_scope": {
+    "after_both": 503,
+    "after_formal": 14,
+    "after_hidden_event_both": 4,
+    "after_raw": 101,
+    "before_both": 0,
+    "before_formal": 0,
+    "before_hidden_event_both": 0,
+    "before_raw": 0,
+    "games": 609,
+    "slots": 614
+  },
+  "bundle_sha256": "ebc710e18a440e875a6e7d0d6fc3e86aaac647fc956f853440c942903622d1aa",
+  "elapsed_seconds": 91.121,
+  "environment": "PROD",
+  "method": "r5 native strict_slot_approvals with bounded pre-proof final20 target slot mask",
+  "note": "No independent global strict-card scan. All other album contributions inherit the actual post-591 baseline.",
+  "players_done_after": 1707,
+  "players_done_before": 1687,
+  "read_only": true
+}

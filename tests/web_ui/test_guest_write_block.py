@@ -224,7 +224,6 @@ WRITE_ROUTES = [
     ("POST", "/api/v1/reports/", {"user_game_id": "no-such-game", "report_type": "normal"}),
     ("POST", "/api/v1/reports/999999/retry", None),
     ("POST", "/api/v1/billing/redeem", {"code": "NOPE"}),
-    ("POST", "/api/v1/board/heartbeat", {"device_id": "dev-guest"}),
     ("POST", "/api/v1/live/translations/learn", {"name": "X", "name_type": "player", "translations": {"en": "X"}}),
     ("POST", "/api/v1/platforms/ogs/login", {"username": "u", "password": "p"}),
     ("DELETE", "/api/v1/platforms/ogs/logout", None),
@@ -507,33 +506,16 @@ async def test_real_user_can_redeem_code(full_app):
 
 
 @pytest.mark.asyncio
-async def test_real_user_can_heartbeat_but_not_list_devices(full_app):
-    """Heartbeat is the box's own report path: any real user may still write it.
-    The public device-list route is retired."""
-    headers, _, _ = await _create_user_and_login(full_app, "device-user")
-    async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
-        beat = await ac.post(
-            "/api/v1/board/heartbeat", headers=headers, json={"device_id": "dev-real-1", "queue_depth": 0}
-        )
-        assert beat.status_code == 200
-        assert beat.json()["status"] == "ok"
-
-        listed = await ac.get("/api/v1/board/devices", headers=headers)
-        assert listed.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_public_device_list_is_retired_for_legacy_admin(full_app):
+async def test_user_token_device_routes_are_retired(full_app):
+    """Boxes report through the signed /api/v1/devices channel; the user-token heartbeat and the
+    public device list are gone for users and legacy admins alike."""
     user_headers, _, _ = await _create_user_and_login(full_app, "device-user")
     admin_headers, _, _ = await _create_admin_and_login(full_app, "device-admin")
     async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
-        beat = await ac.post(
-            "/api/v1/board/heartbeat", headers=user_headers, json={"device_id": "dev-real-1", "queue_depth": 0}
-        )
-        assert beat.status_code == 200
-
-        listed = await ac.get("/api/v1/board/devices", headers=admin_headers)
-        assert listed.status_code == 404
+        for headers in (user_headers, admin_headers):
+            beat = await ac.post("/api/v1/board/heartbeat", headers=headers, json={"device_id": "dev-real-1"})
+            assert beat.status_code in (404, 405)
+            assert (await ac.get("/api/v1/board/devices", headers=headers)).status_code == 404
 
 
 # --- Platform mutations (10 routes) ---

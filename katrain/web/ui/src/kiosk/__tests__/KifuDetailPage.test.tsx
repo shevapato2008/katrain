@@ -25,7 +25,8 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-const { getAlbum } = vi.hoisted(() => ({ getAlbum: vi.fn() }));
+const { getAlbum, play } = vi.hoisted(() => ({ getAlbum: vi.fn(), play: vi.fn() }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play }) }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbum } }));
 
 const { baipuLoad, cacheSgfMock } = vi.hoisted(() => ({ baipuLoad: vi.fn(), cacheSgfMock: vi.fn() }));
@@ -54,6 +55,10 @@ const ALBUM = {
   player_black: '申真谞', player_white: '柯洁',
   black_rank: '九段', white_rank: '九段',
   event: '第 29 届三星杯', round_name: '半决赛',
+  // 页面展示 API 按当前语言返回的 display_* 字段，原始 SGF 字段仅保留为源数据。
+  display_player_black: '申真谞', display_player_white: '柯洁',
+  display_black_rank: '九段', display_white_rank: '九段',
+  display_event: '第 29 届三星杯', display_round_name: '半决赛',
   result: 'B+R', move_count: 241,
   date_played: '2026-06-30', board_size: 19, handicap: 0,
   komi: 7.5, rules: 'chinese',
@@ -102,13 +107,23 @@ describe('屏 16 棋谱详情 · 三种状态', () => {
     await waitLoaded();
   });
 
-  it('连不上云端(503)时说「要联网」,不印原文;重试照样再拉一次', async () => {
-    getAlbum.mockRejectedValueOnce(new ApiError(503, 'Request failed 503: {"detail":"Remote kifu service unavailable"}'));
+  it('连不上云端时提示检查连接或重试，不断言盒子离线', async () => {
+    getAlbum.mockRejectedValueOnce(new ApiError(503, 'Request failed 503', { code: 'kifu_cloud_unreachable' }));
     renderPage();
-    expect(await screen.findByText('这一局要联网才能读')).toBeInTheDocument();
+    expect(await screen.findByText('无法连接棋谱库')).toBeInTheDocument();
+    expect(screen.getByText('请检查网络连接或稍后重试。')).toBeInTheDocument();
     expect(screen.queryByText(/Request failed/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitLoaded();
+  });
+
+  it('云端服务报错时提示暂不可用，不误报断网', async () => {
+    getAlbum.mockRejectedValueOnce(new ApiError(503, 'Request failed 503', { code: 'kifu_cloud_error' }));
+    renderPage();
+    expect(await screen.findByText('棋谱库暂时不可用')).toBeInTheDocument();
+    expect(screen.getByText('云端服务暂时出了问题，请稍后重试。')).toBeInTheDocument();
+    expect(screen.queryByText('无法连接棋谱库')).toBeNull();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
   });
 
   it('题头写的是两位棋手、段位和这一局的元数据', async () => {
@@ -119,7 +134,7 @@ describe('屏 16 棋谱详情 · 三种状态', () => {
     expect(hero.textContent).toContain('2026-06-30');
     expect(hero.textContent).toContain('19 路');
     expect(hero.textContent).toContain('中国规则');
-    expect(hero.textContent).toContain('黑贴 7.5 目');
+    expect(hero.textContent).toContain('SGF 贴目 7.5 目');
     expect(hero.textContent).toContain('241 手');
   });
 });
@@ -254,4 +269,18 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
     expect(btn).toBeDisabled();
     expect(btn).toHaveAttribute('title', expect.stringContaining('13 路'));
   });
+});
+
+it('keeps archive load, pass and start silent while explicit forward/backward/jump replay sounds once', async () => {
+  baipuLoad.mockResolvedValue({ board_size: 19, steps: [...STEPS, step({ kind: 'pass', color: 'B' })], meta: {} });
+  renderPage(); await waitLoaded();
+  expect(play).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '下一手' }));
+  expect(play).toHaveBeenCalledExactlyOnceWith('stone');
+  fireEvent.click(screen.getByRole('button', { name: '跳到最后' }));
+  expect(play).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: '上一手' }));
+  expect(play).toHaveBeenCalledTimes(2);
+  fireEvent.click(screen.getByRole('button', { name: '回到开局' }));
+  expect(play).toHaveBeenCalledTimes(2);
 });

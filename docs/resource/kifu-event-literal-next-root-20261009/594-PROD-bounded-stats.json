@@ -1,0 +1,25 @@
+{
+  "baseline_batch_id": 592,
+  "batch_id": 594,
+  "bounded_scope": {
+    "both_players_before_and_after": 567,
+    "event_after_qualified": 938,
+    "event_before_none": 938,
+    "games": 938,
+    "raw_cards_after": 567
+  },
+  "bundle_sha256": "4911de05449dbc0577eb3270cea1eb0f14bcb940e716b580e9e02b8e767d3eef",
+  "environment": "PROD",
+  "ledger_targets": {
+    "kifu_name_research_evidence": 610,
+    "kifu_raw_event_names": 610
+  },
+  "note": "Other catalog and album coverage counts inherit the actual 592 baseline.",
+  "raw_title_coverage": {
+    "distinct_album_raw_event_values": 50222,
+    "five_language_literal_raw_title_owner_ids_sha256": "66474def96b1e592a1aae3bca47668978785e6fd7f68a0461a1483247097206c",
+    "five_language_literal_raw_title_owners": 9650,
+    "raw_event_owner_rows": 50223
+  },
+  "read_only": true
+}

@@ -1,6 +1,7 @@
 """KataGo HTTP client for batch analysis (port 8002)."""
 
 import logging
+import math
 from typing import Optional
 
 import httpx
@@ -93,15 +94,73 @@ class KataGoClient:
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
-            return resp.json()
+            result = resp.json()
+            if config.KATAGO_EXPECTED_MODEL_SHA256:
+                self.validate_result(
+                    result, request_id, analyze_turns[-1], board_size, config.KATAGO_EXPECTED_MODEL_SHA256
+                )
+            return result
+
+    @staticmethod
+    def validate_result(
+        result: dict, request_id: str, turn: int, board_size: int, model_sha256: str, min_visits: int = 1
+    ) -> None:
+        """Fail closed before a model response can enter a report or live record."""
+        if not isinstance(result, dict) or result.get("error"):
+            raise ValueError(f"KataGo rejected analysis: {result.get('error') if isinstance(result, dict) else result}")
+        if result.get("id") != request_id or result.get("turnNumber") != turn:
+            raise ValueError("KataGo returned a different request or turn")
+        if result.get("isDuringSearch") is not False:
+            raise ValueError("KataGo did not return a final result")
+        wrapper = result.get("_wrapper")
+        if not isinstance(wrapper, dict) or wrapper.get("model_sha256") != model_sha256:
+            raise ValueError("KataGo model SHA does not match the configured model")
+        if wrapper.get("model_sha256_verified") is not True or not wrapper.get("selected_model"):
+            raise ValueError("KataGo model identity is unverified")
+        root = result.get("rootInfo")
+        if not isinstance(root, dict) or not isinstance(root.get("visits"), int) or root["visits"] < min_visits:
+            raise ValueError("KataGo root visits are below the required depth")
+        for field in ("winrate", "scoreLead"):
+            value = root.get(field)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ValueError(f"KataGo root {field} is invalid")
+        move_infos = result.get("moveInfos")
+        if not isinstance(move_infos, list) or not move_infos:
+            raise ValueError("KataGo returned no candidate moves")
+        for move in move_infos:
+            if not isinstance(move, dict) or not isinstance(move.get("move"), str):
+                raise ValueError("KataGo candidate move is invalid")
+            if not isinstance(move.get("visits"), int) or move["visits"] < 0:
+                raise ValueError("KataGo candidate visits are invalid")
+            for field in ("winrate", "scoreLead", "prior"):
+                value = move.get(field)
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                    raise ValueError(f"KataGo candidate {field} is invalid")
+        ownership = result.get("ownership")
+        if not isinstance(ownership, list) or len(ownership) != board_size * board_size:
+            raise ValueError("KataGo ownership has the wrong board size")
+        if any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) for v in ownership):
+            raise ValueError("KataGo ownership contains invalid values")
 
     async def health_check(self) -> bool:
-        """Return True if KataGo is reachable."""
+        """Return True only when the configured default model is ready."""
         url = f"{self.base_url}{self.health_path}"
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 resp = await client.get(url)
-                return resp.status_code == 200
+                if resp.status_code != 200:
+                    return False
+                if not config.KATAGO_EXPECTED_MODEL_SHA256:
+                    return True
+                health = resp.json()
+                name = health.get("default_model")
+                model = health.get("models", {}).get(name, {})
+                return (
+                    health.get("ready") is True
+                    and model.get("running") is True
+                    and model.get("model_sha256") == config.KATAGO_EXPECTED_MODEL_SHA256
+                    and model.get("model_sha256_verified") is True
+                )
         except Exception:
             return False
 

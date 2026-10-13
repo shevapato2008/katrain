@@ -450,6 +450,9 @@ msgstr "k"
 msgid "strength:dan"
 msgstr "d"
 
+msgid "strength:professional_dan_format"
+msgstr "Profi-{rank}. Dan"
+
 msgid "ai:default"
 msgstr "Recommended"
 
@@ -2254,6 +2257,12 @@ msgstr "Ort"
 msgid "kifu:source"
 msgstr "Quelle"
 
+msgid "kifu:source_golaxy"
+msgstr "GoLaxy"
+
+msgid "kifu:source_unknown"
+msgstr "Quelle nicht verifiziert"
+
 msgid "kifu:open_in_research"
 msgstr "In Forschung öffnen"
 
@@ -3415,7 +3424,7 @@ msgstr ""
 "für Weiß, je auf die eigene Seite normiert"
 
 msgid "grade:def_brilliant"
-msgstr "Topzug der Engine, den selbst ihre Intuition übersah (Prior < 10 %)"
+msgstr "Gespielt wurde der nach eingehender Berechnung beste Zug der KI, dessen anfängliche Auswahlwahrscheinlichkeit unter 10 % lag (im Endspiel unter 6 %)"
 
 msgid "grade:def_best"
 msgstr "Topzug der Engine gespielt"
@@ -3431,8 +3440,19 @@ msgstr "Nicht bewertbar: Vorzug ohne Analyse oder zu wenige Visits"
 
 msgid "grade:brilliance_entry"
 msgstr ""
-"Alle drei Bedingungen: Topzug der Engine gespielt, dessen Policy-Prior unter"
-" 10 % (selbst die Intuition übersah ihn) und die Partie war noch offen."
+"Für einen brillanten Zug müssen alle Bedingungen erfüllt sein: Der "
+"gespielte Zug ist nach eingehender Berechnung die erste Wahl der KI; seine"
+" anfängliche Auswahlwahrscheinlichkeit bei der KI liegt unter 10 % (im "
+"Endspiel unter 6 %); der Ausgang der Partie steht noch nicht fest."
+
+msgid "grade:initial_probability_help"
+msgstr ""
+"Die anfängliche Auswahlwahrscheinlichkeit der KI gibt an, wie "
+"wahrscheinlich die KI diesen Zug vor einer eingehenden Berechnung wählen "
+"würde. Sie ist weder eine Gewinnwahrscheinlichkeit noch die "
+"Wahrscheinlichkeit, mit der ein Mensch den Zug spielen würde. Auch ein Zug"
+" mit sehr niedriger anfänglicher Auswahlwahrscheinlichkeit kann nach "
+"eingehender Berechnung zur ersten Wahl werden."
 
 msgid "grade:match_timeline_legend"
 msgstr ""
@@ -4030,8 +4050,8 @@ msgstr "Zug {n} {m} · {s} · {g} · {x} Pkt. Verlust"
 
 msgid "grade:sel_brilliant"
 msgstr ""
-"Zug {n} {m} · {s} · Brillanz {k} — es ist die erste Wahl der Engine, der sie"
-" selbst nur {p}% Prior gibt (je niedriger, desto brillanter)"
+"Zug {n} {m} · {s} · Brillanz {k} — anfängliche Auswahlwahrscheinlichkeit "
+"der KI nur {p} %; nach eingehender Berechnung erste Wahl"
 
 msgid "grade:truncated_plot"
 msgstr "Höchstens {k} pro Seite werden gezeichnet; {n} weitere fehlen"
@@ -7091,20 +7111,22 @@ msgid "baipu:wrong_title"
 msgstr "Falsch gesetzt · gehört auf {c}"
 
 msgid "kifu:detail_offline"
-msgstr "Für diese Partie ist eine Internetverbindung nötig"
+msgstr "Verbindung zum Partienarchiv nicht möglich"
 
 msgid "kifu:detail_offline_hint"
-msgstr ""
-"Die Kifu-Bibliothek liegt in der Cloud, und dieses Gerät erreicht sie gerade"
-" nicht."
+msgstr "Prüfe die Netzwerkverbindung oder versuche es später erneut."
 
 msgid "kifu:list_offline"
-msgstr "Die Kifu-Suche braucht eine Internetverbindung"
+msgstr "Verbindung zum Partienarchiv nicht möglich"
 
 msgid "kifu:list_offline_hint"
-msgstr ""
-"Dieses Gerät erreicht die Cloud gerade nicht. Nachgestellte Kifus und "
-"importierte SGFs sind nicht betroffen."
+msgstr "Prüfe die Netzwerkverbindung oder versuche es später erneut."
+
+msgid "kifu:service_unavailable"
+msgstr "Partienarchiv vorübergehend nicht verfügbar"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "Der Cloud-Dienst ist vorübergehend nicht verfügbar. Bitte versuche es später erneut."
 
 msgid "kifu:wrong_size_reason"
 msgstr "Das ist ein {n}×{n}-Kifu — das echte Brett kann nur 19×19"
@@ -7294,3 +7316,6 @@ msgstr "Anmeldung konnte nicht bestätigt werden"
 
 msgid "vision:not_a_stone"
 msgstr "Kein Stein"
+
+msgid "report:score_difference"
+msgstr "Punktedifferenz"

@@ -23,7 +23,7 @@ const OUT = (slug: string) => resolve(process.cwd(),
  * 预期差异(不是没对齐):
  *  · 顶栏「访客」—— 稿子的占位用户名;这里 `/me` 也给了「访客」,但顶栏样式随登录态走。
  *  · 支招键写「AI支招」(无空格)—— 与对弈页同一个 key `Hints`,Fan 要的是「和对弈页对齐」;稿子写成「AI 支招」。
- *  · 玩家卡两张删了 —— 摆谱**没有人在下棋**,名字进页控条标题(2026-08-24 裁定,稿子同)。
+ *  · 玩家卡复用对弈页样式,展示棋谱记录的黑白双方姓名;常态不再占位显示灯色图例。
  */
 
 /** 稿子那 12 手,换成后端 `steps[]`(row 从上往下数)。 */
@@ -126,7 +126,7 @@ const boot = async (
   // 同一个判据:引擎在不在不属于这一屏 —— 不钉的话 :8001 没起时顶栏多一条「AI 引擎准备中」。
   await page.route('**/api/v1/health', (route) => route.fulfill({ json: { engines: { local: 'reachable' } } }));
   await page.goto('/kiosk/baipu/session/s1');
-  await page.waitForSelector('[data-testid="baipu-pcard"]');
+  await page.waitForSelector('[data-testid="baipu-player-black"]');
   return vision;
 };
 

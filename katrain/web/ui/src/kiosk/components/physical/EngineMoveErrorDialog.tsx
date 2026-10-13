@@ -137,7 +137,7 @@ const EngineMoveErrorDialog = ({ error, sessionId, token, boardSize, reminderTic
 
   return (
     <>
-      <Dialog open={open} maxWidth="xs" fullWidth>
+      <Dialog open={open} maxWidth="xs" fullWidth className="kiosk-game-side-dialog">
         {phase === 'error' ? (
           <>
             <DialogTitle>{t('Golaxy connection error', '星阵连接出错')}</DialogTitle>
@@ -192,6 +192,7 @@ const EngineMoveErrorDialog = ({ error, sessionId, token, boardSize, reminderTic
         )}
       </Dialog>
       <Snackbar
+        className="kiosk-game-toast"
         open={expired}
         autoHideDuration={4000}
         onClose={() => setExpired(false)}

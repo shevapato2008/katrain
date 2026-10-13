@@ -1,0 +1,62 @@
+{
+  "status": "unsigned_pending_root_source_rule_review",
+  "created_at_utc": "2026-10-08T19:07:31.082496+00:00",
+  "producer_id": "/root/restore_tw_twenty",
+  "producer_model": "gpt-6; exact runtime variant unavailable",
+  "research_file": "/Users/fan/Repositories/katrain-kiosk-go-kifu/docs/resource/kifu-next20-2026-10-09/ko3-unsigned-research.json.gz",
+  "research_array_sha256": "6f9ff419993a588268fcfcba06d8aa6bb6378a654737fc64e59978e8fef7ec97",
+  "capture_file": "/Users/fan/Repositories/katrain-kiosk-go-kifu/docs/resource/kifu-next20-2026-10-09/ko3-actual-source-captures.json.gz",
+  "normative_reused_capture_file": "/Users/fan/Repositories/katrain-kiosk-go-kifu/docs/resource/kifu-next-throughput-2026-10-09/reused-NIKL-three-page-captures.json",
+  "records": [
+    {
+      "player_id": 5396,
+      "original_name": "浜中隆光",
+      "reading": "はまなか たかみつ",
+      "candidate_name": "하마나카 다카미쓰",
+      "official_url": "https://www.nihonkiin.or.jp/player/htm/ki000173.html",
+      "official_body_sha256": "a309f2d5ed237c110aa5f0b2f42392b535bac1b0b08695868c07a382af190d18",
+      "igo_url": "https://www.igorating.com/players/takamitsu-hamanaka",
+      "igo_body_sha256": "c69a3f4f773387679852b461676b0a58dc74de5ec039cd0878ea3fa90eeb605c",
+      "conflict_results_per_query": [
+        0,
+        1
+      ],
+      "research_sha256": "d825c4a337b40b815696af113a196332b8494ff232a0af0393ca0aab1524ea8c"
+    },
+    {
+      "player_id": 4276,
+      "original_name": "奥村靖",
+      "reading": "おくむら やすし",
+      "candidate_name": "오쿠무라 야스시",
+      "official_url": "https://www.nihonkiin.or.jp/player/htm/ki000240.htm",
+      "official_body_sha256": "c434068b393ed003436075e5fcdca3830476ecf0802aba8fb6865d27f5a041ff",
+      "igo_url": "https://igorating.com/players/yasushi-okumura",
+      "igo_body_sha256": "e86cc496fe619fd4e6087ae45e2a23793bd9ae1b71c7f8a83042aa6281d54f41",
+      "conflict_results_per_query": [
+        0,
+        2
+      ],
+      "research_sha256": "0a80f01f5ecc87e36dd20a2ee6d08b982d5b12bc7757170a071ddd3392afa6af"
+    },
+    {
+      "player_id": 4782,
+      "original_name": "明戸和巳",
+      "reading": "あけど かずみ",
+      "candidate_name": "아케도 가즈미",
+      "official_url": "https://archive.nihonkiin.or.jp/player/htm/ki000129.htm",
+      "official_body_sha256": "ab0af9f2f8e169d859b9e44ae269e5a2cb05ecea3a91fbad80559969c7a0fcc9",
+      "igo_url": "https://www.igorating.com/players/kazumi-akedo",
+      "igo_body_sha256": "c69ddf45c245b0a2982fedb8c3857e744b048acd9323be3279c84fdfb25c59c5",
+      "conflict_results_per_query": [
+        0,
+        0
+      ],
+      "research_sha256": "a44a9795d692977ee0a227d229527b1d866d363c24333d7bfed2756158025bf8"
+    }
+  ],
+  "limitations": [
+    "Two bounded Naver first-page queries per person; no universal absence claim.",
+    "Current TEST/PROD owner preimages and whole-batch metadata are deferred until root permits post-590 binding.",
+    "The independently retained Nihon Kiin pages use spaces between surname and given name; compact Igo text satisfies the existing literal source-check gate."
+  ]
+}

@@ -133,6 +133,8 @@ class WebGame(Game):
                 and not self.ended_at(node)
             ):
                 self.terminal = GameEnd(self, node, self.end_result)
+                if getattr(self.katrain, "pvp_lobby_human_session", False) is True:
+                    self.katrain.pvp_lobby_awaiting_count = True
 
     def set_current_node(self, node):
         # r1:挪游标进对局提交锁。AI 在锁里核完「当前手仍是开算那一手」之后、`Game.play` 读 `current_node`
@@ -264,6 +266,10 @@ class WebKaTrain(KaTrainBase):
         self.analysis_engine_instance = None
         self.pondering = False
         self.timer_paused = True
+        self.local_geometry_paused = False
+        self.local_geometry_pause_epoch = 0
+        self.local_confirmation_in_progress = False
+        self.local_confirmation_state = {"status": "idle", "reason": None, "points": []}
         # A18:这一局的时限是不是**开局设置**写的(`/api/game/setup`、升降级 `/start` 都经 update_config("timer/…"))。
         # 没写过的局(星阵人机、大厅房间)继承 config.json 默认时限且不暂停,前端不许把它当计时局。
         self.timer_configured = False
@@ -341,11 +347,12 @@ class WebKaTrain(KaTrainBase):
     #:                     already exist with this value and the kiosk report card
     #:                     labels off it.
     #:   pvp_local         同板双人 on one kiosk.
-    GAME_TYPES = ("free", "ai_ladder_ranked", "rated", "ranked", "pvp_local")
+    #:   pvp_online        远端平台在线对弈，平台裁定胜负，局中不得分析。
+    GAME_TYPES = ("free", "ai_ladder_ranked", "rated", "ranked", "pvp_local", "pvp_online")
 
     #: Games where analysis during play would be cheating, so every analysis action
     #: is refused at the dispatch chokepoint and /api/undo returns 403.
-    SCORING_GAME_TYPES = ("rated", "ranked", "ai_ladder_ranked")
+    SCORING_GAME_TYPES = ("rated", "ranked", "ai_ladder_ranked", "pvp_online")
 
     #: Games whose result moves the player's rank. Exactly one, by design: the user's
     #: rank is defined as "what your 升降级对弈 games against the AI say it is", so
@@ -712,7 +719,10 @@ class WebKaTrain(KaTrainBase):
                 "max_visits": self.config("engine/max_visits"),
             },
             "timer": {
-                "paused": self.timer_paused,
+                "paused": self.timer_paused
+                or self.local_geometry_paused
+                or self.local_confirmation_in_progress
+                or (self.game_type == "pvp_local" and not self.clock_started),
                 "main_time_used": self.main_time_used_by_player.get(cn.next_player, 0),
                 "current_node_time_used": cn.time_used,
                 "next_player_periods_used": self.next_player_info.periods_used,
@@ -733,10 +743,19 @@ class WebKaTrain(KaTrainBase):
             "count_min_moves": self.count_min_moves(),
             # 盒上模式双方各停一手、还没数子。为真时 `end_result` 照样非空（"终局"，或分析到了之后
             # 的 "B+3.0?" 估计串），前端要以这一位为准去数子，而不是把 end_result 当成终局结果。
-            "awaiting_count": is_awaiting_count(self),
+            "awaiting_count": is_awaiting_count(self) or bool(getattr(self, "pvp_lobby_awaiting_count", False)),
+            "local_confirmation": {
+                "enabled": self.game_type == "pvp_local",
+                **self.local_confirmation_state,
+            },
+            "degraded": bool(getattr(self, "pvp_lobby_degraded", False)),
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
-            "analysis_allowed": self.analysis_allowed,
+            "platform_my_color": getattr(self, "platform_my_color", None),
+            "platform_phase": getattr(
+                getattr(self, "platform_phase", None), "value", getattr(self, "platform_phase", None)
+            ),
+            "analysis_allowed": self.analysis_allowed and not getattr(self, "pvp_bot_session", False),
             # 与 `analysis_allowed` 是两件事，别合并：
             #   analysis_allowed   = 这一局允不允许分析（升降级反作弊，服务端连算都不算）
             #   analysis_delivered = 算了，但交不交给你（无人认领的会话拿不到）
@@ -746,6 +765,14 @@ class WebKaTrain(KaTrainBase):
             "analysis_delivered": bool(getattr(self, "deliver_analysis", True)),
             "last_ladder_error": getattr(self, "last_ladder_error", False),
         }
+        if getattr(self, "game_type", None) == "pvp_online":
+            # Core Go rules call two consecutive passes "game end". OGS instead
+            # enters stone removal and may return to play. Only a remote result
+            # committed as a terminal fact is an online game's final result.
+            remote_result = self.game.terminal.result if self.game.terminal is not None else None
+            state["end_result"] = remote_result
+            state["terminal_result"] = remote_result
+            state["awaiting_count"] = False
         if not getattr(self, "deliver_analysis", True):
             state["analysis"] = None
             state["commentary"] = ""
@@ -787,12 +814,18 @@ class WebKaTrain(KaTrainBase):
             # a casual game against a hand-picked weak AI would be stored as a rated one
             # and settled into the promotion ledger.
             self.game_type = game_type if game_type is not None else "free"
+            self.local_confirmation_in_progress = False
+            self.local_geometry_paused = False
+            self.local_geometry_pause_epoch = 0
+            self.local_confirmation_state = {"status": "idle", "reason": None, "points": []}
             # G1/G2: a brand new game is never engine-controlled until a platform explicitly
             # says otherwise (via edit_game's platform_engine_color kwarg). Without this reset,
             # a session that finishes an engine game and then starts a plain local game (same
             # WebKaTrain instance, e.g. POST /api/new-game) would retain the stale engine color,
             # making the LED orchestrator (Task 2) treat a purely local game as engine-controlled.
             self.platform_engine_color = None
+            self.platform_my_color = None
+            self.platform_phase = None
             # Task 4: fail-closed lifecycle reset. A brand new game is never a ladder game
             # until the caller explicitly injects a rung (POST /api/new-game ladder_rung=...).
             # Any new-game / load_sgf call that omits it (including a plain reset) clears a
@@ -972,6 +1005,7 @@ class WebKaTrain(KaTrainBase):
                     broadcast_now = [post_broadcast] if post_broadcast is not None else []
 
             if schedule_delayed:
+
                 def _delayed_broadcast():
                     time.sleep(0.25)
                     with self._broadcast_lock:
@@ -1062,6 +1096,26 @@ class WebKaTrain(KaTrainBase):
             self.last_timer_update = time.time()
             return True
 
+    def set_local_geometry_paused(
+        self, paused: bool, *, expected_game_id, expected_node_id=None, expected_epoch=None
+    ) -> bool:
+        """Set the geometry reason only for the still-current local game."""
+        with self.ai_ladder_commit_lock:
+            if self.game_type != "pvp_local" or not self.game or self.game.game_id != expected_game_id:
+                return False
+            if expected_node_id is not None and id(self.game.current_node) != expected_node_id:
+                return False
+            if expected_epoch is not None and self.local_geometry_pause_epoch != expected_epoch:
+                return False
+            if paused:
+                self.local_geometry_pause_epoch += 1
+            if self.local_geometry_paused == paused:
+                return True
+            self.update_timer()  # settle play before pausing; discard the paused interval before resuming
+            self.local_geometry_paused = paused
+            self.update_state()
+            return True
+
     def update_timer(self):
         # r1:整段进对局提交锁。`get_state` 会被广播线程、引擎回调线程、请求线程并发调用;两次结算读到同一个
         # `last_timer_update` 会把同一段 dt 记两遍 —— 超时由服务端时钟核实(Task 6)以后,这就是「提前判负」。
@@ -1081,7 +1135,13 @@ class WebKaTrain(KaTrainBase):
                     self.clock_started = True
                 else:
                     return
-            if self.timer_paused or self.play_analyze_mode != MODE_PLAY or not self.game:
+            if (
+                self.timer_paused
+                or self.local_geometry_paused
+                or self.local_confirmation_in_progress
+                or self.play_analyze_mode != MODE_PLAY
+                or not self.game
+            ):
                 return
 
             cn = self.game.current_node
@@ -1314,10 +1374,7 @@ class WebKaTrain(KaTrainBase):
                 expected_node_id = id(committed_node)
 
                 def _play_committed_sound(state):
-                    if (
-                        state.get("game_id") == expected_game_id
-                        and state.get("current_node_id") == expected_node_id
-                    ):
+                    if state.get("game_id") == expected_game_id and state.get("current_node_id") == expected_node_id:
                         try:
                             self.play_stone_sound(sound_name, after_node_id=expected_node_id)
                         except Exception as e:
@@ -1468,6 +1525,8 @@ class WebKaTrain(KaTrainBase):
             game = self.game
             current_node = game and self.game.current_node
             if guard and current_node:
+                if self.game_type == "pvp_local" and self.local_geometry_paused:
+                    raise EndgameConflict("geometry_unavailable")
                 if getattr(self, "ai_ladder_remote_ended", False):
                     raise EndgameConflict("remote_ended")
                 if current_node.end_state or game.ended_at(current_node):
@@ -1818,6 +1877,8 @@ class WebKaTrain(KaTrainBase):
             self.update_timer()
             if (
                 self.timer_paused
+                or self.local_geometry_paused
+                or self.local_confirmation_in_progress
                 or self.play_analyze_mode != MODE_PLAY
                 or not self.game
                 or self.game.current_node.children

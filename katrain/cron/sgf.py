@@ -47,6 +47,7 @@ class ParsedGame:
     # 主线上出现在**第一手之后**的摆子属性 —— KataGo 的 initialStones 表达不了，
     # 只能丢掉。丢掉了就把它记出来，别让它变成又一个安静的错。
     dropped_midgame_setup: int = 0
+    invalid_moves: int = 0
 
 
 # ── 词法 ──
@@ -176,7 +177,7 @@ def sgf_to_gtp(sgf_coord: str, board_size: int) -> str | None:
     # [tt] 在 ≤19 路上是老写法的虚手。
     if sgf_coord.lower() == "tt" and board_size <= 19:
         return "pass"
-    if len(sgf_coord) < 2:
+    if len(sgf_coord) != 2:
         return None
     col_idx = _SGF_LETTERS.find(sgf_coord[0])
     row_idx = _SGF_LETTERS.find(sgf_coord[1])
@@ -265,6 +266,7 @@ def parse_game(sgf: str) -> ParsedGame:
             gtp = sgf_to_gtp(raw, game.board_size)
             if gtp is None:
                 logger.warning("Skipping unparseable SGF coordinate %r on a %d board", raw, game.board_size)
+                game.invalid_moves += 1
                 continue
             game.moves.append((color, gtp))
 

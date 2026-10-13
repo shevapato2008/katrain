@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 from katrain.web.core.config import INSECURE_DEFAULT_SECRET_KEY
 
-
 ADMIN_ENVS = frozenset({"local", "test", "prod"})
 ADMIN_USERNAME = "admin:fan"
 _BCRYPT = re.compile(r"^\$2[aby]\$(\d\d)\$[./A-Za-z0-9]{53}$")
@@ -18,6 +17,16 @@ class AdminConfig:
     password_hash: str
     session_secret: str
     env: str
+    service_secret: str = ""
+    provider_only: bool = False
+
+
+def local_vision_requested() -> bool:
+    return os.getenv("KATRAIN_ADMIN_ENV") == "local" and os.getenv("KATRAIN_ADMIN_VISION_LOCAL") == "1"
+
+
+def test_training_requested() -> bool:
+    return os.getenv("KATRAIN_ADMIN_ENV") == "test" and os.getenv("KATRAIN_ADMIN_VISION_TRAINING") == "1"
 
 
 def check_startup() -> AdminConfig:
@@ -29,13 +38,15 @@ def check_startup() -> AdminConfig:
     if username != ADMIN_USERNAME:
         raise RuntimeError("KATRAIN_ADMIN_USERNAME must identify the dedicated admin account")
 
+    provider_only = os.getenv("KATRAIN_ADMIN_PROVIDER_ONLY") == "1"
     password_hash = os.getenv("KATRAIN_ADMIN_PASSWORD_HASH", "")
-    match = _BCRYPT.fullmatch(password_hash)
-    if match is None or int(match.group(1)) < 12:
-        raise RuntimeError("KATRAIN_ADMIN_PASSWORD_HASH must be a bcrypt hash with cost at least 12")
+    if not provider_only:
+        match = _BCRYPT.fullmatch(password_hash)
+        if match is None or int(match.group(1)) < 12:
+            raise RuntimeError("KATRAIN_ADMIN_PASSWORD_HASH must be a bcrypt hash with cost at least 12")
 
     session_secret = os.getenv("KATRAIN_ADMIN_SESSION_SECRET", "")
-    if (
+    if (not provider_only or session_secret) and (
         len(session_secret) < 32
         or session_secret != session_secret.strip()
         or session_secret == INSECURE_DEFAULT_SECRET_KEY
@@ -43,8 +54,27 @@ def check_startup() -> AdminConfig:
     ):
         raise RuntimeError("KATRAIN_ADMIN_SESSION_SECRET must be strong and distinct from the public key")
 
+    service_secret = os.getenv("KATRAIN_ADMIN_SERVICE_SECRET", "")
+    if (provider_only or service_secret) and (
+        len(service_secret) < 32
+        or service_secret != service_secret.strip()
+        or service_secret == INSECURE_DEFAULT_SECRET_KEY
+        or service_secret == os.getenv("KATRAIN_SECRET_KEY")
+        or service_secret == session_secret
+    ):
+        raise RuntimeError(
+            "KATRAIN_ADMIN_SERVICE_SECRET must be strong and distinct from public and admin session keys"
+        )
+
     env = os.getenv("KATRAIN_ADMIN_ENV")
     if env not in ADMIN_ENVS:
         raise RuntimeError("KATRAIN_ADMIN_ENV must be local, test, or prod")
 
-    return AdminConfig(username=username, password_hash=password_hash, session_secret=session_secret, env=env)
+    return AdminConfig(
+        username=username,
+        password_hash=password_hash,
+        session_secret=session_secret,
+        env=env,
+        service_secret=service_secret,
+        provider_only=provider_only,
+    )

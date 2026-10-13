@@ -1,0 +1,36 @@
+/* Performance page: ported from the approved clickable prototype (pf-*), on the shared lab-* shell. */
+.pf-page .lab-chip.info { color:var(--admin-info); background:var(--admin-info-bg); border-color:transparent; }
+.pf-page .lab-chip.bad { color:var(--admin-bad); background:var(--admin-bad-bg); border-color:transparent; }
+.pf-status { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 22px; }
+.pf-lead { display:flex; align-items:center; gap:16px; min-width:0; }
+.pf-mark { display:grid; place-items:center; width:48px; height:48px; flex:none; border-radius:10px; background:var(--admin-info-bg); color:var(--admin-info); }
+.pf-mark.bad { background:var(--admin-bad-bg); color:var(--admin-bad); }
+.pf-mark svg { width:26px; height:26px; }
+.pf-status h2 { margin:3px 0 0; font-size:22px; font-weight:600; }
+.pf-status p { margin:3px 0 0; color:var(--admin-muted); font-size:15px; }
+.pf-grid { display:grid; grid-template-columns:minmax(0,1fr) 310px; gap:12px; align-items:stretch; }
+.pf-monitor { display:flex; flex-direction:column; }
+.pf-board { flex:1; min-height:max(470px, calc(100vh - 425px)); display:grid; place-items:center; padding:28px; border-radius:0 0 9px 9px; background:repeating-linear-gradient(0deg,transparent 0 47px,var(--admin-line) 48px),repeating-linear-gradient(90deg,transparent 0 71px,var(--admin-line) 72px); background-color:var(--admin-panel2); }
+.pf-board:has(.pf-embed) { place-items:stretch; }
+.pf-empty { width:min(460px,100%); padding:24px 28px; border:1px solid var(--admin-line); border-radius:10px; background:var(--admin-panel); }
+.pf-empty > svg { width:28px; height:28px; color:var(--admin-info); }
+.pf-empty > svg.bad { color:var(--admin-bad); }
+.pf-empty h3 { margin:10px 0 6px; font-size:20px; font-weight:600; }
+.pf-empty p { margin:0; color:var(--admin-muted); line-height:1.6; overflow-wrap:anywhere; }
+.pf-empty p.pf-error { color:var(--admin-bad); font-family:ui-monospace,Menlo,monospace; font-size:13.5px; }
+.pf-embed { display:flex; flex-direction:column; min-height:0; border:1px solid var(--admin-line); border-radius:8px; background:var(--admin-bg); overflow:hidden; }
+.pf-embed-top { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:46px; padding:0 12px 0 16px; border-bottom:1px solid var(--admin-line); background:var(--admin-bar); font-size:15px; }
+.pf-embed-top label { display:flex; align-items:center; gap:8px; }
+.pf-embed-top label svg { width:19px; height:19px; color:var(--admin-accent); }
+.pf-embed-top select { height:32px; border:1px solid var(--admin-line); border-radius:6px; background:var(--admin-panel2); color:var(--admin-text); font:inherit; font-size:14px; }
+.pf-embed-top a { text-decoration:none; }
+.pf-frame { flex:1; width:100%; min-height:360px; border:0; background:var(--admin-panel); }
+.pf-aside { display:flex; flex-direction:column; }
+.pf-facts { padding:14px 18px; display:grid; gap:16px; margin:0; }
+.pf-facts dt { font-size:13px; color:var(--admin-subtle); }
+.pf-facts dd { margin:4px 0 0; font-size:16px; overflow-wrap:anywhere; }
+.pf-facts dd.muted { color:var(--admin-muted); }
+.pf-facts dd.mono { font-family:ui-monospace,Menlo,monospace; font-size:14px; }
+.pf-foot { display:flex; gap:6px; margin-top:auto; padding:14px 18px; border-top:1px solid var(--admin-line); }
+.pf-foot svg { width:16px; height:16px; flex:none; margin-top:3px; color:var(--admin-info); }
+@media (max-width:1050px) { .pf-grid { grid-template-columns:1fr; } }

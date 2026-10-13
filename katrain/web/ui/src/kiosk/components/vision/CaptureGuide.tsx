@@ -70,29 +70,22 @@ const CaptureGuide = ({ positions, onDismiss }: CaptureGuideProps) => {
   return (
     <Dialog
       open
-      fullScreen
-      PaperProps={{
-        sx: {
-          bgcolor: 'rgba(0, 0, 0, 0.85)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-      }}
+      maxWidth="xs"
+      fullWidth
+      className="kiosk-game-side-dialog"
     >
       <DialogTitle
         sx={{
           color: 'warning.main',
           textAlign: 'center',
           fontSize: '1.5rem',
-          pt: 4,
+          pt: 2,
         }}
       >
         请提走棋子
       </DialogTitle>
 
-      <DialogContent sx={{ textAlign: 'center', maxWidth: 600 }}>
+      <DialogContent sx={{ textAlign: 'center' }}>
         <Typography variant="h6" sx={{ color: '#fff', mb: 2 }}>
           请提走 {summaryParts.join('、')}
         </Typography>
@@ -116,7 +109,7 @@ const CaptureGuide = ({ positions, onDismiss }: CaptureGuideProps) => {
       </DialogContent>
 
       {showSkip && onDismiss && (
-        <DialogActions sx={{ justifyContent: 'center', pb: 4 }}>
+        <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
           <Button variant="outlined" color="warning" size="large" onClick={onDismiss}>
             跳过
           </Button>

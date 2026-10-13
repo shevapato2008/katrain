@@ -170,22 +170,8 @@ def grant(db: Session, user_id: int, amount: int, reason: str, ref_id: str) -> i
     if existing is not None:
         return int(existing.balance_after)
 
-    db.execute(
-        text("UPDATE users SET credits = credits + :amt WHERE id = :uid"),
-        {"amt": amount, "uid": user_id},
-    )
-    balance_after = get_balance(db, user_id)
-    db.add(
-        models_db.CreditTransaction(
-            user_id=user_id,
-            delta=amount,
-            reason=reason,
-            ref_id=ref_id,
-            status="committed",
-            balance_after=balance_after,
-        )
-    )
     try:
+        balance_after = apply_adjustment(db, user_id, amount, reason, ref_id)
         db.commit()
     except IntegrityError:
         # Idempotency race — db.rollback() already undoes our credit within this
@@ -194,6 +180,37 @@ def grant(db: Session, user_id: int, amount: int, reason: str, ref_id: str) -> i
         db.rollback()
         winner = _existing_tx(db, ref_id)
         return int(winner.balance_after) if winner else get_balance(db, user_id)
+    return balance_after
+
+
+def apply_adjustment(db: Session, user_id: int, delta: int, reason: str, ref_id: str) -> int:
+    """Credit or debit `delta` and append its committed ledger row, WITHOUT committing.
+
+    The caller owns the transaction (the admin console commits this together with its audit
+    row). A debit never takes the balance below zero: the conditional UPDATE matches no row
+    and InsufficientCredits is raised with nothing written. History is never edited.
+    """
+    if delta >= 0:
+        db.execute(text("UPDATE users SET credits = credits + :amt WHERE id = :uid"), {"amt": delta, "uid": user_id})
+    else:
+        result = db.execute(
+            text("UPDATE users SET credits = credits + :amt WHERE id = :uid AND credits >= :need"),
+            {"amt": delta, "uid": user_id, "need": -delta},
+        )
+        if result.rowcount != 1:
+            raise InsufficientCredits(f"user {user_id} has fewer than {-delta} credits")
+    balance_after = get_balance(db, user_id)
+    db.add(
+        models_db.CreditTransaction(
+            user_id=user_id,
+            delta=delta,
+            reason=reason,
+            ref_id=ref_id,
+            status="committed",
+            balance_after=balance_after,
+        )
+    )
+    db.flush()
     return balance_after
 
 
@@ -208,12 +225,21 @@ def generate_redeem_codes(db: Session, count: int, credits: int, expires_at: Opt
     """Create `count` high-entropy single-use codes worth `credits` each."""
     if count < 1 or credits < 1:
         raise BillingError("count and credits must be >= 1")
+    codes = add_redeem_codes(db, count, credits, expires_at)
+    db.commit()
+    return codes
+
+
+def add_redeem_codes(db: Session, count: int, credits: int, expires_at: Optional[datetime] = None) -> List[str]:
+    """Stage `count` new codes in the caller's transaction (no commit)."""
+    if count < 1 or credits < 1:
+        raise BillingError("count and credits must be >= 1")
     codes = []
     for _ in range(count):
         code = secrets.token_hex(16)  # 128-bit, not enumerable
         db.add(models_db.RedeemCode(code=code, credits=credits, expires_at=expires_at))
         codes.append(code)
-    db.commit()
+    db.flush()
     return codes
 
 

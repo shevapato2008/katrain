@@ -171,11 +171,14 @@ test('kiosk 对弈首页:同一套字族(这屏不共用挡局屏的任何组件
 // 共享 `tokens.css` 给这几个类都写了显式 font-family,所以现在是绿的 ——
 // 这几条闸是替**下一批**裸控件守的:它们一进来就会在这里响。
 
-test('kiosk 页控条布局 B(跨平台):裸 button 没掉到 UA 字体', async ({ page }) => {
+test('kiosk 页控条布局 B(星阵专页):裸 button 没掉到 UA 字体', async ({ page }) => {
   await stubAuth(page);
-  await page.goto('/kiosk/play/cross-platform');
+  await page.route('**/api/v1/platforms/status', (route) => route.fulfill({
+    json: { platforms: [{ platform: 'golaxy', connected: true, saved_username: '星阵账号' }] },
+  }));
+  await page.goto('/kiosk/play/cross-platform/golaxy');
   await page.waitForLoadState('networkidle');
-  console.log(`[字体] 跨平台屏实际命中:${await assertFontRouting(page, '跨平台屏')}`);
+  console.log(`[字体] 星阵专页实际命中:${await assertFontRouting(page, '星阵专页')}`);
 });
 
 test('kiosk 设置屏:整屏同一套字族', async ({ page }) => {

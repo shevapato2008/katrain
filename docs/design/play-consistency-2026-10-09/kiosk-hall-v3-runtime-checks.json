@@ -1,0 +1,212 @@
+{
+  "errors": [],
+  "calls": [
+    "/api/translations",
+    "/api/v1/auth/me",
+    "/api/translations",
+    "/api/v1/auth/me",
+    "/api/v1/live/translations",
+    "/api/v1/health",
+    "/api/v1/tsumego/progress",
+    "/api/v1/geometry/status",
+    "/api/v1/vision/status",
+    "/api/v1/health",
+    "/api/v1/geometry/status",
+    "/api/v1/vision/status",
+    "/api/v1/geometry/status",
+    "/api/v1/ai-ladder/status",
+    "/api/v1/users/online",
+    "/api/v1/games/active/multiplayer",
+    "/api/v1/ai-ladder/status",
+    "/api/v1/users/online",
+    "/api/v1/games/active/multiplayer",
+    "/api/v1/geometry/status",
+    "/api/pvp/spectate/ee36",
+    "/api/pvp/spectate/ee36",
+    "/api/v1/ai-ladder/status",
+    "/api/v1/users/online",
+    "/api/v1/games/active/multiplayer",
+    "/api/v1/ai-ladder/status",
+    "/api/v1/users/online",
+    "/api/v1/games/active/multiplayer",
+    "/api/v1/auth/me",
+    "/api/translations",
+    "/api/translations",
+    "/api/v1/auth/me",
+    "/api/v1/live/translations",
+    "/api/v1/health",
+    "/api/v1/tsumego/progress",
+    "/api/v1/geometry/status",
+    "/api/v1/vision/status",
+    "/api/v1/health",
+    "/api/v1/geometry/status",
+    "/api/v1/vision/status",
+    "/api/v1/geometry/status",
+    "/api/v1/ai-ladder/status",
+    "/api/v1/users/online",
+    "/api/v1/games/active/multiplayer",
+    "/api/v1/ai-ladder/status",
+    "/api/v1/users/online",
+    "/api/v1/games/active/multiplayer",
+    "/api/v1/auth/me",
+    "/api/translations",
+    "/api/translations",
+    "/api/v1/auth/me",
+    "/api/v1/live/translations",
+    "/api/v1/health",
+    "/api/v1/tsumego/progress",
+    "/api/v1/geometry/status",
+    "/api/v1/vision/status",
+    "/api/v1/health",
+    "/api/v1/geometry/status",
+    "/api/v1/vision/status",
+    "/api/v1/geometry/status",
+    "/api/v1/ai-ladder/status",
+    "/api/v1/users/online",
+    "/api/v1/games/active/multiplayer",
+    "/api/v1/ai-ladder/status",
+    "/api/v1/users/online",
+    "/api/v1/games/active/multiplayer"
+  ],
+  "games": {
+    "lobby": {
+      "x": 16,
+      "y": 248,
+      "width": 992,
+      "height": 330
+    },
+    "room": {
+      "x": 24,
+      "y": 304,
+      "width": 484,
+      "height": 90
+    },
+    "boards": 3,
+    "fonts": [
+      {
+        "selector": ".pvp-kiosk__bar h1",
+        "text": "在线大厅",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".pvp-kiosk__start-grid strong",
+        "text": "快速匹配",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".pvp-kiosk__seat-name b",
+        "text": "秋日拂晓",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".pvp-kiosk__viewers",
+        "text": "2 人观战",
+        "fonts": [
+          {
+            "familyName": "Geist",
+            "postScriptName": "Geist-Regular",
+            "isCustomFont": true,
+            "glyphCount": 2
+          },
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Regular",
+            "isCustomFont": true,
+            "glyphCount": 3
+          }
+        ]
+      }
+    ],
+    "counts": [
+      "2 人观战",
+      "0 人观战",
+      "5 人观战"
+    ]
+  },
+  "stones": [
+    {
+      "className": "pvp-kiosk__stone pvp-kiosk__stone--black",
+      "background": "radial-gradient(circle at 30% 25%, rgb(69, 76, 71), rgb(4, 6, 6) 70%)"
+    },
+    {
+      "className": "pvp-kiosk__stone pvp-kiosk__stone--white",
+      "background": "radial-gradient(circle at 30% 25%, rgb(255, 255, 255), rgb(233, 238, 229) 75%)"
+    },
+    {
+      "className": "pvp-kiosk__stone pvp-kiosk__stone--black",
+      "background": "radial-gradient(circle at 30% 25%, rgb(69, 76, 71), rgb(4, 6, 6) 70%)"
+    },
+    {
+      "className": "pvp-kiosk__stone pvp-kiosk__stone--white",
+      "background": "radial-gradient(circle at 30% 25%, rgb(255, 255, 255), rgb(233, 238, 229) 75%)"
+    },
+    {
+      "className": "pvp-kiosk__stone pvp-kiosk__stone--black",
+      "background": "radial-gradient(circle at 30% 25%, rgb(69, 76, 71), rgb(4, 6, 6) 70%)"
+    },
+    {
+      "className": "pvp-kiosk__stone pvp-kiosk__stone--white",
+      "background": "radial-gradient(circle at 30% 25%, rgb(255, 255, 255), rgb(233, 238, 229) 75%)"
+    }
+  ],
+  "placement": "需要先完成定级\n\n快速匹配按你的升降级段位寻找同水平对手。请先在「升降级对弈」完成 5 局定级赛。你仍可直接邀请空闲棋友。\n\n当前段位\n尚未定级\n稍后再说\n去升降级对弈",
+  "inviteCardTab": "true",
+  "inviteCardFocus": "tabpanel",
+  "invite": "邀请 竹林海棠 对局\n\n对方空闲。未定级也可邀请任意段位棋友，本局不计升降段位。\n\n对方段位 · 20级\n返回大厅\n发送邀请",
+  "inviteMessage": {
+    "type": "invite",
+    "target_id": -11
+  },
+  "arrowTab": "true",
+  "homeTab": "true",
+  "watchUrl": "http://127.0.0.1:5173/kiosk/play/pvp/watch/ee36",
+  "returnHall": true,
+  "unknownCounts": 3,
+  "errorBox": {
+    "x": 16,
+    "y": 223,
+    "width": 992,
+    "height": 54
+  },
+  "errorListBox": {
+    "x": 16,
+    "y": 310,
+    "width": 992,
+    "height": 276
+  },
+  "overflow": {
+    "document": [
+      1024,
+      600
+    ],
+    "main": [
+      992,
+      516
+    ],
+    "mainClient": [
+      992,
+      516
+    ]
+  }
+}

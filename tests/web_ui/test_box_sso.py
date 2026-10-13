@@ -18,6 +18,22 @@ from katrain.web.server import create_app
 from katrain.web.session import LobbyManager, Matchmaker, SessionManager
 
 
+@pytest.mark.parametrize("strict", [False, True])
+def test_server_websocket_accepts_explicit_bearer_behind_tls_proxy_but_box_does_not(monkeypatch, strict):
+    from types import SimpleNamespace
+    from starlette.datastructures import URL, Headers
+    from katrain.web.core.box_sso import resolve_websocket_token
+
+    monkeypatch.setattr(settings, "KATRAIN_MODE", "board" if strict else "server")
+    monkeypatch.setattr(settings, "KATRAIN_BOX_SSO", strict)
+    socket = SimpleNamespace(
+        url=URL("ws://modelstella.com/ws/lobby"),
+        headers=Headers({"origin": "https://modelstella.com", "authorization": "Bearer cloud-token"}),
+        query_params={}, cookies={},
+    )
+    assert resolve_websocket_token(socket) == (None if strict else "cloud-token")
+
+
 BRIDGE_HEADER = {"X-SmartBox-Bridge-Key": "bridge-test-secret"}
 
 

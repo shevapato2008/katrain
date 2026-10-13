@@ -1,0 +1,187 @@
+{
+  "batch_id": 592,
+  "environment": "PROD",
+  "observed_at": "2026-10-08T21:10:52.463074+00:00",
+  "rows": [
+    {
+      "decision_kind": "conventional",
+      "display_name": "자오젠난",
+      "evidence_id": 64082,
+      "lang": "ko",
+      "owner_id": 368,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "가오뤄환",
+      "evidence_id": 64096,
+      "lang": "ko",
+      "owner_id": 696,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "시모히라 아키오",
+      "evidence_id": 64077,
+      "lang": "ko",
+      "owner_id": 3771,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "차오스야오",
+      "evidence_id": 64083,
+      "lang": "ko",
+      "owner_id": 3820,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "亞歷山大·迪那斯塔因",
+      "evidence_id": 64095,
+      "lang": "tw",
+      "owner_id": 3844,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "마에다 료",
+      "evidence_id": 64094,
+      "lang": "ko",
+      "owner_id": 4041,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "안도 히나타",
+      "evidence_id": 64093,
+      "lang": "ko",
+      "owner_id": 4340,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "가와무라 마사미치",
+      "evidence_id": 64080,
+      "lang": "ko",
+      "owner_id": 4568,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "장자야오",
+      "evidence_id": 64084,
+      "lang": "ko",
+      "owner_id": 4634,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "리강",
+      "evidence_id": 64081,
+      "lang": "ko",
+      "owner_id": 5094,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "양원카이",
+      "evidence_id": 64085,
+      "lang": "ko",
+      "owner_id": 5133,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "Sha Xingyu",
+      "evidence_id": 64092,
+      "lang": "en",
+      "owner_id": 5351,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "왕보강",
+      "evidence_id": 64086,
+      "lang": "ko",
+      "owner_id": 5473,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "친쓰웨",
+      "evidence_id": 64087,
+      "lang": "ko",
+      "owner_id": 5675,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "판시위",
+      "evidence_id": 64088,
+      "lang": "ko",
+      "owner_id": 5790,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "천야펑",
+      "evidence_id": 64089,
+      "lang": "ko",
+      "owner_id": 6296,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "천창칭",
+      "evidence_id": 64090,
+      "lang": "ko",
+      "owner_id": 6378,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "황량위",
+      "evidence_id": 64091,
+      "lang": "ko",
+      "owner_id": 6547,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "마에타니 신고",
+      "evidence_id": 64079,
+      "lang": "ko",
+      "owner_id": 6635,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "conventional",
+      "display_name": "다이나카 신",
+      "evidence_id": 64078,
+      "lang": "ko",
+      "owner_id": 6642,
+      "reference_url": null,
+      "status": "verified"
+    }
+  ]
+}

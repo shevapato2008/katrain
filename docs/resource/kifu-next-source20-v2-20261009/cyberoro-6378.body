@@ -1,0 +1,711 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="https://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=euc-kr" />
+
+<title>사이버오로 - 바둑플랫폼 cyberoro.com</title>	
+
+<link rel="stylesheet" type="text/css" href="/css/common.css"/>
+<link rel="stylesheet" type="text/css" href="/css/sub.css"/>
+<link rel="stylesheet" type="text/css" href="/common/text.css"/>
+<script language="JavaScript" src="/cyber_js/etc.js"></script>
+<script language="JavaScript" src="/cyber_js/viewer.js"></script>
+<script language="JavaScript" src="/cyber_js/gibo.js"></script>
+<script language="javascript" src="/cyber_js/AC_RunActiveContent.js"></script>
+
+
+<meta property="og:type" content="article"/>
+<meta property="og:locale" content="ko_KR" />
+<meta property="og:title" content="세계사이버기원">
+<meta property="og:url" content="https://www.cyberoro.com/">
+<meta property="og:description" content="사이버오로">
+<meta property="og:image" content="https://www.cyberoro.com/images/main/K_logo.gif"/>
+
+
+</head>
+
+<body>
+	<div id="common_wrap">
+
+		<div id="header_wrap">
+			<div class="headera">
+				<div class="header">
+				   
+
+					<div class="logo"><h1><a href="https://www.cyberoro.com"><img src="https://open.cyberoro.com/logo/1009(9).gif" alt="오로바둑" /></a></h1></div>                    
+					<div class="navia">                    
+					<ul class="navi">
+						<li ><a href="/news/N_news.oro">바둑뉴스</a></li>
+						<li class="selected"><a href="/bcast/N_index.oro">중계<span>|</span>기보</a></li>
+						<li ><a href="/lecture/N_index.oro">강좌</a></li>
+						<li ><a href="/community/N_index.oro">커뮤니티</a></li>
+						<li ><a href="/orozone/N_index.oro">랭킹<span>|</span>이벤트</a></li>
+						<li ><a href="/shop/N_index.oro">상점</a></li> 
+						<li ><a href="/myinfo/N_index.oro" >내정보</a></li>                                            
+					</ul>              
+					</div>       
+				</div>	
+			</div>
+		</div>				
+				
+				
+	
+		<div id="common_container">
+			<!-- 콘텐츠 시작 -->
+			<div class="common_contents">
+				<!-- 콘텐츠 좌측 영역 -->
+								<div class="column_lnb">
+                	<!-- 좌측 메뉴 -->
+                	<div class="common_lnba">
+                        <a href="/bcast/"><h2>중계 / 기보</h2></a>                       
+                        <ul class="common_lnb">
+                        <li>
+                            <ul>
+                        	<li ><h3><a href="/bcast/N_index.oro">생중계</a></h3></li>                            
+                            <li ><a href="/bcast/N_live.oro">생중계 목록</a></li>
+                            <li ><a href="/bcast/N_schedule.oro">생중계 일정</a></li>
+                            <li ><a href="/bcast/N_schedule_replay.oro">생중계 다시보기</a></li>
+                            </ul>                       
+                        </li>
+                        <li>
+                            <ul>
+                        	<li ><h3><a href="/bcast/N_gibo.oro">기보감상</a></h3></li> 
+                            <li ><a href="/bcast/N_gibo.oro?div=1">국내기보</a></li>
+                            <li ><a href="/bcast/N_gibo.oro?div=2">세계대회</a></li>
+                            <li ><a href="/bcast/N_gibo.oro?div=3">해외기보</a></li>
+                            </ul>                       
+                        </li>
+                       
+                        <li>
+                            <ul>
+                        	<li><h3><a href="/info/N_player.oro">바둑정보</a></h3></li>                            
+                            <li ><a href="/info/N_cpt.oro">기전정보</a></li>
+                            <li class='selected' ><a href="/info/N_player.oro">기사정보</a></li>
+                            <li ><a href="/info/N_calendar.oro">바둑달력</a></li>
+                            </ul>                       
+                        </li>
+                        <li>
+                            <ul>
+                        	<li><h3><a href="/info/N_ranking.oro">프로기사랭킹</a></h3></li>                            
+                            <li ><a href="/info/N_ranking.oro?S_nation=1">한국랭킹</a></li>
+							<li ><a href="/info/N_ranking.oro?S_nation=9">한국랭킹(여자)</a></li>
+                            <li ><a href="/info/N_ranking.oro?S_nation=2">중국랭킹</a></li>                          
+                            </ul>                       
+                        </li>
+						 <li>
+                            <ul>
+                        	<li><h3><a href="/bcast/N_gibo_special_gisa.oro">특선기보</a></h3></li>
+                            <li ><a href="/bcast/N_gibo_special_gisa.oro">대표기사 걸작선</a></li>
+                            <li ><a href="/bcast/N_gibo_special_thema.oro">테마별 감상</a></li>
+                            <li ><a href="/bcast/N_gibo_special.oro">명국해설</a></li>
+                            </ul>                       
+                        </li>
+                        </ul>
+                    </div>
+					<!-- 배너 -->
+					<ul class="bannera">
+					<li><A href="/myinfo/N_card.oro"><img src="/images/common_new/banner_ama.gif" alt="사이버오로 기력으로 한국기원 공인아마단을 받으세요!" /></a></li>
+					<li><A href="https://ebook.cyberoro.com" target="_blank"><img src="/images/common_new/banner_ebook.gif" alt="월간바둑" /></a></li>
+					</ul>
+				</div>
+
+				<!-- 콘텐츠 가운데 영역 -->
+				<div class="column_contents">				
+					<!-- 생중계 일정 -->
+					<div class="common_tta">
+                    기사정보
+					</div>
+
+					<table width="600" border="0" cellspacing="0" cellpadding="0">
+					 <tr>
+						<td align="left" valign="top" id="content_tt">
+							<form method="post" action="/info/N_player.oro?mode=view" name="myform">
+							<input name="Tdiv" type="hidden" value="">
+							<input name="Sdiv" type="hidden" value="">
+
+							<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td style="padding:35px 0 8px 0;"><font class="blue12title"></font></td>
+								<td align="right">
+									<table cellpadding="0" cellspacing="0">
+									<tr>
+										<td><input name="S_prpl_name" type="text" value="천창칭" class="input_gray" style="vertical-align:top;"> </td>
+										<td style="padding:0 0 0 3px;"><input type="image" src="/images/admin/btn_search.gif" alt="찾기" align="absmiddle" /></a> </td>
+									</tr>
+									</table>
+								</td>
+							</tr>
+							</table>
+							
+							</form>
+						</td>
+					</tr>
+					<tr>
+						<td height="10"></td>
+					</tr>      
+					<tr>
+						<td class="sub_menu_box">
+							<a href="N_player.oro?S_nation=1&Tdiv=&Sdiv=" class="hln2"><font class="">국내기사</font></a> ㅣ 
+							<a href="N_player.oro?S_nation=2&Tdiv=&Sdiv=" class="hln2"><font class="">중국기사</font></a> ㅣ 
+							<a href="N_player.oro?S_nation=3&Tdiv=&Sdiv=" class="hln2"><font class="">일본기사</font></a> ㅣ 
+							<a href="N_player.oro?S_nation=4&Tdiv=&Sdiv=" class="hln2"><font class="news_view_sponsor">대만기사</font></a> ㅣ 
+							<a href="N_player.oro?S_nation=6&Tdiv=&Sdiv=" class="hln2"><font class="">북미,유럽</font></a> ㅣ 
+							<a href="N_player.oro?S_nation=5&Tdiv=&Sdiv=" class="hln2"><font class="">기타국가</font></a> ㅣ 
+							<a href="N_player.oro?S_nation=8&Tdiv=&Sdiv=" class="hln2"><font class="">국내은퇴</font></a>
+						</td>
+					</tr>
+					<tr>
+						<td height="10"></td>
+					</tr>
+					<tr>
+						<td>
+							<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td>
+									<table width="100%" border="0" cellspacing="0" cellpadding="0">
+									<tr>
+										<td width="127" align="center">
+											<table width="104" height="132" cellspacing="1" bgcolor="#c0c0c0">
+											<tr>
+												<td align="center" bgcolor="#FFFFFF"><img src="https://www.baduk.or.kr/FileUpDown/player/" width="100"/></td>
+											</tr>
+											</table>
+										</td>
+										<td colspan="2" align="left" valign="top">
+											<div class="dot">
+												<ul>
+													<li><strong>소속 : </strong> 대만기원</li>
+													<li><strong>이름 : </strong>천창칭&nbsp;7단&nbsp;[陳長淸]</li>
+													<li><strong>생일 : </strong></li>
+													
+												</ul>
+											</div>
+										</td>
+									</tr>
+									</table>
+									<br>
+								</td>
+							</tr>
+
+							<tr><td bgcolor='#dddddd' height='1'></td></tr><tr><td align='left' valign='bottom' style='padding:8px 5px 5px 5px;'><span class='blue12b'>승단이력</span></td></tr><tr><td align='left' style='padding:0 5px 5px 5px;'>- 7단 <font color='#d5d5d5'> / </font>1992.07.13<font color='#d5d5d5'> / </font><br></td></tr>
+
+							<tr>
+								<td valign="top">&nbsp;</td>
+							</tr>
+							</table>
+						</td>
+					</tr>	  
+					</table>
+
+
+               		
+                    
+				</div>
+				<!-- 콘텐츠 우측 영역-->
+				<div class="column_aside">				    
+					<div class="loga">
+					    <!-- 대국실 -->
+						<div class="gamea">
+							<div class="game">
+														
+						<script language="JavaScript" src="/cyber_js/cyber.js"></script>
+						<a href="javascript:oro2000();"><img src="/images/common_new/btn_playgame.png" alt="대국실 입장" usemap="#gamemap" border="0" /></a>
+						<map name="gamemap" id="gamemap">
+						  <area shape="rect" coords="20,46,125,70" href="https://down.cyberoro.com/download/OroBaduk_20260414A.exe" alt="대국실 다운로드" />
+						</map>
+							</div>
+						</div>
+					    <!-- 로그정보 -->
+						<script language="JavaScript" src="/cyber_js/check_login_script.js"></script>				
+<script language="JavaScript" src="/cyber_js/common.js"></script>
+					
+					<!-- 로그인 -->
+
+
+
+<script language="JavaScript">
+  function s_login(){
+
+     var f = document.form_login;
+	 if (form_login.saveCheck.checked) {
+	
+		setCookie("saveID", form_login.id.value, 365);
+	    setCookie("savePW", form_login.pass.value, 365);
+	 }else{							
+		setCookie("saveID", '', 365);
+    	setCookie("savePW", '', 365);
+		form_login.saveCheck.checked = false;
+	 }
+
+      if ( f.id.value == "" ){
+          alert( "아이디를 입력하세요" );
+          f.id.focus();
+          return false;
+      }
+      else if ( f.pass.value == "" ){
+          alert( "패스워드를 입력하세요" );
+          f.pass.focus();
+          return false;
+      }
+      else{
+
+	      //	   보안접속을 위한 부분 시작
+		 if(f.s_sec.checked==true){
+			 f.action="https://www.cyberoro.com/login/login_action.oro";
+			 f.r_act.value="sec_login";
+		  }
+		  else{
+
+	  	 	 f.action="/login/login_action.oro";
+			 f.r_act.value="all";         
+		  }
+		 f.submit();
+         return true;
+      }
+  }
+</script>
+
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function CheckStrLength()
+{
+
+ var temp;
+ var f = document.form_login.pass.value.length;
+ var msglen = 10; //최대 길이
+ var tmpstr = "";
+ var enter = 0;
+ var strlen;
+
+ if(f != 0)
+
+ {
+  for(k=0;k<f;k++)
+  {
+   temp = document.form_login.pass.value.charAt(k);
+   
+   if(temp == '\n')
+   {
+    enter++;
+   }
+
+   if(escape(temp).length > 5)
+    msglen -= 2;
+   else
+    msglen--;
+
+
+   if(msglen < 0)
+   {
+    alert(" 10자 까지 쓰실 수 있습니다.");
+    document.form_login.pass.value = tmpstr;
+    break;
+   }
+   else
+   {
+   
+    tmpstr += temp;
+   }
+  }
+ }
+}
+//-->
+
+
+function run(e){
+if(e.keyCode == 13)
+{
+s_login();}
+}
+</SCRIPT>
+
+
+<form name="form_login" method="post" onSubmit="return s_login();">
+
+
+  <input type="hidden" name="r_url" value="">
+  <input name="r_act" type="hidden" value="all" >
+
+					<div class="logina">
+						<ul class="log_save">
+						<li><input type="checkbox" class="checkbox" name="saveCheck" OnClick="JavaScript:warning();">아이디 저장</li>
+						<li class="security"><input type="checkbox" class="checkbox" name="checkbox"  id="s_sec" value="checkbox">보안접속</li>
+						<li class="help"><a href="/board/N_cs_index.oro">고객센터</a></li>
+						</ul>
+						<div class="logtable">
+							<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+							<td><input type="text" placeholder="아이디" name="id" onKeyPress="capsLock(event);"></td>
+							<td rowspan="2"><input type="button" class="btn_log" value="로그인" onclick="s_login();"></td>
+							</tr>
+							<tr>
+							<td><input type="password" placeholder="비밀번호" name="pass" onKeyUp="CheckStrLength()"  onkeypress="return run(event);"></td>
+							</tr>
+							</table>
+						</div>
+						<div class="find_idpw"><a href="https://www.cyberoro.com/myinfo/N_lost_idpw_new.oro">아이디/비밀번호 찾기</a></div>
+						<a href="https://www.cyberoro.com/member/N_regmember_new.oro"><button type="button" class="btn_join">무료회원가입</button></a>
+				  	</div>
+ </form>
+
+ <script>
+				if(getCookie("saveID") != ""){
+					form_login.id.value   = getCookie("saveID");
+					form_login.pass.value = getCookie("savePW");
+					form_login.saveCheck.checked = true;
+
+					form_login.id.style.backgroundImage = '';
+					form_login.pass.style.backgroundImage = '';
+				}
+
+				function warning(){
+					if (form_login.saveCheck.checked) {
+						sure = confirm("비밀번호 저장시 타인에게 노출될 위험이 있습니다. 그래도 저장 하시겠습니까??")
+						if(sure) {
+							setCookie("saveID", form_login.id.value, 365);
+							setCookie("savePW", form_login.pass.value, 365);
+						}else{							
+							setCookie("saveID", '', 365);
+							setCookie("savePW", '', 365);
+							form_login.saveCheck.checked = false;
+						}
+                 
+
+					}
+					 else	  { 
+					  setCookie("saveID", '', 365);
+					  setCookie("savePW", '', 365);
+
+					 form_login.saveCheck.checked = false;}
+				}
+</script>
+
+
+					</div>
+					
+				
+							
+					<div class="asidea">
+						<ul class="aside_bn">
+						<li><a href="/shop/N_index.oro"><img src="/images/common_new/banner_join.jpg" alt="정회원 가입" /></a></li>
+						<li><a href="javascript:OpenWin('https://billing2.cyberoro.com/ball/buy.asp','oroball',500,450,'no','no','no','no','no','no','no',100,100);"><img src="/images/common_new/banner_oroball.jpg" alt="오로볼 구매" /></a></li>
+						<li><a href="javascript:OpenWin('/shop/popup_point_refill.oro','refil',430,600,'no','no','no','no','no','no','no',100,100)"><img src="/images/common_new/banner_point.jpg" alt="포인트 리필" /></a></li>
+						</ul>
+						<!-- 포인트 랭킹 -->
+
+				
+						<div class="point_rka">
+							<div class="aside_tta">
+								<a href="/orozone/N_point_Top.oro?Tdiv=C&Sdiv=8">포인트 랭킹</a> <a href="/orozone/N_point_Top.oro?Tdiv=C&Sdiv=8"><span class="common_more">더보기</span></a>
+							</div>
+							<div class="aside_lista">
+								<div class="point_rk_list">
+									<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							
+							
+					
+
+									<tr>
+									<td width="85">팍스이스트</td>
+									<td>3단</td>
+									<td width="90" class="al_right">10조4209억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">자작나무♡</td>
+									<td>5단*</td>
+									<td width="90" class="al_right">4조422억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">바벨탑</td>
+									<td>1급*</td>
+									<td width="90" class="al_right">2조6343억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">운명아비켜</td>
+									<td>4단*</td>
+									<td width="90" class="al_right">2조6232억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">한솔현현로</td>
+									<td>7단*</td>
+									<td width="90" class="al_right">2조1337억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">충청도요정</td>
+									<td>24급*</td>
+									<td width="90" class="al_right">1조8576억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">해봤어</td>
+									<td>1단</td>
+									<td width="90" class="al_right">1조6597억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">목검향</td>
+									<td>10급*</td>
+									<td width="90" class="al_right">1조5506억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">xyz123</td>
+									<td>7급*</td>
+									<td width="90" class="al_right">1조5118억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">우리영준</td>
+									<td>6단*</td>
+									<td width="90" class="al_right">1조4430억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">비비빅</td>
+									<td>11급*</td>
+									<td width="90" class="al_right">1조4399억</td>
+									</tr>
+
+							
+					
+
+									<tr>
+									<td width="85">입영전야愛</td>
+									<td>4단</td>
+									<td width="90" class="al_right">1조3035억</td>
+									</tr>
+
+							
+								
+									</table>                
+								</div>
+							</div>
+						</div>
+
+
+
+						<!-- 인기상품 -->
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+var preNo = 1;
+function showshop(no) {
+     if(no==1){      
+	   itemc.className = "selected";
+	   point.className = "";	
+    }
+    else{      
+	   itemc.className = "";
+	   point.className = "selected";	
+    }
+	document.getElementById('shopc_'+preNo).style.display = 'none';
+	document.getElementById('shopc_'+no).style.display = 'block';
+	
+	preNo = no;
+}
+//-->
+</SCRIPT>
+
+						<div class="pop_itema">
+							<div class="aside_tta">
+								인기상품
+								<ul class="aside_lnb">
+								<li id="itemc" class="selected"><a href="/shop/N_item.oro" onmouseover="javascript:showshop(1);">아이템</a></li>
+								<li id="point" ><a href="/shop/N_avatar.oro?order_money=400" onmouseover="javascript:showshop(2);">포인트</a></li>
+								</ul>
+							</div>
+							<div class="aside_lista"  id="shopc_1">
+								<ul class="pop_item_list">
+								<li>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_1&url=/shop/popup_sale_vip.oro?item_no=170','item',380,390,'no','no','no','no','no','no','no',50,50);"><img src="/images/shop/item_180.gif" alt="플래티넘 패키지" /></a>
+									<p class="txt_item">플래티넘 패키지</p>
+									<p class="txt_price">오로볼 500개</p>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_1&url=/shop/popup_sale_vip.oro?item_no=170','item',380,390,'no','no','no','no','no','no','no',50,50);"><button type="button" class="btn_buy">구매</button></a>              
+								</li>
+								<li>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_1&url=/shop/popup_sale.oro?item_no=151','item',380,390,'no','no','no','no','no','no','no',50,50);"><img src="/images/shop/item_151.gif" alt="겜바타 패키지" /></a>
+									<p class="txt_item">겜바타 패키지</p>
+									<p class="txt_price">오로볼 100개</p>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_1&url=/shop/popup_sale.oro?item_no=151','item',380,390,'no','no','no','no','no','no','no',50,50);"><button type="button" class="btn_buy">구매</button></a>              
+								</li>
+								<li>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_1&url=/shop/popup_sale.oro?item_no=113','item',380,390,'no','no','no','no','no','no','no',50,50);"><img src="/images/shop/item_113.gif" alt="파워 종합세트" /></a>
+									<p class="txt_item">파워 종합세트</p>
+									<p class="txt_price">오로볼 100개</p>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_1&url=/shop/popup_sale.oro?item_no=113','item',380,390,'no','no','no','no','no','no','no',50,50);"><button type="button" class="btn_buy">구매</button></a>              
+								</li>
+								<li>
+									 <a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_1&url=/shop/popup_sale.oro?item_no=111','item',380,390,'no','no','no','no','no','no','no',50,50);"><img src="/images/shop/item_111.gif" alt="스페셜종합세트A" /></a>
+									<p class="txt_item">스페셜종합세트A</p>
+									<p class="txt_price">오로볼 50개</p>
+									 <a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_1&url=/shop/popup_sale.oro?item_no=111','item',380,390,'no','no','no','no','no','no','no',50,50);"><button type="button" class="btn_buy">구매</button></a>              
+								</li>
+								</ul>
+							</div>
+							<div class="aside_lista"  id="shopc_2"  style="display:none;">
+								<ul class="pop_item_list">
+								<li>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_2&url=/shop/popup_sale.oro?item_no=151','item',380,390,'no','no','no','no','no','no','no',50,50);"><img src="/images/shop/gam_total_s.gif" alt="" width="86" height="82"/></a>
+									<p class="txt_item">겜바타 종합세트</p>
+									<p class="txt_price">오로볼 100개</p>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_2&url=/shop/popup_sale.oro?item_no=151','item',380,390,'no','no','no','no','no','no','no',50,50);"><button type="button" class="btn_buy">구매</button></a>              
+								</li>
+								<li>
+									 <a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_2&url=/shop/popup_sale.oro?item_no=131','item',380,390,'no','no','no','no','no','no','no',50,50);"><img src="/images/shop/item_131.gif" alt="" width="86" height="82"/></a>
+									<p class="txt_item">타짜와 미녀</p>
+									<p class="txt_price">오로볼 80개</p>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_2&url=/shop/popup_sale.oro?item_no=131','item',380,390,'no','no','no','no','no','no','no',50,50);"><button type="button" class="btn_buy">구매</button></a>              
+								</li>
+								<li>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_2&url=/shop/popup_sale.oro?item_no=129','item',380,390,'no','no','no','no','no','no','no',50,50);"><img src="/images/shop/item_129.gif" alt="" width="86" height="82"/></a>
+									<p class="txt_item">오로볼클래식</p>
+									<p class="txt_price">오로볼 40개</p>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_2&url=/shop/popup_sale.oro?item_no=129','item',380,390,'no','no','no','no','no','no','no',50,50);"><button type="button" class="btn_buy">구매</button></a>              
+								</li>
+								<li>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_2&url=/shop/popup_sale.oro?item_no=300&avatar_no=130','item',380,390,'no','no','no','no','no','no','no',50,50);"><img src="/images/shop/Av_130.gif" alt="" width="86" height="82"/></a>
+									<p class="txt_item">바둑귀신</p>
+									<p class="txt_price">오로볼 20개</p>
+									<a href="javascript:OpenWin('/client/main_count.oro?cm_div=SS_2&url=/shop/popup_sale.oro?item_no=300&avatar_no=130','item',380,390,'no','no','no','no','no','no','no',50,50);"><button type="button" class="btn_buy">구매</button></a>              
+								</li>
+								</ul>
+							</div>
+						</div>
+						
+					</div>
+
+
+
+
+
+
+
+					
+
+
+
+
+
+
+
+
+
+
+
+
+				</div>			
+			</div>
+		</div>
+		
+<script>
+    function flinkGo(ver){
+
+	 if (ver == 1){
+      location='/index.oro';
+	 }else if(ver == 2){
+	  location='/company/N_history.oro';
+	 }else if(ver == 3){
+	  location='/company/N_protection.oro';
+	 }else if(ver == 4){
+	  location='/company/N_agreement.oro';
+     }else if(ver == 5){
+	  location='/';	 
+	 }else if(ver == 6){
+	  location='/etc/sitemap.oro';
+	 }else if(ver == 7){
+	  location='https://m.cyberoro.com/?pcV=NO';
+	 }else if(ver == 8){
+	  location='/company/N_youthpolicy.oro';
+     }else{
+	  location='/index.oro';
+	 }
+     
+    }     
+</script>
+
+		
+		<div id="footer">
+            <div class="innerFoot">
+                <div class="footer_logo"><img src="/images/common_new/footer_logo.png" alt="ORO" /></div>
+                <div class="game_info"><img src="/images/common_new/game_info.png" alt="게임정보" /></div>
+                <ul class="footerLinks">
+                    <li><a href="javascript:flinkGo(2);">회사소개</a></li>
+                    <li><a href="javascript:flinkGo(3);">개인정보처리방침</a></li>
+                    <li><a href="javascript:flinkGo(8);">청소년보호정책</a></li>
+                    <li><a href="javascript:flinkGo(4);">이용약관</a></li>  
+                    <li><a href="/board/N_cs_index.oro">운영정책</a></li>
+					<li><a href="javascript:flinkGo(7);">모바일버전</a></li>
+                </ul>
+                <address>
+                    세계사이버기원(주) 대표:곽민호 사업자등록번호:220-81-86538 통신판매업 신고번호:2011-서울중구-0579<br />
+                    서울 중구 퇴계로27길 28(충무로3가) 한영빌딩 6층 <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2208186538" target="_blank">[사업자정보확인]</a><br />
+                    제호 : 사이버오로 I 발행인 : 곽민호 I 편집인 : 정용진 I 정기간행물 등록번호 : 서울, 아02753<br />
+					청소년보호책임자 : 최병준 I 발행일자 : 2013년 7월 26일<br />
+                </address>
+                <p class="copyright">
+                Copyright ⓒ 세계사이버기원 Corp. All rights reserved.
+                </p>
+            </div>
+		</div> 
+
+
+<script language="JavaScript" src="/cyber_js/google_analytics.js"></script>
+
+
+
+
+
+
+<script type="text/javascript">
+var mobileKeyWords = new Array('iPhone', 'iPod', 'BlackBerry', 'Android', 'Windows CE', 'LG', 'MOT', 'SAMSUNG', 'SonyEricsson');
+for (var word in mobileKeyWords){
+    if (navigator.userAgent.match(mobileKeyWords[word]) != null){
+	 
+	     location.href = "https://m.cyberoro.com/";
+	 
+        break;
+    }
+
+}
+</script>
+   
+
+	</div>
+</body>
+</html>

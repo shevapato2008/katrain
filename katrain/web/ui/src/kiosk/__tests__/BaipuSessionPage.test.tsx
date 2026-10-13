@@ -38,14 +38,16 @@ vi.mock('../../api/ledApi', () => ({
 
 // 三路判据:`vis.status` 为 null = 没有 VisionProvider = 手动兜底;给了就绪状态 = 摄像头态。
 // 识别 IO 层(`usePhysicalBaipu`)的规则由它自己的单测管,这里只换成一个可控的读数,并记下页面喂给它什么。
-const { vis, phys, quickAnalyze } = vi.hoisted(() => ({
-  vis: { status: null as null | { enabled: boolean; recognitionReady: boolean } },
+const { vis, phys, quickAnalyze, soundPlay } = vi.hoisted(() => ({
+  vis: { status: null as null | { enabled: boolean; recognitionReady: boolean }, loaded: true },
   phys: { state: {} as Record<string, unknown>, opts: null as null | Record<string, unknown> & { onMatched: () => void } },
   quickAnalyze: vi.fn(),
+  soundPlay: vi.fn(),
 }));
 vi.mock('../context/VisionContext', () => ({
-  useOptionalVision: () => (vis.status ? { visionStatus: vis.status } : null),
+  useOptionalVision: () => (vis.status ? { visionStatus: vis.status, loaded: vis.loaded } : null),
 }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play: soundPlay }) }));
 vi.mock('../hooks/useVisionSync', () => ({
   useVisionSync: () => ({ syncEvents: [], latestEvent: null, setupProgress: null, isSetupComplete: false, connected: true }),
 }));
@@ -61,7 +63,7 @@ const move = (i: number, row: number, col: number, color: 'B' | 'W'): BaipuStep 
   kind: 'move', move_index: i, property: color, row, col, color, removed: [], board_hash: `h${i}`,
 });
 const STEPS: BaipuStep[] = [move(0, 3, 15, 'B'), move(1, 15, 3, 'W')];
-const META = { player_black: '申真谞', player_white: '柯洁', handicap: 0, komi: 7.5, ruleset: 'chinese' };
+const META = { player_black: '申真谞', player_white: '柯洁', handicap: 0, komi: 7.5, ruleset: 'chinese', result: 'W+R' };
 
 const renderPage = (collect = false) =>
   render(
@@ -81,6 +83,7 @@ beforeEach(() => {
   baipuCapture.mockResolvedValue({ kind: 'disabled' });
   ledPoint.mockResolvedValue({ ok: true, connected: true });
   vis.status = null;
+  vis.loaded = true;
   phys.opts = null;
   phys.state = {
     phase: 'await', reason: null, missing: [], extra: [], wrong: null, stuck: false, ledOk: true,
@@ -92,7 +95,7 @@ describe('屏 17 摆谱 · 出口都回棋谱屏(K1)', () => {
   // `/kiosk/baipu` 那一页没有页控条、不在 Dock 词典里 ⇒ 盒上进去就出不来。
   it('退出确认里按「退出」回 /kiosk/kifu', async () => {
     renderPage();
-    await screen.findByTestId('baipu-pcard');
+    await screen.findByTestId('baipu-player-black');
     fireEvent.click(screen.getByRole('button', { name: /棋谱/ }));
     fireEvent.click(screen.getByTestId('baipu-exit-confirm-action'));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
@@ -120,13 +123,42 @@ describe('屏 17 摆谱 · 出口都回棋谱屏(K1)', () => {
 });
 
 describe('屏 17 摆谱 · 上线态不拍照(K4,Fan 2026-09-14)', () => {
+  it('摆完才在电子棋盘中央显示谱中结果', async () => {
+    renderPage(false);
+    await screen.findByTestId('baipu-player-black');
+    expect(screen.queryByTestId('baipu-final-result')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
+    expect(screen.queryByTestId('baipu-final-result')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
+    expect(await screen.findByTestId('baipu-final-result')).toHaveTextContent('白棋中盘胜');
+  });
+
+  it('棋谱没有记录结果时只说明缺少结果', async () => {
+    baipuLoad.mockResolvedValue({ board_size: 19, steps: STEPS, meta: { ...META, result: '' } });
+    renderPage(false);
+    await screen.findByTestId('baipu-player-black');
+    fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
+    expect(await screen.findByTestId('baipu-final-result')).toHaveTextContent('谱里没写结果');
+  });
+
+  it('中文棋谱结果也转成界面语言的对弈终局文案', async () => {
+    baipuLoad.mockResolvedValue({ board_size: 19, steps: STEPS, meta: { ...META, result: '白中盘胜' } });
+    renderPage(false);
+    await screen.findByTestId('baipu-player-black');
+    fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
+    expect(await screen.findByTestId('baipu-final-result')).toHaveTextContent('白棋中盘胜');
+  });
+
   it('确认落子只推进:一次 /capture 都不发(开局帧也不拍),屏上没有「帧 / 拍照」', async () => {
     renderPage(false);
     await screen.findByTestId('baipu-pcard');
     fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
     await waitFor(() => expect(screen.getByTestId('baipu-pagebar')).toHaveTextContent('第 2 / 2 手'));
     expect(baipuCapture).not.toHaveBeenCalled();
-    expect(screen.getByTestId('baipu-led-fold')).toHaveTextContent('红灯 = 放黑子');
+    expect(screen.getByTestId('baipu-player-black')).toHaveTextContent('申真谞');
+    expect(screen.queryByTestId('baipu-led-fold')).toBeNull();
     expect(screen.queryByTestId('baipu-cam-fold')).toBeNull();
     // 「摄像头」可以出现 —— 手动兜底要说清为什么没用它;不许出现的是拍照那一族。
     expect(screen.getByTestId('baipu-session-page').textContent).not.toMatch(/帧|拍照/);
@@ -183,7 +215,7 @@ describe('屏 17 摆谱 · 手动兜底(摄像头用不了,稿 17d)', () => {
     renderPage(false);
     await screen.findByTestId('baipu-pcard');
     expect(screen.getByTestId('baipu-pcard')).toHaveTextContent('没接摄像头 —— 摆好后按「确认落子」');
-    expect(screen.getByTestId('baipu-led-fold')).toHaveTextContent('手动确认');
+    expect(screen.queryByTestId('baipu-led-fold')).toBeNull();
     const tryBtn = screen.getByRole('button', { name: '试下' });
     expect(tryBtn).toBeDisabled();
     expect(tryBtn).toHaveAttribute('title', '摄像头没在识别');
@@ -200,26 +232,53 @@ describe('屏 17 摆谱 · 手动兜底(摄像头用不了,稿 17d)', () => {
 describe('屏 17 摆谱 · 摄像头态(Fan 2026-09-23:不用每步按确认)', () => {
   beforeEach(() => { vis.status = { enabled: true, recognitionReady: true }; });
 
+  it('首次摄像头状态未返回时不先亮灯,也不短暂露出手动确认', async () => {
+    vis.status = { enabled: false, recognitionReady: false };
+    vis.loaded = false;
+    renderPage(false);
+    await screen.findByTestId('baipu-player-black');
+    expect(ledPoint).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: '确认落子' })).toBeNull();
+  });
+
   it('没有确认键:动作区只有 撤回 / 试下 / AI支招;识别层拿到下一手(黑 = 1)', async () => {
     renderPage(false);
-    await screen.findByTestId('baipu-pcard');
+    await screen.findByTestId('baipu-player-black');
     const names = screen.getAllByRole('button').map((b) => b.textContent);
     expect(names).not.toContain('确认落子');
     expect(screen.getByTestId('baipu-actions').textContent).toBe('撤回上一手试下AI支招');
-    expect(screen.getByTestId('baipu-pcard')).toHaveTextContent('摄像头认到就自动下一手');
-    expect(screen.getByTestId('baipu-led-fold')).toHaveTextContent('摄像头在看');
+    expect(screen.queryByTestId('baipu-pcard')).toBeNull();
+    expect(screen.queryByTestId('baipu-led-fold')).toBeNull();
     expect(phys.opts).toMatchObject({ enabled: true, k: 0, paused: false, next: { row: 3, col: 15, color: 1 } });
     expect(document.querySelector('[data-stone="b"][data-at="Q16"]')).toBeInTheDocument();
     expect(document.querySelector('.gob .pending-ring--b')).toBeInTheDocument();
   });
 
+  it('常态展示双方棋手卡并高亮当前方，不占位显示待摆说明和灯色图例', async () => {
+    renderPage(false);
+    const black = await screen.findByTestId('baipu-player-black');
+    const white = screen.getByTestId('baipu-player-white');
+    expect(black).toHaveTextContent('申真谞');
+    expect(black).toHaveAttribute('data-turn', 'true');
+    expect(white).toHaveTextContent('柯洁');
+    expect(white).toHaveAttribute('data-turn', 'false');
+    expect(screen.queryByTestId('baipu-pcard')).toBeNull();
+    expect(screen.queryByTestId('baipu-led-fold')).toBeNull();
+    act(() => phys.opts!.onMatched());
+    await waitFor(() => expect(white).toHaveAttribute('data-turn', 'true'));
+    expect(black).toHaveAttribute('data-turn', 'false');
+  });
+
   it('摄像头认到 → 推进一手;撤回立刻生效、不弹框', async () => {
     renderPage(false);
-    await screen.findByTestId('baipu-pcard');
+    await screen.findByTestId('baipu-player-black');
     act(() => phys.opts!.onMatched());
     await waitFor(() => expect(screen.getByTestId('baipu-pagebar')).toHaveTextContent('第 2 / 2 手'));
+    expect(soundPlay).toHaveBeenCalledExactlyOnceWith('stone');
     expect(document.querySelector('[data-stone="w"][data-at="D4"]')).toBeInTheDocument();
     expect(document.querySelector('.gob .pending-ring--w')).toBeInTheDocument();
+    expect(document.querySelectorAll('.gob .pending-ring')).toHaveLength(1);
+    expect(document.querySelector('.gob .mark')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '撤回上一手' }));
     expect(screen.queryByTestId('baipu-undo-confirm')).toBeNull();
     await waitFor(() => expect(screen.getByTestId('baipu-pagebar')).toHaveTextContent('第 1 / 2 手'));
@@ -245,7 +304,7 @@ describe('屏 17 摆谱 · 摄像头态(Fan 2026-09-23:不用每步按确认)', 
 
   it('试下是开关:按下暂停识别,撤回和 AI支招灰掉;再按一次恢复', async () => {
     renderPage(false);
-    await screen.findByTestId('baipu-pcard');
+    await screen.findByTestId('baipu-player-black');
     act(() => phys.opts!.onMatched());
     await waitFor(() => expect(screen.getByTestId('baipu-pagebar')).toHaveTextContent('第 2 / 2 手'));
     fireEvent.click(screen.getByRole('button', { name: '试下' }));
@@ -261,7 +320,7 @@ describe('屏 17 摆谱 · 摄像头态(Fan 2026-09-23:不用每步按确认)', 
   it('AI 支招:候选三行借灯图例的位置,识别暂停,候选点交给识别层点白灯', async () => {
     quickAnalyze.mockResolvedValue({ moveInfos: [{ move: 'D4', winrate: 0.524, scoreLead: 0.9 }] });
     renderPage(false);
-    await screen.findByTestId('baipu-pcard');
+    await screen.findByTestId('baipu-player-black');
     fireEvent.click(screen.getByRole('button', { name: 'AI支招' }));
     await waitFor(() => expect(screen.getByTestId('baipu-hint-fold')).toHaveTextContent('1 · D4胜率 52.4% · 目差 +0.9'));
     expect(screen.queryByTestId('baipu-led-fold')).toBeNull();

@@ -1,0 +1,32 @@
+--- a/katrain/web/kifu/identity.py
++++ b/katrain/web/kifu/identity.py
+@@ -5,0 +6 @@
++from sqlalchemy import text
+@@ -91 +92,26 @@
+-    return {row[0] for row in player_query.distinct()}, {row[0] for row in event_query.distinct()}
++    player_ids = {row[0] for row in player_query.distinct()}
++    event_ids = {row[0] for row in event_query.distinct()}
++    if exact:
++        # This production reader predates the reviewed-name importer. Keep its
++        # existing aliases and accept one independently approved identity name.
++        rows = db.execute(text("""
++            SELECT DISTINCT n.player_id, n.display_name
++            FROM kifu_player_names AS n
++            JOIN kifu_name_research_evidence AS e ON e.id = n.evidence_id
++            WHERE n.status = 'verified'
++              AND e.review_status = 'approved'
++              AND n.player_id = e.player_id AND n.lang = e.lang
++              AND n.display_name = e.candidate_name
++              AND n.revision = e.revision
++              AND n.decision_kind = e.decision_kind
++              AND n.generation_rule_version = e.generation_rule_version
++              AND n.decision_kind = 'conventional'
++              AND e.producer_model IS NOT NULL AND e.reviewer_model IS NOT NULL
++              AND e.reviewer_id IS NOT NULL AND e.reviewed_at IS NOT NULL
++              AND e.reviewer_id <> e.producer_id
++              AND (n.display_name = :query OR lower(n.display_name) = lower(:query))
++        """), {"query": query}).all()
++        reviewed = {player_id for player_id, name in rows if normalize_alias(name) == needle}
++        if len(reviewed) == 1 and not event_ids and (not player_ids or player_ids == reviewed):
++            player_ids.update(reviewed)
++    return player_ids, event_ids

@@ -6,7 +6,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { useGeometry } from '../context/GeometryContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import AccountSection from '../components/settings/AccountSection';
-import { PLATFORM_META } from '../constants/platforms';
+import PlatformAccounts from '../components/settings/PlatformAccounts';
 import { Icon, type IconName } from '../shell/icons';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
@@ -223,28 +223,7 @@ const SettingsPage = () => {
             {/* 账号那两行(账号 + AI 段位)在 `AccountSection` 里,和下面那行是同一族 `.kiosk-row`。
                 ⚠️ **段位详情那张卡还没重画** —— 它只在点开对话框之后才出现,不占这一组的正面。 */}
             <AccountSection />
-            {/* 上一版这儿摆着四张 `pointer-events:none` 的死卡,列的是 99围棋/野狐/腾讯/新浪 ——
-                **和真正能连的三家对不上**。改成一行真入口:连哪一家、怎么连,都在跨平台对弈那条路上,
-                三家的登录字段还各不相同,不该在这儿复制一套表单。 */}
-            <div className="kiosk-row">
-              <span className="kiosk-row__t">
-                <b>{t('settings:platforms', '跨平台账号')}</b>
-                <em>
-                  {Object.values(PLATFORM_META).map((p) => p.labelCn).join(' · ')}
-                  {' · '}
-                  {t('settings:platforms_sub', '各家登录字段不同，在跨平台对弈里连')}
-                </em>
-              </span>
-              <span className="kiosk-row__end">
-                <button
-                  type="button"
-                  className="kiosk-btn kiosk-btn--secondary"
-                  onClick={() => navigate('/kiosk/play/cross-platform')}
-                >
-                  {t('settings:go_connect', '去连接')}
-                </button>
-              </span>
-            </div>
+            <PlatformAccounts />
           </div>
         </section>
 
@@ -273,23 +252,21 @@ const SettingsPage = () => {
                 </button>
               </span>
             </div>
-            {/* 三件器件的读数。**「读不到」和「没连上」是两回事** ——
-                没问到之前(`loaded=false`)`DEFAULT_STATUS` 三个 capability 全是 false,照画就会在
-                开机那一瞬说「未连接」。所以没读到 / 没有摄像头时一律「—」且不给灯色。
-                措辞照抄标定屏那三格(`GeometryCalibrationScreen` 的 `cells`),同一件事只有一套写法;
-                LED 那一格照视觉赛道 V4:它只说串口通没通,不代表每颗灯都亮。 */}
+            {/* LED 的 Board A 供电确认独立于摄像头；未知状态没有绿色灯色。 */}
             {([
               ['camera', t('Camera', '摄像头'), status.capabilities.camera_ready,
                 t('settings:camera_connected', '已连接'), t('settings:not_ready', '未连接')],
               ['calib', t('Calibration', '几何标定'), status.capabilities.geometry_ready,
                 t('settings:geometry_calibrated', '已标定'), t('settings:geometry_uncalibrated', '未标定')],
               ['led', 'LED', status.capabilities.led_ready,
-                t('settings:led_serial_connected', '串口已连接'), t('settings:not_ready', '未连接')],
+                t('settings:camera_connected', '已连接'), t('settings:not_ready', '未连接')],
             ] as const).map(([key, label, ok, yes, no]) => (
               <div className="kiosk-row" key={key} data-testid={`settings-cap-${key}`}>
                 <span className="kiosk-row__t"><b>{label}</b></span>
                 <span className="kiosk-row__end">
-                  {!loaded || noCamera ? (
+                  {key === 'led' && (!loaded || ok == null) ? (
+                    <span className="kiosk-tag">未确认</span>
+                  ) : !loaded || (noCamera && key !== 'led') ? (
                     <span className="kiosk-tag">—</span>
                   ) : (
                     <span className={ok ? 'kiosk-tag kiosk-tag--win' : 'kiosk-tag'}>{ok ? yes : no}</span>

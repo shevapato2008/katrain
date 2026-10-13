@@ -1,0 +1,62 @@
+{
+  "approved_name_snapshot_sha256": "cdced59eaa2184bdf81881582b8d955672a034d05a0a8543f0608ba6249717ee",
+  "bundle_sha256": "b2aac22b8a85bb60206f42ee180d0d21005f606e6db3f528bbb15c2f47ad1ed8",
+  "catalog_sha256": "aedaab6720cf4035533827d63dc90669e3b5ee35e97855e5b72e02c42616a9d2",
+  "context_refreshed_at": "2026-10-08T18:52:13.109038+00:00",
+  "current_ko_name_bytes_preserved": true,
+  "distinct_players": 20,
+  "environment": "TEST",
+  "existing_name_updates": 20,
+  "expected_new_full_five_after_apply_and_verify": 20,
+  "game_slots": 4663,
+  "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+  "member_captured_at": "2026-10-08T18:52:56.111084+00:00",
+  "native_r2_validation": {
+    "actual_native_r2_code_sha256": {
+      "identity.py": "932d36940b2ddd3a90c4cbfc38802daf4ecb6255d1678fe1a8f3d2e3d457b127",
+      "name_batch.py": "cd91d45b1671ea10924661880094980e21e6d170efba03c83036ef5c03b94a00",
+      "name_candidates.py": "13530e667a8a73e0ee3929aa30987131f00f852daf2c50301aff94e5246a3760",
+      "name_evidence.py": "7f841117402635a7cfd3044c177f7591315f7175f917095b2adadb89ffdf1a42",
+      "name_inventory.py": "157a9393a3be27ddc2e4047135492ee18797c74db6a7576cbc736aa7cc47f5b6",
+      "name_orthographic.py": "b3e5e39870e63d04c9f2a3ce82bee20ce365021766e549e1b8e0b05255147da3"
+    },
+    "bundle_sha256": "b2aac22b8a85bb60206f42ee180d0d21005f606e6db3f528bbb15c2f47ad1ed8",
+    "offline_native_product_validation": true,
+    "validation": {
+      "approved": 20,
+      "candidate_count": 20,
+      "errors": [],
+      "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+      "member_count": 20,
+      "missing": 0,
+      "pending": 0,
+      "ready": true,
+      "rejected": 0,
+      "write_errors": [],
+      "write_ready": true
+    }
+  },
+  "new_evidence_rows": 20,
+  "preceding_applied_batch": {
+    "applied_at": "2026-10-08T18:33:13.167945+00:00",
+    "bundle_sha256": "b374af6d2845011e11439c8e7a893e1b3698ffaabbcb8ba875d3b6f5419acfdf",
+    "id": 589,
+    "status": "applied"
+  },
+  "registry_sha256": "e82b7fce9527f199005bba0b2aabf84f230018a8cbbaad64fe5a0a63af0b8ee9",
+  "status": "root_sources_and_bindings_approved_outer_execution_unsigned",
+  "unique_albums": 4406,
+  "validation": {
+    "approved": 20,
+    "candidate_count": 20,
+    "errors": [],
+    "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+    "member_count": 20,
+    "missing": 0,
+    "pending": 0,
+    "ready": true,
+    "rejected": 0,
+    "write_errors": [],
+    "write_ready": true
+  }
+}

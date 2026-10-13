@@ -16,7 +16,8 @@ game's current_node hasn't changed across the (slow) analysis await -- see
 
 import dataclasses
 import threading
-from unittest.mock import AsyncMock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -101,7 +102,7 @@ def _client(app):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("kind", ["area", "options", "variation", "judge"])
+@pytest.mark.parametrize("kind", ["area", "options", "variation"])
 async def test_engine_analysis_success_per_kind(kind):
     mgr = FakeManager(adapter=FakeAdapter())
     mgr.engine_analysis.return_value = RESULT_BY_KIND[kind]()
@@ -565,3 +566,179 @@ async def test_options_show_hint_raises_does_not_break_response():
     body = r.json()
     assert body["ok"] is True
     assert body["data"]["candidates"]  # analysis payload still returned intact
+
+
+class JudgeKatrain:
+    def __init__(self):
+        self.game = SimpleNamespace(current_node=SimpleNamespace(end_state=None), end_result=None, board_size=(19, 19))
+        self.updated = False
+
+    def _commit_end_state(self, result, *, node=None):
+        assert node is self.game.current_node
+        self.game.current_node.end_state = result
+        self.game.end_result = result
+
+    def get_state(self):
+        return {"end_result": self.game.end_result}
+
+    def update_state(self):
+        self.updated = True
+
+
+class JudgeManager(FakeManager):
+    def __init__(self):
+        super().__init__(adapter=FakeAdapter())
+        self.context = SimpleNamespace(remote_game_id="g1", is_engine=True, is_pending=False)
+        self.end_platform_game = AsyncMock()
+
+    def get_game_context(self, session_id):
+        return self.context
+
+
+def _judge_app(winner="B", delta=6):
+    mgr = JudgeManager()
+    mgr.engine_analysis.return_value = JudgeAnalysis(ownership=[], winner=winner, delta=delta)
+    session = SimpleNamespace(lock=threading.Lock(), katrain=JudgeKatrain(), game_ended=False, last_state=None)
+    app = _build_app_with_board(mgr, session=session)
+    app.state.physical_play = None
+    return app, mgr, session
+
+
+async def _post_judge(app):
+    async with _client(app) as ac:
+        return await ac.post(
+            "/api/v1/platforms/golaxy/engine/analysis", json={"session_id": "sess-1", "kind": "judge"}
+        )
+
+
+@pytest.mark.asyncio
+async def test_judge_undecided_keeps_game_playing(monkeypatch):
+    from katrain.web import server
+
+    save = AsyncMock()
+    monkeypatch.setattr(server, "_record_platform_engine_game", save)
+    app, mgr, session = _judge_app(winner="U", delta=0)
+
+    response = await _post_judge(app)
+
+    assert response.status_code == 200, response.text
+    assert response.json()["ended"] is False
+    assert response.json()["state"]["end_result"] is None
+    assert session.game_ended is False
+    save.assert_not_awaited()
+    mgr.end_platform_game.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("winner,delta,expected", [("B", 6, "B+3"), ("W", 5, "W+2.5"), ("D", 0, "0")])
+async def test_judge_decided_commits_saves_and_returns_state(monkeypatch, winner, delta, expected):
+    from katrain.web import server
+
+    save = AsyncMock()
+    monkeypatch.setattr(server, "_record_platform_engine_game", save)
+    app, mgr, session = _judge_app(winner=winner, delta=delta)
+
+    response = await _post_judge(app)
+
+    assert response.status_code == 200, response.text
+    assert response.json()["ended"] is True
+    assert response.json()["state"]["end_result"] == expected
+    assert session.game_ended is True
+    assert session.katrain.updated is True
+    save.assert_awaited_once()
+    mgr.end_platform_game.assert_awaited_once_with("g1", expected)
+
+
+@pytest.mark.asyncio
+async def test_judge_position_changed_during_await_does_not_commit(monkeypatch):
+    from katrain.web import server
+
+    save = AsyncMock()
+    monkeypatch.setattr(server, "_record_platform_engine_game", save)
+    app, mgr, session = _judge_app()
+
+    async def advance(*_args):
+        session.katrain.game.current_node = SimpleNamespace(end_state=None)
+        return JudgeAnalysis(ownership=[], winner="B", delta=6)
+
+    mgr.engine_analysis.side_effect = advance
+    response = await _post_judge(app)
+
+    assert response.status_code == 409, response.text
+    assert session.katrain.game.end_result is None
+    save.assert_not_awaited()
+    mgr.end_platform_game.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_judge_inflight_engine_move_does_not_commit(monkeypatch):
+    from katrain.web import server
+
+    save = AsyncMock()
+    monkeypatch.setattr(server, "_record_platform_engine_game", save)
+    app, mgr, session = _judge_app()
+    mgr.context.is_pending = True
+
+    response = await _post_judge(app)
+
+    assert response.status_code == 409, response.text
+    assert session.katrain.game.end_result is None
+    save.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("delta", [None, "6", float("nan"), 0])
+async def test_judge_malformed_score_does_not_invent_result(monkeypatch, delta):
+    from katrain.web import server
+
+    save = AsyncMock()
+    monkeypatch.setattr(server, "_record_platform_engine_game", save)
+    app, mgr, session = _judge_app(delta=delta)
+
+    response = await _post_judge(app)
+
+    assert response.status_code == 502, response.text
+    assert session.katrain.game.end_result is None
+    save.assert_not_awaited()
+    mgr.end_platform_game.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_judge_undecided_points_blink_in_vision_frame(monkeypatch):
+    from katrain.web import server
+
+    monkeypatch.setattr(server, "_record_platform_engine_game", AsyncMock())
+    app, mgr, _session = _judge_app(winner="U", delta=0)
+    mgr.engine_analysis.return_value = JudgeAnalysis(
+        ownership=[JudgePoint(col=3, row=15, owner="U"), JudgePoint(col=4, row=4, owner="B")],
+        winner="U", delta=0,
+    )
+    attention = SimpleNamespace(show_attention=MagicMock(), clear_attention=MagicMock())
+    app.state.physical_play = attention
+    app.state.vision = FakeVision(bound_session_id="sess-1")
+
+    response = await _post_judge(app)
+
+    assert response.status_code == 200, response.text
+    attention.show_attention.assert_called_once_with([(3, 3)], source="judge")
+    attention.clear_attention.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_judge_with_no_undecided_points_clears_attention(monkeypatch):
+    from katrain.web import server
+
+    monkeypatch.setattr(server, "_record_platform_engine_game", AsyncMock())
+    app, mgr, _session = _judge_app(winner="U", delta=0)
+    mgr.engine_analysis.return_value = JudgeAnalysis(
+        ownership=[JudgePoint(col=3, row=15, owner="B")], winner="U", delta=0,
+    )
+    attention = SimpleNamespace(show_attention=MagicMock(), clear_attention=MagicMock())
+    app.state.physical_play = attention
+    app.state.vision = FakeVision(bound_session_id="sess-1")
+
+    response = await _post_judge(app)
+
+    assert response.status_code == 200, response.text
+    attention.show_attention.assert_not_called()
+    attention.clear_attention.assert_called_once_with("judge")

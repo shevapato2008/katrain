@@ -166,7 +166,7 @@ export function GoBoardSvg({
         return <circle className={`pending-ring pending-ring--${pending.color.toLowerCase()}`} cx={p.x} cy={p.y} r={STONE_R * 0.55} />;
       })()}
       {/* 最后一手:**圈在子上**,不是换颜色 */}
-      {last && (() => { const p = P(last); return <circle className="mark" cx={p.x} cy={p.y} r={STONE_R * 0.55} />; })()}
+      {last && (blackSet.has(last) || white.includes(last)) && (() => { const p = P(last); return <circle className="mark" style={{ fill: 'none', stroke: onBlack(last) ? '#ffffff' : '#000000' }} cx={p.x} cy={p.y} r={STONE_R * (numbers?.[last] ? 0.82 : 0.55)} />; })()}
       {atari.map((c) => {
         const p = P(c);
         const s = STONE_R * 1.15;

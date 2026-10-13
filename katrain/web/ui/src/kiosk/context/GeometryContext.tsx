@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { GeometryAPI, type GeometryPhase, type GeometryStatus } from '../../api/geometryApi';
+import { useLocation } from 'react-router-dom';
+import { API, type GameType } from '../../api';
+import { GeometryAPI, type GeometryPhase, type GeometryStatus, type GeometryPreflightResult } from '../../api/geometryApi';
 
 const DEFAULT_STATUS: GeometryStatus = {
   phase: 'required',
   session_calibrated: false,
   last_valid: false,
-  capabilities: { camera_ready: false, led_ready: false, geometry_ready: false },
+  capabilities: { camera_ready: false, led_ready: null, geometry_ready: false },
 };
 
 interface GeometryContextValue {
@@ -13,14 +15,17 @@ interface GeometryContextValue {
   /**
    * 第一次问过服务端了没有。
    *
-   * **不是锦上添花:`DEFAULT_STATUS` 的三个 capability 全是 `false`**,直接拿去画状态格,
+   * `DEFAULT_STATUS` 的摄像头与几何 capability 是 `false`，LED 是未知；直接画状态格,
    * 就会在**还没问过**的时候说「摄像头未连接」。而「还没读到状态」和「读到了没连上」
    * 是两回事 —— `goHardware.ts` 的注释早就把这条判过一次(值给「—」、不给 tone)。
    * 少了这个布尔,那条注释在标定屏上就落不了地。
    */
   loaded: boolean;
-  refresh: () => Promise<void>;
-  startCalibration: (trigger: 'auto' | 'manual') => Promise<void>;
+  refresh: () => Promise<GeometryStatus | null>;
+  preflight: () => Promise<GeometryPreflightResult>;
+  startCalibration: (trigger: 'auto' | 'manual', resetSessionId?: string, gameType?: GameType) => Promise<void>;
+  /** Called only after the original game's vision bind succeeds. */
+  completeRecalibration: (sessionId: string) => Promise<void>;
   confirmExisting: () => Promise<void>;
   cancelCalibration: () => Promise<void>;
   recheckLighting: () => Promise<void>;
@@ -34,43 +39,101 @@ const ACTIVE: GeometryPhase[] = [
 ];
 
 export const GeometryProvider = ({ children }: { children: ReactNode }) => {
+  const { pathname } = useLocation();
+  const pendingReset = useRef<{ sessionId: string; revision: number; pathname: string; gameType?: GameType } | null>(null);
+  const statusRef = useRef<GeometryStatus>(DEFAULT_STATUS);
+  const pathnameRef = useRef(pathname);
   const [status, setStatus] = useState<GeometryStatus>(DEFAULT_STATUS);
   const [loaded, setLoaded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const applyStatus = useCallback((next: GeometryStatus) => {
+    statusRef.current = next;
+    if (['failed', 'cancelled', 'disabled'].includes(next.phase)) pendingReset.current = null;
+    setStatus(next);
+  }, []);
+
+  // A deferred reset belongs to the route where the user requested it.
+  useEffect(() => {
+    pathnameRef.current = pathname;
+    if (pendingReset.current?.pathname !== pathname) pendingReset.current = null;
+  }, [pathname]);
+
+  const completeRecalibration = useCallback(async (sessionId: string) => {
+    const pending = pendingReset.current;
+    const current = statusRef.current;
+    if (!pending) return;
+    if (pending.sessionId !== sessionId || pending.pathname !== pathnameRef.current) {
+      pendingReset.current = null;
+      return;
+    }
+    if (current.phase !== 'ready' || !current.session_calibrated
+      || !current.capabilities.geometry_ready || (current.geometry_revision ?? 0) <= pending.revision) return;
+    pendingReset.current = null;
+    // Local bind prepares a fresh reference; RESET_SYNC would immediately invalidate it.
+    if (pending.gameType !== 'pvp_local') await API.visionResetSync();
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
-      setStatus(await GeometryAPI.status() as GeometryStatus);
+      const next = await GeometryAPI.status();
+      applyStatus(next);
       setLoaded(true);
+      return next;
     } catch (error) {
+      pendingReset.current = null;
       if (error instanceof Error && error.message.includes('404')) {
         // 404 = 这台盒子压根没起 capture 服务。**这是一个读到了的结论**,不是没读到 ⇒ 也算 loaded。
-        setStatus({ ...DEFAULT_STATUS, phase: 'disabled' });
+        const next: GeometryStatus = { ...DEFAULT_STATUS, phase: 'disabled' };
+        applyStatus(next);
         setLoaded(true);
+        return next;
+      } else {
+        setStatus((previous) => ({
+          ...previous, capabilities: { ...previous.capabilities, led_ready: null },
+        }));
+        return null;
       }
-      // 其它错误(502 / 超时)**故意不置 loaded** —— 那才是「还没问出来」。
     }
-  }, []);
+  }, [applyStatus]);
 
-  const startCalibration = useCallback(async (trigger: 'auto' | 'manual') => {
-    setStatus(await GeometryAPI.calibrate(trigger));
-  }, []);
+  const preflight = useCallback(async () => {
+    const result = await GeometryAPI.preflight();
+    applyStatus(result.status);
+    setLoaded(true);
+    return result;
+  }, [applyStatus]);
+
+  const startCalibration = useCallback(async (trigger: 'auto' | 'manual', resetSessionId?: string, gameType?: GameType) => {
+    pendingReset.current = resetSessionId ? {
+      sessionId: resetSessionId, gameType, revision: statusRef.current.geometry_revision ?? 0, pathname: pathnameRef.current,
+    } : null;
+    try {
+      applyStatus(await GeometryAPI.calibrate(trigger));
+    } catch (error) {
+      pendingReset.current = null;
+      throw error;
+    }
+  }, [applyStatus]);
 
   const cancelCalibration = useCallback(async () => {
-    setStatus(await GeometryAPI.cancel());
-  }, []);
+    pendingReset.current = null;
+    applyStatus(await GeometryAPI.cancel());
+  }, [applyStatus]);
 
   const recheckLighting = useCallback(async () => {
-    setStatus(await GeometryAPI.recheckLighting());
-  }, []);
+    applyStatus(await GeometryAPI.recheckLighting());
+  }, [applyStatus]);
 
   const confirmExisting = useCallback(async () => {
-    setStatus(await GeometryAPI.confirmExisting());
-  }, []);
+    pendingReset.current = null;
+    applyStatus(await GeometryAPI.confirmExisting());
+  }, [applyStatus]);
 
   const relocate = useCallback(async () => {
-    setStatus(await GeometryAPI.relocate());
-  }, []);
+    pendingReset.current = null;
+    applyStatus(await GeometryAPI.relocate());
+  }, [applyStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,7 +150,7 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
   }, [refresh, status.phase]);
 
   return (
-    <GeometryContext.Provider value={{ status, loaded, refresh, startCalibration, confirmExisting, cancelCalibration, recheckLighting, relocate }}>
+    <GeometryContext.Provider value={{ status, loaded, refresh, preflight, startCalibration, completeRecalibration, confirmExisting, cancelCalibration, recheckLighting, relocate }}>
       {children}
     </GeometryContext.Provider>
   );

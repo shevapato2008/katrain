@@ -13,3 +13,17 @@ describe('GoBoardSvg · 摆谱的两种圈', () => {
     expect(container.querySelectorAll('circle.remove, circle.hint')).toHaveLength(0);
   });
 });
+
+describe('GoBoardSvg last stone', () => {
+  it.each([['b', ['D4'], [], '#ffffff'], ['w', [], ['D4'], '#000000']] as const)('marks a %s stone with a contrast hollow ring', (_color, black, white, stroke) => {
+    const { container } = render(<GoBoardSvg black={black} white={white} last="D4" />);
+    const ring = container.querySelector('circle.mark');
+    expect(ring).toHaveStyle({ stroke, fill: 'none' });
+  });
+  it('does not mark an empty point or pass', () => {
+    const { container, rerender } = render(<GoBoardSvg black={['D4']} last="Q16" />);
+    expect(container.querySelector('circle.mark')).toBeNull();
+    rerender(<GoBoardSvg black={['D4']} last="pass" />);
+    expect(container.querySelector('circle.mark')).toBeNull();
+  });
+});

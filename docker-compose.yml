@@ -58,6 +58,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+      args:
+        # export KATRAIN_BUILD_SHA=$(git rev-parse --short HEAD) before `docker compose build`
+        KATRAIN_BUILD_SHA: ${KATRAIN_BUILD_SHA:-unknown}
     image: katrain-web:local
     container_name: katrain-web
     depends_on:
@@ -103,6 +106,8 @@ services:
       - KATRAIN_ADMIN_USERNAME=${KATRAIN_ADMIN_USERNAME:-}
       - KATRAIN_ADMIN_PASSWORD_HASH=${KATRAIN_ADMIN_PASSWORD_HASH:-}
       - KATRAIN_ADMIN_SESSION_SECRET=${KATRAIN_ADMIN_SESSION_SECRET:-}
+      - KATRAIN_ADMIN_SERVICE_SECRET=${KATRAIN_ADMIN_SERVICE_SECRET:-}
+      - KATRAIN_ADMIN_PROVIDER_ONLY=${KATRAIN_ADMIN_PROVIDER_ONLY:-0}
       - KATRAIN_ADMIN_ENV=${KATRAIN_ADMIN_ENV:-local}
       - KATRAIN_SECRET_KEY=${KATRAIN_SECRET_KEY:?KATRAIN_SECRET_KEY 必须在 .env 里设置}
       - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
@@ -120,6 +125,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.cron
+      args:
+        # export KATRAIN_BUILD_SHA=$(git rev-parse --short HEAD) before `docker compose build`
+        KATRAIN_BUILD_SHA: ${KATRAIN_BUILD_SHA:-unknown}
     container_name: katrain-cron
     restart: unless-stopped
     volumes:
@@ -128,6 +136,7 @@ services:
       - KATRAIN_SECRET_KEY=${KATRAIN_SECRET_KEY:?KATRAIN_SECRET_KEY 必须在 .env 里设置}
       - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
       - KATAGO_URL=http://host.docker.internal:8002
+      - KATAGO_EXPECTED_MODEL_SHA256=${KATAGO_EXPECTED_MODEL_SHA256:-}
       - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
       - CRON_LOG_LEVEL=INFO
       - CRON_REPORT_ANALYZE_ENABLED=true

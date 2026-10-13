@@ -1,0 +1,8 @@
+567f09e946e13193159064d0a4b859691cfceea46b2073f2321ce4f7469700e4  docs/resource/kifu-sgf-event-supplemental-small-prod-2026-10-04.jsonl
+02e5632a40d82f78fd3740d34fd7278f32663b605aec2b9aa91882f0d5ced8f2  docs/resource/kifu-sgf-event-supplemental-full-prod-2026-10-04.jsonl.gz
+a2dc534a1022f76adaa761808052fbc009b0223e159e4603af0933a66fef4ac7  docs/resource/kifu-sgf-event-supplemental-enriched-prod-2026-10-04.jsonl.gz
+2515a9afcc48fa96392caa66de0dd0d09da5c038c74b40f85acf7073062c9e6b  docs/resource/kifu-sgf-event-supplemental-report-prod-2026-10-04.json
+c34ef63cda88da2b4fb98aea94e059035188335f2ac36485e439eb24501a004f  docs/resource/kifu-sgf-event-supplemental-report-prod-2026-10-04.md
+1dc3d5f8b1d91680b17f8cc12fa3df3ce7123bb505a17a67fdec9908651f3a31  scripts/extract_kifu_sgf_event_candidates.py
+6abccbdc3f8e50d24d4292019b2d87e8f1491778726cc3300dd3cd56eea56e61  scripts/summarize_kifu_sgf_event_candidates.py
+0405579a445c4e242058f269ee90b2400714698a14aebb89be0b4718bebe6d04  tests/web_ui/test_extract_kifu_sgf_event_candidates.py

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import httpx
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -111,6 +112,8 @@ def _consume_recovery_episode(request: Request, body: "EngineMoveRecoveryRequest
 async def vision_status(request: Request):
     """Return vision service status."""
     vision = getattr(request.app.state, "vision", None)
+    led = getattr(request.app.state, "led", None)
+    led_connected = led.is_board_connected() if led is not None else None
     if vision is None:
         return {
             "enabled": False,
@@ -122,7 +125,7 @@ async def vision_status(request: Request):
             "geometry_ready": False,
             "model_ready": False,
             "recognition_ready": False,
-            "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
+            "led_connected": led_connected,
         }
 
     vision.refresh_status()
@@ -136,7 +139,7 @@ async def vision_status(request: Request):
         "geometry_ready": vision._latest_status.geometry_ready,
         "model_ready": vision._latest_status.model_ready,
         "recognition_ready": vision._latest_status.recognition_ready,
-        "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
+        "led_connected": led_connected,
     }
 
 
@@ -195,6 +198,38 @@ async def bind_session(
         session = None
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session {body.session_id} not found")
+    bridge = getattr(request.app.state, "pvp_box_bridge", None)
+    if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        generation = request.app.state.box_sso.active_generation
+        room = bridge.rooms.for_local(generation, body.session_id)
+        if current_user is None or room is None or room.local_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="PvP room unavailable")
+        try:
+            payload = await bridge.fetch_state(generation, body.session_id)
+        except PvpBoxAuthError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except PvpBoxRemoteError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                bridge.rooms.discard_local(body.session_id)
+                manager.remove_session(body.session_id)
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
+        state = payload["state"]
+        if state.get("board_size") not in ([19, 19], (19, 19), 19):
+            raise HTTPException(status_code=409, detail="physical PvP requires a 19x19 board")
+        session.last_state = state
+        vision.bind_session(body.session_id)
+        request.app.state.ranked_vision_binding = None
+        _drain_stale_move_queue(request)
+        vision.set_expected_from_stones(state["stones"], expected_node_id=state.get("current_node_id"))
+        orchestrator = getattr(request.app.state, "physical_play", None)
+        if orchestrator is not None:
+            orchestrator.on_bind(body.session_id, session)
+            orchestrator.on_game_state(state)
+        return {"ok": True, "session_id": body.session_id}
     ranked_binding = None
     if is_ai_ladder_ranked_session(session):
         with session.lock:
@@ -216,20 +251,95 @@ async def bind_session(
     # 实体盘的局:在绑上之前一颗子也放不进去,所以这里才是「棋盘可用」那一刻,钟从这里起步。
     # (Fan 2026-09-20:「我要看到电子棋盘再开始计时」。RK3562 实测建局→绑定隔了 69 秒,
     #  那段时间用户还在标定屏,却已经被扣时。)`start_clock` 幂等,重连再绑不会重置。
-    if session.katrain.start_clock():
-        logger.info("Clock started for session %s (vision bound)", body.session_id)
-
     # Set expected board from current game state
     game_state = session.katrain.get_state()
+    geometry_pause_epoch = getattr(session.katrain, "local_geometry_pause_epoch", 0)
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    geometry_status = calibration.status() if calibration is not None else None
+    geometry_revision = geometry_status.get("geometry_revision") if geometry_status is not None else None
     if game_state and "stones" in game_state:
         vision.set_expected_from_stones(
             game_state["stones"],
+            game_state["board_size"][0],
             expected_node_id=game_state.get("current_node_id"),
         )
 
     orchestrator = getattr(request.app.state, "physical_play", None)
     if orchestrator is not None:
         orchestrator.on_bind(body.session_id, session)
+
+    if game_state.get("game_type") == "pvp_local" and not game_state.get("end_result"):
+        from katrain.web.core.local_confirmation import local_confirmation_for
+
+        if geometry_status is not None and geometry_status.get("phase") != "ready":
+            raise HTTPException(status_code=409, detail="Physical geometry is unavailable")
+        if not vision.supports_local_confirmation:
+            session.katrain.local_confirmation_state = {"status": "idle", "reason": "unavailable", "points": []}
+            session.katrain.update_state()
+            raise HTTPException(status_code=409, detail="Full local recognition pipeline is unavailable")
+        if vision.local_confirmation_bootstrap_state == "unavailable":
+            # This bind is an explicit retry after the player corrected the setup.
+            vision.set_local_confirmation_mode(False, session_id=body.session_id, game_id=game_state["game_id"])
+        vision.set_local_confirmation_mode(True, session_id=body.session_id, game_id=game_state["game_id"])
+        deadline = asyncio.get_running_loop().time() + 8.5
+        while not vision.local_confirmation_ready:
+            if (
+                vision.bound_session_id != body.session_id
+                or session.katrain.game.game_id != game_state["game_id"]
+                or id(session.katrain.game.current_node) != game_state["current_node_id"]
+                or vision.local_confirmation_bootstrap_state == "unavailable"
+                or asyncio.get_running_loop().time() >= deadline
+            ):
+                session.katrain.local_confirmation_state = {"status": "idle", "reason": "unavailable", "points": []}
+                session.katrain.update_state()
+                raise HTTPException(
+                    status_code=409, detail="Reference frame preparation failed; clear the board and retry"
+                )
+            await asyncio.sleep(0.05)
+        if (
+            vision.bound_session_id != body.session_id
+            or session.katrain.game.game_id != game_state["game_id"]
+            or id(session.katrain.game.current_node) != game_state["current_node_id"]
+        ):
+            raise HTTPException(status_code=409, detail="Local game changed during vision bind")
+
+        def validate_and_resume():
+            # Called inside controller.ready's session/game locks, before start_clock.
+            if vision.bound_session_id != body.session_id or not vision.local_confirmation_ready:
+                raise HTTPException(status_code=409, detail="Physical reference changed during vision bind")
+            if calibration is not None:
+                current_geometry = calibration.status()
+                if (
+                    current_geometry.get("phase") != "ready"
+                    or current_geometry.get("geometry_revision") != geometry_revision
+                ):
+                    raise HTTPException(status_code=409, detail="Physical geometry changed during vision bind")
+            restored = session.katrain.set_local_geometry_paused(
+                False,
+                expected_game_id=game_state["game_id"],
+                expected_node_id=game_state["current_node_id"],
+                expected_epoch=geometry_pause_epoch,
+            )
+            if not restored:
+                raise HTTPException(status_code=409, detail="Local game changed during vision bind")
+
+        local_confirmation_for(session).ready(
+            game_state["game_id"], "physical", vision, before_start=validate_and_resume
+        )
+        with session.lock:
+            if vision.bound_session_id != body.session_id or not vision.local_confirmation_ready:
+                raise HTTPException(status_code=409, detail="Physical reference changed during vision bind")
+            if session.katrain.local_geometry_pause_epoch != geometry_pause_epoch:
+                raise HTTPException(status_code=409, detail="Physical geometry changed during vision bind")
+            if calibration is not None:
+                current_geometry = calibration.status()
+                if (
+                    current_geometry.get("phase") != "ready"
+                    or current_geometry.get("geometry_revision") != geometry_revision
+                ):
+                    raise HTTPException(status_code=409, detail="Physical geometry changed during vision bind")
+    elif session.katrain.start_clock():
+        logger.info("Clock started for session %s (vision bound)", body.session_id)
 
     return {"ok": True, "session_id": body.session_id}
 

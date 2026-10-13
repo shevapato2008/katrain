@@ -1,0 +1,240 @@
+{
+  "status": "producer-pending-independent-review",
+  "produced_at": "2026-10-05T10:08:37.878193+00:00",
+  "producer_id": "/root/event10_review_apply",
+  "producer_model": "gpt-6-astra",
+  "reasoning_effort": "max",
+  "database_writes": false,
+  "candidate_count": 25,
+  "event_ids": [
+    41,
+    50,
+    42,
+    40,
+    43
+  ],
+  "languages": [
+    "cn",
+    "tw",
+    "jp",
+    "ko",
+    "en"
+  ],
+  "literal_translations": 0,
+  "source_policy": "23 direct official/Go-publication cells; 2 pinned Traditional Chinese Wikipedia passages with independent official identity evidence.",
+  "source_capture_directory": "/tmp/kifu-event-next-high5-20261005/sources",
+  "targets": {
+    "TEST": {
+      "captured_at": "2026-10-05T09:53:38.013853+00:00",
+      "capture_sha256": "c9878003682d320f889dc2b93f36bacd42c9f6153dfbedcdcbdb01d842960a5e",
+      "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+      "catalog_sha256": "f2e4d322966039cd8fba4dba45dad952b9f2f24611c633ebc5c61384945b7079",
+      "bundle_sha256": "8b326940b512fdb0c94a4635507aa47def06b5ca69e24442b5caf6a056b0a3f0",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "41": {
+          "event_id": 41,
+          "linked_rows": 12828,
+          "unique_games": 12828,
+          "visible_unique_games": 12828
+        },
+        "50": {
+          "event_id": 50,
+          "linked_rows": 6180,
+          "unique_games": 6180,
+          "visible_unique_games": 6180
+        },
+        "42": {
+          "event_id": 42,
+          "linked_rows": 2680,
+          "unique_games": 2680,
+          "visible_unique_games": 2680
+        },
+        "40": {
+          "event_id": 40,
+          "linked_rows": 2678,
+          "unique_games": 2678,
+          "visible_unique_games": 2678
+        },
+        "43": {
+          "event_id": 43,
+          "linked_rows": 2287,
+          "unique_games": 2285,
+          "visible_unique_games": 2285
+        }
+      },
+      "unique_visible_games": 26651
+    },
+    "PROD": {
+      "captured_at": "2026-10-05T09:55:33.545292+00:00",
+      "capture_sha256": "f45b8136afc152dafcb47fc70d80dc541727efb447ce4c32967496167bcc2c87",
+      "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+      "catalog_sha256": "03cca482ef1dc3e52a109ed0a758e1fdc3f7c4a3dc061aa433b3def1e07df1a4",
+      "bundle_sha256": "c30408864141b7bf82d6e2abfc1384c660e2b4dd627921820af8193582317bc9",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "41": {
+          "event_id": 41,
+          "linked_rows": 12828,
+          "unique_games": 12828,
+          "visible_unique_games": 12828
+        },
+        "50": {
+          "event_id": 50,
+          "linked_rows": 6180,
+          "unique_games": 6180,
+          "visible_unique_games": 6180
+        },
+        "42": {
+          "event_id": 42,
+          "linked_rows": 2680,
+          "unique_games": 2680,
+          "visible_unique_games": 2680
+        },
+        "40": {
+          "event_id": 40,
+          "linked_rows": 2678,
+          "unique_games": 2678,
+          "visible_unique_games": 2678
+        },
+        "43": {
+          "event_id": 43,
+          "linked_rows": 2287,
+          "unique_games": 2285,
+          "visible_unique_games": 2285
+        }
+      },
+      "unique_visible_games": 26651
+    }
+  },
+  "events": [
+    {
+      "event_id": 41,
+      "canonical_name": "中国围棋甲级联赛",
+      "unique_visible_games": 12828,
+      "names": {
+        "cn": "中国围棋甲级联赛",
+        "tw": "中國圍棋甲級聯賽",
+        "jp": "中国囲碁甲級リーグ戦",
+        "ko": "중국갑조리그",
+        "en": "Chinese A League"
+      },
+      "sources": {
+        "cn": "https://www.sport.gov.cn/n322/n3407/n3413/c564649/content.html",
+        "tw": "https://www.haifong.org/news/content/44A50C946C4E448FD6315C86C49D835A",
+        "jp": "https://www.pandanet.co.jp/event/chinaevent/backnumber2020.htm",
+        "ko": "https://m.baduk.or.kr/news/B02_view.asp?news_sum_no=1692",
+        "en": "https://gotoeveryone.k2ss.info/news/cn/al/28/"
+      }
+    },
+    {
+      "event_id": 50,
+      "canonical_name": "韩国围棋联赛",
+      "unique_visible_games": 6180,
+      "names": {
+        "cn": "韩国围棋联赛",
+        "tw": "韓國圍棋聯賽",
+        "jp": "韓国囲碁リーグ",
+        "ko": "한국바둑리그",
+        "en": "Korean Baduk League"
+      },
+      "sources": {
+        "cn": "https://www.sport.gov.cn/n14471/n14481/n14518/c893134/content.html",
+        "tw": "https://haifong.org/game/classes/F073F992B64DE103212A93B6E0C3AB1C",
+        "jp": "https://kb-league.syuusaigo.com/",
+        "ko": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000545",
+        "en": "https://gotoeveryone.k2ss.info/news/kr/kl/10/"
+      }
+    },
+    {
+      "event_id": 42,
+      "canonical_name": "中国女子围棋甲级联赛",
+      "unique_visible_games": 2680,
+      "names": {
+        "cn": "中国女子围棋甲级联赛",
+        "tw": "中國女子圍棋甲級聯賽",
+        "jp": "中国女子囲碁甲級リーグ",
+        "ko": "중국여자갑조리그",
+        "en": "Chinese Women’s A League"
+      },
+      "sources": {
+        "cn": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c27635988/content.html",
+        "tw": "https://zh.wikipedia.org/w/index.php?title=%E4%B8%AD%E5%9B%BD%E5%A5%B3%E5%AD%90%E5%9B%B4%E6%A3%8B%E7%94%B2%E7%BA%A7%E8%81%94%E8%B5%9B&oldid=92668094&variant=zh-tw",
+        "jp": "https://www.nihonkiin.or.jp/match_news/match_info/2025_5.html",
+        "ko": "https://m.baduk.or.kr/news/B01_view.asp?news_no=4038",
+        "en": "https://www.usgo.org/content.aspx?club_id=454497&item_id=92428&page_id=5"
+      }
+    },
+    {
+      "event_id": 40,
+      "canonical_name": "日本龙星战",
+      "unique_visible_games": 2678,
+      "names": {
+        "cn": "日本龙星战",
+        "tw": "日本龍星戰",
+        "jp": "竜星戦",
+        "ko": "일본 용성전",
+        "en": "Ryusei Tournament"
+      },
+      "sources": {
+        "cn": "https://www.foxwq.com/news/8091.html",
+        "tw": "https://zh.wikipedia.org/w/index.php?title=%E9%BE%8D%E6%98%9F%E6%88%B0&oldid=52849061&variant=zh-tw",
+        "jp": "https://www.nihonkiin.or.jp/match/ryusei/022.html",
+        "ko": "https://www.cyberoro.com/news/N_news_view.oro?cmt_n=&div_no=A1&num=525830&pageNo=",
+        "en": "https://www.nihonkiin.or.jp/english/topics/11/topics2011_10.htm"
+      }
+    },
+    {
+      "event_id": 43,
+      "canonical_name": "三星杯世界围棋大师赛",
+      "unique_visible_games": 2285,
+      "names": {
+        "cn": "三星杯世界围棋大师赛",
+        "tw": "三星盃世界圍棋大師賽",
+        "jp": "三星火災杯世界囲碁マスターズ",
+        "ko": "삼성화재배 월드바둑마스터스",
+        "en": "Samsung Cup"
+      },
+      "sources": {
+        "cn": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c27069198/content.html",
+        "tw": "https://www.haifong.org/game/classes/B0A85C728A240460DBA68725773324CF",
+        "jp": "https://www.nihonkiin.or.jp/match/sansei/archive.html",
+        "ko": "https://baduk.or.kr/game/game_view.asp?cmpt_code=2104&etcKey=2",
+        "en": "https://homepages.cwi.nl/~aeb/go/games/games/Samsung/"
+      }
+    }
+  ],
+  "display_reader_note": "strict_display_maps accepts approved type names and separately approved raw-event composition names. display_event_name only automatically decorates linked Oteai CWI year/season strings. This bundle adds event-type names only and does not approve or rewrite raw EV edition/round text.",
+  "review_notes": [
+    "The live highest-frequency incomplete five after excluding completed Oteai/Honinbo/Judan and delegated Japanese majors are 41,50,42,40,43. Both databases agree.",
+    "Korean main league English is Korean Baduk League, quoted in the 2012 season body. The site header variant Korea Baduk League is not the selected candidate.",
+    "Ryusei cn/tw/ko retain an explicit Japan qualifier; jp/en use published Nihon Ki-in tournament labels. The TW evidence is a disambiguation-body label, not a Wikidata or interlanguage label.",
+    "The TW women’s A-league form is present in pinned Wikipedia prose/article links rendered in zh-Hant-TW and corroborated by China Sport native identity evidence; it is not represented as a Taiwanese federation naming decision.",
+    "Samsung JP source explicitly notes title eras. The proposed current recurring-series label 三星火災杯世界囲碁マスターズ is documented from edition 14 onward. The database entity spans all editions; raw historical titles remain unchanged.",
+    "All 25 cells use observed published names. No inferred reading, machine-generated literal translation, or negative search closure is used."
+  ]
+}

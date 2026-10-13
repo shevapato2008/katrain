@@ -39,6 +39,7 @@ DATABASE_MAX_OVERFLOW = int(os.getenv("CRON_DB_MAX_OVERFLOW", "10"))
 KATAGO_URL = os.getenv("KATAGO_URL", "http://127.0.0.1:8002")
 KATAGO_ANALYZE_PATH = os.getenv("KATAGO_ANALYZE_PATH", "/analyze")
 KATAGO_HEALTH_PATH = os.getenv("KATAGO_HEALTH_PATH", "/health")
+KATAGO_EXPECTED_MODEL_SHA256 = os.getenv("KATAGO_EXPECTED_MODEL_SHA256", "")
 
 # Analysis flight window
 ANALYSIS_WINDOW_SIZE = int(os.getenv("CRON_ANALYSIS_WINDOW_SIZE", "16"))
@@ -115,6 +116,8 @@ REPORT_ANALYZE_ENABLED = os.getenv("CRON_REPORT_ANALYZE_ENABLED", "true").lower(
 REPORT_CONCURRENCY = int(os.getenv("CRON_REPORT_CONCURRENCY", "3"))
 REPORT_POLL_INTERVAL = float(os.getenv("CRON_REPORT_POLL_INTERVAL", "2.0"))
 REPORT_ANALYSIS_PRIORITY = int(os.getenv("CRON_REPORT_ANALYSIS_PRIORITY", "1000"))
+KIFU_ANALYZE_ENABLED = os.getenv("CRON_KIFU_ANALYZE_ENABLED", "false").lower() == "true"
+KIFU_ANALYSIS_TIMEOUT = float(os.getenv("CRON_KIFU_ANALYSIS_TIMEOUT", "180.0"))
 
 # Job enable/disable toggles
 FETCH_LIST_ENABLED = os.getenv("CRON_FETCH_LIST_ENABLED", "true").lower() == "true"

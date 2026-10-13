@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress, FormHelperText } from '@mui/material';
+import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress, FormHelperText } from '@mui/material';
 import { API, ApiError, type LadderRung } from '../../api';
 import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDebounce } from '../../hooks/useDebounce';
-import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
 import {
     AiLadderApiError,
     endAiLadderGame,
@@ -16,13 +15,11 @@ import {
 } from '../../features/aiLadder/api';
 import type { AiLadderCountingReason } from '../../features/aiLadder/types';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
-import { canStartAiLadderGame } from '../../features/aiLadder/startGate';
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 import AiLadderRatedSetup from '../components/aiLadder/AiLadderRatedSetup';
-import ContentPageHeader from '../components/layout/ContentPageHeader';
+import PlayPageLayout from '../components/layout/PlayPageLayout';
 import AuthRequiredDialog from '../components/auth/AuthRequiredDialog';
-import LoginModal from '../components/auth/LoginModal';
-import LoginIcon from '@mui/icons-material/Login';
+import { AuthGuard } from '../components/guards/AuthGuard';
 
 // Map Slider value to Rank label for UI
 const valueToRank = (val: number) => {
@@ -33,10 +30,10 @@ const valueToRank = (val: number) => {
     }
 };
 
-const AiSetupPage = () => {
+const AiSetupContent = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { user, token, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { user, token, isAuthenticated, isLoading: authLoading, status: authStatus } = useAuth();
     useSettings(); // Subscribe to translation changes for re-render
     const { t } = useTranslation();
     const mode = searchParams.get('mode') || 'free';
@@ -54,7 +51,6 @@ const AiSetupPage = () => {
     // 未登录时该说的那句话。空 = 不说。自由对弈本身不需要登录（服务端对无人认领的会话放行），
     // 所以这条只在服务端仍然拒绝时兜底 —— 它不是常态路径，而是「万一还是 401」的出口。
     const [authPrompt, setAuthPrompt] = useState('');
-    const [loginOpen, setLoginOpen] = useState(false);
     const [lifecyclePending, setLifecyclePending] = useState(false);
     const [lifecycleError, setLifecycleError] = useState('');
     const [syncRetryPending, setSyncRetryPending] = useState(false);
@@ -77,6 +73,7 @@ const AiSetupPage = () => {
         setLifecyclePending(false);
         setLifecycleError('');
         setLifecycleReceipt(undefined);
+        return () => { lifecycleGeneration.current += 1; };
     }, [isRated, token, user?.id, user?.username]);
 
     useEffect(() => {
@@ -388,10 +385,13 @@ const AiSetupPage = () => {
      */
     const handleRetrySettlement = async (gameId: string) => {
         if (syncRetryPending) return;
+        const requestGeneration = lifecycleGeneration.current;
+        const current = () => lifecycleGeneration.current === requestGeneration;
         setLifecycleError('');
         setSyncRetryPending(true);
         try {
             const { sync } = await retryAiLadderSettlement(gameId, token || undefined);
+            if (!current()) return;
             if (sync && sync.state !== 'synced') {
                 // 还是没送到:退避重排、次数加一(或者被云端拒收)。就地把这份状态贴上去。
                 applyBlockingSync(gameId, sync);
@@ -408,6 +408,7 @@ const AiSetupPage = () => {
             }
             await retryAiLadderStatus();
         } catch (retryError) {
+            if (!current()) return;
             if (retryError instanceof AiLadderApiError && (retryError.status === 401 || retryError.status === 403)) {
                 setLifecycleError('登录已失效，请重新登录后再试');
             } else if (retryError instanceof AiLadderApiError && retryError.status === 404) {
@@ -418,7 +419,7 @@ const AiSetupPage = () => {
                 setLifecycleError('重试失败，请稍后再试');
             }
         } finally {
-            setSyncRetryPending(false);
+            if (current()) setSyncRetryPending(false);
         }
     };
 
@@ -479,194 +480,141 @@ const AiSetupPage = () => {
         );
     };
 
-    /**
-     * 升降级对弈的未登录支。
-     *
-     * 段位是记在账号上的,没有账号就无处可记 —— 这一屏对游客不是「暂时不可用」而是
-     * **永远需要先有账号**,所以说的是原因不是故障。在这条分支之前,游客走到这里看到的是
-     * 「登录已失效,请重新登录后再试」(`/api/v1/ai-ladder/status` 的 401 被当成过期处理),
-     * 那句话对**从未登录过**的人是假的,而且旁边只有一个「重试」——重试永远不会成功。
-     *
-     * `authLoading` 必须等:挂载时那次 `/me` 探针没回来之前 `isAuthenticated` 是 false,
-     * 不等就会让已登录用户每次刷新都先闪一下「需要登录」(AuthGuard 里记的是同一条)。
-     * 同一个理由,状态请求也要等 —— `useAiLadderStatus(..., isRated && isAuthenticated)`。
-     */
-    if (isRated && !authLoading && !isAuthenticated) {
-        return (
-            <Box
-                sx={{
-                    flex: 1,
-                    minHeight: 0,
-                    overflowY: 'auto',
-                    px: { xs: 2, sm: 3, lg: 4 },
-                    pt: { xs: 2, md: 3 },
-                    pb: { xs: 'calc(80px + env(safe-area-inset-bottom))', sm: 3 },
-                }}
-            >
-                <Box sx={{ width: '100%', maxWidth: 1500, mx: 'auto' }}>
-                    <ContentPageHeader title="升降级对弈" parentLabel="对局" parentTo="/galaxy/play" />
-                    <Alert severity="info" data-testid="rated-login-required" sx={{ mt: 2.5 }}>
-                        {t('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')}
-                    </Alert>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2.5 }}>
-                        <Button
-                            data-testid="rated-login-action"
-                            variant="contained"
-                            size="large"
-                            startIcon={<LoginIcon />}
-                            onClick={() => setLoginOpen(true)}
-                        >
-                            {t('Login', '登录')}
-                        </Button>
-                        {/* 游客不是无路可走:自由对弈本来就不需要账号,把那条路指出来。 */}
-                        <Button
-                            data-testid="rated-login-free-fallback"
-                            variant="outlined"
-                            color="inherit"
-                            size="large"
-                            onClick={() => navigate('/galaxy/play/ai?mode=free')}
-                        >
-                            {t('play:go_free_play', '先去自由对弈')}
-                        </Button>
-                    </Stack>
-                </Box>
-                <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
-            </Box>
-        );
-    }
-
     if (isRated) {
         return (
-            <Box
-                sx={{
-                    flex: 1,
-                    minHeight: 0,
-                    overflowY: 'auto',
-                    px: { xs: 2, sm: 3, lg: 4 },
-                    pt: { xs: 2, md: 3 },
-                    pb: { xs: 'calc(80px + env(safe-area-inset-bottom))', sm: 3 },
-                }}
-            >
-                <Box sx={{ width: '100%', maxWidth: 1500, mx: 'auto' }}>
-                    <ContentPageHeader title="升降级对弈" parentLabel="对局" parentTo="/galaxy/play" />
-                    {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
-                    <Box sx={{ mt: 2.5 }}>
-                        <AiLadderRatedSetup
-                            status={aiLadderStatus}
-                            color={color}
-                            mainTime={mainTime}
-                            byoLength={byoLength}
-                            byoPeriods={byoPeriods}
-                            startPending={startPending}
-                            lifecyclePending={lifecyclePending}
-                            lifecycleError={lifecycleError}
-                            lifecycleReceipt={lifecycleReceipt
-                                && lifecycleReceipt.scopeKey === lifecycleScopeKey
-                                && (!blockingGameId || blockingGameId === lifecycleReceipt.gameId)
-                                ? lifecycleReceipt.receipt
-                                : undefined}
-                            onColorChange={setColor}
-                            onRetry={handleLifecycleRetry}
-                            onStart={handleStartGame}
-                            onContinue={(sessionId) => {
-                                if (aiLadderStatus.view_state !== 'ready' || !aiLadderStatus.blocking_game) return;
-                                const gameId = aiLadderStatus.blocking_game.game_id;
-                                saveAiLadderBefore(
-                                    sessionId,
-                                    aiLadderStatus,
-                                    String(user?.id ?? user?.username ?? 'anonymous'),
-                                    gameId,
-                                );
-                                navigate(`/galaxy/play/game/${sessionId}?mode=rated&game_id=${encodeURIComponent(gameId)}`);
-                            }}
-                            onEndGame={handleEndGame}
-                            onRetrySettlement={handleRetrySettlement}
-                            syncRetryPending={syncRetryPending}
-                        />
-                    </Box>
-                </Box>
-                <AuthRequiredDialog open={!!authPrompt} onClose={() => setAuthPrompt('')} message={authPrompt} />
-            </Box>
+            <PlayPageLayout title="升降级对弈">
+                {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+                <AiLadderRatedSetup
+                    status={aiLadderStatus}
+                    color={color}
+                    mainTime={mainTime}
+                    byoLength={byoLength}
+                    byoPeriods={byoPeriods}
+                    startPending={startPending}
+                    lifecyclePending={lifecyclePending}
+                    lifecycleError={lifecycleError}
+                    lifecycleReceipt={lifecycleReceipt
+                        && lifecycleReceipt.scopeKey === lifecycleScopeKey
+                        && (!blockingGameId || blockingGameId === lifecycleReceipt.gameId)
+                        ? lifecycleReceipt.receipt
+                        : undefined}
+                    onColorChange={setColor}
+                    onRetry={handleLifecycleRetry}
+                    onStart={handleStartGame}
+                    onContinue={(sessionId) => {
+                        if (aiLadderStatus.view_state !== 'ready' || !aiLadderStatus.blocking_game) return;
+                        const gameId = aiLadderStatus.blocking_game.game_id;
+                        saveAiLadderBefore(
+                            sessionId,
+                            aiLadderStatus,
+                            String(user?.id ?? user?.username ?? 'anonymous'),
+                            gameId,
+                        );
+                        navigate(`/galaxy/play/game/${sessionId}?mode=rated&game_id=${encodeURIComponent(gameId)}`);
+                    }}
+                    onEndGame={handleEndGame}
+                    onRetrySettlement={handleRetrySettlement}
+                    syncRetryPending={syncRetryPending}
+                />
+                <AuthRequiredDialog feature={isRated ? "rated" : "play"} open={!!authPrompt} onClose={() => setAuthPrompt('')} message={authPrompt} />
+            </PlayPageLayout>
         );
     }
 
-    if (loading && !aiConstants) return <Box sx={{ p: 4 }}>Loading...</Box>;
+    if (loading && !aiConstants) return (
+        <PlayPageLayout title="自由对弈">
+            <Box className="galaxy-play-stage galaxy-play-stage__main" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <CircularProgress size={24} />
+                <Typography>{t('Loading', 'Loading...')}</Typography>
+            </Box>
+        </PlayPageLayout>
+    );
 
     const strategyOptions = aiConstants?.options || {};
+    const strategyKey = opponent.startsWith('ai:p:') ? opponent.slice(5) : opponent.replace(/^ai:/, '');
+    const opponentRank = opponent === 'ai:human'
+        ? valueToRank(rankValue)
+        : isLadder
+            ? ladderRungs.find((r) => r.rung === ladderRung)?.rank_name
+            : estimatedRank;
+    const ruleName = rulesets.find((rule) => rule.id === rules);
 
     return (
-        <Box sx={{ p: 4, maxWidth: 1000, mx: 'auto' }}>
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
-                {isRated ? t('play:rated_ai_setup', 'Rated Game Setup') : t('play:free_play_setup', 'Free Play Setup')}
-            </Typography>
-            
+        <PlayPageLayout title="自由对弈">
             {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
             {/* 自由对弈不需要账号,但**代价要在开局前说**:这一局落在一个匿名会话上,
                 服务端不会把它写进任何人的棋谱库(落库那几处的条件都是 `current_user and
                 session.user_id`)。事后才发现「棋谱没了」比事前少一句话贵得多。 */}
-            {!authLoading && !isAuthenticated && (
+            {!authLoading && !isAuthenticated && authStatus === 'guest' && (
                 <Alert severity="info" data-testid="free-guest-notice" sx={{ mb: 3 }}>
                     {t('play:guest_free_notice', '你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。')}
                 </Alert>
             )}
 
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
-                <Paper sx={{ p: 4, borderRadius: 4 }}>
-                    <Typography variant="h6" gutterBottom>{t('Board & Rules', 'Board & Rules')}</Typography>
-                    
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>{t('board size', 'Board Size')}</InputLabel>
-                        <Select value={boardSize} label={t('board size', 'Board Size')} onChange={(e) => setBoardSize(Number(e.target.value))} disabled={isRated}>
-                            <MenuItem value={19}>19x19 ({t('Standard', 'Standard')})</MenuItem>
-                            <MenuItem value={13}>13x13</MenuItem>
-                            <MenuItem value={9}>9x9</MenuItem>
-                        </Select>
-                    </FormControl>
+            <Box component="section" className="galaxy-play-stage galaxy-play-stage--split">
+                <Box className="galaxy-play-stage__main">
+                    <Stack direction="row" justifyContent="space-between" alignItems="baseline" gap={2} sx={{ mb: '20px', flexWrap: 'wrap' }}>
+                        <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600 }}>对局设置</Typography>
+                        <Typography variant="caption" color="text.secondary">自由对弈 · 不计升降段位</Typography>
+                    </Stack>
+                    <Box sx={{
+                        display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '36px',
+                        '@media (max-width:1100px)': { gridTemplateColumns: '1fr', gap: '20px' },
+                    }}>
+                        <Box component="section">
+                            <Typography component="h3" sx={{ fontSize: 20, fontWeight: 600 }}>{t('Board & Rules', 'Board & Rules')}</Typography>
+                            <Divider sx={{ mt: 2, mb: 1 }} />
 
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>{t('ruleset', 'Ruleset')}</InputLabel>
-                        <Select value={rules} label={t('ruleset', 'Ruleset')} onChange={(e) => setRules(e.target.value)} disabled={isRated}>
-                            {rulesets.map(r => <MenuItem key={r.id} value={r.id}>{t(r.id, r.name)}</MenuItem>)}
-                        </Select>
-                    </FormControl>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>{t('board size', 'Board Size')}</InputLabel>
+                                <Select value={boardSize} label={t('board size', 'Board Size')} onChange={(e) => setBoardSize(Number(e.target.value))} disabled={isRated}>
+                                    <MenuItem value={19}>19x19 ({t('Standard', 'Standard')})</MenuItem>
+                                    <MenuItem value={13}>13x13</MenuItem>
+                                    <MenuItem value={9}>9x9</MenuItem>
+                                </Select>
+                            </FormControl>
 
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>{t('Your Color', 'Your Color')}</InputLabel>
-                        <Select value={color} label={t('Your Color', 'Your Color')} onChange={(e) => setColor(e.target.value)}>
-                            <MenuItem value="B">{t('Black', 'Black')} ({t('First', 'First')})</MenuItem>
-                            <MenuItem value="W">{t('White', 'White')} ({t('Second', 'Second')})</MenuItem>
-                        </Select>
-                    </FormControl>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>{t('ruleset', 'Ruleset')}</InputLabel>
+                                <Select value={rules} label={t('ruleset', 'Ruleset')} onChange={(e) => setRules(e.target.value)} disabled={isRated}>
+                                    {rulesets.map(r => <MenuItem key={r.id} value={r.id}>{t(r.id, r.name)}</MenuItem>)}
+                                </Select>
+                            </FormControl>
 
-                    {!isRated && (
-                        <Box sx={{ mt: 2 }}>
-                            <Typography gutterBottom>{t('handicap', 'Handicap')} ({t('Stones', 'Stones')}): {handicap}</Typography>
-                            <Slider 
-                                value={handicap} min={0} max={9} step={1} 
-                                onChange={(_, v) => setHandicap(v as number)} 
-                                valueLabelDisplay="auto"
-                            />
-                            <Typography gutterBottom sx={{ mt: 2 }}>{t('komi', 'Komi')}: {komi}</Typography>
-                            <Slider
-                                value={komi} min={0.5} max={85.5} step={0.25}
-                                onChange={(_, v) => setKomi(v as number)}
-                                valueLabelDisplay="auto"
-                            />
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>{t('Your Color', 'Your Color')}</InputLabel>
+                                <Select value={color} label={t('Your Color', 'Your Color')} onChange={(e) => setColor(e.target.value)}>
+                                    <MenuItem value="B">{t('Black', 'Black')} ({t('First', 'First')})</MenuItem>
+                                    <MenuItem value="W">{t('White', 'White')} ({t('Second', 'Second')})</MenuItem>
+                                </Select>
+                            </FormControl>
+
+                            {!isRated && (
+                                <Box sx={{ mt: 2 }}>
+                                    <Typography gutterBottom>{t('handicap', 'Handicap')} ({t('Stones', 'Stones')}): {handicap}</Typography>
+                                    <Slider
+                                        value={handicap} min={0} max={9} step={1}
+                                        onChange={(_, v) => setHandicap(v as number)}
+                                        valueLabelDisplay="auto"
+                                    />
+                                    <Typography gutterBottom sx={{ mt: 2 }}>{t('komi', 'Komi')}: {komi}</Typography>
+                                    <Slider
+                                        value={komi} min={0.5} max={85.5} step={0.25}
+                                        onChange={(_, v) => setKomi(v as number)}
+                                        valueLabelDisplay="auto"
+                                    />
+                                </Box>
+                            )}
                         </Box>
-                    )}
-                </Paper>
 
-                <Paper sx={{ p: 4, borderRadius: 4 }}>
-                    <Typography variant="h6" gutterBottom>{t('Opponent & Time', 'Opponent & Time')}</Typography>
+                        <Box component="section" sx={{
+                            borderLeft: '1px solid var(--play-line)', pl: '36px',
+                            '@media (max-width:1100px)': { borderLeft: 0, pl: 0, borderTop: '1px solid var(--play-line)', pt: '20px' },
+                        }}>
+                            <Typography component="h3" sx={{ fontSize: 20, fontWeight: 600 }}>{t('Opponent & Time', 'Opponent & Time')}</Typography>
+                            <Divider sx={{ mt: 2, mb: 1 }} />
 
-                    {isRated ? (
-                        <AiLadderSetupOpponent
-                            status={aiLadderStatus}
-                            onRetry={retryAiLadderStatus}
-                        />
-                    ) : (
-                        <>
                             <FormControl fullWidth margin="normal">
                                 <InputLabel>{t('aistrategy', 'AI Strategy')}</InputLabel>
                                 <Select value={opponent} label={t('aistrategy', 'AI Strategy')} onChange={(e) => setOpponent(e.target.value)} disabled={isRated}>
@@ -691,7 +639,7 @@ const AiSetupPage = () => {
                                 <Box sx={{ mt: 2, px: 1 }}>
                                     <Typography gutterBottom sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span>{t('Rank', 'Rank')}:</span>
-                                        <strong style={{ color: '#4a6b5c' }}>{valueToRank(rankValue)}</strong>
+                                        <strong style={{ color: 'var(--play-accent)' }}>{valueToRank(rankValue)}</strong>
                                     </Typography>
                                     <Slider
                                         value={rankValue} min={0} max={28} step={1}
@@ -752,60 +700,85 @@ const AiSetupPage = () => {
                                     )}
                                 </Box>
                             )}
-                        </>
-                    )}
 
-                    <Divider sx={{ my: 3 }} />
-                    
-                    <FormControlLabel
-                        control={<Switch checked={timerEnabled} onChange={(e) => setTimerEnabled(e.target.checked)} disabled={isRated} />}
-                        label={t('Enable Timer', 'Enable Timer')}
-                        sx={{ mb: 1 }}
-                    />
+                            <Divider sx={{ my: 3 }} />
 
-                    {timerEnabled && (
-                        <Box sx={{ mt: 1 }}>
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant="caption" color="text.secondary">{t('main time', 'Main Time')} ({t('Minutes', 'Minutes')}): {mainTime}</Typography>
-                                <Slider 
-                                    value={mainTime} min={0} max={60} step={1} 
-                                    onChange={(_, v) => setMainTime(v as number)}
-                                />
-                            </Box>
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant="caption" color="text.secondary">{t('byoyomi length', 'Byo-yomi')} ({t('Seconds', 'Seconds')}): {byoLength}</Typography>
-                                <Slider 
-                                    value={byoLength} min={5} max={60} step={5} 
-                                    onChange={(_, v) => setByoLength(v as number)}
-                                />
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color="text.secondary">{t('byoyomi periods', 'Periods')}: {byoPeriods}</Typography>
-                                <Slider 
-                                    value={byoPeriods} min={1} max={10} step={1} 
-                                    onChange={(_, v) => setByoPeriods(v as number)}
-                                />
-                            </Box>
+                            <FormControlLabel
+                                control={<Switch checked={timerEnabled} onChange={(e) => setTimerEnabled(e.target.checked)} disabled={isRated} />}
+                                label={t('Enable Timer', 'Enable Timer')}
+                                sx={{ mb: 1 }}
+                            />
+
+                            {timerEnabled && (
+                                <Box sx={{ mt: 1 }}>
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="caption" color="text.secondary">{t('main time', 'Main Time')} ({t('Minutes', 'Minutes')}): {mainTime}</Typography>
+                                        <Slider
+                                            value={mainTime} min={0} max={60} step={1}
+                                            onChange={(_, v) => setMainTime(v as number)}
+                                        />
+                                    </Box>
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="caption" color="text.secondary">{t('byoyomi length', 'Byo-yomi')} ({t('Seconds', 'Seconds')}): {byoLength}</Typography>
+                                        <Slider
+                                            value={byoLength} min={5} max={60} step={5}
+                                            onChange={(_, v) => setByoLength(v as number)}
+                                        />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">{t('byoyomi periods', 'Periods')}: {byoPeriods}</Typography>
+                                        <Slider
+                                            value={byoPeriods} min={1} max={10} step={1}
+                                            onChange={(_, v) => setByoPeriods(v as number)}
+                                        />
+                                    </Box>
+                                </Box>
+                            )}
                         </Box>
-                    )}
-                </Paper>
+                    </Box>
+                </Box>
+                <Box component="aside" className="galaxy-play-stage__side">
+                    <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600 }}>准备开局</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        按自己的节奏练习。此处的胜负不会改变升降级段位。
+                    </Typography>
+                    <Box data-testid="free-game-summary" sx={{ p: 2, bgcolor: '#1b231e', borderRadius: '8px', color: '#c3d8c7' }}>
+                        <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                            {boardSize}路 · {t(rules, ruleName?.name || rules)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                            {color === 'B' ? t('Black', 'Black') : t('White', 'White')} · {t('komi', 'Komi')} {komi} · {t('handicap', 'Handicap')} {handicap}
+                        </Typography>
+                        <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                            {getStrategyDisplay(strategyKey)}{opponentRank ? ` · ${opponentRank}` : ''}
+                        </Typography>
+                        <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                            {timerEnabled
+                                ? `${mainTime} ${t('Minutes', 'Minutes')} · ${byoPeriods}×${byoLength} ${t('Seconds', 'Seconds')}`
+                                : t('play:untimed', '不计时')}
+                        </Typography>
+                    </Box>
+                    <Stack spacing={1.5} sx={{ mt: 'auto', pt: 1 }}>
+                        <Button variant="contained" size="large" onClick={handleStartGame} disabled={loading}
+                            startIcon={loading ? <CircularProgress size={18} color="inherit" /> : undefined}>
+                            {t('btn:Play', 'Start Game')}
+                        </Button>
+                        <Button data-testid="free-return-action" variant="outlined" color="inherit" onClick={() => navigate('/galaxy/play')}>
+                            返回对局
+                        </Button>
+                    </Stack>
+                </Box>
             </Box>
-
-            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button onClick={() => navigate('/galaxy/play')}>{t('cancel', 'Cancel')}</Button>
-                <Button
-                    data-testid={isRated ? 'ranked-start-action' : undefined}
-                    variant="contained"
-                    size="large"
-                    onClick={handleStartGame}
-                    disabled={loading || (isRated && !canStartAiLadderGame(aiLadderStatus))}
-                >
-                    {t('btn:Play', 'Start Game')}
-                </Button>
-            </Box>
-            <AuthRequiredDialog open={!!authPrompt} onClose={() => setAuthPrompt('')} message={authPrompt} />
-        </Box>
+            <AuthRequiredDialog feature={isRated ? "rated" : "play"} open={!!authPrompt} onClose={() => setAuthPrompt('')} message={authPrompt} />
+        </PlayPageLayout>
     );
+};
+
+const AiSetupPage = () => {
+    const [searchParams] = useSearchParams();
+    return searchParams.get('mode') === 'rated'
+        ? <AuthGuard feature="rated"><AiSetupContent /></AuthGuard>
+        : <AiSetupContent />;
 };
 
 export default AiSetupPage;

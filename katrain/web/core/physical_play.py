@@ -27,6 +27,7 @@ class PhysicalPlayConfig:
     hint_top_n: int = 3  # Q2 defaults
     hint_blink_period_s: float = 0.8
     hint_timeout_s: float = 30.0
+    attention_timeout_s: float = 3.0
     hint_max_visits: int = 100
     hint_engine: str = "cloud"  # "local" | "cloud" | "off" — 支招 is an analysis query, so
     # prefer the strong cloud GPU; RequestRouter degrades to local when CLOUD_KATAGO_URL is unset.

@@ -1,0 +1,208 @@
+{
+  "bindings": [
+    {
+      "lang": "ko",
+      "owner": {
+        "id": 11171,
+        "kind": "player"
+      },
+      "preimage_binding": {
+        "actor_id": "/root/next20_packet_recovered",
+        "actor_model": "gpt-6-sol",
+        "bound_at": "2026-10-08T19:49:47.971077+00:00",
+        "capture_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+        "captured_at": "2026-10-08T19:48:58.675691+00:00",
+        "name_preimage_sha256": null,
+        "source_candidate_sha256": "8a7af0ca6ea81d1e2a53f9bfc98ebf5b3f674264d39c1f544c116869797fdd37"
+      },
+      "prod_id": 5396
+    },
+    {
+      "lang": "ko",
+      "owner": {
+        "id": 10071,
+        "kind": "player"
+      },
+      "preimage_binding": {
+        "actor_id": "/root/next20_packet_recovered",
+        "actor_model": "gpt-6-sol",
+        "bound_at": "2026-10-08T19:49:47.986953+00:00",
+        "capture_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+        "captured_at": "2026-10-08T19:48:58.675691+00:00",
+        "name_preimage_sha256": null,
+        "source_candidate_sha256": "05a860e892588881db2bc95be74e11364fc061d586f9662e152e677becedae7b"
+      },
+      "prod_id": 4276
+    },
+    {
+      "lang": "ko",
+      "owner": {
+        "id": 10570,
+        "kind": "player"
+      },
+      "preimage_binding": {
+        "actor_id": "/root/next20_packet_recovered",
+        "actor_model": "gpt-6-sol",
+        "bound_at": "2026-10-08T19:49:48.000175+00:00",
+        "capture_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+        "captured_at": "2026-10-08T19:48:58.675691+00:00",
+        "name_preimage_sha256": null,
+        "source_candidate_sha256": "3e56f88c86d95304592733ed43f745d38cb4d07a78964c5272c2ce25b82b2528"
+      },
+      "prod_id": 4782
+    }
+  ],
+  "candidates": [
+    {
+      "decision_kind": "generated",
+      "display_name": "하마나카 다카미쓰",
+      "generated_review": {
+        "decision": "pending",
+        "display_name": "하마나카 다카미쓰",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "identity_input_review": "pending",
+        "lang": "ko",
+        "original_name": "浜中隆光",
+        "output_review": "pending",
+        "owner": {
+          "id": 11171,
+          "kind": "player"
+        },
+        "positive_generation_sha256": "719322ec2646f88f26da394d2fa6816dd257aac74285c47bd93a889a9dfc286a",
+        "reading": "はまなか たかみつ",
+        "reading_basis_url": "https://www.igorating.com/players/takamitsu-hamanaka",
+        "reason": "Pending root review of source, rule, output and fresh binding.",
+        "research_sha256": "107e6b07bcb7a888e2658396d423456a4c11195896056fba9fc5dfb65a55101d",
+        "reviewed_at": "",
+        "reviewer_id": "",
+        "reviewer_model": "",
+        "rule_review": "pending"
+      },
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 11171,
+        "kind": "player"
+      },
+      "preimage_binding": {
+        "actor_id": "/root/next20_packet_recovered",
+        "actor_model": "gpt-6-sol",
+        "bound_at": "2026-10-08T19:49:47.971077+00:00",
+        "capture_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+        "captured_at": "2026-10-08T19:48:58.675691+00:00",
+        "name_preimage_sha256": null,
+        "source_candidate_sha256": "8a7af0ca6ea81d1e2a53f9bfc98ebf5b3f674264d39c1f544c116869797fdd37"
+      },
+      "produced_at": "2026-10-08T19:07:30.929061+00:00",
+      "producer_id": "/root/restore_tw_twenty",
+      "producer_model": "gpt-6; exact runtime variant unavailable",
+      "research_sha256": "107e6b07bcb7a888e2658396d423456a4c11195896056fba9fc5dfb65a55101d",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "오쿠무라 야스시",
+      "generated_review": {
+        "decision": "pending",
+        "display_name": "오쿠무라 야스시",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "identity_input_review": "pending",
+        "lang": "ko",
+        "original_name": "奥村靖",
+        "output_review": "pending",
+        "owner": {
+          "id": 10071,
+          "kind": "player"
+        },
+        "positive_generation_sha256": "d1627f3efbb911fd8a2c006337f34ffb7256a61b813ca215cf413cdac4822cb5",
+        "reading": "おくむら やすし",
+        "reading_basis_url": "https://igorating.com/players/yasushi-okumura",
+        "reason": "Pending root review of source, rule, output and fresh binding.",
+        "research_sha256": "5f4b0e3ac20edcdaa73602838593c70f2400f231e754b2a94f397620b63c35e8",
+        "reviewed_at": "",
+        "reviewer_id": "",
+        "reviewer_model": "",
+        "rule_review": "pending"
+      },
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 10071,
+        "kind": "player"
+      },
+      "preimage_binding": {
+        "actor_id": "/root/next20_packet_recovered",
+        "actor_model": "gpt-6-sol",
+        "bound_at": "2026-10-08T19:49:47.986953+00:00",
+        "capture_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+        "captured_at": "2026-10-08T19:48:58.675691+00:00",
+        "name_preimage_sha256": null,
+        "source_candidate_sha256": "05a860e892588881db2bc95be74e11364fc061d586f9662e152e677becedae7b"
+      },
+      "produced_at": "2026-10-08T19:07:30.943651+00:00",
+      "producer_id": "/root/restore_tw_twenty",
+      "producer_model": "gpt-6; exact runtime variant unavailable",
+      "research_sha256": "5f4b0e3ac20edcdaa73602838593c70f2400f231e754b2a94f397620b63c35e8",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "아케도 가즈미",
+      "generated_review": {
+        "decision": "pending",
+        "display_name": "아케도 가즈미",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "identity_input_review": "pending",
+        "lang": "ko",
+        "original_name": "明戸和巳",
+        "output_review": "pending",
+        "owner": {
+          "id": 10570,
+          "kind": "player"
+        },
+        "positive_generation_sha256": "ef364130a298901f17d8e1a11bf693168c05fba35e89100e31f7dcf3a4656ece",
+        "reading": "あけど かずみ",
+        "reading_basis_url": "https://www.igorating.com/players/kazumi-akedo",
+        "reason": "Pending root review of source, rule, output and fresh binding.",
+        "research_sha256": "9d07152cdcc67de739fe8f928a8f95a4383e8df1bf020cca7a9a133eba631e83",
+        "reviewed_at": "",
+        "reviewer_id": "",
+        "reviewer_model": "",
+        "rule_review": "pending"
+      },
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 10570,
+        "kind": "player"
+      },
+      "preimage_binding": {
+        "actor_id": "/root/next20_packet_recovered",
+        "actor_model": "gpt-6-sol",
+        "bound_at": "2026-10-08T19:49:48.000175+00:00",
+        "capture_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+        "captured_at": "2026-10-08T19:48:58.675691+00:00",
+        "name_preimage_sha256": null,
+        "source_candidate_sha256": "3e56f88c86d95304592733ed43f745d38cb4d07a78964c5272c2ce25b82b2528"
+      },
+      "produced_at": "2026-10-08T19:07:30.959024+00:00",
+      "producer_id": "/root/restore_tw_twenty",
+      "producer_model": "gpt-6; exact runtime variant unavailable",
+      "research_sha256": "9d07152cdcc67de739fe8f928a8f95a4383e8df1bf020cca7a9a133eba631e83",
+      "review_status": "pending"
+    }
+  ],
+  "capture_file_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+  "environment": "TEST",
+  "requirements": [
+    "Approve exact owner, original, full kana, NIKL steps, generated output and both bounded conflict queries per person.",
+    "Add generated_review and independent candidate signature only after reviewing these fresh bindings."
+  ],
+  "research_file": "TEST-mixed20-ko-research-unsigned.json.gz",
+  "research_sha256": "5efbc946ec95b998658daec4d8dda0f77ef4620c1d796a1d6672c0e54d47bdd1",
+  "source_approval": "root-source-rule-review.json",
+  "status": "pending_root_positive_source_output_and_binding_approval"
+}

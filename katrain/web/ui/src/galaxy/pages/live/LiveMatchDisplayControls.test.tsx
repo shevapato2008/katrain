@@ -14,6 +14,7 @@ const callbacks = () => ({
   onMoveNumbersToggle: vi.fn(),
   onAiMarkersToggle: vi.fn(),
   onCoordinatesToggle: vi.fn(),
+  on3dToggle: vi.fn(),
   onClearTryMoves: vi.fn(),
 });
 
@@ -26,6 +27,7 @@ const renderControls = (overrides: Partial<LiveMatchDisplayControlsProps> = {}) 
       showMoveNumbers={false}
       showAiMarkers={false}
       showCoordinates={false}
+      view3d={false}
       ownershipAvailable
       tryMoves={[]}
       {...handlers}
@@ -38,13 +40,14 @@ const renderControls = (overrides: Partial<LiveMatchDisplayControlsProps> = {}) 
 const names = {
   tryMove: 'translated:live:try_move:Try Move',
   territory: 'translated:live:territory:Territory',
-  moveNumbers: 'translated:live:move_numbers:Move Numbers',
+  moveNumbers: 'translated:Move Numbers:手数',
   aiMarkers: 'translated:live:show_advice:Show Advice',
-  coordinates: 'translated:Coordinates:Coordinates',
+  coordinates: 'translated:Coordinates:坐标',
+  view3d: 'translated:3D:3D',
 };
 
 describe('LiveMatchDisplayControls', () => {
-  it('renders four real, translated tool-grid buttons plus a coordinate switch, with the established icons and pressed state', () => {
+  it('groups three equally sized board display buttons with the established icons and pressed state', () => {
     renderControls({
       tryMoveMode: true,
       showTerritory: false,
@@ -57,6 +60,8 @@ describe('LiveMatchDisplayControls', () => {
       [names.tryMove, 'TouchAppIcon', 'true'],
       [names.territory, 'MapIcon', 'false'],
       [names.moveNumbers, 'FormatListNumberedIcon', 'true'],
+      [names.coordinates, 'GridOnIcon', 'false'],
+      [names.view3d, 'ViewInArIcon', 'false'],
       ['translated:live:hide_advice:Hide Advice', 'TipsAndUpdatesIcon', 'true'],
     ] as const;
 
@@ -70,10 +75,7 @@ describe('LiveMatchDisplayControls', () => {
       expect(button.querySelector(`[data-testid="${icon}"]`)).toBeInTheDocument();
     }
 
-    // 坐标不在工具格里：它改的是棋盘刻度，不是棋盘上画什么分析信息（与死活题页对齐）。
-    const coordinates = screen.getByRole('checkbox', { name: names.coordinates });
-    expect(coordinates).not.toBeChecked();
-    expect(screen.queryByRole('button', { name: names.coordinates })).not.toBeInTheDocument();
+    expect(screen.getByTestId('board-display-controls')).toContainElement(screen.getByRole('button', { name: names.coordinates }));
   });
 
   it('calls only the callback belonging to the clicked control', () => {
@@ -82,6 +84,8 @@ describe('LiveMatchDisplayControls', () => {
       [names.tryMove, 'onTryMoveToggle'],
       [names.territory, 'onTerritoryToggle'],
       [names.moveNumbers, 'onMoveNumbersToggle'],
+      [names.coordinates, 'onCoordinatesToggle'],
+      [names.view3d, 'on3dToggle'],
       [names.aiMarkers, 'onAiMarkersToggle'],
     ] as const;
 
@@ -93,11 +97,6 @@ describe('LiveMatchDisplayControls', () => {
       }
     }
 
-    Object.values(handlers).forEach((handler) => handler.mockClear());
-    fireEvent.click(screen.getByRole('checkbox', { name: names.coordinates }));
-    for (const [handlerName, handler] of Object.entries(handlers)) {
-      expect(handler).toHaveBeenCalledTimes(handlerName === 'onCoordinatesToggle' ? 1 : 0);
-    }
   });
 
   it('disables unavailable territory while keeping its explanation reachable through a span wrapper', async () => {
@@ -116,12 +115,12 @@ describe('LiveMatchDisplayControls', () => {
     expect(handlers.onTerritoryToggle).not.toHaveBeenCalled();
   });
 
-  it('shows the try path and a 40px clear action only while try mode has moves', () => {
+  it('shows the try path and enables the clear action when there are trial moves', () => {
     const handlers = renderControls({ tryMoveMode: true, tryMoves: ['D4', 'Q16'] });
 
     expect(screen.getByText('translated:live:try:TRY: D4 → Q16')).toBeInTheDocument();
-    const clear = screen.getByRole('button', { name: 'translated:live:clear:Clear' });
-    expect(clear).toHaveStyle({ minHeight: '40px' });
+    const clear = screen.getByRole('button', { name: 'translated:live:clear:清空' });
+    expect(clear).not.toBeDisabled();
     fireEvent.click(clear);
     expect(handlers.onClearTryMoves).toHaveBeenCalledOnce();
   });
@@ -129,41 +128,22 @@ describe('LiveMatchDisplayControls', () => {
   it.each([
     { tryMoveMode: false, tryMoves: ['D4'] },
     { tryMoveMode: true, tryMoves: [] },
-  ])('omits the clear row for $tryMoveMode / $tryMoves', (props) => {
+  ])('keeps the clear action disabled without trial moves', (props) => {
     renderControls(props);
-    expect(screen.queryByRole('button', { name: 'translated:live:clear:Clear' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'translated:live:clear:清空' })).toBeDisabled();
   });
 
-  /* 工具格栅格必须来自共用常量 `railStyles.toolGridSx`，不是本页自己写一份。
-     2026-09-01 键改成「图标左、文字右」之后列数分了两档：窄档 2×2、宽档 1×4 ——
-     横排一格要装下「图标 + 间隙 + 两字」，四列在 320 档只剩 67px，装不下。
-     这条测试原来钉的是字面量 `repeat(4, minmax(0, 1fr))`：断言的对象变了，不是坏了，
-     所以改写成两档各断言一次，而不是删掉——删掉等于这条栅格从此没人守。
-     变异验证：把 `toolGridSx` 的 RAIL_WIDE 那一支删掉，下面第二条红；
-     把基础值改回 `repeat(4, ...)`，第一条红。 */
-  it('uses the shared tool grid: 2 columns narrow, 4 columns on a wide rail', () => {
+  it('keeps action and display buttons in the same four-column geometry', () => {
     renderControls();
-    expect(screen.getByTestId('live-match-display-controls-grid')).toHaveStyle({
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-    });
-    const css = Array.from(document.querySelectorAll('style')).map((n) => n.textContent ?? '').join('\n');
-    expect(css).toMatch(
-      /@container board-rail \(min-width: 460px\)\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/,
-    );
+    for (const id of ['live-match-display-controls-grid', 'board-display-controls']) {
+      expect(screen.getByTestId(id)).toHaveStyle({ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))' });
+    }
   });
 
-  /* 跨页一致：坐标开关这一行在直播/复盘和对局页必须是同一种东西。
-     窄档两端对齐（冻结稿的形状）；宽档必须**关掉** space-between —— 对局页那一组在
-     520 档会排成两列，继续两端对齐的话每个滑块离下一列的标签只有 16px、离自己的标签 158px，
-     邻近性整个反过来。这里只有一个开关排不出第二列，但要跟对局页用**同一条规则**，
-     否则同一个「坐标」开关在两类页面上一个贴着标签、一个甩到 488px 外。
-     这条钉的是那条规则来自**共用常量** `railToggleRowSx`，不是各页各写一份。
-     变异验证：把 RAIL_WIDE 的 460 改成 9999（等于宽档规则永不生效），本条红。 */
-  it('drops space-between on the shared wide-rail band so the switch stays next to its label', () => {
+  it('keeps the three board display actions in their own equal-width group', () => {
     renderControls();
-    const css = Array.from(document.querySelectorAll('style')).map((n) => n.textContent ?? '').join('\n');
-    expect(css).toContain('@container board-rail (min-width: 460px)');
-    expect(css).toMatch(/@container board-rail \(min-width: 460px\)\s*\{[^}]*justify-content:\s*flex-start/);
+    const group = screen.getByTestId('board-display-controls');
+    expect(group).toHaveStyle({ gridTemplateColumns: 'repeat(4,minmax(0,1fr))' });
+    expect(group.querySelectorAll('button')).toHaveLength(3);
   });
 });

@@ -70,6 +70,15 @@ describe('GameControlPanel', () => {
     expect(screen.getByText('数子')).toBeInTheDocument();
   });
 
+  test('automatic lobby count stops turn prompts and disables play actions', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'B', end_result: '终局', awaiting_count: true, degraded: false });
+    expect(screen.getByText('正在自动数子')).toBeInTheDocument();
+    expect(screen.queryByText('轮到你')).not.toBeInTheDocument();
+    for (const name of ['数子', '停一手', '认输']) {
+      expect(screen.getByRole('button', { name })).toBeDisabled();
+    }
+  });
+
   test('胜率图只在终局后允许跳转棋谱位置', () => {
     const history = [
       { node_id: 10, score: 0, winrate: 0.5 },
@@ -138,6 +147,97 @@ describe('GameControlPanel', () => {
     expect(screen.queryByText('2:03')).toBeNull();
     expect(screen.queryByText('1:38')).toBeNull();
     expect(screen.getByText('不限时')).toBeInTheDocument();
+  });
+
+  test('OGS seats wait for remote clock and never show inherited local time', () => {
+    const online = panel({
+      game_type: 'pvp_online', platform_my_color: 'B',
+      timer: { configured: true, paused: false, current_node_time_used: 12, main_time_used: 123, next_player_periods_used: 0,
+        settings: { main_time: 20, byo_length: 30, byo_periods: 5, minimal_use: 0, sound: true } },
+    });
+    expect(screen.getAllByText('等待 OGS 计时')).toHaveLength(2);
+    expect(screen.queryByText('19:48')).toBeNull();
+    online.rerender(<GameControlPanel
+      gameState={{ ...mockGameState, game_type: 'pvp_online', platform_my_color: 'B' }}
+      platformClock={{ black_time: { thinking_time: 83 }, white_time: 91, current_player: 'B', paused: false }}
+      onAction={() => {}} onNavigate={() => {}} analysisToggles={{}} onToggleAnalysis={() => {}} />);
+    expect(screen.getByText('1:23')).toBeInTheDocument();
+    expect(screen.getByText('1:31')).toBeInTheDocument();
+    expect(screen.queryByText('等待 OGS 计时')).toBeNull();
+  });
+
+  test('OGS byoyomi displays the synced period time without pretending to tick locally', () => {
+    panel({ game_type: 'pvp_online', platform_my_color: 'B' }, {
+      platformClock: {
+        black_time: { thinking_time: 0, periods: 3, period_time: 30, period_time_left: 18 },
+        white_time: { thinking_time: 91 }, current_player: 'B', paused: false,
+      },
+    });
+    expect(screen.getByText('0:18')).toBeInTheDocument();
+    expect(screen.getByText('读秒 · OGS 上次同步')).toBeInTheDocument();
+    expect(screen.getByText('OGS 上次同步')).toBeInTheDocument();
+  });
+
+  test('OGS scoring offers remote accept/reject and blocks ordinary passing', () => {
+    const onAction = vi.fn();
+    panel({ game_type: 'pvp_online', platform_my_color: 'W' }, { platformPhase: 'scoring', onAction });
+    fireEvent.click(screen.getByRole('button', { name: '确认无死子' }));
+    fireEvent.click(screen.getByRole('button', { name: '继续下棋' }));
+    expect(onAction).toHaveBeenCalledWith('ogs-score-accept');
+    expect(onAction).toHaveBeenCalledWith('ogs-score-reject');
+    expect(screen.getByRole('button', { name: '停一手' })).toBeDisabled();
+    expect(screen.getByText('当前未同步 OGS 死子标记；将按无死子确认')).toBeInTheDocument();
+    expect(screen.queryByText('领地')).toBeNull();
+    expect(screen.queryByText('AI支招')).toBeNull();
+  });
+
+  test('OGS scoring disables duplicate actions while awaiting the platform', () => {
+    panel({ game_type: 'pvp_online', platform_my_color: 'B' }, { platformPhase: 'scoring', onlineScoringPending: true });
+    expect(screen.getByRole('button', { name: '确认无死子' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '继续下棋' })).toBeDisabled();
+  });
+
+  test('OGS playing phase cannot launch local counting', () => {
+    panel({ game_type: 'pvp_online', platform_my_color: 'B' }, { platformPhase: 'playing' });
+    expect(screen.queryByRole('button', { name: '确认无死子' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '继续下棋' })).toBeNull();
+    expect(screen.getByRole('button', { name: '数子' })).toBeDisabled();
+  });
+
+  test('OGS opponent turn is not labeled as my turn', () => {
+    panel({ game_type: 'pvp_online', platform_my_color: 'W', player_to_move: 'B' });
+    expect(within(screen.getByTestId('player-card-B')).getByText(/对方回合/)).toBeInTheDocument();
+    expect(within(screen.getByTestId('player-card-W')).getByText(/等待对方/)).toBeInTheDocument();
+    expect(screen.queryByText('轮到你')).toBeNull();
+  });
+
+  test('self-owned lobby uses its central seat without OGS controls or AI analysis', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'B' });
+    expect(within(screen.getByTestId('player-card-B')).getByText(/对方回合/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '停一手' })).toBeDisabled();
+    expect(screen.queryByText('等待 OGS 计时')).toBeNull();
+    expect(screen.queryByText('AI支招')).toBeNull();
+  });
+  test('self-owned lobby enables count retry when automatic two-pass scoring fails', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'W', degraded: true, awaiting_count: true,
+      end_result: 'board-game-end', history: [], count_min_moves: 100 });
+    const count = screen.getByRole('button', { name: '数子' });
+    expect(count).toBeEnabled();
+    expect(count).not.toHaveAttribute('title', expect.stringContaining('100'));
+    expect(screen.getByText(/自动数子失败/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '停一手' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '认输' })).toBeDisabled();
+  });
+  test('self-owned lobby does not bypass count threshold without a degraded result', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'W', awaiting_count: true, degraded: false,
+      history: [], count_min_moves: 100 });
+    expect(screen.getByRole('button', { name: '数子' })).toBeDisabled();
+  });
+
+  test('OGS finished phase blocks resign until the remote result is reflected locally', () => {
+    panel({ game_type: 'pvp_online', platform_my_color: 'B' }, { platformPhase: 'finished' });
+    expect(screen.getByRole('button', { name: '认输' })).toBeDisabled();
+    expect(screen.getByText(/等待 OGS 结果/)).toBeInTheDocument();
   });
 
   test('physical placement status replaces login/count hints without fault styling', () => {

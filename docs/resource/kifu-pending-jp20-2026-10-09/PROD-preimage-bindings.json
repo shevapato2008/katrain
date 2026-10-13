@@ -1,0 +1,322 @@
+[
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380278+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "9a72bb1d23aaf625d5c6431d84f8918cd5193745f4dcb09a1a73a2dcd5b66bc9"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 3785,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380336+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "5011d6a54a9264080a9ee057c6799342534216d077c70b118d232c106d14b936"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 4235,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380459+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "58e9e6529a166fced7604d22ae638098c56ed741c67befe311f61a9c975565d3"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 4420,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380532+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "b67c0bc1f9094989fdd7e5b977d1ceca4d70ba519ddfdb5a9d7ddc5137ca766a"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 4771,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380584+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "a8fd7b5ef5be49adcc6fbc56d80a34ff9030b59d79e94c4e6fe6cd9f16b65f35"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 5297,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380632+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "51af0b4c8de7169daf4c02ebc682172574c1c1db1cbea6f8e48a6ab0fd300496"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 5397,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380739+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "f87ae89bad1360c81569b54a5ef9b575ddc1c6fcebc110ac6f23a1fb7539abe9"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 5398,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380804+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "4a6515445a4561738e9ee5ebb8ddeb822fa81fe8226760cfaebd129e6dd76ac0"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 5675,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380859+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "8d811680bb5108aadf000e67cb01f6bf9fdb84ae3d9e4a067becccec17d6581c"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6259,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380912+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "f81c617c4c1fb4463aa4f47c854eee1c15c864e1eda455b3ac74e76c102c7861"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6599,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.380963+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "f5b382a8238651606ce7a1b668a726655ea240160866a301676491c8f3ad185f"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6626,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.381008+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "0b2f2c92481d195edc55d09bee1be8d37586142872ea01d798065ff1e0e5482e"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6629,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.381120+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "cc4b11bf2eb01bb34722dae76f3ad4a30e50c1f9daf5a6ba0107ed7a5874568c"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6633,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.381173+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "93bce8dad7083ec7d064534791058a4ccbef8e3662298bf25ab29ab8894ed5c2"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6634,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.381221+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "6dfef182f823fc07309203b0274cc05e3cfa6827933aa94606353bc80a99de64"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6672,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.381277+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "e629dceb877853e804a214480e9b1406f64b15f88ed8e31d168c3dfb8cb16a31"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6686,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.381338+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "fcb86c2b3bbbead072720b12423b4662210f317e13f372073b4e28a5b954e47c"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6712,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.381426+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "596ace3e26d5fa98425fd729a51d88596b3d878c6d885a421f5040ad1ec41f1d"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6714,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.381488+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "cdf1347d66841a52929cc8ba841c135aa2d29dd2d8109997f09c03cdd758951e"
+    },
+    "lang": "cn",
+    "owner": {
+      "id": 6769,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/next_batch_source_recovery",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T18:12:52.512134+00:00",
+      "capture_sha256": "3380be65d5a097ea2154feeb798ea98afea894fc9e0ac573cbc58a0b31200fec",
+      "captured_at": "2026-10-08T18:11:08.276976+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "4569cb8e2e94108cc95afa6616d8063ed07eb1c268ed2ebca687de45e95a95fc"
+    },
+    "lang": "tw",
+    "owner": {
+      "id": 4340,
+      "kind": "player"
+    }
+  }
+]

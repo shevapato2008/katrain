@@ -2,6 +2,9 @@ import threading
 
 import numpy as np
 import pytest
+import subprocess
+import sys
+import uuid
 
 from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
 
@@ -185,3 +188,217 @@ def test_camera_hub_controls_are_inert_before_start():
     assert hub.initial_exposure is None
     assert hub.current_auto_exposure is None
     assert hub.current_exposure is None
+
+
+def test_same_camera_device_is_busy_until_owner_stops():
+    device = f"camera-{uuid.uuid4().hex}"
+    first_camera, second_camera = FakeCamera(), FakeCamera()
+    first = CameraHub(CameraHubConfig(device_id=device), camera=first_camera)
+    second = CameraHub(CameraHubConfig(device_id=device), camera=second_camera)
+    first.start()
+    try:
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            second.start()
+        assert second_camera.open_calls == 0
+    finally:
+        first.stop()
+    second.start()
+    try:
+        assert second_camera.open_calls == 1
+    finally:
+        second.stop()
+
+
+def test_different_camera_devices_do_not_block_each_other():
+    device = uuid.uuid4().hex
+    first = CameraHub(CameraHubConfig(device_id=f"{device}-1"), camera=FakeCamera())
+    second = CameraHub(CameraHubConfig(device_id=f"{device}-2"), camera=FakeCamera())
+    first.start()
+    try:
+        second.start()
+        assert second.is_started
+    finally:
+        second.stop()
+        first.stop()
+
+
+def test_camera_open_failure_releases_device_for_retry():
+    device = f"camera-{uuid.uuid4().hex}"
+    broken = FakeCamera()
+    broken.open = lambda: False
+    first = CameraHub(CameraHubConfig(device_id=device), camera=broken)
+    with pytest.raises(RuntimeError, match="Failed to open camera"):
+        first.start()
+    second = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    second.start()
+    second.stop()
+
+
+def test_camera_open_exception_releases_device_for_retry():
+    device = f"camera-{uuid.uuid4().hex}"
+    broken = FakeCamera()
+
+    def fail_open():
+        raise OSError("camera unplugged")
+
+    broken.open = fail_open
+    first = CameraHub(CameraHubConfig(device_id=device), camera=broken)
+    with pytest.raises(OSError, match="camera unplugged"):
+        first.start()
+    second = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    second.start()
+    second.stop()
+
+
+def test_partial_camera_open_is_closed_before_lease_is_released():
+    device = f"camera-{uuid.uuid4().hex}"
+    broken = FakeCamera()
+    peer = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    original_close = broken.close
+
+    def fail_after_open():
+        broken.is_connected = True
+        raise OSError("failed after opening")
+
+    def close_while_owned():
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        original_close()
+
+    broken.open = fail_after_open
+    broken.close = close_while_owned
+    first = CameraHub(CameraHubConfig(device_id=device), camera=broken)
+    with pytest.raises(OSError, match="failed after opening"):
+        first.start()
+    assert broken.close_calls == 1
+    assert broken.is_connected is False
+    peer.start()
+    peer.stop()
+
+
+def test_real_camera_manager_thread_start_failure_releases_capture_before_lease(monkeypatch):
+    from katrain.vision import camera as camera_module
+
+    device = f"camera-{uuid.uuid4().hex}"
+    peer = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+
+    class Capture:
+        released = False
+
+        def isOpened(self):
+            return not self.released
+
+        def set(self, *_args):
+            return True
+
+        def get(self, *_args):
+            return 0.0
+
+        def release(self):
+            with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+                peer.start()
+            self.released = True
+
+    capture = Capture()
+    monkeypatch.setattr(camera_module.cv2, "VideoCapture", lambda _device: capture)
+    original_start = camera_module.threading.Thread.start
+
+    def fail_thread_start(_thread):
+        if _thread.name == "cam-reader":
+            raise RuntimeError("camera reader could not start")
+        return original_start(_thread)
+
+    monkeypatch.setattr(camera_module.threading.Thread, "start", fail_thread_start)
+    camera = camera_module.CameraManager(device_id=device, warmup_seconds=0)
+    hub = CameraHub(CameraHubConfig(device_id=device), camera=camera)
+    with pytest.raises(RuntimeError, match="camera reader could not start"):
+        hub.start()
+
+    assert capture.released is True
+    assert camera._cap is None
+    assert camera.is_connected is False
+    peer.start()
+    peer.stop()
+
+
+def test_linux_high_camera_index_and_device_path_share_a_lease(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "linux")
+    device = 10000 + int(uuid.uuid4().hex[:6], 16)
+    first = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    peer = CameraHub(CameraHubConfig(device_id=f"/dev/video{device}"), camera=FakeCamera())
+    first.start()
+    try:
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+    finally:
+        peer.stop()
+        first.stop()
+
+
+def test_camera_device_lease_blocks_another_process():
+    device = f"camera-{uuid.uuid4().hex}"
+    first = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    script = """import sys
+from katrain.web.core.device_lease import DeviceBusy, DeviceLease
+try:
+    lease = DeviceLease.acquire('camera', sys.argv[1])
+except DeviceBusy:
+    sys.exit(0)
+else:
+    lease.release()
+    sys.exit(1)
+"""
+    first.start()
+    try:
+        result = subprocess.run([sys.executable, "-c", script, device], capture_output=True, text=True, timeout=5)
+        assert result.returncode == 0, result.stderr
+    finally:
+        first.stop()
+
+
+def test_blocked_reader_retains_device_lease_until_it_exits(monkeypatch):
+    device = f"camera-{uuid.uuid4().hex}"
+    finish, released = threading.Event(), threading.Event()
+    camera = FakeCamera()
+    camera._reader_thread = threading.Thread(target=finish.wait, daemon=True)
+    camera._reader_thread.start()
+    owner = CameraHub(CameraHubConfig(device_id=device), camera=camera)
+    peer = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    owner.start()
+    lease = owner._device_lease
+    original_release = lease.release
+
+    def release():
+        original_release()
+        released.set()
+
+    monkeypatch.setattr(lease, "release", release)
+    try:
+        owner.stop()
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        finish.set()
+        assert released.wait(1)
+        peer.start()
+    finally:
+        finish.set()
+        camera._reader_thread.join(1)
+        peer.stop()
+        owner.stop()
+
+
+def test_identified_frame_reads_do_not_reopen_a_stopped_hub():
+    class IdentifiedCamera(FakeCamera):
+        identified_reads = 0
+
+        def read_frame_identified(self):
+            self.identified_reads += 1
+            return self.frame.copy(), 7, 3.0
+
+    camera = IdentifiedCamera()
+    hub = CameraHub(CameraHubConfig(device_id=f"camera-{uuid.uuid4().hex}"), camera=camera)
+    hub.start()
+    assert hub.read_frame_identified()[1:] == (7, 3.0)
+    hub.stop()
+    assert hub.read_frame_identified() == (None, 0, 0.0)
+    assert camera.identified_reads == 1

@@ -133,7 +133,16 @@ class StoneDetector:
         self.iou_threshold = iou_threshold
         self.backend_impl = create_backend(backend)
         self.backend_impl.load(model_path)
+        # Only the ultralytics backend takes an input size at call time; ONNX/RKNN keep their fixed input.
+        # Its own default is 960, the same as ours, so callers that never pass imgsz are unchanged.
+        if backend == "ultralytics" and hasattr(self.backend_impl, "_imgsz"):
+            self.backend_impl._imgsz = int(imgsz)
 
     def detect(self, image: np.ndarray) -> list[Detection]:
         """Run inference on a perspective-corrected board image."""
         return dedup_detections(self.backend_impl.detect(image, self.confidence_threshold, self.iou_threshold))
+
+    def detect_observed(self, image: np.ndarray) -> tuple[list[Detection], list[Detection]]:
+        """One inference returning (boxes after model NMS, boxes after business dedup); the second equals detect()."""
+        raw = self.backend_impl.detect(image, self.confidence_threshold, self.iou_threshold)
+        return list(raw), dedup_detections(raw)

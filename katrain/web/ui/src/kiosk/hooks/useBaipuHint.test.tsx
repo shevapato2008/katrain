@@ -46,7 +46,7 @@ beforeEach(() => { vi.useRealTimers(); quickAnalyze.mockReset(); quickAnalyze.mo
 describe('buildHintRequest', () => {
   it('只带前 k 步;setup 进 initial_stones;pass 记 pass;贴目与规则取谱', () => {
     const steps = [setup('B', 15, 3), mv('B', 3, 15), pass('W'), mv('B', 2, 2)];
-    expect(buildHintRequest(steps, 3, 19, { player_black: '', player_white: '', handicap: 0, komi: 6.5, ruleset: 'japanese' }))
+    expect(buildHintRequest(steps, 3, 19, { player_black: '', player_white: '', result: '', handicap: 0, komi: 6.5, ruleset: 'japanese' }))
       .toEqual({
         moves: [['B', 'Q16'], ['W', 'pass']],
         initial_stones: [['B', 'D4']],

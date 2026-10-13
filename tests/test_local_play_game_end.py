@@ -91,7 +91,28 @@ def _owned_game(client, monkeypatch, *, game_type, board_mode, size=19, base=100
 
 
 def _move(client, sid, coords=None):
-    r = client.post("/api/move", json={"session_id": sid, "coords": coords, "pass_move": coords is None})
+    session = client.app.state.session_manager.get_session(sid)
+    if session.katrain.game_type == "pvp_local":
+        state = session.katrain.get_state()
+        ready = client.post(
+            "/api/local/ready", json={"session_id": sid, "expected_game_id": state["game_id"], "input": "screen"}
+        )
+        assert ready.status_code == 200, ready.text
+        r = client.post(
+            "/api/local/confirm",
+            json={
+                "session_id": sid,
+                "expected_game_id": state["game_id"],
+                "expected_node_id": state["current_node_id"],
+                "color": state["player_to_move"],
+                "request_id": f"move-{state['current_node_id']}",
+                "input": "screen",
+                "action": "pass" if coords is None else "move",
+                "coords": coords,
+            },
+        )
+    else:
+        r = client.post("/api/move", json={"session_id": sid, "coords": coords, "pass_move": coords is None})
     assert r.status_code == 200, r.text
     return r.json()["state"]
 
@@ -342,6 +363,8 @@ def test_free_game_ended_by_a_pass_outside_api_move_is_recordable(client, monkey
     _move(client, sid)  # 人（白）停一手
     with session.lock:  # 「AI」（黑）停一手，走的是 genmove 线程那条路
         session.katrain.game.play(Move(None, player=session.katrain.game.current_node.next_player))
+        # The real generate_ai_move path records the two-pass terminal fact too.
+        session.katrain.game.record_two_pass_end(session.katrain.game.current_node)
     session.katrain.update_state()
     assert _recorded_results(client) == []  # 今天到这里为止就是没落账
     assert session.katrain.get_state()["awaiting_count"] is True

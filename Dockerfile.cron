@@ -9,4 +9,8 @@ COPY katrain/cron/ katrain/cron/
 # Ensure katrain is a package (needs __init__.py at katrain level)
 RUN touch katrain/__init__.py
 
+# Build identity for the admin config check (set by compose from `git rev-parse --short HEAD`).
+ARG KATRAIN_BUILD_SHA=unknown
+ENV KATRAIN_BUILD_SHA=${KATRAIN_BUILD_SHA}
+
 CMD ["python", "-m", "katrain.cron"]

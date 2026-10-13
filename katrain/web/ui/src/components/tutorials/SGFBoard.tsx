@@ -14,6 +14,8 @@ export interface SGFPayload {
 interface SGFBoardProps {
   payload: SGFPayload;
   maxMoveStep?: number;
+  /** Current explicitly numbered stone; absent for static, unnumbered diagrams. */
+  last?: [number, number] | null;
   showFullBoard?: boolean;
   onClick?: (col: number, row: number) => void;
   /** Override the SVG max width (default 500). Useful for kiosk thumbnails / large dialogs. */
@@ -22,6 +24,17 @@ interface SGFBoardProps {
   style?: React.CSSProperties;
   /** Optional className on the root <svg>. */
   className?: string;
+}
+
+/** Resolve an exact book move number only when a real stone occupies that point. */
+export function findNumberedStone(payload: SGFPayload | null | undefined, step: number | null): [number, number] | null {
+  if (!payload || step == null || step <= 0) return null;
+  for (const [col, row] of [...payload.stones.B, ...payload.stones.W]) {
+    const label = payload.labels?.[`${col},${row}`];
+    if (col >= 0 && row >= 0 && col < payload.size && row < payload.size
+      && label && /^\d+$/.test(label) && Number(label) === step) return [col, row];
+  }
+  return null;
 }
 
 const CELL = 32;
@@ -35,7 +48,7 @@ const HOSHI_19: [number, number][] = [
   [3, 15], [9, 15], [15, 15],
 ];
 
-export default function SGFBoard({ payload, maxMoveStep, showFullBoard, onClick, maxWidth, style, className }: SGFBoardProps) {
+export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, onClick, maxWidth, style, className }: SGFBoardProps) {
   const { size, stones, labels = {}, letters = {}, shapes = {}, highlights = [], viewport } = payload;
 
   // Viewport: support rectangular {col, row, cols, rows} and square {col, row, size}
@@ -193,6 +206,12 @@ export default function SGFBoard({ payload, maxMoveStep, showFullBoard, onClick,
       );
     });
 
+  const lastColor = last && inViewport(...last) && shouldShowStone(...last)
+    ? stones.B.some(([c, r]) => c === last[0] && r === last[1]) ? '#fff'
+      : stones.W.some(([c, r]) => c === last[0] && r === last[1]) ? '#000' : null
+    : null;
+  const lastPoint = lastColor && last ? toSvg(...last) : null;
+
   // Click grid (when onClick is provided)
   const clickGrid: React.ReactNode[] = [];
   if (onClick) {
@@ -230,6 +249,8 @@ export default function SGFBoard({ payload, maxMoveStep, showFullBoard, onClick,
       {letterEls}
       {shapeEls}
       {labelEls}
+      {lastPoint && <circle data-testid="tutorial-last-move" cx={lastPoint.x} cy={lastPoint.y}
+        r={STONE_R * 0.82} fill="none" stroke={lastColor!} strokeWidth={1.5} pointerEvents="none" />}
       {clickGrid}
     </svg>
   );

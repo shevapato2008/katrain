@@ -1,0 +1,213 @@
+{
+  "status": "producer-pending-independent-review",
+  "producer_id": "/root/event10_review_apply",
+  "producer_model": "gpt-6-astra",
+  "reasoning_effort": "max",
+  "produced_at": "2026-10-05T10:39:21.492289+00:00",
+  "database_writes": false,
+  "event_ids": [
+    47,
+    63,
+    67,
+    56,
+    97
+  ],
+  "languages": [
+    "cn",
+    "tw",
+    "jp",
+    "ko",
+    "en"
+  ],
+  "candidate_count": 25,
+  "conventional_count": 11,
+  "translated_count": 14,
+  "targets": {
+    "TEST": {
+      "captured_at": "2026-10-05T10:31:20.984955+00:00",
+      "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+      "catalog_sha256": "f2e4d322966039cd8fba4dba45dad952b9f2f24611c633ebc5c61384945b7079",
+      "catalog_hash_basis_capture": "/tmp/kifu-event-next-high5-20261005/TEST/current.json",
+      "bundle_sha256": "de8aea95ce8a731aaa5b68e18b57f41d323412c277ebb8cd440390c2f82c1491",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "47": {
+          "event_id": 47,
+          "linked_rows": 665,
+          "unique_games": 665,
+          "visible_unique_games": 665
+        },
+        "63": {
+          "event_id": 63,
+          "linked_rows": 619,
+          "unique_games": 619,
+          "visible_unique_games": 619
+        },
+        "67": {
+          "event_id": 67,
+          "linked_rows": 587,
+          "unique_games": 587,
+          "visible_unique_games": 587
+        },
+        "56": {
+          "event_id": 56,
+          "linked_rows": 578,
+          "unique_games": 578,
+          "visible_unique_games": 578
+        },
+        "97": {
+          "event_id": 97,
+          "linked_rows": 561,
+          "unique_games": 561,
+          "visible_unique_games": 561
+        }
+      },
+      "unique_visible_games": 3010
+    },
+    "PROD": {
+      "captured_at": "2026-10-05T10:31:19.829316+00:00",
+      "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+      "catalog_sha256": "03cca482ef1dc3e52a109ed0a758e1fdc3f7c4a3dc061aa433b3def1e07df1a4",
+      "catalog_hash_basis_capture": "/tmp/kifu-event-next-high5-20261005/PROD/current.json",
+      "bundle_sha256": "6c2f6a16cf24d3951d939467881cdb88ca7b9b84057556219d3ac04f7ccda636",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "47": {
+          "event_id": 47,
+          "linked_rows": 665,
+          "unique_games": 665,
+          "visible_unique_games": 665
+        },
+        "63": {
+          "event_id": 63,
+          "linked_rows": 619,
+          "unique_games": 619,
+          "visible_unique_games": 619
+        },
+        "67": {
+          "event_id": 67,
+          "linked_rows": 587,
+          "unique_games": 587,
+          "visible_unique_games": 587
+        },
+        "56": {
+          "event_id": 56,
+          "linked_rows": 578,
+          "unique_games": 578,
+          "visible_unique_games": 578
+        },
+        "97": {
+          "event_id": 97,
+          "linked_rows": 561,
+          "unique_games": 561,
+          "visible_unique_games": 561
+        }
+      },
+      "unique_visible_games": 3010
+    }
+  },
+  "events": [
+    {
+      "event_id": 47,
+      "canonical_name": "韩国国手战",
+      "unique_visible_games": 665,
+      "names": {
+        "cn": "韩国国手战",
+        "tw": "韓國國手戰",
+        "jp": "韓国国手戦",
+        "ko": "국수전",
+        "en": "Guksu"
+      }
+    },
+    {
+      "event_id": 63,
+      "canonical_name": "日本关西棋院第一位决定战",
+      "unique_visible_games": 619,
+      "names": {
+        "cn": "日本关西棋院第一位决定战",
+        "tw": "日本關西棋院第一位決定戰",
+        "jp": "関西棋院第一位決定戦",
+        "ko": "간사이기원 제1위 결정전",
+        "en": "Kansai Ki-in First Place Tournament"
+      }
+    },
+    {
+      "event_id": 67,
+      "canonical_name": "春兰杯世界职业围棋锦标赛",
+      "unique_visible_games": 587,
+      "names": {
+        "cn": "春兰杯世界职业围棋锦标赛",
+        "tw": "春蘭杯世界職業圍棋錦標賽",
+        "jp": "春蘭杯世界囲碁選手権",
+        "ko": "춘란배 세계프로바둑선수권대회",
+        "en": "Chunlan Cup"
+      }
+    },
+    {
+      "event_id": 56,
+      "canonical_name": "台湾中环碁圣赛",
+      "unique_visible_games": 578,
+      "names": {
+        "cn": "中环碁圣赛",
+        "tw": "中環碁聖賽",
+        "jp": "台湾中環碁聖戦",
+        "ko": "중환기성전",
+        "en": "CMC Gosei Championship"
+      }
+    },
+    {
+      "event_id": 97,
+      "canonical_name": "衢州烂柯杯中国围棋冠军赛",
+      "unique_visible_games": 561,
+      "names": {
+        "cn": "衢州烂柯杯中国围棋冠军赛",
+        "tw": "衢州爛柯盃中國圍棋冠軍賽",
+        "jp": "衢州爛柯杯中国囲碁チャンピオン戦",
+        "ko": "취저우 란커배 중국바둑선수권대회",
+        "en": "Quzhou Lanke Cup Chinese Go Championship"
+      }
+    }
+  ],
+  "translation_notes": {
+    "47-cn": "Render 국수전 (國手戰) as 国手战, adding 韩国 to distinguish this historical Korean title from the Taiwanese Guoshou and other national events.",
+    "47-tw": "Render 국수전 as 國手戰 in Traditional Chinese, preserving explicit 韓國 country scope.",
+    "47-jp": "Render 국수전 as 国手戦 in Japanese and add 韓国 to distinguish the Korean competition.",
+    "63-cn": "Render 関西棋院第一位決定戦 in Simplified Chinese as 关西棋院第一位决定战 and add 日本 country context; preserve first-place decision tournament scope.",
+    "63-tw": "Render 関西棋院第一位決定戦 as 關西棋院第一位決定戰 in Traditional Chinese, adding 日本 country context.",
+    "63-ko": "Render 関西棋院 as 간사이기원 and 第一位決定戦 as 제1위 결정전. Preserve the Kansai Ki-in competition rather than the Nihon Ki-in or All-Japan first-place events.",
+    "63-en": "Retain the institution's name Kansai Ki-in and translate 第一位決定戦 as First Place Tournament. This explicit translation does not claim published use or the broader Kansai Ki-in Championship identity.",
+    "67-ko": "Render 春兰杯世界职业围棋锦标赛 as 춘란배 세계프로바둑선수권대회, preserving sponsor, world, professional, Go and championship scope.",
+    "56-cn": "Convert 中環碁聖賽 into Simplified Chinese 中环碁圣赛; retain 碁 as part of this proper title. This is the newly numbered event from 2013.",
+    "56-jp": "Render 中環碁聖賽 as 中環碁聖戦 in Japanese, adding 台湾 to distinguish it from Japanese Gosei and from the former international CMC Cup.",
+    "97-tw": "Render the official domestic 衢州烂柯杯中国围棋冠军赛 in Traditional Chinese as 衢州爛柯盃中國圍棋冠軍賽; keep 中國 and 冠軍賽 to distinguish the later world Lanke event.",
+    "97-jp": "Render the domestic Chinese championship as 衢州爛柯杯中国囲碁チャンピオン戦. Preserve the title's Chinese championship scope without introducing a world championship claim.",
+    "97-ko": "Render the domestic championship as 취저우 란커배 중국바둑선수권대회, retaining Quzhou/Lanke and Chinese Go championship scope; this is not the world Lanke Cup.",
+    "97-en": "Render 衢州烂柯杯中国围棋冠军赛 as Quzhou Lanke Cup Chinese Go Championship. Chinese Go Championship explicitly distinguishes this domestic event from the World Go Open launched in 2023."
+  },
+  "scope_note": "Names and evidence for existing event types only. No album links, owners, aliases or raw EV text change. Existing type identity/linked rows are reused.",
+  "reader_note": "Existing strict display reads approved type names. Generic raw EV year/edition/round decoration is not added by this data batch."
+}

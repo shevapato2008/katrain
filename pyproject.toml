@@ -53,6 +53,7 @@ web = [
     # the last passlib-compatible bcrypt so login/register works.
     "bcrypt>=4.0.1,<4.1",
     "httpx>=0.28.1",
+    "sgfmill>=1.1.1",
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.0",
     "alembic>=1.13.0",

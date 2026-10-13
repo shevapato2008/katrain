@@ -312,3 +312,47 @@ html, body, #root { margin:0; min-height:100%; }
 .admin-app-tutorial .admin-sourcebtn { font-size:17px; }
 .admin-app-tutorial .admin-copy,
 .admin-app-tutorial .admin-editcopy { font-size:18px; }
+
+/* Status tones and hover feedback shared by every admin page. */
+.admin-app {
+  --admin-ok:#b6d7c4; --admin-ok-bg:#22362d; --admin-bad:#ffbeb9; --admin-bad-bg:#4b2a2b;
+  --admin-info:#a5bdd9; --admin-info-bg:#263849;
+  --admin-hover:#34302e; --admin-hover-line:#8a6a58; --admin-accent-hover:#e8a97f;
+}
+@media (prefers-color-scheme:light) {
+  .admin-app {
+    --admin-ok:#285d55; --admin-ok-bg:#e3f2ea; --admin-bad:#9b3339; --admin-bad-bg:#fce8e8;
+    --admin-info:#285d91; --admin-info-bg:#e5effb;
+    --admin-hover:#e2ebf7; --admin-hover-line:#7e9cc4; --admin-accent-hover:#244d7c;
+  }
+}
+
+/* Sidebar: plain buttons plus the collapsible vision-lab group. */
+.admin-side .admin-nav { width:100%; border:0; background:transparent; text-align:left; }
+.admin-side .admin-nav.active { background:var(--admin-active); }
+.admin-nav-chev { margin-left:auto; transition:transform .15s; }
+.admin-nav-badge { margin-left:auto; min-width:22px; height:22px; padding:0 7px; border-radius:99px; background:var(--admin-bad-bg); color:var(--admin-bad); font:13px/22px ui-monospace,Menlo,monospace; text-align:center; }
+.admin-nav[aria-expanded="true"] .admin-nav-chev { transform:rotate(90deg); }
+.admin-subnav { display:grid; gap:2px; margin:2px 0 6px 30px; padding-left:12px; border-left:1px solid var(--admin-line); }
+.admin-subnav button { display:flex; align-items:center; gap:9px; min-height:44px; padding:6px 12px; border:0; border-radius:7px; background:transparent; color:var(--admin-muted); font-size:17px; text-align:left; }
+.admin-subnav button[aria-current="page"] { background:var(--admin-active); color:var(--admin-active-text); }
+.admin-subnav button:disabled { cursor:not-allowed; color:var(--admin-subtle); }
+.admin-subnav b { display:inline-grid; place-items:center; flex:none; width:22px; height:22px; border:1px solid var(--admin-line); border-radius:50%; font-size:13px; font-weight:400; }
+.admin-subnav button[aria-current="page"] b { background:var(--admin-accent); border-color:var(--admin-accent); color:var(--admin-on-accent); }
+
+/* Hover: every clickable surface lights up before it is pressed. */
+.admin-app :is(button, select, .lab-tab, .admin-nav, label.lab-check) { transition:background-color .12s, border-color .12s, color .12s; }
+.admin-side .admin-nav:not(.active):hover { background:var(--admin-hover); color:var(--admin-text); }
+.admin-side .admin-nav.active:hover { filter:brightness(1.08); }
+.admin-subnav button:not([aria-current="page"]):not(:disabled):hover { background:var(--admin-hover); color:var(--admin-text); }
+.admin-topright button:hover { color:var(--admin-accent-hover); text-decoration:underline; text-underline-offset:4px; }
+.admin-app :is(.lab-btn, .admin-action, .admin-tool, .admin-sourcebtn, .cp-kifu, .cp-sample):not(:disabled):hover { background:var(--admin-hover); border-color:var(--admin-hover-line); color:var(--admin-text); }
+.admin-app :is(.lab-btn.primary, .admin-action.primary, .admin-tool.on):not(:disabled):hover { background:var(--admin-accent-hover); border-color:var(--admin-accent-hover); color:var(--admin-on-accent); }
+.admin-app .cp-kifu[aria-selected="true"]:not(:disabled):hover { background:var(--admin-active); color:var(--admin-active-text); }
+.admin-app :is(.admin-pager button, .admin-back):not(:disabled):hover { background:var(--admin-hover); border-radius:6px; color:var(--admin-accent); }
+.admin-app .lab-tab:hover { background:var(--admin-hover); color:var(--admin-text); }
+.admin-app .lab-seg button:not(:disabled):not([aria-pressed="true"]):hover { background:var(--admin-hover); color:var(--admin-text); }
+.admin-app .lab-seg button[aria-pressed="true"]:not(:disabled):hover { background:var(--admin-accent-hover); }
+.admin-app :is(select, input:not([type="checkbox"]):not([type="range"])):not(:disabled):hover { border-color:var(--admin-hover-line); }
+.admin-app label.lab-check:hover { color:var(--admin-text); }
+@media (prefers-reduced-motion:reduce) { .admin-app * { transition:none !important; } }

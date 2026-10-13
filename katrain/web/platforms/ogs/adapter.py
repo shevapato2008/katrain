@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+import asyncio
 import time
-from typing import Optional
+from dataclasses import dataclass, replace
+from typing import Callable, Optional
 
 from katrain.web.platforms.base import PlatformAdapter
 from katrain.web.platforms.coords import katrain_to_sgf, sgf_to_katrain
@@ -15,6 +17,7 @@ from katrain.web.platforms.models import (
     PlatformChallenge,
     PlatformCredentials,
     PlatformGameSession,
+    PlatformGameSnapshot,
     PlatformMove,
     TimeControl,
 )
@@ -22,6 +25,28 @@ from katrain.web.platforms.ogs.realtime_client import OGSRealtimeClient
 from katrain.web.platforms.ogs.rest_client import OGSRestClient
 
 logger = logging.getLogger("katrain_web")
+FINAL_RESULT_RETRY_DELAYS = (0.5, 1.0, 2.0)
+
+
+@dataclass
+class _PendingDirectChallenge:
+    game_id: int
+    on_gamedata: Callable
+    task: Optional[asyncio.Task] = None
+
+
+def ogs_to_core(col: int, row: int, size: int) -> tuple[int, int]:
+    """OGS top-left coordinates to KaTrain core bottom-left coordinates."""
+    if type(col) is not int or type(row) is not int or not 0 <= col < size or not 0 <= row < size:
+        raise ValueError("OGS coordinate outside board")
+    return col, size - 1 - row
+
+
+def core_to_ogs(col: int, row: int, size: int) -> tuple[int, int]:
+    """KaTrain core bottom-left coordinates to OGS top-left coordinates."""
+    if type(col) is not int or type(row) is not int or not 0 <= col < size or not 0 <= row < size:
+        raise ValueError("KaTrain coordinate outside board")
+    return col, size - 1 - row
 
 
 def _parse_rank(ranking: float) -> tuple[str, float]:
@@ -39,10 +64,14 @@ def _parse_rank(ranking: float) -> tuple[str, float]:
 
 def _parse_time_control(tc: dict) -> TimeControl:
     """Parse OGS time control dict into our TimeControl model."""
-    system = tc.get("system", tc.get("time_control", "byoyomi"))
+    if not isinstance(tc, dict):
+        raise ValueError("OGS time control parameters are missing")
+    system = tc.get("system", tc.get("time_control"))
+    if system not in ("byoyomi", "fischer", "canadian", "absolute", "simple"):
+        raise ValueError("unsupported OGS time control")
     return TimeControl(
         system=system,
-        main_time=tc.get("main_time", 0),
+        main_time=tc.get("main_time", tc.get("initial_time", 0)),
         period_time=tc.get("period_time"),
         periods=tc.get("periods"),
         time_increment=tc.get("time_increment"),
@@ -79,12 +108,23 @@ class OGSAdapter(PlatformAdapter):
         self._rt: Optional[OGSRealtimeClient] = None
         self._active_game_id: Optional[int] = None
         self._game_data: dict[int, dict] = {}  # game_id -> gamedata
+        self._snapshots: dict[int, PlatformGameSnapshot] = {}
+        self._game_handlers: dict[int, list[tuple[str, object]]] = {}
+        self._game_locks: dict[int, asyncio.Lock] = {}
+        self._connecting_games: set[int] = set()
+        self._early_moves: dict[int, list[dict]] = {}
+        self._final_retry_tasks: dict[int, asyncio.Task] = {}
         self._automatch_uuid: Optional[str] = None
         self._seek_graph: dict[str, PlatformChallenge] = {}  # challenge_id -> challenge
+        self._seek_graph_ready = False
+        self._pending_challenges: dict[int, _PendingDirectChallenge] = {}
+        self._challenge_keepalive_interval = 1.0
 
     # --- Connection lifecycle ---
 
     async def connect(self, credentials: PlatformCredentials) -> bool:
+        self._seek_graph.clear()
+        self._seek_graph_ready = False
         try:
             # Try token-based reconnection first
             if "user_jwt" in credentials.auth_data and credentials.auth_data.get("user_jwt"):
@@ -100,14 +140,15 @@ class OGSAdapter(PlatformAdapter):
 
             # Connect realtime
             self._rt = OGSRealtimeClient()
+            # Authenticate can deliver active_game immediately. Register
+            # before the socket starts receiving its first frame.
+            self._register_events()
             await self._rt.connect(
                 jwt=self._rest.user_jwt,
                 user_id=self._rest.user_id,
                 username=self._rest.username,
             )
 
-            # Register event handlers
-            self._register_events()
             self._connected = True
 
             # Subscribe to seek graph for open challenges
@@ -119,9 +160,21 @@ class OGSAdapter(PlatformAdapter):
             return True
         except Exception as e:
             logger.error(f"OGS connection failed: {e}")
+            if self._rt:
+                try:
+                    await self._rt.disconnect()
+                except Exception:
+                    logger.exception("OGS failed connection cleanup")
+                self._rt = None
+            self._connected = False
             return False
 
     async def disconnect(self) -> None:
+        for challenge_id in list(self._pending_challenges):
+            await self._stop_pending_challenge(challenge_id)
+        for task in self._final_retry_tasks.values():
+            task.cancel()
+        self._final_retry_tasks.clear()
         if self._rt:
             await self._rt.disconnect()
             self._rt = None
@@ -129,6 +182,12 @@ class OGSAdapter(PlatformAdapter):
         self._connected = False
         self._active_game_id = None
         self._game_data.clear()
+        self._snapshots.clear()
+        self._game_handlers.clear()
+        self._game_locks.clear()
+        self._early_moves.clear()
+        self._seek_graph.clear()
+        self._seek_graph_ready = False
 
     # --- Event registration ---
 
@@ -147,59 +206,29 @@ class OGSAdapter(PlatformAdapter):
 
     def _register_game_events(self, game_id: int) -> None:
         """Register event handlers for a specific game."""
-        self._rt.on(f"game/{game_id}/gamedata", lambda data: self._on_gamedata(game_id, data))
-        self._rt.on(f"game/{game_id}/move", lambda data: self._on_move(game_id, data))
-        self._rt.on(f"game/{game_id}/clock", lambda data: self._on_clock(game_id, data))
-        self._rt.on(f"game/{game_id}/phase", lambda data: self._on_phase(game_id, data))
+        if game_id in self._game_handlers:
+            return
+        handlers = [
+            (f"game/{game_id}/gamedata", lambda data: self._on_gamedata(game_id, data)),
+            (f"game/{game_id}/move", lambda data: self._on_move(game_id, data)),
+            (f"game/{game_id}/clock", lambda data: self._on_clock(game_id, data)),
+            (f"game/{game_id}/phase", lambda data: self._on_phase(game_id, data)),
+        ]
+        for name, handler in handlers:
+            self._rt.on(name, handler)
+        self._game_handlers[game_id] = handlers
+
+    def _unregister_game_events(self, game_id: int) -> None:
+        for name, handler in self._game_handlers.pop(game_id, []):
+            self._rt.off(name, handler)
 
     # --- Lobby ---
 
     async def get_open_challenges(self) -> list[PlatformChallenge]:
-        """Return open challenges. Uses WebSocket seek graph cache, falls back to REST API."""
-        if self._seek_graph:
-            return list(self._seek_graph.values())
-
-        # Fallback: fetch via REST when seek graph cache is empty
-        try:
-            raw_challenges = await self._rest.get_open_challenges(page_size=50)
-            challenges = []
-            for ch in raw_challenges:
-                parsed = self._parse_rest_challenge(ch)
-                if parsed:
-                    challenges.append(parsed)
-            logger.debug(f"OGS REST fallback: {len(challenges)} open challenges")
-            return challenges
-        except Exception as e:
-            logger.warning(f"Failed to fetch OGS challenges via REST: {e}")
-            return []
-
-    def _parse_rest_challenge(self, ch: dict) -> Optional[PlatformChallenge]:
-        """Parse an OGS REST /api/v1/challenges/ entry into PlatformChallenge."""
-        try:
-            challenger = ch.get("challenger", {})
-            rank_str, rank_num = _parse_rank(challenger.get("ranking", 15))
-            game = ch.get("game", {})
-            tc = _parse_time_control(game.get("time_control_parameters", {}))
-            return PlatformChallenge(
-                platform="ogs",
-                challenge_id=str(ch.get("id", "")),
-                from_user=OnlineUser(
-                    platform="ogs",
-                    user_id=str(challenger.get("id", "")),
-                    username=challenger.get("username", "?"),
-                    rank=rank_str,
-                    rank_numeric=rank_num,
-                ),
-                board_size=game.get("width", 19),
-                time_control=tc,
-                rules=game.get("rules", "chinese"),
-                ranked=game.get("ranked", False),
-                handicap=game.get("handicap", 0),
-                komi=game.get("komi"),
-            )
-        except Exception as e:
-            logger.debug(f"Failed to parse REST challenge: {e}")
-            return None
+        """Return verified real-time seeks after the initial WebSocket snapshot."""
+        if not self._seek_graph_ready:
+            raise RuntimeError("OGS seek graph snapshot is not available")
+        return list(self._seek_graph.values())
 
     async def get_online_users(self, room: Optional[str] = None) -> list[OnlineUser]:
         """Fetch online players via OGS REST API (active game players)."""
@@ -227,15 +256,80 @@ class OGSAdapter(PlatformAdapter):
 
     async def send_challenge(self, user_id: str, settings: dict) -> str:
         challenge_id, game_id = await self._rest.challenge_player(int(user_id), settings)
+        if type(challenge_id) is not int or challenge_id <= 0 or type(game_id) is not int or game_id <= 0:
+            raise ValueError("OGS direct challenge has no verified challenge and game ids")
+        if self._rt is None:
+            raise RuntimeError("OGS realtime is not connected")
+
+        async def on_gamedata(_data):
+            # If active-game restoration already owns this subscription, do not
+            # disconnect the live game just to end the challenge wait.
+            await self._stop_pending_challenge(challenge_id, disconnect_game=game_id not in self._game_handlers)
+            await self._on_active_game({"id": game_id})
+
+        pending = _PendingDirectChallenge(game_id, on_gamedata)
+        self._pending_challenges[challenge_id] = pending
+        event = f"game/{game_id}/gamedata"
+        self._rt.on(event, on_gamedata)
+        try:
+            await self._rt.game_connect(game_id)
+            if challenge_id in self._pending_challenges:
+                pending.task = asyncio.create_task(self._keep_pending_challenge(challenge_id, game_id))
+        except Exception:
+            await self._stop_pending_challenge(challenge_id)
+            try:
+                await self._rest.decline_challenge(challenge_id)
+            except Exception:
+                logger.exception("OGS could not cancel direct challenge %s after subscription failure", challenge_id)
+            raise
         return str(challenge_id)
 
+    def pending_direct_challenge_id(self) -> Optional[str]:
+        """Current outgoing invitation owned by this adapter connection."""
+        challenge_id = next(iter(self._pending_challenges), None)
+        return str(challenge_id) if challenge_id is not None else None
+
+    async def _keep_pending_challenge(self, challenge_id: int, game_id: int) -> None:
+        try:
+            while challenge_id in self._pending_challenges:
+                await asyncio.sleep(self._challenge_keepalive_interval)
+                if challenge_id in self._pending_challenges:
+                    await self._rt.challenge_keepalive(challenge_id, game_id)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("OGS direct challenge %s keepalive failed", challenge_id)
+            await self._stop_pending_challenge(challenge_id)
+
+    async def _stop_pending_challenge(self, challenge_id: int, *, disconnect_game: bool = True) -> None:
+        pending = self._pending_challenges.pop(challenge_id, None)
+        if pending is None or self._rt is None:
+            return
+        if pending.task is not None and pending.task is not asyncio.current_task():
+            pending.task.cancel()
+        self._rt.off(f"game/{pending.game_id}/gamedata", pending.on_gamedata)
+        if not disconnect_game:
+            return
+        try:
+            await self._rt.game_disconnect(pending.game_id)
+        except Exception:
+            logger.exception("OGS direct challenge %s disconnect failed", challenge_id)
+
     async def accept_challenge(self, challenge_id: str) -> PlatformGameSession:
-        data = await self._rest.accept_challenge(int(challenge_id))
-        game_id = data.get("game") or data.get("id")
+        # Public seek acceptance is a different endpoint from direct-invite
+        # acceptance. Its response need not contain a game id: retain the
+        # explicit game_id from the verified seek before posting.
+        challenge = self._seek_graph.get(str(challenge_id))
+        if challenge is None or not challenge.game_id or not challenge.game_id.isdecimal():
+            raise ValueError("OGS public challenge has no verified game id")
+        game_id = int(challenge.game_id)
+        await self._rest.accept_open_challenge(int(challenge_id))
         return await self._connect_to_game(game_id)
 
     async def decline_challenge(self, challenge_id: str) -> None:
-        await self._rest.decline_challenge(int(challenge_id))
+        numeric_id = int(challenge_id)
+        await self._rest.decline_challenge(numeric_id)
+        await self._stop_pending_challenge(numeric_id)
 
     async def create_open_challenge(self, settings: dict) -> str:
         # OGS open challenges are created via REST API
@@ -256,7 +350,9 @@ class OGSAdapter(PlatformAdapter):
     async def submit_move(self, game_id: str, col: int, row: int) -> bool:
         if not self._rt:
             return False
-        sgf_move = katrain_to_sgf(col, row)
+        snapshot = self.get_game_snapshot(game_id)
+        ogs_col, ogs_row = core_to_ogs(col, row, snapshot.board_size)
+        sgf_move = katrain_to_sgf(ogs_col, ogs_row)
         await self._rt.game_move(int(game_id), sgf_move)
         # OGS doesn't send explicit ACK — if the move is invalid, we get an error event.
         # For now, assume success. The gateway timeout handles failures.
@@ -273,7 +369,138 @@ class OGSAdapter(PlatformAdapter):
             await self._rt.game_resign(int(game_id))
 
     async def fetch_game_snapshot(self, game_id: str) -> dict:
-        return await self._rest.get_game(int(game_id))
+        try:
+            raw = self._normalize_rest_game(int(game_id), await self._rest.get_game(int(game_id)))
+            snapshot = self.parse_game_snapshot(int(game_id), raw)
+        except Exception:
+            cached = self._snapshots.get(int(game_id))
+            if cached is not None and cached.phase == GamePhase.FINISHED:
+                self._schedule_final_result_retry(int(game_id))
+            raise
+        previous = self._snapshots.get(int(game_id))
+        if previous is not None and previous.phase == GamePhase.FINISHED and snapshot.phase != GamePhase.FINISHED:
+            raise ValueError("OGS REST snapshot regressed after finish")
+        if previous is not None and snapshot.move_number < previous.move_number:
+            raise ValueError("OGS REST snapshot lost confirmed moves")
+        self._game_data[int(game_id)] = raw
+        self._snapshots[int(game_id)] = snapshot
+        await self._emit("game_snapshot", str(game_id), snapshot)
+        result_emitted = False
+        if snapshot.phase == GamePhase.FINISHED:
+            result_emitted = await self._emit_finished_result(int(game_id), raw)
+            if not result_emitted:
+                self._schedule_final_result_retry(int(game_id))
+        return {"phase": snapshot.phase.value, "move_number": snapshot.move_number,
+                "result_emitted": result_emitted}
+
+    def get_game_snapshot(self, game_id: str) -> PlatformGameSnapshot:
+        try:
+            return self._snapshots[int(game_id)]
+        except (KeyError, ValueError) as exc:
+            raise RuntimeError("OGS authoritative game snapshot is unavailable") from exc
+
+    async def refresh_game_session(self, game_id: str) -> PlatformGameSession:
+        """Verify the remote board and account seat before a local resume."""
+        await self.fetch_game_snapshot(game_id)
+        return self._session_from_game_data(int(game_id), self._game_data[int(game_id)])
+
+    def parse_game_snapshot(self, game_id: int, data: dict) -> PlatformGameSnapshot:
+        """Decode the documented Goban shape; unknown shapes stop play."""
+        if not isinstance(data, dict):
+            raise ValueError("invalid OGS game snapshot")
+        if "gamedata" in data:
+            data = self._normalize_rest_game(game_id, data)
+        size = data.get("width")
+        if type(size) is not int or size not in self.supported_board_sizes or data.get("height") != size:
+            raise ValueError("unsupported OGS board dimensions")
+        phase = {"play": GamePhase.PLAYING, "stone removal": GamePhase.SCORING,
+                 "finished": GamePhase.FINISHED}.get(data.get("phase"))
+        if phase is None:
+            raise ValueError("unsupported OGS game phase")
+        initial = data.get("initial_state", {"black": "", "white": ""})
+        if not isinstance(initial, dict):
+            raise ValueError("invalid OGS initial state")
+        setup = []
+        occupied = set()
+        for color, key in (("B", "black"), ("W", "white")):
+            encoded = initial.get(key, "")
+            if not isinstance(encoded, str) or len(encoded) % 2:
+                raise ValueError("invalid OGS initial state")
+            for i in range(0, len(encoded), 2):
+                pair = encoded[i:i + 2]
+                if not all("a" <= char <= "z" for char in pair):
+                    raise ValueError("invalid OGS initial coordinate")
+                point = ogs_to_core(ord(pair[0]) - 97, ord(pair[1]) - 97, size)
+                if point in occupied:
+                    raise ValueError("overlapping OGS setup stones")
+                occupied.add(point)
+                setup.append((color, *point))
+        handicap = data.get("handicap", 0)
+        if type(handicap) is not int or not 0 <= handicap <= 9:
+            raise ValueError("invalid OGS handicap")
+        if handicap >= 2 and len([stone for stone in setup if stone[0] == "B"]) < handicap:
+            raise ValueError("OGS handicap setup is incomplete")
+        raw_moves = data.get("moves")
+        if not isinstance(raw_moves, list):
+            raise ValueError("invalid OGS move history")
+        moves = []
+        first_color = "W" if handicap else "B"
+        for index, packed in enumerate(raw_moves, 1):
+            if isinstance(packed, list) and len(packed) >= 2:
+                x, y = packed[:2]
+                if len(packed) > 3 and packed[3] not in (None, 0):
+                    raise ValueError("unsupported edited OGS move")
+            elif isinstance(packed, dict) and "x" in packed and "y" in packed:
+                if packed.get("edited") or packed.get("player_update"):
+                    raise ValueError("unsupported edited OGS move")
+                x, y = packed["x"], packed["y"]
+            else:
+                raise ValueError("unsupported OGS move encoding")
+            if (x, y) == (-1, -1) and type(x) is int and type(y) is int:
+                col = row = -1
+            else:
+                col, row = ogs_to_core(x, y, size)
+            color = first_color if index % 2 else ("W" if first_color == "B" else "B")
+            moves.append(PlatformMove(col, row, color, index, str(game_id)))
+        return PlatformGameSnapshot(str(game_id), size, tuple(setup), tuple(moves), phase)
+
+    @staticmethod
+    def _normalize_rest_game(game_id: int, raw: dict) -> dict:
+        """REST envelope has metadata outside, live history inside gamedata."""
+        if not isinstance(raw, dict):
+            raise ValueError("invalid OGS REST game")
+        inner = raw.get("gamedata")
+        if inner is None:
+            return raw  # game/connect's already-flat test/source shape
+        if not isinstance(inner, dict):
+            raise ValueError("invalid OGS gamedata")
+        for source in (raw, inner):
+            for key in ("id", "game_id"):
+                if source.get(key) is not None and str(source[key]) != str(game_id):
+                    raise ValueError("OGS game identity mismatch")
+        for key in ("width", "height"):
+            if key in raw and key in inner and raw[key] != inner[key]:
+                raise ValueError("OGS game board mismatch")
+        outer_players, inner_players = raw.get("players"), inner.get("players")
+        if isinstance(outer_players, dict) and isinstance(inner_players, dict):
+            for color in ("black", "white"):
+                outer_seat = outer_players.get(color)
+                inner_seat = inner_players.get(color)
+                if isinstance(outer_seat, dict) and isinstance(inner_seat, dict):
+                    if str(outer_seat.get("id")) != str(inner_seat.get("id")):
+                        raise ValueError("OGS player seat mismatch")
+        if "phase" not in inner or "moves" not in inner:
+            raise ValueError("OGS REST gamedata has no complete history")
+        merged = {**raw, **inner, "players": outer_players or inner_players,
+                  "width": raw.get("width", inner.get("width")),
+                  "height": raw.get("height", inner.get("height"))}
+        merged.pop("gamedata", None)
+        # REST's outer envelope may carry a stale outcome while its nested
+        # gamedata is still being finalized. Only inner result fields count.
+        for field in ("winner", "outcome"):
+            if field not in inner:
+                merged.pop(field, None)
+        return merged
 
     async def submit_scoring_action(self, game_id: str, action: dict) -> bool:
         if not self._rt:
@@ -282,33 +509,121 @@ class OGSAdapter(PlatformAdapter):
             stones = action.get("stones", "")
             await self._rt.game_removed_stones_accept(int(game_id), stones)
             return True
+        if action.get("action") == "reject":
+            await self._rt.game_removed_stones_reject(int(game_id))
+            return True
         return False
 
     # --- Internal: connect to a game ---
 
     async def _connect_to_game(self, game_id: int) -> PlatformGameSession:
         """Connect to an OGS game and return a PlatformGameSession."""
+        if type(game_id) is not int or game_id <= 0:
+            raise ValueError("invalid OGS game id")
+        async with self._game_locks.setdefault(game_id, asyncio.Lock()):
+            if game_id in self._snapshots:
+                return self._session_from_game_data(game_id, self._game_data[game_id])
+            self._connecting_games.add(game_id)
+            try:
+                return await self._connect_to_game_once(game_id)
+            except Exception:
+                if self._rt is not None:
+                    disconnect = getattr(self._rt, "game_disconnect", None)
+                    if disconnect is not None:
+                        try:
+                            await disconnect(game_id)
+                        except Exception:
+                            logger.exception("OGS game disconnect after failed validation")
+                    self._unregister_game_events(game_id)
+                self._game_data.pop(game_id, None)
+                self._snapshots.pop(game_id, None)
+                self._early_moves.pop(game_id, None)
+                raise
+            finally:
+                self._connecting_games.discard(game_id)
+
+    async def _connect_to_game_once(self, game_id: int) -> PlatformGameSession:
+        # Subscribe first so a move between subscription and REST snapshot is
+        # available for later reconciliation. Do not publish a local seat until
+        # the REST identity is validated; missing/mismatched IDs cannot become White.
         self._register_game_events(game_id)
         await self._rt.game_connect(game_id)
+        game_data = self._normalize_rest_game(game_id, await self._rest.get_game(game_id))
+        width, height = game_data.get("width"), game_data.get("height")
+        if type(width) is not int or type(height) is not int or width != height or width not in self.supported_board_sizes:
+            raise ValueError("unsupported OGS board dimensions")
+        self._verified_seats(game_data)
 
-        # Fetch game data via REST for initial state
-        game_data = await self._rest.get_game(game_id)
-        self._game_data[game_id] = game_data
+        # A gamedata/move event can arrive while REST is in flight. Keep that
+        # early payload for the snapshot bridge to reconcile instead of erasing
+        # it with the REST response. Seat and board metadata remain the
+        # validated REST values, even if an early event includes stale fields.
+        early_data = self._game_data.get(game_id, {})
+        self._game_data[game_id] = {
+            **game_data,
+            **early_data,
+            "players": game_data["players"],
+            "width": width,
+            "height": height,
+            "handicap": game_data.get("handicap", 0),
+        }
+        # The REST response was fetched after subscribing. If a full gamedata
+        # callback won the race, keep whichever complete history is newer.
+        rest_snapshot = self.parse_game_snapshot(game_id, game_data)
+        if early_data:
+            early_snapshot = self.parse_game_snapshot(game_id, self._game_data[game_id])
+            if early_snapshot.move_number < rest_snapshot.move_number:
+                self._game_data[game_id] = game_data
+                snapshot = rest_snapshot
+            else:
+                snapshot = early_snapshot
+        else:
+            snapshot = rest_snapshot
+        self._snapshots[game_id] = snapshot
+        early_moves = self._early_moves.pop(game_id, [])
+        if early_moves:
+            # A delta raced the REST response. A fresh authoritative read is
+            # simpler and safer than replaying potentially duplicated events.
+            fresh = self._normalize_rest_game(game_id, await self._rest.get_game(game_id))
+            fresh_snapshot = self.parse_game_snapshot(game_id, fresh)
+            for event in early_moves:
+                number = event["move_number"]
+                if number > fresh_snapshot.move_number:
+                    raise RuntimeError("early OGS move missing from authoritative snapshot")
+                candidate_raw = {**fresh, "moves": [*fresh["moves"][:number - 1], event["move"]]}
+                candidate = self.parse_game_snapshot(game_id, candidate_raw).moves[-1]
+                if candidate != fresh_snapshot.moves[number - 1]:
+                    raise RuntimeError("early OGS move conflicts with authoritative snapshot")
+            if fresh_snapshot.move_number < snapshot.move_number:
+                raise RuntimeError("OGS authoritative snapshot regressed during connection")
+            snapshot = fresh_snapshot
+            self._game_data[game_id] = fresh
+            self._snapshots[game_id] = snapshot
         self._active_game_id = game_id
+        return self._session_from_game_data(game_id, game_data)
 
-        # Determine our color
-        players = game_data.get("players", {})
-        black_id = players.get("black", {}).get("id")
-        my_color = "B" if black_id == self._rest.user_id else "W"
-        opponent_data = players.get("white" if my_color == "B" else "black", {})
+    def _verified_seats(self, game_data: dict) -> tuple[str, dict]:
+        players = game_data.get("players")
+        if not isinstance(players, dict):
+            raise ValueError("OGS game has no verified seats")
+        black, white = players.get("black"), players.get("white")
+        if not isinstance(black, dict) or not isinstance(white, dict):
+            raise ValueError("OGS game has no verified seats")
+        black_id, white_id, owner_id = black.get("id"), white.get("id"), self._rest.user_id
+        if any(type(value) not in (int, str) or not str(value).strip() for value in (black_id, white_id, owner_id)):
+            raise ValueError("OGS game has no verified seats")
+        if str(black_id) == str(white_id) or str(owner_id) not in (str(black_id), str(white_id)):
+            raise ValueError("OGS game is not seated for this account")
+        my_color = "B" if str(owner_id) == str(black_id) else "W"
+        return my_color, white if my_color == "B" else black
+
+    def _session_from_game_data(self, game_id: int, game_data: dict) -> PlatformGameSession:
+        my_color, opponent_data = self._verified_seats(game_data)
         opp_rank, opp_rank_num = _parse_rank(opponent_data.get("ranking", 15))
-
-        tc = _parse_time_control(game_data.get("time_control", {}))
-
         return PlatformGameSession(
             platform="ogs",
             game_id=str(game_id),
-            board_size=game_data.get("width", 19),
+            board_size=game_data["width"],
             my_color=my_color,
             opponent=OnlineUser(
                 platform="ogs",
@@ -317,7 +632,7 @@ class OGSAdapter(PlatformAdapter):
                 rank=opp_rank,
                 rank_numeric=opp_rank_num,
             ),
-            time_control=tc,
+            time_control=_parse_time_control(game_data.get("time_control", {})),
             rules=game_data.get("rules", "chinese"),
             ranked=game_data.get("ranked", False),
             handicap=game_data.get("handicap", 0),
@@ -329,8 +644,14 @@ class OGSAdapter(PlatformAdapter):
     async def _on_active_game(self, data) -> None:
         """Received active game notification."""
         if data and isinstance(data, dict):
-            game_id = data.get("id")
-            logger.debug(f"OGS active_game: {game_id}")
+            game_id = data.get("id", data.get("game_id"))
+            if type(game_id) is not int or game_id <= 0:
+                return
+            try:
+                session = await self._connect_to_game(game_id)
+                await self._emit("game_started", session)
+            except Exception:
+                logger.exception("Could not restore OGS active game %s", game_id)
 
     async def _on_notification(self, data) -> None:
         """Received a notification (may be a challenge)."""
@@ -339,6 +660,10 @@ class OGSAdapter(PlatformAdapter):
         ntype = data.get("type")
         if ntype == "challenge":
             await self._handle_challenge_notification(data)
+        elif ntype == "gameOfferRejected":
+            for challenge_id, pending in list(self._pending_challenges.items()):
+                if str(pending.game_id) == str(data.get("game_id")):
+                    await self._stop_pending_challenge(challenge_id)
 
     async def _handle_challenge_notification(self, data: dict) -> None:
         """Convert OGS challenge notification to PlatformChallenge."""
@@ -367,73 +692,61 @@ class OGSAdapter(PlatformAdapter):
         await self._emit("challenge_received", platform_challenge)
 
     async def _on_gamedata(self, game_id: int, data: dict) -> None:
-        """Full game state received (on game connect or state change).
-
-        OGS gamedata.moves is a flat list: [x1, y1, timedelta1, x2, y2, timedelta2, ...].
-        We convert to a list of [x, y] pairs for internal tracking.
-        """
-        # Parse the flat moves array into [col, row] pairs
-        raw_moves = data.get("moves", [])
-        parsed_moves = []
-        i = 0
-        while i + 1 < len(raw_moves):
-            parsed_moves.append([raw_moves[i], raw_moves[i + 1]])
-            i += 3  # skip timedelta (x, y, timedelta triplets)
-            if i > len(raw_moves):
-                i -= 1  # some formats may omit timedelta for last move
-                break
-        data["moves"] = parsed_moves
+        """Store a full authoritative game state without changing move shape."""
+        snapshot = self.parse_game_snapshot(game_id, data)
+        current = self._snapshots.get(game_id)
+        if current is not None and current.phase == GamePhase.FINISHED and snapshot.phase != GamePhase.FINISHED:
+            return
+        if current and snapshot.move_number < current.move_number:
+            return
         self._game_data[game_id] = data
-        logger.debug(f"OGS game/{game_id}/gamedata: phase={data.get('phase')}, moves={len(parsed_moves)}")
+        self._snapshots[game_id] = snapshot
+        await self._emit("game_snapshot", str(game_id), snapshot)
+        if snapshot.phase == GamePhase.FINISHED:
+            if not await self._emit_finished_result(game_id, data):
+                self._schedule_final_result_retry(game_id)
 
     async def _on_move(self, game_id: int, data) -> None:
         """Move received (both ours and opponent's). OGS sends all moves."""
-        if not data:
+        if not isinstance(data, dict) or str(data.get("game_id")) != str(game_id):
             return
-
-        # data can be [col, row, timedelta] or a dict with {move_number, move: [x,y,...]}
-        if isinstance(data, list):
-            col, row = data[0], data[1]
-        elif isinstance(data, dict):
-            move = data.get("move")
-            if isinstance(move, list):
-                col, row = move[0], move[1]
-            elif isinstance(move, str) and len(move) == 2:
-                col, row = sgf_to_katrain(move)
-            else:
-                return
-        else:
+        number = data.get("move_number")
+        if type(number) is not int or number <= 0:
             return
-
-        # Update internal move tracking
-        gamedata = self._game_data.get(game_id, {})
-        if "moves" not in gamedata:
-            gamedata["moves"] = []
-        moves = gamedata["moves"]
-        move_number = len(moves) + 1
-        moves.append([col, row])
-
-        # Determine color from move count + handicap
-        # OGS: with handicap > 0, black places handicap stones first, then white moves first.
-        # In the moves list from gamedata, handicap stones are NOT included — they're in initial_state.
-        # So moves[0] is always the first normal move: Black if handicap=0, White if handicap>0.
-        handicap = gamedata.get("handicap", 0)
-        if handicap > 0:
-            color = "W" if (move_number % 2 == 1) else "B"
-        else:
-            color = "B" if (move_number % 2 == 1) else "W"
-
-        # Check if this is our own move echoed back
-        players = gamedata.get("players", {})
-        black_id = players.get("black", {}).get("id")
-        my_color = "B" if black_id == self._rest.user_id else "W"
-
-        if color == my_color:
-            # Our own move echoed back — skip (already applied locally by gateway)
+        current = self._snapshots.get(game_id)
+        if current is None:
+            self._early_moves.setdefault(game_id, []).append(data)
             return
-
-        platform_move = PlatformMove(col=col, row=row, color=color, move_number=move_number, game_id=str(game_id))
+        if number != current.move_number + 1:
+            if number <= current.move_number:
+                try:
+                    candidate = self._decode_single_move(game_id, data, current, number)
+                except ValueError:
+                    candidate = None
+                if candidate == current.moves[number - 1]:
+                    return
+            await self.fetch_game_snapshot(str(game_id))
+            return
+        platform_move = self._decode_single_move(game_id, data, current, number)
+        raw = self._game_data.get(game_id)
+        if raw is None:
+            await self.fetch_game_snapshot(str(game_id))
+            return
+        raw["moves"] = [*raw["moves"], data["move"]]
+        next_snapshot = self.parse_game_snapshot(game_id, raw)
+        self._snapshots[game_id] = next_snapshot
+        # This includes our own echo. Only the manager may confirm/commit it.
         await self._emit("opponent_move", platform_move)
+
+    def _decode_single_move(self, game_id: int, data: dict, snapshot: PlatformGameSnapshot, number: int) -> PlatformMove:
+        raw = self._game_data.get(game_id)
+        if raw is None:
+            raise ValueError("missing OGS game context")
+        synthetic = {**raw, "moves": [*raw["moves"][:number - 1], data.get("move")]}
+        parsed = self.parse_game_snapshot(game_id, synthetic)
+        if parsed.move_number != number:
+            raise ValueError("invalid OGS move event")
+        return parsed.moves[-1]
 
     async def _on_clock(self, game_id: int, data: dict) -> None:
         """Clock update received."""
@@ -444,6 +757,7 @@ class OGSAdapter(PlatformAdapter):
         black_id = players.get("black", {}).get("id")
         my_color = "B" if black_id == self._rest.user_id else "W"
         clock = _parse_clock(data, my_color)
+        clock.game_id = str(game_id)
         await self._emit("clock_update", clock)
 
     async def _on_phase(self, game_id: int, data) -> None:
@@ -454,19 +768,67 @@ class OGSAdapter(PlatformAdapter):
             "stone removal": GamePhase.SCORING,
             "finished": GamePhase.FINISHED,
         }
-        phase = phase_map.get(phase_str, GamePhase.PLAYING)
+        phase = phase_map.get(phase_str)
+        if phase is None:
+            logger.warning("Unknown OGS game phase for %s: %r", game_id, phase_str)
+            return
+        current = self._snapshots.get(game_id)
+        if current is not None and current.phase == GamePhase.FINISHED and phase != GamePhase.FINISHED:
+            return
+        if current is not None:
+            self._snapshots[game_id] = replace(current, phase=phase)
         await self._emit("game_phase_changed", str(game_id), phase)
 
         if phase == GamePhase.FINISHED:
-            # Game ended — fetch final state from REST for accurate result
-            try:
-                final_data = await self._rest.get_game(game_id)
-                self._game_data[game_id] = final_data
-            except Exception:
-                final_data = self._game_data.get(game_id, {})
-            result = final_data.get("outcome", "?")
-            winner = final_data.get("winner", "?")
-            await self._emit("game_ended", str(game_id), result, str(winner))
+            # A phase event does not carry the winner. Never settle from stale
+            # in-memory gamedata if this authoritative read fails.
+            if not await self._read_finished_result(game_id):
+                self._schedule_final_result_retry(game_id)
+
+    async def _read_finished_result(self, game_id: int) -> bool:
+        try:
+            # fetch_game_snapshot emits the final board before game_ended. A
+            # phase frame may arrive after the last move while its move frame
+            # was lost, so settling directly from REST result would save a
+            # truncated local game tree.
+            state = await self.fetch_game_snapshot(str(game_id))
+        except Exception:
+            logger.warning("OGS final result fetch failed for game %s", game_id, exc_info=True)
+            return False
+        return bool(state["result_emitted"])
+
+    def _schedule_final_result_retry(self, game_id: int) -> None:
+        task = self._final_retry_tasks.get(game_id)
+        if task is not None and not task.done():
+            return
+        self._final_retry_tasks[game_id] = asyncio.create_task(self._retry_finished_result(game_id))
+
+    async def _retry_finished_result(self, game_id: int) -> None:
+        for delay in FINAL_RESULT_RETRY_DELAYS:
+            await asyncio.sleep(delay)
+            if await self._read_finished_result(game_id):
+                return
+        logger.error("OGS final result remains unavailable for game %s; waiting for a new frame/reconnect", game_id)
+
+    async def _emit_finished_result(self, game_id: int, data: dict) -> bool:
+        from katrain.web.platforms.ogs.results import parse_finished_result
+
+        try:
+            result = parse_finished_result(data)
+        except ValueError:
+            # A phase frame can race the REST result write. A later gamedata
+            # frame, snapshot fetch or reconnect will retry.
+            return False
+        winner = result[0] if result.startswith(("B+", "W+")) else ""
+        try:
+            await self._emit("game_ended", str(game_id), result, winner)
+        except Exception:
+            logger.exception("OGS final result could not be applied for game %s", game_id)
+            return False
+        task = self._final_retry_tasks.pop(game_id, None)
+        if task is not None and task is not asyncio.current_task():
+            task.cancel()
+        return True
 
     async def _on_net_pong(self, data: dict) -> None:
         """Latency measurement response."""
@@ -486,11 +848,11 @@ class OGSAdapter(PlatformAdapter):
         - New seek: [{seek_data}]
         - Game started: [{"game_started": true, ...}]
         """
-        if not data or not isinstance(data, list):
+        if not isinstance(data, list):
             return
 
-        # Distinguish initial snapshot (many entries) from incremental updates (1-2 entries)
-        is_snapshot = len(data) > 5
+        # The first event is the snapshot even when OGS has zero/few seeks.
+        is_snapshot = not self._seek_graph_ready
 
         if is_snapshot:
             self._seek_graph.clear()
@@ -525,6 +887,7 @@ class OGSAdapter(PlatformAdapter):
                     challenge = self._parse_seek(entry)
                     if challenge:
                         self._seek_graph[challenge.challenge_id] = challenge
+        self._seek_graph_ready = True
 
     def _parse_seek(self, seek: dict) -> Optional[PlatformChallenge]:
         """Parse an OGS seek graph entry into PlatformChallenge.
@@ -533,31 +896,46 @@ class OGSAdapter(PlatformAdapter):
         time_control is a STRING ("byoyomi"), time_control_parameters is the dict.
         """
         try:
+            width, height = seek.get("width"), seek.get("height")
+            public_game_id = seek.get("game_id")
+            tc_params = seek.get("time_control_parameters")
+            if (
+                type(public_game_id) not in (int, str) or
+                not str(public_game_id).isdecimal() or int(public_game_id) <= 0 or
+                type(width) is not int or width not in self.supported_board_sizes or
+                type(height) is not int or height != width or
+                seek.get("rengo") is not False or
+                seek.get("invite_only") is not False or
+                seek.get("private") is not False or
+                not isinstance(tc_params, dict) or
+                tc_params.get("speed") not in ("live", "rapid", "blitz")
+            ):
+                return None
             user = seek.get("user", seek)
-            rank_str, rank_num = _parse_rank(user.get("ranking", 15))
+            ranking = user.get("rank", user.get("ranking"))
+            if not isinstance(ranking, (int, float)) or isinstance(ranking, bool):
+                return None
+            rank_str, rank_num = _parse_rank(ranking)
             # time_control is a string in seek data; time_control_parameters is the dict
-            tc_params = seek.get("time_control_parameters", {})
-            if isinstance(tc_params, dict):
-                tc = _parse_time_control(tc_params)
-            else:
-                tc = TimeControl(system=str(seek.get("time_control", "byoyomi")), main_time=0)
+            tc = _parse_time_control(tc_params)
 
             return PlatformChallenge(
                 platform="ogs",
                 challenge_id=str(seek.get("challenge_id", seek.get("game_id", ""))),
                 from_user=OnlineUser(
                     platform="ogs",
-                    user_id=str(user.get("player_id", user.get("id", ""))),
+                    user_id=str(user.get("user_id", user.get("player_id", user.get("id", "")))),
                     username=user.get("username", "?"),
                     rank=rank_str,
                     rank_numeric=rank_num,
                 ),
-                board_size=seek.get("width", 19),
+                board_size=width,
                 time_control=tc,
                 rules=seek.get("rules", "chinese"),
                 ranked=seek.get("ranked", False),
                 handicap=seek.get("handicap", 0),
                 komi=seek.get("komi"),
+                game_id=str(public_game_id),
             )
         except Exception as e:
             logger.debug(f"Failed to parse seek: {e}")
@@ -577,13 +955,19 @@ class OGSAdapter(PlatformAdapter):
 
     async def _on_connection_lost_internal(self, data) -> None:
         """Internal connection lost handler."""
+        for challenge_id in list(self._pending_challenges):
+            await self._stop_pending_challenge(challenge_id)
         self._connected = False
+        self._seek_graph.clear()
+        self._seek_graph_ready = False
         await self._emit("connection_lost")
 
     async def _on_reconnected_internal(self, data) -> None:
-        """Internal reconnected handler — re-register game events and resync state."""
+        """Refresh each subscribed game after the socket has rejoined it."""
         self._connected = True
-        # Game events need re-registration since they were on the old WebSocket callback list
-        for game_id in list(self._game_data.keys()):
-            self._register_game_events(game_id)
         await self._emit("reconnected")
+        for game_id in list(self._game_handlers):
+            try:
+                await self.fetch_game_snapshot(str(game_id))
+            except Exception:
+                logger.exception("OGS snapshot resync failed for game %s", game_id)

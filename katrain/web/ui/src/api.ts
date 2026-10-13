@@ -1,3 +1,8 @@
+/** An absent or invalid membership count is unknown, never an estimate from sockets. */
+export function verifiedSpectatorCount(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
+}
+
 export interface PlayerInfo {
   player_type: string;
   player_subtype: string;
@@ -8,7 +13,26 @@ export interface PlayerInfo {
   main_time_used: number;
 }
 
-export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online';
+export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online' | 'pvp_lobby';
+
+export interface LocalConfirmationState {
+  enabled: boolean;
+  status: 'idle' | 'recognizing';
+  reason?: 'no_stone' | 'multiple_stones' | 'capture_remaining' | 'timeout' | 'illegal_move' | 'unavailable'
+    | 'frame_overexposed' | 'frame_underexposed' | null;
+  points?: { row: number; col: number }[];
+}
+
+export interface LocalConfirmRequest {
+  session_id: string;
+  expected_game_id: string;
+  expected_node_id: number;
+  color: 'B' | 'W';
+  request_id: string;
+  input: 'screen' | 'physical';
+  action: 'move' | 'pass';
+  coords: [number, number] | null;
+}
 
 export interface GameState {
   game_id: string;
@@ -62,6 +86,8 @@ export interface GameState {
     zen_mode: boolean;
   };
   sockets_count?: number;
+  /** Unique authenticated viewers excluding both player seats; absent on older servers. */
+  spectator_count?: number;
   timer?: {
     paused: boolean;
     main_time_used: number;
@@ -81,10 +107,12 @@ export interface GameState {
   language: string;
   count_min_moves?: number;
   /**
-   * 盒上模式、双方各停一手、这一局还没有结果 ⇒ 后端等前端来数子(v2-design §3.4)。
-   * 为真时 `/api/count/request` 跳过手数门槛。老服务端不带这个字段 ⇒ undefined ⇒ 不自动数。
+   * 双方各停一手、这一局还没有正式胜负时，允许 `/api/count/request` 跳过手数门槛。
+   * 本地局由客户端自动请求；大厅局由中央自动补分，失败时结合 `degraded` 开放重试。
    */
   awaiting_count?: boolean;
+  /** 大厅局双 pass 后中央自动补分失败；此时可手动重试数子。 */
+  degraded?: boolean;
   engine?: "local" | "cloud";
   trainer_settings?: {
     eval_thresholds: number[];
@@ -100,6 +128,7 @@ export interface GameState {
     max_visits?: number;
   };
   game_type?: GameType;
+  local_confirmation?: LocalConfirmationState;
   analysis_allowed?: boolean;
   /**
    * 服务端这一局**交付不交付**分析结果。与 `analysis_allowed` 是两件事，别合并：
@@ -121,6 +150,12 @@ export interface GameState {
   // PVP, multiplayer). Authoritative signal for humanColor/aiColor derivation —
   // see kiosk/pages/GamePage.tsx deriveHumanColor/deriveAiTurnState (G2).
   platform_engine_color?: 'B' | 'W' | null;
+  /** OGS online game: the authenticated box user's seat, supplied by the session bridge. */
+  platform_my_color?: 'B' | 'W' | null;
+  /** Self-owned PvP mirror also exposes this neutral seat alias. */
+  my_color?: 'B' | 'W' | null;
+  /** Current OGS phase, mirrored in get_state so reload can restore scoring UI. */
+  platform_phase?: 'playing' | 'paused' | 'scoring' | 'finished' | null;
 }
 
 export interface SessionResponse {
@@ -226,7 +261,7 @@ export type EngineAnalysisData =
   | { sequence: AnalysisPoint[]; winrate: number; delta: number } // variation
   | { ownership: JudgePoint[]; winner: string; delta: number }; // judge
 export type EngineAnalysisResponse =
-  | { ok: true; kind: "area" | "options" | "judge" | "variation"; data: EngineAnalysisData }
+  | { ok: true; kind: "area" | "options" | "judge" | "variation"; data: EngineAnalysisData; ended?: boolean; state?: GameState }
   | { ok: false; reason: "insufficient"; kind: string };
 // Remaining metered-道具 counts for the analysis-button badges. Each is a
 // number, or null when the platform didn't report it (render as "unknown",
@@ -244,9 +279,103 @@ export interface PlatformUser {
   status: string;
 }
 
+/** Display projection for the Golaxy lobby; unknown upstream fields stay null. */
+export interface GolaxyOnlinePlayer {
+  user_id: string;
+  username: string;
+  rank: string | null;
+  status: string | null;
+  // Verified display projections; malformed or missing values remain null.
+  wins?: number | null;
+  losses?: number | null;
+  is_self?: boolean; // Compared with the caller usercode verified by check_token.
+  invite_able?: boolean | null; // Upstream preference, not proof an invitation will succeed.
+  avatar_url?: string | null;
+}
+
+export interface GolaxyPlayerProfile extends Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank' | 'wins' | 'losses' | 'is_self'> {
+  followed: boolean | null;
+}
+
+export interface GolaxyPlayerGame {
+  game_id: string;
+  black: string | null;
+  white: string | null;
+  move_number: number | null;
+  result: string | null;
+  board_size: number | null;
+}
+
+export interface GolaxyRoom {
+  room_id: string;
+  room_number: string | null;
+  room_type: string | null; // Verified game category (自由战 / 升降战), not gameroomType.
+  handicap: number | null;
+  black: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
+  white: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
+  phase: string | null;
+  spectator_count: number | null; // No verified spectator membership count; currently null.
+  move_number?: number | null;
+  room_user_count?: number | null; // All room users, including players.
+}
+
+export interface GolaxySpectatorPosition {
+  black_stones: string[];
+  white_stones: string[];
+  move_number: number;
+  last_move: { color: 'B' | 'W'; coordinate: string | null } | null;
+}
+
+export interface GolaxySpectatorClock {
+  remaining_seconds: number;
+  period_seconds?: number | null;
+  periods_remaining?: number | null;
+}
+
+/** One read-only, server-authoritative board position. Coordinates use Go notation such as Q16. */
+export interface GolaxySpectatorSnapshot {
+  room_id: string;
+  game_id: string | null; // Null until matching upstream room/meta/state IDs establish identity.
+  room_number: string | null;
+  board_size: 19;
+  black: { username: string; rank: string | null } | null;
+  white: { username: string; rank: string | null } | null;
+  black_stones: string[];
+  white_stones: string[];
+  move_number: number;
+  phase: string | null;
+  result: string | null;
+  room_type: string | null;
+  handicap: number | null;
+  last_move: GolaxySpectatorPosition['last_move'];
+  history: GolaxySpectatorPosition[];
+  clocks: { black: GolaxySpectatorClock; white: GolaxySpectatorClock; active_color?: 'B' | 'W' | null } | null;
+  members: { user_id: string; username: string; role: 'black' | 'white' | 'spectator' | null }[] | null;
+}
+
+export interface PlatformChallenge {
+  platform: string;
+  challenge_id: string;
+  from_user: PlatformUser & { platform: string; rank_numeric: number };
+  board_size: number;
+  time_control: {
+    system: string;
+    main_time: number;
+    period_time?: number | null;
+    periods?: number | null;
+    time_increment?: number | null;
+    max_time?: number | null;
+    stones_per_period?: number | null;
+  };
+  rules: string;
+  ranked: boolean;
+  handicap: number;
+  komi: number | null;
+}
+
 export interface PlatformClockState {
-  black_time: Record<string, any>;
-  white_time: Record<string, any>;
+  black_time: Record<string, unknown> | number;
+  white_time: Record<string, unknown> | number;
   current_player: "B" | "W";
   paused?: boolean;
 }
@@ -258,7 +387,7 @@ export interface VisionStatusResponse {
   sync_state: string;
   bound_session_id: string | null;
   recognition_ready?: boolean;
-  led_connected?: boolean;
+  led_connected?: boolean | null;
 }
 
 // Task 9: physical engine-move (Golaxy 隧道) error recovery. `col`/`row` are GTP/board
@@ -401,7 +530,7 @@ export const API = {
     const params = new URLSearchParams({ session_id: sessionId });
     const headers: Record<string, string> = authHeaders(token);
     const response = await fetch(`/api/state?${params.toString()}`, { headers });
-    if (!response.ok) throw new Error("Failed to get state");
+    if (!response.ok) throw new ApiError(response.status, "Failed to get state");
     return { session_id: sessionId, state: (await response.json()).state };
   },
   playMove: (sessionId: string, coords: { x: number; y: number } | null, token?: string): Promise<SessionResponse> =>
@@ -410,6 +539,10 @@ export const API = {
       coords: coords ? [coords.x, coords.y] : null,
       pass_move: coords === null,
     }, token),
+  confirmLocalMove: (request: LocalConfirmRequest, token?: string): Promise<SessionResponse & { accepted: boolean }> =>
+    apiPost('/api/local/confirm', request, token),
+  readyLocalGame: (session_id: string, expected_game_id: string, input: 'screen' | 'physical', token?: string): Promise<SessionResponse> =>
+    apiPost('/api/local/ready', { session_id, expected_game_id, input }, token),
   undo: (sessionId: string, nTimes: number | string = 1): Promise<SessionResponse> =>
     apiPost("/api/undo", { session_id: sessionId, n_times: nTimes }),
   redo: (sessionId: string, nTimes: number = 1): Promise<SessionResponse> =>
@@ -681,12 +814,12 @@ export const API = {
     if (!response.ok) throw new Error("Failed to get engine item counts");
     return response.json();
   },
-  platformLogout: async (platform: string, token: string | null | undefined) => {
+  platformLogout: async (platform: string, token: string | null | undefined): Promise<{ status: string; platform: string }> => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {
       method: "DELETE",
       headers: authHeaders(token),
     });
-    if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
+    if (!response.ok) throw new ApiError(response.status, `Logout failed: ${response.status}`);
     return response.json();
   },
   platformStatus: async (token: string | null | undefined): Promise<PlatformStatusResponse> => {
@@ -696,32 +829,73 @@ export const API = {
     if (!response.ok) throw new Error("Failed to get platform status");
     return response.json();
   },
-  platformUsers: async (platform: string, token: string | null | undefined, query?: string): Promise<{ users: PlatformUser[] }> => {
-    const params = query ? `?q=${encodeURIComponent(query)}` : '';
+  platformUsers: async <T extends PlatformUser | GolaxyOnlinePlayer = PlatformUser>(platform: string, token: string | null | undefined, query?: string, lobby?: { page: number; filter: 'all' | 'same_level' | 'following' }): Promise<{ users: T[] }> => {
+    const search = new URLSearchParams();
+    if (query) search.set('q', query);
+    if (lobby) { search.set('page', String(lobby.page)); search.set('filter', lobby.filter); }
+    const params = search.size ? `?${search}` : '';
     const response = await fetch(`/api/v1/platforms/${platform}/users${params}`, {
       headers: authHeaders(token),
     });
-    if (!response.ok) throw new Error("Failed to get users");
+    if (!response.ok) throw new ApiError(response.status, `Failed to get users (${response.status})`);
     return response.json();
   },
-  platformRooms: async (platform: string, token: string | null | undefined) => {
-    const response = await fetch(`/api/v1/platforms/${platform}/rooms`, {
+  platformPlayerProfile: async (platform: string, peerCode: string, token: string | null | undefined): Promise<{ profile: GolaxyPlayerProfile }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/users/${encodeURIComponent(peerCode)}/profile`, {
       headers: authHeaders(token),
     });
-    if (!response.ok) throw new Error("Failed to get rooms");
+    if (!response.ok) throw new ApiError(response.status, `Failed to get player profile (${response.status})`);
     return response.json();
   },
-  platformChallenges: async (platform: string, token: string | null | undefined) => {
+  platformPlayerGames: async (platform: string, peerCode: string, token: string | null | undefined, page = 0): Promise<{ total: number | null; games: GolaxyPlayerGame[] }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/users/${encodeURIComponent(peerCode)}/games?page=${page}`, {
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to get player games (${response.status})`);
+    return response.json();
+  },
+  platformFollowPlayer: async (platform: string, peerCode: string, follow: boolean, token: string | null | undefined): Promise<{ profile: GolaxyPlayerProfile }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/users/${encodeURIComponent(peerCode)}/follow`, {
+      method: follow ? 'POST' : 'DELETE',
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to change player follow (${response.status})`);
+    return response.json();
+  },
+  platformRooms: async (platform: string, token: string | null | undefined, page?: number): Promise<{ rooms: GolaxyRoom[] }> => {
+    const params = page === undefined ? '' : `?page=${page}`;
+    const response = await fetch(`/api/v1/platforms/${platform}/rooms${params}`, {
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to get rooms (${response.status})`);
+    return response.json();
+  },
+  platformRoomSnapshot: async (roomId: string, token: string | null | undefined, signal?: AbortSignal): Promise<GolaxySpectatorSnapshot> => {
+    const response = await fetch(`/api/v1/platforms/golaxy/rooms/${encodeURIComponent(roomId)}/snapshot`, {
+      headers: authHeaders(token),
+      signal,
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to get room snapshot (${response.status})`);
+    return response.json();
+  },
+  platformChallenges: async (platform: string, token: string | null | undefined): Promise<{ challenges: PlatformChallenge[] }> => {
     const response = await fetch(`/api/v1/platforms/${platform}/challenges`, {
       headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get challenges");
     return response.json();
   },
-  platformSendChallenge: (platform: string, data: object, token: string | null | undefined) =>
+  platformSendChallenge: (platform: string, data: object, token: string | null | undefined): Promise<{ challenge_id: string }> =>
     apiPost(`/api/v1/platforms/${platform}/challenge`, data, token),
-  platformAcceptChallenge: (platform: string, challengeId: string, token: string | null | undefined) =>
+  platformAcceptChallenge: (platform: string, challengeId: string, token: string | null | undefined): Promise<{ session_id: string; game?: unknown }> =>
     apiPost(`/api/v1/platforms/${platform}/challenge/accept`, { challenge_id: challengeId }, token),
+  platformActiveGame: async (platform: string, token: string | null | undefined): Promise<{ session_id: string | null; pending_challenge_id?: string | null }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/active-game`, { headers: authHeaders(token) });
+    if (!response.ok) throw new Error('Failed to get active platform game');
+    return response.json();
+  },
+  platformOgsScoring: (sessionId: string, action: 'accept' | 'reject', token: string | null | undefined): Promise<{ status: 'pending' }> =>
+    apiPost('/api/v1/platforms/ogs/scoring', { session_id: sessionId, action }, token),
   platformDeclineChallenge: (platform: string, challengeId: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/challenge/decline`, { challenge_id: challengeId }, token),
   platformStartAutomatch: (platform: string, prefs: object, token: string | null | undefined) =>

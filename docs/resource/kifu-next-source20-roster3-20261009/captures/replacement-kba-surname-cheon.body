@@ -1,0 +1,332 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>한국기원</title>
+	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/css/common.css" type="text/css" rel="stylesheet" />
+	<link href="/css/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/js/common.js"></script>
+	<script language="javascript" src="/js/prototype.js"></script>
+</head>
+
+
+<form method="post" name="s1">
+<input type="hidden" name="S_sort_mode" value="A">
+<input type="hidden" name="prpl_code">
+
+<ul class="sortMode">
+	<li class="on"><button type="button" onclick="pageMove_search4('2','천','','A')">✔가나다순</button></li>
+	<li ><button type="button" onclick="pageMove_search4('2','천','','R')">✔서열순</button></li>
+</ul>                                                
+<div class="searchOptions frt">
+	<div class="select">
+		<select name="S_nation">
+			<option value="ALL" >구분</option>
+			
+				<option value="1" >한국</option>
+			
+				<option value="2"  selected >중국</option>
+			
+				<option value="3" >일본</option>
+			
+				<option value="4" >대만</option>
+			
+				<option value="6" >북미/유럽</option>
+			
+				<option value="7" >은퇴</option>
+			
+		</select>
+	</div>
+	<div class="select bdlt_no">
+		<select name="S_ob_forc">
+			<option value=""  selected >단</option>
+			
+				<option value="9" >9단</option>
+			
+				<option value="8" >8단</option>
+			
+				<option value="7" >7단</option>
+			
+				<option value="6" >6단</option>
+			
+				<option value="5" >5단</option>
+			
+				<option value="4" >4단</option>
+			
+				<option value="3" >3단</option>
+			
+				<option value="2" >2단</option>
+			
+				<option value="1" >1단</option>
+			
+		</select>
+	</div>                                                             	
+	<input type="text" placeholder="기사명" class="player" name="S_prpl_name" value="천" >
+	<button type="button" class="search" onclick="pageMove_search4(S_nation.value, S_prpl_name.value, S_ob_forc.value, 'A')">검색</button>
+</div>
+</form>
+
+<div class="recordTab">
+	<ul>
+		<li><button type="button"  onclick="pageMove_search4('1','천','','A')">한국</button></li>
+		<li><button type="button" class="on" onclick="pageMove_search4('2','천','','A')">중국</button></li>
+		<li><button type="button"  onclick="pageMove_search4('3','천','','A')">일본</button></li>
+		<li><button type="button"  onclick="pageMove_search4('4','천','','A')">대만</button></li>
+		<!--<li><button type="button"  onclick="pageMove_search4('5','천','','A')">기타</button></li>-->
+		<li><button type="button"  onclick="pageMove_search4('6','천','','A')">북미/유럽</button></li>
+		<li><button type="button"  onclick="pageMove_search4('7','천','','A')">은퇴</button></li>
+	</ul>
+</div>
+
+
+	<div class="playerArea">
+		<ul>
+			
+			<li class="lvList">
+				<div class="lv">
+					<dl>
+						<dt><span>9</span>段</dt>
+						<dd id="cnt9"></dd>
+					</dl>
+				</div>
+				<div class="players">
+					<ul>
+						
+							<li><a onclick="viewPage_player('20000664')">자오천위</a></li>
+							
+							<li><a onclick="viewPage_player('20000087')">천린신</a></li>
+							
+							<li><a onclick="viewPage_player('20000251')">천야오예</a></li>
+							
+							<li><a onclick="viewPage_player('20000128')">천쭈더</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt9.innerHTML = "4명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>8</span>段</dt>
+												<dd id="cnt8"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000538')">샤천쿤</a></li>
+							
+							<li><a onclick="viewPage_player('20000675')">천셴(賢)</a></li>
+							
+							<li><a onclick="viewPage_player('20000959')">천위눙</a></li>
+							
+							<li><a onclick="viewPage_player('20000844')">천정쉰</a></li>
+							
+							<li><a onclick="viewPage_player('20000845')">천쯔젠</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt8.innerHTML = "5명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>7</span>段</dt>
+												<dd id="cnt7"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20001808')">천이춘</a></li>
+							
+							<li><a onclick="viewPage_player('20001675')">천하오신</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt7.innerHTML = "2명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>6</span>段</dt>
+												<dd id="cnt6"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000384')">왕천싱</a></li>
+							
+							<li><a onclick="viewPage_player('20000865')">천위썬</a></li>
+							
+							<li><a onclick="viewPage_player('20002403')">천자루이(瑞)</a></li>
+							
+							<li><a onclick="viewPage_player('20000524')">천하오(浩)</a></li>
+							
+							<li><a onclick="viewPage_player('20001654')">천한치</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt6.innerHTML = "5명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>5</span>段</dt>
+												<dd id="cnt5"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20002162')">리신천</a></li>
+							
+							<li><a onclick="viewPage_player('20001073')">천비선</a></li>
+							
+							<li><a onclick="viewPage_player('20000549')">천이밍</a></li>
+							
+							<li><a onclick="viewPage_player('20000081')">천후이팡</a></li>
+							
+							<li><a onclick="viewPage_player('20000337')">황천</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt5.innerHTML = "5명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>4</span>段</dt>
+												<dd id="cnt4"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000728')">천샤오난</a></li>
+							
+							<li><a onclick="viewPage_player('20000992')">천샤오톈</a></li>
+							
+							<li><a onclick="viewPage_player('20002317')">천이저</a></li>
+							
+							<li><a onclick="viewPage_player('20001817')">천이푸</a></li>
+							
+							<li><a onclick="viewPage_player('20002287')">천투리</a></li>
+							
+							<li><a onclick="viewPage_player('20002025')">천하오둥</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt4.innerHTML = "6명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>3</span>段</dt>
+												<dd id="cnt3"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000854')">왕이천</a></li>
+							
+							<li><a onclick="viewPage_player('10000715')">왕천판</a></li>
+							
+							<li><a onclick="viewPage_player('20001673')">천둥루</a></li>
+							
+							<li><a onclick="viewPage_player('20002110')">천만치</a></li>
+							
+							<li><a onclick="viewPage_player('20001205')">천쉬둥</a></li>
+							
+							<li><a onclick="viewPage_player('20002344')">천신양</a></li>
+							
+							<li><a onclick="viewPage_player('20000594')">천양</a></li>
+							
+							<li><a onclick="viewPage_player('20001004')">천원정</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt3.innerHTML = "8명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>2</span>段</dt>
+												<dd id="cnt2"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20001819')">천레이</a></li>
+							
+							<li><a onclick="viewPage_player('20000705')">천룬타오</a></li>
+							
+							<li><a onclick="viewPage_player('20000456')">천보야</a></li>
+							
+							<li><a onclick="viewPage_player('20001667')">천셴(玄)</a></li>
+							
+							<li><a onclick="viewPage_player('20000969')">천쓰위안</a></li>
+							
+							<li><a onclick="viewPage_player('20000700')">후이징천</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt2.innerHTML = "6명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>1</span>段</dt>
+												<dd id="cnt1"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20001917')">량춘천</a></li>
+							
+							<li><a onclick="viewPage_player('20001879')">리천숴</a></li>
+							
+							<li><a onclick="viewPage_player('20001989')">장천중</a></li>
+							
+							<li><a onclick="viewPage_player('20000819')">장한천</a></li>
+							
+							<li><a onclick="viewPage_player('20002011')">중천광</a></li>
+							
+							<li><a onclick="viewPage_player('20002015')">천더룽</a></li>
+							
+							<li><a onclick="viewPage_player('20002017')">천루이</a></li>
+							
+							<li><a onclick="viewPage_player('20002016')">천밍촨</a></li>
+							
+							<li><a onclick="viewPage_player('20002026')">천샤오신</a></li>
+							
+							<li><a onclick="viewPage_player('20002018')">천안치</a></li>
+							
+							<li><a onclick="viewPage_player('20001041')">천야펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002020')">천웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20002583')">천위다</a></li>
+							
+							<li><a onclick="viewPage_player('20002019')">천잉</a></li>
+							
+							<li><a onclick="viewPage_player('20002021')">천자오펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002013')">천쟈</a></li>
+							
+							<li><a onclick="viewPage_player('20002014')">천쟈밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002022')">천즈강</a></li>
+							
+							<li><a onclick="viewPage_player('20002166')">천천</a></li>
+							
+							<li><a onclick="viewPage_player('20002023')">천첸웨이</a></li>
+							
+							<li><a onclick="viewPage_player('20002058')">천하오(昊)</a></li>
+							
+						<script>document.all.cnt1.innerHTML = "21명"</script>
+					</ul>
+				</div>
+			</li>
+		</ul>
+	</div>
+
+
+<script>
+	document.all.search_loading.style.display = 'none';
+</script>
+
+

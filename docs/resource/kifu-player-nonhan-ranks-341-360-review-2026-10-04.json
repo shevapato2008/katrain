@@ -1,0 +1,434 @@
+{
+  "format": "kifu-player-nonhan-ranks-341-360-review-v1",
+  "scope": "frozen post7 inventory exact raw ranks 341–360; earlier ranks excluded",
+  "snapshot_note": "TEST/PROD read-only repeatable-read SQL on 2026-10-04: all 20 exact raw counts identical and all FK NULL; current catalog IDs read separately in both environments. Importer must rebind live ID/name and FK before writing.",
+  "summary": {
+    "raw_values": 20,
+    "slots_each_environment": 469,
+    "approved_raw_values": 16,
+    "approved_slots_each_environment": 376,
+    "held_raw_values": 4,
+    "held_slots_each_environment": 93,
+    "new_catalog_players": 3
+  },
+  "rows": [
+    {
+      "rank": 341,
+      "raw_value": "Inoue Shuntatsu",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1750-12-15",
+      "last_raw_date": "1771-12-22",
+      "canonical_chinese_name": "井上春达因硕",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://archive.nihonkiin.or.jp/history/rekidai.html",
+      "identity_note": "日本棋院历代家元表列六世井上因碩（春達），1750–1771棋谱吻合。"
+    },
+    {
+      "rank": 342,
+      "raw_value": "Kajikawa Shurei",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1846-06-04",
+      "last_raw_date": "1884-06-05",
+      "canonical_chinese_name": "梶川秀玲（待核）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Shusaku/",
+      "identity_note": "CWI 秀策棋谱列 Kajikawa Shurei，但无可靠汉字姓名对照，暂缓。"
+    },
+    {
+      "rank": 343,
+      "raw_value": "Kataoka Satoshi",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1973-04-18",
+      "last_raw_date": "1978-12-21",
+      "canonical_chinese_name": "片冈聪",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5447
+        ],
+        "test": [
+          11222
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列片岡聡/Kataoka Satoshi。"
+    },
+    {
+      "rank": 344,
+      "raw_value": "KimIlHwan",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1985-05-27",
+      "last_raw_date": "2002-04-27",
+      "canonical_chinese_name": "金日焕",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6162
+        ],
+        "test": [
+          11930
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000013",
+      "identity_note": "韩国棋院列김일환/金日煥，1974入段。"
+    },
+    {
+      "rank": 345,
+      "raw_value": "KimSeung-chun",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1989-12-01",
+      "last_raw_date": "2004-06-11",
+      "canonical_chinese_name": "金承俊",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          163
+        ],
+        "test": [
+          164
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000059",
+      "identity_note": "Sensei 转写表列 Kim Seung-chun=Kim Seungjun；韩国棋院列김승준/金承俊，1988入段，与原谱相符。",
+      "additional_evidence_urls": [
+        "https://senseis.xmp.net/?McCuneReischauer="
+      ]
+    },
+    {
+      "rank": 346,
+      "raw_value": "Kobayashi Satoru",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1974-11-21",
+      "last_raw_date": "1978-11-29",
+      "canonical_chinese_name": "小林觉",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4432
+        ],
+        "test": [
+          10223
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列小林覚/Kobayashi Satoru。"
+    },
+    {
+      "rank": 347,
+      "raw_value": "NoYeong-ha",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1970-05-12",
+      "last_raw_date": "1997-03-10",
+      "canonical_chinese_name": "卢永夏",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4085
+        ],
+        "test": [
+          9881
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000023",
+      "identity_note": "韩国棋院列노영하/盧永夏，1967入段。"
+    },
+    {
+      "rank": 348,
+      "raw_value": "Oyama Kunio",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1966-07-21",
+      "last_raw_date": "1978-01-19",
+      "canonical_chinese_name": "大山国夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4246
+        ],
+        "test": [
+          10041
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "与第282名 OyamaKunio 同人，沿用目录 ID。"
+    },
+    {
+      "rank": 349,
+      "raw_value": "ParkYeongChan",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1985-01-17",
+      "last_raw_date": "1992-09-29",
+      "canonical_chinese_name": "朴映璨",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4890
+        ],
+        "test": [
+          10675
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000116",
+      "identity_note": "韩国棋院列박영찬/朴映璨，1984入段。"
+    },
+    {
+      "rank": 350,
+      "raw_value": "Yasui San'ei",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1890-08-24",
+      "last_raw_date": "1903-01-25",
+      "canonical_chinese_name": "安井算英",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6676
+        ],
+        "test": [
+          12445
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://archive.nihonkiin.or.jp/history/rekidai.html",
+      "identity_note": "与第215名 Yasui Sanei 同人；十世安井算英，两库共享 ID 已建，沿用。"
+    },
+    {
+      "rank": 351,
+      "raw_value": "Yoshida Hanjuro",
+      "slots_each_environment": 24,
+      "current_unlinked_slots_each_environment": 24,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1863-07",
+      "last_raw_date": "1894-02",
+      "canonical_chinese_name": "吉田半十郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://kifubara.app/zh/players/573ba160-e290-4f64-a452-1e9c5a885b30",
+      "identity_note": "历史棋谱直接列吉田半十郎/Yoshida Hanjuro；CWI 方圆社棋谱延续至1890年代。"
+    },
+    {
+      "rank": 352,
+      "raw_value": "Akedo Kazumi",
+      "slots_each_environment": 23,
+      "current_unlinked_slots_each_environment": 23,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1969-11-05",
+      "last_raw_date": "1978-08-17",
+      "canonical_chinese_name": "明户和巳（待核）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 列明戸和巳/Akedo Kazumi；目录已有明户和已4781/10569与明户和巳4782/10570两 ID，先去重。"
+    },
+    {
+      "rank": 353,
+      "raw_value": "Chen Zude",
+      "slots_each_environment": 23,
+      "current_unlinked_slots_each_environment": 23,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-06-12",
+      "last_raw_date": "1978-06-22",
+      "canonical_chinese_name": "陈祖德",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6371
+        ],
+        "test": [
+          12137
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.weiqi.org.cn/player/professional",
+      "identity_note": "中国围棋协会职业棋手名录列陈祖德；1960–1978中日棋谱吻合。"
+    },
+    {
+      "rank": 354,
+      "raw_value": "Hanawa Yasutoki",
+      "slots_each_environment": 23,
+      "current_unlinked_slots_each_environment": 23,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1963-04-24,25",
+      "last_raw_date": "1977-11-02",
+      "canonical_chinese_name": "塙保时",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列塙保時/Hanawa Yasutoki。"
+    },
+    {
+      "rank": 355,
+      "raw_value": "HeoChang-heui",
+      "slots_each_environment": 23,
+      "current_unlinked_slots_each_environment": 23,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1983-11-08",
+      "last_raw_date": "1999-07-05",
+      "canonical_chinese_name": "许壮会（待核）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000027",
+      "identity_note": "韩国棋院列허장회/許壯會；HeoChang-heui 与该人的具体转写对应尚缺直接可靠出处，与第338名一起暂缓。"
+    },
+    {
+      "rank": 356,
+      "raw_value": "Ishigure Makiko",
+      "slots_each_environment": 23,
+      "current_unlinked_slots_each_environment": 23,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1967-11-21",
+      "last_raw_date": "1978-10-25",
+      "canonical_chinese_name": "石榑真纪子（待核）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000033.html",
+      "identity_note": "日本棋院列石榑まき子（Ishigure Makiko）；现有石榑真子5644/11417无法由官方资料证实为同一汉字名，且汉字译写未确定。"
+    },
+    {
+      "rank": 357,
+      "raw_value": "JeongHyeonSan",
+      "slots_each_environment": 23,
+      "current_unlinked_slots_each_environment": 23,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1987-12-24",
+      "last_raw_date": "1997-04-28",
+      "canonical_chinese_name": "丁铉山",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3741
+        ],
+        "test": [
+          9539
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000054",
+      "identity_note": "韩国棋院列정현산/丁鉉山，1987–1997赛事年代吻合。"
+    },
+    {
+      "rank": 358,
+      "raw_value": "Matsuoka Akira",
+      "slots_each_environment": 23,
+      "current_unlinked_slots_each_environment": 23,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1969-05-14",
+      "last_raw_date": "1978-10-19",
+      "canonical_chinese_name": "松冈章",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5154
+        ],
+        "test": [
+          10935
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列松岡章/Matsuoka Akira。"
+    },
+    {
+      "rank": 359,
+      "raw_value": "HongChong-hyeon",
+      "slots_each_environment": 22,
+      "current_unlinked_slots_each_environment": 22,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1977-06-09",
+      "last_raw_date": "1999-05-25",
+      "canonical_chinese_name": "洪钟贤",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5391
+        ],
+        "test": [
+          11166
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000024",
+      "identity_note": "与第340名 HongJongHyun 同人；Hong Chong-hyeon 是同一韩文姓名홍종현的另一转写。",
+      "additional_evidence_urls": [
+        "https://senseis.xmp.net/?McCuneReischauer="
+      ]
+    },
+    {
+      "rank": 360,
+      "raw_value": "HwangWeon-chun",
+      "slots_each_environment": 22,
+      "current_unlinked_slots_each_environment": 22,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1985-11-19",
+      "last_raw_date": "2004-12-13",
+      "canonical_chinese_name": "黄元俊",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6523
+        ],
+        "test": [
+          12287
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000026",
+      "identity_note": "韩国棋院列황원준/黃元俊，1976入段。"
+    }
+  ]
+}

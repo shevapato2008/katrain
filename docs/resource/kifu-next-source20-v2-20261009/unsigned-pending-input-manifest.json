@@ -1,0 +1,14 @@
+{
+  "PROD": {
+    "file": "PROD-post591-unsigned-pending-input.json.gz",
+    "sha256": "031b98559a638ae55ecdf678a5fabbfe65c0fa815423f334027b23187e11bf57",
+    "owners": 20,
+    "game_slots": 600
+  },
+  "TEST": {
+    "file": "TEST-post591-unsigned-pending-input.json.gz",
+    "sha256": "954b333b038735034ba91df5c32f4fcd55ffa56ba8b935e29ca6582cfbc744b1",
+    "owners": 20,
+    "game_slots": 600
+  }
+}

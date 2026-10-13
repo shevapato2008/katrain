@@ -1,0 +1,577 @@
+{
+  "format": "kifu-player-provisional20-exact-plan-v1",
+  "environment": "PROD",
+  "database": "katrain_prod_20260725",
+  "review_artifact": "docs/resource/kifu-player-provisional-timed-pilot-independent-review-2026-10-04.md",
+  "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736",
+  "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+  "counts": {
+    "raw_rows": 20,
+    "linked_slots": 13633,
+    "album_fk_updates": 0,
+    "canonical_creates": 0,
+    "canonical_renames": 0
+  },
+  "items": [
+    {
+      "raw_id": 11410,
+      "raw_value": "朴廷桓",
+      "expected_slots": 1526,
+      "player_id": 54,
+      "canonical_name": "朴廷桓",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 54,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 54,
+          "canonical_name": "朴廷桓",
+          "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%B4%E5%BB%B7%E6%A1%93",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 11547,
+      "raw_value": "李世石",
+      "expected_slots": 1405,
+      "player_id": 4944,
+      "canonical_name": "李世石",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 4944,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 4944,
+          "canonical_name": "李世石",
+          "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000119",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 10721,
+      "raw_value": "山下敬吾",
+      "expected_slots": 1371,
+      "player_id": 242,
+      "canonical_name": "山下敬吾",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 242,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 242,
+          "canonical_name": "山下敬吾",
+          "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000322.htm",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 9972,
+      "raw_value": "古力",
+      "expected_slots": 1353,
+      "player_id": 201,
+      "canonical_name": "古力",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 201,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 201,
+          "canonical_name": "古力",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%8F%A4%E5%8A%9B",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 10910,
+      "raw_value": "常昊",
+      "expected_slots": 1319,
+      "player_id": 877,
+      "canonical_name": "常昊",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 877,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 877,
+          "canonical_name": "常昊",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%B8%B8%E6%98%8A",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 10265,
+      "raw_value": "大竹英雄",
+      "expected_slots": 1303,
+      "player_id": 879,
+      "canonical_name": "大竹英雄",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 879,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 879,
+          "canonical_name": "大竹英雄",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E7%AB%B9%E8%8B%B1%E9%9B%84",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 13169,
+      "raw_value": "藤泽秀行",
+      "expected_slots": 1258,
+      "player_id": 880,
+      "canonical_name": "藤泽秀行",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 880,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 880,
+          "canonical_name": "藤泽秀行",
+          "source_url": "https://zh.wikipedia.org/wiki/%E8%97%A4%E6%B3%BD%E7%A7%80%E8%A1%8C",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 11119,
+      "raw_value": "徐奉洙",
+      "expected_slots": 1257,
+      "player_id": 108,
+      "canonical_name": "徐奉洙",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 108,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 108,
+          "canonical_name": "徐奉洙",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%BE%90%E5%A5%89%E6%B4%99",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 10812,
+      "raw_value": "崔哲瀚",
+      "expected_slots": 1194,
+      "player_id": 4535,
+      "canonical_name": "崔哲瀚",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 4535,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 4535,
+          "canonical_name": "崔哲瀚",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%B4%94%E5%93%B2%E7%80%9A",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 12984,
+      "raw_value": "聂卫平",
+      "expected_slots": 1190,
+      "player_id": 5744,
+      "canonical_name": "聂卫平",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 5744,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 5744,
+          "canonical_name": "聂卫平",
+          "source_url": "https://zh.wikipedia.org/wiki/%E8%81%82%E5%8D%AB%E5%B9%B3",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 12771,
+      "raw_value": "知念熏",
+      "expected_slots": 84,
+      "player_id": 5632,
+      "canonical_name": "知念熏",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 5632,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 5632,
+          "canonical_name": "知念熏",
+          "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000323.htm",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 13640,
+      "raw_value": "金大熙",
+      "expected_slots": 45,
+      "player_id": 6129,
+      "canonical_name": "金大熙",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 6129,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 6129,
+          "canonical_name": "金大熙",
+          "source_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000401",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 11549,
+      "raw_value": "李世石九段",
+      "expected_slots": 35,
+      "player_id": 4944,
+      "canonical_name": "李世石",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 4944,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 4944,
+          "canonical_name": "李世石",
+          "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000119",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 13358,
+      "raw_value": "赵斐",
+      "expected_slots": 22,
+      "player_id": 411,
+      "canonical_name": "赵斐",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 411,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 411,
+          "canonical_name": "赵斐",
+          "source_url": "https://www.sohu.com/a/335939651_114977",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 13834,
+      "raw_value": "金茜倩",
+      "expected_slots": 32,
+      "player_id": 6221,
+      "canonical_name": "金茜倩",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 6221,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 6221,
+          "canonical_name": "金茜倩",
+          "source_url": "https://www.foxwq.com/news/12721.html",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 14262,
+      "raw_value": "高宇",
+      "expected_slots": 21,
+      "player_id": 6468,
+      "canonical_name": "高宇",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 6468,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 6468,
+          "canonical_name": "高宇",
+          "source_url": "https://sports.sina.cn/sa/2008-11-11/detail-ikftssap6622122.d.html?vt=4",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 14442,
+      "raw_value": "黄进先",
+      "expected_slots": 18,
+      "player_id": 6552,
+      "canonical_name": "黄进先",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 6552,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 6552,
+          "canonical_name": "黄进先",
+          "source_url": "https://sports.sina.cn/others/qipai/2019-11-19/detail-iihnzahi1942006.d.html?wm=3049_0015",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 12323,
+      "raw_value": "洪性志五段",
+      "expected_slots": 19,
+      "player_id": 175,
+      "canonical_name": "洪性志",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 175,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 175,
+          "canonical_name": "洪性志",
+          "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000280",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 12477,
+      "raw_value": "玄釉斌",
+      "expected_slots": 115,
+      "player_id": 5460,
+      "canonical_name": "玄釉斌",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 5460,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 5460,
+          "canonical_name": "玄釉斌",
+          "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000882",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    },
+    {
+      "raw_id": 10067,
+      "raw_value": "吴树浩",
+      "expected_slots": 66,
+      "player_id": 131,
+      "canonical_name": "吴树浩",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 131,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 131,
+          "canonical_name": "吴树浩",
+          "source_url": "https://www.weiqi.org.cn/player/professional",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "Exact raw identity confirmed by primary association/biographical evidence and full chronology review.",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "8b3311c1e6f3641c749163c538c634459a6e43b3888bf3370c0e0459243cb736"
+        }
+      }
+    }
+  ]
+}

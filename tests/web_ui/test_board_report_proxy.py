@@ -116,15 +116,25 @@ async def test_board_report_endpoints_forward_to_remote_without_local_report_wri
 
 
 @pytest.mark.asyncio
-async def test_board_delete_user_game_is_remote_only(board_app):
+@pytest.mark.parametrize("game_type", ["free", "ai_ladder_ranked"])
+async def test_board_delete_user_game_clears_local_cache_after_remote_success(board_app, game_type):
     headers = await _login_headers(board_app)
+    async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://test") as client:
+        user_id = (await client.get("/api/v1/auth/me", headers=headers)).json()["id"]
+    board_app.state.user_game_repo.create(
+        user_id=user_id,
+        game_id="remote-game",
+        sgf_content="(;FF[4]SZ[19];B[pd])",
+        source="play_ai",
+        game_type=game_type,
+    )
     async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://test") as client:
         response = await client.delete("/api/v1/user-games/remote-game", headers=headers)
 
     assert response.status_code == 200
     assert response.json() == {"status": "deleted"}
     board_app.state._test_remote.delete_user_game.assert_awaited_once_with("remote-game")
-    board_app.state._test_local_user_games.delete.assert_not_called()
+    assert board_app.state.user_game_repo.get("remote-game", user_id) is None
 
 
 @pytest.mark.asyncio

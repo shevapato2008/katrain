@@ -1,0 +1,11 @@
+services:
+  katrain-cron:
+    image: katrain-cron:transformer-20261002
+    environment:
+      KATAGO_EXPECTED_MODEL_SHA256: 93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871
+  katago-cron:
+    image: katago-transformer:20261002-tf3-b11c768
+    environment:
+      KATAGO_CONFIG_FILE: /opt/katago/config.yaml
+    volumes:
+      - /home/ubuntu/katrain-transformer/models/kata1-tf3-b11c768-s11003M-d5973M-7gres.bin.gz:/opt/katago/models/kata1-tf3-b11c768-s11003M-d5973M-7gres.bin.gz:ro

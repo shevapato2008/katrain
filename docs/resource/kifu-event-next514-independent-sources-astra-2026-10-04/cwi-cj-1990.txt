@@ -1,0 +1,493 @@
+18th Japan-China Go Exchange, 1990
+Up
+Prev
+Next
+18th Japan-China Go Exchange, 1990
+Go World 59 writes:
+This year the Chinese sent a team of eight players under 28 and under 8-dan to Japan.
+The defending side fielded various teams of players under 8-dan and under 26
+in a series of seven matches played between 19 and 30 April.
+The touring team scored 38 wins to 18 losses.
+The Japanese lost one of the matches 0-8 (on 4/26), the second time this has happened.
+Individual best-of-three matches were held in the 5th to 7th rounds of the tour,
+and here the Chinese won six out of eight.
+Most successful of the tourists was Liao Guiyong 7-dan, who won all of his games.
+Two players had 6-1 records: Shao 4-dan and Zhang Xuan 7-dan.
+Zhang is one of the top women players in China.
+Another woman who did well, with 5-2, is Yang Hui 7-dan, the wife of Tsao 9-dan.
+1: 4/19
+2: 4/20
+3: 4/22
+4: 4/26
+5: 4/28
+6: 4/29
+7: 4/30
+Score
+Liao Guiyong
+Yukawa
++R
+Goto
++0.5
+Ogata
++2.5
+Obuchi
++R
+Oya
++R
+Oya
++0.5
+Arimura
++R
+7-0
+Zhang Xuan
+Yokota
++R
+Ishida A.
++R
+Shinoda
++
+Mimura
++R
+Aoki K.
++
+Aoki K.
++R
+Cho Sonjin
+−R
+6-1
+Shao Weigang
+Yoshida M.
++R
+Yamada K.
++R
+Nakane
++R
+Tsurumaru
++R
+Sakai
++
+Sakai
+−
+Sakai
++
+6-1
+Yang Hui
+Moriyama
+−3.5
+Yamada W.
++
+Katayama
++
+Morita
++0.5
+Aoki S.
++R
+Aoki S.
++R
+Oya
+−1.5
+5-2
+Fang Jie
+Sekiyama
++R
+Yamada S.
+−R
+Matsuoka
+−R
+Iguchi
++R
+Izumitani
+−0.5
+Izumitani
++R
+Izumitani
++6.5
+4-3
+Liu Jing
+Sakakibara
++R
+Sasaka
++3.5
+Miyagawa
+−2.5
+Inoue N.
++R
+Arimura
+−R
+Arimura
+−R
+Aoki K
++2.5
+4-3
+Wang Jiankun
+Yuki S.
+−R
+Enda H.
++7.5
+Hiroe
+−0.5
+Nakaonoda
++R
+Onda
++
+Onda
+−R
+Onda
++
+4-3
+Li Xing
+Kurahashi
+−R
+Ueki
+−
+Okumura
++
+Fujisawa K.
++R
+Cho Sonjin
+−R
+Cho Sonjin
+−R
+Aoki S.
+−3.5
+2-5
+Result
+5-3
+6-2
+5-3
+8-0
+5-3
+4-4
+5-3
+38-18
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1990-04-19
+Yuki Satoshi
+Wang Jiankun
+B+R
+127
+sgf
+1990-04-19
+Liao Guiyong
+Yukawa Mitsuhisa
+B+R
+131
+sgf
+1990-04-19
+Zhang Xuan
+Yokota Shigeaki
+B+R
+135
+sgf
+1990-04-19
+Fang Jie
+Sekiyama Toshimichi
+B+R
+145
+sgf
+1990-04-19
+Yoshida Mika
+Shao Weigang
+W+R
+174
+sgf
+1990-04-19
+Sakakibara Fumiko
+Liu Jing
+W+R
+208
+sgf
+1990-04-19
+Moriyama Naoki
+Yang Hui
+B+3.5
+246
+sgf
+1990-04-19
+Li Xing
+Kurahashi Masayuki
+W+R
+248
+sgf
+1990-04-20
+Shao Weigang
+Yamada Kimio
+B+R
+133
+sgf
+1990-04-20
+Zhang Xuan
+Ishida Atsushi
+B+R
+215
+sgf
+1990-04-20
+Wang Jiankun
+Enda Hideki
+B+7.5
+237
+sgf
+1990-04-20
+Sasaka Shiro
+Liu Jing
+W+3.5
+256
+sgf
+1990-04-20
+Goto Shungo
+Liao Guiyong
+W+0.5
+261
+sgf
+1990-04-20
+Fang Jie
+Yamada Shiho
+W+R
+270
+sgf
+1990-04-20
+Yamada Wakio
+Yang Hui
+W+3.5
+243
+sgf
+1990-04-22
+Zhang Xuan
+Shinoda Hideyuki
+B+R
+109
+sgf
+1990-04-22
+Nakane Naoyuki
+Shao Weigang
+W+R
+128
+sgf
+1990-04-22
+Fang Jie
+Matsuoka Hideki
+W+R
+194
+sgf
+1990-04-22
+Okumura Yasushi
+Li Xing
+W+R
+200
+sgf
+1990-04-22
+Liu Jing
+Miyagawa Fumihiko
+W+2.5
+217
+sgf
+1990-04-22
+Ogata Masaki
+Liao Guiyong
+W+2.5
+249
+sgf
+1990-04-22
+Wang Jiankun
+Hiroe Hiroyuki
+W+0.5
+261
+sgf
+1990-04-26
+Zhang Xuan
+Mimura Tomoyasu
+B+R
+115
+sgf
+1990-04-26
+Liu Jing
+Inoue Naomi
+B+R
+135
+sgf
+1990-04-26
+Tsurumaru Keiichi
+Shao Weigang
+W+R
+174
+sgf
+1990-04-26
+Obuchi Morito
+Liao Guiyong
+W+R
+186
+sgf
+1990-04-26
+Fang Jie
+Iguchi Hideichiro
+B+R
+189
+sgf
+1990-04-26
+Fujisawa Kazunari
+Li Xing
+W+R
+200
+sgf
+1990-04-26
+Wang Jiankun
+Nakaonoda Tomomi
+B+R
+233
+sgf
+1990-04-26
+Morita Michihiro
+Yang Hui
+W+0.5
+279
+sgf
+1990-04-27
+Yang Hui
+Komatsu Hideki
+W+R
+192
+sgf
+1990-04-28
+Liao Guiyong
+Oya Koichi
+B+R
+149
+sgf
+1990-04-28
+Li Xing
+Cho Sonjin
+W+R
+242
+sgf
+1990-04-28
+Izumitani Hideo
+Fang Jie
+B+0.5
+296
+sgf
+1990-04-28
+Liu Jing
+Arimura Hiroshi
+W+R
+298
+sgf
+1990-04-28
+Aoki Kikuyo
+Zhang Xuan
+W+R
+186
+sgf
+1990-04-28
+Yang Hui
+Aoki Shinichi
+B+R
+257
+sgf
+1990-04-28 or 30
+Shao Weigang
+Sakai Maki
+B+5.5
+257
+sgf
+1990-04-28 or 30
+Shao Weigang
+Sakai Maki
+B+5.5
+281
+sgf
+1990-04-28 or 30
+Wang Jiankun
+Onda Yasuhiko
+B+R
+245
+sgf
+1990-04-29
+Fang Jie
+Izumitani Hideo
+B+R
+125
+sgf
+1990-04-29
+Cho Sonjin
+Li Xing
+B+R
+153
+sgf
+1990-04-29
+Zhang Xuan
+Aoki Kikuyo
+B+R
+183
+sgf
+1990-04-29
+Arimura Hiroshi
+Liu Jing
+B+R
+205
+sgf
+1990-04-29
+Sakai Maki
+Shao Weigang
+B+R
+239
+sgf
+1990-04-29
+Oya Koichi
+Liao Guiyong
+W+0.5
+267
+sgf
+1990-04-29
+Wang Jiankun
+Onda Yasuhiko
+W+R
+92
+sgf
+1990-04-29
+Aoki Shinichi
+Yang Hui
+W+R
+204
+sgf
+1990-04-30
+Cho Sonjin
+Zhang Xuan
+B+R
+135
+sgf
+1990-04-30
+Liao Guiyong
+Arimura Hiroshi
+B+R
+201
+sgf
+1990-04-30
+Fang Jie
+Izumitani Hideo
+B+6.5
+222
+sgf
+1990-04-30
+Oya Koichi
+Yang Hui
+B+1.5
+231
+sgf
+1990-04-30
+Li Xing
+Aoki Shinichi
+W+3.5
+269
+sgf
+1990-04-30
+Aoki Kikuyo
+Liu Jing
+W+2.5
+276
+sgf

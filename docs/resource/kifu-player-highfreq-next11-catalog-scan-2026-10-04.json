@@ -1,0 +1,254 @@
+{
+  "prod": {
+    "snapshot": "/tmp/kifu-prod-catalog-post-cn-20261004.json",
+    "scan": {
+      "刘星": {
+        "target_id": 644,
+        "exact_canonical_rows": [
+          {
+            "id": 644,
+            "canonical_name": "刘星"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "山田规三生": {
+        "target_id": 74,
+        "exact_canonical_rows": [
+          {
+            "id": 74,
+            "canonical_name": "山田规三生"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "林书阳": {
+        "target_id": 53,
+        "exact_canonical_rows": [
+          {
+            "id": 53,
+            "canonical_name": "林书阳"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "林君谚": {
+        "target_id": 100,
+        "exact_canonical_rows": [
+          {
+            "id": 100,
+            "canonical_name": "林君谚"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "柳时熏": {
+        "target_id": 164,
+        "exact_canonical_rows": [
+          {
+            "id": 164,
+            "canonical_name": "柳时熏"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "睦镇硕": {
+        "target_id": 22,
+        "exact_canonical_rows": [
+          {
+            "id": 22,
+            "canonical_name": "睦镇硕"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "许家元": {
+        "target_id": 32,
+        "exact_canonical_rows": [
+          {
+            "id": 32,
+            "canonical_name": "许家元"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "许皓鋐": {
+        "target_id": 93,
+        "exact_canonical_rows": [
+          {
+            "id": 93,
+            "canonical_name": "许皓鋐"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "谢依旻": {
+        "target_id": 155,
+        "exact_canonical_rows": [
+          {
+            "id": 155,
+            "canonical_name": "谢依旻"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "赖均辅": {
+        "target_id": 68,
+        "exact_canonical_rows": [
+          {
+            "id": 68,
+            "canonical_name": "赖均辅"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "陈祈睿": {
+        "target_id": 44,
+        "exact_canonical_rows": [
+          {
+            "id": 44,
+            "canonical_name": "陈祈睿"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      }
+    }
+  },
+  "test": {
+    "snapshot": "/tmp/kifu-test-player-catalog-2026-10-04.json",
+    "scan": {
+      "刘星": {
+        "target_id": 645,
+        "exact_canonical_rows": [
+          {
+            "id": 645,
+            "canonical_name": "刘星"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "山田规三生": {
+        "target_id": 74,
+        "exact_canonical_rows": [
+          {
+            "id": 74,
+            "canonical_name": "山田规三生"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "林书阳": {
+        "target_id": 53,
+        "exact_canonical_rows": [
+          {
+            "id": 53,
+            "canonical_name": "林书阳"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "林君谚": {
+        "target_id": 101,
+        "exact_canonical_rows": [
+          {
+            "id": 101,
+            "canonical_name": "林君谚"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "柳时熏": {
+        "target_id": 165,
+        "exact_canonical_rows": [
+          {
+            "id": 165,
+            "canonical_name": "柳时熏"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "睦镇硕": {
+        "target_id": 22,
+        "exact_canonical_rows": [
+          {
+            "id": 22,
+            "canonical_name": "睦镇硕"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "许家元": {
+        "target_id": 32,
+        "exact_canonical_rows": [
+          {
+            "id": 32,
+            "canonical_name": "许家元"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "许皓鋐": {
+        "target_id": 93,
+        "exact_canonical_rows": [
+          {
+            "id": 93,
+            "canonical_name": "许皓鋐"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "谢依旻": {
+        "target_id": 156,
+        "exact_canonical_rows": [
+          {
+            "id": 156,
+            "canonical_name": "谢依旻"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "赖均辅": {
+        "target_id": 68,
+        "exact_canonical_rows": [
+          {
+            "id": 68,
+            "canonical_name": "赖均辅"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      },
+      "陈祈睿": {
+        "target_id": 44,
+        "exact_canonical_rows": [
+          {
+            "id": 44,
+            "canonical_name": "陈祈睿"
+          }
+        ],
+        "exact_normalized_alias_rows": [],
+        "conflict": false
+      }
+    }
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "languages": ["en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"],
+  "notes": "Only directly sourced names are listed. A missing or review language uses the exact original SGF name. These are entity names, not translated card labels; coverage uses distinct raw names from kifu_albums.",
+  "entities": [
+    {
+      "key": "player:go_seigen",
+      "kind": "player",
+      "canonical": "Go Seigen",
+      "aliases": ["吴清源", "吳清源", "呉清源", "Wu Qingyuan"],
+      "alias_sources": {
+        "吴清源": "https://en.wikipedia.org/wiki/Go_Seigen",
+        "吳清源": "https://en.wikipedia.org/wiki/Go_Seigen",
+        "呉清源": "https://www.nihonkiin.or.jp/player/htm/ki001001.htm",
+        "Wu Qingyuan": "https://en.wikipedia.org/wiki/Go_Seigen"
+      },
+      "names": {
+        "en": {"value": "Go Seigen", "status": "verified", "source_url": "https://en.wikipedia.org/wiki/Go_Seigen"},
+        "cn": {"value": "吴清源", "status": "verified", "source_url": "https://en.wikipedia.org/wiki/Go_Seigen"},
+        "tw": {"value": "吳清源", "status": "verified", "source_url": "https://en.wikipedia.org/wiki/Go_Seigen"},
+        "jp": {"value": "呉清源", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/player/htm/ki001001.htm"},
+        "de": {"value": "Go Seigen", "status": "verified", "source_url": "https://de.wikipedia.org/wiki/Go_Seigen"},
+        "fr": {"value": "Go Seigen", "status": "verified", "source_url": "https://fr.wikipedia.org/wiki/Go_Seigen"}
+      }
+    },
+    {
+      "key": "player:honinbo_dosaku",
+      "kind": "player",
+      "canonical": "Honinbo Dosaku",
+      "aliases": ["Hon'inbō Dōsaku", "本因坊道策", "道策"],
+      "alias_sources": {
+        "Hon'inbō Dōsaku": "https://en.wikipedia.org/wiki/Hon%27inb%C5%8D_D%C5%8Dsaku",
+        "本因坊道策": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list01.html",
+        "道策": "https://www.nihonkiin.or.jp/teach/history/rekidai.html"
+      },
+      "names": {
+        "en": {"value": "Hon'inbō Dōsaku", "status": "verified", "source_url": "https://en.wikipedia.org/wiki/Hon%27inb%C5%8D_D%C5%8Dsaku"},
+        "cn": {"value": "本因坊道策", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9B%A0%E5%9D%8A%E9%81%93%E7%AD%96"},
+        "tw": {"value": "本因坊道策", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9B%A0%E5%9D%8A%E9%81%93%E7%AD%96"},
+        "jp": {"value": "本因坊道策", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list01.html"}
+      }
+    },
+    {
+      "key": "player:honinbo_jowa",
+      "kind": "player",
+      "canonical": "Honinbo Jowa",
+      "aliases": ["Hon'inbō Jōwa", "本因坊丈和", "丈和"],
+      "alias_sources": {
+        "Hon'inbō Jōwa": "https://en.wikipedia.org/wiki/Hon%27inb%C5%8D_J%C5%8Dwa",
+        "本因坊丈和": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list02.html",
+        "丈和": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list02.html"
+      },
+      "names": {
+        "en": {"value": "Hon'inbō Jōwa", "status": "verified", "source_url": "https://en.wikipedia.org/wiki/Hon%27inb%C5%8D_J%C5%8Dwa"},
+        "cn": {"value": "本因坊丈和", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9B%A0%E5%9D%8A%E4%B8%88%E5%92%8C"},
+        "tw": {"value": "本因坊丈和", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9B%A0%E5%9D%8A%E4%B8%88%E5%92%8C"},
+        "jp": {"value": "本因坊丈和", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list02.html"}
+      }
+    },
+    {
+      "key": "player:honinbo_shusaku",
+      "kind": "player",
+      "canonical": "Honinbo Shusaku",
+      "aliases": ["Hon'inbō Shūsaku", "Shusaku", "本因坊秀策", "秀策"],
+      "alias_sources": {
+        "Hon'inbō Shūsaku": "https://en.wikipedia.org/wiki/Hon%27inb%C5%8D_Sh%C5%ABsaku",
+        "Shusaku": "https://en.wikipedia.org/wiki/Hon%27inb%C5%8D_Sh%C5%ABsaku",
+        "本因坊秀策": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list01.html",
+        "秀策": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list01.html"
+      },
+      "names": {
+        "en": {"value": "Hon'inbō Shūsaku", "status": "verified", "source_url": "https://en.wikipedia.org/wiki/Hon%27inb%C5%8D_Sh%C5%ABsaku"},
+        "cn": {"value": "本因坊秀策", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9B%A0%E5%9D%8A%E7%A7%80%E7%AD%96"},
+        "tw": {"value": "本因坊秀策", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9B%A0%E5%9D%8A%E7%A7%80%E7%AD%96"},
+        "jp": {"value": "本因坊秀策", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list01.html"}
+      }
+    },
+    {
+      "key": "player:kitani_minoru",
+      "kind": "player",
+      "canonical": "Kitani Minoru",
+      "aliases": ["Minoru Kitani", "木谷实", "木谷實", "木谷実"],
+      "alias_sources": {
+        "Minoru Kitani": "https://en.wikipedia.org/wiki/Minoru_Kitani",
+        "木谷实": "https://zh.wikipedia.org/wiki/%E6%9C%A8%E8%B0%B7%E5%AE%9E",
+        "木谷實": "https://www.nihonkiin.or.jp/player/htm/ki001060.htm",
+        "木谷実": "https://en.wikipedia.org/wiki/Minoru_Kitani"
+      },
+      "names": {
+        "en": {"value": "Kitani Minoru", "status": "verified", "source_url": "https://archive.nihonkiin.or.jp/player/htm/ki001060.htm"},
+        "cn": {"value": "木谷实", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%A8%E8%B0%B7%E5%AE%9E"},
+        "tw": {"value": "木谷實", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%A8%E8%B0%B7%E5%AE%9E"},
+        "jp": {"value": "木谷實", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/player/htm/ki001060.htm"}
+      }
+    },
+    {
+      "key": "event:oteai",
+      "kind": "event",
+      "canonical": "Oteai",
+      "aliases": ["大手合", "JapanPromotionTournament"],
+      "alias_sources": {
+        "大手合": "https://www.nihonkiin.or.jp/profile/faq/",
+        "JapanPromotionTournament": "https://homepages.cwi.nl/~aeb/go/games/games/Oteai/1934/index.html"
+      },
+      "names": {
+        "en": {"value": "Oteai", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/english/topics/03/topics2003_01.htm"},
+        "cn": {"value": "大手合", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E6%89%8B%E5%90%88"},
+        "tw": {"value": "大手合", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E6%89%8B%E5%90%88"},
+        "jp": {"value": "大手合", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/profile/faq/"}
+      }
+    },
+    {
+      "key": "event:wu_qingyuan_cup",
+      "kind": "event",
+      "canonical": "吴清源杯",
+      "aliases": ["Wu Qingyuan Cup", "Go Seigen Cup", "吳清源杯", "呉清源杯"],
+      "alias_sources": {
+        "Wu Qingyuan Cup": "https://weiqi.org.sg/competitions/",
+        "Go Seigen Cup": "https://en.wikipedia.org/wiki/Wu_Qingyuan_Cup",
+        "吳清源杯": "https://www.haifong.org/news/content/FA2E404EA22BC410A32945EA2B4E11FB",
+        "呉清源杯": "https://www.nihonkiin.or.jp/match/goseigen/archive.html"
+      },
+      "names": {
+        "en": {"value": "Wu Qingyuan Cup", "status": "verified", "source_url": "https://weiqi.org.sg/competitions/"},
+        "cn": {"value": "吴清源杯", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E2%80%9C%E5%90%B4%E6%B8%85%E6%BA%90%E6%9D%AF%E2%80%9D%E4%B8%96%E7%95%8C%E5%A5%B3%E5%AD%90%E5%9B%B4%E6%A3%8B%E8%B5%9B"},
+        "tw": {"value": "吳清源杯", "status": "verified", "source_url": "https://www.haifong.org/news/content/FA2E404EA22BC410A32945EA2B4E11FB"},
+        "jp": {"value": "呉清源杯", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/match/goseigen/archive.html"}
+      }
+    }
+  ]
+}

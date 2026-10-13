@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>智星盒管理后台 · 教程管理最终实现对照</title>
+  <style>
+    @import url('../../../katrain/web/ui/src/admin/AdminApp.css');
+    html,body { margin:0; min-height:100%; }
+    .admin-app { height:100vh; }
+    .admin-brand-cn { font-family:'Galaxy Long Cang',serif; }
+    .admin-board { display:block; width:min(100%, 538px); height:auto; max-height:100%; border-radius:4px; }
+    .admin-source-missing { min-height:108px; display:grid; place-items:center; }
+    .admin-sourcecaption { line-height:1.6; }
+    .design-preview-controls { position:fixed; right:14px; bottom:13px; z-index:10; display:flex; gap:8px; padding:7px; border:1px solid var(--admin-line); border-radius:8px; background:var(--admin-bar); box-shadow:0 8px 24px #0005; font-size:14px; }
+    .design-preview-controls button { padding:5px 10px; border:1px solid var(--admin-line); border-radius:6px; color:var(--admin-text); background:var(--admin-panel); }
+    body[data-capture="true"] .design-preview-controls { display:none; }
+    body[data-state="detail"] .admin-editbar,body[data-state="detail"] .admin-editcopy,body[data-state="detail"] .admin-draft-note,body[data-state="detail"] .edit-actions { display:none; }
+    body[data-state="editing"] .admin-copy,body[data-state="editing"] .detail-actions { display:none; }
+    body[data-state="editing"] .admin-editcopy { display:block; }
+    body[data-state="editing"] .admin-editcopy { margin-top:6px; }
+    body[data-state="editing"] .admin-draft-note { margin-top:27px; }
+  </style>
+</head>
+<body class="admin-app admin-app-tutorial" data-state="detail">
+  <header class="admin-top"><div class="admin-brand"><img src="../../../katrain/img/logo-white.png" alt=""><span class="admin-brand-cn">智星盒</span><span class="admin-brand-en">StellaBox</span><span class="admin-brand-admin">管理后台</span></div><div class="admin-topright"><span class="admin-env">本机环境</span><span>admin:fan</span><button type="button">退出</button></div></header>
+  <div class="admin-wrap">
+    <aside class="admin-side"><div class="admin-sidehead">内容与服务</div><div class="admin-nav active"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1m0-15c3-2 6-2 9-1v15c-3-1-6-1-9 1m0-15v15"/></svg>教程管理</div><div class="admin-nav"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>定时任务</div><div class="admin-sidefoot">当前环境：本机环境<br>修改会写入该环境的教程数据</div></aside>
+    <main class="admin-main">
+      <div class="admin-heading"><div><div class="admin-title">教程管理</div><div class="admin-crumb">围棋入门教程 / 第一章 基础概念 / 1. 外势和实地 / 1. 外势和实地</div></div><div class="admin-headcontrols"><select aria-label="选择教材"><option>围棋入门教程</option></select><select aria-label="选择章节"><option>第一章 基础概念</option></select><select aria-label="选择小节"><option>1. 外势和实地</option></select></div></div>
+      <div class="admin-workspace">
+        <section class="admin-source"><div class="admin-panehead"><strong>原书页对照</strong><span>第 3 页</span></div><div class="admin-book"><div class="admin-source-missing">此图没有原书页图片</div><div class="admin-sourcecaption">图1中的黑1称为三三，是三线与三线的交叉点。</div></div></section>
+        <section class="admin-center"><div class="admin-boardbar"><strong>1. 外势和实地 · 棋图预览</strong><span>当前第 2 / 2 手 · 棋图局部</span></div><div class="admin-boardstage"><svg class="admin-board" viewBox="0 0 538 538" role="img" aria-label="19 路棋盘示例"><rect width="538" height="538" fill="#dfb66b"/><g id="board-lines" stroke="#9b7a43" stroke-width="1"/><g fill="#8f713f"><circle cx="104" cy="104" r="2.5"/><circle cx="269" cy="104" r="2.5"/><circle cx="434" cy="104" r="2.5"/><circle cx="104" cy="269" r="2.5"/><circle cx="269" cy="269" r="2.5"/><circle cx="434" cy="269" r="2.5"/><circle cx="104" cy="434" r="2.5"/><circle cx="269" cy="434" r="2.5"/><circle cx="434" cy="434" r="2.5"/></g><circle cx="104" cy="104" r="12" fill="#151515"/><circle cx="434" cy="434" r="12" fill="#fff" stroke="#999"/></svg></div><div class="admin-editbar"><button class="admin-tool on">落子</button><button class="admin-tool">撤销</button><span class="admin-edit-hint">草稿 2 手 · 未保存</span></div></section>
+        <section class="admin-right"><div class="admin-rightscroll"><div class="admin-figuretitle"><button class="admin-back" aria-label="返回图列表">←</button><div><h1>1. 外势和实地</h1><div class="admin-sub">图 1 · 本节共 1 图</div></div><span class="admin-viewtag">编辑工作台</span></div><div class="admin-pager"><button disabled>‹</button><span>图 1 / 1</span><button disabled>›</button></div><button class="admin-sourcebtn">▣ 对照原书页</button><div class="admin-section"><div class="admin-label">手数</div><div class="admin-moves"><span>当前 2 / 2</span><span>逐手查看棋图</span></div><input class="admin-range" type="range" min="0" max="2" value="2" aria-label="棋图手数"></div><div class="admin-section"><div class="admin-label"><span>语音讲解</span><span>文字与语音分开保存</span></div><p class="admin-copy">在图 1 里，黑棋下在 1 位的这手棋叫做三三点。三三点的好处是比较容易做出眼形来活棋，不过它的不足之处在于朝着边上和中央发展的力量相对较弱。</p><textarea class="admin-editcopy" aria-label="编辑语音讲解">在图 1 里，黑棋下在 1 位的这手棋叫做三三点。</textarea><div class="admin-draft-note">● 未保存的棋图和讲解不会影响公开页面</div><div class="admin-mini">讲解音频</div><div class="admin-media">配语音的视频尚未生成</div></div><div class="admin-section"><div class="admin-label">审核状态</div><div class="admin-mini">未审核。请核对原书页、棋图和讲解后确认。</div></div></div><div class="admin-actions detail-actions"><button class="admin-action">编辑棋图</button><button class="admin-action">编辑讲解</button><button class="admin-action">生成语音</button><button class="admin-action">人工核对完成</button><button class="admin-action wide" disabled>✓ 确认审核</button></div><div class="admin-actions edit-actions"><button class="admin-action primary">保存更改</button><button class="admin-action">取消</button><button class="admin-action" disabled>生成语音</button><button class="admin-action" disabled>人工核对完成</button><button class="admin-action wide" disabled>✓ 确认审核</button></div></section>
+      </div>
+    </main>
+  </div>
+  <div class="design-preview-controls"><button id="toggle-state" type="button">切换编辑态</button></div>
+  <script>
+    const params=new URLSearchParams(location.search); const editing=params.get('state')==='editing';
+    document.body.dataset.state=editing?'editing':'detail'; document.body.dataset.capture=params.get('capture')==='true'?'true':'false';
+    document.querySelector('.admin-editcopy').value=document.querySelector('.admin-copy').textContent+' 白 2 是四线与四线的交叉点，称之为“星”，也是外势线与外势线的交叉点。';
+    document.getElementById('toggle-state').addEventListener('click',()=>{document.body.dataset.state=document.body.dataset.state==='editing'?'detail':'editing';});
+    const lines=document.getElementById('board-lines'); for(let i=0;i<19;i++){const n=21.5+i*27.5;lines.insertAdjacentHTML('beforeend',`<line x1="21.5" y1="${n}" x2="516.5" y2="${n}"/><line x1="${n}" y1="21.5" x2="${n}" y2="516.5"/>`);}
+  </script>
+</body>
+</html>

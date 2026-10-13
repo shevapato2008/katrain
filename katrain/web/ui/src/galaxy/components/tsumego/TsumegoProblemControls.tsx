@@ -14,7 +14,8 @@
  */
 
 import type { ReactNode } from 'react';
-import { Box, Typography, Button, Divider, Switch } from '@mui/material';
+import { Box, Typography, Button, Divider } from '@mui/material';
+import GridOnIcon from '@mui/icons-material/GridOn';
 import UndoIcon from '@mui/icons-material/Undo';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
@@ -26,7 +27,7 @@ import TimerIcon from '@mui/icons-material/Timer';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
 import ToolGridButton from '../board/ToolGridButton';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { railToggleRowSx, toolGridSx } from '../../../components/railStyles';
+import { toolGridSx } from '../../../components/railStyles';
 
 // mm:ss
 const formatTime = (seconds: number): string => {
@@ -218,16 +219,8 @@ export function TsumegoDisplayControls({
   return (
     <>
       <Divider />
-      <Box sx={{ px: 2, py: 0.5, ...railToggleRowSx }}>
-        <Typography variant="body2" color="text.secondary">{t('Coordinates', '坐标')}</Typography>
-        <Switch
-          size="small"
-          checked={showCoordinates}
-          onChange={onToggleCoordinates}
-          /* MUI v7：`inputProps` 到不了里面那个 input（实测 aria-label 为 null），
-             可及名要走 `slotProps.input`。 */
-          slotProps={{ input: { 'aria-label': t('Coordinates', '坐标') } }}
-        />
+      <Box sx={{ py: 1, width: 'calc((100% - 12px) / 3)' }}>
+        <ToolGridButton icon={<GridOnIcon />} label={t('Coordinates', '坐标')} toggle active={showCoordinates} onClick={onToggleCoordinates} />
       </Box>
     </>
   );

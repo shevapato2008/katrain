@@ -1,0 +1,32 @@
+{
+  "anchors": {
+    "PROD": "14fe5df6d455a70014a6ac8b0233c665a4af1ec22be9457706b83e1e4a15816e",
+    "TEST": "d35db67464429f1f0c807a83d3f031656b1d1fe3274e861897dd5389d2419454"
+  },
+  "decision": "approved_actual_sources_and_finite_rules_only_final_binding_pending",
+  "ko3_pending_research_sha256": "6f9ff419993a588268fcfcba06d8aa6bb6378a654737fc64e59978e8fef7ec97",
+  "notes": [
+    "Exact source name/evidence/creation journal retained and native-qualified; no generated CN→TW chaining.",
+    "Unihan fullfile scoped records checked; Japanese original 浜/瀬/塩 and selected self variants remain exact.",
+    "MOE PDF actual pages4/5/13 read; 云 row includes 雲 and 云; generated chosen display 桂詩雲 is not claimed a unique MOE mapping or published Taiwanese personal name.",
+    "Official KBA actual 이정은(李貞垠) and stable diary identity retained, compatibility 李 unnormalized.",
+    "KO3 full Nihon/Igo reading and NIKL three captures plus six bounded conflict responses read; Hangame/Namu results are conflict leads, not fetched identity publications.",
+    "No SQL, new candidate approval or preimage binding in this source/rule approval."
+  ],
+  "reviewed_at": "2026-10-08T19:28:10.663047+00:00",
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "rules_sha256": "0805e62e021f10e84300e6af6b3737948e12fd77bacb2b117ff50beaabc3e856",
+  "source_file_sha256": {
+    "ko3-actual-source-captures.json.gz": "e8c6054bb28e3432d2bf57eab277fb699e7c79ffe8ec9c764dd4e102ae9bb4a4",
+    "ko3-unsigned-research.json.gz": "fb05ad09ce8935cbaccbbcf792ae53cc987837c01dbb5b9fa2e31dc1b9c09aee",
+    "tw-Unihan-17.0.0.zip": "f7a48b2b545acfaa77b2d607ae28747404ce02baefee16396c5d2d7a8ef34b5e",
+    "tw-cn7-finite-rule-request.json": "a8a6d810bfba7c5ae3511d36132c02b7145ad0c18cf545bd1dcebaab5e52b464",
+    "tw-cn7-pending-gate-anchor-review-requests.json": "e66cb3a5de226be7945a91ea157107539a8385ea1d5d6da45e3228bc10f4d588",
+    "tw-jp-retention-rule-request.json": "4e02c68900023a5afba4362bd738d0d5b3d7adab3fd7765d1628c519c1c3fc2d",
+    "tw-kba446-actual-capture.json.gz": "b6cee28ed4b2eb74565dada659e6db97e93c99c059de5a6d36a3cc53149ee6e9",
+    "tw-moe-strokes.pdf": "5e7173d5aa11064d3d5662d5ce4723626f2b4d2122da264f7d63e946a5815434",
+    "tw-official-hanja-rule-request.json": "949d24175030249bfe1caa09fc716b57659b1da21cc7f2e30bca8ded1b93eb27",
+    "tw-unsigned-anchor-review-requests.json": "46329fad180d8c43706092d634318ec01d006b6101d39f95747849498db1e232"
+  }
+}

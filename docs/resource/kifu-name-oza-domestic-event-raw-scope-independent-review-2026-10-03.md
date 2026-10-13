@@ -1,0 +1,28 @@
+# Domestic Ōza finite raw scope: independent review
+
+2026-10-03; reviewer `/root/event_oza_nhk_source_review`. This reviews the [producer memo](kifu-name-oza-domestic-event-raw-scope-producer-gpt6-2026-10-03.md) and its protected `scope.pending.json`. It is a source and raw applicability review only: no event owner, alias, display name, album FK, database write, or import approval.
+
+## Decision
+
+**HOLD the producer's 99-raw / 2,015-row candidate partition.** Two proposed candidate raw values contain seven SGF roots whose `GN` says Ōza but whose `GC` explicitly says **日本天元战**. Because this proposal makes decisions per exact raw value, both mixed raw values must be held in full until their individual rows are resolved. The corrected conservative partition is **97 numbered CANDIDATE raw values / 1,980 rows; five numbered HOLD raw values / 78 rows; one bare HOLD raw value / three rows**. Thus six HOLD raw values cover 81 rows. CANDIDATE means a bounded lead without a conflicting root in this review, not permission to bind an event or write an FK.
+
+| Exact raw value | Rows | Review | Evidence |
+| --- | ---: | --- | --- |
+| `28th Oza` | 17 | **HOLD, agrees with producer** | All 17 SGF roots retain `EV[28th Oza]`, but all source paths are `/Oza/26/P01.sgf`–`P17.sgf`, dates 1977-12-15–1978-05-11, `RO[3rd Preliminary]`. The [Japanese Ōza history](https://archive.nihonkiin.or.jp/match/oza/) places the 26th result in 1978 and the 28th in 1980. No automatic edition repair. |
+| `45thOza` | 5 | **HOLD, agrees with producer** | Album 54534 has `GN[45thOza]`, `GC[45th日本王座战 ...]`, and `DT[1998-02-06]`; the other four dates are 1996–97. The explicit Japanese Ōza context does not settle the outlying edition/date pair. |
+| `48thOza` | 21 | **HOLD, agrees with producer** | Album 85420 has `GN[48thOza]`, `GC[48th日本王座战 ...]`, and `DT[1998-09-01]`; the other 20 dates are 2000. Keep the full raw value held until the outlier is resolved. |
+| `Oza` | 3 | **HOLD, agrees with producer** | SGF comments actually add Japanese Ōza clues: albums 121167 and 131924 say `1985日本王座战`, while 130235 says `第20期日本王座战预选第2轮`. This narrows the likely family, but the bare raw value has no edition or stage; these comments do not justify a raw-wide automatic rule. The producer's “no organizer in frozen scope” statement is true only of the frozen metadata, not of the retained SGF comments. |
+| `Oza,27th` | 19 | **HOLD, correction** | Six rows (albums 29750, 32733, 33947, 52292, 52293, 81392) have `GN[Oza,27th]` but `GC` describes the **第5期日本天元战** main tournament. Thirteen sibling rows describe Japanese Ōza. This raw value mixes positive Ōza and Tengen context, so a whole-raw CANDIDATE would be unsafe. |
+| `42ndOza` | 16 | **HOLD, correction** | Album 144944 has `GN[42ndOza]` but `GC[第21期日本天元战预选 ...]`; 15 siblings describe Japanese Ōza. Hold the whole exact raw value pending row-level resolution. |
+
+The seven conflicting rows are within the producer's normal edition-year windows, which demonstrates why year and source family alone cannot establish applicability. `日本天元战` is a competing Japanese professional event declaration in the same SGF, not the Toyota–Denso World Go Ōza or student Ōza. The [Toyota–Denso page](https://archive.nihonkiin.or.jp/match/toyota/index-e.html) separately names a world tournament founded in 2001; the [Japan Go Association student report](https://www.nihonkiin.or.jp/news/release/post_977.html) describes a world student competition. Neither shares the domestic professional Ōza identity merely because it contains “Oza”.
+
+## Reproduction and evidence limits
+
+I independently compared all 103 producer raw values against the four `core=Oza` groups in the frozen `event-components-v4` gzip and against the prior preliminary scope. Raw spelling, grammar, counts, all 2,061 album IDs, dates, rounds, source records, event IDs and duplicate flags match exactly. The frozen grammar partition is 24 spaced ordinal / 1,356 rows, 45 joined ordinal / 384, 33 suffix ordinal / 318, and one bare / three. The producer's initial 99/3 numbered split and 2,015/46 row counts are arithmetically accurate **for its proposed decisions**, but its candidate set misses the two mixed-source raw values.
+
+I then parsed root properties from the existing protected read-only production SGF capture and matched every captured row back to the frozen row. All 1,356 CWI roots have the raw value in `EV`; this includes 35 rows in player folders outside `/Oza/N/`. All 705 `19x19` roots have the raw value in `GN`; their `GC` splits into **698 Japanese Ōza** and **seven Japanese Tengen** descriptions. The 17 `28th Oza` paths, both numbered date outliers, and three bare SGF comments were checked directly. This was an independent re-parse of a prior protected capture, **not** a fresh database query or retrieval of original source files. SGF comments are source evidence, not governing-body certification; remaining CANDIDATE rows still require the normal binding review.
+
+Protected decision packet: `~/.local/share/kifu-name-audit/2026-10-03/oza-domestic-event-scope-independent-review/scope.review.json` (103 exact raw decisions, all album IDs, seven conflicting root records; SHA-256 `fa7b25278a1148ec8bf3a597a6cfcdb453cb21ff6f7ba4c81cd7ce3e1d8fa128`). Input SHA-256: producer scope `7aa3d86e381f68cd6803c7fe3ea82f7aa4fa344fe7fafe3aaa137965de682cd9`; preliminary scope `8a94c6104227324bfb21bc781b4b5ba85c4247f4648a1465204862936acd0413`; frozen gzip `ae483b833c73879cf9b5544060d3857f1898806fddb76c93c2e6e0bda6716d05`; retained read-only SGF capture `134fc49cf88da06e4d6a6eec447b3828f21508ebe988a9c744f21d41100a5091`.
+
+No code, database, producer packet, or Git commit was changed.

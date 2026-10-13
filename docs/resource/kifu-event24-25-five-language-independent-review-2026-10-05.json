@@ -1,0 +1,292 @@
+{
+  "reviewer_id": "/root/event10_review_apply",
+  "reviewer_model": "gpt-6-astra",
+  "reasoning_effort": "max",
+  "model_confirmation": "Parent confirmed explicit gpt-6-astra/max spawn configuration.",
+  "reviewed_at": "2026-10-05T09:39:47.777622+00:00",
+  "decision": "approve_exact_10_cells",
+  "source_review": [
+    {
+      "owner": {
+        "id": 24,
+        "kind": "event"
+      },
+      "lang": "en",
+      "display_name": "Honinbo",
+      "result": "approved",
+      "basis": "CWI lists Honinbo under tournaments and links recurring title games; conventional English series form, not a person name here.",
+      "checks": [
+        {
+          "url": "https://homepages.cwi.nl/~aeb/go/games/games/Honinbo/",
+          "observed_lang": "en",
+          "body_sha256": "e04b9168fba2f1b6f06a032ca3afd1b36181c4ce7aeddd5ed970137e3265aac2",
+          "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/honinbo-controlled-research/en_cwi.html"
+        }
+      ],
+      "research_sha256": "05fda370ec3f7128408065eb43f226d38231da0295218b277133a2c8ce10d699"
+    },
+    {
+      "owner": {
+        "id": 24,
+        "kind": "event"
+      },
+      "lang": "cn",
+      "display_name": "本因坊战",
+      "result": "approved",
+      "basis": "Pinned zh-cn article uses 本因坊战 for the Japanese recurring series; organizer and native series identity corroborated by Nihon Ki-in.",
+      "checks": [
+        {
+          "url": "https://zh.wikipedia.org/w/index.php?title=%E6%9C%AC%E5%9B%A0%E5%9D%8A%E6%88%98&oldid=93277475&variant=zh-cn",
+          "observed_lang": "zh-Hans-CN",
+          "body_sha256": "168337947ee7f1da468dcad82587c577539cbfd93b4f8a8cc24b0387cd955892",
+          "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/honinbo-controlled-research/cn_wikipedia.html",
+          "identity_corroboration": {
+            "url": "https://www.nihonkiin.or.jp/match/honinbo/070.html",
+            "body_sha256": "d96c496abca1c292ad0814200cf4d66adb7a7ed233347934a1a4bce11eda6f26",
+            "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/honinbo-controlled-research/identity_nihon_kiin.html"
+          }
+        }
+      ],
+      "research_sha256": "a337febd5b1781e241732c0afcbca4e6d4cd8b9c9b43e9290124ea982e226903"
+    },
+    {
+      "owner": {
+        "id": 24,
+        "kind": "event"
+      },
+      "lang": "tw",
+      "display_name": "本因坊戰",
+      "result": "approved",
+      "basis": "Pinned zh-tw article independently renders 本因坊戰 in title and body with Japanese series context; not an unverified local script conversion.",
+      "checks": [
+        {
+          "url": "https://zh.wikipedia.org/w/index.php?title=%E6%9C%AC%E5%9B%A0%E5%9D%8A%E6%88%98&oldid=93277475&variant=zh-tw",
+          "observed_lang": "zh-Hant-TW",
+          "body_sha256": "7f191654462740c9564f1939aefe4ebf1711d8f5752aab019ab9eecbd7543663",
+          "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/honinbo-controlled-research/tw_wikipedia.html",
+          "identity_corroboration": {
+            "url": "https://www.nihonkiin.or.jp/match/honinbo/070.html",
+            "body_sha256": "d96c496abca1c292ad0814200cf4d66adb7a7ed233347934a1a4bce11eda6f26",
+            "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/honinbo-controlled-research/identity_nihon_kiin.html"
+          }
+        }
+      ],
+      "research_sha256": "695a8726dc8d19daf9a96f8b88d6456e51d6792259f9dacc9be3e1df3944f4d2"
+    },
+    {
+      "owner": {
+        "id": 24,
+        "kind": "event"
+      },
+      "lang": "jp",
+      "display_name": "本因坊戦",
+      "result": "approved",
+      "basis": "Nihon Ki-in uses 本因坊戦 in the event heading and 棋戦名称 field across editions.",
+      "checks": [
+        {
+          "url": "https://www.nihonkiin.or.jp/match/honinbo/070.html",
+          "observed_lang": "ja",
+          "body_sha256": "d96c496abca1c292ad0814200cf4d66adb7a7ed233347934a1a4bce11eda6f26",
+          "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/honinbo-controlled-research/identity_nihon_kiin.html"
+        }
+      ],
+      "research_sha256": "fd84be9b950a7d35a476f77bbb73cc717259b52cef233ca0440a18af5a28aa82"
+    },
+    {
+      "owner": {
+        "id": 24,
+        "kind": "event"
+      },
+      "lang": "ko",
+      "display_name": "본인방전",
+      "result": "approved",
+      "basis": "Korea Baduk Association uses 본인방전 in Cho U’s 56th and 58th championship record; years and opponent match the Japanese event.",
+      "checks": [
+        {
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000106",
+          "observed_lang": "ko",
+          "body_sha256": "d788a5fdca0e5154f776796069e8d985146a7714bbc2bf823e79274bf6d30dcf",
+          "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/honinbo-controlled-research/ko_kbaduk.html"
+        }
+      ],
+      "research_sha256": "87f96ff75a0d216e4f10fc4edafe174da3ff29b10ba55ea90bf617d7d0e5419d"
+    },
+    {
+      "owner": {
+        "id": 25,
+        "kind": "event"
+      },
+      "lang": "en",
+      "display_name": "Judan",
+      "result": "approved",
+      "basis": "CWI tournament index explicitly lists Judan from 1962 onward; conventional English event form.",
+      "checks": [
+        {
+          "url": "https://homepages.cwi.nl/~aeb/go/games/games/index.html",
+          "observed_lang": "en",
+          "body_sha256": "388e0f1434799d941720cadf5cfc9d9ee10409f280a785d3af0c8fa5fd4c741a",
+          "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/judan-ten-en-repair/source-bodies/cwi-en.html"
+        }
+      ],
+      "research_sha256": "dbab216423dd67aa11ebe21bf5a90235d71e397d7617319475833f1e5f695593"
+    },
+    {
+      "owner": {
+        "id": 25,
+        "kind": "event"
+      },
+      "lang": "cn",
+      "display_name": "十段战",
+      "result": "approved",
+      "basis": "Pinned zh-cn article uses 十段战 and identifies the Japanese title competition, distinct from player rank.",
+      "checks": [
+        {
+          "url": "https://zh.wikipedia.org/w/index.php?title=%E5%8D%81%E6%AE%B5%E6%88%98&oldid=92446810&variant=zh-cn",
+          "observed_lang": "zh-Hans-CN",
+          "body_sha256": "b4ab9a0849dc6956af3417ba94cc8fab884d1f8d9728f49f31818c04a2dbf99e",
+          "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/judan-ten-controlled/source-bodies/cn.html",
+          "identity_corroboration": {
+            "url": "https://www.nihonkiin.or.jp/match/jyudan/064.html",
+            "body_sha256": "8fbcb6874cb91b68fb9af0edbc548fcee8a6ca94686f51f37c4705439da10d78",
+            "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/judan-ten-en-repair/source-bodies/nihonkiin-ja.html"
+          }
+        }
+      ],
+      "research_sha256": "50de2303fc9dd5074b81d71fdd5f0d1bbc25fcf77ae5782646c3031021fa9c02"
+    },
+    {
+      "owner": {
+        "id": 25,
+        "kind": "event"
+      },
+      "lang": "tw",
+      "display_name": "十段戰",
+      "result": "approved",
+      "basis": "Pinned zh-tw article uses 十段戰 and identifies Sankei, Nihon Ki-in and Kansai Ki-in as organizers.",
+      "checks": [
+        {
+          "url": "https://zh.wikipedia.org/w/index.php?title=%E5%8D%81%E6%AE%B5%E6%88%98&oldid=92446810&variant=zh-tw",
+          "observed_lang": "zh-Hant-TW",
+          "body_sha256": "109b8c816efbe1d80e1ce4a396a6dabbc4c450d455a98cd532c33016d8fb380d",
+          "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/judan-ten-controlled/source-bodies/tw.html",
+          "identity_corroboration": {
+            "url": "https://www.nihonkiin.or.jp/match/jyudan/064.html",
+            "body_sha256": "8fbcb6874cb91b68fb9af0edbc548fcee8a6ca94686f51f37c4705439da10d78",
+            "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/judan-ten-en-repair/source-bodies/nihonkiin-ja.html"
+          }
+        }
+      ],
+      "research_sha256": "23c6bb8f5865bd2e8522ebd61483acd1ea55e534462a7d3f665eb8b7e430830d"
+    },
+    {
+      "owner": {
+        "id": 25,
+        "kind": "event"
+      },
+      "lang": "jp",
+      "display_name": "十段戦",
+      "result": "approved",
+      "basis": "Nihon Ki-in uses 十段戦 as the continuing series heading; sponsor-qualified 大和ハウス杯十段戦 denotes current editions, so sponsor-free series name is appropriate.",
+      "checks": [
+        {
+          "url": "https://www.nihonkiin.or.jp/match/jyudan/064.html",
+          "observed_lang": "ja",
+          "body_sha256": "8fbcb6874cb91b68fb9af0edbc548fcee8a6ca94686f51f37c4705439da10d78",
+          "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/judan-ten-en-repair/source-bodies/nihonkiin-ja.html"
+        }
+      ],
+      "research_sha256": "f5657444ee199fd4b32038cfce5383d787e569af3fa0990007456560926d93b5"
+    },
+    {
+      "owner": {
+        "id": 25,
+        "kind": "event"
+      },
+      "lang": "ko",
+      "display_name": "일본십단전",
+      "result": "approved",
+      "basis": "Korea Baduk Association explicitly uses 일본십단전 for Iyama’s 50th title match; Japanese qualifier retained to distinguish Korea’s namesake.",
+      "checks": [
+        {
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000324",
+          "observed_lang": "ko",
+          "body_sha256": "7055f612296b446ad305817c5e0c63ca174029983de7334fd972abf0809568ca",
+          "retained_body": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/judan-ten-controlled/source-bodies/ko-www.html"
+        }
+      ],
+      "research_sha256": "d5b22e4df77e04b4467b6715ac01add0fb9461f5f1fc01c8fb9f803d3b9798f8"
+    }
+  ],
+  "environments": {
+    "TEST": {
+      "original_pending_bundle_sha256": "7a663d844fa08d0d3c2384c27fa7e5f6bda10aea7c7cc90c35c4e4ba135c2384",
+      "fresh_pending_bundle_sha256": "1aad94b917af77fbad4c1efbcb6111e981b9c766eb3e9e25159ed55c7ac0561c",
+      "approved_bundle_sha256": "82fb0631a9626c6294f0921af1bf68b4425506b7216e62a3b953b59124e2bfdd",
+      "current_capture_sha256": "11a4372e9cd8242efff05c84d31c55cdad815f3eedd8f37c0da8ecf5bd51d3cb",
+      "captured_at": "2026-10-05T09:37:44.387001+00:00",
+      "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+      "catalog_sha256": "f2e4d322966039cd8fba4dba45dad952b9f2f24611c633ebc5c61384945b7079",
+      "mechanical_rebase": "Only top-level inventory and catalog hashes refreshed. Original independently bound null name preimages and exact owner preimages remain unchanged and were confirmed in fresh capture.",
+      "counts": {
+        "24": {
+          "rows": 5638,
+          "unique_games": 5638,
+          "visible_unique_games": 5638
+        },
+        "25": {
+          "rows": 4427,
+          "unique_games": 4427,
+          "visible_unique_games": 4427
+        }
+      },
+      "validation": {
+        "ready": true,
+        "write_ready": true,
+        "write_errors": [],
+        "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+        "member_count": 10,
+        "candidate_count": 10,
+        "approved": 10,
+        "pending": 0,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      }
+    },
+    "PROD": {
+      "original_pending_bundle_sha256": "ed6f34980820fb923aa97f1d6de3ed448f7671d1b0f543b66d05acc3086e394d",
+      "fresh_pending_bundle_sha256": "dac6c88d504e3d9f07a5f3bb02b06f024e4b22d75f606112ed2135537d663d2a",
+      "approved_bundle_sha256": "6b20a16be3aef9f3a6105e1f7da74f075bba0b16b22304bbc7d1d2f357b97e93",
+      "current_capture_sha256": "c5608d6eeb2d9fc319595adaa90d5fd1083230471af6027ec4579959bc45e1f1",
+      "captured_at": "2026-10-05T09:37:48.647442+00:00",
+      "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+      "catalog_sha256": "03cca482ef1dc3e52a109ed0a758e1fdc3f7c4a3dc061aa433b3def1e07df1a4",
+      "mechanical_rebase": "Only top-level inventory and catalog hashes refreshed. Original independently bound null name preimages and exact owner preimages remain unchanged and were confirmed in fresh capture.",
+      "counts": {
+        "24": {
+          "rows": 5638,
+          "unique_games": 5638,
+          "visible_unique_games": 5638
+        },
+        "25": {
+          "rows": 4427,
+          "unique_games": 4427,
+          "visible_unique_games": 4427
+        }
+      },
+      "validation": {
+        "ready": true,
+        "write_ready": true,
+        "write_errors": [],
+        "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+        "member_count": 10,
+        "candidate_count": 10,
+        "approved": 10,
+        "pending": 0,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      }
+    }
+  }
+}

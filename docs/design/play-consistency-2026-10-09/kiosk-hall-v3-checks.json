@@ -1,0 +1,120 @@
+{
+  "errors": [],
+  "games": {
+    "canvas": {
+      "x": 0,
+      "y": 0,
+      "width": 1024,
+      "height": 600
+    },
+    "lobby": {
+      "x": 16,
+      "y": 248,
+      "width": 992,
+      "height": 330
+    },
+    "room": {
+      "x": 24,
+      "y": 304,
+      "width": 484,
+      "height": 90
+    },
+    "fonts": [
+      {
+        "selector": ".khall-pagebar h1",
+        "text": "在线大厅",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".khall-start b",
+        "text": "快速匹配",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".khall-room .khall-seat-name b",
+        "text": "秋日拂晓",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".khall-room .khall-viewers",
+        "text": "2 人观战",
+        "fonts": [
+          {
+            "familyName": "Geist",
+            "postScriptName": "Geist-Regular",
+            "isCustomFont": true,
+            "glyphCount": 2
+          },
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Regular",
+            "isCustomFont": true,
+            "glyphCount": 3
+          }
+        ]
+      }
+    ]
+  },
+  "stones": [
+    {
+      "className": "khall-stone khall-stone--black",
+      "background": "radial-gradient(circle at 30% 25%, rgb(69, 76, 71), rgb(4, 6, 6) 70%)"
+    },
+    {
+      "className": "khall-stone khall-stone--white",
+      "background": "radial-gradient(circle at 30% 25%, rgb(255, 255, 255), rgb(233, 238, 229) 75%)"
+    },
+    {
+      "className": "khall-stone khall-stone--black",
+      "background": "radial-gradient(circle at 30% 25%, rgb(69, 76, 71), rgb(4, 6, 6) 70%)"
+    },
+    {
+      "className": "khall-stone khall-stone--white",
+      "background": "radial-gradient(circle at 30% 25%, rgb(255, 255, 255), rgb(233, 238, 229) 75%)"
+    },
+    {
+      "className": "khall-stone khall-stone--black",
+      "background": "radial-gradient(circle at 30% 25%, rgb(69, 76, 71), rgb(4, 6, 6) 70%)"
+    },
+    {
+      "className": "khall-stone khall-stone--white",
+      "background": "radial-gradient(circle at 30% 25%, rgb(255, 255, 255), rgb(233, 238, 229) 75%)"
+    }
+  ],
+  "placement": "完成定级后再来匹配\n\n快速匹配按升降级段位寻找同水平对手。请先完成5局定级赛。你仍可直接邀请空闲棋友。\n\n当前段位 · 尚未定级\n返回大厅\n去升降级对弈",
+  "invite": "邀请 竹林海棠 对局\n\n对方空闲。未定级也可邀请任意段位棋友，本局不计升降段位。\n\n对方段位 · 20级\n返回大厅\n发送邀请",
+  "inviteSent": "邀请已发送，等待对方回应。",
+  "sameRank": [
+    "3段",
+    "3段",
+    "3段"
+  ],
+  "watch": "进入 ee36 房只读观战。",
+  "pageOverflow": {
+    "width": 1024,
+    "height": 600
+  },
+  "keyboardTabs": "ArrowRight and Home passed",
+  "galaxyFreePixelUnchanged": true
+}

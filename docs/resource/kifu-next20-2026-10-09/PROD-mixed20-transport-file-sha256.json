@@ -1,0 +1,18 @@
+{
+  "approved": 20,
+  "bundle_sha256": "a5abce84c7daeef1337dca515591b0066825f25e7df2f04b7cbc6b25f85ee690",
+  "environment": "PROD",
+  "file_sha256": {
+    "PROD-mixed20-approved-input.json.gz": "5fd963ed40ce123d73df153b4479569e0c0569d008a1f15dec3fd3ea722a6789",
+    "PROD-mixed20-approved-name-snapshot.json.gz": "ec9b443803f443a60f872cbb2e1ddb38aa5aa2dd6b6ef8de596e3a84c2bfb767",
+    "PROD-mixed20-evidence.jsonl": "3b81b96b9d069f006980ca51a870491fdba3aab470e8aa227cd8e14f7b48d7ef",
+    "PROD-mixed20-fresh-post590-pages.json.gz": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+    "PROD-mixed20-inventory.json.gz": "63f8233665d95b6a92b4b1b557263d77fd5f0065a410e8696e4495dc15a45c24",
+    "PROD-mixed20-source-registry.json": "98f2368d2a2dd6e941156f59b3267180fd7702fffe15e6f38fe74a3e4fed3bd8",
+    "PROD-mixed20-unsigned-bundle.json.gz": "475c2ca097985b6ed55df1237df4bf35ce15c8ab9dce5980f425cd5971f9eaa1",
+    "PROD-mixed20-unsigned-evidence.json.gz": "8b3f27e3e297254908776620e000eb762422f43b24465d28900e416a05cb3e9e",
+    "PROD-mixed20-unsigned-summary.json": "94ab0bfff90d4ee1aefd96b96860ee07522721c9d4f544a0763e066a4fe4ede4"
+  },
+  "source_records": 20,
+  "status": "unsigned_transport_ready_outer_execution_approval_pending"
+}

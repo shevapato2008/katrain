@@ -50,14 +50,50 @@ export interface GeometryLayout {
   points: [number, number][][];
 }
 
+export type LightingReason = 'frame_overexposed' | 'frame_underexposed';
+
+export interface GeometryExposureMetrics {
+  median: number;
+  clip_frac: number;
+  shadow_frac: number;
+  reason?: LightingReason | null;
+  confirmed?: boolean;
+}
+
+export interface GeometryAnchorAttempt {
+  row: number;
+  col: number;
+  color: string;
+  level: number;
+  ok?: boolean;
+  peak?: number | null;
+  area?: number | null;
+  margin?: number | null;
+  reason?: string | null;
+  roi_fallback?: boolean;
+}
+
+export interface GeometryMetrics {
+  inlier_count?: number | null;
+  rms_residual?: number | null;
+  max_residual?: number | null;
+  exposure?: GeometryExposureMetrics | null;
+  attempts?: GeometryAnchorAttempt[];
+  relocated?: number;
+  shift_cells?: number;
+  drift_response?: number;
+}
+
 export interface GeometryStatus {
   phase: GeometryPhase;
+  /** 失败或取消前的真实阶段；旧服务端可能不提供。 */
+  stopped_phase?: GeometryPhase | null;
   session_calibrated: boolean;
   last_valid: boolean;
   progress?: { current: number; total: number };
   error?: string | null;
   pause_reason?: GeometryPauseReason | null;
-  metrics?: Record<string, number | null>;
+  metrics?: GeometryMetrics;
   geometry_revision?: number;
   detected_anchors?: GeometryAnchor[];
   /** 最近一次外框重定位为什么没成(`no_board_detected` / `orientation_ambiguous` / `moved_too_far` / `delivery_failed` …);成了或没试过为 null。 */
@@ -66,7 +102,7 @@ export interface GeometryStatus {
   lock_moved?: boolean;
   capabilities: {
     camera_ready: boolean;
-    led_ready: boolean;
+    led_ready: boolean | null;
     geometry_ready: boolean;
     recognition_ready?: boolean;
     model_ready?: boolean;
@@ -78,7 +114,16 @@ const json = async <T>(res: Response): Promise<T> => {
   return res.json();
 };
 
+export interface GeometryPreflightResult {
+  ready: boolean;
+  reason?: string;
+  status: GeometryStatus;
+}
+
 export const GeometryAPI = {
+  preflight: async (): Promise<GeometryPreflightResult> => json(await fetch(`${API_BASE}/preflight`, {
+    method: 'POST', signal: AbortSignal.timeout(15000),
+  })),
   lock: async (): Promise<GeometryLockResult> => {
     const res = await fetch(`${API_BASE}/lock`, { method: 'POST' });
     if (!res.ok) throw new Error(`geometry/lock failed ${res.status}`);
@@ -92,7 +137,7 @@ export const GeometryAPI = {
       phase: 'disabled',
       session_calibrated: false,
       last_valid: Boolean(data.locked),
-      capabilities: { camera_ready: false, led_ready: false, geometry_ready: false },
+      capabilities: { camera_ready: false, led_ready: data.capabilities?.led_ready ?? null, geometry_ready: false },
     };
   },
   calibrate: async (trigger: 'auto' | 'manual'): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/calibrate`, {

@@ -10,9 +10,9 @@ decoding raw Golaxy int coords / the 722-float area list / the 361-char judge
 belong string into KaTrain (col, row) structures via coords.golaxy_to_katrain.
 
 Golden decode values (validated live in golaxy-protocol.md Section 9.5):
-  golaxy_to_katrain(60)  -> Move(col=3, row=3)   (D16)
-  golaxy_to_katrain(288) -> Move(col=3, row=15)  (D4; black stone)
-  golaxy_to_katrain(300) -> Move(col=15, row=15) (Q4; white stone)
+  golaxy_to_katrain(60)  -> Move(col=3, row=15) (D16)
+  golaxy_to_katrain(288) -> Move(col=3, row=3)  (D4; black stone)
+  golaxy_to_katrain(300) -> Move(col=15, row=3) (Q4; white stone)
 
 Tests are async (``asyncio_mode=auto`` in pyproject.toml).
 """
@@ -85,9 +85,9 @@ def recorder():
 
 
 def test_golden_decode_values():
-    assert golaxy_to_katrain(60) == Move(col=3, row=3)
-    assert golaxy_to_katrain(288) == Move(col=3, row=15)
-    assert golaxy_to_katrain(300) == Move(col=15, row=15)
+    assert golaxy_to_katrain(60) == Move(col=3, row=15)
+    assert golaxy_to_katrain(288) == Move(col=3, row=3)
+    assert golaxy_to_katrain(300) == Move(col=15, row=3)
 
 
 # --------------------------------------------------------------------------- #
@@ -104,8 +104,8 @@ async def test_variation_decodes_sequence_and_passes_through_winrate_delta():
     analysis = await adapter.engine_analysis(game_id, "variation")
 
     assert isinstance(analysis, VariationAnalysis)
-    assert analysis.sequence[0] == Point(col=3, row=3)
-    assert analysis.sequence == [Point(col=3, row=3), Point(col=3, row=15), Point(col=15, row=15)]
+    assert analysis.sequence[0] == Point(col=3, row=15)
+    assert analysis.sequence == [Point(col=3, row=15), Point(col=3, row=3), Point(col=15, row=3)]
     assert analysis.winrate == pytest.approx(0.375)
     assert analysis.delta == pytest.approx(-2.1)
 
@@ -118,7 +118,7 @@ async def test_variation_skips_unknown_special_coords():
 
     analysis = await adapter.engine_analysis(game_id, "variation")
 
-    assert analysis.sequence == [Point(col=3, row=3), Point(col=3, row=15)]
+    assert analysis.sequence == [Point(col=3, row=15), Point(col=3, row=3)]
 
 
 async def test_area_decodes_361_points_and_passes_through_winrate_delta():
@@ -135,7 +135,7 @@ async def test_area_decodes_361_points_and_passes_through_winrate_delta():
     assert isinstance(analysis, AreaAnalysis)
     assert len(analysis.ownership) == 361
     point = analysis.ownership[288]
-    assert (point.col, point.row) == (3, 15)
+    assert (point.col, point.row) == (3, 3)
     assert point.value == pytest.approx(0.683)
     assert analysis.winrate == pytest.approx(0.375)
     assert analysis.delta == pytest.approx(-2.2)
@@ -153,7 +153,7 @@ async def test_options_decodes_candidates_with_parallel_arrays():
     assert len(analysis.candidates) == 2
     c0 = analysis.candidates[0]
     assert isinstance(c0, Candidate)
-    assert (c0.col, c0.row) == (3, 3)  # coord 60
+    assert (c0.col, c0.row) == (3, 15)  # coord 60
     assert c0.prob == pytest.approx(0.4)
     assert c0.winrate == pytest.approx(0.376)
     assert c0.delta == pytest.approx(-2.1)
@@ -168,7 +168,7 @@ async def test_options_skips_unknown_special_coords():
     analysis = await adapter.engine_analysis(game_id, "options")
 
     assert len(analysis.candidates) == 1
-    assert (analysis.candidates[0].col, analysis.candidates[0].row) == (3, 3)
+    assert (analysis.candidates[0].col, analysis.candidates[0].row) == (3, 15)
 
 
 async def test_judge_decodes_361_points_and_passes_through_winner_delta():
@@ -187,7 +187,7 @@ async def test_judge_decodes_361_points_and_passes_through_winner_delta():
     assert len(analysis.ownership) == 361
     p288 = analysis.ownership[288]
     assert isinstance(p288, JudgePoint)
-    assert (p288.col, p288.row) == (3, 15)
+    assert (p288.col, p288.row) == (3, 3)
     assert p288.owner == "B"
     assert analysis.ownership[300].owner == "W"
     assert analysis.winner == "B"
@@ -311,7 +311,7 @@ async def test_auth_expired_refresh_then_retry_returns_second_result():
     assert len(refreshed) == 1
     assert len(calls) == 2
     assert calls[0] == calls[1]
-    assert analysis.sequence == [Point(col=3, row=3)]
+    assert analysis.sequence == [Point(col=3, row=15)]
     assert analysis.winrate == pytest.approx(0.4)
 
 

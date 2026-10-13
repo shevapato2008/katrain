@@ -1,0 +1,212 @@
+{
+  "status": "producer-pending-independent-review",
+  "producer_id": "/root/event10_review_apply",
+  "producer_model": "gpt-6-astra",
+  "reasoning_effort": "max",
+  "produced_at": "2026-10-05T10:44:25.036145+00:00",
+  "database_writes": false,
+  "event_ids": [
+    46,
+    69,
+    61,
+    73,
+    81
+  ],
+  "languages": [
+    "cn",
+    "tw",
+    "jp",
+    "ko",
+    "en"
+  ],
+  "candidate_count": 25,
+  "conventional_count": 12,
+  "translated_count": 13,
+  "targets": {
+    "TEST": {
+      "captured_at": "2026-10-05T10:40:10.948831+00:00",
+      "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+      "catalog_sha256": "f2e4d322966039cd8fba4dba45dad952b9f2f24611c633ebc5c61384945b7079",
+      "catalog_hash_basis_capture": "/tmp/kifu-event-next-high5-20261005/TEST/current.json",
+      "bundle_sha256": "317ca841f2a57e95c90f47c4c0d18039a34299b8e35ded4980f01e79fc2f6c5d",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "46": {
+          "event_id": 46,
+          "linked_rows": 480,
+          "unique_games": 480,
+          "visible_unique_games": 480
+        },
+        "69": {
+          "event_id": 69,
+          "linked_rows": 468,
+          "unique_games": 468,
+          "visible_unique_games": 468
+        },
+        "61": {
+          "event_id": 61,
+          "linked_rows": 428,
+          "unique_games": 428,
+          "visible_unique_games": 428
+        },
+        "73": {
+          "event_id": 73,
+          "linked_rows": 419,
+          "unique_games": 419,
+          "visible_unique_games": 419
+        },
+        "81": {
+          "event_id": 81,
+          "linked_rows": 403,
+          "unique_games": 403,
+          "visible_unique_games": 403
+        }
+      },
+      "unique_visible_games": 2198
+    },
+    "PROD": {
+      "captured_at": "2026-10-05T10:40:09.825938+00:00",
+      "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+      "catalog_sha256": "03cca482ef1dc3e52a109ed0a758e1fdc3f7c4a3dc061aa433b3def1e07df1a4",
+      "catalog_hash_basis_capture": "/tmp/kifu-event-next-high5-20261005/PROD/current.json",
+      "bundle_sha256": "475f0324406d8b2a9c2115746c9ee6919260e573e918fe604b68962b64a8dd75",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "46": {
+          "event_id": 46,
+          "linked_rows": 480,
+          "unique_games": 480,
+          "visible_unique_games": 480
+        },
+        "69": {
+          "event_id": 69,
+          "linked_rows": 468,
+          "unique_games": 468,
+          "visible_unique_games": 468
+        },
+        "61": {
+          "event_id": 61,
+          "linked_rows": 428,
+          "unique_games": 428,
+          "visible_unique_games": 428
+        },
+        "73": {
+          "event_id": 73,
+          "linked_rows": 419,
+          "unique_games": 419,
+          "visible_unique_games": 419
+        },
+        "81": {
+          "event_id": 81,
+          "linked_rows": 403,
+          "unique_games": 403,
+          "visible_unique_games": 403
+        }
+      },
+      "unique_visible_games": 2198
+    }
+  },
+  "events": [
+    {
+      "event_id": 46,
+      "canonical_name": "全日本第一位战",
+      "unique_visible_games": 480,
+      "names": {
+        "cn": "全日本第一位决定战",
+        "tw": "全日本第一位決定戰",
+        "jp": "全日本第一位決定戦",
+        "ko": "전일본 제1위 결정전",
+        "en": "All Japan 1st Place Tournament"
+      }
+    },
+    {
+      "event_id": 69,
+      "canonical_name": "梦百合杯世界围棋公开赛",
+      "unique_visible_games": 468,
+      "names": {
+        "cn": "梦百合杯世界围棋公开赛",
+        "tw": "夢百合杯世界圍棋公開賽",
+        "jp": "夢百合杯世界囲碁オープン戦",
+        "ko": "몽백합배 세계바둑오픈전",
+        "en": "Mlily Cup"
+      }
+    },
+    {
+      "event_id": 61,
+      "canonical_name": "应氏杯世界职业围棋锦标赛",
+      "unique_visible_games": 428,
+      "names": {
+        "cn": "应氏杯世界职业围棋锦标赛",
+        "tw": "應氏杯世界職業圍棋錦標賽",
+        "jp": "応氏杯世界選手権",
+        "ko": "응씨배 세계프로바둑선수권대회",
+        "en": "Ing Cup"
+      }
+    },
+    {
+      "event_id": 73,
+      "canonical_name": "中国全国围棋团体赛",
+      "unique_visible_games": 419,
+      "names": {
+        "cn": "全国围棋团体赛",
+        "tw": "中國全國圍棋團體賽",
+        "jp": "中国全国囲碁団体戦",
+        "ko": "중국 전국바둑단체전",
+        "en": "Chinese National Team Go Championship"
+      }
+    },
+    {
+      "event_id": 81,
+      "canonical_name": "台湾联电杯职业围棋赛",
+      "unique_visible_games": 403,
+      "names": {
+        "cn": "台湾联电杯职业围棋赛",
+        "tw": "聯電盃職業圍棋賽",
+        "jp": "台湾聯電杯プロ囲碁戦",
+        "ko": "대만 UMC배 프로바둑대회",
+        "en": "UMC Cup Professional Go Tournament"
+      }
+    }
+  ],
+  "translation_notes": {
+    "46-cn": "Render 全日本第一位決定戦 in Simplified Chinese as 全日本第一位决定战, preserving All-Japan first-place identity.",
+    "46-tw": "Render the Japanese 第一位決定戦 as 第一位決定戰 in Traditional Chinese, preserving 全日本.",
+    "46-ko": "Translate 全日本第一位決定戦 as 전일본 제1위 결정전. This retains the national scope and first-place decision competition, distinct from Kansai Ki-in and the earlier Nihon Ki-in title.",
+    "69-ko": "Render 梦百合杯世界围棋公开赛 as 몽백합배 세계바둑오픈전, preserving sponsor, world, Go and open tournament scope.",
+    "61-ko": "Render 应氏杯世界职业围棋锦标赛 as 응씨배 세계프로바둑선수권대회, preserving Ing sponsor identity and the world professional Go championship.",
+    "73-tw": "Convert 全国围棋团体赛 into Traditional Chinese 全國圍棋團體賽 with explicit 中國 country scope.",
+    "73-jp": "Render 全国围棋团体赛 as 全国囲碁団体戦 with 中国 country scope; preserve the domestic team competition rather than individual or international play.",
+    "73-ko": "Render 中国全国围棋团体赛 as 중국 전국바둑단체전, preserving national domestic team competition scope.",
+    "73-en": "Translate the Chinese national team Go competition as Chinese National Team Go Championship. Team describes the domestic competition format, not matches of China's national representative team.",
+    "81-cn": "Convert 『聯電盃』職業圍棋賽 into Simplified Chinese 联电杯职业围棋赛, omit the sponsor's typographic quotation brackets, and add 台湾 to preserve this domestic competition identity.",
+    "81-tw": "Normalize the officially captured 『聯電盃』職業圍棋賽 to the display title 聯電盃職業圍棋賽 by removing only typographic quotation brackets. This is a declared title rendering, without a claim that the unquoted target was found verbatim in the captured body.",
+    "81-jp": "Render the Taiwanese 『聯電盃』職業圍棋賽 as 台湾聯電杯プロ囲碁戦, retaining the sponsor and professional Go competition scope.",
+    "81-ko": "Render the Taiwanese professional Go tournament as 대만 UMC배 프로바둑대회. UMC is explicitly identified in the same native Haifong source as the sponsoring 聯華電子 company."
+  },
+  "scope_note": "Names and evidence for existing event types only. No album links, owners, aliases or raw EV text change. Existing type identity/linked rows are reused.",
+  "reader_note": "Existing strict display reads approved type names. Generic raw EV year/edition/round decoration is not added by this data batch."
+}

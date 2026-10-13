@@ -539,6 +539,9 @@ msgstr "k"
 msgid "strength:dan"
 msgstr "d"
 
+msgid "strength:professional_dan_format"
+msgstr "{rank}e dan professionnel"
+
 msgid "ai:default"
 msgstr "Recommended"
 
@@ -2226,6 +2229,12 @@ msgstr "Lieu"
 msgid "kifu:source"
 msgstr "Source"
 
+msgid "kifu:source_golaxy"
+msgstr "GoLaxy"
+
+msgid "kifu:source_unknown"
+msgstr "Source non vérifiée"
+
 msgid "kifu:open_in_research"
 msgstr "Ouvrir en recherche"
 
@@ -3390,7 +3399,9 @@ msgstr ""
 
 msgid "grade:def_brilliant"
 msgstr ""
-"Premier choix du moteur que son intuition n'avait pas vu (prior < 10 %)"
+"Coup joué correspondant au premier choix de l'IA après un calcul "
+"approfondi, avec une probabilité de sélection initiale de l'IA inférieure "
+"à 10 % (à 6 % en fin de partie)"
 
 msgid "grade:def_best"
 msgstr "Premier choix du moteur joué"
@@ -3407,8 +3418,18 @@ msgstr ""
 
 msgid "grade:brilliance_entry"
 msgstr ""
-"Les trois à la fois : premier choix du moteur joué, prior de politique sous "
-"10 % (son intuition ne l'avait pas vu), et partie encore indécise."
+"Un coup brillant doit remplir toutes ces conditions : le coup joué est le "
+"premier choix de l'IA après un calcul approfondi ; sa probabilité de "
+"sélection initiale par l'IA est inférieure à 10 % (à 6 % en fin de partie)"
+" ; l'issue de la partie n'est pas encore décidée."
+
+msgid "grade:initial_probability_help"
+msgstr ""
+"La probabilité de sélection initiale de l'IA est la probabilité que l'IA "
+"attribue au choix de ce coup avant un calcul approfondi. Ce n'est ni la "
+"probabilité de gagner, ni celle qu'un humain joue ce coup. Un coup dont la"
+" probabilité de sélection initiale est très faible peut aussi devenir le "
+"premier choix après un calcul approfondi."
 
 msgid "grade:match_timeline_legend"
 msgstr ""
@@ -4003,8 +4024,8 @@ msgstr "Coup {n} {m} · {s} · {g} · perte de {x} pts"
 
 msgid "grade:sel_brilliant"
 msgstr ""
-"Coup {n} {m} · {s} · brio {k} — c'est le premier choix du moteur, auquel il "
-"n'accordait que {p}% a priori (plus c'est bas, plus c'est brillant)"
+"Coup {n} {m} · {s} · brio {k} — probabilité de sélection initiale de l'IA "
+"de seulement {p} % ; devenu le premier choix après un calcul approfondi"
 
 msgid "grade:truncated_plot"
 msgstr "Au plus {k} par camp sont tracés ; {n} autres ne sont pas affichés"
@@ -7071,20 +7092,22 @@ msgid "baipu:wrong_title"
 msgstr "Mal placée · elle va en {c}"
 
 msgid "kifu:detail_offline"
-msgstr "Cette partie nécessite une connexion Internet"
+msgstr "Impossible de se connecter à la bibliothèque de parties"
 
 msgid "kifu:detail_offline_hint"
-msgstr ""
-"La bibliothèque de kifus est dans le cloud, et cet appareil ne peut pas la "
-"joindre pour l'instant."
+msgstr "Vérifiez votre connexion réseau ou réessayez plus tard."
 
 msgid "kifu:list_offline"
-msgstr "La recherche de kifus nécessite une connexion Internet"
+msgstr "Impossible de se connecter à la bibliothèque de parties"
 
 msgid "kifu:list_offline_hint"
-msgstr ""
-"Cet appareil ne peut pas joindre le cloud pour l'instant. Les kifus rejoués "
-"et les SGF importés ne sont pas concernés."
+msgstr "Vérifiez votre connexion réseau ou réessayez plus tard."
+
+msgid "kifu:service_unavailable"
+msgstr "Bibliothèque de parties temporairement indisponible"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "Le service cloud est temporairement indisponible. Réessayez plus tard."
 
 msgid "kifu:wrong_size_reason"
 msgstr "C'est un kifu {n}×{n} — le plateau réel n'accepte que le 19×19"
@@ -7270,3 +7293,6 @@ msgstr "Échec de la confirmation de connexion"
 
 msgid "vision:not_a_stone"
 msgstr "Ce n'est pas une pierre"
+
+msgid "report:score_difference"
+msgstr "Écart de points"

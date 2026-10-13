@@ -1,0 +1,187 @@
+{
+  "batch_id": 591,
+  "environment": "PROD",
+  "observed_at": "2026-10-08T20:16:50.350103+00:00",
+  "rows": [
+    {
+      "decision_kind": "generated",
+      "display_name": "葉子萌",
+      "evidence_id": 64067,
+      "lang": "tw",
+      "owner_id": 229,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "桂詩雲",
+      "evidence_id": 64071,
+      "lang": "tw",
+      "owner_id": 320,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "行泓丞",
+      "evidence_id": 64069,
+      "lang": "tw",
+      "owner_id": 385,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "王琛",
+      "evidence_id": 64072,
+      "lang": "tw",
+      "owner_id": 391,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "李貞垠",
+      "evidence_id": 64073,
+      "lang": "tw",
+      "owner_id": 446,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "周雨萱",
+      "evidence_id": 64068,
+      "lang": "tw",
+      "owner_id": 595,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "肖澤彬",
+      "evidence_id": 64066,
+      "lang": "tw",
+      "owner_id": 600,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "朱彦臻",
+      "evidence_id": 64070,
+      "lang": "tw",
+      "owner_id": 662,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "塩入逸造",
+      "evidence_id": 64062,
+      "lang": "tw",
+      "owner_id": 4235,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "오쿠무라 야스시",
+      "evidence_id": 64075,
+      "lang": "ko",
+      "owner_id": 4276,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "日下包夫",
+      "evidence_id": 64057,
+      "lang": "tw",
+      "owner_id": 4771,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "아케도 가즈미",
+      "evidence_id": 64076,
+      "lang": "ko",
+      "owner_id": 4782,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "武田博愛",
+      "evidence_id": 64059,
+      "lang": "tw",
+      "owner_id": 5297,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "하마나카 다카미쓰",
+      "evidence_id": 64074,
+      "lang": "ko",
+      "owner_id": 5396,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "浜島久義",
+      "evidence_id": 64058,
+      "lang": "tw",
+      "owner_id": 5397,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "鈴木越雄",
+      "evidence_id": 64065,
+      "lang": "tw",
+      "owner_id": 6259,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "小松伸昭",
+      "evidence_id": 64060,
+      "lang": "tw",
+      "owner_id": 6599,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "早瀬玄堂",
+      "evidence_id": 64061,
+      "lang": "tw",
+      "owner_id": 6626,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "福原義虎",
+      "evidence_id": 64063,
+      "lang": "tw",
+      "owner_id": 6629,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "九世安井算知",
+      "evidence_id": 64064,
+      "lang": "tw",
+      "owner_id": 6686,
+      "reference_url": null,
+      "status": "verified"
+    }
+  ]
+}

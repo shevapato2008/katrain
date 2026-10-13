@@ -307,12 +307,13 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
         ctx.fillStyle = move.player === 'B' ? "rgba(255, 255, 255, 0.95)" : "rgba(0, 0, 0, 0.95)";
         ctx.fillText((index + 1).toString(), pos.x, pos.y);
       });
-    } else if (lastMove) {
-      // Draw last move indicator only when not showing move numbers
+    }
+    if (lastMove) {
+      // Keep the ring outside the central number when move numbers are visible.
       const lastStone = stones.find(s => s.coords[0] === lastMove[0] && s.coords[1] === lastMove[1]);
       if (lastStone) {
         const pos = gridToCanvas(layout, lastMove[0], lastMove[1]);
-        const circleRadius = layout.gridSize * 0.25;
+        const circleRadius = layout.gridSize * (showMoveNumbers ? 0.42 : 0.25);
 
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, circleRadius, 0, Math.PI * 2);

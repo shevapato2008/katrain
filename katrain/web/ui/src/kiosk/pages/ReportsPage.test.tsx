@@ -793,6 +793,20 @@ describe('屏 19 · 删除', () => {
     expect(within(rows()[1]).queryByRole('button', { name: '删除' })).toBeNull();
   });
 
+  it('棋谱库导入的职业棋局不显示删除，个人升降级对局显示删除', async () => {
+    mocks.list.mockResolvedValue(response([
+      game('library', { source: 'kifu_library' }),
+      game('ranked', { game_type: 'ai_ladder_ranked' }),
+    ]));
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
+    expect(within(rows()[0]).queryByRole('button', { name: '删除' })).toBeNull();
+    fireEvent.click(within(rows()[1]).getByRole('button', { name: /升降级对弈/ }));
+    await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
+    expect(within(rows()[1]).getByRole('button', { name: '删除' })).toBeInTheDocument();
+  });
+
   it('确认之后才删,删完重新拉列表', async () => {
     renderPage();
     await waitFor(() => expect(rows()).toHaveLength(2));

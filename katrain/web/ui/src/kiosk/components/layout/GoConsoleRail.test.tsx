@@ -20,7 +20,7 @@ describe('GoConsoleRail —— 状态格接真硬件', () => {
   test('两个 Context 都缺席时,三格是「—」且一颗灯都不点', () => {
     const { container } = render(<GoConsoleRail />);
     expect([...container.querySelectorAll('.kiosk-status__v')].map((e) => e.textContent))
-      .toEqual(['—', '—', '—']);
+      .toEqual(['—', '—', '未确认']);
     expect(container.querySelectorAll('.kiosk-status__k i')).toHaveLength(0);
   });
 
@@ -44,7 +44,7 @@ describe('GoConsoleRail —— 状态格接真硬件', () => {
     vision.mockReturnValue({ visionStatus: { cameraConnected: true, ledConnected: null } });
     geometry.mockReturnValue({ status: { phase: 'ready' } });
     render(<GoConsoleRail />);
-    expect(screen.getByText('LED').parentElement?.querySelector('.kiosk-status__v')?.textContent).toBe('—');
+    expect(screen.getByText('LED').parentElement?.querySelector('.kiosk-status__v')?.textContent).toBe('未确认');
     expect(lampOf('LED')).toBe(null);
     // 同一屏上另外两格照旧亮 —— 证明「—」是这一格的判断,不是整栏退化了
     expect(lampOf('摄像头')).toBe('var(--good)');

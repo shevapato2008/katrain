@@ -44,7 +44,7 @@ def _human(delta: timedelta) -> str:
     return f"{seconds // 86400} 天"
 
 
-def derive_health(row, now: datetime) -> Health:
+def derive_health(row, now: datetime, paused_reason: str | None = None, resumed_at: datetime | None = None) -> Health:
     """Apply the spec's health states in priority order, stopping at the first match."""
     now = as_utc(now)
     heartbeat = as_utc(row.heartbeat_at)
@@ -54,6 +54,8 @@ def derive_health(row, now: datetime) -> Health:
         return Health("offline", f"cron 进程失联：{_human(now - heartbeat)}没有心跳")
     if not row.enabled:
         return Health("disabled", "已被配置停用")
+    if paused_reason is not None and row.kind == "interval":
+        return Health("paused", f"已在后台暂停：{paused_reason}")
 
     if row.kind == "loop":
         iteration = as_utc(row.loop_iteration_at)
@@ -82,6 +84,9 @@ def derive_health(row, now: datetime) -> Health:
         return Health("failed", f"连续 {row.consecutive_failures} 次不成功，最近一次抛出了异常")
     if row.last_status == "errors":
         return Health("errors", "跑完了，但运行期间有报错")
+    resumed = as_utc(resumed_at)
+    if resumed is not None and resumed > started:
+        elapsed = min(elapsed, now - resumed)  # a job that was paused is not overdue for the paused time
     if elapsed > 2 * interval + OVERDUE_GRACE:
         return Health("overdue", f"上次开始于 {_human(elapsed)}前，间隔是 {_human(interval)}")
     return Health("ok", f"上次开始于 {_human(elapsed)}前")

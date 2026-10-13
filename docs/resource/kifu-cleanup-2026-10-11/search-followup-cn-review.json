@@ -1,0 +1,32 @@
+{
+  "baseline_files_sha256": {
+    "katrain/web/api/v1/endpoints/kifu.py": "0a47df6b6ef2ce2c9c03b3a0ff5fdcdf54d3f055780f8042bcdb5f761255cc42",
+    "tests/web_ui/test_kifu_name_first_pass.py": "d08813bc8d0a6fbd7097323ce2741742ea3adbbf5eb71568701b4c8e9717b41a"
+  },
+  "files_sha256": {
+    "katrain/web/api/v1/endpoints/kifu.py": "e4415009ee320dacd1f80446d24204282644d4dad4e7914e9508dfc9101a92f9",
+    "tests/web_ui/test_kifu_name_first_pass.py": "ebc8c0313c51037a1cf7418ecbaf4ab17617670c1afeec6eeaef4ee991e13d7b"
+  },
+  "findings": [],
+  "review_basis": [
+    "The former canonical-plus-raw condition is extracted without semantic change into exact_player_with_raw.",
+    "player_only_search requires a single canonical player, either alone or accompanied by qualified raw-player matches, with no canonical/raw event name matches and no selected-event matches. It now excludes those defined player-only searches from the non-strict CN provisional expansion.",
+    "Unidentified queries, event queries, selected-event matches and multiple-player searches retain their previous branch conditions. The strict path, canonical FK/raw-scope union, public/nonduplicate filters and shared list/count predicate are unchanged.",
+    "The focused test now covers strict 1/0, CN/EN display requests, canonical-only and canonical-plus-raw matches. Injected unrelated provisional player and album results verify that neither mode re-expands the exact player result set.",
+    "Five focused tests passed in the root actual run, including retained shared-player/raw-event cases. Recorded source hashes match the independently reviewed current files."
+  ],
+  "reviewed_at": "2026-10-11T16:50:35.769840+00:00",
+  "reviewer_id": "/root/cleanup_final_review_astra",
+  "reviewer_model": "gpt-6-astra",
+  "scope": "Only the follow-up player_only_search guard and focused regression-test expansion after the first search fix. No SSH, database, Git or repository code mutations by reviewer.",
+  "status": "approved",
+  "test_evidence": {
+    "current_file_hashes_match": true,
+    "executor": "/root",
+    "path": "/tmp/kifu-cleanup-20261011/search-followup-cn-root-tests.json",
+    "reported_exit_code": 0,
+    "reported_result": "5 passed in 1.06s",
+    "reviewer_repeated_tests": false,
+    "sha256": "57d9473143a6b0e3150fa8c7ba4f167c1b8c173f6095ea35cb959a5e18779212"
+  }
+}

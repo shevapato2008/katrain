@@ -7,7 +7,11 @@ from pydantic import BaseModel
 from katrain.web.models import User
 from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
 from katrain.web.api.v1.endpoints.reports import _dispatch_remote_only
-from katrain.web.core.user_game_repo import ProtectedRankedGameError, ReservedAiLadderGameIdError
+from katrain.web.core.user_game_repo import (
+    ProtectedLibraryGameError,
+    ProtectedRankedGameError,
+    ReservedAiLadderGameIdError,
+)
 from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session, guard_user_has_no_pending_ranked_game
 
 router = APIRouter()
@@ -202,15 +206,12 @@ async def delete_user_game(
 ):
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await _dispatch_remote_only(lambda: dispatcher.user_games_delete(game_id))
+        return await _dispatch_remote_only(lambda: dispatcher.user_games_delete(game_id, current_user.id))
 
     repo = request.app.state.user_game_repo
-    existing = repo.get(game_id, current_user.id)
-    if existing and existing.get("game_type") == "ai_ladder_ranked":
-        raise HTTPException(status_code=403, detail="authoritative ranked AI games are protected from generic deletion")
     try:
         deleted = repo.delete(game_id, current_user.id)
-    except ProtectedRankedGameError as exc:
+    except (ProtectedLibraryGameError, ProtectedRankedGameError) as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     if not deleted:
         raise HTTPException(status_code=404, detail="Game not found")

@@ -1,0 +1,41 @@
+/* Diagnostics: ported from the approved clickable prototype. */
+.dg-controls { display:grid; gap:8px; padding:10px 14px; }
+.dg-model-row, .dg-run-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.dg-model-row { padding-bottom:8px; border-bottom:1px solid var(--admin-line); }
+.dg-version small { display:block; font-size:13px; color:var(--admin-muted); }
+.dg-version strong { font-size:16px; font-weight:400; }
+.dg-registered { display:flex; align-items:center; gap:8px; flex:1; min-width:260px; font-size:16px; }
+.dg-page .dg-registered select { flex:1; max-width:300px; height:38px; border:1px solid var(--admin-line); border-radius:6px; background:var(--admin-panel2); color:var(--admin-text); font-size:15px; padding:4px 8px; }
+.dg-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; font-size:14px; color:var(--admin-muted); flex:1; }
+.dg-meta strong { font-weight:400; color:var(--admin-text); font-size:16px; }
+.dg-lock { display:inline-flex; align-items:center; gap:5px; color:var(--admin-warn); }
+.dg-lock svg { width:15px; height:15px; }
+.dg-num { font-size:12.5px; font-weight:400; color:var(--admin-accent); }
+.dg-stage { display:grid; grid-template-columns:minmax(0,1fr) 320px; }
+.dg-viewer { height:max(460px, calc(100vh - 385px)); border-right:1px solid var(--admin-line); }
+.dg-figure { position:relative; width:100%; height:100%; }
+.dg-figure img { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; }
+.dg-boxes { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+/* Boxes sit on the camera image, which does not change with the page theme: one fixed set in both themes. */
+.dg-page { --dg-box-0:#2f9c86; --dg-box-1:#4f86c6; --dg-box-2:#d14b3f; --dg-box-3:#3f9a4f; --dg-box-sustain:#d9962b; --dg-box-below:#8a8a8a; }
+.dg-box { fill:none; stroke-width:2; vector-effect:non-scaling-stroke; }
+.dg-box.c0 { stroke:var(--dg-box-0); } .dg-box.c1 { stroke:var(--dg-box-1); } .dg-box.c2 { stroke:var(--dg-box-2); } .dg-box.c3 { stroke:var(--dg-box-3); }
+.dg-box.sustain { stroke:var(--dg-box-sustain); } .dg-box.below { stroke:var(--dg-box-below); }
+.dg-square { height:100%; aspect-ratio:1; max-width:100%; }
+.dg-board { display:block; width:100%; height:100%; }
+.dg-warn { top:auto; bottom:10px; }
+.dg-side { padding:14px 16px; display:grid; gap:12px; align-content:start; max-height:max(460px, calc(100vh - 385px)); overflow:auto; }
+.dg-side h3 { margin:0; font-size:20px; }
+.dg-kicker { font-size:13px; color:var(--admin-accent); }
+.dg-side dl { margin:0; display:grid; gap:8px; }
+.dg-side dt { font-size:13px; color:var(--admin-subtle); }
+.dg-side dd { margin:1px 0 0; font-size:15px; line-height:1.55; }
+.dg-keys { font-size:13px; color:var(--admin-subtle); }
+.dg-batch { display:grid; gap:4px; padding:8px 12px; border:1px solid var(--admin-line); border-radius:8px; background:var(--admin-panel2); font-size:14px; color:var(--admin-muted); }
+.dg-batch strong { font-size:15px; font-weight:400; color:var(--admin-text); }
+.dg-batch p { margin:2px 0 0; }
+.dg-batch.stale { border-color:var(--admin-warn); background:var(--admin-warn-bg); }
+.dg-batch.stale strong { color:var(--admin-warn); }
+.dg-batch summary { cursor:pointer; color:var(--admin-link); }
+.dg-batch summary:hover { color:var(--admin-accent); }
+.dg-pop { margin-top:6px; line-height:1.6; font-size:13px; color:var(--admin-muted); }

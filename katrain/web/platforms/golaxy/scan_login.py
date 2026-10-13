@@ -119,7 +119,7 @@ class ScanRateLimited(Exception):
 
 
 class GolaxyScanLogin:
-    """薄客户端,只管 uuid / 状态 / 昵称三步只读查询(①③⑤)。
+    """薄客户端,只管 uuid / 状态 / 登录账号三步只读查询(①③⑤)。
 
     第 ④ 步(拿确认后的 uuid 换 access/refresh token)**不在这里**——它复用
     `adapter.py` 里既有的 token 存储/刷新路径(`GolaxyRestClient.login_scan_code`),
@@ -185,8 +185,7 @@ class GolaxyScanLogin:
         return _STATE_BY_DATA.get(raw, ScanState.UNKNOWN)
 
     async def username(self, uuid: str) -> str:
-        """星阵账号的**昵称**——不是登录 principal,不能拿它去拼 `0086-{昵称}`
-        (见 adapter.py 里 scan_login 相关注释 / R-29)。仅用于屏上展示。"""
+        """星阵账号的带区号手机号（登录 principal），不是屏上昵称。"""
         body = await self._get("/api/auth/scan/username", uuid=uuid)
         return str(body["data"])
 

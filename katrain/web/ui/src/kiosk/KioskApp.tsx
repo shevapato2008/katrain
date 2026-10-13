@@ -23,10 +23,11 @@ import '../kiosk-shell/card.css';
 import '../kiosk-shell/status.css';
 import '../kiosk-shell/go-screens.css';
 
-import { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
+import { accessAllowed, kioskAccessPolicy } from '../components/auth/accessPolicy';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
@@ -40,42 +41,57 @@ import KioskViewport from './components/layout/KioskViewport';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
-import PlayPage from './pages/PlayPage';
-import AiSetupPage from './pages/AiSetupPage';
-import PvpLocalSetupPage from './pages/PvpLocalSetupPage';
-import GamePage from './pages/GamePage';
-import GrowthPage from './pages/GrowthPage';
-import TsumegoPage from './pages/TsumegoPage';
-import TsumegoCategoriesPage from './pages/TsumegoCategoriesPage';
-import TsumegoUnitsPage from './pages/TsumegoUnitsPage';
-import TsumegoUnitListPage from './pages/TsumegoUnitListPage';
-import TsumegoProblemPage from './pages/TsumegoProblemPage';
-import ResearchPage from './pages/ResearchPage';
+const PlayPage = lazy(() => import('./pages/PlayPage'));
+const AiSetupPage = lazy(() => import('./pages/AiSetupPage'));
+const PvpLocalSetupPage = lazy(() => import('./pages/PvpLocalSetupPage'));
+const GamePage = lazy(() => import('./pages/GamePage'));
+const GrowthPage = lazy(() => import('./pages/GrowthPage'));
+const TsumegoPage = lazy(() => import('./pages/TsumegoPage'));
+const TsumegoCategoriesPage = lazy(() => import('./pages/TsumegoCategoriesPage'));
+const TsumegoUnitsPage = lazy(() => import('./pages/TsumegoUnitsPage'));
+const TsumegoUnitListPage = lazy(() => import('./pages/TsumegoUnitListPage'));
+const TsumegoProblemPage = lazy(() => import('./pages/TsumegoProblemPage'));
+const ResearchPage = lazy(() => import('./pages/ResearchPage'));
 import KifuPage from './pages/KifuPage';
-import KifuDetailPage from './pages/KifuDetailPage';
-import BaipuSessionRoute from './pages/BaipuSessionRoute';
-import LobbyPage from './pages/LobbyPage';
-import SettingsPage from './pages/SettingsPage';
-import ReportsPage from './pages/ReportsPage';
-import ReportDetailPage from './pages/ReportDetailPage';
-import VisionSetupPage from './pages/VisionSetupPage';
-import PlatformConnectPage from './pages/PlatformConnectPage';
-import PlatformLoginPage from './pages/PlatformLoginPage';
-import PlatformLobbyPage from './pages/PlatformLobbyPage';
-import PlatformEngineSetupPage from './pages/PlatformEngineSetupPage';
-import TutorialCategoriesPage from './pages/TutorialCategoriesPage';
-import TutorialBooksPage from './pages/TutorialBooksPage';
-import TutorialSectionPage from './pages/TutorialSectionPage';
+const KifuDetailPage = lazy(() => import('./pages/KifuDetailPage'));
+const KifuReportDetailPage = lazy(() => import('./pages/KifuReportDetailPage'));
+const BaipuSessionRoute = lazy(() => import('./pages/BaipuSessionRoute'));
+const LobbyPage = lazy(() => import('./pages/LobbyPage'));
+const PvpSpectatorPage = lazy(() => import('./pages/PvpSpectatorPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const ReportDetailPage = lazy(() => import('./pages/ReportDetailPage'));
+const VisionSetupPage = lazy(() => import('./pages/VisionSetupPage'));
+const PlatformLoginPage = lazy(() => import('./pages/PlatformLoginPage'));
+const PlatformLobbyPage = lazy(() => import('./pages/PlatformLobbyPage'));
+const GolaxyHomePage = lazy(() => import('./pages/GolaxyHomePage'));
+const GolaxyPregameSetupPage = lazy(() => import('./pages/GolaxyPregameSetupPage'));
+const GolaxySpectatorPage = lazy(() => import('./pages/GolaxySpectatorPage'));
+const PlatformEngineSetupPage = lazy(() => import('./pages/PlatformEngineSetupPage'));
+const TutorialCategoriesPage = lazy(() => import('./pages/TutorialCategoriesPage'));
+const TutorialBooksPage = lazy(() => import('./pages/TutorialBooksPage'));
+const TutorialSectionPage = lazy(() => import('./pages/TutorialSectionPage'));
+
+const LegacyPlatformLobbyRedirect = () => {
+  const { search } = useLocation();
+  return <Navigate to={new URLSearchParams(search).get('platform') === 'ogs'
+    ? '/kiosk/play/cross-platform/ogs' : '/kiosk/play'} replace />;
+};
 
 export const KioskRoutes = () => {
-  const { user } = useAuth();
+  const { user, status, isAuthenticated, isGuest } = useAuth();
+  const { pathname } = useLocation();
+  const accessPolicy = kioskAccessPolicy(pathname);
+  const accessBlocked = Boolean(accessPolicy && !accessAllowed(status, isAuthenticated, isGuest, accessPolicy.realAccount));
   const { t } = useTranslation();
   // The shared zero-persistence guest account has literal username "guest";
   // never surface that raw string in the header — show the localized label.
-  const headerUsername = user?.username === 'guest' ? t('Guest', '访客') : user?.username;
+  const headerUsername = status === 'checking' ? t('auth:checking_identity', '身份确认中')
+    : status === 'unavailable' ? t('auth:unavailable_identity', '身份待确认')
+    : user?.username === 'guest' ? t('Guest', '访客') : user?.username;
 
   return (
-    <Routes>
+    <Suspense fallback={null}><Routes>
       {/* Public */}
       <Route path="login" element={<LoginPage />} />
 
@@ -100,11 +116,12 @@ export const KioskRoutes = () => {
               **挡它的是服务端**(`guard_session_reader`:有主人的会话要求「是这局的参与者」),
               不是这一层。前端少一道门不等于后端少一道。
           `*` 兜底也必须在守卫外面:留在里面的话,游客输一个不存在的路径会连兜底都匹配不到。 */}
-      <Route element={<KioskLayout username={headerUsername} />}>
+      <Route element={<KioskLayout username={headerUsername} accessBlocked={accessBlocked} />}>
         <Route index element={<Navigate to="play" replace />} />
 
         {/* --- 游客可达:自由对弈那条链 --- */}
         <Route path="play" element={<PlayPage />} />
+        <Route path="play/cross-platform" element={<Navigate to="/kiosk/play" replace />} />
         <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
         <Route path="play/ai/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
 
@@ -120,15 +137,21 @@ export const KioskRoutes = () => {
               选了下在屏幕上」。开局设置屏那颗「屏幕 / 实体盘」不接到这儿的话,人选了屏幕
               进来还是被推去标定工作台,开关只做了半截。偏好默认开 ⇒ 对现有行为零影响。
               **不要退回裸的 `PhysicalBoardGuard`。** */}
-          <Route path="play/pvp/local/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
+          {/* Local recovery stays inside GamePage so geometry loss cannot unmount the original session. */}
+          <Route path="play/pvp/local/game/:sessionId" element={<GamePage />} />
           <Route path="play/pvp/room/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
           <Route path="play/cross-platform/engine/game/:sessionId" element={<PlayInputGuard><GamePage engineMode /></PlayInputGuard>} />
+          <Route path="play/cross-platform/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
 
           <Route path="play/pvp/setup" element={<PvpLocalSetupPage />} />
           <Route path="play/pvp/lobby" element={<LobbyPage />} />
-          <Route path="play/cross-platform" element={<PlatformConnectPage />} />
+          <Route path="play/pvp/watch/:sessionId" element={<PvpSpectatorPage />} />
           <Route path="play/cross-platform/login/:platform" element={<PlatformLoginPage />} />
-          <Route path="play/cross-platform/lobby" element={<PlatformLobbyPage />} />
+          <Route path="play/cross-platform/lobby" element={<LegacyPlatformLobbyRedirect />} />
+          <Route path="play/cross-platform/golaxy" element={<GolaxyHomePage />} />
+          <Route path="play/cross-platform/golaxy/setup/:mode" element={<GolaxyPregameSetupPage />} />
+          <Route path="play/cross-platform/golaxy/spectate/:roomId" element={<GolaxySpectatorPage />} />
+          <Route path="play/cross-platform/ogs" element={<PlatformLobbyPage />} />
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
@@ -152,7 +175,8 @@ export const KioskRoutes = () => {
               旧地址 `/kiosk/live*` 落到下面的 `*` 兜底(→ 对弈),不另留重定向。 */}
           <Route path="research" element={<ResearchPage />} />
           <Route path="kifu" element={<KifuPage />} />
-          <Route path="kifu/:kifuId" element={<KifuDetailPage />} />
+          <Route path="kifu/:kifuId" element={<KifuReportDetailPage />} />
+          <Route path="kifu/:kifuId/replay" element={<KifuDetailPage />} />
           <Route path="baipu" element={<Navigate to="/kiosk/kifu" replace />} />
           <Route path="baipu/session/:source" element={<BaipuSessionRoute />} />
           <Route path="report" element={<ReportsPage />} />
@@ -174,7 +198,7 @@ export const KioskRoutes = () => {
             (守卫会先把整棵子树换成 `<Navigate to="/kiosk/login">`),屏上是白的。 */}
         <Route path="*" element={<Navigate to="play" replace />} />
       </Route>
-    </Routes>
+    </Routes></Suspense>
   );
 };
 

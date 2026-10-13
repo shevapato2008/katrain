@@ -2158,7 +2158,7 @@ async def test_recovery_rejects_non_authoritative_user_game_using_pending_id(api
 
 
 @pytest.mark.asyncio
-async def test_ranked_user_game_cannot_be_updated_or_deleted_through_generic_crud(api_app, client):
+async def test_unsettled_ranked_user_game_cannot_be_updated_or_deleted_through_generic_crud(api_app, client):
     game_id = "protected-ranked-game"
     original_sgf = "(;FF[4]SZ[19];B[pd])"
     api_app.state.user_game_repo.create_ai_ladder_ranked(
@@ -2168,6 +2168,27 @@ async def test_ranked_user_game_cannot_be_updated_or_deleted_through_generic_cru
         source="play_ai",
         result="B+R",
     )
+    with api_app.state._test_session_factory() as db:
+        db.add(
+            models_db.AiLadderPendingGame(
+                game_id=game_id,
+                user_id=api_app.state._test_user_id,
+                session_id="pending-ranked-session",
+                user_color="B",
+                game_type="ai_ladder_ranked",
+                opponent_rung=15,
+                opponent_rank_name="fixture-15",
+                opponent_config_snapshot={},
+                opponent_certification_status="certified",
+                opponent_availability="available",
+                opponent_route="server",
+                ai_subtype="ai:ladder",
+                execution_identity="fixture-net",
+                game_saved=True,
+                saved_result="B+R",
+            )
+        )
+        db.commit()
 
     async with client as ac:
         updated = await ac.put(
@@ -2181,11 +2202,108 @@ async def test_ranked_user_game_cannot_be_updated_or_deleted_through_generic_cru
     assert deleted.status_code == 403
     with pytest.raises(ValueError, match="protected"):
         api_app.state.user_game_repo.update(game_id, api_app.state._test_user_id, result="W+R")
-    with pytest.raises(ValueError, match="protected"):
+    with pytest.raises(ValueError, match="settlement is not complete"):
         api_app.state.user_game_repo.delete(game_id, api_app.state._test_user_id)
     saved = api_app.state.user_game_repo.get(game_id, api_app.state._test_user_id)
     assert saved["sgf_content"] == original_sgf
     assert saved["result"] == "B+R"
+
+
+@pytest.mark.asyncio
+async def test_orphan_ranked_user_game_without_pending_settlement_can_be_deleted(api_app, client):
+    game_id = "orphan-ranked-game"
+    user_id = api_app.state._test_user_id
+    api_app.state.user_game_repo.create_ai_ladder_ranked(
+        user_id=user_id,
+        game_id=game_id,
+        sgf_content="(;FF[4]SZ[19];B[pd])",
+        source="play_ai",
+        result="B+R",
+    )
+
+    async with client as ac:
+        deleted = await ac.delete(f"/api/v1/user-games/{game_id}", headers=api_app.state._test_headers)
+
+    assert deleted.status_code == 200
+    assert api_app.state.user_game_repo.get(game_id, user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_settled_ranked_user_game_can_be_deleted_without_deleting_ledger(api_app, client):
+    game_id = "settled-ranked-game"
+    user_id = api_app.state._test_user_id
+    api_app.state.user_game_repo.create_ai_ladder_ranked(
+        user_id=user_id,
+        game_id=game_id,
+        sgf_content="(;FF[4]SZ[19];B[pd])",
+        source="play_ai",
+        result="B+R",
+    )
+    with api_app.state._test_session_factory() as db:
+        db.add(
+            models_db.AiLadderGameLedger(
+                game_id=game_id,
+                user_id=user_id,
+                user_color="B",
+                result="win",
+                game_type="ai_ladder_ranked",
+                opponent_rung=15,
+                opponent_rank_name="fixture-15",
+                opponent_config_snapshot={},
+                opponent_certification_status="certified",
+                opponent_availability="available",
+                opponent_route="server",
+                counted=True,
+            )
+        )
+        db.commit()
+
+    async with client as ac:
+        deleted = await ac.delete(f"/api/v1/user-games/{game_id}", headers=api_app.state._test_headers)
+        recreated_by_user = await ac.post(
+            "/api/v1/user-games/",
+            headers=api_app.state._test_headers,
+            json={
+                "id": game_id,
+                "sgf_content": "(;FF[4]SZ[19];B[pd])",
+                "source": "play_ai",
+                "game_type": "free",
+            },
+        )
+
+    assert deleted.status_code == 200
+    assert recreated_by_user.status_code == 409
+    assert api_app.state.user_game_repo.get(game_id, user_id) is None
+    with api_app.state._test_session_factory() as db:
+        ledger = db.query(models_db.AiLadderGameLedger).filter_by(game_id=game_id).one()
+        assert ledger.user_id == user_id
+        assert ledger.counted is True
+    with pytest.raises(ValueError, match="deleted ranked game"):
+        api_app.state.user_game_repo.create_ai_ladder_ranked(
+            user_id=user_id,
+            game_id=game_id,
+            sgf_content="(;FF[4]SZ[19];B[pd])",
+            source="play_ai",
+            result="B+R",
+        )
+
+
+@pytest.mark.asyncio
+async def test_library_import_cannot_be_deleted(api_app, client):
+    game_id = "library-import-game"
+    user_id = api_app.state._test_user_id
+    api_app.state.user_game_repo.create(
+        user_id=user_id,
+        game_id=game_id,
+        sgf_content="(;FF[4]SZ[19];B[pd])",
+        source="kifu_library",
+    )
+
+    async with client as ac:
+        deleted = await ac.delete(f"/api/v1/user-games/{game_id}", headers=api_app.state._test_headers)
+
+    assert deleted.status_code == 403
+    assert api_app.state.user_game_repo.get(game_id, user_id) is not None
 
 
 def test_authoritative_ranked_save_uses_game_id_not_sgf_hash_and_checks_owner(api_app):

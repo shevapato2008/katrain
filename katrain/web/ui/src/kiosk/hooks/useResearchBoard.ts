@@ -62,7 +62,7 @@ export interface UseResearchBoardReturn extends ResearchBoardState {
   handicapCount: number; // Number of leading setup stones (from handicap)
 
   // Board actions
-  handleIntersectionClick: (x: number, y: number) => void;
+  handleIntersectionClick: (x: number, y: number) => boolean;
   handlePass: () => void;
   handleClear: () => void;
   handleMoveChange: (move: number) => void;
@@ -119,6 +119,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
   // Track selected stone for move mode
 
   const handleIntersectionClick = useCallback((x: number, y: number) => {
+    if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= boardSize || y >= boardSize) return false;
     const letters = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
     const col = letters[x];
     const row = y + 1;
@@ -138,7 +139,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
       setStoneColors(newColors);
       setCurrentMove(newMoves.length);
       rawSgfRef.current = null;
-      return;
+      return false;
     }
 
     // 剩下三段都是落子。颜色由工具决定。
@@ -163,7 +164,8 @@ export function useResearchBoard(): UseResearchBoardReturn {
     setStoneColors(newColors);
     setCurrentMove(newMoves.length);
     rawSgfRef.current = null;
-  }, [moves, stoneColors, currentMove, boardTool]);
+    return true;
+  }, [moves, stoneColors, currentMove, boardSize, boardTool]);
 
   const handlePass = useCallback(() => {
     const newMoves = moves.slice(0, currentMove);

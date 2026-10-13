@@ -1,0 +1,207 @@
+{
+  "status": "producer-pending-independent-review",
+  "producer_id": "/root/event10_review_apply",
+  "producer_model": "gpt-6-astra",
+  "reasoning_effort": "max",
+  "produced_at": "2026-10-05T10:25:46.856308+00:00",
+  "database_writes": false,
+  "event_ids": [
+    35,
+    54,
+    60,
+    64,
+    89
+  ],
+  "languages": [
+    "cn",
+    "tw",
+    "jp",
+    "ko",
+    "en"
+  ],
+  "candidate_count": 25,
+  "conventional_count": 17,
+  "translated_count": 8,
+  "targets": {
+    "TEST": {
+      "captured_at": "2026-10-05T10:19:18.874269+00:00",
+      "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+      "catalog_sha256": "f2e4d322966039cd8fba4dba45dad952b9f2f24611c633ebc5c61384945b7079",
+      "catalog_hash_basis_capture": "/tmp/kifu-event-next-high5-20261005/TEST/current.json",
+      "bundle_sha256": "524665c9e27b0c15f030a3068fe7a37fb2d62b84fb6856bc4d211a4b8d5bd23c",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "35": {
+          "event_id": 35,
+          "linked_rows": 900,
+          "unique_games": 900,
+          "visible_unique_games": 900
+        },
+        "54": {
+          "event_id": 54,
+          "linked_rows": 842,
+          "unique_games": 842,
+          "visible_unique_games": 842
+        },
+        "60": {
+          "event_id": 60,
+          "linked_rows": 818,
+          "unique_games": 818,
+          "visible_unique_games": 818
+        },
+        "64": {
+          "event_id": 64,
+          "linked_rows": 806,
+          "unique_games": 806,
+          "visible_unique_games": 806
+        },
+        "89": {
+          "event_id": 89,
+          "linked_rows": 793,
+          "unique_games": 793,
+          "visible_unique_games": 793
+        }
+      },
+      "unique_visible_games": 4159
+    },
+    "PROD": {
+      "captured_at": "2026-10-05T10:19:17.837725+00:00",
+      "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+      "catalog_sha256": "03cca482ef1dc3e52a109ed0a758e1fdc3f7c4a3dc061aa433b3def1e07df1a4",
+      "catalog_hash_basis_capture": "/tmp/kifu-event-next-high5-20261005/PROD/current.json",
+      "bundle_sha256": "5df92f90bc39f3d8442f2f1e2ee5b7d305629ca5042d958a224b2f9329ee6b9f",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "35": {
+          "event_id": 35,
+          "linked_rows": 900,
+          "unique_games": 900,
+          "visible_unique_games": 900
+        },
+        "54": {
+          "event_id": 54,
+          "linked_rows": 842,
+          "unique_games": 842,
+          "visible_unique_games": 842
+        },
+        "60": {
+          "event_id": 60,
+          "linked_rows": 818,
+          "unique_games": 818,
+          "visible_unique_games": 818
+        },
+        "64": {
+          "event_id": 64,
+          "linked_rows": 806,
+          "unique_games": 806,
+          "visible_unique_games": 806
+        },
+        "89": {
+          "event_id": 89,
+          "linked_rows": 793,
+          "unique_games": 793,
+          "visible_unique_games": 793
+        }
+      },
+      "unique_visible_games": 4159
+    }
+  },
+  "events": [
+    {
+      "event_id": 35,
+      "canonical_name": "日本女子本因坊战",
+      "unique_visible_games": 900,
+      "names": {
+        "cn": "日本女子本因坊战",
+        "tw": "日本女子本因坊戰",
+        "jp": "女流本因坊戦",
+        "ko": "일본 여류본인방전",
+        "en": "Women's Honinbo"
+      }
+    },
+    {
+      "event_id": 54,
+      "canonical_name": "台湾国手赛",
+      "unique_visible_games": 842,
+      "names": {
+        "cn": "台湾国手赛",
+        "tw": "國手賽",
+        "jp": "台湾国手戦",
+        "ko": "대만 국수전",
+        "en": "Guoshou"
+      }
+    },
+    {
+      "event_id": 60,
+      "canonical_name": "富士通杯世界围棋锦标赛",
+      "unique_visible_games": 818,
+      "names": {
+        "cn": "富士通杯世界围棋锦标赛",
+        "tw": "日本富士通盃",
+        "jp": "世界囲碁選手権・富士通杯",
+        "ko": "후지쓰배 세계 바둑 선수권 대회",
+        "en": "Fujitsu Cup"
+      }
+    },
+    {
+      "event_id": 64,
+      "canonical_name": "中国龙星战",
+      "unique_visible_games": 806,
+      "names": {
+        "cn": "中国龙星战",
+        "tw": "中國龍星戰",
+        "jp": "中国竜星戦",
+        "ko": "중국 용성전",
+        "en": "Longxing"
+      }
+    },
+    {
+      "event_id": 89,
+      "canonical_name": "中国阿含桐山杯",
+      "unique_visible_games": 793,
+      "names": {
+        "cn": "阿含·桐山杯中国围棋快棋公开赛",
+        "tw": "阿含·桐山盃中國圍棋快棋公開賽",
+        "jp": "阿含・桐山杯中国囲碁早碁オープン戦",
+        "ko": "아함·동산배 중국바둑속기오픈전",
+        "en": "Ahan Tongshan Cup"
+      }
+    }
+  ],
+  "translation_notes": {
+    "35-cn": "Translate native 女流 as 女子 and 戦 as 战, preserve 本因坊, and add 日本 identifying the Japanese professional series.",
+    "35-tw": "Translate native 女流 as 女子 and 戦 as 戰, preserve 本因坊, with 日本 identity qualifier.",
+    "54-cn": "Convert official 國手賽 to 国手赛 with 台湾 distinguishing the existing Taiwan professional title.",
+    "54-jp": "Preserve 国手 and render 賽 as 戦, with 台湾 identifying the existing 2005-onward title.",
+    "64-tw": "Convert 中国龙星战 to Traditional Chinese 中國龍星戰, preserving the China qualifier.",
+    "89-tw": "Convert the entire Chinese formal name to Traditional Chinese and Taiwan-style 盃, retaining China, fast-play and open-event scope.",
+    "89-jp": "Preserve 阿含・桐山杯 and render 中国围棋快棋公开赛 as 中国囲碁早碁オープン戦. This is the Chinese tournament, not the Japanese cup or bilateral champion match.",
+    "89-ko": "Render 阿含·桐山杯 as 아함·동산배 and 中国围棋快棋公开赛 as 중국바둑속기오픈전, preserving the China/open/fast-play scope."
+  },
+  "scope_note": "Names and evidence for existing event types only. No album links, owners, aliases or raw EV text change. Existing type identity/linked rows are reused.",
+  "reader_note": "Existing strict display reads approved type names. Generic raw EV year/edition/round decoration is not added by this data batch."
+}

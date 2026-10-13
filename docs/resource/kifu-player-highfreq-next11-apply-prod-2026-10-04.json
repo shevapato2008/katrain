@@ -1,0 +1,30 @@
+{
+  "environment": "prod",
+  "plan_sha256": "31181898f7b15e40c140f329eaf18dc5f6b4516a6ae65af2641155a92d05c5e4",
+  "review_sha256": "c195ac1ed387ffd0f5ecd628bfed1e30e89f82b81805b7dd1b156b2c8a8c48ca",
+  "before": {
+    "linked_slots": 275300,
+    "catalog_ids": 3670
+  },
+  "after": {
+    "linked_slots": 283555,
+    "catalog_ids": 3670
+  },
+  "verified_new_fk_slots": 8255,
+  "verified_protected": 0,
+  "verified_hold": 0,
+  "verified_excluded_raws": 21,
+  "verified_rank_variant_slots": 59,
+  "verified_all_pb_pw_games": 173025,
+  "catalog_unchanged": true,
+  "coverage": [
+    {
+      "albums": 173025,
+      "black_links": 141438,
+      "white_links": 142117,
+      "event_links": 82408,
+      "both_players": 118969,
+      "all_three": 55754
+    }
+  ]
+}

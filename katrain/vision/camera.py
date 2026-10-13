@@ -357,7 +357,9 @@ class CameraManager:
             self._connected = False
             self._latest_frame = None
         if self._reader_thread is not None:
-            self._reader_thread.join(timeout=self.READER_JOIN_TIMEOUT_S)
+            # Thread.start() can fail after capture acquisition; unstarted threads cannot be joined.
+            if self._reader_thread.ident is not None:
+                self._reader_thread.join(timeout=self.READER_JOIN_TIMEOUT_S)
             if self._reader_thread.is_alive():
                 logger.warning("Camera %s reader is still stopping; deferring reopen", self._device_id)
                 return  # The reader releases its own capture in finally.
@@ -382,6 +384,15 @@ class CameraManager:
 
         with self._frame_lock:
             return self._latest_frame.copy() if self._latest_frame is not None else None
+
+    def read_frame_identified(self) -> tuple[np.ndarray | None, int, float]:
+        """read_frame() plus the frame's reader sequence and monotonic timestamp, taken under one lock."""
+        self._last_demand = time.monotonic()
+        if not self._connected:
+            return self._try_reconnect(), self._frame_seq, self._frame_ts
+        with self._frame_lock:
+            frame = self._latest_frame.copy() if self._latest_frame is not None else None
+            return frame, self._frame_seq, self._frame_ts
 
     # ------------------------------------------------------------------
     # Background reader

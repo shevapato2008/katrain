@@ -78,7 +78,7 @@ describe('GalaxySidebar', () => {
     renderSidebar();
 
     expect(screen.getByRole('button', { name: 'Collapse navigation' })).toHaveStyle({
-      left: '240px',
+      left: '218px',
       top: '50%',
       transform: 'translateY(-50%)',
     });

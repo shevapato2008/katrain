@@ -33,8 +33,6 @@ _STREAM_INTERVAL_IDLE_S = 0.2
 
 
 def _stream_interval_s(phase: str) -> float:
-    if phase == "converging_exposure":
-        return _STREAM_INTERVAL_IDLE_S
     return _STREAM_INTERVAL_ACTIVE_S if phase in _ACTIVE_CALIBRATION_PHASES else _STREAM_INTERVAL_IDLE_S
 
 

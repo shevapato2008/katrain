@@ -1,0 +1,3769 @@
+{
+  "status": "unsigned_name_matrix_for_review",
+  "profile": "sgf_english",
+  "owner_manifest_canonical_sha256": "170cd67ab820c50575d7dd65cceb43bd300acb7f4a9ee596fcf553e6c2cc9747",
+  "source_packet_canonical_sha256": "45f2574db88d5b0274a4b5788cbac274cc2a29daebe25ff5a6bab5623606d1a8",
+  "capture_file_sha256": {
+    "TEST": "3030b7dba62edf83c715ed7adad73d3852983d441e50d7ce5950624aaa084057",
+    "PROD": "729620a1ff34ab4384bbd93221ae5b93d80193584707943db4ba6a77484694b8"
+  },
+  "core_lexicon": {
+    "Nihon Ki-in #1": {
+      "cn": "日本棋院第一位",
+      "tw": "日本棋院第一位",
+      "jp": "日本棋院第1位",
+      "ko": "일본기원 제1위",
+      "en": "Nihon Ki-in No. 1"
+    },
+    "Kiseong": {
+      "cn": "棋圣战",
+      "tw": "棋聖戰",
+      "jp": "棋聖戦",
+      "ko": "기성전",
+      "en": "Kiseong Tournament"
+    },
+    "All-Japan Women's Championship": {
+      "cn": "全日本女子冠军赛",
+      "tw": "全日本女子冠軍賽",
+      "jp": "全日本女子選手権",
+      "ko": "전일본 여자 선수권",
+      "en": "All-Japan Women's Championship"
+    },
+    "P'aewang": {
+      "cn": "霸王战",
+      "tw": "霸王戰",
+      "jp": "覇王戦",
+      "ko": "패왕전",
+      "en": "P'aewang Tournament"
+    },
+    "NihonKi-inChampionship": {
+      "cn": "日本棋院选手权赛",
+      "tw": "日本棋院選手權賽",
+      "jp": "日本棋院選手権戦",
+      "ko": "일본기원 선수권전",
+      "en": "Nihon Ki-in Championship"
+    },
+    "Kukgi": {
+      "cn": "国棋战",
+      "tw": "國棋戰",
+      "jp": "国棋戦",
+      "ko": "국기전",
+      "en": "Kukgi Tournament"
+    },
+    "Nihon Saikyo": {
+      "cn": "日本最强战",
+      "tw": "日本最強戰",
+      "jp": "日本最強戦",
+      "ko": "일본 최강전",
+      "en": "Nihon Saikyo Tournament"
+    },
+    "Taewang": {
+      "cn": "大王战",
+      "tw": "大王戰",
+      "jp": "大王戦",
+      "ko": "대왕전",
+      "en": "Taewang Tournament"
+    },
+    "BacchusCup": {
+      "cn": "巴克斯杯",
+      "tw": "巴克斯盃",
+      "jp": "バッカス杯",
+      "ko": "박카스배",
+      "en": "Bacchus Cup"
+    },
+    "Ch'oegowi": {
+      "cn": "最高位战",
+      "tw": "最高位戰",
+      "jp": "最高位戦",
+      "ko": "최고위전",
+      "en": "Ch'oegowi Tournament"
+    },
+    "JapaneseTengen": {
+      "cn": "日本天元战",
+      "tw": "日本天元戰",
+      "jp": "日本天元戦",
+      "ko": "일본 천원전",
+      "en": "Japanese Tengen Tournament"
+    },
+    "HayagoChampionship": {
+      "cn": "快棋选手权赛",
+      "tw": "快棋選手權賽",
+      "jp": "早碁選手権戦",
+      "ko": "속기 선수권전",
+      "en": "Hayago Championship"
+    },
+    "NECCup": {
+      "cn": "NEC杯",
+      "tw": "NEC盃",
+      "jp": "NEC杯",
+      "ko": "NEC배",
+      "en": "NEC Cup"
+    }
+  },
+  "raw_titles": 122,
+  "proposed_name_cells": 610,
+  "current_games": 938,
+  "records": [
+    {
+      "raw_value": "10thBacchusCup",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "10th"
+        },
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        }
+      ],
+      "names": {
+        "cn": "第10届巴克斯杯",
+        "tw": "第10屆巴克斯盃",
+        "jp": "第10回バッカス杯",
+        "ko": "제10회 박카스배",
+        "en": "10th Bacchus Cup"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "ca8368ec8778c76592786053c0d020a76de8a4710b6435646c537cbdc90ea204",
+        "PROD": "ca8368ec8778c76592786053c0d020a76de8a4710b6435646c537cbdc90ea204"
+      },
+      "owner_id": {
+        "TEST": 50442,
+        "PROD": 50442
+      }
+    },
+    {
+      "raw_value": "10thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "10th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第10届快棋选手权赛",
+        "tw": "第10屆快棋選手權賽",
+        "jp": "第10回早碁選手権戦",
+        "ko": "제10회 속기 선수권전",
+        "en": "10th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "39750052b86bf34f9724de3a3cd9d428276e425a55891d1c99fb07e6fe1fb63f",
+        "PROD": "39750052b86bf34f9724de3a3cd9d428276e425a55891d1c99fb07e6fe1fb63f"
+      },
+      "owner_id": {
+        "TEST": 50447,
+        "PROD": 50447
+      }
+    },
+    {
+      "raw_value": "10thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "10th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第10届大王战",
+        "tw": "第10屆大王戰",
+        "jp": "第10回大王戦",
+        "ko": "제10회 대왕전",
+        "en": "10th Taewang Tournament"
+      },
+      "current_games": 11,
+      "scope_sha256": {
+        "TEST": "37054f7a54b0b19068101dc426953e197c6b97411afe19169eb096e310b0d807",
+        "PROD": "37054f7a54b0b19068101dc426953e197c6b97411afe19169eb096e310b0d807"
+      },
+      "owner_id": {
+        "TEST": 50467,
+        "PROD": 50467
+      }
+    },
+    {
+      "raw_value": "11thBacchusCup",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "11th"
+        },
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        }
+      ],
+      "names": {
+        "cn": "第11届巴克斯杯",
+        "tw": "第11屆巴克斯盃",
+        "jp": "第11回バッカス杯",
+        "ko": "제11회 박카스배",
+        "en": "11th Bacchus Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "c9b4b28ac76bb6f40d523f9117924d8e12df99a2c74ce9a1002f4377edc84bfa",
+        "PROD": "c9b4b28ac76bb6f40d523f9117924d8e12df99a2c74ce9a1002f4377edc84bfa"
+      },
+      "owner_id": {
+        "TEST": 50936,
+        "PROD": 50936
+      }
+    },
+    {
+      "raw_value": "11thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "11th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第11届快棋选手权赛",
+        "tw": "第11屆快棋選手權賽",
+        "jp": "第11回早碁選手権戦",
+        "ko": "제11회 속기 선수권전",
+        "en": "11th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "6c89ae05354c533dc3d3f644979d2b936e312f2d3ea99bb160e672343f57628f",
+        "PROD": "6c89ae05354c533dc3d3f644979d2b936e312f2d3ea99bb160e672343f57628f"
+      },
+      "owner_id": {
+        "TEST": 50940,
+        "PROD": 50940
+      }
+    },
+    {
+      "raw_value": "11thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "11th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第11届大王战",
+        "tw": "第11屆大王戰",
+        "jp": "第11回大王戦",
+        "ko": "제11회 대왕전",
+        "en": "11th Taewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "6c9f9348ea455a9e375fc55ef222f45576f0c835f42bae82cc3f6c052c7ffec4",
+        "PROD": "6c9f9348ea455a9e375fc55ef222f45576f0c835f42bae82cc3f6c052c7ffec4"
+      },
+      "owner_id": {
+        "TEST": 50965,
+        "PROD": 50965
+      }
+    },
+    {
+      "raw_value": "12thBacchusCup",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "12th"
+        },
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        }
+      ],
+      "names": {
+        "cn": "第12届巴克斯杯",
+        "tw": "第12屆巴克斯盃",
+        "jp": "第12回バッカス杯",
+        "ko": "제12회 박카스배",
+        "en": "12th Bacchus Cup"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "7b37c33c1797fc8be2704fc2ba5f70eb051125794d8add796dd61659bd93004c",
+        "PROD": "7b37c33c1797fc8be2704fc2ba5f70eb051125794d8add796dd61659bd93004c"
+      },
+      "owner_id": {
+        "TEST": 51358,
+        "PROD": 51358
+      }
+    },
+    {
+      "raw_value": "12thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "12th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第12届NEC杯",
+        "tw": "第12屆NEC盃",
+        "jp": "第12回NEC杯",
+        "ko": "제12회 NEC배",
+        "en": "12th NEC Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "263919ac357f1713b9c78c57432b6e1dfbd7a2c2d37ae348db27d4f5fb9d2c6d",
+        "PROD": "263919ac357f1713b9c78c57432b6e1dfbd7a2c2d37ae348db27d4f5fb9d2c6d"
+      },
+      "owner_id": {
+        "TEST": 51378,
+        "PROD": 51378
+      }
+    },
+    {
+      "raw_value": "13thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "13th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第13届大王战",
+        "tw": "第13屆大王戰",
+        "jp": "第13回大王戦",
+        "ko": "제13회 대왕전",
+        "en": "13th Taewang Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "ed08ca3b8c5fef7a790ccf0190b6c4865c2959d0eff02d371b272b8cd3780730",
+        "PROD": "ed08ca3b8c5fef7a790ccf0190b6c4865c2959d0eff02d371b272b8cd3780730"
+      },
+      "owner_id": {
+        "TEST": 51716,
+        "PROD": 51716
+      }
+    },
+    {
+      "raw_value": "14thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "14th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第14届NEC杯",
+        "tw": "第14屆NEC盃",
+        "jp": "第14回NEC杯",
+        "ko": "제14회 NEC배",
+        "en": "14th NEC Cup"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "d80329a1e975e344042ba2d229cdf079688e4cd3220e0960d7bb5f302f62d215",
+        "PROD": "d80329a1e975e344042ba2d229cdf079688e4cd3220e0960d7bb5f302f62d215"
+      },
+      "owner_id": {
+        "TEST": 51860,
+        "PROD": 51860
+      }
+    },
+    {
+      "raw_value": "15thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "15th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第15届NEC杯",
+        "tw": "第15屆NEC盃",
+        "jp": "第15回NEC杯",
+        "ko": "제15회 NEC배",
+        "en": "15th NEC Cup"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "ad7cec689c1239d7189f3319ef0c22fbf01ad74d1775a8468ddb72dae7582c7a",
+        "PROD": "ad7cec689c1239d7189f3319ef0c22fbf01ad74d1775a8468ddb72dae7582c7a"
+      },
+      "owner_id": {
+        "TEST": 51951,
+        "PROD": 51951
+      }
+    },
+    {
+      "raw_value": "15thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "15th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第15届大王战",
+        "tw": "第15屆大王戰",
+        "jp": "第15回大王戦",
+        "ko": "제15회 대왕전",
+        "en": "15th Taewang Tournament"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "dacd146b9c96ab3d9e8e84a6eede62ea2f8daa1a38903e914c42b859f98f69ed",
+        "PROD": "dacd146b9c96ab3d9e8e84a6eede62ea2f8daa1a38903e914c42b859f98f69ed"
+      },
+      "owner_id": {
+        "TEST": 51960,
+        "PROD": 51960
+      }
+    },
+    {
+      "raw_value": "16thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "16th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第16届快棋选手权赛",
+        "tw": "第16屆快棋選手權賽",
+        "jp": "第16回早碁選手権戦",
+        "ko": "제16회 속기 선수권전",
+        "en": "16th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "4878254d24e6ed683e15af33fbe0932b1bf3bad1dd3443789a43102610f16dbd",
+        "PROD": "4878254d24e6ed683e15af33fbe0932b1bf3bad1dd3443789a43102610f16dbd"
+      },
+      "owner_id": {
+        "TEST": 52078,
+        "PROD": 52078
+      }
+    },
+    {
+      "raw_value": "16thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "16th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第16届NEC杯",
+        "tw": "第16屆NEC盃",
+        "jp": "第16回NEC杯",
+        "ko": "제16회 NEC배",
+        "en": "16th NEC Cup"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "4e10cbc817995bfcb742f85601ccbcc03a7ae925498b7ccbff69e4acfe45be7f",
+        "PROD": "4e10cbc817995bfcb742f85601ccbcc03a7ae925498b7ccbff69e4acfe45be7f"
+      },
+      "owner_id": {
+        "TEST": 52088,
+        "PROD": 52088
+      }
+    },
+    {
+      "raw_value": "16thNihonKi-inChampionship",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "16th"
+        },
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第16届日本棋院选手权赛",
+        "tw": "第16屆日本棋院選手權賽",
+        "jp": "第16回日本棋院選手権戦",
+        "ko": "제16회 일본기원 선수권전",
+        "en": "16th Nihon Ki-in Championship"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "cc0d158c750cc4bb2cfda611a3f8b7db563065a0c818495ca6550e68938b56cc",
+        "PROD": "cc0d158c750cc4bb2cfda611a3f8b7db563065a0c818495ca6550e68938b56cc"
+      },
+      "owner_id": {
+        "TEST": 52092,
+        "PROD": 52092
+      }
+    },
+    {
+      "raw_value": "17thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "17th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第17届NEC杯",
+        "tw": "第17屆NEC盃",
+        "jp": "第17回NEC杯",
+        "ko": "제17회 NEC배",
+        "en": "17th NEC Cup"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "5f86d15f86eb32e852d42d19fb8c3e0b886a7326fd44944bf12e65d12dc5f353",
+        "PROD": "5f86d15f86eb32e852d42d19fb8c3e0b886a7326fd44944bf12e65d12dc5f353"
+      },
+      "owner_id": {
+        "TEST": 52180,
+        "PROD": 52180
+      }
+    },
+    {
+      "raw_value": "18thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "18th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第18届NEC杯",
+        "tw": "第18屆NEC盃",
+        "jp": "第18回NEC杯",
+        "ko": "제18회 NEC배",
+        "en": "18th NEC Cup"
+      },
+      "current_games": 11,
+      "scope_sha256": {
+        "TEST": "0fa62e7250db1a74173329ec8822e41be13efbd6d7fd3ff00302b6d1b2759ba5",
+        "PROD": "0fa62e7250db1a74173329ec8822e41be13efbd6d7fd3ff00302b6d1b2759ba5"
+      },
+      "owner_id": {
+        "TEST": 52254,
+        "PROD": 52254
+      }
+    },
+    {
+      "raw_value": "19thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "19th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第19届快棋选手权赛",
+        "tw": "第19屆快棋選手權賽",
+        "jp": "第19回早碁選手権戦",
+        "ko": "제19회 속기 선수권전",
+        "en": "19th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "e972516f495236ff54f268b68aca5d6a59c8ea87bfa89ec764374cefff39ec30",
+        "PROD": "e972516f495236ff54f268b68aca5d6a59c8ea87bfa89ec764374cefff39ec30"
+      },
+      "owner_id": {
+        "TEST": 52971,
+        "PROD": 52971
+      }
+    },
+    {
+      "raw_value": "19thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "19th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第19届NEC杯",
+        "tw": "第19屆NEC盃",
+        "jp": "第19回NEC杯",
+        "ko": "제19회 NEC배",
+        "en": "19th NEC Cup"
+      },
+      "current_games": 11,
+      "scope_sha256": {
+        "TEST": "2dc288b1d46008b6b4b1e44d3857d751dbd298fb645b32687b48b9ac5769bd82",
+        "PROD": "2dc288b1d46008b6b4b1e44d3857d751dbd298fb645b32687b48b9ac5769bd82"
+      },
+      "owner_id": {
+        "TEST": 52983,
+        "PROD": 52983
+      }
+    },
+    {
+      "raw_value": "1stHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "1st"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第1届快棋选手权赛",
+        "tw": "第1屆快棋選手權賽",
+        "jp": "第1回早碁選手権戦",
+        "ko": "제1회 속기 선수권전",
+        "en": "1st Hayago Championship"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "06ba6c58741cdcd85682486e424fcb2abac819c6cda3ecda80904668be94196a",
+        "PROD": "06ba6c58741cdcd85682486e424fcb2abac819c6cda3ecda80904668be94196a"
+      },
+      "owner_id": {
+        "TEST": 53305,
+        "PROD": 53305
+      }
+    },
+    {
+      "raw_value": "1stNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "1st"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第1届NEC杯",
+        "tw": "第1屆NEC盃",
+        "jp": "第1回NEC杯",
+        "ko": "제1회 NEC배",
+        "en": "1st NEC Cup"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "c5919cb1dcc9353c1a401751d124a617f6a4d5a59aacaf890b680cedc8840927",
+        "PROD": "c5919cb1dcc9353c1a401751d124a617f6a4d5a59aacaf890b680cedc8840927"
+      },
+      "owner_id": {
+        "TEST": 53338,
+        "PROD": 53338
+      }
+    },
+    {
+      "raw_value": "1stNihonKi-inChampionship",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "1st"
+        },
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第1届日本棋院选手权赛",
+        "tw": "第1屆日本棋院選手權賽",
+        "jp": "第1回日本棋院選手権戦",
+        "ko": "제1회 일본기원 선수권전",
+        "en": "1st Nihon Ki-in Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "654fb057bedeae7a0c9f94de191ea8e203dba90f08d304d04cf5d0351536d985",
+        "PROD": "654fb057bedeae7a0c9f94de191ea8e203dba90f08d304d04cf5d0351536d985"
+      },
+      "owner_id": {
+        "TEST": 53344,
+        "PROD": 53344
+      }
+    },
+    {
+      "raw_value": "20thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "20th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第20届NEC杯",
+        "tw": "第20屆NEC盃",
+        "jp": "第20回NEC杯",
+        "ko": "제20회 NEC배",
+        "en": "20th NEC Cup"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "7a7b0d6593276305575c3451c42b0b0f333a1fd9d0aadecd4601a9a177719682",
+        "PROD": "7a7b0d6593276305575c3451c42b0b0f333a1fd9d0aadecd4601a9a177719682"
+      },
+      "owner_id": {
+        "TEST": 63348,
+        "PROD": 63348
+      }
+    },
+    {
+      "raw_value": "21stCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "21st"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第21届最高位战",
+        "tw": "第21屆最高位戰",
+        "jp": "第21回最高位戦",
+        "ko": "제21회 최고위전",
+        "en": "21st Ch'oegowi Tournament"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "c98f1f9f1093485ff15de9780540c81fb03a475bf8f97e3382a3ded2f22bdb00",
+        "PROD": "c98f1f9f1093485ff15de9780540c81fb03a475bf8f97e3382a3ded2f22bdb00"
+      },
+      "owner_id": {
+        "TEST": 63504,
+        "PROD": 63504
+      }
+    },
+    {
+      "raw_value": "21stHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "21st"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第21届快棋选手权赛",
+        "tw": "第21屆快棋選手權賽",
+        "jp": "第21回早碁選手権戦",
+        "ko": "제21회 속기 선수권전",
+        "en": "21st Hayago Championship"
+      },
+      "current_games": 12,
+      "scope_sha256": {
+        "TEST": "69ae3708cf2ead7e728b779592a08d15f8cc35c76cfd29a2486f02632597fb37",
+        "PROD": "69ae3708cf2ead7e728b779592a08d15f8cc35c76cfd29a2486f02632597fb37"
+      },
+      "owner_id": {
+        "TEST": 63507,
+        "PROD": 63507
+      }
+    },
+    {
+      "raw_value": "26thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "26th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第26届快棋选手权赛",
+        "tw": "第26屆快棋選手權賽",
+        "jp": "第26回早碁選手権戦",
+        "ko": "제26회 속기 선수권전",
+        "en": "26th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "196595d4eeff3d168b63f7ade3fd1aa8dd3e2a9e590c4f171798ac92b63b33a1",
+        "PROD": "196595d4eeff3d168b63f7ade3fd1aa8dd3e2a9e590c4f171798ac92b63b33a1"
+      },
+      "owner_id": {
+        "TEST": 64448,
+        "PROD": 64448
+      }
+    },
+    {
+      "raw_value": "26thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "26th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第26届霸王战",
+        "tw": "第26屆霸王戰",
+        "jp": "第26回覇王戦",
+        "ko": "제26회 패왕전",
+        "en": "26th P'aewang Tournament"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "ac6d2b8c34ca2df7dfcbf6c28b178357d61247f26b2eb587ebfa486eedd9d853",
+        "PROD": "ac6d2b8c34ca2df7dfcbf6c28b178357d61247f26b2eb587ebfa486eedd9d853"
+      },
+      "owner_id": {
+        "TEST": 64462,
+        "PROD": 64462
+      }
+    },
+    {
+      "raw_value": "27thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "27th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第27届快棋选手权赛",
+        "tw": "第27屆快棋選手權賽",
+        "jp": "第27回早碁選手権戦",
+        "ko": "제27회 속기 선수권전",
+        "en": "27th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "b738f2737cb085a2a89470ada60521551348dbd7e1896a471e879a9d80397f29",
+        "PROD": "b738f2737cb085a2a89470ada60521551348dbd7e1896a471e879a9d80397f29"
+      },
+      "owner_id": {
+        "TEST": 64592,
+        "PROD": 64592
+      }
+    },
+    {
+      "raw_value": "27thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "27th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第27届霸王战",
+        "tw": "第27屆霸王戰",
+        "jp": "第27回覇王戦",
+        "ko": "제27회 패왕전",
+        "en": "27th P'aewang Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "d1332619fd421f9898a5522449bd446df4396a02cc6978e58c366b2556e13fab",
+        "PROD": "d1332619fd421f9898a5522449bd446df4396a02cc6978e58c366b2556e13fab"
+      },
+      "owner_id": {
+        "TEST": 64603,
+        "PROD": 64603
+      }
+    },
+    {
+      "raw_value": "28thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "28th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第28届霸王战",
+        "tw": "第28屆霸王戰",
+        "jp": "第28回覇王戦",
+        "ko": "제28회 패왕전",
+        "en": "28th P'aewang Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "1d13d70ccb9a82e8c5c2866e05f4aa2aac555d20fa7c92a562d0e9c7c5dc6277",
+        "PROD": "1d13d70ccb9a82e8c5c2866e05f4aa2aac555d20fa7c92a562d0e9c7c5dc6277"
+      },
+      "owner_id": {
+        "TEST": 65156,
+        "PROD": 65156
+      }
+    },
+    {
+      "raw_value": "29thJapaneseTengen",
+      "core_key": "JapaneseTengen",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "29th"
+        },
+        {
+          "kind": "core",
+          "text": "JapaneseTengen"
+        }
+      ],
+      "names": {
+        "cn": "第29届日本天元战",
+        "tw": "第29屆日本天元戰",
+        "jp": "第29回日本天元戦",
+        "ko": "제29회 일본 천원전",
+        "en": "29th Japanese Tengen Tournament"
+      },
+      "current_games": 28,
+      "scope_sha256": {
+        "TEST": "8560688d6e368326f679177b7a78644c6601800ed02e84328bf1d0e612974148",
+        "PROD": "8560688d6e368326f679177b7a78644c6601800ed02e84328bf1d0e612974148"
+      },
+      "owner_id": {
+        "TEST": 65253,
+        "PROD": 65253
+      }
+    },
+    {
+      "raw_value": "2ndNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "2nd"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第2届NEC杯",
+        "tw": "第2屆NEC盃",
+        "jp": "第2回NEC杯",
+        "ko": "제2회 NEC배",
+        "en": "2nd NEC Cup"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "ad5bb6453cbc6320ce36e586d371ba36f239df95416419d89f93b19dfbcf9cec",
+        "PROD": "ad5bb6453cbc6320ce36e586d371ba36f239df95416419d89f93b19dfbcf9cec"
+      },
+      "owner_id": {
+        "TEST": 65531,
+        "PROD": 65531
+      }
+    },
+    {
+      "raw_value": "30thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "30th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第30届快棋选手权赛",
+        "tw": "第30屆快棋選手權賽",
+        "jp": "第30回早碁選手権戦",
+        "ko": "제30회 속기 선수권전",
+        "en": "30th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "b0b76a2c5356f32ebb9a70cac89c0b2cbe99ed597dcf37bcc1f9eb6d3bed3bed",
+        "PROD": "b0b76a2c5356f32ebb9a70cac89c0b2cbe99ed597dcf37bcc1f9eb6d3bed3bed"
+      },
+      "owner_id": {
+        "TEST": 65784,
+        "PROD": 65784
+      }
+    },
+    {
+      "raw_value": "30thJapaneseTengen",
+      "core_key": "JapaneseTengen",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "30th"
+        },
+        {
+          "kind": "core",
+          "text": "JapaneseTengen"
+        }
+      ],
+      "names": {
+        "cn": "第30届日本天元战",
+        "tw": "第30屆日本天元戰",
+        "jp": "第30回日本天元戦",
+        "ko": "제30회 일본 천원전",
+        "en": "30th Japanese Tengen Tournament"
+      },
+      "current_games": 27,
+      "scope_sha256": {
+        "TEST": "034c95e209105239058ca791e78f233b6dc76f6bc4f9202133ec37b97ac19147",
+        "PROD": "034c95e209105239058ca791e78f233b6dc76f6bc4f9202133ec37b97ac19147"
+      },
+      "owner_id": {
+        "TEST": 65790,
+        "PROD": 65790
+      }
+    },
+    {
+      "raw_value": "30thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "30th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第30届霸王战",
+        "tw": "第30屆霸王戰",
+        "jp": "第30回覇王戦",
+        "ko": "제30회 패왕전",
+        "en": "30th P'aewang Tournament"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "902695f780c099619e345b370293cd0db2a5df750fbceb111bdc44b21e830b53",
+        "PROD": "902695f780c099619e345b370293cd0db2a5df750fbceb111bdc44b21e830b53"
+      },
+      "owner_id": {
+        "TEST": 65799,
+        "PROD": 65799
+      }
+    },
+    {
+      "raw_value": "31stCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "31st"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第31届最高位战",
+        "tw": "第31屆最高位戰",
+        "jp": "第31回最高位戦",
+        "ko": "제31회 최고위전",
+        "en": "31st Ch'oegowi Tournament"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "4d7bf1ce2f8b880a8d0958983703c04757165bbc7aa25e60d048688f68706e5e",
+        "PROD": "4d7bf1ce2f8b880a8d0958983703c04757165bbc7aa25e60d048688f68706e5e"
+      },
+      "owner_id": {
+        "TEST": 65901,
+        "PROD": 65901
+      }
+    },
+    {
+      "raw_value": "31stHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "31st"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第31届快棋选手权赛",
+        "tw": "第31屆快棋選手權賽",
+        "jp": "第31回早碁選手権戦",
+        "ko": "제31회 속기 선수권전",
+        "en": "31st Hayago Championship"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "2dc07d614961923f3b8c86fc6e541de26091c0078dde606ff39d2e15fe1ba907",
+        "PROD": "2dc07d614961923f3b8c86fc6e541de26091c0078dde606ff39d2e15fe1ba907"
+      },
+      "owner_id": {
+        "TEST": 65903,
+        "PROD": 65903
+      }
+    },
+    {
+      "raw_value": "31stJapaneseTengen",
+      "core_key": "JapaneseTengen",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "31st"
+        },
+        {
+          "kind": "core",
+          "text": "JapaneseTengen"
+        }
+      ],
+      "names": {
+        "cn": "第31届日本天元战",
+        "tw": "第31屆日本天元戰",
+        "jp": "第31回日本天元戦",
+        "ko": "제31회 일본 천원전",
+        "en": "31st Japanese Tengen Tournament"
+      },
+      "current_games": 26,
+      "scope_sha256": {
+        "TEST": "1663f1ceec3f4571cc3f7a4ddeb2ff5eb10e186517e93df1abc5934aba0bc39c",
+        "PROD": "1663f1ceec3f4571cc3f7a4ddeb2ff5eb10e186517e93df1abc5934aba0bc39c"
+      },
+      "owner_id": {
+        "TEST": 65908,
+        "PROD": 65908
+      }
+    },
+    {
+      "raw_value": "31stP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "31st"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第31届霸王战",
+        "tw": "第31屆霸王戰",
+        "jp": "第31回覇王戦",
+        "ko": "제31회 패왕전",
+        "en": "31st P'aewang Tournament"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "3fabde1329fced5a3214f7c266f21accf3a63a2b42bf3f8a17a0576c112a45bb",
+        "PROD": "3fabde1329fced5a3214f7c266f21accf3a63a2b42bf3f8a17a0576c112a45bb"
+      },
+      "owner_id": {
+        "TEST": 65918,
+        "PROD": 65918
+      }
+    },
+    {
+      "raw_value": "32ndCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "32nd"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第32届最高位战",
+        "tw": "第32屆最高位戰",
+        "jp": "第32回最高位戦",
+        "ko": "제32회 최고위전",
+        "en": "32nd Ch'oegowi Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "8afbbad841d8a14dbaca3131e1ceb145007aa892f290509ebf9ceef54168059d",
+        "PROD": "8afbbad841d8a14dbaca3131e1ceb145007aa892f290509ebf9ceef54168059d"
+      },
+      "owner_id": {
+        "TEST": 66000,
+        "PROD": 66000
+      }
+    },
+    {
+      "raw_value": "32ndHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "32nd"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第32届快棋选手权赛",
+        "tw": "第32屆快棋選手權賽",
+        "jp": "第32回早碁選手権戦",
+        "ko": "제32회 속기 선수권전",
+        "en": "32nd Hayago Championship"
+      },
+      "current_games": 13,
+      "scope_sha256": {
+        "TEST": "06cffc7c922d72bf5a6f8dbc7729268d61b4ebf54756cb279e4c8d8d9a03c8ad",
+        "PROD": "06cffc7c922d72bf5a6f8dbc7729268d61b4ebf54756cb279e4c8d8d9a03c8ad"
+      },
+      "owner_id": {
+        "TEST": 66001,
+        "PROD": 66001
+      }
+    },
+    {
+      "raw_value": "32ndP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "32nd"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第32届霸王战",
+        "tw": "第32屆霸王戰",
+        "jp": "第32回覇王戦",
+        "ko": "제32회 패왕전",
+        "en": "32nd P'aewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "1120e7ba10460a8dd584e56fb34e208ae322e230a48473e9e73171b741386e7e",
+        "PROD": "1120e7ba10460a8dd584e56fb34e208ae322e230a48473e9e73171b741386e7e"
+      },
+      "owner_id": {
+        "TEST": 66012,
+        "PROD": 66012
+      }
+    },
+    {
+      "raw_value": "34thCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "34th"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第34届最高位战",
+        "tw": "第34屆最高位戰",
+        "jp": "第34回最高位戦",
+        "ko": "제34회 최고위전",
+        "en": "34th Ch'oegowi Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "4d865c42f6390ea61af4d5c9463a4e6c0ca7883b406ab0be7f10608d050334fd",
+        "PROD": "4d865c42f6390ea61af4d5c9463a4e6c0ca7883b406ab0be7f10608d050334fd"
+      },
+      "owner_id": {
+        "TEST": 66099,
+        "PROD": 66099
+      }
+    },
+    {
+      "raw_value": "34thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "34th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第34届霸王战",
+        "tw": "第34屆霸王戰",
+        "jp": "第34回覇王戦",
+        "ko": "제34회 패왕전",
+        "en": "34th P'aewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "c896c183f055c98593868a94c1e1eac71df34cfd18b5c0dc662a5d217b44d594",
+        "PROD": "c896c183f055c98593868a94c1e1eac71df34cfd18b5c0dc662a5d217b44d594"
+      },
+      "owner_id": {
+        "TEST": 66109,
+        "PROD": 66109
+      }
+    },
+    {
+      "raw_value": "35thCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "35th"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第35届最高位战",
+        "tw": "第35屆最高位戰",
+        "jp": "第35回最高位戦",
+        "ko": "제35회 최고위전",
+        "en": "35th Ch'oegowi Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "be1e5e664f9fc64dc8fb2b2d179f19f12b7b6ccf4f375164174987c63fdac7a5",
+        "PROD": "be1e5e664f9fc64dc8fb2b2d179f19f12b7b6ccf4f375164174987c63fdac7a5"
+      },
+      "owner_id": {
+        "TEST": 66132,
+        "PROD": 66132
+      }
+    },
+    {
+      "raw_value": "35thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "35th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第35届霸王战",
+        "tw": "第35屆霸王戰",
+        "jp": "第35回覇王戦",
+        "ko": "제35회 패왕전",
+        "en": "35th P'aewang Tournament"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "491c18fce477bc32c6a55b8c44afc2231e95f4ea31f1dab756e6a575aaba7e80",
+        "PROD": "491c18fce477bc32c6a55b8c44afc2231e95f4ea31f1dab756e6a575aaba7e80"
+      },
+      "owner_id": {
+        "TEST": 66142,
+        "PROD": 66142
+      }
+    },
+    {
+      "raw_value": "36thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "36th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第36届霸王战",
+        "tw": "第36屆霸王戰",
+        "jp": "第36回覇王戦",
+        "ko": "제36회 패왕전",
+        "en": "36th P'aewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "1d307273b41bd30ca154aee21001c29635ce48f5dd70ad1613146cf030dede5a",
+        "PROD": "1d307273b41bd30ca154aee21001c29635ce48f5dd70ad1613146cf030dede5a"
+      },
+      "owner_id": {
+        "TEST": 66195,
+        "PROD": 66195
+      }
+    },
+    {
+      "raw_value": "37thCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "37th"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第37届最高位战",
+        "tw": "第37屆最高位戰",
+        "jp": "第37回最高位戦",
+        "ko": "제37회 최고위전",
+        "en": "37th Ch'oegowi Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "514e13bb9dedd37b082a2f9bd873cecb1903257a15331e65eeb583cdccc296b5",
+        "PROD": "514e13bb9dedd37b082a2f9bd873cecb1903257a15331e65eeb583cdccc296b5"
+      },
+      "owner_id": {
+        "TEST": 66237,
+        "PROD": 66237
+      }
+    },
+    {
+      "raw_value": "3rdHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "3rd"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第3届快棋选手权赛",
+        "tw": "第3屆快棋選手權賽",
+        "jp": "第3回早碁選手権戦",
+        "ko": "제3회 속기 선수권전",
+        "en": "3rd Hayago Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "d38976d8ff70fbc4308d9844fd6973fae05ff59a7b8d2911f697dd01247071f6",
+        "PROD": "d38976d8ff70fbc4308d9844fd6973fae05ff59a7b8d2911f697dd01247071f6"
+      },
+      "owner_id": {
+        "TEST": 66419,
+        "PROD": 66419
+      }
+    },
+    {
+      "raw_value": "3rdNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "3rd"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第3届NEC杯",
+        "tw": "第3屆NEC盃",
+        "jp": "第3回NEC杯",
+        "ko": "제3회 NEC배",
+        "en": "3rd NEC Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "6c5733755c75a52b25bcc9b8635333326408d2ff6ffd4a3e058656842fd14d38",
+        "PROD": "6c5733755c75a52b25bcc9b8635333326408d2ff6ffd4a3e058656842fd14d38"
+      },
+      "owner_id": {
+        "TEST": 66444,
+        "PROD": 66444
+      }
+    },
+    {
+      "raw_value": "4thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "4th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第4届快棋选手权赛",
+        "tw": "第4屆快棋選手權賽",
+        "jp": "第4回早碁選手権戦",
+        "ko": "제4회 속기 선수권전",
+        "en": "4th Hayago Championship"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "03e87fdad0a3d18667d413cfe8b88a51fd42dd02e9ba0d2d8ed9ed21ec3761ab",
+        "PROD": "03e87fdad0a3d18667d413cfe8b88a51fd42dd02e9ba0d2d8ed9ed21ec3761ab"
+      },
+      "owner_id": {
+        "TEST": 67294,
+        "PROD": 67294
+      }
+    },
+    {
+      "raw_value": "5thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "5th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第5届快棋选手权赛",
+        "tw": "第5屆快棋選手權賽",
+        "jp": "第5回早碁選手権戦",
+        "ko": "제5회 속기 선수권전",
+        "en": "5th Hayago Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "730a7df3929bf6d148fef49dc3962562d9ac1d004a379d7727b8b0b08ac63065",
+        "PROD": "730a7df3929bf6d148fef49dc3962562d9ac1d004a379d7727b8b0b08ac63065"
+      },
+      "owner_id": {
+        "TEST": 67714,
+        "PROD": 67714
+      }
+    },
+    {
+      "raw_value": "5thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "5th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第5届NEC杯",
+        "tw": "第5屆NEC盃",
+        "jp": "第5回NEC杯",
+        "ko": "제5회 NEC배",
+        "en": "5th NEC Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "6ff325923298ecffc8ea6549cadf5588fbc964a73ca41286a300d5126bcce8da",
+        "PROD": "6ff325923298ecffc8ea6549cadf5588fbc964a73ca41286a300d5126bcce8da"
+      },
+      "owner_id": {
+        "TEST": 67739,
+        "PROD": 67739
+      }
+    },
+    {
+      "raw_value": "6thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "6th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第6届快棋选手权赛",
+        "tw": "第6屆快棋選手權賽",
+        "jp": "第6回早碁選手権戦",
+        "ko": "제6회 속기 선수권전",
+        "en": "6th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "34e044f0ce0816aa691f7fdf8ac0ed52be6dc098e917f63ad4a81c5eb84587c9",
+        "PROD": "34e044f0ce0816aa691f7fdf8ac0ed52be6dc098e917f63ad4a81c5eb84587c9"
+      },
+      "owner_id": {
+        "TEST": 68110,
+        "PROD": 68110
+      }
+    },
+    {
+      "raw_value": "6thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "6th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第6届NEC杯",
+        "tw": "第6屆NEC盃",
+        "jp": "第6回NEC杯",
+        "ko": "제6회 NEC배",
+        "en": "6th NEC Cup"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "8cfb4e223426ad5e4932f12c76929500d0b7058e4b9cb2b41a22135998328871",
+        "PROD": "8cfb4e223426ad5e4932f12c76929500d0b7058e4b9cb2b41a22135998328871"
+      },
+      "owner_id": {
+        "TEST": 68132,
+        "PROD": 68132
+      }
+    },
+    {
+      "raw_value": "6thNihonKi-inChampionship",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "6th"
+        },
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第6届日本棋院选手权赛",
+        "tw": "第6屆日本棋院選手權賽",
+        "jp": "第6回日本棋院選手権戦",
+        "ko": "제6회 일본기원 선수권전",
+        "en": "6th Nihon Ki-in Championship"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "9674d4e509083440081b4005b3d4c183fb66ea1569e0f91ab99dbbdb7aadc0ef",
+        "PROD": "9674d4e509083440081b4005b3d4c183fb66ea1569e0f91ab99dbbdb7aadc0ef"
+      },
+      "owner_id": {
+        "TEST": 68135,
+        "PROD": 68135
+      }
+    },
+    {
+      "raw_value": "6thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "6th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第6届大王战",
+        "tw": "第6屆大王戰",
+        "jp": "第6回大王戦",
+        "ko": "제6회 대왕전",
+        "en": "6th Taewang Tournament"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "d4a173b66bf9461236c99213063798b44ff203ddb8e8a5b324f8964034808db3",
+        "PROD": "d4a173b66bf9461236c99213063798b44ff203ddb8e8a5b324f8964034808db3"
+      },
+      "owner_id": {
+        "TEST": 68151,
+        "PROD": 68151
+      }
+    },
+    {
+      "raw_value": "7thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "7th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第7届快棋选手权赛",
+        "tw": "第7屆快棋選手權賽",
+        "jp": "第7回早碁選手権戦",
+        "ko": "제7회 속기 선수권전",
+        "en": "7th Hayago Championship"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "fe7a8732d9ac50a89eb45e0f29a4841f240137028776f72c34747b96476e1bc8",
+        "PROD": "fe7a8732d9ac50a89eb45e0f29a4841f240137028776f72c34747b96476e1bc8"
+      },
+      "owner_id": {
+        "TEST": 68480,
+        "PROD": 68480
+      }
+    },
+    {
+      "raw_value": "7thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "7th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第7届NEC杯",
+        "tw": "第7屆NEC盃",
+        "jp": "第7回NEC杯",
+        "ko": "제7회 NEC배",
+        "en": "7th NEC Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "df6627e2d4ce99931a98705275e0b1e8d7cb59f82d16876bae49588709cfd7e2",
+        "PROD": "df6627e2d4ce99931a98705275e0b1e8d7cb59f82d16876bae49588709cfd7e2"
+      },
+      "owner_id": {
+        "TEST": 68503,
+        "PROD": 68503
+      }
+    },
+    {
+      "raw_value": "7thNihonKi-inChampionship",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "7th"
+        },
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第7届日本棋院选手权赛",
+        "tw": "第7屆日本棋院選手權賽",
+        "jp": "第7回日本棋院選手権戦",
+        "ko": "제7회 일본기원 선수권전",
+        "en": "7th Nihon Ki-in Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "c116d715bf6c4f5639e834bd483be97808e3eeea9734202f4cf3c246140e939c",
+        "PROD": "c116d715bf6c4f5639e834bd483be97808e3eeea9734202f4cf3c246140e939c"
+      },
+      "owner_id": {
+        "TEST": 68508,
+        "PROD": 68508
+      }
+    },
+    {
+      "raw_value": "7thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "7th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第7届霸王战",
+        "tw": "第7屆霸王戰",
+        "jp": "第7回覇王戦",
+        "ko": "제7회 패왕전",
+        "en": "7th P'aewang Tournament"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "4ff288845eb9a8b37eaaf6a85577de8c587670573eca90aa178b52e854570dda",
+        "PROD": "4ff288845eb9a8b37eaaf6a85577de8c587670573eca90aa178b52e854570dda"
+      },
+      "owner_id": {
+        "TEST": 68516,
+        "PROD": 68516
+      }
+    },
+    {
+      "raw_value": "7thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "7th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第7届大王战",
+        "tw": "第7屆大王戰",
+        "jp": "第7回大王戦",
+        "ko": "제7회 대왕전",
+        "en": "7th Taewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "dd868870527aafa77292cb237aaa2dad8cf47424628c59d2fa0d352462ae61c9",
+        "PROD": "dd868870527aafa77292cb237aaa2dad8cf47424628c59d2fa0d352462ae61c9"
+      },
+      "owner_id": {
+        "TEST": 68525,
+        "PROD": 68525
+      }
+    },
+    {
+      "raw_value": "8thBacchusCup",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "8th"
+        },
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        }
+      ],
+      "names": {
+        "cn": "第8届巴克斯杯",
+        "tw": "第8屆巴克斯盃",
+        "jp": "第8回バッカス杯",
+        "ko": "제8회 박카스배",
+        "en": "8th Bacchus Cup"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "fc09eb195739bf7c6ea9649f865484ac11ccd1b5f62c435c3c1cb8bc2de1eef7",
+        "PROD": "fc09eb195739bf7c6ea9649f865484ac11ccd1b5f62c435c3c1cb8bc2de1eef7"
+      },
+      "owner_id": {
+        "TEST": 68706,
+        "PROD": 68706
+      }
+    },
+    {
+      "raw_value": "8thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "8th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第8届快棋选手权赛",
+        "tw": "第8屆快棋選手權賽",
+        "jp": "第8回早碁選手権戦",
+        "ko": "제8회 속기 선수권전",
+        "en": "8th Hayago Championship"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "696c67b1651c2e1f5c610124ee26b8a8c26e76b17dffc78eb6dbcc386fac3a39",
+        "PROD": "696c67b1651c2e1f5c610124ee26b8a8c26e76b17dffc78eb6dbcc386fac3a39"
+      },
+      "owner_id": {
+        "TEST": 68710,
+        "PROD": 68710
+      }
+    },
+    {
+      "raw_value": "8thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "8th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第8届NEC杯",
+        "tw": "第8屆NEC盃",
+        "jp": "第8回NEC杯",
+        "ko": "제8회 NEC배",
+        "en": "8th NEC Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "7fbf550695eda8243c8f25581efb894bc66faf31d7edd6f6dacbaf82d9702bd9",
+        "PROD": "7fbf550695eda8243c8f25581efb894bc66faf31d7edd6f6dacbaf82d9702bd9"
+      },
+      "owner_id": {
+        "TEST": 68728,
+        "PROD": 68728
+      }
+    },
+    {
+      "raw_value": "8thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "8th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第8届大王战",
+        "tw": "第8屆大王戰",
+        "jp": "第8回大王戦",
+        "ko": "제8회 대왕전",
+        "en": "8th Taewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "0b8bfcbac7867d048121c951f650f671f2324aefb2afd5c1e211a19711f42cd3",
+        "PROD": "0b8bfcbac7867d048121c951f650f671f2324aefb2afd5c1e211a19711f42cd3"
+      },
+      "owner_id": {
+        "TEST": 68744,
+        "PROD": 68744
+      }
+    },
+    {
+      "raw_value": "9thBacchusCup",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "9th"
+        },
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        }
+      ],
+      "names": {
+        "cn": "第9届巴克斯杯",
+        "tw": "第9屆巴克斯盃",
+        "jp": "第9回バッカス杯",
+        "ko": "제9회 박카스배",
+        "en": "9th Bacchus Cup"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "149513427c34a7ef2ceafef4f0b6769c69757914cf4953e9552e7e0c02b4a1f8",
+        "PROD": "149513427c34a7ef2ceafef4f0b6769c69757914cf4953e9552e7e0c02b4a1f8"
+      },
+      "owner_id": {
+        "TEST": 68986,
+        "PROD": 68986
+      }
+    },
+    {
+      "raw_value": "9thNihonKi-inChampionship",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "9th"
+        },
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第9届日本棋院选手权赛",
+        "tw": "第9屆日本棋院選手權賽",
+        "jp": "第9回日本棋院選手権戦",
+        "ko": "제9회 일본기원 선수권전",
+        "en": "9th Nihon Ki-in Championship"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "d373e83ff2d20757f716cfc195934985a564849f2152dacec30e769b9f25d603",
+        "PROD": "d373e83ff2d20757f716cfc195934985a564849f2152dacec30e769b9f25d603"
+      },
+      "owner_id": {
+        "TEST": 69011,
+        "PROD": 69011
+      }
+    },
+    {
+      "raw_value": "9thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "9th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第9届大王战",
+        "tw": "第9屆大王戰",
+        "jp": "第9回大王戦",
+        "ko": "제9회 대왕전",
+        "en": "9th Taewang Tournament"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "872c23ad552e63c81a830f2d07c4c7e9b89027b3e2f3b6424817cacdb8a26293",
+        "PROD": "872c23ad552e63c81a830f2d07c4c7e9b89027b3e2f3b6424817cacdb8a26293"
+      },
+      "owner_id": {
+        "TEST": 69020,
+        "PROD": 69020
+      }
+    },
+    {
+      "raw_value": "BacchusCup,2nd",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",2nd"
+        }
+      ],
+      "names": {
+        "cn": "第2届巴克斯杯",
+        "tw": "第2屆巴克斯盃",
+        "jp": "第2回バッカス杯",
+        "ko": "제2회 박카스배",
+        "en": "2nd Bacchus Cup"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "b2f5050fb36de295853d3d3a1ec6c6fff0a9cb3b2a4c928e8c2be20f0d9f6238",
+        "PROD": "b2f5050fb36de295853d3d3a1ec6c6fff0a9cb3b2a4c928e8c2be20f0d9f6238"
+      },
+      "owner_id": {
+        "TEST": 69254,
+        "PROD": 69254
+      }
+    },
+    {
+      "raw_value": "BacchusCup,3rd",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",3rd"
+        }
+      ],
+      "names": {
+        "cn": "第3届巴克斯杯",
+        "tw": "第3屆巴克斯盃",
+        "jp": "第3回バッカス杯",
+        "ko": "제3회 박카스배",
+        "en": "3rd Bacchus Cup"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "a16a492c1779e3a4294871313cb014ad8215e92433d4c3a0efda1429a355228a",
+        "PROD": "a16a492c1779e3a4294871313cb014ad8215e92433d4c3a0efda1429a355228a"
+      },
+      "owner_id": {
+        "TEST": 69255,
+        "PROD": 69255
+      }
+    },
+    {
+      "raw_value": "BacchusCup,4th",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",4th"
+        }
+      ],
+      "names": {
+        "cn": "第4届巴克斯杯",
+        "tw": "第4屆巴克斯盃",
+        "jp": "第4回バッカス杯",
+        "ko": "제4회 박카스배",
+        "en": "4th Bacchus Cup"
+      },
+      "current_games": 12,
+      "scope_sha256": {
+        "TEST": "99b38fff75a0c4b5f0ead146d2b707fe95c4c089de2a5f484481af8eb4b05525",
+        "PROD": "99b38fff75a0c4b5f0ead146d2b707fe95c4c089de2a5f484481af8eb4b05525"
+      },
+      "owner_id": {
+        "TEST": 69256,
+        "PROD": 69256
+      }
+    },
+    {
+      "raw_value": "BacchusCup,5th",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",5th"
+        }
+      ],
+      "names": {
+        "cn": "第5届巴克斯杯",
+        "tw": "第5屆巴克斯盃",
+        "jp": "第5回バッカス杯",
+        "ko": "제5회 박카스배",
+        "en": "5th Bacchus Cup"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "5758d9e234da90f201badc719c37e9f81e093149bb5fc15a1411e9ac95109885",
+        "PROD": "5758d9e234da90f201badc719c37e9f81e093149bb5fc15a1411e9ac95109885"
+      },
+      "owner_id": {
+        "TEST": 69257,
+        "PROD": 69257
+      }
+    },
+    {
+      "raw_value": "BacchusCup,6th",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",6th"
+        }
+      ],
+      "names": {
+        "cn": "第6届巴克斯杯",
+        "tw": "第6屆巴克斯盃",
+        "jp": "第6回バッカス杯",
+        "ko": "제6회 박카스배",
+        "en": "6th Bacchus Cup"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "05e202c19feb6f657430aac28d25f35cf316b3677e0cb504ba73249d5edff92b",
+        "PROD": "05e202c19feb6f657430aac28d25f35cf316b3677e0cb504ba73249d5edff92b"
+      },
+      "owner_id": {
+        "TEST": 69258,
+        "PROD": 69258
+      }
+    },
+    {
+      "raw_value": "BacchusCup,7th",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",7th"
+        }
+      ],
+      "names": {
+        "cn": "第7届巴克斯杯",
+        "tw": "第7屆巴克斯盃",
+        "jp": "第7回バッカス杯",
+        "ko": "제7회 박카스배",
+        "en": "7th Bacchus Cup"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "ee3d4d2683505c1d2647d2b9d8f6eb60d0bcc9993f425c898644a60e5c3179ec",
+        "PROD": "ee3d4d2683505c1d2647d2b9d8f6eb60d0bcc9993f425c898644a60e5c3179ec"
+      },
+      "owner_id": {
+        "TEST": 69259,
+        "PROD": 69259
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,25th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",25th"
+        }
+      ],
+      "names": {
+        "cn": "第25届最高位战",
+        "tw": "第25屆最高位戰",
+        "jp": "第25回最高位戦",
+        "ko": "제25회 최고위전",
+        "en": "25th Ch'oegowi Tournament"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "44ebc09bfa4ca2aca0c981dde8a880c200fd56d7188c7fd2395308593ed0b685",
+        "PROD": "44ebc09bfa4ca2aca0c981dde8a880c200fd56d7188c7fd2395308593ed0b685"
+      },
+      "owner_id": {
+        "TEST": 69279,
+        "PROD": 69279
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,26th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",26th"
+        }
+      ],
+      "names": {
+        "cn": "第26届最高位战",
+        "tw": "第26屆最高位戰",
+        "jp": "第26回最高位戦",
+        "ko": "제26회 최고위전",
+        "en": "26th Ch'oegowi Tournament"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "df38cdf340e26837d236fe25085bc1554aa2340c4215a0246b2cafa490b99c6c",
+        "PROD": "df38cdf340e26837d236fe25085bc1554aa2340c4215a0246b2cafa490b99c6c"
+      },
+      "owner_id": {
+        "TEST": 69280,
+        "PROD": 69280
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,27th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",27th"
+        }
+      ],
+      "names": {
+        "cn": "第27届最高位战",
+        "tw": "第27屆最高位戰",
+        "jp": "第27回最高位戦",
+        "ko": "제27회 최고위전",
+        "en": "27th Ch'oegowi Tournament"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "1e6906bc2dd9c0a93fc9adea4b1c6614d7122c236b96699b9354f7cbc6fb24d8",
+        "PROD": "1e6906bc2dd9c0a93fc9adea4b1c6614d7122c236b96699b9354f7cbc6fb24d8"
+      },
+      "owner_id": {
+        "TEST": 69281,
+        "PROD": 69281
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,28th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",28th"
+        }
+      ],
+      "names": {
+        "cn": "第28届最高位战",
+        "tw": "第28屆最高位戰",
+        "jp": "第28回最高位戦",
+        "ko": "제28회 최고위전",
+        "en": "28th Ch'oegowi Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "a66a7d31206e55093cc7b46d4d07b97fba4318f2d329a9d1e15958d129a8cbc1",
+        "PROD": "a66a7d31206e55093cc7b46d4d07b97fba4318f2d329a9d1e15958d129a8cbc1"
+      },
+      "owner_id": {
+        "TEST": 69282,
+        "PROD": 69282
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,29th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",29th"
+        }
+      ],
+      "names": {
+        "cn": "第29届最高位战",
+        "tw": "第29屆最高位戰",
+        "jp": "第29回最高位戦",
+        "ko": "제29회 최고위전",
+        "en": "29th Ch'oegowi Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "58b2e47dbc859b381e96b7e789a8207672c434482dd455a401867d240c7ca443",
+        "PROD": "58b2e47dbc859b381e96b7e789a8207672c434482dd455a401867d240c7ca443"
+      },
+      "owner_id": {
+        "TEST": 69283,
+        "PROD": 69283
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,30th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",30th"
+        }
+      ],
+      "names": {
+        "cn": "第30届最高位战",
+        "tw": "第30屆最高位戰",
+        "jp": "第30回最高位戦",
+        "ko": "제30회 최고위전",
+        "en": "30th Ch'oegowi Tournament"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "a579ba1c23881c7811915a97e6a373f2456b112d2585df5a8bbf9c6df2fda248",
+        "PROD": "a579ba1c23881c7811915a97e6a373f2456b112d2585df5a8bbf9c6df2fda248"
+      },
+      "owner_id": {
+        "TEST": 69284,
+        "PROD": 69284
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,38th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",38th"
+        }
+      ],
+      "names": {
+        "cn": "第38届最高位战",
+        "tw": "第38屆最高位戰",
+        "jp": "第38回最高位戦",
+        "ko": "제38회 최고위전",
+        "en": "38th Ch'oegowi Tournament"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "6810c464635ee112f08676aa03f737df51378d22b214804fb3d669b13390892a",
+        "PROD": "6810c464635ee112f08676aa03f737df51378d22b214804fb3d669b13390892a"
+      },
+      "owner_id": {
+        "TEST": 69285,
+        "PROD": 69285
+      }
+    },
+    {
+      "raw_value": "Kiseong,10th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",10th"
+        }
+      ],
+      "names": {
+        "cn": "第10届棋圣战",
+        "tw": "第10屆棋聖戰",
+        "jp": "第10回棋聖戦",
+        "ko": "제10회 기성전",
+        "en": "10th Kiseong Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "6613668c523d916ed167345e9ad3777a80fb234d04f9b7b4a8e05655a6a0468f",
+        "PROD": "6613668c523d916ed167345e9ad3777a80fb234d04f9b7b4a8e05655a6a0468f"
+      },
+      "owner_id": {
+        "TEST": 69967,
+        "PROD": 69967
+      }
+    },
+    {
+      "raw_value": "Kiseong,12th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",12th"
+        }
+      ],
+      "names": {
+        "cn": "第12届棋圣战",
+        "tw": "第12屆棋聖戰",
+        "jp": "第12回棋聖戦",
+        "ko": "제12회 기성전",
+        "en": "12th Kiseong Tournament"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "60ffd3cdd298413d4784834f95a695d3fbf5d7e071fbed363bfeb66604877f4a",
+        "PROD": "60ffd3cdd298413d4784834f95a695d3fbf5d7e071fbed363bfeb66604877f4a"
+      },
+      "owner_id": {
+        "TEST": 69969,
+        "PROD": 69969
+      }
+    },
+    {
+      "raw_value": "Kiseong,1st",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",1st"
+        }
+      ],
+      "names": {
+        "cn": "第1届棋圣战",
+        "tw": "第1屆棋聖戰",
+        "jp": "第1回棋聖戦",
+        "ko": "제1회 기성전",
+        "en": "1st Kiseong Tournament"
+      },
+      "current_games": 21,
+      "scope_sha256": {
+        "TEST": "47ffe10a7aefa9969f303a6b4897dac26a55b5f8e6055fb645ff83ffb0955ceb",
+        "PROD": "47ffe10a7aefa9969f303a6b4897dac26a55b5f8e6055fb645ff83ffb0955ceb"
+      },
+      "owner_id": {
+        "TEST": 69971,
+        "PROD": 69971
+      }
+    },
+    {
+      "raw_value": "Kiseong,2nd",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",2nd"
+        }
+      ],
+      "names": {
+        "cn": "第2届棋圣战",
+        "tw": "第2屆棋聖戰",
+        "jp": "第2回棋聖戦",
+        "ko": "제2회 기성전",
+        "en": "2nd Kiseong Tournament"
+      },
+      "current_games": 20,
+      "scope_sha256": {
+        "TEST": "d306c49b84655cc5623803245eafe43ac1e3a2c0899e2da2f992affa5b8100cb",
+        "PROD": "d306c49b84655cc5623803245eafe43ac1e3a2c0899e2da2f992affa5b8100cb"
+      },
+      "owner_id": {
+        "TEST": 69972,
+        "PROD": 69972
+      }
+    },
+    {
+      "raw_value": "Kiseong,3rd",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",3rd"
+        }
+      ],
+      "names": {
+        "cn": "第3届棋圣战",
+        "tw": "第3屆棋聖戰",
+        "jp": "第3回棋聖戦",
+        "ko": "제3회 기성전",
+        "en": "3rd Kiseong Tournament"
+      },
+      "current_games": 17,
+      "scope_sha256": {
+        "TEST": "0644f8f024d0938bb12100496198f1d00a7a70dd010d5c33320104beeef3298c",
+        "PROD": "0644f8f024d0938bb12100496198f1d00a7a70dd010d5c33320104beeef3298c"
+      },
+      "owner_id": {
+        "TEST": 69973,
+        "PROD": 69973
+      }
+    },
+    {
+      "raw_value": "Kiseong,4th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",4th"
+        }
+      ],
+      "names": {
+        "cn": "第4届棋圣战",
+        "tw": "第4屆棋聖戰",
+        "jp": "第4回棋聖戦",
+        "ko": "제4회 기성전",
+        "en": "4th Kiseong Tournament"
+      },
+      "current_games": 19,
+      "scope_sha256": {
+        "TEST": "79eb69faf48170f0aa0c6921ec7f31d7c6e6404249dc9f738c7421ff33320c6a",
+        "PROD": "79eb69faf48170f0aa0c6921ec7f31d7c6e6404249dc9f738c7421ff33320c6a"
+      },
+      "owner_id": {
+        "TEST": 69974,
+        "PROD": 69974
+      }
+    },
+    {
+      "raw_value": "Kiseong,5th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",5th"
+        }
+      ],
+      "names": {
+        "cn": "第5届棋圣战",
+        "tw": "第5屆棋聖戰",
+        "jp": "第5回棋聖戦",
+        "ko": "제5회 기성전",
+        "en": "5th Kiseong Tournament"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "b72acb0d02d201eb848d5387ed2ad3eb89f83708a07c09355bef54c571ff3581",
+        "PROD": "b72acb0d02d201eb848d5387ed2ad3eb89f83708a07c09355bef54c571ff3581"
+      },
+      "owner_id": {
+        "TEST": 69975,
+        "PROD": 69975
+      }
+    },
+    {
+      "raw_value": "Kiseong,6th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",6th"
+        }
+      ],
+      "names": {
+        "cn": "第6届棋圣战",
+        "tw": "第6屆棋聖戰",
+        "jp": "第6回棋聖戦",
+        "ko": "제6회 기성전",
+        "en": "6th Kiseong Tournament"
+      },
+      "current_games": 13,
+      "scope_sha256": {
+        "TEST": "fb44a5f6c1065806857f9247b80f04b7a31c516015a1560aeeda2087f77f5e14",
+        "PROD": "fb44a5f6c1065806857f9247b80f04b7a31c516015a1560aeeda2087f77f5e14"
+      },
+      "owner_id": {
+        "TEST": 69976,
+        "PROD": 69976
+      }
+    },
+    {
+      "raw_value": "Kiseong,7th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",7th"
+        }
+      ],
+      "names": {
+        "cn": "第7届棋圣战",
+        "tw": "第7屆棋聖戰",
+        "jp": "第7回棋聖戦",
+        "ko": "제7회 기성전",
+        "en": "7th Kiseong Tournament"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "777f4c2983bc1bedc9a00667068e295a088289759e468188b67b72815f950664",
+        "PROD": "777f4c2983bc1bedc9a00667068e295a088289759e468188b67b72815f950664"
+      },
+      "owner_id": {
+        "TEST": 69977,
+        "PROD": 69977
+      }
+    },
+    {
+      "raw_value": "Kiseong,8th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",8th"
+        }
+      ],
+      "names": {
+        "cn": "第8届棋圣战",
+        "tw": "第8屆棋聖戰",
+        "jp": "第8回棋聖戦",
+        "ko": "제8회 기성전",
+        "en": "8th Kiseong Tournament"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "6f94150282ab97e878c023168602c9ee2a8dffb578c30ecd6f1cb46611970490",
+        "PROD": "6f94150282ab97e878c023168602c9ee2a8dffb578c30ecd6f1cb46611970490"
+      },
+      "owner_id": {
+        "TEST": 69978,
+        "PROD": 69978
+      }
+    },
+    {
+      "raw_value": "Kiseong,9th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",9th"
+        }
+      ],
+      "names": {
+        "cn": "第9届棋圣战",
+        "tw": "第9屆棋聖戰",
+        "jp": "第9回棋聖戦",
+        "ko": "제9회 기성전",
+        "en": "9th Kiseong Tournament"
+      },
+      "current_games": 19,
+      "scope_sha256": {
+        "TEST": "6d82aa209540a332f896461f3f020d3140a263d3690f807e9cad19a07a38d5db",
+        "PROD": "6d82aa209540a332f896461f3f020d3140a263d3690f807e9cad19a07a38d5db"
+      },
+      "owner_id": {
+        "TEST": 69979,
+        "PROD": 69979
+      }
+    },
+    {
+      "raw_value": "Kukgi,10th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",10th"
+        }
+      ],
+      "names": {
+        "cn": "第10届国棋战",
+        "tw": "第10屆國棋戰",
+        "jp": "第10回国棋戦",
+        "ko": "제10회 국기전",
+        "en": "10th Kukgi Tournament"
+      },
+      "current_games": 16,
+      "scope_sha256": {
+        "TEST": "5a52d14a06e2e4fa1ecd573fce40d1b0f360bf21272cbb8bf4dcc2064cc2a926",
+        "PROD": "5a52d14a06e2e4fa1ecd573fce40d1b0f360bf21272cbb8bf4dcc2064cc2a926"
+      },
+      "owner_id": {
+        "TEST": 70030,
+        "PROD": 70030
+      }
+    },
+    {
+      "raw_value": "Kukgi,11th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",11th"
+        }
+      ],
+      "names": {
+        "cn": "第11届国棋战",
+        "tw": "第11屆國棋戰",
+        "jp": "第11回国棋戦",
+        "ko": "제11회 국기전",
+        "en": "11th Kukgi Tournament"
+      },
+      "current_games": 23,
+      "scope_sha256": {
+        "TEST": "6de05410922190a2eae12fddfbfae26050298778f82f21d94ad9087d38c330bb",
+        "PROD": "6de05410922190a2eae12fddfbfae26050298778f82f21d94ad9087d38c330bb"
+      },
+      "owner_id": {
+        "TEST": 70031,
+        "PROD": 70031
+      }
+    },
+    {
+      "raw_value": "Kukgi,12th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",12th"
+        }
+      ],
+      "names": {
+        "cn": "第12届国棋战",
+        "tw": "第12屆國棋戰",
+        "jp": "第12回国棋戦",
+        "ko": "제12회 국기전",
+        "en": "12th Kukgi Tournament"
+      },
+      "current_games": 23,
+      "scope_sha256": {
+        "TEST": "f4bb4b65cba2f2dbae86dce86f6d166c6033fce2906efcfe418cd2337b2d2509",
+        "PROD": "f4bb4b65cba2f2dbae86dce86f6d166c6033fce2906efcfe418cd2337b2d2509"
+      },
+      "owner_id": {
+        "TEST": 70032,
+        "PROD": 70032
+      }
+    },
+    {
+      "raw_value": "Kukgi,13th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",13th"
+        }
+      ],
+      "names": {
+        "cn": "第13届国棋战",
+        "tw": "第13屆國棋戰",
+        "jp": "第13回国棋戦",
+        "ko": "제13회 국기전",
+        "en": "13th Kukgi Tournament"
+      },
+      "current_games": 14,
+      "scope_sha256": {
+        "TEST": "79efdade2b30ab12678e240a97de77d861acc9308db0cd33d7ddba3f9e087863",
+        "PROD": "79efdade2b30ab12678e240a97de77d861acc9308db0cd33d7ddba3f9e087863"
+      },
+      "owner_id": {
+        "TEST": 70033,
+        "PROD": 70033
+      }
+    },
+    {
+      "raw_value": "Kukgi,14th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",14th"
+        }
+      ],
+      "names": {
+        "cn": "第14届国棋战",
+        "tw": "第14屆國棋戰",
+        "jp": "第14回国棋戦",
+        "ko": "제14회 국기전",
+        "en": "14th Kukgi Tournament"
+      },
+      "current_games": 14,
+      "scope_sha256": {
+        "TEST": "64f0c5aa1e6a1a1eec0f071ea5a8435815a59d4bc6da40f757c5385627f4188c",
+        "PROD": "64f0c5aa1e6a1a1eec0f071ea5a8435815a59d4bc6da40f757c5385627f4188c"
+      },
+      "owner_id": {
+        "TEST": 70034,
+        "PROD": 70034
+      }
+    },
+    {
+      "raw_value": "Kukgi,15th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",15th"
+        }
+      ],
+      "names": {
+        "cn": "第15届国棋战",
+        "tw": "第15屆國棋戰",
+        "jp": "第15回国棋戦",
+        "ko": "제15회 국기전",
+        "en": "15th Kukgi Tournament"
+      },
+      "current_games": 11,
+      "scope_sha256": {
+        "TEST": "68b9d61e5803bd68efe15a20623c8b42d81e3a87e6721621a201ebf9580bf847",
+        "PROD": "68b9d61e5803bd68efe15a20623c8b42d81e3a87e6721621a201ebf9580bf847"
+      },
+      "owner_id": {
+        "TEST": 70035,
+        "PROD": 70035
+      }
+    },
+    {
+      "raw_value": "Kukgi,17th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",17th"
+        }
+      ],
+      "names": {
+        "cn": "第17届国棋战",
+        "tw": "第17屆國棋戰",
+        "jp": "第17回国棋戦",
+        "ko": "제17회 국기전",
+        "en": "17th Kukgi Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "21c6fca4da013f3c33ff1b99f3738154e9fdd00319bdc8c65efe46696a965e35",
+        "PROD": "21c6fca4da013f3c33ff1b99f3738154e9fdd00319bdc8c65efe46696a965e35"
+      },
+      "owner_id": {
+        "TEST": 70037,
+        "PROD": 70037
+      }
+    },
+    {
+      "raw_value": "Kukgi,18th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",18th"
+        }
+      ],
+      "names": {
+        "cn": "第18届国棋战",
+        "tw": "第18屆國棋戰",
+        "jp": "第18回国棋戦",
+        "ko": "제18회 국기전",
+        "en": "18th Kukgi Tournament"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "5755e6df84abfa0495e7137b8209a1aaf62b612ee2f955e79eba6e4da99a312f",
+        "PROD": "5755e6df84abfa0495e7137b8209a1aaf62b612ee2f955e79eba6e4da99a312f"
+      },
+      "owner_id": {
+        "TEST": 70038,
+        "PROD": 70038
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,10th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",10th"
+        }
+      ],
+      "names": {
+        "cn": "第10届日本棋院选手权赛",
+        "tw": "第10屆日本棋院選手權賽",
+        "jp": "第10回日本棋院選手権戦",
+        "ko": "제10회 일본기원 선수권전",
+        "en": "10th Nihon Ki-in Championship"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "493893abd0f0def8c6c8e17925c4251578453230c061031e1b491290096c1512",
+        "PROD": "493893abd0f0def8c6c8e17925c4251578453230c061031e1b491290096c1512"
+      },
+      "owner_id": {
+        "TEST": 70340,
+        "PROD": 70340
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,11th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",11th"
+        }
+      ],
+      "names": {
+        "cn": "第11届日本棋院选手权赛",
+        "tw": "第11屆日本棋院選手權賽",
+        "jp": "第11回日本棋院選手権戦",
+        "ko": "제11회 일본기원 선수권전",
+        "en": "11th Nihon Ki-in Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "25f9493f7a801022eae6c7339fab438f378e1cfee5de5ad60d8151a7072ef824",
+        "PROD": "25f9493f7a801022eae6c7339fab438f378e1cfee5de5ad60d8151a7072ef824"
+      },
+      "owner_id": {
+        "TEST": 70341,
+        "PROD": 70341
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,12th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",12th"
+        }
+      ],
+      "names": {
+        "cn": "第12届日本棋院选手权赛",
+        "tw": "第12屆日本棋院選手權賽",
+        "jp": "第12回日本棋院選手権戦",
+        "ko": "제12회 일본기원 선수권전",
+        "en": "12th Nihon Ki-in Championship"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "c583d300e9ca0c442fa6a82316c40284ccf1dc9da6578ffda52092ffbb89953b",
+        "PROD": "c583d300e9ca0c442fa6a82316c40284ccf1dc9da6578ffda52092ffbb89953b"
+      },
+      "owner_id": {
+        "TEST": 70342,
+        "PROD": 70342
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,13th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",13th"
+        }
+      ],
+      "names": {
+        "cn": "第13届日本棋院选手权赛",
+        "tw": "第13屆日本棋院選手權賽",
+        "jp": "第13回日本棋院選手権戦",
+        "ko": "제13회 일본기원 선수권전",
+        "en": "13th Nihon Ki-in Championship"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "74b2d9438298ee2db33314bd8191aefbbf63b7e5446b6768bcf91e624de35601",
+        "PROD": "74b2d9438298ee2db33314bd8191aefbbf63b7e5446b6768bcf91e624de35601"
+      },
+      "owner_id": {
+        "TEST": 70343,
+        "PROD": 70343
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,14th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",14th"
+        }
+      ],
+      "names": {
+        "cn": "第14届日本棋院选手权赛",
+        "tw": "第14屆日本棋院選手權賽",
+        "jp": "第14回日本棋院選手権戦",
+        "ko": "제14회 일본기원 선수권전",
+        "en": "14th Nihon Ki-in Championship"
+      },
+      "current_games": 12,
+      "scope_sha256": {
+        "TEST": "070398eb73ec8ab30394cdfa54075878a798f7c5fd4ad4c3d15ab977d8a4a6ed",
+        "PROD": "070398eb73ec8ab30394cdfa54075878a798f7c5fd4ad4c3d15ab977d8a4a6ed"
+      },
+      "owner_id": {
+        "TEST": 70344,
+        "PROD": 70344
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,15th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",15th"
+        }
+      ],
+      "names": {
+        "cn": "第15届日本棋院选手权赛",
+        "tw": "第15屆日本棋院選手權賽",
+        "jp": "第15回日本棋院選手権戦",
+        "ko": "제15회 일본기원 선수권전",
+        "en": "15th Nihon Ki-in Championship"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "a2d1f3d45d42ddb0959ca53e407184c6d903c124df9fead4a7b9d182b950ae5e",
+        "PROD": "a2d1f3d45d42ddb0959ca53e407184c6d903c124df9fead4a7b9d182b950ae5e"
+      },
+      "owner_id": {
+        "TEST": 70345,
+        "PROD": 70345
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,17th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",17th"
+        }
+      ],
+      "names": {
+        "cn": "第17届日本棋院选手权赛",
+        "tw": "第17屆日本棋院選手權賽",
+        "jp": "第17回日本棋院選手権戦",
+        "ko": "제17회 일본기원 선수권전",
+        "en": "17th Nihon Ki-in Championship"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "f50f558bf5d98146333d2ae3cb6bef82bc19c9e7ebb44fec6e0cc56c5930b252",
+        "PROD": "f50f558bf5d98146333d2ae3cb6bef82bc19c9e7ebb44fec6e0cc56c5930b252"
+      },
+      "owner_id": {
+        "TEST": 70347,
+        "PROD": 70347
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,18th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",18th"
+        }
+      ],
+      "names": {
+        "cn": "第18届日本棋院选手权赛",
+        "tw": "第18屆日本棋院選手權賽",
+        "jp": "第18回日本棋院選手権戦",
+        "ko": "제18회 일본기원 선수권전",
+        "en": "18th Nihon Ki-in Championship"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "22a6e38ecb2576bcba2f8c7fdcc2661069bd4deadb4b84ce273a2b6297f40bd4",
+        "PROD": "22a6e38ecb2576bcba2f8c7fdcc2661069bd4deadb4b84ce273a2b6297f40bd4"
+      },
+      "owner_id": {
+        "TEST": 70348,
+        "PROD": 70348
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,19th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",19th"
+        }
+      ],
+      "names": {
+        "cn": "第19届日本棋院选手权赛",
+        "tw": "第19屆日本棋院選手權賽",
+        "jp": "第19回日本棋院選手権戦",
+        "ko": "제19회 일본기원 선수권전",
+        "en": "19th Nihon Ki-in Championship"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "51b05460c9d35c8ba30a06814ad778d3d992254d6006ca27c719eec9344ec06b",
+        "PROD": "51b05460c9d35c8ba30a06814ad778d3d992254d6006ca27c719eec9344ec06b"
+      },
+      "owner_id": {
+        "TEST": 70349,
+        "PROD": 70349
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,20th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",20th"
+        }
+      ],
+      "names": {
+        "cn": "第20届日本棋院选手权赛",
+        "tw": "第20屆日本棋院選手權賽",
+        "jp": "第20回日本棋院選手権戦",
+        "ko": "제20회 일본기원 선수권전",
+        "en": "20th Nihon Ki-in Championship"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "317189e0fff1197d59bd747d0a513d5ff02acb040c707ed92b42c3a281e24bed",
+        "PROD": "317189e0fff1197d59bd747d0a513d5ff02acb040c707ed92b42c3a281e24bed"
+      },
+      "owner_id": {
+        "TEST": 70350,
+        "PROD": 70350
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,8th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",8th"
+        }
+      ],
+      "names": {
+        "cn": "第8届日本棋院选手权赛",
+        "tw": "第8屆日本棋院選手權賽",
+        "jp": "第8回日本棋院選手権戦",
+        "ko": "제8회 일본기원 선수권전",
+        "en": "8th Nihon Ki-in Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "b5740333867411404d7333fae8d52bdb0bee58ffae223358892771854fb38465",
+        "PROD": "b5740333867411404d7333fae8d52bdb0bee58ffae223358892771854fb38465"
+      },
+      "owner_id": {
+        "TEST": 70353,
+        "PROD": 70353
+      }
+    },
+    {
+      "raw_value": "P'aewang,20th",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",20th"
+        }
+      ],
+      "names": {
+        "cn": "第20届霸王战",
+        "tw": "第20屆霸王戰",
+        "jp": "第20回覇王戦",
+        "ko": "제20회 패왕전",
+        "en": "20th P'aewang Tournament"
+      },
+      "current_games": 20,
+      "scope_sha256": {
+        "TEST": "5316aa25ccb49f94ff4b3ab1eadff90b29fc7fd2b9a5e91632145cb61f26ee9c",
+        "PROD": "5316aa25ccb49f94ff4b3ab1eadff90b29fc7fd2b9a5e91632145cb61f26ee9c"
+      },
+      "owner_id": {
+        "TEST": 70502,
+        "PROD": 70502
+      }
+    },
+    {
+      "raw_value": "P'aewang,21st",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",21st"
+        }
+      ],
+      "names": {
+        "cn": "第21届霸王战",
+        "tw": "第21屆霸王戰",
+        "jp": "第21回覇王戦",
+        "ko": "제21회 패왕전",
+        "en": "21st P'aewang Tournament"
+      },
+      "current_games": 14,
+      "scope_sha256": {
+        "TEST": "d8928c6a1f1073131a71e9dc78ca269a99a5b1d805eb8d9e06a7c6ae9a612516",
+        "PROD": "d8928c6a1f1073131a71e9dc78ca269a99a5b1d805eb8d9e06a7c6ae9a612516"
+      },
+      "owner_id": {
+        "TEST": 70503,
+        "PROD": 70503
+      }
+    },
+    {
+      "raw_value": "P'aewang,22nd",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",22nd"
+        }
+      ],
+      "names": {
+        "cn": "第22届霸王战",
+        "tw": "第22屆霸王戰",
+        "jp": "第22回覇王戦",
+        "ko": "제22회 패왕전",
+        "en": "22nd P'aewang Tournament"
+      },
+      "current_games": 20,
+      "scope_sha256": {
+        "TEST": "b42d01de074c4ee140d71fb65da1c3f99dd70d6b11a4bc70c65516e011121a02",
+        "PROD": "b42d01de074c4ee140d71fb65da1c3f99dd70d6b11a4bc70c65516e011121a02"
+      },
+      "owner_id": {
+        "TEST": 70504,
+        "PROD": 70504
+      }
+    },
+    {
+      "raw_value": "P'aewang,23rd",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",23rd"
+        }
+      ],
+      "names": {
+        "cn": "第23届霸王战",
+        "tw": "第23屆霸王戰",
+        "jp": "第23回覇王戦",
+        "ko": "제23회 패왕전",
+        "en": "23rd P'aewang Tournament"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "a24989dbb7fb2b7bfb33b7ea637f43f69e57bf50ad5ab8b890339fc188547dd4",
+        "PROD": "a24989dbb7fb2b7bfb33b7ea637f43f69e57bf50ad5ab8b890339fc188547dd4"
+      },
+      "owner_id": {
+        "TEST": 70505,
+        "PROD": 70505
+      }
+    },
+    {
+      "raw_value": "P'aewang,24th",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",24th"
+        }
+      ],
+      "names": {
+        "cn": "第24届霸王战",
+        "tw": "第24屆霸王戰",
+        "jp": "第24回覇王戦",
+        "ko": "제24회 패왕전",
+        "en": "24th P'aewang Tournament"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "e29a680651f91054dcf861120bbf0e9d063a2daf1c9837115857981202e4bdf2",
+        "PROD": "e29a680651f91054dcf861120bbf0e9d063a2daf1c9837115857981202e4bdf2"
+      },
+      "owner_id": {
+        "TEST": 70506,
+        "PROD": 70506
+      }
+    },
+    {
+      "raw_value": "P'aewang,25th",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",25th"
+        }
+      ],
+      "names": {
+        "cn": "第25届霸王战",
+        "tw": "第25屆霸王戰",
+        "jp": "第25回覇王戦",
+        "ko": "제25회 패왕전",
+        "en": "25th P'aewang Tournament"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "cd5b49811e1f5d87ca118306351e3fb60b606aca016f99c2025f9094d45ff6c4",
+        "PROD": "cd5b49811e1f5d87ca118306351e3fb60b606aca016f99c2025f9094d45ff6c4"
+      },
+      "owner_id": {
+        "TEST": 70507,
+        "PROD": 70507
+      }
+    },
+    {
+      "raw_value": "P'aewang,33rd",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",33rd"
+        }
+      ],
+      "names": {
+        "cn": "第33届霸王战",
+        "tw": "第33屆霸王戰",
+        "jp": "第33回覇王戦",
+        "ko": "제33회 패왕전",
+        "en": "33rd P'aewang Tournament"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "1e4d78302d0afd1dd90e2423723296d1836a4b0351137df19fa10e96f4757cfe",
+        "PROD": "1e4d78302d0afd1dd90e2423723296d1836a4b0351137df19fa10e96f4757cfe"
+      },
+      "owner_id": {
+        "TEST": 70508,
+        "PROD": 70508
+      }
+    },
+    {
+      "raw_value": "Taewang,3rd",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Taewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",3rd"
+        }
+      ],
+      "names": {
+        "cn": "第3届大王战",
+        "tw": "第3屆大王戰",
+        "jp": "第3回大王戦",
+        "ko": "제3회 대왕전",
+        "en": "3rd Taewang Tournament"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "2e903bdbc6ee634efa0fa033973e0621d10823a80fbcbc02ff94e4f02e05add2",
+        "PROD": "2e903bdbc6ee634efa0fa033973e0621d10823a80fbcbc02ff94e4f02e05add2"
+      },
+      "owner_id": {
+        "TEST": 70654,
+        "PROD": 70654
+      }
+    },
+    {
+      "raw_value": "Taewang,4th",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Taewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",4th"
+        }
+      ],
+      "names": {
+        "cn": "第4届大王战",
+        "tw": "第4屆大王戰",
+        "jp": "第4回大王戦",
+        "ko": "제4회 대왕전",
+        "en": "4th Taewang Tournament"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "9b20c728f0c5ef23fe6dbaaf72eb087a6cf3dedd07da4c85d967df2ddf18a265",
+        "PROD": "9b20c728f0c5ef23fe6dbaaf72eb087a6cf3dedd07da4c85d967df2ddf18a265"
+      },
+      "owner_id": {
+        "TEST": 70655,
+        "PROD": 70655
+      }
+    },
+    {
+      "raw_value": "Taewang,5th",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Taewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",5th"
+        }
+      ],
+      "names": {
+        "cn": "第5届大王战",
+        "tw": "第5屆大王戰",
+        "jp": "第5回大王戦",
+        "ko": "제5회 대왕전",
+        "en": "5th Taewang Tournament"
+      },
+      "current_games": 15,
+      "scope_sha256": {
+        "TEST": "7c392d4f8d40e7c69a219d55684014db849ae953d9095205cafeea48504451dd",
+        "PROD": "7c392d4f8d40e7c69a219d55684014db849ae953d9095205cafeea48504451dd"
+      },
+      "owner_id": {
+        "TEST": 70656,
+        "PROD": 70656
+      }
+    }
+  ],
+  "approval": null
+}

@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>采集正式前端 · v2 同视口对照</title>
+<style>body{font:16px/1.6 serif;margin:24px;background:#161a1e;color:#eee}a{color:#e7b491}section{margin:30px 0}img{display:block;max-width:100%;height:auto;border:1px solid #59616a}summary{cursor:pointer}p{max-width:1000px}</style>
+<h1>采集正式 React · 1440×900 四图对照</h1>
+<p>独立 GPT-6 Astra max：四态 APPROVE。运行图是正式 React 组件，但 API 与相机图由临时浏览器响应替换，仅验外观与交互，不代表真实硬件验收；生产组件不包含这些响应。</p>
+<div id="states"></div>
+<script>
+const states=[['unconnected-dark','夜间未连接'],['ready-dark','夜间可采集'],['stale-dark','恢复待复核'],['review-light','白天样本检查']];
+document.getElementById('states').innerHTML=states.map(([state,label])=>`<section><h2>${label}</h2><p><a href="vision-v2-design-${state}-1440x900.png">参考</a> · <a href="vision-v2-runtime-${state}-1440x900.png">正式运行图</a> · <a href="vision-v2-overlay-${state}.png">叠加</a> · <a href="vision-v2-diff-${state}.png">差异</a></p><img src="vision-v2-side-${state}.png" alt="${label}参考与实现并排" loading="lazy"><details><summary>50% 叠加</summary><img src="vision-v2-overlay-${state}.png" alt="${label}叠加" loading="lazy"></details></section>`).join('');
+</script></html>

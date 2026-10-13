@@ -1,0 +1,38 @@
+{
+  "format": "kifu-new33-secondbatch-primary-source-capture-v1",
+  "sources": [
+    {
+      "key": "cwa-CWA000147",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000147",
+      "path": "docs/resource/kifu-player-new33-secondbatch-independent-sources-2026-10-04/cwa-CWA000147.json",
+      "sha256": "e9dfb60e2bf2119fba867bb53a409d3d2598fe13e44bf635a1eb632a52f68921",
+      "bytes": 1268,
+      "http_status": 200,
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000147",
+      "retrieved_utc": "2026-10-04T10:24:53.214292+00:00"
+    },
+    {
+      "key": "taiwan-chenyihsiang-admission",
+      "url": "https://taiwangorg.blogspot.com/2009/01/blog-post_12.html",
+      "path": "docs/resource/kifu-player-new33-secondbatch-independent-sources-2026-10-04/taiwan-chenyihsiang-admission.html",
+      "sha256": "5a7a706ca428fc5731d6a2b815ca5efe0a91ac6a5c56456fa2995c5872205e2d",
+      "bytes": 47915,
+      "http_status": 200,
+      "resolved_url": "https://taiwangorg.blogspot.com/2009/01/blog-post_12.html",
+      "retrieved_utc": "2026-10-04T10:24:54.658799+00:00",
+      "text_path": "docs/resource/kifu-player-new33-secondbatch-independent-sources-2026-10-04/taiwan-chenyihsiang-admission.txt",
+      "text_sha256": "a7567e262edbebaf669eb98c7f262483cdd15a9eaa03b3ece111c4e7bae98d9c"
+    },
+    {
+      "key": "cwi-cj-1990",
+      "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1990/index.html",
+      "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-1990.html",
+      "sha256": "b0bb3cb7931d259b8333b006c47ac27f54ce7d7721bf3ce449910d3ce6a0d862",
+      "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-1990.txt",
+      "text_sha256": "82ec6e039c79b7e8748690d4f6b398a60ad07432b0541a6b0b8d35ed24e8a4f8",
+      "retrieved_utc": "2026-10-04T09:58:46.267634+00:00",
+      "http_status": 200,
+      "evidence_role": "Dated game context only; player identity and promotion chronology remain anchored to federation profiles."
+    }
+  ]
+}

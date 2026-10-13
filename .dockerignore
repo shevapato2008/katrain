@@ -19,3 +19,13 @@ data/go4_*
 # Measured: without this, `COPY . /app` spends minutes on the copy alone and the image
 # grows by the full size of whatever calibration ran that day.
 superpowers/
+
+# Translation research, historical database snapshots and source captures belong
+# in Git for traceability, but are not inputs to the web/desktop image. Keep the
+# small default source registry and seed used by catalogue tooling. Historical
+# migration commands need their pinned archive files mounted explicitly.
+/docs/resource/
+!/docs/resource/kifu-name-source-registry.json
+!/docs/resource/kifu-name-seed.json
+/.firecrawl/
+/tmp/

@@ -26,6 +26,10 @@ class CommandType(Enum):
     SET_MONITOR = "set_monitor"
     SET_PAUSED = "set_paused"
     SET_MOVE_ARMED = "set_move_armed"
+    SET_LOCAL_CONFIRMATION_MODE = "set_local_confirmation_mode"
+    OPEN_LOCAL_WINDOW = "open_local_window"
+    CANCEL_LOCAL_WINDOW = "cancel_local_window"
+    COMPLETE_LOCAL_WINDOW = "complete_local_window"
     PAUSE_DETECTION = "pause_detection"
     RESUME_DETECTION = "resume_detection"
     SET_LIT_POINTS = "set_lit_points"
@@ -60,6 +64,12 @@ class WorkerStatus:
     # from "the last thing this worker happened to publish" — worker.py publishes at 1 Hz,
     # so the newest published board can easily predate a move confirmed since.
     observation_seq: int = 0
+    local_confirmation_mode: bool = False
+    local_confirmation_session_id: str | None = None
+    local_confirmation_game_id: str | None = None
+    local_confirmation_mode_generation: int = 0
+    local_confirmation_ready: bool = False
+    local_confirmation_bootstrap_state: str = "idle"
 
 
 @dataclass
@@ -70,3 +80,19 @@ class ConfirmedMove:
     row: int
     color: int  # BLACK=1, WHITE=2
     observation_seq: int = 0  # the observation this confirmation was made on
+
+
+@dataclass
+class LocalWindowObservation:
+    """One complete postprocessed board, isolated from the automatic move consumer."""
+
+    token: str
+    board: list[list[int]]
+    observation_seq: int
+    camera_seq: int
+    camera_ts: float
+    candidate: ConfirmedMove | None = None
+    pending: bool = False
+    ambiguous_points: list[list[int]] = field(default_factory=list)
+    session_id: str | None = None
+    exposure: dict[str, Any] | None = None

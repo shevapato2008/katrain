@@ -1,0 +1,876 @@
+[
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/41278?lang=cn",
+    "seconds": 2.003,
+    "total": null,
+    "display": {
+      "id": 41278,
+      "black_rank": "五品",
+      "white_rank": "六品",
+      "display_player_black": "彭景华",
+      "display_player_white": "陈国兴",
+      "display_black_rank": "五品",
+      "display_white_rank": "六品",
+      "display_event": "第23届台湾围棋名人擂台赛第28局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/42518?lang=cn",
+    "seconds": 2.007,
+    "total": null,
+    "display": {
+      "id": 42518,
+      "black_rank": "六品",
+      "white_rank": "九品",
+      "display_player_black": "周俊勋",
+      "display_player_white": "陈明进",
+      "display_black_rank": "六品",
+      "display_white_rank": "九品",
+      "display_event": "第22届台湾围棋名人擂台赛第37局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/48506?lang=cn",
+    "seconds": 2.011,
+    "total": null,
+    "display": {
+      "id": 48506,
+      "black_rank": "七品",
+      "white_rank": null,
+      "display_player_black": "杨志德",
+      "display_player_white": "崔珪昞",
+      "display_black_rank": "七品",
+      "display_white_rank": "",
+      "display_event": "第8届韩国台湾围棋交流赛第2轮",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/125192?lang=cn",
+    "seconds": 2.31,
+    "total": null,
+    "display": {
+      "id": 125192,
+      "black_rank": "5p",
+      "white_rank": "7p",
+      "display_player_black": "阿奥基施尼奇",
+      "display_player_white": "依田纪基",
+      "display_black_rank": "5p",
+      "display_white_rank": "7p",
+      "display_event": "第3届NEC杯俊英战",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/59098?lang=cn",
+    "seconds": 2.301,
+    "total": null,
+    "display": {
+      "id": 59098,
+      "black_rank": "6dan",
+      "white_rank": "6dan",
+      "display_player_black": "董彦",
+      "display_player_white": "山下敬吾",
+      "display_black_rank": "6dan",
+      "display_white_rank": "6dan",
+      "display_event": "第14届中日NEC杯新秀对抗赛三番棋",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/41278?lang=tw",
+    "seconds": 2.302,
+    "total": null,
+    "display": {
+      "id": 41278,
+      "black_rank": "五品",
+      "white_rank": "六品",
+      "display_player_black": "彭景華",
+      "display_player_white": "陳國興",
+      "display_black_rank": "五品",
+      "display_white_rank": "六品",
+      "display_event": "第23屆臺灣圍棋名人擂臺賽第28局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/42518?lang=tw",
+    "seconds": 1.8,
+    "total": null,
+    "display": {
+      "id": 42518,
+      "black_rank": "六品",
+      "white_rank": "九品",
+      "display_player_black": "周俊勳",
+      "display_player_white": "陳明進",
+      "display_black_rank": "六品",
+      "display_white_rank": "九品",
+      "display_event": "第22屆臺灣圍棋名人擂臺賽第37局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/48506?lang=tw",
+    "seconds": 1.796,
+    "total": null,
+    "display": {
+      "id": 48506,
+      "black_rank": "七品",
+      "white_rank": null,
+      "display_player_black": "楊志德",
+      "display_player_white": "崔珪昞",
+      "display_black_rank": "七品",
+      "display_white_rank": "",
+      "display_event": "第8屆韓國臺灣圍棋交流賽第2輪",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/125192?lang=tw",
+    "seconds": 1.805,
+    "total": null,
+    "display": {
+      "id": 125192,
+      "black_rank": "5p",
+      "white_rank": "7p",
+      "display_player_black": "阿奧基施尼奇",
+      "display_player_white": "依田紀基",
+      "display_black_rank": "5p",
+      "display_white_rank": "7p",
+      "display_event": "第3屆NEC盃俊英戰",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/59098?lang=tw",
+    "seconds": 1.394,
+    "total": null,
+    "display": {
+      "id": 59098,
+      "black_rank": "6dan",
+      "white_rank": "6dan",
+      "display_player_black": "董彥",
+      "display_player_white": "山下敬吾",
+      "display_black_rank": "6dan",
+      "display_white_rank": "6dan",
+      "display_event": "第14屆中日NEC盃新秀對抗賽三番棋",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/41278?lang=jp",
+    "seconds": 1.394,
+    "total": null,
+    "display": {
+      "id": 41278,
+      "black_rank": "五品",
+      "white_rank": "六品",
+      "display_player_black": "彭景華",
+      "display_player_white": "陳國興",
+      "display_black_rank": "五品",
+      "display_white_rank": "六品",
+      "display_event": "第23回台湾囲碁名人勝ち抜き戦 第28局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/42518?lang=jp",
+    "seconds": 1.39,
+    "total": null,
+    "display": {
+      "id": 42518,
+      "black_rank": "六品",
+      "white_rank": "九品",
+      "display_player_black": "周俊勲",
+      "display_player_white": "陳明進",
+      "display_black_rank": "六品",
+      "display_white_rank": "九品",
+      "display_event": "第22回台湾囲碁名人勝ち抜き戦 第37局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/48506?lang=jp",
+    "seconds": 2.436,
+    "total": null,
+    "display": {
+      "id": 48506,
+      "black_rank": "七品",
+      "white_rank": null,
+      "display_player_black": "楊志德",
+      "display_player_white": "崔珪昞",
+      "display_black_rank": "七品",
+      "display_white_rank": "",
+      "display_event": "第8回韓国・台湾囲碁交流戦 第2ラウンド",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/125192?lang=jp",
+    "seconds": 2.436,
+    "total": null,
+    "display": {
+      "id": 125192,
+      "black_rank": "5p",
+      "white_rank": "7p",
+      "display_player_black": "アオキシニチ",
+      "display_player_white": "依田紀基",
+      "display_black_rank": "5p",
+      "display_white_rank": "7p",
+      "display_event": "第3回NEC杯俊英戦",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/59098?lang=jp",
+    "seconds": 2.443,
+    "total": null,
+    "display": {
+      "id": 59098,
+      "black_rank": "6dan",
+      "white_rank": "6dan",
+      "display_player_black": "董彦",
+      "display_player_white": "山下敬吾",
+      "display_black_rank": "6dan",
+      "display_white_rank": "6dan",
+      "display_event": "第14回中日NEC杯新秀対抗戦三番勝負",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/41278?lang=ko",
+    "seconds": 0.643,
+    "total": null,
+    "display": {
+      "id": 41278,
+      "black_rank": "五品",
+      "white_rank": "六品",
+      "display_player_black": "펑징화",
+      "display_player_white": "천궈싱",
+      "display_black_rank": "五品",
+      "display_white_rank": "六品",
+      "display_event": "제23회 대만 바둑 명인 연승전 제28국",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/42518?lang=ko",
+    "seconds": 0.652,
+    "total": null,
+    "display": {
+      "id": 42518,
+      "black_rank": "六品",
+      "white_rank": "九品",
+      "display_player_black": "저우쥔쉰",
+      "display_player_white": "천밍진",
+      "display_black_rank": "六品",
+      "display_white_rank": "九品",
+      "display_event": "제22회 대만 바둑 명인 연승전 제37국",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/48506?lang=ko",
+    "seconds": 0.631,
+    "total": null,
+    "display": {
+      "id": 48506,
+      "black_rank": "七品",
+      "white_rank": null,
+      "display_player_black": "양즈더",
+      "display_player_white": "최규병",
+      "display_black_rank": "七品",
+      "display_white_rank": "",
+      "display_event": "제8회 한국·대만 바둑 교류전 제2라운드",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/125192?lang=ko",
+    "seconds": 2.357,
+    "total": null,
+    "display": {
+      "id": 125192,
+      "black_rank": "5p",
+      "white_rank": "7p",
+      "display_player_black": "아오기신이차하이",
+      "display_player_white": "요다 노리모토",
+      "display_black_rank": "5p",
+      "display_white_rank": "7p",
+      "display_event": "제3회 NEC 신예전(슌에이)",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/59098?lang=ko",
+    "seconds": 2.347,
+    "total": null,
+    "display": {
+      "id": 59098,
+      "black_rank": "6dan",
+      "white_rank": "6dan",
+      "display_player_black": "둥옌",
+      "display_player_white": "야마시타 게이고",
+      "display_black_rank": "6dan",
+      "display_white_rank": "6dan",
+      "display_event": "제14회 중일 NEC배 신예 대항전 3번기",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/41278?lang=en",
+    "seconds": 2.337,
+    "total": null,
+    "display": {
+      "id": 41278,
+      "black_rank": "五品",
+      "white_rank": "六品",
+      "display_player_black": "Peng Jinghua",
+      "display_player_white": "Chen Guoxing",
+      "display_black_rank": "五品",
+      "display_white_rank": "六品",
+      "display_event": "23rd Taiwan Go Meijin Relay Tournament, Game 28",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/42518?lang=en",
+    "seconds": 1.741,
+    "total": null,
+    "display": {
+      "id": 42518,
+      "black_rank": "六品",
+      "white_rank": "九品",
+      "display_player_black": "Chou Chun-hsun",
+      "display_player_white": "Chen Mingjin",
+      "display_black_rank": "六品",
+      "display_white_rank": "九品",
+      "display_event": "22nd Taiwan Go Meijin Relay Tournament, Game 37",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/48506?lang=en",
+    "seconds": 1.734,
+    "total": null,
+    "display": {
+      "id": 48506,
+      "black_rank": "七品",
+      "white_rank": null,
+      "display_player_black": "Yang Zhide",
+      "display_player_white": "Choi Kyubyeong",
+      "display_black_rank": "七品",
+      "display_white_rank": "",
+      "display_event": "8th Korea–Taiwan Go Exchange Match, Round 2",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/125192?lang=en",
+    "seconds": 1.725,
+    "total": null,
+    "display": {
+      "id": 125192,
+      "black_rank": "5p",
+      "white_rank": "7p",
+      "display_player_black": "AokiShin'ichi",
+      "display_player_white": "Yoda Norimoto",
+      "display_black_rank": "5p",
+      "display_white_rank": "7p",
+      "display_event": "3rd NEC New Stars (Shun’ei)",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/59098?lang=en",
+    "seconds": 8.64,
+    "total": null,
+    "display": {
+      "id": 59098,
+      "black_rank": "6dan",
+      "white_rank": "6dan",
+      "display_player_black": "Dong Yan",
+      "display_player_white": "Yamashita Keigo",
+      "display_black_rank": "6dan",
+      "display_white_rank": "6dan",
+      "display_event": "14th China-Japan NEC New Stars Match, Best of Three",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums?lang=en&page=1&page_size=1&q=%E5%90%B4%E6%B8%85%E6%BA%90",
+    "seconds": 8.633,
+    "total": 1680
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums?lang=en&page=1&page_size=1&q=Go%20Seigen",
+    "seconds": 8.633,
+    "total": 1252
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/41278?lang=cn",
+    "seconds": 2.21,
+    "total": null,
+    "display": {
+      "id": 41278,
+      "black_rank": "五品",
+      "white_rank": "六品",
+      "display_player_black": "彭景华",
+      "display_player_white": "陈国兴",
+      "display_black_rank": "五品",
+      "display_white_rank": "六品",
+      "display_event": "第23届台湾围棋名人擂台赛第28局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/42518?lang=cn",
+    "seconds": 2.211,
+    "total": null,
+    "display": {
+      "id": 42518,
+      "black_rank": "六品",
+      "white_rank": "九品",
+      "display_player_black": "周俊勋",
+      "display_player_white": "陈明进",
+      "display_black_rank": "六品",
+      "display_white_rank": "九品",
+      "display_event": "第22届台湾围棋名人擂台赛第37局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/48506?lang=cn",
+    "seconds": 2.216,
+    "total": null,
+    "display": {
+      "id": 48506,
+      "black_rank": "七品",
+      "white_rank": null,
+      "display_player_black": "杨志德",
+      "display_player_white": "崔珪昞",
+      "display_black_rank": "七品",
+      "display_white_rank": "",
+      "display_event": "第8届韩国台湾围棋交流赛第2轮",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/125192?lang=cn",
+    "seconds": 3.022,
+    "total": null,
+    "display": {
+      "id": 125192,
+      "black_rank": "5p",
+      "white_rank": "7p",
+      "display_player_black": "阿奥基施尼奇",
+      "display_player_white": "依田纪基",
+      "display_black_rank": "5p",
+      "display_white_rank": "7p",
+      "display_event": "第3届NEC杯俊英战",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/59098?lang=cn",
+    "seconds": 3.023,
+    "total": null,
+    "display": {
+      "id": 59098,
+      "black_rank": "6dan",
+      "white_rank": "6dan",
+      "display_player_black": "董彦",
+      "display_player_white": "山下敬吾",
+      "display_black_rank": "6dan",
+      "display_white_rank": "6dan",
+      "display_event": "第14届中日NEC杯新秀对抗赛三番棋",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/41278?lang=tw",
+    "seconds": 2.967,
+    "total": null,
+    "display": {
+      "id": 41278,
+      "black_rank": "五品",
+      "white_rank": "六品",
+      "display_player_black": "彭景華",
+      "display_player_white": "陳國興",
+      "display_black_rank": "五品",
+      "display_white_rank": "六品",
+      "display_event": "第23屆臺灣圍棋名人擂臺賽第28局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/42518?lang=tw",
+    "seconds": 0.431,
+    "total": null,
+    "display": {
+      "id": 42518,
+      "black_rank": "六品",
+      "white_rank": "九品",
+      "display_player_black": "周俊勳",
+      "display_player_white": "陳明進",
+      "display_black_rank": "六品",
+      "display_white_rank": "九品",
+      "display_event": "第22屆臺灣圍棋名人擂臺賽第37局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/48506?lang=tw",
+    "seconds": 1.982,
+    "total": null,
+    "display": {
+      "id": 48506,
+      "black_rank": "七品",
+      "white_rank": null,
+      "display_player_black": "楊志德",
+      "display_player_white": "崔珪昞",
+      "display_black_rank": "七品",
+      "display_white_rank": "",
+      "display_event": "第8屆韓國臺灣圍棋交流賽第2輪",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/125192?lang=tw",
+    "seconds": 3.028,
+    "total": null,
+    "display": {
+      "id": 125192,
+      "black_rank": "5p",
+      "white_rank": "7p",
+      "display_player_black": "阿奧基施尼奇",
+      "display_player_white": "依田紀基",
+      "display_black_rank": "5p",
+      "display_white_rank": "7p",
+      "display_event": "第3屆NEC盃俊英戰",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/59098?lang=tw",
+    "seconds": 2.651,
+    "total": null,
+    "display": {
+      "id": 59098,
+      "black_rank": "6dan",
+      "white_rank": "6dan",
+      "display_player_black": "董彥",
+      "display_player_white": "山下敬吾",
+      "display_black_rank": "6dan",
+      "display_white_rank": "6dan",
+      "display_event": "第14屆中日NEC盃新秀對抗賽三番棋",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/41278?lang=jp",
+    "seconds": 1.568,
+    "total": null,
+    "display": {
+      "id": 41278,
+      "black_rank": "五品",
+      "white_rank": "六品",
+      "display_player_black": "彭景華",
+      "display_player_white": "陳國興",
+      "display_black_rank": "五品",
+      "display_white_rank": "六品",
+      "display_event": "第23回台湾囲碁名人勝ち抜き戦 第28局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/42518?lang=jp",
+    "seconds": 0.521,
+    "total": null,
+    "display": {
+      "id": 42518,
+      "black_rank": "六品",
+      "white_rank": "九品",
+      "display_player_black": "周俊勲",
+      "display_player_white": "陳明進",
+      "display_black_rank": "六品",
+      "display_white_rank": "九品",
+      "display_event": "第22回台湾囲碁名人勝ち抜き戦 第37局",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/48506?lang=jp",
+    "seconds": 0.516,
+    "total": null,
+    "display": {
+      "id": 48506,
+      "black_rank": "七品",
+      "white_rank": null,
+      "display_player_black": "楊志德",
+      "display_player_white": "崔珪昞",
+      "display_black_rank": "七品",
+      "display_white_rank": "",
+      "display_event": "第8回韓国・台湾囲碁交流戦 第2ラウンド",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/125192?lang=jp",
+    "seconds": 1.822,
+    "total": null,
+    "display": {
+      "id": 125192,
+      "black_rank": "5p",
+      "white_rank": "7p",
+      "display_player_black": "アオキシニチ",
+      "display_player_white": "依田紀基",
+      "display_black_rank": "5p",
+      "display_white_rank": "7p",
+      "display_event": "第3回NEC杯俊英戦",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/59098?lang=jp",
+    "seconds": 3.189,
+    "total": null,
+    "display": {
+      "id": 59098,
+      "black_rank": "6dan",
+      "white_rank": "6dan",
+      "display_player_black": "董彦",
+      "display_player_white": "山下敬吾",
+      "display_black_rank": "6dan",
+      "display_white_rank": "6dan",
+      "display_event": "第14回中日NEC杯新秀対抗戦三番勝負",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/41278?lang=ko",
+    "seconds": 1.817,
+    "total": null,
+    "display": {
+      "id": 41278,
+      "black_rank": "五品",
+      "white_rank": "六品",
+      "display_player_black": "펑징화",
+      "display_player_white": "천궈싱",
+      "display_black_rank": "五品",
+      "display_white_rank": "六品",
+      "display_event": "제23회 대만 바둑 명인 연승전 제28국",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/42518?lang=ko",
+    "seconds": 1.567,
+    "total": null,
+    "display": {
+      "id": 42518,
+      "black_rank": "六品",
+      "white_rank": "九品",
+      "display_player_black": "저우쥔쉰",
+      "display_player_white": "천밍진",
+      "display_black_rank": "六品",
+      "display_white_rank": "九品",
+      "display_event": "제22회 대만 바둑 명인 연승전 제37국",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/48506?lang=ko",
+    "seconds": 3.011,
+    "total": null,
+    "display": {
+      "id": 48506,
+      "black_rank": "七品",
+      "white_rank": null,
+      "display_player_black": "양즈더",
+      "display_player_white": "최규병",
+      "display_black_rank": "七品",
+      "display_white_rank": "",
+      "display_event": "제8회 한국·대만 바둑 교류전 제2라운드",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/125192?lang=ko",
+    "seconds": 2.897,
+    "total": null,
+    "display": {
+      "id": 125192,
+      "black_rank": "5p",
+      "white_rank": "7p",
+      "display_player_black": "아오기신이차하이",
+      "display_player_white": "요다 노리모토",
+      "display_black_rank": "5p",
+      "display_white_rank": "7p",
+      "display_event": "제3회 NEC 신예전(슌에이)",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/59098?lang=ko",
+    "seconds": 2.879,
+    "total": null,
+    "display": {
+      "id": 59098,
+      "black_rank": "6dan",
+      "white_rank": "6dan",
+      "display_player_black": "둥옌",
+      "display_player_white": "야마시타 게이고",
+      "display_black_rank": "6dan",
+      "display_white_rank": "6dan",
+      "display_event": "제14회 중일 NEC배 신예 대항전 3번기",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/41278?lang=en",
+    "seconds": 1.7,
+    "total": null,
+    "display": {
+      "id": 41278,
+      "black_rank": "五品",
+      "white_rank": "六品",
+      "display_player_black": "Peng Jinghua",
+      "display_player_white": "Chen Guoxing",
+      "display_black_rank": "五品",
+      "display_white_rank": "六品",
+      "display_event": "23rd Taiwan Go Meijin Relay Tournament, Game 28",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/42518?lang=en",
+    "seconds": 0.443,
+    "total": null,
+    "display": {
+      "id": 42518,
+      "black_rank": "六品",
+      "white_rank": "九品",
+      "display_player_black": "Chou Chun-hsun",
+      "display_player_white": "Chen Mingjin",
+      "display_black_rank": "六品",
+      "display_white_rank": "九品",
+      "display_event": "22nd Taiwan Go Meijin Relay Tournament, Game 37",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/48506?lang=en",
+    "seconds": 0.366,
+    "total": null,
+    "display": {
+      "id": 48506,
+      "black_rank": "七品",
+      "white_rank": null,
+      "display_player_black": "Yang Zhide",
+      "display_player_white": "Choi Kyubyeong",
+      "display_black_rank": "七品",
+      "display_white_rank": "",
+      "display_event": "8th Korea–Taiwan Go Exchange Match, Round 2",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/125192?lang=en",
+    "seconds": 4.612,
+    "total": null,
+    "display": {
+      "id": 125192,
+      "black_rank": "5p",
+      "white_rank": "7p",
+      "display_player_black": "AokiShin'ichi",
+      "display_player_white": "Yoda Norimoto",
+      "display_black_rank": "5p",
+      "display_white_rank": "7p",
+      "display_event": "3rd NEC New Stars (Shun’ei)",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/59098?lang=en",
+    "seconds": 4.611,
+    "total": null,
+    "display": {
+      "id": 59098,
+      "black_rank": "6dan",
+      "white_rank": "6dan",
+      "display_player_black": "Dong Yan",
+      "display_player_white": "Yamashita Keigo",
+      "display_black_rank": "6dan",
+      "display_white_rank": "6dan",
+      "display_event": "14th China-Japan NEC New Stars Match, Best of Three",
+      "display_round_name": null
+    }
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums?lang=en&page=1&page_size=1&q=%E5%90%B4%E6%B8%85%E6%BA%90",
+    "seconds": 4.515,
+    "total": 1231
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums?lang=en&page=1&page_size=1&q=Go%20Seigen",
+    "seconds": 2.078,
+    "total": 1231
+  }
+]

@@ -90,6 +90,7 @@ const ToolGridButton = ({
           justifyContent: 'center',
           gap: '9px',
           padding: '0 10px',
+          '@container board-rail (max-width: 460px)': { px: '3px', gap: '4px', '& .MuiSvgIcon-root': { fontSize: 18 } },
           ...railControlSx,
           lineHeight: 1.2,
           borderRadius: '8px',

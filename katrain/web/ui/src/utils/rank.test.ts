@@ -15,6 +15,18 @@ describe('formatRank', () => {
     expect(formatRank(3, t)).toBe('3段');
   });
 
+  it('localizes SGF professional dan ranks distinctly from amateur dan', () => {
+    expect(formatRank('5p', t)).toBe('职业5段');
+    expect(formatRank(' 4P ', t)).toBe('职业4段');
+  });
+
+  it('localizes a Chinese numeral dan field while retaining Chinese spelling', () => {
+    expect(formatRank('六段', t)).toBe('六段');
+    expect(formatRank('六段', (key, fallback) => ({
+      'strength:dan': 'dan',
+    } as Record<string, string>)[key] ?? fallback ?? '')).toBe('6dan');
+  });
+
   it('passes legacy free-text ranks through unchanged', () => {
     expect(formatRank('业5', t)).toBe('业5');
     expect(formatRank('amateur 3 dan', t)).toBe('amateur 3 dan');

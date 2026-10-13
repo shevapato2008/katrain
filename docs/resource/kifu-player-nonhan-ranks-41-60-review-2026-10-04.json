@@ -1,0 +1,429 @@
+{
+  "format": "kifu-player-nonhan-ranks-41-60-review-v1",
+  "scope": "exact raw ranks 41–60; no implied alias expansion",
+  "snapshot_note": "TEST and PROD read-only repeatable-read SQL on 2026-10-04; all 20 raw counts identical and every observed FK NULL. Catalog IDs are snapshot values and must be checked again in live dry-run.",
+  "summary": {
+    "raw_values": 20,
+    "slots_each_environment": 5239,
+    "approved_raw_values": 16,
+    "approved_slots_each_environment": 4212,
+    "held_raw_values": 4,
+    "held_slots_each_environment": 1027,
+    "new_catalog_players": 3,
+    "approved_existing_catalog_rename": 1
+  },
+  "rows": [
+    {
+      "rank": 41,
+      "raw_value": "Kaji Kazutame",
+      "slots_each_environment": 279,
+      "current_unlinked_slots_each_environment": 279,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1941-03",
+      "last_raw_date": "1978-04-06",
+      "canonical_chinese_name": "梶和为",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5266
+        ],
+        "test": [
+          11045
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000047.htm",
+      "identity_note": "梶和為，1922 年生；当前目录为简体「梶和为」。"
+    },
+    {
+      "rank": 42,
+      "raw_value": "Kusaka Kaneo",
+      "slots_each_environment": 277,
+      "current_unlinked_slots_each_environment": 277,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1936-10-07,08",
+      "last_raw_date": "1978-12-14",
+      "canonical_chinese_name": "日下包夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4771
+        ],
+        "test": [
+          10560
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列出日下包夫与 Kusaka Kaneo。"
+    },
+    {
+      "rank": 43,
+      "raw_value": "Hamajima Hisayoshi",
+      "slots_each_environment": 273,
+      "current_unlinked_slots_each_environment": 273,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-02-10",
+      "last_raw_date": "1978-11-02",
+      "canonical_chinese_name": "浜岛久义",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5397
+        ],
+        "test": [
+          11172
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 列出浜島久義与 Hamajima Hisayoshi；沿用现有简体混排目录名。"
+    },
+    {
+      "rank": 44,
+      "raw_value": "Sugiuchi Masao",
+      "slots_each_environment": 272,
+      "current_unlinked_slots_each_environment": 272,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1935",
+      "last_raw_date": "1978-12-05",
+      "canonical_chinese_name": "杉内雅男",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000011.htm",
+      "identity_note": "日本棋院直接列出杉内雅男 / SUGIUCHI, Masao；两环境无现有同名 ID。"
+    },
+    {
+      "rank": 45,
+      "raw_value": "Izutani Minoru",
+      "slots_each_environment": 270,
+      "current_unlinked_slots_each_environment": 270,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1933-12-04",
+      "last_raw_date": "1978-11-16",
+      "canonical_chinese_name": "泉谷实",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5365
+        ],
+        "test": [
+          11141
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 列出泉谷実与 Izutani Minoru。"
+    },
+    {
+      "rank": 46,
+      "raw_value": "Okubo Ichigen",
+      "slots_each_environment": 268,
+      "current_unlinked_slots_each_environment": 268,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1946-10-09,10",
+      "last_raw_date": "1978-12-14",
+      "canonical_chinese_name": "大洼一玄",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "consolidate_catalog_first",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000017.htm",
+      "identity_note": "日本棋院列大窪一玄、旧名大窪幸雄；现目录有大漥一玄与大窐一玄两个变体 ID，暂不指定目标。"
+    },
+    {
+      "rank": 47,
+      "raw_value": "Kada Katsuji",
+      "slots_each_environment": 264,
+      "current_unlinked_slots_each_environment": 264,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1946-08",
+      "last_raw_date": "1978-12-14",
+      "canonical_chinese_name": "加田克司",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4047
+        ],
+        "test": [
+          9843
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 列出加田克司与 Kada Katsuji。"
+    },
+    {
+      "rank": 48,
+      "raw_value": "Ishigure Ikuro",
+      "slots_each_environment": 263,
+      "current_unlinked_slots_each_environment": 263,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1959-02",
+      "last_raw_date": "1978-09-28",
+      "canonical_chinese_name": "石榑郁郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5645
+        ],
+        "test": [
+          11418
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000033.htm",
+      "identity_note": "日本棋院直接列出石榑郁郎 / ISHIGURE, Ikuro。"
+    },
+    {
+      "rank": 49,
+      "raw_value": "Honinbo Shuwa",
+      "slots_each_environment": 262,
+      "current_unlinked_slots_each_environment": 262,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1840-11-24",
+      "last_raw_date": "1873-04-06",
+      "canonical_chinese_name": "本因坊秀和",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+      "identity_note": "CWI 历史棋谱表将本因坊秀和与 Honinbo Shuwa 对应，1840–1873 原值年份与其活动期相符。"
+    },
+    {
+      "rank": 50,
+      "raw_value": "Oeda Yusuke",
+      "slots_each_environment": 262,
+      "current_unlinked_slots_each_environment": 262,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-03-30",
+      "last_raw_date": "1978-02-16",
+      "canonical_chinese_name": "大枝雄介",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4252
+        ],
+        "test": [
+          10047
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000049.htm",
+      "identity_note": "日本棋院直接列出大枝雄介 / OEDA, Yusuke。"
+    },
+    {
+      "rank": 51,
+      "raw_value": "Suzuki Masaharu",
+      "slots_each_environment": 262,
+      "current_unlinked_slots_each_environment": 262,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1956-11-07,08",
+      "last_raw_date": "1978-09-13",
+      "canonical_chinese_name": "铃木政春",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6255
+        ],
+        "test": [
+          12021
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000103.htm",
+      "identity_note": "日本棋院直接列出鈴木政春 / SUZUKI, Masaharu。"
+    },
+    {
+      "rank": 52,
+      "raw_value": "Otake Hideo",
+      "slots_each_environment": 261,
+      "current_unlinked_slots_each_environment": 261,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1954-12",
+      "last_raw_date": "1978-12-21",
+      "canonical_chinese_name": "大竹英雄",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          879
+        ],
+        "test": [
+          1091
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000008.htm",
+      "identity_note": "日本棋院直接列出大竹英雄 / OTAKE, Hideo。"
+    },
+    {
+      "rank": 53,
+      "raw_value": "Kano Yoshinori",
+      "slots_each_environment": 256,
+      "current_unlinked_slots_each_environment": 256,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1953-05-27,28",
+      "last_raw_date": "1978-03-16",
+      "canonical_chinese_name": "加纳嘉德",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "consolidate_catalog_first",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000015.htm",
+      "identity_note": "日本棋院为加納嘉徳；现目录有加纳嘉徳、加纳嘉德两个 ID，先合并目录。"
+    },
+    {
+      "rank": 54,
+      "raw_value": "Iwata Tatsuaki",
+      "slots_each_environment": 255,
+      "current_unlinked_slots_each_environment": 255,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-02-24,25",
+      "last_raw_date": "1978-12-14",
+      "canonical_chinese_name": "岩田达明",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4519
+        ],
+        "test": [
+          10310
+        ]
+      },
+      "proposed_catalog_action": "rename_existing_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000016.htm",
+      "identity_note": "日本棋院直接列出岩田達明及旧名岩田正男；现有唯一相关 ID 使用旧名，关联该 ID 并将目录规范名改为岩田达明。"
+    },
+    {
+      "rank": 55,
+      "raw_value": "Matsumoto Tokuji",
+      "slots_each_environment": 255,
+      "current_unlinked_slots_each_environment": 255,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1953-04-15,16",
+      "last_raw_date": "1978-10-19",
+      "canonical_chinese_name": "松本笃二",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5158
+        ],
+        "test": [
+          10939
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000069.htm",
+      "identity_note": "日本棋院直接列出松本篤二 / MATSUMOTO, Tokuji。"
+    },
+    {
+      "rank": 56,
+      "raw_value": "Haruyama Isamu",
+      "slots_each_environment": 253,
+      "current_unlinked_slots_each_environment": 253,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1959-07",
+      "last_raw_date": "1978-12-16",
+      "canonical_chinese_name": "春山勇",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4792
+        ],
+        "test": [
+          10580
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000034.htm",
+      "identity_note": "日本棋院直接列出春山勇 / HARUYAMA, Isamu。"
+    },
+    {
+      "rank": 57,
+      "raw_value": "Hayase Hiroshi",
+      "slots_each_environment": 253,
+      "current_unlinked_slots_each_environment": 253,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-20,21",
+      "last_raw_date": "1978-11-16",
+      "canonical_chinese_name": "早濑弘",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4774
+        ],
+        "test": [
+          10562
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000025.htm",
+      "identity_note": "日本棋院直接列出早瀬弘 / HAYASE, Hiroshi。"
+    },
+    {
+      "rank": 58,
+      "raw_value": "Sumino Tsunehiro",
+      "slots_each_environment": 252,
+      "current_unlinked_slots_each_environment": 252,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1941-04-30,05-01",
+      "last_raw_date": "1978-10-05",
+      "canonical_chinese_name": "炭野恒广",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "consolidate_catalog_first",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 明确炭野恒広旧名炭野武司；现目录恒广、恒広、武司三个 ID，先归并。"
+    },
+    {
+      "rank": 59,
+      "raw_value": "Rin Kaiho",
+      "slots_each_environment": 251,
+      "current_unlinked_slots_each_environment": 251,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1952-08-03",
+      "last_raw_date": "1978-12-25",
+      "canonical_chinese_name": "林海峰",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "separate_han_variant_batch",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000009.htm",
+      "identity_note": "与已审汉字变体高频组重叠；现目录「林海峯名誉」且已有 FK 名称不一致，避免两批并发归并。"
+    },
+    {
+      "rank": 60,
+      "raw_value": "Takagi Shoichi",
+      "slots_each_environment": 251,
+      "current_unlinked_slots_each_environment": 251,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1962-05-09,10",
+      "last_raw_date": "1978-12-04",
+      "canonical_chinese_name": "高木祥一",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000036.htm",
+      "identity_note": "日本棋院直接列出高木祥一 / TAKAGI, Shoichi；两环境无现有同名 ID。"
+    }
+  ]
+}

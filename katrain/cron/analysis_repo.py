@@ -102,6 +102,7 @@ class AnalysisRepo:
         score_lead: float,
         top_moves: list[dict],
         ownership: Optional[list[list[float]]] = None,
+        model_sha256: Optional[str] = None,
     ) -> None:
         """Mark a task as success and store analysis results."""
         record = self.db.query(LiveAnalysisDB).get(record_id)
@@ -112,6 +113,7 @@ class AnalysisRepo:
         record.score_lead = score_lead
         record.top_moves = top_moves
         record.ownership = ownership
+        record.model_sha256 = model_sha256
         record.analyzed_at = datetime.utcnow()
         record.error_message = None
         self.db.commit()
@@ -164,6 +166,7 @@ class AnalysisRepo:
                     LiveAnalysisDB.match_id == record.match_id,
                     LiveAnalysisDB.move_number == record.move_number - 1,
                     LiveAnalysisDB.status == "success",
+                    LiveAnalysisDB.model_sha256 == record.model_sha256,
                 )
             )
             .first()

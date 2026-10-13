@@ -10,6 +10,8 @@ import { KioskActions, type KioskAction } from '../shell/KioskActions';
 import { Icon } from '../shell/icons';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { useResearchBoard, type BoardTool } from '../hooks/useResearchBoard';
+import { useSound } from '../../hooks/useSound';
+import { isReplayStoneMove } from '../../hooks/useReplayStoneSound';
 import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ruleNameOf } from '../utils/setupOptions';
@@ -132,10 +134,11 @@ const BACK_FALLBACK = { path: '/kiosk/play', label: '对弈' };
 const ResearchPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { token, isAuthenticated } = useAuth();
 
   const board = useResearchBoard();
+  const { play } = useSound();
   // ⚠️ **token 必传。** 签名是 `token?: string`(选填)—— 漏传编译得过、单测也不红,
   // 但服务端会 `close(1008, "Invalid token")`:棋盘停在 `/api/state` 那一帧,摆子看起来
   // 像点了没反应,分析结果永远不刷新。**本机看不出来**,127.0.0.1 上有 cookie 兜底。
@@ -398,18 +401,20 @@ const ResearchPage = () => {
 
   const onIntersection = useCallback((x: number, y: number) => {
     if (scan === 'running') return; // 扫描期间盘面是冻的
-    editGuard(() => board.handleIntersectionClick(x, y));
-  }, [scan, editGuard, board]);
+    editGuard(() => { if (board.handleIntersectionClick(x, y)) play('stone'); });
+  }, [scan, editGuard, board, play]);
 
   const goToMove = useCallback((move: number) => {
     const clamped = Math.max(0, Math.min(board.moves.length, move));
+    if (clamped === board.currentMove) return;
     board.handleMoveChange(clamped);
+    if (clamped > 0 && isReplayStoneMove(board.moves[clamped - 1], board.boardSize)) play('stone');
     // 扫完之后会话也要跟着挪,否则 `gs.analysis` 说的还是上一个节点。
     if (scan === 'done' && session.gameState) {
       const node = session.gameState.history[clamped]?.node_id;
       if (node !== undefined) void session.onNavigate(node);
     }
-  }, [board, scan, session]);
+  }, [board, scan, session, play]);
 
   // ── 入口:三条深链 ─────────────────────────────────────────────────────────
   //
@@ -417,28 +422,44 @@ const ResearchPage = () => {
   // 异步续体里从 `board` 反推 SGF —— `loadFromSGF` 的 setState 还没 flush,读到的是载入前
   // 的空盘(galaxy `ResearchPage.tsx:187-199` 那个陈旧闭包 bug)。把刚取到的 `sgf_content`
   // 直接串进 `createSession`。
-  const kifuRef = useRef(false);
+  const kifuRef = useRef<string | null>(null);
+  const kifuRequestRef = useRef(0);
+  const lastKifuPlayersRef = useRef<{ id: string; black: string; white: string } | null>(null);
+  const currentPlayersRef = useRef({ black: board.playerBlack, white: board.playerWhite });
+  useEffect(() => {
+    currentPlayersRef.current = { black: board.playerBlack, white: board.playerWhite };
+  }, [board.playerBlack, board.playerWhite]);
   useEffect(() => {
     const id = searchParams.get('kifu_id');
-    if (!id || kifuRef.current) return;
-    kifuRef.current = true;
-    KifuAPI.getAlbum(Number(id)).then(async (album) => {
-      if (album.sgf_content) {
+    if (!id) return;
+    const request = ++kifuRequestRef.current;
+    KifuAPI.getAlbum(Number(id), lang).then(async (album) => {
+      if (request !== kifuRequestRef.current) return;
+      const firstLoad = kifuRef.current !== id;
+      if (firstLoad && album.sgf_content) {
         const r = board.loadFromSGF(album.sgf_content);
         if (!r.success) { console.error('Failed to load kifu for deep link:', r.error); return; }
+        kifuRef.current = id;
       }
-      if (album.player_black) board.setPlayerBlack(album.player_black);
-      if (album.player_white) board.setPlayerWhite(album.player_white);
-      const head = album.event
-        ? `${album.event}${album.round_name ? ` · ${album.round_name}` : ''}`
-        : `${album.player_black} vs ${album.player_white}`;
+      const black = album.display_player_black ?? t('game:black_side', '黑方');
+      const white = album.display_player_white ?? t('game:white_side', '白方');
+      const previous = lastKifuPlayersRef.current;
+      if (firstLoad || previous?.id !== id || currentPlayersRef.current.black === previous.black) board.setPlayerBlack(black);
+      if (firstLoad || previous?.id !== id || currentPlayersRef.current.white === previous.white) board.setPlayerWhite(white);
+      lastKifuPlayersRef.current = { id, black, white };
+      const head = album.display_event
+        ? `${album.display_event}${album.display_round_name ? ` · ${album.display_round_name}` : ''}`
+        : `${black} vs ${white}`;
       setProvenance({
         label: `${t('research:from_kifu', '棋谱库')}：${head}${album.date_played ? ` · ${album.date_played}` : ''}`,
         backPath: `/kiosk/kifu/${id}`, backLabel: t('kifu:title', '棋谱'),
       });
-      if (searchParams.get('analyze') === '1' && album.sgf_content) await startScan(album.sgf_content);
-    }).catch((err) => console.error('Failed to load kifu for deep link:', err));
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+      if (firstLoad && searchParams.get('analyze') === '1' && album.sgf_content) await startScan(album.sgf_content);
+    }).catch((err) => {
+      if (request === kifuRequestRef.current) console.error('Failed to load kifu for deep link:', err);
+    });
+    return () => { kifuRequestRef.current += 1; };
+  }, [searchParams, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const userGameRef = useRef(false);
   useEffect(() => {
@@ -601,6 +622,7 @@ const ResearchPage = () => {
             showCoordinates={false}
             handicapCount={board.handicapCount}
             onIntersectionClick={onIntersection}
+            rejectOccupiedIntersections={board.boardTool !== 'delete'}
             nextColor={board.nextColor ?? undefined}
             /* 推荐点**常亮**,没有开关管它 —— 稿子 `data-ghost="R11,C7,Q6"` 就是这么画的。 */
             aiMarkers={markers}

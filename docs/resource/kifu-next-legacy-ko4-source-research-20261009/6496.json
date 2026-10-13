@@ -1,0 +1,138 @@
+{
+  "artifact_kind": "legacy_generated_ko_source_only_review",
+  "read_only": true,
+  "prod_id": 6496,
+  "slots": 127,
+  "shortlist_scope": "Frequency queue row only; five physical language names do not prove qualification.",
+  "identity": {
+    "queue_canonical_name": "高见泽忠夫",
+    "Japanese_original_name": "高見沢忠夫",
+    "identity_bridge": "The retained Japanese profile uses this exact original name and its reading/romanization. Queue JP/CN names align by glyph variant; no additional identity audit performed.",
+    "profile_capture": {
+      "url": "https://www.igorating.com/players/tadao-takamizawa",
+      "publisher": "professional_go_rating_archive",
+      "observed_lang": "ja",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T18:22:22.754428+00:00",
+      "body_sha256": "21a049a5c10da7b94b245bf42a21d20cd4620fa43ad63908b4dd5af762be3636",
+      "locator": "Complete retained known-source HTTP response",
+      "excerpt": "高見沢忠夫｜囲碁棋士レーティング（日本） 囲碁棋士レーティング EN レートとは 棋士 女流棋戦 韓国のレートを見る データ更新が遅れています 囲碁棋士レーティング › 棋士を探す › 高見沢忠夫 高見沢忠夫 高見沢忠夫（たかみざわ ただお）のレートは1131です。これまでの最高は1352（2011年8月19日）。 引退。レートは引退時のものです。 高見沢忠夫 たかみざわ ただお 日本棋院 東京 レート 1131 順位 － 1年変動 — 最高レート 1352 直近10局 ● 負け ● 負け ● 負け ● 負け ● 負け ● 負け ● 負け ● 負け ● 負け ● 負け 42勝151敗 （不戦敗1） 2018年の成績 0勝5敗 1927年以降の成績 42勝151敗 勝率 .218 引退時のレート（ランキング対象外） レートは公表された対局結果から計算した値です。黒番の有利さはこの数値に含まれていません。 棋士ランキング 棋士を探す ほかの棋士と比べる 棋士のレート推移 全期間 1100 1150 1200 1250 1300 1350 1400 2009 2012 2015 2018 70局 最高 1352 最低 1131 全期間は2006年以降を表示しています（それ以前は計算の助走期間のため出していません）。 最近の対局 新しい順に最大20局。増減はレートの動きです。 対局日 相手・棋戦 結果 増減 2018年6月14日 藤沢里菜 天元戦 黒白不明番 ● 負け ↓1 2018年3月22日 黒瀧正憲 王座戦 黒白不明番 ● 負け ↓2 2018年3月8日 酒井猛 名人戦 黒白不明番 ● 負け ↓2 2018年1月25日 中村秀仁 本因坊戦 黒白不明番 ● 負け ↓3 2018年1月11日 鶴丸敬一 碁聖戦 黒白不明番 ● 負け ↓7 2017年11月24日 山田晋次 棋聖戦 ファーストトーナメント予選 1回戦 黒白不明番 ● 負け ↓2 2017年10月26日 萩原睦 棋聖戦 ファーストトーナメント予選 1回戦 黒白不明番 ● 負け ↓10 2017年8月24日 中澤彩子 十段戦 黒白不明番 ● 負け ↓11 2017年8月4日 星野正樹 十段戦 黒白不明番 ● 負け ↓1 2017年5月11日 藤澤一就 天元戦 黒白不明番 ● 負け ↓5 2017年4月27日 王唯任 王座戦 黒白不明番 ● 負け ↓9 2017年4月6日 大澤奈留美 名人戦 黒白不明番 ● 負け ↓5 2017年3月31日 鈴木伊佐男 名人戦 黒白不明番 ● 負け ↓6 2017年3月10日 中島美絵子 王座戦 黒白不明番 ● 負け ↓12 2017年1月19日 茅野直彦 碁聖戦 黒白不明番 ● 負け ↓4 2016年12月3日 遠藤悦史 棋聖戦 ファーストトーナメント予選 2回戦 黒白不明番 ● 負け ↓4 2016年11月24日 山田晋次 棋聖戦 ファーストトーナメント予選 1回戦 黒白不明番 ● 負け ↓3 2016年9月22日 玉城忍 本因坊戦 黒白不明番 ● 負け ↓10 2016年6月25日 大澤奈留美 王座戦 黒白不明番 ● 負け ↓6 2016年6月11日 叶井天平 王座戦 黒白不明番 ○ 勝ち ↑18 対戦成績 対局数の多い順に最大10名。成績は高見沢忠夫から見た勝敗で、持碁・無勝負は勝敗に数えません。1927年以降の対局だけです。 相手 合計 黒番時 白番時 くわしく 大平修三 0勝4敗 .000 0勝2敗 0勝2敗 比べる 村松竜一 0勝4敗 .000 0勝0敗 0勝0敗 比べる 泉谷政憲 0勝3敗 .000 0勝0敗 0勝2敗 比べる 鈴木伊佐男 0勝3敗 .000 0勝0敗 0勝0敗 比べる 中岡二郎 0勝3敗 .000 0勝0敗 0勝3敗 比べる 川本昇 1勝2敗 .333 0勝0敗 1勝2敗 比べる 淡路修三 0勝3敗 .000 0勝1敗 0勝0敗 比べる 尾越一郎 1勝2敗 .333 0勝0敗 0勝0敗 比べる 林海峯 0勝3敗 .000 0勝1敗 0勝1敗 比べる 安倍吉輝 2勝1敗 .667 1勝0敗 0勝0敗 比べる 年別成績 1月から12月までの暦年で数えています（不戦勝・不戦敗を含み、持碁・無勝負は含みません）。1927年以",
+      "body_bytes": 28924
+    },
+    "local_capture_packet": "docs/resource/kifu-next-throughput-2026-10-09/fresh-known-source-captures/6496.json.gz",
+    "local_capture_packet_sha256": "bfe9224f2b9770da24b64fbc01bc2ace66c8a8d777bc64ec2205ad1a3f397d81"
+  },
+  "reading": {
+    "published_Japanese_reading": "たかみざわ ただお",
+    "published_romanization": "Takamizawa Tadao",
+    "citation": "Japanese professional profile body excerpt; no reading inferred from Kanji.",
+    "romanization_capture_status": "Name is present in the existing read-only queue as a verified EN physical row; its separate source body is not included in the supplied saved-capture packet, so this report does not claim to have rechecked that publication."
+  },
+  "current_KO": {
+    "display_name": "다카미자와 다다오",
+    "status": "verified",
+    "decision_kind": "generated",
+    "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+    "evidence_id": 33080,
+    "reference_url": null,
+    "reference_kind": null
+  },
+  "legacy_proof_gap_clues": {
+    "shortlist_snapshot": "KO row is stored as verified/generated under nikl-ja-ko-personal-name-v1, but reference_url and reference_kind are null in this queue snapshot. That is a traceability cue, not proof that a separate signed review bundle is absent. The matched old throughput snapshot explicitly lists product_qualified_languages as cn, en, jp, tw and omits ko.",
+    "saved_legacy_explanation": "た→다 (surname initial); か→카; み→미; ざ→자; わ→와; た→다 (given-name initial); だ→다; お→오. たかみざわ→다카미자와; ただお→다다오. Reviewer verifies saved NIKL rule.",
+    "audit_limit": "No signed candidate/evidence ledger or latest owner preimage audit was performed in this source-only task.",
+    "snapshot_reference": {
+      "path": "docs/resource/kifu-next-throughput-2026-10-09/old-ko28-frequency-readonly.json",
+      "sha256": "82b1c7c30f3df7caf9c9681ed23ab4a1dd35c91546f9170fac6c8aa44ab61d59",
+      "product_qualified_languages": [
+        "cn",
+        "en",
+        "jp",
+        "tw"
+      ]
+    }
+  },
+  "Korean_cross_checks": {
+    "finding": "possible_same_person_Korean_Go_publisher_conflict_hold",
+    "note": "Naver exact-Han Go query result links a Hangame Baduk player page titled “다카미자와 타다오” (page seq=1814). This differs from current “다카미자와 다다오”. The source page itself was not among the retained body captures, so preserve as a direct conflict lead and hold for root/manual decision; do not overwrite on search-snippet evidence alone. Japanese identity source has 高見沢忠夫 and たかみざわ ただお.",
+    "references": [
+      {
+        "publisher": "Hangame Baduk (Korean Go service; target page body not captured)",
+        "url": "https://baduk.hangame.com/people.nhn?m=detail&seq=1814",
+        "captured_search_result_text": "다카미자와 타다오 - 한게임 바둑",
+        "role": "captured Naver exact-Han search result; probable direct Korean Go-name conflict lead, page body not available in saved captures"
+      }
+    ],
+    "queries": [
+      {
+        "query": "\"高見沢忠夫\" 바둑",
+        "url": "https://search.naver.com/search.naver?where=nexearch&query=%22%E9%AB%98%E8%A6%8B%E6%B2%A2%E5%BF%A0%E5%A4%AB%22+%EB%B0%94%EB%91%91",
+        "http_status": 200,
+        "fetched_at": "2026-10-08T18:22:24.742169+00:00",
+        "body_sha256": "91e9d5a34b9a7c8be2156e10cbc6f78db28bbf831d4908294bb662425b9a71ec",
+        "locator": "Actual first Naver result page for this exact quoted name plus 바둑",
+        "publisher": "Naver search",
+        "source_role": "bounded discovery capture; not publisher body",
+        "body_excerpt": "<!doctype html> <html lang=\"ko\"><head> <meta charset=\"utf-8\"> <meta name=\"referrer\" content=\"strict-origin-when-cross-origin\">  <meta name=\"format-detection\" content=\"telephone=no,address=no,email=no\"> <meta property=\"og:title\" content=\"&quot;高見沢忠夫&quot; 바둑 : 네이버 검색\"/> <meta property=\"og:image\" content=\"https://ssl.pstatic.net/sstatic/search/common/og_v3.png\"> <meta property=\"og:description\" content=\"'&quot;高見沢忠夫&quot; 바둑'의 네이버 검색 결과입니다.\"> <meta name=\"description\" lang=\"ko\" content=\"'&quot;高見沢忠夫&quot; 바둑'의 네이버 검색 결과입니다.\"> <title>&quot;高見沢忠夫&quot; 바둑 : 네이버 검색</title> <link rel=\"shortcut icon\" href=\"https://ssl.pstatic.net/sstatic/search/favicon/favicon_32x32_240820.ico\">  <link rel=\"search\" type=\"application/opensearchdescription+xml\" href=\"https://ssl.pstatic.net/sstatic/search/opensearch-description.https.xml\" title=\"Naver\" /><script>try{performance.mark('nx-head-start')}catch(e){}</script><link rel=\"stylesheet\" type=\"text/css\" href=\"https://ssl.pstatic.net/sstatic/search/pc/css/search1_261007.css?o=search\"> <link rel=\"stylesheet\" type=\"text/css\" href=\"https://ssl.pstatic.net/sstati",
+        "body_bytes": 133387,
+        "visible_result_locators": [
+          {
+            "anchor_text": "한게임 바둑-즐거운 반상여행 baduk.hangame.com › people.nhn 새 창 열림",
+            "href": "https://baduk.hangame.com/people.nhn?m=detail&seq=1814",
+            "adjacent_visible_text": "한게임 바둑-즐거운 반상여행 baduk.hangame.com › people.nhn 새 창 열림 AI 출처 정보 한게임 바둑은 한게임이 제공하는 온라인 바둑 서비스로, 인공지능 ‘한돌’과 다양한 실력대의 대국을 즐길 수 있습니다. 최신 경기 뉴스·기보·랭킹·상점 등 바둑 관련 정보를 종합적으로 제공하는 플랫폼입니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림"
+          },
+          {
+            "anchor_text": "다카미자와 타다오 - 한게임 바둑 새 창 열림",
+            "href": "https://baduk.hangame.com/people.nhn?m=detail&seq=1814",
+            "adjacent_visible_text": "다카미자와 타다오 - 한게임 바둑 새 창 열림"
+          },
+          {
+            "anchor_text": "주요경력 새 창 열림",
+            "href": "https://baduk.hangame.com/people.nhn?m=detail&seq=1814",
+            "adjacent_visible_text": "주요경력 새 창 열림 관련 뉴스보기 · 뉴스홈 · 관련 뉴스가 없습니다. 관련 기보보기 · 기보홈 · [일본 천원전(天元戰)] 예선 C조 린하이펑9단 vs 다 새 창 열림"
+          },
+          {
+            "anchor_text": "관련 뉴스보기 · 뉴스홈 · 관련 뉴스가 없습니다. 관련 기보보기 · 기보홈 · [일본 천원전(天元戰)] 예선 C조 린하이펑9단 vs 다 새 창 열림",
+            "href": "https://baduk.hangame.com/people.nhn?m=detail&seq=1814",
+            "adjacent_visible_text": "주요경력 새 창 열림 관련 뉴스보기 · 뉴스홈 · 관련 뉴스가 없습니다. 관련 기보보기 · 기보홈 · [일본 천원전(天元戰)] 예선 C조 린하이펑9단 vs 다 새 창 열림"
+          }
+        ],
+        "body_text_locator": "Saved exact response body; metadata is in this record. Search-result evidence is limited to named visible anchors/snippets where listed; see adjacent_visible_text, not raw script text."
+      },
+      {
+        "query": "\"다카미자와 다다오\" 바둑",
+        "url": "https://search.naver.com/search.naver?where=nexearch&query=%22%EB%8B%A4%EC%B9%B4%EB%AF%B8%EC%9E%90%EC%99%80+%EB%8B%A4%EB%8B%A4%EC%98%A4%22+%EB%B0%94%EB%91%91",
+        "http_status": 200,
+        "fetched_at": "2026-10-08T18:22:26.615412+00:00",
+        "body_sha256": "9419fbe039f62b1aa06103358b13259bc75d3df0591869b36ed77f45c90e3403",
+        "locator": "Actual first Naver result page for this exact quoted name plus 바둑",
+        "publisher": "Naver search",
+        "source_role": "bounded discovery capture; not publisher body",
+        "body_excerpt": "<!doctype html> <html lang=\"ko\"><head> <meta charset=\"utf-8\"> <meta name=\"referrer\" content=\"strict-origin-when-cross-origin\">  <meta name=\"format-detection\" content=\"telephone=no,address=no,email=no\"> <meta property=\"og:title\" content=\"&quot;다카미자와 다다오&quot; 바둑 : 네이버 검색\"/> <meta property=\"og:image\" content=\"https://ssl.pstatic.net/sstatic/search/common/og_v3.png\"> <meta property=\"og:description\" content=\"'&quot;다카미자와 다다오&quot; 바둑'의 네이버 검색 결과입니다.\"> <meta name=\"description\" lang=\"ko\" content=\"'&quot;다카미자와 다다오&quot; 바둑'의 네이버 검색 결과입니다.\"> <title>&quot;다카미자와 다다오&quot; 바둑 : 네이버 검색</title> <link rel=\"shortcut icon\" href=\"https://ssl.pstatic.net/sstatic/search/favicon/favicon_32x32_240820.ico\">  <link rel=\"search\" type=\"application/opensearchdescription+xml\" href=\"https://ssl.pstatic.net/sstatic/search/opensearch-description.https.xml\" title=\"Naver\" /><script>try{performance.mark('nx-head-start')}catch(e){}</script><link rel=\"stylesheet\" type=\"text/css\" href=\"https://ssl.pstatic.net/sstatic/search/pc/css/search1_261007.css?o=search\"> <link rel=\"stylesheet\" type=\"text/css\" href=\"https://ssl.ps",
+        "body_bytes": 98853,
+        "visible_result_locators": [],
+        "body_text_locator": "Saved exact response body; metadata is in this record. Search-result evidence is limited to named visible anchors/snippets where listed; see adjacent_visible_text, not raw script text."
+      }
+    ],
+    "search_scope": "Only saved exact Japanese Han and exact current-Hangul plus 바둑 query response bodies; bounded results, not a global absence claim."
+  },
+  "minimal_reusable_authority_page": {
+    "url": "https://www.igorating.com/players/tadao-takamizawa",
+    "publisher": "professional_go_rating_archive",
+    "body_sha256": "21a049a5c10da7b94b245bf42a21d20cd4620fa43ad63908b4dd5af762be3636",
+    "fetched_at": "2026-10-08T18:22:22.754428+00:00",
+    "reuse": "This same-person Japanese Go rating profile gives original Kanji plus explicit kana reading; use it as the minimum reading/identity anchor. The Latin EN spelling exists as a verified queue row, but its separate source body is not in the supplied capture packet and must be checked before reuse."
+  },
+  "disposition": "hold_for_Korean_name_conflict_review",
+  "qualification_snapshot": {
+    "snapshot_path": "docs/resource/kifu-next-throughput-2026-10-09/old-ko28-frequency-readonly.json",
+    "snapshot_sha256": "82b1c7c30f3df7caf9c9681ed23ab4a1dd35c91546f9170fac6c8aa44ab61d59",
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ],
+    "interpretation": "At this read-only throughput snapshot, KO is absent from product_qualified_languages despite a KO row marked verified/generated. This is a qualification/read-path gap clue, not a current live read or a claim about why the old proof failed."
+  }
+}

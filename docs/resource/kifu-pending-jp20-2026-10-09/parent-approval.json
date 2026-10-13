@@ -1,0 +1,11 @@
+{
+  "reviewer_id": "/root",
+  "reviewer_model": "GPT-6 (exact runtime variant unavailable)",
+  "reviewed_at": "2026-10-08T18:28:28.185869+00:00",
+  "hashes": {
+    "TEST": "b374af6d2845011e11439c8e7a893e1b3698ffaabbcb8ba875d3b6f5419acfdf",
+    "PROD": "ebc1a45c8aad3ffcc0fafa05df07861918019fa4b8c8396dc5fbb278fbfb25f1"
+  },
+  "scope": "20 distinct owners:19 exact JPoriginal CNdisplay and1 finite qualifiedCN→TW; literalNULL targets; currentpost588 source/catalognative qualification, aliases0collisions; SGF/FK/ranksrawpreserved; newJPpinnedimporterrequired",
+  "result": "approved_for_bounded_execution"
+}

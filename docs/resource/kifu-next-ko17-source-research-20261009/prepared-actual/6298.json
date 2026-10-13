@@ -1,0 +1,480 @@
+{
+  "artifact_kind": "ko_name_source_only_research",
+  "queue_player_id": 6298,
+  "queue_order_slots": 5,
+  "selection_scope": "Batch 597 read-only shortlist: KO missing and four physically verified primary rows; this shortlist is not final qualification proof.",
+  "owner_binding": {
+    "status": "placeholder_not_validated_not_eligible",
+    "queue_id_read_only": 6298,
+    "note": "Fresh CN/EN anchor bindings and latest owner preimages are intentionally left for root to bind from the new current capture; this source packet does not qualify the owner."
+  },
+  "canonical_name": "陈佳",
+  "available_non_ko_anchor_names": {
+    "cn": "陈佳",
+    "en": "Chen Jia",
+    "jp": "陈佳",
+    "tw": "陳佳",
+    "binding_status": "queue labels only; not current owner preimages"
+  },
+  "status": "pending_no_direct_same_person_Korean_Hangul_name_identified_in_bounded_sources",
+  "scope": {
+    "shortlist_context": "queue selection is prioritization only",
+    "language_scope": "not assigned from name characters alone",
+    "eligibility": "not established by this source-only packet"
+  },
+  "identity": {
+    "capture": [
+      {
+        "player_id": 6298,
+        "canonical_name": "陈佳",
+        "published_latin": "Chen Jia",
+        "source_id": "ret110-goratings-en",
+        "source_language": "en",
+        "source_role": "language_go",
+        "url": "https://www.goratings.org/en/players/425.html",
+        "evidence_ids": [
+          62801
+        ],
+        "method": "GET",
+        "http_status": 200,
+        "final_url": "https://www.goratings.org/en/players/425.html",
+        "content_type": "text/html",
+        "request_started_at_utc": "2026-10-08T23:08:02.897060+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:04.453546+00:00",
+        "body_bytes": 5064,
+        "body_sha256": "ee5de2d250392ad8d1c6399f6abbc7e8d35d1bad88cdfb354b095fdc53861674",
+        "body_file": "captures/6298-authority-ret110-goratings-en.body",
+        "publisher": "Go Ratings",
+        "body_text_excerpt": "Chen Jia Chen Jia Back to main list Graph Data Wins 1 Losses 1 Total 2 Date of Birth 1983-03-01 Game List Date Rating Color Result Opponent Kifu 1999-10-11 3056 White Loss Lin Feng 3167 ♂ | cwa | go4go | 1999-10-10 3056 Black Win Wang Lei (s) 3091 ♂ | cwa | go4go | Contact: Rémi Coulom . Powered by joedb, the C++ database .",
+        "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+        "subject_role": "target_same_person_profile_or_roster",
+        "capture_kind": "authority_page_capture"
+      }
+    ],
+    "conclusion": "Captured Go-source bodies associate the queue Han spelling with the profiled Go player. A Latin form is described only when it appears in that specific captured body; otherwise the queue Latin string remains a search term only. Binding the profile to the current owner remains pending root validation."
+  },
+  "reading": {
+    "capture": [
+      {
+        "capture": {
+          "player_id": 6298,
+          "canonical_name": "陈佳",
+          "published_latin": "Chen Jia",
+          "source_id": "GoRatings-Korean-language-path",
+          "source_language": "ko",
+          "source_role": "language_go_localized_profile",
+          "url": "https://www.goratings.org/ko/players/425.html",
+          "derived_from_capture_url": "https://www.goratings.org/en/players/425.html",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.goratings.org/ko/players/425.html",
+          "content_type": "text/html",
+          "request_started_at_utc": "2026-10-08T23:08:24.359701+00:00",
+          "fetched_at_utc": "2026-10-08T23:08:26.144555+00:00",
+          "body_bytes": 5094,
+          "body_sha256": "11fc4a22c7f4f6b2634b2e365f2d0bef5b87d9fb2e6b1557857f32a9deb2269f",
+          "body_file": "captures/6298-authority-goratings-ko.body",
+          "publisher": "Go Ratings",
+          "body_text_excerpt": "Chen Jia Chen Jia 메인 페이지로 돌아가기 그래프 데이터 승리 1 패배 1 합계 2 생년월일 1983-03-01 대국 기록 날짜 레이팅 흑백 결과 상대 기보 1999-10-11 3056 백번 패 린펑 3167 ♂ | cwa | go4go | 1999-10-10 3056 흑번 승 왕레이(雷) 3091 ♂ | cwa | go4go | 문의 Rémi Coulom . Powered by joedb, the C++ database .",
+          "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+          "subject_role": "target_same_person_localized_path_check",
+          "capture_kind": "authority_page_capture"
+        },
+        "observation": "Korean-locale page heading is the same profile rendered as Latin; it does not publish a Korean Hangul player name.",
+        "observed_profile_heading_excerpt": "Chen Jia Chen Jia"
+      }
+    ],
+    "published_latin": null,
+    "status": "No Korean reading or Hangul form is established. The Latin string is included solely as the queue-provided exact search query; this packet does not claim it was published as the player preferred spelling.",
+    "note": "The Korean-locale GoRatings pages captured here use Latin or Han fallback for the profile name, not a Hangul transliteration.",
+    "queue_latin_query": "Chen Jia"
+  },
+  "rule": {
+    "capture": {
+      "status": "not_applied_to_this_owner",
+      "source_basis": "normative_zh_ko_v1",
+      "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+      "decision_reference": "docs/resource/kifu-zh-ko-firstbatch-20261009/source-and-rule-decision.json",
+      "decision_sha256": "dca4e25367ede21a4b162e7ebe4551d6a13a499b084322ebcd44c04f43cdee00",
+      "rule_capture_index": "docs/resource/kifu-nikl-cn-ko-research-20261009/capture-index.json",
+      "rule_capture_index_sha256": "38cacb787678bec8e6d051d90c957f1ea203c2bcb6d58b94eec620f780763609",
+      "pinned_full_rule_body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "approved_owner_ids_in_rule_decision": [
+        5498,
+        5739
+      ],
+      "note": "The finite six-map approval is specific to two different owners and their reviewed readings. No spelling/output has been generated or declared verified for this queue owner; any future rule extension is separate.",
+      "normative_source_capture": {
+        "id": "foreign-regulation-full",
+        "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "method": "GET",
+        "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+        "http_status": 200,
+        "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "content_type": "text/html;charset=UTF-8",
+        "body_bytes": 456809,
+        "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+        "body_file": "captures/foreign-regulation-full.html"
+      },
+      "rule_excerpt_locator": "Foreign-language table 5 at saved original HTML line 1573; notation note at line 1578. The six approved mappings apply only to owners 5498 and 5739 in source-and-rule-decision.json; no mapping is applied here.",
+      "original_rule_excerpt": "The saved NIKL full-body response is the normative reference. This packet intentionally records no generated reading/output for this owner."
+    }
+  },
+  "contrary_checks": {
+    "saved_roster_scans": [
+      {
+        "publisher": "Korean Baduk Association",
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+        "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+        "body_bytes": 80097,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+        "source_role": "official_China_player_roster_bounded_literal_scan",
+        "literal_scan_terms": [
+          "陈佳",
+          "Chen Jia"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 陈佳; Chen Jia. Exact matching strings present: []."
+      },
+      {
+        "publisher": "TVBaduk",
+        "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+        "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+        "body_bytes": 119151,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+        "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+        "literal_scan_terms": [
+          "陈佳",
+          "Chen Jia"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 陈佳; Chen Jia. Exact matching strings present: []."
+      },
+      {
+        "publisher": "Daum Cafe community roster (2012)",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+        "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "body_bytes": 153004,
+        "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+        "source_role": "community_reference_only_not_official",
+        "literal_scan_terms": [
+          "陈佳",
+          "Chen Jia"
+        ],
+        "exact_matches_present": [
+          "陈佳"
+        ],
+        "status": "found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 陈佳; Chen Jia. Exact matching strings present: [\"陈佳\"]."
+      }
+    ],
+    "web_search_captures": [
+      {
+        "player_id": 6298,
+        "engine": "naver",
+        "query": "\"陈佳\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E4%BD%B3%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E4%BD%B3%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 403,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:12.918300+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:14.308895+00:00",
+        "body_bytes": 28555,
+        "body_sha256": "2370dadd5b72d3d370a08d4d851a2f9a56b2d92781ca9946ef472432d329e3d7",
+        "body_file": "captures/6298-search-naver-han.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+        "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+        "relevance_assessment": "unavailable_http_403",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 6298,
+        "engine": "naver",
+        "query": "\"Chen Jia\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22Chen%20Jia%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22Chen%20Jia%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 403,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:13.147660+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:14.593783+00:00",
+        "body_bytes": 28559,
+        "body_sha256": "6ee663a0caf06eda194671b157e20e9ed2d0b173a09dd2c726d0c9c4296217bc",
+        "body_file": "captures/6298-search-naver-latin.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+        "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+        "relevance_assessment": "unavailable_http_403",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 6298,
+        "engine": "bing",
+        "query": "\"陈佳\" 바둑",
+        "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+        "url": "https://www.bing.com/search?q=%22%E9%99%88%E4%BD%B3%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://www.bing.com/search?q=%22%E9%99%88%E4%BD%B3%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "request_started_at_utc": "2026-10-08T23:08:59.459645+00:00",
+        "fetched_at_utc": "2026-10-08T23:09:00.769525+00:00",
+        "body_bytes": 120982,
+        "body_sha256": "ec9f9d815a3c56595686d524310380192526cf9492649e3881c96d46b11beb82",
+        "body_file": "captures/6298-search-bing-han.html",
+        "publisher": "Bing search",
+        "body_text_excerpt": "\"陈佳\" 바둑 - Search Skip to content Accessibility Feedback All Search Images Videos Maps News More Shopping Flights Tools About 61 results Open links in new tab Any time totalwine.com https://www.totalwine.com Total Wine & More | Liquor Store and Alcohol Delivery Over 8,000 wines, 3,000 spirits & 2,500 beers with the best prices, selection and service at Total Wine & More. Shop online for … totalwine.com https://www.totalwine.com › store-info › texas-humble Liquor Store, Wine Store - Humble, TX - Total Wine & More Shop wines, spirits and beers at the best prices, selection and service. Buy online for home delivery or pick up in our store near you … totalwine.com https://community.totalwine.com Total Wine & More | Donation & Sponsorship Requests Total Wine & More Community Engagement Requests Through our community engagement programs we have been able to connect … totalwine.com https://careers.totalwine.com › job-search-results Total Wine & More Jobs | Apply for Local Openings Discover exciting job opportunities with Total Wine & More. Find part-time and full-time retail, management, and support positions. … totalwine.com https://book.totalwine.com › demonow Total Wine & More Error: Net",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 6298,
+        "engine": "bing",
+        "query": "\"Chen Jia\" 바둑",
+        "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+        "url": "https://www.bing.com/search?q=%22Chen%20Jia%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://www.bing.com/search?q=%22Chen%20Jia%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "request_started_at_utc": "2026-10-08T23:08:59.459892+00:00",
+        "fetched_at_utc": "2026-10-08T23:09:00.753951+00:00",
+        "body_bytes": 123432,
+        "body_sha256": "7dc74118d8d319471a59159336373919f215c1cf28b149bc614834ddc35354fd",
+        "body_file": "captures/6298-search-bing-latin.html",
+        "publisher": "Bing search",
+        "body_text_excerpt": "\"Chen Jia\" 바둑 - Search Skip to content Accessibility Feedback All Search Images Videos Maps News More Shopping Flights Tools About 241,000 results Open links in new tab Any time wikipedia.org https:// en.wikipedia.org › wiki › Chen_(singer ) Chen (singer ) - Wikipedia Kim Jong-dae (Korean: 김종대; born September 21, 1992), known professionally as Chen (첸), is a South Korean singer and … wikipedia.org https:// en.wikipedia.org › wiki › Chen_(surname ) Chen (surname ) - Wikipedia Chen ([ʈʂʰə n] ⓘ) is a common Chinese-language surname 陳 or 陈, and one of the most common surnames in Asia. It is the most … youtube.com https:// www.youtube.com › @ CHEN › videos CHEN - YouTube 안녕하세요~ 첸 입니다!이곳은 앞으로 하나하나 영상을 올려가며저 자신이 더 나은 가수로서 성장하기 위한 공간입니다! famousbirthdays.com https:// www.famousbirthdays.com › people › chen .html Chen - Age, Bio, Family | Famous Birthdays Sep 21, 1992 · South Korean pop singer best known as the main vocalist of the EXO subgroup Exo-CBX as well as the SM … kprofiles.com https://kprofiles.com › chen -exo-profile CHEN (EXO) Profile (Updated!) - Kpop Profiles Our CHEN (EXO) Profile is updated on a regular basis, providing up to date facts and news. shein.com https://us. shein .co",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      }
+    ],
+    "coverage_note": "Exact Han and exact published Latin searches were captured where available. HTTP 403 is preserved as unavailable; an alternative Bing capture is included when available. Results are bounded and do not support global absence. Similar names were not accepted without a same-person Go identity bridge."
+  },
+  "source_reading": {
+    "queue_latin_query": "Chen Jia",
+    "queue_string_source": "read-only shortlist row, not current source/owner binding",
+    "observed_romanization": null,
+    "interpretation": "No Korean spelling or reading generated or inferred. The literal queue Latin string is used only as the second search query."
+  },
+  "identity_bridges": [
+    {
+      "player_id": 6298,
+      "canonical_name": "陈佳",
+      "published_latin": "Chen Jia",
+      "source_id": "ret110-goratings-en",
+      "source_language": "en",
+      "source_role": "language_go",
+      "url": "https://www.goratings.org/en/players/425.html",
+      "evidence_ids": [
+        62801
+      ],
+      "method": "GET",
+      "http_status": 200,
+      "final_url": "https://www.goratings.org/en/players/425.html",
+      "content_type": "text/html",
+      "request_started_at_utc": "2026-10-08T23:08:02.897060+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:04.453546+00:00",
+      "body_bytes": 5064,
+      "body_sha256": "ee5de2d250392ad8d1c6399f6abbc7e8d35d1bad88cdfb354b095fdc53861674",
+      "body_file": "captures/6298-authority-ret110-goratings-en.body",
+      "publisher": "Go Ratings",
+      "body_text_excerpt": "Chen Jia Chen Jia Back to main list Graph Data Wins 1 Losses 1 Total 2 Date of Birth 1983-03-01 Game List Date Rating Color Result Opponent Kifu 1999-10-11 3056 White Loss Lin Feng 3167 ♂ | cwa | go4go | 1999-10-10 3056 Black Win Wang Lei (s) 3091 ♂ | cwa | go4go | Contact: Rémi Coulom . Powered by joedb, the C++ database .",
+      "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+      "subject_role": "target_same_person_profile_or_roster",
+      "capture_kind": "authority_page_capture"
+    }
+  ],
+  "searches": [
+    {
+      "player_id": 6298,
+      "engine": "naver",
+      "query": "\"陈佳\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E4%BD%B3%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E4%BD%B3%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 403,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:12.918300+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:14.308895+00:00",
+      "body_bytes": 28555,
+      "body_sha256": "2370dadd5b72d3d370a08d4d851a2f9a56b2d92781ca9946ef472432d329e3d7",
+      "body_file": "captures/6298-search-naver-han.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+      "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+      "relevance_assessment": "unavailable_http_403",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query used the exact queue Han or Latin string plus 바둑. HTTP 403 means unavailable for content review, not no results.",
+      "exact_latin_name_also_searched": "Chen Jia",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 6298,
+      "engine": "naver",
+      "query": "\"Chen Jia\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22Chen%20Jia%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22Chen%20Jia%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 403,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:13.147660+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:14.593783+00:00",
+      "body_bytes": 28559,
+      "body_sha256": "6ee663a0caf06eda194671b157e20e9ed2d0b173a09dd2c726d0c9c4296217bc",
+      "body_file": "captures/6298-search-naver-latin.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+      "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+      "relevance_assessment": "unavailable_http_403",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query used the exact queue Han or Latin string plus 바둑. HTTP 403 means unavailable for content review, not no results.",
+      "exact_latin_name_also_searched": "Chen Jia",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 6298,
+      "engine": "bing",
+      "query": "\"陈佳\" 바둑",
+      "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+      "url": "https://www.bing.com/search?q=%22%E9%99%88%E4%BD%B3%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://www.bing.com/search?q=%22%E9%99%88%E4%BD%B3%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "request_started_at_utc": "2026-10-08T23:08:59.459645+00:00",
+      "fetched_at_utc": "2026-10-08T23:09:00.769525+00:00",
+      "body_bytes": 120982,
+      "body_sha256": "ec9f9d815a3c56595686d524310380192526cf9492649e3881c96d46b11beb82",
+      "body_file": "captures/6298-search-bing-han.html",
+      "publisher": "Bing search",
+      "body_text_excerpt": "\"陈佳\" 바둑 - Search Skip to content Accessibility Feedback All Search Images Videos Maps News More Shopping Flights Tools About 61 results Open links in new tab Any time totalwine.com https://www.totalwine.com Total Wine & More | Liquor Store and Alcohol Delivery Over 8,000 wines, 3,000 spirits & 2,500 beers with the best prices, selection and service at Total Wine & More. Shop online for … totalwine.com https://www.totalwine.com › store-info › texas-humble Liquor Store, Wine Store - Humble, TX - Total Wine & More Shop wines, spirits and beers at the best prices, selection and service. Buy online for home delivery or pick up in our store near you … totalwine.com https://community.totalwine.com Total Wine & More | Donation & Sponsorship Requests Total Wine & More Community Engagement Requests Through our community engagement programs we have been able to connect … totalwine.com https://careers.totalwine.com › job-search-results Total Wine & More Jobs | Apply for Local Openings Discover exciting job opportunities with Total Wine & More. Find part-time and full-time retail, management, and support positions. … totalwine.com https://book.totalwine.com › demonow Total Wine & More Error: Net",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Chen Jia",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 6298,
+      "engine": "bing",
+      "query": "\"Chen Jia\" 바둑",
+      "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+      "url": "https://www.bing.com/search?q=%22Chen%20Jia%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://www.bing.com/search?q=%22Chen%20Jia%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "request_started_at_utc": "2026-10-08T23:08:59.459892+00:00",
+      "fetched_at_utc": "2026-10-08T23:09:00.753951+00:00",
+      "body_bytes": 123432,
+      "body_sha256": "7dc74118d8d319471a59159336373919f215c1cf28b149bc614834ddc35354fd",
+      "body_file": "captures/6298-search-bing-latin.html",
+      "publisher": "Bing search",
+      "body_text_excerpt": "\"Chen Jia\" 바둑 - Search Skip to content Accessibility Feedback All Search Images Videos Maps News More Shopping Flights Tools About 241,000 results Open links in new tab Any time wikipedia.org https:// en.wikipedia.org › wiki › Chen_(singer ) Chen (singer ) - Wikipedia Kim Jong-dae (Korean: 김종대; born September 21, 1992), known professionally as Chen (첸), is a South Korean singer and … wikipedia.org https:// en.wikipedia.org › wiki › Chen_(surname ) Chen (surname ) - Wikipedia Chen ([ʈʂʰə n] ⓘ) is a common Chinese-language surname 陳 or 陈, and one of the most common surnames in Asia. It is the most … youtube.com https:// www.youtube.com › @ CHEN › videos CHEN - YouTube 안녕하세요~ 첸 입니다!이곳은 앞으로 하나하나 영상을 올려가며저 자신이 더 나은 가수로서 성장하기 위한 공간입니다! famousbirthdays.com https:// www.famousbirthdays.com › people › chen .html Chen - Age, Bio, Family | Famous Birthdays Sep 21, 1992 · South Korean pop singer best known as the main vocalist of the EXO subgroup Exo-CBX as well as the SM … kprofiles.com https://kprofiles.com › chen -exo-profile CHEN (EXO) Profile (Updated!) - Kpop Profiles Our CHEN (EXO) Profile is updated on a regular basis, providing up to date facts and news. shein.com https://us. shein .co",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Chen Jia",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    }
+  ],
+  "additional_bounded_cross_checks": [
+    {
+      "publisher": "Korean Baduk Association",
+      "url": "https://www.baduk.or.kr/record/player_in.asp",
+      "method": "POST",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+      "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+      "body_bytes": 80097,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+      "source_role": "official_China_player_roster_bounded_literal_scan",
+      "literal_scan_terms": [
+        "陈佳",
+        "Chen Jia"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 陈佳; Chen Jia. Exact matching strings present: []."
+    },
+    {
+      "publisher": "TVBaduk",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "body_bytes": 119151,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+      "literal_scan_terms": [
+        "陈佳",
+        "Chen Jia"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 陈佳; Chen Jia. Exact matching strings present: []."
+    },
+    {
+      "publisher": "Daum Cafe community roster (2012)",
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "body_bytes": 153004,
+      "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "source_role": "community_reference_only_not_official",
+      "literal_scan_terms": [
+        "陈佳",
+        "Chen Jia"
+      ],
+      "exact_matches_present": [
+        "陈佳"
+      ],
+      "status": "found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 陈佳; Chen Jia. Exact matching strings present: [\"陈佳\"]."
+    }
+  ],
+  "conclusion": "Source-only research packet. No Korean name candidate, reviewer signature, eligibility claim, or target preimage validation.",
+  "review_status": "source assembly only; independent candidate review/signature not performed"
+}

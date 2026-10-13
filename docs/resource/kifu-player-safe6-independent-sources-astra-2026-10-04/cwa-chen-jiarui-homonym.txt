@@ -1,0 +1,71 @@
+{
+  "code": 0,
+  "msg": "操作成功",
+  "data": {
+    "playerNo": "CWA000820",
+    "chessPlayer": 1,
+    "playerType": 1,
+    "playerName": "陈家瑞",
+    "playerGrade": "Z06",
+    "playerImage": "https://cwa-web.oss-cn-beijing.aliyuncs.com/player/17852220730698007689601.jpg",
+    "playerGender": 1,
+    "playerEmail": "",
+    "playerProvince": "",
+    "playerCity": "",
+    "playerStatus": 1,
+    "playerNameEn": "",
+    "playerNameNa": "",
+    "playerIdType": 1,
+    "playerBirthday": "2010-02-04",
+    "playerUnit": "",
+    "playerProfile": "",
+    "playerRating": "2339.80",
+    "ratingRank": 147,
+    "playerStartDate": "2021-07-18",
+    "createTime": "2024-05-06 16:38:31",
+    "updateTime": "2026-09-03 10:22:12",
+    "dataStatus": 0,
+    "lastDate": 202608,
+    "checkTeam": 1,
+    "playerAwards": [],
+    "playerExperiences": [
+      {
+        "playerNo": "CWA000820",
+        "upgradeGrade": "Z06",
+        "upgradeDate": "2025-07-31",
+        "upgradeEvents": "中国围棋协会"
+      },
+      {
+        "playerNo": "CWA000820",
+        "upgradeGrade": "Z05",
+        "upgradeDate": "2025-01-08",
+        "upgradeEvents": "中国围棋协会"
+      },
+      {
+        "playerNo": "CWA000820",
+        "upgradeGrade": "Z04",
+        "upgradeDate": "2024-07-14",
+        "upgradeEvents": "中国围棋协会"
+      },
+      {
+        "playerNo": "CWA000820",
+        "upgradeGrade": "Z03",
+        "upgradeDate": "2024-04-09",
+        "upgradeEvents": "中国围棋协会"
+      },
+      {
+        "playerNo": "CWA000820",
+        "upgradeGrade": "Z02",
+        "upgradeDate": "2023-07-28",
+        "upgradeEvents": "中国围棋协会"
+      },
+      {
+        "playerNo": "CWA000820",
+        "upgradeGrade": "Z01",
+        "upgradeDate": "2021-07-18",
+        "upgradeEvents": "中国围棋协会"
+      }
+    ],
+    "playerLabels": []
+  }
+}

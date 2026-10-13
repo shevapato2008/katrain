@@ -1,10 +1,12 @@
 from sqlalchemy import (
+    BigInteger,
     Column,
     Integer,
     String,
     DateTime,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Text,
     Enum,
     CheckConstraint,
@@ -398,6 +400,7 @@ class LiveAnalysisDB(Base):
     score_lead = Column(Float, nullable=True)  # Black's lead in points
     top_moves = Column(JSON, nullable=True)  # [{move, visits, winrate, score_lead, prior, pv}, ...]
     ownership = Column(JSON, nullable=True)  # 2D array of ownership values (-1 to 1, positive=Black)
+    model_sha256 = Column(String(64), nullable=True)
 
     # Move classification
     actual_move = Column(String(8), nullable=True)  # The move that was played
@@ -710,12 +713,335 @@ class TrainingSample(Base):
     figure = relationship("TutorialFigure")
 
 
+class KifuPlayer(Base):
+    """A person identity, separate from names found in SGF files."""
+
+    __tablename__ = "kifu_players"
+
+    id = Column(Integer, primary_key=True)
+    canonical_name = Column(String(512), nullable=False)
+    authoritative_pages = Column(JSON, nullable=False, default=list, server_default=text("'[]'"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class KifuEvent(Base):
+    """A competition type; editions, rounds, and rules have separate identities."""
+
+    __tablename__ = "kifu_events"
+
+    id = Column(Integer, primary_key=True)
+    canonical_name = Column(String(256), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class KifuEventEdition(Base):
+    """One verified edition of a competition type."""
+
+    __tablename__ = "kifu_event_editions"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=False)
+    edition_number = Column(Integer, nullable=True)
+    edition_label = Column(String(128), nullable=True)
+    year = Column(Integer, nullable=True)
+    season = Column(String(64), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("edition_number IS NOT NULL OR edition_label IS NOT NULL OR year IS NOT NULL",
+                        name="ck_kifu_event_edition_key"),
+        CheckConstraint("edition_number IS NULL OR edition_number > 0", name="ck_kifu_event_edition_number"),
+        UniqueConstraint("event_id", "edition_number", name="uq_kifu_event_edition_number"),
+        UniqueConstraint("event_id", "edition_label", name="uq_kifu_event_edition_label"),
+        Index("uq_kifu_event_edition_id_event", "id", "event_id", unique=True),
+        Index(
+            "uq_kifu_event_edition_year_only", "event_id", "year", unique=True,
+            sqlite_where=text(
+                "year IS NOT NULL AND season IS NULL AND edition_number IS NULL AND edition_label IS NULL"
+            ),
+            postgresql_where=text(
+                "year IS NOT NULL AND season IS NULL AND edition_number IS NULL AND edition_label IS NULL"
+            ),
+        ),
+        Index(
+            "uq_kifu_event_edition_year_season", "event_id", "year", "season", unique=True,
+            sqlite_where=text(
+                "year IS NOT NULL AND season IS NOT NULL AND edition_number IS NULL AND edition_label IS NULL"
+            ),
+            postgresql_where=text(
+                "year IS NOT NULL AND season IS NOT NULL AND edition_number IS NULL AND edition_label IS NULL"
+            ),
+        ),
+    )
+
+
+class KifuPlayerAlias(Base):
+    __tablename__ = "kifu_player_aliases"
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=False, index=True)
+    alias = Column(String(512), nullable=False)
+    normalized_alias = Column(String(512), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("player_id", "normalized_alias", name="uq_kifu_player_alias_identity"),)
+
+
+class KifuEventAlias(Base):
+    __tablename__ = "kifu_event_aliases"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=False, index=True)
+    alias = Column(String(256), nullable=False)
+    normalized_alias = Column(String(256), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("event_id", "normalized_alias", name="uq_kifu_event_alias_identity"),)
+
+
+class KifuPlayerName(Base):
+    __tablename__ = "kifu_player_names"
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=False, index=True)
+    lang = Column(String(2), nullable=False)
+    display_name = Column(String(512), nullable=False)
+    status = Column(String(16), nullable=False)
+    reference_url = Column(Text, nullable=True)
+    reference_kind = Column(String(32), nullable=True)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    decision_kind = Column(String(32), nullable=True)
+    generation_rule_version = Column(String(64), nullable=True)
+    revision = Column(Integer, nullable=True)
+    evidence_id = Column(Integer, ForeignKey("kifu_name_research_evidence.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("player_id", "lang", name="uq_kifu_player_name_lang"),
+        CheckConstraint("status IN ('verified', 'review', 'missing')", name="ck_kifu_player_name_status"),
+    )
+
+
+class KifuEventName(Base):
+    __tablename__ = "kifu_event_names"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=False, index=True)
+    lang = Column(String(2), nullable=False)
+    display_name = Column(String(256), nullable=False)
+    status = Column(String(16), nullable=False)
+    reference_url = Column(Text, nullable=True)
+    reference_kind = Column(String(32), nullable=True)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    decision_kind = Column(String(32), nullable=True)
+    generation_rule_version = Column(String(64), nullable=True)
+    revision = Column(Integer, nullable=True)
+    evidence_id = Column(Integer, ForeignKey("kifu_name_research_evidence.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("event_id", "lang", name="uq_kifu_event_name_lang"),
+        CheckConstraint("status IN ('verified', 'review', 'missing')", name="ck_kifu_event_name_status"),
+    )
+
+
+class KifuRawPlayerValue(Base):
+    __tablename__ = "kifu_raw_player_values"
+
+    id = Column(Integer, primary_key=True)
+    raw_value = Column(Text, nullable=False, unique=True)
+    category = Column(String(32), nullable=False)
+    parsed_data = Column(JSON, nullable=True)
+    parser_version = Column(String(64), nullable=True)
+    review_status = Column(String(16), nullable=False, server_default="pending")
+    review_metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint("review_status IN ('pending', 'approved', 'rejected')", name="ck_kifu_raw_player_review"),
+    )
+
+
+class KifuRawEventValue(Base):
+    __tablename__ = "kifu_raw_event_values"
+
+    id = Column(Integer, primary_key=True)
+    raw_value = Column(Text, nullable=False, unique=True)
+    category = Column(String(32), nullable=False)
+    parsed_data = Column(JSON, nullable=True)
+    parser_version = Column(String(64), nullable=True)
+    review_status = Column(String(16), nullable=False, server_default="pending")
+    review_metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint("review_status IN ('pending', 'approved', 'rejected')", name="ck_kifu_raw_event_review"),
+    )
+
+
+class KifuNameSourceRegistry(Base):
+    __tablename__ = "kifu_name_source_registry"
+
+    id = Column(Integer, primary_key=True)
+    version = Column(String(64), nullable=False)
+    sha256 = Column(String(64), nullable=False)
+    registry = Column(JSON, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("version", "sha256", name="uq_kifu_name_registry_version_hash"),)
+
+
+class KifuNameResearchEvidence(Base):
+    __tablename__ = "kifu_name_research_evidence"
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=True, index=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=True, index=True)
+    raw_player_id = Column(Integer, ForeignKey("kifu_raw_player_values.id"), nullable=True, index=True)
+    raw_event_id = Column(Integer, ForeignKey("kifu_raw_event_values.id"), nullable=True, index=True)
+    lang = Column(String(2), nullable=False)
+    revision = Column(Integer, nullable=False)
+    source_registry_id = Column(Integer, ForeignKey("kifu_name_source_registry.id"), nullable=False)
+    candidate_name = Column(Text, nullable=False)
+    decision_kind = Column(String(32), nullable=False)
+    generation_rule_version = Column(String(64), nullable=False)
+    research_payload = Column(JSON, nullable=False)
+    producer_id = Column(String(128), nullable=False)
+    producer_model = Column(String(128), nullable=True)
+    produced_at = Column(DateTime(timezone=True), server_default=func.now())
+    reviewer_id = Column(String(128), nullable=True)
+    reviewer_model = Column(String(128), nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    review_status = Column(String(16), nullable=False, server_default="pending")
+
+    __table_args__ = (
+        CheckConstraint(
+            "(CASE WHEN player_id IS NOT NULL THEN 1 ELSE 0 END) + "
+            "(CASE WHEN event_id IS NOT NULL THEN 1 ELSE 0 END) + "
+            "(CASE WHEN raw_player_id IS NOT NULL THEN 1 ELSE 0 END) + "
+            "(CASE WHEN raw_event_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
+            name="ck_kifu_name_evidence_one_owner",
+        ),
+        CheckConstraint("review_status IN ('pending', 'approved', 'rejected')", name="ck_kifu_name_evidence_review"),
+        CheckConstraint(
+            "review_status <> 'approved' OR "
+            "(reviewer_id IS NOT NULL AND reviewer_id <> producer_id AND reviewed_at IS NOT NULL)",
+            name="ck_kifu_name_evidence_independent_approval",
+        ),
+        UniqueConstraint("player_id", "lang", "revision", name="uq_kifu_name_evidence_player_revision"),
+        UniqueConstraint("event_id", "lang", "revision", name="uq_kifu_name_evidence_event_revision"),
+        UniqueConstraint("raw_player_id", "lang", "revision", name="uq_kifu_name_evidence_raw_player_revision"),
+        UniqueConstraint("raw_event_id", "lang", "revision", name="uq_kifu_name_evidence_raw_event_revision"),
+    )
+
+
+class KifuRawPlayerName(Base):
+    __tablename__ = "kifu_raw_player_names"
+
+    id = Column(Integer, primary_key=True)
+    raw_player_id = Column(Integer, ForeignKey("kifu_raw_player_values.id"), nullable=False, index=True)
+    lang = Column(String(2), nullable=False)
+    display_name = Column(Text, nullable=False)
+    status = Column(String(16), nullable=False, server_default="review")
+    decision_kind = Column(String(32), nullable=True)
+    generation_rule_version = Column(String(64), nullable=True)
+    revision = Column(Integer, nullable=True)
+    evidence_id = Column(Integer, ForeignKey("kifu_name_research_evidence.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("raw_player_id", "lang", name="uq_kifu_raw_player_name_lang"),
+        CheckConstraint("status IN ('verified', 'review', 'missing')", name="ck_kifu_raw_player_name_status"),
+        CheckConstraint(
+            "status <> 'verified' OR evidence_id IS NOT NULL", name="ck_kifu_raw_player_name_verified_evidence"
+        ),
+    )
+
+
+class KifuRawEventName(Base):
+    __tablename__ = "kifu_raw_event_names"
+
+    id = Column(Integer, primary_key=True)
+    raw_event_id = Column(Integer, ForeignKey("kifu_raw_event_values.id"), nullable=False, index=True)
+    lang = Column(String(2), nullable=False)
+    display_name = Column(Text, nullable=False)
+    status = Column(String(16), nullable=False, server_default="review")
+    decision_kind = Column(String(32), nullable=True)
+    generation_rule_version = Column(String(64), nullable=True)
+    revision = Column(Integer, nullable=True)
+    evidence_id = Column(Integer, ForeignKey("kifu_name_research_evidence.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("raw_event_id", "lang", name="uq_kifu_raw_event_name_lang"),
+        CheckConstraint("status IN ('verified', 'review', 'missing')", name="ck_kifu_raw_event_name_status"),
+        CheckConstraint(
+            "status <> 'verified' OR evidence_id IS NOT NULL", name="ck_kifu_raw_event_name_verified_evidence"
+        ),
+    )
+
+
+class KifuNameBatch(Base):
+    __tablename__ = "kifu_name_batches"
+
+    id = Column(Integer, primary_key=True)
+    bundle_sha256 = Column(String(64), nullable=False, unique=True)
+    inventory_sha256 = Column(String(64), nullable=False)
+    source_registry_id = Column(Integer, ForeignKey("kifu_name_source_registry.id"), nullable=False)
+    reviewed_artifact = Column(JSON, nullable=False)
+    status = Column(String(24), nullable=False, server_default="pending")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    applied_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class KifuNameChange(Base):
+    __tablename__ = "kifu_name_changes"
+
+    id = Column(Integer, primary_key=True)
+    batch_id = Column(Integer, ForeignKey("kifu_name_batches.id"), nullable=False)
+    sequence = Column(Integer, nullable=False)
+    target_table = Column(String(64), nullable=False)
+    target_row_id = Column(Integer, nullable=False)
+    before_image = Column(JSON, nullable=True)
+    after_image = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("batch_id", "sequence", name="uq_kifu_name_change_sequence"),
+        UniqueConstraint("batch_id", "target_table", "target_row_id", name="uq_kifu_name_change_row"),
+    )
+
+
+class KifuSource(Base):
+    """A verified dataset/source type, not the raw SGF SO property."""
+
+    __tablename__ = "kifu_sources"
+
+    id = Column(Integer, primary_key=True)
+    source_key = Column(String(64), nullable=False, unique=True)
+    display_name = Column(String(128), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class KifuAlbum(Base):
     """Database model for tournament game records (大赛棋谱)."""
 
     __tablename__ = "kifu_albums"
 
     id = Column(Integer, primary_key=True, index=True)
+    black_player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=True, index=True)
+    white_player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=True, index=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=True, index=True)
+    event_edition_id = Column(Integer, ForeignKey("kifu_event_editions.id"), nullable=True)
+    duplicate_of_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=True, index=True)
+    # NULL keeps the game in the public library; a reason preserves excluded records for review.
+    list_hidden_reason = Column(String(64), nullable=True)
+    __table_args__ = (
+        CheckConstraint("event_edition_id IS NULL OR event_id IS NOT NULL",
+                        name="ck_kifu_album_edition_requires_event"),
+        ForeignKeyConstraint(["event_edition_id", "event_id"],
+                             ["kifu_event_editions.id", "kifu_event_editions.event_id"],
+                             name="fk_kifu_albums_event_edition_type"),
+    )
     player_black = Column(String(512), nullable=False, index=True)
     player_white = Column(String(512), nullable=False, index=True)
     black_rank = Column(String(64), nullable=True)
@@ -738,6 +1064,174 @@ class KifuAlbum(Base):
     source_path = Column(String(512), unique=True, nullable=False, index=True)  # Prevents duplicate imports
     search_text = Column(Text, nullable=True)  # Lowercased concatenated searchable fields
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+def _lower_sha256_check(column: str) -> str:
+    """Portable SQLite/PostgreSQL CHECK for a 64-character lowercase hex digest."""
+
+    remainder = column
+    for digit in "0123456789abcdef":
+        remainder = f"replace({remainder}, '{digit}', '')"
+    return f"length({column}) = 64 AND length({remainder}) = 0"
+
+
+class KifuEventSelectionBatch(Base):
+    """Auditable batch of reviewed per-album event selections."""
+
+    __tablename__ = "kifu_event_selection_batches"
+
+    id = Column(Integer, primary_key=True)
+    bundle_sha256 = Column(String(64), nullable=False)
+    member_set_sha256 = Column(String(64), nullable=False)
+    reviewed_artifact = Column(JSON, nullable=False)
+    producer_id = Column(String(128), nullable=False)
+    reviewer_id = Column(String(128), nullable=False)
+    reviewed_at = Column(DateTime(timezone=True), nullable=False)
+    status = Column(String(16), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    applied_at = Column(DateTime(timezone=True), nullable=True)
+    undone_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("bundle_sha256", name="uq_kifu_event_selection_batch_hash"),
+        CheckConstraint(_lower_sha256_check("bundle_sha256"), name="ck_kifu_event_selection_bundle_sha256"),
+        CheckConstraint(_lower_sha256_check("member_set_sha256"), name="ck_kifu_event_selection_member_sha256"),
+        CheckConstraint("producer_id <> reviewer_id", name="ck_kifu_event_selection_independent_review"),
+        CheckConstraint("status IN ('applied', 'undone')", name="ck_kifu_event_selection_batch_status"),
+    )
+
+
+class KifuAlbumEventSelection(Base):
+    """Reviewed event value chosen from one album's pinned SGF, leaving source fields intact."""
+
+    __tablename__ = "kifu_album_event_selections"
+
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), primary_key=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=True)
+    batch_id = Column(Integer, ForeignKey("kifu_event_selection_batches.id"), nullable=False)
+    selected_raw = Column(Text, nullable=False)
+    sgf_sha256 = Column(String(64), nullable=False)
+    property_name = Column(String(2), nullable=False)
+    property_index = Column(Integer, nullable=False)
+    status = Column(String(16), nullable=False)
+    rule_version = Column(String(64), nullable=False)
+    reviewer_id = Column(String(128), nullable=False)
+    reviewed_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint("length(trim(selected_raw)) > 0", name="ck_kifu_album_event_selected_raw"),
+        CheckConstraint(_lower_sha256_check("sgf_sha256"), name="ck_kifu_album_event_sgf_sha256"),
+        CheckConstraint("property_name = 'GN' AND property_index = 1", name="ck_kifu_album_event_gn_index"),
+        CheckConstraint("status = 'approved'", name="ck_kifu_album_event_status"),
+    )
+
+
+class KifuAnalysisJob(Base):
+    """Analysis of a canonical professional album, independent of user reports."""
+
+    __tablename__ = "kifu_analysis_jobs"
+
+    id = Column(Integer, primary_key=True)
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=False, index=True)
+    sgf_sha256 = Column(String(64), nullable=False)
+    model_sha256 = Column(String(64), nullable=False)
+    requested_visits = Column(Integer, nullable=False)
+    # NULL is intentionally unverified for pre-migration jobs, even with explicit RU/KM.
+    analysis_parameters = Column(JSON, nullable=True)
+    status = Column(String(16), nullable=False, default="pending")
+    total_moves = Column(Integer, nullable=False)
+    analyzed_moves = Column(Integer, nullable=False, default=0)
+    retry_count = Column(Integer, nullable=False, default=0)
+    error_message = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+
+    __table_args__ = (
+        UniqueConstraint("album_id", "sgf_sha256", "model_sha256", "requested_visits", name="uq_kifu_analysis_identity"),
+        CheckConstraint("requested_visits > 0", name="ck_kifu_analysis_visits"),
+        CheckConstraint("status IN ('pending', 'running', 'completed', 'failed')", name="ck_kifu_analysis_status"),
+        Index("ix_kifu_analysis_jobs_status_created", "status", "created_at"),
+    )
+
+
+class KifuAnalysisMove(Base):
+    """Depth verified position snapshot for a professional game."""
+
+    __tablename__ = "kifu_analysis_moves"
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey("kifu_analysis_jobs.id"), nullable=False, index=True)
+    move_number = Column(Integer, nullable=False)
+    parameter_sha256 = Column(String(64), nullable=True)
+    root_visits = Column(Integer, nullable=False)
+    visits = Column(Integer)
+    winrate = Column(Float)
+    score_lead = Column(Float)
+    top_moves = Column(JSON)
+    ownership = Column(JSON)
+    actual_move = Column(String(8))
+    actual_player = Column(String(1))
+    delta_score = Column(Float)
+    delta_winrate = Column(Float)
+    grade = Column(String(16))
+    points_lost = Column(Float)
+    points_lost_source = Column(String(12))
+    is_top_move = Column(Boolean)
+    top_prior = Column(Float)
+    brilliance = Column(Integer)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("job_id", "move_number", name="uq_kifu_analysis_move"),
+        CheckConstraint("root_visits > 0", name="ck_kifu_analysis_root_visits"),
+    )
+
+
+class KifuAlbumSource(Base):
+    __tablename__ = "kifu_album_sources"
+
+    id = Column(Integer, primary_key=True)
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=False, index=True)
+    source_id = Column(Integer, ForeignKey("kifu_sources.id"), nullable=False, index=True)
+    origin_path = Column(String(1024), nullable=False)
+    match_method = Column(String(32), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("album_id", "source_id", "origin_path", name="uq_kifu_album_source_origin"),)
+
+
+class KifuDedupBatch(Base):
+    """One reversible catalog deduplication run."""
+
+    __tablename__ = "kifu_dedup_batches"
+
+    id = Column(Integer, primary_key=True)
+    batch_key = Column(String(128), nullable=False, unique=True)
+    status = Column(String(24), nullable=False, default="running")
+    summary = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class KifuDedupChange(Base):
+    """Before/after pointer and source links for restoring only this batch."""
+
+    __tablename__ = "kifu_dedup_changes"
+
+    id = Column(Integer, primary_key=True)
+    batch_id = Column(Integer, ForeignKey("kifu_dedup_batches.id"), nullable=False, index=True)
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=False, index=True)
+    duplicate_of_id_before = Column(Integer, ForeignKey("kifu_albums.id"), nullable=True)
+    duplicate_of_id_after = Column(Integer, ForeignKey("kifu_albums.id"), nullable=True)
+    source_links_before = Column(JSON, nullable=False)
+    source_links_after = Column(JSON, nullable=False)
+    sgf_sha256_before = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("batch_id", "album_id", name="uq_kifu_dedup_batch_album"),)
 
 
 class UserGame(Base):
@@ -838,6 +1332,7 @@ class ReportTask(Base):
     # 授权那一刻棋谱内容的指纹。cron 认领时比对，不一致就失败而不是拼一份
     # 「旧棋谱前缀 + 新棋谱后缀」的报告出来。
     sgf_hash = Column(String(64), nullable=True)
+    model_sha256 = Column(String(64), nullable=True)
     # 已经结算过的手数水位。结算按**增量**收费：actual = cost(analyzed_moves - settled_moves)。
     # 不记水位的话，/retry 之后的第二次结算会把第一次已结清的前缀再收一遍 ——
     # retry 的预扣只覆盖增量（total_moves - analyzed_moves），而 analyzed_moves 是累计值，
@@ -1131,3 +1626,109 @@ class CronJobRun(Base):
     error = Column(Text, nullable=True)
 
     __table_args__ = (Index("ix_cron_job_runs_job_started", "job_name", "started_at"),)
+
+
+class ProcessHealthReport(Base):
+    """Latest config-check verdicts, one row per process (web / cron / admin), overwritten in place.
+
+    `report` is JSON of templated verdicts only — never configuration values. Written by each
+    process about its own effective config; read by the admin console.
+    """
+
+    __tablename__ = "process_health_reports"
+
+    process = Column(String(16), primary_key=True)
+    hostname = Column(String(128), nullable=False)
+    build = Column(String(64), nullable=False)
+    generated_at = Column(DateTime(timezone=True), nullable=False)
+    report = Column(Text, nullable=False)
+
+
+class ErrorGroup(Base):
+    """ERROR-level log records grouped by fingerprint (one row per distinct failure), written by each
+    process's error collector and read / resolved in the admin console. Samples are scrubbed."""
+
+    __tablename__ = "error_groups"
+
+    id = Column(Integer, primary_key=True)
+    fingerprint = Column(String(64), nullable=False, unique=True)
+    process = Column(String(16), nullable=False)
+    logger = Column(String(128), nullable=False)
+    exc_type = Column(String(128), nullable=True)
+    template = Column(Text, nullable=False)
+    location = Column(String(400), nullable=False)
+    job = Column(String(64), nullable=True)
+    first_seen = Column(DateTime(timezone=True), nullable=False)
+    last_seen = Column(DateTime(timezone=True), nullable=False)
+    state_changed_at = Column(DateTime(timezone=True), nullable=False)
+    count = Column(Integer, nullable=False, default=1)
+    sample = Column(Text, nullable=False)
+    build = Column(String(64), nullable=False)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_by = Column(String(128), nullable=True)
+
+
+class BoxDevice(Base):
+    """A smartbox that reports telemetry. Trust on first use: the first registration stores the
+    device's derived key (never the factory secret) as `pending`; an admin approves or rejects it.
+    Heartbeats are HMAC-signed with that key and must carry strictly increasing timestamps."""
+
+    __tablename__ = "box_devices"
+
+    device_id = Column(String(64), primary_key=True)
+    key = Column(String(64), nullable=False)
+    status = Column(String(16), nullable=False, default="pending")  # pending | approved | rejected
+    registered_at = Column(DateTime(timezone=True), nullable=False)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    decided_by = Column(String(128), nullable=True)
+    last_seen = Column(DateTime(timezone=True), nullable=True)
+    last_ts = Column(Integer, nullable=True)
+    last_ip = Column(String(64), nullable=True)
+    board = Column(String(64), nullable=True)
+    smartbox_version = Column(String(32), nullable=True)
+    katrain_build = Column(String(64), nullable=True)
+    mode = Column(String(32), nullable=True)
+    uptime_s = Column(Integer, nullable=True)
+
+
+class CronJobControl(Base):
+    """Persistent pause state per interval job, set in the admin console and polled by cron."""
+
+    __tablename__ = "cron_job_controls"
+
+    job_name = Column(String(64), primary_key=True)
+    paused = Column(Boolean, nullable=False, default=False)
+    reason = Column(Text, nullable=True)
+    changed_at = Column(DateTime(timezone=True), nullable=False)
+    changed_by = Column(String(128), nullable=False)
+
+
+class CronJobCommand(Base):
+    """Run-now requests from the admin console; cron marks each done or rejected (with a note)."""
+
+    __tablename__ = "cron_job_commands"
+
+    id = Column(Integer, primary_key=True)
+    job_name = Column(String(64), nullable=False, index=True)
+    command = Column(String(16), nullable=False)
+    requested_at = Column(DateTime(timezone=True), nullable=False)
+    requested_by = Column(String(128), nullable=False)
+    state = Column(String(16), nullable=False, default="pending")
+    handled_at = Column(DateTime(timezone=True), nullable=True)
+    note = Column(Text, nullable=True)
+
+
+class GoldenImageStatus(Base):
+    """Release status of one golden image (identified by its manifest prefix in the artifacts bucket).
+    Absent row = candidate. The bucket itself is written only by the provisioning upload script."""
+
+    __tablename__ = "golden_image_status"
+
+    prefix = Column(String(255), primary_key=True)
+    status = Column(String(16), nullable=False)  # candidate | released | revoked
+    note = Column(Text, nullable=True)
+    # The exact bytes that were released: a later overwrite of the file shows up as a problem.
+    released_etag = Column(String(128), nullable=True)
+    released_size = Column(BigInteger, nullable=True)
+    changed_at = Column(DateTime(timezone=True), nullable=False)
+    changed_by = Column(String(128), nullable=False)

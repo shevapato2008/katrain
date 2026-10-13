@@ -1,0 +1,17 @@
+{
+  "base_image_id": "sha256:6ffe9b6dad44ae280dc756d8468f1695337ca786541976413b515e614ebab3c5",
+  "environment": "PROD",
+  "image_id": "sha256:6eb7597b5b478c082fe91405c0223531a46380bf53b9d7dc33e8e74cfb642b02",
+  "image_tag": "katrain-kifu-importer:kifu-mixed-game-prod-20261009-r6",
+  "service_restarts": 0,
+  "sql_writes": 0,
+  "verified_files": {
+    "katrain/web/api/v1/endpoints/kifu.py": "7c73657144f91da606cdbda02a1b77c866d6fc754524b2e019b690198f208d7f",
+    "katrain/web/core/models_db.py": "8e78f21935922db42520a2791cc4f00da0175ff212e781aed4ab4f9919bbcbfa",
+    "katrain/web/kifu/identity.py": "0d73f2bbee561962eb5f7ed76711a01e10da6407723547e88352ad3375cdc883",
+    "katrain/web/kifu/name_evidence.py": "7f841117402635a7cfd3044c177f7591315f7175f917095b2adadb89ffdf1a42",
+    "katrain/web/kifu/name_orthographic.py": "d210965d365b766498d520df50294ee5622b827d07324813f6c4f79adff7af91",
+    "katrain/web/kifu/raw_event_translation.py": "0aab89aa5a93541dde26381254d3e9ff1a1a1dc6707b6089ba6fd6f473506b1f",
+    "scripts/kifu_raw_event_title_owners.py": "7c152e11172052e0de1c1adadf586b3930fed7946df09aa5eadef15171bd23ca"
+  }
+}

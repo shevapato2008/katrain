@@ -1,0 +1,13 @@
+/* Golden images: ported from the prototype (ar-*). */
+.ar-page .lab-chip.info { color:var(--admin-info); background:var(--admin-info-bg); border-color:transparent; }
+.ub-lhead.ar, .ub-lrow.ar { grid-template-columns:70px 60px minmax(0,1fr) 76px 100px 150px 76px 180px; }
+.ub-lrow.ar { padding-block:6px; }
+.ub-lrow.ar.bad { background:var(--admin-bad-bg); }
+.ar-file { overflow:hidden; text-overflow:ellipsis; }
+.ub-lrow.ar small { display:block; font-size:12px; color:var(--admin-subtle); }
+.ub-lrow.ar small.ar-prob { display:flex; align-items:center; gap:4px; color:var(--admin-bad); font-family:inherit; white-space:normal; }
+.ar-prob svg { width:14px; height:14px; flex:none; }
+.ar-act { display:flex; gap:6px; justify-content:flex-end; }
+.ar-link-body { display:flex; gap:10px; align-items:center; padding:12px 16px; }
+.ar-link-body code { flex:1; min-width:0; overflow-wrap:anywhere; font-size:12.5px; padding:8px 10px; border:1px solid var(--admin-line); border-radius:6px; background:var(--admin-well); user-select:all; }
+.ar-pad { padding:0 16px 12px; overflow-wrap:anywhere; }

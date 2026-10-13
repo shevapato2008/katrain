@@ -219,8 +219,13 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
-    async def get_kifu(self, album_id: int) -> Dict:
-        resp = await self._request("GET", f"/api/v1/kifu/albums/{album_id}")
+    async def get_kifu(self, album_id: int, lang: str = "cn") -> Dict:
+        resp = await self._request("GET", f"/api/v1/kifu/albums/{album_id}", params={"lang": lang})
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_kifu_analysis(self, album_id: int) -> Dict:
+        resp = await self._request("GET", f"/api/v1/kifu/albums/{album_id}/analysis")
         resp.raise_for_status()
         return resp.json()
 
@@ -414,29 +419,6 @@ class RemoteAPIClient:
 
     async def get_tutorial_figure(self, figure_id: int) -> Any:
         resp = await self._request("GET", f"/api/v1/tutorials/figures/{figure_id}", auth=False)
-        resp.raise_for_status()
-        return resp.json()
-
-    # ── Board (device management) ──
-
-    async def heartbeat(
-        self,
-        queue_depth: int = 0,
-        failed_count: int = 0,
-        oldest_unsynced_age_sec: int = 0,
-        last_sync_at: Optional[str] = None,
-    ) -> Dict:
-        resp = await self._request(
-            "POST",
-            "/api/v1/board/heartbeat",
-            json={
-                "device_id": self.device_id,
-                "queue_depth": queue_depth,
-                "failed_count": failed_count,
-                "oldest_unsynced_age_sec": oldest_unsynced_age_sec,
-                "last_sync_at": last_sync_at,
-            },
-        )
         resp.raise_for_status()
         return resp.json()
 

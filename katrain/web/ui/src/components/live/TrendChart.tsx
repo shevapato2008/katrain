@@ -1,8 +1,11 @@
 import { Box, Stack, Tab, Tabs, Typography, useTheme } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useMeasuredWidth } from '../../hooks/useMeasuredWidth';
+import { TIER_DEF_TEXT, BRILLIANCE_BANDS, BRILLIANCE_HELP_TEXT } from './chartDefinitions';
 import Segmented from './Segmented';
+import { placeChartLabels } from './chartLabelPositions';
+import { AnalysisHelpContent, ChartTabHelp, type AnalysisTab } from './AnalysisChartHelp';
 import { StoneCircle, StoneDot, stoneFill, stoneRim } from './chartMarks';
 import type { MoveAnalysis } from '../../types/live';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -17,7 +20,6 @@ import {
   longestTop1Run,
   PER_SIDE_LIMIT,
   GRADE_BY_ID,
-  GRADE_LADDER_POINTS,
   GRADE_PHASES,
   GRADE_TIERS,
   isBad,
@@ -33,58 +35,31 @@ interface TrendChartProps {
   totalMoves: number;
   currentMove: number;
   onMoveClick?: (move: number) => void;
+  reportMode?: boolean;
 }
-
-/**
- * 妙度的量程与分档。
- *
- * 真源是 `katrain/core/move_grade.yaml` 的 `brilliant.levels_prior`
- * `[0.05, 0.03, 0.02, 0.01, 0.0]`，判定在 `move_grade_core.brilliance_level`：
- * **级数 = 1 + 越过的断点数**，封顶 5。这里只是把同一组数写成人看的区间。
- *
- * 为什么不从 `gradeTiers.generated.ts` 读：那份产物只导出档位表和目损梯子
- * （`GRADE_LADDER_POINTS`），没有 `levels_prior`。要把它也导出来才能消掉这份手抄 ——
- * 记为待办，代价是改 `move_grade.py --emit` 的模板。在那之前，**改 yaml 的人要记得改这里**，
- * 所以下面这行区间文案里的数字必须与真源逐字对应。
- */
-/**
- * 七档的一句话定义。**目损阈值一律从 `GRADE_LADDER_POINTS` 取**，不在文案里写死数字 ——
- * 真源 `move_grade.yaml` 改了梯子，这里跟着变，不会悄悄过期。
- * （`brilliant` 那条的 10% 是 `brilliant.max_prior`，生成产物里没有导出它，
- *  与 `BRILLIANCE_BANDS` 同属待办：把它也 emit 出来才能消掉这处手抄。）
- */
-const TIER_DEF_TEXT = (t: (k: string, d: string) => string): Record<string, string> => {
-  const L = GRADE_LADDER_POINTS;
-  const lt = (n: number) => t('grade:def_points_lt', '目损 < {n} 目').replace('{n}', String(n));
-  return {
-    brilliant: t('grade:def_brilliant', '走出引擎首选，且连引擎自己都没想到（先验 < 10%）'),
-    best: t('grade:def_best', '走出引擎首选'),
-    very_good: lt(L.very_good),
-    playable: lt(L.playable),
-    inaccuracy: lt(L.inaccuracy),
-    mistake: lt(L.mistake),
-    blunder: t('grade:def_blunder', '目损 ≥ {n} 目').replace('{n}', String(L.mistake)),
-    unrated: t('grade:def_unrated', '上一手没分析或搜索量不足，判不了'),
-  };
-};
-
-const BRILLIANCE_BANDS: readonly { level: number; band: string }[] = [
-  { level: 1, band: '5% ≤ prior < 10%' },
-  { level: 2, band: '3% ≤ prior < 5%' },
-  { level: 3, band: '2% ≤ prior < 3%' },
-  { level: 4, band: '1% ≤ prior < 2%' },
-  { level: 5, band: 'prior < 1%' },
-];
 
 export default function TrendChart({
   analysis,
   totalMoves,
   currentMove,
   onMoveClick,
+  reportMode = false,
 }: TrendChartProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const [tab, setTab] = useState(0);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const [workspaceHeight, setWorkspaceHeight] = useState(180);
+
+  useEffect(() => {
+    const plot = workspaceRef.current;
+    if (!reportMode || !plot) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setWorkspaceHeight(Math.max(80, Math.floor(entry.contentRect.height)));
+    });
+    observer.observe(plot);
+    return () => observer.disconnect();
+  }, [reportMode, tab]);
 
   // 两张图各要一份实测宽度。**不能共用一个**：它们分属不同 tab，同一时刻只有一个挂载，
   // 共用的话 callback ref 会在切 tab 时被后挂载的那个覆盖，先挂的那张再也收不到尺寸变化。
@@ -98,15 +73,11 @@ export default function TrendChart({
     const scores: number[] = [];
 
     for (let i = 0; i <= totalMoves; i++) {
-      moves.push(i);
       const moveAnalysis = analysis[i];
       if (moveAnalysis) {
+        moves.push(i);
         winrates.push(moveAnalysis.winrate * 100);
         scores.push(moveAnalysis.score_lead);
-      } else {
-        // Interpolate or use default
-        winrates.push(50);
-        scores.push(0);
       }
     }
 
@@ -125,12 +96,12 @@ export default function TrendChart({
   // Get current values for display above chart
   const currentWinrate = useMemo(() => {
     const moveAnalysis = analysis[currentMove];
-    return moveAnalysis ? moveAnalysis.winrate * 100 : 50;
+    return moveAnalysis ? moveAnalysis.winrate * 100 : null;
   }, [analysis, currentMove]);
 
   const currentScoreLead = useMemo(() => {
     const moveAnalysis = analysis[currentMove];
-    return moveAnalysis ? moveAnalysis.score_lead : 0;
+    return moveAnalysis ? moveAnalysis.score_lead : null;
   }, [analysis, currentMove]);
 
   // Dual-axis chart with winrate and score lead
@@ -140,29 +111,29 @@ export default function TrendChart({
     // viewBox 宽 == 容器实测 CSS 宽 ⇒ 缩放比恒为 1：绘图区随右栏伸缩，字号不跟着缩。
     // 改造前这里写死 420，320 档下整张图被缩到 0.79（轴标 11px 只剩 8.7px）。
     const width = dualWidth;
-    const height = 180;
-    const leftPadding = 42;
-    const rightPadding = 42;
+    const height = reportMode ? Math.max(80, workspaceHeight - 34) : 180;
+    const leftPadding = 56;
+    const rightPadding = 56;
     const topPadding = 16;
-    const bottomPadding = 12;
+    const bottomPadding = reportMode ? 34 : 12;
     const chartWidth = width - leftPadding - rightPadding;
     const chartHeight = height - topPadding - bottomPadding;
 
-    const xStep = chartWidth / Math.max(1, chartData.winrates.length - 1);
+    const xStep = chartWidth / Math.max(1, totalMoves);
 
     // Winrate points (0-100 -> chart coordinates)
     const winratePoints = chartData.winrates.map((value, i) => {
-      const x = leftPadding + i * xStep;
+      const x = leftPadding + chartData.moves[i] * xStep;
       const y = topPadding + chartHeight - (value / 100) * chartHeight;
-      return `${x},${y}`;
+      return `${i === 0 || chartData.moves[i] !== chartData.moves[i - 1] + 1 ? 'M' : 'L'}${x},${y}`;
     }).join(' ');
 
     // Score points (scoreRange.min to scoreRange.max -> chart coordinates)
     const scorePoints = chartData.scores.map((value, i) => {
-      const x = leftPadding + i * xStep;
+      const x = leftPadding + chartData.moves[i] * xStep;
       const normalized = (value - scoreRange.min) / (scoreRange.max - scoreRange.min);
       const y = topPadding + chartHeight - normalized * chartHeight;
-      return `${x},${y}`;
+      return `${i === 0 || chartData.moves[i] !== chartData.moves[i - 1] + 1 ? 'M' : 'L'}${x},${y}`;
     }).join(' ');
 
     // Current move indicator
@@ -220,20 +191,20 @@ export default function TrendChart({
         })}
 
         {/* Score line (orange) */}
-        <polyline
+        <path
           fill="none"
           stroke="#ff9800"
           strokeWidth="1.5"
           strokeOpacity="0.8"
-          points={scorePoints}
+          d={scorePoints}
         />
 
         {/* Winrate line (green) */}
-        <polyline
+        <path
           fill="none"
           stroke="#4caf50"
           strokeWidth="2"
-          points={winratePoints}
+          d={winratePoints}
         />
 
         {/* Current move indicator */}
@@ -245,6 +216,14 @@ export default function TrendChart({
           stroke="rgba(255,255,255,0.5)"
           strokeWidth="1"
         />
+
+        {reportMode && <g fill={theme.palette.text.secondary} fontSize={12}>
+          {[0, 0.25, 0.5, 0.75, 1].map(fraction => <text key={fraction}
+            x={leftPadding + chartWidth * fraction} y={height - 18} textAnchor="middle">
+            {Math.round(totalMoves * fraction)}
+          </text>)}
+          <text x={leftPadding + chartWidth / 2} y={height - 3} textAnchor="middle">{t('grade:axis_move_number', '手数')}</text>
+        </g>}
 
         {/* Click area */}
         <rect
@@ -258,8 +237,7 @@ export default function TrendChart({
             if (!onMoveClick) return;
             const rect = e.currentTarget.getBoundingClientRect();
             const x = e.clientX - rect.left;
-            const svgX = (x / rect.width) * width;
-            const ratio = (svgX - leftPadding) / chartWidth;
+            const ratio = x / rect.width;
             const move = Math.round(ratio * totalMoves);
             onMoveClick(Math.max(0, Math.min(totalMoves, move)));
           }}
@@ -308,8 +286,9 @@ export default function TrendChart({
   /** 筛选条。**走势 tab 不用它** —— 那张图画的是整局曲线，截一段等于把上下文砍掉
    *  （Fan 2026-09-01：「对于走势图，不需要切换这些，去掉吧」）。 */
   const filterBar = (withPlayer: boolean) => (
-    <Stack direction="row" sx={{ mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
+    <Stack direction={reportMode ? "column" : "row"} sx={{ mb: reportMode ? 0 : 1.5, flexWrap: 'wrap', gap: 1 }}>
       <Segmented
+        vertical={reportMode}
         options={PHASE_OPTIONS}
         value={phase}
         onChange={setPhase}
@@ -317,7 +296,8 @@ export default function TrendChart({
       />
       {withPlayer && (
         <Segmented
-          options={PLAYER_OPTIONS}
+          vertical={reportMode}
+        options={PLAYER_OPTIONS}
           value={player}
           onChange={setPlayer}
           ariaLabel={t('grade:filter_player', '棋手')}
@@ -356,10 +336,10 @@ export default function TrendChart({
   const brillianceDefs = (
     <Box sx={{ pt: 1 }}>
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.7, mb: 0.75 }}>
-        {t(
-          'grade:brilliance_entry',
-          '入选要同时满足三条：走出引擎首选、该首选的 policy 先验 < 10%（连引擎直觉都没想到）、局面还没定。',
-        )}
+        {BRILLIANCE_HELP_TEXT(t).entry}
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.7, mb: 0.75 }}>
+        {BRILLIANCE_HELP_TEXT(t).probability}
       </Typography>
       <Box
         sx={{
@@ -418,30 +398,21 @@ export default function TrendChart({
    */
   const renderHistogram = () => {
     const width = lolliWidth;
-    const height = 250;
+    const height = reportMode ? workspaceHeight : 250;
     const padL = 34;
     const padR = 10;
-    const padT = 30;
-    const padB = 46;
+    const padT = reportMode ? 56 : 40;
+    const padB = 62;
     const plot = height - padT - padB;
     const groupW = (width - padL - padR) / histogram.cells.length;
     const maxRate = Math.max(
       ...histogram.cells.map((c) => Math.max(c.blackRate, c.whiteRate)),
       0.01,
     );
-    // 最高的那一组做直接标注。并列时取第一个 —— 标两组反而更乱。
-    const tallest = histogram.cells.reduce(
-      (best, c, i) =>
-        Math.max(c.blackRate, c.whiteRate) >
-        Math.max(histogram.cells[best].blackRate, histogram.cells[best].whiteRate)
-          ? i
-          : best,
-      0,
-    );
     const gridLines = [0, 0.2, 0.4, 0.6].filter((f) => f <= maxRate);
 
     return (
-      <Box sx={{ bgcolor: 'background.default', borderRadius: 1, px: 0.5, py: 0.5 }}>
+      <Box sx={{ bgcolor: 'background.default', borderRadius: 1, minWidth: 0, height: reportMode ? '100%' : undefined }}>
         <svg
           ref={lolliRef}
           data-testid="trend-histogram-chart"
@@ -452,12 +423,16 @@ export default function TrendChart({
           role="img"
           aria-label={t('grade:histogram_aria', '七档发挥水准分布，黑柱为黑方、白柱为白方，各自归一')}
         >
+          <StoneCircle cx={padL + 5} cy={12} r={5} black />
+          <text x={padL + 15} y={16} fontSize={12} fill={theme.palette.text.secondary}>{t('review:black', '黑')}</text>
+          <StoneCircle cx={padL + 47} cy={12} r={5} black={false} />
+          <text x={padL + 57} y={16} fontSize={12} fill={theme.palette.text.secondary}>{t('review:white', '白')}</text>
           {gridLines.map((f) => {
             const y = padT + plot - (f / maxRate) * plot;
             return (
               <g key={f}>
                 <line x1={padL} y1={y} x2={width - padR} y2={y} stroke="rgba(255,255,255,0.06)" />
-                <text x={padL - 6} y={y + 3.5} textAnchor="end" fill={theme.palette.text.disabled} fontSize="9.5">
+                <text x={padL - 6} y={y + 3.5} textAnchor="end" fill={theme.palette.text.secondary} fontSize={reportMode ? 12 : 11}>
                   {Math.round(f * 100)}%
                 </text>
               </g>
@@ -491,22 +466,11 @@ export default function TrendChart({
                         strokeWidth={1.4}
                       />
                       {b.v > 0 && (
-                        <text x={x + barW / 2} y={y - 5} textAnchor="middle" fill="#d0cdc8" fontSize="9.5">
+                        <text x={x + barW / 2} y={y - (b.black ? 5 : 19)} textAnchor="middle" fill={theme.palette.text.secondary} fontSize={reportMode ? 12 : 11}>
                           {b.v}
                         </text>
                       )}
-                      {b.v > 0 && i === tallest && (
-                        <text
-                          x={x + barW / 2}
-                          y={y - 17}
-                          textAnchor="middle"
-                          fill={theme.palette.text.primary}
-                          fontSize="11"
-                          fontWeight="600"
-                        >
-                          {b.black ? t('live:black', 'B') : t('live:white', 'W')}
-                        </text>
-                      )}
+
                     </g>
                   );
                 })}
@@ -515,7 +479,7 @@ export default function TrendChart({
                   y={height - padB + 15}
                   textAnchor="middle"
                   fill={theme.palette.text.secondary}
-                  fontSize="11.5"
+                  fontSize={reportMode ? 12 : 11}
                 >
                   {t(cell.tier.i18nKey, cell.tier.zh)}
                 </text>
@@ -533,10 +497,11 @@ export default function TrendChart({
                   x={x0 + groupW / 2}
                   y={height - padB + 36}
                   textAnchor="middle"
-                  fill={theme.palette.text.disabled}
-                  fontSize="9"
+                  fill={theme.palette.text.secondary}
+                  fontSize={reportMode ? 12 : 11}
                 >
-                  {Math.round(cell.blackRate * 100)}/{Math.round(cell.whiteRate * 100)}%
+                  <tspan x={x0 + groupW / 2}>{Math.round(cell.blackRate * 100)}%</tspan>
+                  <tspan x={x0 + groupW / 2} dy={14}>{Math.round(cell.whiteRate * 100)}%</tspan>
                 </text>
               </g>
             );
@@ -587,17 +552,17 @@ export default function TrendChart({
 
   /** 统计视图：三行比率，每行黑白各一条。行前的棋子标记就是「这条是谁的」。 */
   const renderMatchStats = () => (
-    <Box>
+    <Box sx={reportMode ? { height: '100%', display: 'grid', gridTemplateRows: 'repeat(3, minmax(0,1fr))', gap: '6px' } : undefined}>
       {matchRate.rows.map((row) => (
-        <Box key={row.id} sx={{ mb: 1.75 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1, mb: 0.75 }}>
-            <Typography variant="body2" sx={{ color: 'text.primary' }}>
+        <Box key={row.id} sx={{ mb: reportMode ? 0 : 1.75, ...(reportMode ? { minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly' } : {}) }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1, mb: reportMode ? 0 : 0.75 }}>
+            <Typography variant="body2" sx={{ color: 'text.primary', ...(reportMode ? { fontSize: 14, lineHeight: '20px' } : {}) }}>
               {t(row.i18nKey, row.zh)}
             </Typography>
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
+              sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', display: reportMode ? 'none' : undefined }}
             >
               <StoneDot black /> {row.black}/{row.blackTotal} ({Math.round(row.blackRate * 100)}%)
               <Box component="span" sx={{ display: 'inline-block', width: 12 }} />
@@ -608,7 +573,7 @@ export default function TrendChart({
             { rate: row.blackRate, black: true },
             { rate: row.whiteRate, black: false },
           ] as const).map((b, i) => (
-            <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+            <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: reportMode ? 0 : 0.5, ...(reportMode ? { height: 20, flexShrink: 0 } : {}) }}>
               <StoneDot black={b.black} />
               <Box sx={{ flex: 1, height: 9, bgcolor: 'action.hover', borderRadius: '5px', overflow: 'hidden', minWidth: 0 }}>
                 <Box
@@ -624,7 +589,7 @@ export default function TrendChart({
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ width: 34, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
+                sx={{ width: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums', ...(reportMode ? { fontSize: 13, lineHeight: '18px' } : {}) }}
               >
                 {Math.round(b.rate * 100)}%
               </Typography>
@@ -650,11 +615,11 @@ export default function TrendChart({
    */
   const renderMatchTimeline = () => {
     const width = lolliWidth;
-    const height = 148;
+    const height = reportMode ? workspaceHeight : 148;
     const padL = 34;
     const padR = 14;
     const padT = 26;
-    const lane = 28;
+    const lane = reportMode ? Math.max(28, (height - 88) / 2) : 28;
     const gap = 14;
     const span = width - padL - padR;
     const first = timeline.length ? timeline[0].move_number : 0;
@@ -671,7 +636,7 @@ export default function TrendChart({
     const showMark = (marked.run?.length ?? 0) >= 5;
 
     return (
-      <Box sx={{ bgcolor: 'background.default', borderRadius: 1, px: 0.5, py: 0.5 }}>
+      <Box sx={{ bgcolor: 'background.default', borderRadius: 1, minWidth: 0, height: reportMode ? '100%' : undefined }}>
         <svg
           ref={lolliRef}
           data-testid="trend-match-timeline"
@@ -729,7 +694,7 @@ export default function TrendChart({
                 y={12}
                 textAnchor="middle"
                 fill={theme.palette.warning.main}
-                fontSize="10.5"
+                fontSize={reportMode ? 12 : 11}
               >
                 {t('grade:match_longest_run', '{side} 第{from}–{to}手连续{n}手中一选')
                   .replace('{side}', marked.side === 'B' ? t('live:black', 'B') : t('live:white', 'W'))
@@ -739,19 +704,19 @@ export default function TrendChart({
               </text>
             </g>
           )}
-          <text x={padL - 2} y={height - 4} fill="#8b8885" fontSize="10.5">{first}</text>
-          <text x={width - padR} y={height - 4} textAnchor="end" fill="#8b8885" fontSize="10.5">{last}</text>
+          <text x={padL - 2} y={height - 4} fill="#8b8885" fontSize={reportMode ? 12 : 11}>{first}</text>
+          <text x={width - padR} y={height - 4} textAnchor="end" fill="#8b8885" fontSize={reportMode ? 12 : 11}>{last}</text>
           <text
             x={(padL + width - padR) / 2}
             y={height - 4}
             textAnchor="middle"
-            fill={theme.palette.text.disabled}
-            fontSize="10"
+            fill={theme.palette.text.secondary}
+            fontSize={reportMode ? 12 : 11}
           >
             {t('grade:axis_move_number', '手数')}
           </text>
         </svg>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', pt: 0.75, lineHeight: 1.7 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: reportMode ? 'none' : 'block', pt: 0.75, lineHeight: 1.7 }}>
           {t('grade:match_timeline_legend', '满格实色 = 走中一选，半高浅色 = 进前三，底色 = 其他')}
         </Typography>
       </Box>
@@ -782,18 +747,19 @@ export default function TrendChart({
     if (items.length === 0) return null;
     const width = lolliWidth;
     // 缩放比现在恒为 1（viewBox 宽 == CSS 宽），所以这个数就是屏上的像素高。
-    const height = 196;
-    const padL = 30;
-    const padR = 14;
+    const height = reportMode ? workspaceHeight : 196;
+    const padL = 40;
+    const padR = 24;
     const mid = height / 2;
-    const arm = mid - 30;
+    const arm = mid - 44;
     const span = Math.max(1, totalMoves);
-    const maxMag = fixedMax ?? Math.max(...items.map((a) => Math.max(0, magnitude(a))), 1e-6);
+    const maxMag = fixedMax ?? Math.max(3, Math.ceil(Math.max(...items.map((a) => Math.max(0, magnitude(a)))) / 3) * 3);
     const xOf = (n: number) => padL + (Math.max(0, Math.min(span, n)) / span) * (width - padL - padR);
-    const labelled: number[] = [];
+    const points = items.map(a => ({ x: xOf(a.move_number), y: mid + (a.player === 'B' ? -1 : 1) * Math.max(0, magnitude(a)) / maxMag * arm, label: String(a.move_number), black: a.player === 'B' }));
+    const labels = placeChartLabels(points, { left: padL, right: width - 4, top: 28, bottom: height - 20 });
 
     return (
-      <Box sx={{ bgcolor: 'background.default', borderRadius: 1, px: 0.5, py: 0.5, mb: 1 }}>
+      <Box sx={{ bgcolor: 'background.default', borderRadius: 1, minWidth: 0, height: reportMode ? '100%' : undefined }}>
         <svg
           ref={lolliRef}
           data-testid="trend-lollipop-chart"
@@ -804,11 +770,11 @@ export default function TrendChart({
           role="img"
           aria-label={`${axisLabel}${t('grade:axis_aria', '，黑方在轴上方、白方在下方，横轴是手数')}`}
         >
-          {/* 纵向参考线：让「哪一段密集」不用数格子就看得出。 */}
-          {[1, 2, 3, 4].map((g) => {
-            const gx = padL + ((width - padL - padR) * g) / 5;
-            return <line key={g} x1={gx} y1={mid - arm} x2={gx} y2={mid + arm} stroke="rgba(255,255,255,0.045)" />;
-          })}
+          {(fixedMax ? [1, 3, 5] : [maxMag / 3, maxMag * 2 / 3, maxMag]).flatMap(value => [-1, 1].map(sign => {
+            const y = mid + sign * value / maxMag * arm;
+            return <g key={`${value}:${sign}`}><line x1={padL} y1={y} x2={width - padR} y2={y} stroke="rgba(255,255,255,0.08)" />
+              <text x={padL - 6} y={y + 4} textAnchor="end" fontSize={12} fill={theme.palette.text.secondary}>{value}</text></g>;
+          }))}
           <line x1={padL} y1={mid} x2={width - padR} y2={mid} stroke="rgba(255,255,255,0.30)" />
           {currentMove > 0 && (
             <>
@@ -820,44 +786,35 @@ export default function TrendChart({
                 stroke="rgba(255,255,255,0.38)"
                 strokeDasharray="3 3"
               />
-              <text x={xOf(currentMove)} y={11} textAnchor="middle" fill={theme.palette.text.secondary} fontSize="10">
+              <text x={reportMode ? width / 2 : xOf(currentMove)} y={11} textAnchor="middle" fill={theme.palette.text.secondary} fontSize={reportMode ? 12 : 11}>
                 {t('live:move_number', 'Move')} {currentMove}
               </text>
             </>
           )}
-          {/* 轴两端的黑白标注：棋子 + 字，不靠图例。 */}
-          <StoneCircle cx={11} cy={mid - arm + 4} r={6} black />
-          <text x={21} y={mid - arm + 8} fill={theme.palette.text.secondary} fontSize="11">
-            {t('live:black', 'B')}
-          </text>
-          <StoneCircle cx={11} cy={mid + arm - 4} r={6} black={false} />
-          <text x={21} y={mid + arm} fill={theme.palette.text.secondary} fontSize="11">
-            {t('live:white', 'W')}
-          </text>
-          {/* 纵轴说得出自己度量的是什么，以及量程上限。 */}
-          <text x={width - padR} y={mid - arm - 4} textAnchor="end" fill={theme.palette.text.disabled} fontSize="10">
-            {axisLabel}
-          </text>
-          {items.map((a) => {
+          <StoneCircle cx={padL + 5} cy={22} r={5} black />
+          <text x={padL + 16} y={26} fill={theme.palette.text.secondary} fontSize={12}>{t('review:black', '黑')}</text>
+          <StoneCircle cx={padL + 5} cy={height - 24} r={5} black={false} />
+          <text x={padL + 16} y={height - 20} fill={theme.palette.text.secondary} fontSize={12}>{t('review:white', '白')}</text>
+          <text x={width - padR} y={26} textAnchor="end" fill={theme.palette.text.secondary} fontSize={12}>{axisLabel}</text>
+          {items.map((a, index) => {
             const color = colorOf(a);
             const len = (Math.max(0, magnitude(a)) / maxMag) * arm;
             const x = xOf(a.move_number);
             const isBlack = a.player === 'B';
             const tipY = isBlack ? mid - len : mid + len;
-            const showLabel = labelled.every((lx) => Math.abs(lx - x) >= 26);
-            if (showLabel) labelled.push(x);
+            const label = labels[index];
             return (
               <g key={a.move_number} style={{ cursor: onMoveClick ? 'pointer' : 'default' }}>
                 <title>{tipText(a)}</title>
                 <line x1={x} y1={mid} x2={x} y2={tipY} stroke={color} strokeWidth="2.2" strokeOpacity="0.72" />
                 <circle cx={x} cy={tipY} r="5.5" fill={stoneFill(isBlack)} stroke={stoneRim(isBlack)} strokeWidth="1.6" />
-                {showLabel && (
+                {label && (
                   <text
-                    x={x}
-                    y={isBlack ? tipY - 10 : tipY + 16}
+                    x={label.x}
+                    y={label.y}
                     textAnchor="middle"
-                    fill="rgba(255,255,255,0.55)"
-                    fontSize="10"
+                    fill={theme.palette.text.secondary}
+                    fontSize={reportMode ? 12 : 11}
                   >
                     {a.move_number}
                   </text>
@@ -867,16 +824,16 @@ export default function TrendChart({
             );
           })}
           {/* 横轴：左端 0、右端**这盘棋的总手数**（Fan 明确要求），中间写单位。 */}
-          <text x={padL - 2} y={height - 4} fill="#8b8885" fontSize="10.5">0</text>
-          <text x={width - padR} y={height - 4} textAnchor="end" fill="#8b8885" fontSize="10.5">
+          <text x={padL - 2} y={height - 4} fill="#8b8885" fontSize={reportMode ? 12 : 11}>0</text>
+          <text x={width - padR} y={height - 4} textAnchor="end" fill="#8b8885" fontSize={reportMode ? 12 : 11}>
             {totalMoves}
           </text>
           <text
             x={(padL + width - padR) / 2}
             y={height - 4}
             textAnchor="middle"
-            fill={theme.palette.text.disabled}
-            fontSize="10"
+            fill={theme.palette.text.secondary}
+            fontSize={reportMode ? 12 : 11}
           >
             {t('grade:axis_move_number', '手数')}
           </text>
@@ -885,8 +842,43 @@ export default function TrendChart({
     );
   };
 
+  const reportTabs: { id: AnalysisTab; label: string }[] = [
+    { id: 'trend', label: t('live:trend_chart', '走势') },
+    { id: 'brilliant', label: t('live:brilliant', '妙手') },
+    { id: 'mistake', label: t('live:mistakes', '失误') },
+    { id: 'perf', label: t('grade:performance', '发挥水准') },
+    { id: 'match', label: t('grade:match_rate', 'AI吻合度') },
+  ];
+  if (reportMode) return <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+    <Box className="report-chart-tabs" role="tablist" aria-label={t('grade:tabs', '着手评价')} sx={{ display: 'flex', flexShrink: 0, borderBottom: 1, borderColor: 'divider', height: 44,
+      '& .chart-tab-help--inactive': { '@container board-rail (max-width: 560px)': { display: 'none' } } }}>
+      {reportTabs.map((item, index) => <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '1 1 auto', minWidth: 0, borderBottom: tab === index ? '2px solid' : '2px solid transparent', borderColor: tab === index ? 'primary.light' : 'transparent', color: tab === index ? 'primary.light' : 'text.secondary' }}>
+        <Box component="button" role="tab" aria-selected={tab === index} onClick={() => setTab(index)} sx={{ border: 0, bgcolor: 'transparent', color: 'inherit', fontFamily: 'inherit', fontSize: 14, px: '2px', minWidth: 44, height: 44, whiteSpace: 'nowrap', flex: '0 1 auto', cursor: 'pointer', '@container board-rail (min-width: 560px)': { fontSize: 16 } }}>{item.label}</Box>
+        <ChartTabHelp label={item.label} active={tab === index}><AnalysisHelpContent tab={item.id} selection={item.id === 'brilliant' ? brilliants : bads} histogram={histogram} matchRate={matchRate} /></ChartTabHelp>
+      </Box>)}
+    </Box>
+    <Box sx={{ display: 'grid', gridTemplateColumns: tab === 0 ? 'minmax(0,1fr)' : '64px minmax(0,1fr)', gap: 1, p: 1, flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      {tab !== 0 && <Box sx={{ minHeight: 0, overflowY: 'auto' }}>{tab === 4 ? <Stack spacing={1}>
+        <Segmented vertical options={PHASE_OPTIONS} value={phase} onChange={setPhase} ariaLabel={t('grade:filter_phase', '阶段')} />
+        <Segmented vertical options={MATCH_VIEW_OPTIONS} value={matchView} onChange={setMatchView} ariaLabel={t('grade:filter_match_view', '视图')} />
+      </Stack> : filterBar(tab === 1 || tab === 2)}</Box>}
+      <Box ref={workspaceRef} data-testid="report-chart-workspace" sx={{ minWidth: 0, minHeight: 0, overflow: 'hidden', '& svg': { display: 'block' } }}>
+        {tab === 0 && <><Box sx={{ height: 34, display: 'flex', justifyContent: 'space-between', fontSize: 14, gap: 1 }}>
+          <span style={{ color: '#8fdfad' }}>{t('live:black_winrate', '黑方胜率')} {currentWinrate == null ? '—' : `${currentWinrate.toFixed(1)}%`}</span>
+          <span style={{ color: '#ffb74d' }}>{t('live:black_lead', '黑方领先')} {currentScoreLead == null ? '—' : `${currentScoreLead >= 0 ? '+' : ''}${currentScoreLead.toFixed(1)}`}</span>
+        </Box><Box sx={{ bgcolor: 'background.default', borderRadius: 1 }}>{renderDualChart()}</Box></>}
+        {tab === 1 && (brilliants.shown.length ? renderLollipop(brilliants.shown, a => a.brilliance ?? 1, () => GRADE_BY_ID.brilliant.color,
+          t('grade:axis_brilliance', '妙度 1–5'), a => `${a.move_number} · ${sideLabel(a)} · ${t('grade:brilliance', '妙度')} ${a.brilliance ?? 1}`, BRILLIANCE_MAX) : <Typography>{t('live:no_brilliant', '暂无妙手')}</Typography>)}
+        {tab === 2 && (bads.shown.length ? renderLollipop(bads.shown, badnessRank, a => GRADE_BY_ID[(a.grade as GradeId) ?? 'unrated']?.color ?? '#888',
+          t('grade:axis_points_lost_short', '目损 · 目'), a => `${a.move_number} · ${sideLabel(a)} · ${tierLabel(a)} · ${badnessRank(a).toFixed(1)}`) : <Typography>{t('live:no_mistakes', '暂无失误')}</Typography>)}
+        {tab === 3 && (histogram.blackTotal + histogram.whiteTotal > 0 ? renderHistogram() : <Typography>{t('grade:no_rated_moves', '本阶段没有已评级的着手')}</Typography>)}
+        {tab === 4 && (matchRate.blackDecided + matchRate.whiteDecided > 0 ? matchView === 'stats' ? renderMatchStats() : renderMatchTimeline() : <Typography>{t('grade:match_no_data', '本阶段还没有可比对的着手')}</Typography>)}
+      </Box>
+    </Box>
+  </Box>;
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       {/* 五个 tab：**不带括号计数、等宽、左对齐**（Fan 2026-09-01）。
           去掉计数的理由不只是整齐 —— 计数会随阶段/棋手筛选变，标签跟着变宽，
           整条 tab 会在用户点筛选时抖动。数量改到各 tab 自己的说明行里报。
@@ -900,8 +892,8 @@ export default function TrendChart({
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}
-        variant="scrollable"
-        scrollButtons="auto"
+        variant={reportMode ? 'standard' : 'scrollable'}
+        scrollButtons={reportMode ? false : 'auto'}
         allowScrollButtonsMobile
         sx={{
           borderBottom: 1,
@@ -911,7 +903,8 @@ export default function TrendChart({
           bgcolor: 'background.paper',
           '& .MuiTab-root': {
             minHeight: 40,
-            minWidth: 88,
+            minWidth: reportMode ? 0 : 88,
+            ...(reportMode ? { flex: '1 1 auto' } : {}),
             py: 0,
             px: 0.5,
             fontSize: '0.84rem',
@@ -928,19 +921,19 @@ export default function TrendChart({
       </Tabs>
 
       {/* Scrollable content area */}
-      <Box sx={{ px: 1.5, py: 1, flex: 1, overflow: 'auto' }}>
+      <Box sx={{ px: 1.5, py: 1, flex: 1, minHeight: 0, overflow: 'auto' }}>
         {tab === 0 && (
-          <Box>
+          <Box sx={reportMode ? { height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' } : undefined}>
             {/* Values display above chart */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, px: 0.5 }}>
               <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 600 }}>
-                {t('live:black_winrate', 'Black Winrate')}: {currentWinrate.toFixed(1)}%
+                {t('live:black_winrate', 'Black Winrate')}: {currentWinrate == null ? '—' : `${currentWinrate.toFixed(1)}%`}
               </Typography>
               <Typography variant="body2" sx={{ color: '#ff9800', fontWeight: 600 }}>
-                {t('live:black_lead', 'Black Lead')}: {currentScoreLead >= 0 ? '+' : ''}{currentScoreLead.toFixed(1)} {t('live:points_unit', 'pts')}
+                {t('live:black_lead', 'Black Lead')}: {currentScoreLead == null ? '—' : `${currentScoreLead >= 0 ? '+' : ''}${currentScoreLead.toFixed(1)}`} {t('live:points_unit', 'pts')}
               </Typography>
             </Box>
-            <Box sx={{ bgcolor: 'background.default', borderRadius: 1, p: 0.5 }}>
+            <Box ref={workspaceRef} sx={{ bgcolor: 'background.default', borderRadius: 1, p: 0.5, ...(reportMode ? { flex: 1, minHeight: 0 } : {}) }}>
               {renderDualChart()}
             </Box>
           </Box>
@@ -1032,15 +1025,17 @@ export default function TrendChart({
             {/* AI 一致率：实战手与引擎候选表的重合程度。三行**各有各的分母** ——
                 「一选」在报告链路用服务端的 is_top_move、直播链路退回上一手 top_moves[0]；
                 「前三」「不在前十选」只能靠上一手的候选表算，判不了的手不进分母。 */}
-            <Stack direction="row" sx={{ mb: 1.5, flexWrap: 'wrap', gap: 1, justifyContent: 'space-between' }}>
+            <Stack direction={reportMode ? "column" : "row"} sx={{ mb: reportMode ? 0 : 1.5, flexWrap: 'wrap', gap: 1, justifyContent: 'space-between' }}>
               <Segmented
-                options={PHASE_OPTIONS}
+                vertical={reportMode}
+        options={PHASE_OPTIONS}
                 value={phase}
                 onChange={setPhase}
                 ariaLabel={t('grade:filter_phase', '阶段')}
               />
               <Segmented
-                options={MATCH_VIEW_OPTIONS}
+                vertical={reportMode}
+        options={MATCH_VIEW_OPTIONS}
                 value={matchView}
                 onChange={setMatchView}
                 ariaLabel={t('grade:filter_match_view', '视图')}

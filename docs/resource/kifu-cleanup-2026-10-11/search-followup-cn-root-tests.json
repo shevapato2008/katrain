@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "observed_at": "2026-10-11T16:49:51.624004+00:00",
+  "tests": 5,
+  "result": "5 passed in 1.06s",
+  "purpose": "strict and non-strict CN/EN canonical plus raw searches and canonical-only searches exclude unrelated provisional results; shared-player/raw-event behavior remains",
+  "files_sha256": {
+    "katrain/web/api/v1/endpoints/kifu.py": "e4415009ee320dacd1f80446d24204282644d4dad4e7914e9508dfc9101a92f9",
+    "tests/web_ui/test_kifu_name_first_pass.py": "ebc8c0313c51037a1cf7418ecbaf4ab17617670c1afeec6eeaef4ee991e13d7b"
+  }
+}

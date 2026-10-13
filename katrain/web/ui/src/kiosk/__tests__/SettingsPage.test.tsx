@@ -67,10 +67,10 @@ vi.mock('../context/GeometryContext', () => ({
 }));
 
 // 「关于」那一组的唯一数据来源是 `/api/v1/health`(`API.engineHealth`)—— 响应是**输入**,每条用例自己造。
-const health = vi.hoisted(() => ({ engineHealth: vi.fn() }));
+const health = vi.hoisted(() => ({ engineHealth: vi.fn(), platformStatus: vi.fn() }));
 vi.mock('../../api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api')>();
-  return { ...actual, API: { ...actual.API, engineHealth: health.engineHealth } };
+  return { ...actual, API: { ...actual.API, engineHealth: health.engineHealth, platformStatus: health.platformStatus } };
 });
 const mockHealth = (body: unknown) => health.engineHealth.mockResolvedValue(body);
 
@@ -96,6 +96,9 @@ const renderPage = () =>
 describe('屏 27 设置 · 分组与导航', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    health.platformStatus.mockResolvedValue({ platforms: [
+      { platform: 'ogs', connected: false }, { platform: 'golaxy', connected: false },
+    ] });
     mockGeometry({ loaded: true });
     mockHealth({ status: 'ok', engines: { local: 'reachable', cloud: 'unconfigured' } });
   });
@@ -149,19 +152,24 @@ describe('屏 27 设置 · 分组与导航', () => {
 describe('屏 27 设置 · 每一组的内容都是真的', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    health.platformStatus.mockResolvedValue({ platforms: [
+      { platform: 'ogs', connected: false }, { platform: 'golaxy', connected: false },
+    ] });
     mockGeometry({ loaded: true });
     mockHealth({ status: 'ok', engines: { local: 'reachable', cloud: 'unconfigured' } });
   });
 
   // 上一版那四张平台卡是 `pointer-events:none` 的死装饰,而且列的是
   // 99围棋/野狐/腾讯/新浪 —— **和真正能连的三家对不上**。
-  it('平台那一行念的是真能连的三家,并且点得动', () => {
+  it('平台账号来自真实状态，并从对弈首页选择连接', async () => {
     renderPage();
-    expect(screen.getByText(/OGS · 野狐围棋 · 星阵围棋/)).toBeInTheDocument();
+    expect(screen.getByText('跨平台账号')).toBeInTheDocument();
+    expect(await screen.findByTestId('platform-account-ogs')).toHaveTextContent('未连接');
+    expect(screen.getByTestId('platform-account-golaxy')).toHaveTextContent('未连接');
     expect(screen.queryByText(/99围棋/)).toBeNull();
     expect(screen.queryByText(/腾讯围棋/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '去连接' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play');
   });
 
   it('实体棋盘那一组给的是真读数和一条去标定的路', () => {
@@ -185,7 +193,7 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     renderPage();
     expect(screen.getByTestId('settings-cap-camera')).toHaveTextContent('已连接');
     expect(screen.getByTestId('settings-cap-calib')).toHaveTextContent('已标定');
-    expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('串口已连接');
+    expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('已连接');
     expect(screen.queryByText(/就绪/)).toBeNull();
   });
 
@@ -193,29 +201,43 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
   it('还没问到状态时三格写「—」,不冒充「未连接」,也不给灯色', () => {
     mockGeometry({ loaded: false });
     renderPage();
-    for (const key of ['camera', 'calib', 'led']) {
+    for (const key of ['camera', 'calib']) {
       const cell = screen.getByTestId(`settings-cap-${key}`);
       expect(cell).toHaveTextContent('—');
       expect(cell.querySelector('.kiosk-tag--win')).toBeNull();
     }
+    expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('未确认');
     expect(screen.queryByText('未连接')).toBeNull();
     expect(screen.queryByText('还没标定')).toBeNull();
   });
 
   // 404 ⇒ `phase='disabled'`:这台盒子没起采集服务。把人送进标定屏再让那屏的空态弹回来,
   // 是多一跳而且那一跳没有解释。
-  it('这台盒子没有摄像头时,标定入口不可点并写明原因,三格是「—」', () => {
-    mockGeometry({ loaded: true, status: { phase: 'disabled' } });
+  it('这台盒子没有摄像头时,标定入口不可点且LED仍独立显示真实状态', () => {
+    mockGeometry({ loaded: true, status: {
+      phase: 'disabled', capabilities: { camera_ready: false, led_ready: true, geometry_ready: false },
+    } });
     renderPage();
     const btn = screen.getByRole('button', { name: '开始标定' });
     expect(btn).toBeDisabled();
     expect(screen.getByTestId('settings-no-camera')).toHaveTextContent('这台盒子没有配摄像头');
     fireEvent.click(btn);
     expect(mockNavigate).not.toHaveBeenCalled();
-    for (const key of ['camera', 'calib', 'led']) {
+    for (const key of ['camera', 'calib']) {
       expect(screen.getByTestId(`settings-cap-${key}`)).toHaveTextContent('—');
     }
+    expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('已连接');
     expect(screen.queryByText('未连接')).toBeNull();
+  });
+
+  it.each([false, null])('Board A=%s时设置不显示绿色已连接', (ledReady) => {
+    mockGeometry({ loaded: true, status: {
+      phase: 'disabled', capabilities: { camera_ready: false, led_ready: ledReady, geometry_ready: false },
+    } });
+    renderPage();
+    const cell = screen.getByTestId('settings-cap-led');
+    expect(cell).toHaveTextContent(ledReady === false ? '未连接' : '未确认');
+    expect(cell.querySelector('.kiosk-tag--win')).toBeNull();
   });
 
   // 今天的行为不许退化。

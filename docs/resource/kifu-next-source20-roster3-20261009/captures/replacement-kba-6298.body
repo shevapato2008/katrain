@@ -1,0 +1,128 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>한국기원</title>
+	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/css/common.css" type="text/css" rel="stylesheet" />
+	<link href="/css/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/js/common.js"></script>
+	<script language="javascript" src="/js/prototype.js"></script>
+</head>
+
+
+<form method="post" name="s1">
+<input type="hidden" name="S_sort_mode" value="A">
+<input type="hidden" name="prpl_code">
+
+<ul class="sortMode">
+	<li class="on"><button type="button" onclick="pageMove_search4('2','천자','','A')">✔가나다순</button></li>
+	<li ><button type="button" onclick="pageMove_search4('2','천자','','R')">✔서열순</button></li>
+</ul>                                                
+<div class="searchOptions frt">
+	<div class="select">
+		<select name="S_nation">
+			<option value="ALL" >구분</option>
+			
+				<option value="1" >한국</option>
+			
+				<option value="2"  selected >중국</option>
+			
+				<option value="3" >일본</option>
+			
+				<option value="4" >대만</option>
+			
+				<option value="6" >북미/유럽</option>
+			
+				<option value="7" >은퇴</option>
+			
+		</select>
+	</div>
+	<div class="select bdlt_no">
+		<select name="S_ob_forc">
+			<option value=""  selected >단</option>
+			
+				<option value="9" >9단</option>
+			
+				<option value="8" >8단</option>
+			
+				<option value="7" >7단</option>
+			
+				<option value="6" >6단</option>
+			
+				<option value="5" >5단</option>
+			
+				<option value="4" >4단</option>
+			
+				<option value="3" >3단</option>
+			
+				<option value="2" >2단</option>
+			
+				<option value="1" >1단</option>
+			
+		</select>
+	</div>                                                             	
+	<input type="text" placeholder="기사명" class="player" name="S_prpl_name" value="천자" >
+	<button type="button" class="search" onclick="pageMove_search4(S_nation.value, S_prpl_name.value, S_ob_forc.value, 'A')">검색</button>
+</div>
+</form>
+
+<div class="recordTab">
+	<ul>
+		<li><button type="button"  onclick="pageMove_search4('1','천자','','A')">한국</button></li>
+		<li><button type="button" class="on" onclick="pageMove_search4('2','천자','','A')">중국</button></li>
+		<li><button type="button"  onclick="pageMove_search4('3','천자','','A')">일본</button></li>
+		<li><button type="button"  onclick="pageMove_search4('4','천자','','A')">대만</button></li>
+		<!--<li><button type="button"  onclick="pageMove_search4('5','천자','','A')">기타</button></li>-->
+		<li><button type="button"  onclick="pageMove_search4('6','천자','','A')">북미/유럽</button></li>
+		<li><button type="button"  onclick="pageMove_search4('7','천자','','A')">은퇴</button></li>
+	</ul>
+</div>
+
+
+	<div class="playerArea">
+		<ul>
+			
+			<li class="lvList">
+				<div class="lv">
+					<dl>
+						<dt><span>6</span>段</dt>
+						<dd id="cnt6"></dd>
+					</dl>
+				</div>
+				<div class="players">
+					<ul>
+						
+							<li><a onclick="viewPage_player('20002403')">천자루이(瑞)</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt6.innerHTML = "1명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>1</span>段</dt>
+												<dd id="cnt1"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20002021')">천자오펑</a></li>
+							
+						<script>document.all.cnt1.innerHTML = "1명"</script>
+					</ul>
+				</div>
+			</li>
+		</ul>
+	</div>
+
+
+<script>
+	document.all.search_loading.style.display = 'none';
+</script>
+
+

@@ -1958,6 +1958,17 @@ class LadderStrategy(AIStrategy):
         return (move, _ladder_thought_label(rung))
 
 
+def generate_ladder_candidate(game: Game, rung: int) -> tuple[GameNode, Move, str]:
+    """Generate a certified ladder move without touching the game tree.
+
+    The caller must validate the captured node and reservation under its commit
+    lock before playing the candidate.
+    """
+    node = game.current_node
+    move, thoughts = LadderStrategy(game, {"rung": rung}).generate_move()
+    return node, move, thoughts
+
+
 def generate_ai_move(game: Game, ai_mode: str, ai_settings: Dict) -> Optional[Tuple[Move, GameNode]]:
     """
     Generate a move using the selected AI strategy.

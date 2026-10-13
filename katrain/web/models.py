@@ -9,6 +9,23 @@ class MoveRequest(BaseModel):
     pass_move: bool = False
 
 
+class LocalConfirmRequest(BaseModel):
+    session_id: str
+    expected_game_id: str
+    expected_node_id: int
+    color: Literal["B", "W"]
+    request_id: str = Field(min_length=1, max_length=128)
+    input: Literal["screen", "physical"]
+    action: Literal["move", "pass"]
+    coords: Optional[List[int]] = Field(default=None, min_length=2, max_length=2)
+
+
+class LocalReadyRequest(BaseModel):
+    session_id: str
+    expected_game_id: str
+    input: Literal["screen", "physical"]
+
+
 class UndoRedoRequest(BaseModel):
     session_id: str
     n_times: Union[int, str] = 1
@@ -215,6 +232,9 @@ class OnlineUser(BaseModel):
     rank: str = "20k"
     elo_points: int = 0
     avatar_url: Optional[str] = None
+    ladder_rung: Optional[int] = None
+    rank_label: Optional[str] = None
+    presence: str = "idle"
 
 
 class UserInDB(User):

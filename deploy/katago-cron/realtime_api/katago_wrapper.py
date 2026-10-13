@@ -1,0 +1,197 @@
+import asyncio
+import json
+import logging
+import os
+import uuid
+from typing import Dict, Any, Optional, List
+
+logger = logging.getLogger(__name__)
+
+
+def merge_ld_library_path(env: Dict[str, str], ld_library_paths: List[str]) -> None:
+    if not ld_library_paths:
+        return
+
+    current_ld = env.get('LD_LIBRARY_PATH', '')
+    merged_paths = []
+    for path in ld_library_paths + (current_ld.split(':') if current_ld else []):
+        if path and path not in merged_paths:
+            merged_paths.append(path)
+
+    env['LD_LIBRARY_PATH'] = ':'.join(merged_paths)
+
+
+class KataGoWrapper:
+    def __init__(
+        self,
+        katago_path: str,
+        config_path: str,
+        model_path: str,
+        human_model_path: Optional[str] = None,
+        additional_args: Optional[List[str]] = None,
+        ld_library_paths: Optional[List[str]] = None,
+    ):
+        self.katago_path = katago_path
+        self.config_path = config_path
+        self.model_path = model_path
+        self.human_model_path = human_model_path
+        self.model_sha256: Optional[str] = None
+        self.model_sha256_verified = False
+        self.human_model_sha256: Optional[str] = None
+        self.human_model_sha256_verified = False
+        self.additional_args = additional_args or []
+        self.ld_library_paths = ld_library_paths or []
+        self.process: Optional[asyncio.subprocess.Process] = None
+        self.pending_requests: Dict[str, asyncio.Future] = {}
+        self.running = False
+        self.read_task: Optional[asyncio.Task] = None
+
+    @property
+    def has_human_model(self) -> bool:
+        return bool(self.human_model_path)
+
+    async def start(self):
+        if self.process:
+            return
+
+        env = os.environ.copy()
+        self._merge_ld_library_path(env)
+
+        cmd = [
+            self.katago_path,
+            'analysis',
+            '-config', self.config_path,
+            '-model', self.model_path,
+        ]
+        
+        if self.human_model_path:
+            cmd.extend(['-human-model', self.human_model_path])
+            
+        cmd.extend(self.additional_args)
+        
+        logger.info(f'Starting KataGo: {" ".join(cmd)}')
+
+        ld_library_path = env.get('LD_LIBRARY_PATH')
+        if ld_library_path:
+            logger.info(f'Using LD_LIBRARY_PATH for KataGo: {ld_library_path}')
+        else:
+            logger.warning('LD_LIBRARY_PATH is not set; backend runtime libraries may fail to load')
+        
+        try:
+            self.process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env
+            )
+            # INCREASE BUFFER LIMIT for stdout to support large analysis payloads
+            if self.process.stdout:
+                self.process.stdout._limit = 256 * 1024  # 256KB limit
+
+            self.running = True
+            self.read_task = asyncio.create_task(self._read_loop())
+            asyncio.create_task(self._log_stderr())
+        except Exception as e:
+            logger.error(f'Failed to start KataGo: {e}')
+            raise
+
+    async def stop(self):
+        self.running = False
+        if self.process:
+            try:
+                self.process.terminate()
+                await self.process.wait()
+            except ProcessLookupError:
+                pass
+            self.process = None
+        
+        # Cancel pending requests
+        for future in self.pending_requests.values():
+            if not future.done():
+                future.cancel()
+        self.pending_requests.clear()
+
+    async def query(self, query_data: Dict[str, Any], timeout: float = 600.0) -> Dict[str, Any]:
+        if not self.process or self.process.returncode is not None:
+            # If process crashed or hasn't started, try to start it
+            await self.start()
+
+        query_id = query_data.get('id')
+        if not query_id:
+            query_id = str(uuid.uuid4())
+            query_data['id'] = query_id
+
+        future = asyncio.get_running_loop().create_future()
+        self.pending_requests[query_id] = future
+
+        # Filter out fields that KataGo C++ engine does not understand
+        safe_query_data = {
+            k: v for k, v in query_data.items()
+            if k not in ('gameId', 'userId', '_wrapper')
+        }
+        override = safe_query_data.get('overrideSettings')
+        if isinstance(override, dict) and 'model' in override:
+            safe_query_data['overrideSettings'] = {
+                key: value for key, value in override.items() if key != 'model'
+            }
+
+        try:
+            json_str = json.dumps(safe_query_data) + '\n'
+            self.process.stdin.write(json_str.encode())
+            await self.process.stdin.drain()
+            return await asyncio.wait_for(future, timeout=timeout)
+        except asyncio.TimeoutError:
+            logger.warning(f"Query {query_id} timed out after {timeout}s")
+            if query_id in self.pending_requests:
+                del self.pending_requests[query_id]
+            raise TimeoutError(f"KataGo query timed out after {timeout}s")
+        except Exception as e:
+            if query_id in self.pending_requests:
+                del self.pending_requests[query_id]
+            raise e
+
+    async def _read_loop(self):
+        while self.running and self.process:
+            try:
+                line = await self.process.stdout.readline()
+                if not line:
+                    break
+                line_str = line.decode().strip()
+                if not line_str:
+                    continue
+                
+                try:
+                    response = json.loads(line_str)
+                    req_id = response.get('id')
+                    if req_id and req_id in self.pending_requests:
+                        future = self.pending_requests.pop(req_id)
+                        if not future.done():
+                            future.set_result(response)
+                except json.JSONDecodeError:
+                    logger.error(f'Failed to decode JSON: {line_str}')
+            except Exception as e:
+                logger.error(f'Error reading from KataGo: {e}')
+                break
+        
+        logger.warning('KataGo read loop exited')
+        # Fail all pending requests if process dies
+        for future in self.pending_requests.values():
+            if not future.done():
+                future.set_exception(RuntimeError('KataGo process terminated'))
+        self.pending_requests.clear()
+
+    async def _log_stderr(self):
+        while self.running and self.process:
+            try:
+                line = await self.process.stderr.readline()
+                if not line:
+                    break
+                # Only log if it looks like an error or explicit log
+                # For now just debug or ignore to avoid clutter
+                logger.info(f'KataGo Stderr: {line.decode().strip()}')
+            except:
+                break
+
+    def _merge_ld_library_path(self, env: Dict[str, str]) -> None:
+        merge_ld_library_path(env, self.ld_library_paths)

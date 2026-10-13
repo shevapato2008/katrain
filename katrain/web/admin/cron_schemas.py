@@ -5,8 +5,8 @@ from typing import Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 
-HealthState = Literal["offline", "disabled", "pending", "stuck", "running", "failed", "errors", "overdue", "ok"]
-RunStatus = Literal["running", "success", "errors", "failed"]
+HealthState = Literal["offline", "disabled", "paused", "pending", "stuck", "running", "failed", "errors", "overdue", "ok"]
+RunStatus = Literal["running", "success", "errors", "failed", "paused"]
 
 
 class CronHealthOut(BaseModel):
@@ -23,6 +23,17 @@ class CronLoopStatsOut(BaseModel):
     capacity: int = Field(ge=0)
     errors_total: int = Field(ge=0)
     last_error_at: AwareDatetime | None
+
+
+class CronCommandOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: int
+    state: Literal["pending", "done", "rejected"]
+    requested_at: AwareDatetime
+    requested_by: str
+    handled_at: AwareDatetime | None
+    note: str | None
 
 
 class CronJobOut(BaseModel):
@@ -44,6 +55,12 @@ class CronJobOut(BaseModel):
     consecutive_failures: int = Field(ge=0)
     loop_iteration_at: AwareDatetime | None
     loop_stats: CronLoopStatsOut | None
+    paused: bool = False
+    pause_reason: str | None = None
+    paused_by: str | None = None
+    paused_at: AwareDatetime | None = None
+    pending_run: CronCommandOut | None = None
+    last_command: CronCommandOut | None = None
 
 
 class CronJobsResponse(BaseModel):

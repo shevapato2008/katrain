@@ -50,7 +50,7 @@ export function testView(state: CronView['state']): CronView {
     list.health = { state: 'errors', reason: '最近一次运行出现 ERROR' }; list.last_status = 'errors'; list.consecutive_failures = 1; list.last_error = '赛事列表接口响应超时';
   }
   if (source === 'offline') shownJobs.forEach((job) => { job.health = { state: 'offline', reason: '最后心跳超过 120 秒' }; job.heartbeat_at = at('16:29:54'); });
-  const order: Record<CronHealth, number> = { failed: 0, errors: 1, offline: 0, stuck: 2, overdue: 3, running: 4, pending: 5, disabled: 6, ok: 7 };
+  const order: Record<CronHealth, number> = { failed: 0, errors: 1, offline: 0, stuck: 2, overdue: 3, paused: 4, running: 4, pending: 5, disabled: 6, ok: 7 };
   shownJobs.sort((a, b) => order[a.health.state] - order[b.health.state]);
   const runs = Object.fromEntries(shownJobs.map((job) => [job.name, makeRuns(job, ['analyze', 'report_analyze'].includes(job.name) ? 2 : job.name === 'poll_moves' ? 3 : ['cleanup', 'tutorial_backup'].includes(job.name) ? 14 : 200, source)]));
   return {

@@ -1,0 +1,5897 @@
+{
+  "status": "unsigned_postowner_name_binding",
+  "raw_owners": 122,
+  "proposed_name_cells": 610,
+  "current_games": 938,
+  "source_matrix_canonical_sha256": "d4a25340b2d2ac20ff138dd49c07f92ac726f882534e4dd5ad5de7ae88c8bab1",
+  "owner_manifest_canonical_sha256": "170cd67ab820c50575d7dd65cceb43bd300acb7f4a9ee596fcf553e6c2cc9747",
+  "postowner_capture_file_sha256": {
+    "TEST": "478e54e549e82c262acaea7f8eda3cd35a919dacdbd725d03d60c4a2757756cf",
+    "PROD": "0562cb99af9acd993901021a6a4d06484eaa72f2fad2104c7242bda24e1262f9"
+  },
+  "catalog_sha256": {
+    "TEST": "7b17a5440205ee895ef10afc87faa0b72ba18ad19544d013936ebcabd38662d0",
+    "PROD": "d872c53d390d15dd1cf9197704047ec910210b30f62a214e7d5d5a0611377b4d"
+  },
+  "inventory_sha256": {
+    "TEST": "f7a702fd82b79237f846f712ec62a3aeb8e66d55c08a47189f286e07f216c23c",
+    "PROD": "4f387112f2506f4714d9cf65d4d748bd4248eb1d6da01f4617c28dd0ff07f040"
+  },
+  "owner_afterimage_sha256": {
+    "TEST": {
+      "29thJapaneseTengen": "570ebcce4a8bc11024342c3aedb636ced5e42b78567c580c35f9857cabd1d80e",
+      "30thJapaneseTengen": "045ae342a30cc4c9a9f4a9aeff8a7a2ea3ffdd6b054a821d60aea7d1e1d727f0",
+      "31stJapaneseTengen": "bf399befcc88087f9c166db822c1aa629fbffc0e391b4fb06b4fba092f835055",
+      "Kukgi,11th": "63887d53da83f89f731c2f7bbeaf53713b98bd5c94348a1ba12255abcbcd98e7",
+      "Kukgi,12th": "bcaa580625ffc02cf50edea441ede4d7fde35483265e95e159d19823a316e974",
+      "Kiseong,1st": "eb4c8910e00f26c9d621813c53ae4c7a19e4faaf0eba3ef62659430f18c94008",
+      "Kiseong,2nd": "5cc3e127760ab6bfa2824ea80638bd7d6e35d1b0daebc8bddc0fa460037879f1",
+      "P'aewang,20th": "7004b54fcd0a4f0c033861a71a073a307711cac813282aa377fbfa1432f6ad3f",
+      "P'aewang,22nd": "40612179b7bff5c1d01e2e9e6a05358126218402b6cbceb7137b22cdfa1034e4",
+      "Kiseong,4th": "a533d09dc04bfdee168d6620be81d2e76a532d85e3bf9002d9ba7081c707f9c5",
+      "Kiseong,9th": "9c5572c6704ed19d8402f838bddcee9747ca447467ba2cea97e609ea814dda04",
+      "Kiseong,3rd": "ff6078429ef03a1c5c6f31c19d343e86ad0adfbd24d4a0f1d4dd5f3e9185a8b8",
+      "Kukgi,10th": "71922c3dfb422766ff280ae1f61419819c61b9798183580ee1dea00f4be698bc",
+      "Taewang,5th": "d7e3fa620644b9587dcc667eb70528ea9ff9802f802e3904ce05e8ba8f644d58",
+      "Kukgi,13th": "66192efcf937e692a257b97637987d8dab70dfe1aa8aced46dce8a8a88759ece",
+      "Kukgi,14th": "f309c636dbd68b300cd80f7c5b0342d8522c6a7d6e96a8406f41e787f4ab5b29",
+      "P'aewang,21st": "6172f76822281b50ad7cb0e7ed9942a811e802c60811dbfc077346ca1f1a3b17",
+      "32ndHayagoChampionship": "47fcbca5674b3327c43f95e4a5289ba1910ff73db24ef5a8f090da5495f0123a",
+      "Kiseong,6th": "2f388f97ed9beb5ccab7f8f1ac4fb85187026c9214759eff7c2ded4abd0a045a",
+      "21stHayagoChampionship": "ce5e0c1875c71ef97d32fdd73056dbef0a4336d564ebe94c0bbd370d3ef5f40d",
+      "BacchusCup,4th": "774afb51c69c8fba1dc0905272e319aae571c64a625b5a9d033c2ca5a2e501a9",
+      "NihonKi-inChampionship,14th": "ba2b7aa9b686c1771aa561c66db2dde45e4a0394557f7f2247560be5571e7b2c",
+      "10thTaewang": "d9dcb0a5723d4bae71d5850914b1074b301031b36580918c29bda45195b2d3b8",
+      "18thNECCup": "3883c7218095e928b403319f7d2c7606df5a7e0faa740f495af1805b2691ebfe",
+      "19thNECCup": "79a8f849645b363f604ea3a6e6bfd05e8bf8a4383f8fc125ef99e52fc476c08f",
+      "Kukgi,15th": "8cdc5367875d60c64bd8d39d18289c3971c5f81310c3e8844eec5ff458aeb7a0",
+      "15thTaewang": "a0ad519448d03b6755ddc9ee99a7d59ccdf6592b53dcced8a3240b5ec5963fbb",
+      "30thP'aewang": "0c55567407e9b0558766b7e58329bb2acbd6737209fd96009eb833220fe19833",
+      "Kiseong,7th": "4d0926d16d868f54b197d13dbfba0b9dbe3b02710f29dc371af0c6e69aa9f6dc",
+      "Kiseong,8th": "e869c60711f1b3544287bf03a94e1ebd82e20a53d7e8d0f94d2f1285534d811e",
+      "NihonKi-inChampionship,19th": "dd73f00a9fe471b4cc0314115f782e6f574d3432ab007c817822ae516bfa75c6",
+      "P'aewang,23rd": "06a1c713e4db3af4e2db51b989f0f74f7cee92ab84af58b46a283db0f7619c7c",
+      "31stHayagoChampionship": "e9fa7907b940ac0ad70882b98b8b5ed5f177e932a4641724a41384918ba76008",
+      "8thBacchusCup": "26fde44c9882e4d3b8970c8cdd413118f02a3b5a28b63d6f76e355583d024b2b",
+      "9thBacchusCup": "47b6a9523d7566feb037d69bc4055d44061bc16aebf32bb248958e93feefcbad",
+      "9thTaewang": "ed06cb97195a0ae6d9f77415922cebec7e8e29dabfa0b1f3e96898f3ecca5a08",
+      "BacchusCup,2nd": "a29f86762b41715fdeb0eac09d5c7b5b278776138532618a34a180715975767c",
+      "BacchusCup,3rd": "7e8ae25f5d9f549fdd9f9c3f241ea13de2f95247634525cea5136b6403e4652b",
+      "Ch'oegowi,27th": "372841da4fffcc1ddeff54de0ea3fad0cc6ab49c5f5c3253fe83d8e22f42bb8f",
+      "35thP'aewang": "5d16f160f4a9cf731b840d70360cc19eb61f520aba07dc528196b1661c4e8b99",
+      "Ch'oegowi,30th": "6e47cc29b689f797eeca8c1665ba87ae550af02bfab3b6fb84a762b3f357c98a",
+      "Kiseong,5th": "95ac68cb740e7702e9c15474db57d7c0b4664e96a5f36b7a5b11074c26b165e4",
+      "Kukgi,18th": "06a83c60a591f8a2b09f8bdfd26fa6dba000f784144b9c00656d6581fb7fce8f",
+      "NihonKi-inChampionship,10th": "30dec58c0bdc18c1b946d5a9b67b817786546ccb53965ea452e903ff1fd77bae",
+      "NihonKi-inChampionship,12th": "85eb838c456f27f05091e0fbb35e1a30f7944fac4412fde0a6dcbf483ff36182",
+      "NihonKi-inChampionship,17th": "010919dcb669e024f32ea5834234f5e4f34a2c6b6b31706abe49ee53a7f897e6",
+      "Taewang,4th": "846505f25b6f3218f6946edd2e16ec0803c7ee060bec9ee64bae893afdc8a64f",
+      "12thBacchusCup": "1be1d664d15afcc855dac5dc13f05a9e28f371b738cfe2757ca90e3102da8153",
+      "Ch'oegowi,25th": "44081604eee90510f334e18130ece56805dcfe62edc9e7c085c3e44c46d4b229",
+      "Ch'oegowi,26th": "ee414315927ea7d4613a46df128e572c8313c0c442b52147b26666332a9ce99f",
+      "NihonKi-inChampionship,15th": "f59a66352e42041c8e98af3eea7e17d7a357416f41b11fa252108035ccd03871",
+      "NihonKi-inChampionship,18th": "7ce9a96e333a6f6e3bb64b6208922837c6b4368105570b52c23b0a40f8ec2980",
+      "P'aewang,24th": "62e312edd6f298f17ef398887a51151828f59020e6c242b711bb8790fadc2659",
+      "16thNihonKi-inChampionship": "232ffea992ae7caabb40c4edc1b543d85800975037bb6d944509da2915dd6724",
+      "17thNECCup": "a29a38a0cf30f97da1b696970d1d6cae38dfb3002c105e4c7cf6d48dd964dec4",
+      "26thP'aewang": "16d0d6f868da71feabef2d7cc1a1dd7d89be5bfa1e03a3a9bb228171814d6d1c",
+      "31stCh'oegowi": "fcd208e6e825dc20b5afd27a91a62a5da386fd3cdd904093f5c298e60dfe4d7e",
+      "BacchusCup,5th": "bb7f5b8f05ce2681b56ecc702ecedefa8a912b6bd67d54357ebf2ede435ed3d4",
+      "Ch'oegowi,38th": "4f3536955d3c06217045379dee27e98a496690fc8a069898d0142a390dbf6161",
+      "NihonKi-inChampionship,13th": "a49f08264e16b4b21bc1f0054582038e87377ea1f2ef7a5bf406fafd83206fda",
+      "P'aewang,25th": "72dded76e5285b8923de2a2fc685d1a415b6a98a81b7999c3bfaa8652c6c4360",
+      "P'aewang,33rd": "6c2d53c50c4972434f4792f392bbc359da75596d32cc0f02a374ed99b982c83f",
+      "10thBacchusCup": "4fde86c3cc0da31df088313735e334bd27ed2000cd161c90065ed52e60525b90",
+      "11thTaewang": "a3e09ca2b09744aea481038e9e15a3118bc6b6a07c6a01fc9219bde872fdfcbb",
+      "15thNECCup": "b855aa54137cd05bb4453629a00df7f763497cb218d5f141f8c6c18320f5c04e",
+      "32ndCh'oegowi": "9f87303514e652a76e9094013cc11b488ab086eb49168864617413a70439151e",
+      "32ndP'aewang": "78e6bdac134bbbe60c1fdd3874ee373cb3fe8d1e4258949330ecaf62b9c16941",
+      "34thCh'oegowi": "828f9849ef6ac44e41436deaed7b0d97d947a521237d7411034df69d830cbe62",
+      "34thP'aewang": "7763c64fa384bfd13b3d7dfe7def0db8f9231a74663684d434093846ed614a7c",
+      "36thP'aewang": "ddc24a5aaaa6472dcc769fe35bf0caa6f2bdc3ca2a2c577496356f98c2babd19",
+      "37thCh'oegowi": "e64d0a1bfd7270fa9d36d341ec81dd846e7ff3b98068b155189a35fad804f27b",
+      "4thHayagoChampionship": "3cb6c4e00a476271128671f65b7f448abc1d0b2080942ac3cb4575dfa940680d",
+      "6thNihonKi-inChampionship": "8bda4d6ef32343f6f1e168fee5cccb0e20f349252207d2d8e1cd519e82956d7d",
+      "7thTaewang": "40acb9ebb248daae8c6a653cd179810ace02067dde861160a664f64fa3d8eb59",
+      "8thTaewang": "54c42a07609ad7b0c219d4cca272d114a80d74010b2b437c44892ac87df299e4",
+      "9thNihonKi-inChampionship": "14fb580b03b54ad8b61aea5c2c726ff523135168bdf05d6aebfde04557020844",
+      "BacchusCup,6th": "e467c1b8f64201063b75719a7e141acffe76259a59da857b6baca1ba63cef895",
+      "BacchusCup,7th": "0a74f360417a81592583d2d67a9bb3669fd48ab3ee298a77b1a2395249353a24",
+      "Ch'oegowi,29th": "b32e08ae03d256a3e185ef5fb0abb8bf10843cc1b9f2f7b679c30f623d8e9837",
+      "Kiseong,10th": "7f02ae030faa5a26a5224d843b836463e0a7c616552a6fc887bc5e296250f617",
+      "NihonKi-inChampionship,20th": "f3acf82369e3baa63c6b8dfac4b1d68d751d13704306362025a335216f2dbfd4",
+      "14thNECCup": "a018aabe147f093b20e366908e5997119390b71d2a720fe6469b6524dcccff17",
+      "16thNECCup": "5a235f6d311cb0e49a1ef22f628a786e286c0a464233cd638d31697b0b37703d",
+      "1stNihonKi-inChampionship": "8e6dde4621abd7ad3fc99da393f821cbc0e299005b07a38d49dbcce764e9ae67",
+      "20thNECCup": "4703bb4a5f37c703f6115bddfd7bb84a0a75260e946d45cf16171b62cefadcfc",
+      "31stP'aewang": "78c95c67fad9a2c2d76ddc398663b0a6e5dfe1d5d3071d71bff24ad3f3084fb3",
+      "3rdHayagoChampionship": "3c80143adad82d78289368a74bbddec60ebc5fee7163f5fb9e27b00c7c7d679a",
+      "5thHayagoChampionship": "e963b712a090909c2e352c3d3c610b6d1c8f4991210b6366f5d3cd2f41c4b87d",
+      "7thNihonKi-inChampionship": "60b9e35fadcb83d09011fc934fe4f2aba3f7ed6e259cade550400dec317dd25f",
+      "Kiseong,12th": "0a9f92384cc9999a65b524893cc0b05eba30e8477f343d1ea97c440708d663ed",
+      "NihonKi-inChampionship,11th": "c50b1a2aa3336e58f59420ef70e179d3fccef9863f003e8a40a96616c1627704",
+      "NihonKi-inChampionship,8th": "e9751536c29687ace60b6f263201f899d7a41cbc8d46f4580c12722fa8923235",
+      "Taewang,3rd": "d52e93ffd16283b313fd6144f6593305f2bc246c91728779f4108f46bf6910fe",
+      "13thTaewang": "6c25e7d3fcd527f3881dae511bedc5b5b1848daa286a3646b84cd8f5eb663d89",
+      "1stHayagoChampionship": "bccc9fb8706a9de6476d00a6c0b04fa06b8c098c69181b040abd19e2628b43b0",
+      "1stNECCup": "f0b201f186bf85cdade552b00c2b78a680b718ab4369cd5ad070a67b71f7ca95",
+      "27thP'aewang": "e3ce801fb37f86d7f7d6b1d8816ddaffad9e149597f7b87919bacafa72e94ae0",
+      "28thP'aewang": "63888a9ab813ed737a20d446555ef39ed8226e8f64556a13ca24e2d9b0048c30",
+      "2ndNECCup": "52339fd47ae11013dc60a39c3441e5a6b87059f8572dd7c5ba615f1bf9c60904",
+      "35thCh'oegowi": "2ad0eb21d34513d39e65840e5aa7e76c433df198e27e7d4e9212be2ff7038d77",
+      "6thNECCup": "7229878eeb99a99b004c0e98cd04f3c19e80034800d2a3bd1226f05e2375e184",
+      "7thHayagoChampionship": "dfd5039eaffb00eb7145aa7601c74328ea0e774d73911d39c2e8ed6890cb6f2c",
+      "8thHayagoChampionship": "a2eaeb8b3cef9c26c1bef057ffbb319dc6e772405121b6417bc629bf1a631fa1",
+      "Ch'oegowi,28th": "990018f40c74c3008100cecaaa08b0a86e0403db682ff14ba77eb46c3168545e",
+      "Kukgi,17th": "775fdfadb0e918e4b6b5866cd7f5e0939916d01aabbb70961f33e8ad75622382",
+      "10thHayagoChampionship": "b9bdc4b467e382be84f308e59e8d195f8c98002467c7c5a119048d1088892995",
+      "11thBacchusCup": "c6c6562a545bb0ca7f011ad62c2401be5c80ea6e94f04ceb467d36aaee08d077",
+      "11thHayagoChampionship": "4a6e6f0b04153a1d9a5c96e1d12b3947892a08030b809604975a36abb4d88ef3",
+      "12thNECCup": "4773285d068a9f63df2ac770c63b46235b8123d8624f1fdb542a310a3a04a36b",
+      "16thHayagoChampionship": "6ee692bb9fa2f639d053210e931c6b6fd8832d2ed62a03af89bba1e34200c5e6",
+      "19thHayagoChampionship": "c9bc0eca5750f657d702656ec3b7a737c8cab256759cbae91b3e2e02d6de2239",
+      "21stCh'oegowi": "eb0ba6faa5bacf5288b746279aa449d1b60d1da7dd6a217ba2d8c2595fa037c6",
+      "26thHayagoChampionship": "db5105da856b50d21485d1f7dafdd0242b52a0ad5d9d82eb54beca3907730c22",
+      "27thHayagoChampionship": "6c81fb6c1554165779441f2b0533986e3311c027e70078eaf9f7f846465c3967",
+      "30thHayagoChampionship": "efab84e32c38abdc84bf3977470a1baa8428e5ed4c0ef24caca90f036b8461be",
+      "3rdNECCup": "08fc8501534776791cf2e0dd6702218926c20d0a16ba9026904b6bb2e8558978",
+      "5thNECCup": "49e1b384d68a4f20b2fe53fd81faaf99d3d545ef3b6342c43dd72fe663462f2e",
+      "6thHayagoChampionship": "b49b9eeacfdc9e59e53e9b1d02dfd20a816217d18b928d6aa86b36d22b7f18be",
+      "6thTaewang": "87e5f5bfd4c1780f87b67bb73e8616def89f789d5ecb076140fd306673fdd5b6",
+      "7thNECCup": "4951aa48ee70c9eb763c3a4e9435f407b0560877f873d06a1160a633d0180c0a",
+      "7thP'aewang": "bbeebb8738ef8f87149f76134c0accef5068186c6e233b9ab1e7b6f90c4fc36c",
+      "8thNECCup": "0044c0b18d18c0a7d93d8984ad0fd63f4d09e3af3f64a637592718b4851528cf"
+    },
+    "PROD": {
+      "29thJapaneseTengen": "c2dce032f77a32c5b69d71c3f265f12e73bff8645150cae6bbd93b2be4a34e65",
+      "30thJapaneseTengen": "be07ca28f864f1cdf28b07d9180fd187b99fc4a8b1a848542c9b9940535c4db9",
+      "31stJapaneseTengen": "94c86bac485f1a7d95313946449d6a5abe92ff48eb366a2307d71fe3df64d3af",
+      "Kukgi,11th": "03d20a316d7396a56e4167ce451c8f87fd068fe2559c20dba1c8e55821f66f19",
+      "Kukgi,12th": "ad0731b53d6a7686fcf1f3412577b721a7346914f101b552b2a5c81b2b5cf94c",
+      "Kiseong,1st": "a5c6c70c82cbcec5709832bd76d5a3580bbf299467cb4b361a621a06d859b52d",
+      "Kiseong,2nd": "7b7400384f9cdd25ed9d09ebe8f3a4531499c60822de3e3ffb54163a0805a4fc",
+      "P'aewang,20th": "c71de64fdf2348641e89ec750cd46f84933d24be8b93cd9c1305c3567b95324e",
+      "P'aewang,22nd": "03987155a166170875555baebb972066e2c5abae38764cd6b52c03041968bce3",
+      "Kiseong,4th": "ab73031f6102c86ed34888ff31eb80556dcdf2ea1e848f62b99c54170468e3d4",
+      "Kiseong,9th": "eaf3b1af950ac30e8bcae97aea3adddeeb2b0ed589dd068d5e28fd7b005b9f09",
+      "Kiseong,3rd": "9c1ff23a1c19c4fa2be78e5e50297a9ade3aa62507838a1246b521c795ec24d7",
+      "Kukgi,10th": "a7b1dac7e4a9a0698b473241de7adacd4b1c53336e58984a8f64704c22979e03",
+      "Taewang,5th": "8f2df2b7686d89ababcefa6cf90739dcefc4dfef84f5c85ff34386e91919964b",
+      "Kukgi,13th": "c2be27e149ae477b929f7008f6f5c8de51522de62b4c17ebbd7828df31c5b3af",
+      "Kukgi,14th": "fd2e14a1df27b8eb9da9d34f796366f88415969b5fa5889461fd17be1387f048",
+      "P'aewang,21st": "a714a1e39faf8add6f51780c9abb2bf6f873bf60eaae7291a4c3394fadfa9cfa",
+      "32ndHayagoChampionship": "f5b1c2b631a02d54dc138dc54586b97dd763702cf209ab4f6277bb5a92b83efe",
+      "Kiseong,6th": "53a3d9fffd4f49ba81608a1cad23eb78c4f81e0ebdf9fc4b06f661e1969eb206",
+      "21stHayagoChampionship": "ffe65f091d8799c63b9c30cc09fbd7957207fdc4d10673d8f0499c817ef1f541",
+      "BacchusCup,4th": "191f5f7e77263a16148e2a748a08b09f03fc8c15ba3136d4a39596563795c35f",
+      "NihonKi-inChampionship,14th": "064df4db23021e71b48f18133b6f24a8eacc8fd7ed9d0a14640191b6e895c232",
+      "10thTaewang": "b943416ba614c8cc8c258b9af3e21abe4f7197db7ca6e08818c8d93a99c463c4",
+      "18thNECCup": "958e98c65a2ffd673225b1ae2ece14536a4da5aec3f331634a1544a7ceef0e13",
+      "19thNECCup": "4736b67b3a7687f4c59a7350dfcf76eff014f9e38c9d4491001998e0c6b14d39",
+      "Kukgi,15th": "412367419e5fe99d9c75860636d028bc9674fde7e83aeaeadf2178cfaa6103ce",
+      "15thTaewang": "7678854b6d18e727ba6eceb0b28239a19a5fe1cf9b9e8059470db9d70807d90c",
+      "30thP'aewang": "c4a4f4379614da6c487eab269a5674ef2b7d8be7e3f39987d9e6497678ce03a6",
+      "Kiseong,7th": "4be74b09bb24a2617374e521d6bb4b1cc89c42a2cc0a1cf200deeffe05ecc4a8",
+      "Kiseong,8th": "288567a7558c9318514a2d272e69171f57413d110dece37cd1eabc75ff8bc375",
+      "NihonKi-inChampionship,19th": "426986c10bf5c6cd050f0ce5e5212f500938b707b5866069ce05c957e707287a",
+      "P'aewang,23rd": "693b7a12bc9fcc1ad0983e68624ba16a821bdb5a8559e79ddffde953ca1df5ed",
+      "31stHayagoChampionship": "25b77e976bb7dabc323a2f85c958de327a1689f8849ae1961f924860aaaf9f22",
+      "8thBacchusCup": "d642fb92ccafe27d4653c4958ae6f372282097e9841b0e8378e516371861d586",
+      "9thBacchusCup": "5e243c4c6716e08be6b5b6140b4c42acfd50f4b12b10e41950af70701125f872",
+      "9thTaewang": "84fead255fa925a6946c9bd5190c8214762df7f0c9e28bf9dedf23cec27c4adc",
+      "BacchusCup,2nd": "634cd6ac7e4fcd9aa1f96fb364301cf3a1b69ed26a85348533ce0981dd2be068",
+      "BacchusCup,3rd": "30641989fce3b6864475843db904e88c746d9033e63da26372ef41bb25ef91bd",
+      "Ch'oegowi,27th": "dc8e78b9729d30e7377fb9dbd06ef0f30716f8e27432e43fed265ef37aff1fa9",
+      "35thP'aewang": "f5be92a4d4668a562d8def0d4e226cefe2cd5fc2a1d8395cd8c2f9ea3f47c7dd",
+      "Ch'oegowi,30th": "18a2025a9f779d3db6912a466faeb81729965106417802a75af20cac8731ba3c",
+      "Kiseong,5th": "075de3b63e8a1a8f7a4414ae5832358e95698a493a4823df12e3d329edf13d1a",
+      "Kukgi,18th": "317a71a7cdc93c7fada08f194a7f092d17d0233c7d999ae02ee29c9b87555282",
+      "NihonKi-inChampionship,10th": "8dc3cb7dbda47a8b43367d1fbc27099de99e229897bd841548d1bb9f0f05457e",
+      "NihonKi-inChampionship,12th": "cb145d35c19216bbc8ea373cb02a118d42f20f17082572f06a6bc6b7d0c4dc78",
+      "NihonKi-inChampionship,17th": "dd3100fc08b1787d769e99a39e99157b7335fdcc085d933d1d3a9f640d3c304b",
+      "Taewang,4th": "be2a2ada2ffd58bf27ce6931ee15b0f47133209e020129b22d5110d4e7b838e3",
+      "12thBacchusCup": "fa68b48a248715a36801aab1ea0cb2efab22a273fed81866b9d90b1b3131da8f",
+      "Ch'oegowi,25th": "9f15fd52b7a0460c20f393c2259e92be1ff02f21a73f487efa35f9470cd35746",
+      "Ch'oegowi,26th": "393b3f91cd0a17e4b5cb31d3ff83306fc6fc40c5440b6e93fc71a26976cca99e",
+      "NihonKi-inChampionship,15th": "51a3aec4f7c8442d4b4d650296d271d97dfea4b922ccfd5aa18a93b3cfdd0296",
+      "NihonKi-inChampionship,18th": "02547dc1666f9eb09f9667c51b3f159e81163e1b55a4ab4b00aa5446c7c067dc",
+      "P'aewang,24th": "8b2e8afcc32e2759ac97512f8e9b265259d5b150b918efc98e6b14fef6a48214",
+      "16thNihonKi-inChampionship": "0bc223717adf37cdcdddc17edc1ac2082882b26d06a15709b7aa4f2f39134be3",
+      "17thNECCup": "cad4d226a288d610ecc8c90dad155e02c1d4b0a27f29a93be7622eff21a33a87",
+      "26thP'aewang": "29cacb2a0f375d287c0e6663bff46604e366d796f0a1eabcac50a6e718fb3cf8",
+      "31stCh'oegowi": "a1caa02536537bfa9eb5d395e61c498a7bd73baac36233915979651b9a7ef062",
+      "BacchusCup,5th": "5ee0d7f727c40955c4ec8fcc13123d8c4c1edef4d86e98768c0fff091b0888ec",
+      "Ch'oegowi,38th": "2614502c662c51ea524748a67bf415a5011ea01cc1bb0959f8bcd226b3af3ca6",
+      "NihonKi-inChampionship,13th": "b8c33df55ade2208cca35df0a96834f3b59ec0da382a5fa2ecdb1180d489bdaa",
+      "P'aewang,25th": "0fac490db6a6fd97c8f982a5809e100a0b16a7019700d88d320a464ec275119c",
+      "P'aewang,33rd": "0ff40ac1b4f20912e9abfea9425553e3074d838925e3f553733de2fa6c8837fe",
+      "10thBacchusCup": "580071da1fe2130b5409b49cbdaff5cf07dd170657d63d22598d103955a466eb",
+      "11thTaewang": "4cfdd4a8b5ab1da9b3e3fc6ebc942b7e8fd554301ea766a6dea7e70a0f7e2316",
+      "15thNECCup": "91f33cbaff894e2267438858229f1d11208da666cbe0180caf648d714a9d7b8f",
+      "32ndCh'oegowi": "3e8ba6c3f2ee0515300c1d7c61dad6473060676d1cf459164d443c5e41e0641f",
+      "32ndP'aewang": "22cf7709b94f4d9505fdba755bcd543b804718964933c827429c25ddbe546f12",
+      "34thCh'oegowi": "c6ce8634e53103f351ad7aeb4a1da70ad27b850179f6a0bcb0cacb05742c03a5",
+      "34thP'aewang": "b73ea3eb239073a3719be34c3466606605b2624989f4e90ade3a7714aa403c79",
+      "36thP'aewang": "1d44afb934b096624ac5605301263ea1c29a18c9a0b1377583fb76d239f78c68",
+      "37thCh'oegowi": "a8f4fa7e5349bf4db608f2a2603f3ef532bde75525a498428e5b3820f923c665",
+      "4thHayagoChampionship": "b856f5dfe3ce57e3f8c96c32be4b4f9e77245529e5ae9cfdcb7591ba1b98b9bd",
+      "6thNihonKi-inChampionship": "e85787d035a948227543ce165ba55e80457f902b5771dc730f98288e43682db8",
+      "7thTaewang": "5d9928f133309838d84194ebd5d0c432dc77e3a69d94c0f9c96233e0a2ae759c",
+      "8thTaewang": "dd67e14b17d067f1a274ec581d339f0df36f9c26e0ca59cc471ef269d04f98a7",
+      "9thNihonKi-inChampionship": "aa874e83bfa165b5b7d8f14d8810aef63820a80099981034dc36fb16205d8849",
+      "BacchusCup,6th": "d1393e382dc7caf4570c18487923b7b920388321dff2ad5c053666217f421222",
+      "BacchusCup,7th": "8f9c1a4630483ee60b5e4b841bf388ca821b68a01b20334820b7e2095885a867",
+      "Ch'oegowi,29th": "84ce00a018d9f31b51c4ddc093c7a0b8df8507e2965fe55a0e7b8ed6925595a5",
+      "Kiseong,10th": "82ef5ca73f85926706f82085e3c98011e3bf159c21636f006e015821d1c1a96d",
+      "NihonKi-inChampionship,20th": "5b3ffe44e752ce6cc4f1e01a47a7b4c88e13aebbcd0a154892816cc373c99ea9",
+      "14thNECCup": "cad80988c63c5378c4f04b17c6f0144a8c192f9499c73b5324f0f2c624b83d11",
+      "16thNECCup": "df46576f74c2b3161c7f53e0f03a05c8f2a96a9e0af9a9630bd47f3546f3c2ff",
+      "1stNihonKi-inChampionship": "515e6ad56aed902f164005b0c775df911c113135e6192fb893f67966498e2613",
+      "20thNECCup": "0459b905129565ab700e0a6f2b77a352b2aefef392900cd136268915ff1762e5",
+      "31stP'aewang": "1897fc326dd12f553e2564abc5d4aaa3ec6e4ed0304c40c029672964a7589ab4",
+      "3rdHayagoChampionship": "9a06ede9032f4c01d21edce39516906ce0ddae29fa10e8291d6895b384cf08dc",
+      "5thHayagoChampionship": "2521fbf68b8c38075cc40fb34dd7c678f5f59c215b36562c40be0bf79f62771b",
+      "7thNihonKi-inChampionship": "51745ad5e3ebe93f7a9c11b6ca7757c782e9be3fd358f1b154a0c8c3f58f4008",
+      "Kiseong,12th": "7934d3a6125206cc5ad24d43fac1794acd9366968fec45718d4d5bc7bea62791",
+      "NihonKi-inChampionship,11th": "4b359d5db1b503e32c4d6c8ecd909bc5888c611732730f2bfb9c2343e90ada7e",
+      "NihonKi-inChampionship,8th": "859612b6138ceab0f3bf8b1003dd1d1b69ac335079c24c0e4c50aaf4a5aa09cd",
+      "Taewang,3rd": "7a58ac88aefe50c9011f6da4b7e863c006d91eabb98157c74ab5b80da2e122a1",
+      "13thTaewang": "904a9d61aa256c38e699097473b59fbe11199f3304b7d92c59ff72b54efbd9aa",
+      "1stHayagoChampionship": "800e204b36a36a2e6d8bc6a50ccae070b6e4299b185faf1f4b41a39053c27c71",
+      "1stNECCup": "51e2b84e7d00b2828eaa8f8a1aeb5062ca846e47afc61e78ccabc94ad0617e3f",
+      "27thP'aewang": "26c7a2c2f6dc9f7500c6ab3bfb9066e7b7f893176a1cebd9c047c50fd9c55aca",
+      "28thP'aewang": "f3bbd92a59931ac4648a0439a824cbfe9fa9d39f992014a1164114a8ffeffe39",
+      "2ndNECCup": "476056b66e49a43a3c4944af84c3db7ecc653c4f805047b38a0c44def5c824df",
+      "35thCh'oegowi": "17827752694b127b3c70dfdd61e2708b5e107fec5b74b069572dbdbfb00b1139",
+      "6thNECCup": "d9c2e94ce107fb1a12f8a0befa4f8b495bebac413101b8e42f3712b6c1f6d828",
+      "7thHayagoChampionship": "a1beda35dcff42f7a8f3c3e99cbb29505258c2abbd7446ba51f80644117315af",
+      "8thHayagoChampionship": "7228c8469142beae255595ad89148602c2d95527742b407ffa27f63969523a68",
+      "Ch'oegowi,28th": "0f65ef4b98112e60591aa2b83df146dd743eef6f8f5652838501e41fea7afdec",
+      "Kukgi,17th": "e80699f6b054d11afc41d57d2e4f2494da68dfa548078ff0046aa2612d2104fd",
+      "10thHayagoChampionship": "b479ae1a796d1f0692a9463acb48709ce7edee4ab7433792c91d6edfa8d130ee",
+      "11thBacchusCup": "67979599a776b4e5f6fc8de159170b455e0983c9b8c569c1bb66d6c5c73e5f65",
+      "11thHayagoChampionship": "e6bdc2e0ea624efd041a58d1b709d514417bceb59aa271abe117f6ff2130022c",
+      "12thNECCup": "24e0a3c29586c913069794c5edca4a789550156af162ad3649713b7e1b900a5b",
+      "16thHayagoChampionship": "b51cb5030561e6dbcbb0e75e6d51a50253eba9bb83d159a86d33e4ced7052101",
+      "19thHayagoChampionship": "be28e7290ea016e06d7792bf43cb4f09223529b8d7938dcc77fd922fd0fce7b3",
+      "21stCh'oegowi": "942f1f41d7d3428da6c6b5a8b3795c1d27a524db6094db74e9d511668a12e82d",
+      "26thHayagoChampionship": "2d171ed44db28aa446cb15dbc37584501c3b4403f32b6afd905c4fd7013dd36b",
+      "27thHayagoChampionship": "5be5ff5f8c7679961dff7bb14d64a782273f6de576ed7139e5cfa113598fa394",
+      "30thHayagoChampionship": "def6d5844fcda6ef67dd6eca577d4e6691a09a1f6b8379eff8bd45790b1fe2b5",
+      "3rdNECCup": "05132feb79f117730662087ba6a4a616d82249a18458d2becde283a992520d03",
+      "5thNECCup": "46bf4550cb49cb8a88e6b60881c90255b0bdcae22a21f5d1dfc7b1014b0630ca",
+      "6thHayagoChampionship": "554e9397bcf31ff54c0c79350f3d255466e7e81ff135bb9576b83467ac1d0357",
+      "6thTaewang": "c70fa78e2e76e0aeb16e506ef8ec9438ef4530261ab24b4cbdabc80151bacd98",
+      "7thNECCup": "3d4b673d088a83b0661a015aec9296dde1500e580e1175777682dbefa6d6c424",
+      "7thP'aewang": "3c7eddf8268bd4e975a8ebd0386f4d82e63633e92378762c748f5e4db38a3a0d",
+      "8thNECCup": "3989dd40b66a60d4a695f9d1849f1771bfb213d42752fd4cf4008e9105e9ff3b"
+    }
+  },
+  "full_physical_album_sha256": {
+    "TEST": {
+      "29thJapaneseTengen": "3780b15eb4f86588cb52b60b91d025027da65ba376c388b0b390d13c24fd507d",
+      "30thJapaneseTengen": "84ba2f507855a951485f8f3612c4cd069235dc450762348eac01e210fbfbe6ba",
+      "31stJapaneseTengen": "9195d325933fb2b5a477b54743db01d0ec5d0dc89e692acc2b16524b35477b18",
+      "Kukgi,11th": "c1a2ee98316ac0deee87d7501b0957e23922e69200591b9f3b19a850ae569d1d",
+      "Kukgi,12th": "9da8a7afe0134bce19fe236e15a13b93b1d4794b36690f67a9c5407fa7390f60",
+      "Kiseong,1st": "e96261198928cc005f91bcf99b46b1f2f617f56b8e41d744aac6fc1a5a32e056",
+      "Kiseong,2nd": "e67a887a8cbca14771b4ef4046eb7886d0af7d661386b5b8b6f4442b5d5cfff7",
+      "P'aewang,20th": "41d1b9c8dd6471443ec80e3ceeee4101b3365b1461ba57e0fdec8a27b5e19c28",
+      "P'aewang,22nd": "b4c64d4d196f68de1ecad2deb0dbba92814baaee3e8e9f02b22a1fc48404dcca",
+      "Kiseong,4th": "891cd7114af8eb45f211b4d980db59a0cc9e43480bdea28b604f88161a7a64e5",
+      "Kiseong,9th": "5a5cad0da7027348240ff14e7f3706c887b7e49e5f4ee42b0178ba0997b8bffa",
+      "Kiseong,3rd": "835da5a6534866e40cc2655050ba07e59b7cb87a8e17f4c1ab7efdb1171ab2aa",
+      "Kukgi,10th": "2b77369aba40f75d41212d8d4ff2ab8a2c4f45498822247d9befc37f45682fed",
+      "Taewang,5th": "6c12e460b17c70f34b1ddfaa47ad89b9ff8f4e30df3188be470307b0ab61518e",
+      "Kukgi,13th": "a0bf50919f4ca65ebbca477ba8aafac152e72d97a2a4832468aca714d9a76cb5",
+      "Kukgi,14th": "1b2af996416f128d05c7c23a93f6c6a3a52599b36c6fb77fe447dc600f3d4420",
+      "P'aewang,21st": "28482dddea03f1314916da35a2898a37939235a92cebad977b4c682805d927ee",
+      "32ndHayagoChampionship": "9081566d81127ec01421e7bba2846e5c60ac2f17a69ed2ff3679f4556b7134db",
+      "Kiseong,6th": "7f76aa2ddc551d1b8b6dd78cbd2099acbe1775c971b94f8130f8fef8011b1c21",
+      "21stHayagoChampionship": "b9c7f2cdb17943c99ea810cd561e4c4ed0ff3585dbd59ae87f525407fc3fecf6",
+      "BacchusCup,4th": "ce404826e203569128f27a2b4059a43ec00c1b305adccc1de3642b75503b94b6",
+      "NihonKi-inChampionship,14th": "7a4f2a7d79a6f6e915e37c0e9c9eb1c45c7b95ac28c17aa111d993867316d1a3",
+      "10thTaewang": "95c8e4cafe9e78c902adffbfe144d4fa0f17fc201b78a092ecbefecc10002f2d",
+      "18thNECCup": "285674955b95be8120355ec7cca27279e4de8e76ea25992c79ac671e68686bd4",
+      "19thNECCup": "e83a0d470c36a2da3b751d84f430220a467236435e67318ea33234bafbcbe01a",
+      "Kukgi,15th": "e82677a22a87912563919d17d9921e59ec26b4c1d1063a354e02788463b9f4b1",
+      "15thTaewang": "b21c7bc72c9b17b481ee7b323ea68e7f4044d7dcf7cf13619f2f93b4cbe84c9c",
+      "30thP'aewang": "41e5ff7cdbe0323c446faea7ff438a546f3bc063e7a1de4dde52a75a32f2ae5f",
+      "Kiseong,7th": "b1b00851f696807f61361176b52456cbf16ea0a0e7c902c6790998935a06fc98",
+      "Kiseong,8th": "5c4d436e1a28c15a59584d1a26bb3e362d1ace6dcc2dc90ec16c9e31386003a3",
+      "NihonKi-inChampionship,19th": "361578d554fe435503c713f41c702d8683c64fd60073131027bbbb50d56e60ca",
+      "P'aewang,23rd": "25f7639347c353b2e97879285bf01474ad46155c27e30d8882cc5f2f707f9835",
+      "31stHayagoChampionship": "cedc5848840bcd034169541095de150fea7c5417bcede2f7a32e3b96d352459f",
+      "8thBacchusCup": "9464243703d7bb970779a44a2c75948510d805f4e2bf704298336844a6811d3d",
+      "9thBacchusCup": "fd2400fd170142e6a7645b91cbc5b2b3080d32cef593dcf6fcfde5f32fded6f9",
+      "9thTaewang": "f36ae30e5c48112b9aa7b824e65cbda9a17e8d5c8cca89004976b00d0988dbbb",
+      "BacchusCup,2nd": "9d4cd473b4e5b4671077c8442b87a2a45e4520d581710080e4657fd902824feb",
+      "BacchusCup,3rd": "ae1ce0e4921e8f4a8e75a96bd5cde7d2204c836769e684785b9cbc53a9cb44a6",
+      "Ch'oegowi,27th": "00ca59b830818342cd0d8842caf4efd6f90daa462e7e6484d78e42a67769d826",
+      "35thP'aewang": "54023dcc5886ff65dceaa04954a0b8c975678623b77863d0e8bd056a86931133",
+      "Ch'oegowi,30th": "48f53eb6ec07105bb02895fda7a8fbd0b78336cfd4b2f3f956b250250887d214",
+      "Kiseong,5th": "e1690ce9d2f9ab76755c0edf17ff1bbccefe15012c50612c6cbe924c9f3f8a8b",
+      "Kukgi,18th": "5b6db889281f5e5240cb7206e1ad624bec0053eb454a7179deac9ea9f76cf7d0",
+      "NihonKi-inChampionship,10th": "286f07ffb35a5ed56a6e8604a4a1e5c2829ca4cc6477dea9407335d634a46ba2",
+      "NihonKi-inChampionship,12th": "0db7ce4f208da83cb4bcadb222d6e1c829b0546cdba9483bf0d6836652ce4689",
+      "NihonKi-inChampionship,17th": "f22cf8889031fedc6033fd6c943b9593eef080f548dc0bc9cc40a5209d4368c1",
+      "Taewang,4th": "3f5b2b67533f33eb2d611257f0c1d60cd39c924b7d4145f6e267a381ec37524d",
+      "12thBacchusCup": "eacdb25add7fb1482acf1a3162c2d6ead12db3b11ef031817380c88c3616d930",
+      "Ch'oegowi,25th": "c4355562e7bf3668a6bf1e7c6ffc4851f19f1062e0fb4a03d21c7928238335a2",
+      "Ch'oegowi,26th": "27ead0baeb08fd27a73ab8fa40e280065cdc5f50b68d5dabbde94ea7673b7954",
+      "NihonKi-inChampionship,15th": "558e11e1a8de199338390f94fabf83b5daea34782b30ad4f48e3b402282b09fe",
+      "NihonKi-inChampionship,18th": "0c44c126a890ea9cfbecdd9a922088dd727f02ed7524731888dea8e283dfdac7",
+      "P'aewang,24th": "94997c696cebddfb2c46d4dc98c673fd0c6b0754c351dc9bd6cab16951e3c78e",
+      "16thNihonKi-inChampionship": "3d5bdc35a1054442f9b5352c1f0093157f71f548291d30c98a45e8d13670a895",
+      "17thNECCup": "0b592ab5a38db164410045ec609f0e6a39b6b41d95b0009b475646020f3de194",
+      "26thP'aewang": "36bb482473fc2cd5b8f351887ffcceab450200d4d2458f1e142f30c857c53949",
+      "31stCh'oegowi": "7035c1cda434eb17d1c5799adf8c05ac430b28ed315e0437aeb9cc7f927bce3b",
+      "BacchusCup,5th": "ff9bf237851307e0d8b1f5fdc7536ecfd6ea1e871953d4aca3590a188b91f6e0",
+      "Ch'oegowi,38th": "6aba76a860bcb0c1d687961c27671485ac87b147ed3d448febea0f3c9b6ef98f",
+      "NihonKi-inChampionship,13th": "03ac1d218cf2b73e30fafab60c49de28fa56cf917045c0c500cfeb539ea3c1fb",
+      "P'aewang,25th": "cb7436d774c6ac8279731cd30cb6a220fc7c4d25bb221d2f3fbdbfbfeaca73a3",
+      "P'aewang,33rd": "d88286f443f1d72444b57dfaf136ca136c636e530597c9c998efbecdedff03f3",
+      "10thBacchusCup": "323cbe02be36406991ee3cb7abf404adee6691373be0af6463ab53d1a4ce32f4",
+      "11thTaewang": "193eda3b9868dc2e9065b0e02a3b581a023f0d2172192d716abd5e1852488624",
+      "15thNECCup": "43825c4ba664bac3a6753b32a1da31126d6247b255b80ce8c410c5b9f3c70e29",
+      "32ndCh'oegowi": "4e5319a37e74fa9585d65ae9e927e9ca72d80f2b171efacd62d10b247e257b04",
+      "32ndP'aewang": "26a94f8a27dd638baafc75bd40a1d12af1cd50daffbb449a92c75d9d45ae7f62",
+      "34thCh'oegowi": "aa0f1ae4755fc1afd0036a078a12602d57a52740368483c481c4255358c85172",
+      "34thP'aewang": "4d7629bf45a36e3b5bff68bb094a171e5acf0902542b6efce1ad64caa56ab221",
+      "36thP'aewang": "7eb49f29fcf09d45273232c35b65e7458a268c854cb1d66d8992e5d035ab370d",
+      "37thCh'oegowi": "a17f820926cf3a9fd450a8ec20f0888153727445628cde96f0f8e2229139fe9f",
+      "4thHayagoChampionship": "486ab74d43795cd7d955d14c1e6c6201a3692b07308fdc2a5ff2ed65deb22013",
+      "6thNihonKi-inChampionship": "773317a4d3a4e7828ffdb07bf0603b4f4d7f93b31937f80e56686f9d3dd907c2",
+      "7thTaewang": "ca19874dfd51b724c62abda371fe5de423952e3afb2aaacebb027c9c0c214fe5",
+      "8thTaewang": "bac07905d7ebfaf590e27b7d3d870096a6103bd572d49f869197efd4342ea8ab",
+      "9thNihonKi-inChampionship": "4fcd9b0ec2c9c87125fd5512a7a903137fdc21853511396207ddf4d98377b75b",
+      "BacchusCup,6th": "d8dcb72d6779c0bc5a5216920b1644f9d40bd41af368f0d1030c93eb29057699",
+      "BacchusCup,7th": "e9474a491424bde924410da0341472031ca13cc9b3080f681fb227a67b247009",
+      "Ch'oegowi,29th": "52ad541531875bffec486b2124a9599b316b4720597def1e99f695d83c502d9e",
+      "Kiseong,10th": "40de699c0a431f67bb1cc8a0254dc655aa988d73cc079b26cb729c5f3fa5871e",
+      "NihonKi-inChampionship,20th": "cf0c4f20ef21586128f0461d3eb9ebed80309550728cecfced1ad6ec8ac08625",
+      "14thNECCup": "8c901176b0f7d49a7d07582d84d1f4893173fde8abce9a2d6ffaba18d452d2bf",
+      "16thNECCup": "c6a6bab90115e298f23a7e87a1dbd465d7fd9cb5aa3dfd3bac0adca058b3c171",
+      "1stNihonKi-inChampionship": "827c4582dc94b0905c09b34c01780a297cbb686eb71ba77b082e47a14d2f74d0",
+      "20thNECCup": "689b4a7e3a7fb5fc519fb33c55db66b55873183eb45dbec7fe1146e5f3f42982",
+      "31stP'aewang": "f2d66eaffb3c57df5e62e4a05c2877d75c3c09fbb3b4def6a57760683f572c52",
+      "3rdHayagoChampionship": "4bec38e834457a9c3211911cd6c804442604dbe4079d6a7506c1140e1ef28e9e",
+      "5thHayagoChampionship": "85f4f4d551e349443e1d099887851f169fe3fb21d8257f0a4f79e4c0d601523b",
+      "7thNihonKi-inChampionship": "3cad933d741eb66024f20b407e3f7fa700c6d3c801526c4aaa49bc987a9d49dc",
+      "Kiseong,12th": "3ade4dc8e825f8709cf580e39a03284a8647dfdbbc8332bdbc3ee2ba842083ab",
+      "NihonKi-inChampionship,11th": "7a7fc15cd185f604f97b7fd598ae7ca71fee26897605498b815d292e8721371a",
+      "NihonKi-inChampionship,8th": "1a6ee983180661820b2012c5eee0e6f990be8f08809a6bd4eafda91df7051f83",
+      "Taewang,3rd": "1a040afcde13c5fe7341f3d48e043ed6143c6acad192ff0f19d323d0cae89dcb",
+      "13thTaewang": "d37546c6f4c8e8af2a6682ac86630d65e3b2583f24fc3fe35c365a3d273508e9",
+      "1stHayagoChampionship": "414b797952682a26acc5fc886a6d05c1b4875a12737148a21f50056ec8e697ea",
+      "1stNECCup": "0909c469bab6c21314aac8cb2ceea1b43358192446569917d244328e2a42bde2",
+      "27thP'aewang": "ecb2b48e8d2f1e99e71762bc0c912e672bdd39d6d80145a52f41652c0af1d543",
+      "28thP'aewang": "63dd369c0733bd9994a0900adf1814248674ccdce28be6d2f7eda39ea9552bce",
+      "2ndNECCup": "db0a48488409f25921c3dd210123445709ff9ccb1cd8d585f912c9d9d6bf7d90",
+      "35thCh'oegowi": "270a67755e7b60f0c9085ae97a0ba932882538bf1c0094af95cc7e8f5d10cdc0",
+      "6thNECCup": "36a5503714d45694ebd77571a99aa2e62e7cbc0e82b11681a2d3e8b81ca95b52",
+      "7thHayagoChampionship": "3e10741cd0964a0610edcc61a54c8c740eb989be16460f203705a1e07472e0fb",
+      "8thHayagoChampionship": "902e2d97d423d34f4297b812a5c2957803aa9779d0dda9d6965d09d48b7298c9",
+      "Ch'oegowi,28th": "80cff51775bf3f4c5fbea8ab58b16d88a12a93ad458031cc172ad71f86db7c7a",
+      "Kukgi,17th": "b61edb4603fbd0bb4b7beb97ea2bb92dc487d1be251ad963eea8460a251c03d1",
+      "10thHayagoChampionship": "74a8f7897f67a084439d021af4ce2e6ccbd8052bf7a06bd30000a5ef8d71bcab",
+      "11thBacchusCup": "a8b53ac6b9cf001c35e4f5f656b5f7c339993eb225d2541f5259633dca50e3d1",
+      "11thHayagoChampionship": "422ecce998d1964d98fb9008f7ac24323a32cd0b2e6e021d5791a1db3b049557",
+      "12thNECCup": "110614b3d4ca900f6cf403091d27dd1468734ba1bfb96c48de0f865e973139e8",
+      "16thHayagoChampionship": "4d3cf570fd9c4be05fe601dfa27a35e5ea9673ce221c608f30f0cfae3084cbf4",
+      "19thHayagoChampionship": "3ea0beed705c639e54ac6a583545f6705233b866a9fc0917ef382b3afb4ba17e",
+      "21stCh'oegowi": "6e227497ed2c1a2c93a85e6c659a809730b738c8c907bc14d86d65581d3824fb",
+      "26thHayagoChampionship": "43a5c3e86b44d54356966c455027e2fed1bd1c1ca600a23b76d46a6976823443",
+      "27thHayagoChampionship": "b2bbebcb189279b7cd76d9a1f1b9291c338933c24f7dd1b0334b1a53894830ab",
+      "30thHayagoChampionship": "8552854b9d796decdfc0dcaf7f80943cf4549acd09aff8d3e0c1481e6aa71916",
+      "3rdNECCup": "f48728e686aa7e801e244c2b3e466b948707afde523d4c9da16c13bcaf3abbb6",
+      "5thNECCup": "59e1f2f161243139eb0254791f1120e67e6890ab74bc74cd80c9822d66d7f506",
+      "6thHayagoChampionship": "e1fb260c3dd1556e40cdd2fa21032cd06117d6c0827ceaca3dafa602adc6c8a9",
+      "6thTaewang": "dd1e792fe8d183083ad61c37782f5d7ac3d7446ef90c92c8849301bf4f5a694e",
+      "7thNECCup": "c0798e32e8612d105a27e6c1bdcbdcc705a2986fd1c776ec7449c020570e8054",
+      "7thP'aewang": "200bd0a5e8f3918a685c21b7aede70a3fe9c08375e8012499f44d0dac3f729dc",
+      "8thNECCup": "226ffbf2d103210a468a19f141f5032f2687dc022c81afbb63b5af0cfc8b0b7c"
+    },
+    "PROD": {
+      "29thJapaneseTengen": "f4febc9aa8f9d83f9d265c71a483e6b79a24899a9ea03cb1c401981d7bb4012a",
+      "30thJapaneseTengen": "fccd1491893f4ca8e80edad2011c4c1f7d19b9e0e6d13321de900fe3d3985b4d",
+      "31stJapaneseTengen": "78da7f22cfdff30be78a55736bc14d777e434a139416f3a3c93df00c57503ee7",
+      "Kukgi,11th": "dced84cd3f7b68d04c52c8118e7e97454c33e349f619135bd018de72297cfe1f",
+      "Kukgi,12th": "569ccdaf31eb6a0a0bb4c49cbccefe34add455d9b0c28e2d5cb406207dc6dac3",
+      "Kiseong,1st": "76cb6517b0580aa27b076b385fcffe4f81e5be3e4443f4d3b68e7aa8a32865ba",
+      "Kiseong,2nd": "ddbe53f3ff90810805f0a75456db1777ad51c42046a96ec141624b8b12b65734",
+      "P'aewang,20th": "e13c169e9509ae9d5a96006da041df0ac5f9f72eff417850b31b9587d37728cd",
+      "P'aewang,22nd": "0ead6e5823db1a778bea431388efa936c8675b733223cb946f7e57885cf24612",
+      "Kiseong,4th": "29241e2610bfec476c1371a19b7671460b0d2e384cabaf62279c00234b5f67ca",
+      "Kiseong,9th": "3d72810cb6ac948189504950c9fd54734c41e6c4406c6f9b084ce3a5441a7a62",
+      "Kiseong,3rd": "6aec43c2bc1e50dce7fcd0fdbdc390dd7bfd47369718c1cb04ea479913401374",
+      "Kukgi,10th": "bc03ab8ef413fc911804612ffd4798b874d95bd51af9324819919e2827486d08",
+      "Taewang,5th": "41034b4f71efa61cbcd1aeb9f745eb002fbb1d8709c4645031017cf5ffef27ec",
+      "Kukgi,13th": "580a84887c34f48d7964f439ec4d0d70227b58ab56be9faf9e0c3b84d3ebf98a",
+      "Kukgi,14th": "6c6357aa903694b2d932fffe51911a10276a0f702d946d8412ad252ef8d28635",
+      "P'aewang,21st": "4de039bdb83ee5280c28fdd25180a3ea2326ff2c498529c0cb03851829f19965",
+      "32ndHayagoChampionship": "89551485b3aec21ed1c8d4c7319ddb59e158aa7988e94a4b6dd939d29f145699",
+      "Kiseong,6th": "5d62a8ba7bbf661d513da0c6a131c266f99ba5e2ec828cdd1d13edd7540bde78",
+      "21stHayagoChampionship": "349f876de7e37451f8206265fec7e11653661fdcd534b02dc5d1a01274a86267",
+      "BacchusCup,4th": "5cb1edb04ccd06071ee416aeabb951e761eb180b372af13f3be4a3bf5148d14c",
+      "NihonKi-inChampionship,14th": "59e0ebcebb5aabc4368aec87c34918f23f2af0e287a9edb0fe9f538042a41cc3",
+      "10thTaewang": "adcb8cbc28149f47c50a2498fd98dfce7184da5b4bc68b1ead61fc4be27dfdc2",
+      "18thNECCup": "ff00df4a6a107887e0bfdeeb08b5d80529b27d99fa5c8a4a599d62b6353192b1",
+      "19thNECCup": "d46ae0246fd19381a400697bbe7f60974b5952da6861675c901fa3ad8d55fc00",
+      "Kukgi,15th": "f52d1647e63b508ce95d0bfd60fa6a2871aeadd149d4bee05f12e0431adfa62b",
+      "15thTaewang": "038f09f25dc43008e839ecd9731586491eea0d6e4c73308151159f98c3d0793f",
+      "30thP'aewang": "f7a5e9933b52883ae4572991256b319b3fff66fcab1f1852d8e5aac47b8849cd",
+      "Kiseong,7th": "1d3b208ad5a855dbcc24c01091ada6194f80d36914b3162cf2575a42d5d33834",
+      "Kiseong,8th": "fe32fdd4a5e442c938164a4e721c41b789ee9e6ec53389fbc3b2ca1095be18d2",
+      "NihonKi-inChampionship,19th": "dbb2d3c54450bc30695b10d42d093173b211d61bb3136f39e9f1d9350f7460d6",
+      "P'aewang,23rd": "5314c923b0bdaedc9bfc41aa8ba5c363de161a1a037362d4ccfbd16e268359c5",
+      "31stHayagoChampionship": "7eab69bd832eeecefef2924cf563032a71bb75095bb60f2f3e1c1fb4a1eb0b90",
+      "8thBacchusCup": "c5e8777766a0e926cd544817eefb3c9ffd6ef7d479c781ac44cce8004688362a",
+      "9thBacchusCup": "55fefcac4835a08611c9b1bbef92fb681715b7b98e5c65e001bf4ccede5e5cfc",
+      "9thTaewang": "65cd5c40cb4d0221f88a056da729b5970ad03ef5a202f0693d1b0540fa448481",
+      "BacchusCup,2nd": "2460222508413ebc4a34bb5d9b27cb2c4032917e5075da75b5a507bc680f4bd1",
+      "BacchusCup,3rd": "401e27a9b150e8524d70915d65eddd69f3735889d069b240c6336ed8233fcdc8",
+      "Ch'oegowi,27th": "39d7e2876ec8897bb46d472eea177460d690e00a86d1514a594a1dae4f405378",
+      "35thP'aewang": "77c95c9d15b3c263d248e5036bff68ae343781d80d7386d8fc97693c9d1d076c",
+      "Ch'oegowi,30th": "4f748608c9b8a9ccf07264282cb5eba77e562309bfb6957d415d379fdfdebca6",
+      "Kiseong,5th": "eb67ca4a66d9888adcd4d411e252b3e3516330cb1b59f8ec480a575c0da31a6d",
+      "Kukgi,18th": "5dba4c6ac12fb8dd21f4900e4d7fb309e6b9ddcf8ce5fc3a917425b969f4e648",
+      "NihonKi-inChampionship,10th": "71799c047aaefdbc6225c1cfa7399c9808d2228a45b7de0b489c778dbdb346d1",
+      "NihonKi-inChampionship,12th": "c7216dfb198f3dba6f997a7e84bcd5ab21e8a418f00985c65242bec3f690f907",
+      "NihonKi-inChampionship,17th": "1305ce2822fd36a1dd279a8ec8c239e1a934db08631411581ccb35dbad5dafa3",
+      "Taewang,4th": "6a348ed91ff66ce960ea05d3f7e806e896e3e51e24334c08a5638f2a19ed5ba3",
+      "12thBacchusCup": "1b91912b999a348ab7d752ad28eaf1454c76adc198ea2b38a8c55022fc93dcec",
+      "Ch'oegowi,25th": "b9c320452a3b61fd4d3aa280340e3898cda768638c7016d49b1d0f53991b3944",
+      "Ch'oegowi,26th": "8a8b5bf01cd186ec9c3bbe453cfbc15dfd3834bf78083fb7c28d87cffdb6b8bf",
+      "NihonKi-inChampionship,15th": "2a087360f1e40021eb24308441fca09a84ffb67c57ccf20bdf4130e6e721ae4d",
+      "NihonKi-inChampionship,18th": "37dc5015a5429b2ae855792d5f08598bec3e985fb253691a62f0cae9fbbbc7fe",
+      "P'aewang,24th": "af2d624928b093fe5b14e3d2d8ac4d92291f618890600395c1b0e7731121017b",
+      "16thNihonKi-inChampionship": "7ed19326c9e2c4fa2959d0e60be8a056c198632ee5b6745f5005d5fdc0ffb776",
+      "17thNECCup": "b5b2e550dedf0a074f0eb0139e18f079fae18ab734425e121a7a436d6658b1c4",
+      "26thP'aewang": "33d0c0d5df111e994ae1da867605350213643729c97ed7be6c889fdc5d6df065",
+      "31stCh'oegowi": "697990a9f2909173b2eb3cdb42fdadd26e6a2bc4fa673f3846e5b7569d156139",
+      "BacchusCup,5th": "e6773bbc7a3b8c573377d98a4832f60291be3cf1dc7ea178c875dfd648b07932",
+      "Ch'oegowi,38th": "1c60c4361a4d54159dd8d819c15a881dd1752f507934462796ae9063caad73b5",
+      "NihonKi-inChampionship,13th": "210255d891d3013dc9e4e63811858d6cab7a352c5913efaa37827998c6356fb1",
+      "P'aewang,25th": "475d76c196f969010936bdcfa7ac572cbda32e110f884ac2b9008f5e5a62405b",
+      "P'aewang,33rd": "3cd4151ddf085978864ca5dcb5f8ab2713ac939c588d76f03c749cc7e445d538",
+      "10thBacchusCup": "78253d70a12cd5ad045d86e3ebee7bec2cca6fb904c95215849cc3ea4126f0f6",
+      "11thTaewang": "3a5146ccadd24bba6c07db5302b2d09c8bb852b7d6737f905bc3f2e7d12da107",
+      "15thNECCup": "adb7691c05d73d1977f7eef0e7315d3c476497b007ca82806c1f9e82737a50c2",
+      "32ndCh'oegowi": "5c8a2c10c5d26b23ff093abef8944f178e5660d4ded75b5b78dc96294e40bf5a",
+      "32ndP'aewang": "6b3df824153c8f80ce88e5319810ff42a153dba51b0ed3c7db4350d21fe1f41a",
+      "34thCh'oegowi": "bf3ef61b512ed860256e98145cc11fe32c71a2356b58d991ed92d0d89cf5c04f",
+      "34thP'aewang": "352a2d3ce54a2cec512b61bb1b924f3b9c52184e233e1c4384fa0e5502a2057f",
+      "36thP'aewang": "5092f0fde3210b95413bd67a97ccdb37ef07169e38b59a58158951cf3c3533cc",
+      "37thCh'oegowi": "288411c7bfa6e94556a93e2ca9664b1c4588ad2a3ad2d63206710025794bf38f",
+      "4thHayagoChampionship": "d10ece7e4dc76c694fb4b1f991e45c308edda1cfbe17a6022b3067c2d9be87b3",
+      "6thNihonKi-inChampionship": "5a8fa2040640fd771fed087ab75aef68149fb90cab79e2f98e057f5f39774ef5",
+      "7thTaewang": "deeb8b2034611f3b4210cd8da7bb3dfed57f05cd581e9f33222b6a608f5fe5ef",
+      "8thTaewang": "9f9159875b79f5c49c8b2810f3c0fa231a872fc07b5ffc04a27b1c2d868d003e",
+      "9thNihonKi-inChampionship": "6bc77804c4240d26d692ec8ecb4da6979024cf7e8f58805b503af4a55582dec8",
+      "BacchusCup,6th": "959aa100be7ee284d8705baf94866a2b6e2be4a5e01c2a1a8b94c520ae6a7a2d",
+      "BacchusCup,7th": "8173cf3864674ffe4b24c6b282f551549974e1f7d9d1c6c2197754cb3d6bafb5",
+      "Ch'oegowi,29th": "24d5a6675ab57990f05ecff48d4450e3f7be62d1e4312a52240817ba9611d3ba",
+      "Kiseong,10th": "30151daca72e9688e624443f703fcf6079536343c44536e0595bb29f035c49b5",
+      "NihonKi-inChampionship,20th": "33fe6fba8559ef6daaf94dc439f800f90f6136f9c0aca56de280533995e0fbf5",
+      "14thNECCup": "0bec613ecfae32e32e8eefcf3bf8baa638622323d872f7de7e7feab3c749aab2",
+      "16thNECCup": "da6a27de048d74f424c67784472dd8d0670ad0890ca9fcc929c977691dcf8ebb",
+      "1stNihonKi-inChampionship": "22db76669d70a5897fd2eb0605ef9b4151fcca7ad9063947705c7ac4190c2a5a",
+      "20thNECCup": "1f5ceed5e789161378a2eb7eb3bbb934de58e4f4bd083e5c3798839f8f6ba408",
+      "31stP'aewang": "dc3009bf1ddfc6a6acc395db58c3c14b46f5fafe17a40a5f5e34c406d2d2e984",
+      "3rdHayagoChampionship": "2da0231664a61eacea40792e97a464dae11508d0b1ae24bdca6f436156b4aba7",
+      "5thHayagoChampionship": "b8abca1149693077b1326fdd7bacbb863c54232d364c9f41bab8b62992b8db0b",
+      "7thNihonKi-inChampionship": "550c15731d7dc7835831109b973ad6d098467bd1678e57a6efc97916acfbcb33",
+      "Kiseong,12th": "71255231bc36fdae796a77ae794cea91f74fe65259bce86f666f5e46396dfa88",
+      "NihonKi-inChampionship,11th": "e671c27d5cfe1b8a7739b1b56f851d8e6e5c16135abba5628a618947c1759331",
+      "NihonKi-inChampionship,8th": "3decae09525e415c489f168a387ecf30c3ddc65e0845a13ab8b408011f5eade4",
+      "Taewang,3rd": "de15d51a2c59ccdcfdcc06616765f5ebc48d198462e01645df0bf71d0b4b4784",
+      "13thTaewang": "8bafccba0c0e545e674100e599792d072d608e4b75d011188de4f00f049125e1",
+      "1stHayagoChampionship": "64604006fbf5bc80f86dc6fedf721d0e1c2edebb8ba52795e264729ccceb13ec",
+      "1stNECCup": "6531203d4729bf00fa1ba7eab4ffb2da671acdba6bea989ee4dc5a92580716b0",
+      "27thP'aewang": "d4035d86353a9d69645bbb45c0be4dfbc6ad05bc2a49d4f66d9627bc35309352",
+      "28thP'aewang": "19f6d8e4581854b7d0309594804d2e1b6d841ac6664c69199db0db7c0b199cce",
+      "2ndNECCup": "75950347c4d30f498438362374841fc8de768e37efab7bfba26ede09eb22af86",
+      "35thCh'oegowi": "972eb3e1946af7b1098530a320e3ab33d63127afce05a1b6898dc6f5b086cd96",
+      "6thNECCup": "b79126767810cb9513c850721272caa8034a071977aea44129a1ba7b9ee4e747",
+      "7thHayagoChampionship": "76a4094551eba6b675b83995abd4a63d822c6ca354a05c2b79732f3776f325bd",
+      "8thHayagoChampionship": "328537008ef1dd88a8f53a40bca9b009bf1c0bf716a0d641e6a31490679fe695",
+      "Ch'oegowi,28th": "eff7520575b361e2f33f04ff1f8c5b5f78eee5cb2a26571fa55425b98e00117b",
+      "Kukgi,17th": "d51c311471c98baa8a9fe7c8174f73f0254e698a0543793cdd8af8f86e7319c6",
+      "10thHayagoChampionship": "9f15b32d2c8c8fe5414f9fef2314106a727b6ba3c31dbc60df662051f8e02e3e",
+      "11thBacchusCup": "931632de59f5e2f7008032f90dc7f4242b978c893500e4f024ad71a6e74eba01",
+      "11thHayagoChampionship": "93e29adb0c6959588d671b20b64207b3e38c5f8c068a3b440fbbdac402a988dd",
+      "12thNECCup": "33f07a983225692612c2ead3861a6919ed0629a051009e33cb97eaabb4c4bc7a",
+      "16thHayagoChampionship": "e6bd4b980a0053f88a6b3347d767cea1ad4507252c83a8799650f2be97ba0b5c",
+      "19thHayagoChampionship": "744a4cd4281cc30c2c06ef6e318de410740b9246b810ade1d7be33674e040c44",
+      "21stCh'oegowi": "87328df98457461160fad973ef6f7a73f3142cdb5cbe0d7a792807bd388342b8",
+      "26thHayagoChampionship": "8dfb88a99e038031804b60a060477a4fad79da2712be56b7042b52332981b3df",
+      "27thHayagoChampionship": "f126f47dd68e848e0038a19f8d81a7b57a09c5f6bbdd91c5d85b8675724f4e98",
+      "30thHayagoChampionship": "c09280b571bc509274729d58bafb00d95afc3689fafb493cbe701c229b1e3502",
+      "3rdNECCup": "aac397d989ea285ab6438e152f2e19f7e8a3103d94a6e747ddd2b7816f7e330e",
+      "5thNECCup": "220ffd9fd237c2b530f6bd55c0290d5f8f29579830fe4d5a857f1527afe53817",
+      "6thHayagoChampionship": "bd5a35fdc451b702b4826bbcbe521056dcc6ea7ba85413789285a4d3ab9dea3a",
+      "6thTaewang": "db4e137244cbb631cd79cb2c87d4bbe7b3f99fbf18a3994ae9c9667994bb7f21",
+      "7thNECCup": "c29a9858478093ef48a362b0f80e8e55dbbced686d6a6703c262e376cb2d30c7",
+      "7thP'aewang": "e9873320e2e68caf8d15785c59ef4b4bd6c104fda390cff805a9bbcfa317e340",
+      "8thNECCup": "b456db295df6418c6a1485371fbae2dd65f07832aa482af7d5b2ffaa04c14a67"
+    }
+  },
+  "name_preimage_sha256": {
+    "TEST": {
+      "10thBacchusCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "10thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "10thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "11thBacchusCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "11thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "11thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "12thBacchusCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "12thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "13thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "14thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "15thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "15thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "16thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "16thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "16thNihonKi-inChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "17thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "18thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "19thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "19thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "1stHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "1stNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "1stNihonKi-inChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "20thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "21stCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "21stHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "26thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "26thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "27thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "27thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "28thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "29thJapaneseTengen": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "2ndNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "30thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "30thJapaneseTengen": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "30thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "31stCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "31stHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "31stJapaneseTengen": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "31stP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "32ndCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "32ndHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "32ndP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "34thCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "34thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "35thCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "35thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "36thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "37thCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "3rdHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "3rdNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "4thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "5thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "5thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "6thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "6thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "6thNihonKi-inChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "6thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "7thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "7thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "7thNihonKi-inChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "7thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "7thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "8thBacchusCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "8thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "8thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "8thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "9thBacchusCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "9thNihonKi-inChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "9thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,2nd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,3rd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,4th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,5th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,6th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,7th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,25th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,26th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,27th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,28th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,29th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,30th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,38th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,10th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,12th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,1st": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,2nd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,3rd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,4th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,5th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,6th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,7th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,8th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,9th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,10th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,11th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,12th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,13th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,14th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,15th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,17th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,18th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,10th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,11th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,12th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,13th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,14th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,15th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,17th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,18th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,19th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,20th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,8th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,20th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,21st": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,22nd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,23rd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,24th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,25th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,33rd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Taewang,3rd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Taewang,4th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Taewang,5th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      }
+    },
+    "PROD": {
+      "10thBacchusCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "10thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "10thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "11thBacchusCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "11thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "11thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "12thBacchusCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "12thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "13thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "14thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "15thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "15thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "16thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "16thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "16thNihonKi-inChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "17thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "18thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "19thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "19thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "1stHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "1stNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "1stNihonKi-inChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "20thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "21stCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "21stHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "26thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "26thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "27thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "27thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "28thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "29thJapaneseTengen": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "2ndNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "30thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "30thJapaneseTengen": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "30thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "31stCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "31stHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "31stJapaneseTengen": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "31stP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "32ndCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "32ndHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "32ndP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "34thCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "34thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "35thCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "35thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "36thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "37thCh'oegowi": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "3rdHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "3rdNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "4thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "5thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "5thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "6thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "6thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "6thNihonKi-inChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "6thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "7thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "7thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "7thNihonKi-inChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "7thP'aewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "7thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "8thBacchusCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "8thHayagoChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "8thNECCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "8thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "9thBacchusCup": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "9thNihonKi-inChampionship": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "9thTaewang": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,2nd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,3rd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,4th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,5th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,6th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "BacchusCup,7th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,25th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,26th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,27th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,28th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,29th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,30th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Ch'oegowi,38th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,10th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,12th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,1st": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,2nd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,3rd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,4th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,5th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,6th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,7th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,8th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kiseong,9th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,10th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,11th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,12th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,13th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,14th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,15th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,17th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Kukgi,18th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,10th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,11th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,12th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,13th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,14th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,15th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,17th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,18th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,19th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,20th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "NihonKi-inChampionship,8th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,20th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,21st": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,22nd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,23rd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,24th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,25th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "P'aewang,33rd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Taewang,3rd": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Taewang,4th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      },
+      "Taewang,5th": {
+        "cn": null,
+        "tw": null,
+        "jp": null,
+        "ko": null,
+        "en": null
+      }
+    }
+  },
+  "records": [
+    {
+      "raw_value": "10thBacchusCup",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "10th"
+        },
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        }
+      ],
+      "names": {
+        "cn": "第10届巴克斯杯",
+        "tw": "第10屆巴克斯盃",
+        "jp": "第10回バッカス杯",
+        "ko": "제10회 박카스배",
+        "en": "10th Bacchus Cup"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "ca8368ec8778c76592786053c0d020a76de8a4710b6435646c537cbdc90ea204",
+        "PROD": "ca8368ec8778c76592786053c0d020a76de8a4710b6435646c537cbdc90ea204"
+      },
+      "owner_id": {
+        "TEST": 50442,
+        "PROD": 50442
+      }
+    },
+    {
+      "raw_value": "10thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "10th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第10届快棋选手权赛",
+        "tw": "第10屆快棋選手權賽",
+        "jp": "第10回早碁選手権戦",
+        "ko": "제10회 속기 선수권전",
+        "en": "10th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "39750052b86bf34f9724de3a3cd9d428276e425a55891d1c99fb07e6fe1fb63f",
+        "PROD": "39750052b86bf34f9724de3a3cd9d428276e425a55891d1c99fb07e6fe1fb63f"
+      },
+      "owner_id": {
+        "TEST": 50447,
+        "PROD": 50447
+      }
+    },
+    {
+      "raw_value": "10thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "10th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第10届大王战",
+        "tw": "第10屆大王戰",
+        "jp": "第10回大王戦",
+        "ko": "제10회 대왕전",
+        "en": "10th Taewang Tournament"
+      },
+      "current_games": 11,
+      "scope_sha256": {
+        "TEST": "37054f7a54b0b19068101dc426953e197c6b97411afe19169eb096e310b0d807",
+        "PROD": "37054f7a54b0b19068101dc426953e197c6b97411afe19169eb096e310b0d807"
+      },
+      "owner_id": {
+        "TEST": 50467,
+        "PROD": 50467
+      }
+    },
+    {
+      "raw_value": "11thBacchusCup",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "11th"
+        },
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        }
+      ],
+      "names": {
+        "cn": "第11届巴克斯杯",
+        "tw": "第11屆巴克斯盃",
+        "jp": "第11回バッカス杯",
+        "ko": "제11회 박카스배",
+        "en": "11th Bacchus Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "c9b4b28ac76bb6f40d523f9117924d8e12df99a2c74ce9a1002f4377edc84bfa",
+        "PROD": "c9b4b28ac76bb6f40d523f9117924d8e12df99a2c74ce9a1002f4377edc84bfa"
+      },
+      "owner_id": {
+        "TEST": 50936,
+        "PROD": 50936
+      }
+    },
+    {
+      "raw_value": "11thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "11th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第11届快棋选手权赛",
+        "tw": "第11屆快棋選手權賽",
+        "jp": "第11回早碁選手権戦",
+        "ko": "제11회 속기 선수권전",
+        "en": "11th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "6c89ae05354c533dc3d3f644979d2b936e312f2d3ea99bb160e672343f57628f",
+        "PROD": "6c89ae05354c533dc3d3f644979d2b936e312f2d3ea99bb160e672343f57628f"
+      },
+      "owner_id": {
+        "TEST": 50940,
+        "PROD": 50940
+      }
+    },
+    {
+      "raw_value": "11thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "11th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第11届大王战",
+        "tw": "第11屆大王戰",
+        "jp": "第11回大王戦",
+        "ko": "제11회 대왕전",
+        "en": "11th Taewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "6c9f9348ea455a9e375fc55ef222f45576f0c835f42bae82cc3f6c052c7ffec4",
+        "PROD": "6c9f9348ea455a9e375fc55ef222f45576f0c835f42bae82cc3f6c052c7ffec4"
+      },
+      "owner_id": {
+        "TEST": 50965,
+        "PROD": 50965
+      }
+    },
+    {
+      "raw_value": "12thBacchusCup",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "12th"
+        },
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        }
+      ],
+      "names": {
+        "cn": "第12届巴克斯杯",
+        "tw": "第12屆巴克斯盃",
+        "jp": "第12回バッカス杯",
+        "ko": "제12회 박카스배",
+        "en": "12th Bacchus Cup"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "7b37c33c1797fc8be2704fc2ba5f70eb051125794d8add796dd61659bd93004c",
+        "PROD": "7b37c33c1797fc8be2704fc2ba5f70eb051125794d8add796dd61659bd93004c"
+      },
+      "owner_id": {
+        "TEST": 51358,
+        "PROD": 51358
+      }
+    },
+    {
+      "raw_value": "12thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "12th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第12届NEC杯",
+        "tw": "第12屆NEC盃",
+        "jp": "第12回NEC杯",
+        "ko": "제12회 NEC배",
+        "en": "12th NEC Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "263919ac357f1713b9c78c57432b6e1dfbd7a2c2d37ae348db27d4f5fb9d2c6d",
+        "PROD": "263919ac357f1713b9c78c57432b6e1dfbd7a2c2d37ae348db27d4f5fb9d2c6d"
+      },
+      "owner_id": {
+        "TEST": 51378,
+        "PROD": 51378
+      }
+    },
+    {
+      "raw_value": "13thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "13th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第13届大王战",
+        "tw": "第13屆大王戰",
+        "jp": "第13回大王戦",
+        "ko": "제13회 대왕전",
+        "en": "13th Taewang Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "ed08ca3b8c5fef7a790ccf0190b6c4865c2959d0eff02d371b272b8cd3780730",
+        "PROD": "ed08ca3b8c5fef7a790ccf0190b6c4865c2959d0eff02d371b272b8cd3780730"
+      },
+      "owner_id": {
+        "TEST": 51716,
+        "PROD": 51716
+      }
+    },
+    {
+      "raw_value": "14thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "14th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第14届NEC杯",
+        "tw": "第14屆NEC盃",
+        "jp": "第14回NEC杯",
+        "ko": "제14회 NEC배",
+        "en": "14th NEC Cup"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "d80329a1e975e344042ba2d229cdf079688e4cd3220e0960d7bb5f302f62d215",
+        "PROD": "d80329a1e975e344042ba2d229cdf079688e4cd3220e0960d7bb5f302f62d215"
+      },
+      "owner_id": {
+        "TEST": 51860,
+        "PROD": 51860
+      }
+    },
+    {
+      "raw_value": "15thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "15th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第15届NEC杯",
+        "tw": "第15屆NEC盃",
+        "jp": "第15回NEC杯",
+        "ko": "제15회 NEC배",
+        "en": "15th NEC Cup"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "ad7cec689c1239d7189f3319ef0c22fbf01ad74d1775a8468ddb72dae7582c7a",
+        "PROD": "ad7cec689c1239d7189f3319ef0c22fbf01ad74d1775a8468ddb72dae7582c7a"
+      },
+      "owner_id": {
+        "TEST": 51951,
+        "PROD": 51951
+      }
+    },
+    {
+      "raw_value": "15thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "15th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第15届大王战",
+        "tw": "第15屆大王戰",
+        "jp": "第15回大王戦",
+        "ko": "제15회 대왕전",
+        "en": "15th Taewang Tournament"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "dacd146b9c96ab3d9e8e84a6eede62ea2f8daa1a38903e914c42b859f98f69ed",
+        "PROD": "dacd146b9c96ab3d9e8e84a6eede62ea2f8daa1a38903e914c42b859f98f69ed"
+      },
+      "owner_id": {
+        "TEST": 51960,
+        "PROD": 51960
+      }
+    },
+    {
+      "raw_value": "16thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "16th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第16届快棋选手权赛",
+        "tw": "第16屆快棋選手權賽",
+        "jp": "第16回早碁選手権戦",
+        "ko": "제16회 속기 선수권전",
+        "en": "16th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "4878254d24e6ed683e15af33fbe0932b1bf3bad1dd3443789a43102610f16dbd",
+        "PROD": "4878254d24e6ed683e15af33fbe0932b1bf3bad1dd3443789a43102610f16dbd"
+      },
+      "owner_id": {
+        "TEST": 52078,
+        "PROD": 52078
+      }
+    },
+    {
+      "raw_value": "16thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "16th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第16届NEC杯",
+        "tw": "第16屆NEC盃",
+        "jp": "第16回NEC杯",
+        "ko": "제16회 NEC배",
+        "en": "16th NEC Cup"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "4e10cbc817995bfcb742f85601ccbcc03a7ae925498b7ccbff69e4acfe45be7f",
+        "PROD": "4e10cbc817995bfcb742f85601ccbcc03a7ae925498b7ccbff69e4acfe45be7f"
+      },
+      "owner_id": {
+        "TEST": 52088,
+        "PROD": 52088
+      }
+    },
+    {
+      "raw_value": "16thNihonKi-inChampionship",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "16th"
+        },
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第16届日本棋院选手权赛",
+        "tw": "第16屆日本棋院選手權賽",
+        "jp": "第16回日本棋院選手権戦",
+        "ko": "제16회 일본기원 선수권전",
+        "en": "16th Nihon Ki-in Championship"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "cc0d158c750cc4bb2cfda611a3f8b7db563065a0c818495ca6550e68938b56cc",
+        "PROD": "cc0d158c750cc4bb2cfda611a3f8b7db563065a0c818495ca6550e68938b56cc"
+      },
+      "owner_id": {
+        "TEST": 52092,
+        "PROD": 52092
+      }
+    },
+    {
+      "raw_value": "17thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "17th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第17届NEC杯",
+        "tw": "第17屆NEC盃",
+        "jp": "第17回NEC杯",
+        "ko": "제17회 NEC배",
+        "en": "17th NEC Cup"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "5f86d15f86eb32e852d42d19fb8c3e0b886a7326fd44944bf12e65d12dc5f353",
+        "PROD": "5f86d15f86eb32e852d42d19fb8c3e0b886a7326fd44944bf12e65d12dc5f353"
+      },
+      "owner_id": {
+        "TEST": 52180,
+        "PROD": 52180
+      }
+    },
+    {
+      "raw_value": "18thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "18th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第18届NEC杯",
+        "tw": "第18屆NEC盃",
+        "jp": "第18回NEC杯",
+        "ko": "제18회 NEC배",
+        "en": "18th NEC Cup"
+      },
+      "current_games": 11,
+      "scope_sha256": {
+        "TEST": "0fa62e7250db1a74173329ec8822e41be13efbd6d7fd3ff00302b6d1b2759ba5",
+        "PROD": "0fa62e7250db1a74173329ec8822e41be13efbd6d7fd3ff00302b6d1b2759ba5"
+      },
+      "owner_id": {
+        "TEST": 52254,
+        "PROD": 52254
+      }
+    },
+    {
+      "raw_value": "19thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "19th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第19届快棋选手权赛",
+        "tw": "第19屆快棋選手權賽",
+        "jp": "第19回早碁選手権戦",
+        "ko": "제19회 속기 선수권전",
+        "en": "19th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "e972516f495236ff54f268b68aca5d6a59c8ea87bfa89ec764374cefff39ec30",
+        "PROD": "e972516f495236ff54f268b68aca5d6a59c8ea87bfa89ec764374cefff39ec30"
+      },
+      "owner_id": {
+        "TEST": 52971,
+        "PROD": 52971
+      }
+    },
+    {
+      "raw_value": "19thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "19th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第19届NEC杯",
+        "tw": "第19屆NEC盃",
+        "jp": "第19回NEC杯",
+        "ko": "제19회 NEC배",
+        "en": "19th NEC Cup"
+      },
+      "current_games": 11,
+      "scope_sha256": {
+        "TEST": "2dc288b1d46008b6b4b1e44d3857d751dbd298fb645b32687b48b9ac5769bd82",
+        "PROD": "2dc288b1d46008b6b4b1e44d3857d751dbd298fb645b32687b48b9ac5769bd82"
+      },
+      "owner_id": {
+        "TEST": 52983,
+        "PROD": 52983
+      }
+    },
+    {
+      "raw_value": "1stHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "1st"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第1届快棋选手权赛",
+        "tw": "第1屆快棋選手權賽",
+        "jp": "第1回早碁選手権戦",
+        "ko": "제1회 속기 선수권전",
+        "en": "1st Hayago Championship"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "06ba6c58741cdcd85682486e424fcb2abac819c6cda3ecda80904668be94196a",
+        "PROD": "06ba6c58741cdcd85682486e424fcb2abac819c6cda3ecda80904668be94196a"
+      },
+      "owner_id": {
+        "TEST": 53305,
+        "PROD": 53305
+      }
+    },
+    {
+      "raw_value": "1stNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "1st"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第1届NEC杯",
+        "tw": "第1屆NEC盃",
+        "jp": "第1回NEC杯",
+        "ko": "제1회 NEC배",
+        "en": "1st NEC Cup"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "c5919cb1dcc9353c1a401751d124a617f6a4d5a59aacaf890b680cedc8840927",
+        "PROD": "c5919cb1dcc9353c1a401751d124a617f6a4d5a59aacaf890b680cedc8840927"
+      },
+      "owner_id": {
+        "TEST": 53338,
+        "PROD": 53338
+      }
+    },
+    {
+      "raw_value": "1stNihonKi-inChampionship",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "1st"
+        },
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第1届日本棋院选手权赛",
+        "tw": "第1屆日本棋院選手權賽",
+        "jp": "第1回日本棋院選手権戦",
+        "ko": "제1회 일본기원 선수권전",
+        "en": "1st Nihon Ki-in Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "654fb057bedeae7a0c9f94de191ea8e203dba90f08d304d04cf5d0351536d985",
+        "PROD": "654fb057bedeae7a0c9f94de191ea8e203dba90f08d304d04cf5d0351536d985"
+      },
+      "owner_id": {
+        "TEST": 53344,
+        "PROD": 53344
+      }
+    },
+    {
+      "raw_value": "20thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "20th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第20届NEC杯",
+        "tw": "第20屆NEC盃",
+        "jp": "第20回NEC杯",
+        "ko": "제20회 NEC배",
+        "en": "20th NEC Cup"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "7a7b0d6593276305575c3451c42b0b0f333a1fd9d0aadecd4601a9a177719682",
+        "PROD": "7a7b0d6593276305575c3451c42b0b0f333a1fd9d0aadecd4601a9a177719682"
+      },
+      "owner_id": {
+        "TEST": 63348,
+        "PROD": 63348
+      }
+    },
+    {
+      "raw_value": "21stCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "21st"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第21届最高位战",
+        "tw": "第21屆最高位戰",
+        "jp": "第21回最高位戦",
+        "ko": "제21회 최고위전",
+        "en": "21st Ch'oegowi Tournament"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "c98f1f9f1093485ff15de9780540c81fb03a475bf8f97e3382a3ded2f22bdb00",
+        "PROD": "c98f1f9f1093485ff15de9780540c81fb03a475bf8f97e3382a3ded2f22bdb00"
+      },
+      "owner_id": {
+        "TEST": 63504,
+        "PROD": 63504
+      }
+    },
+    {
+      "raw_value": "21stHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "21st"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第21届快棋选手权赛",
+        "tw": "第21屆快棋選手權賽",
+        "jp": "第21回早碁選手権戦",
+        "ko": "제21회 속기 선수권전",
+        "en": "21st Hayago Championship"
+      },
+      "current_games": 12,
+      "scope_sha256": {
+        "TEST": "69ae3708cf2ead7e728b779592a08d15f8cc35c76cfd29a2486f02632597fb37",
+        "PROD": "69ae3708cf2ead7e728b779592a08d15f8cc35c76cfd29a2486f02632597fb37"
+      },
+      "owner_id": {
+        "TEST": 63507,
+        "PROD": 63507
+      }
+    },
+    {
+      "raw_value": "26thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "26th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第26届快棋选手权赛",
+        "tw": "第26屆快棋選手權賽",
+        "jp": "第26回早碁選手権戦",
+        "ko": "제26회 속기 선수권전",
+        "en": "26th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "196595d4eeff3d168b63f7ade3fd1aa8dd3e2a9e590c4f171798ac92b63b33a1",
+        "PROD": "196595d4eeff3d168b63f7ade3fd1aa8dd3e2a9e590c4f171798ac92b63b33a1"
+      },
+      "owner_id": {
+        "TEST": 64448,
+        "PROD": 64448
+      }
+    },
+    {
+      "raw_value": "26thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "26th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第26届霸王战",
+        "tw": "第26屆霸王戰",
+        "jp": "第26回覇王戦",
+        "ko": "제26회 패왕전",
+        "en": "26th P'aewang Tournament"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "ac6d2b8c34ca2df7dfcbf6c28b178357d61247f26b2eb587ebfa486eedd9d853",
+        "PROD": "ac6d2b8c34ca2df7dfcbf6c28b178357d61247f26b2eb587ebfa486eedd9d853"
+      },
+      "owner_id": {
+        "TEST": 64462,
+        "PROD": 64462
+      }
+    },
+    {
+      "raw_value": "27thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "27th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第27届快棋选手权赛",
+        "tw": "第27屆快棋選手權賽",
+        "jp": "第27回早碁選手権戦",
+        "ko": "제27회 속기 선수권전",
+        "en": "27th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "b738f2737cb085a2a89470ada60521551348dbd7e1896a471e879a9d80397f29",
+        "PROD": "b738f2737cb085a2a89470ada60521551348dbd7e1896a471e879a9d80397f29"
+      },
+      "owner_id": {
+        "TEST": 64592,
+        "PROD": 64592
+      }
+    },
+    {
+      "raw_value": "27thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "27th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第27届霸王战",
+        "tw": "第27屆霸王戰",
+        "jp": "第27回覇王戦",
+        "ko": "제27회 패왕전",
+        "en": "27th P'aewang Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "d1332619fd421f9898a5522449bd446df4396a02cc6978e58c366b2556e13fab",
+        "PROD": "d1332619fd421f9898a5522449bd446df4396a02cc6978e58c366b2556e13fab"
+      },
+      "owner_id": {
+        "TEST": 64603,
+        "PROD": 64603
+      }
+    },
+    {
+      "raw_value": "28thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "28th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第28届霸王战",
+        "tw": "第28屆霸王戰",
+        "jp": "第28回覇王戦",
+        "ko": "제28회 패왕전",
+        "en": "28th P'aewang Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "1d13d70ccb9a82e8c5c2866e05f4aa2aac555d20fa7c92a562d0e9c7c5dc6277",
+        "PROD": "1d13d70ccb9a82e8c5c2866e05f4aa2aac555d20fa7c92a562d0e9c7c5dc6277"
+      },
+      "owner_id": {
+        "TEST": 65156,
+        "PROD": 65156
+      }
+    },
+    {
+      "raw_value": "29thJapaneseTengen",
+      "core_key": "JapaneseTengen",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "29th"
+        },
+        {
+          "kind": "core",
+          "text": "JapaneseTengen"
+        }
+      ],
+      "names": {
+        "cn": "第29届日本天元战",
+        "tw": "第29屆日本天元戰",
+        "jp": "第29回日本天元戦",
+        "ko": "제29회 일본 천원전",
+        "en": "29th Japanese Tengen Tournament"
+      },
+      "current_games": 28,
+      "scope_sha256": {
+        "TEST": "8560688d6e368326f679177b7a78644c6601800ed02e84328bf1d0e612974148",
+        "PROD": "8560688d6e368326f679177b7a78644c6601800ed02e84328bf1d0e612974148"
+      },
+      "owner_id": {
+        "TEST": 65253,
+        "PROD": 65253
+      }
+    },
+    {
+      "raw_value": "2ndNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "2nd"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第2届NEC杯",
+        "tw": "第2屆NEC盃",
+        "jp": "第2回NEC杯",
+        "ko": "제2회 NEC배",
+        "en": "2nd NEC Cup"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "ad5bb6453cbc6320ce36e586d371ba36f239df95416419d89f93b19dfbcf9cec",
+        "PROD": "ad5bb6453cbc6320ce36e586d371ba36f239df95416419d89f93b19dfbcf9cec"
+      },
+      "owner_id": {
+        "TEST": 65531,
+        "PROD": 65531
+      }
+    },
+    {
+      "raw_value": "30thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "30th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第30届快棋选手权赛",
+        "tw": "第30屆快棋選手權賽",
+        "jp": "第30回早碁選手権戦",
+        "ko": "제30회 속기 선수권전",
+        "en": "30th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "b0b76a2c5356f32ebb9a70cac89c0b2cbe99ed597dcf37bcc1f9eb6d3bed3bed",
+        "PROD": "b0b76a2c5356f32ebb9a70cac89c0b2cbe99ed597dcf37bcc1f9eb6d3bed3bed"
+      },
+      "owner_id": {
+        "TEST": 65784,
+        "PROD": 65784
+      }
+    },
+    {
+      "raw_value": "30thJapaneseTengen",
+      "core_key": "JapaneseTengen",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "30th"
+        },
+        {
+          "kind": "core",
+          "text": "JapaneseTengen"
+        }
+      ],
+      "names": {
+        "cn": "第30届日本天元战",
+        "tw": "第30屆日本天元戰",
+        "jp": "第30回日本天元戦",
+        "ko": "제30회 일본 천원전",
+        "en": "30th Japanese Tengen Tournament"
+      },
+      "current_games": 27,
+      "scope_sha256": {
+        "TEST": "034c95e209105239058ca791e78f233b6dc76f6bc4f9202133ec37b97ac19147",
+        "PROD": "034c95e209105239058ca791e78f233b6dc76f6bc4f9202133ec37b97ac19147"
+      },
+      "owner_id": {
+        "TEST": 65790,
+        "PROD": 65790
+      }
+    },
+    {
+      "raw_value": "30thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "30th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第30届霸王战",
+        "tw": "第30屆霸王戰",
+        "jp": "第30回覇王戦",
+        "ko": "제30회 패왕전",
+        "en": "30th P'aewang Tournament"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "902695f780c099619e345b370293cd0db2a5df750fbceb111bdc44b21e830b53",
+        "PROD": "902695f780c099619e345b370293cd0db2a5df750fbceb111bdc44b21e830b53"
+      },
+      "owner_id": {
+        "TEST": 65799,
+        "PROD": 65799
+      }
+    },
+    {
+      "raw_value": "31stCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "31st"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第31届最高位战",
+        "tw": "第31屆最高位戰",
+        "jp": "第31回最高位戦",
+        "ko": "제31회 최고위전",
+        "en": "31st Ch'oegowi Tournament"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "4d7bf1ce2f8b880a8d0958983703c04757165bbc7aa25e60d048688f68706e5e",
+        "PROD": "4d7bf1ce2f8b880a8d0958983703c04757165bbc7aa25e60d048688f68706e5e"
+      },
+      "owner_id": {
+        "TEST": 65901,
+        "PROD": 65901
+      }
+    },
+    {
+      "raw_value": "31stHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "31st"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第31届快棋选手权赛",
+        "tw": "第31屆快棋選手權賽",
+        "jp": "第31回早碁選手権戦",
+        "ko": "제31회 속기 선수권전",
+        "en": "31st Hayago Championship"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "2dc07d614961923f3b8c86fc6e541de26091c0078dde606ff39d2e15fe1ba907",
+        "PROD": "2dc07d614961923f3b8c86fc6e541de26091c0078dde606ff39d2e15fe1ba907"
+      },
+      "owner_id": {
+        "TEST": 65903,
+        "PROD": 65903
+      }
+    },
+    {
+      "raw_value": "31stJapaneseTengen",
+      "core_key": "JapaneseTengen",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "31st"
+        },
+        {
+          "kind": "core",
+          "text": "JapaneseTengen"
+        }
+      ],
+      "names": {
+        "cn": "第31届日本天元战",
+        "tw": "第31屆日本天元戰",
+        "jp": "第31回日本天元戦",
+        "ko": "제31회 일본 천원전",
+        "en": "31st Japanese Tengen Tournament"
+      },
+      "current_games": 26,
+      "scope_sha256": {
+        "TEST": "1663f1ceec3f4571cc3f7a4ddeb2ff5eb10e186517e93df1abc5934aba0bc39c",
+        "PROD": "1663f1ceec3f4571cc3f7a4ddeb2ff5eb10e186517e93df1abc5934aba0bc39c"
+      },
+      "owner_id": {
+        "TEST": 65908,
+        "PROD": 65908
+      }
+    },
+    {
+      "raw_value": "31stP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "31st"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第31届霸王战",
+        "tw": "第31屆霸王戰",
+        "jp": "第31回覇王戦",
+        "ko": "제31회 패왕전",
+        "en": "31st P'aewang Tournament"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "3fabde1329fced5a3214f7c266f21accf3a63a2b42bf3f8a17a0576c112a45bb",
+        "PROD": "3fabde1329fced5a3214f7c266f21accf3a63a2b42bf3f8a17a0576c112a45bb"
+      },
+      "owner_id": {
+        "TEST": 65918,
+        "PROD": 65918
+      }
+    },
+    {
+      "raw_value": "32ndCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "32nd"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第32届最高位战",
+        "tw": "第32屆最高位戰",
+        "jp": "第32回最高位戦",
+        "ko": "제32회 최고위전",
+        "en": "32nd Ch'oegowi Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "8afbbad841d8a14dbaca3131e1ceb145007aa892f290509ebf9ceef54168059d",
+        "PROD": "8afbbad841d8a14dbaca3131e1ceb145007aa892f290509ebf9ceef54168059d"
+      },
+      "owner_id": {
+        "TEST": 66000,
+        "PROD": 66000
+      }
+    },
+    {
+      "raw_value": "32ndHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "32nd"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第32届快棋选手权赛",
+        "tw": "第32屆快棋選手權賽",
+        "jp": "第32回早碁選手権戦",
+        "ko": "제32회 속기 선수권전",
+        "en": "32nd Hayago Championship"
+      },
+      "current_games": 13,
+      "scope_sha256": {
+        "TEST": "06cffc7c922d72bf5a6f8dbc7729268d61b4ebf54756cb279e4c8d8d9a03c8ad",
+        "PROD": "06cffc7c922d72bf5a6f8dbc7729268d61b4ebf54756cb279e4c8d8d9a03c8ad"
+      },
+      "owner_id": {
+        "TEST": 66001,
+        "PROD": 66001
+      }
+    },
+    {
+      "raw_value": "32ndP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "32nd"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第32届霸王战",
+        "tw": "第32屆霸王戰",
+        "jp": "第32回覇王戦",
+        "ko": "제32회 패왕전",
+        "en": "32nd P'aewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "1120e7ba10460a8dd584e56fb34e208ae322e230a48473e9e73171b741386e7e",
+        "PROD": "1120e7ba10460a8dd584e56fb34e208ae322e230a48473e9e73171b741386e7e"
+      },
+      "owner_id": {
+        "TEST": 66012,
+        "PROD": 66012
+      }
+    },
+    {
+      "raw_value": "34thCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "34th"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第34届最高位战",
+        "tw": "第34屆最高位戰",
+        "jp": "第34回最高位戦",
+        "ko": "제34회 최고위전",
+        "en": "34th Ch'oegowi Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "4d865c42f6390ea61af4d5c9463a4e6c0ca7883b406ab0be7f10608d050334fd",
+        "PROD": "4d865c42f6390ea61af4d5c9463a4e6c0ca7883b406ab0be7f10608d050334fd"
+      },
+      "owner_id": {
+        "TEST": 66099,
+        "PROD": 66099
+      }
+    },
+    {
+      "raw_value": "34thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "34th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第34届霸王战",
+        "tw": "第34屆霸王戰",
+        "jp": "第34回覇王戦",
+        "ko": "제34회 패왕전",
+        "en": "34th P'aewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "c896c183f055c98593868a94c1e1eac71df34cfd18b5c0dc662a5d217b44d594",
+        "PROD": "c896c183f055c98593868a94c1e1eac71df34cfd18b5c0dc662a5d217b44d594"
+      },
+      "owner_id": {
+        "TEST": 66109,
+        "PROD": 66109
+      }
+    },
+    {
+      "raw_value": "35thCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "35th"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第35届最高位战",
+        "tw": "第35屆最高位戰",
+        "jp": "第35回最高位戦",
+        "ko": "제35회 최고위전",
+        "en": "35th Ch'oegowi Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "be1e5e664f9fc64dc8fb2b2d179f19f12b7b6ccf4f375164174987c63fdac7a5",
+        "PROD": "be1e5e664f9fc64dc8fb2b2d179f19f12b7b6ccf4f375164174987c63fdac7a5"
+      },
+      "owner_id": {
+        "TEST": 66132,
+        "PROD": 66132
+      }
+    },
+    {
+      "raw_value": "35thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "35th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第35届霸王战",
+        "tw": "第35屆霸王戰",
+        "jp": "第35回覇王戦",
+        "ko": "제35회 패왕전",
+        "en": "35th P'aewang Tournament"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "491c18fce477bc32c6a55b8c44afc2231e95f4ea31f1dab756e6a575aaba7e80",
+        "PROD": "491c18fce477bc32c6a55b8c44afc2231e95f4ea31f1dab756e6a575aaba7e80"
+      },
+      "owner_id": {
+        "TEST": 66142,
+        "PROD": 66142
+      }
+    },
+    {
+      "raw_value": "36thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "36th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第36届霸王战",
+        "tw": "第36屆霸王戰",
+        "jp": "第36回覇王戦",
+        "ko": "제36회 패왕전",
+        "en": "36th P'aewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "1d307273b41bd30ca154aee21001c29635ce48f5dd70ad1613146cf030dede5a",
+        "PROD": "1d307273b41bd30ca154aee21001c29635ce48f5dd70ad1613146cf030dede5a"
+      },
+      "owner_id": {
+        "TEST": 66195,
+        "PROD": 66195
+      }
+    },
+    {
+      "raw_value": "37thCh'oegowi",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "37th"
+        },
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        }
+      ],
+      "names": {
+        "cn": "第37届最高位战",
+        "tw": "第37屆最高位戰",
+        "jp": "第37回最高位戦",
+        "ko": "제37회 최고위전",
+        "en": "37th Ch'oegowi Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "514e13bb9dedd37b082a2f9bd873cecb1903257a15331e65eeb583cdccc296b5",
+        "PROD": "514e13bb9dedd37b082a2f9bd873cecb1903257a15331e65eeb583cdccc296b5"
+      },
+      "owner_id": {
+        "TEST": 66237,
+        "PROD": 66237
+      }
+    },
+    {
+      "raw_value": "3rdHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "3rd"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第3届快棋选手权赛",
+        "tw": "第3屆快棋選手權賽",
+        "jp": "第3回早碁選手権戦",
+        "ko": "제3회 속기 선수권전",
+        "en": "3rd Hayago Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "d38976d8ff70fbc4308d9844fd6973fae05ff59a7b8d2911f697dd01247071f6",
+        "PROD": "d38976d8ff70fbc4308d9844fd6973fae05ff59a7b8d2911f697dd01247071f6"
+      },
+      "owner_id": {
+        "TEST": 66419,
+        "PROD": 66419
+      }
+    },
+    {
+      "raw_value": "3rdNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "3rd"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第3届NEC杯",
+        "tw": "第3屆NEC盃",
+        "jp": "第3回NEC杯",
+        "ko": "제3회 NEC배",
+        "en": "3rd NEC Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "6c5733755c75a52b25bcc9b8635333326408d2ff6ffd4a3e058656842fd14d38",
+        "PROD": "6c5733755c75a52b25bcc9b8635333326408d2ff6ffd4a3e058656842fd14d38"
+      },
+      "owner_id": {
+        "TEST": 66444,
+        "PROD": 66444
+      }
+    },
+    {
+      "raw_value": "4thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "4th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第4届快棋选手权赛",
+        "tw": "第4屆快棋選手權賽",
+        "jp": "第4回早碁選手権戦",
+        "ko": "제4회 속기 선수권전",
+        "en": "4th Hayago Championship"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "03e87fdad0a3d18667d413cfe8b88a51fd42dd02e9ba0d2d8ed9ed21ec3761ab",
+        "PROD": "03e87fdad0a3d18667d413cfe8b88a51fd42dd02e9ba0d2d8ed9ed21ec3761ab"
+      },
+      "owner_id": {
+        "TEST": 67294,
+        "PROD": 67294
+      }
+    },
+    {
+      "raw_value": "5thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "5th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第5届快棋选手权赛",
+        "tw": "第5屆快棋選手權賽",
+        "jp": "第5回早碁選手権戦",
+        "ko": "제5회 속기 선수권전",
+        "en": "5th Hayago Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "730a7df3929bf6d148fef49dc3962562d9ac1d004a379d7727b8b0b08ac63065",
+        "PROD": "730a7df3929bf6d148fef49dc3962562d9ac1d004a379d7727b8b0b08ac63065"
+      },
+      "owner_id": {
+        "TEST": 67714,
+        "PROD": 67714
+      }
+    },
+    {
+      "raw_value": "5thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "5th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第5届NEC杯",
+        "tw": "第5屆NEC盃",
+        "jp": "第5回NEC杯",
+        "ko": "제5회 NEC배",
+        "en": "5th NEC Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "6ff325923298ecffc8ea6549cadf5588fbc964a73ca41286a300d5126bcce8da",
+        "PROD": "6ff325923298ecffc8ea6549cadf5588fbc964a73ca41286a300d5126bcce8da"
+      },
+      "owner_id": {
+        "TEST": 67739,
+        "PROD": 67739
+      }
+    },
+    {
+      "raw_value": "6thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "6th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第6届快棋选手权赛",
+        "tw": "第6屆快棋選手權賽",
+        "jp": "第6回早碁選手権戦",
+        "ko": "제6회 속기 선수권전",
+        "en": "6th Hayago Championship"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "34e044f0ce0816aa691f7fdf8ac0ed52be6dc098e917f63ad4a81c5eb84587c9",
+        "PROD": "34e044f0ce0816aa691f7fdf8ac0ed52be6dc098e917f63ad4a81c5eb84587c9"
+      },
+      "owner_id": {
+        "TEST": 68110,
+        "PROD": 68110
+      }
+    },
+    {
+      "raw_value": "6thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "6th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第6届NEC杯",
+        "tw": "第6屆NEC盃",
+        "jp": "第6回NEC杯",
+        "ko": "제6회 NEC배",
+        "en": "6th NEC Cup"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "8cfb4e223426ad5e4932f12c76929500d0b7058e4b9cb2b41a22135998328871",
+        "PROD": "8cfb4e223426ad5e4932f12c76929500d0b7058e4b9cb2b41a22135998328871"
+      },
+      "owner_id": {
+        "TEST": 68132,
+        "PROD": 68132
+      }
+    },
+    {
+      "raw_value": "6thNihonKi-inChampionship",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "6th"
+        },
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第6届日本棋院选手权赛",
+        "tw": "第6屆日本棋院選手權賽",
+        "jp": "第6回日本棋院選手権戦",
+        "ko": "제6회 일본기원 선수권전",
+        "en": "6th Nihon Ki-in Championship"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "9674d4e509083440081b4005b3d4c183fb66ea1569e0f91ab99dbbdb7aadc0ef",
+        "PROD": "9674d4e509083440081b4005b3d4c183fb66ea1569e0f91ab99dbbdb7aadc0ef"
+      },
+      "owner_id": {
+        "TEST": 68135,
+        "PROD": 68135
+      }
+    },
+    {
+      "raw_value": "6thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "6th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第6届大王战",
+        "tw": "第6屆大王戰",
+        "jp": "第6回大王戦",
+        "ko": "제6회 대왕전",
+        "en": "6th Taewang Tournament"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "d4a173b66bf9461236c99213063798b44ff203ddb8e8a5b324f8964034808db3",
+        "PROD": "d4a173b66bf9461236c99213063798b44ff203ddb8e8a5b324f8964034808db3"
+      },
+      "owner_id": {
+        "TEST": 68151,
+        "PROD": 68151
+      }
+    },
+    {
+      "raw_value": "7thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "7th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第7届快棋选手权赛",
+        "tw": "第7屆快棋選手權賽",
+        "jp": "第7回早碁選手権戦",
+        "ko": "제7회 속기 선수권전",
+        "en": "7th Hayago Championship"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "fe7a8732d9ac50a89eb45e0f29a4841f240137028776f72c34747b96476e1bc8",
+        "PROD": "fe7a8732d9ac50a89eb45e0f29a4841f240137028776f72c34747b96476e1bc8"
+      },
+      "owner_id": {
+        "TEST": 68480,
+        "PROD": 68480
+      }
+    },
+    {
+      "raw_value": "7thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "7th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第7届NEC杯",
+        "tw": "第7屆NEC盃",
+        "jp": "第7回NEC杯",
+        "ko": "제7회 NEC배",
+        "en": "7th NEC Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "df6627e2d4ce99931a98705275e0b1e8d7cb59f82d16876bae49588709cfd7e2",
+        "PROD": "df6627e2d4ce99931a98705275e0b1e8d7cb59f82d16876bae49588709cfd7e2"
+      },
+      "owner_id": {
+        "TEST": 68503,
+        "PROD": 68503
+      }
+    },
+    {
+      "raw_value": "7thNihonKi-inChampionship",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "7th"
+        },
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第7届日本棋院选手权赛",
+        "tw": "第7屆日本棋院選手權賽",
+        "jp": "第7回日本棋院選手権戦",
+        "ko": "제7회 일본기원 선수권전",
+        "en": "7th Nihon Ki-in Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "c116d715bf6c4f5639e834bd483be97808e3eeea9734202f4cf3c246140e939c",
+        "PROD": "c116d715bf6c4f5639e834bd483be97808e3eeea9734202f4cf3c246140e939c"
+      },
+      "owner_id": {
+        "TEST": 68508,
+        "PROD": 68508
+      }
+    },
+    {
+      "raw_value": "7thP'aewang",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "7th"
+        },
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        }
+      ],
+      "names": {
+        "cn": "第7届霸王战",
+        "tw": "第7屆霸王戰",
+        "jp": "第7回覇王戦",
+        "ko": "제7회 패왕전",
+        "en": "7th P'aewang Tournament"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "4ff288845eb9a8b37eaaf6a85577de8c587670573eca90aa178b52e854570dda",
+        "PROD": "4ff288845eb9a8b37eaaf6a85577de8c587670573eca90aa178b52e854570dda"
+      },
+      "owner_id": {
+        "TEST": 68516,
+        "PROD": 68516
+      }
+    },
+    {
+      "raw_value": "7thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "7th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第7届大王战",
+        "tw": "第7屆大王戰",
+        "jp": "第7回大王戦",
+        "ko": "제7회 대왕전",
+        "en": "7th Taewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "dd868870527aafa77292cb237aaa2dad8cf47424628c59d2fa0d352462ae61c9",
+        "PROD": "dd868870527aafa77292cb237aaa2dad8cf47424628c59d2fa0d352462ae61c9"
+      },
+      "owner_id": {
+        "TEST": 68525,
+        "PROD": 68525
+      }
+    },
+    {
+      "raw_value": "8thBacchusCup",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "8th"
+        },
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        }
+      ],
+      "names": {
+        "cn": "第8届巴克斯杯",
+        "tw": "第8屆巴克斯盃",
+        "jp": "第8回バッカス杯",
+        "ko": "제8회 박카스배",
+        "en": "8th Bacchus Cup"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "fc09eb195739bf7c6ea9649f865484ac11ccd1b5f62c435c3c1cb8bc2de1eef7",
+        "PROD": "fc09eb195739bf7c6ea9649f865484ac11ccd1b5f62c435c3c1cb8bc2de1eef7"
+      },
+      "owner_id": {
+        "TEST": 68706,
+        "PROD": 68706
+      }
+    },
+    {
+      "raw_value": "8thHayagoChampionship",
+      "core_key": "HayagoChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "8th"
+        },
+        {
+          "kind": "core",
+          "text": "HayagoChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第8届快棋选手权赛",
+        "tw": "第8屆快棋選手權賽",
+        "jp": "第8回早碁選手権戦",
+        "ko": "제8회 속기 선수권전",
+        "en": "8th Hayago Championship"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "696c67b1651c2e1f5c610124ee26b8a8c26e76b17dffc78eb6dbcc386fac3a39",
+        "PROD": "696c67b1651c2e1f5c610124ee26b8a8c26e76b17dffc78eb6dbcc386fac3a39"
+      },
+      "owner_id": {
+        "TEST": 68710,
+        "PROD": 68710
+      }
+    },
+    {
+      "raw_value": "8thNECCup",
+      "core_key": "NECCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "8th"
+        },
+        {
+          "kind": "core",
+          "text": "NECCup"
+        }
+      ],
+      "names": {
+        "cn": "第8届NEC杯",
+        "tw": "第8屆NEC盃",
+        "jp": "第8回NEC杯",
+        "ko": "제8회 NEC배",
+        "en": "8th NEC Cup"
+      },
+      "current_games": 2,
+      "scope_sha256": {
+        "TEST": "7fbf550695eda8243c8f25581efb894bc66faf31d7edd6f6dacbaf82d9702bd9",
+        "PROD": "7fbf550695eda8243c8f25581efb894bc66faf31d7edd6f6dacbaf82d9702bd9"
+      },
+      "owner_id": {
+        "TEST": 68728,
+        "PROD": 68728
+      }
+    },
+    {
+      "raw_value": "8thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "8th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第8届大王战",
+        "tw": "第8屆大王戰",
+        "jp": "第8回大王戦",
+        "ko": "제8회 대왕전",
+        "en": "8th Taewang Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "0b8bfcbac7867d048121c951f650f671f2324aefb2afd5c1e211a19711f42cd3",
+        "PROD": "0b8bfcbac7867d048121c951f650f671f2324aefb2afd5c1e211a19711f42cd3"
+      },
+      "owner_id": {
+        "TEST": 68744,
+        "PROD": 68744
+      }
+    },
+    {
+      "raw_value": "9thBacchusCup",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "9th"
+        },
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        }
+      ],
+      "names": {
+        "cn": "第9届巴克斯杯",
+        "tw": "第9屆巴克斯盃",
+        "jp": "第9回バッカス杯",
+        "ko": "제9회 박카스배",
+        "en": "9th Bacchus Cup"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "149513427c34a7ef2ceafef4f0b6769c69757914cf4953e9552e7e0c02b4a1f8",
+        "PROD": "149513427c34a7ef2ceafef4f0b6769c69757914cf4953e9552e7e0c02b4a1f8"
+      },
+      "owner_id": {
+        "TEST": 68986,
+        "PROD": 68986
+      }
+    },
+    {
+      "raw_value": "9thNihonKi-inChampionship",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "9th"
+        },
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        }
+      ],
+      "names": {
+        "cn": "第9届日本棋院选手权赛",
+        "tw": "第9屆日本棋院選手權賽",
+        "jp": "第9回日本棋院選手権戦",
+        "ko": "제9회 일본기원 선수권전",
+        "en": "9th Nihon Ki-in Championship"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "d373e83ff2d20757f716cfc195934985a564849f2152dacec30e769b9f25d603",
+        "PROD": "d373e83ff2d20757f716cfc195934985a564849f2152dacec30e769b9f25d603"
+      },
+      "owner_id": {
+        "TEST": 69011,
+        "PROD": 69011
+      }
+    },
+    {
+      "raw_value": "9thTaewang",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "edition",
+          "text": "9th"
+        },
+        {
+          "kind": "core",
+          "text": "Taewang"
+        }
+      ],
+      "names": {
+        "cn": "第9届大王战",
+        "tw": "第9屆大王戰",
+        "jp": "第9回大王戦",
+        "ko": "제9회 대왕전",
+        "en": "9th Taewang Tournament"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "872c23ad552e63c81a830f2d07c4c7e9b89027b3e2f3b6424817cacdb8a26293",
+        "PROD": "872c23ad552e63c81a830f2d07c4c7e9b89027b3e2f3b6424817cacdb8a26293"
+      },
+      "owner_id": {
+        "TEST": 69020,
+        "PROD": 69020
+      }
+    },
+    {
+      "raw_value": "BacchusCup,2nd",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",2nd"
+        }
+      ],
+      "names": {
+        "cn": "第2届巴克斯杯",
+        "tw": "第2屆巴克斯盃",
+        "jp": "第2回バッカス杯",
+        "ko": "제2회 박카스배",
+        "en": "2nd Bacchus Cup"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "b2f5050fb36de295853d3d3a1ec6c6fff0a9cb3b2a4c928e8c2be20f0d9f6238",
+        "PROD": "b2f5050fb36de295853d3d3a1ec6c6fff0a9cb3b2a4c928e8c2be20f0d9f6238"
+      },
+      "owner_id": {
+        "TEST": 69254,
+        "PROD": 69254
+      }
+    },
+    {
+      "raw_value": "BacchusCup,3rd",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",3rd"
+        }
+      ],
+      "names": {
+        "cn": "第3届巴克斯杯",
+        "tw": "第3屆巴克斯盃",
+        "jp": "第3回バッカス杯",
+        "ko": "제3회 박카스배",
+        "en": "3rd Bacchus Cup"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "a16a492c1779e3a4294871313cb014ad8215e92433d4c3a0efda1429a355228a",
+        "PROD": "a16a492c1779e3a4294871313cb014ad8215e92433d4c3a0efda1429a355228a"
+      },
+      "owner_id": {
+        "TEST": 69255,
+        "PROD": 69255
+      }
+    },
+    {
+      "raw_value": "BacchusCup,4th",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",4th"
+        }
+      ],
+      "names": {
+        "cn": "第4届巴克斯杯",
+        "tw": "第4屆巴克斯盃",
+        "jp": "第4回バッカス杯",
+        "ko": "제4회 박카스배",
+        "en": "4th Bacchus Cup"
+      },
+      "current_games": 12,
+      "scope_sha256": {
+        "TEST": "99b38fff75a0c4b5f0ead146d2b707fe95c4c089de2a5f484481af8eb4b05525",
+        "PROD": "99b38fff75a0c4b5f0ead146d2b707fe95c4c089de2a5f484481af8eb4b05525"
+      },
+      "owner_id": {
+        "TEST": 69256,
+        "PROD": 69256
+      }
+    },
+    {
+      "raw_value": "BacchusCup,5th",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",5th"
+        }
+      ],
+      "names": {
+        "cn": "第5届巴克斯杯",
+        "tw": "第5屆巴克斯盃",
+        "jp": "第5回バッカス杯",
+        "ko": "제5회 박카스배",
+        "en": "5th Bacchus Cup"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "5758d9e234da90f201badc719c37e9f81e093149bb5fc15a1411e9ac95109885",
+        "PROD": "5758d9e234da90f201badc719c37e9f81e093149bb5fc15a1411e9ac95109885"
+      },
+      "owner_id": {
+        "TEST": 69257,
+        "PROD": 69257
+      }
+    },
+    {
+      "raw_value": "BacchusCup,6th",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",6th"
+        }
+      ],
+      "names": {
+        "cn": "第6届巴克斯杯",
+        "tw": "第6屆巴克斯盃",
+        "jp": "第6回バッカス杯",
+        "ko": "제6회 박카스배",
+        "en": "6th Bacchus Cup"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "05e202c19feb6f657430aac28d25f35cf316b3677e0cb504ba73249d5edff92b",
+        "PROD": "05e202c19feb6f657430aac28d25f35cf316b3677e0cb504ba73249d5edff92b"
+      },
+      "owner_id": {
+        "TEST": 69258,
+        "PROD": 69258
+      }
+    },
+    {
+      "raw_value": "BacchusCup,7th",
+      "core_key": "BacchusCup",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "BacchusCup"
+        },
+        {
+          "kind": "edition",
+          "text": ",7th"
+        }
+      ],
+      "names": {
+        "cn": "第7届巴克斯杯",
+        "tw": "第7屆巴克斯盃",
+        "jp": "第7回バッカス杯",
+        "ko": "제7회 박카스배",
+        "en": "7th Bacchus Cup"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "ee3d4d2683505c1d2647d2b9d8f6eb60d0bcc9993f425c898644a60e5c3179ec",
+        "PROD": "ee3d4d2683505c1d2647d2b9d8f6eb60d0bcc9993f425c898644a60e5c3179ec"
+      },
+      "owner_id": {
+        "TEST": 69259,
+        "PROD": 69259
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,25th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",25th"
+        }
+      ],
+      "names": {
+        "cn": "第25届最高位战",
+        "tw": "第25屆最高位戰",
+        "jp": "第25回最高位戦",
+        "ko": "제25회 최고위전",
+        "en": "25th Ch'oegowi Tournament"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "44ebc09bfa4ca2aca0c981dde8a880c200fd56d7188c7fd2395308593ed0b685",
+        "PROD": "44ebc09bfa4ca2aca0c981dde8a880c200fd56d7188c7fd2395308593ed0b685"
+      },
+      "owner_id": {
+        "TEST": 69279,
+        "PROD": 69279
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,26th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",26th"
+        }
+      ],
+      "names": {
+        "cn": "第26届最高位战",
+        "tw": "第26屆最高位戰",
+        "jp": "第26回最高位戦",
+        "ko": "제26회 최고위전",
+        "en": "26th Ch'oegowi Tournament"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "df38cdf340e26837d236fe25085bc1554aa2340c4215a0246b2cafa490b99c6c",
+        "PROD": "df38cdf340e26837d236fe25085bc1554aa2340c4215a0246b2cafa490b99c6c"
+      },
+      "owner_id": {
+        "TEST": 69280,
+        "PROD": 69280
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,27th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",27th"
+        }
+      ],
+      "names": {
+        "cn": "第27届最高位战",
+        "tw": "第27屆最高位戰",
+        "jp": "第27回最高位戦",
+        "ko": "제27회 최고위전",
+        "en": "27th Ch'oegowi Tournament"
+      },
+      "current_games": 9,
+      "scope_sha256": {
+        "TEST": "1e6906bc2dd9c0a93fc9adea4b1c6614d7122c236b96699b9354f7cbc6fb24d8",
+        "PROD": "1e6906bc2dd9c0a93fc9adea4b1c6614d7122c236b96699b9354f7cbc6fb24d8"
+      },
+      "owner_id": {
+        "TEST": 69281,
+        "PROD": 69281
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,28th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",28th"
+        }
+      ],
+      "names": {
+        "cn": "第28届最高位战",
+        "tw": "第28屆最高位戰",
+        "jp": "第28回最高位戦",
+        "ko": "제28회 최고위전",
+        "en": "28th Ch'oegowi Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "a66a7d31206e55093cc7b46d4d07b97fba4318f2d329a9d1e15958d129a8cbc1",
+        "PROD": "a66a7d31206e55093cc7b46d4d07b97fba4318f2d329a9d1e15958d129a8cbc1"
+      },
+      "owner_id": {
+        "TEST": 69282,
+        "PROD": 69282
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,29th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",29th"
+        }
+      ],
+      "names": {
+        "cn": "第29届最高位战",
+        "tw": "第29屆最高位戰",
+        "jp": "第29回最高位戦",
+        "ko": "제29회 최고위전",
+        "en": "29th Ch'oegowi Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "58b2e47dbc859b381e96b7e789a8207672c434482dd455a401867d240c7ca443",
+        "PROD": "58b2e47dbc859b381e96b7e789a8207672c434482dd455a401867d240c7ca443"
+      },
+      "owner_id": {
+        "TEST": 69283,
+        "PROD": 69283
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,30th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",30th"
+        }
+      ],
+      "names": {
+        "cn": "第30届最高位战",
+        "tw": "第30屆最高位戰",
+        "jp": "第30回最高位戦",
+        "ko": "제30회 최고위전",
+        "en": "30th Ch'oegowi Tournament"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "a579ba1c23881c7811915a97e6a373f2456b112d2585df5a8bbf9c6df2fda248",
+        "PROD": "a579ba1c23881c7811915a97e6a373f2456b112d2585df5a8bbf9c6df2fda248"
+      },
+      "owner_id": {
+        "TEST": 69284,
+        "PROD": 69284
+      }
+    },
+    {
+      "raw_value": "Ch'oegowi,38th",
+      "core_key": "Ch'oegowi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Ch'oegowi"
+        },
+        {
+          "kind": "edition",
+          "text": ",38th"
+        }
+      ],
+      "names": {
+        "cn": "第38届最高位战",
+        "tw": "第38屆最高位戰",
+        "jp": "第38回最高位戦",
+        "ko": "제38회 최고위전",
+        "en": "38th Ch'oegowi Tournament"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "6810c464635ee112f08676aa03f737df51378d22b214804fb3d669b13390892a",
+        "PROD": "6810c464635ee112f08676aa03f737df51378d22b214804fb3d669b13390892a"
+      },
+      "owner_id": {
+        "TEST": 69285,
+        "PROD": 69285
+      }
+    },
+    {
+      "raw_value": "Kiseong,10th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",10th"
+        }
+      ],
+      "names": {
+        "cn": "第10届棋圣战",
+        "tw": "第10屆棋聖戰",
+        "jp": "第10回棋聖戦",
+        "ko": "제10회 기성전",
+        "en": "10th Kiseong Tournament"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "6613668c523d916ed167345e9ad3777a80fb234d04f9b7b4a8e05655a6a0468f",
+        "PROD": "6613668c523d916ed167345e9ad3777a80fb234d04f9b7b4a8e05655a6a0468f"
+      },
+      "owner_id": {
+        "TEST": 69967,
+        "PROD": 69967
+      }
+    },
+    {
+      "raw_value": "Kiseong,12th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",12th"
+        }
+      ],
+      "names": {
+        "cn": "第12届棋圣战",
+        "tw": "第12屆棋聖戰",
+        "jp": "第12回棋聖戦",
+        "ko": "제12회 기성전",
+        "en": "12th Kiseong Tournament"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "60ffd3cdd298413d4784834f95a695d3fbf5d7e071fbed363bfeb66604877f4a",
+        "PROD": "60ffd3cdd298413d4784834f95a695d3fbf5d7e071fbed363bfeb66604877f4a"
+      },
+      "owner_id": {
+        "TEST": 69969,
+        "PROD": 69969
+      }
+    },
+    {
+      "raw_value": "Kiseong,1st",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",1st"
+        }
+      ],
+      "names": {
+        "cn": "第1届棋圣战",
+        "tw": "第1屆棋聖戰",
+        "jp": "第1回棋聖戦",
+        "ko": "제1회 기성전",
+        "en": "1st Kiseong Tournament"
+      },
+      "current_games": 21,
+      "scope_sha256": {
+        "TEST": "47ffe10a7aefa9969f303a6b4897dac26a55b5f8e6055fb645ff83ffb0955ceb",
+        "PROD": "47ffe10a7aefa9969f303a6b4897dac26a55b5f8e6055fb645ff83ffb0955ceb"
+      },
+      "owner_id": {
+        "TEST": 69971,
+        "PROD": 69971
+      }
+    },
+    {
+      "raw_value": "Kiseong,2nd",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",2nd"
+        }
+      ],
+      "names": {
+        "cn": "第2届棋圣战",
+        "tw": "第2屆棋聖戰",
+        "jp": "第2回棋聖戦",
+        "ko": "제2회 기성전",
+        "en": "2nd Kiseong Tournament"
+      },
+      "current_games": 20,
+      "scope_sha256": {
+        "TEST": "d306c49b84655cc5623803245eafe43ac1e3a2c0899e2da2f992affa5b8100cb",
+        "PROD": "d306c49b84655cc5623803245eafe43ac1e3a2c0899e2da2f992affa5b8100cb"
+      },
+      "owner_id": {
+        "TEST": 69972,
+        "PROD": 69972
+      }
+    },
+    {
+      "raw_value": "Kiseong,3rd",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",3rd"
+        }
+      ],
+      "names": {
+        "cn": "第3届棋圣战",
+        "tw": "第3屆棋聖戰",
+        "jp": "第3回棋聖戦",
+        "ko": "제3회 기성전",
+        "en": "3rd Kiseong Tournament"
+      },
+      "current_games": 17,
+      "scope_sha256": {
+        "TEST": "0644f8f024d0938bb12100496198f1d00a7a70dd010d5c33320104beeef3298c",
+        "PROD": "0644f8f024d0938bb12100496198f1d00a7a70dd010d5c33320104beeef3298c"
+      },
+      "owner_id": {
+        "TEST": 69973,
+        "PROD": 69973
+      }
+    },
+    {
+      "raw_value": "Kiseong,4th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",4th"
+        }
+      ],
+      "names": {
+        "cn": "第4届棋圣战",
+        "tw": "第4屆棋聖戰",
+        "jp": "第4回棋聖戦",
+        "ko": "제4회 기성전",
+        "en": "4th Kiseong Tournament"
+      },
+      "current_games": 19,
+      "scope_sha256": {
+        "TEST": "79eb69faf48170f0aa0c6921ec7f31d7c6e6404249dc9f738c7421ff33320c6a",
+        "PROD": "79eb69faf48170f0aa0c6921ec7f31d7c6e6404249dc9f738c7421ff33320c6a"
+      },
+      "owner_id": {
+        "TEST": 69974,
+        "PROD": 69974
+      }
+    },
+    {
+      "raw_value": "Kiseong,5th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",5th"
+        }
+      ],
+      "names": {
+        "cn": "第5届棋圣战",
+        "tw": "第5屆棋聖戰",
+        "jp": "第5回棋聖戦",
+        "ko": "제5회 기성전",
+        "en": "5th Kiseong Tournament"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "b72acb0d02d201eb848d5387ed2ad3eb89f83708a07c09355bef54c571ff3581",
+        "PROD": "b72acb0d02d201eb848d5387ed2ad3eb89f83708a07c09355bef54c571ff3581"
+      },
+      "owner_id": {
+        "TEST": 69975,
+        "PROD": 69975
+      }
+    },
+    {
+      "raw_value": "Kiseong,6th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",6th"
+        }
+      ],
+      "names": {
+        "cn": "第6届棋圣战",
+        "tw": "第6屆棋聖戰",
+        "jp": "第6回棋聖戦",
+        "ko": "제6회 기성전",
+        "en": "6th Kiseong Tournament"
+      },
+      "current_games": 13,
+      "scope_sha256": {
+        "TEST": "fb44a5f6c1065806857f9247b80f04b7a31c516015a1560aeeda2087f77f5e14",
+        "PROD": "fb44a5f6c1065806857f9247b80f04b7a31c516015a1560aeeda2087f77f5e14"
+      },
+      "owner_id": {
+        "TEST": 69976,
+        "PROD": 69976
+      }
+    },
+    {
+      "raw_value": "Kiseong,7th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",7th"
+        }
+      ],
+      "names": {
+        "cn": "第7届棋圣战",
+        "tw": "第7屆棋聖戰",
+        "jp": "第7回棋聖戦",
+        "ko": "제7회 기성전",
+        "en": "7th Kiseong Tournament"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "777f4c2983bc1bedc9a00667068e295a088289759e468188b67b72815f950664",
+        "PROD": "777f4c2983bc1bedc9a00667068e295a088289759e468188b67b72815f950664"
+      },
+      "owner_id": {
+        "TEST": 69977,
+        "PROD": 69977
+      }
+    },
+    {
+      "raw_value": "Kiseong,8th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",8th"
+        }
+      ],
+      "names": {
+        "cn": "第8届棋圣战",
+        "tw": "第8屆棋聖戰",
+        "jp": "第8回棋聖戦",
+        "ko": "제8회 기성전",
+        "en": "8th Kiseong Tournament"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "6f94150282ab97e878c023168602c9ee2a8dffb578c30ecd6f1cb46611970490",
+        "PROD": "6f94150282ab97e878c023168602c9ee2a8dffb578c30ecd6f1cb46611970490"
+      },
+      "owner_id": {
+        "TEST": 69978,
+        "PROD": 69978
+      }
+    },
+    {
+      "raw_value": "Kiseong,9th",
+      "core_key": "Kiseong",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kiseong"
+        },
+        {
+          "kind": "edition",
+          "text": ",9th"
+        }
+      ],
+      "names": {
+        "cn": "第9届棋圣战",
+        "tw": "第9屆棋聖戰",
+        "jp": "第9回棋聖戦",
+        "ko": "제9회 기성전",
+        "en": "9th Kiseong Tournament"
+      },
+      "current_games": 19,
+      "scope_sha256": {
+        "TEST": "6d82aa209540a332f896461f3f020d3140a263d3690f807e9cad19a07a38d5db",
+        "PROD": "6d82aa209540a332f896461f3f020d3140a263d3690f807e9cad19a07a38d5db"
+      },
+      "owner_id": {
+        "TEST": 69979,
+        "PROD": 69979
+      }
+    },
+    {
+      "raw_value": "Kukgi,10th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",10th"
+        }
+      ],
+      "names": {
+        "cn": "第10届国棋战",
+        "tw": "第10屆國棋戰",
+        "jp": "第10回国棋戦",
+        "ko": "제10회 국기전",
+        "en": "10th Kukgi Tournament"
+      },
+      "current_games": 16,
+      "scope_sha256": {
+        "TEST": "5a52d14a06e2e4fa1ecd573fce40d1b0f360bf21272cbb8bf4dcc2064cc2a926",
+        "PROD": "5a52d14a06e2e4fa1ecd573fce40d1b0f360bf21272cbb8bf4dcc2064cc2a926"
+      },
+      "owner_id": {
+        "TEST": 70030,
+        "PROD": 70030
+      }
+    },
+    {
+      "raw_value": "Kukgi,11th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",11th"
+        }
+      ],
+      "names": {
+        "cn": "第11届国棋战",
+        "tw": "第11屆國棋戰",
+        "jp": "第11回国棋戦",
+        "ko": "제11회 국기전",
+        "en": "11th Kukgi Tournament"
+      },
+      "current_games": 23,
+      "scope_sha256": {
+        "TEST": "6de05410922190a2eae12fddfbfae26050298778f82f21d94ad9087d38c330bb",
+        "PROD": "6de05410922190a2eae12fddfbfae26050298778f82f21d94ad9087d38c330bb"
+      },
+      "owner_id": {
+        "TEST": 70031,
+        "PROD": 70031
+      }
+    },
+    {
+      "raw_value": "Kukgi,12th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",12th"
+        }
+      ],
+      "names": {
+        "cn": "第12届国棋战",
+        "tw": "第12屆國棋戰",
+        "jp": "第12回国棋戦",
+        "ko": "제12회 국기전",
+        "en": "12th Kukgi Tournament"
+      },
+      "current_games": 23,
+      "scope_sha256": {
+        "TEST": "f4bb4b65cba2f2dbae86dce86f6d166c6033fce2906efcfe418cd2337b2d2509",
+        "PROD": "f4bb4b65cba2f2dbae86dce86f6d166c6033fce2906efcfe418cd2337b2d2509"
+      },
+      "owner_id": {
+        "TEST": 70032,
+        "PROD": 70032
+      }
+    },
+    {
+      "raw_value": "Kukgi,13th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",13th"
+        }
+      ],
+      "names": {
+        "cn": "第13届国棋战",
+        "tw": "第13屆國棋戰",
+        "jp": "第13回国棋戦",
+        "ko": "제13회 국기전",
+        "en": "13th Kukgi Tournament"
+      },
+      "current_games": 14,
+      "scope_sha256": {
+        "TEST": "79efdade2b30ab12678e240a97de77d861acc9308db0cd33d7ddba3f9e087863",
+        "PROD": "79efdade2b30ab12678e240a97de77d861acc9308db0cd33d7ddba3f9e087863"
+      },
+      "owner_id": {
+        "TEST": 70033,
+        "PROD": 70033
+      }
+    },
+    {
+      "raw_value": "Kukgi,14th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",14th"
+        }
+      ],
+      "names": {
+        "cn": "第14届国棋战",
+        "tw": "第14屆國棋戰",
+        "jp": "第14回国棋戦",
+        "ko": "제14회 국기전",
+        "en": "14th Kukgi Tournament"
+      },
+      "current_games": 14,
+      "scope_sha256": {
+        "TEST": "64f0c5aa1e6a1a1eec0f071ea5a8435815a59d4bc6da40f757c5385627f4188c",
+        "PROD": "64f0c5aa1e6a1a1eec0f071ea5a8435815a59d4bc6da40f757c5385627f4188c"
+      },
+      "owner_id": {
+        "TEST": 70034,
+        "PROD": 70034
+      }
+    },
+    {
+      "raw_value": "Kukgi,15th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",15th"
+        }
+      ],
+      "names": {
+        "cn": "第15届国棋战",
+        "tw": "第15屆國棋戰",
+        "jp": "第15回国棋戦",
+        "ko": "제15회 국기전",
+        "en": "15th Kukgi Tournament"
+      },
+      "current_games": 11,
+      "scope_sha256": {
+        "TEST": "68b9d61e5803bd68efe15a20623c8b42d81e3a87e6721621a201ebf9580bf847",
+        "PROD": "68b9d61e5803bd68efe15a20623c8b42d81e3a87e6721621a201ebf9580bf847"
+      },
+      "owner_id": {
+        "TEST": 70035,
+        "PROD": 70035
+      }
+    },
+    {
+      "raw_value": "Kukgi,17th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",17th"
+        }
+      ],
+      "names": {
+        "cn": "第17届国棋战",
+        "tw": "第17屆國棋戰",
+        "jp": "第17回国棋戦",
+        "ko": "제17회 국기전",
+        "en": "17th Kukgi Tournament"
+      },
+      "current_games": 3,
+      "scope_sha256": {
+        "TEST": "21c6fca4da013f3c33ff1b99f3738154e9fdd00319bdc8c65efe46696a965e35",
+        "PROD": "21c6fca4da013f3c33ff1b99f3738154e9fdd00319bdc8c65efe46696a965e35"
+      },
+      "owner_id": {
+        "TEST": 70037,
+        "PROD": 70037
+      }
+    },
+    {
+      "raw_value": "Kukgi,18th",
+      "core_key": "Kukgi",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Kukgi"
+        },
+        {
+          "kind": "edition",
+          "text": ",18th"
+        }
+      ],
+      "names": {
+        "cn": "第18届国棋战",
+        "tw": "第18屆國棋戰",
+        "jp": "第18回国棋戦",
+        "ko": "제18회 국기전",
+        "en": "18th Kukgi Tournament"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "5755e6df84abfa0495e7137b8209a1aaf62b612ee2f955e79eba6e4da99a312f",
+        "PROD": "5755e6df84abfa0495e7137b8209a1aaf62b612ee2f955e79eba6e4da99a312f"
+      },
+      "owner_id": {
+        "TEST": 70038,
+        "PROD": 70038
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,10th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",10th"
+        }
+      ],
+      "names": {
+        "cn": "第10届日本棋院选手权赛",
+        "tw": "第10屆日本棋院選手權賽",
+        "jp": "第10回日本棋院選手権戦",
+        "ko": "제10회 일본기원 선수권전",
+        "en": "10th Nihon Ki-in Championship"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "493893abd0f0def8c6c8e17925c4251578453230c061031e1b491290096c1512",
+        "PROD": "493893abd0f0def8c6c8e17925c4251578453230c061031e1b491290096c1512"
+      },
+      "owner_id": {
+        "TEST": 70340,
+        "PROD": 70340
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,11th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",11th"
+        }
+      ],
+      "names": {
+        "cn": "第11届日本棋院选手权赛",
+        "tw": "第11屆日本棋院選手權賽",
+        "jp": "第11回日本棋院選手権戦",
+        "ko": "제11회 일본기원 선수권전",
+        "en": "11th Nihon Ki-in Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "25f9493f7a801022eae6c7339fab438f378e1cfee5de5ad60d8151a7072ef824",
+        "PROD": "25f9493f7a801022eae6c7339fab438f378e1cfee5de5ad60d8151a7072ef824"
+      },
+      "owner_id": {
+        "TEST": 70341,
+        "PROD": 70341
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,12th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",12th"
+        }
+      ],
+      "names": {
+        "cn": "第12届日本棋院选手权赛",
+        "tw": "第12屆日本棋院選手權賽",
+        "jp": "第12回日本棋院選手権戦",
+        "ko": "제12회 일본기원 선수권전",
+        "en": "12th Nihon Ki-in Championship"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "c583d300e9ca0c442fa6a82316c40284ccf1dc9da6578ffda52092ffbb89953b",
+        "PROD": "c583d300e9ca0c442fa6a82316c40284ccf1dc9da6578ffda52092ffbb89953b"
+      },
+      "owner_id": {
+        "TEST": 70342,
+        "PROD": 70342
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,13th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",13th"
+        }
+      ],
+      "names": {
+        "cn": "第13届日本棋院选手权赛",
+        "tw": "第13屆日本棋院選手權賽",
+        "jp": "第13回日本棋院選手権戦",
+        "ko": "제13회 일본기원 선수권전",
+        "en": "13th Nihon Ki-in Championship"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "74b2d9438298ee2db33314bd8191aefbbf63b7e5446b6768bcf91e624de35601",
+        "PROD": "74b2d9438298ee2db33314bd8191aefbbf63b7e5446b6768bcf91e624de35601"
+      },
+      "owner_id": {
+        "TEST": 70343,
+        "PROD": 70343
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,14th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",14th"
+        }
+      ],
+      "names": {
+        "cn": "第14届日本棋院选手权赛",
+        "tw": "第14屆日本棋院選手權賽",
+        "jp": "第14回日本棋院選手権戦",
+        "ko": "제14회 일본기원 선수권전",
+        "en": "14th Nihon Ki-in Championship"
+      },
+      "current_games": 12,
+      "scope_sha256": {
+        "TEST": "070398eb73ec8ab30394cdfa54075878a798f7c5fd4ad4c3d15ab977d8a4a6ed",
+        "PROD": "070398eb73ec8ab30394cdfa54075878a798f7c5fd4ad4c3d15ab977d8a4a6ed"
+      },
+      "owner_id": {
+        "TEST": 70344,
+        "PROD": 70344
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,15th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",15th"
+        }
+      ],
+      "names": {
+        "cn": "第15届日本棋院选手权赛",
+        "tw": "第15屆日本棋院選手權賽",
+        "jp": "第15回日本棋院選手権戦",
+        "ko": "제15회 일본기원 선수권전",
+        "en": "15th Nihon Ki-in Championship"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "a2d1f3d45d42ddb0959ca53e407184c6d903c124df9fead4a7b9d182b950ae5e",
+        "PROD": "a2d1f3d45d42ddb0959ca53e407184c6d903c124df9fead4a7b9d182b950ae5e"
+      },
+      "owner_id": {
+        "TEST": 70345,
+        "PROD": 70345
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,17th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",17th"
+        }
+      ],
+      "names": {
+        "cn": "第17届日本棋院选手权赛",
+        "tw": "第17屆日本棋院選手權賽",
+        "jp": "第17回日本棋院選手権戦",
+        "ko": "제17회 일본기원 선수권전",
+        "en": "17th Nihon Ki-in Championship"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "f50f558bf5d98146333d2ae3cb6bef82bc19c9e7ebb44fec6e0cc56c5930b252",
+        "PROD": "f50f558bf5d98146333d2ae3cb6bef82bc19c9e7ebb44fec6e0cc56c5930b252"
+      },
+      "owner_id": {
+        "TEST": 70347,
+        "PROD": 70347
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,18th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",18th"
+        }
+      ],
+      "names": {
+        "cn": "第18届日本棋院选手权赛",
+        "tw": "第18屆日本棋院選手權賽",
+        "jp": "第18回日本棋院選手権戦",
+        "ko": "제18회 일본기원 선수권전",
+        "en": "18th Nihon Ki-in Championship"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "22a6e38ecb2576bcba2f8c7fdcc2661069bd4deadb4b84ce273a2b6297f40bd4",
+        "PROD": "22a6e38ecb2576bcba2f8c7fdcc2661069bd4deadb4b84ce273a2b6297f40bd4"
+      },
+      "owner_id": {
+        "TEST": 70348,
+        "PROD": 70348
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,19th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",19th"
+        }
+      ],
+      "names": {
+        "cn": "第19届日本棋院选手权赛",
+        "tw": "第19屆日本棋院選手權賽",
+        "jp": "第19回日本棋院選手権戦",
+        "ko": "제19회 일본기원 선수권전",
+        "en": "19th Nihon Ki-in Championship"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "51b05460c9d35c8ba30a06814ad778d3d992254d6006ca27c719eec9344ec06b",
+        "PROD": "51b05460c9d35c8ba30a06814ad778d3d992254d6006ca27c719eec9344ec06b"
+      },
+      "owner_id": {
+        "TEST": 70349,
+        "PROD": 70349
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,20th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",20th"
+        }
+      ],
+      "names": {
+        "cn": "第20届日本棋院选手权赛",
+        "tw": "第20屆日本棋院選手權賽",
+        "jp": "第20回日本棋院選手権戦",
+        "ko": "제20회 일본기원 선수권전",
+        "en": "20th Nihon Ki-in Championship"
+      },
+      "current_games": 5,
+      "scope_sha256": {
+        "TEST": "317189e0fff1197d59bd747d0a513d5ff02acb040c707ed92b42c3a281e24bed",
+        "PROD": "317189e0fff1197d59bd747d0a513d5ff02acb040c707ed92b42c3a281e24bed"
+      },
+      "owner_id": {
+        "TEST": 70350,
+        "PROD": 70350
+      }
+    },
+    {
+      "raw_value": "NihonKi-inChampionship,8th",
+      "core_key": "NihonKi-inChampionship",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "NihonKi-inChampionship"
+        },
+        {
+          "kind": "edition",
+          "text": ",8th"
+        }
+      ],
+      "names": {
+        "cn": "第8届日本棋院选手权赛",
+        "tw": "第8屆日本棋院選手權賽",
+        "jp": "第8回日本棋院選手権戦",
+        "ko": "제8회 일본기원 선수권전",
+        "en": "8th Nihon Ki-in Championship"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "b5740333867411404d7333fae8d52bdb0bee58ffae223358892771854fb38465",
+        "PROD": "b5740333867411404d7333fae8d52bdb0bee58ffae223358892771854fb38465"
+      },
+      "owner_id": {
+        "TEST": 70353,
+        "PROD": 70353
+      }
+    },
+    {
+      "raw_value": "P'aewang,20th",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",20th"
+        }
+      ],
+      "names": {
+        "cn": "第20届霸王战",
+        "tw": "第20屆霸王戰",
+        "jp": "第20回覇王戦",
+        "ko": "제20회 패왕전",
+        "en": "20th P'aewang Tournament"
+      },
+      "current_games": 20,
+      "scope_sha256": {
+        "TEST": "5316aa25ccb49f94ff4b3ab1eadff90b29fc7fd2b9a5e91632145cb61f26ee9c",
+        "PROD": "5316aa25ccb49f94ff4b3ab1eadff90b29fc7fd2b9a5e91632145cb61f26ee9c"
+      },
+      "owner_id": {
+        "TEST": 70502,
+        "PROD": 70502
+      }
+    },
+    {
+      "raw_value": "P'aewang,21st",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",21st"
+        }
+      ],
+      "names": {
+        "cn": "第21届霸王战",
+        "tw": "第21屆霸王戰",
+        "jp": "第21回覇王戦",
+        "ko": "제21회 패왕전",
+        "en": "21st P'aewang Tournament"
+      },
+      "current_games": 14,
+      "scope_sha256": {
+        "TEST": "d8928c6a1f1073131a71e9dc78ca269a99a5b1d805eb8d9e06a7c6ae9a612516",
+        "PROD": "d8928c6a1f1073131a71e9dc78ca269a99a5b1d805eb8d9e06a7c6ae9a612516"
+      },
+      "owner_id": {
+        "TEST": 70503,
+        "PROD": 70503
+      }
+    },
+    {
+      "raw_value": "P'aewang,22nd",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",22nd"
+        }
+      ],
+      "names": {
+        "cn": "第22届霸王战",
+        "tw": "第22屆霸王戰",
+        "jp": "第22回覇王戦",
+        "ko": "제22회 패왕전",
+        "en": "22nd P'aewang Tournament"
+      },
+      "current_games": 20,
+      "scope_sha256": {
+        "TEST": "b42d01de074c4ee140d71fb65da1c3f99dd70d6b11a4bc70c65516e011121a02",
+        "PROD": "b42d01de074c4ee140d71fb65da1c3f99dd70d6b11a4bc70c65516e011121a02"
+      },
+      "owner_id": {
+        "TEST": 70504,
+        "PROD": 70504
+      }
+    },
+    {
+      "raw_value": "P'aewang,23rd",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",23rd"
+        }
+      ],
+      "names": {
+        "cn": "第23届霸王战",
+        "tw": "第23屆霸王戰",
+        "jp": "第23回覇王戦",
+        "ko": "제23회 패왕전",
+        "en": "23rd P'aewang Tournament"
+      },
+      "current_games": 10,
+      "scope_sha256": {
+        "TEST": "a24989dbb7fb2b7bfb33b7ea637f43f69e57bf50ad5ab8b890339fc188547dd4",
+        "PROD": "a24989dbb7fb2b7bfb33b7ea637f43f69e57bf50ad5ab8b890339fc188547dd4"
+      },
+      "owner_id": {
+        "TEST": 70505,
+        "PROD": 70505
+      }
+    },
+    {
+      "raw_value": "P'aewang,24th",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",24th"
+        }
+      ],
+      "names": {
+        "cn": "第24届霸王战",
+        "tw": "第24屆霸王戰",
+        "jp": "第24回覇王戦",
+        "ko": "제24회 패왕전",
+        "en": "24th P'aewang Tournament"
+      },
+      "current_games": 7,
+      "scope_sha256": {
+        "TEST": "e29a680651f91054dcf861120bbf0e9d063a2daf1c9837115857981202e4bdf2",
+        "PROD": "e29a680651f91054dcf861120bbf0e9d063a2daf1c9837115857981202e4bdf2"
+      },
+      "owner_id": {
+        "TEST": 70506,
+        "PROD": 70506
+      }
+    },
+    {
+      "raw_value": "P'aewang,25th",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",25th"
+        }
+      ],
+      "names": {
+        "cn": "第25届霸王战",
+        "tw": "第25屆霸王戰",
+        "jp": "第25回覇王戦",
+        "ko": "제25회 패왕전",
+        "en": "25th P'aewang Tournament"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "cd5b49811e1f5d87ca118306351e3fb60b606aca016f99c2025f9094d45ff6c4",
+        "PROD": "cd5b49811e1f5d87ca118306351e3fb60b606aca016f99c2025f9094d45ff6c4"
+      },
+      "owner_id": {
+        "TEST": 70507,
+        "PROD": 70507
+      }
+    },
+    {
+      "raw_value": "P'aewang,33rd",
+      "core_key": "P'aewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "P'aewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",33rd"
+        }
+      ],
+      "names": {
+        "cn": "第33届霸王战",
+        "tw": "第33屆霸王戰",
+        "jp": "第33回覇王戦",
+        "ko": "제33회 패왕전",
+        "en": "33rd P'aewang Tournament"
+      },
+      "current_games": 6,
+      "scope_sha256": {
+        "TEST": "1e4d78302d0afd1dd90e2423723296d1836a4b0351137df19fa10e96f4757cfe",
+        "PROD": "1e4d78302d0afd1dd90e2423723296d1836a4b0351137df19fa10e96f4757cfe"
+      },
+      "owner_id": {
+        "TEST": 70508,
+        "PROD": 70508
+      }
+    },
+    {
+      "raw_value": "Taewang,3rd",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Taewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",3rd"
+        }
+      ],
+      "names": {
+        "cn": "第3届大王战",
+        "tw": "第3屆大王戰",
+        "jp": "第3回大王戦",
+        "ko": "제3회 대왕전",
+        "en": "3rd Taewang Tournament"
+      },
+      "current_games": 4,
+      "scope_sha256": {
+        "TEST": "2e903bdbc6ee634efa0fa033973e0621d10823a80fbcbc02ff94e4f02e05add2",
+        "PROD": "2e903bdbc6ee634efa0fa033973e0621d10823a80fbcbc02ff94e4f02e05add2"
+      },
+      "owner_id": {
+        "TEST": 70654,
+        "PROD": 70654
+      }
+    },
+    {
+      "raw_value": "Taewang,4th",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Taewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",4th"
+        }
+      ],
+      "names": {
+        "cn": "第4届大王战",
+        "tw": "第4屆大王戰",
+        "jp": "第4回大王戦",
+        "ko": "제4회 대왕전",
+        "en": "4th Taewang Tournament"
+      },
+      "current_games": 8,
+      "scope_sha256": {
+        "TEST": "9b20c728f0c5ef23fe6dbaaf72eb087a6cf3dedd07da4c85d967df2ddf18a265",
+        "PROD": "9b20c728f0c5ef23fe6dbaaf72eb087a6cf3dedd07da4c85d967df2ddf18a265"
+      },
+      "owner_id": {
+        "TEST": 70655,
+        "PROD": 70655
+      }
+    },
+    {
+      "raw_value": "Taewang,5th",
+      "core_key": "Taewang",
+      "raw_parts": [
+        {
+          "kind": "core",
+          "text": "Taewang"
+        },
+        {
+          "kind": "edition",
+          "text": ",5th"
+        }
+      ],
+      "names": {
+        "cn": "第5届大王战",
+        "tw": "第5屆大王戰",
+        "jp": "第5回大王戦",
+        "ko": "제5회 대왕전",
+        "en": "5th Taewang Tournament"
+      },
+      "current_games": 15,
+      "scope_sha256": {
+        "TEST": "7c392d4f8d40e7c69a219d55684014db849ae953d9095205cafeea48504451dd",
+        "PROD": "7c392d4f8d40e7c69a219d55684014db849ae953d9095205cafeea48504451dd"
+      },
+      "owner_id": {
+        "TEST": 70656,
+        "PROD": 70656
+      }
+    }
+  ],
+  "approval": null
+}

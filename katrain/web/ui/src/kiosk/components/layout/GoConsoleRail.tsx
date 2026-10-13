@@ -1,7 +1,6 @@
 import { KioskConsoleRail } from '../../shell/KioskConsoleRail';
 import { GoBoardSvg } from '../../shell/GoBoardSvg';
 import type { StatusCell } from '../../shell/KioskStatusCells';
-import { GO_HARDWARE_CELLS } from '../../shell/goHardware';
 import { useOptionalVision } from '../../context/VisionContext';
 import { useOptionalGeometry } from '../../context/GeometryContext';
 
@@ -32,16 +31,11 @@ export function GoConsoleRail({ syncLeft, syncRight }: {
   const vision = useOptionalVision();
   const geometry = useOptionalGeometry();
 
-  // ⚠️ Context 缺席(`useOptional*` 返回 null)和「读到了、结果是没连上」是**两回事**。
-  // 前者保持 GO_HARDWARE_CELLS 的「—」不点灯,后者才给红灯 ——
-  // 「否定的答复不携带原因」:一条消息的缺席不能当成判别位。
-  const statuses: readonly StatusCell[] = vision || geometry
-    ? [
-        cameraCell(vision?.visionStatus.cameraConnected),
-        geometryCell(geometry?.status.phase),
-        ledCell(vision?.visionStatus.ledConnected),
-      ]
-    : GO_HARDWARE_CELLS;
+  const statuses: readonly StatusCell[] = [
+    cameraCell(vision?.visionStatus.cameraConnected),
+    geometryCell(geometry?.status.phase),
+    ledCell(vision?.visionStatus.ledConnected),
+  ];
 
   return (
     <KioskConsoleRail
@@ -65,10 +59,9 @@ const cameraCell = (connected?: boolean | null): StatusCell =>
 // `?? false`,于是「没说」被画成一颗琥珀灯的「未连接」。一条消息的缺席不是判别位。
 const ledCell = (connected?: boolean | null): StatusCell =>
   connected == null
-    ? { label: 'LED', value: '—' }
+    ? { label: 'LED', value: '未确认' }
     // 没连上是**琥珀不是红**:没有它照样能下棋,只是没有提示灯。摄像头没连上才是故障。
-    // 「已连接」而不是「就绪」:这一格读的是串口开没开(`led_service.is_connected()`),灯带某段坏了它照样是真 ——
-    // 「就绪」声称的比它知道的多。宽度与摄像头那格同为三个字(Fan 2026-09-23,视觉赛道 V4)。
+    // LINK 确认 Board A 供电；仍不声称每颗 LED 都正常。
     : { label: 'LED', value: connected ? '已连接' : '未连接', tone: connected ? 'good' : 'warn' };
 
 const geometryCell = (phase?: string): StatusCell => {

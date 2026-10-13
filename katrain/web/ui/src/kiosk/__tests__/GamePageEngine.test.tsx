@@ -95,6 +95,7 @@ vi.mock('../../components/ScoreGraph', () => ({
 }));
 
 const mockSetSessionId = vi.fn();
+const mockSetGameState = vi.fn();
 const mockHandleAction = vi.fn();
 const mockOnMove = vi.fn();
 const mockOnNavigate = vi.fn();
@@ -151,7 +152,7 @@ vi.mock('../../hooks/useGameSession', () => ({
     // Real session updates replace the snapshot; mutating one shared object hides
     // stale async closures in the analysis-response guard.
     gameState: { ...mockGameState },
-    setGameState: vi.fn(),
+    setGameState: mockSetGameState,
     error: null,
     onMove: mockOnMove,
     onNavigate: mockOnNavigate,
@@ -305,6 +306,33 @@ describe('GamePage engine mode', () => {
       });
       const overlay = JSON.parse(screen.getByTestId('board').getAttribute('data-overlay')!);
       expect(overlay).toEqual({ kind: 'judge', ownership });
+    });
+
+    it('数子未定点在棋盘圈出 Q6，并提示继续收官', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'judge', ended: false,
+        data: { ownership: [{ col: 15, row: 5, owner: 'U' }], winner: 'U', delta: 0 },
+      });
+      renderPage(true);
+      fireEvent.click(screen.getByText('数子'));
+
+      const prompt = await screen.findByTestId('golaxy-judge-undecided');
+      expect(within(prompt).getByText('Q6')).toBeInTheDocument();
+      expect(screen.getByTestId('game-attention-marker')).toHaveAttribute('aria-label', 'Q6');
+      expect(mockSetGameState).not.toHaveBeenCalled();
+    });
+
+    it('uses the server-committed judge result as the game state', async () => {
+      const finalState = { ...mockGameState, end_result: 'B+2.5' };
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'judge', ended: true, state: finalState,
+        data: { ownership: [], winner: 'B', delta: 5 },
+      });
+      renderPage(true);
+      fireEvent.click(screen.getByText('数子'));
+
+      await waitFor(() => expect(mockSetGameState).toHaveBeenCalledWith(finalState));
+      expect(screen.queryByTestId('golaxy-judge-undecided')).not.toBeInTheDocument();
     });
 
     it('leaves the local 领地/AI支招/图表 controls in place without engineMode', () => {

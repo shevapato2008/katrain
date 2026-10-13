@@ -4,16 +4,16 @@ import { jobDescriptions, jobLabels } from './jobLabels';
 import type { CronHealth, CronJob, CronRun, CronView } from './types';
 import './CronPage.css';
 
-const statusLabels: Record<CronHealth, string> = { ok: '正常', running: '运行中', errors: '有报错', failed: '失败', offline: '失联', stuck: '卡住', overdue: '该跑没跑', disabled: '已停用', pending: '等待首次运行' };
+const statusLabels: Record<CronHealth, string> = { ok: '正常', running: '运行中', errors: '有报错', failed: '失败', offline: '失联', stuck: '卡住', overdue: '该跑没跑', disabled: '已停用', paused: '已暂停', pending: '等待首次运行' };
 const shortStatusLabels: Record<CronHealth, string> = { ...statusLabels, errors: '报错', overdue: '逾期', pending: '待首跑', disabled: '停用' };
-const statusIcons = { ok: CheckCircle2, running: Activity, errors: TriangleAlert, failed: XCircle, offline: WifiOff, stuck: TriangleAlert, overdue: Clock3, disabled: PauseCircle, pending: CircleDashed };
-const summaryOrder: CronHealth[] = ['failed', 'offline', 'stuck', 'errors', 'overdue', 'running', 'pending', 'disabled', 'ok'];
+const statusIcons = { ok: CheckCircle2, running: Activity, errors: TriangleAlert, failed: XCircle, offline: WifiOff, stuck: TriangleAlert, overdue: Clock3, disabled: PauseCircle, paused: PauseCircle, pending: CircleDashed };
+const summaryOrder: CronHealth[] = ['failed', 'offline', 'stuck', 'errors', 'overdue', 'paused', 'running', 'pending', 'disabled', 'ok'];
 const exceptionStates = new Set<CronHealth>(['failed', 'errors', 'offline', 'stuck', 'overdue']);
 const time = (value: string | null) => value ? new Date(value).toLocaleTimeString('zh-CN', { hour12: false, timeZone: 'Asia/Shanghai' }) : '—';
 const runTime = (value: string) => new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' });
 const duration = (value: number | null, kind: CronJob['kind']) => kind === 'loop' ? '循环中' : value === null ? '—' : value < 1000 ? `${value} ms` : `${(value / 1000).toFixed(1)} 秒`;
 const interval = (job: CronJob) => job.kind === 'loop' ? '常驻循环' : `间隔 · ${job.interval_seconds === 3 ? '3 秒' : job.interval_seconds === 900 ? '15 分' : job.interval_seconds === 1800 ? '30 分' : job.interval_seconds === 300 ? '5 分' : job.interval_seconds === 3600 ? '1 小时' : job.interval_seconds === 86400 ? '1 天' : `${job.interval_seconds} 秒`}`;
-const runStatus = (run: CronRun) => run.status === 'success' ? '成功' : run.status === 'failed' ? '失败' : run.status === 'errors' ? '有报错' : '运行中';
+const runStatus = (run: CronRun) => run.status === 'success' ? '成功' : run.status === 'failed' ? '失败' : run.status === 'errors' ? '有报错' : run.status === 'paused' ? '已暂停，跳过' : '运行中';
 const elapsed = (from: string | null, to: string | null) => {
   if (!from || !to) return '时间未知';
   const seconds = Math.max(0, Math.floor((new Date(to).getTime() - new Date(from).getTime()) / 1000));
@@ -30,7 +30,9 @@ function StatusIcon({ state }: { state: CronHealth }) {
   return <Icon aria-hidden="true" />;
 }
 
-export default function CronPage({ view, onRefresh, onSelectJob }: { view: CronView; onRefresh: () => void; onSelectJob?: (name: string) => void }) {
+export type CronControls = { pause: (name: string, reason: string) => Promise<void>; resume: (name: string) => Promise<void>; runNow: (name: string) => Promise<void> };
+
+export default function CronPage({ view, onRefresh, onSelectJob, controls }: { view: CronView; onRefresh: () => void; onSelectJob?: (name: string) => void; controls?: CronControls }) {
   const [selected, setSelected] = useState<string | null>(view.selectedJob ?? null);
   const [feedback, setFeedback] = useState('');
   const selectedJob = view.jobs.find((job) => job.name === selected);
@@ -97,6 +99,7 @@ export default function CronPage({ view, onRefresh, onSelectJob }: { view: CronV
             <div><small>上次成功</small><strong>{fullTime(selectedJob.last_success_at)}</strong></div>
             <div><small>{selectedJob.kind === 'loop' ? '正在处理' : '本次耗时'}</small><strong>{selectedJob.kind === 'loop' && selectedJob.loop_stats ? `${selectedJob.loop_stats.in_flight} / ${selectedJob.loop_stats.capacity}` : duration(selectedJob.last_duration_ms, selectedJob.kind)}</strong></div>
           </div>
+          {controls && <JobControls job={selectedJob} controls={controls} offline={offline} />}
           {selectedJob.last_error && <><div className="cron-detail-label">最近错误</div><div className="cron-detail-error">{selectedJob.last_error}</div></>}
           <section className="cron-detail-runs" aria-label="运行历史记录">
             <h3>运行历史</h3>
@@ -111,4 +114,36 @@ export default function CronPage({ view, onRefresh, onSelectJob }: { view: CronV
       </aside>
     </>}
   </main>;
+}
+
+function JobControls({ job, controls, offline }: { job: CronJob; controls: CronControls; offline: boolean }) {
+  const [pausing, setPausing] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  if (job.kind === 'loop') return <><div className="cron-detail-label">操作</div><p className="cron-actions-note">常驻循环任务不支持暂停或立即运行。</p></>;
+  const act = async (operation: () => Promise<void>) => {
+    setBusy(true); setError('');
+    try { await operation(); setPausing(false); setReason(''); } catch (cause) { setError(cause instanceof Error ? cause.message : '操作失败，请重试。'); }
+    setBusy(false);
+  };
+  const last = job.last_command;
+  return <>
+    <div className="cron-detail-label">操作</div>
+    {job.paused ? <>
+      <div className="cron-paused"><strong>已暂停</strong><span>原因：{job.pause_reason} · {job.paused_by} 于 {fullTime(job.paused_at ?? null)}</span></div>
+      <div className="cron-actions"><button className="cron-act primary" type="button" disabled={busy} onClick={() => { void act(() => controls.resume(job.name)); }}>恢复</button></div>
+    </> : pausing ? <div className="cron-pause-form">
+      <label>暂停原因（至少 5 个字，写进审计）<input value={reason} maxLength={200} autoFocus onChange={(event) => setReason(event.target.value)} /></label>
+      <div className="cron-actions"><button className="cron-act primary" type="button" disabled={busy || reason.trim().length < 5} onClick={() => { void act(() => controls.pause(job.name, reason.trim())); }}>确认暂停</button><button className="cron-act" type="button" disabled={busy} onClick={() => { setPausing(false); setReason(''); }}>取消</button></div>
+    </div> : <div className="cron-actions">
+      <button className="cron-act" type="button" disabled={busy || !job.enabled || !!job.pending_run} onClick={() => { void act(() => controls.runNow(job.name)); }}>{job.pending_run ? '已排队' : '立即运行'}</button>
+      <button className="cron-act" type="button" disabled={busy} onClick={() => setPausing(true)}>暂停…</button>
+    </div>}
+    {error ? <p className="cron-actions-note bad" role="alert">{error}</p>
+      : job.pending_run ? <p className="cron-actions-note">已排队 · cron 进程每 10 秒领取一次{offline ? '；但 cron 进程目前失联，领取不到' : '，领取后按正常流程运行并记录'}。</p>
+      : last?.state === 'rejected' ? <p className="cron-actions-note bad">上次立即运行被 cron 拒绝：{last.note}</p>
+      : !job.enabled ? <p className="cron-actions-note">任务已被配置停用，cron 不会调度它。</p>
+      : <p className="cron-actions-note">操作写入审计。暂停只跳过定时运行，不会打断正在跑的这一次。</p>}
+  </>;
 }

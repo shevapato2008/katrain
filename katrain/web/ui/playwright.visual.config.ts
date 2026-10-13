@@ -13,7 +13,10 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${visualPort}`,
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [{ name: 'chromium', use: {
+    ...devices['Desktop Chrome'],
+    ...(process.env.KATRAIN_PW_VISUAL_CHROME === '1' ? { channel: 'chrome' } : {}),
+  } }],
   webServer: {
     command: `npm run dev -- --host 127.0.0.1 --port ${visualPort}${visualPortEnv ? ' --strictPort' : ''}`,
     url: `http://127.0.0.1:${visualPort}/galaxy/play`,

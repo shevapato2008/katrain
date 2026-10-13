@@ -57,6 +57,13 @@ class TestSetUsername:
         rest.set_username("0086-13116158612")
         assert rest._username == "0086-13116158612"
 
+    def test_selected_international_area_is_untouched(self):
+        rest = GolaxyRestClient()
+        rest.set_username("00886-912345678")
+        assert rest._username == "00886-912345678"
+        rest.set_username("001264-5551234")
+        assert rest._username == "001264-5551234"
+
     def test_none_is_noop_and_does_not_clobber(self):
         rest = GolaxyRestClient()
         rest.set_username("13116158612")

@@ -3,7 +3,7 @@
  * shared between useGameSession and useResearchSession.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { API, type GameState } from '../api';
+import { API, verifiedSpectatorCount, type GameState } from '../api';
 import { readAudioPref } from '../utils/audioPrefs';
 import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
 
@@ -81,7 +81,7 @@ export function useSessionBase(options: UseSessionBaseOptions = {}): UseSessionB
                         setGameState(msg.state);
                         onStateUpdate?.(msg.state);
                     } else if (msg.type === 'spectator_count') {
-                        setGameState(prev => prev ? { ...prev, sockets_count: msg.count } : prev);
+                        setGameState(prev => prev ? { ...prev, sockets_count: msg.count, spectator_count: verifiedSpectatorCount(msg.spectator_count) } : prev);
                     } else if (msg.type === 'sound') {
                         playSound(msg.data.sound);
                     }

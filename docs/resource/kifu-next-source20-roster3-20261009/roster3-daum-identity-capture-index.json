@@ -1,0 +1,26 @@
+[
+  {
+    "pid": 6329,
+    "url": "https://db.u-go.net/?q=Chen%20Huimin",
+    "method": "GET",
+    "status": 200,
+    "final_url": "https://db.u-go.net/?q=Chen%20Huimin",
+    "fetched_at_utc": "2026-10-08T21:14:13.667269+00:00",
+    "body_file": "captures/roster3-6329-ugo-identity.body.gz",
+    "body_bytes": 23791,
+    "body_sha256": "9401247bfb413b14cdcbc6223dc083e7fa3fd92244c31aa8f0b06aaa014ce36d",
+    "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Chen Huimin g 陈惠民 TWN SL 1 (1 entries) Show 12 25 50 100 items.* Language data* * We use a cookie to store your preference. Expla"
+  },
+  {
+    "pid": 5495,
+    "url": "https://db.u-go.net/?q=Wang%20Xuezhuan",
+    "method": "GET",
+    "status": 200,
+    "final_url": "https://db.u-go.net/?q=Wang%20Xuezhuan",
+    "fetched_at_utc": "2026-10-08T21:14:14.965176+00:00",
+    "body_file": "captures/roster3-5495-ugo-identity.body.gz",
+    "body_bytes": 23906,
+    "body_sha256": "41aa704b3719b10b9eceefda9c16bc9a0641c7317264ac092596efa20f6ef0a3",
+    "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Wang Xuezhuan g Wang Xuechuan 4 • 王学传 TWN SL 1 (1 entries) Show 12 25 50 100 items.* Language data* * We use a cookie to store yo"
+  }
+]

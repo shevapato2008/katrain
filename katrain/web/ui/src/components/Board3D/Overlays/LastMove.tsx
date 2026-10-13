@@ -14,7 +14,8 @@ const LastMove = ({ gameState }: LastMoveProps) => {
   const pos = gridToWorld(lx, ly, boardSize);
 
   const lastStone = gameState.stones.find(s => s[1] && s[1][0] === lx && s[1][1] === ly);
-  const markerColor = lastStone?.[0] === 'B' ? '#ffffff' : '#000000';
+  if (!lastStone) return null;
+  const markerColor = lastStone[0] === 'B' ? '#ffffff' : '#000000';
 
   // Stone center is at pos[1]. Stone apex (top of flattened sphere) is at pos[1] + STONE_HEIGHT.
   // Ring sits just above the apex to avoid clipping.

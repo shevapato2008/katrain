@@ -1,31 +1,32 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { Box, CircularProgress } from '@mui/material';
+import { Fragment, type ReactNode } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { AccessPrompt } from '../../../components/auth/AccessPrompt';
+import { ProtectedOutline } from '../../../components/auth/ProtectedOutline';
+import { accessAllowed, accessMetadata, kioskAccessPolicy, type AccessFeature } from '../../../components/auth/accessPolicy';
+import { LAUNCHER_LOGIN_URL, leaveToLauncher } from '../../shell/boxUrls';
 
-// LOGOUT_REDIRECT contract (consumed by Settings 退出登录, Phase B):
-//   AuthContext.logout() only clears state — it does NOT navigate.
-//   This guard bounces any unauthenticated view to /kiosk/login (Navigate below).
-//   Callers must run: await logout(); navigate('/kiosk/login', { replace: true }).
-const KioskAuthGuard = () => {
-  const { isAuthenticated, isLoading } = useAuth();
-  // Wait for the mount-time session probe (localStorage token OR shared SSO
-  // cookie) before deciding — else a valid session flashes the login page.
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'background.default',
-        }}
-      >
-        <CircularProgress sx={{ color: '#58b57a' }} />
-      </Box>
-    );
+const KioskAuthGuard = ({ children, feature, realAccount }: { children?: ReactNode; feature?: AccessFeature; realAccount?: boolean }) => {
+  const auth = useAuth();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const policy = kioskAccessPolicy(pathname);
+  const selectedFeature = feature ?? policy?.feature ?? 'hall';
+  const needsRealAccount = realAccount ?? policy?.realAccount ?? false;
+  if (accessAllowed(auth.status, auth.isAuthenticated, auth.isGuest, needsRealAccount)) {
+    return <Fragment key={auth.identityKey}>{children ?? <Outlet />}</Fragment>;
   }
-  return isAuthenticated ? <Outlet /> : <Navigate to="/kiosk/login" replace />;
+  const backPath = accessMetadata[selectedFeature].backPath || '/play';
+  return <>
+    <ProtectedOutline surface="kiosk" feature={selectedFeature} />
+    <AccessPrompt open surface="kiosk" status={auth.status} feature={selectedFeature} strictBox={auth.isStrictBoxKiosk}
+      onPrimary={() => {
+        if (auth.status === 'unavailable') void auth.retry();
+        else if (auth.isStrictBoxKiosk) leaveToLauncher(LAUNCHER_LOGIN_URL);
+        else navigate('/kiosk/login');
+      }}
+      onBack={() => navigate(`/kiosk${backPath}`, { replace: true })} />
+  </>;
 };
 
 export default KioskAuthGuard;

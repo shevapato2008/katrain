@@ -1,0 +1,23 @@
+{
+  "content": {
+    "lang": "cn",
+    "preservation": "exact_codepoints",
+    "reference_kind": "verified_japanese_display",
+    "source_lang": "ja",
+    "source_script": "Kanji",
+    "target_region": "CN",
+    "target_script": "Kanji",
+    "version": "primary-orthographic-v1"
+  },
+  "approval": {
+    "content_sha256": "07eee5cc60fdfb51f073b3949b88670daf3a3bf1278e5e4a8068264fbafce49c",
+    "produced_at": "2026-10-08T17:57:15.846800+00:00",
+    "producer_id": "/root/next_batch_source_recovery",
+    "producer_model": "GPT-6 (exact runtime variant unavailable)",
+    "status": "approved",
+    "reviewer_id": "/root",
+    "reviewer_model": "gpt-6",
+    "reviewed_at": "2026-10-08T18:02:34.794858+00:00",
+    "conclusion": "approved_orthographic_rule"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "mode": "actual_transaction_rollback_dry_run",
+  "applied": false,
+  "environments": {
+    "test": {
+      "plan_sha256": "9c79b893e3e22abf2a9449a7fbdb9725003240840ba556d8726f3ea701b2c39b",
+      "review_sha256": "446e816da75b5a31c074fab8627c03e8f1bf70adfda105197d5e991596570d99",
+      "counts": {
+        "new_fk_slots": 3035,
+        "protected_slots": 0,
+        "held_slots": 20,
+        "raw_values": 10
+      },
+      "protected_catalog_ids": [
+        268,
+        295,
+        310,
+        337,
+        494,
+        535,
+        637
+      ],
+      "postrollback_capture_same_plan": true,
+      "database": "katrain_db"
+    },
+    "prod": {
+      "plan_sha256": "a62d627332a839e3149994fb730ec448e4473aef68cd33581cd9889a62118f97",
+      "review_sha256": "7d1ca12e136a23125a8cb425575970d6113184013f55286589e231f45534b3f5",
+      "counts": {
+        "new_fk_slots": 3035,
+        "protected_slots": 0,
+        "held_slots": 20,
+        "raw_values": 10
+      },
+      "protected_catalog_ids": [
+        267,
+        294,
+        309,
+        336,
+        493,
+        534,
+        636
+      ],
+      "postrollback_capture_same_plan": true,
+      "database": "katrain_prod_20260725"
+    }
+  }
+}

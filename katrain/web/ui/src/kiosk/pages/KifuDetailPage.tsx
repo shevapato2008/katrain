@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
+import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
 import { BaipuAPI, cacheSgf, canonToGtp, type BaipuStep } from '../../api/baipuApi';
 import { replayBaipuSteps } from '../../utils/baipuReplay';
 import { translateResult } from '../../utils/resultTranslation';
+import { formatRank } from '../../utils/rank';
 import { interpolate } from '../utils/interpolate';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
@@ -71,7 +73,7 @@ interface MoveEntry {
 }
 
 const rulesLabel = (rules: string | null, t: (k: string, d: string) => string): string | null => {
-  if (!rules) return null;
+  if (!rules) return t('kifu:rules_unresolved', '规则待核验');
   const r = rules.trim().toLowerCase();
   if (r === 'chinese' || r === 'cn') return t('Chinese rules', '中国规则');
   if (r === 'japanese' || r === 'jp') return t('Japanese rules', '日本规则');
@@ -85,43 +87,52 @@ const KifuDetailPage = () => {
   const { kifuId } = useParams<{ kifuId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
 
-  const [album, setAlbum] = useState<KifuAlbumDetail | null>(null);
+  const [loadedAlbum, setLoadedAlbum] = useState<KifuAlbumDetail | null>(null);
+  const [loadedLang, setLoadedLang] = useState<string | null>(null);
   const [steps, setSteps] = useState<BaipuStep[] | null>(null);
   const [boardSize, setBoardSize] = useState(19);
   const [error, setError] = useState<string | null>(null);
-  /** 读不到是不是「连不上云端」(503)—— 棋谱库只在云端。 */
-  const [offline, setOffline] = useState(false);
+  const [failure, setFailure] = useState<'unreachable' | 'service' | 'other'>('other');
   const [reload, setReload] = useState(0);
   const [cursor, setCursor] = useState(0);   // 已经走到第几手(0 = 开局)
   const nowRef = useRef<HTMLSpanElement | null>(null);
+  const loadedIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!kifuId) return;
     let cancelled = false;
     // ⚠️ 清空只能发生在异步回调里(`react-hooks/set-state-in-effect`) —— 效应体里同步
     // setState 会连锁重渲染。重试时那句 `setError(null)` 挂在按钮的点击处理里,那是事件不是效应。
-    KifuAPI.getAlbum(Number(kifuId))
+    KifuAPI.getAlbum(Number(kifuId), lang)
       .then(async (detail) => {
         if (cancelled) return;
         if (!detail.sgf_content) throw new Error('empty sgf');
         const loaded = await BaipuAPI.load({ sgf: detail.sgf_content });
         if (cancelled) return;
         setError(null);
-        setAlbum(detail);
+        setLoadedAlbum(detail);
+        setLoadedLang(lang);
         setSteps(loaded.steps);
         setBoardSize(loaded.board_size || detail.board_size || 19);
-        setCursor(0);
+        if (loadedIdRef.current !== detail.id) setCursor(0);
+        loadedIdRef.current = detail.id;
       })
       .catch((e: Error) => {
         if (!cancelled) {
           setError(e.message);
-          setOffline(e instanceof ApiError && e.status === 503);
+          const detail = e instanceof ApiError ? e.detail : null;
+          const unreachable = e instanceof ApiError && e.status === 503
+            && typeof detail === 'object' && detail !== null
+            && 'code' in detail && detail.code === 'kifu_cloud_unreachable';
+          setFailure(unreachable ? 'unreachable' : e instanceof ApiError && e.status >= 500 ? 'service' : 'other');
         }
       });
     return () => { cancelled = true; };
-  }, [kifuId, reload]);
+  }, [kifuId, reload, lang]);
+
+  const album = loadedLang === lang ? loadedAlbum : null;
 
   // 手数表:只有 `move` / `pass` 算一手,让子的 setup 不算。
   const entries = useMemo<MoveEntry[]>(() => {
@@ -142,6 +153,8 @@ const KifuDetailPage = () => {
 
   const total = entries.length;
   const at = Math.min(cursor, total);
+  useReplayStoneSound({ identity: album?.id ?? null, cursor: at, move: entries[at - 1]?.coord ?? undefined,
+    ready: !!album && album.id === Number(kifuId) && steps !== null, selected: true, boardSize });
   // 走到第 `at` 手 = 播到那一手所在的 step(含),开局则只播它前面的 setup。
   const stepCount = at === 0
     ? (entries[0]?.stepIndex ?? steps?.length ?? 0)
@@ -159,19 +172,19 @@ const KifuDetailPage = () => {
   const goBaipu = useCallback(() => {
     if (!album?.sgf_content) return;
     const id = `kifu_${album.id}`;
-    const name = [album.event, album.round_name].filter(Boolean).join(' · ')
-      || `${album.player_black} vs ${album.player_white}`;
+    const name = [album.display_event, album.display_round_name].filter(Boolean).join(' · ')
+      || `${album.display_player_black ?? t('game:black_side', '黑方')} vs ${album.display_player_white ?? t('game:white_side', '白方')}`;
     cacheSgf(id, name, album.sgf_content);
     navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, {
       // 带上来处:摆谱会话的返回键回这一局的详情页,不是摆谱列表
       state: { ...backToState(location), sgf: album.sgf_content, name },
     });
-  }, [album, navigate, location]);
+  }, [album, navigate, location, t]);
 
   const cols = colsFor(boardSize);
   const rows = rowsFor(boardSize);
   const title = album
-    ? [album.event, album.round_name].filter(Boolean).join(' · ') || t('kifu:untitled_game', '无题名的一局')
+    ? [album.display_event, album.display_round_name].filter(Boolean).join(' · ') || t('kifu:untitled_game', '无题名的一局')
     : t('kifu:back_kifu', '棋谱');
 
   const meta = album
@@ -179,7 +192,7 @@ const KifuDetailPage = () => {
       album.date_played,
       `${boardSize} ${t('kifu:board_lines', '路')}`,
       rulesLabel(album.rules, t),
-      album.komi != null ? `${t('kifu:komi_black', '黑贴')} ${album.komi} ${t('kifu:komi_unit', '目')}` : null,
+      album.komi != null ? `${t('report:sgf_komi', 'SGF 贴目')} ${album.komi} ${t('kifu:komi_unit', '目')}` : null,
       album.handicap > 0 ? `${t('kifu:handicap_pre', '让')} ${album.handicap} ${t('kifu:handicap_unit', '子')}` : null,
       album.result ? translateResult(album.result, t, album.rules) : null,
       `${album.move_count} ${t('kifu:moves_unit', '手')}`,
@@ -255,8 +268,16 @@ const KifuDetailPage = () => {
 
         {error ? (
           <div className="empty" data-testid="kifu-detail-error">
-            <h4>{offline ? t('kifu:detail_offline', '这一局要联网才能读') : t('kifu:load_failed', '这一局读不到')}</h4>
-            <p>{offline ? t('kifu:detail_offline_hint', '棋谱库在云端，这台盒子现在连不上。') : error}</p>
+            <h4>{failure === 'unreachable'
+              ? t('kifu:detail_offline', '无法连接棋谱库')
+              : failure === 'service'
+                ? t('kifu:service_unavailable', '棋谱库暂时不可用')
+                : t('kifu:load_failed', '这一局读不到')}</h4>
+            <p>{failure === 'unreachable'
+              ? t('kifu:detail_offline_hint', '请检查网络连接或稍后重试。')
+              : failure === 'service'
+                ? t('kifu:service_unavailable_hint', '云端服务暂时出了问题，请稍后重试。')
+                : error}</p>
             <button
               type="button"
               className="kiosk-btn kiosk-btn--pill pill"
@@ -274,11 +295,11 @@ const KifuDetailPage = () => {
           <>
             <div className="khero" data-testid="kifu-detail-hero">
               <b>
-                {album.player_black}
-                {album.black_rank && <em>{album.black_rank}</em>}
+                {album.display_player_black ?? t('game:black_side', '黑方')}
+                {album.display_black_rank && <em>{formatRank(album.display_black_rank, t)}</em>}
                 <i>{t('kifu:versus', '对')}</i>
-                {album.player_white}
-                {album.white_rank && <em>{album.white_rank}</em>}
+                {album.display_player_white ?? t('game:white_side', '白方')}
+                {album.display_white_rank && <em>{formatRank(album.display_white_rank, t)}</em>}
               </b>
               <p>{meta}</p>
             </div>

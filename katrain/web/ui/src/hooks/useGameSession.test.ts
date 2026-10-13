@@ -184,3 +184,28 @@ describe('the session-is-gone signal', () => {
     expect(result.current.connectionLost).toBe('gone');
   });
 });
+
+
+describe('verified spectator membership metadata', () => {
+  beforeEach(() => {
+    vi.clearAllMocks(); sockets.length = 0;
+    vi.mocked(API.getState).mockResolvedValue({ session_id: 'session-1', state: minimalState() });
+    vi.stubGlobal('WebSocket', MockWebSocket);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+  it('updates verified membership without deriving it from raw socket count', async () => {
+    const hook = renderHook(() => useGameSession({ token: 'token' }));
+    act(() => hook.result.current.setSessionId('session-1'));
+    await waitFor(() => expect(sockets).toHaveLength(1));
+    const event = (data: object) => ({ data: JSON.stringify({ type: 'spectator_count', ...data }) } as MessageEvent);
+    act(() => sockets[0].onmessage?.(event({ count: 8, spectator_count: 2 })));
+    expect(hook.result.current.gameState).toMatchObject({ sockets_count: 8, spectator_count: 2 });
+    act(() => sockets[0].onmessage?.(event({ count: 9, spectator_count: -1 })));
+    expect(hook.result.current.gameState?.sockets_count).toBe(9);
+    expect(hook.result.current.gameState?.spectator_count).toBeUndefined();
+    act(() => sockets[0].onmessage?.(update({ ...minimalState(), spectator_count: 0 })));
+    expect(hook.result.current.gameState?.spectator_count).toBe(0);
+    act(() => sockets[0].onmessage?.(event({ count: 10 })));
+    expect(hook.result.current.gameState?.spectator_count).toBeUndefined();
+  });
+});

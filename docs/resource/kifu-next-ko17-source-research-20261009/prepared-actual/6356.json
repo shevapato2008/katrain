@@ -1,0 +1,436 @@
+{
+  "artifact_kind": "ko_name_source_only_research",
+  "queue_player_id": 6356,
+  "queue_order_slots": 10,
+  "selection_scope": "Batch 597 read-only shortlist: KO missing and four physically verified primary rows; this shortlist is not final qualification proof.",
+  "owner_binding": {
+    "status": "placeholder_not_validated_not_eligible",
+    "queue_id_read_only": 6356,
+    "note": "Fresh CN/EN anchor bindings and latest owner preimages are intentionally left for root to bind from the new current capture; this source packet does not qualify the owner."
+  },
+  "canonical_name": "陈永奇",
+  "available_non_ko_anchor_names": {
+    "cn": "陈永奇",
+    "en": "Chen Yongqi",
+    "jp": "陳永奇",
+    "tw": "陳永奇",
+    "binding_status": "queue labels only; not current owner preimages"
+  },
+  "status": "pending_no_direct_same_person_Korean_Hangul_name_identified_in_bounded_sources",
+  "scope": {
+    "shortlist_context": "queue selection is prioritization only",
+    "language_scope": "not assigned from name characters alone",
+    "eligibility": "not established by this source-only packet"
+  },
+  "identity": {
+    "capture": [
+      {
+        "player_id": 6356,
+        "canonical_name": "陈永奇",
+        "published_latin": "Chen Yongqi",
+        "source_id": "ret97-ugo-en",
+        "source_language": "en",
+        "source_role": "language_go",
+        "url": "https://db.u-go.net/playerdb/players/2084/",
+        "evidence_ids": [
+          61326,
+          61327,
+          61329
+        ],
+        "method": "GET",
+        "http_status": 200,
+        "final_url": "https://db.u-go.net/playerdb/players/2084/",
+        "content_type": "application/json",
+        "request_started_at_utc": "2026-10-08T23:07:59.726476+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:01.530377+00:00",
+        "body_bytes": 1001,
+        "body_sha256": "47ad6a06fc046c0ddcc39b6e94634355d07fdac6615be7c1bbaa7079d3d1feb1",
+        "body_file": "captures/6356-authority-ret97-ugo-en.body",
+        "publisher": "U-Go / GoGoD / Go4go",
+        "body_text_excerpt": "\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":7125,\"playername\":\"https://db.u-go.net/playerdb/names/208/\",\"name\":\"陈永奇\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"565\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[{\"player\":\"https://db.u-go.net/playerdb/players/2084/\",\"url\":\"http://senseis.xmp.net/?ChenYongqi\",\"affiliation\":false,\"wikipedia\":\"\",\"senseislibrary\":true}],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-12T21:15:10.448199Z\",\"last_changed\":\"2016-12-17T11:33:49.790492Z\"}",
+        "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+        "subject_role": "target_same_person_profile_or_roster",
+        "capture_kind": "authority_page_capture"
+      },
+      {
+        "player_id": 6356,
+        "canonical_name": "陈永奇",
+        "published_latin": "Chen Yongqi",
+        "source_id": "ret100-goratings-ja",
+        "source_language": "ja",
+        "source_role": "language_go",
+        "url": "https://www.goratings.org/ja/players/565.html",
+        "evidence_ids": [
+          61328
+        ],
+        "method": "GET",
+        "http_status": 200,
+        "final_url": "https://www.goratings.org/ja/players/565.html",
+        "content_type": "text/html",
+        "request_started_at_utc": "2026-10-08T23:08:35.317706+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:37.006977+00:00",
+        "body_bytes": 6807,
+        "body_sha256": "ce916ec3aa6c75a3731a3571b2c03fff87f11a01bded03b9462c5d4f32927309",
+        "body_file": "captures/6356-authority-ret100-goratings-ja.body",
+        "publisher": "Go Ratings",
+        "body_text_excerpt": "陳永奇 陳永奇 トップへ戻る 推移グラフ データ 勝利 0 敗北 6 合計 6 リンク https://www.haifong.org/p... リンク http://senseis.xmp.net/?C... 生年月日 1955-12-31 対局データ 日付 レーティング 手番 対局結果 対局相手 棋譜 2014-03-03 2665 白番 敗北 林立祥 3208 ♂ | go4go | 2013-03-07 2666 黒番 敗北 林修平 3064 ♂ | go4go | 2012-10-18 2667 黒番 敗北 葉紘源 3027 ♂ | go4go | 2011-09-29 2670 黒番 敗北 陳義翔 2822 ♂ | go4go | 2010-09-02 2678 白番 敗北 周平強 2951 ♂ | go4go | 2009-08-27 2687 黒番 敗北 周平強 2956 ♂ | go4go | 問合せ先： Rémi Coulom . Powered by joedb, the C++ database .",
+        "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+        "subject_role": "target_same_person_profile_or_roster",
+        "capture_kind": "authority_page_capture"
+      }
+    ],
+    "conclusion": "Captured Go-source bodies associate the queue Han spelling with the profiled Go player. A Latin form is described only when it appears in that specific captured body; otherwise the queue Latin string remains a search term only. Binding the profile to the current owner remains pending root validation."
+  },
+  "reading": {
+    "capture": [
+      {
+        "capture": {
+          "player_id": 6356,
+          "canonical_name": "陈永奇",
+          "published_latin": "Chen Yongqi",
+          "source_id": "GoRatings-Korean-language-path",
+          "source_language": "ko",
+          "source_role": "language_go_localized_profile",
+          "url": "https://www.goratings.org/ko/players/565.html",
+          "derived_from_capture_url": "https://www.goratings.org/ja/players/565.html",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.goratings.org/ko/players/565.html",
+          "content_type": "text/html",
+          "request_started_at_utc": "2026-10-08T23:08:43.925477+00:00",
+          "fetched_at_utc": "2026-10-08T23:08:45.511319+00:00",
+          "body_bytes": 6776,
+          "body_sha256": "6463a2838d72279b187b86a966c22f402fe7ee5c3d6be32cecbac161b116d3d9",
+          "body_file": "captures/6356-authority-goratings-ko.body",
+          "publisher": "Go Ratings",
+          "body_text_excerpt": "Chen Yongqi Chen Yongqi 메인 페이지로 돌아가기 그래프 데이터 승리 0 패배 6 합계 6 링크 https://www.haifong.org/p... 링크 http://senseis.xmp.net/?C... 생년월일 1955-12-31 대국 기록 날짜 레이팅 흑백 결과 상대 기보 2014-03-03 2665 백번 패 린리샹 3208 ♂ | go4go | 2013-03-07 2666 흑번 패 Lin Xiuping 3064 ♂ | go4go | 2012-10-18 2667 흑번 패 Ye Hongyuan 3027 ♂ | go4go | 2011-09-29 2670 흑번 패 천이샹 2822 ♂ | go4go | 2010-09-02 2678 백번 패 저우핑창 2951 ♂ | go4go | 2009-08-27 2687 흑번 패 저우핑창 2956 ♂ | go4go | 문의 Rémi Coulom . Powered by joedb, the C++ database .",
+          "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+          "subject_role": "target_same_person_localized_path_check",
+          "capture_kind": "authority_page_capture"
+        },
+        "observation": "Korean-locale page heading is the same profile rendered as Latin; it does not publish a Korean Hangul player name.",
+        "observed_profile_heading_excerpt": "Chen Yongqi Chen Yongqi"
+      }
+    ],
+    "published_latin": null,
+    "status": "No Korean reading or Hangul form is established. The Latin string is included solely as the queue-provided exact search query; this packet does not claim it was published as the player preferred spelling.",
+    "note": "The Korean-locale GoRatings pages captured here use Latin or Han fallback for the profile name, not a Hangul transliteration.",
+    "queue_latin_query": "Chen Yongqi"
+  },
+  "rule": {
+    "capture": {
+      "status": "not_applied_to_this_owner",
+      "source_basis": "normative_zh_ko_v1",
+      "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+      "decision_reference": "docs/resource/kifu-zh-ko-firstbatch-20261009/source-and-rule-decision.json",
+      "decision_sha256": "dca4e25367ede21a4b162e7ebe4551d6a13a499b084322ebcd44c04f43cdee00",
+      "rule_capture_index": "docs/resource/kifu-nikl-cn-ko-research-20261009/capture-index.json",
+      "rule_capture_index_sha256": "38cacb787678bec8e6d051d90c957f1ea203c2bcb6d58b94eec620f780763609",
+      "pinned_full_rule_body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "approved_owner_ids_in_rule_decision": [
+        5498,
+        5739
+      ],
+      "note": "The finite six-map approval is specific to two different owners and their reviewed readings. No spelling/output has been generated or declared verified for this queue owner; any future rule extension is separate.",
+      "normative_source_capture": {
+        "id": "foreign-regulation-full",
+        "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "method": "GET",
+        "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+        "http_status": 200,
+        "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "content_type": "text/html;charset=UTF-8",
+        "body_bytes": 456809,
+        "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+        "body_file": "captures/foreign-regulation-full.html"
+      },
+      "rule_excerpt_locator": "Foreign-language table 5 at saved original HTML line 1573; notation note at line 1578. The six approved mappings apply only to owners 5498 and 5739 in source-and-rule-decision.json; no mapping is applied here.",
+      "original_rule_excerpt": "The saved NIKL full-body response is the normative reference. This packet intentionally records no generated reading/output for this owner."
+    }
+  },
+  "contrary_checks": {
+    "saved_roster_scans": [
+      {
+        "publisher": "Korean Baduk Association",
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+        "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+        "body_bytes": 80097,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+        "source_role": "official_China_player_roster_bounded_literal_scan",
+        "literal_scan_terms": [
+          "陈永奇",
+          "Chen Yongqi"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 陈永奇; Chen Yongqi. Exact matching strings present: []."
+      },
+      {
+        "publisher": "TVBaduk",
+        "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+        "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+        "body_bytes": 119151,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+        "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+        "literal_scan_terms": [
+          "陈永奇",
+          "Chen Yongqi"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 陈永奇; Chen Yongqi. Exact matching strings present: []."
+      },
+      {
+        "publisher": "Daum Cafe community roster (2012)",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+        "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "body_bytes": 153004,
+        "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+        "source_role": "community_reference_only_not_official",
+        "literal_scan_terms": [
+          "陈永奇",
+          "Chen Yongqi"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 陈永奇; Chen Yongqi. Exact matching strings present: []."
+      }
+    ],
+    "web_search_captures": [
+      {
+        "player_id": 6356,
+        "engine": "naver",
+        "query": "\"陈永奇\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E6%B0%B8%E5%A5%87%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E6%B0%B8%E5%A5%87%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:08.780566+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:10.681294+00:00",
+        "body_bytes": 196245,
+        "body_sha256": "7f6e4a1c9293aea4107f38fa8bcaa3cd96a42f0822f936cb330b16e4a12b70c9",
+        "body_file": "captures/6356-search-naver-han.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "\"陈永奇\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"陈永奇\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"陈永奇\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 공공디자인 종합정보시스템 www.publicdesign.kr › com PDF 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 저작자표시-비영리-변경금지 2.0 대한민국 새 창 열림 203페이지 3MB 저작자표시-비영리-변경금지 2.0 대한민국 이용자는 아래의 조건을 따르는 경우에 한하여 자유롭게 l 이 저작물을 복제, 배포, 전송, 전시, 공연 및 방송할 수 있습니다. 다음과 같은 조건을 따라야 합니다: l 귀하는, 이 저작물의 재이용이나 배포의 경우, 이 저작물에 적용된 이용허락조건 을 명확하게 나타내어야 합니다. l 저작권자로부터 별도의... 새 창 열림 baekje-heritage.or.kr archive.baekje-heritage.or.kr › 학술자료집.pdf PDF 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 2024 백제학대회 새 창 열림 663페이지 58MB 백제역사유적지구 국제학술포럼 2024 백제학대회 unesco 학술자료집 FRI 10.6. SUN 10.4. 공주대학교 국제회의실 교양관. 공무시 덕산시 행사일정 ◎ 1일차(국제학술포럼) 일시 및 시간 주요내용 발표자 비고 10월 4일(금) / 1일차 공주대 대학본부 국제회의실 12:30 13:00 30‘ ■ 참가자 등록 및 행사 안내 사회자: 이경복(충남역사문화연구실장) 13:00 13:20 20‘ ■ 개회... 새 창 열림 mosan.or.kr mosan.or.kr › file PDF 새 창 열림 AI 출처 정보 동아인문학회는 인문학 분야 학술활동을 지원하는 학회로, 공지사항·학술행사 안내와 논",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 6356,
+        "engine": "naver",
+        "query": "\"Chen Yongqi\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22Chen%20Yongqi%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22Chen%20Yongqi%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:08.833880+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:10.725648+00:00",
+        "body_bytes": 166680,
+        "body_sha256": "5dfac49cd71544467d90e4fb26b1f05366afb8f0d3d660643267d6575366da23",
+        "body_file": "captures/6356-search-naver-latin.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "\"Chen Yongqi\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Chen Yongqi\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Chen Yongqi\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 Go Ratings www.goratings.org › players 새 창 열림 AI 출처 정보 Go Ratings는 바둑 기사들의 Elo 등급과 순위를 제공하는 사이트로, 최신 경기 기록과 통계 정보를 확인할 수 있습니다. 또한 과거 등급 변동과 여성 기사 순위 등 다양한 히스토리 페이지를 운영합니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 저우핑창 - Go Ratings 새 창 열림 날짜 상대 2019-09-23 Lin Yuxiang 2981 ♂ 2019-09-19 양쯔쉔 2976 ♀ 2019-09-15 천치루이 3321 ♂ 새 창 열림 120행 더보기 새 창 열림 Zhou Pingqiang 새 창 열림 Date, Opponent ; 2019-09-23, Lin Yuxiang, 2981, ♂ ; 2019-09-19, Yang Zixuan, 2976, ♀ ; 2019-09-15, Chen Qirui, 3321, ♂ ; 2019-09-08, Ye Hongyuan, 2907, ♂ ; 2019-09-05, Liu Jianchang, 2628, ♂ ; 2019-09-03, Lai Junfu, 3237, ♂ ; 2019-09-02, Chen Yixiang, 2763, ♂ ; 2019-04-10, Shi Jingyao, 2981, ♂ ; 2019-04-10, Huang Shiyuan, 3051, ♂ ; 2019-04-08, Bai Xinhui, 2740, ♀ ; 2019-04-08, W",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      }
+    ],
+    "coverage_note": "Exact Han and exact published Latin searches were captured where available. HTTP 403 is preserved as unavailable; an alternative Bing capture is included when available. Results are bounded and do not support global absence. Similar names were not accepted without a same-person Go identity bridge."
+  },
+  "source_reading": {
+    "queue_latin_query": "Chen Yongqi",
+    "queue_string_source": "read-only shortlist row, not current source/owner binding",
+    "observed_romanization": null,
+    "interpretation": "No Korean spelling or reading generated or inferred. The literal queue Latin string is used only as the second search query."
+  },
+  "identity_bridges": [
+    {
+      "player_id": 6356,
+      "canonical_name": "陈永奇",
+      "published_latin": "Chen Yongqi",
+      "source_id": "ret97-ugo-en",
+      "source_language": "en",
+      "source_role": "language_go",
+      "url": "https://db.u-go.net/playerdb/players/2084/",
+      "evidence_ids": [
+        61326,
+        61327,
+        61329
+      ],
+      "method": "GET",
+      "http_status": 200,
+      "final_url": "https://db.u-go.net/playerdb/players/2084/",
+      "content_type": "application/json",
+      "request_started_at_utc": "2026-10-08T23:07:59.726476+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:01.530377+00:00",
+      "body_bytes": 1001,
+      "body_sha256": "47ad6a06fc046c0ddcc39b6e94634355d07fdac6615be7c1bbaa7079d3d1feb1",
+      "body_file": "captures/6356-authority-ret97-ugo-en.body",
+      "publisher": "U-Go / GoGoD / Go4go",
+      "body_text_excerpt": "\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":7125,\"playername\":\"https://db.u-go.net/playerdb/names/208/\",\"name\":\"陈永奇\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"565\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[{\"player\":\"https://db.u-go.net/playerdb/players/2084/\",\"url\":\"http://senseis.xmp.net/?ChenYongqi\",\"affiliation\":false,\"wikipedia\":\"\",\"senseislibrary\":true}],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-12T21:15:10.448199Z\",\"last_changed\":\"2016-12-17T11:33:49.790492Z\"}",
+      "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+      "subject_role": "target_same_person_profile_or_roster",
+      "capture_kind": "authority_page_capture"
+    },
+    {
+      "player_id": 6356,
+      "canonical_name": "陈永奇",
+      "published_latin": "Chen Yongqi",
+      "source_id": "ret100-goratings-ja",
+      "source_language": "ja",
+      "source_role": "language_go",
+      "url": "https://www.goratings.org/ja/players/565.html",
+      "evidence_ids": [
+        61328
+      ],
+      "method": "GET",
+      "http_status": 200,
+      "final_url": "https://www.goratings.org/ja/players/565.html",
+      "content_type": "text/html",
+      "request_started_at_utc": "2026-10-08T23:08:35.317706+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:37.006977+00:00",
+      "body_bytes": 6807,
+      "body_sha256": "ce916ec3aa6c75a3731a3571b2c03fff87f11a01bded03b9462c5d4f32927309",
+      "body_file": "captures/6356-authority-ret100-goratings-ja.body",
+      "publisher": "Go Ratings",
+      "body_text_excerpt": "陳永奇 陳永奇 トップへ戻る 推移グラフ データ 勝利 0 敗北 6 合計 6 リンク https://www.haifong.org/p... リンク http://senseis.xmp.net/?C... 生年月日 1955-12-31 対局データ 日付 レーティング 手番 対局結果 対局相手 棋譜 2014-03-03 2665 白番 敗北 林立祥 3208 ♂ | go4go | 2013-03-07 2666 黒番 敗北 林修平 3064 ♂ | go4go | 2012-10-18 2667 黒番 敗北 葉紘源 3027 ♂ | go4go | 2011-09-29 2670 黒番 敗北 陳義翔 2822 ♂ | go4go | 2010-09-02 2678 白番 敗北 周平強 2951 ♂ | go4go | 2009-08-27 2687 黒番 敗北 周平強 2956 ♂ | go4go | 問合せ先： Rémi Coulom . Powered by joedb, the C++ database .",
+      "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+      "subject_role": "target_same_person_profile_or_roster",
+      "capture_kind": "authority_page_capture"
+    }
+  ],
+  "searches": [
+    {
+      "player_id": 6356,
+      "engine": "naver",
+      "query": "\"陈永奇\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E6%B0%B8%E5%A5%87%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E6%B0%B8%E5%A5%87%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:08.780566+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:10.681294+00:00",
+      "body_bytes": 196245,
+      "body_sha256": "7f6e4a1c9293aea4107f38fa8bcaa3cd96a42f0822f936cb330b16e4a12b70c9",
+      "body_file": "captures/6356-search-naver-han.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "\"陈永奇\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"陈永奇\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"陈永奇\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 공공디자인 종합정보시스템 www.publicdesign.kr › com PDF 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 저작자표시-비영리-변경금지 2.0 대한민국 새 창 열림 203페이지 3MB 저작자표시-비영리-변경금지 2.0 대한민국 이용자는 아래의 조건을 따르는 경우에 한하여 자유롭게 l 이 저작물을 복제, 배포, 전송, 전시, 공연 및 방송할 수 있습니다. 다음과 같은 조건을 따라야 합니다: l 귀하는, 이 저작물의 재이용이나 배포의 경우, 이 저작물에 적용된 이용허락조건 을 명확하게 나타내어야 합니다. l 저작권자로부터 별도의... 새 창 열림 baekje-heritage.or.kr archive.baekje-heritage.or.kr › 학술자료집.pdf PDF 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 2024 백제학대회 새 창 열림 663페이지 58MB 백제역사유적지구 국제학술포럼 2024 백제학대회 unesco 학술자료집 FRI 10.6. SUN 10.4. 공주대학교 국제회의실 교양관. 공무시 덕산시 행사일정 ◎ 1일차(국제학술포럼) 일시 및 시간 주요내용 발표자 비고 10월 4일(금) / 1일차 공주대 대학본부 국제회의실 12:30 13:00 30‘ ■ 참가자 등록 및 행사 안내 사회자: 이경복(충남역사문화연구실장) 13:00 13:20 20‘ ■ 개회... 새 창 열림 mosan.or.kr mosan.or.kr › file PDF 새 창 열림 AI 출처 정보 동아인문학회는 인문학 분야 학술활동을 지원하는 학회로, 공지사항·학술행사 안내와 논",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Chen Yongqi",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 6356,
+      "engine": "naver",
+      "query": "\"Chen Yongqi\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22Chen%20Yongqi%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22Chen%20Yongqi%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:08.833880+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:10.725648+00:00",
+      "body_bytes": 166680,
+      "body_sha256": "5dfac49cd71544467d90e4fb26b1f05366afb8f0d3d660643267d6575366da23",
+      "body_file": "captures/6356-search-naver-latin.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "\"Chen Yongqi\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Chen Yongqi\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Chen Yongqi\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 Go Ratings www.goratings.org › players 새 창 열림 AI 출처 정보 Go Ratings는 바둑 기사들의 Elo 등급과 순위를 제공하는 사이트로, 최신 경기 기록과 통계 정보를 확인할 수 있습니다. 또한 과거 등급 변동과 여성 기사 순위 등 다양한 히스토리 페이지를 운영합니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 저우핑창 - Go Ratings 새 창 열림 날짜 상대 2019-09-23 Lin Yuxiang 2981 ♂ 2019-09-19 양쯔쉔 2976 ♀ 2019-09-15 천치루이 3321 ♂ 새 창 열림 120행 더보기 새 창 열림 Zhou Pingqiang 새 창 열림 Date, Opponent ; 2019-09-23, Lin Yuxiang, 2981, ♂ ; 2019-09-19, Yang Zixuan, 2976, ♀ ; 2019-09-15, Chen Qirui, 3321, ♂ ; 2019-09-08, Ye Hongyuan, 2907, ♂ ; 2019-09-05, Liu Jianchang, 2628, ♂ ; 2019-09-03, Lai Junfu, 3237, ♂ ; 2019-09-02, Chen Yixiang, 2763, ♂ ; 2019-04-10, Shi Jingyao, 2981, ♂ ; 2019-04-10, Huang Shiyuan, 3051, ♂ ; 2019-04-08, Bai Xinhui, 2740, ♀ ; 2019-04-08, W",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Chen Yongqi",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    }
+  ],
+  "additional_bounded_cross_checks": [
+    {
+      "publisher": "Korean Baduk Association",
+      "url": "https://www.baduk.or.kr/record/player_in.asp",
+      "method": "POST",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+      "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+      "body_bytes": 80097,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+      "source_role": "official_China_player_roster_bounded_literal_scan",
+      "literal_scan_terms": [
+        "陈永奇",
+        "Chen Yongqi"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 陈永奇; Chen Yongqi. Exact matching strings present: []."
+    },
+    {
+      "publisher": "TVBaduk",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "body_bytes": 119151,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+      "literal_scan_terms": [
+        "陈永奇",
+        "Chen Yongqi"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 陈永奇; Chen Yongqi. Exact matching strings present: []."
+    },
+    {
+      "publisher": "Daum Cafe community roster (2012)",
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "body_bytes": 153004,
+      "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "source_role": "community_reference_only_not_official",
+      "literal_scan_terms": [
+        "陈永奇",
+        "Chen Yongqi"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 陈永奇; Chen Yongqi. Exact matching strings present: []."
+    }
+  ],
+  "conclusion": "Source-only research packet. No Korean name candidate, reviewer signature, eligibility claim, or target preimage validation.",
+  "review_status": "source assembly only; independent candidate review/signature not performed"
+}

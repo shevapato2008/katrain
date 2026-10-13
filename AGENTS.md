@@ -33,3 +33,14 @@
 - Commit messages are short, present-tense summaries (e.g., `allow 3.13`, `add mac app icon (#774)`); reference issues/PRs with `#` when applicable.
 - For PRs, include: intent summary, test results (`pytest` and manual app run/OS tested), and screenshots or screen recordings for UI changes.
 - For larger features, open an issue or start a discussion before implementation (see `CONTRIBUTIONS.md`); call out engine/KataGo config impacts explicitly.
+
+## Integration & Deployment Workflow
+
+When the user requests feature integration and release, complete these steps in order:
+
+1. Fetch the latest `develop`, merge it into the feature branch, resolve conflicts, verify the combined result, commit, and push the feature branch.
+2. Merge the feature branch into `develop` and push `develop`.
+3. Update `smartbox-software/vendor/katrain` to the published `develop` commit; commit and push the parent repository's submodule pointer. Preserve unrelated working-tree changes.
+4. Deploy the integrated release to both `home-ubuntu` and `ucloud-v100`; verify service health and representative actual Galaxy/kiosk pages.
+
+Report the published commits and deployed version. A deployed feature branch is not a completed merge into `develop`.

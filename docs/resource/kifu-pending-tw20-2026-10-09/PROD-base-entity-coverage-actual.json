@@ -1,0 +1,13 @@
+{
+  "both_qualified_player_ids_games": 128805,
+  "qualified_event_id_games": 105977,
+  "base_entity_names_games": 80253,
+  "environment": "PROD",
+  "batch_id": 588,
+  "observed_at": "2026-10-08T18:38:49.582863+00:00",
+  "method": "direct kifu_albums black_player_id, white_player_id and event_id in independently qualified five-language owner ID sets from PROD-progress-actual.json",
+  "scope": "entity IDs only; no raw event title/selection/hidden scope; not strict full-card coverage",
+  "player_qualified_ids": 1647,
+  "event_qualified_ids": 64,
+  "games": 173025
+}

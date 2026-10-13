@@ -75,9 +75,12 @@ class CaptureService:
         )
 
     # -- frame access ------------------------------------------------------ #
-    def grab_fresh(self, after_ts: Optional[float] = None, settle_ms: float = 150.0):
+    def grab_fresh(self, after_ts: Optional[float] = None, settle_ms: float = 150.0, timeout: float | None = None):
         """Return ``(frame, seq, ts)`` of a frame read after ``after_ts + settle``."""
-        return self._hub.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+        kwargs = {"after_ts": after_ts, "settle_ms": settle_ms}
+        if timeout is not None:
+            kwargs["timeout"] = timeout
+        return self._hub.grab_fresh(**kwargs)
 
     def read_frame(self):
         return self._hub.read_frame()

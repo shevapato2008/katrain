@@ -45,6 +45,20 @@ const PlayPage = () => {
   const engineReadiness = useEngineReadiness();
   const resume = readActiveSession('game');
   const [platforms, setPlatforms] = useState<PlatformInfo[]>(defaultPlatforms);
+  const [hour, setHour] = useState(() => new Date().getHours());
+
+  useEffect(() => {
+    const updateHour = () => setHour(new Date().getHours());
+    const onVisible = () => { if (!document.hidden) updateHour(); };
+    const interval = setInterval(updateHour, 60 * 60 * 1000);
+    window.addEventListener('focus', updateHour);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', updateHour);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
 
   useEffect(() => {
     let current = true;
@@ -63,7 +77,6 @@ const PlayPage = () => {
     return () => { current = false; };
   }, [isAuthenticated, token]);
 
-  const hour = new Date().getHours();
   const [greetKey, greetZh] =
     hour < 6 ? ['Late night', '夜深了'] :
     hour < 11 ? ['Good morning', '早上好'] :
@@ -167,19 +180,14 @@ const PlayPage = () => {
                 />
               );
             }
-            // 2026-09-23(Task 5):「未连接」这一支改跳独立的登录页 —— 已连接那两支
-            // 原样不动(Task 10 再改,那时 `/kiosk/play/cross-platform/golaxy` 才存在)。
+            // 对弈首页是平台选择的唯一入口；各平台连接后各进专页。
             const target = p.connected
-              ? (p.supports_engine_play
-                  ? `/kiosk/play/cross-platform/engine/${p.platform}`
-                  : `/kiosk/play/cross-platform/lobby?platform=${p.platform}`)
+              ? `/kiosk/play/cross-platform/${p.platform}`
               : `/kiosk/play/cross-platform/login/${p.platform}`;
             // 副标说的是**下一步会发生什么**,而且每一句都从真状态推出来:
-            // 连上了就说走哪条路,没连上就说这个平台要拿什么登录(登录字段在 PLATFORM_META 里)。
+            // 连上了就说去专页,没连上就说这个平台要拿什么登录(登录字段在 PLATFORM_META 里)。
             const sub = p.connected
-              ? (p.supports_engine_play
-                  ? t('Connected · plays the engine', '已连接 · 人机对弈')
-                  : t('Connected · goes to the lobby', '已连接 · 走大厅'))
+              ? t('platform:connected_enter', '已连接 · 进入平台专页')
               : meta.login
                 ? `${t('Tap to connect', '点击登录')} · ${t(meta.login.userLabel, meta.login.userLabelCn)} + ${t(meta.login.passLabel, meta.login.passLabelCn)}`
                 : t('Tap to connect', '点击登录');

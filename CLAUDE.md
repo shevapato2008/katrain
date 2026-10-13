@@ -201,7 +201,9 @@ Shared code must **not** import from `src/kiosk/`, `src/galaxy/`, or `src/pages/
 
 ## gstack
 
-Use the `/browse` skill from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.
+Use the `/browse` skill from gstack for general web browsing. Claude in Chrome (`mcp__claude-in-chrome__*`) is allowed
+for checking frontend effects in Fan's logged-in Chrome — e.g. hover/click checks on a published claude.ai Artifact,
+which headless browsers cannot open without his login.
 
 Available skills:
 - `/office-hours` — YC-style office hours (startup or builder mode)

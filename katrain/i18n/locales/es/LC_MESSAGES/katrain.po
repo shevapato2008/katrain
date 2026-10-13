@@ -450,6 +450,9 @@ msgstr "k"
 msgid "strength:dan"
 msgstr "d"
 
+msgid "strength:professional_dan_format"
+msgstr "{rank} dan profesional"
+
 msgid "ai:default"
 msgstr "Recommended"
 
@@ -2092,6 +2095,12 @@ msgstr "Lugar"
 msgid "kifu:source"
 msgstr "Fuente"
 
+msgid "kifu:source_golaxy"
+msgstr "GoLaxy"
+
+msgid "kifu:source_unknown"
+msgstr "Fuente sin verificar"
+
 msgid "kifu:open_in_research"
 msgstr "Abrir en investigación"
 
@@ -3248,7 +3257,7 @@ msgstr ""
 "Blancas, normalizadas por bando"
 
 msgid "grade:def_brilliant"
-msgstr "La primera opción del motor que ni su intuición vio (prior < 10 %)"
+msgstr "Se jugó la primera opción de la IA tras un cálculo profundo, con una probabilidad de selección inicial de la IA inferior al 10 % (al 6 % en el final de la partida)"
 
 msgid "grade:def_best"
 msgstr "Jugó la primera opción del motor"
@@ -3265,9 +3274,18 @@ msgstr ""
 
 msgid "grade:brilliance_entry"
 msgstr ""
-"Deben cumplirse las tres: jugó la primera opción del motor, su prior de "
-"política era inferior al 10 % (ni su intuición la vio) y la partida seguía "
-"indecisa."
+"Una jugada brillante debe cumplir todas estas condiciones: la jugada "
+"realizada es la primera opción de la IA tras un cálculo profundo; su "
+"probabilidad de selección inicial por la IA es inferior al 10 % (al 6 % en"
+" el final de la partida); el resultado de la partida aún no está decidido."
+
+msgid "grade:initial_probability_help"
+msgstr ""
+"La probabilidad de selección inicial de la IA es la probabilidad que la IA"
+" asigna a elegir esta jugada antes de realizar un cálculo profundo. No es "
+"la probabilidad de ganar ni la probabilidad de que una persona juegue esa "
+"jugada. Una jugada con una probabilidad de selección inicial muy baja "
+"también puede convertirse en la primera opción tras un cálculo profundo."
 
 msgid "grade:match_timeline_legend"
 msgstr ""
@@ -3861,8 +3879,9 @@ msgstr "Jugada {n} {m} · {s} · {g} · pierde {x} pts"
 
 msgid "grade:sel_brilliant"
 msgstr ""
-"Jugada {n} {m} · {s} · brillantez {k} — es la primera opción del motor, al "
-"que solo le dio un {p}% previo (cuanto más bajo, más brillante)"
+"Jugada {n} {m} · {s} · brillantez {k} — probabilidad de selección inicial "
+"de la IA de solo {p} %; pasó a ser la primera opción tras un cálculo "
+"profundo"
 
 msgid "grade:truncated_plot"
 msgstr "Se dibujan como máximo {k} por bando; quedan {n} sin mostrar"
@@ -6925,20 +6944,22 @@ msgid "baipu:wrong_title"
 msgstr "Mal colocada · va en {c}"
 
 msgid "kifu:detail_offline"
-msgstr "Esta partida necesita conexión a internet para abrirse"
+msgstr "No se puede conectar a la biblioteca de partidas"
 
 msgid "kifu:detail_offline_hint"
-msgstr ""
-"La biblioteca de partidas está en la nube y este equipo no puede conectarse "
-"ahora."
+msgstr "Comprueba la conexión de red o vuelve a intentarlo más tarde."
 
 msgid "kifu:list_offline"
-msgstr "Buscar en la biblioteca de partidas requiere conexión a internet"
+msgstr "No se puede conectar a la biblioteca de partidas"
 
 msgid "kifu:list_offline_hint"
-msgstr ""
-"Este equipo no puede conectarse a la nube ahora. Las partidas reproducidas y"
-" los SGF importados no se ven afectados."
+msgstr "Comprueba la conexión de red o vuelve a intentarlo más tarde."
+
+msgid "kifu:service_unavailable"
+msgstr "La biblioteca de partidas no está disponible temporalmente"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "El servicio en la nube no está disponible temporalmente. Vuelve a intentarlo más tarde."
 
 msgid "kifu:wrong_size_reason"
 msgstr "Es una partida de {n}×{n}: el tablero físico solo admite 19×19"
@@ -7115,3 +7136,6 @@ msgstr "No se pudo confirmar el inicio de sesión"
 
 msgid "vision:not_a_stone"
 msgstr "No es una piedra"
+
+msgid "report:score_difference"
+msgstr "Diferencia de puntos"

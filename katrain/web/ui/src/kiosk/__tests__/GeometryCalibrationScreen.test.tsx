@@ -11,7 +11,7 @@ import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationS
  * 屏 26 棋盘标定。**2026-08-24 整份换口径**(文件也跟着组件从 `…Workspace` 改名)。
  *
  * 上一版 7 条断言的是 `phaseTitle` / `phaseHint` 那两块大字和一排 MUI Chip;
- * 这一轮它们**换成了四步清单 + 三格状态**(同一份信息,分辨率更高)。
+ * 这一轮它们换成了步骤清单 + 三格状态(同一份信息,分辨率更高)。
  * 每一条的**被测意图都还在**,只是问法换了 —— 逐条在注释里点名换的是哪一句。
  *
  * 布局事实一律不在这儿断言(jsdom 没有布局引擎):
@@ -55,7 +55,7 @@ vi.mock('../components/vision/CameraGeometryOverlay', () => ({
   },
 }));
 
-const renderScreen = () => render(
+const screenTree = () => (
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter>
       <GeometryCalibrationScreen
@@ -63,8 +63,9 @@ const renderScreen = () => render(
         title="棋盘标定" sub="先把棋盘清空 · 四角和天元共 5 个定位点"
       />
     </MemoryRouter>
-  </ThemeProvider>,
+  </ThemeProvider>
 );
+const renderScreen = () => render(screenTree());
 
 const steps = () => screen.getAllByTestId('calib-step');
 const acts = () => screen.getByTestId('calib-actions');
@@ -82,7 +83,7 @@ describe('屏 26 棋盘标定', () => {
     vi.mocked(GeometryAPI.layout).mockRejectedValue(new Error('geometry request failed 409'));
   });
 
-  // ── 四步,不是五步 ─────────────────────────────────────────────────────────
+  // ── 四步:曝光是独立的真实阶段 ─────────────────────────────────────────────
 
   /**
    * 🔴 稿子原来画五步(2026-09-24 已照实现改成四步),第 2 步「采集熄灯参考帧」对应 `dark_reference` ——
@@ -90,7 +91,7 @@ describe('屏 26 棋盘标定', () => {
    * 那件事确实在做,但是**每个锚点各一次**,不是一个有头有尾的阶段。
    * 画成一行只能在两种假话里挑一种,所以删掉、机制写进旁注。
    */
-  it('四步不是五步,而且没有「采集熄灯参考帧」这一行', () => {
+  it('四步包含曝光收敛并锁定，没有独立的「采集熄灯参考帧」', () => {
     renderScreen();
     expect(steps()).toHaveLength(4);
     expect(steps().map((s) => s.querySelector('.kiosk-row__t b')?.textContent)).toEqual([
@@ -123,10 +124,9 @@ describe('屏 26 棋盘标定', () => {
   });
 
   /**
-   * 🔴 断在哪一步**由 `detected_anchors` 的长度判,不靠错误串** ——
-   * 错误串只说明最后一下出了什么问题,它反推不出前面走了多远。
+   * 老版本没有 stopped_phase 时，锚点计数仍能确定四角 / 星位 / 基线的断点。
    */
-  it('失败:断点由已定位的锚点数决定,之前的步骤保持「完成」', () => {
+  it('旧响应失败:由已定位的锚点数确定断点,之前的步骤保持「完成」', () => {
     status = {
       ...status, phase: 'failed', error: 'anchor_not_found:3,15',
       detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
@@ -176,7 +176,7 @@ describe('屏 26 棋盘标定', () => {
     loaded = false;
     status = { ...status, capabilities: { camera_ready: false, led_ready: false, geometry_ready: false } };
     renderScreen();
-    expect(cells()).toEqual(['摄像头—', '标定—', 'LED—']);
+    expect(cells()).toEqual(['摄像头—', '标定—', 'LED未确认']);
     expect(screen.queryByText('未连接')).toBeNull();
   });
 
@@ -187,11 +187,18 @@ describe('屏 26 棋盘标定', () => {
     expect(cells()[2]).toContain('未连接');
   });
 
-  it('LED 那一格只说串口通了,不说「就绪」', () => {
+  it('LED 那一格显示 Board A 连接确认', () => {
     // 照该文件写法:改模块级 status(beforeEach 里 led_ready 已是 true),再无参 renderScreen();`cells()` 取三格文字
     renderScreen();
-    expect(cells().some((c) => c.includes('串口已连接'))).toBe(true);
+    expect(cells()).toContain('LED已连接');
     expect(cells().some((c) => c.includes('就绪'))).toBe(false);
+  });
+
+  it('LED未知时不显示绿色连接，无法开始标定', () => {
+    status = { ...status, capabilities: { camera_ready: true, led_ready: null, geometry_ready: false } };
+    renderScreen();
+    expect(cells()).toContain('LED未确认');
+    expect(screen.getByRole('button', { name: /开始标定/ })).toBeDisabled();
   });
 
   // ── 标定质量:不许把「不知道」画成「满分」 ─────────────────────────────────
@@ -409,6 +416,18 @@ describe('屏 26 棋盘标定', () => {
     expect(voiceSpeak).toHaveBeenCalledWith(reason === 'frame_overexposed' ? 'calibration_too_bright' : 'calibration_too_dark');
   });
 
+  it('曝光失败且有可靠的过曝诊断时显示光线弹窗并播报', () => {
+    status = {
+      ...status,
+      phase: 'failed',
+      error: 'manual exposure lock readback failed',
+      metrics: { exposure: { median: 247, clip_frac: 0.48, shadow_frac: 0.02, reason: 'frame_overexposed', confirmed: true } },
+    };
+    renderScreen();
+    expect(screen.getByRole('dialog')).toHaveTextContent('画面过亮');
+    expect(voiceSpeak).toHaveBeenCalledWith('lighting_overexposed');
+  });
+
   it('点击光线重检走统一 Context 动作，重检中不能重复点', async () => {
     recheckLighting.mockResolvedValue(undefined);
     status = { ...status, phase: 'lighting_paused', pause_reason: 'frame_overexposed' };
@@ -426,7 +445,7 @@ describe('屏 26 棋盘标定', () => {
 
   /**
    * 🔴 `/status` 404 ⇒ `disabled`。那台机器上 `/geometry/stream` 会 404、`/calibrate` 会 404、
-   * 四步一步都不会走 —— **把这些控件摆出来全是假的**。但返回键必须在。
+   * 五步一步都不会走 —— **把这些控件摆出来全是假的**。但返回键必须在。
    */
   it('没配摄像头的盒子:整块换成一句实话,不摆一屏按不动的控件', () => {
     status = { ...status, phase: 'disabled' };

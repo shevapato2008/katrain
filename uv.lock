@@ -1047,6 +1047,7 @@ web = [
     { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "python-jose", extra = ["cryptography"] },
+    { name = "sgfmill" },
     { name = "sqlalchemy" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -1105,6 +1106,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.32.0" },
     { name = "rknn-toolkit-lite2", marker = "extra == 'vision-rknn'", specifier = ">=2.0.0" },
     { name = "screeninfo", marker = "sys_platform != 'darwin'", specifier = ">=0.8.1,<0.9" },
+    { name = "sgfmill", marker = "extra == 'web'", specifier = ">=1.1.1" },
     { name = "sqlalchemy", specifier = ">=2.0.46" },
     { name = "sqlalchemy", marker = "extra == 'web'", specifier = ">=2.0.0" },
     { name = "torch", marker = "extra == 'classifier'", specifier = ">=2.0" },
@@ -2865,6 +2867,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c", size = 1319958, upload-time = "2025-05-27T00:56:51.443Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922", size = 1201486, upload-time = "2025-05-27T00:56:49.664Z" },
+]
+
+[[package]]
+name = "sgfmill"
+version = "1.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/2b/42bf7cf772fa54458b6e84e6938192f1466b9a95ae203b1d5efa2cedfc53/sgfmill-1.1.1.tar.gz", hash = "sha256:1f44fa6b613acfae23cf7f69985a4a911fc06f772f6c63c0bbfc89044d88f41d", size = 63179, upload-time = "2018-05-20T15:19:02.98Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/ef/cd39e8db4385260b6f2e021dd8908e8f5167bfddce238bdea0e82b2f59c6/sgfmill-1.1.1-py3-none-any.whl", hash = "sha256:759cd843eba647875931d3a10eb329362087b9832f6b49ee85cf8948b0608b3d", size = 27143, upload-time = "2018-05-20T15:19:01.418Z" },
 ]
 
 [[package]]

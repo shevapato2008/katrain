@@ -7,6 +7,8 @@ import threading
 import time
 from dataclasses import dataclass
 
+from katrain.web.core.device_lease import DeviceLease
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,6 +35,7 @@ class CameraHub:
         self._camera = camera
         self._started = False
         self._lifecycle_lock = threading.Lock()
+        self._device_lease = None
         self._recovery_stop = threading.Event()
         self._recovery_thread: threading.Thread | None = None
 
@@ -44,28 +47,46 @@ class CameraHub:
         with self._lifecycle_lock:
             if self._started:
                 return
-            if self._camera is None:
-                from katrain.vision.camera import CameraManager
+            self._device_lease = DeviceLease.acquire("camera", self.config.device_id)
+            try:
+                if self._camera is None:
+                    from katrain.vision.camera import CameraManager
 
-                self._camera = CameraManager(
-                    device_id=self.config.device_id,
-                    width=self.config.width,
-                    height=self.config.height,
-                    warmup_seconds=self.config.warmup_seconds,
-                    lock_exposure=self.config.lock_exposure,
-                    exposure=self.config.exposure,
-                    lock_awb=self.config.lock_awb,
+                    self._camera = CameraManager(
+                        device_id=self.config.device_id,
+                        width=self.config.width,
+                        height=self.config.height,
+                        warmup_seconds=self.config.warmup_seconds,
+                        lock_exposure=self.config.lock_exposure,
+                        exposure=self.config.exposure,
+                        lock_awb=self.config.lock_awb,
+                    )
+                if not self._camera.open():
+                    if not allow_unavailable:
+                        raise RuntimeError(f"Failed to open camera {self.config.device_id}")
+                    logger.warning(
+                        "Camera unavailable; retaining shared services and retrying: %s", self.config.device_id
+                    )
+                self._started = True
+                self._recovery_stop = threading.Event()
+                self._recovery_thread = threading.Thread(
+                    target=self._recover_loop, args=(self._recovery_stop,), daemon=True, name="camera-recovery"
                 )
-            if not self._camera.open():
-                if not allow_unavailable:
-                    raise RuntimeError(f"Failed to open camera {self.config.device_id}")
-                logger.warning("Camera unavailable; retaining shared services and retrying: %s", self.config.device_id)
-            self._started = True
-            self._recovery_stop = threading.Event()
-            self._recovery_thread = threading.Thread(
-                target=self._recover_loop, args=(self._recovery_stop,), daemon=True, name="camera-recovery"
-            )
-            self._recovery_thread.start()
+                self._recovery_thread.start()
+            except BaseException:
+                self._started = False
+                self._recovery_stop.set()
+                self._recovery_thread = None
+                # Preserve the existing lease through partial-open cleanup.
+                try:
+                    if self._camera is not None:
+                        try:
+                            self._camera.close()
+                        except Exception:
+                            pass
+                finally:
+                    self._release_device_lease()
+                raise
 
     def _recover_loop(self, stop: threading.Event) -> None:
         while not stop.wait(self.RECOVERY_INTERVAL_S):
@@ -81,15 +102,35 @@ class CameraHub:
                         logger.exception("Camera recovery failed for %s", self.config.device_id)
 
     def stop(self) -> None:
-        with self._lifecycle_lock:
-            if not self._started:
-                return
-            self._started = False
-            self._recovery_stop.set()
-            recovery, self._recovery_thread = self._recovery_thread, None
-            self._camera.close()
-        if recovery is not None:
-            recovery.join()
+        recovery = None
+        try:
+            with self._lifecycle_lock:
+                if not self._started:
+                    return
+                self._started = False
+                self._recovery_stop.set()
+                recovery, self._recovery_thread = self._recovery_thread, None
+                try:
+                    self._camera.close()
+                finally:
+                    self._release_device_lease()
+        finally:
+            if recovery is not None:
+                recovery.join()
+
+    def _release_device_lease(self) -> None:
+        lease, self._device_lease = self._device_lease, None
+        reader = getattr(self._camera, "_reader_thread", None)
+        if reader is not None and reader.is_alive():
+            # A blocked native read still owns its capture after bounded close().
+            # Keep peers out until the reader's finally has released that capture.
+            def release_after_reader():
+                reader.join()
+                lease.release()
+
+            threading.Thread(target=release_after_reader, daemon=True, name="camera-lease-release").start()
+        else:
+            lease.release()
 
     def is_connected(self) -> bool:
         return bool(self._started and self._camera is not None and getattr(self._camera, "is_connected", False))
@@ -102,13 +143,27 @@ class CameraHub:
         finally:
             self._lifecycle_lock.release()
 
-    def grab_fresh(self, after_ts=None, settle_ms: float = 150.0):
+    def read_frame_identified(self):
+        """(frame, seq, monotonic ts) from one locked read; diagnostics need the frame's identity."""
+        if not self._lifecycle_lock.acquire(blocking=False):
+            return None, 0, 0.0
+        try:
+            return (
+                self._camera.read_frame_identified() if self._started and self._camera is not None else (None, 0, 0.0)
+            )
+        finally:
+            self._lifecycle_lock.release()
+
+    def grab_fresh(self, after_ts=None, settle_ms: float = 150.0, timeout: float | None = None):
         if not self._lifecycle_lock.acquire(blocking=False):
             return None, 0, 0.0
         try:
             if not self._started:
                 return None, 0, 0.0
-            return self._camera.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+            kwargs = {"after_ts": after_ts, "settle_ms": settle_ms}
+            if timeout is not None:
+                kwargs["timeout"] = timeout
+            return self._camera.grab_fresh(**kwargs)
         finally:
             self._lifecycle_lock.release()
 

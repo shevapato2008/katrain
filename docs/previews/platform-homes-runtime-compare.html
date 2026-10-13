@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>星阵 / OGS 专页 · 7 英寸运行时预览对照</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #0e1414; color: #e7eeeb; }
+    * { box-sizing: border-box; }
+    body { margin: 0 auto; max-width: 1130px; padding: 24px 20px 48px; }
+    h1 { font-size: 23px; margin: 0 0 8px; }
+    p { color: #a9bbb2; line-height: 1.55; margin: 8px 0; }
+    button { font: inherit; color: inherit; border: 1px solid #466352; background: #1a2823; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+    button[aria-pressed="true"] { background: #256146; border-color: #6bc190; }
+    .controls { display: flex; gap: 10px; margin: 22px 0 16px; flex-wrap: wrap; }
+    .frame { width: min(100%, 1024px); aspect-ratio: 1024 / 600; position: relative; overflow: hidden; border: 1px solid #42624f; background: #0a1010; }
+    .frame img { position: absolute; width: 100%; height: 100%; object-fit: contain; }
+    .runtime { clip-path: inset(0 0 0 50%); }
+    .divider { position: absolute; top: 0; bottom: 0; left: 50%; border-left: 2px solid #e1c56a; pointer-events: none; }
+    input[type="range"] { width: min(100%, 1024px); margin: 12px 0 6px; accent-color: #67bf8c; }
+    .links { display: flex; gap: 22px; margin: 10px 0 22px; }
+    .pair { display: none; gap: 12px; width: min(100%, 1024px); }
+    .pair figure { margin: 0; width: 50%; }
+    .pair img { display: block; width: 100%; border: 1px solid #42624f; }
+    .pair figcaption { padding: 6px 0; color: #a9bbb2; }
+    a { color: #85d5a4; }
+    .note { border-left: 3px solid #68b786; padding: 8px 13px; background: #17231f; max-width: 1024px; }
+    small { color: #99aea1; }
+  </style>
+</head>
+<body>
+  <h1>专有首页 · 1024 × 600 运行时预览</h1>
+  <p>左侧是已确认的 Claude 设计稿，右侧是当前 React 页面截图。拖动滑块可叠加检查几何、层级和文案；点击下方链接查看原尺寸。</p>
+  <div class="controls" role="group" aria-label="选择平台">
+    <button type="button" data-page="golaxy" aria-pressed="true">星阵围棋</button>
+    <button type="button" data-page="ogs" aria-pressed="false">OGS</button>
+    <button type="button" data-mode="overlay" aria-pressed="true">叠加</button>
+    <button type="button" data-mode="pair" aria-pressed="false">并排</button>
+  </div>
+  <div id="overlay" class="frame" aria-label="设计稿与运行时叠加图">
+    <img id="design" src="golaxy-design-1024x600.png" alt="星阵设计稿">
+    <img id="runtime" class="runtime" src="golaxy-runtime-1024x600.png" alt="星阵运行时预览">
+    <div id="divider" class="divider"></div>
+  </div>
+  <div id="pair" class="pair"><figure><img id="pair-design" src="golaxy-design-1024x600.png" alt="设计稿"><figcaption>设计稿</figcaption></figure><figure><img id="pair-runtime" src="golaxy-runtime-1024x600.png" alt="React 运行时"><figcaption>React 运行时</figcaption></figure></div>
+  <input id="split" type="range" min="0" max="100" value="50" aria-label="设计稿与运行时分界位置">
+  <small id="legend">左：设计稿　│　右：React 运行时</small>
+  <div class="links"><a id="design-link" href="golaxy-design-1024x600.png">设计稿原尺寸</a><a id="runtime-link" href="golaxy-runtime-1024x600.png">运行时原尺寸</a></div>
+  <p id="note" class="note">星阵的棋友、房间与快速匹配接口尚未接通；当前界面明确显示不可用，因此运行时没有设计稿中的示例棋友。人机对弈入口可用。</p>
+  <p><a href="platform-dedicated-homes-1024x600.html">打开已确认的交互设计稿</a></p>
+  <script>
+    const pages = {
+      golaxy: { design: 'golaxy-design-1024x600.png', runtime: 'golaxy-runtime-1024x600.png', name: '星阵', note: '星阵的棋友、房间与快速匹配接口尚未接通；当前界面明确显示不可用，因此运行时没有设计稿中的示例棋友。人机对弈入口可用。' },
+      ogs: { design: 'ogs-design-1024x600.png', runtime: 'ogs-runtime-fixture-1024x600.png', name: 'OGS', note: 'OGS 的挑战行来自隔离的浏览器预览 Fixture，未进入生产页面。公开挑战数据、接单和开局桥接仍待接入；当前按钮明确显示暂不可用。顶栏复用正式组件，账号名是预览值。' }
+    };
+    for (const button of document.querySelectorAll('[data-page]')) {
+      button.addEventListener('click', () => {
+        const page = pages[button.dataset.page];
+        document.querySelectorAll('[data-page]').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+        for (const kind of ['design', 'runtime']) {
+          document.getElementById(kind).src = page[kind];
+          document.getElementById(kind).alt = `${page.name}${kind === 'design' ? '设计稿' : '运行时预览'}`;
+          document.getElementById(`pair-${kind}`).src = page[kind];
+          document.getElementById(`${kind}-link`).href = page[kind];
+        }
+        document.getElementById('note').textContent = page.note;
+      });
+    }
+    for (const button of document.querySelectorAll('[data-mode]')) {
+      button.addEventListener('click', () => {
+        const pair = button.dataset.mode === 'pair';
+        document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+        document.getElementById('pair').style.display = pair ? 'flex' : 'none';
+        document.getElementById('overlay').style.display = pair ? 'none' : 'block';
+        document.getElementById('split').style.display = pair ? 'none' : 'block';
+        document.getElementById('legend').style.display = pair ? 'none' : 'block';
+      });
+    }
+    document.getElementById('split').addEventListener('input', event => {
+      const split = Number(event.target.value);
+      document.getElementById('runtime').style.clipPath = `inset(0 0 0 ${split}%)`;
+      document.getElementById('divider').style.left = `${split}%`;
+    });
+  </script>
+</body>
+</html>

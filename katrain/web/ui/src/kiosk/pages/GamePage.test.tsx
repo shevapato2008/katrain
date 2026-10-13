@@ -20,6 +20,7 @@ interface MockBoardProps {
   analysisToggles?: Record<string, boolean>;
   playerColor?: 'B' | 'W' | null;
   onPaintedNode?: (nodeId: number) => void;
+  onMove?: (x: number, y: number) => void;
 }
 const { capturedBoardProps } = vi.hoisted(() => ({
   capturedBoardProps: { current: null as MockBoardProps | null },
@@ -36,6 +37,7 @@ vi.mock('../../components/Board', () => ({
 interface MockControlPanelProps {
   onAction: (action: string) => void;
   onTimeExpired?: () => void;
+  onTimeout?: (color: 'B' | 'W') => void;
   statusSlot?: React.ReactNode;
   physicalStatus?: string | null;
 }
@@ -53,6 +55,8 @@ vi.mock('../components/game/GameControlPanel', () => ({
         <i className="ghint">{props.physicalStatus}</i>
         <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
         <button onClick={() => props.onAction('count')}>MOCK_COUNT</button>
+        <button onClick={() => props.onAction('ogs-score-accept')}>MOCK_OGS_ACCEPT</button>
+        <button onClick={() => props.onAction('ogs-score-reject')}>MOCK_OGS_REJECT</button>
         <button onClick={() => props.onTimeExpired?.()}>MOCK_TIMEOUT</button>
       </div>
     );
@@ -68,25 +72,36 @@ const { writeActiveSession, clearActiveSession, readActiveSession } = vi.hoisted
 // 走回落到偏好的那一支 —— 即合并前本文件各用例依赖的行为。
 vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession, readActiveSession }));
 
-const { mockCalibrate } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolvedValue({}) }));
-vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: (...a: unknown[]) => mockCalibrate(...a) } }));
+const { mockCalibrate, mockRelocate, mockGeometryRefresh, geometryState } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolvedValue({}), mockRelocate: vi.fn().mockResolvedValue(undefined), mockGeometryRefresh: vi.fn(), geometryState: { phase: 'ready', revision: 3, loaded: true } }));
+vi.mock('../context/GeometryContext', () => ({ useOptionalGeometry: () => ({
+  startCalibration: mockCalibrate, completeRecalibration: vi.fn(), loaded: geometryState.loaded, refresh: mockGeometryRefresh, relocate: mockRelocate,
+  status: { phase: geometryState.phase, session_calibrated: geometryState.phase === 'ready', geometry_revision: geometryState.revision, capabilities: { geometry_ready: geometryState.phase === 'ready', recognition_ready: true, model_ready: true } },
+}) }));
+vi.mock('../components/vision/GeometryCalibrationScreen', () => ({ default: ({ onBack }: { onBack: () => void }) => <div data-testid="calib-screen"><button onClick={onBack}>返回原局</button></div> }));
 const { mockLadderStatus } = vi.hoisted(() => ({ mockLadderStatus: vi.fn() }));
 vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: mockLadderStatus }));
+const { strictBox } = vi.hoisted(() => ({ strictBox: { value: false } }));
+vi.mock('../shell/boxUrls', () => ({ get isStrictBoxKiosk() { return strictBox.value; } }));
 
 let mockIsVisionEnabled = false;
+let mockVisionLoaded = true;
 let mockPoseLocked = true;
+const mockRefreshStatus = vi.fn();
+const currentVisionStatus = () => ({ enabled: mockIsVisionEnabled, cameraConnected: true, poseLocked: mockPoseLocked, syncState: 'idle', boundSessionId: 'test-session', recognitionReady: true, ledConnected: null });
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
-    visionStatus: { enabled: mockIsVisionEnabled, cameraConnected: true, poseLocked: mockPoseLocked, syncState: 'idle', boundSessionId: null, ledConnected: null },
-    isVisionEnabled: mockIsVisionEnabled,
-    refreshStatus: vi.fn(),
+    visionStatus: currentVisionStatus(),
+    isVisionEnabled: mockIsVisionEnabled, loaded: mockVisionLoaded,
+    refreshStatus: mockRefreshStatus,
   }),
 }));
 
 let mockLatestEvent: { type: string; data: Record<string, unknown> } | null = null;
+let mockBindState: 'preparing' | 'ready' | 'error' = 'ready';
+const mockRetryBind = vi.fn();
 let mockSyncEvents: { seq: number; type: string; data: Record<string, unknown> }[] = [];
 vi.mock('../hooks/useVisionSync', () => ({
-  useVisionSync: () => ({ syncEvents: mockSyncEvents, latestEvent: mockLatestEvent, setupProgress: null, isSetupComplete: false }),
+  useVisionSync: () => ({ syncEvents: mockSyncEvents, latestEvent: mockLatestEvent, setupProgress: null, isSetupComplete: false, bindState: mockBindState, retryBind: mockRetryBind }),
 }));
 
 const mockSetSessionId = vi.fn();
@@ -94,23 +109,31 @@ const mockHandleAction = vi.fn();
 const mockOnMove = vi.fn().mockResolvedValue(undefined);
 const mockOnNavigate = vi.fn();
 const mockSetGameState = vi.fn();
+const mockReconnect = vi.fn();
 const { mockAcknowledgePaintedNode, capturedSessionOptions } = vi.hoisted(() => ({
   mockAcknowledgePaintedNode: vi.fn(),
-  capturedSessionOptions: { current: null as { deferMoveSoundUntilPaint?: boolean } | null },
+  capturedSessionOptions: { current: null as { deferMoveSoundUntilPaint?: boolean; centralRoom?: boolean;
+    onCountRequest?: (data: { requester_id: number; requester_name: string }) => void;
+    onCountRejected?: () => void; onCountTimeout?: () => void } | null },
 }));
 
 let mockGameState: GameState | undefined;
+let mockConnectionLost: 'central' | null = null;
+let mockSessionError: string | null = null;
+let mockGameEndData: { reason: 'forfeit'; result: string } | null = null;
 let mockPhysicalReminder: { kind: 'reminder' | 'escalation'; to_place: number[][]; to_remove: number[][] } | null = null;
 
 vi.mock('../../hooks/useGameSession', () => ({
-  useGameSession: (options: { deferMoveSoundUntilPaint?: boolean }) => {
+  useGameSession: (options: NonNullable<typeof capturedSessionOptions.current>) => {
     capturedSessionOptions.current = options;
     return {
       sessionId: 'test-session',
       setSessionId: mockSetSessionId,
       gameState: mockGameState,
       setGameState: mockSetGameState,
-      error: null,
+      error: mockSessionError,
+      connectionLost: mockConnectionLost,
+      reconnect: mockReconnect,
       onMove: mockOnMove,
       onNavigate: mockOnNavigate,
       handleAction: mockHandleAction,
@@ -118,7 +141,7 @@ vi.mock('../../hooks/useGameSession', () => ({
       lastLog: null,
       chatMessages: [],
       sendChat: vi.fn(),
-      gameEndData: null,
+      gameEndData: mockGameEndData,
       physicalReminder: mockPhysicalReminder,
       // 新覆盖的「非本地对局认输成功」路径会调用它(GamePage.tsx 里未包在 try 里);
       // 缺了这一项此前从未被真调用过,加上后只是补全 mock、不改任何断言。
@@ -170,12 +193,17 @@ const NavigationProbe = () => {
   return null;
 };
 
-const pageTree = () => (
+const pageTree = (initial = '/kiosk/play/ai/game/test-session') => (
   <ThemeProvider theme={kioskTheme}>
-    <MemoryRouter initialEntries={['/kiosk/play/ai/game/test-session']}>
+    <MemoryRouter initialEntries={[initial]}>
       <NavigationProbe />
       <Routes>
+        <Route path="/kiosk/play/pvp/local/game/:sessionId" element={<GamePage />} />
         <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
+        <Route path="/kiosk/play/cross-platform/game/:sessionId" element={<GamePage />} />
+        <Route path="/kiosk/play/pvp/room/:sessionId" element={<GamePage />} />
+        <Route path="/kiosk/play/pvp/lobby" element={<div>PVP_LOBBY</div>} />
+        <Route path="/kiosk/play/cross-platform/ogs" element={<div>OGS_HOME</div>} />
         <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
         <Route path="/kiosk/research" element={<div>RESEARCH_PAGE</div>} />
       </Routes>
@@ -183,16 +211,28 @@ const pageTree = () => (
   </ThemeProvider>
 );
 
-const renderPage = () => render(pageTree());
+const renderPage = (initial?: string) => render(pageTree(initial));
 
 describe('GamePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockIsVisionEnabled = false;
+    geometryState.phase = 'ready'; geometryState.revision = 3; geometryState.loaded = true;
+    mockRefreshStatus.mockImplementation(async () => currentVisionStatus());
+    mockGeometryRefresh.mockImplementation(async () => ({ phase: geometryState.phase, session_calibrated: geometryState.phase === 'ready', geometry_revision: geometryState.revision, capabilities: { camera_ready: true, geometry_ready: geometryState.phase === 'ready', recognition_ready: true, model_ready: true } }));
+    mockRetryBind.mockResolvedValue(true);
+    mockRelocate.mockResolvedValue(undefined);
+    vi.spyOn(API, 'getState').mockImplementation(async id => ({ session_id: id, state: mockGameState! }));
+    mockVisionLoaded = true;
     mockLatestEvent = null;
+    mockBindState = 'ready';
     mockSyncEvents = [];
     mockPoseLocked = true;
     mockPhysicalReminder = null;
+    mockConnectionLost = null;
+    strictBox.value = false;
+    mockSessionError = null;
+    mockGameEndData = null;
     testNavigate = null;
     capturedBoardProps.current = null;
     capturedSessionOptions.current = null;
@@ -250,6 +290,205 @@ describe('GamePage', () => {
     expect(document.querySelector('img[src="/api/v1/vision/stream"]')).toBeNull();
   });
 
+  it('local screen confirmation selects repeatedly and only submits the last point', async () => {
+    localStorage.setItem('kiosk_play_on_board', 'false');
+    mockGameState = makeGameState({ game_type: 'pvp_local', local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human', name: '张三' }, W: { ...basePlayer, player_type: 'player:human', name: '李四' } } });
+    const confirm = vi.spyOn(API, 'confirmLocalMove').mockResolvedValue({ accepted: true, session_id: 'test-session', state: mockGameState });
+    const ready = vi.spyOn(API, 'readyLocalGame').mockResolvedValue({ session_id: 'test-session', state: mockGameState });
+    renderPage();
+    await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+    await act(async () => { await capturedBoardProps.current?.onMove?.(4, 5); });
+    expect(mockOnMove).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /确认落子/ }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(1));
+    expect(confirm.mock.calls[0][0]).toMatchObject({ session_id: 'test-session', expected_game_id: 'test-game', expected_node_id: 5, color: 'B', input: 'screen', coords: [4, 5] });
+    expect(mockPlaySound).not.toHaveBeenCalled();
+    expect(mockAcknowledgePaintedNode).not.toHaveBeenCalled(); // Board owns the real paint acknowledgement.
+    confirm.mockRestore();
+    ready.mockRestore();
+  });
+
+
+
+  it('cold physical-session startup waits for hardware status without declaring screen readiness', () => {
+    mockVisionLoaded = false;
+    geometryState.loaded = false;
+    mockPoseLocked = false;
+    readActiveSession.mockReturnValue({ route: '/kiosk/play/ai/game/test-session', onBoard: true });
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 0, end_result: null,
+      local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    const ready = vi.spyOn(API, 'readyLocalGame').mockResolvedValue({ session_id: 'test-session', state: mockGameState });
+    renderPage();
+    expect(ready).not.toHaveBeenCalled();
+    expect(screen.getByText('正在准备实体盘')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /准备中/ })).toBeDisabled();
+    ready.mockRestore();
+  });
+  it('a refreshed legacy local game keeps physical intent while device status is unknown', () => {
+    mockVisionLoaded = false; mockPoseLocked = false;
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 3,
+      local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    const ready = vi.spyOn(API, 'readyLocalGame');
+    renderPage('/kiosk/play/pvp/local/game/test-session');
+    expect(ready).not.toHaveBeenCalled();
+    expect(screen.getByText('正在准备实体盘')).toBeInTheDocument();
+    ready.mockRestore();
+  });
+  it('failed physical local preparation offers bind retry without confirming a move', async () => {
+    mockIsVisionEnabled = true;
+    mockPoseLocked = false;
+    mockBindState = 'error';
+    mockGameState = makeGameState({ game_type: 'pvp_local', end_result: null,
+      local_confirmation: { enabled: true, status: 'idle', reason: 'unavailable' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    const confirm = vi.spyOn(API, 'confirmLocalMove');
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /重新检查/ }));
+    await waitFor(() => expect(mockRetryBind).toHaveBeenCalledTimes(1));
+    expect(confirm).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+  it('normal initial physical preparation does not require recovery after its automatic bind succeeds', () => {
+    mockIsVisionEnabled = true; mockPoseLocked = false; mockBindState = 'preparing';
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 0,
+      local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    const view = renderPage('/kiosk/play/pvp/local/game/test-session');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('正在准备实体盘')).toBeInTheDocument();
+    mockPoseLocked = true; mockBindState = 'ready';
+    view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('轮到你落子')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '停一手' }).some(b => !(b as HTMLButtonElement).disabled)).toBe(true);
+    expect(mockRetryBind).not.toHaveBeenCalled();
+  });
+  it('refreshing a three-move local game with degraded geometry preserves identity and blocks confirmation', async () => {
+    mockIsVisionEnabled = true;
+    mockPoseLocked = false;
+    geometryState.phase = 'degraded';
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 3, current_node_id: 8,
+      local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human', name: '小明' }, W: { ...basePlayer, player_type: 'player:human', name: '小红' } } });
+    const original = mockGameState;
+    const view = renderPage('/kiosk/play/pvp/local/game/test-session');
+    expect(screen.getByRole('dialog')).toHaveTextContent('恢复实体盘识别');
+    expect(screen.getByRole('dialog')).toHaveTextContent('已确认');
+    expect(screen.queryByText('仍要继续')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('calib-screen')).not.toBeInTheDocument();
+    expect(screen.getByTestId('board')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /停一手/, hidden: true }).every(b => (b as HTMLButtonElement).disabled)).toBe(true);
+    expect(mockGameState).toBe(original);
+    expect(mockSetSessionId).toHaveBeenLastCalledWith('test-session');
+    // Status polling alone must not rebind or clear the recovery latch.
+    geometryState.phase = 'ready'; mockPoseLocked = true;
+    view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+    expect(mockRetryBind).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '对齐外框' }));
+    await waitFor(() => expect(mockRelocate).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockRetryBind).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(mockGameState).toBe(original);
+  });
+  it('an unavailable existing reference blocks recovery even if geometry and pose still appear ready', () => {
+    mockIsVisionEnabled = true;
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 3,
+      local_confirmation: { enabled: true, status: 'idle', reason: 'unavailable' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    renderPage('/kiosk/play/pvp/local/game/test-session');
+    expect(screen.getByRole('dialog')).toHaveTextContent('恢复实体盘识别');
+    expect(screen.getAllByRole('button', { name: /停一手/, hidden: true }).every(b => (b as HTMLButtonElement).disabled)).toBe(true);
+    expect(mockRetryBind).not.toHaveBeenCalled();
+  });
+  it('successful recovery reads the authoritative original state before removing its unavailable blocker', async () => {
+    mockIsVisionEnabled = true;
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 3,
+      local_confirmation: { enabled: true, status: 'idle', reason: 'unavailable' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    const recovered = { ...mockGameState, local_confirmation: { enabled: true, status: 'idle' as const, reason: null } };
+    vi.mocked(API.getState).mockResolvedValue({ session_id: 'test-session', state: recovered });
+    renderPage('/kiosk/play/pvp/local/game/test-session');
+    fireEvent.click(screen.getByRole('button', { name: '重新检查' }));
+    await waitFor(() => expect(mockSetGameState).toHaveBeenCalledWith(recovered));
+    expect(API.getState).toHaveBeenCalledWith('test-session', 'mock-token');
+    expect(mockOnMove).not.toHaveBeenCalled();
+  });
+  it('one recovery click finishes after bind publishes pose readiness despite an earlier stale pose poll', async () => {
+    mockIsVisionEnabled = true; mockPoseLocked = false;
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 3,
+      local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    let resolveState!: (value: { session_id: string; state: GameState }) => void;
+    vi.mocked(API.getState).mockReturnValueOnce(new Promise(r => { resolveState = r; }));
+    let bound = false;
+    mockRetryBind.mockImplementationOnce(async () => { bound = true; return true; });
+    const view = renderPage('/kiosk/play/pvp/local/game/test-session');
+    mockRefreshStatus.mockImplementation(async () => {
+      mockPoseLocked = bound;
+      view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+      return currentVisionStatus();
+    });
+    fireEvent.click(screen.getByRole('button', { name: '重新检查' }));
+    await waitFor(() => expect(API.getState).toHaveBeenCalledTimes(1));
+    // The ordinary poll still carries the pre-bind, unlocked pose while GET state is pending.
+    mockPoseLocked = false;
+    view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+    await act(async () => resolveState({ session_id: 'test-session', state: mockGameState! }));
+    // A later normal poll is ready; no second user click or bind is permitted.
+    mockPoseLocked = true;
+    view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+    expect(screen.getAllByRole('button', { name: /停一手/, hidden: true }).some(b => !(b as HTMLButtonElement).disabled)).toBe(true);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(mockRetryBind).toHaveBeenCalledTimes(1);
+    expect(mockRefreshStatus).toHaveBeenCalledTimes(2);
+  });
+  it('local full calibration replaces visible content within the original game and returns to recovery', async () => {
+    mockIsVisionEnabled = true; mockPoseLocked = false; geometryState.phase = 'degraded';
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 3,
+      local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    renderPage('/kiosk/play/pvp/local/game/test-session');
+    fireEvent.click(screen.getByRole('button', { name: '空盘标定' }));
+    expect(screen.getByTestId('calib-screen')).toBeInTheDocument();
+    expect(mockSetSessionId).toHaveBeenCalledTimes(1);
+    expect(mockCalibrate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '返回原局' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('恢复实体盘识别');
+    expect(mockSetSessionId).toHaveBeenCalledTimes(1);
+  });
+  it('a bind response for an earlier geometry revision cannot clear newer recovery', async () => {
+    mockIsVisionEnabled = true; geometryState.phase = 'degraded';
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 3,
+      local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    let resolve!: (ready: boolean) => void;
+    mockRetryBind.mockReturnValueOnce(new Promise<boolean>(r => { resolve = r; }));
+    const view = renderPage('/kiosk/play/pvp/local/game/test-session');
+    geometryState.phase = 'ready';
+    view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+    fireEvent.click(screen.getByRole('button', { name: '重新检查' }));
+    await waitFor(() => expect(mockRetryBind).toHaveBeenCalledTimes(1));
+    geometryState.revision = 4;
+    view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+    await act(async () => resolve(true));
+    expect(screen.getAllByRole('button', { name: /停一手/, hidden: true }).every(b => (b as HTMLButtonElement).disabled)).toBe(true);
+  });
+  it('geometry revision change blocks a local game even while pose status still says locked', () => {
+    mockIsVisionEnabled = true;
+    mockGameState = makeGameState({ game_type: 'pvp_local', current_node_index: 3,
+      local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    const view = renderPage('/kiosk/play/pvp/local/game/test-session');
+    geometryState.revision = 4;
+    view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+    expect(screen.getByRole('dialog')).toHaveTextContent('恢复实体盘识别');
+    expect(mockRetryBind).not.toHaveBeenCalled();
+  });
   it('实体盘对局页不显示重置识别按钮', () => {
     mockIsVisionEnabled = true;
     mockGameState = makeGameState({
@@ -296,6 +535,12 @@ describe('GamePage', () => {
 
     it('does not show the instruction for screen-only play', () => {
       mockIsVisionEnabled = false;
+    geometryState.phase = 'ready'; geometryState.revision = 3; geometryState.loaded = true;
+    mockRefreshStatus.mockImplementation(async () => currentVisionStatus());
+    mockGeometryRefresh.mockImplementation(async () => ({ phase: geometryState.phase, session_calibrated: geometryState.phase === 'ready', geometry_revision: geometryState.revision, capabilities: { camera_ready: true, geometry_ready: geometryState.phase === 'ready', recognition_ready: true, model_ready: true } }));
+    mockRetryBind.mockResolvedValue(true);
+    mockRelocate.mockResolvedValue(undefined);
+    vi.spyOn(API, 'getState').mockImplementation(async id => ({ session_id: id, state: mockGameState! }));
       mockGameState = aiGame();
       renderPage();
       expect(document.querySelector('.ghint')).not.toHaveTextContent('D4');
@@ -554,7 +799,7 @@ describe('GamePage', () => {
   });
 
   describe('State B — RecalibrationModal (B1.4)', () => {
-    it('opens when pose is lost mid-game, and 重新标定 calls GeometryAPI.calibrate("manual")', async () => {
+    it('opens when pose is lost mid-game, and 重新标定 calls the shared calibration context', async () => {
       mockIsVisionEnabled = true;
       mockPoseLocked = true;
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
@@ -563,7 +808,7 @@ describe('GamePage', () => {
       view.rerender(pageTree());
       expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
       fireEvent.click(screen.getByText('重新标定'));
-      await waitFor(() => expect(mockCalibrate).toHaveBeenCalledWith('manual'));
+      await waitFor(() => expect(mockCalibrate).toHaveBeenCalledWith('manual', 'test-session', mockGameState?.game_type));
     });
 
     it('is suppressed while the escalation dialog is open (escalation > recalibration)', () => {
@@ -698,6 +943,111 @@ describe('GamePage', () => {
       expect(await screen.findByText('认输没成')).toBeInTheDocument();
       expect(screen.queryByText('认输请求失败')).toBeNull();
       expect(screen.getByRole('button', { name: '认输' })).toBeInTheDocument();
+    });
+  });
+
+  describe('OGS online game authority', () => {
+    const ogsPair: GameState['players_info'] = {
+      B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+      W: { ...basePlayer, player_type: 'player:human', name: '我' },
+    };
+    const ogs = (over: Partial<GameState> = {}) => makeGameState({
+      game_type: 'pvp_online', platform_my_color: 'W', players_info: ogsPair, ...over,
+    });
+    const route = '/kiosk/play/cross-platform/game/test-session';
+
+    it('uses the authoritative OGS seat for move, count, resignation and return', async () => {
+      mockGameState = ogs({ player_to_move: 'B' });
+      const count = vi.spyOn(API, 'requestCount');
+      try {
+        renderPage(route);
+        expect(capturedBoardProps.current?.playerColor).toBe('W');
+        await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+        fireEvent.click(screen.getByText('MOCK_COUNT'));
+        expect(mockOnMove).not.toHaveBeenCalled();
+        expect(count).not.toHaveBeenCalled();
+        expect(capturedControlPanelProps.current?.onTimeout).toBeUndefined();
+        expect(capturedControlPanelProps.current?.onTimeExpired).toBeUndefined();
+        fireEvent.click(screen.getByText('MOCK_RESIGN'));
+        expect(screen.getByText('白方认输？')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: '认输' }));
+        await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('resign'));
+        fireEvent.click(screen.getByText('退出对局'));
+        fireEvent.click(screen.getByTestId('exit-leave-keep'));
+        expect(await screen.findByText('OGS_HOME')).toBeInTheDocument();
+      } finally { count.mockRestore(); }
+    });
+
+    it('sends only the OGS scoring decision and waits for the remote verdict', async () => {
+      mockGameState = ogs({ platform_phase: 'scoring' });
+      const score = vi.spyOn(API, 'platformOgsScoring').mockResolvedValue({ status: 'pending' });
+      const localCount = vi.spyOn(API, 'requestCount');
+      try {
+        renderPage(route);
+        fireEvent.click(screen.getByText('MOCK_OGS_ACCEPT'));
+        expect(screen.getByText(/盒子尚未同步 OGS 死子标记/)).toBeInTheDocument();
+        expect(score).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: '确认发送无死子' }));
+        await waitFor(() => expect(score).toHaveBeenCalledWith('test-session', 'accept', 'mock-token'));
+        expect(localCount).not.toHaveBeenCalled();
+        expect(mockSetGameState).not.toHaveBeenCalled();
+        expect(await screen.findByText(/等待 OGS/)).toBeInTheDocument();
+      } finally { score.mockRestore(); localCount.mockRestore(); }
+    });
+
+    it('prevents duplicate OGS scoring sends while waiting for the platform', async () => {
+      mockGameState = ogs({ platform_phase: 'scoring' });
+      let resolveFirst!: (value: { status: 'pending' }) => void;
+      const first = new Promise<{ status: 'pending' }>(resolve => { resolveFirst = resolve; });
+      const score = vi.spyOn(API, 'platformOgsScoring').mockReturnValue(first);
+      try {
+        renderPage(route);
+        fireEvent.click(screen.getByText('MOCK_OGS_ACCEPT'));
+        fireEvent.click(screen.getByRole('button', { name: '确认发送无死子' }));
+        fireEvent.click(screen.getByText('MOCK_OGS_ACCEPT'));
+        expect(score).toHaveBeenCalledTimes(1);
+        await act(async () => { resolveFirst({ status: 'pending' }); });
+        // A confirmed send still waits for OGS; no local score or duplicate POST.
+        fireEvent.click(screen.getByText('MOCK_OGS_ACCEPT'));
+        expect(score).toHaveBeenCalledTimes(1);
+      } finally { score.mockRestore(); }
+    });
+
+    it('can cancel the no-dead-stones confirmation without sending to OGS', () => {
+      mockGameState = ogs({ platform_phase: 'scoring' });
+      const score = vi.spyOn(API, 'platformOgsScoring');
+      try {
+        renderPage(route);
+        fireEvent.click(screen.getByText('MOCK_OGS_ACCEPT'));
+        fireEvent.click(screen.getByRole('button', { name: '取消无死子确认' }));
+        expect(score).not.toHaveBeenCalled();
+      } finally { score.mockRestore(); }
+    });
+
+    it('shows an OGS scoring failure and allows retry', async () => {
+      mockGameState = ogs({ platform_phase: 'scoring' });
+      const score = vi.spyOn(API, 'platformOgsScoring').mockRejectedValueOnce(new Error('network'))
+        .mockResolvedValue({ status: 'pending' });
+      try {
+        renderPage(route);
+        fireEvent.click(screen.getByText('MOCK_OGS_REJECT'));
+        expect(await screen.findByText(/OGS 操作未送达/)).toBeInTheDocument();
+        fireEvent.click(screen.getByText('MOCK_OGS_REJECT'));
+        await waitFor(() => expect(score).toHaveBeenCalledTimes(2));
+      } finally { score.mockRestore(); }
+    });
+
+    it.each([
+      [new ApiError(409, 'conflict'), 'OGS 未确认这手棋'],
+      [new ApiError(502, 'upstream'), 'OGS 暂时不可用'],
+      [new Error('timeout'), '没有得到 OGS 确认'],
+    ])('shows an online move failure instead of a silent console error', async (failure, expected) => {
+      mockGameState = ogs({ player_to_move: 'W' });
+      mockOnMove.mockRejectedValueOnce(failure);
+      renderPage(route);
+      await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+      expect(await screen.findByText(new RegExp(expected))).toBeInTheDocument();
+      expect(mockSetGameState).not.toHaveBeenCalled();
     });
   });
 
@@ -892,6 +1242,151 @@ describe('GamePage', () => {
   });
 
   // --- 3D board removed from kiosk (2026-07-13) -------------------------------------
+  describe('self-owned lobby room', () => {
+    it('holds moves and resignation while automatic count is pending', async () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'W',
+        end_result: '终局', awaiting_count: true, degraded: false,
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      renderPage('/kiosk/play/pvp/room/test-session');
+      expect(screen.getByText('正在自动数子')).toBeInTheDocument();
+      await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+      expect(mockOnMove).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'MOCK_RESIGN' }));
+      expect(screen.queryByText('确认认输？')).not.toBeInTheDocument();
+    });
+    it('applies a central opponent departure result carried by game_end', () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      const { rerender } = renderPage('/kiosk/play/pvp/room/test-session');
+      mockGameEndData = { reason: 'forfeit', result: 'W+R' };
+      rerender(pageTree('/kiosk/play/pvp/room/test-session'));
+      expect(mockSetGameState).toHaveBeenCalledWith(expect.any(Function));
+      mockGameState = mockSetGameState.mock.lastCall![0](mockGameState);
+      rerender(pageTree('/kiosk/play/pvp/room/test-session'));
+      expect(screen.getByTestId('result-badge')).toBeInTheDocument();
+    });
+    it('uses central identity to offer the opponent count request and responds', async () => {
+      strictBox.value = true;
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ user_id: 42 }), { status: 200 })));
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      const respond = vi.spyOn(API, 'respondCount').mockResolvedValue({ accepted: true });
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/pvp/identity', expect.anything()));
+        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 42, requester_name: '我' }));
+        expect(screen.queryByRole('button', { name: '接受数子' })).not.toBeInTheDocument();
+        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 1, requester_name: '对手' }));
+        expect(screen.getByRole('dialog')).toHaveTextContent('对手');
+        expect(screen.getByRole('button', { name: '拒绝数子' })).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: '接受数子' }));
+        await waitFor(() => expect(respond).toHaveBeenCalledWith('test-session', true, 'mock-token'));
+      } finally { respond.mockRestore(); vi.unstubAllGlobals(); }
+    });
+
+    it('can reject an opponent count request', async () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      const respond = vi.spyOn(API, 'respondCount').mockResolvedValue({ accepted: false });
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 2, requester_name: '对手' }));
+        fireEvent.click(screen.getByRole('button', { name: '拒绝数子' }));
+        await waitFor(() => expect(respond).toHaveBeenCalledWith('test-session', false, 'mock-token'));
+      } finally { respond.mockRestore(); }
+    });
+
+    it('shows pending count and clears it on rejection or timeout', async () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      const request = vi.spyOn(API, 'requestCount').mockResolvedValue({ status: 'pending' });
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        fireEvent.click(screen.getByRole('button', { name: 'MOCK_COUNT' }));
+        expect(await screen.findByText('等待对方确认数子')).toBeInTheDocument();
+        act(() => capturedSessionOptions.current?.onCountRejected?.());
+        expect(screen.getByText('数子请求已被拒绝')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'MOCK_COUNT' }));
+        expect(await screen.findByText('等待对方确认数子')).toBeInTheDocument();
+        act(() => capturedSessionOptions.current?.onCountTimeout?.());
+        expect(screen.getByText('数子请求已超时')).toBeInTheDocument();
+      } finally { request.mockRestore(); }
+    });
+
+    it('does not classify a count invitation when central identity fails', async () => {
+      strictBox.value = true;
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response('{}', { status: 503 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ user_id: 42 }), { status: 200 })));
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 1, requester_name: '对手' }));
+        expect(await screen.findByText('无法确认中央账号身份，暂不能处理数子请求')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '接受数子' })).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: '重试身份' }));
+        expect(await screen.findByRole('button', { name: '接受数子' })).toBeInTheDocument();
+      } finally { vi.unstubAllGlobals(); }
+    });
+    it('blocks a stale board on central outage and offers a real reconnect', async () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      mockConnectionLost = 'central';
+      renderPage('/kiosk/play/pvp/room/test-session');
+      expect(capturedSessionOptions.current?.centralRoom).toBe(true);
+      expect(screen.getByTestId('central-room-disconnected')).toHaveTextContent('中央连接中断');
+      expect(screen.queryByTestId('board')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '重新连接' }));
+      expect(mockReconnect).toHaveBeenCalledOnce();
+    });
+    it('keeps return-to-game state when the first room load gets a transient 503', () => {
+      mockGameState = undefined;
+      mockConnectionLost = 'central';
+      mockSessionError = 'Failed to get state';
+      renderPage('/kiosk/play/pvp/room/test-session');
+      expect(screen.getByTestId('central-room-disconnected')).toBeInTheDocument();
+      expect(clearActiveSession).not.toHaveBeenCalled();
+    });
+    it('uses the central seat to block opponent moves and returns to the lobby', async () => {
+      mockGameState = makeGameState({
+        game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'B',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' }, W: { ...basePlayer, player_type: 'player:human', name: '我' } },
+      });
+      renderPage('/kiosk/play/pvp/room/test-session');
+      expect(capturedBoardProps.current?.playerColor).toBe('W');
+      await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+      expect(mockOnMove).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByText('退出对局'));
+      fireEvent.click(screen.getByTestId('exit-leave-keep'));
+      expect(await screen.findByText('PVP_LOBBY')).toBeInTheDocument();
+    });
+    it('retries central counting after a degraded two-pass result without replaying moves', async () => {
+      mockGameState = makeGameState({
+        game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'W',
+        degraded: true, awaiting_count: true, end_result: 'board-game-end',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } },
+      });
+      const count = vi.spyOn(API, 'requestCount').mockResolvedValue({ state: mockGameState } as never);
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        expect(screen.getByTestId('lobby-count-error')).toHaveTextContent('自动数子失败');
+        await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+        await act(async () => { await capturedControlPanelProps.current?.onAction('pass'); });
+        expect(mockOnMove).not.toHaveBeenCalled();
+        expect(mockHandleAction).not.toHaveBeenCalledWith('pass');
+        fireEvent.click(screen.getByRole('button', { name: '重试数子' }));
+        await waitFor(() => expect(count).toHaveBeenCalledWith('test-session', 'mock-token'));
+      } finally { count.mockRestore(); }
+    });
+  });
   // The 3D Go board was dropped to free ~321MB of Mali GPU memory contending with KataGo's
   // OpenCL on the RK3562. Guard against reintroduction: only the 2D Board ever renders.
   describe('3D board removed', () => {

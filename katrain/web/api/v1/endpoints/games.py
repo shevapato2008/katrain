@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from katrain.web.models import User
 from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.core.pvp_lobby_bots import human_ladder_rungs, playable_rungs
 
 router = APIRouter()
 
@@ -21,23 +22,60 @@ async def list_active_multiplayer_games(
     一直留着:任何人都能枚举出正在进行的对局、双方用户名和会话号。
     `get_current_user` 本文件早就 import 了,只是没挂上。
     """
+    from katrain.web.core.box_sso import strict_box_sso_enabled
+
+    bridge = getattr(request.app.state, "pvp_box_bridge", None)
+    if strict_box_sso_enabled():
+        if bridge is None:
+            raise HTTPException(status_code=503, detail="Central lobby unavailable")
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        generation = request.app.state.box_sso.active_generation
+        try:
+            central_user_id = (await bridge.identity(generation, current_user.id))["user_id"]
+            rows = await bridge.get_json(generation, current_user.id, "/api/v1/games/active/multiplayer")
+            return bridge.rewrite_active_games(generation, current_user.id, central_user_id, rows)
+        except PvpBoxAuthError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except PvpBoxRemoteError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     manager = request.app.state.session_manager
     user_repo = request.app.state.user_repo
     sessions = manager.list_active_multiplayer_sessions()
 
     all_users = user_repo.list_users()
     users_by_id = {u["id"]: u["username"] for u in all_users}
+    ids = {user_id for s in sessions for user_id in (s.player_b_id, s.player_w_id)
+           if user_id is not None and user_id > 0}
+    ranks = human_ladder_rungs(request.app.state.session_factory, ids)
+    labels = {level.rung: level.rank_label for level in playable_rungs()}
+    runtime = getattr(request.app.state, "pvp_lobby_bots", None)
+    bots_by_id = {row["id"]: row for row in runtime.public_online_rows()} if runtime is not None else {}
 
     results = []
     for s in sessions:
+        if s.game_ended or getattr(s, "game_type", "free") == "pvp_online":
+            continue
         state = s.last_state or s.katrain.get_state()
+        black_bot = bots_by_id.get(s.player_b_id, {})
+        white_bot = bots_by_id.get(s.player_w_id, {})
+        black_rung = black_bot.get("ladder_rung", ranks.get(s.player_b_id))
+        white_rung = white_bot.get("ladder_rung", ranks.get(s.player_w_id))
         results.append(
             {
                 "session_id": s.session_id,
-                "player_b": users_by_id.get(s.player_b_id, "Unknown"),
-                "player_w": users_by_id.get(s.player_w_id, "Unknown"),
-                "spectator_count": len(s.sockets) - 2 if len(s.sockets) > 2 else 0,
+                "player_b": users_by_id.get(s.player_b_id, black_bot.get("username", "Unknown")),
+                "player_w": users_by_id.get(s.player_w_id, white_bot.get("username", "Unknown")),
+                "player_b_id": s.player_b_id,
+                "player_w_id": s.player_w_id,
+                "player_b_rung": black_rung,
+                "player_w_rung": white_rung,
+                "player_b_rank_label": labels.get(black_rung),
+                "player_w_rank_label": labels.get(white_rung),
+                "spectator_count": manager.spectator_count(s),
                 "move_count": len(state.get("history", [])),
+                "degraded": bool(getattr(s, "bot_degraded", False) or getattr(s, "multiplayer_degraded", False)),
             }
         )
     return results

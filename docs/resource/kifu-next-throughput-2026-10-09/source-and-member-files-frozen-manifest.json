@@ -1,0 +1,19 @@
+{
+  "files": {
+    "positive-ko20-unsigned-research.json.gz": "fa04a7532b328062dc8e6066a7b06d7badddcdabbef10175b908573ee1300afb",
+    "PROD-ko20-unsigned-research.json.gz": "fa04a7532b328062dc8e6066a7b06d7badddcdabbef10175b908573ee1300afb",
+    "TEST-ko20-unsigned-research.json.gz": "b691d58394a598d6d9fd89bf7b964373b993ce52ead86bea8058f52e0af4e170",
+    "positive-ko20-summary.json": "35485943c2e87dd5e431988cf9c5f9c80bb81c8526227c0f88b3c3ea055b4b26",
+    "PROD-ko20-current-preimages.json.gz": "e29a3b5ae4ebad949e73f4c908b0c8333709ea34f0b0cf146c91931861a4eecb",
+    "TEST-ko20-current-preimages.json.gz": "78f4625a72609d7a3eefc7ac79409b26cad9357101defb4025b6391754e4a7d5",
+    "PROD-ko20-inner-request-unsigned.json": "fae6ecb4d36142f5d58aaa0f37716bdc5affa1e5e3d8432bda937311b8fb6b01",
+    "TEST-ko20-inner-request-unsigned.json": "3d207cdd51dc2bc8f813c852cf840c1f835c69d8c081b0c7230596a01460e57e",
+    "unsigned-inner-requests-summary.json": "eba3bf11cf65fea320bee518eb693a7c759e8b10f5f4bacd6b94b06576da88ce",
+    "source-registry-reused.json": "98f2368d2a2dd6e941156f59b3267180fd7702fffe15e6f38fe74a3e4fed3bd8",
+    "reused-NIKL-three-page-captures.json": "8f8d6851e014fd6df950b7d2cfe6d9ce6a12b8d95f1165e75bc6c012ff25a436",
+    "cwi-progression-capture.json.gz": "4ca9cb2a01c7564d6106517485f5c0837855a8d2dd776d39bf41f27d84c5f857",
+    "source-resolution-corrections.json": "bc5ca77a3e10fdc9ffcf57432880594529c0ac57fbf0219f7a9c45f126cfc140"
+  },
+  "review_status": "unsigned_pending_independent_review",
+  "global_context_status": "awaiting_after_589_snapshot"
+}

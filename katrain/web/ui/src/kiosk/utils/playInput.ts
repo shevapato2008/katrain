@@ -98,7 +98,7 @@ export function playInputState(visionEnabled: boolean, boardSize: number): PlayI
  * 开局设置屏把 `onBoard` 随活动会话写下;对局路由外的守卫和对局屏都从这里读。
  * 只在活动会话**就是当前这条路由**时才用它:比较的是完整路径(对局路由带 `:sessionId`,
  * 前缀相同不代表是同一局)。别的情况(旧记录没有 onBoard / 活动会话是另一局 /
- * 从房间、跨平台引擎进来的局)回落到偏好 —— 那正是今天的行为。
+ * 从房间进来的局)回落到偏好；新开的跨平台人机局也有自己的 onBoard。
  */
 export function readSessionPlayOnBoard(pathname: string): { onBoard: boolean; fromSession: boolean } {
   const norm = (p: string) => (p.length > 1 && p.endsWith('/') ? p.slice(0, -1) : p);

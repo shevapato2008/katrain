@@ -7,17 +7,14 @@ Golaxy encodes a board point as a single integer:
 where boardRow is 1..19 with 19 at the TOP of the board, and colIndex is
 0..18 left-to-right (letters A=0, B=1, ..., H=7, J=8 [I skipped], K=9, ...).
 
-KaTrain uses 0-indexed (col, row) from the top-left, row 0 = top (same
-convention as the existing generic katrain/web/platforms/coords.py). Golden
-values below were captured live on 2026-07-02 and are expressed in GTP
-notation (human-verifiable) then converted to KaTrain (col, row) using the
-existing, already-tested gtp_to_katrain/katrain_to_gtp helpers -- this test
-file does NOT re-derive the GTP<->KaTrain mapping, only golaxy<->KaTrain.
+KaTrain core uses 0-indexed (col, row) from the bottom-left, row 0 = bottom.
+Golden values below were captured live on 2026-07-02 and are expressed in GTP
+notation, parsed with the core Move that receives these coordinates.
 """
 
 import pytest
 
-from katrain.web.platforms.coords import gtp_to_katrain, katrain_to_gtp
+from katrain.core.sgf_parser import Move as CoreMove
 from katrain.web.platforms.golaxy.coords import (
     GolaxyCoordResult,
     Move,
@@ -56,37 +53,37 @@ BOUNDARY_GTP_TO_COORD = [
 class TestKatrainToGolaxyGolden:
     @pytest.mark.parametrize("gtp, coord", GOLDEN_GTP_TO_COORD)
     def test_golden_encode(self, gtp, coord):
-        col, row = gtp_to_katrain(gtp, BOARD_SIZE)
+        col, row = CoreMove.from_gtp(gtp).coords
         assert katrain_to_golaxy(col, row, BOARD_SIZE) == coord
 
     @pytest.mark.parametrize("gtp, coord", BOUNDARY_GTP_TO_COORD)
     def test_boundary_encode(self, gtp, coord):
-        col, row = gtp_to_katrain(gtp, BOARD_SIZE)
+        col, row = CoreMove.from_gtp(gtp).coords
         assert katrain_to_golaxy(col, row, BOARD_SIZE) == coord
 
 
 class TestGolaxyToKatrainGolden:
     @pytest.mark.parametrize("gtp, coord", GOLDEN_GTP_TO_COORD)
     def test_golden_decode(self, gtp, coord):
-        col, row = gtp_to_katrain(gtp, BOARD_SIZE)
+        col, row = CoreMove.from_gtp(gtp).coords
         result = golaxy_to_katrain(coord, BOARD_SIZE)
         assert result == Move(col, row)
 
     @pytest.mark.parametrize("gtp, coord", BOUNDARY_GTP_TO_COORD)
     def test_boundary_decode(self, gtp, coord):
-        col, row = gtp_to_katrain(gtp, BOARD_SIZE)
+        col, row = CoreMove.from_gtp(gtp).coords
         result = golaxy_to_katrain(coord, BOARD_SIZE)
         assert result == Move(col, row)
 
     def test_decode_249_is_c6(self):
         result = golaxy_to_katrain(249, BOARD_SIZE)
         assert isinstance(result, Move)
-        assert katrain_to_gtp(result.col, result.row, BOARD_SIZE) == "C6"
+        assert CoreMove((result.col, result.row)).gtp() == "C6"
 
     def test_decode_286_is_b4(self):
         result = golaxy_to_katrain(286, BOARD_SIZE)
         assert isinstance(result, Move)
-        assert katrain_to_gtp(result.col, result.row, BOARD_SIZE) == "B4"
+        assert CoreMove((result.col, result.row)).gtp() == "B4"
 
 
 class TestRoundTrip:

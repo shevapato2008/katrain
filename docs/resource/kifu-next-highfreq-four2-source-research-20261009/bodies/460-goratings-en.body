@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>Oba Junya</title><link rel="icon" type="image/png" href="/apple-touch-icon.png"/><link href="/css/nv.d3.min.css" rel="stylesheet">
+<script src="/javascript/d3.min.js" charset="utf-8"></script>
+<script src="/javascript/nv.d3.min.js" charset="utf-8"></script>
+<meta name=viewport content="width=device-width, initial-scale=1"><meta charset="UTF-8"><style>
+body
+{
+ font-family: sans-serif;
+}
+
+p
+{
+ text-align:center;
+}
+
+h1,h2,h3
+{
+ color: #fff;
+ background-color: #777;
+ padding: 0.3em;
+ text-align: center;
+}
+
+table
+{
+ margin: 0px auto;
+ border-collapse: collapse;
+ color: black;
+ background-color: white;
+}
+
+th
+{
+ padding-left: 0.2em;
+ padding-right: 0.2em;
+ color: black;
+ background-color: #ccc;
+ font-family: sans-serif;
+ font-weight: bold;
+ border: 1px solid white;
+}
+
+th.missing
+{
+ background-color: white;
+}
+
+td
+{
+ padding-left:0.2em;
+ padding-right:0.2em;
+ border:1px solid white;
+ color:black;
+ background-color:#eee;
+ white-space:nowrap;
+}
+
+th.r
+{
+ text-align:right;
+}
+
+td.r
+{
+ text-align:right;
+}
+
+td.c
+{
+ text-align:center;
+}
+
+td.w
+{
+ color: white;
+ background-color: white;
+ border: none;
+}
+
+#graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#history-graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    width:100%;
+    height:75vh;
+}
+
+#chartContainer
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#lang-ctn
+{
+  padding: 10px;
+  text-align: center;
+}
+
+#lang-ctn div
+{
+ background-color: #ccc;
+ display: inline-block;
+ padding-top: 10px;
+ padding-bottom: 5px;
+ padding-right: 5px;
+ padding-left: 5px;
+}
+
+.flag-lang
+{
+  margin-left: 3px;
+  margin-right: 3px;
+  width: 30px;
+  height: 20px;
+}
+
+.banner-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+  margin: 12px auto;
+  background-color: #eee;
+  padding: 1rem;
+}
+
+.banner-container > * {
+  flex: 1 1 25rem;
+  min-width: 16rem;
+}
+
+.banner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.store-badge {
+  height: 3em;
+  width: auto;
+  max-width: 100%;
+  margin: auto 6px;
+}
+
+.review-stars {
+  color: #f5c518;
+}
+</style></head><body><h1>Oba Junya</h1><div id="lang-ctn"><div><a href="../../en/players/603.html"><img alt="en translation" class="flag-lang" src="/flags/en.svg" /></a><a href="../../zh/players/603.html"><img alt="zh translation" class="flag-lang" src="/flags/zh.svg" /></a><a href="../../ja/players/603.html"><img alt="ja translation" class="flag-lang" src="/flags/ja.svg" /></a><a href="../../ko/players/603.html"><img alt="ko translation" class="flag-lang" src="/flags/ko.svg" /></a></div></div><p><a href="..">Back to main list</a></p><h2>Graph</h2>
+<div id='chartContainer'>
+<svg id='graph' style='height:450px; width:600px'> </svg>
+</div>
+<script type="text/javascript">
+var format = d3.time.format("%Y-%m-%d");
+var format2 = d3.time.format("%Y/%m/%d");
+d3.json('/players-json/data-603.json', function(data) {
+nv.addGraph(function() {
+var chart = nv.models.lineChart()
+.x(function(d) { return format.parse(d[0]) })
+.y(function(d) { return d[1] })
+.margin({top:20, left: 50, right:50})
+.useInteractiveGuideline(true)
+.showYAxis(true)
+.showXAxis(true)
+.showLegend(false)
+;
+
+ chart.xAxis
+.tickFormat(function(d) {
+return format(new Date(d))
+});
+d3.select('#chartContainer svg')
+.datum(data)
+.call(chart);
+nv.utils.windowResize(function() { chart.update() });
+return chart;
+});
+});
+</script>
+<h2>Data</h2><table><tr><th class="r">Wins</th><td class="r">55</td></tr><tr><th class="r">Losses</th><td class="r">89</td></tr><tr><th class="r">Total</th><td class="r">144</td></tr><tr><th class="r">Link</th><td class="r" style="text-align: left;"><a href="https://www.nihonkiin.or.jp/player/htm/ki000389.html">https://www.nihonkiin.or....</a></td></tr><tr><th class="r">Link</th><td class="r" style="text-align: left;"><a href="https://www.baduk.or.kr/record/player_view.asp?pkey=20000453">https://www.baduk.or.kr/r...</a></td></tr><tr><th class="r">Date of Birth</th><td class="r">1983-10-01</td></tr></table><h2>Game List</h2><table><tr><th>Date</th><th>Rating</th><th>Color</th><th>Result</th><th colspan="4">Opponent</th><th>Kifu</th></tr><tr><td>2026-09-24</td><td>3029</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1826.html">Nishioka Masao</a></td>
+<td>3026</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/upload/java_gibo/53TengensenA_Nishioka_Ooba_20260924.sgf">nihon_kiin</a> | </td>
+</tr>
+<tr><td>2026-08-20</td><td>3030</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1001.html">Yamamori Tadanao</a></td>
+<td>2920</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/upload/java_gibo/9SGWChuyousenP1_Ooba_Yamamori_20260820.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/128806">go4go</a> | </td>
+</tr>
+<tr><td>2026-07-27</td><td>3031</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1974.html">Muramoto Wataru</a></td>
+<td>3186</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/upload/java_gibo/82HonninbousenB_Ooba_Muramoto_20260728.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/128745">go4go</a> | </td>
+</tr>
+<tr><td>2026-04-27</td><td>3036</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1529.html">Mutsuura Yuta</a></td>
+<td>3299</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/52meijin_b_ohba_mutsuura_20260427.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/126770">go4go</a> | </td>
+</tr>
+<tr><td>2026-01-08</td><td>3042</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1707.html">Otake Yu</a></td>
+<td>3337</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/74ouza_ooba_ootake_20250108.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/125249">go4go</a> | </td>
+</tr>
+<tr><td>2025-11-13</td><td>3046</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1529.html">Mutsuura Yuta</a></td>
+<td>3301</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/b67oukansen_ooba_mutuura_20251113.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/124265">go4go</a> | </td>
+</tr>
+<tr><td>2025-09-25</td><td>3049</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1186.html">Muramatsu Hiroki</a></td>
+<td>3174</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/8SGWyosen1kaisen_muramatsu_oba_20250925%281%29.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/123302">go4go</a> | </td>
+</tr>
+<tr><td>2025-07-14</td><td>3055</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1009.html">Yanagisawa Satoshi</a></td>
+<td>2948</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/67OukansenB_Yanagisawa_Ooba_20250714.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/122020">go4go</a> | </td>
+</tr>
+<tr><td>2025-06-09</td><td>3058</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1451.html">Hsu Chia Yuan</a></td>
+<td>3531</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/agonkiriyamahai_ooba_kyokagen_20250609.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/121558">go4go</a> | </td>
+</tr>
+<tr><td>2025-03-17</td><td>3064</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="129.html">Nakano Hironari</a></td>
+<td>3057</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/honninbousen_nakanokanya_ooba_20250317.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/120456">go4go</a> | </td>
+</tr>
+<tr><td>2024-12-12</td><td>3072</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1529.html">Mutsuura Yuta</a></td>
+<td>3311</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/51tengensen_mutuura_ooba_20241212.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/119138">go4go</a> | </td>
+</tr>
+<tr><td>2024-11-03</td><td>3076</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="258.html">Akiyama Jiro</a></td>
+<td>3289</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/7sgw3_ooba_akiyama_20241103.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/118504">go4go</a> | </td>
+</tr>
+<tr><td>2024-11-03</td><td>3076</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="352.html">Matsumoto Takehisa</a></td>
+<td>3185</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/7sgw4_matumoto_ooba_20241103.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/118513">go4go</a> | </td>
+</tr>
+<tr><td>2024-11-02</td><td>3076</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="600.html">Mochizuki Kenichi</a></td>
+<td>3168</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/7chuuyou_ooba_moti_20241102.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/118492">go4go</a> | </td>
+</tr>
+<tr><td>2024-11-02</td><td>3076</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="816.html">Lin Tzu Yuan</a></td>
+<td>3127</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/7SGW2_Rin_Ooba_202411022.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/118500">go4go</a> | </td>
+</tr>
+<tr><td>2024-09-30</td><td>3079</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="1355.html">Hosaka Mayu</a></td>
+<td>2612</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/chuuyousen_ooba_mayu_20240930.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/117822">go4go</a> | </td>
+</tr>
+<tr><td>2024-09-30</td><td>3079</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="276.html">Mimura Tomoyasu</a></td>
+<td>3155</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/7SGWChuyo_ObaJunya_imuraTo_20240930.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/117824">go4go</a> | </td>
+</tr>
+<tr><td>2024-09-30</td><td>3079</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1118.html">Sasaki Tsuyoshi</a></td>
+<td>2853</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/chuuyousen_sasakituyosi_ooba_20240930.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/117825">go4go</a> | </td>
+</tr>
+<tr><td>2024-09-12</td><td>3079</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1069.html">Shida Tatsuya</a></td>
+<td>3318</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50goseisen_sida_ooba_20240912.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/117468">go4go</a> | </td>
+</tr>
+<tr><td>2024-05-16</td><td>3085</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="960.html">Hsieh Yi Min</a></td>
+<td>3065</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/63judansenyosenB_oba_sha_20240516.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/115425">go4go</a> | </td>
+</tr>
+<tr><td>2024-03-11</td><td>3088</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1465.html">Abe Yoshiki</a></td>
+<td>3121</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-03-04</td><td>3088</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1144.html">Kumamoto Shusei</a></td>
+<td>2919</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/meijinsen_kumamoto_ooba_20240304.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/114224">go4go</a> | </td>
+</tr>
+<tr><td>2024-02-05</td><td>3090</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="601.html">Iyama Yuta</a></td>
+<td>3566</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50tengensen1kaisen_oba_iyama_20240205.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/113904">go4go</a> | </td>
+</tr>
+<tr><td>2023-12-07</td><td>3095</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1456.html">Hoshiai Shiho</a></td>
+<td>2983</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50TengensenA_Hoshiai_Ooba_20231207.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/112747">go4go</a> | </td>
+</tr>
+<tr><td>2023-09-14</td><td>3100</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1877.html">Tsuji Shigehito</a></td>
+<td>3171</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/48kiseisenC_tsuji_oba_20230914.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/111171">go4go</a> | </td>
+</tr>
+<tr><td>2023-08-07</td><td>3103</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="82.html">Takemiya Masaki</a></td>
+<td>2980</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50tengensenyosenB_takemiya_oba_20230807.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/110370">go4go</a> | </td>
+</tr>
+<tr><td>2023-06-01</td><td>3107</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="913.html">Murakawa Daisuke</a></td>
+<td>3360</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/71ozasen1kaisen_murakawa_oba_20230601.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/109379">go4go</a> | </td>
+</tr>
+<tr><td>2023-05-29</td><td>3108</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1529.html">Mutsuura Yuta</a></td>
+<td>3282</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/48kiseisenC_oba_mutsuura_20230529.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/109350">go4go</a> | </td>
+</tr>
+<tr><td>2023-04-27</td><td>3110</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1823.html">Seki Koutarou</a></td>
+<td>3292</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/kiseiFT_seki_oba_20230427.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/108814">go4go</a> | </td>
+</tr>
+<tr><td>2023-04-17</td><td>3111</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="1003.html">Okuda Aya</a></td>
+<td>2967</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/48kiseisenFT_oba_okuda_20230417.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/108706">go4go</a> | </td>
+</tr>
+<tr><td>2023-04-13</td><td>3111</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="98.html">Cho Chi Hun</a></td>
+<td>3193</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/finalqualifierforouza_ouba_chou_20230413.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/108548">go4go</a> | </td>
+</tr>
+<tr><td>2022-12-05</td><td>3114</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="1096.html">Takemiya Yoko</a></td>
+<td>2821</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/kiseisen_ooba_youkou_20221205_20221205.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/106343">go4go</a> | </td>
+</tr>
+<tr><td>2022-08-22</td><td>3116</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="276.html">Mimura Tomoyasu</a></td>
+<td>3203</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/5SGWyosen1kaisen_ohba_mimura_20220822.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/104586">go4go</a> | </td>
+</tr>
+<tr><td>2022-06-13</td><td>3118</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1114.html">Yu Chengchi</a></td>
+<td>3451</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/70ozasen1kaisen_yo_oba_20220613%281%29.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/103352">go4go</a> | </td>
+</tr>
+<tr><td>2022-04-18</td><td>3120</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1269.html">Motoki Katsuya</a></td>
+<td>3370</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/70ouzasaisyuuyosen_motoki_ooba_20220418.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/102695">go4go</a> | </td>
+</tr>
+<tr><td>2021-08-30</td><td>3122</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1091.html">Shigeno Yuki</a></td>
+<td>1889</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/chuuyousen_sigeno_ooba_20210830.sgf">nihon_kiin</a> | </td>
+</tr>
+<tr><td>2021-08-30</td><td>3122</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="784.html">Kubo Hideo</a></td>
+<td>2960</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/chuyousen_kubo_ooba_20210830.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/98448">go4go</a> | </td>
+</tr>
+<tr><td>2021-05-20</td><td>3126</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1188.html">Ida Atsushi</a></td>
+<td>3369</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/69ouza_ida_ooba_20210520.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/96913">go4go</a> | </td>
+</tr>
+<tr><td>2021-03-29</td><td>3128</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="70.html">Wang Ming Wan</a></td>
+<td>3134</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/ouzasen_ooba_oumeien_20210329.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/96060">go4go</a> | </td>
+</tr>
+<tr><td>2020-11-23</td><td>3131</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1535.html">Wu Boyi</a></td>
+<td>3185</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/97298">go4go</a> | </td>
+</tr>
+<tr><td>2020-11-01</td><td>3131</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="782.html">Ohashi Hirofumi</a></td>
+<td>3161</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/3sgw_oohasi_ooba.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/99979">go4go</a> | </td>
+</tr>
+<tr><td>2020-11-01</td><td>3131</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="604.html">Chang Li Yu</a></td>
+<td>3181</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/3sgw_ooba_tyou.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/93455">go4go</a> | </td>
+</tr>
+<tr><td>2020-10-31</td><td>3131</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="1000.html">Yamamoto Kentaro</a></td>
+<td>2820</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/chuyousen_ooba_yamamoto_2020.10.31%281%29.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/99967">go4go</a> | </td>
+</tr>
+<tr><td>2020-10-31</td><td>3131</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="194.html">Kim Soo Joon</a></td>
+<td>3155</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/chuyousen_kimu_ooba_2020.10.31.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/99973">go4go</a> | </td>
+</tr>
+<tr><td>2020-09-28</td><td>3133</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="956.html">Sano Takatsugu</a></td>
+<td>2523</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/3sgw1_sano_ooba.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/100053">go4go</a> | </td>
+</tr>
+<tr><td>2020-09-28</td><td>3133</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="698.html">Izawa Akino</a></td>
+<td>2725</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/3chuuyousen_izawa_ooba_20200928.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/100059">go4go</a> | </td>
+</tr>
+<tr><td>2020-09-28</td><td>3133</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1209.html">Mimura Kaori</a></td>
+<td>2818</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/3chuuyousen_mimura_ooba_20200928.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/93444">go4go</a> | </td>
+</tr>
+<tr><td>2019-12-19</td><td>3143</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="158.html">Otake Hideo</a></td>
+<td>2963</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/45kisei_ootake_ooba_20191219.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/88304">go4go</a> | </td>
+</tr>
+<tr><td>2019-11-14</td><td>3145</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="36.html">Lin Hai Fong</a></td>
+<td>2730</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/honinbouB_ooba_rin_2019.11.14.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/87610">go4go</a> | </td>
+</tr>
+<tr><td>2019-11-04</td><td>3146</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="194.html">Kim Soo Joon</a></td>
+<td>3162</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/chuuyousen_kimusujun_ooba_20191104.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/87232">go4go</a> | </td>
+</tr>
+<tr><td>2019-11-04</td><td>3146</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="367.html">Suzuki Ayumi</a></td>
+<td>3079</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/2sgw_suzuki_ooba.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/87239">go4go</a> | </td>
+</tr>
+<tr><td>2019-11-03</td><td>3146</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="180.html">Mizokami Tomochika</a></td>
+<td>3224</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/2sgw_ooba_mizokami_20191103.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/87216">go4go</a> | </td>
+</tr>
+<tr><td>2019-11-03</td><td>3146</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="276.html">Mimura Tomoyasu</a></td>
+<td>3219</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/sgw2-ooba-mimura.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/87224">go4go</a> | </td>
+</tr>
+<tr><td>2019-10-31</td><td>3146</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="2146.html">Ueno Risa</a></td>
+<td>2925</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/kiseiFT_ooba_ueno_2019.10.31%281%29.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/87142">go4go</a> | </td>
+</tr>
+<tr><td>2019-10-10</td><td>3146</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="765.html">Suzuki Yoshimichi</a></td>
+<td>2933</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/88897">go4go</a> | </td>
+</tr>
+<tr><td>2019-10-10</td><td>3146</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="1660.html">Koike Yoshihiro</a></td>
+<td>3251</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/88224">go4go</a> | </td>
+</tr>
+<tr><td>2019-10-07</td><td>3146</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="335.html">Ogata Masaki</a></td>
+<td>3127</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/chuuyousen_ogata_ooba_2019.10.07.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/86758">go4go</a> | </td>
+</tr>
+<tr><td>2019-09-09</td><td>3146</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="1000.html">Yamamoto Kentaro</a></td>
+<td>2799</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/chuuyousen_ooba_yamamotokentarou_2019.09.09.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/89200">go4go</a> | </td>
+</tr>
+<tr><td>2019-08-15</td><td>3146</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1231.html">Ichiriki Ryo</a></td>
+<td>3556</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/87443">go4go</a> | </td>
+</tr>
+<tr><td>2019-07-18</td><td>3146</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="175.html">Takao Shinji</a></td>
+<td>3335</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/87439">go4go</a> | </td>
+</tr>
+<tr><td>2019-06-20</td><td>3145</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="64.html">Yamashita Keigo</a></td>
+<td>3380</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/87432">go4go</a> | </td>
+</tr>
+<tr><td>2019-05-23</td><td>3143</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="93.html">Hane Naoki</a></td>
+<td>3345</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/agonkiriyama_ooba_hanenaoki_2019.05.23.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/86882">go4go</a> | </td>
+</tr>
+<tr><td>2019-03-07</td><td>3137</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="182.html">Kono Rin</a></td>
+<td>3424</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/85215">go4go</a> | </td>
+</tr>
+<tr><td>2018-12-13</td><td>3131</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="235.html">Kataoka Satoshi</a></td>
+<td>3107</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/44kisei_oba_kataoka_20181213.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/80895">go4go</a> | </td>
+</tr>
+<tr><td>2018-12-09</td><td>3130</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="602.html">Lin Han Chieh</a></td>
+<td>3272</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/sgw3-rin-ooba.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/80638">go4go</a> | </td>
+</tr>
+<tr><td>2018-12-09</td><td>3130</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="349.html">Tsuruyama Atsushi</a></td>
+<td>3238</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/sgw4_tsuruyama_ohba_20181209.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/80650">go4go</a> | </td>
+</tr>
+<tr><td>2018-12-08</td><td>3130</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1012.html">Wang Wei Jen</a></td>
+<td>2769</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/sgw1_ou_ooba_20181208.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/80623">go4go</a> | </td>
+</tr>
+<tr><td>2018-12-08</td><td>3130</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="276.html">Mimura Tomoyasu</a></td>
+<td>3207</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/sgw2_mimura_ooba_20181208.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/80632">go4go</a> | </td>
+</tr>
+<tr><td>2018-11-15</td><td>3128</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="194.html">Kim Soo Joon</a></td>
+<td>3166</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/67ouzaA_kim_ooba.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/79392">go4go</a> | </td>
+</tr>
+<tr><td>2018-11-06</td><td>3127</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="783.html">Kitano Ryo</a></td>
+<td>2862</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/SGWyosen_kitano_ooba_20181106.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/79747">go4go</a> | </td>
+</tr>
+<tr><td>2018-10-18</td><td>3125</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1224.html">Fujisawa Rina</a></td>
+<td>3195</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/jyuudansen_rina_ooba.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/78028">go4go</a> | </td>
+</tr>
+<tr><td>2018-09-10</td><td>3121</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1190.html">Adachi Toshimasa</a></td>
+<td>3252</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/80564">go4go</a> | </td>
+</tr>
+<tr><td>2018-03-06</td><td>3104</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="180.html">Mizokami Tomochika</a></td>
+<td>3202</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/77646">go4go</a> | </td>
+</tr>
+<tr><td>2018-02-01</td><td>3101</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="64.html">Yamashita Keigo</a></td>
+<td>3403</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/79104">go4go</a> | </td>
+</tr>
+<tr><td>2017-09-25</td><td>3091</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1230.html">Tsuruta Kazushi</a></td>
+<td>3128</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/73173">go4go</a> | </td>
+</tr>
+<tr><td>2017-05-25</td><td>3083</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="175.html">Takao Shinji</a></td>
+<td>3359</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/65893">go4go</a> | </td>
+</tr>
+<tr><td>2017-05-11</td><td>3083</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="251.html">Yuki Satoshi</a></td>
+<td>3233</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/64490">go4go</a> | </td>
+</tr>
+<tr><td>2017-03-09</td><td>3080</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="90.html">Yoda Norimoto</a></td>
+<td>3224</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/20170309yoda.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/62830">go4go</a> | </td>
+</tr>
+<tr><td>2017-02-23</td><td>3079</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1306.html">Yoon Chunho</a></td>
+<td>3046</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/63207">go4go</a> | </td>
+</tr>
+<tr><td>2016-11-17</td><td>3074</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="108.html">Chang Hsu</a></td>
+<td>3357</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/juudanchou20161117.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/59295">go4go</a> | </td>
+</tr>
+<tr><td>2016-07-14</td><td>3068</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="71.html">Wang Li Chen</a></td>
+<td>3189</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/42meijinA_rissei_oba.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/55684">go4go</a> | </td>
+</tr>
+<tr><td>2016-03-10</td><td>3064</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="71.html">Wang Li Chen</a></td>
+<td>3190</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/53780">go4go</a> | </td>
+</tr>
+<tr><td>2015-12-17</td><td>3062</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="70.html">Wang Ming Wan</a></td>
+<td>3191</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/64ouzaA_meien_ooba.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/51861">go4go</a> | </td>
+</tr>
+<tr><td>2015-08-13</td><td>3056</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="95.html">Cho Sun Jin</a></td>
+<td>3219</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/40kiseiC_sonjin_ooba.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/48503">go4go</a> | </td>
+</tr>
+<tr><td>2015-05-17</td><td>3053</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="314.html">Kurahashi Masayuki</a></td>
+<td>3113</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/47261">go4go</a> | </td>
+</tr>
+<tr><td>2015-05-11</td><td>3053</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="251.html">Yuki Satoshi</a></td>
+<td>3319</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/20170511yuki.sgf">nihon_kiin</a> | </td>
+</tr>
+<tr><td>2015-03-05</td><td>3051</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1114.html">Yu Chengchi</a></td>
+<td>3365</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/52280">go4go</a> | </td>
+</tr>
+<tr><td>2014-11-06</td><td>3050</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="888.html">Huang Yih Tzuu</a></td>
+<td>3285</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/44910">go4go</a> | </td>
+</tr>
+<tr><td>2014-06-26</td><td>3049</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="194.html">Kim Soo Joon</a></td>
+<td>3226</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/52497">go4go</a> | </td>
+</tr>
+<tr><td>2014-02-06</td><td>3045</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="301.html">Sakai Hideyuki</a></td>
+<td>3213</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/49118">go4go</a> | </td>
+</tr>
+<tr><td>2013-11-21</td><td>3044</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="64.html">Yamashita Keigo</a></td>
+<td>3381</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/49338">go4go</a> | </td>
+</tr>
+<tr><td>2013-10-03</td><td>3041</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="71.html">Wang Li Chen</a></td>
+<td>3176</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/gosei_a-oba-ou_r-20131003.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/37070">go4go</a> | </td>
+</tr>
+<tr><td>2013-08-08</td><td>3037</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="222.html">Ishida Yoshio</a></td>
+<td>3085</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/gosei_a-ishida_y-oba-20130808.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/43443">go4go</a> | </td>
+</tr>
+<tr><td>2013-06-09</td><td>3031</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="95.html">Cho Sun Jin</a></td>
+<td>3231</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/34174">go4go</a> | </td>
+</tr>
+<tr><td>2013-05-02</td><td>3028</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="70.html">Wang Ming Wan</a></td>
+<td>3207</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/judana-oum-oba-20130502.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/33567">go4go</a> | </td>
+</tr>
+<tr><td>2013-04-11</td><td>3026</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="98.html">Cho Chi Hun</a></td>
+<td>3258</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/honinbo.a-tyo.t-oba-20130411.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/33347">go4go</a> | </td>
+</tr>
+<tr><td>2013-01-31</td><td>3022</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="82.html">Takemiya Masaki</a></td>
+<td>3123</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/ouza.a-oba-takemiya-20130131.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/31890">go4go</a> | </td>
+</tr>
+<tr><td>2012-09-20</td><td>3014</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="82.html">Takemiya Masaki</a></td>
+<td>3123</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/gosei.a-takemiya-oba-20120920.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/30307">go4go</a> | </td>
+</tr>
+<tr><td>2012-08-16</td><td>3013</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="61.html">Morita Michihiro</a></td>
+<td>3050</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/52251">go4go</a> | </td>
+</tr>
+<tr><td>2012-07-12</td><td>3010</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="82.html">Takemiya Masaki</a></td>
+<td>3122</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/meijin.a-takemiya.m-oba-20120712.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/29456">go4go</a> | </td>
+</tr>
+<tr><td>2012-06-25</td><td>3009</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="88.html">Hikosaka Naoto</a></td>
+<td>3157</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/8daiwayosen-hikosaka-oba-20120625.sgf">nihon_kiin</a> | </td>
+</tr>
+<tr><td>2012-05-03</td><td>3007</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="158.html">Otake Hideo</a></td>
+<td>3054</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/kiriyama-otake-oba-20120503.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/28774">go4go</a> | </td>
+</tr>
+<tr><td>2012-04-23</td><td>3007</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1201.html">Han Taehee</a></td>
+<td>3317</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/28679">go4go</a> | </td>
+</tr>
+<tr><td>2012-02-20</td><td>3003</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="959.html">Kato Yuki (m)</a></td>
+<td>2963</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/32092">go4go</a> | </td>
+</tr>
+<tr><td>2012-02-20</td><td>3003</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1325.html">Kikkawa Hajime</a></td>
+<td>2929</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/32091">go4go</a> | </td>
+</tr>
+<tr><td>2011-09-12</td><td>2995</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="604.html">Chang Li Yu</a></td>
+<td>3135</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/39368">go4go</a> | </td>
+</tr>
+<tr><td>2011-09-01</td><td>2995</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="90.html">Yoda Norimoto</a></td>
+<td>3274</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/27016">go4go</a> | </td>
+</tr>
+<tr><td>2011-08-18</td><td>2994</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="95.html">Cho Sun Jin</a></td>
+<td>3220</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/26890">go4go</a> | </td>
+</tr>
+<tr><td>2011-08-11</td><td>2994</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="1231.html">Ichiriki Ryo</a></td>
+<td>3238</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/39367">go4go</a> | </td>
+</tr>
+<tr><td>2011-05-30</td><td>2990</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="64.html">Yamashita Keigo</a></td>
+<td>3395</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/74209">go4go</a> | </td>
+</tr>
+<tr><td>2011-03-31</td><td>2987</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="256.html">Goto Shungo</a></td>
+<td>2956</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/30733">go4go</a> | </td>
+</tr>
+<tr><td>2010-12-23</td><td>2984</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="999.html">Ohashi Naruya</a></td>
+<td>2973</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/25499">go4go</a> | </td>
+</tr>
+<tr><td>2010-12-16</td><td>2983</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="222.html">Ishida Yoshio</a></td>
+<td>3097</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/25183">go4go</a> | </td>
+</tr>
+<tr><td>2010-11-11</td><td>2982</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="71.html">Wang Li Chen</a></td>
+<td>3197</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24818">go4go</a> | </td>
+</tr>
+<tr><td>2010-07-29</td><td>2975</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1122.html">Terayama Rei</a></td>
+<td>3135</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/48428">go4go</a> | </td>
+</tr>
+<tr><td>2010-07-08</td><td>2974</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1142.html">Suzuki Shinji</a></td>
+<td>3171</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23999">go4go</a> | </td>
+</tr>
+<tr><td>2010-07-01</td><td>2974</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="51.html">Kobayashi Satoru</a></td>
+<td>3229</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23921">go4go</a> | </td>
+</tr>
+<tr><td>2010-03-18</td><td>2969</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1122.html">Terayama Rei</a></td>
+<td>3131</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23244">go4go</a> | </td>
+</tr>
+<tr><td>2010-02-18</td><td>2967</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="913.html">Murakawa Daisuke</a></td>
+<td>3243</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23064">go4go</a> | </td>
+</tr>
+<tr><td>2009-12-10</td><td>2961</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1007.html">Shuto Shun</a></td>
+<td>3156</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22998">go4go</a> | </td>
+</tr>
+<tr><td>2009-12-02</td><td>2960</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1566.html">Huang Chengyi</a></td>
+<td>2834</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/50241">go4go</a> | </td>
+</tr>
+<tr><td>2009-12-01</td><td>2960</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1146.html">Lee Chungyu</a></td>
+<td>3292</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/50248">go4go</a> | </td>
+</tr>
+<tr><td>2009-11-30</td><td>2960</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="970.html">Wang Tao</a></td>
+<td>3322</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/50263">go4go</a> | </td>
+</tr>
+<tr><td>2009-06-15</td><td>2951</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="175.html">Takao Shinji</a></td>
+<td>3341</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/21912">go4go</a> | </td>
+</tr>
+<tr><td>2009-05-07</td><td>2949</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="71.html">Wang Li Chen</a></td>
+<td>3248</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20677">go4go</a> | </td>
+</tr>
+<tr><td>2009-04-27</td><td>2948</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="888.html">Huang Yih Tzuu</a></td>
+<td>3230</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20728">go4go</a> | </td>
+</tr>
+<tr><td>2009-04-27</td><td>2948</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="1000.html">Yamamoto Kentaro</a></td>
+<td>2850</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20727">go4go</a> | </td>
+</tr>
+<tr><td>2009-01-22</td><td>2943</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="960.html">Hsieh Yi Min</a></td>
+<td>3108</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19976">go4go</a> | </td>
+</tr>
+<tr><td>2008-11-27</td><td>2941</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="70.html">Wang Ming Wan</a></td>
+<td>3234</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19614">go4go</a> | </td>
+</tr>
+<tr><td>2008-11-20</td><td>2941</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="158.html">Otake Hideo</a></td>
+<td>3081</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19533">go4go</a> | </td>
+</tr>
+<tr><td>2008-11-02</td><td>2940</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="889.html">Anzai Nobuaki</a></td>
+<td>3180</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20261">go4go</a> | </td>
+</tr>
+<tr><td>2008-11-01</td><td>2940</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1069.html">Shida Tatsuya</a></td>
+<td>3181</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20256">go4go</a> | </td>
+</tr>
+<tr><td>2008-05-01</td><td>2931</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="71.html">Wang Li Chen</a></td>
+<td>3242</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17828">go4go</a> | </td>
+</tr>
+<tr><td>2008-01-31</td><td>2928</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="235.html">Kataoka Satoshi</a></td>
+<td>3197</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17123">go4go</a> | </td>
+</tr>
+<tr><td>2008-01-10</td><td>2927</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1069.html">Shida Tatsuya</a></td>
+<td>3191</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/16976">go4go</a> | </td>
+</tr>
+<tr><td>2007-08-14</td><td>2922</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="816.html">Lin Tzu Yuan</a></td>
+<td>3129</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/15732">go4go</a> | </td>
+</tr>
+<tr><td>2007-02-15</td><td>2918</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="600.html">Mochizuki Kenichi</a></td>
+<td>3128</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/14923">go4go</a> | </td>
+</tr>
+<tr><td>2006-06-15</td><td>2914</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="70.html">Wang Ming Wan</a></td>
+<td>3226</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/11720">go4go</a> | </td>
+</tr>
+<tr><td>2006-05-18</td><td>2914</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="222.html">Ishida Yoshio</a></td>
+<td>3113</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/14970">go4go</a> | </td>
+</tr>
+<tr><td>2006-03-27</td><td>2914</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="916.html">Kubota Masaru</a></td>
+<td>2780</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10670">go4go</a> | </td>
+</tr>
+<tr><td>2005-05-12</td><td>2921</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="273.html">Ishida Atsushi</a></td>
+<td>2943</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/6605">go4go</a> | </td>
+</tr>
+<tr><td>2005-02-21</td><td>2924</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1191.html">Shimosaka Miori</a></td>
+<td>2704</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/56146">go4go</a> | </td>
+</tr>
+<tr><td>2004-06-10</td><td>2932</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="284.html">Oya Kouichi</a></td>
+<td>3112</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/73306">go4go</a> | </td>
+</tr>
+<tr><td>2003-12-22</td><td>2933</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="200.html">Kim Juho</a></td>
+<td>3349</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/6949">go4go</a> | </td>
+</tr>
+</table>
+<p><small>Contact: <a href="https://www.remi-coulom.fr/">Rémi Coulom</a>. Powered by <a href="https://github.com/Remi-Coulom/joedb">joedb, the C++ database</a>.</small></p></body></html>

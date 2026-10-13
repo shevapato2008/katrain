@@ -1,84 +1,19 @@
 """Board device management endpoints.
 
-Server-side: heartbeat. Device listing is no longer a public route.
+Server-side: nothing (box telemetry moved to the signed /api/v1/devices channel).
 Board-side: live match proxy to remote server (when KATRAIN_MODE=board).
 """
 
 import logging
-from datetime import datetime
-from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
-from katrain.web.api.v1.endpoints.auth import require_writable_user
-from katrain.web.core.db import get_db
-from katrain.web.core.models_db import DeviceHeartbeatDB
-from katrain.web.models import User
 
 logger = logging.getLogger("katrain_web")
 
 router = APIRouter()
-
-
-class HeartbeatRequest(BaseModel):
-    device_id: str
-    queue_depth: int = 0
-    failed_count: int = 0
-    oldest_unsynced_age_sec: int = 0
-    app_version: Optional[str] = None
-
-
-class HeartbeatResponse(BaseModel):
-    status: str  # "ok" or "upgrade_available"
-    server_time: str
-    upgrade_url: Optional[str] = None
-
-
-@router.post("/heartbeat", response_model=HeartbeatResponse)
-async def device_heartbeat(
-    request: Request,
-    body: HeartbeatRequest,
-    current_user: User = Depends(require_writable_user),
-    db: Session = Depends(get_db),
-):
-    """Receive heartbeat from an RK3588 board device.
-
-    Updates last_seen timestamp and sync queue stats for monitoring.
-    """
-    now = datetime.utcnow()
-
-    # Upsert device heartbeat record
-    record = db.query(DeviceHeartbeatDB).filter(DeviceHeartbeatDB.device_id == body.device_id).first()
-
-    if record:
-        record.last_seen = now
-        record.queue_depth = body.queue_depth
-        record.failed_count = body.failed_count
-        record.oldest_unsynced_age_sec = body.oldest_unsynced_age_sec
-        record.app_version = body.app_version
-        record.ip_address = request.client.host if request.client else None
-    else:
-        record = DeviceHeartbeatDB(
-            device_id=body.device_id,
-            last_seen=now,
-            queue_depth=body.queue_depth,
-            failed_count=body.failed_count,
-            oldest_unsynced_age_sec=body.oldest_unsynced_age_sec,
-            app_version=body.app_version,
-            ip_address=request.client.host if request.client else None,
-        )
-        db.add(record)
-
-    db.commit()
-
-    return HeartbeatResponse(
-        status="ok",
-        server_time=now.isoformat(),
-    )
 
 
 # ── Read-only proxies to the remote server (board mode only) ──

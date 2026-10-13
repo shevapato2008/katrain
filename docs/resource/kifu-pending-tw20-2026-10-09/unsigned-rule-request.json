@@ -1,0 +1,528 @@
+{
+  "content": {
+    "exceptions_checked": true,
+    "excluded_characters": [
+      "于",
+      "傑",
+      "升",
+      "岳",
+      "嶽",
+      "於",
+      "昇",
+      "杰",
+      "鍾",
+      "鐘",
+      "钟"
+    ],
+    "excluded_names": [
+      "孔傑",
+      "孔杰",
+      "胡子扬",
+      "胡子揚",
+      "鬍子揚"
+    ],
+    "lang": "tw",
+    "mappings": [
+      {
+        "human_name_applicable": true,
+        "input": "一",
+        "location": "Unihan_Variants.txt: U+4E00 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "一"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "中",
+        "location": "Unihan_Variants.txt: U+4E2D has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "中"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "予",
+        "location": "Unihan_Variants.txt: U+4E88 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "予"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "云",
+        "location": "PDF physical page 4: 云－雲",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "雲"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "井",
+        "location": "Unihan_Variants.txt: U+4E95 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "井"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "何",
+        "location": "Unihan_Variants.txt: U+4F55 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "何"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "保",
+        "location": "Unihan_Variants.txt: U+4FDD has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "保"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "光",
+        "location": "Unihan_Variants.txt: U+5149 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "光"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "凤",
+        "location": "PDF physical page 4: 凤－鳳",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "鳳"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "出",
+        "location": "Unihan_Variants.txt: U+51FA kTraditionalVariant",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "出"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "刘",
+        "location": "PDF physical page 7: 刘－劉",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "劉"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "加",
+        "location": "Unihan_Variants.txt: U+52A0 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "加"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "哲",
+        "location": "Unihan_Variants.txt: U+54F2 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "哲"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "善",
+        "location": "Unihan_Variants.txt: U+5584 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "善"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "塙",
+        "location": "Unihan_Variants.txt: U+5859 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "塙"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "士",
+        "location": "Unihan_Variants.txt: U+58EB has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "士"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "天",
+        "location": "Unihan_Variants.txt: U+5929 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "天"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "夫",
+        "location": "Unihan_Variants.txt: U+592B has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "夫"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "奎",
+        "location": "Unihan_Variants.txt: U+594E has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "奎"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "实",
+        "location": "PDF physical page 13: 实－實",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "實"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "崔",
+        "location": "Unihan_Variants.txt: U+5D14 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "崔"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "川",
+        "location": "Unihan_Variants.txt: U+5DDD has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "川"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "帅",
+        "location": "PDF physical page 5: 帅－帥",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "帥"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "志",
+        "location": "Unihan_Variants.txt: U+5FD7 kTraditionalVariant",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "志"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "怀",
+        "location": "PDF physical page 10: 怀－懷",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "懷"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "怡",
+        "location": "Unihan_Variants.txt: U+6021 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "怡"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "才",
+        "location": "Unihan_Variants.txt: U+624D kTraditionalVariant",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "才"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "新",
+        "location": "Unihan_Variants.txt: U+65B0 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "新"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "时",
+        "location": "PDF physical page 9: 时－時",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "時"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "明",
+        "location": "Unihan_Variants.txt: U+660E has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "明"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "曹",
+        "location": "Unihan_Variants.txt: U+66F9 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "曹"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "李",
+        "location": "Unihan_Variants.txt: U+674E has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "李"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "林",
+        "location": "Unihan_Variants.txt: U+6797 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "林"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "染",
+        "location": "Unihan_Variants.txt: U+67D3 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "染"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "柱",
+        "location": "Unihan_Variants.txt: U+67F1 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "柱"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "根",
+        "location": "Unihan_Variants.txt: U+6839 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "根"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "棣",
+        "location": "Unihan_Variants.txt: U+68E3 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "棣"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "次",
+        "location": "Unihan_Variants.txt: U+6B21 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "次"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "欣",
+        "location": "Unihan_Variants.txt: U+6B23 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "欣"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "殷",
+        "location": "Unihan_Variants.txt: U+6BB7 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "殷"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "永",
+        "location": "Unihan_Variants.txt: U+6C38 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "永"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "泉",
+        "location": "Unihan_Variants.txt: U+6CC9 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "泉"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "源",
+        "location": "Unihan_Variants.txt: U+6E90 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "源"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "田",
+        "location": "Unihan_Variants.txt: U+7530 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "田"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "秀",
+        "location": "Unihan_Variants.txt: U+79C0 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "秀"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "端",
+        "location": "Unihan_Variants.txt: U+7AEF has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "端"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "笃",
+        "location": "PDF physical page 15: 笃－篤",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "篤"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "纳",
+        "location": "PDF physical page 10: 纳－納",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "納"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "英",
+        "location": "Unihan_Variants.txt: U+82F1 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "英"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "荣",
+        "location": "PDF physical page 14: 荣－榮",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "榮"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "衡",
+        "location": "Unihan_Variants.txt: U+8861 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "衡"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "許",
+        "location": "Unihan_Variants.txt: U+8A31 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "許"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "谷",
+        "location": "Unihan_Variants.txt: U+8C37 kTraditionalVariant",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "谷"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "贾",
+        "location": "PDF physical page 17: 贾－賈",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "賈"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "轶",
+        "location": "PDF physical page 14: 轶－軼",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "軼"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "郎",
+        "location": "Unihan_Variants.txt: U+90CE has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "郎"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "金",
+        "location": "Unihan_Variants.txt: U+91D1 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "金"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "陈",
+        "location": "PDF physical page 10: 陈－陳",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "陳"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "雄",
+        "location": "Unihan_Variants.txt: U+96C4 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "雄"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "马",
+        "location": "PDF physical page 4: 马－馬",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "馬"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "高",
+        "location": "Unihan_Variants.txt: U+9AD8 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "高"
+      }
+    ],
+    "source_lang": "zh-Hans",
+    "source_script": "Hans",
+    "target_region": "TW",
+    "target_script": "Hant",
+    "version": "primary-orthographic-v1"
+  },
+  "production": {
+    "content_sha256": "2b48d96f5a7a4e9f23848c28820f1b4b50b2cc0c2ca4d1168c07276a6360da1c",
+    "produced_at": "2026-10-08T17:33:39.182406+00:00",
+    "producer_id": "/root/restore_tw_twenty",
+    "producer_model": "GPT-6 (exact runtime variant unavailable)"
+  },
+  "status": "pending_independent_rule_approval"
+}

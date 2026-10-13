@@ -1,0 +1,49 @@
+[
+  {
+    "prod_id": 5158,
+    "url": "https://www.igorating.com/players/tokuji-matsumoto",
+    "reading": "まつもと とくじ",
+    "status": "captured"
+  },
+  {
+    "prod_id": 3778,
+    "url": "https://www.igorating.com/players/jiro-nakaoka",
+    "reading": "なかおか じろう",
+    "status": "captured"
+  },
+  {
+    "prod_id": 5413,
+    "url": "https://www.igorating.com/players/hideo-watanabe",
+    "reading": "わたなべ ひでお",
+    "status": "captured"
+  },
+  {
+    "prod_id": 4499,
+    "status": "failed",
+    "error": "(4499, 'https://www.igorating.com/players/masuo-yamazaki', 'original absent')"
+  },
+  {
+    "prod_id": 5877,
+    "url": "https://www.igorating.com/players/yoshihiko-nishigami",
+    "reading": "にしがみ よしひこ",
+    "status": "captured"
+  },
+  {
+    "prod_id": 3902,
+    "url": "https://www.igorating.com/players/kaoru-sato",
+    "reading": "さとう かおる",
+    "status": "captured"
+  },
+  {
+    "prod_id": 4587,
+    "url": "https://www.igorating.com/players/katsuhiko-hiroe",
+    "reading": "ひろえ かつひこ",
+    "status": "captured"
+  },
+  {
+    "prod_id": 6261,
+    "url": "https://www.igorating.com/players/akira-nabeshima",
+    "reading": "なべしま あきら",
+    "status": "captured"
+  }
+]

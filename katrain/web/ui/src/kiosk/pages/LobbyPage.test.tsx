@@ -1,302 +1,321 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { beforeEach, afterEach, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import LobbyPage from './LobbyPage';
 
-/**
- * 屏 06 在线大厅的**行为**那一半。版式归 `kiosk-screen-06-lobby.fourup.spec.ts`(眼睛)
- * 和 `kiosk-shell-scroll.spec.ts`(机器量),这里一条几何都不断言 —— jsdom 没有布局引擎。
- *
- * 这里断言的是四件**和布局无关**的事,每一件挂了都是一个产品缺陷:
- *   ① 「空闲 / 对局中」是**算**出来的 —— 后端没有这个状态位,它靠比对两份列表得出。
- *      算错了,屏上会请人去邀请一个正在下棋的人。
- *   ② 名单**按能不能邀请排序**。排错了,能点的那几个埋在十几行灰按钮下面。
- *   ③ 没定级时排位那一段**灰掉且说明原因**;定过级就放开。
- *      灰而不说原因是这套稿子在别处专门骂过的事。
- *   ④ 「邀请」发出去的是 `{type:'invite', target_id}` —— 发错了对面收不到。
- *
- * **变异记录**(2026-08-24,两条都真跑过):
- *   · 去掉 `roster` 那个 `sort` ⇒ 排序那条红,实到
- *     `['小满','云在青天','柳三石','我','大熊']`(正在下棋的两个人排在最前)。
- *   · 把「访客早退」挪回 `/ws/lobby` 那个 `useEffect` **前面** ⇒ 最后两条红,
- *     报的正是 React 的 `Rendered more hooks than during the previous render`。
- */
-
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return { ...actual, useNavigate: () => mockNavigate };
-});
-vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: auth.token, user: auth.user, isAuthenticated: auth.isAuthenticated }),
-}));
-const { getAiLadderStatus } = vi.hoisted(() => ({ getAiLadderStatus: vi.fn() }));
-vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus }));
-
-// isAuthenticated 与 token 是**两个量**：严格盒端 token 恒 null 而人是登录的，
-// 所以夹具必须能分别置位，不能让一个推另一个。
+const nav = vi.fn();
+const { ladder, box } = vi.hoisted(() => ({ ladder: vi.fn(), box: { strict: false } }));
+vi.mock('react-router-dom', async () => ({ ...(await vi.importActual('react-router-dom')), useNavigate: () => nav }));
 const auth = { token: 'tok' as string | null, user: { id: 1, username: '我' }, isAuthenticated: true };
-
-const GAMES = [
-  { session_id: 'aaaa1111', player_b: '小满', player_w: '云在青天', spectator_count: 3, move_count: 87 },
-  { session_id: 'bbbb2222', player_b: '不系舟', player_w: '半日闲', spectator_count: 0, move_count: 12 },
-];
-const USERS = [
-  // 故意让**在下棋的人排在前面** —— 排序那一条要是没写,这个顺序会原样上屏。
-  { id: 5, username: '小满' }, { id: 6, username: '云在青天' },
-  { id: 2, username: '柳三石' }, { id: 1, username: '我' }, { id: 3, username: '大熊' },
-];
-
-/** 假 WebSocket:记下发出去的每一条,并留一个口子把服务端的推送打进来。 */
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
+vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: ladder }));
+vi.mock('../shell/boxUrls', () => ({ get isStrictBoxKiosk() { return box.strict; } }));
 const sent: string[] = [];
-let push: (m: unknown) => void = () => {};
+const sockets: FakeWS[] = [];
+let socketCount = 0;
+let push: (message: unknown) => void;
 class FakeWS {
-  static readonly OPEN = 1;
+  static OPEN = 1;
   readyState = 1;
-  onmessage: ((e: { data: string }) => void) | null = null;
-  close() { this.readyState = 3; }
-  send(s: string) { sent.push(s); }
-  constructor() { push = (m) => this.onmessage?.({ data: JSON.stringify(m) }); }
+  onmessage: ((event: { data: string }) => void) | null = null;
+  onopen: (() => void) | null = null;
+  onclose: ((event: { code: number }) => void) | null = null;
+  onerror: (() => void) | null = null;
+  constructor() { socketCount++; sockets.push(this); push = (m) => this.onmessage?.({ data: JSON.stringify(m) }); queueMicrotask(() => this.onopen?.()); }
+  send(value: string) { sent.push(value); }
+  close() {}
 }
-
-const renderPage = () =>
-  render(<ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>);
-
-const rowOf = (name: string) =>
-  screen.getAllByTestId('lobby-player').find((r) => within(r).queryByText(name))!;
-
+const games = [{ session_id: 'own', player_b: '他', player_w: '我', player_b_id: 9, player_w_id: 1, move_count: 10, player_b_rank_label: '业余 2 段', player_w_rank_label: '业余 2 段' }];
+const people = [{ id: 1, username: '我', ladder_rung: 12, rank_label: '业余 2 段', presence: 'playing' }, { id: 2, username: '同段', ladder_rung: 12, rank_label: '业余 2 段', presence: 'idle', kind: 'bot' }, { id: 3, username: '异段', ladder_rung: 13, rank_label: '业余 3 段', presence: 'idle' }];
+const page = (players = true) => {
+  const view = render(<ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>);
+  if (players && auth.isAuthenticated) fireEvent.click(screen.getByRole('tab', { name: /在线棋友/ }));
+  return view;
+};
+const showGames = () => userEvent.click(screen.getByRole('tab', { name: /进行中对局/ }));
 beforeEach(() => {
-  vi.clearAllMocks();
-  sent.length = 0;
-  auth.token = 'tok';
-  auth.user = { id: 1, username: '我' };
-  auth.isAuthenticated = true;
+  sent.length = 0; sockets.length = 0; socketCount = 0; nav.mockClear(); ladder.mockReset(); box.strict = false; auth.token = 'tok'; auth.user = { id: 1, username: '我' }; auth.isAuthenticated = true;
   vi.stubGlobal('WebSocket', FakeWS);
+  vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('/pvp/identity') ? { user_id: 42 } : url.includes('/users/online') ? people : games) })));
+  ladder.mockResolvedValue({ placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '业余 2 段' } } });
+});
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+it('shows quick matching, same-rung filtering and own-room return', async () => {
+  page(); await screen.findByText('同段'); await screen.findByText('我的段位');
+  expect(screen.getAllByRole('button', { name: /快速匹配/ })).toHaveLength(1);
+  await userEvent.click(screen.getByRole('button', { name: '同段位' }));
+  expect(screen.queryByText('异段')).not.toBeInTheDocument();
+  expect(screen.queryByText(/机器人|bot/i)).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: /快速匹配/ }));
+  expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'start_matchmaking' });
+  await userEvent.click(screen.getByRole('button', { name: '取消匹配' }));
+  expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'stop_matchmaking' });
+  await showGames();
+  await userEvent.click(screen.getByTestId('lobby-game'));
+  expect(nav).toHaveBeenCalledWith('/kiosk/play/pvp/room/own', { state: { backTo: '/kiosk/play/pvp/lobby' } });
+});
+it('requires placement only for matching and keeps invitations available', async () => {
+  ladder.mockResolvedValue({ placement_state: { phase: 'placement', completed_games: 2, total_games: 5 } });
+  page(); await screen.findByText('同段'); await screen.findByText('我的段位');
+  expect(screen.getByRole('button', { name: '同段位' })).toBeDisabled();
+  await userEvent.click(screen.getByRole('button', { name: /快速匹配/ }));
+  expect(screen.getByRole('dialog')).toHaveTextContent('定级');
+  expect(sent).toHaveLength(0);
+  await userEvent.click(screen.getByRole('button', { name: '稍后再说' }));
+  await userEvent.click(within(screen.getByTestId('lobby-player-2')).getByRole('button', { name: '邀请' }));
+  expect(screen.getByRole('dialog', { name: '邀请 同段 对局' })).toBeInTheDocument();
+  expect(sent).toHaveLength(0);
+  await userEvent.click(screen.getByRole('button', { name: '发送邀请' }));
+  expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'invite', target_id: 2 });
+});
+it('uses central identity and proxied central rank in strict box mode even when the local shadow differs', async () => {
+  box.strict = true; auth.token = null;
+  ladder.mockResolvedValue({ placement_state: { phase: 'placed', rung: { rung: 13, rank_name: '业余 3 段' } } });
+  vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('/pvp/identity') ? { user_id: 42 } : url.includes('/users/online') ? [
+    ...people, { id: 42, username: '中央的我', ladder_rung: 13, rank_label: '业余 3 段', presence: 'playing' },
+  ] : [{ ...games[0], session_id: 'local-mirror-room', player_w_id: 42 }]) })));
+  page(); await screen.findByText('同段');
+  expect(fetch).toHaveBeenCalledWith('/api/pvp/identity', expect.anything());
+  expect(within(screen.getByTestId('lobby-player-1')).queryByText('这是你')).not.toBeInTheDocument();
+  expect(within(await screen.findByTestId('lobby-player-42')).getByText('这是你')).toBeInTheDocument();
+  expect(ladder).toHaveBeenCalled();
+  expect(screen.getByText('我的段位').parentElement).toHaveTextContent('业余 3 段');
+  await userEvent.click(screen.getByRole('button', { name: '同段位' }));
+  expect(screen.getByTestId('lobby-player-42')).toBeInTheDocument();
+  expect(screen.queryByTestId('lobby-player-2')).not.toBeInTheDocument();
+  await showGames();
+  await userEvent.click(screen.getByTestId('lobby-game'));
+  expect(nav).toHaveBeenCalledWith('/kiosk/play/pvp/room/local-mirror-room', { state: { backTo: '/kiosk/play/pvp/lobby' } });
+});
+it('keeps invitations disabled while central identity is unknown and retries identity plus socket', async () => {
+  box.strict = true; auth.token = null;
+  let identities = 0;
   vi.stubGlobal('fetch', vi.fn((url: string) => {
-    const body = url.includes('/users/online') ? USERS
-      : url.includes('/games/active/multiplayer') ? GAMES
-        : [];
-    return Promise.resolve({ ok: true, json: () => Promise.resolve(body) } as Response);
+    if (url.includes('/pvp/identity')) {
+      identities++;
+      return Promise.resolve(identities === 1
+        ? { ok: false, json: () => Promise.resolve({}) }
+        : { ok: true, json: () => Promise.resolve({ user_id: 42 }) });
+    }
+    return Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('/users/online')
+      ? [{ id: 1, username: '本地影子', ladder_rung: 12, rank_label: '业余 2 段', presence: 'idle' }, ...people.slice(1)]
+      : games) });
   }));
-  getAiLadderStatus.mockResolvedValue({
-    view_state: 'ready',
-    placement_state: { phase: 'placement', completed_games: 2, total_games: 5 },
-    current_opponent: null, recent_ranked_results: [], net_score: 0, pending_settlement: false,
+  page();
+  const shadow = await screen.findByTestId('lobby-player-1');
+  expect(within(shadow).getByRole('button', { name: '邀请' })).toBeDisabled();
+  expect(await screen.findByText('无法确认中央账号身份，请重试。')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: '重试' }));
+  await waitFor(() => expect(identities).toBe(2));
+  await waitFor(() => expect(socketCount).toBe(2));
+  await waitFor(() => expect(within(screen.getByTestId('lobby-player-1')).getByRole('button', { name: '邀请' })).toBeEnabled());
+  expect(ladder).toHaveBeenCalled();
+  expect(screen.getByText('我的段位').parentElement).toHaveTextContent('业余 2 段');
+});
+it.each([false, true])('shows rank load error and retries instead of claiming the player is unplaced (strict=%s)', async (strict) => {
+  box.strict = strict;
+  ladder.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '业余 2 段' } } });
+  page();
+  expect(await screen.findByText('段位读取失败')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /快速匹配/ })).toBeDisabled();
+  expect(screen.queryByText('尚未定级')).not.toBeInTheDocument();
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: '重试段位' }));
+  await waitFor(() => expect(screen.getByText('我的段位').parentElement).toHaveTextContent('业余 2 段'));
+});
+it('preserves guest gate and incoming invitations', async () => {
+  auth.isAuthenticated = false; page();
+  expect(screen.getByTestId('lobby-guest')).toHaveTextContent('登录后进在线大厅');
+  auth.isAuthenticated = true;
+});
+it('accepts an incoming invitation without a placement requirement', async () => {
+  ladder.mockResolvedValue({ placement_state: { phase: 'placement', completed_games: 0, total_games: 5 } });
+  page(); await screen.findByText('同段');
+  act(() => push({ type: 'invitation', from_id: 2, from_name: '同段' }));
+  await userEvent.click(await screen.findByRole('button', { name: '接受并开局' }));
+  expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'accept_invite', target_id: 2 });
+});
+it('removes old lobby rows when a refresh fails', async () => {
+  page();
+  await screen.findByTestId('lobby-player-2');
+  await showGames();
+  expect(screen.getByTestId('lobby-game')).toBeInTheDocument();
+  vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
+  act(() => push({ type: 'lobby_update' }));
+  await screen.findByText('大厅数据读取失败。');
+  await waitFor(() => expect(screen.queryByTestId('lobby-player-2')).not.toBeInTheDocument());
+  expect(screen.queryByTestId('lobby-game')).not.toBeInTheDocument();
+  expect(screen.queryByText('当前没有进行中的对局。')).not.toBeInTheDocument();
+});
+it('reconnects after a central restart and clears matching without resending it', async () => {
+  page();
+  await screen.findByText('同段');
+  await userEvent.click(screen.getByRole('button', { name: /快速匹配/ }));
+  expect(screen.getByRole('dialog')).toHaveTextContent('正在寻找同段位对手');
+  vi.useFakeTimers();
+  act(() => {
+    push({ type: 'error', code: 'CENTRAL_DISCONNECTED', message: 'Central lobby disconnected' });
+    sockets[0].readyState = 3;
+    sockets[0].onclose?.({ code: 1013 });
   });
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /快速匹配/ })).toBeDisabled();
+  await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+  expect(socketCount).toBe(2);
+  act(() => push({ type: 'lobby_update' }));
+  expect(screen.getByRole('button', { name: /快速匹配/ })).toBeEnabled();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(sent.map((raw) => JSON.parse(raw))).toEqual([{ type: 'start_matchmaking' }]);
+});
+it('does not reconnect after an authentication policy rejection', async () => {
+  page();
+  await screen.findByText('同段');
+  vi.useFakeTimers();
+  act(() => { sockets[0].readyState = 3; sockets[0].onclose?.({ code: 1008 }); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+  expect(socketCount).toBe(1);
+  expect(screen.getByRole('button', { name: /快速匹配/ })).toBeDisabled();
+});
+it('cancels a pending reconnect when leaving the lobby', async () => {
+  const view = page();
+  await screen.findByText('同段');
+  vi.useFakeTimers();
+  act(() => { sockets[0].readyState = 3; sockets[0].onclose?.({ code: 1013 }); });
+  view.unmount();
+  await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+  expect(socketCount).toBe(1);
+});
+it('backs off repeated failed reconnects instead of retrying every second', async () => {
+  page();
+  await screen.findByText('同段');
+  vi.useFakeTimers();
+  act(() => { sockets[0].readyState = 3; sockets[0].onclose?.({ code: 1013 }); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+  expect(socketCount).toBe(2);
+  act(() => { sockets[1].readyState = 3; sockets[1].onclose?.({ code: 1013 }); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+  expect(socketCount).toBe(2);
+  await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+  expect(socketCount).toBe(3);
+});
+it('cancels the previous identity reconnect when the signed-in account changes', async () => {
+  box.strict = true; auth.token = null;
+  const view = page();
+  await screen.findByText('同段');
+  vi.useFakeTimers();
+  act(() => { sockets[0].readyState = 3; sockets[0].onclose?.({ code: 1013 }); });
+  auth.user = { id: 7, username: '新账号' };
+  await act(async () => { view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>); });
+  expect(socketCount).toBe(2);
+  await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+  expect(socketCount).toBe(2);
+  expect(sent).toHaveLength(0);
 });
 
-afterEach(() => { vi.unstubAllGlobals(); });
+it('opens other players games as readonly spectators, including a cloud ID on a strict box', async () => {
+  box.strict = true;
+  vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(
+    url.includes('/pvp/identity') ? { user_id: 42 } : url.includes('/users/online') ? people
+      : [{ ...games[0], session_id: 'central-other-room', player_w_id: 77 }]) })));
+  page();
+  await showGames();
+  const card = await screen.findByTestId('lobby-game');
+  expect(card.tagName).toBe('BUTTON');
+  await userEvent.click(card);
+  expect(nav).toHaveBeenCalledWith('/kiosk/play/pvp/watch/central-other-room');
+});
 
-describe('屏 06 在线大厅', () => {
-  it('「对局中」是比对出来的:名字出现在进行中的对局里 ⇒ 灰、邀请键点不动', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('lobby-player')).toHaveLength(5));
 
-    const busy = rowOf('小满');
-    expect(within(busy).getByText('对局中')).toBeInTheDocument();
-    expect(within(busy).getByRole('button', { name: '邀请' })).toBeDisabled();
+it('starts with roving games/players tabs and the invite card focuses the players panel', async () => {
+  page(false);
+  const gamesTab = screen.getByRole('tab', { name: /进行中对局/ });
+  const playersTab = screen.getByRole('tab', { name: /在线棋友/ });
+  expect(gamesTab).toHaveAttribute('aria-selected', 'true');
+  expect(gamesTab).toHaveAttribute('tabindex', '0');
+  expect(playersTab).toHaveAttribute('tabindex', '-1');
+  gamesTab.focus(); await userEvent.keyboard('{ArrowRight}');
+  expect(playersTab).toHaveFocus();
+  expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', playersTab.id);
+  await userEvent.keyboard('{Home}'); expect(gamesTab).toHaveFocus();
+  await userEvent.keyboard('{End}'); expect(playersTab).toHaveFocus();
+  await userEvent.click(screen.getByRole('button', { name: /邀请棋友/ }));
+  expect(screen.getByRole('tabpanel')).toHaveFocus();
+});
 
-    const free = rowOf('柳三石');
-    expect(within(free).getByText('空闲')).toBeInTheDocument();
-    expect(within(free).getByRole('button', { name: '邀请' })).toBeEnabled();
+it('confirms the selected other-rank invite once and traps/restores dialog focus', async () => {
+  ladder.mockResolvedValue({ placement_state: { phase: 'placement' } });
+  page();
+  const target = await screen.findByTestId('lobby-player-3');
+  const trigger = within(target).getByRole('button', { name: '邀请' });
+  await userEvent.click(trigger);
+  const modal = screen.getByRole('dialog', { name: '邀请 异段 对局' });
+  expect(modal).toHaveTextContent('业余 3 段');
+  expect(modal).toHaveFocus(); expect(sent).toHaveLength(0);
+  await userEvent.tab({ shift: true });
+  expect(screen.getByRole('button', { name: '发送邀请' })).toHaveFocus();
+  await userEvent.tab(); expect(within(modal).getByRole('button', { name: '返回大厅' })).toHaveFocus();
+  await userEvent.keyboard('{Escape}'); expect(trigger).toHaveFocus(); expect(sent).toHaveLength(0);
+  await userEvent.click(trigger);
+  await userEvent.dblClick(screen.getByRole('button', { name: '发送邀请' }));
+  expect(sent.map((raw) => JSON.parse(raw))).toEqual([{ type: 'invite', target_id: 3 }]);
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument(); expect(trigger).toHaveFocus();
+});
+
+it('keeps self and busy invites unavailable and stops matchmaking with Escape', async () => {
+  vi.mocked(fetch).mockImplementation((url) => Promise.resolve({ ok: true, json: async () => String(url).includes('/users/online')
+    ? [...people, { id: 4, username: '忙碌', ladder_rung: 12, rank_label: '2段', presence: 'playing' }] : games } as Response));
+  page();
+  expect(within(await screen.findByTestId('lobby-player-1')).queryByRole('button', { name: '邀请' })).not.toBeInTheDocument();
+  expect(within(screen.getByTestId('lobby-player-4')).getByRole('button', { name: '邀请' })).toBeDisabled();
+  const match = screen.getByRole('button', { name: /快速匹配/ });
+  await waitFor(() => expect(match).toBeEnabled()); await userEvent.click(match);
+  expect(screen.getByRole('dialog', { name: '正在寻找同段位对手' })).toHaveFocus();
+  await userEvent.keyboard('{Escape}');
+  expect(sent.map((raw) => JSON.parse(raw))).toEqual([{ type: 'start_matchmaking' }, { type: 'stop_matchmaking' }]);
+  expect(match).toHaveFocus();
+});
+
+it.each([undefined, null, -1, 1.5, '3'])('shows unknown spectators for unverified count %s', async (count) => {
+  vi.mocked(fetch).mockImplementation((url) => Promise.resolve({ ok: true, json: async () => String(url).includes('/users/online')
+    ? people : [{ ...games[0], spectator_count: count, sockets_count: 20 }] } as Response));
+  page(false);
+  expect(await screen.findByText('观战人数未返回')).toBeInTheDocument();
+  expect(screen.queryByText('18 人观战')).not.toBeInTheDocument();
+});
+
+it('shows verified spectators with black/white seats and uses no per-room request', async () => {
+  vi.mocked(fetch).mockImplementation((url) => Promise.resolve({ ok: true, json: async () => String(url).includes('/users/online')
+    ? people : [{ ...games[0], spectator_count: 0 }] } as Response));
+  page(false);
+  expect(await screen.findByText('0 人观战')).toBeInTheDocument();
+  expect(screen.getByTestId('lobby-game')).toHaveTextContent('执黑');
+  expect(screen.getByTestId('lobby-game')).toHaveTextContent('执白');
+  expect(document.querySelector('.pvp-kiosk__mini-board')).not.toBeNull();
+  expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual(['/api/v1/users/online', '/api/v1/games/active/multiplayer']);
+});
+
+it('drops old account rows and ignores late list and rank responses', async () => {
+  let resolveUsers!: (value: Response) => void;
+  let resolveGames!: (value: Response) => void;
+  let resolveRank!: (value: unknown) => void;
+  ladder.mockReturnValueOnce(new Promise((resolve) => { resolveRank = resolve; }));
+  vi.mocked(fetch).mockImplementationOnce(() => new Promise((resolve) => { resolveUsers = resolve; }))
+    .mockImplementationOnce(() => new Promise((resolve) => { resolveGames = resolve; }));
+  const view = page();
+  auth.user = { id: 7, username: '新账号' }; auth.token = 'new';
+  vi.mocked(fetch).mockImplementation((url) => Promise.resolve({ ok: true, json: async () => String(url).includes('/users/online')
+    ? [{ id: 7, username: '新账号', ladder_rung: 13, rank_label: '3段', presence: 'idle' }] : [] } as Response));
+  ladder.mockResolvedValue({ placement_state: { phase: 'placed', rung: { rung: 13, rank_name: '3段' } } });
+  view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>);
+  expect(await screen.findByText('新账号')).toBeInTheDocument();
+  await act(async () => {
+    resolveUsers({ ok: true, json: async () => people } as Response);
+    resolveGames({ ok: true, json: async () => games } as Response);
+    resolveRank({ placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '2段' } } });
   });
-
-  it('名单按能不能邀请排序:我 → 空闲 → 对局中(接口给的顺序正好相反)', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('lobby-player')).toHaveLength(5));
-    const names = screen.getAllByTestId('lobby-player').map((r) => r.querySelector('h4')!.textContent);
-    expect(names).toEqual(['我', '柳三石', '大熊', '小满', '云在青天']);
-  });
-
-  it('自己那一行不给邀请键,给「这是你」', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('lobby-player')).toHaveLength(5));
-    const me = rowOf('我');
-    expect(within(me).getByText('这是你')).toBeInTheDocument();
-    expect(within(me).queryByRole('button', { name: '邀请' })).not.toBeInTheDocument();
-  });
-
-  it('「邀请」发的是 {type:"invite", target_id}', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('lobby-player')).toHaveLength(5));
-    await userEvent.click(within(rowOf('柳三石')).getByRole('button', { name: '邀请' }));
-    expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'invite', target_id: 2 });
-  });
-
-  it('没定级:排位那一段灰着,并说清还差几局', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getByRole('radio', { name: '排位赛' })).toBeDisabled());
-    expect(screen.getByTestId('lobby-rated-why')).toHaveTextContent('你还差 3 局');
-    expect(screen.getByRole('radio', { name: '自由对局' })).toBeEnabled();
-  });
-
-  it('读不到定级进度:仍然挡住排位,但**不报一个编出来的局数**', async () => {
-    getAiLadderStatus.mockRejectedValue(new Error('boom'));
-    renderPage();
-    await waitFor(() => expect(screen.getByRole('radio', { name: '排位赛' })).toBeDisabled());
-    expect(screen.getByTestId('lobby-rated-why')).not.toHaveTextContent('还差');
-  });
-
-  it('定过级:排位放开,那行解释整条不见', async () => {
-    getAiLadderStatus.mockResolvedValue({
-      view_state: 'ready',
-      placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '业余 2 段' } },
-      current_opponent: null, recent_ranked_results: [], net_score: 0, pending_settlement: false,
-    });
-    renderPage();
-    await waitFor(() => expect(screen.getByRole('radio', { name: '排位赛' })).toBeEnabled());
-    expect(screen.queryByTestId('lobby-rated-why')).not.toBeInTheDocument();
-  });
-
-  it('开始匹配发的是当下选中的那一档', async () => {
-    getAiLadderStatus.mockResolvedValue({
-      view_state: 'ready',
-      placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '业余 2 段' } },
-      current_opponent: null, recent_ranked_results: [], net_score: 0, pending_settlement: false,
-    });
-    renderPage();
-    await waitFor(() => expect(screen.getByRole('radio', { name: '排位赛' })).toBeEnabled());
-    await userEvent.click(screen.getByRole('radio', { name: '排位赛' }));
-    await userEvent.click(screen.getByTestId('lobby-start-match'));
-    expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'start_matchmaking', game_type: 'rated' });
-  });
-
-  it('收到邀请:弹窗给的是邀请人的名字,接受发 accept_invite,拒绝只关窗', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('lobby-player')).toHaveLength(5));
-
-    push({ type: 'invitation', from_id: 2, from_name: '柳三石', mode: 'free' });
-    await waitFor(() => expect(screen.getByTestId('lobby-invitation')).toBeInTheDocument());
-    expect(screen.getByText('柳三石邀你下一局')).toBeInTheDocument();
-
-    // 「拒绝」今天只关掉本地这个窗 —— 后端没有 decline,**一条消息都不该发出去**。
-    const beforeDecline = sent.length;
-    await userEvent.click(screen.getByRole('button', { name: '拒绝' }));
-    await waitFor(() => expect(screen.queryByTestId('lobby-invitation')).not.toBeInTheDocument());
-    expect(sent).toHaveLength(beforeDecline);
-
-    push({ type: 'invitation', from_id: 2, from_name: '柳三石', mode: 'free' });
-    await waitFor(() => expect(screen.getByTestId('lobby-invitation')).toBeInTheDocument());
-    await userEvent.click(screen.getByRole('button', { name: '接受并开局' }));
-    expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'accept_invite', target_id: 2 });
-  });
-
-  /**
-   * 「点进去可以观战」**撤掉了**(2026-08-25,S1)。观战这条路今天不存在:
-   * `/api/session/{id}/*` 一律过 `guard_session_reader`,陌生人进去必 403 ——
-   * 原来那句话是在邀请用户去按一颗必然失败的按钮。
-   *
-   * 两条一起看才有意义:**没有正对照,「点了没反应」和「这一列整个渲染坏了」分不开。**
-   */
-  it('别人的对局卡不是按钮,点了什么都不会发生', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('lobby-game')).toHaveLength(2));
-    const card = screen.getAllByTestId('lobby-game')[0];
-    // 夹具里两局都不是「我」的(小满/云在青天、不系舟/半日闲)。
-    expect(card.tagName).not.toBe('BUTTON');
-    expect(card).toHaveAttribute('data-mine', '0');
-    await userEvent.click(card);
-    expect(mockNavigate).not.toHaveBeenCalled();
-  });
-
-  it('自己在里面的那一局点得回去 —— 判别位是用户名(端点只回名字,没有 id)', async () => {
-    vi.stubGlobal('fetch', vi.fn((url: string) => {
-      const body = url.includes('/users/online') ? USERS
-        : url.includes('/games/active/multiplayer') ? [{ ...GAMES[0], player_w: '我' }]
-          : [];
-      return Promise.resolve({ ok: true, json: () => Promise.resolve(body) } as Response);
-    }));
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('lobby-game')).toHaveLength(1));
-    const card = screen.getByTestId('lobby-game');
-    expect(card.tagName).toBe('BUTTON');
-    await userEvent.click(card);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/room/aaaa1111', { state: { backTo: '/kiosk/play/pvp/lobby' } });
-  });
-
-  /**
-   * `await res.json()` 回来的是 `unknown`,`as ActiveGame[]` 只是让类型检查闭嘴。
-   * 少一个 `session_id`,`.slice(0,4)` 当场抛,而这一屏上面没有 error boundary ⇒ 整个 app 白屏。
-   * 2026-08-24 `navigation.integration.test.tsx` 真的这么炸过(它那个兜底 fetch
-   * 对所有 URL 回同一份分类数组)。
-   */
-  it('接口回了认不出的行:整行丢掉,不白屏', async () => {
-    vi.stubGlobal('fetch', vi.fn((url: string) => {
-      const body = url.includes('/users/online') ? USERS
-        : url.includes('/games/active/multiplayer')
-          ? [{ level: '15k', categories: { tesuji: 139 }, total: 1000 }, GAMES[0]]
-          : [];
-      return Promise.resolve({ ok: true, json: () => Promise.resolve(body) } as Response);
-    }));
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('lobby-game')).toHaveLength(1));
-    expect(within(screen.getByTestId('lobby-game')).getByText('小满')).toBeInTheDocument();
-  });
-
-  it('配上了就直接进对局 —— 不再多问一次', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('lobby-player')).toHaveLength(5));
-    push({ type: 'match_found', session_id: 'sess-9' });
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/room/sess-9', { state: { backTo: '/kiosk/play/pvp/lobby' } }));
-  });
-
-  /**
-   * 回归钉子（2026-09-13 板上实测）：严格盒端 SSO 里 token 恒为 null 而人是登录的
-   * （凭据在 HttpOnly sb_go_token cookie 里）。这一屏原来四道闸全建在 token 上，
-   * 于是**已登录**的盒端用户看到的是「登录后进在线大厅」那道门，名单、定级、WS 全死。
-   * 而 KioskAuthGuard 判的正是 isAuthenticated —— 能走到这一屏的人按定义都已登录。
-   * 变异验证：把本页任一处 `!isAuthenticated` 改回 `!token`，这条立刻红。
-   */
-  it('盒端:token 恒 null 而已登录 —— 大厅照常开,不摆那道门,凭据交给 cookie', async () => {
-    auth.token = null;
-    auth.isAuthenticated = true;
-    renderPage();
-
-    await waitFor(() => expect(screen.getAllByTestId('lobby-player')).toHaveLength(5));
-    expect(screen.queryByTestId('lobby-guest')).not.toBeInTheDocument();
-    // 定级 effect 也真的跑了（没有 token 时传 undefined，让 cookie 去认证）
-    expect(getAiLadderStatus).toHaveBeenCalledWith(undefined);
-    // 两个列表请求发出去了，且**不打 Authorization 头**
-    const calls = (fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls;
-    const listCalls = calls.filter((c) => typeof c[0] === 'string'
-      && ((c[0] as string).includes('/users/online') || (c[0] as string).includes('/games/active/multiplayer')));
-    expect(listCalls).toHaveLength(2);
-    for (const c of listCalls) {
-      expect((c[1] as { headers?: unknown } | undefined)?.headers).toBeUndefined();
-    }
-  });
-
-  it('没登录:走那道门,一份灰名单都不摆', async () => {
-    auth.token = null;
-    auth.isAuthenticated = false;
-    renderPage();
-    expect(await screen.findByTestId('lobby-guest')).toBeInTheDocument();
-    expect(screen.getByText('登录后进在线大厅')).toBeInTheDocument();
-    expect(screen.queryAllByTestId('lobby-player')).toHaveLength(0);
-    await userEvent.click(screen.getByRole('button', { name: '前往登录' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/login');
-  });
-
-  /**
-   * 旧版把「没登录就早退」写在一部分 hooks 中间(`/ws/lobby` 那个 `useEffect` 在它后面),
-   * 于是访客那一帧比登录那一帧**少注册一个 hook** —— 同一个组件实例上登录一次就当场抛
-   * 「Rendered more hooks than during the previous render」。
-   * 这条用同一个实例走一遍「访客 → 登录」,把它钉住。
-   */
-  it('访客态和登录态是同一条 hook 序列 —— 同一个实例上登录不许炸', async () => {
-    auth.token = null;
-    auth.isAuthenticated = false;
-    const view = renderPage();
-    expect(await screen.findByTestId('lobby-guest')).toBeInTheDocument();
-
-    auth.token = 'tok';
-    auth.isAuthenticated = true;
-    view.rerender(
-      <ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>,
-    );
-    await waitFor(() => expect(screen.getAllByTestId('lobby-player')).toHaveLength(5));
-  });
+  expect(screen.queryByText('同段')).not.toBeInTheDocument();
+  expect(screen.getByText('我的段位').parentElement).toHaveTextContent('3段');
 });

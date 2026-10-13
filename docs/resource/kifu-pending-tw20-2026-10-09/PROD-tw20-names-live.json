@@ -1,0 +1,187 @@
+{
+  "environment": "PROD",
+  "batch_id": 588,
+  "observed_at": "2026-10-08T18:39:50.685948+00:00",
+  "rows": [
+    {
+      "owner_id": 3906,
+      "lang": "tw",
+      "display_name": "何天予",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64009
+    },
+    {
+      "owner_id": 3993,
+      "lang": "tw",
+      "display_name": "出雲榮次",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64002
+    },
+    {
+      "owner_id": 4023,
+      "lang": "tw",
+      "display_name": "劉棣懷",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64011
+    },
+    {
+      "owner_id": 4552,
+      "lang": "tw",
+      "display_name": "崔殷奎",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64008
+    },
+    {
+      "owner_id": 4572,
+      "lang": "tw",
+      "display_name": "川端篤士",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64012
+    },
+    {
+      "owner_id": 4801,
+      "lang": "tw",
+      "display_name": "曹志林",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64014
+    },
+    {
+      "owner_id": 5040,
+      "lang": "tw",
+      "display_name": "李柱衡",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64013
+    },
+    {
+      "owner_id": 5211,
+      "lang": "tw",
+      "display_name": "染谷一雄",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64001
+    },
+    {
+      "owner_id": 5365,
+      "lang": "tw",
+      "display_name": "泉谷實",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64000
+    },
+    {
+      "owner_id": 5581,
+      "lang": "tw",
+      "display_name": "田永善",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64005
+    },
+    {
+      "owner_id": 5893,
+      "lang": "tw",
+      "display_name": "許才源",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64007
+    },
+    {
+      "owner_id": 5933,
+      "lang": "tw",
+      "display_name": "賈欣怡",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64010
+    },
+    {
+      "owner_id": 6215,
+      "lang": "tw",
+      "display_name": "金秀英",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64015
+    },
+    {
+      "owner_id": 6376,
+      "lang": "tw",
+      "display_name": "陳軼哲",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64006
+    },
+    {
+      "owner_id": 6447,
+      "lang": "tw",
+      "display_name": "馬帥",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64004
+    },
+    {
+      "owner_id": 6458,
+      "lang": "tw",
+      "display_name": "高光明",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64016
+    },
+    {
+      "owner_id": 6713,
+      "lang": "tw",
+      "display_name": "中根鳳次郎",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 64003
+    },
+    {
+      "owner_id": 6752,
+      "lang": "tw",
+      "display_name": "塙保時",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 63997
+    },
+    {
+      "owner_id": 6765,
+      "lang": "tw",
+      "display_name": "加納一夫",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 63998
+    },
+    {
+      "owner_id": 6768,
+      "lang": "tw",
+      "display_name": "金井新一",
+      "status": "verified",
+      "reference_url": null,
+      "decision_kind": "generated",
+      "evidence_id": 63999
+    }
+  ]
+}

@@ -5539,10 +5539,10 @@ def run_web():
     )
     parser.add_argument(
         "--vision-auto-exposure",
-        choices=["software", "off"],
+        choices=["software", "hardware", "off"],
         default=None,
-        help="Software AE: drive board-region median brightness into the target band by "
-        "adjusting exposure at runtime (default: software; advisory-only on macOS).",
+        help="Runtime exposure control: native camera AE, software AE, or off "
+        "(default: software; software AE is advisory-only on macOS).",
     )
     parser.add_argument(
         "--vision-ae-target",

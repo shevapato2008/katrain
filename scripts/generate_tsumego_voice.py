@@ -21,6 +21,12 @@ LINES = {
     "capture_remove": "请提走被吃的棋子",
     "stone_offcenter": "棋子没放正，请摆正后继续。",
     "suspected_move": "检测到疑似落子，请在屏幕上确认。",
+    "calibration_move_hand": "请移开手，保持棋盘上方无遮挡。",
+    "calibration_running": "正在标定，请不要遮挡棋盘。",
+    "calibration_obstructed": "检测到遮挡，请移开手。",
+    "calibration_too_bright": "光线太亮，请拉上窗帘，避开直射光。",
+    "calibration_too_dark": "光线太暗，请打开室内灯。",
+    "calibration_done": "棋盘标定完成。",
 }
 
 

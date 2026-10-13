@@ -119,7 +119,7 @@ class _VisionWorkerLoop:
             height=config.get("camera_height", 720),
             warmup_seconds=config.get("camera_warmup_seconds", 2.0),
         )
-        self._motion_filter = MotionFilter()
+        self._motion_filter = MotionFilter(pixel_diff_threshold=13, illumination_invariant=True)
         self._motion_mask_cache = MotionRoiMaskCache()
         self._last_motion_log: float | None = None
         self._last_motion_at: float | None = None

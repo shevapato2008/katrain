@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -24,13 +24,17 @@ DEFAULT_GEOMETRY_PATH = Path("~/.katrain/geometry_lock.npz").expanduser()
 # the JPEG encode (backend) and decode (kiosk chromium) so the flash loop and progress
 # counter stay responsive (the "卡在 N/13" freeze); the preview returns to 5fps afterwards.
 _ACTIVE_CALIBRATION_PHASES = frozenset(
-    {"waiting_empty", "dark_reference", "flashing_corners", "verifying", "building_baseline"}
+    {"waiting_empty", "waiting_stable", "converging_exposure", "dark_reference",
+     "flashing_corners", "verifying", "building_baseline", "obstructed",
+     "lighting_paused", "lighting_rechecking"}
 )
 _STREAM_INTERVAL_ACTIVE_S = 0.5
 _STREAM_INTERVAL_IDLE_S = 0.2
 
 
 def _stream_interval_s(phase: str) -> float:
+    if phase == "converging_exposure":
+        return _STREAM_INTERVAL_IDLE_S
     return _STREAM_INTERVAL_ACTIVE_S if phase in _ACTIVE_CALIBRATION_PHASES else _STREAM_INTERVAL_IDLE_S
 
 
@@ -136,6 +140,17 @@ async def geometry_cancel(request: Request):
     return calibration.status()
 
 
+@router.post("/recheck-lighting")
+async def geometry_recheck_lighting(request: Request):
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is None:
+        raise HTTPException(status_code=404, detail="LED geometry calibration not enabled")
+    try:
+        return calibration.recheck_lighting()
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
 @router.post("/confirm-existing")
 async def geometry_confirm_existing(request: Request):
     calibration = getattr(request.app.state, "geometry_calibration", None)
@@ -166,6 +181,48 @@ async def geometry_relocate(request: Request):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+def _with_vision_capabilities(request: Request, result: dict) -> dict:
+    capabilities = result.setdefault("capabilities", {})
+    vision = getattr(request.app.state, "vision", None)
+    try:
+        if vision is None:
+            raise RuntimeError("vision unavailable")
+        vision.refresh_status()
+        capabilities.update(
+            model_ready=bool(vision._latest_status.model_ready),
+            recognition_ready=bool(vision._latest_status.recognition_ready),
+        )
+    except Exception:
+        capabilities.update(model_ready=False, recognition_ready=False)
+    return result
+
+
+@router.post("/preflight")
+async def geometry_preflight(request: Request):
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is None:
+        raise HTTPException(status_code=404, detail="geometry calibration not enabled")
+    from katrain.web.core.geometry_calibration_service import CalibrationBusy
+
+    try:
+        result = await asyncio.to_thread(calibration.preflight)
+    except CalibrationBusy as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    result["status"] = _with_vision_capabilities(request, result["status"])
+    capabilities = result["status"]["capabilities"]
+    if not all(capabilities.get(key) is True for key in ("camera_ready", "model_ready", "recognition_ready")):
+        result["ready"] = False
+        result["reason"] = result.get("reason") or "recognition_unavailable"
+    if (
+        result["status"].get("phase") != "ready"
+        or result["status"].get("locked") is not True
+        or result["status"].get("session_calibrated") is not True
+    ):
+        result["ready"] = False
+        result["reason"] = result.get("reason") or "geometry_required"
+    return result
+
+
 @router.get("/stream")
 async def geometry_stream(request: Request, scale: int = 1):
     capture = _get_capture(request)
@@ -182,6 +239,37 @@ async def geometry_stream(request: Request, scale: int = 1):
             await asyncio.sleep(_stream_interval_s(_calibration_phase(request)))
 
     return StreamingResponse(generate(), media_type="multipart/x-mixed-replace;boundary=frame")
+
+
+@router.get("/snapshot")
+async def geometry_snapshot(request: Request, view: str = "raw", scale: int = 1, revision: int | None = None):
+    """Serve one fresh frame so the kiosk can pull without an MJPEG display queue."""
+    capture = _get_capture(request)
+    if view not in {"raw", "warped"}:
+        raise HTTPException(status_code=400, detail="invalid_view")
+    lock = None
+    if view == "warped":
+        lock, phase, current_revision = _geometry_snapshot(request)
+        if lock is None or phase in _ACTIVE_CALIBRATION_PHASES or (
+            revision is not None and revision != current_revision
+        ):
+            raise HTTPException(status_code=409, detail="geometry_not_available")
+
+    def encode_latest() -> bytes | None:
+        frame = capture.read_frame()
+        if frame is None:
+            return None
+        if lock is not None:
+            return _encode_warped_frame(frame, lock, scale)
+        import cv2
+
+        ok, jpeg = cv2.imencode(".jpg", _downscale(frame, scale), [cv2.IMWRITE_JPEG_QUALITY, 65])
+        return jpeg.tobytes() if ok else None
+
+    jpeg = await asyncio.to_thread(encode_latest)
+    if jpeg is None:
+        raise HTTPException(status_code=503, detail="camera_frame_not_available")
+    return Response(jpeg, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
 @router.get("/layout")
@@ -325,23 +413,15 @@ async def geometry_lock(request: Request):
 async def geometry_status(request: Request):
     calibration = getattr(request.app.state, "geometry_calibration", None)
     if calibration is not None:
-        result = calibration.status()
-        capabilities = result.setdefault("capabilities", {})
-        vision = getattr(request.app.state, "vision", None)
-        if vision is not None:
-            vision.refresh_status()
-            capabilities.update(
-                model_ready=bool(vision._latest_status.model_ready),
-                recognition_ready=bool(vision._latest_status.recognition_ready),
-            )
-        else:
-            capabilities.update(model_ready=False, recognition_ready=False)
-        return result
+        return _with_vision_capabilities(request, calibration.status())
     lock = getattr(request.app.state, "geometry", None)
+    led = getattr(request.app.state, "led", None)
+    capabilities = {"led_ready": led.is_board_connected() if led is not None else None}
     if lock is None:
-        return {"locked": False}
+        return {"locked": False, "capabilities": capabilities}
     return {
         "locked": True,
+        "capabilities": capabilities,
         "confidence": getattr(lock, "confidence", None),
         "out_size": getattr(lock, "out_size", None),
     }

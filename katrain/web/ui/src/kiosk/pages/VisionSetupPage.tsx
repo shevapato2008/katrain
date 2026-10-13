@@ -20,7 +20,7 @@ const VisionSetupPage = () => {
       backLabel={fromSettings ? t('vision:back_settings', '设置') : t('Back', '返回')}
       onBack={back}
       title={t('vision:calibrate_title', '棋盘标定')}
-      sub={t('vision:calibrate_sub', '先把棋盘清空 · 四角 + 九星共 13 个定位点')}
+      sub={t('vision:calibrate_sub', '先把棋盘清空 · 四角和天元共 5 个定位点')}
     />
   );
 };

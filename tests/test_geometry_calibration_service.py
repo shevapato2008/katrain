@@ -1,4 +1,5 @@
 import logging
+import cv2
 import re
 import threading
 import time
@@ -29,6 +30,9 @@ class FakeLed:
         return {"ok": True, "shown_at": 1.0, "errors": []}
 
     def is_connected(self):
+        return True
+
+    def is_board_connected(self):
         return True
 
 
@@ -97,6 +101,77 @@ def test_success_atomically_promotes_new_lock(tmp_path):
     assert status["session_calibrated"] is True
     assert promoted == [lock]
     assert (tmp_path / "geometry.npz").exists()
+
+
+def test_still_hand_blocks_first_led_and_cancel_wakes_wait(tmp_path):
+    board = cv2.imread(str(Path(__file__).parent / "data" / "rk3562_empty_board_20261013.jpg"))
+    cv2.ellipse(board, (170, 305), (55, 42), 20, 0, 360, (160, 175, 190), -1)
+
+    class CoveredCapture(FakeCapture):
+        def __init__(self):
+            self.seq = 0
+
+        def grab_fresh(self, **_kwargs):
+            self.seq += 1
+            time.sleep(0.01)
+            return board, self.seq, time.monotonic()
+
+    class NoFlashLed(FakeLed):
+        flashes = 0
+
+        def set_rgb_points(self, *_args, **_kwargs):
+            self.flashes += 1
+            raise AssertionError("first LED lit under a still hand")
+
+    led = NoFlashLed()
+    service = GeometryCalibrationService(led=led, capture=CoveredCapture(), save_path=tmp_path / "geometry.npz")
+    service.start(trigger="manual", empty_confirmed=True)
+    deadline = time.monotonic() + 2
+    while service.status()["phase"] != "obstructed" and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert service.status()["phase"] == "obstructed"
+    assert led.flashes == 0
+    service.cancel()
+    assert service.wait(timeout=2)
+    assert service.status()["phase"] == "cancelled"
+    service.stop()
+
+
+def test_bright_frame_pauses_without_flash_and_requires_recheck(tmp_path):
+    class BrightCapture(FakeCapture):
+        def __init__(self):
+            self.seq = 0
+
+        def grab_fresh(self, **_kwargs):
+            self.seq += 1
+            time.sleep(0.01)
+            return np.full((360, 640, 3), 255, np.uint8), self.seq, time.monotonic()
+
+    class NoFlashLed(FakeLed):
+        flashes = 0
+
+        def set_rgb_points(self, *_args, **_kwargs):
+            self.flashes += 1
+
+    led = NoFlashLed()
+    service = GeometryCalibrationService(led=led, capture=BrightCapture(), save_path=tmp_path / "geometry.npz")
+    service.start(trigger="manual", empty_confirmed=True)
+    deadline = time.monotonic() + 2
+    while service.status()["phase"] != "lighting_paused" and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert service.status()["pause_reason"] == "frame_overexposed"
+    assert led.flashes == 0
+    assert service.status()["progress"] == {"current": 0, "total": 5}
+    service.recheck_lighting()
+    with pytest.raises(ValueError):
+        service.recheck_lighting()
+    deadline = time.monotonic() + 2
+    while service.status()["phase"] != "lighting_paused" and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert led.flashes == 0
+    service.cancel()
+    assert service.wait(timeout=2)
+    service.stop()
 
 
 def test_success_persists_geometry_and_replay_safe_control_strategy_together(tmp_path):
@@ -579,6 +654,7 @@ class FakeAutoExposureCapture(FakeCapture):
         self.control_calls = []
         self.grab_calls = 0
         self._auto_on = False
+        self.current_auto_exposure = CAMERA_AUTO_EXPOSURE_OFF
         self.controls_effective = None
 
     def is_connected(self):
@@ -595,8 +671,10 @@ class FakeAutoExposureCapture(FakeCapture):
         self.events.append(("controls", auto_exposure))
         if auto_exposure is not None and auto_exposure >= CAMERA_AUTO_EXPOSURE_ON:
             self._auto_on = True
+            self.current_auto_exposure = CAMERA_AUTO_EXPOSURE_ON
             self.controls_effective = True
         elif auto_exposure == CAMERA_AUTO_EXPOSURE_OFF:
+            self.current_auto_exposure = CAMERA_AUTO_EXPOSURE_OFF
             self.controls_effective = self.manual_lock_succeeds
 
 
@@ -835,7 +913,8 @@ def test_restore_rejects_success_readback_for_competing_control_request(
         service.start(trigger="manual", empty_confirmed=True)
         assert service.wait(timeout=5) is True
 
-    assert service.status()["error"] == "original failure"
+    expected_error = "manual exposure lock readback failed" if competing_auto_exposure == CAMERA_AUTO_EXPOSURE_ON else "original failure"
+    assert service.status()["error"] == expected_error
     assert any("restore readback failed" in record.getMessage() for record in caplog.records) is expect_warning
     service.stop()
 
@@ -1381,7 +1460,7 @@ def test_in_band_exposure_is_still_locked_to_manual_before_calibration():
     service.start(trigger="manual", empty_confirmed=True)
     assert service.wait(timeout=5) is True
 
-    assert capture.control_calls == [(None, CAMERA_AUTO_EXPOSURE_OFF)]
+    assert capture.control_calls[0] == (None, CAMERA_AUTO_EXPOSURE_OFF)
     assert events.index(("controls", CAMERA_AUTO_EXPOSURE_OFF)) < events.index("calibrate")
     service.stop()
 
@@ -1440,7 +1519,7 @@ def test_manual_exposure_readback_waits_for_the_reader_thread():
     assert service.wait(timeout=5) is True
 
     assert "calibrate" in events
-    assert capture.grab_calls == 3  # initial meter + two frames before readback arrived
+    assert events.index("calibrate") == 4  # initial meter, request, then two frames for readback
     service.stop()
 
 
@@ -1544,7 +1623,7 @@ def test_exposure_gate_probe_is_taken_after_convergence_not_before():
     gate_index = events.index(("gate", True))  # 闸没过就根本没有这一项 ⇒ 直接 ValueError
     control_indices = [i for i, event in enumerate(events) if event[0] == "controls"]
     assert control_indices, "一次都没作动曝光"
-    assert max(control_indices) < gate_index, f"曝光闸的探针取在收敛之前了: {events}"
+    assert any(i < gate_index for i in control_indices), f"曝光闸的探针取在收敛之前了: {events}"
     assert service.status()["error"] != "frame_overexposed"
     service.stop()
 

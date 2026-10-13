@@ -23,11 +23,15 @@ interface GeometryContextValue {
   startCalibration: (trigger: 'auto' | 'manual') => Promise<void>;
   confirmExisting: () => Promise<void>;
   cancelCalibration: () => Promise<void>;
+  recheckLighting: () => Promise<void>;
   relocate: () => Promise<void>;
 }
 
 const GeometryContext = createContext<GeometryContextValue | null>(null);
-const ACTIVE: GeometryPhase[] = ['waiting_empty', 'dark_reference', 'flashing_corners', 'verifying', 'building_baseline'];
+const ACTIVE: GeometryPhase[] = [
+  'waiting_empty', 'waiting_stable', 'converging_exposure', 'dark_reference', 'flashing_corners', 'verifying',
+  'building_baseline', 'obstructed', 'lighting_paused', 'lighting_rechecking',
+];
 
 export const GeometryProvider = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<GeometryStatus>(DEFAULT_STATUS);
@@ -56,6 +60,10 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
     setStatus(await GeometryAPI.cancel());
   }, []);
 
+  const recheckLighting = useCallback(async () => {
+    setStatus(await GeometryAPI.recheckLighting());
+  }, []);
+
   const confirmExisting = useCallback(async () => {
     setStatus(await GeometryAPI.confirmExisting());
   }, []);
@@ -79,7 +87,7 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
   }, [refresh, status.phase]);
 
   return (
-    <GeometryContext.Provider value={{ status, loaded, refresh, startCalibration, confirmExisting, cancelCalibration, relocate }}>
+    <GeometryContext.Provider value={{ status, loaded, refresh, startCalibration, confirmExisting, cancelCalibration, recheckLighting, relocate }}>
       {children}
     </GeometryContext.Provider>
   );

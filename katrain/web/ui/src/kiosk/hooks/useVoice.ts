@@ -15,7 +15,13 @@ export type VoiceName =
   | 'wrong_remove'
   | 'capture_remove'
   | 'stone_offcenter'
-  | 'suspected_move';
+  | 'suspected_move'
+  | 'calibration_move_hand'
+  | 'calibration_running'
+  | 'calibration_obstructed'
+  | 'calibration_too_bright'
+  | 'calibration_too_dark'
+  | 'calibration_done';
 
 export function useVoice() {
   // Only one voice line at a time — new line interrupts the previous.

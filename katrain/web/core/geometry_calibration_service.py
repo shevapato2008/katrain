@@ -18,7 +18,11 @@ from katrain.vision.camera import (
     _auto_exposure_readback_matches,
 )
 from katrain.vision.geometry_lock import save_geometry_lock
-from katrain.vision.led_geometry_calibrator import LedGeometryCalibrator, check_frame_exposure
+from katrain.vision.calibration_stability import CalibrationStabilityGate, check_grid_lighting
+from katrain.vision.led_geometry_calibrator import (
+    CalibrationInterrupted, FivePointLedGeometryCalibrator, LightingInterrupted,
+    check_frame_exposure, probe_frame_exposure,
+)
 from katrain.web.core.hardware_vision_state import CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK
 
 logger = logging.getLogger(__name__)
@@ -55,7 +59,9 @@ class LegacyPublishRollbackError(RuntimeError):
 
 
 class GeometryCalibrationService:
-    ACTIVE_PHASES = {"waiting_empty", "dark_reference", "flashing_corners", "verifying", "building_baseline"}
+    ACTIVE_PHASES = {"waiting_empty", "waiting_stable", "converging_exposure", "dark_reference",
+                     "flashing_corners", "verifying", "building_baseline", "obstructed",
+                     "lighting_paused", "lighting_rechecking"}
 
     # 标定入口那次曝光收敛的边界。用户正站在标定屏前等,不能无限等:超了就带着当前
     # 曝光继续往下走 —— 真收不回来,后面的曝光闸会诚实拒绝,不会伪装成功。
@@ -73,13 +79,14 @@ class GeometryCalibrationService:
     # 而 outcome 会报 timeout 而不是 max_steps —— 两个上限并存时小的那个说了算,
     # 这正是上一版 12s < 20s 会踩的坑。
     EXPOSURE_CONVERGE_TIMEOUT_S = 30.0
-    # 目标带与 auto_exposure.ExposureController 的默认带同源(spec:中位落在 [120,170])。
+    # HBV 硬件 AE 在日光下可稳定于 172；这仍可用于标定差分。
     EXPOSURE_TARGET_LO = 120.0
-    EXPOSURE_TARGET_HI = 170.0
-    # request_controls is consumed by the camera reader between reads. If the request
-    # lands while a read is already in flight, the first fresh frame can legitimately
-    # arrive before its readback; allow the next two frames before declaring failure.
-    EXPOSURE_CONTROL_VERIFY_MAX_FRAMES = 3
+    EXPOSURE_TARGET_HI = 190.0
+    # Hardware auto-then-lock runs inside the camera reader. During convergence,
+    # grab_fresh can time out with the same cached frame; a frame count is not a
+    # control-completion deadline. None means pending, not a failed driver readback.
+    EXPOSURE_CONTROL_VERIFY_TIMEOUT_S = 30.0
+    EXPOSURE_CONTROL_VERIFY_POLL_S = 0.05
 
     def __init__(
         self,
@@ -93,7 +100,7 @@ class GeometryCalibrationService:
         on_degraded=None,
         on_suspend=None,
         on_resume=None,
-        calibrator_factory=LedGeometryCalibrator,
+        calibrator_factory=FivePointLedGeometryCalibrator,
         drift_needed=None,  # develop 275625ec 加的,原样保留
         selector=None,
         auto_relocate=AUTO_RELOCATE_ON_DRIFT,
@@ -122,7 +129,11 @@ class GeometryCalibrationService:
         self.on_resume = on_resume or (lambda: None)
         self.calibrator_factory = calibrator_factory
         self._lock = threading.Lock()
+        self._monitor_update_lock = threading.Lock()
+        self._monitor_reset_pending = None
+        self._preflighting = False
         self._cancel_event = threading.Event()
+        self._lighting_recheck = threading.Event()
         self._publish_started = False
         self._thread = None
         self._geometry_revision = 0
@@ -138,11 +149,13 @@ class GeometryCalibrationService:
         self._drift_thread.start()
         self._status = {
             "phase": "required",
-            "progress": {"current": 0, "total": 13},
+            "progress": {"current": 0, "total": 5},
+            "pause_reason": None,
             "session_calibrated": False,
             "last_valid": initial_lock is not None,
             "trigger": None,
             "error": None,
+            "stopped_phase": None,
             "metrics": {},
             "relocate_error": None,  # 最近一次重定位为什么没成(字符串);metrics 是数值型,不放这里
             # current_lock 已知对不上盘(降级过)。phase 会被之后的 start → cancel / failed 覆盖掉,
@@ -165,17 +178,20 @@ class GeometryCalibrationService:
         with self._lock:
             if self._thread is not None and self._thread.is_alive():
                 raise CalibrationBusy("geometry calibration already running")
-            if self._relocating:
+            if self._relocating or self._preflighting:
                 raise CalibrationBusy("geometry relocation in progress")
             self._cancel_event = threading.Event()
+            self._lighting_recheck = threading.Event()
             self._publish_started = False
             self._drift_monitor = None
             self._detected_anchors = []
             self._status.update(
                 phase="waiting_empty",
-                progress={"current": 0, "total": 13},
+                progress={"current": 0, "total": 5},
+                pause_reason=None,
                 trigger=trigger,
                 error=None,
+                stopped_phase=None,
                 metrics={},
                 relocate_error=None,
             )
@@ -186,6 +202,7 @@ class GeometryCalibrationService:
         with self._lock:
             if not self._publish_started:
                 self._cancel_event.set()
+                self._lighting_recheck.set()
         if self.led is not None:
             try:
                 self.led.clear(strict=True)
@@ -197,6 +214,14 @@ class GeometryCalibrationService:
         self.wait(timeout=5)
         self._drift_stop.set()
         self._drift_thread.join(timeout=2)
+
+    def recheck_lighting(self) -> dict:
+        with self._lock:
+            if self._status["phase"] != "lighting_paused":
+                raise ValueError("lighting is not paused")
+            self._status["phase"] = "lighting_rechecking"
+            self._lighting_recheck.set()
+        return self.status()
 
     def wait(self, timeout=None) -> bool:
         thread = self._thread
@@ -220,7 +245,7 @@ class GeometryCalibrationService:
         status["out_size"] = getattr(self.current_lock, "out_size", None)
         status["capabilities"] = {
             "camera_ready": self._is_ready(self.capture),
-            "led_ready": self._is_ready(self.led),
+            "led_ready": self.led.is_board_connected() if self.led is not None else None,
             "geometry_ready": self.current_lock is not None and status["session_calibrated"],
         }
         return status
@@ -230,11 +255,171 @@ class GeometryCalibrationService:
     # 那一态是「这份几何已知是错的」,它的出路是重定位(relocate),不是确认沿用。
     _REUSABLE_PHASES = frozenset({"required", "failed", "cancelled"})
 
+    PREFLIGHT_TIMEOUT_S = 8.0
+
+    def preflight(self) -> dict:
+        """Check the existing reference against fresh, still camera frames on demand."""
+        from katrain.vision.motion_filter import MotionFilter
+
+        started = time.monotonic()
+        deadline = started + self.PREFLIGHT_TIMEOUT_S
+        with self._lock:
+            if self._preflighting or self._relocating or (self._thread is not None and self._thread.is_alive()):
+                raise CalibrationBusy("geometry operation in progress")
+            available = (
+                self._status["phase"] == "ready"
+                and self._status["session_calibrated"]
+                and not self._status["lock_moved"]
+                and self.current_lock is not None
+                and self._drift_monitor is not None
+            )
+            if available:
+                self._preflighting = True
+                lock, revision, monitor = self.current_lock, self._geometry_revision, self._drift_monitor
+        if not available:
+            return {"ready": False, "reason": "geometry_required", "status": self.status()}
+
+        reason = "timeout"
+        stable_count = 0
+        drift_count = 0
+        last_seq, last_ts = -1, started
+        motion = MotionFilter()
+        first_frame = True
+        try:
+            if not self._is_ready(self.capture):
+                reason = "camera_unavailable"
+            else:
+                while time.monotonic() < deadline:
+                    if not self._is_ready(self.capture):
+                        reason = "camera_unavailable"
+                        break
+                    frame, seq, ts = self.capture.grab_fresh(
+                        after_ts=last_ts, settle_ms=0.0, timeout=min(0.5, max(0.0, deadline - time.monotonic()))
+                    )
+                    if time.monotonic() >= deadline:
+                        break
+                    with self._lock:
+                        current = (
+                            self._status["phase"] == "ready"
+                            and self.current_lock is lock
+                            and self._geometry_revision == revision
+                            and self._drift_monitor is monitor
+                        )
+                    if not current:
+                        reason = "stale_geometry"
+                        break
+                    if frame is None:
+                        reason = "camera_unavailable"
+                        break
+                    if seq is None or ts is None or seq <= last_seq or ts <= last_ts:
+                        stable_count = 0
+                        drift_count = 0
+                        reason = "stale_frame"
+                        continue
+                    last_seq, last_ts = seq, ts
+                    still = motion.is_stable(frame)
+                    if time.monotonic() >= deadline:
+                        reason = "timeout"
+                        break
+                    if first_frame:
+                        first_frame = False
+                        continue
+                    if not still:
+                        stable_count = 0
+                        drift_count = 0
+                        reason = "motion"
+                        continue
+                    if not self._monitor_update_lock.acquire(timeout=max(0.0, deadline - time.monotonic())):
+                        reason = "timeout"
+                        break
+                    try:
+                        if time.monotonic() >= deadline:
+                            reason = "timeout"
+                            break
+                        if self._monitor_reset_pending is monitor:
+                            monitor.reset_streak()
+                            self._monitor_reset_pending = None
+                        drift = monitor.update(frame)
+                    finally:
+                        self._monitor_update_lock.release()
+                    if time.monotonic() >= deadline:
+                        reason = "timeout"
+                        break
+                    if drift.response < 0.05:
+                        stable_count = 0
+                        drift_count = 0
+                        reason = "low_correlation"
+                        continue
+                    if drift.shift_cells > monitor.threshold_cells:
+                        stable_count = 0
+                        drift_count += 1
+                        reason = "drift_pending"
+                    else:
+                        drift_count = 0
+                    if drift_count >= max(3, monitor.consecutive_frames) and drift.degraded:
+                        if time.monotonic() >= deadline:
+                            reason = "timeout"
+                            break
+                        self._apply_drift(drift, monitor=monitor)
+                        if self.status()["phase"] == "degraded":
+                            logger.warning(
+                                "geometry preflight degraded source=preflight revision=%s shift_cells=%.3f response=%.3f seq=%s ts=%.3f",
+                                revision,
+                                drift.shift_cells,
+                                drift.response,
+                                seq,
+                                ts,
+                            )
+                            reason = "board_moved"
+                        else:
+                            reason = "stale_geometry"
+                        break
+                    if drift_count:
+                        continue
+                    stable_count += 1
+                    if stable_count >= max(3, monitor.consecutive_frames):
+                        reason = None
+                        break
+            with self._lock:
+                current = (
+                    self._status["phase"] == "ready"
+                    and self.current_lock is lock
+                    and self._geometry_revision == revision
+                    and self._drift_monitor is monitor
+                )
+            if not current and reason is None:
+                reason = "stale_geometry"
+            if reason is None and not self._is_ready(self.capture):
+                reason = "camera_unavailable"
+            if reason is None and time.monotonic() >= deadline:
+                reason = "timeout"
+        finally:
+            if reason != "board_moved":
+                if self._monitor_update_lock.acquire(timeout=max(0.0, deadline - time.monotonic())):
+                    try:
+                        monitor.reset_streak()
+                        if self._monitor_reset_pending is monitor:
+                            self._monitor_reset_pending = None
+                    finally:
+                        self._monitor_update_lock.release()
+                else:
+                    self._monitor_reset_pending = monitor
+            with self._lock:
+                self._preflighting = False
+        status = self.status()
+        if reason is None and (status["phase"] != "ready" or status["geometry_revision"] != revision):
+            reason = "stale_geometry"
+        if reason is None and time.monotonic() >= deadline:
+            reason = "timeout"
+        return {"ready": reason is None, "reason": reason, "status": status}
+
     def confirm_existing(self) -> dict:
         """Promote a persisted lock for this process after operator inspection."""
         with self._lock:
             if self._relocating:
                 raise ValueError("relocation in progress")
+            if self._preflighting:
+                raise ValueError("preflight in progress")
             if self._status["phase"] not in self._REUSABLE_PHASES:
                 raise ValueError(
                     "existing geometry can only be confirmed after restart, a failed run, or a cancelled run"
@@ -255,6 +440,7 @@ class GeometryCalibrationService:
                 last_valid=True,
                 trigger="operator_reuse",
                 error=None,
+                stopped_phase=None,
                 metrics={},
                 relocate_error=None,
             )
@@ -270,6 +456,7 @@ class GeometryCalibrationService:
         with self._lock:
             self._status["phase"] = phase
             self._status["progress"] = {"current": current, "total": total}
+            self._status["pause_reason"] = None
 
     def _anchor_observed(self, row: int, col: int, point: tuple[float, float], color: str) -> None:
         with self._lock:
@@ -283,7 +470,14 @@ class GeometryCalibrationService:
                 }
             )
 
-    def _converge_exposure(self) -> None:
+    def _lock_preconverged_exposure(self, request) -> None:
+        handoff = getattr(self.capture, "lock_preconverged", None)
+        if callable(handoff):
+            handoff()
+        else:
+            request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
+
+    def _converge_exposure(self, *, force_auto: bool = False) -> None:
         """标定开始前把曝光收敛一次。无几何锁时,这是**唯一**会去动曝光的地方。
 
         根因(spec §2.1 + 终审 F1):CameraHub 在 open() 时关掉硬件 AE,而软件 AE 只在
@@ -317,11 +511,14 @@ class GeometryCalibrationService:
         if grab is None or request is None or self._cancel_event.is_set():
             return  # 没有运行时控制的相机(macOS 上 UVC 写入被静默拒绝):没什么可收敛的
         stats = self._measure_exposure(grab)
-        if stats is None or self._in_target_band(stats):
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled while measuring exposure")
+        if stats is None or (self._in_target_band(stats) and not force_auto):
             # 亮度合格不代表曝光已经锁住。标定的 lit-dark 差分要求两帧使用同一曝光，
             # 所以这条短路也必须切到手动并验证驱动读回，而不是直接进入锚点循环。
-            request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
-            settled = self._wait_for_manual_exposure_readback(grab)
+            self._lock_preconverged_exposure(request)
+            requested_after = time.monotonic()
+            settled = self._wait_for_manual_exposure_readback(grab, requested_after=requested_after)
             logger.info(
                 "geometry exposure lock: median %s -> manual verified, median now %s",
                 None if stats is None else round(stats["median"]),
@@ -349,6 +546,8 @@ class GeometryCalibrationService:
                     break
                 steps += 1
                 stats = self._measure_exposure(grab)
+                if self._cancel_event.is_set():
+                    raise CalibrationCancelled("calibration cancelled while measuring exposure")
                 if stats is None:
                     outcome = "no_frame"
                     break
@@ -364,8 +563,9 @@ class GeometryCalibrationService:
             # 只把关闭动作放进来,**不吞异常**:异常照旧往上抛,由 _run 的 except 变成
             # phase=failed。日志那几行故意留在 finally 外面 —— 它们要再取一帧,在异常
             # 传播途中取帧再抛就会用新异常盖掉真正的那个。
-            request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
-        settled = self._wait_for_manual_exposure_readback(grab)
+            self._lock_preconverged_exposure(request)
+            requested_after = time.monotonic()
+        settled = self._wait_for_manual_exposure_readback(grab, requested_after=requested_after)
         # 一行里四件事,每件都在回答一个自己回答不了的问题:
         #  - 交接前后两个 median:两个数接近 ⇒ 驱动保留了 AE 收敛值;后一个跳回高位
         #    ⇒ 「驱动把曝光弹回 default」的指纹。否则 journal 里只有一个
@@ -391,17 +591,66 @@ class GeometryCalibrationService:
         )
 
     def _verify_manual_exposure_lock(self) -> None:
-        if getattr(self.capture, "controls_effective", None) is not True:
+        mode = self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None))
+        if (
+            getattr(self.capture, "controls_effective", None) is not True
+            or mode is None
+            or not _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, mode)
+        ):
             raise RuntimeError("manual exposure lock readback failed")
 
-    def _wait_for_manual_exposure_readback(self, grab) -> dict | None:
-        settled = None
-        for _attempt in range(self.EXPOSURE_CONTROL_VERIFY_MAX_FRAMES):
-            settled = self._measure_exposure(grab)
-            if getattr(self.capture, "controls_effective", None) is not None:
-                break
-        self._verify_manual_exposure_lock()
+    def _wait_for_manual_exposure_readback(self, grab, *, requested_after: float) -> dict | None:
+        settled, completed = self._wait_for_exposure_controls(grab, cancellable=True)
+        if not completed:
+            raise RuntimeError("manual exposure lock readback failed")
+        try:
+            self._verify_manual_exposure_lock()
+        except RuntimeError:
+            # A final driver failure is still the error. Only independent evidence
+            # from three fresh frames can additionally explain severe illumination.
+            if getattr(self.capture, "controls_effective", None) is not None and self._is_ready(self.capture):
+                try:
+                    probed = probe_frame_exposure(
+                        self.capture, after_ts=requested_after, cancel_event=self._cancel_event
+                    )
+                except Exception as exc:
+                    logger.warning("geometry exposure failure probe failed: %s", exc)
+                    probed = None
+                if self._cancel_event.is_set():
+                    raise CalibrationCancelled("calibration cancelled during exposure diagnosis")
+                if probed is not None:
+                    ok, reason, stats = probed
+                    if not ok:
+                        with self._lock:
+                            self._status["metrics"]["exposure"] = {**stats, "reason": reason, "confirmed": True}
+            raise
         return settled
+
+    def _wait_for_exposure_controls(self, grab, *, cancellable: bool) -> tuple[dict | None, bool]:
+        deadline = time.monotonic() + self.EXPOSURE_CONTROL_VERIFY_TIMEOUT_S
+        settled = None
+        while time.monotonic() < deadline:
+            if cancellable and self._cancel_event.is_set():
+                raise CalibrationCancelled("calibration cancelled while waiting for exposure controls")
+            settled = self._measure_exposure(grab)
+            if cancellable and self._cancel_event.is_set():
+                raise CalibrationCancelled("calibration cancelled while waiting for exposure controls")
+            if time.monotonic() >= deadline:
+                break
+            if getattr(self.capture, "controls_effective", None) is not None:
+                return settled, True
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            delay = min(self.EXPOSURE_CONTROL_VERIFY_POLL_S, remaining)
+            if cancellable:
+                self._cancel_event.wait(delay)
+            else:
+                # Rollback must complete even when the operator cancelled the run.
+                time.sleep(delay)
+        if cancellable and self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled while waiting for exposure controls")
+        return settled, False
 
     @staticmethod
     def _measure_exposure(grab) -> dict | None:
@@ -442,22 +691,20 @@ class GeometryCalibrationService:
             return
 
         grab = getattr(self.capture, "grab_fresh", None)
-        for _attempt in range(self.EXPOSURE_CONTROL_VERIFY_MAX_FRAMES):
-            effective = getattr(self.capture, "controls_effective", None)
-            if effective is not None or grab is None:
-                break
-            grab(settle_ms=0.0)
+        completed = True
+        if grab is not None:
+            _settled, completed = self._wait_for_exposure_controls(grab, cancellable=False)
         effective = getattr(self.capture, "controls_effective", None)
         current_auto_exposure = self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None))
         restored = (
-            effective is True
+            completed
+            and effective is True
             and current_auto_exposure is not None
             and _auto_exposure_readback_matches(target_auto_exposure, current_auto_exposure)
         )
         if not restored:
             logger.warning(
-                "geometry exposure restore readback failed: controls_effective=%r "
-                "target_auto=%r current_auto=%r",
+                "geometry exposure restore readback failed: controls_effective=%r target_auto=%r current_auto=%r",
                 effective,
                 target_auto_exposure,
                 current_auto_exposure,
@@ -467,6 +714,7 @@ class GeometryCalibrationService:
         if not self._cancel_event.is_set():
             return False
         with self._lock:
+            self._status["stopped_phase"] = self._status["phase"]
             self._status["phase"] = "cancelled"
         return True
 
@@ -524,6 +772,87 @@ class GeometryCalibrationService:
                 # staging cleanup must not make callers infer the opposite state.
                 logger.warning("legacy geometry staging cleanup failed at %s: %s", staging_path, cleanup_exc)
 
+    def _wait_lighting(self, reason: str, gate: CalibrationStabilityGate) -> None:
+        self.led.clear(strict=True)
+        while not self._cancel_event.is_set():
+            with self._lock:
+                self._status["phase"] = "lighting_paused"
+                self._status["pause_reason"] = reason
+            self._lighting_recheck.wait(0.2)
+            if not self._lighting_recheck.is_set() or self._cancel_event.is_set():
+                continue
+            self._lighting_recheck.clear()
+            self._converge_exposure(force_auto=True)
+            gate.reset()
+            frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
+            if frame is None:
+                reason = "frame_underexposed"
+                continue
+            whole_ok, whole_reason, _ = check_frame_exposure(frame)
+            if not whole_ok:
+                reason = whole_reason
+                continue
+            visible, grid_reason = gate.observe(frame)
+            if grid_reason == "board_occluded":
+                return  # regular stable wait explains the occlusion after recheck
+            issue, _stats = check_grid_lighting(frame, gate.quad)
+            reason = issue
+            if reason is None:
+                return
+
+    def _wait_stable(self, gate: CalibrationStabilityGate, resume_phase: str, current: int) -> None:
+        self.led.clear(strict=True)
+        gate.reset()
+        last_logged = 0.0
+        with self._lock:
+            self._status["phase"] = "waiting_stable"
+            self._status["pause_reason"] = "board_motion"
+        while not self._cancel_event.is_set():
+            frame, _seq, _ts = self.capture.grab_fresh(settle_ms=120.0)
+            if frame is None:
+                continue
+            whole_ok, whole_reason, _ = check_frame_exposure(frame)
+            if not whole_ok:
+                self._wait_lighting(whole_reason, gate)
+                gate.reset()
+                continue
+            ready, reason = gate.observe(frame)
+            if not ready:
+                now = time.monotonic()
+                if now - last_logged >= 2.0:
+                    logger.info("geometry stability wait phase=%s point=%d reason=%s stable=%d motion=%s",
+                                resume_phase, current, reason, gate.stable_frames, gate.last_motion_ratios)
+                    last_logged = now
+                with self._lock:
+                    self._status["phase"] = "obstructed" if reason == "board_occluded" else "waiting_stable"
+                    self._status["pause_reason"] = reason
+                continue
+            issue, _stats = check_grid_lighting(frame, gate.quad)
+            if issue is not None:
+                self._wait_lighting(issue, gate)
+                gate.reset()
+                continue
+            self._progress(resume_phase, current, 5)
+            logger.info("geometry stability ready phase=%s point=%d motion=%s",
+                        resume_phase, current, gate.last_motion_ratios)
+            gate.capture_motion.reset()
+            return
+
+    def _guard_live_frame(self, gate: CalibrationStabilityGate, frame, dark: bool) -> None:
+        whole_ok, whole_reason, _ = check_frame_exposure(frame)
+        if not whole_ok:
+            raise LightingInterrupted(whole_reason)
+        reason = gate.capture_reason(frame)
+        if reason is not None:
+            logger.info("geometry capture interrupted phase=%s point=%d reason=%s dark=%s",
+                        self._status["phase"], self._status["progress"]["current"], reason, dark)
+            raise CalibrationInterrupted(reason)
+        # Assess lighting on dark frames. The LED is intentionally absent from this sample.
+        if dark:
+            issue, _stats = check_grid_lighting(frame, gate.quad)
+            if issue is not None:
+                raise LightingInterrupted(issue)
+
     def _run(self) -> None:
         exposure_snapshot = self._snapshot_exposure_controls()
         committed = False
@@ -531,9 +860,8 @@ class GeometryCalibrationService:
             # Free the CPU the vision worker hogs for the whole run; on_resume (finally)
             # re-arms it on the new lock (success) or the previous one (failure/cancel).
             self.on_suspend()
-            # 挂起 worker 之后、跑锚点循环之前:把曝光收敛一次(见 _converge_exposure)。
-            # 顺序是判据的一部分 —— 标定自己的曝光闸必须量在收敛之后的那一帧上。
-            self._converge_exposure()
+            # Exposure can be too dark for the grid to be visible at all. Brighten
+            # first without flashing, then require a clear, stable grid before LED.
             calibrator = self.calibrator_factory(
                 led=self.led,
                 capture=self.capture,
@@ -541,13 +869,38 @@ class GeometryCalibrationService:
                 progress=self._progress,
                 anchor_observer=self._anchor_observed,
             )
+            if hasattr(calibrator, "configure_live"):
+                gate = CalibrationStabilityGate()
+                calibrator.configure_live(
+                    before_capture=lambda phase, current, _total: self._wait_stable(gate, phase, current),
+                    frame_guard=lambda frame, dark: self._guard_live_frame(gate, frame, dark),
+                    anchor_roi=gate.anchor_roi,
+                    on_lighting=lambda reason: self._wait_lighting(reason, gate),
+                )
+            self._progress("converging_exposure", 0, 5)
+            self._converge_exposure()
+            if hasattr(calibrator, "configure_live"):
+                self._wait_stable(gate, "dark_reference", 0)
+                if self._cancel_if_requested():
+                    return
+                # A hand could have biased the first AE pass; meter once more on
+                # the now-visible empty board, then discard the exposure transition.
+                self._progress("converging_exposure", 0, 5)
+                self._converge_exposure()
+                self._wait_stable(gate, "dark_reference", 0)
+            if self._cancel_if_requested():
+                return
             result = calibrator.calibrate()
-            if self._cancel_if_requested() or result.reason == "cancelled":
+            if self._cancel_if_requested():
+                return
+            if result.reason == "cancelled":
                 with self._lock:
+                    self._status["stopped_phase"] = self._status["phase"]
                     self._status["phase"] = "cancelled"
                 return
             if not result.ok or result.lock is None:
                 with self._lock:
+                    self._status["stopped_phase"] = self._status["phase"]
                     self._status["phase"] = "failed"
                     self._status["error"] = result.reason or "calibration_failed"
                     # 失败诊断是这一层唯一的可观测出口 —— 丢掉它,任何人都分不清
@@ -593,10 +946,12 @@ class GeometryCalibrationService:
                 self._geometry_revision += 1
                 self._status.update(
                     phase="ready",
-                    progress={"current": 13, "total": 13},
+                    progress={"current": 5, "total": 5},
+                    pause_reason=None,
                     session_calibrated=True,
                     last_valid=True,
                     error=None,
+                    stopped_phase=None,
                     metrics=metrics,
                     relocate_error=None,
                     lock_moved=False,
@@ -607,10 +962,12 @@ class GeometryCalibrationService:
                 logger.warning("geometry calibration on_success failed after commit: %s", exc)
         except CalibrationCancelled:
             with self._lock:
+                self._status["stopped_phase"] = self._status["phase"]
                 self._status["phase"] = "cancelled"
         except LegacyPublishRollbackError as exc:
             logger.error("legacy geometry rollback failed; invalidating runtime geometry: %s", exc)
             with self._lock:
+                self._status["stopped_phase"] = self._status["phase"]
                 self.current_lock = None
                 self._drift_monitor = None
                 self._status.update(
@@ -629,6 +986,7 @@ class GeometryCalibrationService:
                 logger.warning("geometry calibration post-commit update failed: %s", exc)
             else:
                 with self._lock:
+                    self._status["stopped_phase"] = self._status["phase"]
                     self._status["phase"] = "failed"
                     self._status["error"] = str(exc)
         finally:
@@ -672,7 +1030,7 @@ class GeometryCalibrationService:
         期间 start / confirm_existing / 另一次 relocate 都进不来 —— 否则两边会互相覆盖 current_lock、phase 与错误。
         """
         with self._lock:
-            if self._relocating or (self._thread is not None and self._thread.is_alive()):
+            if self._preflighting or self._relocating or (self._thread is not None and self._thread.is_alive()):
                 raise CalibrationBusy("geometry calibration or relocation already running")
             if self._status["phase"] not in allowed_phases:
                 raise ValueError("relocate is only available after drift, cancel or failure")
@@ -768,6 +1126,7 @@ class GeometryCalibrationService:
                 last_valid=True,
                 trigger=trigger,
                 error=None,
+                stopped_phase=None,
                 relocate_error=None,
                 lock_moved=False,
             )
@@ -802,13 +1161,22 @@ class GeometryCalibrationService:
             if self._drift_needed is not None and not self._drift_needed():
                 continue
             with self._lock:
-                if self._status["phase"] != "ready":
+                if self._status["phase"] != "ready" or self._preflighting:
                     continue
             try:
                 frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
                 if frame is None:
                     continue
-                self._apply_drift(monitor.update(frame), monitor=monitor)
+                with self._lock:
+                    if self._preflighting or self._status["phase"] != "ready" or monitor is not self._drift_monitor:
+                        continue
+                with self._monitor_update_lock:
+                    if self._monitor_reset_pending is monitor:
+                        monitor.reset_streak()
+                        self._monitor_reset_pending = None
+                        continue
+                    drift = monitor.update(frame)
+                self._apply_drift(drift, monitor=monitor)
             except Exception:
                 time.sleep(0.1)
 

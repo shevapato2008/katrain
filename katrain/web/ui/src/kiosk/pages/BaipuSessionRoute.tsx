@@ -14,7 +14,8 @@ import BaipuSessionPage from './BaipuSessionPage';
  * `GeometryCalibrationService.ACTIVE_PHASES` 是同一份名单(那两处都没导出,这里不为它改别人的文件)。
  */
 const CALIBRATION_RUNNING: readonly GeometryPhase[] = [
-  'waiting_empty', 'dark_reference', 'flashing_corners', 'verifying', 'building_baseline',
+  'waiting_empty', 'waiting_stable', 'converging_exposure', 'dark_reference', 'flashing_corners', 'verifying',
+  'building_baseline', 'obstructed', 'lighting_paused', 'lighting_rechecking',
 ];
 
 /**

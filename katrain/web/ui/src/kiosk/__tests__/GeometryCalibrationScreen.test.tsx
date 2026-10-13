@@ -22,13 +22,20 @@ const startCalibration = vi.fn();
 const cancelCalibration = vi.fn();
 const confirmExisting = vi.fn();
 const relocate = vi.fn();
+const recheckLighting = vi.fn();
+const voiceSpeak = vi.fn();
+const voiceStop = vi.fn();
 let status: GeometryStatus;
 let loaded = true;
 
 vi.mock('../context/GeometryContext', () => ({
   useGeometry: () => ({
-    status, loaded, startCalibration, cancelCalibration, confirmExisting, relocate, refresh: vi.fn(),
+    status, loaded, startCalibration, cancelCalibration, confirmExisting, recheckLighting, relocate, refresh: vi.fn(),
   }),
+}));
+
+vi.mock('../hooks/useVoice', () => ({
+  useVoice: () => ({ speak: voiceSpeak, stop: voiceStop }),
 }));
 
 vi.mock('../../api/geometryApi', async (importOriginal) => {
@@ -53,7 +60,7 @@ const renderScreen = () => render(
     <MemoryRouter>
       <GeometryCalibrationScreen
         backLabel="设置" onBack={vi.fn()}
-        title="棋盘标定" sub="先把棋盘清空 · 四角 + 九星共 13 个定位点"
+        title="棋盘标定" sub="先把棋盘清空 · 四角和天元共 5 个定位点"
       />
     </MemoryRouter>
   </ThemeProvider>,
@@ -80,14 +87,14 @@ describe('屏 26 棋盘标定', () => {
   /**
    * 🔴 稿子原来画五步(2026-09-24 已照实现改成四步),第 2 步「采集熄灯参考帧」对应 `dark_reference` ——
    * **全仓没有任何地方写入这个 phase**(只在两处「哪些算进行中」的常量集合里当摆设)。
-   * 那件事确实在做,但是**每个锚点各一次、13+ 次**,不是一个有头有尾的阶段。
+   * 那件事确实在做,但是**每个锚点各一次**,不是一个有头有尾的阶段。
    * 画成一行只能在两种假话里挑一种,所以删掉、机制写进旁注。
    */
   it('四步不是五步,而且没有「采集熄灯参考帧」这一行', () => {
     renderScreen();
     expect(steps()).toHaveLength(4);
     expect(steps().map((s) => s.querySelector('.kiosk-row__t b')?.textContent)).toEqual([
-      '准备空盘标定', '定位棋盘四角', '定位九个星位', '生成空盘基线',
+      '等待棋盘稳定', '确认并锁定曝光', '定位棋盘', '生成空盘基线',
     ]);
     expect(screen.queryByText(/采集熄灯参考帧/)).toBeNull();
     // 旁注最多两行:「先熄灯再亮灯各拍一张」那句 Fan 2026-09-27 裁定删掉
@@ -101,15 +108,18 @@ describe('屏 26 棋盘标定', () => {
     expect(steps()[1]).toHaveAttribute('data-state', 'todo');
   });
 
-  it('跑到星位时:前两步完成、第 3 步在跑,而且说得出正在点第几个', () => {
+  it('五点定位时:前两步完成、第 3 步在跑,只展示总进度', () => {
     status = {
-      ...status, phase: 'verifying',
-      progress: { current: 7, total: 13 },
-      detected_anchors: Array.from({ length: 7 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+      ...status, phase: 'flashing_corners',
+      progress: { current: 3, total: 5 },
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
     };
     renderScreen();
     expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'done', 'now', 'todo']);
-    expect(steps()[2]).toHaveTextContent('正在点第 4 个'); // 7 − 4 + 1
+    expect(steps()[2]).toHaveTextContent('定位棋盘');
+    expect(steps()[2].querySelector('em')).toBeNull();
+    expect(screen.getByTestId('calib-cap')).toHaveTextContent('3 / 5');
+    expect(screen.getByTestId('calib-preview-state')).toHaveTextContent('正在标定');
   });
 
   /**
@@ -119,10 +129,10 @@ describe('屏 26 棋盘标定', () => {
   it('失败:断点由已定位的锚点数决定,之前的步骤保持「完成」', () => {
     status = {
       ...status, phase: 'failed', error: 'anchor_not_found:3,15',
-      detected_anchors: Array.from({ length: 6 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
     };
     renderScreen();
-    // 6 个 ⇒ 四角过了、断在星位那一步
+    // 3 个 ⇒ 曝光已锁、断在五点定位那一步
     expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'done', 'bad', 'todo']);
   });
 
@@ -191,33 +201,33 @@ describe('屏 26 棋盘标定', () => {
    * **后端没给这个数的时候它编一个满分出来**(13/13、0.000 px 读起来就是「完美」)。
    * 规范 §14:值写「—」不写 0。
    */
-  it('后端整个没给 metrics:说「没拿到残差数据」,不编一个 13/13 出来', () => {
+  it('后端整个没给 metrics:不编一个 5/5 出来', () => {
     status = { ...status, phase: 'ready', session_calibrated: true, last_valid: true };
     renderScreen();
-    expect(steps()[3]).toHaveTextContent('没拿到这次的残差数据');
-    expect(steps()[3]).not.toHaveTextContent('13 / 13');
+    expect(steps()[3].querySelector('em')).toBeNull();
+    expect(steps()[3]).not.toHaveTextContent('5 / 5');
     expect(steps()[3]).toHaveAttribute('data-state', 'plain'); // 中性,不是 done —— 不知道不是满分
   });
 
-  it('给了 metrics 但字段是空的:逐项写「—」,一样不敢标绿', () => {
+  it('给了 metrics 但字段是空的:一样不敢标绿', () => {
     status = {
       ...status, phase: 'ready', session_calibrated: true, last_valid: true,
       metrics: {} as Record<string, never>,
     };
     renderScreen();
-    expect(steps()[3]).toHaveTextContent('— / 13 点 · RMS — px · 最大残差 — px');
+    expect(steps()[3].querySelector('em')).toBeNull();
     expect(steps()[3]).toHaveAttribute('data-state', 'plain');
   });
 
-  it('拿到真数就写真数;不足 13 点时 tag 转琥珀并把数写出来', () => {
+  it('不足 5 点时 tag 转琥珀并把数写出来', () => {
     status = {
       ...status, phase: 'ready', session_calibrated: true, last_valid: true,
-      metrics: { inlier_count: 9, rms_residual: 0.4213, max_residual: 0.9077 },
+      metrics: { inlier_count: 4, rms_residual: 0.4213, max_residual: 0.9077 },
     };
     renderScreen();
-    expect(steps()[3]).toHaveTextContent('9 / 13 点 · RMS 0.421 px · 最大残差 0.908 px');
+    expect(steps()[3].querySelector('em')).toBeNull();
     expect(steps()[3]).toHaveAttribute('data-state', 'warn');
-    expect(within(steps()[3]).getByText('完成 · 9 / 13')).toBeInTheDocument();
+    expect(within(steps()[3]).getByText('完成 · 4 / 5')).toBeInTheDocument();
   });
 
   // ── 两颗键 ─────────────────────────────────────────────────────────────────
@@ -348,13 +358,68 @@ describe('屏 26 棋盘标定', () => {
 
   it('画面底下那条两个数都算得出来,不估', () => {
     status = {
-      ...status, phase: 'verifying',
-      detected_anchors: Array.from({ length: 12 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+      ...status, phase: 'flashing_corners',
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
     };
     renderScreen();
     const cap = screen.getByTestId('calib-cap');
-    expect(cap).toHaveTextContent('四角已定位 · 九星 8 / 9');
-    expect(cap).toHaveTextContent('第 3 / 4 步');
+    expect(cap).toHaveTextContent('已完成 3 个点');
+    expect(cap).toHaveTextContent('3 / 5');
+  });
+
+  it('开始后等待移手，首灯前显示等待而非标定中', () => {
+    status = { ...status, phase: 'waiting_empty' };
+    renderScreen();
+    expect(screen.getByTestId('calib-preview-banner')).toHaveTextContent('请把手移开棋盘上方');
+    expect(steps()[0]).toHaveAttribute('data-state', 'now');
+    expect(within(acts()).getAllByRole('button')).toHaveLength(1);
+  });
+
+  it('点击开始即走围棋共用的语音播放器提示移手', async () => {
+    startCalibration.mockResolvedValue(undefined);
+    renderScreen();
+    fireEvent.click(within(acts()).getByRole('button', { name: '重新开始标定' }));
+    expect(voiceSpeak).toHaveBeenCalledWith('calibration_move_hand');
+  });
+
+  it('遮挡暂停保留已完成的点，动作区仍只有取消标定', () => {
+    status = {
+      ...status, phase: 'obstructed', pause_reason: 'board_occluded',
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+    };
+    renderScreen();
+    expect(screen.getByTestId('calib-preview-banner')).toHaveTextContent('检测到遮挡');
+    expect(screen.getByTestId('calib-cap')).toHaveTextContent('3 / 5');
+    expect(steps()[2]).toHaveTextContent('已暂停');
+    expect(within(acts()).getAllByRole('button')).toHaveLength(1);
+    expect(voiceSpeak).toHaveBeenCalledWith('calibration_obstructed');
+  });
+
+  it.each([
+    ['frame_overexposed', '画面过亮', '拉上窗帘'],
+    ['frame_underexposed', '画面过暗', '打开室内灯'],
+  ] as const)('光线暂停 %s 提示具体调整', (reason, title, guidance) => {
+    status = { ...status, phase: 'lighting_paused', pause_reason: reason };
+    renderScreen();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent(title);
+    expect(dialog).toHaveTextContent(guidance);
+    expect(within(dialog).getByRole('button', { name: '调整后重新检测' })).toBeInTheDocument();
+    expect(within(acts()).getAllByRole('button')).toHaveLength(1);
+    expect(voiceSpeak).toHaveBeenCalledWith(reason === 'frame_overexposed' ? 'calibration_too_bright' : 'calibration_too_dark');
+  });
+
+  it('点击光线重检走统一 Context 动作，重检中不能重复点', async () => {
+    recheckLighting.mockResolvedValue(undefined);
+    status = { ...status, phase: 'lighting_paused', pause_reason: 'frame_overexposed' };
+    const rendered = renderScreen();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '调整后重新检测' }));
+    await waitFor(() => expect(recheckLighting).toHaveBeenCalledTimes(1));
+    rendered.unmount();
+
+    status = { ...status, phase: 'lighting_rechecking' };
+    renderScreen();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '正在检测…' })).toBeDisabled();
   });
 
   // ── 没有摄像头的盒子 ───────────────────────────────────────────────────────
@@ -384,11 +449,13 @@ describe('屏 26 棋盘标定', () => {
     expect(screen.getByText('完成 LED 标定后生成俯视画面')).toBeInTheDocument();
   });
 
-  it('运行中切到俯视:说的是「完成后重新生成」,不播上一次那份正在被作废的几何', () => {
+  it('运行中始终显示实时原始画面，不展示已失效的俯视画面', () => {
     status = { ...status, phase: 'flashing_corners', last_valid: true };
-    renderScreen();
-    fireEvent.click(within(screen.getByTestId('calib-pagebar')).getAllByRole('radio')[1]);
-    expect(screen.getByText('标定进行中，俯视画面在完成后重新生成')).toBeInTheDocument();
+    const { container } = renderScreen();
+    expect(within(screen.getByTestId('calib-pagebar')).queryByRole('radio')).toBeNull();
+    expect(container.querySelector('canvas[aria-label="摄像头原始画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=raw&scale=3');
+    expect(screen.queryByText('标定进行中，俯视画面在完成后重新生成')).toBeNull();
   });
 
   // ── 俯视叠加层与 warped-stream 同一个 pad ─────────────────────────────────
@@ -400,6 +467,10 @@ describe('屏 26 棋盘标定', () => {
    * **夹具必须 ≠ 默认值 0**,否则丢参数与传参数算出同一个数,这条闸是瞎的。
    */
   it('俯视叠加层按 layout.warped_margin_cells 内缩:A19 落在 (53,53)、T1 落在 (1002,1002)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob() }));
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 528, height: 528, close: vi.fn() }));
+    const canvas = vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
     overlayBuilders.clear();
     status = { ...status, phase: 'ready', session_calibrated: true, last_valid: true };
     vi.mocked(GeometryAPI.layout).mockResolvedValue({
@@ -414,5 +485,7 @@ describe('屏 26 棋盘标定', () => {
     const at = (l: string) => { const c = model.corners.find((k) => k.label === l)!; return [c.x, c.y]; };
     expect(at('A19')).toEqual([53, 53]);
     expect(at('T1')).toEqual([1002, 1002]);
+    canvas.mockRestore();
+    vi.unstubAllGlobals();
   });
 });

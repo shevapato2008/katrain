@@ -157,14 +157,12 @@ def media(tmp_path, monkeypatch):
         db.execute(update(models_db.TutorialFigure).values(updated_at=None))
         db.commit()
     storage = LocalStorageBackend(tmp_path)
-    import sys
-    from types import SimpleNamespace
 
     def stub_renderer(**kwargs):
         kwargs["output_path"].write_bytes(b"video")
 
-    monkeypatch.setitem(sys.modules, "katrain.web.tutorials.media_render", SimpleNamespace(render_video=stub_renderer))
     worker = media_tasks.MediaWorker(factory, storage=storage, queue_limit=2)
+    monkeypatch.setattr(worker, "_render_video", stub_renderer)
     app = FastAPI()
     app.state.admin_config = object()
     app.state.session_factory = factory
@@ -435,7 +433,7 @@ def test_video_variants_reuse_same_audio_and_2d_remains_default(media, monkeypat
         captured.append(kwargs)
         kwargs["output_path"].write_bytes(b"video")
 
-    monkeypatch.setitem(sys.modules, "katrain.web.tutorials.media_render", SimpleNamespace(render_video=render))
+    monkeypatch.setattr(worker, "_render_video", render)
 
     async def forbidden(*args):
         raise AssertionError("valid saved audio must be reused")
@@ -565,3 +563,55 @@ def test_unchanged_calibration_keeps_current_video_variant(media):
     assert response.status_code == 200
     assert response.json()["video_asset"] == "current.mp4"
     assert response.json()["recognition_debug"]["workbench_media"]["videos"]["2d"]["asset"] == "current.mp4"
+
+
+def test_shutdown_terminates_owned_render_process_and_cleans_job_temp(media, tmp_path, monkeypatch):
+    import json
+    import sys
+    import threading
+    import time
+    from katrain.web.tutorials import media_tasks
+
+    client, factory, worker, storage, app = media
+    enqueue(client)
+    worker.run_next()
+    with factory() as db:
+        version = (
+            db.get(models_db.TutorialFigure, 1)
+            .updated_at.replace(tzinfo=__import__("datetime").timezone.utc)
+            .isoformat()
+        )
+    task = enqueue(client, kind="video", version=version).json()["task"]
+    marker = tmp_path / "render-started.json"
+    real_popen = __import__("subprocess").Popen
+    processes = []
+    child = """import json, pathlib, sys, time, os
+spec = json.loads(pathlib.Path(sys.argv[1]).read_text())
+pathlib.Path(sys.argv[2]).write_text(json.dumps({'pid': os.getpid(), 'directory': str(pathlib.Path(spec['output_path']).parent)}))
+time.sleep(60)
+"""
+
+    def launch(command, **kwargs):
+        process = real_popen([sys.executable, "-c", child, command[-1], str(marker)], **kwargs)
+        processes.append(process)
+        return process
+
+    monkeypatch.setattr(media_tasks.subprocess, "Popen", launch)
+    worker._render_video = media_tasks.MediaWorker._render_video.__get__(worker)
+    worker.thread = threading.Thread(target=worker.run_next)
+    worker.thread.start()
+    deadline = time.monotonic() + 5
+    while not marker.exists() and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert marker.exists(), "owned render child did not start"
+    details = json.loads(marker.read_text())
+    worker.close()
+    assert not worker.thread.is_alive()
+    assert processes[0].poll() is not None
+    assert not __import__("pathlib").Path(details["directory"]).exists()
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        assert figure.video_asset is None
+        assert not figure.recognition_debug["workbench_media"].get("videos")
+        result = db.get(models_db.TutorialMediaTask, task["id"])
+        assert result.status == "failed" and result.stage == "rendering_video"

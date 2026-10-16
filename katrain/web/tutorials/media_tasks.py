@@ -5,6 +5,11 @@ import copy
 import hashlib
 import json
 import logging
+import os
+import signal
+import subprocess
+import sys
+import time
 import tempfile
 import threading
 from contextlib import contextmanager
@@ -90,6 +95,8 @@ class MediaWorker:
         self.thread = None
         self.active_loop = None
         self.active_tts = None
+        self.active_render = None
+        self.render_lock = threading.Lock()
 
     def enqueue(self, db, figure, body, admin):
         from katrain.web.admin.routers.tutorials import _audit, _commit, _version_filter
@@ -190,11 +197,16 @@ class MediaWorker:
     def close(self):
         self.stop_event.set()
         self.wake.set()
-        if self.active_loop and self.active_tts:
+        active_loop, active_tts = self.active_loop, self.active_tts
+        if active_loop and active_tts:
             try:
-                self.active_loop.call_soon_threadsafe(self.active_tts.cancel)
+                active_loop.call_soon_threadsafe(active_tts.cancel)
             except RuntimeError:
                 pass
+        with self.render_lock:
+            process = self.active_render
+        if process is not None:
+            self._terminate_render(process)
         if self.thread:
             self.thread.join(timeout=5)
 
@@ -277,6 +289,74 @@ class MediaWorker:
             self.active_loop = None
             self.active_tts = None
 
+    @staticmethod
+    def _terminate_render(process):
+        """Terminate the runner and all browser/ffmpeg descendants in its group."""
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            pass
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait(timeout=3)
+
+    def _render_video(self, **spec):
+        directory = spec["output_path"].parent
+        spec_path = directory / "render-spec.json"
+        spec_path.write_text(
+            json.dumps(
+                {key: str(value) if isinstance(value, Path) else value for key, value in spec.items()},
+                ensure_ascii=False,
+            )
+        )
+        # The renderer needs local binaries/fonts/Chromium only. Do not pass DB,
+        # provider, storage, or admin credentials into this child environment.
+        allowed = {
+            "PATH",
+            "HOME",
+            "LANG",
+            "LC_ALL",
+            "TMPDIR",
+            "PLAYWRIGHT_BROWSERS_PATH",
+            "TUTORIAL_MEDIA_CHROMIUM_EXECUTABLE",
+        }
+        environment = {key: value for key, value in os.environ.items() if key in allowed}
+        with (directory / "render.log").open("w+b") as log:
+            process = subprocess.Popen(
+                [sys.executable, "-m", "katrain.web.tutorials.media_render_runner", str(spec_path)],
+                cwd=Path(__file__).resolve().parents[3],
+                env=environment,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+            with self.render_lock:
+                self.active_render = process
+            deadline = time.monotonic() + 620
+            try:
+                while process.poll() is None:
+                    if self.stop_event.wait(0.05):
+                        raise RuntimeError("Admin process shut down during rendering; retry explicitly")
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError("Tutorial render process exceeded 620 seconds")
+                if self.stop_event.is_set():
+                    raise RuntimeError("Admin process shut down during rendering; retry explicitly")
+                if process.returncode:
+                    log.seek(0, 2)
+                    log.seek(max(0, log.tell() - 2000))
+                    raise RuntimeError("Tutorial renderer failed: " + log.read().decode("utf-8", errors="replace"))
+            finally:
+                self._terminate_render(process)
+                with self.render_lock:
+                    if self.active_render is process:
+                        self.active_render = None
+
     def _upload(self, key, path, content_type):
         with path.open("rb") as source:
             self.storage.put(key, source, content_type=content_type)
@@ -333,13 +413,11 @@ class MediaWorker:
             "step_cues": {**cues, "asset": prefix + "/step_cues.json"},
         }
         if kind == "video":
-            from katrain.web.tutorials.media_render import render_video
-
             self._stage(task_id, "aligning_replay")
             frames = replay_frames(payload) if validate_replay(payload)["status"] == "complete" else []
             self._stage(task_id, "rendering_video")
             video_path = directory / "video.mp4"
-            render_video(
+            self._render_video(
                 board_payload=payload,
                 frames=frames,
                 speech_timing=timing,

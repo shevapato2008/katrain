@@ -420,11 +420,15 @@ def test_media_namespace_never_changes_recognition_uncertainty(media):
 
 
 def test_video_variants_reuse_same_audio_and_2d_remains_default(media, monkeypatch):
-    import sys
-    from types import SimpleNamespace
     from katrain.web.tutorials import media_tasks
 
     client, factory, worker, storage, app = media
+    narration = "黑2、4，白3。"
+    with factory() as db:
+        db.get(models_db.TutorialFigure, 1).narration = narration
+        db.commit()
+        db.execute(update(models_db.TutorialFigure).values(updated_at=None))
+        db.commit()
     enqueue(client)
     worker.run_next()
     captured = []
@@ -461,6 +465,7 @@ def test_video_variants_reuse_same_audio_and_2d_remains_default(media, monkeypat
     assert len(captured) == 2
     assert captured[0]["speech_timing"] == captured[1]["speech_timing"]
     assert captured[0]["frames"] == captured[1]["frames"]
+    assert captured[0]["narration"] == captured[1]["narration"] == narration
 
 
 def test_explicit_media_migration_only_creates_media_table():

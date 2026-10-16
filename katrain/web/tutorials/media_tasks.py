@@ -418,6 +418,7 @@ class MediaWorker:
             self._stage(task_id, "rendering_video")
             video_path = directory / "video.mp4"
             self._render_video(
+                narration=narration,
                 board_payload=payload,
                 frames=frames,
                 speech_timing=timing,

@@ -102,7 +102,7 @@ export default function TutorialMediaRecorder() {
     let lastPaintedKey: string | null = null;
     window.__tutorialSetFrame = async (time: number) => {
       const frame = frameAtTime(data, time);
-      const key = JSON.stringify([frame.step, subtitleAtTime(data.speech_timing, time)]);
+      const key = JSON.stringify([frame.step, subtitleAtTime(data.narration, data.speech_timing, time)]);
       if (key === lastPaintedKey) return key;
       flushSync(() => setTimeMs(time));
       await document.fonts.ready;
@@ -128,6 +128,6 @@ export default function TutorialMediaRecorder() {
         : <><Board3D gameState={asGameState(frame)} onMove={noop} analysisToggles={TOGGLES} readOnly disableControls cameraPosition={cameraPosition} cameraTarget={[0, 1.2, 0]} frameloop="demand" onCanvasReady={onCanvasReady} />
           {canvasState && <ProjectionOverlay frame={frame} region={region} state={canvasState} />}</>}
     </div>{data.step_cues.status !== 'complete' && <div className="tm-static" data-testid="tutorial-static-reason">{staticLabel}</div>}</div>
-    <div className="tm-caption"><span>{subtitleAtTime(data.speech_timing, timeMs)}</span></div>
+    <div className="tm-caption"><span>{subtitleAtTime(data.narration, data.speech_timing, timeMs)}</span></div>
   </main>;
 }

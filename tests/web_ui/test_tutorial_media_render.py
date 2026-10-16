@@ -17,10 +17,37 @@ def test_renderer_rejects_an_audio_artifact_mismatch(tmp_path):
     audio.write_bytes(b"a different immutable artifact")
     with pytest.raises(ValueError, match="audio.*hash|audio.*SHA256"):
         render_video(
+            narration="保存原文。",
             board_payload={"size": 9, "stones": {"B": [], "W": []}},
             frames=[],
             speech_timing={"schema_version": 1, "audio_sha256": "0" * 64, "duration_ms": 1000, "boundaries": []},
             step_cues={"schema_version": 1, "status": "pending", "audio_sha256": "0" * 64, "cues": []},
+            audio_path=audio,
+            output_path=tmp_path / "video.mp4",
+            render_mode="2d",
+        )
+    assert not (tmp_path / "video.mp4").exists()
+
+
+def test_renderer_rejects_narration_that_does_not_match_the_saved_timing(tmp_path):
+    from katrain.web.tutorials.media_render import render_video
+
+    audio = tmp_path / "speech.mp3"
+    audio.write_bytes(b"immutable audio")
+    digest = hashlib.sha256(audio.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match="narration.*hash|narration.*SHA256"):
+        render_video(
+            narration="黑2、4。",
+            board_payload={"size": 9, "stones": {"B": [], "W": []}},
+            frames=[],
+            speech_timing={
+                "schema_version": 1,
+                "audio_sha256": digest,
+                "narration_sha256": "0" * 64,
+                "duration_ms": 1000,
+                "boundaries": [{"text": "黑24", "start_ms": 100, "duration_ms": 800}],
+            },
+            step_cues={"schema_version": 1, "status": "pending", "audio_sha256": digest, "cues": []},
             audio_path=audio,
             output_path=tmp_path / "video.mp4",
             render_mode="2d",
@@ -73,14 +100,17 @@ def test_real_renderer_muxes_exact_audio_and_full_snapshots(tmp_path, mode):
         {"step": 2, "payload": board, "last": [1, 0]},
     ]
     output = tmp_path / f"{mode}.mp4"
+    narration = "黑2、4 提子，之后复用原位。"
     render_video(
+        narration=narration,
         board_payload=board,
         frames=frames,
         speech_timing={
             "schema_version": 1,
             "audio_sha256": digest,
+            "narration_sha256": hashlib.sha256(narration.encode()).hexdigest(),
             "duration_ms": duration,
-            "boundaries": [{"text": "提子后复用原位。", "start_ms": 100, "duration_ms": 2000}],
+            "boundaries": [{"text": "黑24提子之后复用原位", "start_ms": 100, "duration_ms": 2000}],
         },
         step_cues={
             "schema_version": 1,

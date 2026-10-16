@@ -32,6 +32,7 @@ export interface StepCues {
   cues: { step: number; at_ms: number }[];
 }
 export interface RecordingData {
+  narration: string;
   board_payload: RecorderPayload;
   frames: ReplayFrame[];
   speech_timing: SpeechTiming;
@@ -59,15 +60,27 @@ export function knownRegion(data: RecordingData): Region | null {
   return region?.confirmed ? { col: region.col, row: region.row, cols: region.cols, rows: region.rows } : null;
 }
 
-/** Sentence-sized captions retain the actual start time of their first boundary. */
-export function subtitleAtTime(timing: SpeechTiming, timeMs: number): string {
+/** Caption text is sliced verbatim from the saved narration; only times come from words. */
+export function subtitleAtTime(narration: string, timing: SpeechTiming, timeMs: number): string {
+  const sourceCharacters = [...narration.matchAll(/[\p{L}\p{N}]/gu)];
+  const wordCharacters = timing.boundaries.map(boundary => boundary.text.match(/[\p{L}\p{N}]/gu) ?? []);
+  if (!sourceCharacters.length || sourceCharacters.map(match => match[0]).join('') !== wordCharacters.flat().join('')) {
+    throw new Error('Speech boundary text does not match the exact saved narration');
+  }
   let text = '';
   let start = 0;
+  let cursor = 0;
   const groups: { text: string; start: number }[] = [];
-  for (const boundary of timing.boundaries) {
+  for (const [index, boundary] of timing.boundaries.entries()) {
+    const count = wordCharacters[index].length;
+    if (!count) continue;
+    const from = cursor === 0 ? 0 : sourceCharacters[cursor].index!;
+    cursor += count;
+    const to = cursor < sourceCharacters.length ? sourceCharacters[cursor].index! : narration.length;
+    const segment = narration.slice(from, to);
     if (!text) start = boundary.start_ms;
-    text += boundary.text;
-    if (/[。！？.!?；;]$/.test(boundary.text.trim()) || text.length >= 30) {
+    text += segment;
+    if (/[。！？.!?；;][^\p{L}\p{N}]*$/u.test(segment) || text.length >= 30) {
       groups.push({ text, start });
       text = '';
     }

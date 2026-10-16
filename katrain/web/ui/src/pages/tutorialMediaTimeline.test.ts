@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { frameAtTime, subtitleAtTime, knownRegion, type RecordingData } from './tutorialMediaTimeline';
 
 const data: RecordingData = {
+  narration: '白棋被提。之后复用原位。',
   render_mode: '2d',
   board_payload: { size: 9, stones: { B: [[1, 0]], W: [[2, 0]] }, source_region: { col: 1, row: 0, cols: 8, rows: 9, confirmed: true } },
   frames: [
@@ -29,9 +30,24 @@ describe('tutorial recorder time axis', () => {
     expect(frameAtTime(pending, 2500).payload).toBe(data.board_payload);
   });
   it('uses actual boundary starts for subtitles, including on backward seeks', () => {
-    expect(subtitleAtTime(data.speech_timing, 0)).toBe('');
-    expect(subtitleAtTime(data.speech_timing, 1500)).toBe('之后复用原位。');
-    expect(subtitleAtTime(data.speech_timing, 300)).toBe('白棋被提。');
+    expect(subtitleAtTime(data.narration, data.speech_timing, 0)).toBe('');
+    expect(subtitleAtTime(data.narration, data.speech_timing, 1500)).toBe('之后复用原位。');
+    expect(subtitleAtTime(data.narration, data.speech_timing, 300)).toBe('白棋被提。');
+  });
+  it('keeps exact saved punctuation and spaces such as 黑2、4 while retaining word timestamps', () => {
+    const narration = '“白1”， 黑2、4 后，白3。下一句 保留 空格，白5！';
+    const first = ['白', '1', '黑', '2', '4', '后', '白', '3'];
+    const second = ['下一句', '保留', '空格', '白', '5'];
+    const timing = { ...data.speech_timing, boundaries: [
+      ...first.map((text, index) => ({ text, start_ms: 100 + index * 100, duration_ms: 80 })),
+      ...second.map((text, index) => ({ text, start_ms: 1700 + index * 100, duration_ms: 80 })),
+    ] };
+    const originalBoundaries = structuredClone(timing.boundaries);
+    expect(subtitleAtTime(narration, timing, 99)).toBe('');
+    expect(subtitleAtTime(narration, timing, 100)).toBe('“白1”， 黑2、4 后，白3。');
+    expect(subtitleAtTime(narration, timing, 1699)).toBe('“白1”， 黑2、4 后，白3。');
+    expect(subtitleAtTime(narration, timing, 1700)).toBe('下一句 保留 空格，白5！');
+    expect(timing.boundaries).toEqual(originalBoundaries);
   });
   it('only treats confirmed source extent as known in static mode', () => {
     expect(knownRegion({ ...data, step_cues: { ...data.step_cues, status: 'pending' } })).toEqual({ col: 1, row: 0, cols: 8, rows: 9 });

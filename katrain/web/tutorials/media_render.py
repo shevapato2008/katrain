@@ -38,12 +38,17 @@ def _probe(path, *, timeout=20):
     )
 
 
-def _validate_inputs(board_payload, frames, speech_timing, step_cues, audio_path, render_mode):
+def _validate_inputs(narration, board_payload, frames, speech_timing, step_cues, audio_path, render_mode):
     if render_mode not in ("2d", "3d"):
         raise ValueError("render_mode must be 2d or 3d")
     digest = hashlib.sha256(audio_path.read_bytes()).hexdigest()
     if speech_timing.get("audio_sha256") != digest or step_cues.get("audio_sha256") != digest:
         raise ValueError("The audio artifact hash does not match speech_timing/step_cues")
+    if (
+        not isinstance(narration, str)
+        or speech_timing.get("narration_sha256") != hashlib.sha256(narration.encode()).hexdigest()
+    ):
+        raise ValueError("The saved narration hash does not match speech_timing")
     if speech_timing.get("schema_version") != 1 or step_cues.get("schema_version") != 1:
         raise ValueError("Unsupported tutorial media timing schema")
     duration = speech_timing.get("duration_ms")
@@ -69,6 +74,9 @@ def _validate_inputs(board_payload, frames, speech_timing, step_cues, audio_path
         ):
             raise ValueError("Invalid or unordered speech boundary")
         previous = start
+    from katrain.web.tutorials.media_timing import align_boundaries
+
+    align_boundaries(narration, boundaries)
     if not isinstance(board_payload.get("size"), int) or not 2 <= board_payload["size"] <= 25:
         raise ValueError("Invalid saved board size")
     if not isinstance(board_payload.get("stones"), dict):
@@ -193,6 +201,7 @@ def _capture_frames(data, directory, *, deadline):
 
 def render_video(
     *,
+    narration: str,
     board_payload: dict,
     frames: list[dict],
     speech_timing: dict,
@@ -207,7 +216,7 @@ def render_video(
     calibration label. Failures propagate to the job runner with their stage.
     """
     audio_path, output_path = Path(audio_path), Path(output_path)
-    duration = _validate_inputs(board_payload, frames, speech_timing, step_cues, audio_path, render_mode)
+    duration = _validate_inputs(narration, board_payload, frames, speech_timing, step_cues, audio_path, render_mode)
     audio = _probe(audio_path)
     if not any(stream.get("codec_type") == "audio" for stream in audio.get("streams", [])):
         raise ValueError("Saved speech artifact contains no audio stream")
@@ -216,6 +225,7 @@ def render_video(
         raise ValueError("Saved speech duration disagrees with the actual audio artifact")
     deadline = time.monotonic() + RENDER_TIMEOUT_SECONDS
     data = {
+        "narration": narration,
         "board_payload": board_payload,
         "frames": frames,
         "speech_timing": speech_timing,

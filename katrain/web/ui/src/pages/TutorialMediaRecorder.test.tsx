@@ -6,6 +6,7 @@ afterEach(() => { delete window.__TUTORIAL_MEDIA_DATA; });
 
 it('renders the saved final board and permanent pending label with unknown extent and occupied points', () => {
   window.__TUTORIAL_MEDIA_DATA = {
+    narration: '静态局面。',
     render_mode: '2d',
     board_payload: { size: 19, stones: { B: [[14, 2]], W: [[15, 14]] },
       unknown_stones: [{ point: [12, 8], color: null }],

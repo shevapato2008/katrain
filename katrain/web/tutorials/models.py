@@ -82,6 +82,15 @@ class TutorialFigureOut(BaseModel):
         return value.replace(tzinfo=timezone.utc) if value is not None and value.tzinfo is None else value
 
 
+class TutorialFigureAdminOut(TutorialFigureOut):
+    """Authenticated authoring response; reviewer identities stay out of public schemas."""
+
+    board_review: Optional[Dict[str, Any]] = None
+    video_2d_review: Optional[Dict[str, Any]] = None
+    video_3d_review: Optional[Dict[str, Any]] = None
+    review_validity: Optional[Dict[str, Any]] = None
+
+
 class TutorialSectionDetailOut(TutorialSectionOut):
     """Section with all its figures included."""
 

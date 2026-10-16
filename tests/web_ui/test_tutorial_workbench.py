@@ -695,14 +695,14 @@ def test_workbench_separates_playability_and_saved_board_review_without_inheriti
     assert by_id[1]["replay"]["status"] == "complete" and by_id[1]["review"]["sequence"] is None
     assert {figure_id: row["board_review_status"] for figure_id, row in by_id.items()} == {
         1: "unreviewed",
-        2: "legacy_verified",
+        2: "unreviewed",
         3: "unreviewed",
         4: "unreviewed",
     }
     pending = client.get("/api/admin/tutorials/books/1/workbench?page=92&filter=sequence_pending").json()["figures"]
     assert {row["figure"]["id"] for row in pending} == {2, 3, 4}
     uncalibrated = client.get("/api/admin/tutorials/books/1/workbench?page=92&filter=uncalibrated").json()["figures"]
-    assert {row["figure"]["id"] for row in uncalibrated} == {1, 3, 4}
+    assert {row["figure"]["id"] for row in uncalibrated} == {1, 2, 3, 4}
     with Session() as db:
         for figure_id in (2, 3, 4):
             assert db.get(models_db.TutorialFigure, figure_id).recognition_debug == {"human_verified": True}

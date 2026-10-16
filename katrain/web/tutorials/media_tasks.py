@@ -30,6 +30,7 @@ from katrain.web.tutorials.media_timing import (
     probe_duration,
     synthesize_audio,
 )
+from katrain.web.tutorials.manual_review import board_approval, board_authority, media_dependencies
 from katrain.web.tutorials.replay import replay_frames, validate_replay
 from katrain.web.tutorials.services import _get_book_slug
 
@@ -54,16 +55,9 @@ def invalidate_media(debug, *, narration=False):
 
 
 def content_inputs(figure, kind, voice=VOICE):
-    result = {"narration": figure.narration, "voice": voice}
     if kind == "video":
-        media = media_metadata(figure)
-        result.update(
-            board_payload=figure.board_payload,
-            audio_asset=figure.audio_asset,
-            audio=media.get("audio"),
-            speech_timing=media.get("speech_timing"),
-        )
-    return result
+        return media_dependencies(figure, voice=voice)
+    return {"narration": figure.narration, "voice": voice, **board_authority(figure)}
 
 
 def task_output(task):
@@ -109,6 +103,9 @@ class MediaWorker:
                 db.execute(text("SELECT pg_advisory_xact_lock(1853101)"))
                 db.refresh(figure, with_for_update=True)
             _version_filter(db, figure, body.expected_updated_at)
+            approval = board_approval(figure)
+            if not approval["approved"]:
+                raise HTTPException(status_code=422, detail=approval["reason"])
             inputs = content_inputs(figure, body.kind)
             input_digest = digest(inputs)
             existing = db.scalar(
@@ -248,6 +245,17 @@ class MediaWorker:
             )
             if task is None:
                 return False
+            figure = db.get(TutorialFigure, task.figure_id)
+            if (
+                figure is None
+                or not board_approval(figure)["approved"]
+                or digest(content_inputs(figure, task.kind, task.snapshot["voice"])) != task.input_digest
+            ):
+                task.status, task.stage = "stale", "stale"
+                task.error = "Static diagram approval or saved media inputs changed before generation"
+                task.finished_at = datetime.now(timezone.utc)
+                db.commit()
+                return True
             claimed = db.execute(
                 update(TutorialMediaTask)
                 .where(TutorialMediaTask.id == task.id, TutorialMediaTask.status == "queued")
@@ -429,10 +437,30 @@ class MediaWorker:
             )
             if not video_path.is_file() or not video_path.stat().st_size:
                 raise RuntimeError("Renderer returned empty video")
+            with video_path.open("rb") as video_source:
+                file_sha256 = hashlib.file_digest(video_source, "sha256").hexdigest()
             result.update(
                 step_cues={**cues, "asset": prefix + "/step_cues.json"},
                 video={
                     "asset": prefix + f"/video-{mode}.mp4",
+                    "sha256": file_sha256,
+                    "dependencies_sha256": digest(
+                        {
+                            **{
+                                key: snapshot[key]
+                                for key in (
+                                    "board_content_sha256",
+                                    "board_review_sha256",
+                                    "narration",
+                                    "voice",
+                                    "board_payload",
+                                )
+                            },
+                            "audio_asset": audio["asset"],
+                            "audio": audio,
+                            "speech_timing": timing,
+                        }
+                    ),
                     "duration_ms": probe_duration(video_path),
                     "size_bytes": video_path.stat().st_size,
                     "audio_sha256": timing["audio_sha256"],
@@ -465,7 +493,11 @@ class MediaWorker:
             if task is None or task.status != "running":
                 return
             figure = db.get(TutorialFigure, task.figure_id, with_for_update=True)
-            if figure is None or digest(content_inputs(figure, task.kind, task.snapshot["voice"])) != task.input_digest:
+            if (
+                figure is None
+                or not board_approval(figure)["approved"]
+                or digest(content_inputs(figure, task.kind, task.snapshot["voice"])) != task.input_digest
+            ):
                 task.status, task.stage, task.error = "stale", "stale", "Saved media inputs changed during generation"
                 task.result = result
             else:
@@ -477,10 +509,12 @@ class MediaWorker:
                 media.update(audio=result["audio"], speech_timing=result["speech_timing"])
                 values = {"audio_asset": result["audio"]["asset"]}
                 if result["generated_audio"]:
+                    values.update(video_2d_review=None, video_3d_review=None)
                     values.update(video_asset=None, video_duration_ms=None, video_size_bytes=None)
                 if digest(figure.board_payload) == digest(task.snapshot.get("board_payload")):
                     media["step_cues"] = result["step_cues"]
                 if task.kind == "video":
+                    values[f"video_{task.render_mode}_review"] = None
                     media["step_cues"] = result["step_cues"]
                     media.setdefault("videos", {})[task.render_mode] = result["video"]
                     if task.render_mode == "2d":

@@ -12,7 +12,6 @@ from sqlalchemy.pool import StaticPool
 
 from katrain.web.core import models_db
 
-
 BOARD = {"size": 19, "stones": {"B": [[3, 3]], "W": []}}
 URL = "/api/admin/tutorials/figures/1"
 
@@ -186,83 +185,21 @@ def test_audit_failure_rolls_back_business_change(writer):
         assert db.get(models_db.TutorialFigure, 1).narration is None
 
 
-def test_tts_failure_leaves_database_untouched_and_retry_binds_versioned_asset(writer, monkeypatch):
+def test_legacy_audio_generation_directs_to_durable_tasks_without_side_effects(writer, monkeypatch):
     client, Session, tutorials, tmp_path = writer
-    with Session() as db:
-        db.get(models_db.TutorialFigure, 1).video_asset = "old.mp4"
-        db.get(models_db.TutorialFigure, 1).video_duration_ms = 12000
-        db.get(models_db.TutorialFigure, 1).video_size_bytes = 3456
-        db.commit()
-        db.execute(update(models_db.TutorialFigure).where(models_db.TutorialFigure.id == 1).values(updated_at=None))
-        db.commit()
 
-    async def failing(_text, _path):
-        raise RuntimeError("TTS unavailable")
+    async def forbidden(*args):
+        raise AssertionError("Legacy generation must never synthesize")
 
-    monkeypatch.setattr(tutorials, "_synthesize_audio", failing)
-    failed = client.post(f"{URL}/generate-audio", json={"narration": "spoken", "expected_updated_at": None})
-    assert failed.status_code == 502
-    with Session() as db:
-        fig = db.get(models_db.TutorialFigure, 1)
-        assert fig.narration is None and fig.audio_asset is None and fig.video_asset == "old.mp4"
-        assert fig.video_duration_ms == 12000 and fig.video_size_bytes == 3456
-        assert fig.updated_at is None
-
-    async def succeeding(_text, path):
-        path.write_bytes(b"MP3 test bytes")
-
-    monkeypatch.setattr(tutorials, "_synthesize_audio", succeeding)
-    saved = client.post(f"{URL}/generate-audio", json={"narration": "spoken", "expected_updated_at": None})
-    assert saved.status_code == 200, saved.text
-    key = saved.json()["audio_asset"]
-    assert key.startswith("tutorial_assets/test-book/audio/fig_1_") and key.endswith(".mp3")
-    assert (tmp_path / key).read_bytes() == b"MP3 test bytes"
-    assert saved.json()["narration"] == "spoken"
-    assert saved.json()["video_asset"] is None
-    assert saved.json()["video_duration_ms"] is None
-    assert saved.json()["video_size_bytes"] is None
-
-
-def test_tts_upload_failure_does_not_commit_narration(writer, monkeypatch):
-    client, Session, tutorials, _ = writer
-
-    async def succeeding(_text, path):
-        path.write_bytes(b"audio")
-
-    class FailingStorage:
-        def put(self, *_args, **_kwargs):
-            raise RuntimeError("object storage unavailable")
-
-    monkeypatch.setattr(tutorials, "_synthesize_audio", succeeding)
-    monkeypatch.setattr(tutorials, "get_storage_backend", FailingStorage)
-    response = client.post(f"{URL}/generate-audio", json={"narration": "new text", "expected_updated_at": None})
-    assert response.status_code == 502
+    monkeypatch.setattr(tutorials, "_synthesize_audio", forbidden)
+    response = client.post(f"{URL}/generate-audio", json={"narration": "spoken", "expected_updated_at": None})
+    assert response.status_code == 409
+    assert "media-tasks" in response.json()["detail"]
     with Session() as db:
         figure = db.get(models_db.TutorialFigure, 1)
         assert figure.narration is None and figure.audio_asset is None and figure.updated_at is None
-
-
-def test_tts_detects_a_conflict_after_upload(writer, monkeypatch):
-    client, Session, tutorials, tmp_path = writer
-
-    async def racing_generation(_text, path):
-        path.write_bytes(b"audio")
-        with Session() as db:
-            db.execute(
-                update(models_db.TutorialFigure)
-                .where(models_db.TutorialFigure.id == 1)
-                .values(narration="another editor", updated_at=datetime.now(timezone.utc))
-            )
-            db.commit()
-
-    monkeypatch.setattr(tutorials, "_synthesize_audio", racing_generation)
-    response = client.post(f"{URL}/generate-audio", json={"narration": "stale", "expected_updated_at": None})
-    assert response.status_code == 409
-    with Session() as db:
-        figure = db.get(models_db.TutorialFigure, 1)
-        assert figure.narration == "another editor" and figure.audio_asset is None
         assert db.query(models_db.AdminAuditLog).count() == 0
-    assert len(list(tmp_path.rglob("fig_1_*.mp3"))) == 1
+    assert not list(tmp_path.rglob("*.mp3"))
 
 
 def test_missing_audit_table_returns_unavailable_and_rolls_back(writer):

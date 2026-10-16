@@ -1,8 +1,6 @@
 """Versioned tutorial authoring for the dedicated admin process."""
 
 import logging
-import tempfile
-import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -15,7 +13,7 @@ from sqlalchemy.orm import Session
 from katrain.web.admin.session import get_current_admin
 from katrain.web.core.models_db import AdminAuditLog, BoardPayloadHistory, TrainingSample, TutorialFigure
 from katrain.web.core.storage import get_storage_backend
-from katrain.web.tutorials.models import StrictBoardPayload, TutorialFigureOut
+from katrain.web.tutorials.models import StrictBoardPayload, TutorialFigureAdminOut as TutorialFigureOut
 from katrain.web.tutorials.services import _get_book_slug
 
 logger = logging.getLogger(__name__)
@@ -79,7 +77,10 @@ def _utc(value: datetime) -> datetime:
 
 
 def _output(figure: TutorialFigure) -> TutorialFigureOut:
+    from katrain.web.tutorials.manual_review import review_validity
+
     result = TutorialFigureOut.model_validate(figure)
+    result.review_validity = review_validity(figure)
     if result.updated_at is not None:
         result.updated_at = _utc(result.updated_at)
     return result
@@ -195,6 +196,7 @@ def update_narration(
     if figure.narration != body.narration:
         from katrain.web.tutorials.media_tasks import invalidate_media
 
+        values.update(video_2d_review=None, video_3d_review=None)
         values["recognition_debug"] = invalidate_media(figure.recognition_debug, narration=True)
         values["audio_asset"] = None
         values["video_asset"] = None
@@ -220,50 +222,11 @@ async def generate_audio(
     db: Session = Depends(get_admin_db),
     admin: dict = Depends(get_current_admin),
 ):
-    figure = _load(db, figure_id)
-    # A preflight avoids generating an object for an already stale editor.
-    if body.expected_updated_at is None:
-        stale = figure.updated_at is not None
-    else:
-        stale = figure.updated_at is None or _utc(figure.updated_at) != _utc(
-            datetime.fromisoformat(body.expected_updated_at.replace("Z", "+00:00"))
-        )
-    if stale:
-        raise HTTPException(status_code=409, detail="Figure was modified by another session. Reload and retry.")
-
-    book_slug = _get_book_slug(db, figure)
-    key = f"tutorial_assets/{book_slug}/audio/fig_{figure_id}_{uuid.uuid4().hex}.mp3"
-    with tempfile.TemporaryDirectory(prefix="katrain-admin-tts-") as directory:
-        path = Path(directory) / "audio.mp3"
-        try:
-            await _synthesize_audio(body.narration, path)
-            if not path.is_file() or path.stat().st_size == 0:
-                raise RuntimeError("TTS returned empty audio")
-            with path.open("rb") as audio:
-                get_storage_backend().put(key, audio, content_type="audio/mpeg")
-        except Exception as exc:
-            logger.warning("Admin TTS or upload failed for figure %d: %s", figure_id, exc)
-            raise HTTPException(status_code=502, detail="Audio generation or upload failed") from exc
-
-    from katrain.web.tutorials.media_tasks import invalidate_media
-
-    figure = _cas_update(
-        db,
-        figure,
-        body.expected_updated_at,
-        {
-            "recognition_debug": invalidate_media(figure.recognition_debug, narration=True),
-            "narration": body.narration,
-            "audio_asset": key,
-            "video_asset": None,
-            "video_duration_ms": None,
-            "video_size_bytes": None,
-        },
+    _load(db, figure_id)
+    raise HTTPException(
+        status_code=409,
+        detail=f"Legacy audio generation is disabled. Save narration, approve the static diagram, then POST /figures/{figure_id}/media-tasks with kind=audio and expected_updated_at.",
     )
-    _audit(db, admin, "tutorial.generate_audio", figure_id)
-    _commit(db)
-    db.refresh(figure)
-    return _output(figure)
 
 
 def _export_training(db: Session, figure: TutorialFigure) -> TrainingExportResult:

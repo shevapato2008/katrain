@@ -33,7 +33,15 @@ from katrain.web.core.models_db import (
     TutorialFigure,
     TutorialSection,
 )
-from katrain.web.tutorials.models import StrictBoardPayload, TutorialFigureOut
+from katrain.web.tutorials.models import StrictBoardPayload, TutorialFigureAdminOut as TutorialFigureOut
+from katrain.web.tutorials.manual_review import (
+    board_approval,
+    board_content_sha256,
+    board_problem,
+    make_review,
+    static_payload,
+    review_validity,
+)
 from katrain.web.tutorials.recognition_import import content_sha256
 from katrain.web.tutorials.recognition_models import TutorialRecognitionCandidate
 from katrain.web.tutorials.replay import validate_replay
@@ -108,7 +116,10 @@ def _save_payload(
         "board_payload": payload,
         "recognition_debug": debug,
     }
-    if original != payload or (narration_set and figure.narration != narration):
+    if candidate_id is not None or static_payload(original) != static_payload(payload):
+        values["board_review"] = None
+    if original != payload or candidate_id is not None or (narration_set and figure.narration != narration):
+        values.update(video_2d_review=None, video_3d_review=None)
         values.update(video_asset=None, video_duration_ms=None, video_size_bytes=None)
     if narration_set:
         values["narration"] = narration
@@ -153,27 +164,29 @@ def _verify(figure_id, body, db, admin, scope):
     figure = _load(db, figure_id)
     if not figure.board_payload:
         raise HTTPException(status_code=422, detail="Save a board before verification")
-    try:
-        StrictBoardPayload.model_validate(figure.board_payload)
-    except ValidationError as exc:
-        raise HTTPException(status_code=422, detail="Saved diagram needs calibration") from exc
-    payload = figure.board_payload
     if scope == "board":
-        if payload.get("unknown_stones") or (
-            payload.get("schema_version") == 2 and not (payload.get("source_region") or {}).get("confirmed")
-        ):
+        problem = board_problem(figure)
+        if problem:
+            raise HTTPException(status_code=422, detail=problem)
+    else:
+        try:
+            StrictBoardPayload.model_validate(figure.board_payload)
+        except ValidationError as exc:
+            raise HTTPException(status_code=422, detail="Saved diagram needs calibration") from exc
+        if validate_replay(figure.board_payload)["status"] != "complete":
             raise HTTPException(
-                status_code=422, detail="Resolve unknown stones and confirm the source region before board verification"
+                status_code=422, detail={"message": "Replay needs calibration", **validate_replay(figure.board_payload)}
             )
-    elif validate_replay(payload)["status"] != "complete":
-        raise HTTPException(status_code=422, detail={"message": "Replay needs calibration", **validate_replay(payload)})
     debug = copy.deepcopy(figure.recognition_debug or {})
     review = _review(figure)
     review[scope] = {"verified_by": admin["username"], "verified_at": datetime.now(timezone.utc).isoformat()}
     debug["calibration_review"] = review
     if scope == "board":
         debug.update(human_verified=True, verified_by=admin["username"], verified_at=review[scope]["verified_at"])
-    figure = _cas_update(db, figure, body.expected_updated_at, {"recognition_debug": debug})
+    values = {"recognition_debug": debug}
+    if scope == "board":
+        values["board_review"] = make_review(admin, board_content_sha256(figure))
+    figure = _cas_update(db, figure, body.expected_updated_at, values)
     db.add(
         BoardPayloadHistory(
             figure_id=figure.id,
@@ -291,10 +304,9 @@ def _entry(figure, candidates, references):
     review = _review(figure)
     board_review_status = "unreviewed"
     if current is not None:
-        if review["board"]:
+        if board_approval(figure)["approved"]:
             board_review_status = "verified"
-        elif current.get("schema_version") != 2 and (figure.recognition_debug or {}).get("human_verified") is True:
-            board_review_status = "legacy_verified"
+
     chosen = current if current is not None else (candidates[-1].board_payload if candidates else None)
     evidence = [candidate.raw_result for candidate in candidates]
     inference = _flag(
@@ -311,6 +323,7 @@ def _entry(figure, candidates, references):
         "candidates": [_candidate(candidate) for candidate in candidates],
         "source_references": [_reference(reference) for reference in references],
         "review": review,
+        "review_validity": review_validity(figure),
         "board_review_status": board_review_status,
         "replay": validate_replay(chosen or {}),
         "inference": inference,

@@ -130,6 +130,7 @@ def media(tmp_path, monkeypatch):
     from katrain.web.admin.routers import tutorial_media, tutorial_workbench, tutorials
     from katrain.web.admin.session import get_current_admin
     from katrain.web.tutorials import media_tasks
+    from katrain.web.tutorials.manual_review import board_content_sha256, make_review
     from katrain.web.core.storage.local import LocalStorageBackend
 
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False}, poolclass=StaticPool)
@@ -153,6 +154,9 @@ def media(tmp_path, monkeypatch):
                 board_payload=board(),
             )
         )
+        db.commit()
+        figure = db.get(models_db.TutorialFigure, 1)
+        figure.board_review = make_review({"username": "isolated-fixture-reviewer"}, board_content_sha256(figure))
         db.commit()
         db.execute(update(models_db.TutorialFigure).values(updated_at=None))
         db.commit()
@@ -502,7 +506,7 @@ def test_audio_immediately_publishes_authoritative_cues(media, monkeypatch):
         assert storage.exists(metadata["step_cues"]["asset"])
 
 
-def test_board_edit_during_audio_keeps_speech_but_omits_old_cues(media, monkeypatch):
+def test_board_edit_during_audio_prevents_publication(media, monkeypatch):
     from katrain.web.tutorials import media_tasks
 
     client, factory, worker, storage, app = media
@@ -521,10 +525,10 @@ def test_board_edit_during_audio_keeps_speech_but_omits_old_cues(media, monkeypa
     task = enqueue(client).json()["task"]
     worker.run_next()
     with factory() as db:
-        metadata = db.get(models_db.TutorialFigure, 1).recognition_debug["workbench_media"]
-        assert metadata["audio"] and metadata["speech_timing"]
-        assert not metadata.get("step_cues")
-        assert db.get(models_db.TutorialMediaTask, task["id"]).status == "succeeded"
+        figure = db.get(models_db.TutorialFigure, 1)
+        assert figure.audio_asset is None
+        assert not (figure.recognition_debug or {}).get("workbench_media")
+        assert db.get(models_db.TutorialMediaTask, task["id"]).status == "stale"
 
 
 def test_publication_audit_failure_rolls_back_media_binding(media):

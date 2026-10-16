@@ -555,3 +555,104 @@ def test_export_extent_distinguishes_confirmed_crop_from_full_board(workbench):
                     "unknown_extent": not full_board,
                 }
             )
+
+
+def test_accepted_collection_scopes_workbench_and_zip_preserving_legacy_and_current(workbench):
+    from katrain.web.tutorials.recognition_import import content_sha256, import_candidate
+
+    client, Session, _ = workbench
+    protected = diagram()
+    protected["labels"]["0,0"] = "human saved"
+    saved = save(client, protected).json()
+    verified = client.put(
+        "/api/admin/tutorials/figures/1/verify-board", json={"expected_updated_at": saved["updated_at"]}
+    )
+    assert verified.status_code == 200, verified.text
+    with Session() as db:
+        db.add(models_db.TutorialFigure(id=2, section_id=1, page=92, figure_label="recognized extra", order=2))
+        db.add(
+            models_db.TutorialFigure(
+                id=3,
+                section_id=1,
+                page=92,
+                figure_label="legacy unlinked",
+                order=3,
+                board_payload={"size": 9, "stones": {"B": [[3, 3]], "W": []}},
+            )
+        )
+        db.commit()
+        db.execute(
+            update(models_db.TutorialFigure)
+            .where(models_db.TutorialFigure.id == 1)
+            .values(narration="human narration", audio_asset="protected.mp3")
+        )
+        db.commit()
+        figure = db.get(models_db.TutorialFigure, 1)
+        original = {
+            name: copy.deepcopy(getattr(figure, name))
+            for name in ("board_payload", "recognition_debug", "narration", "audio_asset", "updated_at")
+        }
+    fallback = client.get("/api/admin/tutorials/books/1/workbench?page=92").json()
+    assert {row["figure"]["id"] for row in fallback["figures"]} == {1, 2, 3}
+    assert fallback["scope"]["dataset"] is None
+    assert fallback["scope"]["physical_figure_count"] == 3
+    assert fallback["scope"]["legacy_unlinked_count"] == 0
+    with Session() as db:
+        for recognition_id, figure_id, dataset in (
+            ("p092-f03", 1, "ishida-full195-gpt61sol-v1"),
+            ("p092-f04", 2, "ishida-full195-gpt61sol-v1"),
+            ("p092-f04-related", 2, "ishida-full195-gpt61sol-v1"),
+            ("old-experiment", 3, "unaccepted-experiment"),
+        ):
+            import_candidate(
+                db,
+                source_book_id=1,
+                dataset=dataset,
+                recognition_id=recognition_id,
+                figure_id=figure_id,
+                page=92,
+                raw_result={"id": recognition_id},
+                board_payload=diagram(),
+            )
+        db.commit()
+    response = client.get("/api/admin/tutorials/books/1/workbench?page=92")
+    assert response.status_code == 200, response.text
+    default = response.json()
+    assert {row["figure"]["id"] for row in default["figures"]} == {1, 2}
+    assert default["scope"] == {
+        "dataset": "ishida-full195-gpt61sol-v1",
+        "physical_figure_count": 2,
+        "legacy_unlinked_count": 1,
+        "legacy_unlinked_label": "旧数据未关联",
+    }
+    page = next(item for item in default["pages"] if item["page"] == 92)
+    assert (page["figure_count"], page["filtered_figure_count"], page["legacy_unlinked_count"]) == (2, 2, 1)
+    pending = client.get("/api/admin/tutorials/books/1/workbench?page=92&filter=uncalibrated").json()
+    assert [row["figure"]["id"] for row in pending["figures"]] == [2]
+    legacy_response = client.get("/api/admin/tutorials/books/1/workbench?page=92&filter=legacy_unlinked")
+    assert legacy_response.status_code == 200, legacy_response.text
+    legacy = legacy_response.json()
+    assert [row["figure"]["id"] for row in legacy["figures"]] == [3]
+    assert legacy["figures"][0]["scope_label"] == "旧数据未关联"
+    assert next(item for item in legacy["pages"] if item["page"] == 92)["filtered_figure_count"] == 1
+    archive = client.get("/api/admin/tutorials/books/1/export.zip")
+    assert archive.status_code == 200, archive.text
+    with zipfile.ZipFile(io.BytesIO(archive.content)) as zipped:
+        index = json.loads(zipped.read("index.json"))
+        assert len([name for name in zipped.namelist() if name.endswith(".sgf")]) == 2
+        assert {entry["figure_id"] for entry in index["figures"]} == {1, 2}
+        assert index["scope"] == default["scope"]
+        assert len(index["legacy_unlinked"]) == 1
+        unlinked = index["legacy_unlinked"][0]
+        assert unlinked["figure_id"] == 3 and unlinked["page"] == 92
+        assert unlinked["figure_label"] == "legacy unlinked" and unlinked["status"] == "legacy_unlinked"
+        assert "version" in unlinked and unlinked["reason"]
+        current = next(entry for entry in index["figures"] if entry["figure_id"] == 1)
+        assert current["version_kind"] == "current" and current["payload_sha256"] == content_sha256(protected)
+        assert json.loads(zipped.read(current["json_file"]))["board_payload"] == protected
+        assert next(entry for entry in index["figures"] if entry["figure_id"] == 2)["version_kind"] == "candidate"
+    assert client.get("/api/admin/tutorials/figures/3/export.sgf").status_code == 200
+    assert client.get("/api/admin/tutorials/figures/3/history").status_code == 200
+    with Session() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        assert {name: getattr(figure, name) for name in original} == original

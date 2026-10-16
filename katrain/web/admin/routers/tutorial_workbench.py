@@ -42,6 +42,7 @@ from katrain.web.tutorials.source_models import TutorialSourceFigure, TutorialSo
 from katrain.web.tutorials.viewport import compute_viewport
 
 router = APIRouter(dependencies=[Depends(get_current_admin)])
+ACCEPTED_RECOGNITION_DATASET = "ishida-full195-gpt61sol-v1"
 
 
 class ApplyCandidateWrite(VersionedWrite):
@@ -354,11 +355,33 @@ def _book_entries(db, book_id, source):
     ], references
 
 
+def _select_book_collection(entries):
+    """Use the accepted physical targets without changing or identifying legacy rows."""
+    accepted_ids = {
+        figure.id
+        for figure, entry in entries
+        if any(candidate["dataset"] == ACCEPTED_RECOGNITION_DATASET for candidate in entry["candidates"])
+    }
+    selected, legacy_unlinked = [], []
+    for figure, entry in entries:
+        legacy = bool(accepted_ids) and figure.id not in accepted_ids
+        entry["scope_status"] = "legacy_unlinked" if legacy else "recognized_physical" if accepted_ids else "all"
+        entry["scope_label"] = "旧数据未关联" if legacy else "已接受的识别集合" if accepted_ids else "全部图记录"
+        (legacy_unlinked if legacy else selected).append((figure, entry))
+    scope = {
+        "dataset": ACCEPTED_RECOGNITION_DATASET if accepted_ids else None,
+        "physical_figure_count": len(selected),
+        "legacy_unlinked_count": len(legacy_unlinked),
+        "legacy_unlinked_label": "旧数据未关联",
+    }
+    return selected, legacy_unlinked, scope
+
+
 @router.get("/books/{book_id}/workbench")
 def get_workbench(
     book_id: int,
     page: int = Query(ge=1),
-    filter: Literal["all", "uncalibrated", "inference", "uncertainty", "sequence_pending"] = "all",
+    filter: Literal["all", "uncalibrated", "inference", "uncertainty", "sequence_pending", "legacy_unlinked"] = "all",
     db: Session = Depends(get_admin_db),
 ):
     source = _load_source(db, book_id)
@@ -373,25 +396,33 @@ def get_workbench(
     if selected is None:
         raise HTTPException(status_code=404, detail="Source page not found")
     entries, references = _book_entries(db, book_id, source)
+    selected_entries, legacy_entries, scope = _select_book_collection(entries)
 
-    def page_entries(number):
+    def page_entries(collection, number):
         return [
             entry
-            for figure, entry in entries
+            for figure, entry in collection
             if figure.page == number or any(candidate["page"] == number for candidate in entry["candidates"])
         ]
+
+    def filtered_page_entries(number):
+        if filter == "legacy_unlinked":
+            return page_entries(legacy_entries, number)
+        return [entry for entry in page_entries(selected_entries, number) if _matches(entry, filter)]
 
     return {
         "book_id": book_id,
         "source_catalog_id": source.catalog_id,
         "filter": filter,
+        "scope": scope,
         "pages": [
             {
                 "page": item.page,
                 "page_image_path": _asset_path(item.page_image_path),
                 "has_text": bool(item.page_context_text.strip() or item.text_fragments),
-                "figure_count": len(page_entries(item.page)),
-                "filtered_figure_count": sum(_matches(entry, filter) for entry in page_entries(item.page)),
+                "figure_count": len(page_entries(selected_entries, item.page)),
+                "filtered_figure_count": len(filtered_page_entries(item.page)),
+                "legacy_unlinked_count": len(page_entries(legacy_entries, item.page)),
             }
             for item in pages
         ],
@@ -402,7 +433,7 @@ def get_workbench(
             "text_fragments": selected.text_fragments,
             "source_references": [_reference(reference) for reference in references if reference.page == page],
         },
-        "figures": [entry for entry in page_entries(page) if _matches(entry, filter)],
+        "figures": filtered_page_entries(page),
     }
 
 
@@ -463,15 +494,28 @@ def export_figure(figure_id: int, db: Session = Depends(get_admin_db)):
 def export_book(book_id: int, db: Session = Depends(get_admin_db)):
     source = _load_source(db, book_id)
     entries, _ = _book_entries(db, book_id, source)
+    selected_entries, legacy_entries, scope = _select_book_collection(entries)
     index = {
         "book_id": book_id,
         "source_catalog_id": source.catalog_id if source else None,
+        "scope": scope,
         "figures": [],
         "skipped": [],
+        "legacy_unlinked": [
+            {
+                "figure_id": figure.id,
+                "page": figure.page,
+                "figure_label": figure.figure_label,
+                "version": _output(figure).updated_at.isoformat() if figure.updated_at is not None else None,
+                "status": "legacy_unlinked",
+                "reason": "not_linked_to_accepted_recognition_dataset",
+            }
+            for figure, _ in legacy_entries
+        ],
     }
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-        for figure, entry in entries:
+        for figure, entry in selected_entries:
             record = _export_record(figure, entry)
             if record is None:
                 index["skipped"].append({"figure_id": figure.id, "reason": "no_saved_diagram_or_candidate"})

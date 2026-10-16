@@ -238,3 +238,6 @@ katrain/web/ui/test-results/
 # empty text extraction of a scanned PDF. The source PDF and useful OCR remain tracked.
 /tmp/pdfs/es-sol.pdf
 /tmp/pdfs/fr-belgo.txt
+
+# Standalone server tutorial recorder bundle
+katrain/web/tutorial-media-static/

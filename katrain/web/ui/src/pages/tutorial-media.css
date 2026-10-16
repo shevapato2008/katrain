@@ -1,0 +1,15 @@
+/* This entry is only served inside the isolated server recorder browser. */
+@import '@fontsource/noto-sans-sc/400.css';
+@import '@fontsource/noto-sans-sc/600.css';
+
+* { box-sizing: border-box; }
+html, body, #root { width: 100%; height: 100%; margin: 0; }
+body { background: #0f0f0f; color: #f4f1e9; font-family: 'Noto Sans SC', sans-serif; }
+.tm-recorder { width: 100vw; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+.tm-board-area { height: calc(100vh - 116px); display: flex; justify-content: center; align-items: center; position: relative; }
+.tm-board-square { position: relative; width: min(100vw, calc(100vh - 116px)); height: min(100vw, calc(100vh - 116px)); }
+.tm-board-square > svg { height: 100%; }
+.tm-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.tm-static { position: absolute; left: 24px; top: 18px; padding: 9px 14px; border: 1px solid #a8a08d; border-radius: 5px; background: #22221f; color: #ece1bf; font-size: 21px; font-weight: 600; }
+.tm-caption { height: 116px; flex-shrink: 0; padding: 12px 64px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 29px; line-height: 1.55; background: #161616; }
+.tm-caption span { max-width: 1100px; }

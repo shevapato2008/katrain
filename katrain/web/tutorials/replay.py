@@ -4,6 +4,8 @@ Coordinates at this boundary are full-board, top-left coordinates. KaTrain's
 Move coordinates are bottom-left, so convert exactly once at the rule boundary.
 """
 
+import copy
+import re
 from collections import deque
 from types import SimpleNamespace
 
@@ -70,7 +72,7 @@ def _uncertain_move(board, point, color, size, region, unknown):
     return None
 
 
-def validate_replay(payload: dict) -> dict:
+def validate_replay(payload: dict, *, _frames=None) -> dict:
     """Return computed playability and issues, including for an incomplete draft."""
     issues = []
     replay = payload.get("replay")
@@ -134,6 +136,37 @@ def validate_replay(payload: dict) -> dict:
     if board != _board(initial["stones"]):
         issues.append("Initial setup changes occupancy under the game rules")
         return result()
+    labels = copy.deepcopy(initial.get("labels") or {})
+    letters = copy.deepcopy(initial.get("letters") or {})
+    shapes = copy.deepcopy(initial.get("shapes") or {})
+
+    def snapshot(step, item, captured):
+        if _frames is None:
+            return
+        stones = {
+            color: [list(point) for point, occupant in sorted(board.items()) if occupant == color]
+            for color in ("B", "W")
+        }
+        _frames.append(
+            {
+                "step": step,
+                "payload": {
+                    "size": size,
+                    "stones": stones,
+                    "unknown_stones": copy.deepcopy(initial.get("unknown_stones", [])),
+                    "labels": copy.deepcopy(labels),
+                    "letters": copy.deepcopy(letters),
+                    "shapes": copy.deepcopy(shapes),
+                    "viewport": copy.deepcopy(payload.get("viewport")),
+                },
+                "captured": [list(point) for point in sorted(captured)],
+                "last": copy.deepcopy(item.get("point")) if item and item["kind"] == "move" else None,
+                "currentMove": copy.deepcopy(item),
+                "nextColor": turn,
+            }
+        )
+
+    snapshot(0, None, [])
     signatures = [tuple(sorted(board.items()))]
     for index, item in enumerate(replay["moves"], 1):
 
@@ -161,13 +194,22 @@ def validate_replay(payload: dict) -> dict:
         except IllegalMoveException as exc:
             fail(str(exc))
             break
+        previous = board
         board = current_board()
+        captured = set(previous) - set(board)
+        for captured_point in captured:
+            key = f"{captured_point[0]},{captured_point[1]}"
+            for mapping in (labels, letters, shapes):
+                mapping.pop(key, None)
+        if item["kind"] == "move" and item.get("printed_number"):
+            labels[f"{point[0]},{point[1]}"] = item["printed_number"]
         signature = tuple(sorted(board.items()))
         if item["kind"] == "move" and len(signatures) >= 2 and signature == signatures[-2]:
             fail("simple ko recapture is not legal")
             break
         signatures.append(signature)
         turn = "W" if color == "B" else "B"
+        snapshot(index, item, captured)
     else:
         final = _board(payload["stones"])
         if source:
@@ -180,3 +222,96 @@ def validate_replay(payload: dict) -> dict:
                         issues.append("Replay final occupancy does not match the known static source region")
                         return result()
     return result()
+
+
+def replay_frames(payload: dict) -> list[dict]:
+    """Validated immutable snapshots; the existing BaseGame applies every move."""
+    frames = []
+    result = validate_replay(payload, _frames=frames)
+    if result["status"] != "complete":
+        raise ValueError("; ".join(result["issues"]))
+    return frames
+
+
+def replay_draft(payload: dict) -> dict:
+    """Propose an unsaved calibration draft without claiming source evidence."""
+    value = copy.deepcopy(payload)
+    size = value.get("size", 19)
+    region = value.get("source_region") or {"col": 0, "row": 0, "cols": size, "rows": size}
+    value.update(
+        schema_version=2,
+        size=size,
+        unknown_stones=value.get("unknown_stones") or [],
+        source_region={**region, "confirmed": False},
+    )
+    stones = value.setdefault("stones", {"B": [], "W": []})
+    stones.setdefault("B", [])
+    stones.setdefault("W", [])
+    labels = value.get("labels") or {}
+    numbered, warnings = _draft_candidates(value)
+    moves = (
+        [
+            {"kind": "move", "color": color, "point": point, "printed_number": label}
+            for _, color, point, label in numbered
+        ]
+        if not warnings
+        else []
+    )
+    moved = {tuple(item["point"]) for item in moves}
+    initial_stones = {color: [point for point in stones[color] if tuple(point) not in moved] for color in ("B", "W")}
+    value["replay"] = {
+        "status": "needs_calibration",
+        "initial": {
+            "stones": initial_stones,
+            "unknown_stones": copy.deepcopy(value["unknown_stones"]),
+            "labels": {key: label for key, label in labels.items() if tuple(map(int, key.split(","))) not in moved},
+            "letters": copy.deepcopy(value.get("letters") or {}),
+            "shapes": copy.deepcopy(value.get("shapes") or {}),
+            "known_region": {key: region[key] for key in ("col", "row", "cols", "rows")},
+            "to_play": moves[0]["color"] if moves else None,
+        },
+        "moves": moves,
+        "evidence": None,
+    }
+    return value
+
+
+def _draft_candidates(payload):
+    labels = payload.get("labels") or {}
+    stones = payload.get("stones") or {}
+    occupants = {}
+    for color in ("B", "W"):
+        for point in stones.get(color, []):
+            occupants.setdefault(f"{point[0]},{point[1]}", []).append((color, point))
+    numbered, warnings = [], []
+    if payload.get("unknown_stones"):
+        warnings.append("Unknown-colored stones require manual calibration")
+    for key, label in labels.items():
+        if not any(char.isdigit() for char in label):
+            continue
+        if not re.fullmatch(r"[0-9]+", label):
+            warnings.append(f"Label {label!r} is compound or is not a plain numeric label")
+            continue
+        if len(occupants.get(key, [])) != 1:
+            warnings.append(f"Numeric label {label} must identify one known-color occupied point")
+            continue
+        color, point = occupants[key][0]
+        numbered.append((int(label), color, point, label))
+    numbered.sort(key=lambda item: item[0])
+    if not numbered:
+        warnings.append("No unambiguous numeric move labels were found")
+    else:
+        if len({n for n, *_ in numbered}) != len(numbered):
+            warnings.append("Duplicate printed numbers require manual calibration")
+        if [n for n, *_ in numbered] != list(range(numbered[0][0], numbered[0][0] + len(numbered))):
+            warnings.append("Gaps in printed numbers require manual calibration")
+        if any(a[1] == b[1] for a, b in zip(numbered, numbered[1:])):
+            warnings.append("Actual stone colors must alternate")
+    return numbered, warnings
+
+
+def replay_draft_warnings(payload: dict) -> list[str]:
+    return _draft_candidates(payload)[1] + [
+        "Proposed initial setup and ordered moves require source confirmation",
+        "Confirm the known source region and add source evidence before saving a complete replay",
+    ]

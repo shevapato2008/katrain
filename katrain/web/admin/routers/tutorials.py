@@ -18,7 +18,6 @@ from katrain.web.core.storage import get_storage_backend
 from katrain.web.tutorials.models import StrictBoardPayload, TutorialFigureOut
 from katrain.web.tutorials.services import _get_book_slug
 
-
 logger = logging.getLogger(__name__)
 router = APIRouter(dependencies=[Depends(get_current_admin)])
 
@@ -194,6 +193,9 @@ def update_narration(
     figure = _load(db, figure_id)
     values = {"narration": body.narration}
     if figure.narration != body.narration:
+        from katrain.web.tutorials.media_tasks import invalidate_media
+
+        values["recognition_debug"] = invalidate_media(figure.recognition_debug, narration=True)
         values["audio_asset"] = None
         values["video_asset"] = None
         values["video_duration_ms"] = None
@@ -243,11 +245,14 @@ async def generate_audio(
             logger.warning("Admin TTS or upload failed for figure %d: %s", figure_id, exc)
             raise HTTPException(status_code=502, detail="Audio generation or upload failed") from exc
 
+    from katrain.web.tutorials.media_tasks import invalidate_media
+
     figure = _cas_update(
         db,
         figure,
         body.expected_updated_at,
         {
+            "recognition_debug": invalidate_media(figure.recognition_debug, narration=True),
             "narration": body.narration,
             "audio_asset": key,
             "video_asset": None,

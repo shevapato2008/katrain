@@ -37,6 +37,7 @@ from katrain.web.tutorials.models import StrictBoardPayload, TutorialFigureOut
 from katrain.web.tutorials.recognition_import import content_sha256
 from katrain.web.tutorials.recognition_models import TutorialRecognitionCandidate
 from katrain.web.tutorials.replay import validate_replay
+from katrain.web.tutorials.media_tasks import invalidate_media, media_metadata
 from katrain.web.tutorials.sgf_export import diagram_extent, diagram_sgf
 from katrain.web.tutorials.source_models import TutorialSourceFigure, TutorialSourcePage
 from katrain.web.tutorials.viewport import compute_viewport
@@ -99,19 +100,21 @@ def _save_payload(
     debug = _reset_reviews(
         copy.deepcopy(figure.recognition_debug or {}), figure.board_payload, payload, force=candidate_id is not None
     )
+    if original != payload:
+        debug = invalidate_media(debug)
     if candidate_id is not None:
         debug["applied_candidate_id"] = candidate_id
     values = {
         "board_payload": payload,
         "recognition_debug": debug,
-        "video_asset": None,
-        "video_duration_ms": None,
-        "video_size_bytes": None,
     }
+    if original != payload or (narration_set and figure.narration != narration):
+        values.update(video_asset=None, video_duration_ms=None, video_size_bytes=None)
     if narration_set:
         values["narration"] = narration
         if figure.narration != narration:
             values["audio_asset"] = None
+            values["recognition_debug"] = invalidate_media(debug, narration=True)
     figure = _cas_update(db, figure, expected, values)
     db.execute(delete(TrainingSample).where(TrainingSample.figure_id == figure.id))
     if preserve_original:
@@ -275,7 +278,9 @@ def _reference(reference):
 
 def _flag(value, keys):
     if isinstance(value, dict):
-        return any((key in keys and bool(item)) or _flag(item, keys) for key, item in value.items())
+        return any(
+            (key in keys and bool(item)) or _flag(item, keys) for key, item in value.items() if key != "workbench_media"
+        )
     if isinstance(value, list):
         return any(_flag(item, keys) for item in value)
     return False
@@ -302,6 +307,7 @@ def _entry(figure, candidates, references):
     return {
         "figure": _output(figure),
         "current": current,
+        "media": media_metadata(figure),
         "candidates": [_candidate(candidate) for candidate in candidates],
         "source_references": [_reference(reference) for reference in references],
         "review": review,

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import String, cast, delete, select, update
+from sqlalchemy import String, cast, select, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
@@ -17,7 +17,6 @@ from katrain.web.core.models_db import AdminAuditLog, BoardPayloadHistory, Train
 from katrain.web.core.storage import get_storage_backend
 from katrain.web.tutorials.models import StrictBoardPayload, TutorialFigureOut
 from katrain.web.tutorials.services import _get_book_slug
-from katrain.web.tutorials.viewport import compute_viewport
 
 
 logger = logging.getLogger(__name__)
@@ -168,36 +167,18 @@ def update_board(
     db: Session = Depends(get_admin_db),
     admin: dict = Depends(get_current_admin),
 ):
-    figure = _load(db, figure_id)
-    payload = body.board_payload.model_dump(exclude_none=True)
-    payload["viewport"] = compute_viewport(payload)
-    debug = dict(figure.recognition_debug or {})
-    debug["human_verified"] = False
-    debug.pop("verified_at", None)
-    debug.pop("verified_by", None)
-    # A rendered video belongs to the previous board (and its audio).
-    values = {
-        "board_payload": payload,
-        "recognition_debug": debug,
-        "video_asset": None,
-        "video_duration_ms": None,
-        "video_size_bytes": None,
-    }
-    if "narration" in body.model_fields_set:
-        values["narration"] = body.narration
-        if figure.narration != body.narration:
-            values["audio_asset"] = None
-    figure = _cas_update(db, figure, body.expected_updated_at, values)
-    db.execute(delete(TrainingSample).where(TrainingSample.figure_id == figure_id))
-    db.add(
-        BoardPayloadHistory(
-            figure_id=figure_id,
-            board_payload=payload,
-            changed_by=admin["username"],
-            change_type="edit",
-        )
+    from katrain.web.admin.routers.tutorial_workbench import _save_payload
+
+    figure = _save_payload(
+        db,
+        _load(db, figure_id),
+        payload=body.board_payload.model_dump(exclude_unset=True),
+        expected=body.expected_updated_at,
+        admin=admin,
+        narration_set="narration" in body.model_fields_set,
+        narration=body.narration,
+        action="tutorial.board",
     )
-    _audit(db, admin, "tutorial.board", figure_id)
     _commit(db)
     db.refresh(figure)
     return _output(figure)
@@ -323,6 +304,14 @@ def verify_figure(
     admin: dict = Depends(get_current_admin),
 ):
     figure = _load(db, figure_id)
+    if (figure.board_payload or {}).get("schema_version") == 2:
+        from katrain.web.admin.routers.tutorial_workbench import _verify
+
+        verified = _verify(figure_id, body, db, admin, "board")
+        return VerifyResult(
+            figure=verified,
+            training_export=TrainingExportResult(status="skipped", count=0, reason="v2_workbench"),
+        )
     debug = dict(figure.recognition_debug or {})
     debug.update(human_verified=True, verified_at=datetime.now(timezone.utc).isoformat(), verified_by=admin["username"])
     figure = _cas_update(db, figure, body.expected_updated_at, {"recognition_debug": debug})

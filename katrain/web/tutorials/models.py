@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from katrain.web.tutorials.workbench_models import Int, Point, Replay, SourceRegion, UnknownStone, Viewport
+
 
 class TutorialCategoryOut(BaseModel):
     slug: str
@@ -98,13 +100,20 @@ VALID_BOARD_SIZES = {9, 13, 19}
 class StrictBoardPayload(BaseModel):
     """Validated board_payload — rejects malformed or oversized data."""
 
-    size: int = 19
-    stones: Dict[str, List[List[int]]]  # {"B": [[col,row]], "W": [[col,row]]}
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Int | None = None
+    unknown_stones: list[UnknownStone | Point] | None = None
+    source_region: SourceRegion | None = None
+    replay: Replay | None = None
+    viewport: Viewport | None = None
+    size: Int = 19
+    stones: Dict[str, List[Point]]  # {"B": [[col,row]], "W": [[col,row]]}
     labels: Optional[Dict[str, str]] = None
     letters: Optional[Dict[str, str]] = None
     shapes: Optional[Dict[str, str]] = None
     highlights: Optional[List[List[int]]] = None
-    # viewport is computed server-side, not accepted from client
+    # Legacy viewports are computed; explicit v2 viewports round-trip unchanged.
 
     @field_validator("size")
     @classmethod
@@ -142,6 +151,71 @@ class StrictBoardPayload(BaseModel):
             for pair in self.highlights:
                 if len(pair) != 2 or not (0 <= pair[0] <= max_coord and 0 <= pair[1] <= max_coord):
                     raise ValueError(f"highlight coordinate {pair} out of bounds for size {self.size}")
+        if self.schema_version not in (None, 2):
+            raise ValueError("schema_version must be 2 when supplied")
+
+        def validate_setup(stones, unknowns, scope):
+            seen = set()
+            if set(stones) - {"B", "W"}:
+                raise ValueError(f"{scope}: invalid stone color")
+            for coords in stones.values():
+                for point in coords:
+                    if len(point) != 2 or not all(0 <= coordinate < self.size for coordinate in point):
+                        raise ValueError(f"{scope}: point outside board")
+                    if tuple(point) in seen:
+                        raise ValueError(f"{scope}: duplicate occupied point")
+                    seen.add(tuple(point))
+            for stone in unknowns or []:
+                point = stone.point if isinstance(stone, UnknownStone) else stone
+                if not all(0 <= coordinate < self.size for coordinate in point) or tuple(point) in seen:
+                    raise ValueError(f"{scope}: unknown stone overlaps or is outside board")
+                seen.add(tuple(point))
+
+        if self.schema_version == 2:
+            if "size" not in self.model_fields_set:
+                raise ValueError("v2 size must be explicit")
+            if self.unknown_stones is None or any(not isinstance(stone, UnknownStone) for stone in self.unknown_stones):
+                raise ValueError("v2 unknown_stones must explicitly list point/color evidence objects")
+            if set(self.stones) != {"B", "W"}:
+                raise ValueError("v2 stones must explicitly declare B and W")
+        validate_setup(self.stones, self.unknown_stones, "Static diagram")
+
+        def validate_region(region):
+            if region is None:
+                return
+            cols = getattr(region, "cols", None) or getattr(region, "size", None)
+            rows = getattr(region, "rows", None) or getattr(region, "size", None)
+            if region.col < 0 or region.row < 0 or region.col + cols > self.size or region.row + rows > self.size:
+                raise ValueError("Region is outside board")
+
+        validate_region(self.source_region)
+        validate_region(self.viewport)
+        if self.replay:
+            if self.schema_version != 2:
+                raise ValueError("Replay requires schema_version 2")
+            initial = self.replay.initial
+            if initial:
+                if set(initial.stones) != {"B", "W"}:
+                    raise ValueError("Initial state stones must explicitly declare B and W")
+                validate_setup(initial.stones, initial.unknown_stones, "Initial state")
+                validate_region(initial.known_region)
+                for field in ("labels", "letters", "shapes"):
+                    for key in getattr(initial, field) or {}:
+                        try:
+                            col, row = map(int, key.split(","))
+                        except (ValueError, TypeError) as exc:
+                            raise ValueError("Initial marks require col,row coordinates") from exc
+                        if not 0 <= col < self.size or not 0 <= row < self.size:
+                            raise ValueError("Initial mark outside board")
+            for move in self.replay.moves:
+                if move.point is not None and not all(0 <= coordinate < self.size for coordinate in move.point):
+                    raise ValueError("Replay point outside board")
+            if self.replay.status == "complete":
+                from katrain.web.tutorials.replay import validate_replay
+
+                proof = validate_replay(self.model_dump(exclude_unset=True))
+                if proof["status"] != "complete":
+                    raise ValueError("; ".join(proof["issues"]))
         return self
 
 

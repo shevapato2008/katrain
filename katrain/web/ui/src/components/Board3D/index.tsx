@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, memo, Suspense, lazy } from 'react';
 import { Canvas, useFrame, useThree, type RootState } from '@react-three/fiber';
 import * as THREE from 'three';
-import { ACESFilmicToneMapping, PCFShadowMap } from 'three';
+import { ACESFilmicToneMapping, PCFShadowMap, PCFSoftShadowMap } from 'three';
 import Lights from './Lights';
 import BoardMesh from './BoardMesh';
 import CameraController from './CameraController';
@@ -22,13 +22,18 @@ const PolicyMap = lazy(() => import('./Overlays/PolicyMap'));
 const MoveNumbers = lazy(() => import('./Overlays/MoveNumbers'));
 
 /** Static camera for recording mode — sets position + lookAt once, no interaction */
-const StaticCamera = ({ position, target }: { position: [number, number, number]; target: [number, number, number] }) => {
-  const { camera } = useThree();
+const StaticCamera = ({ position, target, up, orthographicSpan }: { position: [number, number, number]; target: [number, number, number]; up?: [number, number, number]; orthographicSpan?: number }) => {
+  const { camera, size, invalidate } = useThree();
   useEffect(() => {
     camera.position.set(...position);
+    if (up) camera.up.set(...up);
     camera.lookAt(new THREE.Vector3(...target));
+    if (camera instanceof THREE.OrthographicCamera && orthographicSpan) {
+      camera.zoom = Math.min(size.width, size.height) / orthographicSpan;
+    }
     camera.updateProjectionMatrix();
-  }, [camera, position, target]);
+    invalidate();
+  }, [camera, position, target, up, orthographicSpan, size, invalidate]);
   return null;
 };
 
@@ -47,6 +52,11 @@ interface Board3DProps extends BoardProps {
   readOnly?: boolean;
   cameraPosition?: [number, number, number];
   cameraTarget?: [number, number, number];
+  cameraUp?: [number, number, number];
+  /** Opt-in orthographic world span; default camera remains perspective. */
+  orthographicSpan?: number;
+  /** Isolated still preview lighting/materials, never enabled by ordinary boards. */
+  recordingAppearance?: 'overhead-preview';
   disableControls?: boolean;
   /** Lock polar angle for non-interactive mode (fraction of π, e.g., 0.33) */
   fixedPolarAngle?: number;
@@ -63,8 +73,9 @@ interface Board3DProps extends BoardProps {
   initialPolarAngle?: number;
 }
 
-const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, readOnly = false, cameraPosition, cameraTarget, disableControls, fixedPolarAngle, frameloop = 'always', onCanvasReady, enableAzimuth, azimuthRange, initialPolarAngle }: Board3DProps) => {
+const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, readOnly = false, cameraPosition, cameraTarget, cameraUp, orthographicSpan, recordingAppearance, disableControls, fixedPolarAngle, frameloop = 'always', onCanvasReady, enableAzimuth, azimuthRange, initialPolarAngle }: Board3DProps) => {
   const boardSize = gameState.board_size[0];
+  const overheadPreview = recordingAppearance === 'overhead-preview';
   const orbitRef = useRef<any>(null);
   const [polarAngle, setPolarAngle] = useState(initialPolarAngle ?? Math.PI * 0.2); // initial approx
   const [az0, az1] = enableAzimuth ? (azimuthRange ?? [-Math.PI / 3, Math.PI / 3]) : [0, 0];
@@ -138,8 +149,9 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <Canvas
-        shadows={{ type: PCFShadowMap }}
+        shadows={{ type: overheadPreview ? PCFSoftShadowMap : PCFShadowMap }}
         dpr={[1, 1.5]}
+        orthographic={!!orthographicSpan}
         camera={{ position: cameraPosition || [0, 22, 26], fov: 40, near: 0.1, far: 100 }}
         gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.2, preserveDrawingBuffer: true }}
         frameloop={frameloop}
@@ -148,9 +160,17 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
       >
         <color attach="background" args={['#0f0f0f']} />
         <fog attach="fog" args={['#0f0f0f', 30, 60]} />
-        <Lights />
+        {overheadPreview ? <>
+          <ambientLight color="#fff8eb" intensity={.65} />
+          <hemisphereLight args={['#fffaf2', '#88765f', .65]} />
+          <directionalLight color="#fff9ef" intensity={2.1} position={[-7, 14, -9]} castShadow
+            shadow-mapSize-width={2048} shadow-mapSize-height={2048}
+            shadow-camera-left={-15} shadow-camera-right={15} shadow-camera-top={15} shadow-camera-bottom={-15}
+            shadow-camera-near={1} shadow-camera-far={40} shadow-normalBias={.015} shadow-bias={-.0001} shadow-radius={4} />
+          <directionalLight color="#e7efff" intensity={.65} position={[8, 11, 6]} />
+        </> : <Lights />}
         {disableControls && cameraPosition && cameraTarget ? (
-          <StaticCamera position={cameraPosition} target={cameraTarget} />
+          <StaticCamera position={cameraPosition} target={cameraTarget} up={cameraUp} orthographicSpan={orthographicSpan} />
         ) : (
           <>
             <CameraController ref={orbitRef} target={cameraTarget} interactive={!disableControls} fixedPolarAngle={fixedPolarAngle} minAzimuthAngle={az0} maxAzimuthAngle={az1} />
@@ -158,7 +178,7 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
           </>
         )}
         <BoardMesh boardSize={boardSize} showCoordinates={!!analysisToggles.coords} />
-        <StoneGroup gameState={gameState} enableDropEffect={!!analysisToggles.stoneDropEffect} />
+        <StoneGroup gameState={gameState} enableDropEffect={!!analysisToggles.stoneDropEffect} satinFinish={overheadPreview} />
         {!readOnly && <RaycastClick
           gameState={gameState}
           onMove={onMove}

@@ -8,6 +8,7 @@ import type { GameState } from '../../api';
 interface StoneGroupProps {
   gameState: GameState;
   enableDropEffect?: boolean;
+  satinFinish?: boolean;
 }
 
 interface DropAnim {
@@ -20,7 +21,7 @@ interface DropAnim {
   targetZ: number;
 }
 
-const StoneGroup = ({ gameState, enableDropEffect = false }: StoneGroupProps) => {
+const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false }: StoneGroupProps) => {
   const boardSize = gameState.board_size[0];
   const prevNodeIndexRef = useRef(gameState.current_node_index);
   const prevLastMoveRef = useRef<[number, number] | null>(gameState.last_move);
@@ -135,6 +136,7 @@ const StoneGroup = ({ gameState, enableDropEffect = false }: StoneGroupProps) =>
             key={`stone-${x}-${y}-${index}`}
             color={player as 'B' | 'W'}
             position={basePos}
+            satinFinish={satinFinish}
           />
         );
       })}
@@ -152,6 +154,7 @@ const StoneGroup = ({ gameState, enableDropEffect = false }: StoneGroupProps) =>
             color={animStone[0] as 'B' | 'W'}
             position={animInitialPosRef.current!}
             scale={0.5}
+            satinFinish={satinFinish}
           />
         );
       })()}

@@ -368,3 +368,17 @@ def test_static_video_allowed_without_sequence_review(media, monkeypatch):
         figure = db.get(models_db.TutorialFigure, 1)
         assert figure.recognition_debug["workbench_media"]["videos"]["2d"]["playback_mode"] == "static"
         assert not (figure.recognition_debug or {}).get("calibration_review", {}).get("sequence")
+
+
+def test_admin_figure_refresh_returns_review_fields_and_requires_auth(media):
+    from katrain.web.admin.session import get_current_admin
+
+    client, factory, worker, storage, app = media
+    response = client.get(ROOT)
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["board_review"]["reviewed_by"] == "isolated-fixture-reviewer"
+    assert result["review_validity"]["board"] == {"approved": True, "reason": None}
+    assert result["video_2d_review"] is None and result["video_3d_review"] is None
+    app.dependency_overrides.pop(get_current_admin)
+    assert client.get(ROOT).status_code == 401

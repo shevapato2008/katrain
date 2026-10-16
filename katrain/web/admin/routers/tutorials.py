@@ -160,6 +160,11 @@ def _commit(db: Session) -> None:
         raise
 
 
+@router.get("/figures/{figure_id}", response_model=TutorialFigureOut)
+def get_figure(figure_id: int, db: Session = Depends(get_admin_db)):
+    return _output(_load(db, figure_id))
+
+
 @router.put("/figures/{figure_id}/board", response_model=TutorialFigureOut)
 def update_board(
     figure_id: int,

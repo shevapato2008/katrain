@@ -656,3 +656,53 @@ def test_accepted_collection_scopes_workbench_and_zip_preserving_legacy_and_curr
     with Session() as db:
         figure = db.get(models_db.TutorialFigure, 1)
         assert {name: getattr(figure, name) for name in original} == original
+
+
+def test_workbench_separates_playability_and_saved_board_review_without_inheriting_legacy_flags(workbench):
+    from katrain.web.tutorials.recognition_import import import_candidate
+
+    client, Session, _ = workbench
+    assert save(client).status_code == 200  # Complete sourced replay, no human reviews.
+    draft = diagram()
+    draft["replay"]["status"] = "needs_calibration"
+    with Session() as db:
+        for figure_id, payload in ((2, {"size": 9, "stones": {"B": [[0, 0]], "W": []}}), (3, None), (4, draft)):
+            db.add(
+                models_db.TutorialFigure(
+                    id=figure_id,
+                    section_id=1,
+                    page=92,
+                    figure_label=str(figure_id),
+                    order=figure_id,
+                    board_payload=payload,
+                    recognition_debug={"human_verified": True},
+                )
+            )
+        db.flush()
+        import_candidate(
+            db,
+            source_book_id=1,
+            dataset="first100-final",
+            recognition_id="p092-candidate-only",
+            figure_id=3,
+            page=92,
+            raw_result={"id": "p092-candidate-only"},
+            board_payload=draft,
+        )
+        db.commit()
+    rows = client.get("/api/admin/tutorials/books/1/workbench?page=92").json()["figures"]
+    by_id = {row["figure"]["id"]: row for row in rows}
+    assert by_id[1]["replay"]["status"] == "complete" and by_id[1]["review"]["sequence"] is None
+    assert {figure_id: row["board_review_status"] for figure_id, row in by_id.items()} == {
+        1: "unreviewed",
+        2: "legacy_verified",
+        3: "unreviewed",
+        4: "unreviewed",
+    }
+    pending = client.get("/api/admin/tutorials/books/1/workbench?page=92&filter=sequence_pending").json()["figures"]
+    assert {row["figure"]["id"] for row in pending} == {2, 3, 4}
+    uncalibrated = client.get("/api/admin/tutorials/books/1/workbench?page=92&filter=uncalibrated").json()["figures"]
+    assert {row["figure"]["id"] for row in uncalibrated} == {1, 3, 4}
+    with Session() as db:
+        for figure_id in (2, 3, 4):
+            assert db.get(models_db.TutorialFigure, figure_id).recognition_debug == {"human_verified": True}

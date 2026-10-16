@@ -283,6 +283,13 @@ def _flag(value, keys):
 
 def _entry(figure, candidates, references):
     current = figure.board_payload
+    review = _review(figure)
+    board_review_status = "unreviewed"
+    if current is not None:
+        if review["board"]:
+            board_review_status = "verified"
+        elif current.get("schema_version") != 2 and (figure.recognition_debug or {}).get("human_verified") is True:
+            board_review_status = "legacy_verified"
     chosen = current if current is not None else (candidates[-1].board_payload if candidates else None)
     evidence = [candidate.raw_result for candidate in candidates]
     inference = _flag(
@@ -297,7 +304,8 @@ def _entry(figure, candidates, references):
         "current": current,
         "candidates": [_candidate(candidate) for candidate in candidates],
         "source_references": [_reference(reference) for reference in references],
-        "review": _review(figure),
+        "review": review,
+        "board_review_status": board_review_status,
         "replay": validate_replay(chosen or {}),
         "inference": inference,
         "uncertainty": uncertainty,
@@ -307,10 +315,10 @@ def _entry(figure, candidates, references):
 def _matches(entry, filter):
     return {
         "all": True,
-        "uncalibrated": not bool(entry["review"]["board"]),
+        "uncalibrated": entry["board_review_status"] == "unreviewed",
         "inference": entry["inference"],
         "uncertainty": entry["uncertainty"],
-        "sequence_pending": not bool(entry["review"]["sequence"]) or entry["replay"]["status"] != "complete",
+        "sequence_pending": entry["replay"]["status"] != "complete",
     }[filter]
 
 

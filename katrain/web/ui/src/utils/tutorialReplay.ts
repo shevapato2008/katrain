@@ -276,12 +276,14 @@ export function buildTutorialReplay(diagram: TutorialDiagram): ReplayResult {
     issues.push('Initial to_play must explicitly declare B or W.');
   }
   let labels = { ...initial.labels };
+  const letters = { ...initial.letters };
+  const shapes = { ...initial.shapes };
   const snapshot = (step: number, move: ReplayMove | null, captured: Point[]): ReplayFrame => {
     const stones: DiagramPayload['stones'] = { B: [], W: [] };
     for (const [key, color] of board) stones[color].push(fromKey(key));
     return {
       step,
-      payload: copyPayload({ size: diagram.size, stones, labels, letters: initial.letters, shapes: initial.shapes, viewport: diagram.viewport }, initial.unknown_stones),
+      payload: copyPayload({ size: diagram.size, stones, labels, letters, shapes, viewport: diagram.viewport }, initial.unknown_stones),
       captured: captured.map(copyPoint),
       last: move?.kind === 'move' && move.point ? copyPoint(move.point) : null,
       currentMove: move ? { ...move, point: move.point ? copyPoint(move.point) : null } : null,
@@ -320,7 +322,7 @@ export function buildTutorialReplay(diagram: TutorialDiagram): ReplayResult {
       }
       board = candidate;
       labels = { ...labels };
-      for (const point of captured) delete labels[pointKey(point)];
+      for (const point of captured) for (const marks of [labels, letters, shapes]) delete marks[pointKey(point)];
       if (move.printed_number !== null) labels[key] = move.printed_number;
       else delete labels[key];
     } else { fail('move kind must be move or pass.'); break; }

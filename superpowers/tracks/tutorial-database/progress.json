@@ -17,7 +17,7 @@
       "human_review": "待人工审核·549图（含疑点1图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T05:20:16+08:00",
+      "updated_at": "2026-10-18T05:53:16+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -34,7 +34,7 @@
       "human_review": "待人工审核·779图（含疑点1图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T05:20:16+08:00",
+      "updated_at": "2026-10-18T05:53:16+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -50,7 +50,7 @@
       "human_review": "待人工审核·132图（含疑点27图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T05:20:16+08:00",
+      "updated_at": "2026-10-18T05:53:16+08:00",
       "priority_tier": "模块内补充",
       "validation_import_manually_set": true
     },
@@ -61,12 +61,12 @@
         "棋形与手筋 · 主教材"
       ],
       "book_id": 15,
-      "recognition": "识别中 · 180/190页 · 536图",
-      "validation_import": "机器校验 180/190页；失败0；不确定项28图；待整书TEST入库",
+      "recognition": "已识别 · 190/190页 · 561图",
+      "validation_import": "机器校验 190/190页；失败0；不确定项30图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T05:20:16+08:00",
+      "updated_at": "2026-10-18T05:53:16+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -81,7 +81,7 @@
       "human_review": "待人工审核·492图（含推断13图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T05:20:16+08:00",
+      "updated_at": "2026-10-18T05:53:16+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -97,7 +97,7 @@
       "human_review": "待人工审核·325实体棋图；另2条跨页文字记录",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T05:20:16+08:00",
+      "updated_at": "2026-10-18T05:53:16+08:00",
       "priority_tier": "核心教材",
       "source_exception_note": "PDF46两条非实体跨页文字引用已通过独立Astra工程复核；原ID15517/15518空记录保留；待整书覆盖对账",
       "validation_import_manually_set": true
@@ -114,7 +114,7 @@
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T05:20:16+08:00",
+      "updated_at": "2026-10-18T05:53:16+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -125,12 +125,12 @@
         "中盘攻击 · 主教材"
       ],
       "book_id": 34,
-      "recognition": "识别中 · 20/276页 · 30图",
-      "validation_import": "机器校验 20/276页；失败0；不确定项0图；待整书TEST入库",
+      "recognition": "识别中 · 40/276页 · 77图",
+      "validation_import": "机器校验 40/276页；失败0；不确定项1图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T05:20:16+08:00",
+      "updated_at": "2026-10-18T05:53:16+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -140,12 +140,12 @@
         "防守、治孤与腾挪 · 主教材"
       ],
       "book_id": 35,
-      "recognition": "待识别",
-      "validation_import": "待机器验证 / 本轮未入库",
+      "recognition": "识别中 · 20/293页 · 21图",
+      "validation_import": "机器校验 20/293页；失败0；不确定项0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": null,
+      "updated_at": "2026-10-18T05:53:16+08:00",
       "priority_tier": "核心教材"
     },
     {

@@ -66,6 +66,7 @@ const FIG_VIDEO = figure({
   id: 101, figure_label: '图4',
   video_asset: 'tutorial_assets/b/video/fig_1.mp4',
   video_duration_ms: 24000,
+  video_profiles: { 'kiosk-7-v1': { asset: 'device.mp4', duration_ms: 24000, output_profile: 'kiosk-7-v1', playback_mode: 'static', timing_status: 'pending', timing_reason: '讲解缺少明确的黑白编号引用' }, 'galaxy-4k-v1': { asset: 'galaxy4k.mp4', duration_ms: 24000, output_profile: 'galaxy-4k-v1' } },
   narration: '白 C5 是禁入点。',
   audio_asset: 'tutorial_assets/b/audio/fig_1.mp3',
 });
@@ -144,14 +145,17 @@ describe('屏 25 课程 · 小节讲解', () => {
     expect(document.querySelector('video'), '一进来就自动放视频').toBeNull();
   });
 
-  it('按「看视频讲解」视频占了盘位,再按回到棋图;src 和 poster 都从 figure 来', async () => {
+  it('opens the device video across the viewport and returns to the diagram without a fabricated poster', async () => {
     renderPage();
     await ready();
+    expect(screen.getByText('静态讲解·落子时间待校准：讲解缺少明确的黑白编号引用')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '看视频讲解' }));
     const video = document.querySelector('video')!;
-    expect(video.getAttribute('src')).toBe('/api/v1/tutorials/assets/tutorial_assets/b/video/fig_1.mp4');
-    expect(video.getAttribute('poster')).toBe('/api/v1/tutorials/assets/tutorial_assets/b/video/fig_1.jpg');
-    expect(screen.queryByTestId('tutorial-figure-board'), '视频和棋图同时占着左边那一格').toBeNull();
+    expect(video.getAttribute('src')).toBe('/api/v1/tutorials/assets/device.mp4');
+    expect(video).not.toHaveAttribute('poster');
+    expect(screen.getByTestId('tutorial-figure-video')).toHaveStyle({ position: 'fixed', inset: '0' });
+    expect(video).toHaveStyle({ width: '100%', height: '100%' });
+    expect(screen.getByRole('button', { name: '回到棋图' })).toHaveStyle({ minHeight: '44px' });
 
     await userEvent.click(screen.getByRole('button', { name: '回到棋图' }));
     expect(screen.getByTestId('tutorial-figure-board')).toBeInTheDocument();
@@ -321,4 +325,13 @@ describe('屏 25 课程 · 小节讲解', () => {
     expect(document.querySelectorAll('.gob .shape')).toHaveLength(1);
     expect(document.querySelectorAll('.gob .hl')).toHaveLength(1);
   });
+});
+
+
+it('shows that the device profile is missing and never opens the Galaxy compatibility pointer', async () => {
+  getSection.mockResolvedValue({ ...SECTION, figures: [figure({ video_asset: 'galaxy4k.mp4', video_output_profile: 'galaxy-4k-v1', video_profiles: { 'galaxy-4k-v1': { asset: 'galaxy4k.mp4', output_profile: 'galaxy-4k-v1' } } })] });
+  renderPage(); await ready();
+  expect(screen.getByText('RK3562 · 7英寸视频尚未生成')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '看视频讲解' })).toBeNull();
+  expect(document.querySelector('video')).toBeNull();
 });

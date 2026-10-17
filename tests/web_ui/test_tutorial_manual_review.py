@@ -211,7 +211,11 @@ def enqueue_historical_3d(media):
             kind="video",
             render_mode="3d",
             input_digest=digest(inputs),
-            snapshot={**copy.deepcopy(inputs), "board_payload": copy.deepcopy(figure.board_payload), "book_slug": "test"},
+            snapshot={
+                **copy.deepcopy(inputs),
+                "board_payload": copy.deepcopy(figure.board_payload),
+                "book_slug": "test",
+            },
             requested_by="historical-admin",
             status="queued",
             stage="queued",
@@ -348,8 +352,8 @@ def test_edit_invalidates_only_dependent_reviews(media, edit):
     assert response.status_code == 200, response.text
     result = response.json()
     assert result["video_2d_review"] is None and result["video_3d_review"] is None
-    assert result["board_review"] == (None if edit == "static" else original)
-    assert result["review_validity"]["board"]["approved"] == (edit != "static")
+    assert result["board_review"] == (original if edit == "narration" else None)
+    assert result["review_validity"]["board"]["approved"] == (edit == "narration")
 
 
 def test_startup_never_adds_review_columns_or_rebuilds_review_table():
@@ -463,3 +467,43 @@ def test_board_review_confirmation_note_is_bounded(media):
         },
     )
     assert response.status_code == 422
+
+
+@pytest.mark.parametrize("source_region", [None, {"col": 0, "row": 0, "cols": 9, "rows": 9, "confirmed": False}])
+def test_explicit_review_accepts_unconfirmed_source_and_retains_unknown_stones(media, source_region):
+    client, factory, *_ = media
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        value = board()
+        value["source_region"] = source_region
+        value["unknown_stones"] = [{"point": [8, 8], "color": None, "evidence": "visible unresolved color"}]
+        value.pop("replay", None)
+        figure.board_payload = value
+        figure.board_review = None
+        db.commit()
+    result = approve(client, factory)
+    assert result["review_validity"]["board"]["approved"] is True
+    assert result["board_payload"]["unknown_stones"] == value["unknown_stones"]
+
+
+def test_replay_edit_invalidates_manual_approval_but_narration_only_preserves_it(media):
+    client, factory, *_ = media
+    approved = approve(client, factory)
+    payload = copy.deepcopy(approved["board_payload"])
+    narration = client.put(
+        ROOT + "/calibration",
+        json={
+            "expected_updated_at": approved["updated_at"],
+            "board_payload": payload,
+            "narration": "Only narration changes",
+        },
+    )
+    assert narration.status_code == 200, narration.text
+    assert narration.json()["board_review"] == approved["board_review"]
+    payload["replay"] = {"status": "needs_calibration", "initial": None, "moves": []}
+    response = client.put(
+        ROOT + "/calibration", json={"expected_updated_at": narration.json()["updated_at"], "board_payload": payload}
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["board_review"] is None
+    assert response.json()["review_validity"]["board"]["approved"] is False

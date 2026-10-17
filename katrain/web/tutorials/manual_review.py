@@ -35,10 +35,6 @@ def board_problem(figure):
         StrictBoardPayload.model_validate(static_payload(figure.board_payload))
     except (ValidationError, TypeError, ValueError):
         return "Saved static diagram needs calibration before manual approval"
-    if figure.board_payload.get("unknown_stones"):
-        return "Resolve unknown stones before static diagram manual approval"
-    if not (figure.board_payload.get("source_region") or {}).get("confirmed"):
-        return "Confirm the source region before static diagram manual approval"
     return None
 
 

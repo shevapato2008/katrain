@@ -426,7 +426,7 @@ def test_sequence_only_change_preserves_board_review_and_invalidates_sequence(wo
     assert review["sequence"] is None
 
 
-def test_legacy_verification_cannot_verify_unknown_v2_and_evidence_not_client_writable(workbench):
+def test_explicit_verification_accepts_retained_unknown_v2_but_evidence_not_client_writable(workbench):
     client, _, _ = workbench
     value = diagram()
     value["unknown_stones"] = [{"point": [8, 8], "color": None}]
@@ -436,7 +436,7 @@ def test_legacy_verification_cannot_verify_unknown_v2_and_evidence_not_client_wr
         client.put(
             "/api/admin/tutorials/figures/1/verify", json={"expected_updated_at": saved["updated_at"]}
         ).status_code
-        == 422
+        == 200
     )
     assert (
         client.put(

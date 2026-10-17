@@ -39,7 +39,6 @@ from katrain.web.tutorials.manual_review import (
     board_content_sha256,
     board_problem,
     make_review,
-    static_payload,
     review_validity,
 )
 from katrain.web.tutorials.recognition_import import content_sha256
@@ -121,7 +120,7 @@ def _save_payload(
         "board_payload": payload,
         "recognition_debug": debug,
     }
-    if candidate_id is not None or static_payload(original) != static_payload(payload):
+    if candidate_id is not None or original != payload:
         values["board_review"] = None
     if original != payload or candidate_id is not None or (narration_set and figure.narration != narration):
         values.update(video_2d_review=None, video_3d_review=None)

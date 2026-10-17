@@ -1,10 +1,13 @@
 import * as THREE from 'three';
+import recipe from '../../../../../assets/board-equipment/go/stones/clamshell-slate/v1/source/recipe.json';
+
+const studioPreset = recipe.studio;
 
 /** The approved shell/slate preview studio, shared with its transparent sprite export. */
 export function configureStoneRenderer(renderer: THREE.WebGLRenderer) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1;
+  renderer.toneMappingExposure = studioPreset.toneMappingExposure;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
 }
@@ -13,11 +16,9 @@ export function configureStoneRenderer(renderer: THREE.WebGLRenderer) {
 export function createStoneEnvironment(renderer: THREE.WebGLRenderer) {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const studio = new THREE.Scene();
-  studio.background = new THREE.Color(.08, .08, .08);
-  for (const [position, size, intensity] of [
-    [[-3, 5, 4], [4.5, 5.5], 3],
-    [[5, 2, -4], [3, 4], .7],
-  ] as const) {
+  const [r, g, b] = studioPreset.environment.background;
+  studio.background = new THREE.Color(r, g, b);
+  for (const { position, size, intensity } of studioPreset.environment.cards) {
     const card = new THREE.Mesh(new THREE.PlaneGeometry(size[0], size[1]), new THREE.MeshBasicMaterial({
       color: new THREE.Color().setScalar(intensity), side: THREE.DoubleSide,
     }));
@@ -25,7 +26,7 @@ export function createStoneEnvironment(renderer: THREE.WebGLRenderer) {
     card.lookAt(0, 0, 0);
     studio.add(card);
   }
-  const environment = pmrem.fromScene(studio, .1);
+  const environment = pmrem.fromScene(studio, studioPreset.environment.sigma);
   studio.traverse(object => {
     if (object instanceof THREE.Mesh) { object.geometry.dispose(); object.material.dispose(); }
   });
@@ -33,26 +34,27 @@ export function createStoneEnvironment(renderer: THREE.WebGLRenderer) {
   return environment;
 }
 
-export const STONE_ENVIRONMENT_INTENSITY = .48;
+export const STONE_ENVIRONMENT_INTENSITY = studioPreset.environment.intensity;
 
 export function addStoneStudioLights(target: THREE.Scene, shadow = false) {
-  target.add(new THREE.HemisphereLight(0xeaf0ff, 0xa08b70, .3));
-  const key = new THREE.DirectionalLight(0xfff9ee, 1.6);
-  key.position.set(-3.8, 6.5, 4);
+  const { hemisphere, key: keyPreset, fill: fillPreset, shadow: shadowPreset } = studioPreset;
+  target.add(new THREE.HemisphereLight(hemisphere.skyColor, hemisphere.groundColor, hemisphere.intensity));
+  const key = new THREE.DirectionalLight(keyPreset.color, keyPreset.intensity);
+  key.position.set(keyPreset.position[0], keyPreset.position[1], keyPreset.position[2]);
   key.castShadow = shadow;
   if (shadow) {
-    key.shadow.mapSize.set(2048, 2048);
-    key.shadow.camera.left = key.shadow.camera.bottom = -5;
-    key.shadow.camera.right = key.shadow.camera.top = 5;
-    key.shadow.camera.near = .1;
-    key.shadow.camera.far = 20;
-    key.shadow.normalBias = .012;
-    key.shadow.bias = -.0002;
-    key.shadow.radius = 9;
-    key.shadow.intensity = .4;
+    key.shadow.mapSize.set(shadowPreset.mapSize, shadowPreset.mapSize);
+    key.shadow.camera.left = key.shadow.camera.bottom = -shadowPreset.bounds;
+    key.shadow.camera.right = key.shadow.camera.top = shadowPreset.bounds;
+    key.shadow.camera.near = shadowPreset.near;
+    key.shadow.camera.far = shadowPreset.far;
+    key.shadow.normalBias = shadowPreset.normalBias;
+    key.shadow.bias = shadowPreset.bias;
+    key.shadow.radius = shadowPreset.radius;
+    key.shadow.intensity = shadowPreset.intensity;
   }
   target.add(key);
-  const fill = new THREE.DirectionalLight(0xe9f0ff, .2);
-  fill.position.set(4, 3, -4);
+  const fill = new THREE.DirectionalLight(fillPreset.color, fillPreset.intensity);
+  fill.position.set(fillPreset.position[0], fillPreset.position[1], fillPreset.position[2]);
   target.add(fill);
 }

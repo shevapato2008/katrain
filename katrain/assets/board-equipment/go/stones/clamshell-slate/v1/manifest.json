@@ -1,0 +1,278 @@
+{
+  "assetId": "go.stones.clamshell-slate",
+  "version": 1,
+  "status": "approved-appearance-test-use",
+  "approvedDate": "2026-10-17",
+  "description": "Original-photo clamshell white and slate black Go stones on approximate closed double-convex geometry",
+  "units": {
+    "models": "metres",
+    "dimensions": "millimetres",
+    "geometry": "normalizedWhiteDiameter=2"
+  },
+  "dimensionsMm": {
+    "W": {
+      "diameter": 21.9,
+      "thickness": 8.8
+    },
+    "B": {
+      "diameter": 22.2,
+      "thickness": 9.1
+    }
+  },
+  "metresPerGeometryUnit": 0.01095,
+  "source": {
+    "recipe": "source/recipe.json",
+    "photo": "materials/source-photo.jpg",
+    "geometry": "Closed symmetric lathe with mirrored Bezier profile; artistic approximation, not a 3D scan",
+    "implementation": {
+      "katrain/web/ui/src/components/tutorials/stoneModel.ts": "489ee206db93ee757ded0f6c6c535d00ce2f6885ad97b6c0d2453e98427968f8",
+      "katrain/web/ui/src/components/tutorials/stoneStudio.ts": "fbe76234ed6b8f023cb320a0de271380a4f4c44acdbf4c8fe86b96e9dc4ebdb0",
+      "katrain/web/ui/preview/photo-shell-stones/preview.ts": "fd77bc1517b6b6d935727387ef7d910bde581f7803ae692655cc76dcbe7a5458",
+      "katrain/web/ui/preview/photo-shell-stones/index.html": "409d2c2f24d80c57d6681bd57ec74c39a5696480550cfe07abffc5e3113778ec",
+      "katrain/web/ui/preview/photo-shell-stones/preview.css": "3572a75b96f7297efd306f0d7748437e60a79c8509c141d7eaa5a888c268a44b",
+      "katrain/web/ui/preview/photo-shell-stones/vite.config.ts": "dd6bd3e666a39068720f9ad20fce64750ac8effe73f9d1e2bb3385f0f2c22d27"
+    }
+  },
+  "provenance": {
+    "pageUrl": "https://kurokigoishiten.com/en/products/clamshell-go-stones-premium-snow-grade",
+    "imageUrl": "https://cdn.shopify.com/s/files/1/0606/1093/6995/products/snow-stripesample-01.jpg?v=1654821047",
+    "file": "materials/source-photo.jpg",
+    "sha256": "b6429d45e91d8c259b09e742145b68e7de0012f052380337f40536e49c786858",
+    "width": 2339,
+    "height": 2356,
+    "cropPixels": {
+      "left": 700,
+      "top": 450,
+      "right": 1650,
+      "bottom": 1400
+    },
+    "rights": "Manufacturer photograph; commercial redistribution permission unconfirmed; authorized scope is TEST"
+  },
+  "rights": {
+    "owner": "Original manufacturer photograph belongs to its copyright holder",
+    "status": "commercial-redistribution-permission-unconfirmed",
+    "authorizedScope": "TEST"
+  },
+  "models": {
+    "W": {
+      "file": "models/white.glb",
+      "nodeName": "clamshell-white-photo-preview",
+      "format": "glTF 2.0 binary",
+      "material": "Original unretouched photo crop, embedded PNG and KHR_texture_transform",
+      "preservedFrom": "Approved clamshell-photo-preview.glb export, byte-identical"
+    },
+    "B": {
+      "file": "models/black.glb",
+      "nodeName": "slate-black",
+      "format": "glTF 2.0 binary",
+      "material": "Approved existing black MeshPhysicalMaterial; no external textures"
+    }
+  },
+  "rendered": {
+    "directory": "rendered/",
+    "manifest": "rendered/manifest.json",
+    "whiteVariantCount": 32,
+    "blackVariantCount": 1,
+    "unchangedApprovedPngSha256": true
+  },
+  "reproduction": {
+    "workingDirectory": "katrain/web/ui",
+    "copySprites": "npm run export:tutorial-stones",
+    "checkArchiveAndMirror": "npm run export:tutorial-stones -- --check",
+    "checkWhiteRenders": "npm run export:tutorial-stones -- --render-check",
+    "exportModels": "npm run export:tutorial-stones -- --export-models",
+    "instructions": "../../../../README.md"
+  },
+  "artifacts": [
+    {
+      "file": "materials/source-photo.jpg",
+      "bytes": 188707,
+      "sha256": "b6429d45e91d8c259b09e742145b68e7de0012f052380337f40536e49c786858"
+    },
+    {
+      "file": "models/black.glb",
+      "bytes": 572344,
+      "sha256": "268931923f099d0301d008cc4239d6df6fe0b6957fde6318bac4d1ff9f3a03d5"
+    },
+    {
+      "file": "models/white.glb",
+      "bytes": 2802108,
+      "sha256": "905212075f78362ba10fa8fdf68176bf1bafe5abab8f9e124c0bcbc17602bbc8"
+    },
+    {
+      "file": "rendered/black.png",
+      "bytes": 39192,
+      "sha256": "c73f79055c030898cec8425c1add9033efd38b62034858b044068dd2b462df43"
+    },
+    {
+      "file": "rendered/white-00.png",
+      "bytes": 72172,
+      "sha256": "39e2723cf23e176e2eff396c6a1dba50b794e8f1f21a0a75845313fbc728d913"
+    },
+    {
+      "file": "rendered/white-01.png",
+      "bytes": 73907,
+      "sha256": "339e81b0dcf8ad3698f26b2a043f5bbf31e8e5a6e5ff74286fb4bd14d28e745d"
+    },
+    {
+      "file": "rendered/white-02.png",
+      "bytes": 76110,
+      "sha256": "28310339db6600109039c296a551dab0b579f120dbab63997fa405872da6852a"
+    },
+    {
+      "file": "rendered/white-03.png",
+      "bytes": 77833,
+      "sha256": "be89ca3e7527afc4d32cb804a1e542aeb41d20aea5267179e32e00436535862e"
+    },
+    {
+      "file": "rendered/white-04.png",
+      "bytes": 78647,
+      "sha256": "719577beb6e66332ed2f834cc0b914971a39a952dc8c448626ad7166e538cae5"
+    },
+    {
+      "file": "rendered/white-05.png",
+      "bytes": 79133,
+      "sha256": "c8dfb8f3aba3f39369ee52097eb1fab3669ece392a1b525da06d2576053bb555"
+    },
+    {
+      "file": "rendered/white-06.png",
+      "bytes": 78803,
+      "sha256": "47cde8970839a43d6f8e124feb6f1d6923f72929df42e5c7f6662d53b804ceba"
+    },
+    {
+      "file": "rendered/white-07.png",
+      "bytes": 77299,
+      "sha256": "8092209f348ccbb37b594803f153460f1550c5e937f3eb5010bb6f8455326492"
+    },
+    {
+      "file": "rendered/white-08.png",
+      "bytes": 74561,
+      "sha256": "9edaf8494308b12e77e27a659444217e5b56b21b5c2c9325e47ae09634cf006c"
+    },
+    {
+      "file": "rendered/white-09.png",
+      "bytes": 77239,
+      "sha256": "f7f12633d65dabca9a5c2d22642c1b23d879a9e6def868d871fbb0d81f68b07c"
+    },
+    {
+      "file": "rendered/white-10.png",
+      "bytes": 78390,
+      "sha256": "f8fbabb43726b7c41f2822f2f81fcd8fc71c796726029195e77b8977d1593ee9"
+    },
+    {
+      "file": "rendered/white-11.png",
+      "bytes": 78622,
+      "sha256": "108abaff44d8bb99a1392160b26bd893b59970701e8edfce7570783af146e481"
+    },
+    {
+      "file": "rendered/white-12.png",
+      "bytes": 77933,
+      "sha256": "bfaf87c75b792ca92b4df8040e68503f7a71d2e29f797fe8531117a387845246"
+    },
+    {
+      "file": "rendered/white-13.png",
+      "bytes": 77025,
+      "sha256": "1fbe14664c1d3deae11c7ba8962936092019fdca693c20d9e449b7c5b40440a3"
+    },
+    {
+      "file": "rendered/white-14.png",
+      "bytes": 75373,
+      "sha256": "8e95c7eb3d1546dd6c5c434f2df201c79d3368de2d3e929043fbb8bbd98b5e28"
+    },
+    {
+      "file": "rendered/white-15.png",
+      "bytes": 73734,
+      "sha256": "56455dd19dd810cd3c7e583b55e9002bb9690a4d36d9226f4a4bfe542b5b5dac"
+    },
+    {
+      "file": "rendered/white-16.png",
+      "bytes": 72142,
+      "sha256": "40c15695ce02039cb9e5906f3e2e4222b5fc219b6e6c1c933c426f093a481d62"
+    },
+    {
+      "file": "rendered/white-17.png",
+      "bytes": 73983,
+      "sha256": "d98e772238ac25cece8dd13f3f8c3bb93d111a0924e77c23bdea16e8f48afa01"
+    },
+    {
+      "file": "rendered/white-18.png",
+      "bytes": 76303,
+      "sha256": "847dd799cfdceb38f0f6cef00e6e295a3ee4b595e334437c2d4a42c14c07d450"
+    },
+    {
+      "file": "rendered/white-19.png",
+      "bytes": 78345,
+      "sha256": "9099320e129d4e6b0b2664250fc819d2bf3564d44eab1d8c7a719dfc5c5203d7"
+    },
+    {
+      "file": "rendered/white-20.png",
+      "bytes": 79722,
+      "sha256": "8aec7f9e1548f4daacd5a9d41c591b453dcc57ae6f6c8353b026ca88277e7685"
+    },
+    {
+      "file": "rendered/white-21.png",
+      "bytes": 80189,
+      "sha256": "0af2968790cb24bd13b16e44581cae74871128039e1b0986a09c66a8ac018e32"
+    },
+    {
+      "file": "rendered/white-22.png",
+      "bytes": 80234,
+      "sha256": "eb860053e58d372a3b1571d4c0cac69aed38f53d1cdc8116d9a26a0668aee12f"
+    },
+    {
+      "file": "rendered/white-23.png",
+      "bytes": 78996,
+      "sha256": "9fe77ca1c1e6be9dada0feff9900704e70dd33625ede7a333389e6e696431d46"
+    },
+    {
+      "file": "rendered/white-24.png",
+      "bytes": 75974,
+      "sha256": "705d910bff1067b7971a6108698a56ad8defebd0918496451e9e6a863c2003b6"
+    },
+    {
+      "file": "rendered/white-25.png",
+      "bytes": 78619,
+      "sha256": "e4d7b1df54be9ff968fb0d51350cea87bef2625b8ba54fba48f2c901464a2381"
+    },
+    {
+      "file": "rendered/white-26.png",
+      "bytes": 80184,
+      "sha256": "ee7accb9c7697a839ebf864cde465e402f8fd5837420225f30fbc07be813d569"
+    },
+    {
+      "file": "rendered/white-27.png",
+      "bytes": 80295,
+      "sha256": "0e1e582e8edbb26dcec8eb3366e09738513af336f23fab7006b10ceee01d2fe9"
+    },
+    {
+      "file": "rendered/white-28.png",
+      "bytes": 79712,
+      "sha256": "a00ccf7dedd30e59225ca45272f7c74e7a52afd8bf886a2b722b723886627aad"
+    },
+    {
+      "file": "rendered/white-29.png",
+      "bytes": 78164,
+      "sha256": "306854f96a1982d815cdf94ae38254b6c66a768fbe82763089f53be2108abcc7"
+    },
+    {
+      "file": "rendered/white-30.png",
+      "bytes": 76318,
+      "sha256": "0cd0d48dc4bb33e7257191e26ec427a84b91e9707332e779dda51fa2bdb26a5c"
+    },
+    {
+      "file": "rendered/white-31.png",
+      "bytes": 73951,
+      "sha256": "04a03758ea5e0fa354b87d345c2a7ae00d4170d27343f25edd64a2d5bada8250"
+    },
+    {
+      "file": "source/recipe.json",
+      "bytes": 3490,
+      "sha256": "0206cdb19f67e5421b4a5617786303b4aaa42ee87e2048f09081550061a93e5f"
+    },
+    {
+      "file": "rendered/manifest.json",
+      "bytes": 7496,
+      "sha256": "6a3e0221fc3902b3b1636af2639feff961bf3b501af6d2bb3537df0d4a006e72"
+    }
+  ]
+}

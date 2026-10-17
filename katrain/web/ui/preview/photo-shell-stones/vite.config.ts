@@ -5,6 +5,9 @@ export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
   publicDir: false,
   base: './',
+  server: {
+    fs: { allow: [fileURLToPath(new URL('../../', import.meta.url)), fileURLToPath(new URL('../../../../assets/board-equipment/', import.meta.url))] },
+  },
   build: {
     outDir: fileURLToPath(new URL('../../../../../output/shell-stones-20261017/photo-model/site', import.meta.url)),
     emptyOutDir: true,

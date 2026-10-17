@@ -1,86 +1,103 @@
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { chromium } from '@playwright/test';
-import { createServer } from 'vite';
 
 const uiRoot = new URL('../', import.meta.url);
+const archive = new URL('../../assets/board-equipment/go/stones/clamshell-slate/v1/', uiRoot);
 const output = new URL('src/assets/tutorial-stones/', uiRoot);
-const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-  || `${homedir()}/Library/Caches/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-mac-arm64/chrome-headless-shell`;
-if (!existsSync(executablePath)) throw new Error('Set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH to an existing Chromium executable.');
+const [mode, ...extra] = process.argv.slice(2);
+if (extra.length || (mode && !['--check', '--render-check', '--export-models'].includes(mode))) {
+  throw new Error('Usage: node scripts/export-tutorial-stones.mjs [--check | --render-check | --export-models]');
+}
+const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 
-const server = await createServer({
-  configFile: fileURLToPath(new URL('preview/photo-shell-stones/vite.config.ts', uiRoot)),
-  server: { host: '127.0.0.1', port: 4182, strictPort: true },
-});
-let browser;
-try {
-  await server.listen();
-  browser = await chromium.launch({ executablePath, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  await page.goto('http://127.0.0.1:4182/');
-  await page.waitForFunction(() => window.__photoStoneReady === true);
-  const sprites = await page.evaluate(() => window.__exportTutorialStoneSprites());
-  const whiteFiles = Array.from({ length: 32 }, (_, variant) => `white-${String(variant).padStart(2, '0')}.png`);
-  if (errors.length || Object.keys(sprites).length !== 32 || whiteFiles.some(file => !sprites[file])) {
-    throw new Error(`Expected 32 photo white sprites: ${errors.join('; ')}`);
+async function withPreview(action) {
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+    || `${homedir()}/Library/Caches/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-mac-arm64/chrome-headless-shell`;
+  if (!existsSync(executablePath)) throw new Error('Set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH to an existing Chromium executable.');
+  const [{ chromium }, { createServer }] = await Promise.all([import('@playwright/test'), import('vite')]);
+  const server = await createServer({
+    configFile: fileURLToPath(new URL('preview/photo-shell-stones/vite.config.ts', uiRoot)),
+    server: { host: '127.0.0.1', port: 4182, strictPort: true },
+  });
+  let browser;
+  try {
+    await server.listen();
+    browser = await chromium.launch({ executablePath, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto('http://127.0.0.1:4182/');
+    await page.waitForFunction(() => window.__photoStoneReady === true);
+    await action(page);
+    if (errors.length) throw new Error(errors.join('; '));
+  } finally {
+    await browser?.close();
+    await server.close();
   }
-  await mkdir(output, { recursive: true });
-  // Black keeps its existing approved rendering; only white is exported from the photo preview.
-  const black = await readFile(new URL('black.png', output));
-  const files = [{ file: 'black.png', sha256: createHash('sha256').update(black).digest('hex') }];
-  for (const [file, dataUrl] of Object.entries(sprites)) {
-    const bytes = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
-    await writeFile(new URL(file, output), bytes);
-    files.push({ file, sha256: createHash('sha256').update(bytes).digest('hex') });
+}
+
+if (mode === '--export-models') {
+  await withPreview(async page => {
+    const models = await page.evaluate(async () => {
+      const preview = window.__photoStonePreview;
+      const data = {};
+      for (const [name, buffer] of [
+        ['white.glb', await preview.exportModel('photo')],
+        ['black.glb', await preview.exportBlackModel()],
+      ]) {
+        if (!(buffer instanceof ArrayBuffer)) throw new Error(`Expected binary GLB: ${name}`);
+        data[name] = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(new Blob([buffer]));
+        });
+      }
+      return data;
+    });
+    await mkdir(new URL('models/', archive), { recursive: true });
+    for (const [file, dataUrl] of Object.entries(models)) {
+      const bytes = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
+      const destination = new URL(`models/${file}`, archive);
+      if (existsSync(destination)) {
+        if (!(await readFile(destination)).equals(bytes)) throw new Error(`Approved model differs: ${file}; use a new asset version for intentional changes.`);
+      } else {
+        await writeFile(destination, bytes);
+      }
+      console.log(`Verified model ${file}: ${sha256(bytes)}`);
+    }
+  });
+} else {
+  const manifest = JSON.parse(await readFile(new URL('manifest.json', archive), 'utf8'));
+  for (const { file, sha256: expected } of manifest.artifacts) {
+    if (sha256(await readFile(new URL(file, archive))) !== expected) throw new Error(`Archive checksum differs: ${file}`);
   }
-  const sources = {};
-  for (const file of ['stoneModel.ts', 'stoneStudio.ts']) {
-    sources[file] = createHash('sha256').update(await readFile(new URL(`src/components/tutorials/${file}`, uiRoot))).digest('hex');
+  const sprites = JSON.parse(await readFile(new URL('rendered/manifest.json', archive), 'utf8'));
+  if (mode === '--render-check') {
+    await withPreview(async page => {
+      const rendered = await page.evaluate(() => window.__exportTutorialStoneSprites());
+      const expected = sprites.files.filter(({ file }) => file.startsWith('white-'));
+      if (Object.keys(rendered).length !== expected.length) throw new Error(`Expected ${expected.length} white sprites.`);
+      for (const { file, sha256: expectedHash } of expected) {
+        const dataUrl = rendered[file];
+        if (!dataUrl) throw new Error(`Missing rendered sprite: ${file}`);
+        const bytes = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
+        if (sha256(bytes) !== expectedHash) throw new Error(`Approved render differs: ${file}`);
+      }
+    });
+    console.log(`Verified ${sprites.whiteVariantCount} byte-identical photo renders; approved black.png preserved.`);
+  } else {
+    await mkdir(output, { recursive: true });
+    for (const file of ['manifest.json', ...sprites.files.map(({ file }) => file)]) {
+      const from = new URL(`rendered/${file}`, archive), to = new URL(file, output);
+      if (mode === '--check') {
+        if (!(await readFile(from)).equals(await readFile(to))) throw new Error(`Consumer mirror differs: ${file}`);
+      } else {
+        await copyFile(from, to);
+      }
+    }
+    console.log(`${mode === '--check' ? 'Verified' : 'Copied'} ${sprites.files.length} approved sprites and manifest from ${manifest.assetId}@v${manifest.version}.`);
   }
-  for (const file of ['preview.ts', 'index.html', 'preview.css', 'vite.config.ts']) {
-    const path = `preview/photo-shell-stones/${file}`;
-    sources[path] = createHash('sha256').update(await readFile(new URL(path, uiRoot))).digest('hex');
-  }
-  const sourcePhotoSha256 = createHash('sha256')
-    .update(await readFile(new URL('preview/photo-shell-stones/source-photo.jpg', uiRoot))).digest('hex');
-  const manifest = {
-    modelVersion: 'shell-slate-original-photo-2026-10-17',
-    width: 256, height: 256, transparent: true,
-    whiteVariantCount: 32, whiteRotationStepDegrees: 11.25,
-    rotation: 'model Y only; camera, studio lights and environment remain fixed',
-    camera: { projection: 'orthographic', position: [0, 9, 0], up: [0, 0, -1], bounds: 'per-color physical radius' },
-    spriteBounds: 'tight per-color diameter; consumer applies diameterRatio once',
-    dimensionsMm: { W: { diameter: 21.9, thickness: 8.8 }, B: { diameter: 22.2, thickness: 9.1 } },
-    diameterRatio: { W: 1, B: 22.2 / 21.9 },
-    provenance: {
-      material: 'Unretouched original photograph UV crop on approximate closed geometry; not a 3D scan',
-      source: {
-        pageUrl: 'https://kurokigoishiten.com/en/products/clamshell-go-stones-premium-snow-grade',
-        imageUrl: 'https://cdn.shopify.com/s/files/1/0606/1093/6995/products/snow-stripesample-01.jpg?v=1654821047',
-        file: 'preview/photo-shell-stones/source-photo.jpg', sha256: sourcePhotoSha256,
-        width: 2339, height: 2356, cropPixels: { left: 700, top: 450, right: 1650, bottom: 1400 },
-        rights: 'Manufacturer photograph; commercial redistribution permission unconfirmed; authorized scope is TEST',
-      },
-      approvedPreview: {
-        url: 'http://127.0.0.1:9035/photo-model/site/',
-        rendererFile: 'preview/photo-shell-stones/preview.ts',
-        rendererSha256BeforeExportHook: 'ca249a7ff38ea2d5a704835f2cb3dbdf866ea75cdd1b970bda338e199db18f2b',
-        white00Sha256: '39e2723cf23e176e2eff396c6a1dba50b794e8f1f21a0a75845313fbc728d913',
-      },
-      whiteMaterial: { roughness: .3, clearcoat: .12, clearcoatRoughness: .38, envMapIntensity: .6, emissiveIntensity: .18 },
-      black: 'Existing black.png preserved byte-identical; not rerendered by the photo exporter',
-    },
-    sources, files,
-  };
-  await writeFile(new URL('manifest.json', output), `${JSON.stringify(manifest, null, 2)}\n`);
-  console.log(`Exported ${files.length} transparent 256px sprites to ${fileURLToPath(output)}`);
-} finally {
-  await browser?.close();
-  await server.close();
 }

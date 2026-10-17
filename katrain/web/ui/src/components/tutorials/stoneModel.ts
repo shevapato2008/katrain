@@ -1,10 +1,9 @@
 import * as THREE from 'three';
+import recipe from '../../../../../assets/board-equipment/go/stones/clamshell-slate/v1/source/recipe.json';
 
 /** Millimetres from the manufacturer's size 32 reference; shape is an artistic approximation. */
-export const STONE_DIMENSIONS = {
-  W: { diameter: 21.9, thickness: 8.8 },
-  B: { diameter: 22.2, thickness: 9.1 },
-} as const;
+export const STONE_DIMENSIONS = recipe.dimensionsMm;
+export const STONE_RECIPE = recipe;
 export type StoneColor = keyof typeof STONE_DIMENSIONS;
 
 function random(seed: number) {
@@ -19,18 +18,19 @@ export function createStoneGeometry(color: StoneColor) {
   const { diameter, thickness } = STONE_DIMENSIONS[color];
   const radius = diameter / STONE_DIMENSIONS.W.diameter;
   const halfHeight = thickness / STONE_DIMENSIONS.W.diameter;
+  const point = ([x, y]: number[]) => new THREE.Vector2(x * radius, y * halfHeight);
+  const [d0, d1, d2, d3] = recipe.geometry.domeControlPoints.map(point);
+  const [e0, e1, e2, e3] = recipe.geometry.edgeControlPoints.map(point);
   const dome = new THREE.CubicBezierCurve(
-    new THREE.Vector2(0, halfHeight), new THREE.Vector2(.43 * radius, halfHeight),
-    new THREE.Vector2(.79 * radius, .76 * halfHeight), new THREE.Vector2(.94 * radius, .32 * halfHeight),
+    d0, d1, d2, d3,
   );
   const edge = new THREE.CubicBezierCurve(
-    new THREE.Vector2(.94 * radius, .32 * halfHeight), new THREE.Vector2(.975 * radius, .224 * halfHeight),
-    new THREE.Vector2(radius, .07 * halfHeight), new THREE.Vector2(radius, 0),
+    e0, e1, e2, e3,
   );
-  const upper = [...dome.getPoints(38), ...edge.getPoints(12).slice(1)];
+  const upper = [...dome.getPoints(recipe.geometry.domeSegments), ...edge.getPoints(recipe.geometry.edgeSegments).slice(1)];
   // Lathe winds from the lower pole to the upper pole. Both poles lie on the rotation axis.
   const profile = [...upper.map(p => new THREE.Vector2(p.x, -p.y)), ...upper.slice(0, -1).reverse()];
-  const geometry = new THREE.LatheGeometry(profile, 128);
+  const geometry = new THREE.LatheGeometry(profile, recipe.geometry.radialSegments);
   const positions = geometry.getAttribute('position');
   const uv = geometry.getAttribute('uv');
   for (let i = 0; i < positions.count; i++) {
@@ -93,10 +93,7 @@ function createShellMaps(seed: number): ShellMaps {
 }
 
 export function createStoneMaterial(color: StoneColor, seed = 17, plain = false) {
-  if (color === 'B') return new THREE.MeshPhysicalMaterial({
-    color: 0x090b0d, metalness: 0, roughness: .46, ior: 1.5,
-    clearcoat: .04, clearcoatRoughness: .55, envMapIntensity: .7,
-  });
+  if (color === 'B') return new THREE.MeshPhysicalMaterial(recipe.materials.black);
   if (plain) return new THREE.MeshPhysicalMaterial({
     color: 0xf5f2e9, metalness: 0, roughness: .34,
     clearcoat: .18, clearcoatRoughness: .35, envMapIntensity: .75,

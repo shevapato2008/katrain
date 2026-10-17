@@ -40,7 +40,7 @@
     "source": {
       "pageUrl": "https://kurokigoishiten.com/en/products/clamshell-go-stones-premium-snow-grade",
       "imageUrl": "https://cdn.shopify.com/s/files/1/0606/1093/6995/products/snow-stripesample-01.jpg?v=1654821047",
-      "file": "preview/photo-shell-stones/source-photo.jpg",
+      "file": "katrain/assets/board-equipment/go/stones/clamshell-slate/v1/materials/source-photo.jpg",
       "sha256": "b6429d45e91d8c259b09e742145b68e7de0012f052380337f40536e49c786858",
       "width": 2339,
       "height": 2356,
@@ -54,7 +54,7 @@
     },
     "approvedPreview": {
       "url": "http://127.0.0.1:9035/photo-model/site/",
-      "rendererFile": "preview/photo-shell-stones/preview.ts",
+      "rendererFile": "katrain/web/ui/preview/photo-shell-stones/preview.ts",
       "rendererSha256BeforeExportHook": "ca249a7ff38ea2d5a704835f2cb3dbdf866ea75cdd1b970bda338e199db18f2b",
       "white00Sha256": "39e2723cf23e176e2eff396c6a1dba50b794e8f1f21a0a75845313fbc728d913"
     },
@@ -68,12 +68,13 @@
     "black": "Existing black.png preserved byte-identical; not rerendered by the photo exporter"
   },
   "sources": {
-    "stoneModel.ts": "ba10ac2e788121eb4242ce33ff1b32e092d4f58efd49c5dc2b0f54e4a0f29f38",
-    "stoneStudio.ts": "44a009f55280fe0202d1f472de417e49d01eafd22dbda95d1c9e31bf24d20c21",
-    "preview/photo-shell-stones/preview.ts": "981b53ddbc52f008b554ccd8827485fff480105249d057f225ba838b457b0651",
-    "preview/photo-shell-stones/index.html": "409d2c2f24d80c57d6681bd57ec74c39a5696480550cfe07abffc5e3113778ec",
-    "preview/photo-shell-stones/preview.css": "3572a75b96f7297efd306f0d7748437e60a79c8509c141d7eaa5a888c268a44b",
-    "preview/photo-shell-stones/vite.config.ts": "331111795ac395c589b2e87ca369f52b6ee7954b5ada4890d94262ed8ffde698"
+    "katrain/assets/board-equipment/go/stones/clamshell-slate/v1/source/recipe.json": "0206cdb19f67e5421b4a5617786303b4aaa42ee87e2048f09081550061a93e5f",
+    "katrain/web/ui/src/components/tutorials/stoneModel.ts": "489ee206db93ee757ded0f6c6c535d00ce2f6885ad97b6c0d2453e98427968f8",
+    "katrain/web/ui/src/components/tutorials/stoneStudio.ts": "fbe76234ed6b8f023cb320a0de271380a4f4c44acdbf4c8fe86b96e9dc4ebdb0",
+    "katrain/web/ui/preview/photo-shell-stones/preview.ts": "fd77bc1517b6b6d935727387ef7d910bde581f7803ae692655cc76dcbe7a5458",
+    "katrain/web/ui/preview/photo-shell-stones/index.html": "409d2c2f24d80c57d6681bd57ec74c39a5696480550cfe07abffc5e3113778ec",
+    "katrain/web/ui/preview/photo-shell-stones/preview.css": "3572a75b96f7297efd306f0d7748437e60a79c8509c141d7eaa5a888c268a44b",
+    "katrain/web/ui/preview/photo-shell-stones/vite.config.ts": "dd6bd3e666a39068720f9ad20fce64750ac8effe73f9d1e2bb3385f0f2c22d27"
   },
   "files": [
     {
@@ -208,5 +209,8 @@
       "file": "white-31.png",
       "sha256": "04a03758ea5e0fa354b87d345c2a7ae00d4170d27343f25edd64a2d5bada8250"
     }
-  ]
+  ],
+  "assetId": "go.stones.clamshell-slate",
+  "assetVersion": 1,
+  "canonicalAsset": "katrain/assets/board-equipment/go/stones/clamshell-slate/v1"
 }

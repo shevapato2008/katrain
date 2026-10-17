@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { createBoardTexture, createStoneGeometry, STONE_DIMENSIONS } from '../../src/components/tutorials/stoneModel';
+import { createBoardTexture, createStoneGeometry, createStoneMaterial, STONE_DIMENSIONS, STONE_RECIPE } from '../../src/components/tutorials/stoneModel';
 import { addStoneStudioLights, configureStoneRenderer, createStoneEnvironment, STONE_ENVIRONMENT_INTENSITY } from '../../src/components/tutorials/stoneStudio';
-import sourcePhoto from './source-photo.jpg';
+import sourcePhoto from '../../../../assets/board-equipment/go/stones/clamshell-slate/v1/materials/source-photo.jpg';
 import derivedAlbedo from './photo-shell-albedo.png';
 import './preview.css';
 
@@ -34,19 +34,18 @@ const loader = new THREE.TextureLoader();
 const [photo, derived] = await Promise.all([loader.loadAsync(sourcePhoto), loader.loadAsync(derivedAlbedo)]);
 for (const texture of [photo, derived]) {
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  texture.anisotropy = Math.min(STONE_RECIPE.materials.photo.anisotropyMax, renderer.capabilities.getMaxAnisotropy());
 }
 // Use only the unretouched photograph's glare-free central patch: x700..1650,
 // y450..1400 of the 2339×2356 source. UV sampling does not generate new pixels.
 // V runs opposite the top-down camera, so this also keeps the photograph upright.
-photo.offset.set(700 / 2339, 1 - 450 / 2356);
-photo.repeat.set(950 / 2339, -950 / 2356);
+const { width: photoWidth, height: photoHeight, cropPixels: crop } = STONE_RECIPE.materials.photo;
+photo.offset.set(crop.left / photoWidth, 1 - crop.top / photoHeight);
+photo.repeat.set((crop.right - crop.left) / photoWidth, -(crop.bottom - crop.top) / photoHeight);
 derived.offset.set(0, 1); derived.repeat.set(1, -1);
 const materials: Record<Mode, THREE.MeshPhysicalMaterial> = Object.fromEntries(
   ([['photo', photo], ['derived', derived]] as const).map(([mode, map]) => [mode, new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, map, metalness: 0, roughness: .3, ior: 1.53,
-    clearcoat: .12, clearcoatRoughness: .38, envMapIntensity: .6,
-    emissive: 0xffffff, emissiveMap: map, emissiveIntensity: .18,
+    ...STONE_RECIPE.materials.white, map, emissiveMap: map,
   })]),
 ) as Record<Mode, THREE.MeshPhysicalMaterial>;
 const stone = new THREE.Mesh(createStoneGeometry('W'), materials.photo);
@@ -76,12 +75,14 @@ function sprite(which: Mode, angle: number) {
   const key = `${which}-${angle}`;
   if (sprites[key]) return sprites[key];
   const ratio = renderer.getPixelRatio();
-  renderer.setPixelRatio(1); renderer.setSize(256, 256, false);
+  const { width, height, camera: preset } = STONE_RECIPE.sprites;
+  renderer.setPixelRatio(1); renderer.setSize(width, height, false);
   const mesh = new THREE.Mesh(stone.geometry, materials[which]);
   mesh.position.y = stone.position.y; mesh.rotation.y = angle;
   spriteScene.add(mesh);
-  const top = new THREE.OrthographicCamera(-1, 1, 1, -1, .01, 30);
-  top.position.set(0, 9, 0); top.up.set(0, 0, -1); top.lookAt(0, 0, 0);
+  const top = new THREE.OrthographicCamera(-preset.bounds, preset.bounds, preset.bounds, -preset.bounds, preset.near, preset.far);
+  top.position.set(preset.position[0], preset.position[1], preset.position[2]);
+  top.up.set(preset.up[0], preset.up[1], preset.up[2]); top.lookAt(0, 0, 0);
   renderer.render(spriteScene, top);
   sprites[key] = renderer.domElement.toDataURL('image/png');
   spriteScene.remove(mesh); renderer.setPixelRatio(ratio); resize();
@@ -117,14 +118,28 @@ document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => b.addEv
     : 'AI 辅助去高光与延展后的衍生纹理；部分细节已重建，不等同原照片。';
 }));
 const download = document.querySelector<HTMLButtonElement>('#download-model')!;
-async function exportModel() {
+async function exportModel(materialMode: Mode = mode) {
   const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
   const mesh = stone.clone();
+  mesh.material = materials[materialMode];
   // glTF units are metres. The existing geometry is normalized to a 2-unit diameter.
-  mesh.scale.setScalar(STONE_DIMENSIONS.W.diameter / 2000);
+  mesh.scale.setScalar(STONE_RECIPE.geometry.metresPerUnit);
   mesh.position.set(0, STONE_DIMENSIONS.W.thickness / 2000, 0);
   mesh.name = 'clamshell-white-photo-preview';
-  mesh.userData = { source: 'https://kurokigoishiten.com/en/products/clamshell-go-stones-premium-snow-grade', texture: mode === 'photo' ? 'Original photo UV crop; unretouched' : 'AI-assisted derivative', usage: 'Local preview; commercial redistribution permission unconfirmed', dimensionsMm: STONE_DIMENSIONS.W };
+  mesh.userData = { source: 'https://kurokigoishiten.com/en/products/clamshell-go-stones-premium-snow-grade', texture: materialMode === 'photo' ? 'Original photo UV crop; unretouched' : 'AI-assisted derivative', usage: 'Local preview; commercial redistribution permission unconfirmed', dimensionsMm: STONE_DIMENSIONS.W };
+  return await new GLTFExporter().parseAsync(mesh, { binary: true });
+}
+async function exportBlackModel() {
+  const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
+  const mesh = new THREE.Mesh(createStoneGeometry('B'), createStoneMaterial('B'));
+  // Black geometry already contains its diameter ratio; both colors use the white baseline.
+  mesh.scale.setScalar(STONE_RECIPE.geometry.metresPerUnit);
+  mesh.position.y = STONE_DIMENSIONS.B.thickness / 2000;
+  mesh.name = 'slate-black';
+  mesh.userData = {
+    assetId: STONE_RECIPE.assetId, version: STONE_RECIPE.version, units: 'metres',
+    dimensionsMm: STONE_DIMENSIONS.B, geometry: 'Closed symmetric artistic size approximation',
+  };
   return await new GLTFExporter().parseAsync(mesh, { binary: true });
 }
 download.addEventListener('click', async () => {
@@ -142,13 +157,13 @@ resize(); showSamples(); setView('top'); download.disabled = false;
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
 Object.assign(window, {
   __photoStoneReady: true,
-  __photoStonePreview: { setView, sprites, exportModel, dimensions: STONE_DIMENSIONS.W, sourceCrop: [700, 450, 1650, 1400] },
+  __photoStonePreview: { setView, sprites, exportModel, exportBlackModel, dimensions: STONE_DIMENSIONS.W, sourceCrop: [crop.left, crop.top, crop.right, crop.bottom] },
   __exportTutorialStoneSprites: () => {
     renderer.setAnimationLoop(null);
     try {
       const exported: Record<string, string> = {};
-      for (let variant = 0; variant < 32; variant++) {
-        exported[`white-${String(variant).padStart(2, '0')}.png`] = sprite('photo', 2 * Math.PI * variant / 32);
+      for (let variant = 0; variant < STONE_RECIPE.sprites.whiteVariantCount; variant++) {
+        exported[`white-${String(variant).padStart(2, '0')}.png`] = sprite('photo', 2 * Math.PI * variant / STONE_RECIPE.sprites.whiteVariantCount);
       }
       return exported;
     } finally {

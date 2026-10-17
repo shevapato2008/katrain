@@ -10,6 +10,8 @@ description: >
 
 # Tutorial Board Recognition Pipeline
 
+> 历史 CV／逐格模型流程。当前 GPT 整页定位、整图识别和管理后台校准，请使用 [tutorial-gpt-recognition](../tutorial-gpt-recognition/SKILL.md)。下文及 references 中的 Gemini、逐格 patch、强制覆盖和旧审核导出说明不能用于当前流程。
+
 Digitize Go textbook diagrams into structured `BoardPayload` JSON via a hybrid CV + VLLM pipeline.
 S0-S3 are pure OpenCV (millisecond-level). S4 uses CV pre-classification + Gemini 3 Flash per-patch (default).
 

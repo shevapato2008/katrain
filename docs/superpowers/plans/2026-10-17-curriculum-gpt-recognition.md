@@ -39,7 +39,7 @@
 - [x] generic最终结果必须含完整PDF页outcome、匹配PDF/JSON/image/index hashes、catalog id与总页/引用数。仅部分进行结果不冒充全书完成。
 - [x] 缺原PNG而本轮补渲染的PDF页，仅在检测完成、无图、无canonical引用、无识别图时作为coverage-only ledger保留，仍校验图hash；有图/有引用的未注册页严格阻断该书导入，按受控资产/来源页流程补齐，不弱化原注册守卫。expected-pdf-pages必须来自独立PDF清点。
 - [x] dry-run只读，apply使用既有TEST身份守卫及事务/audit，按现有保护条件保留棋图/人工校准/审核/音视频。重复dataset/recognitionID一致跳过，变化不得覆盖不可变候选。
-- [ ] 只部署必要TEST importer文件，不重启服务/DB/MinIO/GPU、不访问生产，不运行force/全表同步。每书根代理串行apply，复跑确认幂等，生成来源→数据库映射、异常和链接。
+- [ ] 使用已核实的本地工具环境和现有TEST数据库隧道执行专用CLI，无需服务部署或重启DB/MinIO/GPU；不访问生产，不运行force/全表同步。每书根代理串行dry-run/apply，复跑确认幂等，生成来源→数据库映射、异常和链接。
 
 ## Chunk 2：逐书执行和交付
 

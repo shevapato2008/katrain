@@ -90,7 +90,7 @@ def render_plan(data):
 ## 现有可操作后台
 
 - [测试教程后台](http://127.0.0.1:18012/admin?book=4&page=11&figure=1030&filter=all)，沿用现有SSH隧道和后台登录。
-- 最新双档样例：第11页两图，各有Galaxy原生4K与RK1024×600版；新视频待人工审核。TEST provider `569120ae9`，console `03e967a1`。普通消费者/RK实机未在本阶段部署。
+- 最新双档样例：第11页两图，各有Galaxy原生4K与RK1024×600版；新视频待人工审核。TEST provider `f671f20f6`，console `03e967a1`。普通消费者/RK实机未在本阶段部署。
 
 ## 当前工具与写入边界
 

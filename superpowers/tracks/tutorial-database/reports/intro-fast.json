@@ -69,8 +69,15 @@
     "independent_static_roots": 132,
     "index_entries": 132,
     "skipped": 0,
-    "zip_sha256": "a187e6b089e23096b58a9057ca354d28f7d1a599da87b153fd5c26fec65e367c",
-    "bytes": 896762
+    "zip_sha256": "2a25713d38e037b5a8e6930a5f1df2c61607869124bf4fe55d04f7aa97e8fca9",
+    "bytes": 896762,
+    "single_figure_endpoint_http200_verified": true,
+    "single_figure_example": {
+      "page": 12,
+      "figure_id": 5603
+    },
+    "mapped_candidates": 132,
+    "mapped_diagrams_all_exported": true
   },
   "artifacts": {
     "figure_map": "intro-fast-recognition-figure-map.csv",

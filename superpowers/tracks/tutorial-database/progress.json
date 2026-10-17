@@ -12,13 +12,14 @@
         "入门、规则与第一盘棋 · 主教材"
       ],
       "book_id": 11,
-      "recognition": "识别中 · 260/314页 · 464图",
-      "validation_import": "机器校验 260/314页；失败0；疑点1图；待整书TEST入库",
-      "human_review": "本轮未审核",
+      "recognition": "已识别 · 314/314页 · 549图",
+      "validation_import": "已入TEST·549图；复跑0新增；SGF549份已验证",
+      "human_review": "待人工审核·549图（含疑点1图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T01:00:33+08:00",
-      "priority_tier": "核心教材"
+      "updated_at": "2026-10-18T01:46:51+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
     },
     {
       "catalog_id": "intro-down",
@@ -28,12 +29,12 @@
         "对杀与局部计算 · 基础"
       ],
       "book_id": 12,
-      "recognition": "识别中 · 240/313页 · 491图",
-      "validation_import": "机器校验 240/313页；失败0；疑点0图；待整书TEST入库",
+      "recognition": "识别中 · 280/313页 · 651图",
+      "validation_import": "机器校验 280/313页；失败0；疑点0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T01:00:33+08:00",
+      "updated_at": "2026-10-18T01:46:51+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -48,7 +49,7 @@
       "human_review": "待人工审核·132图（含疑点27图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T01:00:33+08:00",
+      "updated_at": "2026-10-18T01:46:51+08:00",
       "priority_tier": "模块内补充",
       "validation_import_manually_set": true
     },
@@ -59,12 +60,12 @@
         "棋形与手筋 · 主教材"
       ],
       "book_id": 15,
-      "recognition": "识别中 · 10/190页 · 10图",
-      "validation_import": "机器校验 10/190页；失败0；疑点0图；待整书TEST入库",
+      "recognition": "识别中 · 40/190页 · 115图",
+      "validation_import": "机器校验 40/190页；失败0；疑点4图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T01:00:33+08:00",
+      "updated_at": "2026-10-18T01:46:51+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -74,12 +75,12 @@
         "死活 · 主线选题"
       ],
       "book_id": 23,
-      "recognition": "来源已准备 · 0/255页 · 待识别",
-      "validation_import": "待机器验证 / 本轮未入库",
+      "recognition": "识别中 · 20/255页 · 25图",
+      "validation_import": "机器校验 20/255页；失败0；疑点0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-17T22:34:01+08:00",
+      "updated_at": "2026-10-18T01:46:51+08:00",
       "priority_tier": "核心教材"
     },
     {

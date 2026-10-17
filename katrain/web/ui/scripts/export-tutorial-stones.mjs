@@ -13,7 +13,7 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
 if (!existsSync(executablePath)) throw new Error('Set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH to an existing Chromium executable.');
 
 const server = await createServer({
-  configFile: fileURLToPath(new URL('preview/shell-stones/vite.config.ts', uiRoot)),
+  configFile: fileURLToPath(new URL('preview/photo-shell-stones/vite.config.ts', uiRoot)),
   server: { host: '127.0.0.1', port: 4182, strictPort: true },
 });
 let browser;
@@ -24,11 +24,16 @@ try {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('http://127.0.0.1:4182/');
-  await page.waitForFunction(() => window.__stonePreviewReady === true);
+  await page.waitForFunction(() => window.__photoStoneReady === true);
   const sprites = await page.evaluate(() => window.__exportTutorialStoneSprites());
-  if (errors.length || Object.keys(sprites).length !== 33) throw new Error(`Sprite export failed: ${errors.join('; ')}`);
+  const whiteFiles = Array.from({ length: 32 }, (_, variant) => `white-${String(variant).padStart(2, '0')}.png`);
+  if (errors.length || Object.keys(sprites).length !== 32 || whiteFiles.some(file => !sprites[file])) {
+    throw new Error(`Expected 32 photo white sprites: ${errors.join('; ')}`);
+  }
   await mkdir(output, { recursive: true });
-  const files = [];
+  // Black keeps its existing approved rendering; only white is exported from the photo preview.
+  const black = await readFile(new URL('black.png', output));
+  const files = [{ file: 'black.png', sha256: createHash('sha256').update(black).digest('hex') }];
   for (const [file, dataUrl] of Object.entries(sprites)) {
     const bytes = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
     await writeFile(new URL(file, output), bytes);
@@ -38,15 +43,40 @@ try {
   for (const file of ['stoneModel.ts', 'stoneStudio.ts']) {
     sources[file] = createHash('sha256').update(await readFile(new URL(`src/components/tutorials/${file}`, uiRoot))).digest('hex');
   }
+  for (const file of ['preview.ts', 'index.html', 'preview.css', 'vite.config.ts']) {
+    const path = `preview/photo-shell-stones/${file}`;
+    sources[path] = createHash('sha256').update(await readFile(new URL(path, uiRoot))).digest('hex');
+  }
+  const sourcePhotoSha256 = createHash('sha256')
+    .update(await readFile(new URL('preview/photo-shell-stones/source-photo.jpg', uiRoot))).digest('hex');
   const manifest = {
-    modelVersion: 'shell-slate-legible-grain-2026-10-17',
+    modelVersion: 'shell-slate-original-photo-2026-10-17',
     width: 256, height: 256, transparent: true,
-    whiteVariantCount: 32, whiteTextureSeed: 17, whiteRotationStepDegrees: 11.25,
+    whiteVariantCount: 32, whiteRotationStepDegrees: 11.25,
     rotation: 'model Y only; camera, studio lights and environment remain fixed',
     camera: { projection: 'orthographic', position: [0, 9, 0], up: [0, 0, -1], bounds: 'per-color physical radius' },
     spriteBounds: 'tight per-color diameter; consumer applies diameterRatio once',
     dimensionsMm: { W: { diameter: 21.9, thickness: 8.8 }, B: { diameter: 22.2, thickness: 9.1 } },
-    diameterRatio: { W: 1, B: 22.2 / 21.9 }, sources, files,
+    diameterRatio: { W: 1, B: 22.2 / 21.9 },
+    provenance: {
+      material: 'Unretouched original photograph UV crop on approximate closed geometry; not a 3D scan',
+      source: {
+        pageUrl: 'https://kurokigoishiten.com/en/products/clamshell-go-stones-premium-snow-grade',
+        imageUrl: 'https://cdn.shopify.com/s/files/1/0606/1093/6995/products/snow-stripesample-01.jpg?v=1654821047',
+        file: 'preview/photo-shell-stones/source-photo.jpg', sha256: sourcePhotoSha256,
+        width: 2339, height: 2356, cropPixels: { left: 700, top: 450, right: 1650, bottom: 1400 },
+        rights: 'Manufacturer photograph; commercial redistribution permission unconfirmed; authorized scope is TEST',
+      },
+      approvedPreview: {
+        url: 'http://127.0.0.1:9035/photo-model/site/',
+        rendererFile: 'preview/photo-shell-stones/preview.ts',
+        rendererSha256BeforeExportHook: 'ca249a7ff38ea2d5a704835f2cb3dbdf866ea75cdd1b970bda338e199db18f2b',
+        white00Sha256: '39e2723cf23e176e2eff396c6a1dba50b794e8f1f21a0a75845313fbc728d913',
+      },
+      whiteMaterial: { roughness: .3, clearcoat: .12, clearcoatRoughness: .38, envMapIntensity: .6, emissiveIntensity: .18 },
+      black: 'Existing black.png preserved byte-identical; not rerendered by the photo exporter',
+    },
+    sources, files,
   };
   await writeFile(new URL('manifest.json', output), `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`Exported ${files.length} transparent 256px sprites to ${fileURLToPath(output)}`);

@@ -1,10 +1,9 @@
 {
-  "modelVersion": "shell-slate-legible-grain-2026-10-17",
+  "modelVersion": "shell-slate-original-photo-2026-10-17",
   "width": 256,
   "height": 256,
   "transparent": true,
   "whiteVariantCount": 32,
-  "whiteTextureSeed": 17,
   "whiteRotationStepDegrees": 11.25,
   "rotation": "model Y only; camera, studio lights and environment remain fixed",
   "camera": {
@@ -36,9 +35,45 @@
     "W": 1,
     "B": 1.0136986301369864
   },
+  "provenance": {
+    "material": "Unretouched original photograph UV crop on approximate closed geometry; not a 3D scan",
+    "source": {
+      "pageUrl": "https://kurokigoishiten.com/en/products/clamshell-go-stones-premium-snow-grade",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0606/1093/6995/products/snow-stripesample-01.jpg?v=1654821047",
+      "file": "preview/photo-shell-stones/source-photo.jpg",
+      "sha256": "b6429d45e91d8c259b09e742145b68e7de0012f052380337f40536e49c786858",
+      "width": 2339,
+      "height": 2356,
+      "cropPixels": {
+        "left": 700,
+        "top": 450,
+        "right": 1650,
+        "bottom": 1400
+      },
+      "rights": "Manufacturer photograph; commercial redistribution permission unconfirmed; authorized scope is TEST"
+    },
+    "approvedPreview": {
+      "url": "http://127.0.0.1:9035/photo-model/site/",
+      "rendererFile": "preview/photo-shell-stones/preview.ts",
+      "rendererSha256BeforeExportHook": "ca249a7ff38ea2d5a704835f2cb3dbdf866ea75cdd1b970bda338e199db18f2b",
+      "white00Sha256": "39e2723cf23e176e2eff396c6a1dba50b794e8f1f21a0a75845313fbc728d913"
+    },
+    "whiteMaterial": {
+      "roughness": 0.3,
+      "clearcoat": 0.12,
+      "clearcoatRoughness": 0.38,
+      "envMapIntensity": 0.6,
+      "emissiveIntensity": 0.18
+    },
+    "black": "Existing black.png preserved byte-identical; not rerendered by the photo exporter"
+  },
   "sources": {
     "stoneModel.ts": "ba10ac2e788121eb4242ce33ff1b32e092d4f58efd49c5dc2b0f54e4a0f29f38",
-    "stoneStudio.ts": "44a009f55280fe0202d1f472de417e49d01eafd22dbda95d1c9e31bf24d20c21"
+    "stoneStudio.ts": "44a009f55280fe0202d1f472de417e49d01eafd22dbda95d1c9e31bf24d20c21",
+    "preview/photo-shell-stones/preview.ts": "981b53ddbc52f008b554ccd8827485fff480105249d057f225ba838b457b0651",
+    "preview/photo-shell-stones/index.html": "409d2c2f24d80c57d6681bd57ec74c39a5696480550cfe07abffc5e3113778ec",
+    "preview/photo-shell-stones/preview.css": "3572a75b96f7297efd306f0d7748437e60a79c8509c141d7eaa5a888c268a44b",
+    "preview/photo-shell-stones/vite.config.ts": "331111795ac395c589b2e87ca369f52b6ee7954b5ada4890d94262ed8ffde698"
   },
   "files": [
     {
@@ -47,131 +82,131 @@
     },
     {
       "file": "white-00.png",
-      "sha256": "a03b34983292aa35b497ed02907407ca20178b11c196d444e3c42d477160b036"
+      "sha256": "39e2723cf23e176e2eff396c6a1dba50b794e8f1f21a0a75845313fbc728d913"
     },
     {
       "file": "white-01.png",
-      "sha256": "c31efb4719de1f745eb5727cbf3277c9fce67944e911ac2b67e70a0fa68b49dc"
+      "sha256": "339e81b0dcf8ad3698f26b2a043f5bbf31e8e5a6e5ff74286fb4bd14d28e745d"
     },
     {
       "file": "white-02.png",
-      "sha256": "7c66d9f1255fb97ea6382b2a00bc4bf7e5c7b12eca09e587d9e77f6a8b72fcc5"
+      "sha256": "28310339db6600109039c296a551dab0b579f120dbab63997fa405872da6852a"
     },
     {
       "file": "white-03.png",
-      "sha256": "c4eb8b25ee8b5191cb08436108fb1d0e1d0bb4480c1ed266b1835d5efc1b0e0e"
+      "sha256": "be89ca3e7527afc4d32cb804a1e542aeb41d20aea5267179e32e00436535862e"
     },
     {
       "file": "white-04.png",
-      "sha256": "5042c4b6411d3d15445c821618e260eb934d2e249541b0ecbfde58b080d0d29b"
+      "sha256": "719577beb6e66332ed2f834cc0b914971a39a952dc8c448626ad7166e538cae5"
     },
     {
       "file": "white-05.png",
-      "sha256": "c7a6586f1b91f171de3aecf57481e0f41b41fd29c457feb8156930e5b2c5c087"
+      "sha256": "c8dfb8f3aba3f39369ee52097eb1fab3669ece392a1b525da06d2576053bb555"
     },
     {
       "file": "white-06.png",
-      "sha256": "11aaab1e205c13f8e42cd711837e9372b76ccfc3d20cecd0144bb76fe301f85f"
+      "sha256": "47cde8970839a43d6f8e124feb6f1d6923f72929df42e5c7f6662d53b804ceba"
     },
     {
       "file": "white-07.png",
-      "sha256": "69ce1d0be1f66580b504dc6758542e27405793f70eba61160c41534510cde5a4"
+      "sha256": "8092209f348ccbb37b594803f153460f1550c5e937f3eb5010bb6f8455326492"
     },
     {
       "file": "white-08.png",
-      "sha256": "84656f5ebff856ba0f48d2fb403a2b5e71091c673ce04011ace5bd8148bc3676"
+      "sha256": "9edaf8494308b12e77e27a659444217e5b56b21b5c2c9325e47ae09634cf006c"
     },
     {
       "file": "white-09.png",
-      "sha256": "e7f0ee789e79bda267a3784cbbe3dffabbc0aaa3b6048f3f62a82fdfbfb1aedf"
+      "sha256": "f7f12633d65dabca9a5c2d22642c1b23d879a9e6def868d871fbb0d81f68b07c"
     },
     {
       "file": "white-10.png",
-      "sha256": "3f4a436b33da1f57fcaf8e7c904dee892493fb71b6196edbe8c6fb348fa2a95b"
+      "sha256": "f8fbabb43726b7c41f2822f2f81fcd8fc71c796726029195e77b8977d1593ee9"
     },
     {
       "file": "white-11.png",
-      "sha256": "6db1e7ed4ae2503a56b04286c6a38c1cc2caf75c0d7f4f53de50f30d415b00b7"
+      "sha256": "108abaff44d8bb99a1392160b26bd893b59970701e8edfce7570783af146e481"
     },
     {
       "file": "white-12.png",
-      "sha256": "0ce1de7b8d9dd0c4f207ca0990943c9b7453f40efec1b493ef93e409d511a6b8"
+      "sha256": "bfaf87c75b792ca92b4df8040e68503f7a71d2e29f797fe8531117a387845246"
     },
     {
       "file": "white-13.png",
-      "sha256": "55f1e994c64ba2621c0415d3fd1e9b62f5d5fb83f4a3232e9c6dc7af40a759c3"
+      "sha256": "1fbe14664c1d3deae11c7ba8962936092019fdca693c20d9e449b7c5b40440a3"
     },
     {
       "file": "white-14.png",
-      "sha256": "a49d0743dafaa65282fb1646085aec14344958b2e51bb0d1653226b356054b31"
+      "sha256": "8e95c7eb3d1546dd6c5c434f2df201c79d3368de2d3e929043fbb8bbd98b5e28"
     },
     {
       "file": "white-15.png",
-      "sha256": "8a34ad5bd46eb94bb93b33cacc41574a15921f4962771b7bc5306a971cb059bd"
+      "sha256": "56455dd19dd810cd3c7e583b55e9002bb9690a4d36d9226f4a4bfe542b5b5dac"
     },
     {
       "file": "white-16.png",
-      "sha256": "e876c8c168fc1b4875a701193e6b8176f36639c96ac3be12cf92af762aba6c27"
+      "sha256": "40c15695ce02039cb9e5906f3e2e4222b5fc219b6e6c1c933c426f093a481d62"
     },
     {
       "file": "white-17.png",
-      "sha256": "e142ccd7f18adebacb7f7624a8644aa439f143948d574b810d2cefa73cca5a8c"
+      "sha256": "d98e772238ac25cece8dd13f3f8c3bb93d111a0924e77c23bdea16e8f48afa01"
     },
     {
       "file": "white-18.png",
-      "sha256": "b1fea30f7820d250d32a0cc11b6801619c734610c4004bb21be2f86392802972"
+      "sha256": "847dd799cfdceb38f0f6cef00e6e295a3ee4b595e334437c2d4a42c14c07d450"
     },
     {
       "file": "white-19.png",
-      "sha256": "a5be3e8264e00552fcc23e0374c62ce8263317e4190aad9862dd40c4b95aca61"
+      "sha256": "9099320e129d4e6b0b2664250fc819d2bf3564d44eab1d8c7a719dfc5c5203d7"
     },
     {
       "file": "white-20.png",
-      "sha256": "78b5e2bd6a1bce60557a9d76c229039a0a92ac1ec59aa0ef6f2909d6fa82588e"
+      "sha256": "8aec7f9e1548f4daacd5a9d41c591b453dcc57ae6f6c8353b026ca88277e7685"
     },
     {
       "file": "white-21.png",
-      "sha256": "8e1577e7c6fea583b2ec1ccba792523c613ec28a1f7d73c5eb9cd12fcfee8c8f"
+      "sha256": "0af2968790cb24bd13b16e44581cae74871128039e1b0986a09c66a8ac018e32"
     },
     {
       "file": "white-22.png",
-      "sha256": "b94f3b58ad798ab90504e1349b1471153b8710ed7465cf7e89d04d1ecbbe7e83"
+      "sha256": "eb860053e58d372a3b1571d4c0cac69aed38f53d1cdc8116d9a26a0668aee12f"
     },
     {
       "file": "white-23.png",
-      "sha256": "d775bec7e24843a8fc369de2a0d8b632d30c0234caa78b0a51109d37a367085e"
+      "sha256": "9fe77ca1c1e6be9dada0feff9900704e70dd33625ede7a333389e6e696431d46"
     },
     {
       "file": "white-24.png",
-      "sha256": "6da2b1cf69b4b3ab52f1ed43b8097319f642edc254d119395adecd92831e2f7d"
+      "sha256": "705d910bff1067b7971a6108698a56ad8defebd0918496451e9e6a863c2003b6"
     },
     {
       "file": "white-25.png",
-      "sha256": "54d801e6ea516b390a84987dfb65a190931551f982f7d25ebf8957cdbcf4041b"
+      "sha256": "e4d7b1df54be9ff968fb0d51350cea87bef2625b8ba54fba48f2c901464a2381"
     },
     {
       "file": "white-26.png",
-      "sha256": "06e99d32726fc052372e809bf9998a691db7e38dce239005109858873b659877"
+      "sha256": "ee7accb9c7697a839ebf864cde465e402f8fd5837420225f30fbc07be813d569"
     },
     {
       "file": "white-27.png",
-      "sha256": "4c692b242e4edaf04e38b1584c17c42954bd2932a1761ce3e9a3eaf618090d3e"
+      "sha256": "0e1e582e8edbb26dcec8eb3366e09738513af336f23fab7006b10ceee01d2fe9"
     },
     {
       "file": "white-28.png",
-      "sha256": "7d8cc88e032eabc6e37dd0ac01f8929e10a74541af637b7c2851042d30a7d783"
+      "sha256": "a00ccf7dedd30e59225ca45272f7c74e7a52afd8bf886a2b722b723886627aad"
     },
     {
       "file": "white-29.png",
-      "sha256": "e8b740ebe53299f1bdfcc46e87b79d81f98fce09c8a7459db4c7d6fd85563bb3"
+      "sha256": "306854f96a1982d815cdf94ae38254b6c66a768fbe82763089f53be2108abcc7"
     },
     {
       "file": "white-30.png",
-      "sha256": "790b4ced6a29ba9fb21e420e20f6da17036a5fae15f1707cbcdfedc22daf9863"
+      "sha256": "0cd0d48dc4bb33e7257191e26ec427a84b91e9707332e779dda51fa2bdb26a5c"
     },
     {
       "file": "white-31.png",
-      "sha256": "9f2e9bc63657e6303624d6da8181e025e7e34a02c4ec84c45282373a238fe7cb"
+      "sha256": "04a03758ea5e0fa354b87d345c2a7ae00d4170d27343f25edd64a2d5bada8250"
     }
   ]
 }

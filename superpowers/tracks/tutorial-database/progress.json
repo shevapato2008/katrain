@@ -12,12 +12,12 @@
         "入门、规则与第一盘棋 · 主教材"
       ],
       "book_id": 11,
-      "recognition": "识别中 · 60/314页 · 91图",
-      "validation_import": "机器校验 60/314页；失败0；疑点0图；待整书TEST入库",
+      "recognition": "识别中 · 160/314页 · 276图",
+      "validation_import": "机器校验 160/314页；失败0；疑点0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-17T22:14:39+08:00",
+      "updated_at": "2026-10-17T23:36:46+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -28,12 +28,12 @@
         "对杀与局部计算 · 基础"
       ],
       "book_id": 12,
-      "recognition": "识别中 · 70/313页 · 115图",
-      "validation_import": "机器校验 70/313页；失败0；疑点0图；待整书TEST入库",
+      "recognition": "识别中 · 170/313页 · 297图",
+      "validation_import": "机器校验 170/313页；失败0；疑点0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-17T22:14:39+08:00",
+      "updated_at": "2026-10-17T23:36:46+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -43,12 +43,12 @@
         "入门、规则与第一盘棋 · 补充"
       ],
       "book_id": 13,
-      "recognition": "识别中 · 50/160页 · 30图",
-      "validation_import": "机器校验 50/160页；失败0；疑点6图；待整书TEST入库",
+      "recognition": "识别中 · 110/160页 · 90图",
+      "validation_import": "机器校验 110/160页；失败0；疑点18图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-17T22:14:39+08:00",
+      "updated_at": "2026-10-17T23:36:46+08:00",
       "priority_tier": "模块内补充"
     },
     {
@@ -58,12 +58,12 @@
         "棋形与手筋 · 主教材"
       ],
       "book_id": 15,
-      "recognition": "待识别",
+      "recognition": "来源已准备 · 0/190页 · 待识别",
       "validation_import": "待机器验证 / 本轮未入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": null,
+      "updated_at": "2026-10-17T22:34:01+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -73,12 +73,12 @@
         "死活 · 主线选题"
       ],
       "book_id": 23,
-      "recognition": "待识别",
+      "recognition": "来源已准备 · 0/255页 · 待识别",
       "validation_import": "待机器验证 / 本轮未入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": null,
+      "updated_at": "2026-10-17T22:34:01+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -88,12 +88,12 @@
         "布局基础与方向 · 主教材"
       ],
       "book_id": 33,
-      "recognition": "待识别",
+      "recognition": "来源已准备 · 0/197页 · 待识别",
       "validation_import": "待机器验证 / 本轮未入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": null,
+      "updated_at": "2026-10-17T22:34:01+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -1272,5 +1272,36 @@
     "intro-up",
     "intro-down",
     "intro-fast"
-  ]
+  ],
+  "current_scope": {
+    "catalog_ids": [
+      "intro-up",
+      "shape",
+      "life-1",
+      "intro-down",
+      "opening",
+      "joseki",
+      "sakata-1",
+      "sakata-2",
+      "invasion",
+      "moyo",
+      "sakata-5",
+      "ko",
+      "simple-judgement",
+      "endgame",
+      "go-games",
+      "life-2",
+      "lin-games",
+      "life-3",
+      "lin-games-1",
+      "life-4",
+      "lin-games-2",
+      "life-5",
+      "life-6"
+    ],
+    "books": 23,
+    "pdf_pages": 5827,
+    "definition": "recognition + strict validation + TEST incremental import and admin/SGF verification; not human approval or media",
+    "started_exception": "intro-fast"
+  }
 }

@@ -51,10 +51,10 @@
 
 **Files to confirm:** `katrain/web/admin/routers/tutorial_media.py`, `tutorials/media_tasks.py`, `media_render.py`, `manual_review.py`, existing models/output schemas, console workbench media cards/client/types; Galaxy/kiosk existing consumers.
 
-- [ ] 保留render_mode=2d，output_profile进入任务快照、去重digest、artifact标识；现有workbench_media.videos JSON保存两版，video_2d_review JSON按profile保存文件绑定审核，兼容历史单文件记录，不新建表。
-- [ ] 每版自己的asset/hash/配方版本/审核；重生成一版只撤销该版视频审核。图文编辑按现有依赖失效；完成任务核对内容版本，陈旧结果不绑定新内容。
-- [ ] 后台可独立生成/播放/确认两版；Galaxy默认4K全屏实际原生、RK取设备版，播放器外显示pending原因。未知/不支持profile明确拒绝，不默默回退为低清。
-- [ ] 聚焦CAS/去重/双版互不覆盖/审核失效/重试，真实测试环境一页生成验证；只部署必要TEST容器。生产和RK部署不在本阶段授权范围。
+- [x] 保留render_mode=2d，output_profile进入任务快照、去重digest、artifact标识；现有workbench_media.videos JSON保存两版，video_2d_review JSON按profile保存文件绑定审核，兼容历史单文件记录，不新建表。
+- [x] 每版自己的asset/hash/配方版本/审核；重生成一版只撤销该版视频审核。图文编辑按现有依赖失效；完成任务核对内容版本，陈旧结果不绑定新内容。
+- [x] 后台可独立生成/播放/确认两版；Galaxy默认4K全屏实际原生、RK取设备版，播放器外显示pending原因。未知/不支持profile明确拒绝，不默默回退为低清。
+- [x] 聚焦CAS/去重/双版互不覆盖/审核失效/重试，真实测试环境一页生成验证；只部署必要TEST容器。生产和RK部署不在本阶段授权范围。
 
 ## 交付顺序
 
@@ -84,13 +84,18 @@
 
 **Files:** Console `admin/api/client.ts`、`tutorials/workbench/types.ts`、`WorkbenchContainer.tsx`、`TutorialWorkbench.tsx`（必要时抽现有媒体卡，仅为本需求）；APP `types/tutorial.ts`、`galaxy/pages/tutorials/TutorialFigurePage.tsx`、`kiosk/pages/TutorialSectionPage.tsx` 和现有共享video组件/样式。
 
-- [ ] 后台沿用一张视频卡，固定档位选择“Galaxy · 4K”“RK3562 · 7英寸”；生成/任务状态恢复/播放/审核都对应当前档，旧2D/3D历史只读。各档审核状态不串用。
-- [ ] Galaxy原生4K媒体选择与全屏controls；RK明确设备版且点击后全视口播放，有返回。无新registry/表/模拟业务数据。
-- [ ] 聚焦前后端profile传递、切档状态、独立审核及消费者选择测试；代表性真实页面预览，Astra Max代码审查与实际视频/布局复核。
+- [x] 后台沿用一张视频卡，固定档位选择“Galaxy · 4K”“RK3562 · 7英寸”；生成/任务状态恢复/播放/审核都对应当前档，旧2D/3D历史只读。各档审核状态不串用。
+- [x] Galaxy原生4K媒体选择与全屏controls；RK明确设备版且点击后全视口播放，有返回。无新registry/表/模拟业务数据。
+- [x] 聚焦前后端profile传递、切档状态、独立审核及消费者选择测试；代表性真实页面预览，Astra Max代码审查与实际视频/布局复核。
 
 ### Task 3c：TEST发布与真实一页验收
 
-- [ ] 只更新home-ubuntu TEST provider+console；普通Galaxy/kiosk消费者前端只做本地构建与测试API验证，当前admin provider不承载其页面；守卫现有TEST标志、DB system_identifier7596941912817897507、s3/tutorial-assets及go.sailorvoyage.top/media。不重启DB/MinIO/GPU/web/cron或触碰ucloud/RK设备。
-- [ ] 发布前无running/queued媒体任务；备份仅必要图/审核/媒体指纹与当前容器配置，保持原env/session密钥/ports/networks/mounts，保留回滚镜像。严禁打印秘密配置。
-- [ ] 使用现有已登录浏览器与已有1030/1031棋图审核，生成四视频。原图/文稿/人工棋图审核不变，媒体新记录准确，视频人工审核待用户点，不代为登记。
-- [ ] 每视频下载验证SHA、FFprobe、实际浏览器播放；真实后台切档/刷新仍保留。报告新提交/TEST容器版本、实际链接与明确未发布边界。
+- [x] 只更新home-ubuntu TEST provider+console；普通Galaxy/kiosk消费者前端只做本地构建与测试API验证，当前admin provider不承载其页面；守卫现有TEST标志、DB system_identifier7596941912817897507、s3/tutorial-assets及go.sailorvoyage.top/media。不重启DB/MinIO/GPU/web/cron或触碰ucloud/RK设备。
+- [x] 发布前无running/queued媒体任务；备份仅必要图/审核/媒体指纹与当前容器配置，保持原env/session密钥/ports/networks/mounts，保留回滚镜像。严禁打印秘密配置。
+- [x] 使用现有已登录浏览器与已有1030/1031棋图审核，生成四视频。原图/文稿/人工棋图审核不变，媒体新记录准确，视频人工审核待用户点，不代为登记。
+- [x] 每视频下载验证SHA、FFprobe、实际浏览器播放；真实后台切档/刷新仍保留。报告新提交/TEST容器版本、实际链接与明确未发布边界。
+
+
+## 完成交付
+
+见[测试交付记录](../reports/2026-10-17-dual-profile-test-delivery.md)。Astra Max最终SPEC/CODE与实际成片视觉通过；四段新视频在TEST生成并播放。普通消费者本地外壳验收受临时翻译代理限制，未部署设备，限制如实记录。

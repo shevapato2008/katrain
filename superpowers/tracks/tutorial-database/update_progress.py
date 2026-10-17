@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Refresh the copied curriculum's production stages; never writes tutorial data."""
 import argparse
+import fcntl
+import hashlib
 from datetime import datetime
 from html import escape
 import json
@@ -30,7 +32,8 @@ def refresh(data, output):
         else:
             stage = '已识别' if complete == total and failed == 0 else '识别中'
             book['recognition'] = f'{stage} · {complete}/{total}页 · {figures}图'
-        book['validation_import'] = (f"机器校验 {complete}/{total}页；失败{failed}；"
+        if not book.get('validation_import_manually_set'):
+            book['validation_import'] = (f"机器校验 {complete}/{total}页；失败{failed}；"
             f"疑点{summary['uncertain_figures']}图；待整书TEST入库")
         book['updated_at'] = datetime.now().astimezone().isoformat(timespec='seconds')
 
@@ -109,28 +112,33 @@ def main():
     for field in ('recognition','validation-import','human-review','voice','video'):
         parser.add_argument('--'+field)
     args = parser.parse_args()
-    data = json.loads((HERE/'progress.json').read_text())
-    if args.refresh:
-        refresh(data,args.output_root)
-    if args.book:
-        book = next((b for b in data['books'] if b['catalog_id']==args.book),None)
-        if book is None:
-            parser.error('unknown catalog id')
-        for field in ('recognition','validation_import','human_review','voice','video'):
-            value = getattr(args,field)
-            if value is not None:
-                book[field] = value
-        book['updated_at'] = datetime.now().astimezone().isoformat(timespec='seconds')
-    path = HERE/'go-curriculum.html'
-    content = path.read_text()
-    if content.count(START)!=1 or content.count(END)!=1:
-        raise ValueError('unique progress markers required')
-    first, rest = content.split(START,1)
-    _, last = rest.split(END,1)
-    (HERE/'progress.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
-    path.write_text(first+START+'\n'+table(data)+'\n'+END+last)
-    (HERE/'plan.md').write_text(render_plan(data))
-    print(f'Updated {len(data["books"])} book stages; original curriculum content retained.')
+    lock_path = Path('/tmp') / ('tutorial-progress-' + hashlib.sha256(str(HERE).encode()).hexdigest()[:16] + '.lock')
+    with lock_path.open('a+') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        data = json.loads((HERE/'progress.json').read_text())
+        if args.refresh:
+            refresh(data,args.output_root)
+        if args.book:
+            book = next((b for b in data['books'] if b['catalog_id']==args.book),None)
+            if book is None:
+                parser.error('unknown catalog id')
+            for field in ('recognition','validation_import','human_review','voice','video'):
+                value = getattr(args,field)
+                if value is not None:
+                    book[field] = value
+                    if field == 'validation_import':
+                        book['validation_import_manually_set'] = True
+            book['updated_at'] = datetime.now().astimezone().isoformat(timespec='seconds')
+        path = HERE/'go-curriculum.html'
+        content = path.read_text()
+        if content.count(START)!=1 or content.count(END)!=1:
+            raise ValueError('unique progress markers required')
+        first, rest = content.split(START,1)
+        _, last = rest.split(END,1)
+        (HERE/'progress.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+        path.write_text(first+START+'\n'+table(data)+'\n'+END+last)
+        (HERE/'plan.md').write_text(render_plan(data))
+        print(f'Updated {len(data["books"])} book stages; original curriculum content retained.')
 
 
 if __name__=='__main__':

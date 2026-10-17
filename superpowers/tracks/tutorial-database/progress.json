@@ -12,12 +12,12 @@
         "入门、规则与第一盘棋 · 主教材"
       ],
       "book_id": 11,
-      "recognition": "识别中 · 10/314页 · 1图",
-      "validation_import": "机器校验 10/314页；失败0；疑点0图；待整书TEST入库",
+      "recognition": "识别中 · 30/314页 · 35图",
+      "validation_import": "机器校验 30/314页；失败0；疑点0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-17T21:33:35+08:00"
+      "updated_at": "2026-10-17T21:49:55+08:00"
     },
     {
       "catalog_id": "intro-down",
@@ -27,12 +27,12 @@
         "对杀与局部计算 · 基础"
       ],
       "book_id": 12,
-      "recognition": "识别中 · 30/313页 · 40图",
-      "validation_import": "机器校验 30/313页；失败0；疑点0图；待整书TEST入库",
+      "recognition": "识别中 · 50/313页 · 78图",
+      "validation_import": "机器校验 50/313页；失败0；疑点0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-17T21:33:35+08:00"
+      "updated_at": "2026-10-17T21:49:55+08:00"
     },
     {
       "catalog_id": "intro-fast",
@@ -41,12 +41,12 @@
         "入门、规则与第一盘棋 · 补充"
       ],
       "book_id": 13,
-      "recognition": "待识别",
-      "validation_import": "待机器验证 / 本轮未入库",
+      "recognition": "识别中 · 30/160页 · 14图",
+      "validation_import": "机器校验 30/160页；失败0；疑点3图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": null
+      "updated_at": "2026-10-17T21:49:55+08:00"
     },
     {
       "catalog_id": "basic-technique",

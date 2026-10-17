@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>碁石 · 模型预览</title></head>
+  <body>
+    <main class="workbench">
+      <header class="page-heading"><div><p class="eyebrow">教程工作台 / 材质研究</p><h1>碁石 <span>黑白成对，温润有形</span></h1></div><div class="status"><i></i> 模型预览 · 等待视觉确认</div></header>
+      <div class="top-grid">
+        <section class="viewer panel" aria-label="黑白碁石三维模型">
+          <div class="panel-head"><div><h2>日式双面凸碁石</h2><p>拖动旋转 · 滚轮缩放</p></div><div class="segmented" aria-label="模型视角"><button data-view="top" aria-pressed="true">俯视</button><button data-view="oblique" aria-pressed="false">斜视</button><button data-view="side" aria-pressed="false">侧视</button></div></div>
+          <div id="model-stage"><div class="loading">正在准备碁石材质…</div></div>
+          <div class="viewer-caption"><span><b class="black-dot"></b> 那智黑石 <small>细润柔光</small></span><span><b class="white-dot"></b> 蛤碁白石 <small>细密贝纹</small></span></div>
+        </section>
+        <aside class="details panel"><p class="eyebrow">32 号 · 厚实而不臃肿</p><h2>一黑一白，手感成对</h2><dl><div><dt>白石 · 蛤贝</dt><dd>21.9 × 8.8 <small>mm</small></dd></div><div><dt>黑石 · 那智石</dt><dd>22.2 × 9.1 <small>mm</small></dd></div></dl><p class="material-note">中性珍珠白、斜向细纹，保留圆润边缘与柔和明暗。黑石呈自然油润光泽。</p><div class="comparison"><p>同光照对照</p><div class="comparison-pair"><figure><img id="plain-white" alt="原素面白石" /><figcaption>原素面白石</figcaption></figure><figure><img id="shell-white" alt="新蛤贝白石" /><figcaption>蛤贝白石</figcaption></figure></div></div><p class="approximation">以实物比例建模，表面纹理为原创近似。</p></aside>
+      </div>
+      <section class="size-section"><div class="section-heading"><h2>落在棋盘上</h2><p>24 / 32 / 48 px 实际尺寸 · 检查纹理与标记</p></div><div id="size-grid"></div></section>
+      <footer><div class="motion-sample"><div id="drop-board" aria-label="360 毫秒柔和落子示例"><img alt="落子黑石" /></div><button id="replay-drop">重播落子 <span>360 ms</span></button></div><p>后续用于静态棋盘与俯视二维讲解视频</p><div class="background-controls"><span>棋盘底色</span><button data-board="wood" aria-pressed="true">木色</button><button data-board="light" aria-pressed="false">浅色</button><button data-board="dark" aria-pressed="false">深色</button></div></footer>
+    </main>
+    <script type="module" src="./preview.ts"></script>
+  </body>
+</html>

@@ -57,9 +57,7 @@ it('waits for approved stone textures before capturing the saved board and pendi
   expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0]).toMatchObject({
     recordingStoneSprites: sprites, recordingVisualSeed: '1031',
   });
-  expect(screen.getByTestId('tutorial-known-region')).toHaveAttribute('data-known-region', '7,0,12,19');
-  expect(screen.getByTestId('tutorial-known-region')).toHaveAttribute('fill', 'none');
-  expect(screen.getByTestId('tutorial-known-region')).toHaveAttribute('stroke-dasharray', '4 3');
+  expect(screen.queryByTestId('tutorial-known-region')).not.toBeInTheDocument();
   expect(screen.getByTestId('tutorial-unknown-stone')).toHaveTextContent('?');
 });
 

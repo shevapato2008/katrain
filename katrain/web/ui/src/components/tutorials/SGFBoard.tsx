@@ -260,27 +260,6 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
     >
       {gridLines}
       {hoshiDots}
-      {knownRegion !== undefined && (() => {
-        const region = knownRegion;
-        const start = region ? toSvg(region.col, region.row) : null;
-        const x = start ? Math.max(0, Math.min(svgW, start.x - CELL / 2)) : 0;
-        const y = start ? Math.max(0, Math.min(svgH, start.y - CELL / 2)) : 0;
-        const w = region ? Math.max(0, Math.min(svgW - x, region.cols * CELL)) : 0;
-        const h = region ? Math.max(0, Math.min(svgH - y, region.rows * CELL)) : 0;
-        return <path pointerEvents="none" data-testid="tutorial-known-region" data-known-region={region ? `${region.col},${region.row},${region.cols},${region.rows}` : 'unknown'}
-          d={`M0 0H${svgW}V${svgH}H0Z M${x} ${y}h${w}v${h}h${-w}Z`} fill="#777d81" fillOpacity=".43" fillRule="evenodd" />;
-      })()}
-      {sourceRegion !== undefined && (() => {
-        const region = sourceRegion;
-        const start = region ? toSvg(region.col, region.row) : null;
-        const x = start ? Math.max(0, Math.min(svgW, start.x - CELL / 2)) : 0;
-        const y = start ? Math.max(0, Math.min(svgH, start.y - CELL / 2)) : 0;
-        const w = region ? Math.max(0, Math.min(svgW - x, region.cols * CELL)) : 0;
-        const h = region ? Math.max(0, Math.min(svgH - y, region.rows * CELL)) : 0;
-        return <g pointerEvents="none" data-testid="tutorial-source-region">
-          {region && <rect x={x} y={y} width={w} height={h} fill="none" stroke="#9a552e" strokeWidth="2.2" strokeDasharray={region.confirmed ? undefined : '7 5'} />}
-        </g>;
-      })()}
       {stoneEls}
       {unknownStones.filter(stone => inViewport(...stone.point)).map(stone => {
         const { x, y } = toSvg(...stone.point);

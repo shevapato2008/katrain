@@ -7,7 +7,7 @@ import Board3D from '../components/Board3D';
 import { loadRecordingStoneSprites, type RecordingStoneSprites } from '../components/Board3D/tutorialStoneTextures';
 import { gridToSurface, gridToWorld, STONE_HEIGHT, STONE_RADIUS } from '../components/Board3D/constants';
 import { TUTORIAL_STONE_DIAMETER_RATIO } from '../components/tutorials/tutorialStoneSprites';
-import { frameAtTime, placementAtTime, knownRegion, subtitleAtTime, type Point, type RecordingData, type RecordingPlacement, type ReplayFrame, type Region } from './tutorialMediaTimeline';
+import { frameAtTime, placementAtTime, subtitleAtTime, type Point, type RecordingData, type RecordingPlacement, type ReplayFrame } from './tutorialMediaTimeline';
 
 declare global {
   interface Window {
@@ -38,7 +38,7 @@ function asGameState(frame: ReplayFrame): GameState {
   };
 }
 
-function ProjectionOverlay({ frame, region, state, surfaceMarkers = false, spriteStones = false, placement }: { frame: ReplayFrame; region: Region | null; state: RootState; surfaceMarkers?: boolean; spriteStones?: boolean; placement: RecordingPlacement | null }) {
+function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones = false, placement }: { frame: ReplayFrame; state: RootState; surfaceMarkers?: boolean; spriteStones?: boolean; placement: RecordingPlacement | null }) {
   const { size, stones, labels = {}, letters = {}, shapes = {}, unknown_stones = [] } = frame.payload;
   const width = state.gl.domElement.clientWidth;
   const height = state.gl.domElement.clientHeight;
@@ -64,17 +64,10 @@ function ProjectionOverlay({ frame, region, state, surfaceMarkers = false, sprit
     const unit = Math.hypot(along.x - center.x, along.y - center.y);
     return { x: 0, y: 0, transform: `matrix(${(along.x - center.x) / unit} ${(along.y - center.y) / unit} ${(down.x - center.x) / unit} ${(down.y - center.y) / unit} ${center.x} ${center.y})` };
   };
-  const polygon = (left: number, top: number, right: number, bottom: number) =>
-    [[left, top], [right, top], [right, bottom], [left, bottom]].map(([col, row], index) => {
-      const point = project(col, row);
-      return `${index ? 'L' : 'M'}${point.x},${point.y}`;
-    }).join(' ') + 'Z';
   const occupied = new Set([...stones.B, ...stones.W].map(point => point.join(',')));
   const unknown = new Set(unknown_stones.map(stone => stone.point.join(',')));
   const markerColor = (key: string) => black.has(key) ? '#fff' : '#171717';
-  const outline = region ? polygon(Math.max(-.8, region.col - .5), Math.max(-.8, region.row - .5), Math.min(size - .2, region.col + region.cols - .5), Math.min(size - .2, region.row + region.rows - .5)) : '';
-  return <svg className="tm-overlay" viewBox={`0 0 ${width} ${height}`} aria-label="棋图标记与未知范围">
-    <path d={outline} fill="none" stroke="#746443" strokeWidth="1" strokeDasharray="4 3" data-testid="tutorial-known-region" data-known-region={region ? `${region.col},${region.row},${region.cols},${region.rows}` : 'unknown'} />
+  return <svg className="tm-overlay" viewBox={`0 0 ${width} ${height}`} aria-label="棋图标记">
     {unknown_stones.map(stone => {
       const [col, row] = stone.point;
       const { x, y, transform } = marker(col, row, true);
@@ -157,7 +150,6 @@ export default function TutorialMediaRecorder() {
   const frame = frameAtTime(data, timeMs);
   const placement = placementAtTime(data, timeMs);
   const recordingPlacement = placement ? { ...placement, point: [placement.point[0], frame.payload.size - 1 - placement.point[1]] as Point } : null;
-  const region = knownRegion(data);
   const distance = (frame.payload.size + .6) / (2 * Math.tan(Math.PI / 9)) * 1.12;
   const angle = 35 * Math.PI / 180;
   const cameraPosition: [number, number, number] = [0, 1.2 + distance * Math.cos(angle), distance * Math.sin(angle)];
@@ -172,7 +164,7 @@ export default function TutorialMediaRecorder() {
         recordingAppearance={overhead ? 'overhead' : 'solid-wood'} recordingPlacement={recordingPlacement}
         recordingStoneSprites={overhead ? stoneSprites ?? undefined : undefined} recordingVisualSeed={overhead ? data.visual_seed ?? 'tutorial' : undefined}
         frameloop="demand" onCanvasReady={onCanvasReady} />
-      {canvasState && <ProjectionOverlay frame={frame} region={region} state={canvasState} surfaceMarkers={solidWood} spriteStones={overhead} placement={placement} />}
+      {canvasState && <ProjectionOverlay frame={frame} state={canvasState} surfaceMarkers={solidWood} spriteStones={overhead} placement={placement} />}
     </div>{data.step_cues.status !== 'complete' && <div className="tm-static" data-testid="tutorial-static-reason">{staticLabel}</div>}</div>
     <div className="tm-caption"><span>{subtitleAtTime(data.narration, data.speech_timing, timeMs)}</span></div>
   </main>;

@@ -4,8 +4,8 @@ import { Vector3 } from 'three';
 import type { RootState } from '@react-three/fiber';
 import type { GameState, PlayerInfo } from '../api';
 import Board3D from '../components/Board3D';
-import { gridToSurface, gridToWorld, STONE_RADIUS } from '../components/Board3D/constants';
-import { frameAtTime, knownRegion, subtitleAtTime, type Point, type RecordingData, type ReplayFrame, type Region } from './tutorialMediaTimeline';
+import { gridToSurface, gridToWorld, STONE_HEIGHT, STONE_RADIUS } from '../components/Board3D/constants';
+import { frameAtTime, placementAtTime, knownRegion, subtitleAtTime, type Point, type RecordingData, type RecordingPlacement, type ReplayFrame, type Region } from './tutorialMediaTimeline';
 
 declare global {
   interface Window {
@@ -36,24 +36,26 @@ function asGameState(frame: ReplayFrame): GameState {
   };
 }
 
-function ProjectionOverlay({ frame, region, state, surfaceMarkers = false }: { frame: ReplayFrame; region: Region | null; state: RootState; surfaceMarkers?: boolean }) {
+function ProjectionOverlay({ frame, region, state, surfaceMarkers = false, placement }: { frame: ReplayFrame; region: Region | null; state: RootState; surfaceMarkers?: boolean; placement: RecordingPlacement | null }) {
   const { size, stones, labels = {}, letters = {}, shapes = {}, unknown_stones = [] } = frame.payload;
   const width = state.gl.domElement.clientWidth;
   const height = state.gl.domElement.clientHeight;
-  const project = (col: number, row: number, onStone = false) => {
+  const project = (col: number, row: number, onStone = false, extraHeight = 0) => {
     const position = (onStone ? gridToWorld : gridToSurface)(col, size - 1 - row, size);
-    if (onStone) position[1] += .22;
+    if (onStone) position[1] += STONE_HEIGHT + extraHeight;
     const vector = new Vector3(...position).project(state.camera);
     return { x: (vector.x + 1) * width / 2, y: (1 - vector.y) * height / 2 };
   };
-  const radius = (col: number, row: number) => Math.abs(project(col + STONE_RADIUS, row, true).x - project(col, row, true).x);
+  const isPlacing = (col: number, row: number) => placement?.point[0] === col && placement.point[1] === row;
+  const radius = (col: number, row: number) => Math.abs(project(col + STONE_RADIUS, row, true).x - project(col, row, true).x) * (isPlacing(col, row) ? placement!.scale : 1);
   // Project the local X/Z tangent basis, so glyphs and rings follow the board/stone
   // top instead of facing the screen. Orthographic recording makes this affine exact.
   const marker = (col: number, row: number, onStone: boolean) => {
-    const center = project(col, row, onStone);
+    const extraHeight = onStone && isPlacing(col, row) ? placement!.lift + STONE_HEIGHT * (placement!.scale - 1) : 0;
+    const center = project(col, row, onStone, extraHeight);
     if (!surfaceMarkers) return { ...center, transform: undefined };
-    const along = project(col + 1, row, onStone);
-    const down = project(col, row + 1, onStone);
+    const along = project(col + 1, row, onStone, extraHeight);
+    const down = project(col, row + 1, onStone, extraHeight);
     const unit = Math.hypot(along.x - center.x, along.y - center.y);
     return { x: 0, y: 0, transform: `matrix(${(along.x - center.x) / unit} ${(along.y - center.y) / unit} ${(down.x - center.x) / unit} ${(down.y - center.y) / unit} ${center.x} ${center.y})` };
   };
@@ -122,7 +124,7 @@ export default function TutorialMediaRecorder() {
     let lastPaintedKey: string | null = null;
     window.__tutorialSetFrame = async (time: number) => {
       const frame = frameAtTime(data, time);
-      const key = JSON.stringify([frame.step, subtitleAtTime(data.narration, data.speech_timing, time)]);
+      const key = JSON.stringify([frame.step, subtitleAtTime(data.narration, data.speech_timing, time), placementAtTime(data, time)]);
       if (key === lastPaintedKey) return key;
       flushSync(() => setTimeMs(time));
       await document.fonts.ready;
@@ -137,6 +139,8 @@ export default function TutorialMediaRecorder() {
 
   if (!data) return <div>缺少录制快照</div>;
   const frame = frameAtTime(data, timeMs);
+  const placement = placementAtTime(data, timeMs);
+  const recordingPlacement = placement ? { ...placement, point: [placement.point[0], frame.payload.size - 1 - placement.point[1]] as Point } : null;
   const region = knownRegion(data);
   const distance = (frame.payload.size + .6) / (2 * Math.tan(Math.PI / 9)) * 1.12;
   const angle = 35 * Math.PI / 180;
@@ -149,8 +153,8 @@ export default function TutorialMediaRecorder() {
       <Board3D gameState={gameState} onMove={noop} analysisToggles={TOGGLES} readOnly disableControls
         cameraPosition={overhead ? [0, 26, 0] : cameraPosition} cameraTarget={[0, 1.2, 0]}
         cameraUp={overhead ? [0, 0, -1] : undefined} orthographicSpan={frame.payload.size + (overhead ? .6 : 2.6)}
-        recordingAppearance={overhead ? 'overhead' : 'solid-wood'} frameloop="demand" onCanvasReady={onCanvasReady} />
-      {canvasState && <ProjectionOverlay frame={frame} region={region} state={canvasState} surfaceMarkers={solidWood} />}
+        recordingAppearance={overhead ? 'overhead' : 'solid-wood'} recordingPlacement={recordingPlacement} frameloop="demand" onCanvasReady={onCanvasReady} />
+      {canvasState && <ProjectionOverlay frame={frame} region={region} state={canvasState} surfaceMarkers={solidWood} placement={placement} />}
     </div>{data.step_cues.status !== 'complete' && <div className="tm-static" data-testid="tutorial-static-reason">{staticLabel}</div>}</div>
     <div className="tm-caption"><span>{subtitleAtTime(data.narration, data.speech_timing, timeMs)}</span></div>
   </main>;

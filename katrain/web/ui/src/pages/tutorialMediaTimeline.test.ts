@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { frameAtTime, subtitleAtTime, knownRegion, type RecordingData } from './tutorialMediaTimeline';
+import { frameAtTime, placementAtTime, subtitleAtTime, knownRegion, type RecordingData } from './tutorialMediaTimeline';
 
 const data: RecordingData = {
   narration: '白棋被提。之后复用原位。',
@@ -18,6 +18,25 @@ const data: RecordingData = {
 };
 
 describe('tutorial recorder time axis', () => {
+  it('places only the authoritative current move with a deterministic gentle 360ms settle', () => {
+    const animated: RecordingData = { ...data, frames: data.frames.map(frame => ({ ...frame,
+      currentMove: frame.last ? { kind: 'move', color: frame.step === 1 ? 'B' : 'W', point: frame.last } : null,
+    })) };
+    expect(placementAtTime(animated, 999)).toBeNull();
+    expect(placementAtTime(animated, 1000)).toEqual({ point: [2, 0], lift: .25, scale: .96 });
+    const middle = placementAtTime(animated, 1180)!;
+    expect(middle.lift).toBeCloseTo(.0625);
+    expect(middle.scale).toBeCloseTo(.99);
+    expect(placementAtTime(animated, 1360)).toBeNull();
+    // Seek backward and repeat an occupied point only at its new authoritative cue.
+    expect(placementAtTime(animated, 2000)).toEqual({ point: [1, 0], lift: .25, scale: .96 });
+    expect(placementAtTime(animated, 1180)).toEqual(middle);
+    expect(placementAtTime(animated, 0)).toBeNull();
+    expect(placementAtTime({ ...animated, step_cues: { ...animated.step_cues, status: 'pending' } }, 1000)).toBeNull();
+    expect(placementAtTime({ ...animated, frames: animated.frames.map(frame => frame.step === 1
+      ? { ...frame, currentMove: { kind: 'pass', color: 'B' } } : frame) }, 1000)).toBeNull();
+    expect(placementAtTime(data, 1000)).toBeNull(); // Never infer a move from last/stone-count alone.
+  });
   it('selects whole capture/reuse snapshots and rewinds without accumulating stones', () => {
     expect(frameAtTime(data, 2100)).toBe(data.frames[2]);
     expect(frameAtTime(data, 1100).payload.stones.W).toEqual([]);

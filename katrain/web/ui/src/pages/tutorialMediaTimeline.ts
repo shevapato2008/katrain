@@ -54,6 +54,26 @@ export function frameAtTime(data: RecordingData, timeMs: number): ReplayFrame {
   return frame;
 }
 
+export interface RecordingPlacement { point: Point; lift: number; scale: number }
+
+/** Pure recording pose: seeking to a timestamp always produces the same placement. */
+export function placementAtTime(data: RecordingData, timeMs: number): RecordingPlacement | null {
+  if (data.step_cues.status !== 'complete') return null;
+  let active: StepCues['cues'][number] | null = null;
+  for (const cue of data.step_cues.cues) {
+    if (cue.at_ms > timeMs) break;
+    active = cue;
+  }
+  if (!active || timeMs - active.at_ms >= 360) return null;
+  const frame = frameAtTime(data, timeMs);
+  const move = frame.currentMove;
+  if (move?.kind !== 'move' || !move.point || (move.color !== 'B' && move.color !== 'W')) return null;
+  const point = move.point;
+  if (!frame.payload.stones[move.color].some(stone => stone[0] === point[0] && stone[1] === point[1])) return null;
+  const remaining = (1 - (timeMs - active.at_ms) / 360) ** 2;
+  return { point, lift: .25 * remaining, scale: 1 - .04 * remaining };
+}
+
 export function knownRegion(data: RecordingData): Region | null {
   if (data.step_cues.status === 'complete') return data.board_payload.replay?.initial?.known_region ?? null;
   const region = data.board_payload.source_region;

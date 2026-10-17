@@ -9,6 +9,7 @@ interface StoneMeshProps {
   opacity?: number;
   scale?: number;
   satinFinish?: boolean;
+  contactOpacity?: number;
 }
 
 // Shared geometry — all stones use the same sphere (1 geometry, not 361)
@@ -79,7 +80,7 @@ function getContactTexture() {
   return contactTexture;
 }
 
-const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, scale = 1, satinFinish = false }, ref) => {
+const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, scale = 1, satinFinish = false, contactOpacity = 1 }, ref) => {
   const material = useMemo(() => {
     if (satinFinish) return new THREE.MeshPhysicalMaterial({
       color: color === 'B' ? 0x111418 : 0xf5f2e9,
@@ -111,7 +112,7 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
     <>
       {satinFinish && <mesh position={[position[0] + .035, BOARD_SURFACE_Y + .009, position[2] + .035]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
         <planeGeometry args={[1.06, 1.06]} />
-        <meshBasicMaterial map={getContactTexture()} transparent depthWrite={false} />
+        <meshBasicMaterial map={getContactTexture()} opacity={contactOpacity} transparent depthWrite={false} />
       </mesh>}
       <mesh
         ref={ref}

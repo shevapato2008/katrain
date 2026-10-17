@@ -9,6 +9,8 @@ interface StoneGroupProps {
   gameState: GameState;
   enableDropEffect?: boolean;
   satinFinish?: boolean;
+  /** Explicit deterministic pose from the recorder, in GameState coordinates. */
+  recordingPlacement?: { point: [number, number]; lift: number; scale: number } | null;
 }
 
 interface DropAnim {
@@ -21,7 +23,7 @@ interface DropAnim {
   targetZ: number;
 }
 
-const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false }: StoneGroupProps) => {
+const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false, recordingPlacement }: StoneGroupProps) => {
   const boardSize = gameState.board_size[0];
   const prevNodeIndexRef = useRef(gameState.current_node_index);
   const prevLastMoveRef = useRef<[number, number] | null>(gameState.last_move);
@@ -131,12 +133,16 @@ const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false }
         }
 
         const basePos = gridToWorld(x, y, boardSize);
+        const placement = recordingPlacement?.point[0] === x && recordingPlacement.point[1] === y ? recordingPlacement : null;
+        if (placement) basePos[1] += placement.lift;
         return (
           <StoneMesh
             key={`stone-${x}-${y}-${index}`}
             color={player as 'B' | 'W'}
             position={basePos}
             satinFinish={satinFinish}
+            scale={placement?.scale ?? 1}
+            contactOpacity={placement ? 1 - .45 * (placement.lift / .25) : 1}
           />
         );
       })}

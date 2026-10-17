@@ -1,0 +1,194 @@
+[
+  {
+    "recognition_id": "p216-f01",
+    "page": 216,
+    "source_pointer": "/chapters/10/intro/2/elements/1",
+    "figure_id": 5215,
+    "candidate_id": 1541,
+    "inferences": [
+      {
+        "at": "3,7",
+        "value": "black",
+        "basis": "text",
+        "reason": "题干明确为“黑△子”，故三角标记的空心绘法表示黑子。",
+        "cell": "3,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p216-f02",
+    "page": 216,
+    "source_pointer": "/chapters/10/intro/2/elements/2",
+    "figure_id": 5216,
+    "candidate_id": 1542,
+    "inferences": [
+      {
+        "at": "2,6",
+        "value": "black",
+        "basis": "text",
+        "reason": "题干明确为“黑△子”，故三角标记的空心绘法表示黑子。",
+        "cell": "2,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p216-f03",
+    "page": 216,
+    "source_pointer": "/chapters/10/intro/2/elements/3",
+    "figure_id": 5217,
+    "candidate_id": 1543,
+    "inferences": [
+      {
+        "at": "5,6",
+        "value": "black",
+        "basis": "text",
+        "reason": "题干明确指定“黑△子”，该空心△标记子据此判为黑子。",
+        "cell": "5,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p216-f04",
+    "page": 216,
+    "source_pointer": "/chapters/10/intro/2/elements/4",
+    "figure_id": 5218,
+    "candidate_id": 1544,
+    "inferences": [
+      {
+        "at": "2,7",
+        "value": "black",
+        "basis": "text",
+        "reason": "题干明确指定“黑△子”，该空心△标记子据此判为黑子。",
+        "cell": "2,16"
+      },
+      {
+        "at": "2,8",
+        "value": "black",
+        "basis": "text",
+        "reason": "题干明确指定“黑△子”，该空心△标记子据此判为黑子。",
+        "cell": "2,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p217-f01",
+    "page": 217,
+    "source_pointer": "/chapters/10/intro/3/elements/1",
+    "figure_id": 5219,
+    "candidate_id": 1545,
+    "inferences": [
+      {
+        "at": "5,7",
+        "value": "black",
+        "basis": "text",
+        "reason": "页文明确要求数“黑△子”的气，三角标记子记为黑子。",
+        "cell": "5,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p217-f02",
+    "page": 217,
+    "source_pointer": "/chapters/10/intro/3/elements/2",
+    "figure_id": 5220,
+    "candidate_id": 1546,
+    "inferences": [
+      {
+        "at": "1,6",
+        "value": "black",
+        "basis": "text",
+        "reason": "页文称“黑△子”，三角标记子记为黑子。",
+        "cell": "1,15"
+      },
+      {
+        "at": "1,7",
+        "value": "black",
+        "basis": "text",
+        "reason": "页文称“黑△子”，三角标记子记为黑子。",
+        "cell": "1,16"
+      },
+      {
+        "at": "2,7",
+        "value": "black",
+        "basis": "text",
+        "reason": "页文称“黑△子”，三角标记子记为黑子。",
+        "cell": "2,16"
+      },
+      {
+        "at": "3,7",
+        "value": "black",
+        "basis": "text",
+        "reason": "页文称“黑△子”，三角标记子记为黑子。",
+        "cell": "3,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p217-f03",
+    "page": 217,
+    "source_pointer": "/chapters/10/intro/3/elements/3",
+    "figure_id": 5221,
+    "candidate_id": 1547,
+    "inferences": [
+      {
+        "at": "3,6",
+        "value": "black",
+        "basis": "text",
+        "reason": "题干明确称三角标记棋子为“黑△子”。",
+        "cell": "3,15"
+      },
+      {
+        "at": "4,6",
+        "value": "black",
+        "basis": "text",
+        "reason": "题干明确称三角标记棋子为“黑△子”。",
+        "cell": "4,15"
+      },
+      {
+        "at": "5,6",
+        "value": "black",
+        "basis": "text",
+        "reason": "题干明确称三角标记棋子为“黑△子”。",
+        "cell": "5,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p217-f04",
+    "page": 217,
+    "source_pointer": "/chapters/10/intro/3/elements/4",
+    "figure_id": 5222,
+    "candidate_id": 1548,
+    "inferences": [
+      {
+        "at": "2,6",
+        "value": "black",
+        "basis": "text",
+        "reason": "题干明确称三角标记棋子为“黑△子”。",
+        "cell": "2,15"
+      },
+      {
+        "at": "2,7",
+        "value": "black",
+        "basis": "text",
+        "reason": "题干明确称三角标记棋子为“黑△子”。",
+        "cell": "2,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p246-f02",
+    "page": 246,
+    "source_pointer": "/chapters/12/intro/12/elements/2",
+    "figure_id": 5336,
+    "candidate_id": 1662,
+    "uncertainties": [
+      {
+        "kind": "source_mapping_ocr_conflict",
+        "reason": "【工程来源关联说明；非模型原输出，不代表人工审核】原JSON ref2标签㊿（50），原页题号51；按唯一几何位置关联p246-f02；OCR原值保留待核对。",
+        "origin": "engineering_source_mapping_override",
+        "model_generated": false
+      }
+    ]
+  }
+]

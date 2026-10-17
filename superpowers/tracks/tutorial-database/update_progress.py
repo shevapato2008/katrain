@@ -34,7 +34,7 @@ def refresh(data, output):
             book['recognition'] = f'{stage} · {complete}/{total}页 · {figures}图'
         if not book.get('validation_import_manually_set'):
             book['validation_import'] = (f"机器校验 {complete}/{total}页；失败{failed}；"
-            f"模型疑点{summary['uncertain_figures']}图；待整书TEST入库")
+            f"不确定项{summary['uncertain_figures']}图；待整书TEST入库")
         book['updated_at'] = datetime.now().astimezone().isoformat(timespec='seconds')
 
 

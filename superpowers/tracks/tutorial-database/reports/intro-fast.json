@@ -1,0 +1,98 @@
+{
+  "catalog_id": "intro-fast",
+  "title": "围棋入门速成",
+  "scope": "Already-started non-core exception; excluded from23 core completions",
+  "dataset": "curriculum-intro-fast-gpt61sol-v1",
+  "book_id": 13,
+  "source_book_id": 3,
+  "summary": {
+    "pdf_pages": 160,
+    "pages_detected": 160,
+    "pages_recognized_validated": 160,
+    "figures": 132,
+    "completed": 132,
+    "failed_pages": 0,
+    "pending_pages": 0,
+    "baseline_references": 132,
+    "uncertain_figures": 27,
+    "inferred_figures": 26,
+    "coverage_missing": 0
+  },
+  "source_files": {
+    "/Users/fan/Repositories/go-topic-collections/curriculum/01_入门_规则与第一盘棋/围棋入门速成_沈果孙/围棋入门速成(沈果孙).pdf": "a85c1f9396595121c923963a5b2fc10edd83888bf93ed902d52b56ce10eaf842",
+    "/Users/fan/Repositories/go-topic-collections/curriculum/01_入门_规则与第一盘棋/围棋入门速成_沈果孙/output/book.json": "6fdadb9d5754cb5b82f08d94edda67c1699f96773efe53aa08c218d35689838c"
+  },
+  "coverage": {
+    "canonical_references": 132,
+    "physical_diagrams": 132,
+    "missing": [],
+    "extra": [],
+    "split": [],
+    "all160_pdf_pages_checked": true
+  },
+  "test_import": {
+    "applied": 132,
+    "rerun_existing": 132,
+    "new_duplicates": 0,
+    "full_rerun_snapshot_unchanged": true,
+    "unrelated_original_fields_unchanged": true
+  },
+  "review": {
+    "recognition_completed": 132,
+    "human_approved": 0,
+    "awaiting_human_calibration": 132,
+    "true_replay_complete": 0,
+    "sequence_pending": 132,
+    "uncertain_diagrams": 27,
+    "inferred_diagrams": 26,
+    "unknown_color_diagrams": 2,
+    "origin_uncertain_diagrams": 4,
+    "voice_generated_this_run": 0,
+    "video_generated_this_run": 0
+  },
+  "runtime_filters": {
+    "all": 132,
+    "uncalibrated": 132,
+    "uncertainty": 27,
+    "inference": 26,
+    "sequence_pending": 132
+  },
+  "test_provider_build": "f671f20f6f31c03f25b0f5bd73e0afe73036b6bd",
+  "links": {
+    "book": "http://127.0.0.1:18012/admin?book=13&page=53&figure=5635&filter=all",
+    "unknown_color": "http://127.0.0.1:18012/admin?book=13&page=39&figure=5624&filter=uncertainty",
+    "origin_uncertain": "http://127.0.0.1:18012/admin?book=13&page=53&figure=5635&filter=uncertainty",
+    "ambiguous_mark": "http://127.0.0.1:18012/admin?book=13&page=135&figure=5715&filter=uncertainty"
+  },
+  "export": {
+    "sgfs_parsed": 132,
+    "independent_static_roots": 132,
+    "index_entries": 132,
+    "skipped": 0,
+    "zip_sha256": "a187e6b089e23096b58a9057ca354d28f7d1a599da87b153fd5c26fec65e367c",
+    "bytes": 896762
+  },
+  "artifacts": {
+    "figure_map": "intro-fast-recognition-figure-map.csv",
+    "issues": "intro-fast-issues.json",
+    "zip": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/intro-fast/exports/intro-fast.zip",
+    "source_index": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/intro-fast/exports/index.json",
+    "recognition_results": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/intro-fast/results.json",
+    "audit": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/intro-fast/audit.json"
+  },
+  "notes": [
+    "Machine recognition and Astra/code review are not human content approval.",
+    "All132 are static; independent examples are not concatenated into one game.",
+    "Repeated diagram-local numbers within a shared printed board may disable number preview; no missing moves are invented."
+  ],
+  "browser_acceptance": {
+    "existing_test_url": true,
+    "page_image_http200": true,
+    "full19x19_board_visible": true,
+    "uncertainty_cells_and_evidence_visible": true,
+    "edit_tools_and_cancel_available": true,
+    "page53_two_diagrams_next_switch": true,
+    "no_saved_test_edits_or_human_approval": true
+  },
+  "completed_at": "2026-10-18T01:01:13+08:00"
+}

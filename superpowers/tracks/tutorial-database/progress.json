@@ -12,12 +12,12 @@
         "入门、规则与第一盘棋 · 主教材"
       ],
       "book_id": 11,
-      "recognition": "识别中 · 160/314页 · 276图",
-      "validation_import": "机器校验 160/314页；失败0；疑点0图；待整书TEST入库",
+      "recognition": "识别中 · 260/314页 · 464图",
+      "validation_import": "机器校验 260/314页；失败0；疑点1图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-17T23:36:46+08:00",
+      "updated_at": "2026-10-18T01:00:33+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -28,12 +28,12 @@
         "对杀与局部计算 · 基础"
       ],
       "book_id": 12,
-      "recognition": "识别中 · 170/313页 · 297图",
-      "validation_import": "机器校验 170/313页；失败0；疑点0图；待整书TEST入库",
+      "recognition": "识别中 · 240/313页 · 491图",
+      "validation_import": "机器校验 240/313页；失败0；疑点0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-17T23:36:46+08:00",
+      "updated_at": "2026-10-18T01:00:33+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -43,13 +43,14 @@
         "入门、规则与第一盘棋 · 补充"
       ],
       "book_id": 13,
-      "recognition": "识别中 · 110/160页 · 90图",
-      "validation_import": "机器校验 110/160页；失败0；疑点18图；待整书TEST入库",
-      "human_review": "本轮未审核",
+      "recognition": "已识别 · 160/160页 · 132图",
+      "validation_import": "已入TEST·132图；复跑0新增；SGF132份已验证",
+      "human_review": "待人工审核·132图（含疑点27图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-17T23:36:46+08:00",
-      "priority_tier": "模块内补充"
+      "updated_at": "2026-10-18T01:00:33+08:00",
+      "priority_tier": "模块内补充",
+      "validation_import_manually_set": true
     },
     {
       "catalog_id": "shape",
@@ -58,12 +59,12 @@
         "棋形与手筋 · 主教材"
       ],
       "book_id": 15,
-      "recognition": "来源已准备 · 0/190页 · 待识别",
-      "validation_import": "待机器验证 / 本轮未入库",
+      "recognition": "识别中 · 10/190页 · 10图",
+      "validation_import": "机器校验 10/190页；失败0；疑点0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-17T22:34:01+08:00",
+      "updated_at": "2026-10-18T01:00:33+08:00",
       "priority_tier": "核心教材"
     },
     {

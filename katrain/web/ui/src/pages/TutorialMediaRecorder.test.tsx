@@ -18,10 +18,11 @@ beforeEach(() => {
 
 afterEach(() => { delete window.__TUTORIAL_MEDIA_DATA; vi.clearAllMocks(); });
 
-it('waits for approved stone textures before capturing the saved board and pending label', async () => {
+it.each([undefined, 'galaxy-4k-v1', 'kiosk-7-v1'] as const)('waits for approved textures and captures the saved pending board without a status label for %s', async outputProfile => {
   window.__TUTORIAL_MEDIA_DATA = {
     narration: '静态局面。',
     render_mode: '2d',
+    output_profile: outputProfile,
     visual_seed: '1031',
     board_payload: { size: 19, stones: { B: [[14, 2]], W: [[15, 14]] },
       unknown_stones: [{ point: [12, 8], color: null }],
@@ -33,7 +34,12 @@ it('waits for approved stone textures before capturing the saved board and pendi
     step_cues: { schema_version: 1, audio_sha256: 'audio', status: 'pending', reason: 'Replay requires calibration', cues: [] },
   };
   render(<TutorialMediaRecorder />);
-  expect(screen.getByTestId('tutorial-static-reason')).toHaveTextContent('静态讲解·手顺待校准');
+  const recorder = screen.getByRole('main');
+  if (outputProfile) expect(recorder).toHaveAttribute('data-output-profile', outputProfile);
+  else expect(recorder).not.toHaveAttribute('data-output-profile');
+  expect(screen.queryByTestId('tutorial-static-reason')).not.toBeInTheDocument();
+  expect(recorder).toHaveAttribute('data-step', '-1');
+  expect(window.__TUTORIAL_MEDIA_DATA.step_cues.status).toBe('pending');
   const board = vi.mocked(Board3D).mock.calls.at(-1)?.[0];
   expect(board).toMatchObject({
     cameraPosition: [0, 26, 0], cameraTarget: [0, 1.2, 0], cameraUp: [0, 0, -1],
@@ -61,14 +67,14 @@ it('waits for approved stone textures before capturing the saved board and pendi
   expect(screen.getByTestId('tutorial-unknown-stone')).toHaveTextContent('?');
 });
 
-it('uses the solid wood camera and contrast marker for 3d recordings', () => {
+it('uses the solid wood camera without burning a pending status into 3d recordings', () => {
   window.__TUTORIAL_MEDIA_DATA = {
     narration: '黑1。', render_mode: '3d',
     board_payload: { size: 9, stones: { B: [[2, 0]], W: [] } },
     frames: [{ step: 1, payload: { size: 9, stones: { B: [[2, 0]], W: [] } }, last: [2, 0] }],
     speech_timing: { schema_version: 1, audio_sha256: 'audio', duration_ms: 2000,
       boundaries: [{ text: '黑1', start_ms: 100, duration_ms: 1000 }] },
-    step_cues: { schema_version: 1, audio_sha256: 'audio', status: 'complete', cues: [{ step: 1, at_ms: 0 }] },
+    step_cues: { schema_version: 1, audio_sha256: 'audio', status: 'pending', cues: [] },
   };
   render(<TutorialMediaRecorder />);
   const board = vi.mocked(Board3D).mock.calls.at(-1)?.[0];
@@ -113,6 +119,9 @@ it('keeps the solid wood camera centered and the 2d recording unchanged', () => 
   expect(document.querySelector('[data-annotation-point="6,2"]')?.getAttribute('transform')).toMatch(/^matrix\(/);
   expect(screen.getByTestId('tutorial-unknown-stone')).toHaveTextContent('?');
   expect(screen.getByTestId('tutorial-last-move').parentElement?.getAttribute('transform')).toBe(number.getAttribute('transform'));
+  expect(number.querySelector('text')).toHaveAttribute('stroke-width', '0.8');
+  expect(document.querySelector('[data-annotation-point="6,2"]')).toHaveAttribute('stroke-width', '2');
+  expect(screen.getByTestId('tutorial-last-move')).toHaveAttribute('stroke-width', '1.5');
   window.__TUTORIAL_MEDIA_DATA.render_mode = '2d';
   rerender(<TutorialMediaRecorder />);
   expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0]).toMatchObject({
@@ -120,4 +129,15 @@ it('keeps the solid wood camera centered and the 2d recording unchanged', () => 
     recordingVisualSeed: 'tutorial',
   });
   expect(document.querySelector('[data-annotation-point="2,0"]')).not.toHaveAttribute('transform');
+  const strokes = () => [
+    number.querySelector('text'),
+    document.querySelector('[data-annotation-point="6,2"]'),
+    screen.getByTestId('tutorial-unknown-stone').querySelector('circle'),
+    screen.getByTestId('tutorial-last-move'),
+  ].map(element => Number(element?.getAttribute('stroke-width')));
+  const baselineStrokes = strokes();
+  act(() => board?.onCanvasReady?.({ camera, scene: new Scene(),
+    gl: { domElement: { clientWidth: 1880, clientHeight: 1880 }, render: vi.fn() },
+  } as unknown as RootState));
+  strokes().forEach((stroke, index) => expect(stroke / baselineStrokes[index]).toBeCloseTo(1880 / 684));
 });

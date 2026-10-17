@@ -28,9 +28,9 @@
 - Modify `katrain/web/ui/src/pages/tutorial-media.css`
 - Test `katrain/web/ui/src/pages/TutorialMediaRecorder.test.tsx`
 
-- [ ] 现有 RecordingData 可选 `output_profile: galaxy-4k-v1 | kiosk-7-v1`，默认既有布局兼容。有效profile明确映射CSS属性，不能由任意用户CSS/URL注入。
-- [ ] 新版2D画面删除tm-static烧录；绘制状态仍以snapshot/cues为准。RK固定横向左棋盘右字幕，边距、笔画随尺寸，30字字幕不裁切。Galaxy居中全盘、下方字幕。无新增页面导航或3D入口。
-- [ ] 聚焦检查两个profile布局语义、无状态叠字、pending最终静态图不变、既有真实时间线/标记及纹理等待保持；运行现有recorder/timeline聚焦测试与build:tutorial-media。
+- [x] 现有 RecordingData 可选 `output_profile: galaxy-4k-v1 | kiosk-7-v1`，默认既有布局兼容。有效profile明确映射CSS属性，不能由任意用户CSS/URL注入。
+- [x] 新版2D画面删除tm-static烧录；绘制状态仍以snapshot/cues为准。RK固定横向左棋盘右字幕，边距、笔画随尺寸，30字字幕不裁切。Galaxy居中全盘、下方字幕。无新增页面导航或3D入口。
+- [x] 聚焦检查两个profile布局语义、无状态叠字、pending最终静态图不变、既有真实时间线/标记及纹理等待保持；运行现有recorder/timeline聚焦测试与build:tutorial-media。
 
 ### Task 2: 本地渲染与视觉预览
 
@@ -39,11 +39,11 @@
 - Local private snapshots/audio/results under `~/.local/share/smartbox-admin/tutorial-dual-video-preview-20261017/` (not Git)
 - Preview harness can be `scripts/preview_tutorial_video_profiles.py` if a reusable script materially simplifies existing renderer use; otherwise local driver only.
 
-- [ ] 用真实快照驱动现有隔离录制器，所有图片/字体本地；先短段原生4K，核对WebGL drawingBuffer和截图分辨率。超时继续有界，失败不覆盖已有产物。
-- [ ] 输出1031两版完整25.44s样片，并为1030完成含轻落子/真实cue的短段验证；性能允许时输出1030两版完整42.24s，仍只一页图、不全书批量。
-- [ ] FFprobe核对分辨率/FPS/codec/时长/音轨；保留音频哈希、耗时、字节数和无API写证明。字幕跟原音频边界，不重新生成语音。
-- [ ] 提供原生4K截图、白子局部100%像素对照、RK1024×600截图与可播放页面，页面无需后台新登录，不冒充已部署媒体。
-- [ ] Astra Max先SPEC后CODE再视觉聚焦审核，修复实质阻塞；用户确认样片后才开始Chunk2。
+- [x] 用真实快照驱动现有隔离录制器，所有图片/字体本地；先原生4K静态首样核对，再用1030落子样片核对WebGL drawingBuffer和截图分辨率。超时继续有界，失败不覆盖已有产物。
+- [x] 输出1031两版完整25.44s样片，并为1030完成含轻落子/真实cue的短段验证；性能允许时输出1030两版完整42.24s，仍只一页图、不全书批量。
+- [x] FFprobe核对分辨率/FPS/codec/时长/音轨；保留音频哈希、耗时、字节数和无API写证明。字幕跟原音频边界，不重新生成语音。
+- [x] 提供原生4K截图、白子局部100%像素对照、RK1024×600截图与可播放页面，页面无需后台新登录，不冒充已部署媒体。
+- [x] Astra Max先SPEC后CODE再视觉聚焦审核，修复实质阻塞；用户确认样片后才开始Chunk2。
 
 ## Chunk 2：现有测试后台接入（等待用户视觉确认）
 

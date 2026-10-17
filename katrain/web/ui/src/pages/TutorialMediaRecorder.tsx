@@ -72,8 +72,9 @@ function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones 
       const [col, row] = stone.point;
       const { x, y, transform } = marker(col, row, true);
       const r = radius(col, row);
+      const strokeScale = spriteStones ? r / 16 : 1;
       const key = stone.point.join(',');
-      return <g key={`unknown-${key}`} transform={transform} data-testid="tutorial-unknown-stone"><circle cx={x} cy={y} r={r} fill="#999c9e" stroke="#4f5357" strokeWidth="1.5" strokeDasharray="3 2" />
+      return <g key={`unknown-${key}`} transform={transform} data-testid="tutorial-unknown-stone"><circle cx={x} cy={y} r={r} fill="#999c9e" stroke="#4f5357" strokeWidth={1.5 * strokeScale} strokeDasharray={`${3 * strokeScale} ${2 * strokeScale}`} />
         {!labels[key] && !letters[key] && !shapes[key] && <text x={x} y={y} dominantBaseline="central" textAnchor="middle" fontSize={r * 1.3} fill="#222">?</text>}</g>;
     })}
     {Object.entries({ ...labels, ...letters }).map(([key, text]) => {
@@ -86,14 +87,15 @@ function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones 
         <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill={markerColor(key)} fontWeight="600" fontSize={r * (text.length > 1 ? .95 : 1.3)}
           fontFamily="Arial, sans-serif"
           stroke={onStone ? black.has(key) ? '#15181c' : '#fffdf6' : undefined}
-          strokeWidth={onStone ? .8 : undefined} paintOrder="stroke fill">{text}</text>
+          strokeWidth={onStone ? .8 * (spriteStones ? r / 16 : 1) : undefined} paintOrder="stroke fill">{text}</text>
       </g>;
     })}
     {Object.entries(shapes).map(([key, shape]) => {
       const [col, row] = key.split(',').map(Number);
       const { x, y, transform } = marker(col, row, occupied.has(key) || unknown.has(key));
-      const r = radius(col, row) * .6;
-      return <g key={`shape-${key}`} transform={transform} data-annotation-point={key} fill="none" stroke={markerColor(key)} strokeWidth="2">
+      const stoneRadius = radius(col, row);
+      const r = stoneRadius * .6;
+      return <g key={`shape-${key}`} transform={transform} data-annotation-point={key} fill="none" stroke={markerColor(key)} strokeWidth={2 * (spriteStones ? stoneRadius / 16 : 1)}>
         {shape === 'triangle' && <polygon points={`${x},${y-r} ${x-r*.866},${y+r*.5} ${x+r*.866},${y+r*.5}`} />}
         {shape === 'circle' && <circle cx={x} cy={y} r={r} />}
         {shape === 'square' && <rect x={x-r} y={y-r} width={r*2} height={r*2} />}
@@ -103,8 +105,9 @@ function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones 
     {frame.last && occupied.has(frame.last.join(',')) && (() => {
       const [col, row] = frame.last;
       const { x, y, transform } = marker(col, row, true);
-      return <g transform={transform}><circle data-testid="tutorial-last-move" cx={x} cy={y} r={radius(col, row) * .82}
-        fill="none" stroke={markerColor(frame.last.join(','))} strokeWidth="1.5" /></g>;
+      const r = radius(col, row);
+      return <g transform={transform}><circle data-testid="tutorial-last-move" cx={x} cy={y} r={r * .82}
+        fill="none" stroke={markerColor(frame.last.join(','))} strokeWidth={1.5 * (spriteStones ? r / 16 : 1)} /></g>;
     })()}
   </svg>;
 }
@@ -153,10 +156,10 @@ export default function TutorialMediaRecorder() {
   const distance = (frame.payload.size + .6) / (2 * Math.tan(Math.PI / 9)) * 1.12;
   const angle = 35 * Math.PI / 180;
   const cameraPosition: [number, number, number] = [0, 1.2 + distance * Math.cos(angle), distance * Math.sin(angle)];
-  const staticLabel = data.frames.length > 1 ? '静态讲解·落子时间待校准' : '静态讲解·手顺待校准';
+  const outputProfile = data.output_profile === 'galaxy-4k-v1' || data.output_profile === 'kiosk-7-v1' ? data.output_profile : undefined;
   const gameState = asGameState(frame);
   gameState.last_move = null; // The SVG ring stays clear of material highlights.
-  return <main className="tm-recorder" data-step={frame.step} data-render-mode={data.render_mode} data-board-appearance={solidWood ? 'solid-wood' : 'overhead'}>
+  return <main className="tm-recorder" data-output-profile={outputProfile} data-step={frame.step} data-render-mode={data.render_mode} data-board-appearance={solidWood ? 'solid-wood' : 'overhead'}>
     <div className="tm-board-area"><div className="tm-board-square">
       <Board3D gameState={gameState} onMove={noop} analysisToggles={TOGGLES} readOnly disableControls
         cameraPosition={overhead ? [0, 26, 0] : cameraPosition} cameraTarget={[0, 1.2, 0]}
@@ -165,7 +168,7 @@ export default function TutorialMediaRecorder() {
         recordingStoneSprites={overhead ? stoneSprites ?? undefined : undefined} recordingVisualSeed={overhead ? data.visual_seed ?? 'tutorial' : undefined}
         frameloop="demand" onCanvasReady={onCanvasReady} />
       {canvasState && <ProjectionOverlay frame={frame} state={canvasState} surfaceMarkers={solidWood} spriteStones={overhead} placement={placement} />}
-    </div>{data.step_cues.status !== 'complete' && <div className="tm-static" data-testid="tutorial-static-reason">{staticLabel}</div>}</div>
+    </div></div>
     <div className="tm-caption"><span>{subtitleAtTime(data.narration, data.speech_timing, timeMs)}</span></div>
   </main>;
 }

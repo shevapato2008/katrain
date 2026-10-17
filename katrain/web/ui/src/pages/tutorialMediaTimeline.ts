@@ -32,6 +32,7 @@ export interface StepCues {
   cues: { step: number; at_ms: number }[];
 }
 export interface RecordingData {
+  output_profile?: 'galaxy-4k-v1' | 'kiosk-7-v1';
   /** Stable figure identity; old recording snapshots use the recorder's fixed fallback. */
   visual_seed?: string;
   narration: string;

@@ -10,6 +10,18 @@ body { background: #0f0f0f; color: #f4f1e9; font-family: 'Noto Sans SC', sans-se
 .tm-board-square { position: relative; width: min(100vw, calc(100vh - 116px)); height: min(100vw, calc(100vh - 116px)); }
 .tm-board-square > svg { height: 100%; }
 .tm-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.tm-static { position: absolute; left: 24px; top: 18px; padding: 9px 14px; border: 1px solid #a8a08d; border-radius: 5px; background: #22221f; color: #ece1bf; font-size: 21px; font-weight: 600; }
 .tm-caption { height: 116px; flex-shrink: 0; padding: 12px 64px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 29px; line-height: 1.55; background: #161616; }
 .tm-caption span { max-width: 1100px; white-space: pre-wrap; }
+
+/* Fixed native recording profiles. Snapshots without a profile keep the legacy geometry above. */
+.tm-recorder[data-output-profile="galaxy-4k-v1"] { background: #000; }
+.tm-recorder[data-output-profile="galaxy-4k-v1"] .tm-board-area { height: 1920px; flex: 0 0 1920px; }
+.tm-recorder[data-output-profile="galaxy-4k-v1"] .tm-board-square { width: 1880px; height: 1880px; }
+.tm-recorder[data-output-profile="galaxy-4k-v1"] .tm-caption { height: 240px; padding: 20px 120px; font-size: 72px; line-height: 100px; background: #000; }
+.tm-recorder[data-output-profile="galaxy-4k-v1"] .tm-caption span { max-width: 3300px; }
+
+.tm-recorder[data-output-profile="kiosk-7-v1"] { flex-direction: row; gap: 24px; padding-left: 24px; background: #000; }
+.tm-recorder[data-output-profile="kiosk-7-v1"] .tm-board-area { width: 576px; height: 600px; flex: 0 0 576px; }
+.tm-recorder[data-output-profile="kiosk-7-v1"] .tm-board-square { width: 576px; height: 576px; }
+.tm-recorder[data-output-profile="kiosk-7-v1"] .tm-caption { width: 400px; height: 600px; flex: 0 0 400px; padding: 24px 32px 24px 0; justify-content: flex-start; text-align: left; font-size: 28px; line-height: 42px; background: #000; }
+.tm-recorder[data-output-profile="kiosk-7-v1"] .tm-caption span { max-width: 100%; }

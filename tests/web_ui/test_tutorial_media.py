@@ -198,9 +198,15 @@ def test_task_api_auth_cas_queue_bound_and_recovery(media):
     denied = enqueue(client, version="2000-01-01T00:00:00Z")
     assert denied.status_code == 409
     assert enqueue(client).status_code == 202
+    worker.queue_limit = 1
+    assert enqueue(client, kind="video").status_code == 429
+    worker.queue_limit = 2
     second = enqueue(client, kind="video")
     assert second.status_code == 202
-    assert enqueue(client, kind="video", mode="3d").status_code == 429
+    # Current creation is 2D only, even if the queue is already full.
+    rejected = enqueue(client, kind="video", mode="3d")
+    assert rejected.status_code == 422
+    assert "2D" in rejected.json()["detail"]
     first_id = client.get("/api/admin/tutorials/figures/1/media-tasks").json()["tasks"][0]["id"]
     with factory() as db:
         db.get(models_db.TutorialMediaTask, first_id).status = "running"
@@ -423,7 +429,7 @@ def test_media_namespace_never_changes_recognition_uncertainty(media):
         assert entry["media"]["speech_timing"]["issues"] == ["old media issue"]
 
 
-def test_video_variants_reuse_same_audio_and_2d_remains_default(media, monkeypatch):
+def test_2d_video_reuses_same_audio_and_keeps_historical_3d(media, monkeypatch):
     from katrain.web.tutorials import media_tasks
 
     client, factory, worker, storage, app = media
@@ -456,20 +462,28 @@ def test_video_variants_reuse_same_audio_and_2d_remains_default(media, monkeypat
                 .isoformat()
             )
 
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        debug = copy.deepcopy(figure.recognition_debug)
+        debug["workbench_media"]["videos"] = {"3d": {"asset": "historical-3d.mp4", "audio_sha256": "historical"}}
+        figure.recognition_debug = debug
+        db.commit()
     first = enqueue(client, kind="video", version=version()).json()["task"]
+    with factory() as db:
+        assert db.get(models_db.TutorialMediaTask, first["id"]).snapshot["visual_seed"] == "1"
     worker.run_next()
-    second = enqueue(client, kind="video", mode="3d", version=version()).json()["task"]
-    worker.run_next()
+    rejected = enqueue(client, kind="video", mode="3d", version=version())
+    assert rejected.status_code == 422
+    assert "2D" in rejected.json()["detail"]
     with factory() as db:
         figure = db.get(models_db.TutorialFigure, 1)
         metadata = figure.recognition_debug["workbench_media"]
         assert set(metadata["videos"]) == {"2d", "3d"}
-        assert metadata["videos"]["2d"]["audio_sha256"] == metadata["videos"]["3d"]["audio_sha256"]
+        assert metadata["videos"]["3d"] == {"asset": "historical-3d.mp4", "audio_sha256": "historical"}
         assert figure.video_asset == metadata["videos"]["2d"]["asset"]
-    assert len(captured) == 2
-    assert captured[0]["speech_timing"] == captured[1]["speech_timing"]
-    assert captured[0]["frames"] == captured[1]["frames"]
-    assert captured[0]["narration"] == captured[1]["narration"] == narration
+    assert len(captured) == 1
+    assert captured[0]["visual_seed"] == "1"
+    assert captured[0]["narration"] == narration
 
 
 def test_explicit_media_migration_only_creates_media_table():

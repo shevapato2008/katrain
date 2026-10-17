@@ -1,19 +1,28 @@
 import { act, render, screen } from '@testing-library/react';
 import type { RootState } from '@react-three/fiber';
-import { OrthographicCamera, Scene, Vector3 } from 'three';
-import { afterEach, expect, it, vi } from 'vitest';
+import { OrthographicCamera, Scene, Texture, Vector3 } from 'three';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import Board3D from '../components/Board3D';
+import { loadRecordingStoneSprites } from '../components/Board3D/tutorialStoneTextures';
 import TutorialMediaRecorder from './TutorialMediaRecorder';
 
 // WebGL is exercised by test_tutorial_media_render.py; jsdom checks the recorder boundary.
 vi.mock('../components/Board3D', () => ({ default: vi.fn(() => null) }));
+vi.mock('../components/Board3D/tutorialStoneTextures', () => ({ loadRecordingStoneSprites: vi.fn() }));
+
+const sprites = { B: new Texture(), W: Array.from({ length: 32 }, () => new Texture()) };
+let resolveSprites: (value: typeof sprites) => void;
+beforeEach(() => {
+  vi.mocked(loadRecordingStoneSprites).mockImplementation(() => new Promise(resolve => { resolveSprites = resolve; }));
+});
 
 afterEach(() => { delete window.__TUTORIAL_MEDIA_DATA; vi.clearAllMocks(); });
 
-it('renders the saved final board and permanent pending label with unknown extent and occupied points', () => {
+it('waits for approved stone textures before capturing the saved board and pending label', async () => {
   window.__TUTORIAL_MEDIA_DATA = {
     narration: '静态局面。',
     render_mode: '2d',
+    visual_seed: '1031',
     board_payload: { size: 19, stones: { B: [[14, 2]], W: [[15, 14]] },
       unknown_stones: [{ point: [12, 8], color: null }],
       source_region: { col: 7, row: 0, cols: 12, rows: 19, confirmed: true } },
@@ -42,7 +51,12 @@ it('renders the saved final board and permanent pending label with unknown exten
     camera, scene: new Scene(),
     gl: { domElement: { clientWidth: 800, clientHeight: 800 }, render: vi.fn() },
   } as unknown as RootState));
+  expect(window.__TUTORIAL_MEDIA_READY).not.toBe(true);
+  await act(async () => resolveSprites(sprites));
   expect(window.__TUTORIAL_MEDIA_READY).toBe(true);
+  expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0]).toMatchObject({
+    recordingStoneSprites: sprites, recordingVisualSeed: '1031',
+  });
   expect(screen.getByTestId('tutorial-known-region')).toHaveAttribute('data-known-region', '7,0,12,19');
   expect(screen.getByTestId('tutorial-known-region')).toHaveAttribute('fill', 'none');
   expect(screen.getByTestId('tutorial-known-region')).toHaveAttribute('stroke-dasharray', '4 3');
@@ -62,6 +76,7 @@ it('uses the solid wood camera and contrast marker for 3d recordings', () => {
   const board = vi.mocked(Board3D).mock.calls.at(-1)?.[0];
   expect(board).toMatchObject({
     cameraTarget: [0, 1.2, 0], cameraUp: undefined, orthographicSpan: 11.6, recordingAppearance: 'solid-wood',
+    recordingStoneSprites: undefined, recordingVisualSeed: undefined,
     gameState: { stones: [['B', [2, 8], null, null]], last_move: null },
   });
   expect(board?.cameraPosition?.[2]).toBeGreaterThan(0);
@@ -104,6 +119,7 @@ it('keeps the solid wood camera centered and the 2d recording unchanged', () => 
   rerender(<TutorialMediaRecorder />);
   expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0]).toMatchObject({
     recordingAppearance: 'overhead', cameraPosition: [0, 26, 0], orthographicSpan: 19.6,
+    recordingVisualSeed: 'tutorial',
   });
   expect(document.querySelector('[data-annotation-point="2,0"]')).not.toHaveAttribute('transform');
 });

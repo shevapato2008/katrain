@@ -95,6 +95,10 @@ class MediaWorker:
     def enqueue(self, db, figure, body, admin):
         from katrain.web.admin.routers.tutorials import _audit, _commit, _version_filter
 
+        if body.kind == "video" and body.render_mode != "2d":
+            raise HTTPException(
+                status_code=422, detail="New tutorial videos support 2D only; historical 3D media remains readable"
+            )
         with _QUEUE_LOCK:
             if not figure.narration or not figure.narration.strip():
                 raise HTTPException(status_code=422, detail="Save narration before creating a media task")
@@ -137,6 +141,7 @@ class MediaWorker:
                     **copy.deepcopy(inputs),
                     "board_payload": copy.deepcopy(figure.board_payload),
                     "book_slug": _get_book_slug(db, figure),
+                    "visual_seed": str(figure.id),
                 },
                 requested_by=admin["username"],
                 status="queued",
@@ -434,6 +439,7 @@ class MediaWorker:
                 audio_path=audio_path,
                 output_path=video_path,
                 render_mode=mode,
+                visual_seed=snapshot.get("visual_seed", "tutorial"),
             )
             if not video_path.is_file() or not video_path.stat().st_size:
                 raise RuntimeError("Renderer returned empty video")

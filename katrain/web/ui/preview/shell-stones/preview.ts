@@ -1,57 +1,23 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { createBoardTexture, createStone, STONE_DIMENSIONS } from './stoneModel';
+import { createBoardTexture, createStone, STONE_DIMENSIONS } from '../../src/components/tutorials/stoneModel';
+import { addStoneStudioLights, configureStoneRenderer, createStoneEnvironment, STONE_ENVIRONMENT_INTENSITY } from '../../src/components/tutorials/stoneStudio';
 import './preview.css';
 
 const stage = document.querySelector<HTMLDivElement>('#model-stage')!;
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFShadowMap;
+configureStoneRenderer(renderer);
 renderer.domElement.setAttribute('aria-label', '可旋转检查的黑白双面凸碁石模型');
 renderer.domElement.setAttribute('role', 'img');
 stage.replaceChildren(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#bda077');
-const pmrem = new THREE.PMREMGenerator(renderer);
-// Two broad studio cards avoid the many sharp reflections of a furnished room.
-const studio = new THREE.Scene();
-studio.background = new THREE.Color(.08, .08, .08);
-for (const [position, size, intensity] of [
-  [[-3, 5, 4], [4.5, 5.5], 3],
-  [[5, 2, -4], [3, 4], .7],
-] as const) {
-  const card = new THREE.Mesh(new THREE.PlaneGeometry(size[0], size[1]), new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(intensity), side: THREE.DoubleSide }));
-  card.position.set(position[0], position[1], position[2]); card.lookAt(0, 0, 0); studio.add(card);
-}
-const environment = pmrem.fromScene(studio, .1);
-studio.traverse(object => { if (object instanceof THREE.Mesh) { object.geometry.dispose(); object.material.dispose(); } });
-pmrem.dispose();
+const environment = createStoneEnvironment(renderer);
 scene.environment = environment.texture;
-scene.environmentIntensity = .48;
-
-function addLights(target: THREE.Scene, shadow = false) {
-  target.add(new THREE.HemisphereLight(0xeaf0ff, 0xa08b70, .3));
-  const key = new THREE.DirectionalLight(0xfff9ee, 1.6);
-  key.position.set(-3.8, 6.5, 4);
-  key.castShadow = shadow;
-  if (shadow) {
-    key.shadow.mapSize.set(2048, 2048);
-    key.shadow.camera.left = key.shadow.camera.bottom = -5;
-    key.shadow.camera.right = key.shadow.camera.top = 5;
-    key.shadow.camera.near = .1; key.shadow.camera.far = 20;
-    key.shadow.normalBias = .012; key.shadow.bias = -.0002;
-    key.shadow.radius = 9; key.shadow.intensity = .4;
-  }
-  target.add(key);
-  const fill = new THREE.DirectionalLight(0xe9f0ff, .2);
-  fill.position.set(4, 3, -4); target.add(fill);
-}
-addLights(scene, true);
+scene.environmentIntensity = STONE_ENVIRONMENT_INTENSITY;
+addStoneStudioLights(scene, true);
 
 const boardTexture = createBoardTexture();
 const boardMaterial = new THREE.MeshStandardMaterial({ map: boardTexture, roughness: .88, metalness: 0 });
@@ -120,12 +86,13 @@ const previewPixelRatio = renderer.getPixelRatio();
 renderer.setPixelRatio(1); renderer.setSize(256, 256, false);
 const spriteScene = new THREE.Scene();
 spriteScene.environment = environment.texture; spriteScene.environmentIntensity = scene.environmentIntensity;
-addLights(spriteScene);
+addStoneStudioLights(spriteScene);
 const sprites: Record<string, string> = {};
-function makeSprite(color: 'B' | 'W', seed = 17, plain = false) {
-  const key = `${color}-${seed}${plain ? '-plain' : ''}`;
+function makeSprite(color: 'B' | 'W', seed = 17, plain = false, angle = 0) {
+  const key = `${color}-${seed}${plain ? '-plain' : ''}${angle ? `-angle-${angle}` : ''}`;
   if (sprites[key]) return sprites[key];
   const stone = createStone(color, seed, plain);
+  stone.rotation.y = angle;
   spriteScene.add(stone);
   const radius = STONE_DIMENSIONS[color].diameter / STONE_DIMENSIONS.W.diameter;
   const topCamera = new THREE.OrthographicCamera(-radius, radius, radius, -radius, .01, 30);
@@ -203,4 +170,17 @@ renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, came
 Object.assign(window, {
   __stonePreviewReady: true,
   __stonePreview: { setView, sprites, dimensions: STONE_DIMENSIONS, renderer: 'Three.js WebGL · original closed lathe geometry' },
+  __exportTutorialStoneSprites: () => {
+    renderer.setAnimationLoop(null);
+    renderer.setPixelRatio(1);
+    renderer.setSize(256, 256, false);
+    const exported: Record<string, string> = { 'black.png': makeSprite('B') };
+    for (let variant = 0; variant < 32; variant++) {
+      exported[`white-${String(variant).padStart(2, '0')}.png`] = makeSprite('W', 17, false, 2 * Math.PI * variant / 32);
+    }
+    renderer.setPixelRatio(previewPixelRatio);
+    resize();
+    renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+    return exported;
+  },
 });

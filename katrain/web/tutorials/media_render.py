@@ -293,6 +293,7 @@ def render_video(
     audio_path: Path,
     output_path: Path,
     render_mode: str,
+    visual_seed: str = "tutorial",
 ) -> None:
     """Render snapshots at saved audio cues and atomically write a checked MP4.
 
@@ -315,6 +316,7 @@ def render_video(
         "speech_timing": speech_timing,
         "step_cues": step_cues,
         "render_mode": render_mode,
+        "visual_seed": visual_seed,
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="tutorial-render-", dir=output_path.parent) as temporary:

@@ -1,0 +1,177 @@
+{
+  "modelVersion": "approved-shell-slate-2026-10-17",
+  "width": 256,
+  "height": 256,
+  "transparent": true,
+  "whiteVariantCount": 32,
+  "whiteTextureSeed": 17,
+  "whiteRotationStepDegrees": 11.25,
+  "rotation": "model Y only; camera, studio lights and environment remain fixed",
+  "camera": {
+    "projection": "orthographic",
+    "position": [
+      0,
+      9,
+      0
+    ],
+    "up": [
+      0,
+      0,
+      -1
+    ],
+    "bounds": "per-color physical radius"
+  },
+  "spriteBounds": "tight per-color diameter; consumer applies diameterRatio once",
+  "dimensionsMm": {
+    "W": {
+      "diameter": 21.9,
+      "thickness": 8.8
+    },
+    "B": {
+      "diameter": 22.2,
+      "thickness": 9.1
+    }
+  },
+  "diameterRatio": {
+    "W": 1,
+    "B": 1.0136986301369864
+  },
+  "sources": {
+    "stoneModel.ts": "ea0dbea1e166681f2905d54c1d9f385c977946256c3354b6d1cdbc145b30a8a6",
+    "stoneStudio.ts": "44a009f55280fe0202d1f472de417e49d01eafd22dbda95d1c9e31bf24d20c21"
+  },
+  "files": [
+    {
+      "file": "black.png",
+      "sha256": "c73f79055c030898cec8425c1add9033efd38b62034858b044068dd2b462df43"
+    },
+    {
+      "file": "white-00.png",
+      "sha256": "2243ea13c47d6abed0e8b527d23ec13b78290472f720fb7808c10c5ac01104ac"
+    },
+    {
+      "file": "white-01.png",
+      "sha256": "1d97c5239120c15dc1a94ae227bbf38456153ff9e74dabfa3761221c3120a1b5"
+    },
+    {
+      "file": "white-02.png",
+      "sha256": "f873b2463c000f136b721cd7f2ca85cef86b8ecfbfa3fc93acdd7b22a846ba59"
+    },
+    {
+      "file": "white-03.png",
+      "sha256": "c60ac6c60adabaf4fa30cb12381342c4aa278d08d937438625c47b19458c1f75"
+    },
+    {
+      "file": "white-04.png",
+      "sha256": "cd9f5c4d61a89eee2953ecbffb2ba2a45796ec3e51686c755729f694185d9395"
+    },
+    {
+      "file": "white-05.png",
+      "sha256": "c3dbca7f19196a53993d8adda917ab1c93d686f9ea27863d611340f3dcc7066e"
+    },
+    {
+      "file": "white-06.png",
+      "sha256": "6c040c1b2b56cf7c7e3a5ece4929d77955b4bbccbdde08cff38b1a95d02f7c92"
+    },
+    {
+      "file": "white-07.png",
+      "sha256": "284c5815d366d03efc2c6d1fe2c260ceec7c164c550490c45845c7c8302ecfd6"
+    },
+    {
+      "file": "white-08.png",
+      "sha256": "a6d336062752b2fe5a3c82e38832b2ddc222635f2e40a6fb5c04ec7c69979671"
+    },
+    {
+      "file": "white-09.png",
+      "sha256": "d2e2efabe984f833153cac1dbc1a979cbba006c8a70a17737dd3b9be9a0eb696"
+    },
+    {
+      "file": "white-10.png",
+      "sha256": "c50637ad7485a5cc110dcc33f38911232ecb371f2551cfa019d2a526c56e68e4"
+    },
+    {
+      "file": "white-11.png",
+      "sha256": "b7b92776e3f2a98bb763c55150d1a25bda9bbe128daff805bf8631d4b59b3e41"
+    },
+    {
+      "file": "white-12.png",
+      "sha256": "82fb6084287df0fc44375933912e98c4a24a02ac31191037513d5797b6ab216d"
+    },
+    {
+      "file": "white-13.png",
+      "sha256": "67543928eb10879cf4a3f9692764df41eedcedb6a48fbc0e39d41bc3efd7ffbb"
+    },
+    {
+      "file": "white-14.png",
+      "sha256": "462c99fc07fa3fb70f02840cab7c2a6359ba1b761d5afa151c479196fb59dfd1"
+    },
+    {
+      "file": "white-15.png",
+      "sha256": "3b1d3a058e7ac1c2ac4ee1fe7cf7ce95f408a11c0daa2272e7ca0af36ccfe9b2"
+    },
+    {
+      "file": "white-16.png",
+      "sha256": "ee1a239ef5e3d7284fc5c60cc97113e305847820dcd733d6aaf58b182a9f2c5e"
+    },
+    {
+      "file": "white-17.png",
+      "sha256": "a63871ad24d62a6234287825f1e43d0ace6a6014e130cd11d3fdd22e6c8adb8e"
+    },
+    {
+      "file": "white-18.png",
+      "sha256": "56134a3cffbb01cdc32943551a41523bd9164aa904794395050475700a751bf6"
+    },
+    {
+      "file": "white-19.png",
+      "sha256": "9759d8c996e20fcbe2dc016fceefe32fa26e7a2dd230206d8a2cb1f29fe6c063"
+    },
+    {
+      "file": "white-20.png",
+      "sha256": "4493c2f0dd73877ce9b699b75233351da295a25743773f20348aaaf9bb582c0c"
+    },
+    {
+      "file": "white-21.png",
+      "sha256": "0f5596bc275ac621aadee7988b9adb0cc66d99c1df847222d89e5a680f14075b"
+    },
+    {
+      "file": "white-22.png",
+      "sha256": "8bf2a20d67526df053217b0cbd37a34b992f42956c0de54e90da359bd1de0f88"
+    },
+    {
+      "file": "white-23.png",
+      "sha256": "a8c6b3d785d99f66787e9693dc022fcbe0bc73c92f3dc683001bb18c58897cd6"
+    },
+    {
+      "file": "white-24.png",
+      "sha256": "c183d88057b491f1094d6a8823fe43ce6aebfac8f38bebd23a5c5d24446809f8"
+    },
+    {
+      "file": "white-25.png",
+      "sha256": "a0471a888bb6ef4bb4b7e513a8f9390f3f5303a103f626ae4131f6372eee8a3d"
+    },
+    {
+      "file": "white-26.png",
+      "sha256": "6d147a8b54d1f442ab98c1d6fe26c663a07d7bda7f8d22c091ac1ff661370f72"
+    },
+    {
+      "file": "white-27.png",
+      "sha256": "1122500969dfe4c86a7908c54316f5c310dfec5a62fede33c32f110d07b64e35"
+    },
+    {
+      "file": "white-28.png",
+      "sha256": "bcd5232798ed67d10a13effe90a14583a87dd5a36428d6843867e5fd69535de2"
+    },
+    {
+      "file": "white-29.png",
+      "sha256": "3cd3c7433f27a8b5fb1d3d100ac04e9ced8501423569c57d7dbedea7115fa548"
+    },
+    {
+      "file": "white-30.png",
+      "sha256": "bd1bad8b7435eb21adbba4bc009904143a685dd3be9514ab423acecb4fc16c98"
+    },
+    {
+      "file": "white-31.png",
+      "sha256": "e2bea0f21f134e6e4e99884846feb8f6fa3f38a98331f61ccafee07438e2d19f"
+    }
+  ]
+}

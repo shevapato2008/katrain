@@ -6,6 +6,7 @@ import Lights from './Lights';
 import BoardMesh from './BoardMesh';
 import CameraController from './CameraController';
 import StoneGroup from './StoneGroup';
+import type { RecordingStoneSprites } from './tutorialStoneTextures';
 import RaycastClick from './RaycastClick';
 import GhostStone from './GhostStone';
 import Territory from './Overlays/Territory';
@@ -57,6 +58,9 @@ interface Board3DProps extends BoardProps {
   orthographicSpan?: number;
   /** Opt-in tutorial recording lighting/materials; ordinary boards keep their defaults. */
   recordingAppearance?: 'overhead' | 'solid-wood';
+  /** Approved pre-rendered stones, used only by overhead tutorial recordings. */
+  recordingStoneSprites?: RecordingStoneSprites;
+  recordingVisualSeed?: string;
   /** Deterministic tutorial pose; point uses GameState coordinates. */
   recordingPlacement?: { point: [number, number]; lift: number; scale: number } | null;
   disableControls?: boolean;
@@ -75,7 +79,7 @@ interface Board3DProps extends BoardProps {
   initialPolarAngle?: number;
 }
 
-const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, readOnly = false, cameraPosition, cameraTarget, cameraUp, orthographicSpan, recordingAppearance, recordingPlacement, disableControls, fixedPolarAngle, frameloop = 'always', onCanvasReady, enableAzimuth, azimuthRange, initialPolarAngle }: Board3DProps) => {
+const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, readOnly = false, cameraPosition, cameraTarget, cameraUp, orthographicSpan, recordingAppearance, recordingStoneSprites, recordingVisualSeed, recordingPlacement, disableControls, fixedPolarAngle, frameloop = 'always', onCanvasReady, enableAzimuth, azimuthRange, initialPolarAngle }: Board3DProps) => {
   const boardSize = gameState.board_size[0];
   const overhead = recordingAppearance === 'overhead';
   const solidWood = recordingAppearance === 'solid-wood';
@@ -189,7 +193,8 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
           </>
         )}
         <BoardMesh boardSize={boardSize} showCoordinates={!!analysisToggles.coords} solidWood={solidWood} />
-        <StoneGroup gameState={gameState} enableDropEffect={!!analysisToggles.stoneDropEffect} satinFinish={overhead || solidWood} recordingPlacement={recordingPlacement} />
+        <StoneGroup gameState={gameState} enableDropEffect={!!analysisToggles.stoneDropEffect} satinFinish={overhead || solidWood} recordingPlacement={recordingPlacement}
+          recordingStoneSprites={overhead ? recordingStoneSprites : undefined} recordingVisualSeed={recordingVisualSeed} />
         {!readOnly && <RaycastClick
           gameState={gameState}
           onMove={onMove}

@@ -10,10 +10,13 @@ interface StoneMeshProps {
   scale?: number;
   satinFinish?: boolean;
   contactOpacity?: number;
+  spriteTexture?: THREE.Texture;
+  diameterRatio?: number;
 }
 
 // Shared geometry — all stones use the same sphere (1 geometry, not 361)
 const sharedGeometry = new THREE.SphereGeometry(STONE_RADIUS, 48, 32);
+const sharedSpriteGeometry = new THREE.PlaneGeometry(STONE_RADIUS * 2, STONE_RADIUS * 2);
 
 // Noop raycast — prevents stones from intercepting pointer events
 const noopRaycast = () => {};
@@ -80,8 +83,11 @@ function getContactTexture() {
   return contactTexture;
 }
 
-const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, scale = 1, satinFinish = false, contactOpacity = 1 }, ref) => {
+const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, scale = 1, satinFinish = false, contactOpacity = 1, spriteTexture, diameterRatio = 1 }, ref) => {
   const material = useMemo(() => {
+    if (spriteTexture) return new THREE.MeshBasicMaterial({
+      map: spriteTexture, transparent: true, opacity, depthWrite: false, toneMapped: false, fog: false,
+    });
     if (satinFinish) return new THREE.MeshPhysicalMaterial({
       color: color === 'B' ? 0x111418 : 0xf5f2e9,
       roughness: color === 'B' ? .29 : .34, metalness: 0,
@@ -99,7 +105,7 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
         transparent: opacity < 1, opacity,
       });
     }
-  }, [color, opacity, satinFinish]);
+  }, [color, opacity, satinFinish, spriteTexture]);
 
   // Dispose material on change/unmount (but NOT the shared shell texture)
   useEffect(() => {
@@ -116,12 +122,13 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
       </mesh>}
       <mesh
         ref={ref}
-        position={position}
-        scale={[scale, scale * scaleY, scale]}
-        geometry={sharedGeometry}
+        position={spriteTexture ? [position[0], position[1] + STONE_HEIGHT * scale, position[2]] : position}
+        rotation={spriteTexture ? [-Math.PI / 2, 0, 0] : undefined}
+        scale={spriteTexture ? [scale * diameterRatio, scale * diameterRatio, 1] : [scale, scale * scaleY, scale]}
+        geometry={spriteTexture ? sharedSpriteGeometry : sharedGeometry}
         material={material}
-        castShadow
-        receiveShadow
+        castShadow={!spriteTexture}
+        receiveShadow={!spriteTexture}
         raycast={noopRaycast}
       />
     </>

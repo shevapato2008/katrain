@@ -32,6 +32,8 @@ export interface StepCues {
   cues: { step: number; at_ms: number }[];
 }
 export interface RecordingData {
+  /** Stable figure identity; old recording snapshots use the recorder's fixed fallback. */
+  visual_seed?: string;
   narration: string;
   board_payload: RecorderPayload;
   frames: ReplayFrame[];

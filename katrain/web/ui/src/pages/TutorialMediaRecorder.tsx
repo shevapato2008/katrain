@@ -4,7 +4,9 @@ import { Vector3 } from 'three';
 import type { RootState } from '@react-three/fiber';
 import type { GameState, PlayerInfo } from '../api';
 import Board3D from '../components/Board3D';
+import { loadRecordingStoneSprites, type RecordingStoneSprites } from '../components/Board3D/tutorialStoneTextures';
 import { gridToSurface, gridToWorld, STONE_HEIGHT, STONE_RADIUS } from '../components/Board3D/constants';
+import { TUTORIAL_STONE_DIAMETER_RATIO } from '../components/tutorials/tutorialStoneSprites';
 import { frameAtTime, placementAtTime, knownRegion, subtitleAtTime, type Point, type RecordingData, type RecordingPlacement, type ReplayFrame, type Region } from './tutorialMediaTimeline';
 
 declare global {
@@ -36,7 +38,7 @@ function asGameState(frame: ReplayFrame): GameState {
   };
 }
 
-function ProjectionOverlay({ frame, region, state, surfaceMarkers = false, placement }: { frame: ReplayFrame; region: Region | null; state: RootState; surfaceMarkers?: boolean; placement: RecordingPlacement | null }) {
+function ProjectionOverlay({ frame, region, state, surfaceMarkers = false, spriteStones = false, placement }: { frame: ReplayFrame; region: Region | null; state: RootState; surfaceMarkers?: boolean; spriteStones?: boolean; placement: RecordingPlacement | null }) {
   const { size, stones, labels = {}, letters = {}, shapes = {}, unknown_stones = [] } = frame.payload;
   const width = state.gl.domElement.clientWidth;
   const height = state.gl.domElement.clientHeight;
@@ -47,7 +49,10 @@ function ProjectionOverlay({ frame, region, state, surfaceMarkers = false, place
     return { x: (vector.x + 1) * width / 2, y: (1 - vector.y) * height / 2 };
   };
   const isPlacing = (col: number, row: number) => placement?.point[0] === col && placement.point[1] === row;
-  const radius = (col: number, row: number) => Math.abs(project(col + STONE_RADIUS, row, true).x - project(col, row, true).x) * (isPlacing(col, row) ? placement!.scale : 1);
+  const black = new Set(stones.B.map(point => point.join(',')));
+  const radius = (col: number, row: number) => Math.abs(project(col + STONE_RADIUS, row, true).x - project(col, row, true).x)
+    * (isPlacing(col, row) ? placement!.scale : 1)
+    * (spriteStones && black.has(`${col},${row}`) ? TUTORIAL_STONE_DIAMETER_RATIO.B : 1);
   // Project the local X/Z tangent basis, so glyphs and rings follow the board/stone
   // top instead of facing the screen. Orthographic recording makes this affine exact.
   const marker = (col: number, row: number, onStone: boolean) => {
@@ -64,7 +69,6 @@ function ProjectionOverlay({ frame, region, state, surfaceMarkers = false, place
       const point = project(col, row);
       return `${index ? 'L' : 'M'}${point.x},${point.y}`;
     }).join(' ') + 'Z';
-  const black = new Set(stones.B.map(point => point.join(',')));
   const occupied = new Set([...stones.B, ...stones.W].map(point => point.join(',')));
   const unknown = new Set(unknown_stones.map(stone => stone.point.join(',')));
   const markerColor = (key: string) => black.has(key) ? '#fff' : '#171717';
@@ -118,9 +122,20 @@ export default function TutorialMediaRecorder() {
   const solidWood = data?.render_mode === '3d';
   const [timeMs, setTimeMs] = useState(0);
   const [canvasState, setCanvasState] = useState<RootState | null>(null);
+  const [stoneSprites, setStoneSprites] = useState<RecordingStoneSprites | null>(null);
+  const [spriteError, setSpriteError] = useState<unknown>(null);
   const onCanvasReady = useCallback((state: RootState) => setCanvasState(state), []);
   useEffect(() => {
-    if (!data || !canvasState) return;
+    if (!overhead) return;
+    let active = true;
+    loadRecordingStoneSprites().then(
+      textures => { if (active) setStoneSprites(textures); },
+      error => { if (active) setSpriteError(error); },
+    );
+    return () => { active = false; };
+  }, [overhead]);
+  useEffect(() => {
+    if (!data || !canvasState || (overhead && !stoneSprites)) return;
     let lastPaintedKey: string | null = null;
     window.__tutorialSetFrame = async (time: number) => {
       const frame = frameAtTime(data, time);
@@ -135,8 +150,9 @@ export default function TutorialMediaRecorder() {
     };
     window.__TUTORIAL_MEDIA_READY = true;
     return () => { window.__TUTORIAL_MEDIA_READY = false; delete window.__tutorialSetFrame; };
-  }, [data, canvasState]);
+  }, [data, canvasState, overhead, stoneSprites]);
 
+  if (spriteError) throw spriteError;
   if (!data) return <div>缺少录制快照</div>;
   const frame = frameAtTime(data, timeMs);
   const placement = placementAtTime(data, timeMs);
@@ -153,8 +169,10 @@ export default function TutorialMediaRecorder() {
       <Board3D gameState={gameState} onMove={noop} analysisToggles={TOGGLES} readOnly disableControls
         cameraPosition={overhead ? [0, 26, 0] : cameraPosition} cameraTarget={[0, 1.2, 0]}
         cameraUp={overhead ? [0, 0, -1] : undefined} orthographicSpan={frame.payload.size + (overhead ? .6 : 2.6)}
-        recordingAppearance={overhead ? 'overhead' : 'solid-wood'} recordingPlacement={recordingPlacement} frameloop="demand" onCanvasReady={onCanvasReady} />
-      {canvasState && <ProjectionOverlay frame={frame} region={region} state={canvasState} surfaceMarkers={solidWood} placement={placement} />}
+        recordingAppearance={overhead ? 'overhead' : 'solid-wood'} recordingPlacement={recordingPlacement}
+        recordingStoneSprites={overhead ? stoneSprites ?? undefined : undefined} recordingVisualSeed={overhead ? data.visual_seed ?? 'tutorial' : undefined}
+        frameloop="demand" onCanvasReady={onCanvasReady} />
+      {canvasState && <ProjectionOverlay frame={frame} region={region} state={canvasState} surfaceMarkers={solidWood} spriteStones={overhead} placement={placement} />}
     </div>{data.step_cues.status !== 'complete' && <div className="tm-static" data-testid="tutorial-static-reason">{staticLabel}</div>}</div>
     <div className="tm-caption"><span>{subtitleAtTime(data.narration, data.speech_timing, timeMs)}</span></div>
   </main>;

@@ -197,12 +197,43 @@ def test_explicit_additive_review_migration_preserves_historical_flags():
     engine.dispose()
 
 
+def enqueue_historical_3d(media):
+    """A queued row admitted before 2D-only creation remains processable/readable."""
+    from katrain.web.tutorials.media_tasks import content_inputs
+    from katrain.web.tutorials.media_timing import digest
+
+    _, factory, *_ = media
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        inputs = content_inputs(figure, "video")
+        task = models_db.TutorialMediaTask(
+            figure_id=figure.id,
+            kind="video",
+            render_mode="3d",
+            input_digest=digest(inputs),
+            snapshot={**copy.deepcopy(inputs), "board_payload": copy.deepcopy(figure.board_payload), "book_slug": "test"},
+            requested_by="historical-admin",
+            status="queued",
+            stage="queued",
+        )
+        db.add(task)
+        db.commit()
+        return {"id": task.id}
+
+
 def generate_video(media, mode="2d"):
     client, factory, worker, storage, app = media
-    response = enqueue(client, kind="video", mode=mode, version=version(factory))
-    assert response.status_code == 202, response.text
-    task = response.json()["task"]
+    if mode == "3d":
+        task = enqueue_historical_3d(media)
+    else:
+        response = enqueue(client, kind="video", mode=mode, version=version(factory))
+        assert response.status_code == 202, response.text
+        task = response.json()["task"]
     worker.run_next()
+    if mode == "3d":
+        historical = client.get(f"/api/admin/tutorials/media-tasks/{task['id']}")
+        assert historical.status_code == 200
+        assert historical.json()["task"]["render_mode"] == "3d"
     with factory() as db:
         assert db.get(models_db.TutorialMediaTask, task["id"]).status == "succeeded"
         return db.get(models_db.TutorialFigure, 1).recognition_debug["workbench_media"]["videos"][mode]["asset"]
@@ -270,7 +301,7 @@ def test_video_approval_rejects_missing_changed_legacy_or_stale_artifacts(media,
 def test_video_review_does_not_stale_other_mode_job_and_audit_failure_rolls_back(media):
     client, factory, worker, storage, app = media
     asset = generate_video(media)
-    task = enqueue(client, kind="video", mode="3d", version=version(factory)).json()["task"]
+    task = enqueue_historical_3d(media)
     assert approve_video(media, "2d", asset).status_code == 200
     worker.run_next()
     with factory() as db:

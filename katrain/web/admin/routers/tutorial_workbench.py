@@ -326,7 +326,7 @@ def _entry(figure, candidates, references):
     )
     uncertainty = bool((chosen or {}).get("unknown_stones")) or _flag(
         [evidence, figure.recognition_debug or {}],
-        {"uncertainty", "uncertainties", "doubts", "uncertain", "origin_uncertain", "needs_review", "issues"},
+        {"uncertainty", "uncertainties", "doubts", "uncertain", "origin_uncertain", "issues"},
     )
     return {
         "figure": _output(figure),

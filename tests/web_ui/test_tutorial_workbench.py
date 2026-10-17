@@ -324,6 +324,62 @@ def test_workbench_keeps_all_pages_empty_states_and_current_candidate_compare(wo
     assert filtered["figures"] == [] and filtered["page"]["page_image_path"].endswith("92.png")
 
 
+def test_workbench_does_not_treat_pending_human_review_as_recognition_uncertainty(workbench):
+    from katrain.web.tutorials.recognition_import import import_candidate
+
+    client, Session, _ = workbench
+    with Session() as db:
+        for figure_id in range(1, 7):
+            payload = diagram()
+            payload["replay"] = {"status": "needs_calibration", "initial": None, "moves": []}
+            if figure_id == 3:
+                payload["unknown_stones"] = [{"point": [7, 7], "color": None}]
+            figure = (
+                db.get(models_db.TutorialFigure, 1)
+                if figure_id == 1
+                else models_db.TutorialFigure(
+                    id=figure_id, section_id=1, page=92, figure_label=str(figure_id), order=figure_id
+                )
+            )
+            figure.board_payload = payload
+            figure.recognition_debug = {"needs_review": True}
+            if figure_id == 5:
+                figure.recognition_debug["issues"] = ["Unreadable printed symbol"]
+            db.add(figure)
+            db.flush()
+            result = {"uncertainties": [], "origin_uncertain": False, "issues": [], "inferences": []}
+            if figure_id == 2:
+                result["uncertainties"] = [{"cell": "0,0", "reason": "Ambiguous printed number"}]
+            if figure_id == 4:
+                result["origin_uncertain"] = True
+            if figure_id == 6:
+                result["inferences"] = [{"cell": "0,0", "reason": "Number inferred from source text"}]
+            import_candidate(
+                db,
+                source_book_id=1,
+                dataset="curriculum-test-gpt61sol-v1",
+                recognition_id=f"p092-f{figure_id:02d}",
+                figure_id=figure_id,
+                page=92,
+                raw_result={"needs_review": True, "result": result},
+                board_payload=payload,
+            )
+        db.commit()
+    for filter_name, expected in (
+        ("all", {1, 2, 3, 4, 5, 6}),
+        ("uncalibrated", {1, 2, 3, 4, 5, 6}),
+        ("uncertainty", {2, 3, 4, 5}),
+        ("inference", {6}),
+    ):
+        response = client.get(f"/api/admin/tutorials/books/1/workbench?page=92&filter={filter_name}")
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert {row["figure"]["id"] for row in body["figures"]} == expected
+        assert next(page for page in body["pages"] if page["page"] == 92)["filtered_figure_count"] == len(expected)
+        assert all(row["board_review_status"] == "unreviewed" for row in body["figures"])
+        assert all(not row["review_validity"]["board"]["approved"] for row in body["figures"])
+
+
 def test_audit_failure_rolls_back_board_history_version(workbench):
     client, Session, _ = workbench
 

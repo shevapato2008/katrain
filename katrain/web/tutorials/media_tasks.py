@@ -21,6 +21,7 @@ from sqlalchemy import func, select, text, update
 
 from katrain.web.core.models_db import TutorialFigure, TutorialMediaTask
 from katrain.web.core.storage import get_storage_backend
+from katrain.web.tutorials.media_profiles import GALAXY, render_profile, with_profile
 from katrain.web.tutorials.media_timing import (
     VOICE,
     align_boundaries,
@@ -54,28 +55,34 @@ def invalidate_media(debug, *, narration=False):
     return result
 
 
-def content_inputs(figure, kind, voice=VOICE):
+def content_inputs(figure, kind, voice=VOICE, output_profile=None):
     if kind == "video":
-        return media_dependencies(figure, voice=voice)
+        inputs = media_dependencies(figure, voice=voice)
+        if output_profile is not None:
+            inputs.update(output_profile=output_profile, renderer_recipe=render_profile(output_profile).renderer_recipe)
+        return inputs
     return {"narration": figure.narration, "voice": voice, **board_authority(figure)}
 
 
 def task_output(task):
     return {
-        key: getattr(task, key)
-        for key in (
-            "id",
-            "figure_id",
-            "kind",
-            "render_mode",
-            "status",
-            "stage",
-            "error",
-            "result",
-            "created_at",
-            "started_at",
-            "finished_at",
-        )
+        "output_profile": (task.snapshot or {}).get("output_profile") if task.kind == "video" else None,
+        **{
+            key: getattr(task, key)
+            for key in (
+                "id",
+                "figure_id",
+                "kind",
+                "render_mode",
+                "status",
+                "stage",
+                "error",
+                "result",
+                "created_at",
+                "started_at",
+                "finished_at",
+            )
+        },
     }
 
 
@@ -99,6 +106,7 @@ class MediaWorker:
             raise HTTPException(
                 status_code=422, detail="New tutorial videos support 2D only; historical 3D media remains readable"
             )
+        output_profile = (body.output_profile or GALAXY) if body.kind == "video" else None
         with _QUEUE_LOCK:
             if not figure.narration or not figure.narration.strip():
                 raise HTTPException(status_code=422, detail="Save narration before creating a media task")
@@ -110,7 +118,7 @@ class MediaWorker:
             approval = board_approval(figure)
             if not approval["approved"]:
                 raise HTTPException(status_code=422, detail=approval["reason"])
-            inputs = content_inputs(figure, body.kind)
+            inputs = content_inputs(figure, body.kind, output_profile=output_profile)
             input_digest = digest(inputs)
             existing = db.scalar(
                 select(TutorialMediaTask)
@@ -254,7 +262,10 @@ class MediaWorker:
             if (
                 figure is None
                 or not board_approval(figure)["approved"]
-                or digest(content_inputs(figure, task.kind, task.snapshot["voice"])) != task.input_digest
+                or digest(
+                    content_inputs(figure, task.kind, task.snapshot["voice"], task.snapshot.get("output_profile"))
+                )
+                != task.input_digest
             ):
                 task.status, task.stage = "stale", "stale"
                 task.error = "Static diagram approval or saved media inputs changed before generation"
@@ -375,6 +386,8 @@ class MediaWorker:
             self.storage.put(key, source, content_type=content_type)
 
     def _generate(self, task_id, snapshot, kind, mode, directory):
+        output_profile = snapshot.get("output_profile") if kind == "video" else None
+        profile = render_profile(output_profile)
         prefix = f"tutorial_assets/{snapshot['book_slug']}/media/{task_id}"
         audio_path = directory / "audio.mp3"
         timing, audio = snapshot.get("speech_timing"), snapshot.get("audio")
@@ -440,6 +453,7 @@ class MediaWorker:
                 output_path=video_path,
                 render_mode=mode,
                 visual_seed=snapshot.get("visual_seed", "tutorial"),
+                output_profile=output_profile,
             )
             if not video_path.is_file() or not video_path.stat().st_size:
                 raise RuntimeError("Renderer returned empty video")
@@ -451,7 +465,12 @@ class MediaWorker:
             result.update(
                 step_cues={**cues, "asset": prefix + "/step_cues.json"},
                 video={
-                    "asset": prefix + f"/video-{mode}.mp4",
+                    "asset": prefix + f"/video-{mode}{'-' + output_profile if output_profile else ''}.mp4",
+                    "output_profile": output_profile,
+                    "renderer_recipe": profile.renderer_recipe,
+                    "width": profile.width,
+                    "height": profile.height,
+                    "fps": profile.fps,
                     "sha256": file_sha256,
                     "dependencies_sha256": digest(
                         {
@@ -505,7 +524,10 @@ class MediaWorker:
             if (
                 figure is None
                 or not board_approval(figure)["approved"]
-                or digest(content_inputs(figure, task.kind, task.snapshot["voice"])) != task.input_digest
+                or digest(
+                    content_inputs(figure, task.kind, task.snapshot["voice"], task.snapshot.get("output_profile"))
+                )
+                != task.input_digest
             ):
                 task.status, task.stage, task.error = "stale", "stale", "Saved media inputs changed during generation"
                 task.result = result
@@ -523,10 +545,17 @@ class MediaWorker:
                 if digest(figure.board_payload) == digest(task.snapshot.get("board_payload")):
                     media["step_cues"] = result["step_cues"]
                 if task.kind == "video":
-                    values[f"video_{task.render_mode}_review"] = None
+                    output_profile = task.snapshot.get("output_profile")
+                    review_key = f"video_{task.render_mode}_review"
+                    values[review_key] = with_profile(
+                        values.get(review_key, getattr(figure, review_key)), output_profile, None
+                    )
                     media["step_cues"] = result["step_cues"]
-                    media.setdefault("videos", {})[task.render_mode] = result["video"]
-                    if task.render_mode == "2d":
+                    videos = media.setdefault("videos", {})
+                    videos[task.render_mode] = with_profile(
+                        videos.get(task.render_mode), output_profile, result["video"]
+                    )
+                    if task.render_mode == "2d" and output_profile in (None, GALAXY):
                         values.update(
                             video_asset=result["video"]["asset"],
                             video_duration_ms=result["video"]["duration_ms"],

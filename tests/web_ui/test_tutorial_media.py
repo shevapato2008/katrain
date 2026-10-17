@@ -480,7 +480,7 @@ def test_2d_video_reuses_same_audio_and_keeps_historical_3d(media, monkeypatch):
         metadata = figure.recognition_debug["workbench_media"]
         assert set(metadata["videos"]) == {"2d", "3d"}
         assert metadata["videos"]["3d"] == {"asset": "historical-3d.mp4", "audio_sha256": "historical"}
-        assert figure.video_asset == metadata["videos"]["2d"]["asset"]
+        assert figure.video_asset == metadata["videos"]["2d"]["profiles"][GALAXY]["asset"]
     assert len(captured) == 1
     assert captured[0]["visual_seed"] == "1"
     assert captured[0]["narration"] == narration
@@ -638,3 +638,198 @@ time.sleep(60)
         assert not figure.recognition_debug["workbench_media"].get("videos")
         result = db.get(models_db.TutorialMediaTask, task["id"])
         assert result.status == "failed" and result.stage == "rendering_video"
+
+
+GALAXY = "galaxy-4k-v1"
+KIOSK = "kiosk-7-v1"
+
+
+def current_version(factory):
+    from datetime import timezone
+
+    with factory() as db:
+        value = db.get(models_db.TutorialFigure, 1).updated_at
+        return value.replace(tzinfo=timezone.utc).isoformat() if value else None
+
+
+def enqueue_profile(media, profile, *, kind="video", mode="2d"):
+    client, factory, *_ = media
+    body = {"kind": kind, "render_mode": mode, "expected_updated_at": current_version(factory)}
+    if profile is not None:
+        body["output_profile"] = profile
+    return client.post("/api/admin/tutorials/figures/1/media-tasks", json=body)
+
+
+def prepare_audio(media):
+    response = enqueue_profile(media, None, kind="audio")
+    assert response.status_code == 202, response.text
+    media[2].run_next()
+
+
+def test_profile_defaults_validation_and_independent_queue_identity(media):
+    client, factory, worker, *_ = media
+    audio = enqueue_profile(media, None, kind="audio").json()["task"]
+    assert audio["output_profile"] is None
+    with factory() as db:
+        assert "output_profile" not in db.get(models_db.TutorialMediaTask, audio["id"]).snapshot
+    worker.run_next()
+    first = enqueue_profile(media, None).json()["task"]
+    assert first["output_profile"] == GALAXY
+    assert enqueue_profile(media, GALAXY).json()["task"]["id"] == first["id"]
+    second = enqueue_profile(media, KIOSK).json()["task"]
+    assert second["id"] != first["id"] and second["output_profile"] == KIOSK
+    for profile, kind, mode in [("unknown", "video", "2d"), (KIOSK, "video", "3d"), (GALAXY, "audio", "2d")]:
+        assert enqueue_profile(media, profile, kind=kind, mode=mode).status_code == 422
+    with factory() as db:
+        first_row = db.get(models_db.TutorialMediaTask, first["id"])
+        second_row = db.get(models_db.TutorialMediaTask, second["id"])
+        assert first_row.input_digest != second_row.input_digest
+        assert first_row.snapshot["renderer_recipe"]
+
+
+def test_both_profiles_publish_independently_and_preserve_legacy(media):
+    from katrain.web.tutorials.manual_review import video_artifact
+
+    client, factory, worker, *_ = media
+    prepare_audio(media)
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        debug = copy.deepcopy(figure.recognition_debug)
+        debug["workbench_media"]["videos"] = {"2d": {"asset": "legacy.mp4", "sha256": "old"}, "3d": {"asset": "3d.mp4"}}
+        figure.recognition_debug = debug
+        figure.video_asset = "legacy.mp4"
+        figure.video_2d_review = {"reviewed_by": "legacy", "profiles": {KIOSK: {"asset": "old-kiosk"}}}
+        db.commit()
+    galaxy = enqueue_profile(media, GALAXY).json()["task"]
+    kiosk = enqueue_profile(media, KIOSK).json()["task"]
+    assert worker.run_next() and worker.run_next()
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        videos = figure.recognition_debug["workbench_media"]["videos"]
+        assert videos["2d"]["asset"] == "legacy.mp4" and videos["3d"] == {"asset": "3d.mp4"}
+        assert video_artifact(figure, "2d") == {"asset": "legacy.mp4", "sha256": "old"}
+        assert figure.video_2d_review["reviewed_by"] == "legacy"
+        assert figure.video_2d_review["profiles"] == {GALAXY: None, KIOSK: None}
+        assert figure.video_asset == videos["2d"]["profiles"][GALAXY]["asset"]
+        for task_id, profile, dimensions in [(galaxy["id"], GALAXY, (3840, 2160)), (kiosk["id"], KIOSK, (1024, 600))]:
+            task = db.get(models_db.TutorialMediaTask, task_id)
+            artifact = video_artifact(figure, "2d", profile)
+            assert task.status == "succeeded"
+            assert artifact["output_profile"] == profile and profile in artifact["asset"]
+            assert (artifact["width"], artifact["height"], artifact["fps"]) == (*dimensions, 30)
+            assert task.result["video"] == artifact
+            assert artifact["renderer_recipe"]
+
+
+def test_old_snapshot_remains_legacy_and_renders_original_dimensions(media, monkeypatch):
+    from katrain.web.tutorials.media_tasks import content_inputs
+    from katrain.web.tutorials.media_timing import digest
+
+    client, factory, worker, *_ = media
+    captured = []
+
+    def render(**kwargs):
+        captured.append(kwargs)
+        kwargs["output_path"].write_bytes(b"legacy video")
+
+    monkeypatch.setattr(worker, "_render_video", render)
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        inputs = content_inputs(figure, "video")
+        task = models_db.TutorialMediaTask(
+            figure_id=1,
+            kind="video",
+            render_mode="2d",
+            input_digest=digest(inputs),
+            snapshot={**inputs, "book_slug": "test"},
+            requested_by="old",
+            status="queued",
+            stage="queued",
+        )
+        db.add(task)
+        db.commit()
+        task_id = task.id
+    assert worker.run_next()
+    with factory() as db:
+        task = db.get(models_db.TutorialMediaTask, task_id)
+        assert task.status == "succeeded"
+        artifact = task.result["video"]
+        assert artifact["output_profile"] is None
+        assert (artifact["width"], artifact["height"], artifact["fps"]) == (1280, 800, 15)
+    assert captured[0].get("output_profile") is None
+
+
+@pytest.mark.parametrize("profile", [GALAXY, KIOSK])
+def test_public_and_admin_figures_expose_only_exact_profile_summaries(media, profile):
+    from katrain.web.api.v1.endpoints import tutorials as public
+    from katrain.web.core.db import get_db
+
+    client, factory, worker, storage, app = media
+    app.include_router(public.router, prefix="/api/v1/tutorials")
+
+    def isolated_db():
+        with factory() as db:
+            yield db
+
+    app.dependency_overrides[get_db] = isolated_db
+    prepare_audio(media)
+    task = enqueue_profile(media, profile).json()["task"]
+    worker.run_next()
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        before = copy.deepcopy(figure.recognition_debug)
+        updated = figure.updated_at
+    figure = client.get("/api/v1/tutorials/figures/1").json()
+    section = client.get("/api/v1/tutorials/sections/1").json()["figures"][0]
+    admin = client.get("/api/admin/tutorials/figures/1").json()
+    for result in [figure, section, admin]:
+        assert set(result["video_profiles"]) == {GALAXY, KIOSK}
+        summary = result["video_profiles"][profile]
+        assert summary["output_profile"] == profile
+        assert result["video_profiles"][KIOSK if profile == GALAXY else GALAXY] is None
+        assert "reviewed_by" not in summary and "profiles" not in summary
+        assert result["video_output_profile"] == (GALAXY if profile == GALAXY else None)
+    assert "board_review" not in figure and "video_2d_review" not in section
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        assert figure.recognition_debug == before and figure.updated_at == updated
+
+
+def test_public_legacy_video_does_not_fill_missing_profile(media):
+    from katrain.web.tutorials.models import TutorialFigureOut
+
+    with media[1]() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        figure.video_asset = "old-low-resolution.mp4"
+        figure.recognition_debug = {"workbench_media": {"videos": {"2d": {"asset": figure.video_asset}}}}
+        output = TutorialFigureOut.model_validate(figure)
+        assert output.video_profiles == {GALAXY: None, KIOSK: None}
+        assert output.video_output_profile == "legacy"
+
+
+def test_publish_merges_sibling_change_made_during_render(media, monkeypatch):
+    from katrain.web.tutorials.media_profiles import with_profile
+
+    client, factory, worker, *_ = media
+    prepare_audio(media)
+    sibling = {"asset": "new-kiosk.mp4", "output_profile": KIOSK}
+    review = {"asset": "new-kiosk.mp4", "reviewed_by": "concurrent reviewer"}
+
+    def render(**kwargs):
+        with factory() as db:
+            figure = db.get(models_db.TutorialFigure, 1)
+            debug = copy.deepcopy(figure.recognition_debug)
+            debug["workbench_media"]["videos"] = {"2d": with_profile(None, KIOSK, sibling)}
+            figure.recognition_debug = debug
+            figure.video_2d_review = with_profile(None, KIOSK, review)
+            db.commit()
+        kwargs["output_path"].write_bytes(b"video")
+
+    monkeypatch.setattr(worker, "_render_video", render)
+    task = enqueue_profile(media, GALAXY).json()["task"]
+    worker.run_next()
+    with factory() as db:
+        assert db.get(models_db.TutorialMediaTask, task["id"]).status == "succeeded"
+        figure = db.get(models_db.TutorialFigure, 1)
+        assert figure.recognition_debug["workbench_media"]["videos"]["2d"]["profiles"][KIOSK] == sibling
+        assert figure.video_2d_review["profiles"] == {KIOSK: review, GALAXY: None}

@@ -18,6 +18,8 @@ import time
 import wave
 from urllib.parse import unquote, urlsplit
 
+from katrain.web.tutorials.media_profiles import OutputProfile, render_profile
+
 WIDTH, HEIGHT, FPS = 1280, 800, 15
 # Match the recorder's deterministic placement transition; sound lands on contact.
 PLACEMENT_DURATION_MS = 360
@@ -207,7 +209,8 @@ def _capture_frames(data, directory, *, deadline):
         raise RuntimeError("Standalone tutorial recorder bundle is missing; run npm run build:tutorial-media")
     failures = []
     cache = {}
-    count = math.ceil(data["speech_timing"]["duration_ms"] * FPS / 1000)
+    profile = render_profile(data.get("output_profile"))
+    count = math.ceil(data["speech_timing"]["duration_ms"] * profile.fps / 1000)
 
     def remaining_ms():
         remaining = deadline - time.monotonic()
@@ -233,7 +236,9 @@ def _capture_frames(data, directory, *, deadline):
         browser = playwright.chromium.launch(**launch)
         try:
             context = browser.new_context(
-                viewport={"width": WIDTH, "height": HEIGHT}, device_scale_factor=1, service_workers="block"
+                viewport={"width": profile.width, "height": profile.height},
+                device_scale_factor=1,
+                service_workers="block",
             )
 
             def route_asset(route):
@@ -269,7 +274,7 @@ def _capture_frames(data, directory, *, deadline):
                     window.__tutorialSetFrame(time),
                     new Promise((_, reject) => setTimeout(() => reject(new Error('Frame paint timed out')), 10000))
                 ])""",
-                    index * 1000 / FPS,
+                    index * 1000 / profile.fps,
                 )
                 if failures:
                     raise RuntimeError("Tutorial recorder browser failed: " + "; ".join(failures[:3]))
@@ -294,12 +299,16 @@ def render_video(
     output_path: Path,
     render_mode: str,
     visual_seed: str = "tutorial",
+    output_profile: OutputProfile | None = None,
 ) -> None:
     """Render snapshots at saved audio cues and atomically write a checked MP4.
 
     Pending cues always render the saved final static diagram with an explicit
     calibration label. Failures propagate to the job runner with their stage.
     """
+    profile = render_profile(output_profile)
+    if output_profile is not None and render_mode != "2d":
+        raise ValueError("output_profile is supported only for 2D videos")
     audio_path, output_path = Path(audio_path), Path(output_path)
     duration = _validate_inputs(narration, board_payload, frames, speech_timing, step_cues, audio_path, render_mode)
     audio = _probe(audio_path)
@@ -317,6 +326,7 @@ def render_video(
         "step_cues": step_cues,
         "render_mode": render_mode,
         "visual_seed": visual_seed,
+        "output_profile": output_profile,
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="tutorial-render-", dir=output_path.parent) as temporary:
@@ -340,7 +350,7 @@ def render_video(
                 "-nostdin",
                 "-y",
                 "-framerate",
-                str(FPS),
+                str(profile.fps),
                 "-i",
                 str(directory / "frame-%06d.png"),
                 *audio_inputs,
@@ -350,13 +360,15 @@ def render_video(
                 "-c:v",
                 "libx264",
                 "-preset",
-                "veryfast",
+                profile.preset,
                 "-crf",
-                "20",
+                str(profile.crf),
+                "-threads",
+                "4",
                 "-pix_fmt",
                 "yuv420p",
                 "-r",
-                str(FPS),
+                str(profile.fps),
                 "-c:a",
                 "aac",
                 "-b:a",
@@ -379,7 +391,7 @@ def render_video(
             video.get("height"),
             video.get("r_frame_rate"),
             sound.get("codec_name"),
-        ) != ("h264", WIDTH, HEIGHT, f"{FPS}/1", "aac"):
+        ) != ("h264", profile.width, profile.height, f"{profile.fps}/1", "aac"):
             raise RuntimeError("Rendered tutorial video has invalid codecs, dimensions or frame rate")
         if abs(float(result["format"]["duration"]) * 1000 - actual_duration) > 250:
             raise RuntimeError("Rendered tutorial duration does not match its saved speech artifact")

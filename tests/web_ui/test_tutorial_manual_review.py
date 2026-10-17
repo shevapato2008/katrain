@@ -240,7 +240,7 @@ def generate_video(media, mode="2d"):
         assert historical.json()["task"]["render_mode"] == "3d"
     with factory() as db:
         assert db.get(models_db.TutorialMediaTask, task["id"]).status == "succeeded"
-        return db.get(models_db.TutorialFigure, 1).recognition_debug["workbench_media"]["videos"][mode]["asset"]
+        return db.get(models_db.TutorialMediaTask, task["id"]).result["video"]["asset"]
 
 
 def approve_video(media, mode, asset, expected=None):
@@ -262,19 +262,19 @@ def test_video_approval_exact_file_cas_and_independent_modes(media):
     response = approve_video(media, "2d", first)
     assert response.status_code == 200, response.text
     result = response.json()
-    assert result["video_2d_review"]["asset"] == first
-    assert result["video_2d_review"]["file_sha256"] == hashlib.sha256(b"video").hexdigest()
-    assert result["review_validity"]["video_2d"]["approved"] is True
+    assert result["video_2d_review"]["profiles"][GALAXY]["asset"] == first
+    assert result["video_2d_review"]["profiles"][GALAXY]["file_sha256"] == hashlib.sha256(b"video").hexdigest()
+    assert result["review_validity"]["video_2d_profiles"][GALAXY]["approved"] is True
     assert approve_video(media, "2d", first, expected=old_version).status_code == 409
     second = generate_video(media, "3d")
     response = approve_video(media, "3d", second)
     assert response.status_code == 200, response.text
-    assert response.json()["review_validity"]["video_2d"]["approved"]
+    assert response.json()["review_validity"]["video_2d_profiles"][GALAXY]["approved"]
     assert response.json()["review_validity"]["video_3d"]["approved"]
     generate_video(media)
     with factory() as db:
         figure = db.get(models_db.TutorialFigure, 1)
-        assert figure.video_2d_review is None and figure.video_3d_review is not None
+        assert figure.video_2d_review["profiles"][GALAXY] is None and figure.video_3d_review is not None
     assert approve_video(media, "2d", first).status_code == 409
 
 
@@ -291,7 +291,7 @@ def test_video_approval_rejects_missing_changed_legacy_or_stale_artifacts(media,
             figure = db.get(models_db.TutorialFigure, 1)
             debug = copy.deepcopy(figure.recognition_debug)
             if mutation == "legacy":
-                debug["workbench_media"]["videos"]["2d"].pop("sha256")
+                debug["workbench_media"]["videos"]["2d"]["profiles"][GALAXY].pop("sha256")
             else:
                 figure.narration = "changed directly"
             figure.recognition_debug = debug
@@ -299,7 +299,7 @@ def test_video_approval_rejects_missing_changed_legacy_or_stale_artifacts(media,
     response = approve_video(media, "2d", asset)
     assert response.status_code in (409, 422), response.text
     with factory() as db:
-        assert db.get(models_db.TutorialFigure, 1).video_2d_review is None
+        assert db.get(models_db.TutorialFigure, 1).video_2d_review["profiles"][GALAXY] is None
 
 
 def test_video_review_does_not_stale_other_mode_job_and_audit_failure_rolls_back(media):
@@ -401,7 +401,9 @@ def test_static_video_allowed_without_sequence_review(media, monkeypatch):
     assert calls[0]["frames"] == []
     with factory() as db:
         figure = db.get(models_db.TutorialFigure, 1)
-        assert figure.recognition_debug["workbench_media"]["videos"]["2d"]["playback_mode"] == "static"
+        assert (
+            figure.recognition_debug["workbench_media"]["videos"]["2d"]["profiles"][GALAXY]["playback_mode"] == "static"
+        )
         assert not (figure.recognition_debug or {}).get("calibration_review", {}).get("sequence")
 
 
@@ -424,7 +426,7 @@ def test_video_file_hash_does_not_require_python_311_file_digest(media, monkeypa
     generate_video(media)
     with media[1]() as db:
         figure = db.get(models_db.TutorialFigure, 1)
-        video = figure.recognition_debug["workbench_media"]["videos"]["2d"]
+        video = figure.recognition_debug["workbench_media"]["videos"]["2d"]["profiles"][GALAXY]
         assert video["sha256"] == hashlib.sha256(b"video").hexdigest()
 
 
@@ -507,3 +509,135 @@ def test_replay_edit_invalidates_manual_approval_but_narration_only_preserves_it
     assert response.status_code == 200, response.text
     assert response.json()["board_review"] is None
     assert response.json()["review_validity"]["board"]["approved"] is False
+
+
+from test_tutorial_media import GALAXY, KIOSK, enqueue_profile, prepare_audio
+
+
+def generate_profile(media, profile):
+    response = enqueue_profile(media, profile)
+    assert response.status_code == 202, response.text
+    task_id = response.json()["task"]["id"]
+    media[2].run_next()
+    with media[1]() as db:
+        task = db.get(models_db.TutorialMediaTask, task_id)
+        assert task.status == "succeeded", task.error
+        return task.result["video"]["asset"]
+
+
+def approve_profile(media, profile, asset, *, expected=None):
+    client, factory, *_ = media
+    body = {
+        "render_mode": "2d",
+        "expected_asset": asset,
+        "expected_updated_at": version(factory) if expected is None else expected,
+    }
+    if profile is not None:
+        body["output_profile"] = profile
+    return client.put(ROOT + "/approve-video", json=body)
+
+
+def test_profile_approvals_and_legacy_digest_are_independent(media):
+    from katrain.web.tutorials.manual_review import media_dependencies, video_content_sha256
+    from katrain.web.tutorials.media_timing import digest
+
+    client, factory, worker, storage, app = media
+    prepare_audio(media)
+    storage.put("legacy.mp4", b"legacy video")
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        debug = copy.deepcopy(figure.recognition_debug)
+        debug["workbench_media"]["videos"] = {
+            "2d": {
+                "asset": "legacy.mp4",
+                "sha256": hashlib.sha256(b"legacy video").hexdigest(),
+                "dependencies_sha256": digest(media_dependencies(figure)),
+            }
+        }
+        figure.recognition_debug = debug
+        figure.video_asset = "legacy.mp4"
+        db.commit()
+        original_digest = video_content_sha256(figure, "2d")
+    response = approve_profile(media, None, "legacy.mp4")
+    assert response.status_code == 200, response.text
+    legacy_review = response.json()["video_2d_review"]
+    galaxy = generate_profile(media, GALAXY)
+    kiosk_task = enqueue_profile(media, KIOSK).json()["task"]
+    # Review updates must not stale the queued other output.
+    response = approve_profile(media, None, galaxy)
+    assert response.status_code == 200, response.text
+    galaxy_review = response.json()["video_2d_review"]["profiles"][GALAXY]
+    assert galaxy_review["output_profile"] == GALAXY
+    assert response.json()["review_validity"]["video_2d"]["approved"] is True
+    worker.run_next()
+    with factory() as db:
+        task = db.get(models_db.TutorialMediaTask, kiosk_task["id"])
+        assert task.status == "succeeded"
+        kiosk = task.result["video"]["asset"]
+    assert approve_profile(media, None, kiosk).status_code == 409
+    response = approve_profile(media, KIOSK, kiosk)
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert all(state["approved"] for state in result["review_validity"]["video_2d_profiles"].values())
+    assert result["review_validity"]["video_2d"]["approved"]
+    assert {key: value for key, value in result["video_2d_review"].items() if key != "profiles"} == legacy_review
+    with factory() as db:
+        assert video_content_sha256(db.get(models_db.TutorialFigure, 1), "2d") == original_digest
+    kiosk_review = result["video_2d_review"]["profiles"][KIOSK]
+    generate_profile(media, GALAXY)
+    result = client.get(ROOT).json()
+    assert result["video_2d_review"]["profiles"] == {GALAXY: None, KIOSK: kiosk_review}
+    assert result["review_validity"]["video_2d_profiles"][KIOSK]["approved"]
+    assert result["review_validity"]["video_2d"]["approved"]
+
+
+@pytest.mark.parametrize("profile", [GALAXY, KIOSK])
+def test_profile_approval_checks_exact_slot_bytes_and_version(media, profile):
+    prepare_audio(media)
+    asset = generate_profile(media, profile)
+    assert approve_profile(media, profile, "wrong.mp4").status_code == 409
+    expected = version(media[1])
+    response = approve_profile(media, profile, asset)
+    assert response.status_code == 200, response.text
+    record = response.json()["video_2d_review"]["profiles"][profile]
+    assert record["file_sha256"] == hashlib.sha256(b"video").hexdigest()
+    assert approve_profile(media, profile, asset, expected=expected).status_code == 409
+    media[3].put(asset, b"changed bytes")
+    assert approve_profile(media, profile, asset).status_code == 409
+
+
+def test_profile_digest_changes_on_content_but_not_sibling_publication(media, monkeypatch):
+    from katrain.web.tutorials.media_tasks import content_inputs
+    from katrain.web.tutorials.media_timing import digest
+
+    prepare_audio(media)
+    client, factory, worker, *_ = media
+    first = enqueue_profile(media, GALAXY).json()["task"]
+    second = enqueue_profile(media, KIOSK).json()["task"]
+    assert worker.run_next()
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        row = db.get(models_db.TutorialMediaTask, second["id"])
+        assert digest(content_inputs(figure, "video", output_profile=KIOSK)) == row.input_digest
+        figure.narration = "saved narration changed"
+        db.commit()
+    assert worker.run_next()
+    with factory() as db:
+        assert db.get(models_db.TutorialMediaTask, second["id"]).status == "stale"
+
+
+def test_new_audio_invalidates_both_profiles_and_all_video_reviews(media):
+    prepare_audio(media)
+    for profile in (GALAXY, KIOSK):
+        asset = generate_profile(media, profile)
+        assert approve_profile(media, profile, asset).status_code == 200
+    with media[1]() as db:
+        original_board_review = copy.deepcopy(db.get(models_db.TutorialFigure, 1).board_review)
+    response = enqueue_profile(media, None, kind="audio")
+    assert response.status_code == 202, response.text
+    media[2].run_next()
+    with media[1]() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        assert not figure.recognition_debug["workbench_media"].get("videos")
+        assert figure.video_2d_review is None and figure.video_3d_review is None
+        assert figure.video_asset is None and figure.board_review == original_board_review

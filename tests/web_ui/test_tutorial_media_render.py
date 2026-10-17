@@ -279,3 +279,139 @@ def test_audio_mix_filter_supports_old_ffmpeg_without_latency_option():
     graph = _audio_mix_filter(24000)
     assert "latency" not in graph
     assert "apad=pad_len=119" in graph and "atrim=start_sample=119" in graph
+
+
+@pytest.mark.parametrize(
+    "profile,width,height,crf", [("galaxy-4k-v1", 3840, 2160, 16), ("kiosk-7-v1", 1024, 600, 18), (None, 1280, 800, 20)]
+)
+def test_renderer_uses_profile_encoding_and_checks_native_output(tmp_path, monkeypatch, profile, width, height, crf):
+    from katrain.web.tutorials import media_render
+
+    audio, output = tmp_path / "audio.mp3", tmp_path / "video.mp4"
+    audio.write_bytes(b"immutable audio")
+    calls, captures = [], []
+    fps = 15 if profile is None else 30
+    monkeypatch.setattr(media_render, "_validate_inputs", lambda *args: 1000)
+
+    def capture(data, directory, **kwargs):
+        captures.append(data)
+
+    def run(command, **kwargs):
+        calls.append(command)
+        Path(command[-1]).write_bytes(b"encoded mp4")
+
+    def probe(path, **kwargs):
+        return {
+            "format": {"duration": "1.0"},
+            "streams": (
+                [{"codec_type": "audio", "codec_name": "mp3", "channels": 1, "sample_rate": "24000"}]
+                if path == audio
+                else [
+                    {
+                        "codec_type": "video",
+                        "codec_name": "h264",
+                        "width": width,
+                        "height": height,
+                        "r_frame_rate": f"{fps}/1",
+                    },
+                    {"codec_type": "audio", "codec_name": "aac"},
+                ]
+            ),
+        }
+
+    monkeypatch.setattr(media_render, "_capture_frames", capture)
+    monkeypatch.setattr(media_render, "_run", run)
+    monkeypatch.setattr(media_render, "_probe", probe)
+    media_render.render_video(
+        narration="text",
+        board_payload={},
+        frames=[],
+        speech_timing={},
+        step_cues={"status": "pending"},
+        audio_path=audio,
+        output_path=output,
+        render_mode="2d",
+        output_profile=profile,
+    )
+    assert output.read_bytes() == b"encoded mp4"
+    command = calls[0]
+    assert command[command.index("-framerate") + 1] == str(fps)
+    assert command[command.index("-r") + 1] == str(fps)
+    assert command[command.index("-crf") + 1] == str(crf)
+    assert command[command.index("-preset") + 1] == ("veryfast" if profile is None else "medium")
+    assert command[command.index("-threads") + 1] == "4"
+    assert captures[0]["output_profile"] == profile
+
+
+@pytest.mark.parametrize("profile,mode", [("unknown", "2d"), ("galaxy-4k-v1", "3d")])
+def test_renderer_rejects_unknown_or_3d_profile_before_opening_audio(tmp_path, profile, mode):
+    from katrain.web.tutorials.media_render import render_video
+
+    with pytest.raises(ValueError, match="profile"):
+        render_video(
+            narration="text",
+            board_payload={},
+            frames=[],
+            speech_timing={},
+            step_cues={},
+            audio_path=tmp_path / "missing.mp3",
+            output_path=tmp_path / "video.mp4",
+            render_mode=mode,
+            output_profile=profile,
+        )
+
+
+def test_profile_capture_uses_native_viewport_dpr_one_and_30fps(tmp_path, monkeypatch):
+    import sys
+    import time
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+    from katrain.web.tutorials import media_render
+
+    (tmp_path / "tutorial-media.html").write_text("recorder")
+    monkeypatch.setattr(media_render, "BUNDLE_ROOT", tmp_path)
+    contexts, times = [], []
+
+    class Page:
+        def on(self, *args):
+            pass
+
+        def add_init_script(self, *args):
+            pass
+
+        def goto(self, *args, **kwargs):
+            pass
+
+        def wait_for_function(self, *args, **kwargs):
+            pass
+
+        def set_default_timeout(self, *args):
+            pass
+
+        def evaluate(self, script, value):
+            times.append(value)
+            return "same frame"
+
+        def screenshot(self, *, path, **kwargs):
+            Path(path).write_bytes(b"frame")
+
+    class Browser:
+        def new_context(self, **kwargs):
+            contexts.append(kwargs)
+            return SimpleNamespace(route=lambda *args: None, new_page=lambda: Page())
+
+        def close(self):
+            pass
+
+    playwright = SimpleNamespace(chromium=SimpleNamespace(launch=lambda **kwargs: Browser()))
+    monkeypatch.setitem(
+        sys.modules, "playwright.sync_api", SimpleNamespace(sync_playwright=lambda: nullcontext(playwright))
+    )
+    media_render._capture_frames(
+        {"output_profile": "kiosk-7-v1", "speech_timing": {"duration_ms": 100}},
+        tmp_path,
+        deadline=time.monotonic() + 60,
+    )
+    assert contexts[0]["viewport"] == {"width": 1024, "height": 600}
+    assert contexts[0]["device_scale_factor"] == 1
+    assert times == [0, 1000 / 30, 2000 / 30]

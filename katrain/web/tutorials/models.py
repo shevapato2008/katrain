@@ -4,9 +4,10 @@ Hierarchy: Category → Book → Chapter → Section → Figure
 """
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from katrain.web.tutorials.media_profiles import public_video_fields
 from katrain.web.tutorials.workbench_models import Int, Point, Replay, SourceRegion, UnknownStone, Viewport
 
 
@@ -72,8 +73,17 @@ class TutorialFigureOut(BaseModel):
     video_asset: Optional[str] = None
     video_duration_ms: Optional[int] = None
     video_size_bytes: Optional[int] = None
+    video_profiles: Dict[str, Optional[Dict[str, Any]]] = {}
+    video_output_profile: Literal["galaxy-4k-v1", "legacy"] | None = None
     order: int
     updated_at: Optional[datetime] = None
+
+    @model_validator(mode="after")
+    def populate_video_profiles(self):
+        fields = public_video_fields(self)
+        self.video_profiles = fields["video_profiles"]
+        self.video_output_profile = fields["video_output_profile"]
+        return self
 
     @field_validator("updated_at")
     @classmethod

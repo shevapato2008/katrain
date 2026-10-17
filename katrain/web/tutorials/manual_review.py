@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pydantic import ValidationError
 
 from katrain.web.tutorials.media_timing import VOICE, digest
+from katrain.web.tutorials.media_profiles import GALAXY, OUTPUT_PROFILES, profile_entry
 from katrain.web.tutorials.models import StrictBoardPayload
 
 
@@ -87,42 +88,50 @@ def media_dependencies(figure, *, voice=VOICE):
     }
 
 
-def video_artifact(figure, mode):
-    return ((figure.recognition_debug or {}).get("workbench_media") or {}).get("videos", {}).get(mode)
+def video_artifact(figure, mode, output_profile=None):
+    container = ((figure.recognition_debug or {}).get("workbench_media") or {}).get("videos", {}).get(mode)
+    return profile_entry(container, output_profile)
 
 
-def video_problem(figure, mode):
+def video_problem(figure, mode, output_profile=None):
     approval = board_approval(figure)
     if not approval["approved"]:
         return approval["reason"]
-    video = video_artifact(figure, mode)
+    video = video_artifact(figure, mode, output_profile)
     if not isinstance(video, dict) or not video.get("asset") or not video.get("sha256"):
         return "Generate a current immutable video with a file digest before manual approval"
     if video.get("dependencies_sha256") != digest(media_dependencies(figure)):
         return "Video dependencies changed; generate this mode again before manual approval"
-    if mode == "2d" and figure.video_asset != video["asset"]:
-        return "The saved 2D video does not match the current generated artifact"
+    if mode == "2d" and output_profile is None and figure.video_asset != video["asset"]:
+        galaxy = video_artifact(figure, mode, GALAXY)
+        if not galaxy or figure.video_asset != galaxy.get("asset"):
+            return "The saved 2D video does not match the current generated artifact"
     return None
 
 
-def video_content_sha256(figure, mode):
-    return digest(
-        {"render_mode": mode, "video": video_artifact(figure, mode), "dependencies": media_dependencies(figure)}
-    )
+def video_content_sha256(figure, mode, output_profile=None):
+    content = {
+        "render_mode": mode,
+        "video": video_artifact(figure, mode, output_profile),
+        "dependencies": media_dependencies(figure),
+    }
+    if output_profile is not None:
+        content["output_profile"] = output_profile
+    return digest(content)
 
 
-def video_approval(figure, mode):
-    record = getattr(figure, f"video_{mode}_review")
+def video_approval(figure, mode, output_profile=None):
+    record = profile_entry(getattr(figure, f"video_{mode}_review"), output_profile)
     if not _record_valid(record):
         return {"approved": False, "reason": f"Current {mode.upper()} video requires explicit manual approval"}
-    problem = video_problem(figure, mode)
+    problem = video_problem(figure, mode, output_profile)
     if problem:
         return {"approved": False, "reason": problem}
-    video = video_artifact(figure, mode)
+    video = video_artifact(figure, mode, output_profile)
     if (
         record.get("asset") != video["asset"]
         or record.get("file_sha256") != video["sha256"]
-        or record["content_sha256"] != video_content_sha256(figure, mode)
+        or record["content_sha256"] != video_content_sha256(figure, mode, output_profile)
     ):
         return {"approved": False, "reason": "Video changed after manual approval"}
     return {"approved": True, "reason": None}
@@ -133,6 +142,7 @@ def review_validity(figure):
         "board": board_approval(figure),
         "video_2d": video_approval(figure, "2d"),
         "video_3d": video_approval(figure, "3d"),
+        "video_2d_profiles": {name: video_approval(figure, "2d", name) for name in OUTPUT_PROFILES},
     }
 
 

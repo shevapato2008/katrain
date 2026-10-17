@@ -5,15 +5,12 @@ import type { RootState } from '@react-three/fiber';
 import type { GameState, PlayerInfo } from '../api';
 import Board3D from '../components/Board3D';
 import { gridToSurface, gridToWorld, STONE_RADIUS } from '../components/Board3D/constants';
-import SGFBoard from '../components/tutorials/SGFBoard';
 import { frameAtTime, knownRegion, subtitleAtTime, type Point, type RecordingData, type ReplayFrame, type Region } from './tutorialMediaTimeline';
 
 declare global {
   interface Window {
     __TUTORIAL_MEDIA_DATA?: RecordingData;
     __TUTORIAL_MEDIA_READY?: boolean;
-    /** Local still experiment. The server recorder never enables this flag. */
-    __TUTORIAL_MEDIA_OVERHEAD_PREVIEW?: boolean;
     /** Returns a visual-state key after React, fonts and WebGL have painted. */
     __tutorialSetFrame?: (timeMs: number) => Promise<string>;
   }
@@ -39,7 +36,7 @@ function asGameState(frame: ReplayFrame): GameState {
   };
 }
 
-function ProjectionOverlay({ frame, region, state, overheadPreview = false }: { frame: ReplayFrame; region: Region | null; state: RootState; overheadPreview?: boolean }) {
+function ProjectionOverlay({ frame, region, state, overhead = false }: { frame: ReplayFrame; region: Region | null; state: RootState; overhead?: boolean }) {
   const { size, stones, labels = {}, letters = {}, shapes = {}, unknown_stones = [] } = frame.payload;
   const width = state.gl.domElement.clientWidth;
   const height = state.gl.domElement.clientHeight;
@@ -59,9 +56,9 @@ function ProjectionOverlay({ frame, region, state, overheadPreview = false }: { 
   const occupied = new Set([...stones.B, ...stones.W].map(point => point.join(',')));
   const unknown = new Set(unknown_stones.map(stone => stone.point.join(',')));
   const markerColor = (key: string) => black.has(key) ? '#fff' : '#171717';
-  const mask = polygon(-.8, -.8, size - .2, size - .2) + (region ? polygon(Math.max(-.8, region.col - .5), Math.max(-.8, region.row - .5), Math.min(size - .2, region.col + region.cols - .5), Math.min(size - .2, region.row + region.rows - .5)) : '');
+  const outline = region ? polygon(Math.max(-.8, region.col - .5), Math.max(-.8, region.row - .5), Math.min(size - .2, region.col + region.cols - .5), Math.min(size - .2, region.row + region.rows - .5)) : '';
   return <svg className="tm-overlay" viewBox={`0 0 ${width} ${height}`} aria-label="棋图标记与未知范围">
-    <path d={mask} fill="#777d81" fillOpacity={overheadPreview ? .43 : .5} fillRule="evenodd" data-testid="tutorial-known-region" data-known-region={region ? `${region.col},${region.row},${region.cols},${region.rows}` : 'unknown'} />
+    <path d={outline} fill="none" stroke="#746443" strokeWidth="1" strokeDasharray="4 3" data-testid="tutorial-known-region" data-known-region={region ? `${region.col},${region.row},${region.cols},${region.rows}` : 'unknown'} />
     {unknown_stones.map(stone => {
       const [col, row] = stone.point;
       const { x, y } = project(col, row, true);
@@ -78,9 +75,9 @@ function ProjectionOverlay({ frame, region, state, overheadPreview = false }: { 
       return <g key={`text-${key}`} data-annotation-point={key}>
         {!onStone && <rect x={x - r * .75} y={y - r * .75} width={r * 1.5} height={r * 1.5} rx="2" fill="#c9a061" />}
         <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill={markerColor(key)} fontWeight="600" fontSize={r * (text.length > 1 ? .95 : 1.3)}
-          fontFamily={overheadPreview ? 'Arial, sans-serif' : undefined}
-          stroke={overheadPreview && onStone ? black.has(key) ? '#15181c' : '#fffdf6' : undefined}
-          strokeWidth={overheadPreview && onStone ? .8 : undefined} paintOrder="stroke fill">{text}</text>
+          fontFamily={overhead ? 'Arial, sans-serif' : undefined}
+          stroke={overhead && onStone ? black.has(key) ? '#15181c' : '#fffdf6' : undefined}
+          strokeWidth={overhead && onStone ? .8 : undefined} paintOrder="stroke fill">{text}</text>
       </g>;
     })}
     {Object.entries(shapes).map(([key, shape]) => {
@@ -94,7 +91,7 @@ function ProjectionOverlay({ frame, region, state, overheadPreview = false }: { 
         {shape === 'cross' && <path d={`M${x-r},${y-r}L${x+r},${y+r}M${x-r},${y+r}L${x+r},${y-r}`} />}
       </g>;
     })}
-    {overheadPreview && frame.last && occupied.has(frame.last.join(',')) && (() => {
+    {overhead && frame.last && occupied.has(frame.last.join(',')) && (() => {
       const [col, row] = frame.last;
       const { x, y } = project(col, row, true);
       return <circle data-testid="tutorial-last-move" cx={x} cy={y} r={radius(col, row) * .82}
@@ -105,12 +102,12 @@ function ProjectionOverlay({ frame, region, state, overheadPreview = false }: { 
 
 export default function TutorialMediaRecorder() {
   const data = window.__TUTORIAL_MEDIA_DATA;
-  const overheadPreview = data?.render_mode === '2d' && window.__TUTORIAL_MEDIA_OVERHEAD_PREVIEW === true;
+  const overhead = data?.render_mode === '2d';
   const [timeMs, setTimeMs] = useState(0);
   const [canvasState, setCanvasState] = useState<RootState | null>(null);
   const onCanvasReady = useCallback((state: RootState) => setCanvasState(state), []);
   useEffect(() => {
-    if (!data || ((data.render_mode === '3d' || overheadPreview) && !canvasState)) return;
+    if (!data || !canvasState) return;
     let lastPaintedKey: string | null = null;
     window.__tutorialSetFrame = async (time: number) => {
       const frame = frameAtTime(data, time);
@@ -125,7 +122,7 @@ export default function TutorialMediaRecorder() {
     };
     window.__TUTORIAL_MEDIA_READY = true;
     return () => { window.__TUTORIAL_MEDIA_READY = false; delete window.__tutorialSetFrame; };
-  }, [data, canvasState, overheadPreview]);
+  }, [data, canvasState]);
 
   if (!data) return <div>缺少录制快照</div>;
   const frame = frameAtTime(data, timeMs);
@@ -135,15 +132,14 @@ export default function TutorialMediaRecorder() {
   const cameraPosition: [number, number, number] = [0, 1.2 + distance * Math.cos(angle), distance * Math.sin(angle)];
   const staticLabel = data.frames.length > 1 ? '静态讲解·落子时间待校准' : '静态讲解·手顺待校准';
   const gameState = asGameState(frame);
-  if (overheadPreview) gameState.last_move = null; // The SVG ring stays clear of material highlights.
-  return <main className="tm-recorder" data-step={frame.step} data-render-mode={data.render_mode} data-overhead-preview={overheadPreview || undefined}>
+  if (overhead) gameState.last_move = null; // The SVG ring stays clear of material highlights.
+  return <main className="tm-recorder" data-step={frame.step} data-render-mode={data.render_mode}>
     <div className="tm-board-area"><div className="tm-board-square">
-      {data.render_mode === '2d' && !overheadPreview ? <SGFBoard payload={frame.payload} showFullBoard maxWidth="100%" last={frame.last} knownRegion={region} unknownStones={frame.payload.unknown_stones} />
-        : <><Board3D gameState={gameState} onMove={noop} analysisToggles={TOGGLES} readOnly disableControls
-          cameraPosition={overheadPreview ? [0, 26, 0] : cameraPosition} cameraTarget={[0, 1.2, 0]}
-          cameraUp={overheadPreview ? [0, 0, -1] : undefined} orthographicSpan={overheadPreview ? frame.payload.size + .6 : undefined}
-          recordingAppearance={overheadPreview ? 'overhead-preview' : undefined} frameloop="demand" onCanvasReady={onCanvasReady} />
-          {canvasState && <ProjectionOverlay frame={frame} region={region} state={canvasState} overheadPreview={overheadPreview} />}</>}
+      <Board3D gameState={gameState} onMove={noop} analysisToggles={TOGGLES} readOnly disableControls
+        cameraPosition={overhead ? [0, 26, 0] : cameraPosition} cameraTarget={[0, 1.2, 0]}
+        cameraUp={overhead ? [0, 0, -1] : undefined} orthographicSpan={overhead ? frame.payload.size + .6 : undefined}
+        recordingAppearance={overhead ? 'overhead' : undefined} frameloop="demand" onCanvasReady={onCanvasReady} />
+      {canvasState && <ProjectionOverlay frame={frame} region={region} state={canvasState} overhead={overhead} />}
     </div>{data.step_cues.status !== 'complete' && <div className="tm-static" data-testid="tutorial-static-reason">{staticLabel}</div>}</div>
     <div className="tm-caption"><span>{subtitleAtTime(data.narration, data.speech_timing, timeMs)}</span></div>
   </main>;

@@ -5,9 +5,9 @@ Scope: approved shell/slate material in tutorial static diagrams and overhead 2D
 
 ## Decision
 
-**SPEC / local actual visual: PASS. CODEQUALITY: PASS. No P1/P2 findings.**
+**SPEC / actual visual: PASS. CODEQUALITY: PASS. Deployed TEST samples: PASS. No reproducible P1/P2 findings.**
 
-This is the gate for TEST deployment. **Deployed static UI and the two new TEST MP4s remain pending verification.** The local screenshots below use current TEST figure data with the new local builds; they are not evidence that TEST already runs this build. Human approval of new videos remains pending.
+The deployment gate and final narrow acceptance are complete: provider `6ac678ee1419`, console `5daf407b461e`. The deployed static board and both newly generated TEST 2D MP4s were checked. **Figure 1030 replays seven moves; figure 1031 remains static because its cues are pending. Human approval of both new videos remains pending.**
 
 Reviewed working changes over APP `6f11076354d67949057cb3a1a655314a9a2d310a` and UI `d1db3ea4eecc4aa01133529fa49bb3db4afffd1a`. No deployment, live generation, review approval, DB write or commit was performed by this reviewer.
 
@@ -46,6 +46,29 @@ Fresh checks run by this reviewer:
 
 Implementation agents separately reported the affected backend/frontend tests, builds and a real local MP4 render passing. Those broader runs were not repeated by this reviewer. No additional test framework or audit infrastructure was introduced.
 
-## 3. TEST sample closure — pending
+## 3. TEST sample closure — PASS
 
-After TEST deployment, narrowly verify the newly generated 1030/1031 **2D** MP4s and one deployed static board. Confirm stable approved sprites and readable overlays in actual encoded frames, playback/seek, unchanged source audio and board approvals, and pending video human review. Figure 1030 should retain replay; figure 1031 must remain honestly static while its authoritative cues are pending. No new 3D sample, TTS, full-book generation or automatic video approval is authorized by this review.
+Final acceptance was limited to the deployed static UI and the two replacement **2D** samples. No code review or broad test suite was repeated.
+
+| Figure | New task | Actual file | Playback and state |
+| --- | --- | --- | --- |
+| 1030 | `ed4d6b2b6c9340ab853bdbee5a7048da` | 902,091 bytes; 42.266667 s | Seven-move replay; actual browser playback and forward/backward seek completed, including return to 9.4 s; readyState 4, no media error. |
+| 1031 | `ca8fbd0832b1402c96e38ffab8d17c4b` | 548,874 bytes; 25.466667 s | Honest static explanation, with permanent “静态讲解·落子时间待校准” label. Independent single-player playback advanced 0 → 0.860843 s; seek 12 → 4 s completed; readyState 4, seeking false, error null. |
+
+Both actual encoded files are 1280×800, 15 fps, H.264/AAC. Independently calculated download SHA-256 values agree with the task metadata:
+
+- 1030: `acb62f8476e3c02f6062fd4a3d35d381b219c08bc4cd863d8169cbed7296965e`.
+- 1031: `aaeeb80d83022bf136cfc148f74b0455e625d37fc22c047ff865bdedca153d62`.
+
+Personally viewed `actual-1030-2d.png`, `actual-1031-2d.png` extracted from those MP4s, plus `deployed-ui-1030.png` under `output/tutorial-shell-integration-20261017/`. The approved black/white material, fixed studio highlights, point-specific white orientations, upright labels, inverse ring, crosses, full-board grid and fine boundaries survive encoding; gray fill has not returned. Deployed browser evidence records the same four 1030 variants (20/05/21/14), stable after reload, with no new 3D generation option.
+
+Independent playback used a separate `shell-integration-review-max` browser session on the sample gallery, pointing at the actual new TEST asset URLs. The first two-player attempt produced one 1031 `FFmpegDemuxer: data source error` during backward seek. A single-player reload and forward/backward seek completed successfully without a media error; the deployment owner's actual admin single-player proof also passed both assets. This transient read failure was not reproducible in the representative single-player flow and is recorded as non-blocking. The gallery's missing favicon is unrelated to playback. Browser playback was muted for this material-focused check; the previously accepted audio mix was not re-audited.
+
+Independent before/after JSON comparison confirmed, for both figures:
+
+- `board_payload`, narration and `board_review` are exactly preserved; authoritative board approval remains true.
+- Audio metadata and speech timing are exactly preserved; cue content is unchanged (the newly published cue asset path changes as expected).
+- Historical 3D metadata is preserved.
+- Both jobs succeeded with `generated_audio: false`; `video_2d_review` remains null.
+
+Evidence: `actual-sample-metadata.json`, `deployed-browser-proof.json`, `actual-browser-playback-proof.json`; private `before-{1030,1031}.json`, `after-{1030,1031}.json` and downloaded MP4s under `~/.local/share/smartbox-admin/tutorial-shell-integration-20261017/`. No TTS, new 3D sample, bulk approval or full-book generation was part of this acceptance. The reviewer made no live mutations and did not approve either video.

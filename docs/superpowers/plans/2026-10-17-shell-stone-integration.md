@@ -14,25 +14,25 @@ User approved the full model preview, requested random white angles and explicit
 
 ## Chunk 1: Minimum shared visual foundation
 
-- [ ] Astra Max reviews this plan and decides any material integration tradeoff (max two plan rounds).
-- [ ] Promote the approved model from `katrain/web/ui/preview/shell-stones/stoneModel.ts` to `katrain/web/ui/src/components/tutorials/stoneModel.ts`, with preview importing it. Extract only the studio setup needed by preview/export so sprite output retains approved lighting. Do not alter normal Galaxy/kiosk Board3D defaults.
-- [ ] Add a reproducible local export entry/script: 32 uniformly spaced white grain rotations, one black sprite, 128 or 256 px transparent PNG, fixed seed and camera. Rotate model Y before render so specular highlights remain fixed to studio lighting. Generated file manifest records dimensions/angle count/model version and physical black/white ratio. Store originals in APP source assets; copy byte-identical assets into UI source assets through a small explicit script/check, no shared-package framework.
-- [ ] Add a tiny deterministic `stoneVariant(seed,col,row)` selection helper mirrored/verified across the two repos. Use stable figure ID plus full-board coordinates, never array index, current replay cursor, Date.now or Math.random. Removing/re-adding at the same point may reuse that deterministic orientation; this is intentional visual stability, no new persistence or replay schema.
+- [x] Astra Max reviews this plan and decides any material integration tradeoff (max two plan rounds).
+- [x] Promote the approved model from `katrain/web/ui/preview/shell-stones/stoneModel.ts` to `katrain/web/ui/src/components/tutorials/stoneModel.ts`, with preview importing it. Extract only the studio setup needed by preview/export so sprite output retains approved lighting. Do not alter normal Galaxy/kiosk Board3D defaults.
+- [x] Add a reproducible local export entry/script: 32 uniformly spaced white grain rotations, one black sprite, 128 or 256 px transparent PNG, fixed seed and camera. Rotate model Y before render so specular highlights remain fixed to studio lighting. Generated file manifest records dimensions/angle count/model version and physical black/white ratio. Store originals in APP source assets; copy byte-identical assets into UI source assets through a small explicit script/check, no shared-package framework.
+- [x] Add a tiny deterministic `stoneVariant(seed,col,row)` selection helper mirrored/verified across the two repos. Use stable figure ID plus full-board coordinates, never array index, current replay cursor, Date.now or Math.random. Removing/re-adding at the same point may reuse that deterministic orientation; this is intentional visual stability, no new persistence or replay schema.
 
 ## Chunk 2: User journey — read/edit diagram and play 2D video
 
-- [ ] UI `admin-console/ui/src/components/tutorials/SGFBoard.tsx`: replace known black/white circles with approved sprite images + restrained contact shadows, correct physical diameter ratio; keep annotations and last-move ring as independent upright SVG overlays. Preserve unknown-color, click targets, coordinates, source/known boundaries. Pass figure identity seed from workbench main/thumb/candidate boards. No local WebGL.
-- [ ] APP recorder: optional tutorial sprite props through Board3D/StoneGroup/StoneMesh (or equally small isolated overlay); use sprites only in overhead recording, `MeshBasicMaterial` with `toneMapped=false` / correct sRGB and resource reuse. Map top-left coordinates once so white variants match the static board, stable across frames and backward seeks. Keep 360ms placement, captures, subtitles and quiet landing sounds unchanged.
-- [ ] Only 2D generation in current workbench UI. Preserve old 3D media/history read-only, no new 3D jobs. Minimal enqueue guard rejects new video requests with `render_mode=3d` with a useful error; existing historical records remain readable. No DB schema migration.
-- [ ] Focused checks: orientation variety/stability across reload/step changes, correct black/white ratio, labels and inverse rings do not rotate, unknown stones unchanged, no RK WebGL import; only new 2D jobs. Build both UIs and run affected existing board/media tests, no whole-suite expansion.
+- [x] UI `admin-console/ui/src/components/tutorials/SGFBoard.tsx`: replace known black/white circles with approved sprite images + restrained contact shadows, correct physical diameter ratio; keep annotations and last-move ring as independent upright SVG overlays. Preserve unknown-color, click targets, coordinates, source/known boundaries. Pass figure identity seed from workbench main/thumb/candidate boards. No local WebGL.
+- [x] APP recorder: optional tutorial sprite props through Board3D/StoneGroup/StoneMesh (or equally small isolated overlay); use sprites only in overhead recording, `MeshBasicMaterial` with `toneMapped=false` / correct sRGB and resource reuse. Map top-left coordinates once so white variants match the static board, stable across frames and backward seeks. Keep 360ms placement, captures, subtitles and quiet landing sounds unchanged.
+- [x] Only 2D generation in current workbench UI. Preserve old 3D media/history read-only, no new 3D jobs. Minimal enqueue guard rejects new video requests with `render_mode=3d` with a useful error; existing historical records remain readable. No DB schema migration.
+- [x] Focused checks: orientation variety/stability across reload/step changes, correct black/white ratio, labels and inverse rings do not rotate, unknown stones unchanged, no RK WebGL import; only new 2D jobs. Build both UIs and run affected existing board/media tests, no whole-suite expansion.
 
 ## Chunk 3: TEST integration and sample acceptance
 
-- [ ] Independent Astra Max SPEC/visual check followed by code-quality review; fix until passed. Compare current static board and 2D recorder with approved model at same viewport and actual stone size; one side-by-side/overlay, not all-state reshoots.
-- [ ] Commit narrow changes in both existing feature worktrees. Verify TEST provider/console environment markers, DB system identifier `7596941912817897507`, MinIO bucket `tutorial-assets` and TEST public media base before writes. Reuse existing deployment helper with fresh artifact dirs/version SHAs; await asset transfer before Docker builds. Preserve env/ports/networks/mounts. Restart only TEST provider and console.
-- [ ] Read protected current figures 1030/1031. Keep board payload, narration, raw audio hashes and human board approvals intact; submit two `video/2d` tasks with current expected_updated_at. Do not recreate approvals or mark videos human-approved. No bulk generation.
-- [ ] Verify two actual MP4s (play/seek, model appearance, diverse fixed orientations, 1030 replay and soft placement/audio; 1031 honest static mode if cues still pending). Confirm static main/thumb and video markers match, source frame/unknown bounds unchanged, task freshness/reviews valid. Astra Max checks actual sample video frames and code closure, bounded to changed material.
-- [ ] Deliver TEST backend direct links, two latest 2D sample links and review summary; distinguish code complete/deployed/sample-generated/human-video-review-pending.
+- [x] Independent Astra Max SPEC/visual check followed by code-quality review; fix until passed. Compare current static board and 2D recorder with approved model at same viewport and actual stone size; one side-by-side/overlay, not all-state reshoots.
+- [x] Commit narrow changes in both existing feature worktrees. Verify TEST provider/console environment markers, DB system identifier `7596941912817897507`, MinIO bucket `tutorial-assets` and TEST public media base before writes. Reuse existing deployment helper with fresh artifact dirs/version SHAs; await asset transfer before Docker builds. Preserve env/ports/networks/mounts. Restart only TEST provider and console.
+- [x] Read protected current figures 1030/1031. Keep board payload, narration, raw audio hashes and human board approvals intact; submit two `video/2d` tasks with current expected_updated_at. Do not recreate approvals or mark videos human-approved. No bulk generation.
+- [x] Verify two actual MP4s (play/seek, model appearance, diverse fixed orientations, 1030 replay and soft placement/audio; 1031 honest static mode if cues still pending). Confirm static main/thumb and video markers match, source frame/unknown bounds unchanged, task freshness/reviews valid. Astra Max checks actual sample video frames and code closure, bounded to changed material.
+- [x] Deliver TEST backend direct links, two latest 2D sample links and review summary; distinguish code complete/deployed/sample-generated/human-video-review-pending.
 
 ## Repos / files
 
@@ -44,3 +44,16 @@ User approved the full model preview, requested random white angles and explicit
 ## Acceptance boundary
 
 No figure/replay/narration changes just to vary texture. Stable angle is presentation state derived from identity; only white grain orientation varies, highlights and labels stay fixed. Source artwork comes solely from approved original procedural model. Previous 3D assets retained, current creation uses 2D only. New sample videos remain pending human approval.
+
+
+## Delivered TEST result (2026-10-17)
+
+- Provider deployed code: `6ac678ee1419cd77aa8c0d7e195d93f4674bcc0b`; console deployed code: `5daf407b461eeff23bada72c0134b0e19916d60e`. Both healthy; active media jobs returned to zero.
+- Verified environment markers TEST, database system identifier `7596941912817897507`, existing S3 bucket and TEST media base. Provider/console env, ports, networks and mounts preserved; figure fingerprints unchanged during deployment.
+- Diagram 1030 new 2D task `ed4d6b2b6c9340ab853bdbee5a7048da`: 42.266667s, 1280×800, H264, 15fps, AAC; replay.
+- Diagram 1031 new 2D task `ca8fbd0832b1402c96e38ffab8d17c4b`: 25.466667s, same encoding; static because existing step cues remain pending.
+- Both jobs reused original audio. Board payload, narration, board-review record and historical 3D metadata preserved. New 2D video reviews remain null/pending human review.
+- Real TEST browser successfully played and sought both new assets; white image URLs remain identical after reload. Recorder forward/backward seek to the same timestamp produced identical PNGs.
+- TEST entrance: http://127.0.0.1:18012/admin?book=4&page=11&figure=1030&filter=all
+- Both samples: http://127.0.0.1:9035/samples-2d.html
+- Evidence: `output/tutorial-shell-integration-20261017/`; independent final report: `docs/superpowers/reports/2026-10-17-shell-stone-integration-astra-review.md`.

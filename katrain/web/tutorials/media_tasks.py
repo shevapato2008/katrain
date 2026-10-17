@@ -437,8 +437,11 @@ class MediaWorker:
             )
             if not video_path.is_file() or not video_path.stat().st_size:
                 raise RuntimeError("Renderer returned empty video")
+            checksum = hashlib.sha256()
             with video_path.open("rb") as video_source:
-                file_sha256 = hashlib.file_digest(video_source, "sha256").hexdigest()
+                for chunk in iter(lambda: video_source.read(1024 * 1024), b""):
+                    checksum.update(chunk)
+            file_sha256 = checksum.hexdigest()
             result.update(
                 step_cues={**cues, "asset": prefix + "/step_cues.json"},
                 video={

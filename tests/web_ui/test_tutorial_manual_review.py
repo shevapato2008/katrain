@@ -382,3 +382,12 @@ def test_admin_figure_refresh_returns_review_fields_and_requires_auth(media):
     assert result["video_2d_review"] is None and result["video_3d_review"] is None
     app.dependency_overrides.pop(get_current_admin)
     assert client.get(ROOT).status_code == 401
+
+
+def test_video_file_hash_does_not_require_python_311_file_digest(media, monkeypatch):
+    monkeypatch.delattr(hashlib, "file_digest", raising=False)
+    generate_video(media)
+    with media[1]() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        video = figure.recognition_debug["workbench_media"]["videos"]["2d"]
+        assert video["sha256"] == hashlib.sha256(b"video").hexdigest()

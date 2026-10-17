@@ -391,3 +391,44 @@ def test_video_file_hash_does_not_require_python_311_file_digest(media, monkeypa
         figure = db.get(models_db.TutorialFigure, 1)
         video = figure.recognition_debug["workbench_media"]["videos"]["2d"]
         assert video["sha256"] == hashlib.sha256(b"video").hexdigest()
+
+
+def test_board_review_persists_explicit_user_confirmation_provenance_with_cas(media):
+    client, factory, worker, storage, app = media
+    expected = version(factory)
+    note = "- 确认通过，授权代为登记并生成"
+    body = {"expected_updated_at": expected, "confirmation_source": "user_confirmation", "confirmation_note": note}
+    response = client.put(ROOT + "/verify-board", json=body)
+    assert response.status_code == 200, response.text
+    record = response.json()["board_review"]
+    assert record["confirmation_source"] == "user_confirmation"
+    assert record["confirmation_note"] == note
+    assert record["reviewed_by"] == "admin:test"
+    assert record["reviewed_at"] and len(record["content_sha256"]) == 64
+    assert client.put(ROOT + "/verify-board", json=body).status_code == 409
+    refreshed = client.get(ROOT).json()
+    assert refreshed["board_review"] == record
+    with factory() as db:
+        assert db.get(models_db.TutorialFigure, 1).board_review == record
+        audits = db.query(models_db.AdminAuditLog).filter_by(action="tutorial.verify_board").all()
+        assert len(audits) == 1 and audits[0].actor_username == "admin:test"
+
+
+def test_board_review_default_confirmation_source_is_admin_ui(media):
+    client, factory, *_ = media
+    record = approve(client, factory)["board_review"]
+    assert record["confirmation_source"] == "admin_ui"
+    assert record["confirmation_note"] is None
+
+
+def test_board_review_confirmation_note_is_bounded(media):
+    client, factory, *_ = media
+    response = client.put(
+        ROOT + "/verify-board",
+        json={
+            "expected_updated_at": version(factory),
+            "confirmation_source": "user_confirmation",
+            "confirmation_note": "x" * 1001,
+        },
+    )
+    assert response.status_code == 422

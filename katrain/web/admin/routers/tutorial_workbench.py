@@ -58,6 +58,11 @@ class ApplyCandidateWrite(VersionedWrite):
     candidate_id: int = Field(gt=0)
 
 
+class BoardVerifyWrite(VerifyWrite):
+    confirmation_source: Literal["admin_ui", "user_confirmation"] = "admin_ui"
+    confirmation_note: str | None = Field(default=None, max_length=1000)
+
+
 def _review(figure):
     value = (figure.recognition_debug or {}).get("calibration_review") or {}
     return {"board": value.get("board"), "sequence": value.get("sequence")}
@@ -185,7 +190,12 @@ def _verify(figure_id, body, db, admin, scope):
         debug.update(human_verified=True, verified_by=admin["username"], verified_at=review[scope]["verified_at"])
     values = {"recognition_debug": debug}
     if scope == "board":
-        values["board_review"] = make_review(admin, board_content_sha256(figure))
+        values["board_review"] = make_review(
+            admin,
+            board_content_sha256(figure),
+            confirmation_source=getattr(body, "confirmation_source", "admin_ui"),
+            confirmation_note=getattr(body, "confirmation_note", None),
+        )
     figure = _cas_update(db, figure, body.expected_updated_at, values)
     db.add(
         BoardPayloadHistory(
@@ -202,7 +212,10 @@ def _verify(figure_id, body, db, admin, scope):
 
 @router.put("/figures/{figure_id}/verify-board", response_model=TutorialFigureOut)
 def verify_board(
-    figure_id: int, body: VerifyWrite, db: Session = Depends(get_admin_db), admin: dict = Depends(get_current_admin)
+    figure_id: int,
+    body: BoardVerifyWrite,
+    db: Session = Depends(get_admin_db),
+    admin: dict = Depends(get_current_admin),
 ):
     return _verify(figure_id, body, db, admin, "board")
 

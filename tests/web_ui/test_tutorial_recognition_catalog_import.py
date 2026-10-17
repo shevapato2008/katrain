@@ -511,3 +511,174 @@ def test_local_page_hash_mismatch_is_rejected(tmp_path):
     result_path.write_text(json.dumps(value))
     with pytest.raises(importer.RecognitionImportError, match="page.*hash"):
         importer.load_recognition(result_path, book_path)
+
+
+def generic_inputs(tmp_path, *, page_number=1, commentary=False):
+    _, data, result_path, book_path = write_inputs(tmp_path)
+    pdf = tmp_path / "source.pdf"
+    pdf.write_bytes(b"isolated PDF identity; page count supplied by independent operator inventory")
+    book = json.loads(book_path.read_text())
+    record = book["chapters"][0]["sections"][0]["pages"][0]
+    record["page"] = page_number
+    if commentary:
+        record["elements"][0]["commentary_refs"] = [{"type": "figure_ref", "page": page_number, "element_index": 1}]
+    book_path.write_text(json.dumps(book))
+    figure = data["figures"][0]
+    figure.update(id=f"p{page_number:03d}-f03", page=page_number)
+    data.update(catalog_id="intro-up", pdf_pages=page_number, baseline_references=3)
+    data["sources"] = {str(book_path): importer.file_sha256(book_path), str(pdf): importer.file_sha256(pdf)}
+    # Every PDF page has an immutable outcome; pages outside source PNGs have no figures/refs.
+    page = data["pages"][0]
+    source_image = tmp_path / "pages" / f"page_{page_number:03d}.png"
+    source_image.parent.mkdir(parents=True)
+    source_image.write_bytes(b"original registered source PNG")
+    page.update(
+        references=record["elements"],
+        page=page_number,
+        input_image=str(source_image),
+        page_sha256=importer.file_sha256(source_image),
+        figure_ids=[figure["id"]],
+        detected_count=1,
+    )
+    pages = []
+    for n in range(1, page_number):
+        image = tmp_path / f"assets/pages/page_{n:03d}.png"
+        image.parent.mkdir(parents=True, exist_ok=True)
+        image.write_bytes(b"rendered blank PDF page")
+        pages.append(
+            dict(
+                page=n,
+                references=[],
+                reference_pointers=[],
+                input_image=str(image),
+                page_sha256=importer.file_sha256(image),
+                detection_status="complete",
+                detected_count=0,
+                figure_ids=[],
+                rendered_missing_source=True,
+                render_provenance=dict(
+                    pdf=str(pdf.resolve()),
+                    pdf_sha256=importer.file_sha256(pdf),
+                    pdf_page=n,
+                    renderer="pdftoppm",
+                    dpi=120,
+                ),
+            )
+        )
+    page["unrepresented_references"] = [
+        dict(ref_index=2, reason="text-only reference"),
+        dict(ref_index=3, reason="text-only reference"),
+    ]
+    data["pages"] = pages + [page]
+    data["page_outcomes"] = [dict(page=p["page"], status="complete") for p in data["pages"]]
+    result_path.write_text(json.dumps(data))
+    return data, result_path, book_path, pdf
+
+
+def generic_load(paths, **kw):
+    data, result, book, pdf = paths
+    return importer.load_catalog_recognition(
+        result,
+        book,
+        catalog_id="intro-up",
+        pdf_path=pdf,
+        expected_pdf_pages=max(p["page"] for p in data["pages"]),
+        **kw,
+    )
+
+
+def test_generic_other_book_p92_is_not_ishida_and_commentary_is_not_a_physical_diagram(tmp_path):
+    paths = generic_inputs(tmp_path, page_number=92, commentary=True)
+    batch = generic_load(paths)
+    assert len(batch.references) == 3
+    assert batch.figures[0].raw["id"] == "p092-f03"
+    assert batch.figures[0].payload["schema_version"] == 2
+    assert batch.figures[0].payload["replay"]["status"] == "needs_calibration"
+    assert len(batch.coverage_only_pages) == 91
+    assert len(batch.pages) == 1
+
+
+@pytest.mark.parametrize(
+    "change",
+    ["wrong_catalog", "missing_pdf_page", "wrong_pdf_count", "missing_pdf_hash", "extra_figure_on_unregistered_page"],
+)
+def test_generic_requires_full_independently_counted_pdf_identity(tmp_path, change):
+    paths = generic_inputs(tmp_path, page_number=2)
+    data, result, book, pdf = paths
+    if change == "wrong_catalog":
+        data["catalog_id"] = "other-book"
+    elif change == "missing_pdf_page":
+        data["pages"] = data["pages"][1:]
+    elif change == "wrong_pdf_count":
+        data["pdf_pages"] = 3
+    elif change == "missing_pdf_hash":
+        del data["sources"][str(pdf)]
+    else:
+        data["pages"][0]["detected_count"] = 1
+    result.write_text(json.dumps(data))
+    with pytest.raises(importer.RecognitionImportError):
+        generic_load(paths)
+
+
+def test_generic_cannot_bypass_ishida_frozen_policy(tmp_path):
+    _, result, book, pdf = generic_inputs(tmp_path)
+    with pytest.raises(importer.RecognitionImportError, match="Ishida"):
+        importer.load_catalog_recognition(
+            result, book, catalog_id="ishida-judgement", pdf_path=pdf, expected_pdf_pages=1
+        )
+
+
+@pytest.mark.parametrize(
+    "change",
+    ["partial_outcome", "unvalidated_figure", "unexplained_missing", "copy_registered_png", "wrong_render_pdf"],
+)
+def test_generic_does_not_bypass_complete_results_or_registered_page_guard(tmp_path, change):
+    paths = generic_inputs(tmp_path, page_number=2)
+    data, result, book, pdf = paths
+    if change == "partial_outcome":
+        data["page_outcomes"][0]["status"] = "not_requested"
+    elif change == "unvalidated_figure":
+        data["figures"][0]["result"]["complete"] = False
+    elif change == "unexplained_missing":
+        data["pages"][1]["unrepresented_references"] = []
+    elif change == "copy_registered_png":
+        (book.parent / "pages/page_001.png").write_bytes(b"source actually exists")
+    else:
+        data["pages"][0]["render_provenance"]["pdf_sha256"] = "d" * 64
+    result.write_text(json.dumps(data))
+    with pytest.raises(importer.RecognitionImportError):
+        generic_load(paths)
+
+
+def test_generic_cli_dry_run_requires_test_before_opening_database(tmp_path, monkeypatch):
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.spec_from_file_location(
+        "generic_recognition_cli", Path(__file__).parents[2] / "scripts/import_tutorial_book_recognition.py"
+    )
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    monkeypatch.delenv("KATRAIN_ADMIN_ENV", raising=False)
+    monkeypatch.setattr(cli, "create_engine", lambda *_a, **_kw: pytest.fail("database must not open"))
+    assert (
+        cli.main(
+            [
+                "--results",
+                "missing",
+                "--book-json",
+                "missing",
+                "--pdf",
+                "missing",
+                "--expected-pdf-pages",
+                "314",
+                "--catalog-id",
+                "intro-up",
+                "--dataset",
+                "intro-up-gpt61sol-v1",
+                "--report-dir",
+                str(tmp_path),
+            ]
+        )
+        == 2
+    )

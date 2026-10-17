@@ -55,6 +55,8 @@ class RecognitionInput:
     references: dict[str, dict]
     pages: list[dict]
     source_hashes: dict[str, str]
+    coverage_only_pages: list[dict] = field(default_factory=list)
+    catalog_id: str | None = None
 
 
 @dataclass
@@ -84,7 +86,7 @@ def _read(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def _references(book):
+def _references(book, *, physical_only=False):
     by_page = defaultdict(list)
 
     def walk(value, pointer="", page=None):
@@ -95,6 +97,8 @@ def _references(book):
                     raise RecognitionImportError("canonical reference has invalid page")
                 by_page[page].append((pointer, value))
             for key, child in value.items():
+                if physical_only and key == "commentary_refs":
+                    continue
                 walk(child, pointer + "/" + key.replace("~", "~0").replace("/", "~1"), page)
         elif isinstance(value, list):
             for index, child in enumerate(value):
@@ -159,7 +163,15 @@ def normalize_payload(raw):
     return StrictBoardPayload.model_validate(payload).model_dump(exclude_unset=True)
 
 
-def load_recognition(results_path, book_json_path, *, index_path=None, accepted_first100_path=None):
+def _load_recognition(
+    results_path,
+    book_json_path,
+    *,
+    index_path=None,
+    accepted_first100_path=None,
+    physical_only=False,
+    ishida_sentinel=True,
+):
     """Validate all source/index/frozen evidence before opening a database transaction."""
     data, book = _read(results_path), _read(book_json_path)
     source_hash = file_sha256(book_json_path)
@@ -177,14 +189,14 @@ def load_recognition(results_path, book_json_path, *, index_path=None, accepted_
     if not isinstance(figures, list) or not isinstance(pages, list):
         raise RecognitionImportError("results require figures and page outcomes")
     ids = [figure.get("id") for figure in figures]
-    if any(not isinstance(ident, str) or not re.fullmatch(r"p\d{3}-f\d+", ident) for ident in ids) or len(
+    if any(not isinstance(ident, str) or not re.fullmatch(r"p\d{3,4}-f\d+", ident) for ident in ids) or len(
         set(ids)
     ) != len(ids):
         raise RecognitionImportError("missing/duplicate/invalid physical recognition id")
     page_map = {page["page"]: page for page in pages}
     if len(page_map) != len(pages):
         raise RecognitionImportError("duplicate page outcome")
-    refs = _references(book)
+    refs = _references(book, physical_only=physical_only)
     references = {
         pointer: {"page": page, "raw": reference} for page, group in refs.items() for pointer, reference in group
     }
@@ -209,7 +221,8 @@ def load_recognition(results_path, book_json_path, *, index_path=None, accepted_
             raise RecognitionImportError("canonical page reference pointer mismatch")
     if set(refs) - set(page_map):
         raise RecognitionImportError("canonical references have no page outcome")
-    validate_p92_sentinel(figures)
+    if ishida_sentinel:
+        validate_p92_sentinel(figures)
     if accepted_first100_path:
         accepted = _read(accepted_first100_path)
         old = accepted.get("figures", [])
@@ -230,7 +243,7 @@ def load_recognition(results_path, book_json_path, *, index_path=None, accepted_
             or page not in page_map
             or type(ref_index) is not int
             or not 0 <= ref_index <= len(refs[page])
-            or int(figure["id"][1:4]) != page
+            or int(figure["id"].split("-", 1)[0][1:]) != page
         ):
             raise RecognitionImportError("recognition page/reference index mismatch")
         page_hash = page_map[page]["page_sha256"]
@@ -264,12 +277,115 @@ def load_recognition(results_path, book_json_path, *, index_path=None, accepted_
     return RecognitionInput(source_hash, normalized, references, copy.deepcopy(pages), copy.deepcopy(hashes))
 
 
+def load_recognition(results_path, book_json_path, *, index_path=None, accepted_first100_path=None):
+    """Original Ishida loader: frozen-final and P92 checks are unchanged."""
+    return _load_recognition(
+        results_path, book_json_path, index_path=index_path, accepted_first100_path=accepted_first100_path
+    )
+
+
+def load_catalog_recognition(
+    results_path, book_json_path, *, catalog_id, pdf_path, expected_pdf_pages, index_path=None
+):
+    """Load one complete non-Ishida PDF, retaining all coverage without weakening registered pages."""
+    if catalog_id == "ishida-judgement":
+        raise RecognitionImportError("Ishida requires its existing frozen first100/195-page import policy")
+    data = _read(results_path)
+    if not catalog_id or data.get("catalog_id") != catalog_id:
+        raise RecognitionImportError("recognition catalog identity mismatch")
+    if type(expected_pdf_pages) is not int or not 1 <= expected_pdf_pages <= 9999:
+        raise RecognitionImportError("independently verified PDF page count required")
+    if data.get("pdf_pages") != expected_pdf_pages:
+        raise RecognitionImportError("recognition PDF page count mismatch")
+    pdf_path = Path(pdf_path).resolve()
+    if (data.get("sources") or {}).get(str(pdf_path)) != file_sha256(pdf_path):
+        raise RecognitionImportError("recognition PDF source hash mismatch")
+    batch = _load_recognition(
+        results_path, book_json_path, index_path=index_path, physical_only=True, ishida_sentinel=False
+    )
+    if {p["page"] for p in batch.pages} != set(range(1, expected_pdf_pages + 1)):
+        raise RecognitionImportError("recognition must retain every PDF page outcome")
+    if data.get("baseline_references") != len(batch.references):
+        raise RecognitionImportError("physical reference baseline mismatch")
+    if index_path:
+        index = _read(index_path)
+        if any(index.get(k) != data.get(k) for k in ("catalog_id", "pdf_pages", "baseline_references")):
+            raise RecognitionImportError("recognition index catalog/PDF identity mismatch")
+    outcomes = data.get("page_outcomes", [])
+    if len(outcomes) != expected_pdf_pages or {p.get("page") for p in outcomes if p.get("status") == "complete"} != set(
+        range(1, expected_pdf_pages + 1)
+    ):
+        raise RecognitionImportError("generic import requires all PDF pages recognized and validated")
+    by_page = defaultdict(list)
+    for figure in batch.figures:
+        if figure.error:
+            raise RecognitionImportError("generic import contains unvalidated diagram results")
+        by_page[figure.raw["page"]].append(figure)
+    for page in batch.pages:
+        figures = by_page[page["page"]]
+        if (
+            page.get("detection_status") not in ("complete", "reused_final")
+            or page.get("detected_count") != len(figures)
+            or set(page.get("figure_ids", [])) != {f.raw["id"] for f in figures}
+        ):
+            raise RecognitionImportError("PDF page detection/recognition is not complete")
+        missing = set(range(1, len(page["references"]) + 1)) - {f.raw["ref_index"] for f in figures}
+        reasons = {
+            item.get("ref_index")
+            for item in page.get("unrepresented_references", [])
+            if isinstance(item.get("reason"), str) and item["reason"].strip()
+        }
+        if missing - reasons:
+            raise RecognitionImportError("PDF page has unexplained missing source references")
+    source_images = (Path(book_json_path).resolve().parent / "pages").resolve()
+    rendered_images = (Path(results_path).resolve().parent / "assets/pages").resolve()
+    known_figures = {f.raw["page"] for f in batch.figures}
+    registered = []
+    for page in batch.pages:
+        image_path = Path(page["input_image"]).resolve()
+        provenance = page.get("render_provenance") or {}
+        original_image = image_path.is_relative_to(source_images)
+        original_exists = any((source_images / f"page_{page['page']:0{width}d}.png").exists() for width in (3, 4))
+        rendered_missing = (
+            page.get("rendered_missing_source") is True
+            and image_path.is_relative_to(rendered_images)
+            and not original_exists
+            and image_path.stem in (f"page_{page['page']:03d}", f"page_{page['page']:04d}")
+            and provenance.get("pdf") == str(pdf_path)
+            and provenance.get("pdf_sha256") == file_sha256(pdf_path)
+            and provenance.get("pdf_page") == page["page"]
+            and provenance.get("renderer") == "pdftoppm"
+            and provenance.get("dpi") == 120
+        )
+        if original_image:
+            registered.append(page)
+        elif (
+            rendered_missing
+            and page["page"] not in known_figures
+            and not page["references"]
+            and page.get("detection_status") in ("complete", "reused_final")
+            and page.get("detected_count") == 0
+            and page.get("figure_ids") == []
+        ):
+            # Original PNG missing: confirmed blank/cover only. Hashes were still checked above.
+            batch.coverage_only_pages.append(dict(page, coverage_only=True))
+        else:
+            raise RecognitionImportError(
+                "unregistered source page contains diagrams or unresolved coverage; register its asset first"
+            )
+    batch.pages = registered
+    batch.catalog_id = catalog_id
+    return batch
+
+
 def create_recognition_table(bind):
     """Explicit CLI guard must run first; create only this one new evidence table."""
     TutorialRecognitionCandidate.__table__.create(bind, checkfirst=True)
 
 
 def _source(db, batch, catalog_id, *, lock=False):
+    if batch.catalog_id is not None and batch.catalog_id != catalog_id:
+        raise RecognitionImportError("batch catalog identity differs from target registry")
     query = select(TutorialSourceBook).where(
         TutorialSourceBook.source_namespace == SOURCE_NAMESPACE, TutorialSourceBook.catalog_id == catalog_id
     )
@@ -404,7 +520,7 @@ def _run(db, batch, *, catalog_id, dataset, apply=False, actor="system:recogniti
         source.id,
         source.book_id,
         batch.source_json_sha256,
-        pages=copy.deepcopy(batch.pages),
+        pages=sorted(copy.deepcopy(batch.pages + batch.coverage_only_pages), key=lambda p: p["page"]),
     )
     page_query = select(TutorialSourcePage).where(TutorialSourcePage.source_book_id == source.id)
     if apply:

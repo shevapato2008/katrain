@@ -55,8 +55,8 @@ interface Board3DProps extends BoardProps {
   cameraUp?: [number, number, number];
   /** Opt-in orthographic world span; default camera remains perspective. */
   orthographicSpan?: number;
-  /** Tutorial overhead recording lighting/materials; ordinary boards keep their defaults. */
-  recordingAppearance?: 'overhead';
+  /** Opt-in tutorial recording lighting/materials; ordinary boards keep their defaults. */
+  recordingAppearance?: 'overhead' | 'solid-wood';
   disableControls?: boolean;
   /** Lock polar angle for non-interactive mode (fraction of π, e.g., 0.33) */
   fixedPolarAngle?: number;
@@ -76,6 +76,7 @@ interface Board3DProps extends BoardProps {
 const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, readOnly = false, cameraPosition, cameraTarget, cameraUp, orthographicSpan, recordingAppearance, disableControls, fixedPolarAngle, frameloop = 'always', onCanvasReady, enableAzimuth, azimuthRange, initialPolarAngle }: Board3DProps) => {
   const boardSize = gameState.board_size[0];
   const overhead = recordingAppearance === 'overhead';
+  const solidWood = recordingAppearance === 'solid-wood';
   const orbitRef = useRef<any>(null);
   const [polarAngle, setPolarAngle] = useState(initialPolarAngle ?? Math.PI * 0.2); // initial approx
   const [az0, az1] = enableAzimuth ? (azimuthRange ?? [-Math.PI / 3, Math.PI / 3]) : [0, 0];
@@ -149,7 +150,7 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <Canvas
-        shadows={{ type: overhead ? PCFSoftShadowMap : PCFShadowMap }}
+        shadows={{ type: overhead || solidWood ? PCFSoftShadowMap : PCFShadowMap }}
         dpr={[1, 1.5]}
         orthographic={!!orthographicSpan}
         camera={{ position: cameraPosition || [0, 22, 26], fov: 40, near: 0.1, far: 100 }}
@@ -159,8 +160,16 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
         onCreated={handleCreated}
       >
         <color attach="background" args={['#0f0f0f']} />
-        <fog attach="fog" args={['#0f0f0f', 30, 60]} />
-        {overhead ? <>
+        {!solidWood && <fog attach="fog" args={['#0f0f0f', 30, 60]} />}
+        {solidWood ? <>
+          <ambientLight color="#fff7eb" intensity={.65} />
+          <hemisphereLight args={['#fffaf1', '#786a56', .65]} />
+          <directionalLight color="#fff5df" intensity={2.4} position={[-8, 15, 9]} castShadow
+            shadow-mapSize-width={2048} shadow-mapSize-height={2048}
+            shadow-camera-left={-15} shadow-camera-right={15} shadow-camera-top={15} shadow-camera-bottom={-15}
+            shadow-camera-near={1} shadow-camera-far={45} shadow-normalBias={.025} shadow-bias={-.0001} shadow-radius={4} />
+          <directionalLight color="#dce8ff" intensity={.85} position={[9, 10, -8]} />
+        </> : overhead ? <>
           <ambientLight color="#fff8eb" intensity={.65} />
           <hemisphereLight args={['#fffaf2', '#88765f', .65]} />
           <directionalLight color="#fff9ef" intensity={2.1} position={[-7, 14, -9]} castShadow
@@ -177,8 +186,8 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
             <PolarSync orbitRef={orbitRef} onPolarChange={handlePolarChange} />
           </>
         )}
-        <BoardMesh boardSize={boardSize} showCoordinates={!!analysisToggles.coords} />
-        <StoneGroup gameState={gameState} enableDropEffect={!!analysisToggles.stoneDropEffect} satinFinish={overhead} />
+        <BoardMesh boardSize={boardSize} showCoordinates={!!analysisToggles.coords} solidWood={solidWood} />
+        <StoneGroup gameState={gameState} enableDropEffect={!!analysisToggles.stoneDropEffect} satinFinish={overhead || solidWood} />
         {!readOnly && <RaycastClick
           gameState={gameState}
           onMove={onMove}

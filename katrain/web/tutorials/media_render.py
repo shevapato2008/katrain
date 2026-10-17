@@ -4,6 +4,7 @@ The caller owns the immutable audio and validated replay snapshots. A fresh
 browser sees only the standalone bundle via intercepted local asset requests.
 """
 
+from array import array
 import hashlib
 import json
 import math
@@ -11,11 +12,17 @@ import mimetypes
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import time
+import wave
 from urllib.parse import unquote, urlsplit
 
-WIDTH, HEIGHT, FPS = 1280, 800, 5
+WIDTH, HEIGHT, FPS = 1280, 800, 15
+# Match the recorder's deterministic placement transition; sound lands on contact.
+PLACEMENT_DURATION_MS = 360
+STONE_SAMPLE = Path(__file__).resolve().parents[2] / "sounds" / "stone1.wav"
+STONE_GAIN_DB = -28
 MAX_DURATION_MS = 15 * 60 * 1000
 RENDER_TIMEOUT_SECONDS = 600
 BUNDLE_ROOT = Path(__file__).resolve().parents[1] / "tutorial-media-static"
@@ -101,6 +108,83 @@ def _validate_inputs(narration, board_payload, frames, speech_timing, step_cues,
     elif status != "pending":
         raise ValueError("step_cues must explicitly be complete or pending")
     return duration
+
+
+def _audio_mix_filter(sample_rate):
+    # FFmpeg 4.4's limiter delays by floor(rate * attack_seconds) - 1 samples.
+    # Pad before limiting to flush the tail, then remove that exact lookahead.
+    # This preserves contact time and duration without the newer latency option.
+    delay = max(0, int(sample_rate * 0.005) - 1)
+    return (
+        f"[1:a:0]aresample={sample_rate}[speech];[2:a:0]aresample={sample_rate}[stones];"
+        "[speech][stones]amix=inputs=2:duration=first:normalize=0:dropout_transition=0,"
+        f"apad=pad_len={delay},"
+        "alimiter=limit=0.98:level=false:attack=5,"
+        f"atrim=start_sample={delay},asetpts=PTS-STARTPTS[mixed]"
+    )
+
+
+def _stone_click_times(frames, step_cues, duration_ms):
+    if step_cues.get("status") != "complete":
+        return []
+    by_step = {frame["step"]: frame for frame in frames}
+    return [
+        cue["at_ms"] + PLACEMENT_DURATION_MS
+        for cue in step_cues.get("cues", [])
+        if cue["step"] > 0
+        and (by_step.get(cue["step"], {}).get("currentMove") or {}).get("kind") == "move"
+        and cue["at_ms"] + PLACEMENT_DURATION_MS < duration_ms
+    ]
+
+
+def _write_stone_track(path, click_times, duration_ms, *, channels=1):
+    """Stream a quiet PCM effect track in bounded chunks; never modify narration.
+
+    One fixed ffmpeg mix graph consumes this track regardless of replay length.
+    Overlapping moves sum here; the final mix limiter guards the output peak.
+    """
+    with wave.open(str(STONE_SAMPLE), "rb") as source:
+        if source.getsampwidth() != 2 or source.getcomptype() != "NONE":
+            raise ValueError("The bundled stone sound must be 16-bit PCM")
+        rate, source_channels = source.getframerate(), source.getnchannels()
+        click = array("h", source.readframes(source.getnframes()))
+    if sys.byteorder != "little":
+        click.byteswap()
+    if channels not in (1, 2) or source_channels not in (1, 2):
+        raise ValueError("Tutorial narration and the stone sample must be mono or stereo")
+    # Match speech channels explicitly: ffmpeg's mono-to-stereo rematrix would
+    # otherwise lower a mono narration by 3 dB when mixing the stereo sample.
+    if source_channels != channels:
+        if channels == 1:
+            click = array("h", (round((click[index] + click[index + 1]) / 2) for index in range(0, len(click), 2)))
+        else:
+            click = array("h", (value for sample in click for value in (sample, sample)))
+    gain = 10 ** (STONE_GAIN_DB / 20)
+    click = array("h", (round(sample * gain) for sample in click))
+    click_frames = len(click) // channels
+    starts = [round(at_ms * rate / 1000) for at_ms in click_times]
+    frame_count = math.ceil(duration_ms * rate / 1000)
+    with wave.open(str(path), "wb") as track:
+        track.setnchannels(channels)
+        track.setsampwidth(2)
+        track.setframerate(rate)
+        for offset in range(0, frame_count, rate):
+            end = min(frame_count, offset + rate)
+            active = [start for start in starts if start < end and start + click_frames > offset]
+            if not active:
+                track.writeframesraw(b"\0" * ((end - offset) * channels * 2))
+                continue
+            mixed = [0] * ((end - offset) * channels)
+            for start in active:
+                left, right = max(offset, start), min(end, start + click_frames)
+                if left >= right:
+                    continue
+                for index in range((right - left) * channels):
+                    mixed[(left - offset) * channels + index] += click[(left - start) * channels + index]
+            samples = array("h", (max(-32768, min(32767, value)) for value in mixed))
+            if sys.byteorder != "little":
+                samples.byteswap()
+            track.writeframesraw(samples.tobytes())
 
 
 def _local_asset(bundle, url):
@@ -237,6 +321,15 @@ def render_video(
         directory = Path(temporary)
         _capture_frames(data, directory, deadline=deadline)
         rendered = directory / "rendered.mp4"
+        audio_inputs = ["-i", str(audio_path)]
+        audio_mapping = ["-map", "1:a:0"]
+        click_times = _stone_click_times(frames, step_cues, actual_duration)
+        if click_times:
+            stone_track = directory / "stone-clicks.wav"
+            speech_stream = next(stream for stream in audio["streams"] if stream.get("codec_type") == "audio")
+            _write_stone_track(stone_track, click_times, actual_duration, channels=speech_stream["channels"])
+            audio_inputs += ["-i", str(stone_track)]
+            audio_mapping = ["-filter_complex", _audio_mix_filter(int(speech_stream["sample_rate"])), "-map", "[mixed]"]
         _run(
             [
                 "ffmpeg",
@@ -248,12 +341,10 @@ def render_video(
                 str(FPS),
                 "-i",
                 str(directory / "frame-%06d.png"),
-                "-i",
-                str(audio_path),
+                *audio_inputs,
                 "-map",
                 "0:v:0",
-                "-map",
-                "1:a:0",
+                *audio_mapping,
                 "-c:v",
                 "libx264",
                 "-preset",
@@ -286,7 +377,7 @@ def render_video(
             video.get("height"),
             video.get("r_frame_rate"),
             sound.get("codec_name"),
-        ) != ("h264", WIDTH, HEIGHT, "5/1", "aac"):
+        ) != ("h264", WIDTH, HEIGHT, f"{FPS}/1", "aac"):
             raise RuntimeError("Rendered tutorial video has invalid codecs, dimensions or frame rate")
         if abs(float(result["format"]["duration"]) * 1000 - actual_duration) > 250:
             raise RuntimeError("Rendered tutorial duration does not match its saved speech artifact")

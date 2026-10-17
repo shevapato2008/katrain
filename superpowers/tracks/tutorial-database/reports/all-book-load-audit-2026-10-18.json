@@ -1101,7 +1101,8 @@
       "sample_stones": null
     }
   ],
-  "checked_at": "2026-10-18",
+  "checked_at": "2026-10-18T05:40:21+08:00",
   "verification_scope": "All78 source-page listings and first registered workbench pages, plus per-book DB payload/candidate counts and representative actual-data workbench reads. Ten missing-page1 books also verified through actual browser dropdown. Not a visual re-review of every diagram.",
-  "recognition_completion_note": "Some saved recognition data in10books is not full-book acceptance. Current23core TESTaccepted4; missingJSONnull is pendingrecognition, not loadfailure."
+  "recognition_completion_note": "Some saved recognition data in10books is not full-book acceptance. Current23core TESTaccepted4; missingJSONnull is pendingrecognition, not loadfailure.",
+  "snapshot_note": "Point-in-time loading audit; ongoing23book recognition/imports will change pending/data counts. Follow current curriculum progress for live stage."
 }

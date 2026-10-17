@@ -50,7 +50,7 @@ function texture(canvas: HTMLCanvasElement, color = false) {
   return map;
 }
 
-/** Original fine growth lines, fixed in stone space: no photos, random frames, or polar rings. */
+/** Original shell growth lines, fixed in stone space: no photos, random frames, or polar rings. */
 function createShellMaps(seed: number): ShellMaps {
   const existing = shellMaps.get(seed);
   if (existing) return existing;
@@ -60,8 +60,10 @@ function createShellMaps(seed: number): ShellMaps {
   const contexts = canvases.map(c => c.getContext('2d')!);
   const images = contexts.map(c => c.createImageData(size, size));
   const bands: { position: number; width: number; strength: number }[] = [];
-  for (let position = -1.65; position < 1.7; position += .067 + rng() * .025) {
-    bands.push({ position, width: .009 + rng() * .006, strength: .48 + rng() * .48 });
+  // At the workbench/video's 24–36 px diameter, the former ~25 hairlines averaged
+  // away. Soft, irregular warm growth ribbons stay legible without carved grooves.
+  for (let position = -1.65; position < 1.7; position += .22 + rng() * .12) {
+    bands.push({ position, width: .055 + rng() * .025, strength: .55 + rng() * .4 });
   }
   const angle = .63 + (rng() - .5) * .18;
   const cs = Math.cos(angle), sn = Math.sin(angle);
@@ -76,12 +78,12 @@ function createShellMaps(seed: number): ShellMaps {
     }
     const pearl = 1.8 * Math.sin(across * 8 + along * .7) + .7 * Math.sin(along * 5.1);
     const micro = (rng() - .5) * .6;
-    const base = 239 + pearl - grain * 9 + micro;
+    const base = 246 + pearl + micro;
     const offset = (y * size + x) * 4;
-    images[0].data.set([base + 1.4, base + 1.1, base - 1.4, 255], offset);
-    const roughness = 219 + grain * 13 + micro * 2;
+    images[0].data.set([base + 1.4 - grain * 18, base + 1.1 - grain * 23, base - 1.4 - grain * 39, 255], offset);
+    const roughness = 219 + grain * 4 + micro * 2;
     images[1].data.set([roughness, roughness, roughness, 255], offset);
-    const relief = 128 + grain * 8;
+    const relief = 128 + grain * 1.5;
     images[2].data.set([relief, relief, relief, 255], offset);
   }
   contexts.forEach((ctx, i) => ctx.putImageData(images[i], 0, 0));
@@ -102,6 +104,7 @@ export function createStoneMaterial(color: StoneColor, seed = 17, plain = false)
   const maps = createShellMaps(seed);
   return new THREE.MeshPhysicalMaterial({
     color: 0xffffff, map: maps.color, roughnessMap: maps.roughness, roughness: .36,
+    emissive: 0xffffff, emissiveMap: maps.color, emissiveIntensity: .12,
     bumpMap: maps.bump, bumpScale: .0012, metalness: 0, ior: 1.53,
     clearcoat: .1, clearcoatRoughness: .38, envMapIntensity: .6,
   });

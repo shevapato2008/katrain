@@ -39,7 +39,7 @@ try {
     sources[file] = createHash('sha256').update(await readFile(new URL(`src/components/tutorials/${file}`, uiRoot))).digest('hex');
   }
   const manifest = {
-    modelVersion: 'approved-shell-slate-2026-10-17',
+    modelVersion: 'shell-slate-legible-grain-2026-10-17',
     width: 256, height: 256, transparent: true,
     whiteVariantCount: 32, whiteTextureSeed: 17, whiteRotationStepDegrees: 11.25,
     rotation: 'model Y only; camera, studio lights and environment remain fixed',

@@ -17,7 +17,7 @@
       "human_review": "待人工审核·549图（含疑点1图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T01:46:51+08:00",
+      "updated_at": "2026-10-18T02:01:55+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -29,12 +29,12 @@
         "对杀与局部计算 · 基础"
       ],
       "book_id": 12,
-      "recognition": "识别中 · 280/313页 · 651图",
-      "validation_import": "机器校验 280/313页；失败0；疑点0图；待整书TEST入库",
+      "recognition": "识别中 · 300/313页 · 731图",
+      "validation_import": "机器校验 300/313页；失败0；模型疑点0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T01:46:51+08:00",
+      "updated_at": "2026-10-18T02:01:55+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -49,7 +49,7 @@
       "human_review": "待人工审核·132图（含疑点27图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T01:46:51+08:00",
+      "updated_at": "2026-10-18T02:01:55+08:00",
       "priority_tier": "模块内补充",
       "validation_import_manually_set": true
     },
@@ -60,12 +60,12 @@
         "棋形与手筋 · 主教材"
       ],
       "book_id": 15,
-      "recognition": "识别中 · 40/190页 · 115图",
-      "validation_import": "机器校验 40/190页；失败0；疑点4图；待整书TEST入库",
+      "recognition": "识别中 · 50/190页 · 150图",
+      "validation_import": "机器校验 50/190页；失败0；模型疑点6图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T01:46:51+08:00",
+      "updated_at": "2026-10-18T02:01:55+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -75,12 +75,12 @@
         "死活 · 主线选题"
       ],
       "book_id": 23,
-      "recognition": "识别中 · 20/255页 · 25图",
-      "validation_import": "机器校验 20/255页；失败0；疑点0图；待整书TEST入库",
+      "recognition": "识别中 · 40/255页 · 65图",
+      "validation_import": "机器校验 40/255页；失败0；模型疑点0图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T01:46:51+08:00",
+      "updated_at": "2026-10-18T02:01:55+08:00",
       "priority_tier": "核心教材"
     },
     {

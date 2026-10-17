@@ -25,3 +25,12 @@
 已检查异步保存→审核的新版本传递、错误／冲突分支及忙碌期间的切换保护；现有 CAS、鉴权、旧 verify 别名、审计、历史、服务器审核有效性和完整媒体依赖契约保持一致。编号处理不按缺失区间逐个枚举，大编号不会触发大范围循环。
 
 已阅读本轮聚焦测试。实现方报告 Console 87 项测试及构建通过、APP 60 项测试通过；本审核未重复运行整套测试，只复验上述编号缺陷。未修改业务代码、提交、部署、写库或代为审核。
+
+
+## TEST delivery evidence
+
+- Deployed provider code: `a2ee28a70f3807e5599e46afd04ccbe9905f25ed`; console: `ed7d838cb04b788e1f232693bb5ae9bc5eb7ed4d`. Both TEST containers healthy; environment, ports, mounts and networks preserved. No production deployment.
+- Primary independently reran 60 provider tests and 87 UI tests; console production build passed.
+- Existing entry: http://127.0.0.1:18012/admin?book=4&page=12&figure=1032&filter=all . Real-page check: one enabled human review action, static numbering check passed 10 labels, incomplete replay completeness claim prevented, dirty save-and-review action enabled. Intercepted save request passes the strict server contract; diagnostic interception deliberately prevents live writes and retains the draft. No page errors.
+- Before/after DB fingerprints for figures 1030–1033 (diagram, narration, evidence, media and review records) unchanged. No manual approvals registered by automation.
+- Actual screenshot at 2048×1119 with fonts/images loaded: private evidence `tutorial-review-20261017/deployed-read-loaded.png`. Astra Max visual PASS: existing theme/navigation/three panes retained, one review action and independent playback/check status clear.

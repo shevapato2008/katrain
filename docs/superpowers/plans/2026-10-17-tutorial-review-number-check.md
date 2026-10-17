@@ -28,10 +28,10 @@
 ### Task 2: Independent review and TEST delivery
 
 - [x] Astra Max checks spec compliance first, then code quality/CAS/error paths; resolve blocking findings and recheck.
-- [ ] Commit only owned changes in existing feature worktrees. No production release/merge or unrelated files.
-- [ ] Deploy only `katrain-admin` and `smartbox-admin-admin-console-1` on home-ubuntu. Assert TEST environment and existing DB/media identity; preserve env/ports/networks/mounts and before/after content fingerprints for figures 1030–1033.
-- [ ] Verify existing `127.0.0.1:18012` authenticated page: one enabled review control on 1032, numbering check success on 1–10, no actual review write on behalf of user. Capture one representative page.
-- [ ] Report exact test link, behavior, verification, versions and any remaining limitations.
+- [x] Commit only owned changes in existing feature worktrees. No production release/merge or unrelated files.
+- [x] Deploy only `katrain-admin` and `smartbox-admin-admin-console-1` on home-ubuntu. Assert TEST environment and existing DB/media identity; preserve env/ports/networks/mounts and before/after content fingerprints for figures 1030–1033.
+- [x] Verify existing `127.0.0.1:18012` authenticated page: one enabled review control on 1032, numbering check success on 1–10, no actual review write on behalf of user. Capture one representative page.
+- [x] Report exact test link, behavior, verification, versions and any remaining limitations.
 
 ## Astra Max plan decisions
 

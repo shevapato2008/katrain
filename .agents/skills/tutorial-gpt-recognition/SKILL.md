@@ -92,9 +92,11 @@ description: Use when recognizing Go textbook diagrams with GPT whole-page detec
 
 - 识别样例：`scripts/recognize_ishida_remaining.py`；已完成批次的 final 数据与断点存于书籍仓库。
 - 增量导入样例：`scripts/import_tutorial_recognition.py`；默认 dry-run，apply 要显式测试环境身份。
+- 通用单书识别：`scripts/recognize_tutorial_book.py prepare|all --catalog-id <id>`；从catalog绑定真实来源，每10个PDF页发布检查点，复用成功结果。PDF存在零个或多个声明时，仅安全读取本书`config.py`字面`PDF_FILENAME`选择既有转换文件或已声明副本，不执行配置或重新转换。
+- 通用整书导入：`scripts/import_tutorial_book_recognition.py`；要求完整PDF覆盖ledger、来源/图片/index哈希和独立清点的`--expected-pdf-pages`，dry-run与apply均核对TEST数据库及存储身份。书籍未完成时不冒充整书完成或绕过来源页注册。
 - 严格契约：`katrain/web/tutorials/models.py`、`workbench_models.py`。
 - 候选与导入：`recognition_models.py`、`recognition_catalog_import.py`。
 - 后台保存／审核：`katrain/web/admin/routers/tutorial_workbench.py`、`tutorial_media.py`、`katrain/web/tutorials/manual_review.py`。
 - 管理前端：`smartbox-software/admin-console/ui/src/admin/tutorials/workbench/`。
 
-两个识别／导入脚本目前包含石田书及前 100 页冻结检查，**不是任意书籍通用 CLI**。处理其他书先确认已有工具是否支持，必要时最小适配，不能只替换目录就运行，更不能绕过现有来源和环境校验。
+石田专用识别／导入脚本继续保留195页/468图、前100页266图及第92页修正的冻结检查，**不能当作任意书籍通用CLI替换目录运行**。其他书使用上述catalog绑定入口；该入口拒绝重跑石田书。通用入口仍须保留来源、完整性、人工成果保护和环境校验。

@@ -15,9 +15,9 @@
 **Files:** 本计划；书籍仓库 `curriculum/recognition-comparison/curriculum-gpt61sol-v1/queue.json`；各书 `inventory.json`。
 
 - [x] 读新skill、AGENTS、HTML嵌入JSON和catalog。HTML与catalog78个同ID，78个book.json realpath独立；主模块65本，补充13本。HTML旧state不代表解析状态。
-- [x] Astra决策：按(module.number, group JSON index, group内book index)先后，全局按realpath去重，保留全部模块角色；补充专题按原顺序追加。
+- [x] 最新Astra决策（用户明确先覆盖各模块最高优先级后修订）：核心教材23本 → 练习/专项/纠错16本 → 提高/棋风比较8本 → 模块内补充18本 → 独立补充专题13本。同层按模块轮转，每轮每模块一本；多卷分轮，组内保留书序，全局按realpath去重、保留全部模块角色。intro-up/down/fast继续；下一批新增shape、life-1、opening。模块4共享intro-down不重复；模块13首选simple-judgement，石田只复用final。
 - [x] 首批intro-up/down清点，分别PDF314/313页、549/779图引用；没有电子图final可复用。原页缺封面版权页只渲染缺页，不重新OCR。
-- [ ] 队列逐书保存catalog ID、sourcebook/book ID映射、PDF/JSON哈希、总页、所有模块角色。石田195页最终结果复用，不重新模型；曹布局既有final50页需先检查再复用。
+- [x] 队列逐书保存catalog ID、sourcebook/book ID映射、PDF/JSON哈希、总页、所有模块角色。78本实际PDF共20,875页；21本使用config.py明确的已有转换PDF或双副本中的指定文件，不执行配置代码或重建PDF。石田195页最终结果复用，不重新模型；曹布局final前50页/80图已只读冻结哈希，整页覆盖仍需核验后复用。
 
 ### Task 2：通用识别runner（子agent实现）
 
@@ -53,4 +53,4 @@
 
 Astra Max第二轮PASS，来源页补漏采用coverage-only ledger方案，其余注册页守卫保留。
 
-工具阶段实际验证：通用识别runner12项 + 原/通用导入器40项，共52 passed。Astra Max计划两轮PASS，runner/导入器SPEC/CODE PASS；目标绑定实测问题修复后窄CODE PASS。已启动intro-up、intro-down、intro-fast三书识别，未宣称整书完成。书单副本/阶段表与当前计划入口在主仓库 superpowers/tracks/tutorial-database/。
+工具阶段实际验证：通用识别runner17项 + 原/通用导入器40项，共57 passed。Astra Max计划两轮PASS，runner/导入器SPEC/CODE PASS；目标绑定和21本配置PDF适配均窄CODE PASS，实际78/78来源路径与已核实清点一致。已启动intro-up、intro-down、intro-fast三书识别，未宣称整书完成。书单副本/阶段表与当前计划入口在主仓库 superpowers/tracks/tutorial-database/。

@@ -7,6 +7,7 @@ Validated final figures and successful request caches are reused on continuation
 """
 
 import argparse
+import ast
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
@@ -132,9 +133,38 @@ def catalog_paths(catalog_path, catalog_id, source_root):
         resolve(item["path"]) for item in entry.get("files", []) if str(item.get("path", "")).lower().endswith(".pdf")
     }
     pdfs.update(resolve(value) for value in metadata.get("pdfs", []))
-    if len(jsons) != 1 or len(pdfs) != 1:
-        raise ValueError("catalog source requires one unambiguous PDF and book JSON")
-    return entry, jsons.pop(), pdfs.pop()
+    if len(jsons) != 1:
+        raise ValueError("catalog source requires one unambiguous book JSON")
+    book_json = jsons.pop()
+    if len(pdfs) != 1:
+        # Some catalog sources are PDG archives with an existing PDF conversion;
+        # others list a root copy and a source copy. Read the project's explicit
+        # PDF_FILENAME literally, without executing its config or converting it.
+        project = book_json.parent.parent
+        config = project / "config.py"
+        if not config.is_file() or not config.resolve().is_relative_to(project):
+            raise ValueError("catalog PDF ambiguity requires a local source configuration")
+        try:
+            assignments = [
+                node.value
+                for node in ast.parse(config.read_text()).body
+                if isinstance(node, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == "PDF_FILENAME" for target in node.targets)
+            ]
+            value = ast.literal_eval(assignments[0]) if len(assignments) == 1 else None
+            if not isinstance(value, str) or not value:
+                raise ValueError("PDF_FILENAME must be one literal path")
+        except (ValueError, SyntaxError) as exc:
+            raise ValueError("catalog source configuration requires one literal PDF_FILENAME") from exc
+        selected = resolve(project / value)
+        if not selected.is_relative_to(project) or selected.suffix.lower() != ".pdf":
+            raise ValueError("catalog source configuration must select a PDF inside its own book")
+        if pdfs and selected not in pdfs:
+            raise ValueError("catalog source configuration must select one of its declared PDFs")
+        if not pdfs and not selected.is_relative_to((project / "output/source_conversion").resolve()):
+            raise ValueError("catalog without PDFs requires its existing output/source_conversion PDF")
+        pdfs = {selected}
+    return entry, book_json, pdfs.pop()
 
 
 def recognition_inputs(figures, output):

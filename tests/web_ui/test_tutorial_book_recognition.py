@@ -364,3 +364,47 @@ def test_recognition_binds_tight_target_caption_and_full_page(source, tmp_path):
         assert target.width < caption.width and target.height < caption.height
     assert "target_grid_image" in prompt and "caption_context_image" in prompt and "full_page_image" in prompt
     assert "upper left board" in prompt and "capture note" in prompt
+
+
+def test_catalog_reuses_configured_conversion_without_executing_config(source):
+    module = load_runner()
+    root, book, catalog, pdf, book_json = source
+    converted = book / "output/source_conversion/fixture.pdf"
+    converted.parent.mkdir()
+    pdf.rename(converted)
+    data = json.loads(catalog.read_text())
+    data["books"][0]["files"] = [{"path": str(book_json)}, {"path": str(book / "original.zip")}]
+    data["books"][0]["repo_metadata"]["pdfs"] = []
+    catalog.write_text(json.dumps(data))
+    (book / "config.py").write_text(
+        "raise RuntimeError('must never execute source configuration')\n"
+        "PDF_FILENAME = 'output/source_conversion/fixture.pdf'\n"
+    )
+    assert module.catalog_paths(catalog, "fixture", root)[2] == converted.resolve()
+
+
+def test_catalog_duplicate_pdf_uses_explicit_configured_member(source):
+    module = load_runner()
+    root, book, catalog, pdf, _ = source
+    second = book / "second.pdf"
+    second.write_bytes(pdf.read_bytes())
+    data = json.loads(catalog.read_text())
+    data["books"][0]["repo_metadata"]["pdfs"].append(str(second))
+    catalog.write_text(json.dumps(data))
+    (book / "config.py").write_text("PDF_FILENAME = 'second.pdf'\n")
+    assert module.catalog_paths(catalog, "fixture", root)[2] == second.resolve()
+
+
+@pytest.mark.parametrize("configured", ["../outside.pdf", "other.pdf", "' + str(1) + '"])
+def test_catalog_conversion_requires_literal_confined_conversion_path(source, configured):
+    module = load_runner()
+    root, book, catalog, pdf, book_json = source
+    (book.parent / "outside.pdf").write_bytes(pdf.read_bytes())
+    (book / "other.pdf").write_bytes(pdf.read_bytes())
+    data = json.loads(catalog.read_text())
+    data["books"][0]["files"] = [{"path": str(book_json)}]
+    data["books"][0]["repo_metadata"]["pdfs"] = []
+    catalog.write_text(json.dumps(data))
+    (book / "config.py").write_text("PDF_FILENAME = '" + configured + "'\n")
+    with pytest.raises(ValueError, match="catalog|configuration|conversion"):
+        module.catalog_paths(catalog, "fixture", root)

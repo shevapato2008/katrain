@@ -3,6 +3,7 @@
 import copy
 import json
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
@@ -682,3 +683,448 @@ def test_generic_cli_dry_run_requires_test_before_opening_database(tmp_path, mon
         )
         == 2
     )
+
+
+def pending_annotation_inputs(tmp_path, monkeypatch):
+    """Portable 290-page ledger with two independently mapped annotation holds."""
+    data, result, book, pdf = generic_inputs(tmp_path, page_number=290)
+    canonical = json.loads(book.read_text())
+    reference = {"type": "figure_ref", "label": "第三七图、参考图", "text": "independent side captions"}
+    canonical["chapters"][0]["sections"][0]["pages"].append({"page": 182, "elements": [reference]})
+    book.write_text(json.dumps(canonical))
+    pointer = "/chapters/0/sections/0/pages/1/elements/0"
+    page = data["pages"][181]
+    image = tmp_path / "pages/page_182.png"
+    image.write_bytes(b"registered source with isolated nonstandard ink")
+    page.update(
+        input_image=str(image),
+        page_sha256=importer.file_sha256(image),
+        references=[reference],
+        reference_pointers=[pointer],
+        detected_count=2,
+        figure_ids=["p182-f01", "p182-f02"],
+        rendered_missing_source=False,
+        render_provenance=None,
+        unrepresented_references=[],
+    )
+    uncertainty = {
+        "at": "5,7",
+        "cell": "5,7",
+        "reason": "unresolved ink [ownership_unresolved]",
+        "candidates": ["扫描杂迹", "p182-f01批注", "p182-f02批注"],
+    }
+    pending = []
+    for n, (count, labels) in enumerate(((44, 44), (49, 11)), 1):
+        item = raw(f"p182-f{n:02d}")
+        points = [[x % 19, x // 19 + (0 if n == 1 else 12)] for x in range(count)]
+        item.update(
+            page=182,
+            label="第三七图" if n == 1 else "参考图",
+            source_pointer=pointer,
+            membership_status="unresolved",
+            needs_review=True,
+        )
+        payload = item["result"]["payload"]
+        payload.update(
+            schema_version=2,
+            stones={"B": points[::2], "W": points[1::2]},
+            unknown_stones=[],
+            labels={f"{x},{y}": str(i + 1) for i, (x, y) in enumerate(points[:labels])},
+            viewport={"col": 0, "row": 0, "cols": 19, "rows": 19},
+            source_region={"col": 0, "row": 0, "cols": 19, "rows": 19, "confirmed": False},
+            replay={"status": "needs_calibration", "initial": None, "moves": []},
+        )
+        item["result"].update(
+            complete=False,
+            issues=[],
+            uncertainties=[copy.deepcopy(uncertainty)],
+            error="Logical ownership unresolved; excluded from ordinary recognition retries.",
+        )
+        item["model_response"] = {"id": item["id"], "uncertainties": [copy.deepcopy(uncertainty)]}
+        pending.append(item)
+    data["figures"] = pending + data["figures"]
+    data.update(catalog_id="joseki", baseline_references=4)
+    data["page_outcomes"][181].update(
+        status="failed",
+        detection_status="complete",
+        detection_error=None,
+        recognition_errors=[{"id": f["id"], "error": f["result"]["error"]} for f in pending],
+    )
+    raw_path = tmp_path / "raw/board/p182-f01-p182-f02/approved/result.json"
+    raw_path.parent.mkdir(parents=True)
+    raw_path.write_text(json.dumps({"figures": [f["model_response"] for f in pending]}))
+    for item in data["figures"]:
+        crop = tmp_path / "assets/figures" / (item["id"] + ".png")
+        target = tmp_path / "assets/targets" / (item["id"] + ".png")
+        crop.parent.mkdir(parents=True, exist_ok=True)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        crop.write_bytes(b"original crop")
+        target.write_bytes(b"whole grid")
+        item.update(crop=str(crop.relative_to(tmp_path)), crop_sha256=importer.file_sha256(crop))
+        item["recognition_provenance"] = {"target_grid_sha256": importer.file_sha256(target)}
+    data["sources"] = {str(book): importer.file_sha256(book), str(pdf): importer.file_sha256(pdf)}
+    source_path = tmp_path / "source.json"
+    source_path.write_text(
+        json.dumps(
+            {
+                "catalog_id": "joseki",
+                "pdf_pages": 290,
+                "sources": data["sources"],
+                "pages": copy.deepcopy(data["pages"]),
+            }
+        )
+    )
+    index = {
+        "catalog_id": "joseki",
+        "pdf_pages": 290,
+        "baseline_references": 4,
+        "source_hashes": data["sources"],
+        "figures": {},
+    }
+    for item in data["figures"]:
+        p = pointer if item["page"] == 182 else "/chapters/0/sections/0/pages/0/elements/0"
+        index["figures"][item["id"]] = dict(
+            page=item["page"],
+            ref_index=item["ref_index"],
+            source_pointer=p,
+            figure_sha256=importer.content_sha256(item),
+        )
+    index["content_sha256"] = importer.content_sha256(index)
+    index_path = tmp_path / "recognition-index.json"
+    index_path.write_text(json.dumps(index))
+    data.update(
+        recognition_index_sha256=importer.file_sha256(index_path),
+        recognition_index_content_sha256=index["content_sha256"],
+    )
+    result.write_text(json.dumps(data))
+    logical = tmp_path / "logical-coverage.json"
+    logical.write_text(
+        json.dumps(
+            {
+                "catalog_id": "joseki",
+                "logical_coverage_closed": False,
+                "baseline_references": 4,
+                "records": [
+                    dict(
+                        id=f["id"],
+                        page=f["page"],
+                        label=f["label"],
+                        source_pointer=index["figures"][f["id"]]["source_pointer"],
+                        status="unresolved" if f in pending else "complete",
+                    )
+                    for f in data["figures"]
+                ],
+            }
+        )
+    )
+    evidence = tmp_path / "source-evidence.json"
+    evidence.write_text(json.dumps({"source_manifest_sha256": importer.file_sha256(source_path)}))
+    decision = tmp_path / "source-decision.md"
+    decision.write_text("Keep both holds; candidate-only delivery.")
+    authority = {
+        "source_evidence": importer.file_sha256(evidence),
+        "source_decision": importer.file_sha256(decision),
+        "raw_response": importer.file_sha256(raw_path),
+    }
+    monkeypatch.setattr(importer, "_JOSEKI_PENDING_AUTHORITY_SHA256", authority, raising=False)
+    monkeypatch.setattr(
+        importer, "_JOSEKI_PENDING_FIGURE_SHA256", {f["id"]: importer.content_sha256(f) for f in pending}, raising=False
+    )
+
+    def binding(path):
+        return {"path": str(path), "sha256": importer.file_sha256(path)}
+
+    manifest = {
+        "format": "joseki-p182-pending-annotation-v1",
+        "catalog_id": "joseki",
+        "dataset": "pending-final",
+        "results_sha256": importer.file_sha256(result),
+        "recognition_index_sha256": importer.file_sha256(index_path),
+        "logical_coverage": binding(logical),
+        "source_manifest": binding(source_path),
+        "source_evidence": binding(evidence),
+        "source_decision": binding(decision),
+        "figures": {
+            f["id"]: dict(
+                figure_sha256=importer.content_sha256(f),
+                payload_sha256=importer.content_sha256(f["result"]["payload"]),
+                uncertainties_sha256=importer.content_sha256(f["result"]["uncertainties"]),
+                raw_response=binding(raw_path),
+                raw_pointer=f"/figures/{i}",
+                raw_uncertainty_pointer=f"/figures/{i}/uncertainties/0",
+                raw_uncertainty_sha256=importer.content_sha256(f["model_response"]["uncertainties"][0]),
+            )
+            for i, f in enumerate(pending)
+        },
+    }
+    manifest_path = tmp_path / "pending-annotation.json"
+    manifest_path.write_text(json.dumps(manifest))
+    return data, result, book, pdf, index_path, manifest_path
+
+
+def pending_load(paths, **overrides):
+    data, result, book, pdf, index, manifest = paths
+    options = dict(
+        catalog_id="joseki",
+        pdf_path=pdf,
+        expected_pdf_pages=290,
+        index_path=index,
+        dataset="pending-final",
+        pending_annotation_manifest=manifest,
+    )
+    options.update(overrides)
+    return importer.load_catalog_recognition(result, book, **options)
+
+
+def test_pending_annotation_manifest_preserves_static_candidates_and_holds(tmp_path, monkeypatch):
+    paths = pending_annotation_inputs(tmp_path, monkeypatch)
+    saved = paths[1].read_bytes()
+    batch = pending_load(paths)
+    assert [f.raw["id"] for f in batch.figures if f.pending_annotation] == ["p182-f01", "p182-f02"]
+    for item in batch.figures[:2]:
+        assert item.raw["result"]["complete"] is False
+        assert item.raw["membership_status"] == "unresolved"
+        assert item.payload == item.raw["result"]["payload"] and not item.error
+        assert item.pending_annotation["hold"] == item.raw["result"]["error"]
+    assert paths[1].read_bytes() == saved
+    assert batch.pending_annotation["recognition_complete"] is False
+    assert batch.pending_annotation["logical_coverage_closed"] is False
+    assert batch.pending_annotation["source_inventory_complete"] is True
+    assert batch.pending_annotation["static_candidates_validated"] == 3
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "no_manifest",
+        "wrong_dataset",
+        "wrong_results_hash",
+        "wrong_figure_hash",
+        "wrong_payload_hash",
+        "wrong_raw_hash",
+        "wrong_index_hash",
+        "third_hold",
+        "payload_issue",
+        "missing_page",
+        "detection_failure",
+        "missing_reference",
+        "logical_extra",
+        "missing_crop",
+        "changed_uncertainty",
+        "wrong_raw_uncertainty_hash",
+        "outcome_error",
+        "wrong_authority_hash",
+        "extra_manifest_target",
+        "reissued_source_manifest",
+    ],
+)
+def test_pending_annotation_exception_refuses_other_errors(tmp_path, monkeypatch, change):
+    paths = pending_annotation_inputs(tmp_path, monkeypatch)
+    data, result, book, pdf, index_path, manifest_path = paths
+    manifest = json.loads(manifest_path.read_text())
+    options = {}
+    if change == "no_manifest":
+        options["pending_annotation_manifest"] = None
+    elif change == "wrong_dataset":
+        options["dataset"] = "other"
+    elif change == "wrong_results_hash":
+        manifest["results_sha256"] = "0" * 64
+    elif change == "wrong_figure_hash":
+        manifest["figures"]["p182-f01"]["figure_sha256"] = "0" * 64
+    elif change == "wrong_payload_hash":
+        manifest["figures"]["p182-f01"]["payload_sha256"] = "0" * 64
+    elif change == "wrong_raw_hash":
+        manifest["figures"]["p182-f01"]["raw_response"]["sha256"] = "0" * 64
+    elif change == "wrong_index_hash":
+        manifest["recognition_index_sha256"] = "0" * 64
+    elif change == "wrong_raw_uncertainty_hash":
+        manifest["figures"]["p182-f01"]["raw_uncertainty_sha256"] = "0" * 64
+    elif change == "outcome_error":
+        data["page_outcomes"][0]["detection_error"] = "unresolved failure"
+    elif change == "wrong_authority_hash":
+        manifest["source_decision"]["sha256"] = "0" * 64
+    elif change == "extra_manifest_target":
+        manifest["figures"]["p290-f03"] = copy.deepcopy(manifest["figures"]["p182-f01"])
+    elif change == "reissued_source_manifest":
+        # Reissuing all self-declared hashes must not change the source approved by the evidence.
+        pdf.write_bytes(b"different PDF after source inspection")
+        data["sources"][str(pdf)] = importer.file_sha256(pdf)
+        for page in data["pages"]:
+            if page.get("render_provenance"):
+                page["render_provenance"]["pdf_sha256"] = importer.file_sha256(pdf)
+        source_path = Path(manifest["source_manifest"]["path"])
+        source = json.loads(source_path.read_text())
+        source.update(sources=data["sources"], pages=data["pages"])
+        source_path.write_text(json.dumps(source))
+        manifest["source_manifest"]["sha256"] = importer.file_sha256(source_path)
+    elif change == "third_hold":
+        data["figures"][2]["result"]["complete"] = False
+    elif change == "payload_issue":
+        data["figures"][0]["result"]["issues"] = ["bad payload"]
+    elif change == "missing_page":
+        data["pages"].pop(0)
+    elif change == "detection_failure":
+        data["pages"][0]["detection_status"] = "failed"
+    elif change == "missing_reference":
+        data["pages"][-1]["unrepresented_references"] = []
+    elif change == "logical_extra":
+        logical = Path(manifest["logical_coverage"]["path"])
+        value = json.loads(logical.read_text())
+        value["records"].append(copy.deepcopy(value["records"][0]))
+        logical.write_text(json.dumps(value))
+        manifest["logical_coverage"]["sha256"] = importer.file_sha256(logical)
+    elif change == "missing_crop":
+        (tmp_path / data["figures"][2]["crop"]).unlink()
+    else:
+        data["figures"][0]["result"]["uncertainties"][0]["reason"] = "different annotation"
+    index = json.loads(index_path.read_text())
+    index["source_hashes"] = copy.deepcopy(data["sources"])
+    for item in data["figures"]:
+        index["figures"][item["id"]]["figure_sha256"] = importer.content_sha256(item)
+    index["content_sha256"] = importer.content_sha256({k: v for k, v in index.items() if k != "content_sha256"})
+    index_path.write_text(json.dumps(index))
+    data.update(
+        recognition_index_sha256=importer.file_sha256(index_path),
+        recognition_index_content_sha256=index["content_sha256"],
+    )
+    if change != "wrong_index_hash":
+        manifest["recognition_index_sha256"] = importer.file_sha256(index_path)
+    result.write_text(json.dumps(data))
+    if change != "wrong_results_hash":
+        manifest["results_sha256"] = importer.file_sha256(result)
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(importer.RecognitionImportError):
+        pending_load(paths, **options)
+
+
+@pytest.mark.parametrize("existing_current", [False, True])
+def test_pending_annotation_apply_records_only_candidates_and_rerun_is_immutable(
+    catalog, tmp_path, monkeypatch, existing_current
+):
+    sessions, *_ = catalog
+    paths = pending_annotation_inputs(tmp_path, monkeypatch)
+    batch = pending_load(paths)
+    with sessions.begin() as db:
+        source = db.get(TutorialSourceBook, 9)
+        source.catalog_id = "joseki"
+        source.source_json_sha256 = batch.source_json_sha256
+        db.get(TutorialFigure, 1274).page = 182
+        if existing_current:
+            current = db.get(TutorialFigure, 1274)
+            current.board_payload = {"size": 19, "stones": {"B": [[0, 0]], "W": []}}
+            current.recognition_debug = {"human_verified": True, "board_review": {"by": "human"}}
+            current.narration = "keep human narration"
+        reference = db.get(TutorialSourceFigure, 1001)
+        reference.page = 182
+        reference.source_pointer = batch.figures[0].source_pointer
+        for number, reference_id in ((2, 1002), (3, 1003)):
+            reference = db.get(TutorialSourceFigure, reference_id)
+            reference.page = 290
+            reference.source_pointer = f"/chapters/0/sections/0/pages/0/elements/{number-1}"
+        db.add(
+            TutorialSourceFigure(
+                source_book_id=9,
+                source_figure_id="page290-physical-1",
+                source_pointer=batch.figures[2].source_pointer,
+                page=290,
+                figure_id=None,
+                match_reason="legacy_figure_missing",
+                source_metadata={"section": {"pointer": "/chapters/0/sections/0"}},
+            )
+        )
+        for page in batch.pages:
+            db.add(
+                TutorialSourcePage(
+                    source_book_id=9,
+                    page=page["page"],
+                    page_image_path="assets/source.png",
+                    image_sha256=page["page_sha256"],
+                    text_fragments=[],
+                    page_context_text="source",
+                )
+            )
+    with sessions() as db:
+        plan = importer.plan_recognition(db, batch, catalog_id="joseki", dataset="pending-final")
+        assert [r["status"] for r in plan.rows[:2]] == ["candidate_pending", "candidate_pending"]
+        assert not db.new and not db.dirty
+    result = importer.apply_recognition(sessions, batch, catalog_id="joseki", dataset="pending-final")
+    assert [r["status"] for r in result.rows] == ["candidate_pending", "candidate_pending", "applied"]
+    assert all(not r["applied"] and r["pending_annotation"]["hold"] for r in result.rows[:2])
+    pending_ids = {r["figure_id"] for r in result.rows[:2]}
+    assert len(pending_ids) == 2
+    with sessions() as db:
+        for row, item in zip(result.rows[:2], batch.figures[:2]):
+            current = db.get(TutorialFigure, row["figure_id"])
+            if existing_current and current.id == 1274:
+                assert current.board_payload["stones"]["B"] == [[0, 0]]
+                assert current.recognition_debug == {"human_verified": True, "board_review": {"by": "human"}}
+                assert current.narration == "keep human narration"
+            else:
+                assert current.board_payload is None and current.recognition_debug is None
+            assert db.get(TutorialRecognitionCandidate, row["candidate_id"]).raw_result == item.raw
+        assert [h.figure_id for h in db.scalars(select(BoardPayloadHistory))] == [result.rows[2]["figure_id"]]
+        assert len(db.scalars(select(AdminAuditLog)).all()) == 3
+        snapshot = [
+            {c.name: copy.deepcopy(getattr(f, c.name)) for c in TutorialFigure.__table__.columns}
+            for f in db.scalars(select(TutorialFigure).order_by(TutorialFigure.id))
+        ]
+    rerun = importer.apply_recognition(sessions, batch, catalog_id="joseki", dataset="pending-final")
+    assert [r["status"] for r in rerun.rows] == ["existing"] * 3
+    assert all(r["pending_annotation"] and not r["applied"] for r in rerun.rows[:2])
+    with sessions() as db:
+        assert len(db.scalars(select(TutorialRecognitionCandidate)).all()) == 3
+        assert len(db.scalars(select(BoardPayloadHistory)).all()) == 1
+        assert len(db.scalars(select(AdminAuditLog)).all()) == 3
+        assert [
+            {c.name: getattr(f, c.name) for c in TutorialFigure.__table__.columns}
+            for f in db.scalars(select(TutorialFigure).order_by(TutorialFigure.id))
+        ] == snapshot
+    with pytest.raises(importer.RecognitionImportError, match="dataset"):
+        importer.apply_recognition(sessions, batch, catalog_id="joseki", dataset="other")
+
+
+@pytest.mark.parametrize("mode", ["--dry-run", "--apply"])
+def test_pending_annotation_cli_validates_manifest_before_database(tmp_path, monkeypatch, mode):
+    import importlib.util
+
+    paths = pending_annotation_inputs(tmp_path, monkeypatch)
+    data, result, book, pdf, index, manifest_path = paths
+    manifest = json.loads(manifest_path.read_text())
+    manifest["results_sha256"] = "0" * 64
+    manifest_path.write_text(json.dumps(manifest))
+    spec = importlib.util.spec_from_file_location(
+        "pending_cli", Path(__file__).parents[2] / "scripts/import_tutorial_book_recognition.py"
+    )
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    monkeypatch.setenv("KATRAIN_ADMIN_ENV", "test")
+    monkeypatch.setattr(cli, "create_engine", lambda *_a, **_kw: pytest.fail("manifest must be validated before DB"))
+    assert (
+        cli.main(
+            [
+                "--results",
+                str(result),
+                "--book-json",
+                str(book),
+                "--pdf",
+                str(pdf),
+                "--recognition-index",
+                str(index),
+                "--expected-pdf-pages",
+                "290",
+                "--catalog-id",
+                "joseki",
+                "--dataset",
+                "pending-final",
+                "--pending-annotation-manifest",
+                str(manifest_path),
+                "--expected-env",
+                "test",
+                "--report-dir",
+                str(tmp_path / "report"),
+                mode,
+            ]
+        )
+        == 2
+    )
+    assert "pending annotation" in json.loads((tmp_path / "report/report.json").read_text())["error"]

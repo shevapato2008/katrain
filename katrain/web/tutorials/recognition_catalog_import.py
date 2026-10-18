@@ -46,6 +46,7 @@ class RecognitionFigure:
     source_pointer: str | None
     payload: dict | None
     error: str | None = None
+    pending_annotation: dict | None = None
 
 
 @dataclass
@@ -57,6 +58,7 @@ class RecognitionInput:
     source_hashes: dict[str, str]
     coverage_only_pages: list[dict] = field(default_factory=list)
     catalog_id: str | None = None
+    pending_annotation: dict | None = None
 
 
 @dataclass
@@ -70,6 +72,7 @@ class RecognitionReport:
     rows: list[dict] = field(default_factory=list)
     baseline: list[dict] = field(default_factory=list)
     pages: list[dict] = field(default_factory=list)
+    pending_annotation: dict | None = None
 
     def as_dict(self):
         value = asdict(self)
@@ -138,6 +141,14 @@ def normalize_payload(raw):
     result = raw.get("result") or {}
     if result.get("complete") is not True or not isinstance(result.get("payload"), dict):
         raise RecognitionImportError("recognition did not complete with a static payload")
+    return _normalize_static_payload(raw)
+
+
+def _normalize_static_payload(raw):
+    """Validate static evidence; delivery eligibility is checked by its caller."""
+    result = raw.get("result") or {}
+    if not isinstance(result.get("payload"), dict):
+        raise RecognitionImportError("recognition requires a static payload")
     if result.get("issues"):
         raise RecognitionImportError("recognition contains unresolved payload issues")
     payload = copy.deepcopy(result["payload"])
@@ -161,6 +172,189 @@ def normalize_payload(raw):
     payload["source_region"] = region
     payload["replay"] = {"status": "needs_calibration", "initial": None, "moves": []}
     return StrictBoardPayload.model_validate(payload).model_dump(exclude_unset=True)
+
+
+# One reviewed source exception, never a general allow-incomplete import mode.
+_JOSEKI_PENDING_AUTHORITY_SHA256 = {
+    "source_decision": "1ed362b1365f76c3f6268529f806d33cdd46ccc62d8ed031fd653cb0d759978c",
+    "source_evidence": "681ebc5a94477a698e67a2bb6a787d10bd9e1d0429f415c35508c7279ec9464b",
+    "raw_response": "ab8cc7a7b8fbf85541ff88aa988b408b540a1ad21634ec2f8df8858ee6442060",
+}
+_JOSEKI_PENDING_FIGURE_SHA256 = {
+    "p182-f01": "b67377b630d9827183a3ead38cce716010a5b74e0adcd50b98e9fa1b0372a9da",
+    "p182-f02": "6f56c6e09c5cc622ac0864e49a542e3ff2eb606ee996c09dcde51a41d9f4baa2",
+}
+_OWNERSHIP_HOLD = "Logical ownership unresolved; excluded from ordinary recognition retries."
+
+
+def _pending_bound_file(binding, *, approved_sha256=None):
+    if not isinstance(binding, dict) or not isinstance(binding.get("path"), str):
+        raise RecognitionImportError("pending annotation requires an explicit file/hash binding")
+    path = Path(binding["path"])
+    if (
+        not path.is_file()
+        or file_sha256(path) != binding.get("sha256")
+        or (approved_sha256 is not None and binding.get("sha256") != approved_sha256)
+    ):
+        raise RecognitionImportError("pending annotation file/hash differs from its bound evidence")
+    return path
+
+
+def _validate_pending_annotations(manifest_path, data, batch, results_path, index_path, *, dataset, expected_pdf_pages):
+    """Recompute the finite exception after normal source/index checks, before any DB access."""
+    manifest = _read(manifest_path)
+    expected_ids = set(_JOSEKI_PENDING_FIGURE_SHA256)
+    if (
+        manifest.get("format") != "joseki-p182-pending-annotation-v1"
+        or manifest.get("catalog_id") != "joseki"
+        or data.get("catalog_id") != "joseki"
+        or expected_pdf_pages != 290
+        or not dataset
+        or manifest.get("dataset") != dataset
+        or set(manifest.get("figures", {})) != expected_ids
+    ):
+        raise RecognitionImportError("pending annotation catalog/dataset/exact two-figure scope mismatch")
+    if (
+        index_path is None
+        or manifest.get("results_sha256") != file_sha256(results_path)
+        or manifest.get("recognition_index_sha256") != file_sha256(index_path)
+        or data.get("recognition_index_sha256") != file_sha256(index_path)
+    ):
+        raise RecognitionImportError("pending annotation final/index hash mismatch")
+    index = _read(index_path)
+    if index.get("content_sha256") != content_sha256(
+        {k: v for k, v in index.items() if k != "content_sha256"}
+    ) or data.get("recognition_index_content_sha256") != index.get("content_sha256"):
+        raise RecognitionImportError("pending annotation index content hash mismatch")
+    _pending_bound_file(
+        manifest.get("source_decision"), approved_sha256=_JOSEKI_PENDING_AUTHORITY_SHA256["source_decision"]
+    )
+    evidence = _read(
+        _pending_bound_file(
+            manifest.get("source_evidence"), approved_sha256=_JOSEKI_PENDING_AUTHORITY_SHA256["source_evidence"]
+        )
+    )
+    source_digest = evidence.get("source_manifest_sha256")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(source_digest)):
+        raise RecognitionImportError("approved pending annotation evidence lacks its source manifest hash")
+    source = _read(_pending_bound_file(manifest.get("source_manifest"), approved_sha256=source_digest))
+    source_pages = source.get("pages", [])
+    source_map = {p.get("page"): p for p in source_pages}
+    if (
+        source.get("catalog_id") != "joseki"
+        or source.get("pdf_pages") != 290
+        or source.get("sources") != data.get("sources")
+        or len(source_pages) != 290
+        or set(source_map) != set(range(1, 291))
+    ):
+        raise RecognitionImportError("pending annotation source inventory is incomplete")
+    for page in batch.pages:
+        original = source_map.get(page["page"], {})
+        if any(
+            page.get(k) != original.get(k) for k in ("input_image", "page_sha256", "references", "reference_pointers")
+        ):
+            raise RecognitionImportError("pending annotation source page binding changed")
+    figures = {f.raw["id"]: f for f in batch.figures}
+    if {f.raw["id"] for f in batch.figures if f.raw.get("result", {}).get("complete") is not True} != expected_ids or {
+        f.raw["id"] for f in batch.figures if f.raw["page"] == 182
+    } != expected_ids:
+        raise RecognitionImportError("pending annotation requires exactly the two original incomplete targets")
+    ledger = _read(_pending_bound_file(manifest.get("logical_coverage")))
+    records = ledger.get("records", [])
+    if (
+        ledger.get("catalog_id") != "joseki"
+        or ledger.get("logical_coverage_closed") is not False
+        or ledger.get("baseline_references") != data.get("baseline_references")
+        or len(records) != len(figures)
+        or {r.get("id") for r in records} != set(figures)
+    ):
+        raise RecognitionImportError("pending annotation logical mapping differs from final targets")
+    for record in records:
+        item = figures[record["id"]]
+        raw = item.raw
+        if (
+            record.get("status") != ("unresolved" if raw["id"] in expected_ids else "complete")
+            or record.get("page") != raw["page"]
+            or record.get("label") != raw.get("label")
+            or record.get("source_pointer") != item.source_pointer
+        ):
+            raise RecognitionImportError("pending annotation has another incomplete logical mapping")
+    metadata = {
+        "manifest_path": str(Path(manifest_path).resolve()),
+        "manifest_sha256": file_sha256(manifest_path),
+        "manifest": copy.deepcopy(manifest),
+        "dataset": dataset,
+        "source_inventory_complete": True,
+        "independent_figure_mapping_complete": True,
+        "static_candidates_validated": len(figures),
+        "pending_annotation_figures": 2,
+        "recognition_complete": False,
+        "logical_coverage_closed": False,
+    }
+    base = Path(results_path).resolve().parent
+    for item in batch.figures:
+        raw = item.raw
+        result = raw.get("result") or {}
+        ident = raw["id"]
+        crop = (base / str(raw.get("crop", ""))).resolve()
+        target = base / "assets/targets" / (ident + ".png")
+        if (
+            not crop.is_relative_to(base)
+            or not crop.is_file()
+            or file_sha256(crop) != raw.get("crop_sha256")
+            or not target.is_file()
+            or file_sha256(target) != (raw.get("recognition_provenance") or {}).get("target_grid_sha256")
+        ):
+            raise RecognitionImportError("pending annotation diagram asset/hash mismatch")
+        if ident not in expected_ids:
+            if (
+                item.error
+                or result.get("error")
+                or raw.get("membership_status") == "unresolved"
+                or raw.get("donor_completeness_status") == "unresolved"
+            ):
+                raise RecognitionImportError("pending annotation does not exempt other diagram errors")
+            continue
+        record = manifest["figures"][ident]
+        if (
+            content_sha256(raw) != _JOSEKI_PENDING_FIGURE_SHA256[ident]
+            or record.get("figure_sha256") != content_sha256(raw)
+            or record.get("payload_sha256") != content_sha256(result.get("payload"))
+            or record.get("uncertainties_sha256") != content_sha256(result.get("uncertainties"))
+            or raw.get("membership_status") != "unresolved"
+            or result.get("complete") is not False
+            or result.get("error") != _OWNERSHIP_HOLD
+            or result.get("issues")
+            or result.get("origin_uncertain") is not False
+            or raw.get("needs_review") is not True
+            or len(result.get("uncertainties", [])) != 1
+        ):
+            raise RecognitionImportError("pending annotation differs from the approved figure/payload/hold")
+        raw_path = _pending_bound_file(
+            record.get("raw_response"), approved_sha256=_JOSEKI_PENDING_AUTHORITY_SHA256["raw_response"]
+        )
+        position = sorted(expected_ids).index(ident)
+        boards = _read(raw_path).get("figures", [])
+        if (
+            record.get("raw_pointer") != f"/figures/{position}"
+            or record.get("raw_uncertainty_pointer") != f"/figures/{position}/uncertainties/0"
+            or len(boards) != 2
+            or boards[position] != raw.get("model_response")
+            or len(boards[position].get("uncertainties", [])) != 1
+            or record.get("raw_uncertainty_sha256") != content_sha256(boards[position]["uncertainties"][0])
+        ):
+            raise RecognitionImportError("pending annotation raw response/pointer changed")
+        payload = _normalize_static_payload(raw)
+        if payload != result["payload"]:
+            raise RecognitionImportError("pending annotation requires unchanged explicit static v2 evidence")
+        item.payload, item.error = payload, None
+        item.pending_annotation = {
+            "manifest_sha256": metadata["manifest_sha256"],
+            "hold": result["error"],
+            "evidence": copy.deepcopy(record),
+            "recognition_complete": False,
+        }
+    return metadata
 
 
 def _load_recognition(
@@ -285,7 +479,15 @@ def load_recognition(results_path, book_json_path, *, index_path=None, accepted_
 
 
 def load_catalog_recognition(
-    results_path, book_json_path, *, catalog_id, pdf_path, expected_pdf_pages, index_path=None
+    results_path,
+    book_json_path,
+    *,
+    catalog_id,
+    pdf_path,
+    expected_pdf_pages,
+    index_path=None,
+    dataset=None,
+    pending_annotation_manifest=None,
 ):
     """Load one complete non-Ishida PDF, retaining all coverage without weakening registered pages."""
     if catalog_id == "ishida-judgement":
@@ -311,11 +513,42 @@ def load_catalog_recognition(
         index = _read(index_path)
         if any(index.get(k) != data.get(k) for k in ("catalog_id", "pdf_pages", "baseline_references")):
             raise RecognitionImportError("recognition index catalog/PDF identity mismatch")
+    if pending_annotation_manifest is not None:
+        batch.pending_annotation = _validate_pending_annotations(
+            pending_annotation_manifest,
+            data,
+            batch,
+            results_path,
+            index_path,
+            dataset=dataset,
+            expected_pdf_pages=expected_pdf_pages,
+        )
     outcomes = data.get("page_outcomes", [])
-    if len(outcomes) != expected_pdf_pages or {p.get("page") for p in outcomes if p.get("status") == "complete"} != set(
-        range(1, expected_pdf_pages + 1)
+    pending_ids = {f.raw["id"] for f in batch.figures if f.pending_annotation}
+    if (
+        len(outcomes) != expected_pdf_pages
+        or {p.get("page") for p in outcomes} != set(range(1, expected_pdf_pages + 1))
+        or any(p.get("status") != ("failed" if pending_ids and p["page"] == 182 else "complete") for p in outcomes)
     ):
         raise RecognitionImportError("generic import requires all PDF pages recognized and validated")
+    if pending_ids:
+        outcome = next(p for p in outcomes if p["page"] == 182)
+        errors = outcome.get("recognition_errors", [])
+        if (
+            outcome.get("detection_status") != "complete"
+            or outcome.get("detection_error") is not None
+            or len(errors) != 2
+            or {e.get("id") for e in errors} != pending_ids
+            or any(e.get("error") != _OWNERSHIP_HOLD for e in errors)
+            or any(
+                p.get("detection_error")
+                or p.get("recognition_errors")
+                or p.get("detection_status", "complete") not in ("complete", "reused_final")
+                for p in outcomes
+                if p["page"] != 182
+            )
+        ):
+            raise RecognitionImportError("pending annotation page has another detection/recognition error")
     by_page = defaultdict(list)
     for figure in batch.figures:
         if figure.error:
@@ -326,6 +559,7 @@ def load_catalog_recognition(
         if (
             page.get("detection_status") not in ("complete", "reused_final")
             or page.get("detected_count") != len(figures)
+            or len(page.get("figure_ids", [])) != len(figures)
             or set(page.get("figure_ids", [])) != {f.raw["id"] for f in figures}
         ):
             raise RecognitionImportError("PDF page detection/recognition is not complete")
@@ -510,6 +744,8 @@ def _supplemental(db, source, item, reference):
 def _run(db, batch, *, catalog_id, dataset, apply=False, actor="system:recognition-import"):
     if not dataset or len(dataset) > 128:
         raise RecognitionImportError("dataset must be a stable nonempty identity of at most128 characters")
+    if batch.pending_annotation and batch.pending_annotation["dataset"] != dataset:
+        raise RecognitionImportError("pending annotation dataset differs from its verified manifest")
     if apply:
         _lock_source(db, catalog_id)
     source = _source(db, batch, catalog_id, lock=apply)
@@ -521,6 +757,7 @@ def _run(db, batch, *, catalog_id, dataset, apply=False, actor="system:recogniti
         source.book_id,
         batch.source_json_sha256,
         pages=sorted(copy.deepcopy(batch.pages + batch.coverage_only_pages), key=lambda p: p["page"]),
+        pending_annotation=copy.deepcopy(batch.pending_annotation),
     )
     page_query = select(TutorialSourcePage).where(TutorialSourcePage.source_book_id == source.id)
     if apply:
@@ -576,7 +813,8 @@ def _run(db, batch, *, catalog_id, dataset, apply=False, actor="system:recogniti
             "applied": False,
             "supplemental": False,
             "proposed_new": False,
-            "error": item.error,
+            "error": item.pending_annotation["hold"] if item.pending_annotation else item.error,
+            "pending_annotation": copy.deepcopy(item.pending_annotation),
         }
         report.rows.append(row)
         candidate = existing.get((dataset, raw["id"]))
@@ -628,6 +866,8 @@ def _run(db, batch, *, catalog_id, dataset, apply=False, actor="system:recogniti
             protection_reason=reason,
             status="protected" if reason else ("would_create" if figure is None else "would_apply"),
         )
+        if item.pending_annotation:
+            row["status"] = "candidate_pending"
         if not apply:
             # Reserve this real target for the first physical result in a split group.
             if figure is not None:
@@ -667,7 +907,9 @@ def _run(db, batch, *, catalog_id, dataset, apply=False, actor="system:recogniti
         # This check is under target row lock, after evidence/link insertion, in the same transaction.
         reason = _protected(db, figure, training_table=TrainingSample.__tablename__ in tables)
         row.update(protected=bool(reason), protection_reason=reason)
-        if reason:
+        if item.pending_annotation:
+            row["status"] = "candidate_pending"
+        elif reason:
             row["status"] = "protected"
         else:
             expected = figure.updated_at.isoformat() if figure.updated_at is not None else None
@@ -708,6 +950,7 @@ def _run(db, batch, *, catalog_id, dataset, apply=False, actor="system:recogniti
                         "candidate_id": candidate.id,
                         "status": row["status"],
                         "source_pointer": pointer,
+                        "pending_annotation": item.pending_annotation,
                     },
                     ensure_ascii=False,
                 ),
@@ -764,6 +1007,7 @@ def write_recognition_reports(directory, report):
         "supplemental",
         "proposed_new",
         "error",
+        "pending_annotation",
     ]
     with (directory / "recognition-figure-map.csv").open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)

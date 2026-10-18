@@ -39,6 +39,11 @@ def argument_parser():
         "--expected-pdf-pages", required=True, type=int, help="Actual PDF page count from independent source inventory"
     )
     parser.add_argument("--recognition-index", type=Path, help="Defaults to sibling recognition-index.json if present")
+    parser.add_argument(
+        "--pending-annotation-manifest",
+        type=Path,
+        help="Explicit hash-bound Joseki p182 candidate-only delivery; preserves both holds",
+    )
     parser.add_argument("--catalog-id", required=True)
     parser.add_argument("--dataset", required=True, help="Stable recognition dataset identity; never a timestamp")
     parser.add_argument("--report-dir", required=True, type=Path)
@@ -80,6 +85,8 @@ def main(argv=None):
             catalog_id=args.catalog_id,
             pdf_path=args.pdf,
             expected_pdf_pages=args.expected_pdf_pages,
+            dataset=args.dataset,
+            pending_annotation_manifest=args.pending_annotation_manifest,
         )
         engine = create_engine(settings.DATABASE_URL, echo=False, pool_pre_ping=True)
         sessions = sessionmaker(bind=engine, expire_on_commit=False, autoflush=False)

@@ -674,10 +674,16 @@ class BookRunner(shared.Runner):
             failed = [
                 dict(id=f["id"], error=f["result"].get("error"))
                 for f in state["figures"]
-                if not f.get("result", {}).get("complete")
+                if "result" in f and not f["result"].get("complete")
             ]
+            # An interrupted future batch can have frozen detection/crops but
+            # no transcription yet. Preserve those figures as pending evidence.
+            pending = any("result" not in f for f in state["figures"])
             detected = state["page"].get("detection_status") == "complete"
-            status = "complete" if detected and not failed else "failed" if path.exists() else "not_requested"
+            if failed or state["page"].get("detection_status") == "failed":
+                status = "failed"
+            else:
+                status = "complete" if detected and not pending else "not_requested"
             outcomes.append(
                 dict(
                     page=page["page"],

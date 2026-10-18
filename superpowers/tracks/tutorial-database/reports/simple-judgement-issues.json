@@ -1,0 +1,492 @@
+[
+  {
+    "recognition_id": "p016-f03",
+    "page": 16,
+    "source_pointer": "/chapters/1/sections/1/pages/7/elements/2",
+    "figure_id": 28604,
+    "candidate_id": 6095,
+    "inferences": [
+      {
+        "at": "5,2",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字较淡；正文“对黑1的攻击”与后续黑3、5、7及可见竖笔相符。",
+        "cell": "5,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p024-f02",
+    "page": 24,
+    "source_pointer": "/chapters/1/sections/2/pages/0/elements/2",
+    "figure_id": 28635,
+    "candidate_id": 6126,
+    "inferences": [
+      {
+        "at": "6,11",
+        "value": "7",
+        "basis": "combined",
+        "reason": "字迹浅淡；正文“黑1、3至7”及相邻白6、白8的次序支持为7。",
+        "cell": "17,11"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p038-f02",
+    "page": 38,
+    "source_pointer": "/chapters/2/sections/0/pages/3/elements/1",
+    "figure_id": 28680,
+    "candidate_id": 6171,
+    "inferences": [
+      {
+        "at": "8,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "上沿严重褪色；正文“黑5后”结合黑1至白6的局部次序，推定此处为黑5。",
+        "cell": "14,0"
+      },
+      {
+        "at": "9,0",
+        "value": "white",
+        "basis": "combined",
+        "reason": "顶端标号为6；结合黑1起手的交替次序及下方白子的连接关系，判为白6。",
+        "cell": "15,0"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "8,0",
+        "reason": "上沿此点轮廓与数字严重缺损，黑5的位置属于推定。",
+        "candidates": [
+          "黑5",
+          "空点"
+        ],
+        "cell": "14,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p064-f04",
+    "page": 64,
+    "source_pointer": "/chapters/2/sections/2/pages/6/elements/3",
+    "figure_id": 28745,
+    "candidate_id": 6236,
+    "inferences": [
+      {
+        "at": "8,2",
+        "value": "白9粘",
+        "basis": "combined",
+        "reason": "图外注“⑨粘”；黑6扑、白7提后，白9在黑6原位粘。",
+        "cell": "14,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p066-f02",
+    "page": 66,
+    "source_pointer": "/chapters/2/sections/2/pages/8/elements/1",
+    "figure_id": 28749,
+    "candidate_id": 6240,
+    "uncertainties": [
+      {
+        "at": "6,13",
+        "reason": "似有白子圆圈，但与周围黑子轮廓相接；黑5后该子应被提，暂按可见圆圈保留。",
+        "candidates": [
+          "white",
+          "empty"
+        ],
+        "cell": "17,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p077-f03",
+    "page": 77,
+    "source_pointer": "/chapters/2/sections/2/pages/19/elements/2",
+    "figure_id": 28794,
+    "candidate_id": 6285,
+    "uncertainties": [
+      {
+        "at": "2,14",
+        "reason": "黑子内浅色符号疑为三角，亦似字母A，扫描不清。",
+        "candidates": [
+          "triangle",
+          "letter_A",
+          "unmarked"
+        ],
+        "cell": "13,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p087-f03",
+    "page": 87,
+    "source_pointer": "/chapters/2/sections/3/pages/4/elements/2",
+    "figure_id": 28835,
+    "candidate_id": 6326,
+    "uncertainties": [
+      {
+        "at": "4,11",
+        "reason": "空点上有小型环状字形，笔画模糊，无棋子大小的圆轮廓。",
+        "candidates": [
+          "letter_b",
+          "模糊印痕"
+        ],
+        "cell": "15,11"
+      },
+      {
+        "at": "3,12",
+        "reason": "交点有深色叉状痕迹，不能确定是标记还是污损。",
+        "candidates": [
+          "cross",
+          "印刷污损"
+        ],
+        "cell": "14,12"
+      },
+      {
+        "at": "4,12",
+        "reason": "交点附近有浅色字形，疑似小写字母。",
+        "candidates": [
+          "letter_c",
+          "模糊印痕"
+        ],
+        "cell": "15,12"
+      },
+      {
+        "at": "3,13",
+        "reason": "空点上有小型环状斜笔字形，不能可靠辨认。",
+        "candidates": [
+          "letter_a",
+          "circle",
+          "模糊印痕"
+        ],
+        "cell": "14,13"
+      },
+      {
+        "at": "4,13",
+        "reason": "交点有小型深色痕迹，无法确认其标记含义。",
+        "candidates": [
+          "cross",
+          "印刷污损"
+        ],
+        "cell": "15,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p100-f01",
+    "page": 100,
+    "source_pointer": "/chapters/3/sections/0/pages/6/elements/1",
+    "figure_id": 28863,
+    "candidate_id": 6354,
+    "uncertainties": [
+      {
+        "at": "16,5",
+        "reason": "黑子内浅色痕迹不清，不能确定是否有三角标记。",
+        "candidates": [
+          "无标记",
+          "triangle"
+        ],
+        "cell": "16,11"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p100-f02",
+    "page": 100,
+    "source_pointer": "/chapters/3/sections/0/pages/6/elements/6",
+    "figure_id": 28864,
+    "candidate_id": 6355,
+    "uncertainties": [
+      {
+        "at": "16,11",
+        "reason": "黑子内浅色痕迹不清，不能确定是否有三角标记。",
+        "candidates": [
+          "无标记",
+          "triangle"
+        ],
+        "cell": "16,11"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p105-f03",
+    "page": 105,
+    "source_pointer": "/chapters/3/sections/1/pages/1/elements/6",
+    "figure_id": 28876,
+    "candidate_id": 6367,
+    "inferences": [
+      {
+        "at": "2,17",
+        "value": "5",
+        "basis": "combined",
+        "reason": "目标中字迹模糊；上下文图可辨为5，且与正文黑1至7及局部编号顺序一致。",
+        "cell": "2,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p110-f01",
+    "page": 110,
+    "source_pointer": "/chapters/3/sections/1/pages/6/elements/1",
+    "figure_id": 28885,
+    "candidate_id": 6376,
+    "inferences": [
+      {
+        "at": "6,2",
+        "value": "1",
+        "basis": "sequence",
+        "reason": "黑子上号码较淡，结合邻近白2、黑3及后续编号判为1。",
+        "cell": "6,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p113-f02",
+    "page": 113,
+    "source_pointer": "/chapters/3/sections/1/pages/9/elements/4",
+    "figure_id": 28894,
+    "candidate_id": 6385,
+    "inferences": [
+      {
+        "at": "9,17",
+        "value": "1",
+        "basis": "combined",
+        "reason": "字迹较淡；其余奇数着均可定位，此处与正文所述黑1飞及编号次序相符。",
+        "cell": "9,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p120-f01",
+    "page": 120,
+    "source_pointer": "/chapters/3/sections/2/pages/2/elements/2",
+    "figure_id": 28905,
+    "candidate_id": 6396,
+    "inferences": [
+      {
+        "at": "7,6",
+        "value": "3",
+        "basis": "combined",
+        "reason": "字形模糊；结合白1、黑2及后续黑4、白5的连续着手，判为白3。",
+        "cell": "11,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p122-f02",
+    "page": 122,
+    "source_pointer": "/chapters/3/sections/2/pages/4/elements/2",
+    "figure_id": 28912,
+    "candidate_id": 6403,
+    "inferences": [
+      {
+        "at": "10,2",
+        "value": "3",
+        "basis": "combined",
+        "reason": "右边界白子字形似3，与白1、黑2后的白方应手顺序相符。",
+        "cell": "18,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p144-f02",
+    "page": 144,
+    "source_pointer": "/chapters/3/sections/4/pages/5/elements/8",
+    "figure_id": 28960,
+    "candidate_id": 6451,
+    "inferences": [
+      {
+        "at": "4,7",
+        "value": "6",
+        "basis": "combined",
+        "reason": "字形较淡；结合正文“白4、6”及图中其余编号，判为6。",
+        "cell": "10,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p145-f03",
+    "page": 145,
+    "source_pointer": "/chapters/3/sections/4/pages/6/elements/4",
+    "figure_id": 28963,
+    "candidate_id": 6454,
+    "uncertainties": [
+      {
+        "at": "4,11",
+        "reason": "黑子内部有浅色痕迹，无法确认是印刷斑痕还是三角标记。",
+        "candidates": [
+          "无标记",
+          "triangle"
+        ],
+        "cell": "4,11"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p146-f01",
+    "page": 146,
+    "source_pointer": "/chapters/3/sections/4/pages/7/elements/0",
+    "figure_id": 28964,
+    "candidate_id": 6455,
+    "inferences": [
+      {
+        "at": "10,2",
+        "value": "7",
+        "basis": "combined",
+        "reason": "数字较淡；正文“黑6若挡，白7就长”及白5右邻位置共同支持读作7。",
+        "cell": "16,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p151-f02",
+    "page": 151,
+    "source_pointer": "/chapters/3/sections/4/pages/12/elements/3",
+    "figure_id": 28975,
+    "candidate_id": 6466,
+    "uncertainties": [
+      {
+        "at": "12,12",
+        "reason": "8下方未见可靠圆轮廓，暂按空点，仍有白子轮廓过淡的可能。",
+        "candidates": [
+          "empty",
+          "white"
+        ],
+        "cell": "12,12"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p177-f01",
+    "page": 177,
+    "source_pointer": "/chapters/3/sections/6/pages/6/elements/1",
+    "figure_id": 29028,
+    "candidate_id": 6519,
+    "inferences": [
+      {
+        "at": "2,5",
+        "value": "25",
+        "basis": "combined",
+        "reason": "残字结合黑24、黑26之间的白方应手，判为25。",
+        "cell": "2,5"
+      },
+      {
+        "at": "0,5",
+        "value": "27",
+        "basis": "combined",
+        "reason": "残字结合黑26后、黑28前的白方应手，判为27。",
+        "cell": "0,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p178-f04",
+    "page": 178,
+    "source_pointer": "/chapters/3/sections/6/pages/7/elements/4",
+    "figure_id": 29033,
+    "candidate_id": 6524,
+    "inferences": [
+      {
+        "at": "4,6",
+        "value": "7",
+        "basis": "combined",
+        "reason": "字迹淡；结合黑1起的交替次序及正文“黑7只能连回”，判为黑7。",
+        "cell": "12,12"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p180-f01",
+    "page": 180,
+    "source_pointer": "/chapters/3/sections/6/pages/9/elements/1",
+    "figure_id": 29036,
+    "candidate_id": 6527,
+    "uncertainties": [
+      {
+        "at": "1,5",
+        "reason": "白子内有模糊竖笔，无法确认是否为编号。",
+        "candidates": [
+          "数字1",
+          "无编号（网格线透印）"
+        ],
+        "cell": "1,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p194-f01",
+    "page": 194,
+    "source_pointer": "/chapters/3/sections/8/pages/1/elements/3",
+    "figure_id": 29062,
+    "candidate_id": 6553,
+    "inferences": [
+      {
+        "at": "7,1",
+        "value": "10",
+        "basis": "combined",
+        "reason": "字形较糊，结合黑1起的交替顺序及上边白10至16做活的说明，判为白10。",
+        "cell": "14,1"
+      },
+      {
+        "at": "8,2",
+        "value": "11",
+        "basis": "combined",
+        "reason": "浅印字形近11，与白10、白12之间的黑着及局部次序吻合。",
+        "cell": "15,2"
+      },
+      {
+        "at": "6,2",
+        "value": "13",
+        "basis": "combined",
+        "reason": "浅印字形近13，与白12、白14之间的黑着及局部次序吻合。",
+        "cell": "13,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p209-f02",
+    "page": 209,
+    "source_pointer": "/chapters/4/sections/2/pages/1/elements/2",
+    "figure_id": 29085,
+    "candidate_id": 6576,
+    "uncertainties": [
+      {
+        "at": "6,7",
+        "reason": "黑子上两位数的末位模糊，无法确定为5或7。",
+        "candidates": [
+          "15",
+          "17"
+        ],
+        "cell": "13,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p210-f01",
+    "page": 210,
+    "source_pointer": "/chapters/4/sections/3/pages/0/elements/7",
+    "figure_id": 29087,
+    "candidate_id": 6578,
+    "uncertainties": [
+      {
+        "at": "4,18",
+        "reason": "底边三角标记处可见棋子轮廓，但底色较深；文字说明三角处为白提子后接上，颜色不能可靠判定。",
+        "candidates": [
+          "black",
+          "white"
+        ],
+        "cell": "4,18"
+      }
+    ],
+    "unknown_stones": [
+      {
+        "point": [
+          4,
+          18
+        ],
+        "color": null
+      }
+    ]
+  }
+]

@@ -52,7 +52,7 @@ def table(data):
         '<p class="section-intro">78本独立书源；先覆盖各模块核心教材，同层按模块轮转、多卷分轮推进；跨模块重复书只处理一次。'
         '识别、机器校验、人工审核与音视频分别记录；“已识别”不代表人工审核通过。原书单的正文解析完成仅指文字与结构，不代表电子棋图已完成。</p>'
         '<p><strong>当前连续执行目标：23本核心教材，5,827个PDF页。</strong>其他层级后置；《围棋入门速成》作为此前已启动的补充任务单独记录，不计入23本。</p>'
-        '<p>每本每完成10个PDF页在session汇报；每本完成识别后更新本表。语音及视频不会随本轮识别自动批量生成。'
+        f'<p>每本每完成10个PDF页在session汇报并更新本表；当前模型请求配置上限{data.get("request_limit",3)}。语音及视频不会随本轮识别自动批量生成。'
         '<a href="plan.md">当前执行说明</a> · <a href="progress.json">进度数据</a></p></div></div>'
         '<div class="table-wrap progress-table-wrap"><table aria-label="78本教材制作阶段">'
         '<thead><tr>'+''.join(f'<th scope="col">{text}</th>' for text in headers)+'</tr></thead><tbody>'
@@ -74,7 +74,7 @@ def render_plan(data):
 - 78本真实书源按核心教材 → 练习/专项/纠错 → 提高/棋风比较 → 模块内补充 → 独立补充专题推进；每层按模块轮转、每轮每模块一本，多卷分轮，跨模块重复书只识别一次。
 - 已完成和正在识别的书籍见下表；空闲任务接续队列中的下一本核心教材。模块13首选《简明形势判断》，石田书复用完成结果，不替代主教材。
 - 使用 `.agents/skills/tutorial-gpt-recognition`：GPT-6.1-Sol / high，整页定位、完整棋图转录、严格契约校验、dry-run及TEST增量候选入库。
-- 每位子智能体负责一本书，全局最多3个实际模型请求并行；每书每10个PDF页识别及校验完成后在session报告，尾批单独报告。
+- 每书使用独立识别进程，由主控/工作智能体监督；共享锁将实际模型请求限制在配置上限{data.get('request_limit',3)}以内。原生子智能体数量与书籍进程数分别控制；每书每10个PDF页识别及校验完成后在session报告并更新表格，尾批单独报告。
 - 复用已完成final与原页、文字、缓存；不重跑OCR，不覆盖人工校准、审核或音视频。识别/机器检查与管理员人工审核分开。
 - 仅TEST环境授权：home-ubuntu，DB system_identifier `7596941912817897507`，`katrain_db`，s3 `tutorial-assets`，媒体地址 `https://go.sailorvoyage.top/media`。不写生产或全表同步。
 - 本轮不自动批量生成语音/视频；两阶段在HTML表中独立跟踪。
@@ -104,7 +104,7 @@ def render_plan(data):
 
 ## 更新方式
 
-在本仓库运行 `python3 superpowers/tracks/tutorial-database/update_progress.py --refresh` 从识别输出刷新表格及本说明。每本识别完成必须执行一次；语音/视频阶段变化可用 `--book <catalog-id> --voice '<阶段>' --video '<阶段>'` 更新。原始书目来源：`/Users/fan/Repositories/go-topic-collections/docs/go-curriculum.html`；此仓库副本保留原模块、路径和书目内容。
+在本仓库运行 `python3 superpowers/tracks/tutorial-database/update_progress.py --refresh` 从识别输出刷新表格及本说明。每10个PDF页及整书完成时执行；语音/视频阶段变化可用 `--book <catalog-id> --voice '<阶段>' --video '<阶段>'` 更新。原始书目来源：`/Users/fan/Repositories/go-topic-collections/docs/go-curriculum.html`；此仓库副本保留原模块、路径和书目内容。
 '''
 
 
@@ -120,6 +120,12 @@ def main():
     with lock_path.open('a+') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
         data = json.loads((HERE/'progress.json').read_text())
+        queue_path = args.output_root/'queue.json'
+        limit = (json.loads(queue_path.read_text()).get('global_request_limit',3)
+                 if queue_path.exists() else data.get('request_limit',3))
+        if type(limit) is not int or limit < 1:
+            raise ValueError('positive configured request limit required')
+        data['request_limit'] = limit
         if args.refresh:
             refresh(data,args.output_root)
         if args.book:

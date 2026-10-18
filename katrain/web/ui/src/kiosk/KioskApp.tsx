@@ -15,6 +15,7 @@
 // 引在 KioskApp.tsx 而不是 main.tsx:AppRouter 是 lazy(() => import('./kiosk/KioskApp')),
 // 引在这里 CSS 就落进 kiosk 分块,galaxy 不受影响;kiosk-2d 构建里 galaxy 整条被 DCE。
 import '../kiosk-shell/fonts.css';
+import '../kiosk-shell/brand-font.css';
 import '../kiosk-shell/tokens.css';
 import '../kiosk-shell/go-tokens.css';
 import '../kiosk-shell/seclabel.css';

@@ -210,7 +210,7 @@
 
   /* ---------- §9 字号尺规 ---------- */
   --fs-brand-zh: 20px;
-  --fs-brand-en: 12px;
+  --fs-brand-en: 15px;
   --fs-game-name: 16px;
   --fs-page-title: 26px;
   --fs-section-title: 17px;
@@ -288,11 +288,15 @@
 }
 .kiosk-topbar__brand-en {
   margin-left: var(--topbar-gap-zh-en);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 500;
+  font-family: "SmartBox Fondamento", var(--font-serif);
+  font-style: normal;
+  font-weight: 400;
+  font-synthesis: none;
   font-size: var(--fs-brand-en);
   line-height: 1;
+  letter-spacing: .005em;
+  position: relative;
+  top: 1px;
   color: var(--dim);
 }
 .kiosk-topbar__rule {

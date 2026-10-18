@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Box, ButtonBase } from '@mui/material';
-import { SYSTEM_UI_FONT } from '../../theme';
 import { useGameNavigation } from '../../context/GameNavigationContext';
 
 interface GalaxyTopBarProps {
@@ -47,7 +46,7 @@ const GalaxyTopBar = ({ rightSlot }: GalaxyTopBarProps) => {
         <Box
           component="span"
           className="galaxy-brand-latin"
-          sx={{ fontFamily: SYSTEM_UI_FONT, fontSize: 14, lineHeight: 1, fontWeight: 600, letterSpacing: '0.02em' }}
+          sx={{ fontFamily: '"SmartBox Fondamento", serif', fontSize: 16, lineHeight: 1, fontWeight: 400, fontStyle: 'normal', fontSynthesis: 'none', letterSpacing: '0.005em', position: 'relative', top: 1 }}
         >
           StellaBox
         </Box>

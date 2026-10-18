@@ -19,7 +19,8 @@ def refresh(data, output):
         result = folder / 'results.json'
         if not result.exists():
             continue
-        value = json.loads(result.read_text())
+        result_bytes = result.read_bytes()
+        value = json.loads(result_bytes)
         if value.get('catalog_id') != book['catalog_id']:
             raise ValueError(f"source identity mismatch: {book['catalog_id']}")
         summary = value['summary']
@@ -27,8 +28,23 @@ def refresh(data, output):
         figures, failed = summary['completed'], summary['failed_pages']
         correction = folder / 'p010-detection-override.json'
         unresolved = correction.exists() and json.loads(correction.read_text()).get('status') != 'applied_and_validated'
+        report_path = HERE / 'reports' / f"{book['catalog_id']}.json"
+        try:
+            report = json.loads(report_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            report = {}
+        delivery = report.get('candidate_delivery') or {}
+        pending = delivery.get('pending_annotation_figures', 0)
+        delivered_pending = (
+            report.get('catalog_id') == book['catalog_id']
+            and report.get('delivery_stage') == 'test_candidate_collection_verified_pending_annotations'
+            and delivery.get('manifest', {}).get('results_sha256') == hashlib.sha256(result_bytes).hexdigest()
+            and pending > 0
+        )
         if unresolved:
             book['recognition'] = f'识别中 · 第10页分图修正待完成（原始结果已归档）'
+        elif delivered_pending:
+            book['recognition'] = f"候选已交付 · {delivery['static_candidates_validated']}图；注记未决{pending}图"
         else:
             stage = '已识别' if complete == total and failed == 0 else '识别中'
             book['recognition'] = f'{stage} · {complete}/{total}页 · {figures}图'

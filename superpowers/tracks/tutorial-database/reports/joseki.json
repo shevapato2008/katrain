@@ -1,0 +1,6494 @@
+{
+  "catalog_id": "joseki",
+  "title": "吴清源围棋全集：第二卷·定式要领",
+  "priority_tier": "核心教材",
+  "dataset": "curriculum-joseki-gpt61sol-v1",
+  "book_id": 46,
+  "source_book_id": 41,
+  "summary": {
+    "pdf_pages": 290,
+    "pages_detected": 290,
+    "pages_recognized_validated": 289,
+    "figures": 471,
+    "completed": 469,
+    "failed_pages": 1,
+    "pending_pages": 0,
+    "baseline_references": 259,
+    "uncertain_figures": 19,
+    "inferred_figures": 79,
+    "coverage_missing": 0
+  },
+  "source_files": {
+    "/Users/fan/Repositories/go-topic-collections/curriculum/06_定式理解与选择/吴清源围棋全集_第二卷_定式要领_吴清源/定式要领 - 吴清源.pdf": "7ac4228f7362abd207ee1e7e1ac95b35638727945478aac6d8163b7a9ef977a2",
+    "/Users/fan/Repositories/go-topic-collections/curriculum/06_定式理解与选择/吴清源围棋全集_第二卷_定式要领_吴清源/output/book.json": "5d964c3a6d5c2a2ac3e78d446b604f5a116137a767942bd3a4680bf90c08bdb0"
+  },
+  "coverage": {
+    "baseline_references": 259,
+    "covered_references": 259,
+    "references": [
+      {
+        "page": 12,
+        "ref_index": 1,
+        "label": "第一图",
+        "source_pointer": "/chapters/0/sections/0/pages/0/elements/0",
+        "figure_ids": [
+          "p012-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 13,
+        "ref_index": 1,
+        "label": "第二图、第三图",
+        "source_pointer": "/chapters/0/sections/0/pages/1/elements/0",
+        "figure_ids": [
+          "p013-f02",
+          "p013-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 14,
+        "ref_index": 1,
+        "label": "第四图、第五图",
+        "source_pointer": "/chapters/0/sections/1/pages/0/elements/0",
+        "figure_ids": [
+          "p014-f02",
+          "p014-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 15,
+        "ref_index": 1,
+        "label": "第六图、第七图",
+        "source_pointer": "/chapters/0/sections/1/pages/1/elements/1",
+        "figure_ids": [
+          "p015-f02",
+          "p015-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 17,
+        "ref_index": 1,
+        "label": "第八图、第九图",
+        "source_pointer": "/chapters/0/sections/1/pages/3/elements/0",
+        "figure_ids": [
+          "p017-f02",
+          "p017-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 18,
+        "ref_index": 1,
+        "label": "第一〇图、第一一图",
+        "source_pointer": "/chapters/0/sections/1/pages/4/elements/0",
+        "figure_ids": [
+          "p018-f02",
+          "p018-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 19,
+        "ref_index": 1,
+        "label": "第一二图、第一三图",
+        "source_pointer": "/chapters/0/sections/1/pages/5/elements/0",
+        "figure_ids": [
+          "p019-f02",
+          "p019-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 20,
+        "ref_index": 1,
+        "label": "第一四图、第一五图",
+        "source_pointer": "/chapters/0/sections/1/pages/6/elements/0",
+        "figure_ids": [
+          "p020-f03",
+          "p020-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 20,
+        "ref_index": 2,
+        "label": "参考图",
+        "source_pointer": "/chapters/0/sections/1/pages/6/elements/1",
+        "figure_ids": [
+          "p020-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 21,
+        "ref_index": 1,
+        "label": "第一六图、第一七图",
+        "source_pointer": "/chapters/0/sections/1/pages/7/elements/1",
+        "figure_ids": [
+          "p021-f02",
+          "p021-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 23,
+        "ref_index": 1,
+        "label": "第一八图",
+        "source_pointer": "/chapters/0/sections/1/pages/9/elements/0",
+        "figure_ids": [
+          "p023-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 24,
+        "ref_index": 1,
+        "label": "第一九图、第二〇图",
+        "source_pointer": "/chapters/0/sections/1/pages/10/elements/0",
+        "figure_ids": [
+          "p024-f02",
+          "p024-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 25,
+        "ref_index": 1,
+        "label": "第二一图、参考图",
+        "source_pointer": "/chapters/0/sections/1/pages/11/elements/0",
+        "figure_ids": [
+          "p025-f02",
+          "p025-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 26,
+        "ref_index": 1,
+        "label": "第二二图、第二三图",
+        "source_pointer": "/chapters/0/sections/1/pages/12/elements/1",
+        "figure_ids": [
+          "p026-f02",
+          "p026-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 28,
+        "ref_index": 1,
+        "label": "第二四图、参考图",
+        "source_pointer": "/chapters/0/sections/1/pages/14/elements/0",
+        "figure_ids": [
+          "p028-f02",
+          "p028-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 29,
+        "ref_index": 1,
+        "label": "第二五图、参考图",
+        "source_pointer": "/chapters/0/sections/1/pages/15/elements/0",
+        "figure_ids": [
+          "p029-f02",
+          "p029-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 30,
+        "ref_index": 1,
+        "label": "第二六图、第二七图",
+        "source_pointer": "/chapters/0/sections/1/pages/16/elements/0",
+        "figure_ids": [
+          "p030-f02",
+          "p030-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 31,
+        "ref_index": 1,
+        "label": "第二八图、第二九图",
+        "source_pointer": "/chapters/0/sections/1/pages/17/elements/0",
+        "figure_ids": [
+          "p031-f02",
+          "p031-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 32,
+        "ref_index": 1,
+        "label": "第三〇图、第三一图",
+        "source_pointer": "/chapters/0/sections/1/pages/18/elements/0",
+        "figure_ids": [
+          "p032-f02",
+          "p032-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 33,
+        "ref_index": 1,
+        "label": "第三二图、第三三图",
+        "source_pointer": "/chapters/0/sections/1/pages/19/elements/1",
+        "figure_ids": [
+          "p033-f02",
+          "p033-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 34,
+        "ref_index": 1,
+        "label": "第三四图、第三五图",
+        "source_pointer": "/chapters/0/sections/1/pages/20/elements/1",
+        "figure_ids": [
+          "p034-f02",
+          "p034-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 36,
+        "ref_index": 1,
+        "label": "第三六图、第三七图",
+        "source_pointer": "/chapters/0/sections/1/pages/22/elements/0",
+        "figure_ids": [
+          "p036-f02",
+          "p036-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 37,
+        "ref_index": 1,
+        "label": "第三八图、第三九图",
+        "source_pointer": "/chapters/0/sections/1/pages/23/elements/0",
+        "figure_ids": [
+          "p037-f02",
+          "p037-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 38,
+        "ref_index": 1,
+        "label": "第四〇图、第四一图",
+        "source_pointer": "/chapters/0/sections/1/pages/24/elements/0",
+        "figure_ids": [
+          "p038-f03",
+          "p038-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 38,
+        "ref_index": 2,
+        "label": "参考图",
+        "source_pointer": "/chapters/0/sections/1/pages/24/elements/1",
+        "figure_ids": [
+          "p038-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 39,
+        "ref_index": 1,
+        "label": "第四二图、第四三图",
+        "source_pointer": "/chapters/0/sections/1/pages/25/elements/1",
+        "figure_ids": [
+          "p039-f02",
+          "p039-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 41,
+        "ref_index": 1,
+        "label": "第四四图、参考图1、参考图2",
+        "source_pointer": "/chapters/0/sections/1/pages/27/elements/0",
+        "figure_ids": [
+          "p041-f01",
+          "p041-f02",
+          "p041-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 42,
+        "ref_index": 1,
+        "label": "参考图3、参考图4、参考图5、参考图6",
+        "source_pointer": "/chapters/0/sections/1/pages/28/elements/0",
+        "figure_ids": [
+          "p042-f01",
+          "p042-f02",
+          "p042-f03",
+          "p042-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 43,
+        "ref_index": 1,
+        "label": "第四五图、第四六图",
+        "source_pointer": "/chapters/0/sections/1/pages/29/elements/0",
+        "figure_ids": [
+          "p043-f01",
+          "p043-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 44,
+        "ref_index": 1,
+        "label": "第四七图、第四八图",
+        "source_pointer": "/chapters/0/sections/1/pages/30/elements/0",
+        "figure_ids": [
+          "p044-f01",
+          "p044-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 45,
+        "ref_index": 1,
+        "label": "第四九图、第五〇图",
+        "source_pointer": "/chapters/0/sections/1/pages/31/elements/0",
+        "figure_ids": [
+          "p045-f01",
+          "p045-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 46,
+        "ref_index": 1,
+        "label": "第五一图、第五二图",
+        "source_pointer": "/chapters/0/sections/1/pages/32/elements/1",
+        "figure_ids": [
+          "p046-f01",
+          "p046-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 47,
+        "ref_index": 1,
+        "label": "参考图1、参考图2",
+        "source_pointer": "/chapters/0/sections/1/pages/33/elements/1",
+        "figure_ids": [
+          "p047-f01",
+          "p047-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 49,
+        "ref_index": 1,
+        "label": "第五三图、第五四图",
+        "source_pointer": "/chapters/0/sections/1/pages/35/elements/0",
+        "figure_ids": [
+          "p049-f01",
+          "p049-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 50,
+        "ref_index": 1,
+        "label": "第五五图",
+        "source_pointer": "/chapters/0/sections/2/pages/1/elements/0",
+        "figure_ids": [
+          "p050-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 51,
+        "ref_index": 1,
+        "label": "第五六图、第五七图",
+        "source_pointer": "/chapters/0/sections/2/pages/2/elements/0",
+        "figure_ids": [
+          "p051-f01",
+          "p051-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 52,
+        "ref_index": 1,
+        "label": "第五八图、第五九图",
+        "source_pointer": "/chapters/0/sections/2/pages/3/elements/0",
+        "figure_ids": [
+          "p052-f01",
+          "p052-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 53,
+        "ref_index": 1,
+        "label": "第六〇图、第六一图",
+        "source_pointer": "/chapters/0/sections/2/pages/4/elements/0",
+        "figure_ids": [
+          "p053-f01",
+          "p053-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 54,
+        "ref_index": 1,
+        "label": "第六二图、第六三图",
+        "source_pointer": "/chapters/0/sections/2/pages/5/elements/1",
+        "figure_ids": [
+          "p054-f01",
+          "p054-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 55,
+        "ref_index": 1,
+        "label": "第六四图、第六五图",
+        "source_pointer": "/chapters/0/sections/2/pages/6/elements/1",
+        "figure_ids": [
+          "p055-f01",
+          "p055-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 56,
+        "ref_index": 1,
+        "label": "参考图",
+        "source_pointer": "/chapters/0/sections/2/pages/7/elements/1",
+        "figure_ids": [
+          "p056-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 57,
+        "ref_index": 1,
+        "label": "第六六图、第六七图",
+        "source_pointer": "/chapters/0/sections/2/pages/8/elements/0",
+        "figure_ids": [
+          "p057-f01",
+          "p057-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 58,
+        "ref_index": 1,
+        "label": "第六八图、第六九图",
+        "source_pointer": "/chapters/0/sections/2/pages/9/elements/0",
+        "figure_ids": [
+          "p058-f01",
+          "p058-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 59,
+        "ref_index": 1,
+        "label": "第七〇图、第七一图",
+        "source_pointer": "/chapters/0/sections/2/pages/10/elements/0",
+        "figure_ids": [
+          "p059-f01",
+          "p059-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 60,
+        "ref_index": 1,
+        "label": "第七二图、第七三图",
+        "source_pointer": "/chapters/0/sections/2/pages/11/elements/0",
+        "figure_ids": [
+          "p060-f01",
+          "p060-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 61,
+        "ref_index": 1,
+        "label": "第七四图、第七五图",
+        "source_pointer": "/chapters/0/sections/2/pages/12/elements/1",
+        "figure_ids": [
+          "p061-f01",
+          "p061-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 62,
+        "ref_index": 1,
+        "label": "参考图",
+        "source_pointer": "/chapters/0/sections/2/pages/13/elements/2",
+        "figure_ids": [
+          "p062-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 63,
+        "ref_index": 1,
+        "label": "第七六图、第七七图",
+        "source_pointer": "/chapters/0/sections/2/pages/14/elements/0",
+        "figure_ids": [
+          "p063-f01",
+          "p063-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 64,
+        "ref_index": 1,
+        "label": "第七八图、第七九图、参考图",
+        "source_pointer": "/chapters/0/sections/2/pages/15/elements/0",
+        "figure_ids": [
+          "p064-f01",
+          "p064-f02",
+          "p064-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 65,
+        "ref_index": 1,
+        "label": "第八〇图、参考图",
+        "source_pointer": "/chapters/0/sections/2/pages/16/elements/0",
+        "figure_ids": [
+          "p065-f01",
+          "p065-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 66,
+        "ref_index": 1,
+        "label": "第八一图、第八二图",
+        "source_pointer": "/chapters/0/sections/2/pages/17/elements/0",
+        "figure_ids": [
+          "p066-f01",
+          "p066-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 66,
+        "ref_index": 2,
+        "label": "参考图",
+        "source_pointer": "/chapters/0/sections/2/pages/17/elements/2",
+        "figure_ids": [
+          "p066-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 67,
+        "ref_index": 1,
+        "label": "第八三图、第八四图",
+        "source_pointer": "/chapters/0/sections/2/pages/18/elements/1",
+        "figure_ids": [
+          "p067-f01",
+          "p067-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 68,
+        "ref_index": 1,
+        "label": "第八五图、第八六图",
+        "source_pointer": "/chapters/0/sections/2/pages/19/elements/1",
+        "figure_ids": [
+          "p068-f01",
+          "p068-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 69,
+        "ref_index": 1,
+        "label": "参考图",
+        "source_pointer": "/chapters/0/sections/2/pages/20/elements/4",
+        "figure_ids": [
+          "p069-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 70,
+        "ref_index": 1,
+        "label": "第八七图、第八八图",
+        "source_pointer": "/chapters/0/sections/2/pages/21/elements/0",
+        "figure_ids": [
+          "p070-f01",
+          "p070-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 71,
+        "ref_index": 1,
+        "label": "第八九图、第九〇图",
+        "source_pointer": "/chapters/0/sections/2/pages/22/elements/0",
+        "figure_ids": [
+          "p071-f01",
+          "p071-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 72,
+        "ref_index": 1,
+        "label": "第九一图、第九二图",
+        "source_pointer": "/chapters/0/sections/2/pages/23/elements/0",
+        "figure_ids": [
+          "p072-f01",
+          "p072-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 73,
+        "ref_index": 1,
+        "label": "第九三图、第九四图",
+        "source_pointer": "/chapters/0/sections/2/pages/24/elements/0",
+        "figure_ids": [
+          "p073-f01",
+          "p073-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 74,
+        "ref_index": 1,
+        "label": "参考图",
+        "source_pointer": "/chapters/0/sections/2/pages/25/elements/0",
+        "figure_ids": [
+          "p074-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 74,
+        "ref_index": 2,
+        "label": "第九五图、第九六图",
+        "source_pointer": "/chapters/0/sections/2/pages/25/elements/1",
+        "figure_ids": [
+          "p074-f02",
+          "p074-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 75,
+        "ref_index": 1,
+        "label": "第九七图、第九八图",
+        "source_pointer": "/chapters/0/sections/2/pages/26/elements/1",
+        "figure_ids": [
+          "p075-f01",
+          "p075-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 76,
+        "ref_index": 1,
+        "label": "参考图",
+        "source_pointer": "/chapters/0/sections/2/pages/27/elements/1",
+        "figure_ids": [
+          "p076-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 77,
+        "ref_index": 1,
+        "label": "第九九图、第一〇〇图",
+        "source_pointer": "/chapters/0/sections/2/pages/28/elements/0",
+        "figure_ids": [
+          "p077-f01",
+          "p077-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 78,
+        "ref_index": 1,
+        "label": "第一〇一图、第一〇二图",
+        "source_pointer": "/chapters/0/sections/2/pages/29/elements/0",
+        "figure_ids": [
+          "p078-f01",
+          "p078-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 79,
+        "ref_index": 1,
+        "label": "第一〇三图、第一〇四图",
+        "source_pointer": "/chapters/0/sections/2/pages/30/elements/0",
+        "figure_ids": [
+          "p079-f01",
+          "p079-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 80,
+        "ref_index": 1,
+        "label": "第一〇五图、第一〇六图",
+        "source_pointer": "/chapters/0/sections/3/pages/0/elements/0",
+        "figure_ids": [
+          "p080-f01",
+          "p080-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 81,
+        "ref_index": 1,
+        "label": "第一〇七图、第一〇八图",
+        "source_pointer": "/chapters/0/sections/3/pages/1/elements/1",
+        "figure_ids": [
+          "p081-f01",
+          "p081-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 83,
+        "ref_index": 1,
+        "label": "第一〇九图、第一一〇图",
+        "source_pointer": "/chapters/0/sections/3/pages/3/elements/0",
+        "figure_ids": [
+          "p083-f01",
+          "p083-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 84,
+        "ref_index": 1,
+        "label": "第一一一图、第一一二图",
+        "source_pointer": "/chapters/0/sections/3/pages/4/elements/0",
+        "figure_ids": [
+          "p084-f01",
+          "p084-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 85,
+        "ref_index": 1,
+        "label": "第一一三图、第一一四图",
+        "source_pointer": "/chapters/0/sections/3/pages/5/elements/0",
+        "figure_ids": [
+          "p085-f01",
+          "p085-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 86,
+        "ref_index": 1,
+        "label": "第一一五图、第一一六图",
+        "source_pointer": "/chapters/0/sections/3/pages/6/elements/0",
+        "figure_ids": [
+          "p086-f01",
+          "p086-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 87,
+        "ref_index": 1,
+        "label": "第一一七图、第一一八图",
+        "source_pointer": "/chapters/0/sections/3/pages/7/elements/0",
+        "figure_ids": [
+          "p087-f01",
+          "p087-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 88,
+        "ref_index": 1,
+        "label": "第一一九图、第一二〇图",
+        "source_pointer": "/chapters/0/sections/3/pages/8/elements/1",
+        "figure_ids": [
+          "p088-f01",
+          "p088-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 90,
+        "ref_index": 1,
+        "label": "第一二一图、参考图",
+        "source_pointer": "/chapters/0/sections/3/pages/10/elements/0",
+        "figure_ids": [
+          "p090-f01",
+          "p090-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 91,
+        "ref_index": 1,
+        "label": "第一二二图、参考图",
+        "source_pointer": "/chapters/0/sections/3/pages/11/elements/0",
+        "figure_ids": [
+          "p091-f01",
+          "p091-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 92,
+        "ref_index": 1,
+        "label": "第一二三图、第一二四图",
+        "source_pointer": "/chapters/0/sections/3/pages/12/elements/0",
+        "figure_ids": [
+          "p092-f01",
+          "p092-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 93,
+        "ref_index": 1,
+        "label": "第一二五图、第一二六图",
+        "source_pointer": "/chapters/0/sections/3/pages/13/elements/0",
+        "figure_ids": [
+          "p093-f01",
+          "p093-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 94,
+        "ref_index": 1,
+        "label": "第一二七图、第一二八图",
+        "source_pointer": "/chapters/0/sections/3/pages/14/elements/0",
+        "figure_ids": [
+          "p094-f01",
+          "p094-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 95,
+        "ref_index": 1,
+        "label": "第一二九图、第一三〇图",
+        "source_pointer": "/chapters/0/sections/3/pages/15/elements/1",
+        "figure_ids": [
+          "p095-f01",
+          "p095-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 97,
+        "ref_index": 1,
+        "label": "参考图、第一三一图",
+        "source_pointer": "/chapters/0/sections/3/pages/17/elements/0",
+        "figure_ids": [
+          "p097-f01",
+          "p097-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 98,
+        "ref_index": 1,
+        "label": "第一三二图、第一三三图",
+        "source_pointer": "/chapters/0/sections/3/pages/18/elements/0",
+        "figure_ids": [
+          "p098-f01",
+          "p098-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 99,
+        "ref_index": 1,
+        "label": "第一三四图、第一三五图",
+        "source_pointer": "/chapters/0/sections/3/pages/19/elements/0",
+        "figure_ids": [
+          "p099-f01",
+          "p099-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 100,
+        "ref_index": 1,
+        "label": "参考图1、参考图2、第一三六图",
+        "source_pointer": "/chapters/0/sections/3/pages/20/elements/1",
+        "figure_ids": [
+          "p100-f01",
+          "p100-f02",
+          "p100-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 102,
+        "ref_index": 1,
+        "label": "参考图3、参考图4、第一三七图",
+        "source_pointer": "/chapters/0/sections/3/pages/22/elements/0",
+        "figure_ids": [
+          "p102-f01",
+          "p102-f02",
+          "p102-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 103,
+        "ref_index": 1,
+        "label": "第一三八图、第一三九图",
+        "source_pointer": "/chapters/0/sections/3/pages/23/elements/0",
+        "figure_ids": [
+          "p103-f01",
+          "p103-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 104,
+        "ref_index": 1,
+        "label": "第一四〇图、第一四一图",
+        "source_pointer": "/chapters/0/sections/3/pages/24/elements/0",
+        "figure_ids": [
+          "p104-f01",
+          "p104-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 105,
+        "ref_index": 1,
+        "label": "第一四二图、第一四三图",
+        "source_pointer": "/chapters/0/sections/3/pages/25/elements/0",
+        "figure_ids": [
+          "p105-f01",
+          "p105-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 106,
+        "ref_index": 1,
+        "label": "第一四四图、第一四五图",
+        "source_pointer": "/chapters/0/sections/3/pages/26/elements/1",
+        "figure_ids": [
+          "p106-f01",
+          "p106-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 108,
+        "ref_index": 1,
+        "label": "第一四六图、第一四七图",
+        "source_pointer": "/chapters/0/sections/3/pages/28/elements/0",
+        "figure_ids": [
+          "p108-f01",
+          "p108-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 109,
+        "ref_index": 1,
+        "label": "第一四八图、第一四九图",
+        "source_pointer": "/chapters/0/sections/3/pages/29/elements/0",
+        "figure_ids": [
+          "p109-f01",
+          "p109-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 110,
+        "ref_index": 1,
+        "label": "第一五〇图、第一五一图",
+        "source_pointer": "/chapters/0/sections/3/pages/30/elements/0",
+        "figure_ids": [
+          "p110-f01",
+          "p110-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 111,
+        "ref_index": 1,
+        "label": "第一五二图、第一五三图",
+        "source_pointer": "/chapters/0/sections/3/pages/31/elements/0",
+        "figure_ids": [
+          "p111-f01",
+          "p111-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 112,
+        "ref_index": 1,
+        "label": "第一五四图、第一五五图",
+        "source_pointer": "/chapters/0/sections/3/pages/32/elements/0",
+        "figure_ids": [
+          "p112-f01",
+          "p112-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 113,
+        "ref_index": 1,
+        "label": "第一五六图、第一五七图",
+        "source_pointer": "/chapters/0/sections/3/pages/33/elements/0",
+        "figure_ids": [
+          "p113-f01",
+          "p113-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 114,
+        "ref_index": 1,
+        "label": "第一五八图",
+        "source_pointer": "/chapters/0/sections/3/pages/34/elements/1",
+        "figure_ids": [
+          "p114-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 115,
+        "ref_index": 1,
+        "label": "第一五九图、第一六〇图",
+        "source_pointer": "/chapters/0/sections/3/pages/35/elements/0",
+        "figure_ids": [
+          "p115-f01",
+          "p115-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 116,
+        "ref_index": 1,
+        "label": "第一六一图、第一六二图",
+        "source_pointer": "/chapters/0/sections/3/pages/36/elements/1",
+        "figure_ids": [
+          "p116-f01",
+          "p116-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 117,
+        "ref_index": 1,
+        "label": "第一六三图、第一六四图",
+        "source_pointer": "/chapters/0/sections/3/pages/37/elements/1",
+        "figure_ids": [
+          "p117-f01",
+          "p117-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 119,
+        "ref_index": 1,
+        "label": "第一六五图、第一六六图",
+        "source_pointer": "/chapters/0/sections/4/pages/1/elements/0",
+        "figure_ids": [
+          "p119-f01",
+          "p119-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 120,
+        "ref_index": 1,
+        "label": "第一六七图、第一六八图",
+        "source_pointer": "/chapters/0/sections/4/pages/2/elements/0",
+        "figure_ids": [
+          "p120-f01",
+          "p120-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 121,
+        "ref_index": 1,
+        "label": "第一六九图、第一七〇图",
+        "source_pointer": "/chapters/0/sections/4/pages/3/elements/0",
+        "figure_ids": [
+          "p121-f01",
+          "p121-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 122,
+        "ref_index": 1,
+        "label": "第一七一图、第一七二图",
+        "source_pointer": "/chapters/0/sections/4/pages/4/elements/0",
+        "figure_ids": [
+          "p122-f01",
+          "p122-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 123,
+        "ref_index": 1,
+        "label": "第一七三图、第一七四图",
+        "source_pointer": "/chapters/0/sections/4/pages/5/elements/1",
+        "figure_ids": [
+          "p123-f01",
+          "p123-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 124,
+        "ref_index": 1,
+        "label": "第一七五图、第一七六图",
+        "source_pointer": "/chapters/0/sections/4/pages/6/elements/1",
+        "figure_ids": [
+          "p124-f01",
+          "p124-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 125,
+        "ref_index": 1,
+        "label": "第一七七图",
+        "source_pointer": "/chapters/0/sections/5/pages/0/elements/0",
+        "figure_ids": [
+          "p125-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 126,
+        "ref_index": 1,
+        "label": "第一七八图、第一七九图",
+        "source_pointer": "/chapters/0/sections/5/pages/1/elements/1",
+        "figure_ids": [
+          "p126-f01",
+          "p126-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 127,
+        "ref_index": 1,
+        "label": "第一八〇图、第一八一图",
+        "source_pointer": "/chapters/0/sections/5/pages/2/elements/1",
+        "figure_ids": [
+          "p127-f01",
+          "p127-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 129,
+        "ref_index": 1,
+        "label": "参考图",
+        "source_pointer": "/chapters/0/sections/5/pages/4/elements/0",
+        "figure_ids": [
+          "p129-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 129,
+        "ref_index": 2,
+        "label": "第一八二图、第一八三图",
+        "source_pointer": "/chapters/0/sections/5/pages/4/elements/1",
+        "figure_ids": [
+          "p129-f02",
+          "p129-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 130,
+        "ref_index": 1,
+        "label": "第一八四图、第一八五图",
+        "source_pointer": "/chapters/0/sections/5/pages/5/elements/0",
+        "figure_ids": [
+          "p130-f01",
+          "p130-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 131,
+        "ref_index": 1,
+        "label": "第一八六图、第一八七图",
+        "source_pointer": "/chapters/0/sections/5/pages/6/elements/0",
+        "figure_ids": [
+          "p131-f01",
+          "p131-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 132,
+        "ref_index": 1,
+        "label": "第一八八图、第一八九图",
+        "source_pointer": "/chapters/0/sections/5/pages/7/elements/1",
+        "figure_ids": [
+          "p132-f01",
+          "p132-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 133,
+        "ref_index": 1,
+        "label": "第一九〇图、第一九一图",
+        "source_pointer": "/chapters/0/sections/5/pages/8/elements/1",
+        "figure_ids": [
+          "p133-f01",
+          "p133-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 134,
+        "ref_index": 1,
+        "label": "第一九二图、第一九三图",
+        "source_pointer": "/chapters/0/sections/5/pages/9/elements/1",
+        "figure_ids": [
+          "p134-f01",
+          "p134-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 135,
+        "ref_index": 1,
+        "label": "第一九四图、第一九五图",
+        "source_pointer": "/chapters/0/sections/5/pages/10/elements/1",
+        "figure_ids": [
+          "p135-f01",
+          "p135-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 136,
+        "ref_index": 1,
+        "label": "第一九六图、第一九七图",
+        "source_pointer": "/chapters/0/sections/5/pages/11/elements/1",
+        "figure_ids": [
+          "p136-f01",
+          "p136-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 138,
+        "ref_index": 1,
+        "label": "第一九八图、第一九九图",
+        "source_pointer": "/chapters/0/sections/5/pages/13/elements/0",
+        "figure_ids": [
+          "p138-f01",
+          "p138-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 139,
+        "ref_index": 1,
+        "label": "第二〇〇图、第二〇一图",
+        "source_pointer": "/chapters/0/sections/5/pages/14/elements/0",
+        "figure_ids": [
+          "p139-f01",
+          "p139-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 140,
+        "ref_index": 1,
+        "label": "第二〇二图、第二〇三图",
+        "source_pointer": "/chapters/0/sections/5/pages/15/elements/0",
+        "figure_ids": [
+          "p140-f01",
+          "p140-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 141,
+        "ref_index": 1,
+        "label": "第二〇四图、第二〇五图",
+        "source_pointer": "/chapters/0/sections/5/pages/16/elements/0",
+        "figure_ids": [
+          "p141-f01",
+          "p141-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 142,
+        "ref_index": 1,
+        "label": "第二〇六图、第二〇七图",
+        "source_pointer": "/chapters/0/sections/5/pages/17/elements/1",
+        "figure_ids": [
+          "p142-f01",
+          "p142-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 143,
+        "ref_index": 1,
+        "label": "第二〇八图、第二〇九图",
+        "source_pointer": "/chapters/0/sections/5/pages/18/elements/1",
+        "figure_ids": [
+          "p143-f01",
+          "p143-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 144,
+        "ref_index": 1,
+        "label": "第二一〇图、第二一一图",
+        "source_pointer": "/chapters/0/sections/5/pages/19/elements/1",
+        "figure_ids": [
+          "p144-f01",
+          "p144-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 146,
+        "ref_index": 1,
+        "label": "第二一二图、第二一三图",
+        "source_pointer": "/chapters/0/sections/5/pages/21/elements/0",
+        "figure_ids": [
+          "p146-f01",
+          "p146-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 147,
+        "ref_index": 1,
+        "label": "第二一四图、第二一五图",
+        "source_pointer": "/chapters/0/sections/5/pages/22/elements/1",
+        "figure_ids": [
+          "p147-f01",
+          "p147-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 148,
+        "ref_index": 1,
+        "label": "第二一六图、第二一七图",
+        "source_pointer": "/chapters/0/sections/5/pages/23/elements/0",
+        "figure_ids": [
+          "p148-f01",
+          "p148-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 149,
+        "ref_index": 1,
+        "label": "第二一八图、第二一九图",
+        "source_pointer": "/chapters/0/sections/5/pages/24/elements/0",
+        "figure_ids": [
+          "p149-f01",
+          "p149-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 150,
+        "ref_index": 1,
+        "label": "第二二〇图、第二二一图",
+        "source_pointer": "/chapters/0/sections/6/pages/0/elements/0",
+        "figure_ids": [
+          "p150-f01",
+          "p150-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 151,
+        "ref_index": 1,
+        "label": "第二二二图、第二二三图",
+        "source_pointer": "/chapters/0/sections/6/pages/1/elements/1",
+        "figure_ids": [
+          "p151-f01",
+          "p151-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 152,
+        "ref_index": 1,
+        "label": "第二二四图、第二二五图",
+        "source_pointer": "/chapters/0/sections/6/pages/2/elements/1",
+        "figure_ids": [
+          "p152-f01",
+          "p152-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 153,
+        "ref_index": 1,
+        "label": "第二二六图、第二二七图",
+        "source_pointer": "/chapters/0/sections/6/pages/3/elements/1",
+        "figure_ids": [
+          "p153-f01",
+          "p153-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 154,
+        "ref_index": 1,
+        "label": "第二二八图、第二二九图",
+        "source_pointer": "/chapters/0/sections/6/pages/4/elements/1",
+        "figure_ids": [
+          "p154-f01",
+          "p154-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 159,
+        "ref_index": 1,
+        "label": "第一图",
+        "source_pointer": "/chapters/1/sections/0/pages/0/elements/0",
+        "figure_ids": [
+          "p159-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 160,
+        "ref_index": 1,
+        "label": "第二图、第三图",
+        "source_pointer": "/chapters/1/sections/0/pages/1/elements/1",
+        "figure_ids": [
+          "p160-f01",
+          "p160-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 161,
+        "ref_index": 1,
+        "label": "第四图、第五图",
+        "source_pointer": "/chapters/1/sections/0/pages/2/elements/1",
+        "figure_ids": [
+          "p161-f01",
+          "p161-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 162,
+        "ref_index": 1,
+        "label": "第六图",
+        "source_pointer": "/chapters/1/sections/0/pages/3/elements/1",
+        "figure_ids": [
+          "p162-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 163,
+        "ref_index": 1,
+        "label": "第七图、第八图",
+        "source_pointer": "/chapters/1/sections/1/pages/0/elements/0",
+        "figure_ids": [
+          "p163-f01",
+          "p163-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 164,
+        "ref_index": 1,
+        "label": "第九图、第一〇图",
+        "source_pointer": "/chapters/1/sections/1/pages/1/elements/1",
+        "figure_ids": [
+          "p164-f01",
+          "p164-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 166,
+        "ref_index": 1,
+        "label": "第一一图、第一二图",
+        "source_pointer": "/chapters/1/sections/1/pages/3/elements/0",
+        "figure_ids": [
+          "p166-f01",
+          "p166-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 167,
+        "ref_index": 1,
+        "label": "第一三图、第一四图",
+        "source_pointer": "/chapters/1/sections/1/pages/4/elements/1",
+        "figure_ids": [
+          "p167-f01",
+          "p167-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 168,
+        "ref_index": 1,
+        "label": "第一五图、第一六图",
+        "source_pointer": "/chapters/1/sections/1/pages/5/elements/1",
+        "figure_ids": [
+          "p168-f01",
+          "p168-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 169,
+        "ref_index": 1,
+        "label": "第一七图、第一八图",
+        "source_pointer": "/chapters/1/sections/1/pages/6/elements/1",
+        "figure_ids": [
+          "p169-f01",
+          "p169-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 170,
+        "ref_index": 1,
+        "label": "第一九图",
+        "source_pointer": "/chapters/1/sections/1/pages/7/elements/1",
+        "figure_ids": [
+          "p170-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 171,
+        "ref_index": 1,
+        "label": "第二〇图、第二一图",
+        "source_pointer": "/chapters/1/sections/1/pages/8/elements/0",
+        "figure_ids": [
+          "p171-f01",
+          "p171-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 171,
+        "ref_index": 2,
+        "label": "参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/8/elements/2",
+        "figure_ids": [
+          "p171-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 172,
+        "ref_index": 1,
+        "label": "第二二图、第二三图",
+        "source_pointer": "/chapters/1/sections/1/pages/9/elements/1",
+        "figure_ids": [
+          "p172-f01",
+          "p172-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 173,
+        "ref_index": 1,
+        "label": "第二四图、参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/10/elements/1",
+        "figure_ids": [
+          "p173-f01",
+          "p173-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 174,
+        "ref_index": 1,
+        "label": "第二五图、参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/11/elements/1",
+        "figure_ids": [
+          "p174-f01",
+          "p174-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 176,
+        "ref_index": 1,
+        "label": "第二六图、第二七图",
+        "source_pointer": "/chapters/1/sections/1/pages/13/elements/1",
+        "figure_ids": [
+          "p176-f01",
+          "p176-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 177,
+        "ref_index": 1,
+        "label": "第二八图、第二九图",
+        "source_pointer": "/chapters/1/sections/1/pages/14/elements/1",
+        "figure_ids": [
+          "p177-f01",
+          "p177-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 178,
+        "ref_index": 1,
+        "label": "第三〇图、第三一图",
+        "source_pointer": "/chapters/1/sections/1/pages/15/elements/1",
+        "figure_ids": [
+          "p178-f01",
+          "p178-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 179,
+        "ref_index": 1,
+        "label": "第三二图",
+        "source_pointer": "/chapters/1/sections/1/pages/16/elements/0",
+        "figure_ids": [
+          "p179-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 180,
+        "ref_index": 1,
+        "label": "第三三图、第三四图",
+        "source_pointer": "/chapters/1/sections/1/pages/17/elements/1",
+        "figure_ids": [
+          "p180-f01",
+          "p180-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 181,
+        "ref_index": 1,
+        "label": "第三五图、第三六图",
+        "source_pointer": "/chapters/1/sections/1/pages/18/elements/1",
+        "figure_ids": [
+          "p181-f01",
+          "p181-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 182,
+        "ref_index": 1,
+        "label": "第三七图、参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/19/elements/1",
+        "figure_ids": [
+          "p182-f01",
+          "p182-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 183,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/1/sections/1/pages/20/elements/1",
+        "figure_ids": [
+          "p183-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 184,
+        "ref_index": 1,
+        "label": "参考图1、第三八图",
+        "source_pointer": "/chapters/1/sections/1/pages/21/elements/0",
+        "figure_ids": [
+          "p184-f01",
+          "p184-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 185,
+        "ref_index": 1,
+        "label": "第三九图、参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/22/elements/1",
+        "figure_ids": [
+          "p185-f01",
+          "p185-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 186,
+        "ref_index": 1,
+        "label": "第四〇图、第四一图",
+        "source_pointer": "/chapters/1/sections/1/pages/23/elements/1",
+        "figure_ids": [
+          "p186-f01",
+          "p186-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 187,
+        "ref_index": 1,
+        "label": "第四二图、第四三图",
+        "source_pointer": "/chapters/1/sections/1/pages/24/elements/1",
+        "figure_ids": [
+          "p187-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 188,
+        "ref_index": 1,
+        "label": "第四四图、第四五图",
+        "source_pointer": "/chapters/1/sections/1/pages/25/elements/1",
+        "figure_ids": [
+          "p188-f01",
+          "p188-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 189,
+        "ref_index": 1,
+        "label": "第四六图",
+        "source_pointer": "/chapters/1/sections/1/pages/26/elements/1",
+        "figure_ids": [
+          "p189-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 190,
+        "ref_index": 1,
+        "label": "参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/27/elements/1",
+        "figure_ids": [
+          "p190-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 191,
+        "ref_index": 1,
+        "label": "第四七图、第四八图",
+        "source_pointer": "/chapters/1/sections/1/pages/28/elements/0",
+        "figure_ids": [
+          "p191-f01",
+          "p191-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 192,
+        "ref_index": 1,
+        "label": "参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/29/elements/0",
+        "figure_ids": [
+          "p192-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 192,
+        "ref_index": 2,
+        "label": "第四九图",
+        "source_pointer": "/chapters/1/sections/1/pages/29/elements/1",
+        "figure_ids": [
+          "p192-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 193,
+        "ref_index": 1,
+        "label": "第五一图、第五二图",
+        "source_pointer": "/chapters/1/sections/1/pages/30/elements/1",
+        "figure_ids": [
+          "p193-f01",
+          "p193-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 194,
+        "ref_index": 1,
+        "label": "第五三图、第五四图",
+        "source_pointer": "/chapters/1/sections/1/pages/31/elements/1",
+        "figure_ids": [
+          "p194-f01",
+          "p194-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 195,
+        "ref_index": 1,
+        "label": "第五五图、第五六图",
+        "source_pointer": "/chapters/1/sections/1/pages/32/elements/1",
+        "figure_ids": [
+          "p195-f01",
+          "p195-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 196,
+        "ref_index": 1,
+        "label": "第五七图、参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/33/elements/1",
+        "figure_ids": [
+          "p196-f01",
+          "p196-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 198,
+        "ref_index": 1,
+        "label": "第五八图",
+        "source_pointer": "/chapters/1/sections/2/pages/1/elements/0",
+        "figure_ids": [
+          "p198-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 199,
+        "ref_index": 1,
+        "label": "第五九图、第六〇图",
+        "source_pointer": "/chapters/1/sections/2/pages/2/elements/1",
+        "figure_ids": [
+          "p199-f01",
+          "p199-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 200,
+        "ref_index": 1,
+        "label": "第六一图、第六二图",
+        "source_pointer": "/chapters/1/sections/2/pages/3/elements/1",
+        "figure_ids": [
+          "p200-f01",
+          "p200-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 201,
+        "ref_index": 1,
+        "label": "第六三图",
+        "source_pointer": "/chapters/1/sections/2/pages/4/elements/0",
+        "figure_ids": [
+          "p201-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 202,
+        "ref_index": 1,
+        "label": "第六五图、第六六图",
+        "source_pointer": "/chapters/1/sections/2/pages/5/elements/1",
+        "figure_ids": [
+          "p202-f01",
+          "p202-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 203,
+        "ref_index": 1,
+        "label": "第六七图、第六八图",
+        "source_pointer": "/chapters/1/sections/2/pages/6/elements/1",
+        "figure_ids": [
+          "p203-f01",
+          "p203-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 204,
+        "ref_index": 1,
+        "label": "第六九图",
+        "source_pointer": "/chapters/1/sections/2/pages/7/elements/1",
+        "figure_ids": [
+          "p204-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 205,
+        "ref_index": 1,
+        "label": "第七〇图、第七一图",
+        "source_pointer": "/chapters/1/sections/2/pages/8/elements/1",
+        "figure_ids": [
+          "p205-f01",
+          "p205-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 206,
+        "ref_index": 1,
+        "label": "第七二图、第七三图",
+        "source_pointer": "/chapters/1/sections/2/pages/9/elements/1",
+        "figure_ids": [
+          "p206-f01",
+          "p206-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 207,
+        "ref_index": 1,
+        "label": "第七四图、第七五图",
+        "source_pointer": "/chapters/1/sections/2/pages/10/elements/1",
+        "figure_ids": [
+          "p207-f01",
+          "p207-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 209,
+        "ref_index": 1,
+        "label": "第七六图、第七七图、第七八图",
+        "source_pointer": "/chapters/1/sections/2/pages/12/elements/0",
+        "figure_ids": [
+          "p209-f01",
+          "p209-f02",
+          "p209-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 210,
+        "ref_index": 1,
+        "label": "第七九图、第八〇图",
+        "source_pointer": "/chapters/1/sections/2/pages/13/elements/1",
+        "figure_ids": [
+          "p210-f01",
+          "p210-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 211,
+        "ref_index": 1,
+        "label": "第八一图、参考图",
+        "source_pointer": "/chapters/1/sections/2/pages/14/elements/0",
+        "figure_ids": [
+          "p211-f01",
+          "p211-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 212,
+        "ref_index": 1,
+        "label": "第八二图、第八三图",
+        "source_pointer": "/chapters/1/sections/2/pages/15/elements/1",
+        "figure_ids": [
+          "p212-f01",
+          "p212-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 213,
+        "ref_index": 1,
+        "label": "参考图",
+        "source_pointer": "/chapters/1/sections/2/pages/16/elements/1",
+        "figure_ids": [
+          "p213-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 214,
+        "ref_index": 1,
+        "label": "第八四图",
+        "source_pointer": "/chapters/1/sections/2/pages/17/elements/0",
+        "figure_ids": [
+          "p214-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 215,
+        "ref_index": 1,
+        "label": "第八五图",
+        "source_pointer": "/chapters/1/sections/2/pages/18/elements/0",
+        "figure_ids": [
+          "p215-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 216,
+        "ref_index": 1,
+        "label": "第八六图、第八七图",
+        "source_pointer": "/chapters/1/sections/2/pages/19/elements/1",
+        "figure_ids": [
+          "p216-f01",
+          "p216-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 217,
+        "ref_index": 1,
+        "label": "第八八图",
+        "source_pointer": "/chapters/1/sections/2/pages/20/elements/1",
+        "figure_ids": [
+          "p217-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 218,
+        "ref_index": 1,
+        "label": "第九〇图、第九一图",
+        "source_pointer": "/chapters/1/sections/2/pages/21/elements/1",
+        "figure_ids": [
+          "p218-f01",
+          "p218-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 219,
+        "ref_index": 1,
+        "label": "第九二图",
+        "source_pointer": "/chapters/1/sections/3/pages/0/elements/0",
+        "figure_ids": [
+          "p219-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 220,
+        "ref_index": 1,
+        "label": "第九三图、第九四图",
+        "source_pointer": "/chapters/1/sections/3/pages/1/elements/1",
+        "figure_ids": [
+          "p220-f01",
+          "p220-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 222,
+        "ref_index": 1,
+        "label": "第九五图",
+        "source_pointer": "/chapters/1/sections/3/pages/3/elements/0",
+        "figure_ids": [
+          "p222-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 223,
+        "ref_index": 1,
+        "label": "第九六图、第九七图",
+        "source_pointer": "/chapters/1/sections/3/pages/4/elements/1",
+        "figure_ids": [
+          "p223-f01",
+          "p223-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 224,
+        "ref_index": 1,
+        "label": "第九八图、第九九图",
+        "source_pointer": "/chapters/1/sections/3/pages/5/elements/1",
+        "figure_ids": [
+          "p224-f01",
+          "p224-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 225,
+        "ref_index": 1,
+        "label": "第一〇〇图、第一〇一图",
+        "source_pointer": "/chapters/1/sections/3/pages/6/elements/1",
+        "figure_ids": [
+          "p225-f01",
+          "p225-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 226,
+        "ref_index": 1,
+        "label": "第一〇二图",
+        "source_pointer": "/chapters/1/sections/3/pages/7/elements/1",
+        "figure_ids": [
+          "p226-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 228,
+        "ref_index": 1,
+        "label": "第一〇三图、第一〇四图",
+        "source_pointer": "/chapters/1/sections/3/pages/9/elements/0",
+        "figure_ids": [
+          "p228-f01",
+          "p228-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 229,
+        "ref_index": 1,
+        "label": "第一〇五图",
+        "source_pointer": "/chapters/1/sections/3/pages/10/elements/1",
+        "figure_ids": [
+          "p229-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 230,
+        "ref_index": 1,
+        "label": "第一〇六图、第一〇七图",
+        "source_pointer": "/chapters/1/sections/3/pages/11/elements/1",
+        "figure_ids": [
+          "p230-f01",
+          "p230-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 231,
+        "ref_index": 1,
+        "label": "第一〇八图、第一〇九图",
+        "source_pointer": "/chapters/1/sections/3/pages/12/elements/0",
+        "figure_ids": [
+          "p231-f01",
+          "p231-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 232,
+        "ref_index": 1,
+        "label": "第一一〇图、第一一一图",
+        "source_pointer": "/chapters/1/sections/3/pages/13/elements/1",
+        "figure_ids": [
+          "p232-f01",
+          "p232-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 233,
+        "ref_index": 1,
+        "label": "第一一二图、第一一三图",
+        "source_pointer": "/chapters/1/sections/3/pages/14/elements/1",
+        "figure_ids": [
+          "p233-f01",
+          "p233-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 234,
+        "ref_index": 1,
+        "label": "参考图",
+        "source_pointer": "/chapters/1/sections/3/pages/15/elements/3",
+        "figure_ids": [
+          "p234-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 235,
+        "ref_index": 1,
+        "label": "第一一四图、第一一五图",
+        "source_pointer": "/chapters/1/sections/3/pages/16/elements/1",
+        "figure_ids": [
+          "p235-f01",
+          "p235-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 236,
+        "ref_index": 1,
+        "label": "第一一六图、第一一七图",
+        "source_pointer": "/chapters/1/sections/3/pages/17/elements/1",
+        "figure_ids": [
+          "p236-f01",
+          "p236-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 237,
+        "ref_index": 1,
+        "label": "第一一八图、第一一九图",
+        "source_pointer": "/chapters/1/sections/3/pages/18/elements/1",
+        "figure_ids": [
+          "p237-f01",
+          "p237-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 238,
+        "ref_index": 1,
+        "label": "第一二〇图",
+        "source_pointer": "/chapters/1/sections/3/pages/19/elements/0",
+        "figure_ids": [
+          "p238-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 239,
+        "ref_index": 1,
+        "label": "第一二一图",
+        "source_pointer": "/chapters/1/sections/3/pages/20/elements/0",
+        "figure_ids": [
+          "p239-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 240,
+        "ref_index": 1,
+        "label": "第一二二图、第一二三图",
+        "source_pointer": "/chapters/1/sections/3/pages/21/elements/1",
+        "figure_ids": [
+          "p240-f01",
+          "p240-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 242,
+        "ref_index": 1,
+        "label": "第一二四图、第一二五图",
+        "source_pointer": "/chapters/1/sections/3/pages/23/elements/0",
+        "figure_ids": [
+          "p242-f01",
+          "p242-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 243,
+        "ref_index": 1,
+        "label": "第一二六图、第一二七图",
+        "source_pointer": "/chapters/1/sections/3/pages/24/elements/1",
+        "figure_ids": [
+          "p243-f01",
+          "p243-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 244,
+        "ref_index": 1,
+        "label": "第一二八图、第一二九图",
+        "source_pointer": "/chapters/1/sections/3/pages/25/elements/1",
+        "figure_ids": [
+          "p244-f01",
+          "p244-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 245,
+        "ref_index": 1,
+        "label": "第一三〇图、第一三一图",
+        "source_pointer": "/chapters/1/sections/3/pages/26/elements/0",
+        "figure_ids": [
+          "p245-f01",
+          "p245-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 246,
+        "ref_index": 1,
+        "label": "第一三二图、第一三三图",
+        "source_pointer": "/chapters/1/sections/3/pages/27/elements/1",
+        "figure_ids": [
+          "p246-f01",
+          "p246-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 247,
+        "ref_index": 1,
+        "label": "第一三四图、第一三五图",
+        "source_pointer": "/chapters/1/sections/3/pages/28/elements/1",
+        "figure_ids": [
+          "p247-f01",
+          "p247-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 248,
+        "ref_index": 1,
+        "label": "第一三六图",
+        "source_pointer": "/chapters/1/sections/3/pages/29/elements/1",
+        "figure_ids": [
+          "p248-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 249,
+        "ref_index": 1,
+        "label": "第一三七图",
+        "source_pointer": "/chapters/1/sections/4/pages/0/elements/0",
+        "figure_ids": [
+          "p249-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 250,
+        "ref_index": 1,
+        "label": "第一三八图、第一三九图",
+        "source_pointer": "/chapters/1/sections/4/pages/1/elements/1",
+        "figure_ids": [
+          "p250-f01",
+          "p250-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 251,
+        "ref_index": 1,
+        "label": "第一四〇图、第一四一图",
+        "source_pointer": "/chapters/1/sections/4/pages/2/elements/1",
+        "figure_ids": [
+          "p251-f01",
+          "p251-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 252,
+        "ref_index": 1,
+        "label": "第一四二图、第一四三图",
+        "source_pointer": "/chapters/1/sections/4/pages/3/elements/1",
+        "figure_ids": [
+          "p252-f01",
+          "p252-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 254,
+        "ref_index": 1,
+        "label": "第一四四图、参考图",
+        "source_pointer": "/chapters/1/sections/4/pages/5/elements/0",
+        "figure_ids": [
+          "p254-f01",
+          "p254-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 254,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/1/sections/4/pages/5/elements/2",
+        "figure_ids": [
+          "p254-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 255,
+        "ref_index": 1,
+        "label": "第一四五图",
+        "source_pointer": "/chapters/1/sections/4/pages/6/elements/0",
+        "figure_ids": [
+          "p255-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 256,
+        "ref_index": 1,
+        "label": "第一四五图（重演）、参考图2",
+        "source_pointer": "/chapters/1/sections/4/pages/7/elements/0",
+        "figure_ids": [
+          "p256-f01",
+          "p256-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 257,
+        "ref_index": 1,
+        "label": "第一四六图",
+        "source_pointer": "/chapters/1/sections/4/pages/8/elements/0",
+        "figure_ids": [
+          "p257-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 257,
+        "ref_index": 2,
+        "label": "参考图",
+        "source_pointer": "/chapters/1/sections/4/pages/8/elements/1",
+        "figure_ids": [
+          "p257-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 258,
+        "ref_index": 1,
+        "label": "第一四七图",
+        "source_pointer": "/chapters/1/sections/4/pages/9/elements/1",
+        "figure_ids": [
+          "p258-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 259,
+        "ref_index": 1,
+        "label": "第一四八图、第一四九图",
+        "source_pointer": "/chapters/1/sections/4/pages/10/elements/1",
+        "figure_ids": [
+          "p259-f01",
+          "p259-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 260,
+        "ref_index": 1,
+        "label": "第一五〇图",
+        "source_pointer": "/chapters/1/sections/4/pages/11/elements/1",
+        "figure_ids": [
+          "p260-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 261,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/1/sections/4/pages/12/elements/1",
+        "figure_ids": [
+          "p261-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 261,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/1/sections/4/pages/12/elements/2",
+        "figure_ids": [
+          "p261-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 262,
+        "ref_index": 1,
+        "label": "第一五一图、第一五二图",
+        "source_pointer": "/chapters/1/sections/4/pages/13/elements/1",
+        "figure_ids": [
+          "p262-f01",
+          "p262-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 263,
+        "ref_index": 1,
+        "label": "第一五三图、第一五四图",
+        "source_pointer": "/chapters/1/sections/4/pages/14/elements/0",
+        "figure_ids": [
+          "p263-f01",
+          "p263-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 264,
+        "ref_index": 1,
+        "label": "第一五五图",
+        "source_pointer": "/chapters/1/sections/4/pages/15/elements/1",
+        "figure_ids": [
+          "p264-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 265,
+        "ref_index": 1,
+        "label": "第一五六图、第一五七图",
+        "source_pointer": "/chapters/1/sections/4/pages/16/elements/1",
+        "figure_ids": [
+          "p265-f01",
+          "p265-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 267,
+        "ref_index": 1,
+        "label": "第一五八图、第一五九图",
+        "source_pointer": "/chapters/1/sections/4/pages/18/elements/0",
+        "figure_ids": [
+          "p267-f01",
+          "p267-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 268,
+        "ref_index": 1,
+        "label": "第一六〇图、第一六一图",
+        "source_pointer": "/chapters/1/sections/4/pages/19/elements/0",
+        "figure_ids": [
+          "p268-f01",
+          "p268-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 269,
+        "ref_index": 1,
+        "label": "第一六二图、第一六三图",
+        "source_pointer": "/chapters/1/sections/4/pages/20/elements/0",
+        "figure_ids": [
+          "p269-f01",
+          "p269-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 270,
+        "ref_index": 1,
+        "label": "第一六四图、第一六五图",
+        "source_pointer": "/chapters/1/sections/4/pages/21/elements/0",
+        "figure_ids": [
+          "p270-f01",
+          "p270-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 271,
+        "ref_index": 1,
+        "label": "第一六六图、第一六七图",
+        "source_pointer": "/chapters/1/sections/4/pages/22/elements/0",
+        "figure_ids": [
+          "p271-f01",
+          "p271-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 272,
+        "ref_index": 1,
+        "label": "第一六八图、第一六九图",
+        "source_pointer": "/chapters/1/sections/4/pages/23/elements/0",
+        "figure_ids": [
+          "p272-f01",
+          "p272-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 273,
+        "ref_index": 1,
+        "label": "第一七〇图",
+        "source_pointer": "/chapters/1/sections/5/pages/0/elements/0",
+        "figure_ids": [
+          "p273-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 274,
+        "ref_index": 1,
+        "label": "参考图1、参考图2",
+        "source_pointer": "/chapters/1/sections/5/pages/1/elements/0",
+        "figure_ids": [
+          "p274-f01",
+          "p274-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 275,
+        "ref_index": 1,
+        "label": "第一七一图、第一七二图",
+        "source_pointer": "/chapters/1/sections/5/pages/2/elements/1",
+        "figure_ids": [
+          "p275-f01",
+          "p275-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 276,
+        "ref_index": 1,
+        "label": "第一七三图、第一七四图",
+        "source_pointer": "/chapters/1/sections/5/pages/3/elements/1",
+        "figure_ids": [
+          "p276-f01",
+          "p276-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 277,
+        "ref_index": 1,
+        "label": "第一七五图、第一七六图",
+        "source_pointer": "/chapters/1/sections/5/pages/4/elements/1",
+        "figure_ids": [
+          "p277-f01",
+          "p277-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 279,
+        "ref_index": 1,
+        "label": "第一七七图、第一七八图",
+        "source_pointer": "/chapters/1/sections/5/pages/6/elements/0",
+        "figure_ids": [
+          "p279-f01",
+          "p279-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 280,
+        "ref_index": 1,
+        "label": "第一七九图、第一八〇图",
+        "source_pointer": "/chapters/1/sections/5/pages/7/elements/0",
+        "figure_ids": [
+          "p280-f01",
+          "p280-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 281,
+        "ref_index": 1,
+        "label": "第一八一图、第一八二图",
+        "source_pointer": "/chapters/1/sections/5/pages/8/elements/0",
+        "figure_ids": [
+          "p281-f01",
+          "p281-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 282,
+        "ref_index": 1,
+        "label": "第一八三图",
+        "source_pointer": "/chapters/1/sections/6/pages/0/elements/0",
+        "figure_ids": [
+          "p282-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 283,
+        "ref_index": 1,
+        "label": "第一八四图、第一八五图",
+        "source_pointer": "/chapters/1/sections/6/pages/1/elements/1",
+        "figure_ids": [
+          "p283-f01",
+          "p283-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 284,
+        "ref_index": 1,
+        "label": "第一八六图、第一八七图",
+        "source_pointer": "/chapters/1/sections/6/pages/2/elements/1",
+        "figure_ids": [
+          "p284-f01",
+          "p284-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 285,
+        "ref_index": 1,
+        "label": "第一八八图",
+        "source_pointer": "/chapters/1/sections/7/pages/0/elements/0",
+        "figure_ids": [
+          "p285-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 286,
+        "ref_index": 1,
+        "label": "第一八九图、第一九〇图",
+        "source_pointer": "/chapters/1/sections/7/pages/1/elements/1",
+        "figure_ids": [
+          "p286-f01",
+          "p286-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 287,
+        "ref_index": 1,
+        "label": "第一九一图、第一九二图",
+        "source_pointer": "/chapters/1/sections/8/pages/0/elements/0",
+        "figure_ids": [
+          "p287-f01",
+          "p287-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 288,
+        "ref_index": 1,
+        "label": "第一九三图、第一九四图",
+        "source_pointer": "/chapters/1/sections/8/pages/1/elements/1",
+        "figure_ids": [
+          "p288-f01",
+          "p288-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 289,
+        "ref_index": 1,
+        "label": "第一九五图",
+        "source_pointer": "/chapters/1/sections/8/pages/2/elements/1",
+        "figure_ids": [
+          "p289-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      }
+    ],
+    "missing": [],
+    "extras": [],
+    "splits": [
+      {
+        "page": 13,
+        "ref_index": 1,
+        "label": "第二图、第三图",
+        "source_pointer": "/chapters/0/sections/0/pages/1/elements/0",
+        "figure_ids": [
+          "p013-f02",
+          "p013-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 14,
+        "ref_index": 1,
+        "label": "第四图、第五图",
+        "source_pointer": "/chapters/0/sections/1/pages/0/elements/0",
+        "figure_ids": [
+          "p014-f02",
+          "p014-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 15,
+        "ref_index": 1,
+        "label": "第六图、第七图",
+        "source_pointer": "/chapters/0/sections/1/pages/1/elements/1",
+        "figure_ids": [
+          "p015-f02",
+          "p015-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 17,
+        "ref_index": 1,
+        "label": "第八图、第九图",
+        "source_pointer": "/chapters/0/sections/1/pages/3/elements/0",
+        "figure_ids": [
+          "p017-f02",
+          "p017-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 18,
+        "ref_index": 1,
+        "label": "第一〇图、第一一图",
+        "source_pointer": "/chapters/0/sections/1/pages/4/elements/0",
+        "figure_ids": [
+          "p018-f02",
+          "p018-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 19,
+        "ref_index": 1,
+        "label": "第一二图、第一三图",
+        "source_pointer": "/chapters/0/sections/1/pages/5/elements/0",
+        "figure_ids": [
+          "p019-f02",
+          "p019-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 20,
+        "ref_index": 1,
+        "label": "第一四图、第一五图",
+        "source_pointer": "/chapters/0/sections/1/pages/6/elements/0",
+        "figure_ids": [
+          "p020-f03",
+          "p020-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 21,
+        "ref_index": 1,
+        "label": "第一六图、第一七图",
+        "source_pointer": "/chapters/0/sections/1/pages/7/elements/1",
+        "figure_ids": [
+          "p021-f02",
+          "p021-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 24,
+        "ref_index": 1,
+        "label": "第一九图、第二〇图",
+        "source_pointer": "/chapters/0/sections/1/pages/10/elements/0",
+        "figure_ids": [
+          "p024-f02",
+          "p024-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 25,
+        "ref_index": 1,
+        "label": "第二一图、参考图",
+        "source_pointer": "/chapters/0/sections/1/pages/11/elements/0",
+        "figure_ids": [
+          "p025-f02",
+          "p025-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 26,
+        "ref_index": 1,
+        "label": "第二二图、第二三图",
+        "source_pointer": "/chapters/0/sections/1/pages/12/elements/1",
+        "figure_ids": [
+          "p026-f02",
+          "p026-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 28,
+        "ref_index": 1,
+        "label": "第二四图、参考图",
+        "source_pointer": "/chapters/0/sections/1/pages/14/elements/0",
+        "figure_ids": [
+          "p028-f02",
+          "p028-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 29,
+        "ref_index": 1,
+        "label": "第二五图、参考图",
+        "source_pointer": "/chapters/0/sections/1/pages/15/elements/0",
+        "figure_ids": [
+          "p029-f02",
+          "p029-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 30,
+        "ref_index": 1,
+        "label": "第二六图、第二七图",
+        "source_pointer": "/chapters/0/sections/1/pages/16/elements/0",
+        "figure_ids": [
+          "p030-f02",
+          "p030-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 31,
+        "ref_index": 1,
+        "label": "第二八图、第二九图",
+        "source_pointer": "/chapters/0/sections/1/pages/17/elements/0",
+        "figure_ids": [
+          "p031-f02",
+          "p031-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 32,
+        "ref_index": 1,
+        "label": "第三〇图、第三一图",
+        "source_pointer": "/chapters/0/sections/1/pages/18/elements/0",
+        "figure_ids": [
+          "p032-f02",
+          "p032-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 33,
+        "ref_index": 1,
+        "label": "第三二图、第三三图",
+        "source_pointer": "/chapters/0/sections/1/pages/19/elements/1",
+        "figure_ids": [
+          "p033-f02",
+          "p033-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 34,
+        "ref_index": 1,
+        "label": "第三四图、第三五图",
+        "source_pointer": "/chapters/0/sections/1/pages/20/elements/1",
+        "figure_ids": [
+          "p034-f02",
+          "p034-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 36,
+        "ref_index": 1,
+        "label": "第三六图、第三七图",
+        "source_pointer": "/chapters/0/sections/1/pages/22/elements/0",
+        "figure_ids": [
+          "p036-f02",
+          "p036-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 37,
+        "ref_index": 1,
+        "label": "第三八图、第三九图",
+        "source_pointer": "/chapters/0/sections/1/pages/23/elements/0",
+        "figure_ids": [
+          "p037-f02",
+          "p037-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 38,
+        "ref_index": 1,
+        "label": "第四〇图、第四一图",
+        "source_pointer": "/chapters/0/sections/1/pages/24/elements/0",
+        "figure_ids": [
+          "p038-f03",
+          "p038-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 39,
+        "ref_index": 1,
+        "label": "第四二图、第四三图",
+        "source_pointer": "/chapters/0/sections/1/pages/25/elements/1",
+        "figure_ids": [
+          "p039-f02",
+          "p039-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 41,
+        "ref_index": 1,
+        "label": "第四四图、参考图1、参考图2",
+        "source_pointer": "/chapters/0/sections/1/pages/27/elements/0",
+        "figure_ids": [
+          "p041-f01",
+          "p041-f02",
+          "p041-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 42,
+        "ref_index": 1,
+        "label": "参考图3、参考图4、参考图5、参考图6",
+        "source_pointer": "/chapters/0/sections/1/pages/28/elements/0",
+        "figure_ids": [
+          "p042-f01",
+          "p042-f02",
+          "p042-f03",
+          "p042-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 43,
+        "ref_index": 1,
+        "label": "第四五图、第四六图",
+        "source_pointer": "/chapters/0/sections/1/pages/29/elements/0",
+        "figure_ids": [
+          "p043-f01",
+          "p043-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 44,
+        "ref_index": 1,
+        "label": "第四七图、第四八图",
+        "source_pointer": "/chapters/0/sections/1/pages/30/elements/0",
+        "figure_ids": [
+          "p044-f01",
+          "p044-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 45,
+        "ref_index": 1,
+        "label": "第四九图、第五〇图",
+        "source_pointer": "/chapters/0/sections/1/pages/31/elements/0",
+        "figure_ids": [
+          "p045-f01",
+          "p045-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 46,
+        "ref_index": 1,
+        "label": "第五一图、第五二图",
+        "source_pointer": "/chapters/0/sections/1/pages/32/elements/1",
+        "figure_ids": [
+          "p046-f01",
+          "p046-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 47,
+        "ref_index": 1,
+        "label": "参考图1、参考图2",
+        "source_pointer": "/chapters/0/sections/1/pages/33/elements/1",
+        "figure_ids": [
+          "p047-f01",
+          "p047-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 49,
+        "ref_index": 1,
+        "label": "第五三图、第五四图",
+        "source_pointer": "/chapters/0/sections/1/pages/35/elements/0",
+        "figure_ids": [
+          "p049-f01",
+          "p049-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 51,
+        "ref_index": 1,
+        "label": "第五六图、第五七图",
+        "source_pointer": "/chapters/0/sections/2/pages/2/elements/0",
+        "figure_ids": [
+          "p051-f01",
+          "p051-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 52,
+        "ref_index": 1,
+        "label": "第五八图、第五九图",
+        "source_pointer": "/chapters/0/sections/2/pages/3/elements/0",
+        "figure_ids": [
+          "p052-f01",
+          "p052-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 53,
+        "ref_index": 1,
+        "label": "第六〇图、第六一图",
+        "source_pointer": "/chapters/0/sections/2/pages/4/elements/0",
+        "figure_ids": [
+          "p053-f01",
+          "p053-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 54,
+        "ref_index": 1,
+        "label": "第六二图、第六三图",
+        "source_pointer": "/chapters/0/sections/2/pages/5/elements/1",
+        "figure_ids": [
+          "p054-f01",
+          "p054-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 55,
+        "ref_index": 1,
+        "label": "第六四图、第六五图",
+        "source_pointer": "/chapters/0/sections/2/pages/6/elements/1",
+        "figure_ids": [
+          "p055-f01",
+          "p055-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 57,
+        "ref_index": 1,
+        "label": "第六六图、第六七图",
+        "source_pointer": "/chapters/0/sections/2/pages/8/elements/0",
+        "figure_ids": [
+          "p057-f01",
+          "p057-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 58,
+        "ref_index": 1,
+        "label": "第六八图、第六九图",
+        "source_pointer": "/chapters/0/sections/2/pages/9/elements/0",
+        "figure_ids": [
+          "p058-f01",
+          "p058-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 59,
+        "ref_index": 1,
+        "label": "第七〇图、第七一图",
+        "source_pointer": "/chapters/0/sections/2/pages/10/elements/0",
+        "figure_ids": [
+          "p059-f01",
+          "p059-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 60,
+        "ref_index": 1,
+        "label": "第七二图、第七三图",
+        "source_pointer": "/chapters/0/sections/2/pages/11/elements/0",
+        "figure_ids": [
+          "p060-f01",
+          "p060-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 61,
+        "ref_index": 1,
+        "label": "第七四图、第七五图",
+        "source_pointer": "/chapters/0/sections/2/pages/12/elements/1",
+        "figure_ids": [
+          "p061-f01",
+          "p061-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 63,
+        "ref_index": 1,
+        "label": "第七六图、第七七图",
+        "source_pointer": "/chapters/0/sections/2/pages/14/elements/0",
+        "figure_ids": [
+          "p063-f01",
+          "p063-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 64,
+        "ref_index": 1,
+        "label": "第七八图、第七九图、参考图",
+        "source_pointer": "/chapters/0/sections/2/pages/15/elements/0",
+        "figure_ids": [
+          "p064-f01",
+          "p064-f02",
+          "p064-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 65,
+        "ref_index": 1,
+        "label": "第八〇图、参考图",
+        "source_pointer": "/chapters/0/sections/2/pages/16/elements/0",
+        "figure_ids": [
+          "p065-f01",
+          "p065-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 66,
+        "ref_index": 1,
+        "label": "第八一图、第八二图",
+        "source_pointer": "/chapters/0/sections/2/pages/17/elements/0",
+        "figure_ids": [
+          "p066-f01",
+          "p066-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 67,
+        "ref_index": 1,
+        "label": "第八三图、第八四图",
+        "source_pointer": "/chapters/0/sections/2/pages/18/elements/1",
+        "figure_ids": [
+          "p067-f01",
+          "p067-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 68,
+        "ref_index": 1,
+        "label": "第八五图、第八六图",
+        "source_pointer": "/chapters/0/sections/2/pages/19/elements/1",
+        "figure_ids": [
+          "p068-f01",
+          "p068-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 70,
+        "ref_index": 1,
+        "label": "第八七图、第八八图",
+        "source_pointer": "/chapters/0/sections/2/pages/21/elements/0",
+        "figure_ids": [
+          "p070-f01",
+          "p070-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 71,
+        "ref_index": 1,
+        "label": "第八九图、第九〇图",
+        "source_pointer": "/chapters/0/sections/2/pages/22/elements/0",
+        "figure_ids": [
+          "p071-f01",
+          "p071-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 72,
+        "ref_index": 1,
+        "label": "第九一图、第九二图",
+        "source_pointer": "/chapters/0/sections/2/pages/23/elements/0",
+        "figure_ids": [
+          "p072-f01",
+          "p072-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 73,
+        "ref_index": 1,
+        "label": "第九三图、第九四图",
+        "source_pointer": "/chapters/0/sections/2/pages/24/elements/0",
+        "figure_ids": [
+          "p073-f01",
+          "p073-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 74,
+        "ref_index": 2,
+        "label": "第九五图、第九六图",
+        "source_pointer": "/chapters/0/sections/2/pages/25/elements/1",
+        "figure_ids": [
+          "p074-f02",
+          "p074-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 75,
+        "ref_index": 1,
+        "label": "第九七图、第九八图",
+        "source_pointer": "/chapters/0/sections/2/pages/26/elements/1",
+        "figure_ids": [
+          "p075-f01",
+          "p075-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 77,
+        "ref_index": 1,
+        "label": "第九九图、第一〇〇图",
+        "source_pointer": "/chapters/0/sections/2/pages/28/elements/0",
+        "figure_ids": [
+          "p077-f01",
+          "p077-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 78,
+        "ref_index": 1,
+        "label": "第一〇一图、第一〇二图",
+        "source_pointer": "/chapters/0/sections/2/pages/29/elements/0",
+        "figure_ids": [
+          "p078-f01",
+          "p078-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 79,
+        "ref_index": 1,
+        "label": "第一〇三图、第一〇四图",
+        "source_pointer": "/chapters/0/sections/2/pages/30/elements/0",
+        "figure_ids": [
+          "p079-f01",
+          "p079-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 80,
+        "ref_index": 1,
+        "label": "第一〇五图、第一〇六图",
+        "source_pointer": "/chapters/0/sections/3/pages/0/elements/0",
+        "figure_ids": [
+          "p080-f01",
+          "p080-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 81,
+        "ref_index": 1,
+        "label": "第一〇七图、第一〇八图",
+        "source_pointer": "/chapters/0/sections/3/pages/1/elements/1",
+        "figure_ids": [
+          "p081-f01",
+          "p081-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 83,
+        "ref_index": 1,
+        "label": "第一〇九图、第一一〇图",
+        "source_pointer": "/chapters/0/sections/3/pages/3/elements/0",
+        "figure_ids": [
+          "p083-f01",
+          "p083-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 84,
+        "ref_index": 1,
+        "label": "第一一一图、第一一二图",
+        "source_pointer": "/chapters/0/sections/3/pages/4/elements/0",
+        "figure_ids": [
+          "p084-f01",
+          "p084-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 85,
+        "ref_index": 1,
+        "label": "第一一三图、第一一四图",
+        "source_pointer": "/chapters/0/sections/3/pages/5/elements/0",
+        "figure_ids": [
+          "p085-f01",
+          "p085-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 86,
+        "ref_index": 1,
+        "label": "第一一五图、第一一六图",
+        "source_pointer": "/chapters/0/sections/3/pages/6/elements/0",
+        "figure_ids": [
+          "p086-f01",
+          "p086-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 87,
+        "ref_index": 1,
+        "label": "第一一七图、第一一八图",
+        "source_pointer": "/chapters/0/sections/3/pages/7/elements/0",
+        "figure_ids": [
+          "p087-f01",
+          "p087-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 88,
+        "ref_index": 1,
+        "label": "第一一九图、第一二〇图",
+        "source_pointer": "/chapters/0/sections/3/pages/8/elements/1",
+        "figure_ids": [
+          "p088-f01",
+          "p088-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 90,
+        "ref_index": 1,
+        "label": "第一二一图、参考图",
+        "source_pointer": "/chapters/0/sections/3/pages/10/elements/0",
+        "figure_ids": [
+          "p090-f01",
+          "p090-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 91,
+        "ref_index": 1,
+        "label": "第一二二图、参考图",
+        "source_pointer": "/chapters/0/sections/3/pages/11/elements/0",
+        "figure_ids": [
+          "p091-f01",
+          "p091-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 92,
+        "ref_index": 1,
+        "label": "第一二三图、第一二四图",
+        "source_pointer": "/chapters/0/sections/3/pages/12/elements/0",
+        "figure_ids": [
+          "p092-f01",
+          "p092-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 93,
+        "ref_index": 1,
+        "label": "第一二五图、第一二六图",
+        "source_pointer": "/chapters/0/sections/3/pages/13/elements/0",
+        "figure_ids": [
+          "p093-f01",
+          "p093-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 94,
+        "ref_index": 1,
+        "label": "第一二七图、第一二八图",
+        "source_pointer": "/chapters/0/sections/3/pages/14/elements/0",
+        "figure_ids": [
+          "p094-f01",
+          "p094-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 95,
+        "ref_index": 1,
+        "label": "第一二九图、第一三〇图",
+        "source_pointer": "/chapters/0/sections/3/pages/15/elements/1",
+        "figure_ids": [
+          "p095-f01",
+          "p095-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 97,
+        "ref_index": 1,
+        "label": "参考图、第一三一图",
+        "source_pointer": "/chapters/0/sections/3/pages/17/elements/0",
+        "figure_ids": [
+          "p097-f01",
+          "p097-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 98,
+        "ref_index": 1,
+        "label": "第一三二图、第一三三图",
+        "source_pointer": "/chapters/0/sections/3/pages/18/elements/0",
+        "figure_ids": [
+          "p098-f01",
+          "p098-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 99,
+        "ref_index": 1,
+        "label": "第一三四图、第一三五图",
+        "source_pointer": "/chapters/0/sections/3/pages/19/elements/0",
+        "figure_ids": [
+          "p099-f01",
+          "p099-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 100,
+        "ref_index": 1,
+        "label": "参考图1、参考图2、第一三六图",
+        "source_pointer": "/chapters/0/sections/3/pages/20/elements/1",
+        "figure_ids": [
+          "p100-f01",
+          "p100-f02",
+          "p100-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 102,
+        "ref_index": 1,
+        "label": "参考图3、参考图4、第一三七图",
+        "source_pointer": "/chapters/0/sections/3/pages/22/elements/0",
+        "figure_ids": [
+          "p102-f01",
+          "p102-f02",
+          "p102-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 103,
+        "ref_index": 1,
+        "label": "第一三八图、第一三九图",
+        "source_pointer": "/chapters/0/sections/3/pages/23/elements/0",
+        "figure_ids": [
+          "p103-f01",
+          "p103-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 104,
+        "ref_index": 1,
+        "label": "第一四〇图、第一四一图",
+        "source_pointer": "/chapters/0/sections/3/pages/24/elements/0",
+        "figure_ids": [
+          "p104-f01",
+          "p104-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 105,
+        "ref_index": 1,
+        "label": "第一四二图、第一四三图",
+        "source_pointer": "/chapters/0/sections/3/pages/25/elements/0",
+        "figure_ids": [
+          "p105-f01",
+          "p105-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 106,
+        "ref_index": 1,
+        "label": "第一四四图、第一四五图",
+        "source_pointer": "/chapters/0/sections/3/pages/26/elements/1",
+        "figure_ids": [
+          "p106-f01",
+          "p106-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 108,
+        "ref_index": 1,
+        "label": "第一四六图、第一四七图",
+        "source_pointer": "/chapters/0/sections/3/pages/28/elements/0",
+        "figure_ids": [
+          "p108-f01",
+          "p108-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 109,
+        "ref_index": 1,
+        "label": "第一四八图、第一四九图",
+        "source_pointer": "/chapters/0/sections/3/pages/29/elements/0",
+        "figure_ids": [
+          "p109-f01",
+          "p109-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 110,
+        "ref_index": 1,
+        "label": "第一五〇图、第一五一图",
+        "source_pointer": "/chapters/0/sections/3/pages/30/elements/0",
+        "figure_ids": [
+          "p110-f01",
+          "p110-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 111,
+        "ref_index": 1,
+        "label": "第一五二图、第一五三图",
+        "source_pointer": "/chapters/0/sections/3/pages/31/elements/0",
+        "figure_ids": [
+          "p111-f01",
+          "p111-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 112,
+        "ref_index": 1,
+        "label": "第一五四图、第一五五图",
+        "source_pointer": "/chapters/0/sections/3/pages/32/elements/0",
+        "figure_ids": [
+          "p112-f01",
+          "p112-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 113,
+        "ref_index": 1,
+        "label": "第一五六图、第一五七图",
+        "source_pointer": "/chapters/0/sections/3/pages/33/elements/0",
+        "figure_ids": [
+          "p113-f01",
+          "p113-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 115,
+        "ref_index": 1,
+        "label": "第一五九图、第一六〇图",
+        "source_pointer": "/chapters/0/sections/3/pages/35/elements/0",
+        "figure_ids": [
+          "p115-f01",
+          "p115-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 116,
+        "ref_index": 1,
+        "label": "第一六一图、第一六二图",
+        "source_pointer": "/chapters/0/sections/3/pages/36/elements/1",
+        "figure_ids": [
+          "p116-f01",
+          "p116-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 117,
+        "ref_index": 1,
+        "label": "第一六三图、第一六四图",
+        "source_pointer": "/chapters/0/sections/3/pages/37/elements/1",
+        "figure_ids": [
+          "p117-f01",
+          "p117-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 119,
+        "ref_index": 1,
+        "label": "第一六五图、第一六六图",
+        "source_pointer": "/chapters/0/sections/4/pages/1/elements/0",
+        "figure_ids": [
+          "p119-f01",
+          "p119-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 120,
+        "ref_index": 1,
+        "label": "第一六七图、第一六八图",
+        "source_pointer": "/chapters/0/sections/4/pages/2/elements/0",
+        "figure_ids": [
+          "p120-f01",
+          "p120-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 121,
+        "ref_index": 1,
+        "label": "第一六九图、第一七〇图",
+        "source_pointer": "/chapters/0/sections/4/pages/3/elements/0",
+        "figure_ids": [
+          "p121-f01",
+          "p121-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 122,
+        "ref_index": 1,
+        "label": "第一七一图、第一七二图",
+        "source_pointer": "/chapters/0/sections/4/pages/4/elements/0",
+        "figure_ids": [
+          "p122-f01",
+          "p122-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 123,
+        "ref_index": 1,
+        "label": "第一七三图、第一七四图",
+        "source_pointer": "/chapters/0/sections/4/pages/5/elements/1",
+        "figure_ids": [
+          "p123-f01",
+          "p123-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 124,
+        "ref_index": 1,
+        "label": "第一七五图、第一七六图",
+        "source_pointer": "/chapters/0/sections/4/pages/6/elements/1",
+        "figure_ids": [
+          "p124-f01",
+          "p124-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 126,
+        "ref_index": 1,
+        "label": "第一七八图、第一七九图",
+        "source_pointer": "/chapters/0/sections/5/pages/1/elements/1",
+        "figure_ids": [
+          "p126-f01",
+          "p126-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 127,
+        "ref_index": 1,
+        "label": "第一八〇图、第一八一图",
+        "source_pointer": "/chapters/0/sections/5/pages/2/elements/1",
+        "figure_ids": [
+          "p127-f01",
+          "p127-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 129,
+        "ref_index": 2,
+        "label": "第一八二图、第一八三图",
+        "source_pointer": "/chapters/0/sections/5/pages/4/elements/1",
+        "figure_ids": [
+          "p129-f02",
+          "p129-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 130,
+        "ref_index": 1,
+        "label": "第一八四图、第一八五图",
+        "source_pointer": "/chapters/0/sections/5/pages/5/elements/0",
+        "figure_ids": [
+          "p130-f01",
+          "p130-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 131,
+        "ref_index": 1,
+        "label": "第一八六图、第一八七图",
+        "source_pointer": "/chapters/0/sections/5/pages/6/elements/0",
+        "figure_ids": [
+          "p131-f01",
+          "p131-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 132,
+        "ref_index": 1,
+        "label": "第一八八图、第一八九图",
+        "source_pointer": "/chapters/0/sections/5/pages/7/elements/1",
+        "figure_ids": [
+          "p132-f01",
+          "p132-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 133,
+        "ref_index": 1,
+        "label": "第一九〇图、第一九一图",
+        "source_pointer": "/chapters/0/sections/5/pages/8/elements/1",
+        "figure_ids": [
+          "p133-f01",
+          "p133-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 134,
+        "ref_index": 1,
+        "label": "第一九二图、第一九三图",
+        "source_pointer": "/chapters/0/sections/5/pages/9/elements/1",
+        "figure_ids": [
+          "p134-f01",
+          "p134-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 135,
+        "ref_index": 1,
+        "label": "第一九四图、第一九五图",
+        "source_pointer": "/chapters/0/sections/5/pages/10/elements/1",
+        "figure_ids": [
+          "p135-f01",
+          "p135-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 136,
+        "ref_index": 1,
+        "label": "第一九六图、第一九七图",
+        "source_pointer": "/chapters/0/sections/5/pages/11/elements/1",
+        "figure_ids": [
+          "p136-f01",
+          "p136-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 138,
+        "ref_index": 1,
+        "label": "第一九八图、第一九九图",
+        "source_pointer": "/chapters/0/sections/5/pages/13/elements/0",
+        "figure_ids": [
+          "p138-f01",
+          "p138-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 139,
+        "ref_index": 1,
+        "label": "第二〇〇图、第二〇一图",
+        "source_pointer": "/chapters/0/sections/5/pages/14/elements/0",
+        "figure_ids": [
+          "p139-f01",
+          "p139-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 140,
+        "ref_index": 1,
+        "label": "第二〇二图、第二〇三图",
+        "source_pointer": "/chapters/0/sections/5/pages/15/elements/0",
+        "figure_ids": [
+          "p140-f01",
+          "p140-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 141,
+        "ref_index": 1,
+        "label": "第二〇四图、第二〇五图",
+        "source_pointer": "/chapters/0/sections/5/pages/16/elements/0",
+        "figure_ids": [
+          "p141-f01",
+          "p141-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 142,
+        "ref_index": 1,
+        "label": "第二〇六图、第二〇七图",
+        "source_pointer": "/chapters/0/sections/5/pages/17/elements/1",
+        "figure_ids": [
+          "p142-f01",
+          "p142-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 143,
+        "ref_index": 1,
+        "label": "第二〇八图、第二〇九图",
+        "source_pointer": "/chapters/0/sections/5/pages/18/elements/1",
+        "figure_ids": [
+          "p143-f01",
+          "p143-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 144,
+        "ref_index": 1,
+        "label": "第二一〇图、第二一一图",
+        "source_pointer": "/chapters/0/sections/5/pages/19/elements/1",
+        "figure_ids": [
+          "p144-f01",
+          "p144-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 146,
+        "ref_index": 1,
+        "label": "第二一二图、第二一三图",
+        "source_pointer": "/chapters/0/sections/5/pages/21/elements/0",
+        "figure_ids": [
+          "p146-f01",
+          "p146-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 147,
+        "ref_index": 1,
+        "label": "第二一四图、第二一五图",
+        "source_pointer": "/chapters/0/sections/5/pages/22/elements/1",
+        "figure_ids": [
+          "p147-f01",
+          "p147-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 148,
+        "ref_index": 1,
+        "label": "第二一六图、第二一七图",
+        "source_pointer": "/chapters/0/sections/5/pages/23/elements/0",
+        "figure_ids": [
+          "p148-f01",
+          "p148-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 149,
+        "ref_index": 1,
+        "label": "第二一八图、第二一九图",
+        "source_pointer": "/chapters/0/sections/5/pages/24/elements/0",
+        "figure_ids": [
+          "p149-f01",
+          "p149-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 150,
+        "ref_index": 1,
+        "label": "第二二〇图、第二二一图",
+        "source_pointer": "/chapters/0/sections/6/pages/0/elements/0",
+        "figure_ids": [
+          "p150-f01",
+          "p150-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 151,
+        "ref_index": 1,
+        "label": "第二二二图、第二二三图",
+        "source_pointer": "/chapters/0/sections/6/pages/1/elements/1",
+        "figure_ids": [
+          "p151-f01",
+          "p151-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 152,
+        "ref_index": 1,
+        "label": "第二二四图、第二二五图",
+        "source_pointer": "/chapters/0/sections/6/pages/2/elements/1",
+        "figure_ids": [
+          "p152-f01",
+          "p152-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 153,
+        "ref_index": 1,
+        "label": "第二二六图、第二二七图",
+        "source_pointer": "/chapters/0/sections/6/pages/3/elements/1",
+        "figure_ids": [
+          "p153-f01",
+          "p153-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 154,
+        "ref_index": 1,
+        "label": "第二二八图、第二二九图",
+        "source_pointer": "/chapters/0/sections/6/pages/4/elements/1",
+        "figure_ids": [
+          "p154-f01",
+          "p154-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 160,
+        "ref_index": 1,
+        "label": "第二图、第三图",
+        "source_pointer": "/chapters/1/sections/0/pages/1/elements/1",
+        "figure_ids": [
+          "p160-f01",
+          "p160-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 161,
+        "ref_index": 1,
+        "label": "第四图、第五图",
+        "source_pointer": "/chapters/1/sections/0/pages/2/elements/1",
+        "figure_ids": [
+          "p161-f01",
+          "p161-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 163,
+        "ref_index": 1,
+        "label": "第七图、第八图",
+        "source_pointer": "/chapters/1/sections/1/pages/0/elements/0",
+        "figure_ids": [
+          "p163-f01",
+          "p163-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 164,
+        "ref_index": 1,
+        "label": "第九图、第一〇图",
+        "source_pointer": "/chapters/1/sections/1/pages/1/elements/1",
+        "figure_ids": [
+          "p164-f01",
+          "p164-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 166,
+        "ref_index": 1,
+        "label": "第一一图、第一二图",
+        "source_pointer": "/chapters/1/sections/1/pages/3/elements/0",
+        "figure_ids": [
+          "p166-f01",
+          "p166-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 167,
+        "ref_index": 1,
+        "label": "第一三图、第一四图",
+        "source_pointer": "/chapters/1/sections/1/pages/4/elements/1",
+        "figure_ids": [
+          "p167-f01",
+          "p167-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 168,
+        "ref_index": 1,
+        "label": "第一五图、第一六图",
+        "source_pointer": "/chapters/1/sections/1/pages/5/elements/1",
+        "figure_ids": [
+          "p168-f01",
+          "p168-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 169,
+        "ref_index": 1,
+        "label": "第一七图、第一八图",
+        "source_pointer": "/chapters/1/sections/1/pages/6/elements/1",
+        "figure_ids": [
+          "p169-f01",
+          "p169-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 171,
+        "ref_index": 1,
+        "label": "第二〇图、第二一图",
+        "source_pointer": "/chapters/1/sections/1/pages/8/elements/0",
+        "figure_ids": [
+          "p171-f01",
+          "p171-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 172,
+        "ref_index": 1,
+        "label": "第二二图、第二三图",
+        "source_pointer": "/chapters/1/sections/1/pages/9/elements/1",
+        "figure_ids": [
+          "p172-f01",
+          "p172-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 173,
+        "ref_index": 1,
+        "label": "第二四图、参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/10/elements/1",
+        "figure_ids": [
+          "p173-f01",
+          "p173-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 174,
+        "ref_index": 1,
+        "label": "第二五图、参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/11/elements/1",
+        "figure_ids": [
+          "p174-f01",
+          "p174-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 176,
+        "ref_index": 1,
+        "label": "第二六图、第二七图",
+        "source_pointer": "/chapters/1/sections/1/pages/13/elements/1",
+        "figure_ids": [
+          "p176-f01",
+          "p176-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 177,
+        "ref_index": 1,
+        "label": "第二八图、第二九图",
+        "source_pointer": "/chapters/1/sections/1/pages/14/elements/1",
+        "figure_ids": [
+          "p177-f01",
+          "p177-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 178,
+        "ref_index": 1,
+        "label": "第三〇图、第三一图",
+        "source_pointer": "/chapters/1/sections/1/pages/15/elements/1",
+        "figure_ids": [
+          "p178-f01",
+          "p178-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 180,
+        "ref_index": 1,
+        "label": "第三三图、第三四图",
+        "source_pointer": "/chapters/1/sections/1/pages/17/elements/1",
+        "figure_ids": [
+          "p180-f01",
+          "p180-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 181,
+        "ref_index": 1,
+        "label": "第三五图、第三六图",
+        "source_pointer": "/chapters/1/sections/1/pages/18/elements/1",
+        "figure_ids": [
+          "p181-f01",
+          "p181-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 182,
+        "ref_index": 1,
+        "label": "第三七图、参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/19/elements/1",
+        "figure_ids": [
+          "p182-f01",
+          "p182-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 184,
+        "ref_index": 1,
+        "label": "参考图1、第三八图",
+        "source_pointer": "/chapters/1/sections/1/pages/21/elements/0",
+        "figure_ids": [
+          "p184-f01",
+          "p184-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 185,
+        "ref_index": 1,
+        "label": "第三九图、参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/22/elements/1",
+        "figure_ids": [
+          "p185-f01",
+          "p185-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 186,
+        "ref_index": 1,
+        "label": "第四〇图、第四一图",
+        "source_pointer": "/chapters/1/sections/1/pages/23/elements/1",
+        "figure_ids": [
+          "p186-f01",
+          "p186-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 188,
+        "ref_index": 1,
+        "label": "第四四图、第四五图",
+        "source_pointer": "/chapters/1/sections/1/pages/25/elements/1",
+        "figure_ids": [
+          "p188-f01",
+          "p188-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 191,
+        "ref_index": 1,
+        "label": "第四七图、第四八图",
+        "source_pointer": "/chapters/1/sections/1/pages/28/elements/0",
+        "figure_ids": [
+          "p191-f01",
+          "p191-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 193,
+        "ref_index": 1,
+        "label": "第五一图、第五二图",
+        "source_pointer": "/chapters/1/sections/1/pages/30/elements/1",
+        "figure_ids": [
+          "p193-f01",
+          "p193-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 194,
+        "ref_index": 1,
+        "label": "第五三图、第五四图",
+        "source_pointer": "/chapters/1/sections/1/pages/31/elements/1",
+        "figure_ids": [
+          "p194-f01",
+          "p194-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 195,
+        "ref_index": 1,
+        "label": "第五五图、第五六图",
+        "source_pointer": "/chapters/1/sections/1/pages/32/elements/1",
+        "figure_ids": [
+          "p195-f01",
+          "p195-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 196,
+        "ref_index": 1,
+        "label": "第五七图、参考图",
+        "source_pointer": "/chapters/1/sections/1/pages/33/elements/1",
+        "figure_ids": [
+          "p196-f01",
+          "p196-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 199,
+        "ref_index": 1,
+        "label": "第五九图、第六〇图",
+        "source_pointer": "/chapters/1/sections/2/pages/2/elements/1",
+        "figure_ids": [
+          "p199-f01",
+          "p199-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 200,
+        "ref_index": 1,
+        "label": "第六一图、第六二图",
+        "source_pointer": "/chapters/1/sections/2/pages/3/elements/1",
+        "figure_ids": [
+          "p200-f01",
+          "p200-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 202,
+        "ref_index": 1,
+        "label": "第六五图、第六六图",
+        "source_pointer": "/chapters/1/sections/2/pages/5/elements/1",
+        "figure_ids": [
+          "p202-f01",
+          "p202-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 203,
+        "ref_index": 1,
+        "label": "第六七图、第六八图",
+        "source_pointer": "/chapters/1/sections/2/pages/6/elements/1",
+        "figure_ids": [
+          "p203-f01",
+          "p203-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 205,
+        "ref_index": 1,
+        "label": "第七〇图、第七一图",
+        "source_pointer": "/chapters/1/sections/2/pages/8/elements/1",
+        "figure_ids": [
+          "p205-f01",
+          "p205-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 206,
+        "ref_index": 1,
+        "label": "第七二图、第七三图",
+        "source_pointer": "/chapters/1/sections/2/pages/9/elements/1",
+        "figure_ids": [
+          "p206-f01",
+          "p206-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 207,
+        "ref_index": 1,
+        "label": "第七四图、第七五图",
+        "source_pointer": "/chapters/1/sections/2/pages/10/elements/1",
+        "figure_ids": [
+          "p207-f01",
+          "p207-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 209,
+        "ref_index": 1,
+        "label": "第七六图、第七七图、第七八图",
+        "source_pointer": "/chapters/1/sections/2/pages/12/elements/0",
+        "figure_ids": [
+          "p209-f01",
+          "p209-f02",
+          "p209-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 210,
+        "ref_index": 1,
+        "label": "第七九图、第八〇图",
+        "source_pointer": "/chapters/1/sections/2/pages/13/elements/1",
+        "figure_ids": [
+          "p210-f01",
+          "p210-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 211,
+        "ref_index": 1,
+        "label": "第八一图、参考图",
+        "source_pointer": "/chapters/1/sections/2/pages/14/elements/0",
+        "figure_ids": [
+          "p211-f01",
+          "p211-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 212,
+        "ref_index": 1,
+        "label": "第八二图、第八三图",
+        "source_pointer": "/chapters/1/sections/2/pages/15/elements/1",
+        "figure_ids": [
+          "p212-f01",
+          "p212-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 216,
+        "ref_index": 1,
+        "label": "第八六图、第八七图",
+        "source_pointer": "/chapters/1/sections/2/pages/19/elements/1",
+        "figure_ids": [
+          "p216-f01",
+          "p216-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 218,
+        "ref_index": 1,
+        "label": "第九〇图、第九一图",
+        "source_pointer": "/chapters/1/sections/2/pages/21/elements/1",
+        "figure_ids": [
+          "p218-f01",
+          "p218-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 220,
+        "ref_index": 1,
+        "label": "第九三图、第九四图",
+        "source_pointer": "/chapters/1/sections/3/pages/1/elements/1",
+        "figure_ids": [
+          "p220-f01",
+          "p220-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 223,
+        "ref_index": 1,
+        "label": "第九六图、第九七图",
+        "source_pointer": "/chapters/1/sections/3/pages/4/elements/1",
+        "figure_ids": [
+          "p223-f01",
+          "p223-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 224,
+        "ref_index": 1,
+        "label": "第九八图、第九九图",
+        "source_pointer": "/chapters/1/sections/3/pages/5/elements/1",
+        "figure_ids": [
+          "p224-f01",
+          "p224-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 225,
+        "ref_index": 1,
+        "label": "第一〇〇图、第一〇一图",
+        "source_pointer": "/chapters/1/sections/3/pages/6/elements/1",
+        "figure_ids": [
+          "p225-f01",
+          "p225-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 228,
+        "ref_index": 1,
+        "label": "第一〇三图、第一〇四图",
+        "source_pointer": "/chapters/1/sections/3/pages/9/elements/0",
+        "figure_ids": [
+          "p228-f01",
+          "p228-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 230,
+        "ref_index": 1,
+        "label": "第一〇六图、第一〇七图",
+        "source_pointer": "/chapters/1/sections/3/pages/11/elements/1",
+        "figure_ids": [
+          "p230-f01",
+          "p230-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 231,
+        "ref_index": 1,
+        "label": "第一〇八图、第一〇九图",
+        "source_pointer": "/chapters/1/sections/3/pages/12/elements/0",
+        "figure_ids": [
+          "p231-f01",
+          "p231-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 232,
+        "ref_index": 1,
+        "label": "第一一〇图、第一一一图",
+        "source_pointer": "/chapters/1/sections/3/pages/13/elements/1",
+        "figure_ids": [
+          "p232-f01",
+          "p232-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 233,
+        "ref_index": 1,
+        "label": "第一一二图、第一一三图",
+        "source_pointer": "/chapters/1/sections/3/pages/14/elements/1",
+        "figure_ids": [
+          "p233-f01",
+          "p233-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 235,
+        "ref_index": 1,
+        "label": "第一一四图、第一一五图",
+        "source_pointer": "/chapters/1/sections/3/pages/16/elements/1",
+        "figure_ids": [
+          "p235-f01",
+          "p235-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 236,
+        "ref_index": 1,
+        "label": "第一一六图、第一一七图",
+        "source_pointer": "/chapters/1/sections/3/pages/17/elements/1",
+        "figure_ids": [
+          "p236-f01",
+          "p236-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 237,
+        "ref_index": 1,
+        "label": "第一一八图、第一一九图",
+        "source_pointer": "/chapters/1/sections/3/pages/18/elements/1",
+        "figure_ids": [
+          "p237-f01",
+          "p237-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 240,
+        "ref_index": 1,
+        "label": "第一二二图、第一二三图",
+        "source_pointer": "/chapters/1/sections/3/pages/21/elements/1",
+        "figure_ids": [
+          "p240-f01",
+          "p240-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 242,
+        "ref_index": 1,
+        "label": "第一二四图、第一二五图",
+        "source_pointer": "/chapters/1/sections/3/pages/23/elements/0",
+        "figure_ids": [
+          "p242-f01",
+          "p242-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 243,
+        "ref_index": 1,
+        "label": "第一二六图、第一二七图",
+        "source_pointer": "/chapters/1/sections/3/pages/24/elements/1",
+        "figure_ids": [
+          "p243-f01",
+          "p243-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 244,
+        "ref_index": 1,
+        "label": "第一二八图、第一二九图",
+        "source_pointer": "/chapters/1/sections/3/pages/25/elements/1",
+        "figure_ids": [
+          "p244-f01",
+          "p244-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 245,
+        "ref_index": 1,
+        "label": "第一三〇图、第一三一图",
+        "source_pointer": "/chapters/1/sections/3/pages/26/elements/0",
+        "figure_ids": [
+          "p245-f01",
+          "p245-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 246,
+        "ref_index": 1,
+        "label": "第一三二图、第一三三图",
+        "source_pointer": "/chapters/1/sections/3/pages/27/elements/1",
+        "figure_ids": [
+          "p246-f01",
+          "p246-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 247,
+        "ref_index": 1,
+        "label": "第一三四图、第一三五图",
+        "source_pointer": "/chapters/1/sections/3/pages/28/elements/1",
+        "figure_ids": [
+          "p247-f01",
+          "p247-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 250,
+        "ref_index": 1,
+        "label": "第一三八图、第一三九图",
+        "source_pointer": "/chapters/1/sections/4/pages/1/elements/1",
+        "figure_ids": [
+          "p250-f01",
+          "p250-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 251,
+        "ref_index": 1,
+        "label": "第一四〇图、第一四一图",
+        "source_pointer": "/chapters/1/sections/4/pages/2/elements/1",
+        "figure_ids": [
+          "p251-f01",
+          "p251-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 252,
+        "ref_index": 1,
+        "label": "第一四二图、第一四三图",
+        "source_pointer": "/chapters/1/sections/4/pages/3/elements/1",
+        "figure_ids": [
+          "p252-f01",
+          "p252-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 254,
+        "ref_index": 1,
+        "label": "第一四四图、参考图",
+        "source_pointer": "/chapters/1/sections/4/pages/5/elements/0",
+        "figure_ids": [
+          "p254-f01",
+          "p254-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 256,
+        "ref_index": 1,
+        "label": "第一四五图（重演）、参考图2",
+        "source_pointer": "/chapters/1/sections/4/pages/7/elements/0",
+        "figure_ids": [
+          "p256-f01",
+          "p256-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 259,
+        "ref_index": 1,
+        "label": "第一四八图、第一四九图",
+        "source_pointer": "/chapters/1/sections/4/pages/10/elements/1",
+        "figure_ids": [
+          "p259-f01",
+          "p259-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 262,
+        "ref_index": 1,
+        "label": "第一五一图、第一五二图",
+        "source_pointer": "/chapters/1/sections/4/pages/13/elements/1",
+        "figure_ids": [
+          "p262-f01",
+          "p262-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 263,
+        "ref_index": 1,
+        "label": "第一五三图、第一五四图",
+        "source_pointer": "/chapters/1/sections/4/pages/14/elements/0",
+        "figure_ids": [
+          "p263-f01",
+          "p263-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 265,
+        "ref_index": 1,
+        "label": "第一五六图、第一五七图",
+        "source_pointer": "/chapters/1/sections/4/pages/16/elements/1",
+        "figure_ids": [
+          "p265-f01",
+          "p265-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 267,
+        "ref_index": 1,
+        "label": "第一五八图、第一五九图",
+        "source_pointer": "/chapters/1/sections/4/pages/18/elements/0",
+        "figure_ids": [
+          "p267-f01",
+          "p267-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 268,
+        "ref_index": 1,
+        "label": "第一六〇图、第一六一图",
+        "source_pointer": "/chapters/1/sections/4/pages/19/elements/0",
+        "figure_ids": [
+          "p268-f01",
+          "p268-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 269,
+        "ref_index": 1,
+        "label": "第一六二图、第一六三图",
+        "source_pointer": "/chapters/1/sections/4/pages/20/elements/0",
+        "figure_ids": [
+          "p269-f01",
+          "p269-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 270,
+        "ref_index": 1,
+        "label": "第一六四图、第一六五图",
+        "source_pointer": "/chapters/1/sections/4/pages/21/elements/0",
+        "figure_ids": [
+          "p270-f01",
+          "p270-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 271,
+        "ref_index": 1,
+        "label": "第一六六图、第一六七图",
+        "source_pointer": "/chapters/1/sections/4/pages/22/elements/0",
+        "figure_ids": [
+          "p271-f01",
+          "p271-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 272,
+        "ref_index": 1,
+        "label": "第一六八图、第一六九图",
+        "source_pointer": "/chapters/1/sections/4/pages/23/elements/0",
+        "figure_ids": [
+          "p272-f01",
+          "p272-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 274,
+        "ref_index": 1,
+        "label": "参考图1、参考图2",
+        "source_pointer": "/chapters/1/sections/5/pages/1/elements/0",
+        "figure_ids": [
+          "p274-f01",
+          "p274-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 275,
+        "ref_index": 1,
+        "label": "第一七一图、第一七二图",
+        "source_pointer": "/chapters/1/sections/5/pages/2/elements/1",
+        "figure_ids": [
+          "p275-f01",
+          "p275-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 276,
+        "ref_index": 1,
+        "label": "第一七三图、第一七四图",
+        "source_pointer": "/chapters/1/sections/5/pages/3/elements/1",
+        "figure_ids": [
+          "p276-f01",
+          "p276-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 277,
+        "ref_index": 1,
+        "label": "第一七五图、第一七六图",
+        "source_pointer": "/chapters/1/sections/5/pages/4/elements/1",
+        "figure_ids": [
+          "p277-f01",
+          "p277-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 279,
+        "ref_index": 1,
+        "label": "第一七七图、第一七八图",
+        "source_pointer": "/chapters/1/sections/5/pages/6/elements/0",
+        "figure_ids": [
+          "p279-f01",
+          "p279-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 280,
+        "ref_index": 1,
+        "label": "第一七九图、第一八〇图",
+        "source_pointer": "/chapters/1/sections/5/pages/7/elements/0",
+        "figure_ids": [
+          "p280-f01",
+          "p280-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 281,
+        "ref_index": 1,
+        "label": "第一八一图、第一八二图",
+        "source_pointer": "/chapters/1/sections/5/pages/8/elements/0",
+        "figure_ids": [
+          "p281-f01",
+          "p281-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 283,
+        "ref_index": 1,
+        "label": "第一八四图、第一八五图",
+        "source_pointer": "/chapters/1/sections/6/pages/1/elements/1",
+        "figure_ids": [
+          "p283-f01",
+          "p283-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 284,
+        "ref_index": 1,
+        "label": "第一八六图、第一八七图",
+        "source_pointer": "/chapters/1/sections/6/pages/2/elements/1",
+        "figure_ids": [
+          "p284-f01",
+          "p284-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 286,
+        "ref_index": 1,
+        "label": "第一八九图、第一九〇图",
+        "source_pointer": "/chapters/1/sections/7/pages/1/elements/1",
+        "figure_ids": [
+          "p286-f01",
+          "p286-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 287,
+        "ref_index": 1,
+        "label": "第一九一图、第一九二图",
+        "source_pointer": "/chapters/1/sections/8/pages/0/elements/0",
+        "figure_ids": [
+          "p287-f01",
+          "p287-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 288,
+        "ref_index": 1,
+        "label": "第一九三图、第一九四图",
+        "source_pointer": "/chapters/1/sections/8/pages/1/elements/1",
+        "figure_ids": [
+          "p288-f01",
+          "p288-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      }
+    ]
+  },
+  "test_import": {
+    "statuses": {
+      "applied": 469,
+      "candidate_pending": 2
+    },
+    "rerun_statuses": {
+      "existing": 471
+    },
+    "full_rerun_snapshot_unchanged": true,
+    "unrelated_original_fields_unchanged": true
+  },
+  "review": {
+    "machine_recognition_completed": 469,
+    "human_approvals_granted_this_run": 0,
+    "true_replay_complete_in_new_recognition_results": 0,
+    "voice_generated_this_run": 0,
+    "video_generated_this_run": 0,
+    "uncalibrated_displayed_records": 471,
+    "sequence_pending_displayed_records": 471,
+    "uncertain_displayed_records": 25,
+    "inferred_displayed_records": 79,
+    "exported_diagram_playback": {
+      "true_replay": 0,
+      "number_preview": 407,
+      "zero_step_static": 1,
+      "numbering_failed": 63
+    }
+  },
+  "runtime_filters": {
+    "all": 471,
+    "uncalibrated": 471,
+    "uncertainty": 25,
+    "inference": 79,
+    "sequence_pending": 471
+  },
+  "export": {
+    "sgfs_parsed": 471,
+    "index_entries": 471,
+    "skipped": 0,
+    "mapped_candidates": 471,
+    "mapped_diagrams_all_exported": true,
+    "zip_sha256": "72cdca4bf1dff601c87b804f4285f4289de53cf1605a4a6d8f5edb409945a2f2",
+    "bytes": 3215128,
+    "single_figure_endpoint_http200_verified": true,
+    "single_figure_example": {
+      "page": 12,
+      "figure_id": 22067
+    }
+  },
+  "browser_acceptance": {
+    "existing_test_url": "http://127.0.0.1:18012/admin?book=46&page=182&figure=22222&filter=all",
+    "full19x19_board_visible": true,
+    "edit_tools_and_cancel_available": true,
+    "no_saved_test_edits_or_human_approval": true,
+    "normal_book_dropdown_entry": {
+      "book_id": 46,
+      "first_registered_page": 9,
+      "source_image_loaded": true,
+      "source_page_not_found": false
+    },
+    "multiple_candidates": {
+      "page": 182,
+      "figures": [
+        42029,
+        22222
+      ],
+      "recognition_ids": [
+        "p182-f02",
+        "p182-f01"
+      ],
+      "actual_switch": true,
+      "current_payloads_null": true,
+      "unadopted_candidate_notice_visible": true
+    },
+    "number_preview": {
+      "figure_id": 42029,
+      "observed_steps": [
+        11,
+        10,
+        11
+      ],
+      "moves_vs_figures_separate_controls": true
+    },
+    "other_candidate": {
+      "figure_id": 22222,
+      "printed_steps": 44,
+      "full_board_viewed": true
+    },
+    "editor": {
+      "figure_id": 22222,
+      "opened_with_no_local_modifications": true,
+      "static_initial_and_sequence_tools_visible": true,
+      "cancel_clicked": true,
+      "saved": false
+    },
+    "source_image": {
+      "url": "https://go.sailorvoyage.top/media/tutorial_assets/catalog/joseki/d968bb5417c255041c15c818aa43c70560bdca17269c83ca63a5c4d70fb620d2/page_182.png",
+      "status": 200,
+      "content_type": "image/png",
+      "bytes": 264606,
+      "authorization_header_used": false
+    },
+    "visible_unknown_color_example": {
+      "page": 258,
+      "figure_id": 22295,
+      "full_cells": [
+        [
+          16,
+          3
+        ],
+        [
+          17,
+          3
+        ],
+        [
+          17,
+          4
+        ]
+      ],
+      "board_and_evidence_list_both_visible": true
+    },
+    "screenshot": "output/playwright/joseki-p182-pending-candidate.png",
+    "checked_at": "2026-10-18T13:42:15.266937+08:00"
+  },
+  "playback": {
+    "exported_figures": 471,
+    "counts": {
+      "true_replay": 0,
+      "number_preview": 407,
+      "zero_step_static": 1,
+      "numbering_failed": 63
+    },
+    "numbering_failures": [
+      {
+        "figure_id": 22067,
+        "page": 12,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（15,2）、（16,3）；编号 2 重复：（14,2）、（16,4）；编号 3 重复：（14,3）、（15,4）"
+      },
+      {
+        "figure_id": 41889,
+        "page": 15,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 11：10（1,15）与 12（4,14）之间；编号 10（1,15）与 12（4,14）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 41894,
+        "page": 21,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 23：22（3,15）与 24（3,14）之间；编号 22（3,15）与 24（3,14）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22077,
+        "page": 23,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 23：22（15,3）与 24（15,4）之间；编号 22（15,3）与 24（15,4）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22078,
+        "page": 24,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 23：22（15,3）与 24（15,4）之间；编号 22（15,3）与 24（15,4）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 41905,
+        "page": 36,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 15：14（3,17）与 16（2,17）之间；编号 14（3,17）与 16（2,17）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22091,
+        "page": 38,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 3：2（14,2）与 4（16,6）之间；编号 2（14,2）与 4（16,6）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22093,
+        "page": 41,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 25：24（15,6）与 26（12,5）之间；编号 24（15,6）与 26（12,5）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 41914,
+        "page": 43,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 13：12（1,15）与 14（3,14）之间；编号 12（1,15）与 14（3,14）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22100,
+        "page": 49,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（12,2）与 5（14,3）之间；编号 3（12,2）与 5（14,3）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 41919,
+        "page": 49,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（6,16）与 5（4,15）之间；编号 3（6,16）与 5（4,15）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 41920,
+        "page": 51,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 11：10（1,15）与 12（4,14）之间；编号 10（1,15）与 12（4,14）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22104,
+        "page": 53,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 15：14（17,3）与 16（16,5）之间；编号 14（17,3）与 16（16,5）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22105,
+        "page": 54,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 15：14（17,3）与 16（13,3）之间；编号 14（17,3）与 16（13,3）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 41943,
+        "page": 77,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（7,16）与 5（4,15）之间；编号 3（7,16）与 5（4,15）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22130,
+        "page": 77,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（11,2）与 5（14,3）之间；编号 3（11,2）与 5（14,3）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 41944,
+        "page": 78,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（7,16）与 5（4,15）之间；编号 3（7,16）与 5（4,15）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22131,
+        "page": 78,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（11,2）与 5（14,3）之间；编号 3（11,2）与 5（14,3）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 41945,
+        "page": 79,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（7,16）与 5（3,16）之间；编号 3（7,16）与 5（3,16）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22132,
+        "page": 79,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（11,2）与 5（15,2）之间；编号 3（11,2）与 5（15,2）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 41948,
+        "page": 83,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 11：10（1,15）与 12（4,14）之间；编号 10（1,15）与 12（4,14）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22137,
+        "page": 85,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 15：14（17,3）与 16（13,3）之间；编号 14（17,3）与 16（13,3）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 41955,
+        "page": 91,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 10–11：9（4,18）与 12（5,14）之间；缺少编号 13：12（5,14）与 14（7,17）之间；编号 12（5,14）与 14（7,17）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22146,
+        "page": 95,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 17：16（12,4）与 18（16,2）之间；编号 16（12,4）与 18（16,2）同为白棋，须黑白交替；缺少编号 19：18（16,2）与 20（12,2）之间；编号 18（16,2）与 20（12,2）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22157,
+        "page": 109,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 13：12（17,3）与 14（15,4）之间；编号 12（17,3）与 14（15,4）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22162,
+        "page": 114,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（10,2）与 5（15,2）之间；编号 3（10,2）与 5（15,2）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22163,
+        "page": 115,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（10,2）与 5（15,2）之间；编号 3（10,2）与 5（15,2）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 41977,
+        "page": 115,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（8,16）与 5（3,16）之间；编号 3（8,16）与 5（3,16）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22164,
+        "page": 116,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（10,2）与 5（15,2）之间；编号 3（10,2）与 5（15,2）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 41978,
+        "page": 116,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（8,16）与 5（3,16）之间；编号 3（8,16）与 5（3,16）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22165,
+        "page": 117,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（10,2）与 5（15,4）之间；编号 3（10,2）与 5（15,4）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 41979,
+        "page": 117,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（8,16）与 5（3,13）之间；编号 3（8,16）与 5（3,13）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22170,
+        "page": 123,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 15：14（17,3）与 16（17,5）之间；编号 14（17,3）与 16（17,5）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 41986,
+        "page": 126,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 11：10（1,15）与 12（4,14）之间；编号 10（1,15）与 12（4,14）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 41987,
+        "page": 127,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 12：11（4,15）与 13（3,17）之间；编号 11（4,15）与 13（3,17）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22174,
+        "page": 127,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 11：10（17,3）与 12（15,4）之间；编号 10（17,3）与 12（15,4）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 41991,
+        "page": 132,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 2：1（2,15）与 3（7,15）之间；编号 1（2,15）与 3（7,15）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22184,
+        "page": 138,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 13：12（15,1）与 14（14,5）之间；编号 12（15,1）与 14（14,5）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22203,
+        "page": 162,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 3：2（13,2）与 4（16,2）之间；编号 2（13,2）与 4（16,2）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 42017,
+        "page": 167,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 8–9：7（1,14）与 10（1,13）之间；缺少编号 11：10（1,13）与 12（3,13）之间；编号 10（1,13）与 12（3,13）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22219,
+        "page": 179,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 22–23：21（17,1）与 24（17,7）之间"
+      },
+      {
+        "figure_id": 42031,
+        "page": 185,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 6：5（3,13）与 7（2,12）之间；编号 5（3,13）与 7（2,12）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22226,
+        "page": 186,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 18：17（15,1）与 19（13,4）之间；编号 17（15,1）与 19（13,4）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22229,
+        "page": 189,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 14：13（15,1）与 15（11,2）之间；编号 13（15,1）与 15（11,2）同为黑棋，须黑白交替；缺少编号 16：15（11,2）与 17（17,2）之间；编号 15（11,2）与 17（17,2）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 42049,
+        "page": 211,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 13：12（9,18）与 14（10,15）之间；编号 12（9,18）与 14（10,15）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22250,
+        "page": 211,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 20：19（13,5）与 21（13,4）之间；编号 19（13,5）与 21（13,4）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22254,
+        "page": 215,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 3：2（13,3）与 4（16,2）之间；编号 2（13,3）与 4（16,2）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 42051,
+        "page": 216,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 3：2（5,15）与 4（2,16）之间；编号 2（5,15）与 4（2,16）同为白棋，须黑白交替；缺少编号 5：4（2,16）与 6（3,15）之间；编号 4（2,16）与 6（3,15）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22255,
+        "page": 216,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 3：2（13,3）与 4（16,2）之间；编号 2（13,3）与 4（16,2）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22256,
+        "page": 217,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 3：2（13,3）与 4（16,2）之间；编号 2（13,3）与 4（16,2）同为白棋，须黑白交替；缺少编号 5：4（16,2）与 6（15,3）之间；编号 4（16,2）与 6（15,3）同为白棋，须黑白交替；缺少编号 14：13（15,5）与 15（14,2）之间；编号 13（15,5）与 15（14,2）同为黑棋，须黑白交替；缺少编号 20：19（13,4）与 21（12,3）之间；编号 19（13,4）与 21（12,3）同为黑棋，须黑白交替；缺少编号 22：21（12,3）与 23（9,2）之间；编号 21（12,3）与 23（9,2）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 42052,
+        "page": 218,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 3：2（5,15）与 4（2,16）之间；编号 2（5,15）与 4（2,16）同为白棋，须黑白交替；缺少编号 5：4（2,16）与 6（3,15）之间；编号 4（2,16）与 6（3,15）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 22257,
+        "page": 218,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 3：2（13,3）与 4（16,2）之间；编号 2（13,3）与 4（16,2）同为白棋，须黑白交替；缺少编号 5：4（16,2）与 6（15,3）之间；编号 4（16,2）与 6（15,3）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 42054,
+        "page": 223,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 14：13（2,16）与 15（3,12）之间；编号 13（2,16）与 15（3,12）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22261,
+        "page": 223,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 14：13（14,6）与 15（16,2）之间；编号 13（14,6）与 15（16,2）同为黑棋，须黑白交替；缺少编号 16：15（16,2）与 17（15,6）之间；编号 15（16,2）与 17（15,6）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22266,
+        "page": 229,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 36：35（10,2）与 37（17,6）之间；编号 35（10,2）与 37（17,6）同为黑棋，须黑白交替；缺少编号 39：38（17,7）与 40（11,4）之间；编号 38（17,7）与 40（11,4）同为白棋，须黑白交替；缺少编号 42：41（12,5）与 43（16,6）之间；编号 41（12,5）与 43（16,6）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 42069,
+        "page": 245,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 2：1（2,14）与 3（4,15）之间；编号 1（2,14）与 3（4,15）同为黑棋，须黑白交替；缺少编号 4–5：3（4,15）与 6（5,15）之间；缺少编号 7–8：6（5,15）与 9（4,14）之间"
+      },
+      {
+        "figure_id": 42074,
+        "page": 252,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 8：7（3,12）与 9（4,17）之间；编号 7（3,12）与 9（4,17）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22295,
+        "page": 258,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4–5：3（13,3）与 6（18,1）之间；缺少编号 7：6（18,1）与 8（16,1）之间；编号 6（18,1）与 8（16,1）同为白棋，须黑白交替；缺少编号 14：13（17,5）与 15（15,5）之间；编号 13（17,5）与 15（15,5）同为黑棋，须黑白交替；缺少编号 29：28（18,3）与 30（14,3）之间；编号 28（18,3）与 30（14,3）同为白棋，须黑白交替；缺少编号 32：31（17,2）与 33（13,4）之间；编号 31（17,2）与 33（13,4）同为黑棋，须黑白交替；缺少编号 36–37：35（13,6）与 38（13,5）之间；缺少编号 40–41：39（12,5）与 42（17,6）之间"
+      },
+      {
+        "figure_id": 42081,
+        "page": 267,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（4,15）与 5（2,15）之间；编号 3（4,15）与 5（2,15）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 42082,
+        "page": 268,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（4,15）与 5（2,15）之间；编号 3（4,15）与 5（2,15）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22305,
+        "page": 268,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（14,3）与 5（16,3）之间；编号 3（14,3）与 5（16,3）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 22306,
+        "page": 269,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（14,3）与 5（16,3）之间；编号 3（14,3）与 5（16,3）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 42090,
+        "page": 277,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 28：27（6,16）与 29（1,14）之间；编号 27（6,16）与 29（1,14）同为黑棋，须黑白交替；缺少编号 31：30（1,13）与 32（7,17）之间；编号 30（1,13）与 32（7,17）同为白棋，须黑白交替"
+      }
+    ]
+  },
+  "test_provider_build": "f671f20f6f31c03f25b0f5bd73e0afe73036b6bd",
+  "links": {
+    "book": "http://127.0.0.1:18012/admin?book=46&page=12&figure=22067&filter=all",
+    "uncertainty": "http://127.0.0.1:18012/admin?book=46&page=53&figure=22104&filter=uncertainty",
+    "inference": "http://127.0.0.1:18012/admin?book=46&page=29&figure=22082&filter=inference",
+    "unknown_color": "http://127.0.0.1:18012/admin?book=46&page=258&figure=22295&filter=uncertainty",
+    "pending_annotation_1": "http://127.0.0.1:18012/admin?book=46&page=182&figure=22222&filter=uncertainty",
+    "pending_annotation_2": "http://127.0.0.1:18012/admin?book=46&page=182&figure=42029&filter=uncertainty"
+  },
+  "artifacts": {
+    "figure_map": "joseki-recognition-figure-map.csv",
+    "issues": "joseki-issues.json",
+    "zip": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/joseki/exports/joseki.zip",
+    "source_index": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/joseki/exports/index.json",
+    "recognition_results": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/joseki/results.json",
+    "audit": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/joseki/audit.json"
+  },
+  "notes": [
+    "Machine validation and Astra engineering review do not grant human content approval.",
+    "Independent diagrams are exported separately; incomplete sequences remain static and await calibration.",
+    "All independent static candidates are deliverable; p182 annotation ownership remains unresolved in both original figures.",
+    "471 strict static candidates delivered; machine recognition remains469complete plus two p182 unresolved annotation-ownership holds. The raw ledger has one failed/held page182, not missing diagrams or a pending request.",
+    "All259 existing figure IDs retained;212 new figures added, including one pending candidate-only figure. No existing human edits, review or media were overwritten.",
+    "TEST source browsing starts at registered PDF9 (282 source pages); all290 PDF pages were checked by recognition. The first8 frontmatter pages contain no detected diagrams."
+  ],
+  "completed_at": "2026-10-18T13:42:16.084124+08:00",
+  "candidate_delivery": {
+    "manifest_path": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/joseki/private/pending-annotation-delivery-v1.json",
+    "manifest_sha256": "0c577e2c646f21bc83d191dacb81ee66ad140672538add3c4540bce2a12077e5",
+    "manifest": {
+      "format": "joseki-p182-pending-annotation-v1",
+      "catalog_id": "joseki",
+      "dataset": "curriculum-joseki-gpt61sol-v1",
+      "results_sha256": "061fd9ddc9770010adb38bd7df350292bf8544a1a88bb3c4af568e68d482484e",
+      "recognition_index_sha256": "785e7bf1bebb463d689434e515cd66580c01289b6b41341e74639fe25880b5f4",
+      "logical_coverage": {
+        "path": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/joseki/logical-coverage.json",
+        "sha256": "9c7956be0b399beaa427d8e6b5ace7a34f6df7ca48630a3f8f292e10e3ecc24f"
+      },
+      "source_manifest": {
+        "path": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/joseki/source.json",
+        "sha256": "6fe72d41dd229a46ae38c58f8794e8bcbdecc522cd6d8e40591ca04e0456cc9d"
+      },
+      "source_evidence": {
+        "path": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/joseki/private/p182-source-mark-ownership-evidence.json",
+        "sha256": "681ebc5a94477a698e67a2bb6a787d10bd9e1d0429f415c35508c7279ec9464b"
+      },
+      "source_decision": {
+        "path": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/joseki-p182-source-decision.md",
+        "sha256": "1ed362b1365f76c3f6268529f806d33cdd46ccc62d8ed031fd653cb0d759978c"
+      },
+      "figures": {
+        "p182-f01": {
+          "figure_sha256": "b67377b630d9827183a3ead38cce716010a5b74e0adcd50b98e9fa1b0372a9da",
+          "payload_sha256": "9456fcaf56607414f09a99e729c4ee9abd05f081ccf5761e1ec1692de61a6433",
+          "uncertainties_sha256": "4ae56bcb2b9344adcc00340c405f7fc7b9fa65add08c98fcbb097052466d9201",
+          "raw_response": {
+            "path": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/joseki/raw/board/p182-f01-p182-f02/420c859e2f51a48db22df686371669292fb99c7840b19e3e23abe5c1fdcda953/result.json",
+            "sha256": "ab8cc7a7b8fbf85541ff88aa988b408b540a1ad21634ec2f8df8858ee6442060"
+          },
+          "raw_pointer": "/figures/0",
+          "raw_uncertainty_pointer": "/figures/0/uncertainties/0",
+          "raw_uncertainty_sha256": "3895e33007f032a9c4bb9f2f9e32ebc4d39b44b8134caa160d57ee8f78a2f37e"
+        },
+        "p182-f02": {
+          "figure_sha256": "6f56c6e09c5cc622ac0864e49a542e3ff2eb606ee996c09dcde51a41d9f4baa2",
+          "payload_sha256": "745e0eba977aefbf839882693db41f3ef0c08d5a12e407fc649d747e3c144498",
+          "uncertainties_sha256": "4ae56bcb2b9344adcc00340c405f7fc7b9fa65add08c98fcbb097052466d9201",
+          "raw_response": {
+            "path": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/joseki/raw/board/p182-f01-p182-f02/420c859e2f51a48db22df686371669292fb99c7840b19e3e23abe5c1fdcda953/result.json",
+            "sha256": "ab8cc7a7b8fbf85541ff88aa988b408b540a1ad21634ec2f8df8858ee6442060"
+          },
+          "raw_pointer": "/figures/1",
+          "raw_uncertainty_pointer": "/figures/1/uncertainties/0",
+          "raw_uncertainty_sha256": "3895e33007f032a9c4bb9f2f9e32ebc4d39b44b8134caa160d57ee8f78a2f37e"
+        }
+      }
+    },
+    "dataset": "curriculum-joseki-gpt61sol-v1",
+    "source_inventory_complete": true,
+    "independent_figure_mapping_complete": true,
+    "static_candidates_validated": 471,
+    "pending_annotation_figures": 2,
+    "recognition_complete": false,
+    "logical_coverage_closed": false,
+    "original_recognition_summary": {
+      "pdf_pages": 290,
+      "pages_detected": 290,
+      "pages_recognized_validated": 289,
+      "figures": 471,
+      "completed": 469,
+      "failed_pages": 1,
+      "pending_pages": 0,
+      "baseline_references": 259,
+      "uncertain_figures": 19,
+      "inferred_figures": 79,
+      "coverage_missing": 0
+    }
+  },
+  "export_payload_equality": {
+    "figures_compared": 471,
+    "version_kinds": {
+      "current": 469,
+      "candidate": 2
+    },
+    "export_json_exact_persisted_selected_payload": true,
+    "all_sgf_setup_stones_exact_persisted_selected_payload": true,
+    "pending_pair_exported_as_candidate_only": true,
+    "unknown_color_points_retained_in_json": 3,
+    "zip_sha256": "72cdca4bf1dff601c87b804f4285f4289de53cf1605a4a6d8f5edb409945a2f2"
+  },
+  "pending_candidate_persistence": {
+    "current_payloads_null": true,
+    "no_histories_for_pending_pair": true,
+    "all_figures": 471,
+    "all_candidates": 471,
+    "adopted_histories": 469
+  },
+  "uncertainty_reconciliation": {
+    "canonical_uncertainty_figures": 19,
+    "runtime_flagged_figures": 25,
+    "additional_history_flagged_ids": [
+      "p054-f01",
+      "p054-f02",
+      "p067-f02",
+      "p068-f01",
+      "p077-f01",
+      "p077-f02"
+    ],
+    "explanation": "The backend conservatively flags six resolved historical ownership warnings still preserved in original model evidence. Canonical unresolved/uncertain diagrams are19; actual attention filter is25."
+  },
+  "source_reference_grouping": {
+    "reference_objects": 259,
+    "groups_with_one_diagram": 54,
+    "groups_with_two_diagrams": 199,
+    "groups_with_three_diagrams": 5,
+    "groups_with_four_diagrams": 1,
+    "independent_logical_diagrams": 471,
+    "all259references_covered": true
+  },
+  "recognition_complete": false,
+  "logical_coverage_closed": false,
+  "delivery_stage": "test_candidate_collection_verified_pending_annotations",
+  "source_resolution": {
+    "p54_published_and_verified_before_v2": true,
+    "v2_used_new_p54_base": true,
+    "protected_files_p54": 4377,
+    "protected_files_v2": 4368,
+    "unrelated_pages_v2": 279,
+    "object_conservation": {
+      "input_objects": 813,
+      "owned": 811,
+      "resolved_history": 2,
+      "duplicate_raw_evidence": 308,
+      "unresolved": 0,
+      "discarded": 0
+    },
+    "original_model_responses_raw_sources_crops_unchanged": true,
+    "extra_model_calls_for_recovery": 0,
+    "pending_annotation_recognition_ids": [
+      "p182-f01",
+      "p182-f02"
+    ]
+  },
+  "import_tool_commit": "37e59a8f0d5ec25d9599a233f9cbf7ef2e9fce23",
+  "coverage_notes": "joseki-coverage-notes.md"
+}

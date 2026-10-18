@@ -113,7 +113,7 @@ class TutorialBookDetailOut(TutorialBookOut):
     chapters: List[TutorialChapterOut] = []
 
 
-VALID_BOARD_SIZES = {9, 13, 19}
+VALID_BOARD_SIZES = {9, 11, 13, 19}
 
 
 class StrictBoardPayload(BaseModel):

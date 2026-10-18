@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Icon } from '../../shell/icons';
 import { KioskFold } from '../../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../../shell/KioskActions';
@@ -198,8 +198,10 @@ function useClientElapsed(snapshot: object | undefined, running: boolean): numbe
  * 不是另起一块面板;规则和贴目同理,它们是**这一局开局时定死的**,写在页控条副标里
  * 一次就够。两处都占 0 高度,这正是右栏 516 能装下胜率块的原因。
  */
-function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
+function PlayerRow({ color, info, captures, turn, state, clock, lang, t, paired = false, untimedClock = false }: {
   color: 'B' | 'W';
+  paired?: boolean;
+  untimedClock?: boolean;
   info: PlayerInfo;
   captures: number;
   turn: boolean;
@@ -208,6 +210,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
   lang: string;
   t: (key: string, fallback?: string) => string;
 }) {
+  const surfaceId = useId();
   // 段位:阶梯 AI 的段位是 `rank_display` 里的字符串,其他人走数值 `calculated_rank`。
   const rawRank = info.rank_display ?? localizedRank(info.calculated_rank, lang);
   const rank = !rawRank || rawRank === 'No Rank' ? null : rawRank;
@@ -220,6 +223,34 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
   // (2026-08-26 一度把 fallback 改成「黑棋」去迁就 PO —— 那是把这处不一致钉死了:
   //  设备上设置页承诺「黑方」、对局页给「黑棋」,而注释说它们是同一句话。)
   const name = info.name || (color === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'));
+  if (paired) {
+    // Separate SVG surfaces keep every corner rounded along the diagonal seam.
+    const outline = color === 'W'
+      ? 'M14 1 H218 Q233 1 230 15 L214 111 Q211 125 197 125 H14 Q1 125 1 112 V14 Q1 1 14 1 Z'
+      : 'M36 1 H220 Q233 1 233 14 V112 Q233 125 220 125 H17 Q1 125 4 111 L20 15 Q22 1 36 1 Z';
+    return (
+      <div className={`pcard ai-player-card${turn ? ' turn' : ''}`} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
+        <svg className="ai-player-card__surface" viewBox="0 0 234 126" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id={surfaceId} x2="0.8" y2="1">
+            <stop className="ai-player-card__gradient-start" />
+            <stop className="ai-player-card__gradient-end" offset="1" />
+          </linearGradient></defs>
+          <path d={outline} fill={`url(#${surfaceId})`} strokeWidth="1.5" />
+        </svg>
+        <div className="ai-player-card__name">
+          <span className={color === 'B' ? 'disc b' : 'disc w'} aria-hidden="true" />
+          <h4 title={rank ? `${name} · ${rank}` : name}>{rank ? `${name} · ${rank}` : name}</h4>
+        </div>
+        <div className={untimedClock ? 'clock clock--untimed' : 'clock'}>
+          {clock ? <><b>{clock.value}</b><span>{clock.label}</span></> : <span>{t('game:untimed', '不限时')}</span>}
+        </div>
+        <div className="ai-player-card__foot">
+          <span>{state} · {color === 'B' ? t('game:plays_black', '执黑') : t('game:plays_white', '执白')}</span>
+          <span>{t('game:captures', '提子')} {captures}</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={turn ? 'pcard turn' : 'pcard'} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
       <span className={color === 'B' ? 'disc b' : 'disc w'} />
@@ -244,8 +275,9 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
  * 一方的玩家卡 + 时钟(A18)。时钟跟着本地时间走,所以 hook 挂在每张卡自己身上 ——
  * 放在父组件里算,每 250ms 一次的重渲会把胜率图、棋谱一起带着重画。
  */
-function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }: {
+function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout, paired = false }: {
   gameState: GameState;
+  paired?: boolean;
   color: 'B' | 'W';
   turn: boolean;
   state: string;
@@ -296,7 +328,7 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }:
   return (
     <PlayerRow
       color={color} info={gameState.players_info[color]} captures={gameState.prisoner_count[color]}
-      turn={turn} state={state} clock={clock} lang={lang} t={t}
+      turn={turn} state={state} clock={clock} lang={lang} t={t} paired={paired} untimedClock={reading === null}
     />
   );
 }
@@ -503,7 +535,7 @@ const GameControlPanel = ({
   // N14:升降级局整块不渲染「领地」「AI支招」;按需分析已由页面与服务端禁止。
   const analysisActions: KioskAction[] = engineMode || localGame || onlineGame || rankedGame ? [] : [
     {
-      key: 'ownership', icon: 'grid-nine', label: t('Territory', '领地'),
+      key: 'ownership', icon: 'map-trifold', label: t('Territory', '领地'),
       pressed: !analysisRequiresLogin && !!analysisToggles.ownership,
       onClick: () => onToggleAnalysis('ownership'),
       disabled: analysisRequiresLogin,
@@ -512,7 +544,7 @@ const GameControlPanel = ({
     {
       // AI 支招 = 一次性动作(顶部 N 个候选点,实体盘上白闪),**不是开关** ——
       // 所以它没有 `pressed`。原来那个独立的顶栏支招键在 kiosk-ui-redesign 里已经并进来了。
-      key: 'hint', icon: 'lightbulb', label: t('Hints', 'AI支招'),
+      key: 'hint', icon: 'lightbulb', label: t('Suggest', '支招'),
       onClick: () => onHint?.(), disabled: !hintEnabled || analysisRequiresLogin,
       reason: analysisRequiresLogin ? guestAnalysisReason : undefined,
     },
@@ -530,7 +562,7 @@ const GameControlPanel = ({
   // ⇒ 终局时它们整组不渲染,位置让给真正能用的着法导航。
   const playActions: KioskAction[] = isGameOver ? [] : [
     ...(rankedGame && territory ? [{
-      key: 'ranked-territory', icon: 'grid-nine' as const,
+      key: 'ranked-territory', icon: 'map-trifold' as const,
       label: <span>领地 <span className="ranked-territory-badge">{territory.remaining ?? '—'}</span></span>,
       onClick: territory.onRequest, disabled: territory.disabled,
       reason: territory.remaining === 0 ? '本局 3 次机会已用完' : undefined,
@@ -605,6 +637,17 @@ const GameControlPanel = ({
             clock={ogsGame ? onlineClock('B') : clockFor('B')} lang={lang} t={t}
           />
         </>
+      ) : freeVsAi || rankedGame ? (
+        <div className="ai-player-cards" role="group" aria-label={t('game:players', '对局双方')}>
+          <SeatRow
+            gameState={gameState} color="W" turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
+            untimed={clockFor('W')} lang={lang} t={t} onTimeout={onTimeout} paired
+          />
+          <SeatRow
+            gameState={gameState} color="B" turn={toMove === 'B' && !isGameOver} state={stateWord('B')}
+            untimed={clockFor('B')} lang={lang} t={t} onTimeout={onTimeout} paired
+          />
+        </div>
       ) : (
         <>
           <SeatRow
@@ -677,7 +720,7 @@ const GameControlPanel = ({
       {showScore && (
         <KioskFold
           fold="eval"
-          title={t('game:eval_title', '胜率 · KataGo 原生通道')}
+          title={t('game:eval_title_short', '胜率 · KataGo')}
           value={goEvalSummary(gameState, t)}
         >
           <GoEvalGraph gameState={gameState} onNavigate={isGameOver ? onNavigate : undefined} />
@@ -693,9 +736,11 @@ const GameControlPanel = ({
           右端说明优先显示硬件故障，其次说明星阵数子的语义。 */}
       <div className="gtoggles gtoggles--switch" role="group" aria-label={t('game:display', '显示')}>
         <button type="button" role="switch" aria-checked={!!analysisToggles.coords} onClick={() => onToggleAnalysis('coords')}>
+          {(freeVsAi || rankedGame) && <Icon name="grid-nine" />}
           {t('Coordinates', '坐标')}
         </button>
         <button type="button" role="switch" aria-checked={!!analysisToggles.numbers} onClick={() => onToggleAnalysis('numbers')}>
+          {(freeVsAi || rankedGame) && <Icon name="list-numbers" />}
           {t('Move Numbers', '手数')}
         </button>
         {/* 右端说明按故障、实体盘摆子、星阵动作、游客限制、数子手数的顺序显示:

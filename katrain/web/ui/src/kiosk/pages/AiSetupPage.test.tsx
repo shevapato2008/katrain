@@ -207,13 +207,25 @@ describe('AiSetupPage', () => {
     expect(screen.getByTestId('setup-size')).toHaveTextContent('19 路');
     expect(screen.getByTestId('setup-rules')).toHaveTextContent('中国规则');
     expect(screen.getByTestId('setup-handicap')).toHaveTextContent('分先');
-    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('黑贴 3¾ 子 · 7.5 目');
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('黑贴 7.5 目');
     // 棋力那条轨在这一屏不该出现 —— 对手由盒子配档。
     expect(screen.queryByTestId('setup-strength')).not.toBeInTheDocument();
     // 用时和执子照旧是能选的。
     expect(screen.getByTestId('setup-clock')).toBeInTheDocument();
     expect(screen.getByTestId('setup-color')).toBeInTheDocument();
     expect(screen.getByTestId('ranked-start-action')).toBeInTheDocument();
+  });
+
+  it('已定级但成绩待结算时保留可见原因', () => {
+    rankedState.current = {
+      ...READY_STATUS,
+      placement_state: { phase: 'placed', rung: READY_STATUS.current_opponent },
+      pending_settlement: true,
+      blocking_game: null,
+    };
+    renderPage('ranked');
+    expect(screen.getByText('本盘成绩还没送到云端')).toBeInTheDocument();
+    expect(screen.getByTestId('ranked-start-action')).toBeDisabled();
   });
 
   // 稿子那两格写的是「胜 · 升到 4 级」「负 · 退到 6 级」—— **那是净胜分正好 ±2 的特例**。
@@ -259,7 +271,8 @@ describe('AiSetupPage', () => {
     expect(board).toBeDisabled();
     expect(board).toHaveTextContent('没标定过摄像头');
     expect(pop.querySelector('[data-k="screen"]')).toBeEnabled();
-    expect(screen.getByTestId('setup-seat-hint')).toHaveTextContent('没标定过摄像头');
+    await userEvent.setup().click(screen.getByRole('button', { name: '怎么坐说明' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('没标定过摄像头');
   });
 
   // 盒子上那块盘是 19 路的 —— 选了 9 路,「实体盘」这条路就不成立了。
@@ -294,13 +307,73 @@ describe('AiSetupPage', () => {
     expect(readPlayOnBoard()).toBe(true);
   });
 
-  // 棋力轨两头的键要禁用,**不是回绕**:从最低档按 `−` 绕到最高档,
-  // 是把一次误触变成一局完全不同的棋 —— 而这一组标着「开局后不可改」。
-  it('棋力轨两头到底就禁用', () => {
+  it('棋力下拉包含全部 29 档，选择后开局发送真实 rank 值', async () => {
     renderPage('free');
-    const track = within(screen.getByTestId('setup-strength'));
-    expect(track.getByRole('button', { name: /降低/ })).toBeEnabled();   // 默认第 15 档
-    expect(track.getByRole('button', { name: /提高/ })).toBeEnabled();
+    const user = userEvent.setup();
+    const pop = await openPick(user, 'setup-strength');
+    expect(within(pop).getAllByRole('option')).toHaveLength(29);
+    await user.click(pop.querySelector('[data-k="28"]')!);
+    expect(screen.getByTestId('setup-strength-value')).toHaveTextContent('9 段');
+    await user.click(screen.getByTestId('free-start-action'));
+    await waitFor(() => expect(gameSetup).toHaveBeenCalledWith('s1', 'free', expect.objectContaining({ rank: 28 })));
+  });
+
+  it('自由对弈的枚举都有可展开选项', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    for (const id of ['setup-size', 'setup-rules', 'setup-handicap', 'setup-strength', 'setup-input', 'setup-color', 'setup-clock']) {
+      expect(screen.getByTestId(id)).toHaveAttribute('aria-haspopup', 'listbox');
+      const pop = await openPick(user, id);
+      expect(within(pop).getAllByRole('option').length).toBeGreaterThan(1);
+      expect(screen.getByTestId(id)).toHaveAttribute('aria-expanded', 'true');
+      await user.keyboard('{Escape}');
+    }
+  });
+
+  it('说明按钮打开可关闭的对手解释对话框', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: '对手说明' }));
+    const dialog = screen.getByRole('dialog', { name: '对手' });
+    expect(dialog).toHaveTextContent('不是你的段位');
+    expect(dialog).toHaveTextContent('29');
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: '对手说明' })).toHaveFocus();
+  });
+
+  it('升降级的对手和当前段位使用服务器档位并保持只读', () => {
+    rankedState.current = {
+      ...READY_STATUS,
+      placement_state: { phase: 'placed', rung: { ...READY_STATUS.current_opponent, rung: 24, rank_name: '4段' } },
+    };
+    renderPage('ranked');
+    for (const id of ['setup-opponent', 'setup-current-rank']) {
+      expect(screen.getByTestId(id)).toHaveTextContent('4段');
+      expect(screen.getByTestId(id).tagName).not.toBe('BUTTON');
+      expect(screen.getByTestId(id)).not.toHaveAttribute('aria-haspopup');
+    }
+  });
+
+  it('升降级规则说明保留封分析限制，赌注说明读取当前净胜分', async () => {
+    rankedState.current = { ...READY_STATUS, net_score: -2 };
+    renderPage('ranked');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: '盒子定好的说明' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('全程封分析');
+    await user.click(screen.getByRole('button', { name: '关闭' }));
+    await user.click(await screen.findByRole('button', { name: '这一局赌多少说明' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('当前 -2');
+  });
+
+  it('升降级状态加载失败仍阻止开局并提供实际重试', async () => {
+    rankedState.current = { view_state: 'error', message: '状态服务不可用' };
+    renderPage('ranked');
+    expect(screen.getByRole('alert')).toHaveTextContent('状态服务不可用');
+    expect(screen.getByTestId('ranked-start-action')).toBeDisabled();
+    expect(screen.getByTestId('setup-opponent')).toHaveTextContent('—');
+    await userEvent.setup().click(screen.getByRole('button', { name: '重试' }));
+    expect(retryRanked).toHaveBeenCalledOnce();
   });
 
   it('Start button is present without scrolling (rendered, not gated behind overflow)', () => {

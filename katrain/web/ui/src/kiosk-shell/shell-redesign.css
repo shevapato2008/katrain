@@ -37,6 +37,7 @@
   font-family: var(--font-serif);
   font-size: 22px;
   font-weight: 500;
+  white-space: nowrap;
 }
 .kiosk-screen[data-journey="ai-play"] .kiosk-dock__item[aria-current="page"] {
   transform: none;

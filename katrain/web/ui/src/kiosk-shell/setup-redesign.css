@@ -1,1 +1,96 @@
-/* Screens 02/03 styles are owned by the AI-setup task. */
+/* Approved setup screens: preserve the 516 px board and 460 px settings rail. */
+.ai-setup-redesign .kiosk-rail[data-su] { gap: 4px; }
+.ai-setup-redesign .kiosk-pagebar { height: 52px; gap: 10px; }
+.ai-setup-redesign .kiosk-pagebar__back {
+  height: 48px; min-width: 140px; justify-content: center; padding: 0 9px;
+  border-color: #3c5949; border-radius: 17px; background-color: #1b2924;
+  font-family: var(--font-serif); font-size: 22px; font-weight: 400; white-space: nowrap;
+}
+.ai-setup-redesign .kiosk-pagebar__back svg { width: 24px; height: 24px; }
+.ai-setup-redesign .kiosk-pagebar__title {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  font-size: 28px; font-weight: 600; line-height: 1.05; white-space: nowrap;
+}
+.ai-setup-redesign .kiosk-pagebar__sub {
+  margin: 0; font-size: 18px; font-weight: 400; font-style: normal; color: #a5c4ae;
+}
+.ai-setup-redesign .setgrp-scroll { height: auto; }
+.ai-setup-redesign .setgrp-scroll .kiosk-side__scroll { gap: 4px; padding-right: 0; }
+.ai-setup-redesign .kiosk-rail[data-su] .setgrp + .setgrp { margin-top: 0; }
+.ai-setup-redesign .kiosk-rail[data-su] .kiosk-seclabel { height: 44px; margin: 0; gap: 0; }
+.ai-setup-redesign .kiosk-seclabel h2 {
+  color: #dfece1; font-family: var(--font-serif); font-size: 18px;
+  font-weight: 400; letter-spacing: 0; line-height: 1;
+}
+.ai-setup-redesign .kiosk-seclabel .rule { background: none; }
+.ai-setup-info {
+  display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+  padding: 0; border: 0; border-radius: 50%; background-color: transparent; color: #8cdba6; cursor: pointer;
+}
+.ai-setup-info svg { display: block; width: 27px; height: 27px; }
+.ai-setup-redesign .su-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ai-setup-redesign .su-cell,
+.ai-setup-redesign .su-out {
+  height: 58px; min-width: 0; padding: 6px 29px 6px 10px; gap: 3px;
+  border: 1px solid #4e775c; border-radius: 17px; background-color: #203529;
+  font-family: var(--font-serif); color: #e9f2e9;
+}
+.ai-setup-redesign .su-cell__k,
+.ai-setup-redesign .su-out__k { font-size: 18px; color: #a9c1af; letter-spacing: 0; line-height: 1; }
+.ai-setup-redesign .su-cell__v,
+.ai-setup-redesign .su-out__v {
+  display: flex; align-items: center; min-width: 0; gap: 4px; font-family: var(--font-serif);
+  font-size: 22px; line-height: 1.1; font-weight: 500; color: #e9f2e9;
+}
+.ai-setup-redesign .su-cell__c { color: #b3d8bd; }
+.ai-setup-redesign .su-cell__c,
+.ai-setup-redesign .su-cell__c svg,
+.ai-setup-redesign .su-cell__c .kiosk-icon { width: 16px; height: 16px; }
+.ai-setup-redesign .su-cell__c { margin-top: -8px; }
+.ai-setup-redesign .su-cell--fixed,
+.ai-setup-redesign .su-out:not(.su-out--pick) {
+  border: 1px dashed #3a5848; border-radius: 10px; padding-right: 10px;
+  background: #17231f; box-shadow: none; cursor: default;
+}
+.ai-setup-redesign .su-out { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; margin: 0; }
+.ai-setup-redesign .su-out__n { display: none; }
+.ai-setup-redesign .ai-setup-terms-row { margin-top: 5px; }
+.ai-setup-redesign .ai-setup-opponent-row { grid-template-columns: 1fr; }
+.ai-setup-redesign .ai-setup-opponent-row .su-cell { flex-direction: row; align-items: center; justify-content: flex-start; gap: 18px; border-color: #55b77b; background-color: #20392a; }
+.ai-setup-redesign .ai-setup-seat-row .su-cell { height: 74px; }
+.ai-setup-redesign [data-testid="setup-clock"] .su-cell__v { display: block; white-space: normal; overflow-wrap: anywhere; font-size: 20px; line-height: 1.05; }
+.ai-setup-redesign .su-stake { gap: 8px; }
+.ai-setup-redesign .su-stake > span {
+  height: 50px; padding: 0 6px; border: 1px dashed #3a5848; border-radius: 10px;
+  background: #17231f; font-family: var(--font-serif); font-size: 22px; color: #7cd398;
+}
+.ai-setup-redesign .kiosk-primary-action {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  height: 48px; min-height: 48px; flex: none; margin-top: 6px; padding: 0 12px;
+  border: 1px solid #59bd81; border-radius: 17px; background-color: #58b77e;
+  font-family: var(--font-serif); font-size: 22px; font-weight: 400; color: #10241a;
+}
+.ai-setup-redesign .kiosk-primary-action svg { width: 24px; height: 24px; }
+.ai-setup-redesign :is(button.su-cell, .su-out--pick, .kiosk-primary-action, .kiosk-pagebar__back, .ai-setup-info) {
+  background-image: radial-gradient(ellipse 90% 70% at 50% -8%, #ffffff29, transparent 75%), linear-gradient(180deg, transparent 57%, #00000016);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 2px #0004, 0 3px 0 #102019, 0 6px 10px #0007;
+  translate: 0 0; transition: translate 130ms ease, box-shadow 130ms ease; touch-action: manipulation;
+}
+.ai-setup-redesign :is(button.su-cell, .su-out--pick, .kiosk-primary-action, .kiosk-pagebar__back, .ai-setup-info):active:not(:disabled) {
+  translate: 0 3px; box-shadow: inset 0 4px 9px #0008, inset 0 1px 0 #ffffff14, 0 1px 2px #0006;
+}
+.ai-setup-redesign :is(button.su-cell, .kiosk-primary-action):disabled { background-image: none; box-shadow: none; }
+.ai-setup-redesign button:focus-visible { outline: 2px solid #a9efbd; outline-offset: 2px; }
+.ai-setup-redesign .su-pop { max-width: calc(100% - 4px); max-height: calc(100% - 8px); overflow-y: auto; box-sizing: border-box; }
+.ai-setup-redesign .su-pop__i { font-family: var(--font-serif); font-size: 20px; }
+/* All 29 strength choices fit in three columns with 44 px touch rows. */
+.ai-setup-redesign [data-testid="setup-strength-pop"] { width: calc(100% - 4px); grid-template-rows: repeat(10, 44px); }
+.ai-setup-redesign [data-testid="setup-strength-pop"] .su-pop__i { padding: 0 5px; white-space: nowrap; }
+.ai-setup-help .MuiDialog-paper { border: 1px solid #52785e; border-radius: 17px; background: #1b2c22; color: #edf2ec; }
+.ai-setup-help :is(.MuiDialogTitle-root, .MuiDialogContent-root, .MuiButton-root) { font-family: var(--font-serif); }
+.ai-setup-help .MuiDialogContent-root { font-size: 20px; line-height: 1.5; }
+.ai-setup-help .MuiDialogContent-root p { margin: 0 0 14px; }
+.ai-setup-help .MuiButton-root { min-width: 100px; min-height: 44px; font-size: 20px; }
+@media (prefers-reduced-motion: reduce) {
+  .ai-setup-redesign :is(button.su-cell, .su-out--pick, .kiosk-primary-action, .kiosk-pagebar__back, .ai-setup-info) { transition: none; }
+}

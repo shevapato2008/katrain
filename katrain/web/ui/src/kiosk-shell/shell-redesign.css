@@ -1,0 +1,114 @@
+/* Approved AI-play journey shell at the fixed 1024 × 600 canvas. */
+.kiosk-screen[data-journey="ai-play"] .kiosk-topbar__game {
+  font-size: 22px;
+  letter-spacing: 0;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-topbar__user {
+  font-size: 18px;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-topbar__clock {
+  font-size: 22px;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-topbar__avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-topbar__home {
+  min-height: 46px;
+  font-size: 22px;
+  background: var(--raise);
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-dock {
+  gap: 4px;
+  padding: 7px 14px;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-dock__item {
+  height: 68px;
+  flex-direction: row;
+  gap: 7px;
+  font-size: 22px;
+  border-radius: 15px;
+  background-image: radial-gradient(ellipse 95% 70% at 50% -8%, #ffffff22, transparent 75%),
+    linear-gradient(180deg, transparent 57%, #00000016);
+  box-shadow: inset 0 1px 0 #ffffff26, 0 2px 0 #102019, 0 4px 6px #0005;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-dock__label {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 500;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-dock__item[aria-current="page"] {
+  transform: none;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-console__title b,
+.kiosk-screen[data-journey="ai-play"] .kiosk-console__sync,
+.kiosk-screen[data-journey="ai-play"] .kiosk-status__k,
+.kiosk-screen[data-journey="ai-play"] .kiosk-status__v {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 400;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-console {
+  position: relative;
+  background: #1b2824;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-console__sync {
+  white-space: nowrap;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-status {
+  gap: 8px;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-status__cell {
+  align-items: center;
+  padding: 4px;
+  white-space: nowrap;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-console__help {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 11px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #52785e;
+  border-radius: 50%;
+  background: #1f3427;
+  color: #9be1aa;
+  box-shadow: inset 0 1px 0 #ffffff38, 0 3px 0 #102019, 0 6px 10px #0007;
+  cursor: pointer;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-console__help svg {
+  width: 23px;
+  height: 23px;
+}
+.kiosk-console__help-scrim {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #0009;
+}
+.kiosk-console__help-dialog {
+  width: 420px;
+  padding: 22px;
+  border: 1px solid #6eba83;
+  border-radius: 14px;
+  background: #1c2e23;
+  color: #eef6ee;
+  box-shadow: 0 12px 30px #0008;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  line-height: 1.45;
+}
+.kiosk-console__help-dialog p {
+  margin: 0 0 20px;
+}
+.kiosk-console__help-dialog button {
+  min-width: 100px;
+  height: 44px;
+  float: right;
+}

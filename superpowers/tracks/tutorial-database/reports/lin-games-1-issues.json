@@ -1,0 +1,174 @@
+[
+  {
+    "recognition_id": "p012-f01",
+    "page": 12,
+    "source_pointer": "/chapters/1/sections/6/pages/0/elements/0",
+    "figure_id": 31673,
+    "candidate_id": 7420,
+    "inferences": [
+      {
+        "at": "2,8",
+        "value": "45",
+        "basis": "text",
+        "reason": "图下注“黑45=A”，指向黑子内的A；正文另述空点A为解消劫的位置。",
+        "cell": "2,8"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p013-f01",
+    "page": 13,
+    "source_pointer": "/chapters/1/sections/7/pages/0/elements/0",
+    "figure_id": 31675,
+    "candidate_id": 7422,
+    "inferences": [
+      {
+        "at": "1,8",
+        "value": "54",
+        "basis": "text",
+        "reason": "图下注“白54=A”，对应棋盘上标A的白子。",
+        "cell": "1,8"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p048-f03",
+    "page": 48,
+    "source_pointer": "/chapters/2/sections/16/pages/1/elements/2",
+    "figure_id": 31763,
+    "candidate_id": 7510,
+    "inferences": [
+      {
+        "at": "4,4",
+        "value": "10",
+        "basis": "text",
+        "reason": "图下注“黑10=黑4”，故黑10在黑4位置回提。",
+        "cell": "4,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p052-f04",
+    "page": 52,
+    "source_pointer": "/chapters/2/sections/19/pages/1/elements/3",
+    "figure_id": 31774,
+    "candidate_id": 7521,
+    "inferences": [
+      {
+        "at": "8,4",
+        "value": "14",
+        "basis": "combined",
+        "reason": "末位4笔画较淡；结合可见字形及黑13、黑15之间的白棋次序确认。",
+        "cell": "8,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p055-f01",
+    "page": 55,
+    "source_pointer": "/chapters/2/sections/22/pages/0/elements/1",
+    "figure_id": 31779,
+    "candidate_id": 7526,
+    "inferences": [
+      {
+        "at": "4,4",
+        "value": "173",
+        "basis": "combined",
+        "reason": "末两位73可辨，百位不清；依据图注173—178补全。",
+        "cell": "4,4"
+      },
+      {
+        "at": "5,3",
+        "value": "174",
+        "basis": "combined",
+        "reason": "末两位74可辨，依据图注及连续手顺补全百位。",
+        "cell": "5,3"
+      },
+      {
+        "at": "4,5",
+        "value": "175",
+        "basis": "combined",
+        "reason": "末两位75可辨，依据图注及连续手顺补全百位。",
+        "cell": "4,5"
+      },
+      {
+        "at": "3,5",
+        "value": "176",
+        "basis": "combined",
+        "reason": "末两位76可辨，依据图注及连续手顺补全百位。",
+        "cell": "3,5"
+      },
+      {
+        "at": "6,5",
+        "value": "177",
+        "basis": "combined",
+        "reason": "末两位77可辨，依据图注及连续手顺补全百位。",
+        "cell": "6,5"
+      },
+      {
+        "at": "5,9",
+        "value": "178",
+        "basis": "combined",
+        "reason": "末两位78可辨，图注及“178手完”确认完整手数。",
+        "cell": "5,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p065-f04",
+    "page": 65,
+    "source_pointer": "/chapters/3/sections/7/pages/0/elements/3",
+    "figure_id": 31804,
+    "candidate_id": 7551,
+    "uncertainties": [
+      {
+        "at": "7,6",
+        "reason": "可见末位似3，是否有缺损的十位不清；图内另有白3、白13。",
+        "candidates": [
+          "3",
+          "13",
+          "23"
+        ],
+        "cell": "13,15"
+      },
+      {
+        "at": "7,7",
+        "reason": "可见末位似2，是否有缺损的十位不清；图内另有黑2、黑12。",
+        "candidates": [
+          "2",
+          "12",
+          "22"
+        ],
+        "cell": "13,16"
+      },
+      {
+        "at": "7,8",
+        "reason": "可见末位似4，是否有缺损的十位不清；图内另有黑4、黑14。",
+        "candidates": [
+          "4",
+          "14",
+          "24"
+        ],
+        "cell": "13,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p106-f02",
+    "page": 106,
+    "source_pointer": "/chapters/4/sections/19/pages/0/elements/1",
+    "figure_id": 31900,
+    "candidate_id": 7647,
+    "uncertainties": [
+      {
+        "at": "13,10",
+        "reason": "图中字形似C，正文却称“A断”；暂按可见C记录，保留A的可能。",
+        "candidates": [
+          "letter_C",
+          "letter_A"
+        ],
+        "cell": "13,10"
+      }
+    ]
+  }
+]

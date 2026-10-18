@@ -17,7 +17,7 @@
       "human_review": "待人工审核·549图（含疑点1图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:33+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -34,7 +34,7 @@
       "human_review": "待人工审核·779图（含疑点1图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:33+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -50,7 +50,7 @@
       "human_review": "待人工审核·132图（含疑点27图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:33+08:00",
       "priority_tier": "模块内补充",
       "validation_import_manually_set": true
     },
@@ -66,7 +66,7 @@
       "human_review": "待人工审核·561图（模型疑点30图＋来源冲突2图；含推断35图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:34+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -82,7 +82,7 @@
       "human_review": "待人工审核·492图（含推断13图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:34+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -98,7 +98,7 @@
       "human_review": "待人工审核·325实体棋图；另2条跨页文字记录",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:34+08:00",
       "priority_tier": "核心教材",
       "source_exception_note": "PDF46两条非实体跨页文字引用已通过独立Astra工程复核；原ID15517/15518空记录保留；待整书覆盖对账",
       "validation_import_manually_set": true
@@ -110,12 +110,12 @@
         "定式理解与选择 · 主教材"
       ],
       "book_id": 46,
-      "recognition": "识别中 · 245/290页 · 398图",
-      "validation_import": "398图Strict通过；8图来源归属保留；独立覆盖待收口；待TEST入库",
+      "recognition": "识别中 · 265/290页 · 431图",
+      "validation_import": "431图Strict通过；8图来源归属保留；独立覆盖待收口；待TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:34+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -127,12 +127,13 @@
       ],
       "book_id": 34,
       "recognition": "已识别 · 276/276页 · 529图",
-      "validation_import": "机器校验 276/276页；失败0；不确定项14图；待整书TEST入库",
-      "human_review": "本轮未审核",
+      "validation_import": "已入TEST·529图；复跑0新增；SGF529份已验证",
+      "human_review": "待人工审核·529图（含疑点14图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
-      "priority_tier": "核心教材"
+      "updated_at": "2026-10-18T12:58:34+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
     },
     {
       "catalog_id": "sakata-2",
@@ -146,7 +147,7 @@
       "human_review": "待人工审核·540图（含疑点3图）",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:34+08:00",
       "priority_tier": "核心教材",
       "validation_import_manually_set": true
     },
@@ -157,12 +158,12 @@
         "打入、侵消与破空 · 主教材"
       ],
       "book_id": 51,
-      "recognition": "识别中 · 30/223页 · 92图",
-      "validation_import": "机器校验 30/223页；失败0；不确定项7图；待整书TEST入库",
+      "recognition": "识别中 · 40/223页 · 131图",
+      "validation_import": "机器校验 40/223页；失败0；不确定项8图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:34+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -172,12 +173,12 @@
         "厚势、模样与全局平衡 · 专题"
       ],
       "book_id": 54,
-      "recognition": "识别中 · 50/298页 · 71图",
-      "validation_import": "机器校验 50/298页；失败0；不确定项5图；待整书TEST入库",
+      "recognition": "识别中 · 70/298页 · 110图",
+      "validation_import": "机器校验 70/298页；失败0；不确定项5图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:34+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -187,12 +188,12 @@
         "弃子、转换与取舍 · 主教材"
       ],
       "book_id": 38,
-      "recognition": "识别中 · 40/266页 · 83图",
-      "validation_import": "机器校验 40/266页；失败0；不确定项5图；待整书TEST入库",
+      "recognition": "识别中 · 60/266页 · 131图",
+      "validation_import": "机器校验 60/266页；失败0；不确定项5图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:34+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -202,12 +203,12 @@
         "劫争 · 主教材"
       ],
       "book_id": 57,
-      "recognition": "识别中 · 20/255页 · 32图",
-      "validation_import": "机器校验 20/255页；失败0；不确定项5图；待整书TEST入库",
+      "recognition": "识别中 · 40/255页 · 83图",
+      "validation_import": "机器校验 40/255页；失败0；不确定项10图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:34+08:00",
       "priority_tier": "核心教材"
     },
     {
@@ -217,12 +218,12 @@
         "形势判断与胜负策略 · 主教材"
       ],
       "book_id": 60,
-      "recognition": "识别中 · 20/225页 · 47图",
-      "validation_import": "机器校验 20/225页；失败0；不确定项0图；待整书TEST入库",
+      "recognition": "识别中 · 40/225页 · 113图",
+      "validation_import": "机器校验 40/225页；失败0；不确定项1图；待整书TEST入库",
       "human_review": "本轮未审核",
       "voice": "本轮未开始（历史待核对）",
       "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-18T12:34:09+08:00",
+      "updated_at": "2026-10-18T12:58:34+08:00",
       "priority_tier": "核心教材"
     },
     {

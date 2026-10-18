@@ -43,19 +43,35 @@ BOARD_SCHEMA, DETECTION_SCHEMA = shared.BOARD_SCHEMA, shared.DETECTION_SCHEMA
 COLLECTION = shared.COLLECTION
 DEFAULT_CATALOG = COLLECTION / "curriculum/catalog.json"
 DEFAULT_OUTPUT_ROOT = COLLECTION / "curriculum/recognition-comparison/curriculum-gpt61sol-v1"
-# Every book/process uses these same three OS locks, irrespective of output path.
+# Every book/process shares these OS slot filenames, irrespective of output path.
 LOCK_ROOT = Path(tempfile.gettempdir()) / "katrain-tutorial-gpt61sol"
 FORMAT = "catalog-gpt-recognition-v1"
 
 
 @contextmanager
 def request_slot(directory=LOCK_ROOT / "requests"):
-    """Hold one of exactly three process-wide request slots until launch exits."""
+    """Hold a shared request slot until launch exits; default to the original three.
+
+    KATRAIN_TUTORIAL_REQUEST_LIMIT permits 1..32 slots. New processes can prefer
+    higher slots using KATRAIN_TUTORIAL_REQUEST_PREFER_FROM without replacing the
+    original slot files used by already running processes.
+    """
+    try:
+        limit = int(os.environ.get("KATRAIN_TUTORIAL_REQUEST_LIMIT", "3"))
+        prefer = int(os.environ.get("KATRAIN_TUTORIAL_REQUEST_PREFER_FROM", "0"))
+    except ValueError as error:
+        raise ValueError("KATRAIN_TUTORIAL_REQUEST_LIMIT and PREFER_FROM must be integers") from error
+    if not 1 <= limit <= 32:
+        raise ValueError("KATRAIN_TUTORIAL_REQUEST_LIMIT must be between 1 and 32")
+    if not 0 <= prefer < limit:
+        raise ValueError("KATRAIN_TUTORIAL_REQUEST_PREFER_FROM must be between 0 and LIMIT - 1")
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
-    handles = [(directory / f"slot-{number}.lock").open("a+") for number in range(3)]
+    handles = []
     acquired = None
     try:
+        for number in [*range(prefer, limit), *range(prefer)]:
+            handles.append((directory / f"slot-{number}.lock").open("a+"))
         while acquired is None:
             for handle in handles:
                 try:

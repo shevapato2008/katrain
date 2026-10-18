@@ -421,6 +421,8 @@ const GameControlPanel = ({
       : ogsGame && platformPhase === 'paused' ? t('game:ogs_paused_short', 'OGS 暂停中')
       : onlineGame && c !== myColor && c === toMove ? t('game:opponent_turn', '对方回合')
       : onlineGame && c === myColor && c !== toMove ? t('game:waiting_for_opponent', '等待对方')
+      : nowIndex === 0 && gameState.handicap === 0 && c === 'W' && toMove === 'B'
+        ? t('game:waiting_for_black', '等待黑方')
       : c !== toMove ? t('game:played', '已落子')
       : isAiSeat(c) ? t('game:thinking', '思考中')
       : t('game:your_turn', '轮到你');

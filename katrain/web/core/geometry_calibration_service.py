@@ -105,10 +105,13 @@ class GeometryCalibrationService:
         selector=None,
         auto_relocate=AUTO_RELOCATE_ON_DRIFT,
         restore_auto_exposure_on_success=False,
+        allow_existing_reuse=True,
     ):
         self.led = led
         self.capture = capture
         self.restore_auto_exposure_on_success = restore_auto_exposure_on_success
+        self.allow_existing_reuse = allow_existing_reuse
+        self._full_calibration_completed = False
         # 有人用摄像头时才做漂移检测(每次 ~0.5 s CPU)。None = 一直检测(旧行为)。
         self._drift_needed = drift_needed
         if save_path is None and persist_state is None:
@@ -418,6 +421,8 @@ class GeometryCalibrationService:
     def confirm_existing(self) -> dict:
         """Promote a persisted lock for this process after operator inspection."""
         with self._lock:
+            if not self.allow_existing_reuse:
+                raise ValueError("existing geometry reuse is disabled")
             if self._relocating:
                 raise ValueError("relocation in progress")
             if self._preflighting:
@@ -946,6 +951,7 @@ class GeometryCalibrationService:
                 self.current_lock = result.lock
                 self._drift_monitor = drift_monitor
                 self._geometry_revision += 1
+                self._full_calibration_completed = True
                 self._status.update(
                     phase="ready",
                     progress={"current": 5, "total": 5},
@@ -1041,6 +1047,8 @@ class GeometryCalibrationService:
                 raise CalibrationBusy("geometry calibration or relocation already running")
             if self._status["phase"] not in allowed_phases:
                 raise ValueError("relocate is only available after drift, cancel or failure")
+            if not self.allow_existing_reuse and not self._full_calibration_completed:
+                raise ValueError("full calibration is required before relocation")
             if self.current_lock is None:
                 raise ValueError("no existing geometry to relocate")
             if not self._is_ready(self.capture):

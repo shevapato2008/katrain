@@ -105,6 +105,42 @@ def test_pg_failure_rolls_back_rows_names_and_receipt(pg_engine, monkeypatch):
     assert state(pg_engine) == before
 
 
+def test_pg_statement_timeout_rolls_back_written_publication_and_does_not_leak(pg_engine, monkeypatch):
+    api = publisher()
+    before = state(pg_engine)
+    with pg_engine.connect() as conn:
+        backend_pid = conn.exec_driver_sql("SELECT pg_backend_pid()").scalar_one()
+        conn.exec_driver_sql("SET statement_timeout = '5s'")
+        conn.commit()
+
+    actual_coverage = api._coverage
+    written = []
+
+    def slow_postwrite_coverage(conn, ids):
+        result = actual_coverage(conn, ids)
+        new_album_id = conn.scalar(select(KifuAlbum.id).where(KifuAlbum.id != 11))
+        if new_album_id is not None:
+            written.append(new_album_id)
+            conn.exec_driver_sql("SELECT pg_sleep(0.3)")
+        return result
+
+    monkeypatch.setattr(api, "_STATEMENT_TIMEOUT_MS", 50, raising=False)
+    monkeypatch.setattr(api, "_coverage", slow_postwrite_coverage)
+    try:
+        with pytest.raises(DBAPIError, match="statement timeout"):
+            publish(pg_engine, manifest())
+        assert written, "the timeout must occur after the new album was written"
+        assert state(pg_engine) == before
+        with pg_engine.connect() as conn:
+            assert conn.exec_driver_sql("SELECT pg_backend_pid()").scalar_one() == backend_pid
+            assert conn.exec_driver_sql("SHOW statement_timeout").scalar_one() == "5s"
+            conn.exec_driver_sql("SELECT pg_sleep(0.1)")
+    finally:
+        with pg_engine.connect() as conn:
+            conn.exec_driver_sql("RESET statement_timeout")
+            conn.commit()
+
+
 def test_pg_conditional_compensation_restores_old_qualification(pg_engine):
     receipt = publish(pg_engine, manifest())
     result = publisher().undo_publication(pg_engine, receipt["batch_id"])

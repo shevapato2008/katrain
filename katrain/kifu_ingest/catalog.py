@@ -14,7 +14,7 @@ from hashlib import sha256
 import re
 from urllib.parse import urlparse
 
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -58,6 +58,7 @@ from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS
 FORMAT = "kifu-incremental-manifest-v1"
 BINDING_VERSION = "kifu-incremental-binding-v1"
 LANGUAGES = ("cn", "tw", "jp", "ko", "en")
+_STATEMENT_TIMEOUT_MS = 15 * 60 * 1000
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _ALBUM_METADATA = frozenset(
     {
@@ -1216,6 +1217,11 @@ def publish_manifest(engine, manifest, *, expected_manifest_sha256, lock_timeout
         warm_sgf_cache(engine, sgf_cache)
     try:
         with name_batch._locked_write(engine, lock_timeout_ms=lock_timeout_ms) as conn:
+            if conn.dialect.name == "postgresql":
+                conn.execute(
+                    text("SELECT set_config('statement_timeout', :timeout, true)"),
+                    {"timeout": f"{_STATEMENT_TIMEOUT_MS}ms"},
+                )
             identity_indexes = _identity_indexes(conn)
             previous = (
                 conn.execute(select(KifuNameBatch.__table__).where(KifuNameBatch.bundle_sha256 == manifest_hash))

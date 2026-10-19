@@ -16,6 +16,7 @@ import { platformErrorMessage } from '../utils/platformErrorMessage';
 import { backToState } from '../hooks/useBackTo';
 import { writeActiveSession } from '../utils/activeSession';
 import '../../kiosk-shell/ogs-home.css';
+import './platformReviewed.css';
 
 const timeLabel = (ch: PlatformChallenge) => {
   const tc = ch.time_control;

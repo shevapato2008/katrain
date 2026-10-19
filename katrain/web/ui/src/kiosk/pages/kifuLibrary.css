@@ -84,3 +84,63 @@ body.skbd-padded .kifu-library .compact-pagination:focus-within {
 .kifu-library .kiosk-resume { min-height: var(--l1-resume-h); }
 .kifu-library .kifu-library__recent > .kiosk-seclabel { align-items: center; }
 .kifu-library .empty { flex: none; overflow-wrap: anywhere; }
+
+.archive-reviewed .archive-preview{width:296px;min-width:296px;height:434px;padding:11px;border:1px solid #344b3e;border-radius:13px;background:var(--panel);display:flex;flex-direction:column;gap:8px;box-sizing:border-box}
+.archive-preview h2{font-size:22px;font-weight:400;margin:0;height:30px}
+.archive-preview__board{width:272px;height:272px;flex:none;overflow:hidden;border-radius:10px}
+.archive-preview p{font-size:18px;line-height:24px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.archive-preview__actions{display:flex;gap:8px;margin-top:auto}
+.archive-preview__actions .kiosk-btn{flex:1;height:48px;font-size:22px;white-space:nowrap;padding:0 6px}
+.archive-reviewed .kifu-library{grid-template-rows:38px 24px 44px minmax(0,1fr) 44px}
+.archive-reviewed .kifu-library .kiosk-greet{height:38px}
+.archive-reviewed .kifu-library .kiosk-greet b{font-size:22px}
+.archive-reviewed .kifu-library .kiosk-greet span{font-size:18px}
+.archive-reviewed .kifu-record{height:78px;min-height:78px;gap:6px}
+.archive-reviewed .kifu-record.is-selected{border-color:var(--accent);background:#284233}
+.archive-reviewed .kifu-library .kifu-record__event,.archive-reviewed .kifu-library .kifu-record__meta,.archive-reviewed .kifu-library .kifu-record__player small,.archive-reviewed .kifu-library .kifu-record__result{font-size:18px}
+.archive-reviewed .kifu-library .kifu-record__player{font-size:22px}
+.archive-reviewed .kifu-library .kiosk-btn{font-size:18px}
+
+.archive-preview__actions .kiosk-btn{border:1px solid #4f765a;border-radius:11px;background:linear-gradient(#405a48,#25432f 65%,#1a3225);color:#e8f3ea;box-shadow:inset 0 1px #729579,0 3px 0 #0d2117}
+.archive-preview__actions .kiosk-btn:disabled{opacity:.4;box-shadow:none}
+
+.kifu-replay-reviewed .kiosk-rail{height:516px;display:grid;grid-template-rows:44px 112px 78px minmax(0,1fr) 50px 44px;gap:8px}
+.kifu-replay-reviewed .kiosk-pagebar__title,.kifu-replay-reviewed .kiosk-pagebar__back{font-size:22px}
+.kifu-replay-match,.kifu-replay-pending,.kifu-replay-recent{border:1px solid #415e49;border-radius:12px;background:#1b2b23;padding:8px 12px;min-width:0;overflow:hidden}
+.kifu-replay-match{display:flex;flex-direction:column;justify-content:space-around}
+.kifu-replay-match>strong{font-size:22px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kifu-replay-players{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:22px}
+.kifu-replay-players>span{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap}
+.kifu-replay-players small,.kifu-replay-players em,.kifu-replay-match>small{font-size:18px;color:#b6cabb;font-style:normal}
+.kifu-replay-reviewed .kifu-record__stone{display:inline-block;width:14px;height:14px;flex:none;border-radius:50%;border:1px solid #9eafa3}
+.kifu-replay-pending{display:flex;flex-direction:column;justify-content:center;gap:3px;background:#1b3025;padding:6px 12px}
+.kifu-replay-pending strong{font-size:22px;font-weight:400;color:#e3c789}
+.kifu-replay-pending span{font-size:18px;line-height:20px;color:#bfd0c0}
+.kifu-replay-recent>div:first-child{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:22px}
+.kifu-replay-recent strong{font-weight:400}.kifu-replay-recent>div:first-child span{font-size:18px;color:#b8cdbb}
+.kifu-replay-move-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+.kifu-replay-move-grid button{height:44px;display:flex;align-items:center;gap:6px;padding:0 7px;border:1px solid #3d5948;border-radius:9px;background:#1d3025;color:var(--text);font-size:18px}
+.kifu-replay-move-grid button[aria-pressed="true"]{border-color:var(--accent)}
+.kifu-replay-move-grid b{font-weight:400;color:#9cbaa4}
+.kifu-replay-actions .physical-board-button{width:100%;height:50px;font-size:22px;border:1px solid #6ab582;border-radius:13px;background:linear-gradient(#3d5948,#223c2e 60%,#192d22);color:var(--text);box-shadow:inset 0 1px #72967b,0 3px 0 #0c1c12;display:flex;align-items:center;justify-content:center;gap:8px}
+.kifu-replay-playback{display:flex;align-items:center;gap:6px;min-width:0}
+.kifu-replay-playback button{width:44px;height:44px;flex:none;padding:0;border:1px solid #425f4c;border-radius:11px;background:linear-gradient(#344b3e,#1a3024);color:var(--text);box-shadow:inset 0 1px #66846e,0 3px 0 #0b1c12}
+.kifu-replay-playback button:disabled{opacity:.4;box-shadow:none}
+.kifu-replay-playback input{flex:1;min-width:0;accent-color:var(--accent)}
+
+.archive-reviewed .kifu-library{grid-template-rows:38px 44px 44px minmax(0,1fr) 44px}
+.archive-reviewed .archive-library-heading{flex-direction:row;align-items:center;justify-content:space-between}
+.archive-reviewed .archive-library-heading span{margin-left:auto}
+.archive-library-tabs{display:flex;gap:6px;padding:3px;border:1px solid #344b3e;border-radius:12px;background:#132119}
+.archive-reviewed .archive-library-tabs .kiosk-btn{height:36px;flex:1;font-size:22px;min-height:0}
+.archive-library-tabs .kiosk-btn[aria-pressed="true"]{background:linear-gradient(#3a5945,#25432f);border-color:#5f9370;box-shadow:inset 0 1px #78917f,0 2px 0 #0b1b11}
+.archive-reviewed .kifu-library__footer{justify-content:flex-end}
+
+.archive-reviewed .kifu-library{grid-template-rows:38px 50px 44px minmax(0,1fr) 44px}
+.archive-reviewed .archive-library-tabs .kiosk-btn{height:44px;min-height:44px}
+
+.kifu-replay-reviewed .kiosk-pagebar__iconbtn{width:44px;height:44px;min-width:44px}
+.kifu-replay-info{position:fixed;inset:0;z-index:1000;background:#000a;display:grid;place-items:center}
+.kifu-replay-info__panel{width:min(620px,90vw);padding:24px;border:1px solid #5f9370;border-radius:16px;background:#1b2b23;color:var(--text);font-size:22px}
+.kifu-replay-info__panel h2{font-size:28px;margin:0 0 12px;font-weight:400}.kifu-replay-info__panel p{font-size:22px;line-height:1.6}
+.kifu-replay-info__panel button{height:48px;min-width:120px;border:1px solid #5f9370;border-radius:10px;background:#294c35;color:var(--text);font-size:22px}

@@ -1,29 +1,29 @@
 /* Approved play journey shell at the fixed 1024 × 600 canvas. */
-:is(.kiosk-screen[data-journey="ai-play"], .kiosk-screen[data-journey="local-play"]) .kiosk-topbar__game {
+.kiosk-screen .kiosk-topbar__game {
   font-size: 22px;
   letter-spacing: 0;
 }
-:is(.kiosk-screen[data-journey="ai-play"], .kiosk-screen[data-journey="local-play"]) .kiosk-topbar__user {
+.kiosk-screen .kiosk-topbar__user {
   font-size: 18px;
 }
-:is(.kiosk-screen[data-journey="ai-play"], .kiosk-screen[data-journey="local-play"]) .kiosk-topbar__clock {
+.kiosk-screen .kiosk-topbar__clock {
   font-size: 22px;
 }
-:is(.kiosk-screen[data-journey="ai-play"], .kiosk-screen[data-journey="local-play"]) .kiosk-topbar__avatar {
+.kiosk-screen .kiosk-topbar__avatar {
   width: 32px;
   height: 32px;
   font-size: 18px;
 }
-:is(.kiosk-screen[data-journey="ai-play"], .kiosk-screen[data-journey="local-play"]) .kiosk-topbar__home {
+.kiosk-screen .kiosk-topbar__home {
   min-height: 46px;
   font-size: 22px;
   background: var(--raise);
 }
-.kiosk-screen[data-journey="ai-play"] .kiosk-dock {
+.kiosk-screen .kiosk-dock {
   gap: 4px;
   padding: 7px 14px;
 }
-.kiosk-screen[data-journey="ai-play"] .kiosk-dock__item {
+.kiosk-screen .kiosk-dock__item {
   height: 68px;
   flex-direction: row;
   gap: 7px;
@@ -33,13 +33,13 @@
     linear-gradient(180deg, transparent 57%, #00000016);
   box-shadow: inset 0 1px 0 #ffffff26, 0 2px 0 #102019, 0 4px 6px #0005;
 }
-.kiosk-screen[data-journey="ai-play"] .kiosk-dock__label {
+.kiosk-screen .kiosk-dock__label {
   font-family: var(--font-serif);
   font-size: 22px;
   font-weight: 500;
   white-space: nowrap;
 }
-.kiosk-screen[data-journey="ai-play"] .kiosk-dock__item[aria-current="page"] {
+.kiosk-screen .kiosk-dock__item[aria-current="page"] {
   transform: none;
 }
 .kiosk-screen[data-journey="ai-play"] .kiosk-console__title b,

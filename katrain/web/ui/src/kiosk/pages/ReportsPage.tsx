@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import CompactPagination from '../../components/CompactPagination';
+import './personalGamesReviewed.css';
 import { BaipuAPI } from '../../api/baipuApi';
 import { KifuAPI } from '../../api/kifuApi';
 import { ReportsAPI, type ReportTaskMove, type ReportType } from '../../api/reportApi';
@@ -11,6 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toLibraryUserGameParams, toLocalUserGameParams } from '../../features/report/reportModel';
 import { summarizeReportMoves, winrateSeries } from '../../features/report/reportStats';
 import { useReportTasks } from '../../features/report/useReportTasks';
+import { translateResult } from '../../utils/resultTranslation';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { replayBaipuSteps, type BoardState } from '../../utils/baipuReplay';
@@ -20,11 +23,10 @@ import ReportLibraryImportDialog from '../components/report/ReportLibraryImportD
 import ReportLocalImportDialog, { type LocalImportPayload } from '../components/report/ReportLocalImportDialog';
 import { ReviewWinratePlot } from '../components/report/ReviewWinratePlot';
 import {
-  failureLine, failureReason, isPlaySource, outcomeLine, rowDisc, rowState, rowTitle, yourColor, type RowState,
+  failureLine, failureReason, isPlaySource, outcomeLine, rowState, rowTitle, yourColor, type RowState,
 } from '../components/report/reviewPresentation';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { Icon } from '../shell/icons';
-import { KioskCard } from '../shell/KioskCard';
 import { KioskConsoleRail } from '../shell/KioskConsoleRail';
 import { KioskOptSeg } from '../shell/KioskOptSeg';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
@@ -71,7 +73,7 @@ import { whenLabel } from '../utils/whenLabel';
 /** 来源筛选只有两档 —— 见 `source` 那段注。 */
 type SourceFilter = 'all' | 'play_local';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 20;
 
 type ImportAction = 'save' | ReportType | null;
 
@@ -126,7 +128,7 @@ export default function ReportsPage() {
 
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<UserGameDetail | null>(null);
-  const [board, setBoard] = useState<BoardState | null>(null);
+  const [board, setBoard] = useState<(BoardState & { gameId: string }) | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const detailRequestRef = useRef(0);
 
@@ -141,6 +143,7 @@ export default function ReportsPage() {
   const [libraryImporting, setLibraryImporting] = useState<ImportAction>(null);
   const [localImportError, setLocalImportError] = useState<string | null>(null);
   const [libraryImportError, setLibraryImportError] = useState<string | null>(null);
+  const [reportMenuOpen, setReportMenuOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -204,7 +207,6 @@ export default function ReportsPage() {
   // 就是那份名单(`baipuApi.ts` 决定 ②)。屏 16 逐手回放用的是同一条路、同一个播放器。
   useEffect(() => {
     if (!isAuthenticated || !selectedGameId) return;
-    if (selectedGame?.id === selectedGameId) return;
     const request = ++detailRequestRef.current;
     UserGamesAPI.get(token, selectedGameId)
       .then(async (game) => {
@@ -215,7 +217,7 @@ export default function ReportsPage() {
         try {
           const loaded = await BaipuAPI.load({ sgf: game.sgf_content });
           if (request !== detailRequestRef.current) return;
-          setBoard(replayBaipuSteps(loaded.steps, loaded.steps.length, loaded.board_size || size));
+          setBoard({ ...replayBaipuSteps(loaded.steps, loaded.steps.length, loaded.board_size || size), gameId: game.id });
         } catch {
           // 谱读不出来时**画空盘并说明**,不要摆一盘不是这一局的子当装饰(D11)。
           if (request !== detailRequestRef.current) return;
@@ -232,7 +234,7 @@ export default function ReportsPage() {
         setDetailError(failureLine(translationRef.current('report:preview_failed', '棋谱预览加载失败'), cacheBackedReadFailureKind(error), translationRef.current));
       });
     return () => { detailRequestRef.current += 1; };
-  }, [isAuthenticated, selectedGame?.id, selectedGameId, token]);
+  }, [isAuthenticated, selectedGameId, token]);
 
   // ── 选中那一局的报告逐手 ────────────────────────────────────────────────
   const selectedState: RowState | null = useMemo(() => {
@@ -271,6 +273,7 @@ export default function ReportsPage() {
   }, [completedTaskId, isAuthenticated, token]);
 
   // ── 左栏三格 ────────────────────────────────────────────────────────────
+  const selectedBoard = board?.gameId === selectedGameId ? board : null;
   const selectedSummary = games.find((g) => g.id === selectedGameId) ?? null;
   const mine = selectedSummary ? yourColor(selectedSummary, user?.username) : null;
   // 判不出「你」的时候按**黑方**算,并且把视角写进同步行 —— 不写的话
@@ -476,17 +479,18 @@ export default function ReportsPage() {
 
   return (
     <>
-      <div className="kiosk-layout-l1" data-testid="review-page">
+      <div className="kiosk-layout-l1 personal-games-reviewed" data-testid="review-page">
+        <div className="personal-games-preview">
         <KioskConsoleRail
           title={t('review:rail_title', '选中这一局')}
           sub="Selected"
           board={(
             <GoBoardSvg
               size={selectedGame?.board_size || 19}
-              black={board?.black ?? []}
-              white={board?.white ?? []}
-              last={board?.last}
-              muted={board == null}
+              black={selectedBoard?.black ?? []}
+              white={selectedBoard?.white ?? []}
+              last={selectedBoard?.last}
+              muted={selectedBoard == null}
               label={t('review:rail_board', '选中那一局的终局盘')}
             />
           )}
@@ -494,6 +498,28 @@ export default function ReportsPage() {
           syncRight={railSync.right}
           statuses={cells}
         />
+        <div className="personal-games-preview__actions">
+          <button type="button" className="kiosk-btn" disabled={!selectedGame || selectedGame.id !== selectedGameId || !selectedBoard}
+            onClick={() => navigate(`/kiosk/research?user_game_id=${encodeURIComponent(selectedGameId!)}`)}>{t('review:open_replay', '查看棋谱')}</button>
+          <button type="button" className="kiosk-btn" aria-expanded={reportMenuOpen} disabled={!selectedSummary}
+            onClick={() => setReportMenuOpen(value => !value)}>{t('review:analysis_report', '分析报告')}</button>
+          {reportMenuOpen && <div className="personal-games-tier-menu" role="group" aria-label="分析报告档位">
+            {(['normal', 'deep'] as const).map(tier => {
+              const status = selectedGameId ? reportStatesByGame[selectedGameId] : undefined;
+              const completed = tier === 'normal' ? status?.completedNormal : status?.completedDeep;
+              const active = tier === 'normal' ? status?.activeNormal : status?.activeDeep;
+              const failed = tier === 'normal' ? status?.failedNormal : status?.failedDeep;
+              return <button key={tier} type="button" className="kiosk-btn" disabled={(!completed && Boolean(active)) || !canAnalyzeSelected}
+                onClick={() => {
+                  if (completed) navigate(`/kiosk/report/${completed.id}`);
+                  else if (failed) void retryReport(failed.id).catch(() => undefined);
+                  else if (selectedSummary) void createForGame(selectedSummary, tier).catch(() => undefined);
+                  setReportMenuOpen(false);
+                }}>{tier === 'normal' ? `${t('review:tier_standard', '标准')} 500` : `${t('review:tier_deep', '精读')} 2000`} · {completed ? t('review:tier_view', '查看') : active ? t('review:tier_working', '分析中') : failed ? t('kifu:retry', '重试') : t('review:tier_generate', '生成')}</button>;
+            })}
+          </div>}
+        </div>
+        </div>
 
         <div className="kiosk-side">
           <div className="kiosk-side__fixed">
@@ -616,39 +642,14 @@ export default function ReportsPage() {
                       username={user?.username}
                       t={t}
                       onSelect={() => setSelectedGameId(game.id)}
-                      onOpenReport={(taskId) => navigate(`/kiosk/report/${taskId}`)}
-                      onResume={(taskId) => { void retryReport(taskId).catch(() => undefined); }}
-                      // 行尾的「开始分析」走标准档。**同时选中这一行** —— 否则报错只会落在
-                      // 下面「生成报告」区的 actionError 里,而那一段说的是「选中的那一局」,
-                      // 指的却是另一局。选中让出错的那一行和错误信息对得上。
-                      onStartAnalysis={() => {
-                        setSelectedGameId(game.id);
-                        setActionError(null);
-                        void createForGame(game, 'normal').catch(() => undefined);
-                      }}
                       onDelete={() => setDeleteTarget(game.id)}
                     />
                   ))}
                 </div>
               )}
-              {totalPages > 1 && (
-                <div className="kpager" data-testid="review-pager">
-                  <button
-                    type="button" className="kiosk-btn kiosk-btn--pill"
-                    disabled={page <= 1} onClick={() => updateLocation(query, page - 1)}
-                  >
-                    {t('kifu:prev_page', '上一页')}
-                  </button>
-                  <span>{page} / {totalPages}</span>
-                  <button
-                    type="button" className="kiosk-btn kiosk-btn--pill"
-                    disabled={page >= totalPages} onClick={() => updateLocation(query, page + 1)}
-                  >
-                    {t('kifu:next_page', '下一页')}
-                  </button>
-                </div>
-              )}
             </KioskScrollZone>
+            <div className="personal-games-pagination"><CompactPagination showEdgeButtons page={page} totalPages={totalPages} disabled={gamesLoading || Boolean(gamesFailure)}
+              onPageChange={next => updateLocation(query, next)} /></div>
 
             <section className="kiosk-section">
               <KioskSecLabel
@@ -671,28 +672,6 @@ export default function ReportsPage() {
                 </p>
               )}
               <div className="kiosk-cards" data-testid="review-cards">
-                <KioskCard
-                  title={t('review:tier_standard', '标准')}
-                  sub={t('review:tier_standard_sub', '每手算 500 次')}
-                  icon="lightbulb"
-                  disabled={!canAnalyzeSelected}
-                  onClick={() => {
-                    if (!selectedSummary) return;
-                    setActionError(null);
-                    void createForGame(selectedSummary, 'normal').catch(() => undefined);
-                  }}
-                />
-                <KioskCard
-                  title={t('review:tier_deep', '精读')}
-                  sub={t('review:tier_deep_sub', '每手算 2000 次 · 慢四倍')}
-                  icon="magnifying-glass"
-                  disabled={!canAnalyzeSelected}
-                  onClick={() => {
-                    if (!selectedSummary) return;
-                    setActionError(null);
-                    void createForGame(selectedSummary, 'deep').catch(() => undefined);
-                  }}
-                />
                 <ReportImportMenu
                   onImportLocal={() => { setLocalImportError(null); setLocalImportOpen(true); }}
                   onImportLibrary={() => { setLibraryImportError(null); setLibraryImportOpen(true); }}
@@ -755,16 +734,13 @@ export default function ReportsPage() {
  * 「跳转和干活分在两个手势上」(Fan 2026-07-28)。
  * 整行做不成一个 `<button>`:按钮里套按钮是非法 DOM。
  */
-function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport, onResume, onStartAnalysis, onDelete }: {
+function ReviewRow({ game, state, selected, username, t, onSelect, onDelete }: {
   game: UserGameSummary;
   state: RowState;
   selected: boolean;
   username?: string | null;
   t: (key: string, fallback?: string) => string;
   onSelect: () => void;
-  onOpenReport: (taskId: number) => void;
-  onResume: (taskId: number) => void;
-  onStartAnalysis: () => void;
   onDelete: () => void;
 }) {
   const mine = yourColor(game, username);
@@ -779,89 +755,24 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
 
   return (
     <div className="kiosk-row" data-testid="review-row" data-selected={selected ? 'true' : 'false'} data-state={state.kind}>
-      <button type="button" className="rvpick" onClick={onSelect} aria-pressed={selected}>
-        <span className={`disc ${rowDisc(mine)}`} aria-hidden="true" />
-        <span className="kiosk-row__t">
-          <b>{rowTitle(game, mine, t)}</b>
-          <em>{sub}</em>
+      <button type="button" className="rvpick" onClick={onSelect} aria-pressed={selected} aria-label={rowTitle(game, mine, t)} title={sub}>
+        <span className="personal-game-description">{sub}</span>
+        <span className="personal-game-head">
+          <Icon name="books" /><b>{game.event || game.title || rowTitle(game, mine, t)}</b>
+          <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))} · {game.move_count} {t('report:moves_unit', '手')}</small>
+        </span>
+        <span className="personal-game-match">
+          <span><i className="personal-game-stone" />{game.player_black || t('game:black_side', '黑方')}</span>
+          <em>{game.result ? translateResult(game.result, t, game.rules) : outcomeLine(game, mine, t)}</em>
+          <span>{game.player_white || t('game:white_side', '白方')}<i className="personal-game-stone is-white" /></span>
         </span>
       </button>
       <span className="kiosk-row__end">
-        {state.kind === 'analyzed' && (
-          <>
-            <span className="kiosk-tag kiosk-tag--win">{t('review:tag_analyzed', '已分析')}</span>
-            {/* ⚠️ **两档都跑完时一个「查看报告」指不了两个 id** —— 报告是按档发的。
-                那时拆成两个键,各自只有一个宾语;只有一档时才是那句概括的「查看报告」。
-                上一版的 `ReportGameCard` 本来就是两个键,收成一个等于丢了一条路。 */}
-            {state.taskIds.length > 1
-              ? state.taskIds.map((task) => (
-                <button
-                  key={task.tier}
-                  type="button"
-                  className="kiosk-btn kiosk-btn--pill"
-                  onClick={() => onOpenReport(task.id)}
-                >
-                  {task.tier === 'deep' ? t('review:tier_deep', '精读') : t('review:tier_standard', '标准')}
-                </button>
-              ))
-              : (
-                <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => onOpenReport(state.taskId)}>
-                  {t('review:open_report', '查看报告')}
-                </button>
-              )}
-          </>
-        )}
-        {state.kind === 'running' && (
-          <>
-            <span className="kiosk-tag">
-              {interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: state.analyzed, b: state.total })}
-            </span>
-            <span className="rvprog" aria-hidden="true">
-              <i style={{ width: `${state.total > 0 ? Math.min(100, (state.analyzed / state.total) * 100) : 0}%` }} />
-            </span>
-          </>
-        )}
-        {state.kind === 'partial' && (
-          <>
-            <span className="kiosk-tag kiosk-tag--warn">
-              {interpolate(t('review:tag_partial', '只算到 {a}/{b}'), { a: state.analyzed, b: state.total })}
-            </span>
-            <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => onResume(state.taskId)}>
-              {t('review:resume_analysis', '继续分析')}
-            </button>
-          </>
-        )}
-        {state.kind === 'failed' && (
-          <>
-            <span className="kiosk-tag kiosk-tag--bad">{t('review:tag_failed', '分析失败')}</span>
-            <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => onResume(state.taskId)}>
-              {t('kifu:retry', '重试')}
-            </button>
-          </>
-        )}
-        {/* 「未分析」曾经是**唯一一个有事可做却没有键**的状态 —— 其它每一档行尾都有动作
-            (已分析→查看报告、只算到一半→继续分析、失败→重试),只有这一档是个死标,
-            所以它看起来像坏了。能力其实一直都在:选中这一行之后,下面「生成报告」区的
-            两张卡就可用了 —— 缺的只是这一行自己不指过去。
-            走**标准**档而不是弹二选一:精读慢四倍,不该是每局都被问到的选项;
-            想精读的人仍旧走下面那两张卡,这里不删任何路。 */}
-        {state.kind === 'unanalyzed' && (
-          <>
-            <span className="kiosk-tag">{t('review:tag_unanalyzed', '未分析')}</span>
-            <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={onStartAnalysis}>
-              {t('review:start_analysis', '开始分析')}
-            </button>
-          </>
-        )}
-        {state.kind === 'unfinished' && (
-          <span className="kiosk-tag">{t('review:tag_unfinished', '未终局')}</span>
-        )}
-        {/* 删除只挂在**选中**的那一行上 —— 它是一条不可逆的操作,而稿子的行尾只有一个状态标。
-            ⚠️ 理由不是「一行上不许有三个可点的东西」:选中行本身就可能有三个(标 + 动作键 + 删除)。
-            准确的说法是**未选中的行上不放不可逆操作** —— 那些行你只是扫过去,
-            而选中的那一行是你刚点过、正在看的,删除出现在那儿是你自己把它叫出来的。
-            (`kiosk-shell/icons/` 里没有 trash:那 41 对图标由 MANIFEST 钉着,
-             为一个按钮往共享资产包里塞一份新二进制不划算,所以这里用文字。) */}
+        <span className="kiosk-tag">{state.kind === 'analyzed' ? t('review:tag_analyzed', '已分析')
+          : state.kind === 'running' ? interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: state.analyzed, b: state.total })
+          : state.kind === 'partial' ? interpolate(t('review:tag_partial', '只算到 {a}/{b}'), { a: state.analyzed, b: state.total })
+          : state.kind === 'failed' ? t('review:tag_failed', '分析失败')
+          : state.kind === 'unfinished' ? t('review:tag_unfinished', '未终局') : t('review:tag_unanalyzed', '未分析')}</span>
         {selected && game.source !== 'kifu_library' && (
           <button type="button" className="kiosk-btn kiosk-btn--pill rvdanger" onClick={onDelete}>
             {t('review:delete_game', '删除')}

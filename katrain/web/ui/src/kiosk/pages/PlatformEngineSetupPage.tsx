@@ -21,6 +21,7 @@ import { interpolate } from '../utils/interpolate';
 import { platformErrorMessage } from '../utils/platformErrorMessage';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import { writeActiveSession } from '../utils/activeSession';
+import './platformReviewed.css';
 
 /** 星阵固定 19 路、中国规则；档位来自平台，让子与贴目沿用平台原有对应关系。 */
 const HANDICAP_TRACK = [0, -1, 2, 3, 4, 5, 6, 7, 8, 9] as const;

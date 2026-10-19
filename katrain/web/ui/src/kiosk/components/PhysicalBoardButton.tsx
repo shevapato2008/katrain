@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { cacheSgf } from '../../api/baipuApi';
 import { useTranslation } from '../../hooks/useTranslation';
 import { backToState } from '../hooks/useBackTo';
+import { PhysicalBoardIcon } from '../shell/PhysicalBoardIcon';
 
 interface Props {
   source: string;
@@ -29,6 +30,6 @@ export default function PhysicalBoardButton({ source, name, sgf, boardSize }: Pr
           state: { ...backToState(location), sgf, name, backLabel: t('report:back_report', '报告') },
         });
       }}
-    >{t('report:physical_board', '实体棋盘')}</button>
+    ><PhysicalBoardIcon />{t('report:physical_board_short', '实体盘')}</button>
   );
 }

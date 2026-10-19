@@ -1,14 +1,8 @@
-import { test } from '@playwright/test';
-import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
+import { expect, test } from '@playwright/test';
+import { freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
-
-const SHOTS = resolve(process.cwd(),
-  '../../../../smartbox-software/superpowers/shared/kiosk-shell/sample-go/shots');
-const OUT = resolve(process.cwd(),
-  '../../../superpowers/tracks/kiosk-go-shell-align/visual/19-review/1024x600');
 
 /**
  * 屏 19 复盘(L1 布局 A,**形态 2**:头尾固定,只有中间那条列表滚)。
@@ -136,7 +130,7 @@ const FINAL_BOARD = [
   ['B', 2, 16],  // R17 —— 最后一手
 ] as const;
 
-test('四图:复盘 ←→ sample-go/shots/19-review.png', async ({ page }) => {
+test('approved personal history selection and tier menu', async ({ page }) => {
   await freezeClock(page);
   await page.addInitScript(() => {
     localStorage.setItem('token', 'fourup');
@@ -156,7 +150,7 @@ test('四图:复盘 ←→ sample-go/shots/19-review.png', async ({ page }) => {
     json: { ...GAMES[0], sgf_content: '(;FF[4]GM[1]SZ[19];B[pd];W[dd])' },
   }));
   await page.route('**/api/v1/user-games**', (route) => route.fulfill({
-    json: { items: GAMES, total: GAMES.length, page: 1, page_size: 12 },
+    json: { items: GAMES, total: GAMES.length, page: 1, page_size: 20 },
   }));
   await page.route('**/api/v1/reports/summary', (route) => route.fulfill({
     json: { pending: 0, running: 0, completed: 1, failed: 0 },
@@ -179,28 +173,21 @@ test('四图:复盘 ←→ sample-go/shots/19-review.png', async ({ page }) => {
     },
   }));
 
+  await page.route('**/api/v1/user-games/g*', route => route.fulfill({ json: { ...GAMES[0], sgf_content: '(;SZ[19];B[pd];W[dd])' } }));
   await page.goto('/kiosk/report');
   await page.waitForSelector('[data-testid="review-rows"] .kiosk-row:nth-child(3)');
   await page.waitForSelector('[data-testid="review-winrate-plot"][data-state="plotted"]');
+  await page.waitForFunction(() => !(Array.from(document.querySelectorAll('button')).find(button => button.textContent === '查看棋谱') as HTMLButtonElement | undefined)?.disabled);
+  const rows = page.getByTestId('review-row');
+  expect((await rows.nth(1).locator('.rvpick').boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await rows.nth(1).locator('.personal-game-match > span').last().click();
+  await expect(rows.nth(1)).toHaveAttribute('data-selected', 'true');
+  await rows.nth(0).locator('.personal-game-match > span').first().click();
+  await expect(rows.nth(0)).toHaveAttribute('data-selected', 'true');
+  await page.waitForFunction(() => !(Array.from(document.querySelectorAll('button')).find(button => button.textContent === '查看棋谱') as HTMLButtonElement | undefined)?.disabled);
   await page.waitForLoadState('networkidle');
 
-  const r = await captureFourUp({
-    page,
-    referencePng: resolve(SHOTS, '19-review.png'),
-    outDir: OUT,
-    slug: '19-review',
-    referenceCaption:
-      '参考:sample-go/shots/19-review.png · L1 布局 A 形态 2(镜像栏 296 + 16 + 右栏 680;'
-      + '胜率固定 122 / 历史对局 194 会滚 / 生成报告 102 固定)· 上黑下白 · 行尾只有一个状态标',
-    implementationCaption:
-      '实现:/kiosk/report @1024×600 · 时钟冻 16:40 · 六局与逐手分析是 fixture · '
-      + '**三格是「妙手」不是国象的「漏着」**:围棋的报告是 cron 离线跑的(每手 500/2000 次),'
-      + '不受盒子算力限制,且 `reportModel.ts:192` 早有 `delta_score ≥ 2` 这条口径 —— 转判据不转结论 · '
-      + '曲线接真数据,稿子那枚「后端已有 · 界面未接」蓝标本轮不成立,已去掉 · '
-      + '行尾多出动作键(规范 §11 四态各有各的样子 + 就地干活不跳页,国象稿子同处就是这么画的)· '
-      + '组标题右端多一个搜索开关(稿子漏画,它自己的 `.sbox` 注释把复盘算进了有搜索的四屏)· '
-      + '第三张卡是能用的,不是「即将上线」· 三格数字随算式走,稿子那三个是示意值 · '
-      + 'Dock 七项(2026-08-25 起补了「成长」,围棋独有)',
-  });
-  console.log(`[fourup 19-review] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
+  await page.screenshot({ path: '/tmp/kiosk-19-reviewed.png' });
+  await page.getByRole('button', { name: '分析报告', exact: true }).click();
+  await page.screenshot({ path: '/tmp/kiosk-19-tier-menu.png' });
 });

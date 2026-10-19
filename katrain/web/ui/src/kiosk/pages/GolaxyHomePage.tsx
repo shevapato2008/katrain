@@ -5,9 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PLATFORM_MARKS } from '../constants/platformMarks';
 import { KioskCard } from '../shell/KioskCard';
+import { PhysicalBoardIcon } from '../shell/PhysicalBoardIcon';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import '../../kiosk-shell/golaxy-home.css';
+import './platformReviewed.css';
 
 type Connection =
   | { kind: 'loading' }
@@ -118,7 +120,7 @@ export function GolaxyPlayerProfile({ player, token, onClose, initialStage = 'ma
         </> : stage === 'invite' ? <>
           <p className="golaxy-home__profile-subtitle">邀请这位棋友进行星阵人人对弈</p>
           <div className="golaxy-home__invite-peer"><PlayerAvatar player={player} /><b>{player.username}</b><small>{[player.rank, player.status].filter(Boolean).join(' · ')}</small></div>
-          <div className="golaxy-home__invite-label">本机落子方式</div><div className="golaxy-home__invite-modes"><button aria-pressed={mode === 'screen'} onClick={() => setMode('screen')}>屏幕落子</button><button aria-pressed={mode === 'physical'} onClick={() => setMode('physical')}>实体棋盘</button></div>
+          <div className="golaxy-home__invite-label">本机落子方式</div><div className="golaxy-home__invite-modes"><button aria-pressed={mode === 'screen'} onClick={() => setMode('screen')}>屏幕落子</button><button aria-pressed={mode === 'physical'} onClick={() => setMode('physical')}><PhysicalBoardIcon />实体盘</button></div>
           <p className="golaxy-home__invite-note">邀请对局暂不可用。星阵邀请、取消和进入可落子的对局尚未完成验证。</p>
         </> : stage === 'kifu' ? <>
           <p className="golaxy-home__profile-subtitle">{player.username}的星阵人人对弈棋谱</p>

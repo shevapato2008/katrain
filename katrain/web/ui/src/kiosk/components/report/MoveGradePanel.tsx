@@ -163,6 +163,16 @@ export default function MoveGradePanel({
   const [selectedTab, setTab] = useState<TabId>(hasRecommendation ? 'recommend' : 'trend');
   const tab = selectedTab === 'recommend' && !hasRecommendation ? 'trend' : selectedTab;
   const [expanded, setExpanded] = useState(false);
+  const tabStripRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const strip = tabStripRef.current;
+    const item = strip?.querySelector<HTMLElement>('[data-active="true"]');
+    if (!strip || !item) return;
+    const left = item.offsetLeft - strip.offsetLeft;
+    const available = strip.clientWidth - 44;
+    if (left < strip.scrollLeft) strip.scrollLeft = left;
+    else if (left + item.offsetWidth > strip.scrollLeft + available) strip.scrollLeft = left + item.offsetWidth - available;
+  }, [tab, expanded]);
   const hostRef = useRef<HTMLDivElement>(null);
   const mainMountRef = useRef<HTMLDivElement>(null);
   const dialogMountRef = useRef<HTMLDivElement>(null);
@@ -451,9 +461,17 @@ export default function MoveGradePanel({
           setExpanded(false);
         }
       }}>
-      <div className="report-workspace__tabs" role="group" aria-label={t('grade:tabs', '着手评价')}>
+      <div ref={tabStripRef} className="report-workspace__tabs" role="group" aria-label={t('grade:tabs', '着手评价')}>
         {TABS.map(x => <div className="grade-tab" key={x.id} data-tab-id={x.id} data-active={tab === x.id}>
-          <button type="button" aria-pressed={tab === x.id} onClick={() => { setTab(x.id); setPicked(null); }}>{x.label}</button>
+          <button type="button" aria-pressed={tab === x.id} onFocus={event => {
+            const item = event.currentTarget.parentElement;
+            const strip = item?.parentElement;
+            if (item && strip) {
+              const left = item.offsetLeft - strip.offsetLeft;
+              if (left < strip.scrollLeft) strip.scrollLeft = left;
+              else if (left + item.offsetWidth > strip.scrollLeft + strip.clientWidth) strip.scrollLeft = left + item.offsetWidth - strip.clientWidth;
+            }
+          }} onClick={() => { setTab(x.id); setPicked(null); }}>{x.label}</button>
           {tab === x.id && <ChartTabHelp key={x.id} label={x.label}>
             {x.id === 'recommend' ? <p>{t('report:recommend_help', '推荐度是 AI 对候选着点的选择倾向，不是人类落子的概率。目差和胜率以待落子方为基准；正目差表示该方领先。点按候选可预览变化，实战着点不在前五时追加显示；缺少评估以 — 表示。')}</p>
               : <AnalysisHelpContent tab={x.id} selection={tab === 'brilliant' ? brilliants : bads} histogram={histogram} matchRate={matchRate} />}

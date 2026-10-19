@@ -167,7 +167,7 @@ describe('职业报告固定右栏', () => {
     expect(screen.queryByRole('button', { name: '查看棋谱' })).toBeNull();
     const actions = within(screen.getByTestId('kifu-report-actions')).getAllByRole('button');
     expect(actions).toHaveLength(4);
-    ['试下', '领地', '支招', '实体棋盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
+    ['试下', '领地', '支招', '实体盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
     const toggles = within(screen.getByTestId('kifu-report-toggles')).getAllByRole('button');
     expect(toggles).toHaveLength(2);
     ['手数', '坐标'].forEach((name, index) => expect(toggles[index]).toHaveAccessibleName(name));
@@ -207,17 +207,17 @@ describe('职业报告固定右栏', () => {
 });
 
 
-it('报告的实体棋盘入口携带原始 SGF 和报告返回地址', async () => {
+it('报告的实体盘入口携带原始 SGF 和报告返回地址', async () => {
   renderPage(); await loaded();
   expect(screen.queryByRole('button', { name: '清空' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '实体棋盘' }));
+  fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
   expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/baipu/session/kifu_7', {
     state: expect.objectContaining({ sgf: album.sgf_content, backTo: '/kiosk/kifu/7', backLabel: '报告' }),
   });
 });
 
-it('非19路报告不能进入实体棋盘摆谱', async () => {
+it('非19路报告不能进入实体盘摆谱', async () => {
   mocks.getAlbum.mockResolvedValue({ ...album, board_size: 9, sgf_content: '(;SZ[9];B[dd])' });
   renderPage(); await loaded();
-  expect(screen.getByRole('button', { name: '实体棋盘' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '实体盘' })).toBeDisabled();
 });

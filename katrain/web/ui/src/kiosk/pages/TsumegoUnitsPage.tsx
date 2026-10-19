@@ -32,7 +32,10 @@ import { KioskCard } from '../shell/KioskCard';
  * 做题记录没读到(`serverLoadFailed`)而本机算出 0 道 ⇒ 那个 0 是**算不出来**,不是「一道没错」:
  * 不写「0 道」、不灰,点进错题页那边有重试。
  */
+import './trainingReviewed.css';
+
 const TsumegoUnitsPage = () => {
+  const [tab, setTab] = useState<'units' | 'wrong'>('units');
   const { level, category } = useParams<{ level: string; category: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -88,7 +91,7 @@ const TsumegoUnitsPage = () => {
 
   if (problemIds === null || error || problemIds.length === 0) {
     return (
-      <div className="kiosk-layout-b">
+      <div className="kiosk-layout-b training-reviewed">
         {pagebar}
         <KioskScrollZone>
           {error ? (
@@ -130,16 +133,13 @@ const TsumegoUnitsPage = () => {
 
   // 「当前单元」= 第一个没做完的;全做完了就指最后一个(**不许指向一个不存在的单元**)。
   const current = units.find((u) => u.completed < u.size) ?? units[units.length - 1];
-  const firstUnsolved = current.ids.findIndex((id) => !progress[id]?.completed);
-  const resumeIndex = firstUnsolved < 0 ? 0 : firstUnsolved;
-
   // 做错过的 = 试过、但还没做对。口径只在 `isWrongEntry` 写一次。
   const wrongCount = problemIds.filter((id) => isWrongEntry(progress[id])).length;
   // 0 道而做题记录没读到 ⇒ 这个 0 是编的(和 `GrowthPage` 的 `solved` 同一条)。见文件头。
   const wrongUnknown = serverLoadFailed && wrongCount === 0;
 
   return (
-    <div className="kiosk-layout-b">
+    <div className="kiosk-layout-b training-reviewed">
       {pagebar}
       <KioskScrollZone resetKey={`${level}/${category}`}>
         <div className="kiosk-stats">
@@ -160,21 +160,19 @@ const TsumegoUnitsPage = () => {
           </div>
         </div>
 
-        <div className="kiosk-resume" data-testid="units-start">
-          <span className="bar" />
-          <div>
-            <h4>{t('Start', '开始')} · {interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: current.n })}</h4>
-            <p>{levelName} · {categoryName} · {interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: current.start + resumeIndex + 1 })}</p>
-          </div>
-          <button
-            type="button"
-            className="kiosk-btn kiosk-btn--pill pill"
-            onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/${current.n}`)}
-          >
-            {t('Start', '开始')}
-          </button>
+        <div className="training-tabs" role="tablist" aria-label="训练内容">
+          <button role="tab" aria-selected={tab === 'units'} onClick={() => setTab('units')}>单元</button>
+          <button role="tab" aria-selected={tab === 'wrong'} onClick={() => setTab('wrong')}>错题</button>
         </div>
-
+        {tab === 'wrong' ? <section className="kiosk-section">
+          <KioskCard
+            title="错题簿"
+            sub={wrongUnknown ? '做题记录没读到，进入后可重试' : `这一类现在有 ${wrongCount} 道错题`}
+            icon="arrow-clockwise"
+            disabled={wrongCount === 0 && !wrongUnknown}
+            onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}
+          />
+        </section> : <>
         <section className="kiosk-section">
           <KioskSecLabel
             zh={t('Units', '单元')}
@@ -199,30 +197,7 @@ const TsumegoUnitsPage = () => {
           </div>
         </section>
 
-        {!isAll && (
-          <section className="kiosk-section">
-            <KioskSecLabel zh={t('Other practice', '其他练习')} en="Other practice" />
-            <div className="kiosk-cards">
-              <KioskCard
-                title={t('Mixed training', '综合训练')}
-                sub={t('Mix all categories at this level in 20-problem units', '混合当前难度全部题型，每 20 题一单元')}
-                icon="squares-four"
-                onClick={() => navigate(`/kiosk/tsumego/${level}/all`)}
-              />
-              <KioskCard
-                title={t('Only the ones I got wrong', '只做错过的')}
-                sub={
-                  wrongUnknown
-                    ? t('tsumego:progressUnread', '做题记录没读到')
-                    : interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongCount })
-                }
-                icon="arrow-clockwise"
-                disabled={wrongCount === 0 && !wrongUnknown}
-                onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}
-              />
-            </div>
-          </section>
-        )}
+        </>}
       </KioskScrollZone>
     </div>
   );

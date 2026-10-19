@@ -20,7 +20,7 @@
      那是给开发机看的,不是兜底方案。 */
   --font-serif: "SmartBox Serif", "SmartBox Kai", "Kaiti SC", Georgia, serif;
   --font-sans: "SmartBox Sans", "SmartBox Kai", "Kaiti SC", system-ui, sans-serif;
-  --font-mono: "SmartBox Mono", "SmartBox Kai", ui-monospace, monospace;
+  --font-mono: "SmartBox IBM Plex Mono", "SmartBox Mono", "SmartBox Kai", ui-monospace, monospace;
 
   /* ---------- 画布 ---------- */
   --kiosk-w: 1024px;

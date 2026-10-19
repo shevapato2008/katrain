@@ -1,3 +1,5 @@
+import './trainingReviewed.css';
+import { PhysicalBoardIcon } from '../shell/PhysicalBoardIcon';
 import { Fragment, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { backToState, useBackTo } from '../hooks/useBackTo';
@@ -137,6 +139,7 @@ const TsumegoProblemPage = () => {
   const [searchParams] = useSearchParams();
   const wantWrongSet = searchParams.get('set') === 'wrong';
   const wantAllSet = searchParams.get('set') === 'all';
+  const mixedWrongSet = wantWrongSet && searchParams.get('scope') === 'all';
 
   useEffect(() => {
     if (!problem) return;
@@ -147,7 +150,7 @@ const TsumegoProblemPage = () => {
       setSequenceCategory(category);
       setCategorySequence(ids);
     };
-    const preferredCategory = wantAllSet ? 'all' : problem.category;
+    const preferredCategory = wantAllSet || mixedWrongSet ? 'all' : problem.category;
     const fallbackToProblemCategory = () => {
       const cached = readSequence(problem.level, problem.category);
       if (cached && cached.length > 0) {
@@ -185,7 +188,7 @@ const TsumegoProblemPage = () => {
       disposed = true;
       controller.abort();
     };
-  }, [problem, wantAllSet]);
+  }, [problem, wantAllSet, mixedWrongSet]);
 
   // ---- 错题模式(T1)----
   // `?set=wrong` 且错题快照里有这道题 ⇒ 上/下一题、做对自动下一题、实体模式做对后的翻页,
@@ -193,11 +196,12 @@ const TsumegoProblemPage = () => {
   // 快照读不到 / 不含这道题(深链、换了标签页)⇒ 退回整类,**不假装还在错题里**。
   // 快照由统一 activity store 按账号隔离:同一标签页换人,读不到别人点错题页时写的那份。
   const wrongSequence = useMemo(
-    () => (wantWrongSet && problem ? readWrongSequence(problem.level, problem.category) : null),
-    [wantWrongSet, problem],
+    () => (wantWrongSet && problem ? readWrongSequence(problem.level, mixedWrongSet ? 'all' : problem.category) : null),
+    [wantWrongSet, mixedWrongSet, problem],
   );
   const inWrongSet = !!problemId && !!wrongSequence && wrongSequence.includes(problemId);
   const inAllSet = wantAllSet && sequenceCategory === 'all' && !!problemId && categorySequence.includes(problemId);
+  const inMixedJourney = inAllSet || (inWrongSet && mixedWrongSet);
   const sequence = inWrongSet && wrongSequence ? wrongSequence : categorySequence;
 
   const currentIndex = useMemo(
@@ -214,8 +218,8 @@ const TsumegoProblemPage = () => {
   useEffect(() => {
     if (!problem) return;
     writeLastLevel(problem.level);
-    writeLastCategory(inAllSet ? 'all' : problem.category);
-    const journeyName = inAllSet
+    writeLastCategory(inMixedJourney ? 'all' : problem.category);
+    const journeyName = inMixedJourney
       ? t('Mixed training', '综合训练')
       : t(`tsumego:${problem.category}`, problem.category);
     const head = `${levelChinese(problem.level)} · ${journeyName}`;
@@ -223,7 +227,7 @@ const TsumegoProblemPage = () => {
       inWrongSet
         ? {
             label: `${head} · ${interpolate(t('tsumego:wrongResume', '错题第 {n} 道'), { n: currentIndex + 1 })}`,
-            route: `/kiosk/tsumego/problem/${problem.id}?set=wrong`,
+            route: `/kiosk/tsumego/problem/${problem.id}?set=wrong${mixedWrongSet ? '&scope=all' : ''}`,
           }
         : {
             label: `${head} · 第 ${currentIndex + 1} 题`,
@@ -231,7 +235,7 @@ const TsumegoProblemPage = () => {
           },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot label written once per problem; `t` intentionally excluded
-  }, [problem, currentIndex, inWrongSet, inAllSet]);
+  }, [problem, currentIndex, inWrongSet, inAllSet, inMixedJourney, mixedWrongSet]);
 
   // "Last time" for this problem (4.3) — from the unified progress source.
   const lastDuration = problemId ? progress[problemId]?.lastDuration : undefined;
@@ -240,21 +244,21 @@ const TsumegoProblemPage = () => {
   const navigateToProblem = useCallback(
     (id: string) => {
       flushProgress(); // persist the leaving problem's attempt (4.1/4.2)
-      const setQuery = inWrongSet ? '?set=wrong' : inAllSet ? '?set=all' : '';
+      const setQuery = inWrongSet ? `?set=wrong${mixedWrongSet ? '&scope=all' : ''}` : inAllSet ? '?set=all' : '';
       navigate(`/kiosk/tsumego/problem/${id}${setQuery}`);
     },
-    [navigate, flushProgress, inWrongSet, inAllSet],
+    [navigate, flushProgress, inWrongSet, inAllSet, mixedWrongSet],
   );
 
   const goToUnits = useCallback(() => {
     flushProgress();
     if (problem) {
-      const category = inAllSet ? 'all' : problem.category;
+      const category = inMixedJourney ? 'all' : problem.category;
       navigate(`/kiosk/tsumego/${problem.level}/${category}${inWrongSet ? '/wrong' : ''}`);
     } else {
       backWithoutProblem();
     }
-  }, [navigate, problem, flushProgress, inWrongSet, inAllSet, backWithoutProblem]);
+  }, [navigate, problem, flushProgress, inWrongSet, inMixedJourney, backWithoutProblem]);
 
   const handlePrev = useCallback(() => {
     if (prevId) navigateToProblem(prevId);
@@ -357,7 +361,7 @@ const TsumegoProblemPage = () => {
   // 这一屏能诚实说出口的只有 `hint` 那一句,加上这一屏自己的规则(落子即判)。
   // 稿子第三个标签「示意题面」也去掉:它标的是「这题是稿子上现摆的」,真题来自题库,挂着就是撒谎。
   const categoryName = problem ? t(`tsumego:${problem.category}`, CATEGORY_META[problem.category]?.zh ?? problem.category) : '';
-  const journeyName = inAllSet ? t('Mixed training', '综合训练') : categoryName;
+  const journeyName = inMixedJourney ? t('Mixed training', '综合训练') : categoryName;
   const levelName = problem ? levelChinese(problem.level) : '';
 
   // 这一题属于第几单元 —— 顺序表算得出来就算,算不出来(深链 + 取不到)就退回类目那一层。
@@ -373,7 +377,7 @@ const TsumegoProblemPage = () => {
       : sequence.slice((unitNumber - 1) * UNIT_SIZE, unitNumber * UNIT_SIZE);
   const backTarget = problem
     ? inWrongSet
-      ? `/kiosk/tsumego/${problem.level}/${problem.category}/wrong`
+      ? `/kiosk/tsumego/${problem.level}/${inMixedJourney ? 'all' : problem.category}/wrong`
       : unitNumber === null
         ? `/kiosk/tsumego/${problem.level}/${inAllSet ? 'all' : problem.category}`
         : `/kiosk/tsumego/${problem.level}/${inAllSet ? 'all' : problem.category}/${unitNumber}`
@@ -479,7 +483,7 @@ const TsumegoProblemPage = () => {
   }
 
   return (
-    <div className="kiosk-layout-a">
+    <div className="kiosk-layout-a training-problem-reviewed">
       {/* 盘跨满整个 516 木框:`TsumegoBoard` 是一块 canvas,**坐标画在它自己里面**,
           再套共享的四条刻度带就是两套坐标。见 `go-screens.css` 的 `--full`。 */}
       <div className="kiosk-board">
@@ -566,7 +570,7 @@ const TsumegoProblemPage = () => {
 
         <div className="railsec">
           <div className="rst">
-            <span>{physicalEnabled ? t('tsumego:physicalBoard', '实体棋盘') : t('tsumego:yourMoves', '你的走法')}</span>
+            <span>{physicalEnabled ? t('tsumego:physicalBoardShort', '实体盘') : t('tsumego:yourMoves', '你的走法')}</span>
             <b data-testid="puzzle-counters">
               {t('Time', '用时')} {inPhysicalSetup ? t('tsumego:preparingBoard', '准备中') : formatTime(elapsedTime)}
               {/* 一次都没试过时**不写「0 次」** —— 和屏 13 同一条:0 次是一个次数,
@@ -699,7 +703,7 @@ const TsumegoProblemPage = () => {
             disabled={!physicalMode && !physicalAvailable}
             onClick={() => setPhysical(!physicalMode)}
           >
-            {t('tsumego:physicalBoard', '实体棋盘')}
+            <PhysicalBoardIcon />{t('tsumego:physicalBoardShort', '实体盘')}
           </button>
           <i className="ghint" data-testid="puzzle-toggle-hint">{physicalHint?.text ?? ''}</i>
         </div>

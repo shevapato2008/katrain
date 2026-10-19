@@ -491,7 +491,7 @@ describe('屏 20 · 盘上的交互', () => {
   // 2026-09-02:这一排的名字、顺序、图标全部按 galaxy 的 `LiveMatchDisplayControls` 对齐
   // (Fan:「icon 还有名称也和 galaxy 界面中的不一致,这是不能接受的」)。
   // **顺序也是判据** —— 两端左起第一颗都得是「试下」,不然「一眼对应上」这句话不成立。
-  it('动作保持试下、领地、支招、实体棋盘，显示保持手数、坐标，领地无数据时禁用', () => {
+  it('动作保持试下、领地、支招、实体盘，显示保持手数、坐标，领地无数据时禁用', () => {
     detail = { ...baseDetail(), analysisByMove: { 2: { ...analysis, ownership: null } } };
     renderPage();
     const toggles = within(screen.getByTestId('report-detail-toggles')).getAllByRole('button');
@@ -499,9 +499,9 @@ describe('屏 20 · 盘上的交互', () => {
     ['手数', '坐标'].forEach((name, index) => expect(toggles[index]).toHaveAccessibleName(name));
     const actions = within(screen.getByTestId('report-detail-actions')).getAllByRole('button');
     expect(actions).toHaveLength(4);
-    ['试下', '领地', '支招', '实体棋盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
+    ['试下', '领地', '支招', '实体盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
     expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '实体棋盘' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '实体盘' })).toBeEnabled();
   });
 
   it('坐标仅切换外壳文字，刻度带和盘的参数保留', () => {
@@ -956,10 +956,10 @@ describe('屏 20 · 让子局的下标要对得上', () => {
 });
 
 
-it('个人报告可通过实体棋盘进入现有摆谱流程并返回报告', () => {
+it('个人报告可通过实体盘进入现有摆谱流程并返回报告', () => {
   detail = baseDetail(); renderPage();
   expect(screen.queryByRole('button', { name: '清空' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '实体棋盘' }));
+  fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
   expect(navigate).toHaveBeenCalledWith('/kiosk/baipu/session/user_game_game%20id%2F%E6%B1%89%E5%AD%97', {
     state: expect.objectContaining({ sgf: game.sgf_content, backTo: '/kiosk/report/42', backLabel: '报告' }),
   });

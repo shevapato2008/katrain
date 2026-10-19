@@ -441,6 +441,10 @@ async def resume_batch(store, manifest, digest, *, test_verify, sync, prod_verif
     return row
 
 
+def _receiver_timeout(deadline):
+    return max(1, deadline - time.monotonic())
+
+
 class KifuIngestJob(BaseJob):
     name = "kifu_ingest"
     interval_seconds = 3600
@@ -484,7 +488,7 @@ class KifuIngestJob(BaseJob):
                     host=config.KIFU_INGEST_SSH_HOST,
                     key_path=config.KIFU_INGEST_SSH_KEY,
                     known_hosts=config.KIFU_INGEST_KNOWN_HOSTS,
-                    timeout=min(180, max(1, deadline - time.monotonic())),
+                    timeout=_receiver_timeout(deadline),
                 )
 
             package_dir = stage_root / "packages"

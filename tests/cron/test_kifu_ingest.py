@@ -176,6 +176,14 @@ def test_sync_uses_fixed_ssh_command_and_stdin(monkeypatch):
     assert json.loads(captured["input"])["manifest"] == manifest
 
 
+def test_receiver_timeout_uses_remaining_round_budget(monkeypatch):
+    from katrain.cron.jobs import kifu_ingest
+
+    monkeypatch.setattr(kifu_ingest.time, "monotonic", lambda: 100.0)
+    assert kifu_ingest._receiver_timeout(1100.0) == 1000.0
+    assert kifu_ingest._receiver_timeout(99.0) == 1
+
+
 @pytest.mark.asyncio
 async def test_verifier_checks_real_sgf_and_all_five_display_fields():
     from katrain.kifu_ingest.sync import verify_album_api

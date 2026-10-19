@@ -55,17 +55,18 @@ vi.mock('../components/vision/CameraGeometryOverlay', () => ({
   },
 }));
 
-const screenTree = () => (
+const screenTree = (allowExistingReuse?: boolean) => (
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter>
       <GeometryCalibrationScreen
         backLabel="设置" onBack={vi.fn()}
         title="棋盘标定" sub="先把棋盘清空 · 四角和天元共 5 个定位点"
+        allowExistingReuse={allowExistingReuse}
       />
     </MemoryRouter>
   </ThemeProvider>
 );
-const renderScreen = () => render(screenTree());
+const renderScreen = (allowExistingReuse?: boolean) => render(screenTree(allowExistingReuse));
 
 const steps = () => screen.getAllByTestId('calib-step');
 const acts = () => screen.getByTestId('calib-actions');
@@ -250,6 +251,33 @@ describe('屏 26 棋盘标定', () => {
     renderScreen();
     fireEvent.click(within(acts()).getByRole('button', { name: '沿用上次标定' }));
     await waitFor(() => expect(confirmExisting).toHaveBeenCalled());
+  });
+
+  it('禁用沿用时隐藏沿用操作，仍可标定和返回', () => {
+    status = { ...status, last_valid: true };
+    renderScreen(false);
+
+    expect(cells()).toContain('标定未标定');
+    expect(cells()).not.toContain('标定待确认');
+    expect(screen.queryByRole('button', { name: '沿用上次标定' })).toBeNull();
+    expect(within(acts()).getByRole('button', { name: '重新开始标定' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /设置/ })).toBeEnabled();
+    expect(confirmExisting).not.toHaveBeenCalled();
+  });
+
+  it('禁用沿用且本次未标定时，不显示沿用提示或对齐外框', () => {
+    status = { ...status, phase: 'degraded', last_valid: true };
+    renderScreen(false);
+
+    expect(screen.queryByText(/「沿用上次标定」此刻按不了/)).toBeNull();
+    expect(within(acts()).queryByRole('button', { name: /对齐外框/ })).toBeNull();
+  });
+
+  it.each(['degraded', 'cancelled', 'failed'] as const)('禁用沿用但本次标定成功后 %s 仍可对齐外框', (phase) => {
+    status = { ...status, phase, last_valid: true, session_calibrated: true };
+    renderScreen(false);
+
+    expect(within(acts()).getByRole('button', { name: /对齐外框/ })).toBeEnabled();
   });
 
   it('取消之后「沿用上次标定」可以按', () => {

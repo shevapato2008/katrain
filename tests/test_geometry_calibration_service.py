@@ -688,6 +688,33 @@ def test_confirm_existing_promotes_loaded_lock_without_recalibration(tmp_path):
     assert not save_path.exists()
 
 
+def test_confirm_existing_rejects_when_reuse_disabled_without_changing_state(tmp_path):
+    old = _synth()
+    promoted = []
+    capture = FreshFakeCapture()
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=old,
+        on_success=promoted.append,
+        allow_existing_reuse=False,
+    )
+    service._status.update(phase="failed", error="anchor_not_found:15,15")
+    before = service.status()
+    monitor = service._drift_monitor
+
+    with pytest.raises(ValueError, match="reuse is disabled"):
+        service.confirm_existing()
+
+    assert service.status() == before
+    assert service.current_lock is old
+    assert service._drift_monitor is monitor
+    assert capture.grab_calls == 0
+    assert promoted == []
+    service.stop()
+
+
 def test_confirm_existing_recovers_from_failed_calibration_when_lock_is_valid(tmp_path):
     old = _synth()
     promoted = []
@@ -2556,6 +2583,66 @@ def test_manual_relocate_works_on_a_crowded_board(phase):
     assert out["phase"] == "ready"
     assert selector.calls[-1].name == "MANUAL_FALLBACK"
     assert len(calls.success) == 1 and calls.suspend == [] and calls.persist == []
+    service.stop()
+
+
+@pytest.mark.parametrize("reason", ["cancelled", "anchor_not_found:0,0"])
+def test_relocation_cannot_promote_loaded_lock_after_first_calibration_stops(tmp_path, reason):
+    selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
+    promoted = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=320.0),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_lock(IMG_QUAD),
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=False, reason=reason)),
+        selector=selector,
+        on_success=promoted.append,
+        allow_existing_reuse=False,
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+    before = service.status()
+    assert before["phase"] == ("cancelled" if reason == "cancelled" else "failed")
+
+    with pytest.raises(ValueError, match="full calibration is required before relocation"):
+        service.relocate()
+
+    assert service.status() == before
+    assert selector.calls == []
+    assert promoted == []
+    service.stop()
+
+
+@pytest.mark.parametrize("phase", ["degraded", "cancelled", "failed"])
+def test_relocation_allowed_after_full_calibration_in_opt_out_mode(tmp_path, phase):
+    selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=320.0),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_lock(IMG_QUAD),
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=_lock(IMG_QUAD))),
+        selector=selector,
+        allow_existing_reuse=False,
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+    assert service.status()["phase"] == "ready"
+    if phase == "degraded":
+        service._apply_drift(FakeDrift(degraded=True))
+    else:
+        service.calibrator_factory = _result_calibrator_factory(CalibrationResult(ok=False, reason=phase))
+        service.start(trigger="manual", empty_confirmed=True)
+        assert service.wait(timeout=5) is True
+    assert service.status()["phase"] == phase
+
+    assert service.relocate()["phase"] == "ready"
+    assert len(selector.calls) == 1
     service.stop()
 
 

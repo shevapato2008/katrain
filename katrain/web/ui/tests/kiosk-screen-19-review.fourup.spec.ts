@@ -174,9 +174,14 @@ test('approved personal history selection and tier menu', async ({ page }) => {
   }));
 
   await page.route('**/api/v1/user-games/g*', route => route.fulfill({ json: { ...GAMES[0], sgf_content: '(;SZ[19];B[pd];W[dd])' } }));
+  await page.route('**/api/v1/kifu/albums?*', route => route.fulfill({ json: {
+    items: [{ id: 10, player_black: '棋手甲', player_white: '棋手乙', display_player_black: '棋手甲', display_player_white: '棋手乙',
+      event: '职业赛', display_event: '职业赛', date_played: '2026-08-01', move_count: 186, board_size: 19, komi: 7.5,
+      rules: 'chinese', result: 'B+R', handicap: 0 }], total: 1, page: 1, page_size: 10,
+  } }));
   await page.goto('/kiosk/report');
-  await page.waitForSelector('[data-testid="review-rows"] .kiosk-row:nth-child(3)');
-  await page.waitForSelector('[data-testid="review-winrate-plot"][data-state="plotted"]');
+  await page.waitForSelector('[data-testid="review-rows"] [data-testid="review-row"]:nth-child(3)');
+  await expect(page.getByText('这一局的胜率')).toHaveCount(0);
   await page.waitForFunction(() => !(Array.from(document.querySelectorAll('button')).find(button => button.textContent === '查看棋谱') as HTMLButtonElement | undefined)?.disabled);
   const rows = page.getByTestId('review-row');
   expect((await rows.nth(1).locator('.rvpick').boundingBox())!.height).toBeGreaterThanOrEqual(44);
@@ -190,4 +195,11 @@ test('approved personal history selection and tier menu', async ({ page }) => {
   await page.screenshot({ path: '/tmp/kiosk-19-reviewed.png' });
   await page.getByRole('button', { name: '分析报告', exact: true }).click();
   await page.screenshot({ path: '/tmp/kiosk-19-tier-menu.png' });
+  await page.getByRole('button', { name: '分析报告', exact: true }).click();
+  await page.getByRole('button', { name: /导入棋谱复盘/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '搜索棋谱库' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '从本地导入 SGF' })).toBeVisible();
+  await page.waitForTimeout(350);
+  await page.screenshot({ path: '/tmp/kiosk-19-library-import.png' });
 });

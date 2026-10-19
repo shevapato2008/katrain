@@ -51,12 +51,14 @@
 /* Login labels and entry text share a left edge in SMS/password/OGS forms. */
 [data-testid="platform-login-page"] .xpcol { width:100%; max-width:556px; gap:14px; }
 [data-testid="platform-login-page"] .iglab { width:65px; min-width:65px; text-align:left; font-size:18px; }
-[data-testid="platform-login-page"] .xpfield { font-size:22px; text-align:left; }
+[data-testid="platform-login-page"] .xpfield { font-size:22px; text-align:left; box-shadow:inset 0 2px 5px #0006,inset 0 -1px 0 #ffffff0d; }
+[data-testid="platform-login-page"] .xpfield:focus-within { border-color:var(--accent); }
 [data-testid="platform-login-page"] .xpfield input { font-size:22px; text-align:left; letter-spacing:normal; }
 [data-testid="platform-login-page"] .xpfield input::placeholder { text-align:left; }
-[data-testid="platform-login-page"] .xpfield__area { width:163px; font-size:22px; text-align:left; }
+[data-testid="platform-login-page"] .xpfield:has(.xpfield__area) { padding-left:6px; gap:12px; }
+[data-testid="platform-login-page"] .xpfield__area { width:163px; padding:0 8px 0 12px; border:1px solid #456451; border-radius:11px; background-color:#2a4233; font-size:22px; text-align:left; }
 [data-testid="platform-login-page"] .xpfield i { display:none; }
-[data-testid="platform-login-page"] .xpgo { font-size:22px; }
+[data-testid="platform-login-page"] .xpgo { border:1px solid #91cca0; border-radius:17px; font-size:22px; }
 [data-testid="platform-login-page"] .xpwho b,[data-testid="platform-login-page"] .xpqr__side h4 { font-size:22px; }
 [data-testid="platform-login-page"] .xpwho span,[data-testid="platform-login-page"] .xpfacts b,[data-testid="platform-login-page"] .xpfacts p,[data-testid="platform-login-page"] .xpqr__side p,[data-testid="platform-login-page"] .xpstat,[data-testid="platform-login-page"] .loginerr { font-size:18px; }
 /* The engine selector remains the existing real 39-tier sheet trigger. */
@@ -100,6 +102,22 @@
 [data-testid="platform-login-page"] .reviewed-login-info[open] summary { position:absolute; z-index:6; right:20px; bottom:20px; }
 [data-testid="platform-login-page"] .reviewed-login-info .xpwho { display:none; }
 [data-testid="platform-login-page"] .reviewed-login-info .xpfacts { gap:12px; }
+/* Login controls use the same soft key surface, with recessed text entry fields. */
+[data-testid="platform-login-page"] :is(.xpgo,.kiosk-pagebar__back,.reviewed-login-info summary,.xpfield__area) {
+  background-image:radial-gradient(ellipse 90% 70% at 50% -8%,#ffffff29,transparent 75%),linear-gradient(180deg,transparent 57%,#00000016);
+  box-shadow:inset 0 1px 0 #ffffff38,inset 0 -2px 2px #0004,0 3px 0 #102019,0 6px 10px #0007;
+  translate:0 0;
+  transition:translate 130ms ease,box-shadow 130ms ease;
+  touch-action:manipulation;
+}
+[data-testid="platform-login-page"] .kiosk-pagebar__back { height:44px; border-radius:13px; }
+[data-testid="platform-login-page"] :is(.reviewed-login-info summary,.xpfield__area) { box-shadow:inset 0 1px 0 #ffffff38,inset 0 -1px 2px #0004,0 2px 0 #102019,0 4px 7px #0006; }
+[data-testid="platform-login-page"] :is(.xpgo,.kiosk-pagebar__back,.reviewed-login-info summary,.xpfield__area):active:not(:disabled) { translate:0 2px; box-shadow:inset 0 3px 7px #0008,inset 0 1px 0 #ffffff14,0 1px 2px #0006; }
+[data-testid="platform-login-page"] :is(.xpgo,.kiosk-pagebar__back,.reviewed-login-info summary):focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+[data-testid="platform-login-page"] .xpgo:disabled { background-image:none; box-shadow:none; translate:0 0; }
+@media (prefers-reduced-motion:reduce) {
+  [data-testid="platform-login-page"] :is(.xpgo,.kiosk-pagebar__back,.reviewed-login-info summary,.xpfield__area) { transition:none; }
+}
 .golaxy-home__invite-modes button { display:flex; align-items:center; justify-content:center; gap:8px; }
 .golaxy-home__invite-modes .kiosk-icon,.golaxy-home__invite-modes svg { width:24px; height:24px; }
 [data-testid="platform-engine-setup-page"] .kiosk-pagebar__sub { display:none; }

@@ -80,17 +80,21 @@ Worker boundaries: platform owns Task 2 files; training owns Task 3 files; archi
 
 ### Task 5: Personal games → final board → tiered report/view/delete (19)
 
-**Modify:** `kiosk/pages/ReportsPage.tsx`; create `kiosk/pages/personalGamesReviewed.css` if current shared selectors cannot be scoped safely. Preserve feature report hooks and existing API methods.
+**2026-10-19 visual correction:** The latest approved screenshot supersedes the earlier win rate block and bottom report generation layout. Center the two left preview actions beneath the board. Keep the tier menu visibly attached to 分析报告 with standard/deep generate-or-view status. Make the entire game card the selection target and put an icon-only delete button outside its rounded card edge, with a clear gap. Remove the win rate section and use its space for the scrollable history list. Keep 导入棋谱复盘 below the list; its first click opens the searchable professional kifu library dialog directly, while local SGF import remains reachable from within the dialog. Retain the existing page number input, jump action, and first/previous/next/last controls; use the approved raised key material and pressed state. Match archive card information order and alignment.
+
+**Modify:** `kiosk/pages/ReportsPage.tsx`, `kiosk/pages/personalGamesReviewed.css`, `kiosk/components/report/ReportImportMenu.tsx`, `ReportLibraryImportDialog.tsx` and their focused tests. Preserve feature report hooks and existing API methods.
 
 - [ ] Change `PAGE_SIZE` from 12 to 20. Keep query/source/page server filters and independent list scroll. Reuse `CompactPagination` numeric page jump rather than create another control; last-page deletion uses existing page correction.
 - [ ] Align cards and final-board selected preview with archive presentation without extracting a generic library abstraction unless both actually need it.
 - [ ] Put 查看棋谱 and 分析报告 menu on the left; standard 500/deep 2000 each derive generate/view/working availability from real task tier/status. Preserve in-place generation, polling and retry; do not treat a normal report as a completed deep report.
 - [ ] Reuse existing delete confirmation/API path; validate game and report state disappear after successful deletion and remain on failure. If API deletion semantics do not guarantee report removal, record the contract gap and stop at truthful frontend behavior pending visual confirmation.
-- [ ] Run `npm test -- src/kiosk/pages/ReportsPage.test.tsx src/kiosk/pages/ReportsPage.polling.test.tsx src/kiosk/pages/ResearchPage.userGame.test.tsx`. Extend existing tests only for 20/page, page jump and tier-menu dispatch where missing.
+- [ ] Run focused page/import tests. Cover 20/page, page jump, tier-menu dispatch and visible chevron, direct searchable library dialog, its local SGF entry, and independent card selection/icon deletion. Do not retain obsolete win-rate-only assertions.
 - [ ] Capture selected final-board layout and open tier menu at 1024×600 using `tests/kiosk-screen-19-review.fourup.spec.ts`; verify one real navigation/generation path where connected data is available.
 - [ ] Complete the visual/user confirmation gate.
 
 ### Task 6: Personal/professional report tabs (20)
+
+**2026-10-19 visual correction:** The final artifact's `docs/design/kiosk-unified/tactile.css` overrides the older two-row `report.css` layout. Implement one 50px-tall recessed, horizontally touch-scrollable capsule containing 44px raised tabs with a distinct selected/pressed state. Check both personal and professional report at the target viewport. Review the report's visible action buttons, playback controls, filters, and other changed-page buttons against the same raised/recessed material; repair concrete flat controls with scoped CSS, rather than a broad design-system rewrite. Astra Max's visual acceptance must explicitly check depth, tab shape, spacing, scrolling, text/icon alignment, and comparison with the latest artifact.
 
 **Modify:** `kiosk/components/report/MoveGradePanel.tsx`, `reportWorkspace.css`, `reportRail.css` if needed; page files only if props demonstrably require change.
 
@@ -99,6 +103,12 @@ Worker boundaries: platform owns Task 2 files; training owns Task 3 files; archi
 - [ ] Add a focused tab-selection/visibility test if absent; run `npm test -- src/kiosk/pages/ReportDetailPage.test.tsx src/kiosk/pages/KifuReportDetailPage.test.tsx` plus existing MoveGradePanel tests.
 - [ ] Capture initial and far-right tab at 1024×600 with existing `tests/kiosk-screen-20-report.fourup.spec.ts`; inspect one professional report with same strip. Validate other panels through existing interaction tests, without six redundant full visual reviews.
 - [ ] Complete the visual/user confirmation gate.
+
+### Focused tactile follow-up across reviewed pages (Astra Max visual findings, 2026-10-19)
+
+- [x] At 1024×600, inspect active buttons on archive 15/16, training units/problem, OGS/星阵 login, personal games 19, and shared kiosk top bar. Use the approved report and training carousel raised material as the visual benchmark; keep disabled states subdued.
+- [x] Repair only observed flat controls: archive pagination and centered tabs; archive replay back/info; wrong-book entry and problem actions; platform submit/back/info and area code selector; page 19 import entry, centered delete glyph, and shared home button. Preserve existing action sizes, semantics and handlers.
+- [x] Recapture one representative screenshot per touched screen and ask Astra Max to inspect the actual images. Reuse focused interaction tests and the existing build; do not add CSS-only unit tests. Astra Max confirmed PASS after opening all eight final 1024×600 screenshots.
 
 ## Chunk 3: Gates and delivery
 

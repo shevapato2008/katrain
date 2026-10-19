@@ -294,7 +294,7 @@ export default function ReportDetailPage() {
     <div className="kiosk-rail" data-testid="report-detail-shell">
       <KioskPagebar
         testId="report-detail-pagebar"
-        backLabel={t('review:back_review', '复盘')}
+        backLabel={t('review:back_review_full', '返回复盘')}
         onBack={() => navigate(BACK_PATH)}
         title={t('report:my_reports', '复盘')}
       />
@@ -403,7 +403,7 @@ export default function ReportDetailPage() {
         players={[game.player_black || t('review:black', '黑'), game.player_white || t('review:white', '白')]}
         pagebar={(<KioskPagebar
           testId="report-detail-pagebar"
-          backLabel={t('review:back_review', '复盘')}
+          backLabel={t('review:back_review_full', '返回复盘')}
           onBack={() => navigate(BACK_PATH)}
           title={title}
           sub={sub}

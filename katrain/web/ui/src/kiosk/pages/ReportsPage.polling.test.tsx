@@ -94,7 +94,7 @@ describe('屏 19 接真的报告任务钩子', () => {
 
     await waitFor(() => expect(screen.getByTestId('review-row')).toHaveAttribute('data-selected', 'true'));
     if (screen.getByRole('button', { name: '分析报告' }).getAttribute('aria-expanded') !== 'true') fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
-    fireEvent.click(screen.getByRole('button', { name: /标准/ }));
+    fireEvent.click(screen.getByRole('button', { name: /普通报告/ }));
     expect(await screen.findByText('正在分析 0/3')).toBeInTheDocument();
     expect(mocks.reportCreate).toHaveBeenCalledWith('token', { user_game_id: 'game-1', report_type: 'normal' });
 

@@ -164,7 +164,7 @@ const TsumegoUnitsPage = () => {
           <button role="tab" aria-selected={tab === 'units'} onClick={() => setTab('units')}>单元</button>
           <button role="tab" aria-selected={tab === 'wrong'} onClick={() => setTab('wrong')}>错题</button>
         </div>
-        {tab === 'wrong' ? <section className="kiosk-section">
+        {tab === 'wrong' ? <section className="kiosk-section training-wrong-book-entry">
           <KioskCard
             title="错题簿"
             sub={wrongUnknown ? '做题记录没读到，进入后可重试' : `这一类现在有 ${wrongCount} 道错题`}

@@ -11,7 +11,7 @@ import {
 } from '../../api/userGamesApi';
 import { useAuth } from '../../context/AuthContext';
 import { toLibraryUserGameParams, toLocalUserGameParams } from '../../features/report/reportModel';
-import { summarizeReportMoves, winrateSeries } from '../../features/report/reportStats';
+import { summarizeReportMoves } from '../../features/report/reportStats';
 import { useReportTasks } from '../../features/report/useReportTasks';
 import { translateResult } from '../../utils/resultTranslation';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -21,7 +21,7 @@ import { cacheBackedReadFailureKind, requestFailureKind, type RequestFailureKind
 import ReportImportMenu from '../components/report/ReportImportMenu';
 import ReportLibraryImportDialog from '../components/report/ReportLibraryImportDialog';
 import ReportLocalImportDialog, { type LocalImportPayload } from '../components/report/ReportLocalImportDialog';
-import { ReviewWinratePlot } from '../components/report/ReviewWinratePlot';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
   failureLine, failureReason, isPlaySource, outcomeLine, rowState, rowTitle, yourColor, type RowState,
 } from '../components/report/reviewPresentation';
@@ -133,8 +133,6 @@ export default function ReportsPage() {
   const detailRequestRef = useRef(0);
 
   const [moves, setMoves] = useState<ReportTaskMove[] | null>(null);
-  const [movesLoading, setMovesLoading] = useState(false);
-  const [movesError, setMovesError] = useState<string | null>(null);
   const movesRequestRef = useRef(0);
 
   const [localImportOpen, setLocalImportOpen] = useState(false);
@@ -245,29 +243,20 @@ export default function ReportsPage() {
   const completedTaskId = selectedState?.kind === 'analyzed' ? selectedState.taskId : null;
 
   useEffect(() => {
-    // 上一局读不出来时留下的那句话只在成功时才清 —— 选中一局没报告的新局,
-    // `plotEmpty` 先查 `movesError`,会把上一局的错粘到这一局身上。新选择 / 新请求先清白板。
-    setMovesError(null);
     if (!isAuthenticated || completedTaskId == null) {
       setMoves(null);
       return;
     }
     const request = ++movesRequestRef.current;
-    setMovesLoading(true);
     ReportsAPI.getMoves(token, completedTaskId)
       .then((rows) => {
         if (request !== movesRequestRef.current) return;
         setMoves(rows);
-        setMovesError(null);
       })
       .catch((error: Error) => {
         if (request !== movesRequestRef.current) return;
         console.warn('[review] moves', error);
         setMoves(null);
-        setMovesError(failureLine(translationRef.current('review:moves_failed', '报告读不出来'), requestFailureKind(error), translationRef.current));
-      })
-      .finally(() => {
-        if (request === movesRequestRef.current) setMovesLoading(false);
       });
     return () => { movesRequestRef.current += 1; };
   }, [completedTaskId, isAuthenticated, token]);
@@ -283,7 +272,6 @@ export default function ReportsPage() {
     () => (moves ? summarizeReportMoves(moves, perspective) : null),
     [moves, perspective],
   );
-  const points = useMemo(() => (moves ? winrateSeries(moves) : []), [moves]);
 
   const unanalyzed = t('review:cell_unanalyzed', '未分析');
   const cells: readonly StatusCell[] = [
@@ -314,17 +302,6 @@ export default function ReportsPage() {
       })}`;
     const ts = savedAt(selectedSummary);
     return { left, right: ts == null ? '' : whenLabel(ts, t) };
-  })();
-
-  const plotEmpty = (() => {
-    if (!selectedSummary) return t('review:plot_pick', '从下面挑一局');
-    if (movesError) return movesError;
-    if (movesLoading) return t('review:plot_loading', '正在读这一局的报告');
-    if (completedTaskId == null) {
-      return t('review:plot_unanalyzed', '这一局还没分析 —— 在下面「生成报告」里挑一档');
-    }
-    if (points.length < 2) return t('review:plot_thin', '报告里还没有算出来的手');
-    return '';
   })();
 
   // ── 干活 ────────────────────────────────────────────────────────────────
@@ -501,8 +478,8 @@ export default function ReportsPage() {
         <div className="personal-games-preview__actions">
           <button type="button" className="kiosk-btn" disabled={!selectedGame || selectedGame.id !== selectedGameId || !selectedBoard}
             onClick={() => navigate(`/kiosk/research?user_game_id=${encodeURIComponent(selectedGameId!)}`)}>{t('review:open_replay', '查看棋谱')}</button>
-          <button type="button" className="kiosk-btn" aria-expanded={reportMenuOpen} disabled={!selectedSummary}
-            onClick={() => setReportMenuOpen(value => !value)}>{t('review:analysis_report', '分析报告')}</button>
+          <button type="button" className="kiosk-btn personal-games-report-trigger" aria-haspopup="menu" aria-expanded={reportMenuOpen} disabled={!selectedSummary}
+            onClick={() => setReportMenuOpen(value => !value)}>{t('review:analysis_report', '分析报告')} <Icon name="caret-down" /></button>
           {reportMenuOpen && <div className="personal-games-tier-menu" role="group" aria-label="分析报告档位">
             {(['normal', 'deep'] as const).map(tier => {
               const status = selectedGameId ? reportStatesByGame[selectedGameId] : undefined;
@@ -515,7 +492,7 @@ export default function ReportsPage() {
                   else if (failed) void retryReport(failed.id).catch(() => undefined);
                   else if (selectedSummary) void createForGame(selectedSummary, tier).catch(() => undefined);
                   setReportMenuOpen(false);
-                }}>{tier === 'normal' ? `${t('review:tier_standard', '标准')} 500` : `${t('review:tier_deep', '精读')} 2000`} · {completed ? t('review:tier_view', '查看') : active ? t('review:tier_working', '分析中') : failed ? t('kifu:retry', '重试') : t('review:tier_generate', '生成')}</button>;
+                }}><strong>{completed ? t('review:tier_view', '查看') : active ? t('review:tier_working', '分析中') : failed ? t('kifu:retry', '重试') : t('review:tier_generate', '生成')}{tier === 'normal' ? t('report:normal', '普通报告') : t('report:deep', '深度报告')}</strong><span>每手 {tier === 'normal' ? 500 : 2000} 次</span></button>;
             })}
           </div>}
         </div>
@@ -523,18 +500,6 @@ export default function ReportsPage() {
 
         <div className="kiosk-side">
           <div className="kiosk-side__fixed">
-            <section className="kiosk-section">
-              <KioskSecLabel zh={t('review:sec_winrate', '这一局的胜率')} en="Win rate" />
-              <ReviewWinratePlot
-                points={points}
-                empty={plotEmpty}
-                axisTop={`${t('review:black', '黑')} 100`}
-                axisMid="50"
-                axisBottom={`${t('review:white', '白')} 100`}
-                label={t('review:plot_label', '逐手胜率，上方黑优、下方白优')}
-              />
-            </section>
-
             <KioskScrollZone
               grow
               className={searchOpen ? 'has-search' : undefined}
@@ -673,7 +638,6 @@ export default function ReportsPage() {
               )}
               <div className="kiosk-cards" data-testid="review-cards">
                 <ReportImportMenu
-                  onImportLocal={() => { setLocalImportError(null); setLocalImportOpen(true); }}
                   onImportLibrary={() => { setLibraryImportError(null); setLibraryImportOpen(true); }}
                 />
               </div>
@@ -695,6 +659,7 @@ export default function ReportsPage() {
         error={libraryImportError}
         onClose={() => { setLibraryImportError(null); setLibraryImportOpen(false); }}
         onImport={handleLibraryImport}
+        onImportLocal={() => { setLibraryImportOpen(false); setLocalImportError(null); setLocalImportOpen(true); }}
       />
       {/* 删除确认框:标题 / 正文 / 危险键三条**与 galaxy 同一组 key**
           (`galaxy/pages/report/ReportsPage.tsx:599-611`)—— 同一个对话框、同一个动作,
@@ -754,11 +719,16 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onDelete }: {
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className="kiosk-row" data-testid="review-row" data-selected={selected ? 'true' : 'false'} data-state={state.kind}>
-      <button type="button" className="rvpick" onClick={onSelect} aria-pressed={selected} aria-label={rowTitle(game, mine, t)} title={sub}>
+    <div className="personal-game-row" data-testid="review-row" data-selected={selected ? 'true' : 'false'} data-state={state.kind}>
+      <button type="button" className="kiosk-row rvpick personal-game-card" onClick={onSelect} aria-pressed={selected} aria-label={rowTitle(game, mine, t)} title={sub}>
         <span className="personal-game-description">{sub}</span>
         <span className="personal-game-head">
           <Icon name="books" /><b>{game.event || game.title || rowTitle(game, mine, t)}</b>
+          <span className="personal-game-state">{state.kind === 'analyzed' ? t('review:tag_analyzed', '已分析')
+            : state.kind === 'running' ? interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: state.analyzed, b: state.total })
+            : state.kind === 'partial' ? interpolate(t('review:tag_partial', '只算到 {a}/{b}'), { a: state.analyzed, b: state.total })
+            : state.kind === 'failed' ? t('review:tag_failed', '分析失败')
+            : state.kind === 'unfinished' ? t('review:tag_unfinished', '未终局') : t('review:tag_unanalyzed', '未分析')}</span>
           <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))} · {game.move_count} {t('report:moves_unit', '手')}</small>
         </span>
         <span className="personal-game-match">
@@ -767,18 +737,11 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onDelete }: {
           <span>{game.player_white || t('game:white_side', '白方')}<i className="personal-game-stone is-white" /></span>
         </span>
       </button>
-      <span className="kiosk-row__end">
-        <span className="kiosk-tag">{state.kind === 'analyzed' ? t('review:tag_analyzed', '已分析')
-          : state.kind === 'running' ? interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: state.analyzed, b: state.total })
-          : state.kind === 'partial' ? interpolate(t('review:tag_partial', '只算到 {a}/{b}'), { a: state.analyzed, b: state.total })
-          : state.kind === 'failed' ? t('review:tag_failed', '分析失败')
-          : state.kind === 'unfinished' ? t('review:tag_unfinished', '未终局') : t('review:tag_unanalyzed', '未分析')}</span>
-        {selected && game.source !== 'kifu_library' && (
-          <button type="button" className="kiosk-btn kiosk-btn--pill rvdanger" onClick={onDelete}>
-            {t('review:delete_game', '删除')}
-          </button>
-        )}
-      </span>
+      {selected && game.source !== 'kifu_library' && (
+        <button type="button" className="personal-game-delete" aria-label={t('review:delete_game', '删除对局')} title={t('review:delete_game', '删除对局')} onClick={onDelete}>
+          <DeleteOutlineIcon aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 }

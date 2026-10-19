@@ -28,6 +28,7 @@ interface ReportLibraryImportDialogProps {
   error?: string | null;
   onClose: () => void;
   onImport: (album: KifuAlbumSummary, reportType?: ReportType) => void;
+  onImportLocal?: () => void;
 }
 
 const PAGE_SIZE = 10;
@@ -46,6 +47,7 @@ export default function ReportLibraryImportDialog({
   error = null,
   onClose,
   onImport,
+  onImportLocal,
 }: ReportLibraryImportDialogProps) {
   const { t, lang } = useTranslation();
   const [queryInput, setQueryInput] = useState('');
@@ -123,7 +125,10 @@ export default function ReportLibraryImportDialog({
         },
       }}
     >
-      <DialogTitle sx={{ flexShrink: 0, py: 1.5 }}>{t('report:import_library', '从棋谱库导入')}</DialogTitle>
+      <DialogTitle sx={{ flexShrink: 0, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+        {t('report:import_library', '从棋谱库导入')}
+        {onImportLocal && <Button disabled={loading} onClick={onImportLocal} sx={{ minHeight: 44, fontSize: 18, whiteSpace: 'nowrap' }}>{t('report:import_local', '从本地导入 SGF')}</Button>}
+      </DialogTitle>
       <DialogContent
         data-testid="report-library-import-content"
         dividers
@@ -209,12 +214,12 @@ export default function ReportLibraryImportDialog({
                   >
                     <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 1, width: '100%', minWidth: 0 }}>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography noWrap variant="body2" sx={{ fontWeight: 600 }}>{title}</Typography>
-                        <Typography noWrap variant="caption" color="text.secondary">
+                        <Typography noWrap variant="body2" sx={{ fontWeight: 600, color: selected ? '#10251a' : undefined }}>{title}</Typography>
+                        <Typography noWrap variant="caption" sx={{ color: selected ? '#254733' : 'text.secondary' }}>
                           {black} {item.display_black_rank || ''} · {white} {item.display_white_rank || ''}
                         </Typography>
                       </Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right', whiteSpace: 'normal' }}>
+                      <Typography variant="caption" sx={{ color: selected ? '#254733' : 'text.secondary', textAlign: 'right', whiteSpace: 'normal' }}>
                         {item.date_played || '—'} · {item.move_count} {t('report:moves_unit', '手')}
                       </Typography>
                     </Box>

@@ -1,56 +1,58 @@
 .personal-games-preview{position:relative;width:296px;min-width:296px;height:434px}
 .personal-games-preview .kiosk-console{height:434px}
 .personal-games-preview .kiosk-status{display:none}
-.personal-games-preview__actions{position:absolute;bottom:12px;left:12px;right:12px;display:flex;gap:8px}
-.personal-games-preview__actions>.kiosk-btn{flex:1;height:48px;font-size:22px;padding:0 6px;white-space:nowrap}
-.personal-games-tier-menu{position:absolute;left:0;bottom:56px;right:0;z-index:5;padding:8px;border:1px solid var(--hair);border-radius:12px;background:var(--panel);display:grid;gap:8px;box-shadow:0 8px 24px #0008}
-.personal-games-tier-menu .kiosk-btn{height:48px;font-size:22px}
-.personal-games-reviewed .kiosk-row{min-height:78px;align-items:center;gap:8px}
-.personal-games-reviewed .rvpick{min-width:0;flex:1}
-.personal-games-reviewed .kiosk-row__t b{font-size:22px}
-.personal-games-reviewed .kiosk-row__t em,.personal-games-reviewed .kiosk-tag{font-size:18px}
-.personal-games-reviewed .kiosk-row__end{flex-wrap:wrap;max-width:230px;gap:6px;justify-content:flex-end}
-.personal-games-reviewed .kiosk-row__end .kiosk-btn{font-size:18px}
-.personal-games-reviewed .compact-pagination{margin-top:8px}
+.personal-games-preview .kiosk-console__title b{font-size:22px;letter-spacing:0}
+.personal-games-preview .kiosk-console__sync{margin-top:0;min-width:0;gap:6px;font-size:18px}
+.personal-games-preview .kiosk-console__sync>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.personal-games-preview .kiosk-console__sync>b{flex:none;white-space:nowrap;font-size:18px}
 
-.personal-games-reviewed .kiosk-row{height:78px;min-height:78px;padding:5px 8px;border:1px solid #405b49;border-radius:11px;background:linear-gradient(#293f33,#192c23);box-shadow:inset 0 1px #536c59,0 3px 0 #0b1a13}
-.personal-games-reviewed .kiosk-row[data-selected="true"]{border-color:#69c78a;background:linear-gradient(#365a45,#203d2e 70%,#1b3227)}
-.personal-games-reviewed .rvpick{display:flex;flex-direction:column;align-items:stretch;justify-content:space-around;height:100%;gap:4px;padding:0}
+.personal-games-preview__actions{position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:8px}
+.personal-games-preview__actions>.kiosk-btn{flex:none;width:126px;height:48px;font-size:22px;padding:0 6px;white-space:nowrap}
+.personal-games-preview__actions .kiosk-btn,.archive-preview__actions .kiosk-btn{border:1px solid #4f765a;border-radius:11px;background:linear-gradient(#405a48,#25432f 65%,#1a3225);color:#e8f3ea;box-shadow:inset 0 1px #729579,0 3px 0 #0d2117}
+.personal-games-preview__actions .kiosk-btn:active,.archive-preview__actions .kiosk-btn:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #07130c}
+.personal-games-preview__actions .kiosk-btn:disabled{opacity:.4;box-shadow:none}
+.personal-games-report-trigger{display:flex;align-items:center;justify-content:center;gap:3px}
+.personal-games-report-trigger .kiosk-icon{width:16px;height:16px;flex:none}
+.personal-games-tier-menu{position:absolute;bottom:56px;left:50%;transform:translateX(-50%);width:270px;z-index:5;padding:8px;border:1px solid #4f765a;border-radius:12px;background:#192a20;display:grid;gap:8px;box-shadow:inset 0 1px #668270,0 8px 24px #000b}
+.personal-games-tier-menu .kiosk-btn{height:48px;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 10px}
+.personal-games-tier-menu .kiosk-btn strong{font-size:18px;font-weight:500}
+.personal-games-tier-menu .kiosk-btn span{font-size:14px;white-space:nowrap;color:var(--dim)}
+
+.personal-games-reviewed .kiosk-side__fixed{height:100%}
+.personal-games-reviewed .kiosk-section--grow{min-height:0}
+.personal-games-reviewed .kiosk-rows{display:grid;gap:8px}
+.personal-game-row{display:flex;align-items:stretch;gap:8px;height:78px;min-height:78px}
+.personal-games-reviewed .personal-game-card{display:block;position:relative;flex:1;min-width:0;width:100%;height:78px;min-height:78px;padding:6px 10px;border:1px solid #405b49;border-radius:11px;background:linear-gradient(#334c3c,#1c3125 70%,#17291f);box-shadow:inset 0 1px #657d69,0 3px 0 #0a1a11;text-align:left;color:var(--text);cursor:pointer}
+.personal-game-row[data-selected="true"] .personal-game-card{border-color:#69c78a;background:linear-gradient(#41664e,#254733 70%,#1a3425)}
+.personal-games-reviewed .personal-game-card:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #0a1a11}
+.personal-game-card:focus-visible,.personal-game-delete:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .personal-game-head{display:flex;align-items:center;gap:6px;width:100%;min-width:0}
 .personal-game-head b{font-size:22px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.personal-game-head small{font-size:18px;color:var(--dim);margin-left:auto;white-space:nowrap}
+.personal-game-head small{font-size:18px;color:var(--dim);white-space:nowrap}
 .personal-game-head .kiosk-icon{flex:none;width:22px;color:var(--accent)}
-.personal-game-match{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;font-size:22px}
+.personal-game-match{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;margin-top:4px;font-size:20px}
 .personal-game-match>span{display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .personal-game-match>span:last-child{justify-content:flex-end}
 .personal-game-match em{font-size:18px;font-style:normal;color:#c7e7cf;white-space:nowrap}
 .personal-game-stone{display:inline-block;flex:none;width:14px;height:14px;border-radius:50%;border:1px solid #95a49b;background:#080b09}
 .personal-game-stone.is-white{background:#f2f4ef}
-.personal-games-preview__actions .kiosk-btn,.archive-preview__actions .kiosk-btn{border:1px solid #4f765a;border-radius:11px;background:linear-gradient(#405a48,#25432f 65%,#1a3225);color:#e8f3ea;box-shadow:inset 0 1px #729579,0 3px 0 #0d2117}
-.personal-games-preview__actions .kiosk-btn:disabled{opacity:.4;box-shadow:none}
-
+.personal-game-state{flex:none;margin-left:auto;font-size:14px;color:#acc8b3;opacity:.85;white-space:nowrap}
+.personal-game-delete{flex:none;align-self:center;display:grid;place-items:center;width:48px;height:48px;padding:0;border:1px solid #99675d;border-radius:11px;background:linear-gradient(#392f2c,#251d1c);color:#e99486;box-shadow:inset 0 1px #8c6d67,0 3px 0 #170d0c;cursor:pointer}
+.personal-game-delete svg{width:26px;height:26px}
+.personal-game-delete:active{transform:translateY(2px);box-shadow:inset 0 2px 4px #130c0b}
 .personal-game-description{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
-.personal-games-reviewed .kiosk-console__title b{font-size:22px}
-.personal-games-reviewed .kiosk-console__sync{font-size:18px}
+.personal-games-pagination{flex:none;display:flex;justify-content:flex-end;align-items:center;height:52px}
+.personal-games-pagination .compact-pagination{margin-top:0;font-size:18px;gap:6px}
+.personal-games-pagination .compact-pagination button{background:linear-gradient(#344b3d,#1d3025);border-color:#4e7157;border-radius:10px;box-shadow:inset 0 1px #718a75,0 3px 0 #0b1b11}
+.personal-games-pagination .compact-pagination button:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 2px 5px #0b1b11}
+.personal-games-pagination .compact-pagination button:disabled{box-shadow:none;background:#15221a}
+.personal-games-pagination .compact-pagination__input{background:#203b2a;border-color:#53785b;border-radius:9px;box-shadow:inset 0 2px 4px #0b1b11}
+.personal-games-pagination .compact-pagination__position{font-size:18px}
 .personal-games-reviewed .kiosk-side__fixed>section:last-child>.kiosk-seclabel{display:none}
 .personal-games-reviewed .kiosk-side__fixed>section:last-child .kiosk-card{height:44px;min-height:44px;display:flex;flex-direction:row;align-items:center;gap:8px;padding:0 12px}
+.personal-games-reviewed .kiosk-side__fixed>section:last-child .kiosk-card:not(:disabled){border-color:#54755e;background:linear-gradient(#354c3d,#233a2c 68%,#1a2e23);box-shadow:inset 0 1px #718b76,0 3px 0 #0c1c12,0 4px 7px #0004}
+.personal-games-reviewed .kiosk-side__fixed>section:last-child .kiosk-card:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 2px 5px #0c1c12}
 .personal-games-reviewed .kiosk-side__fixed>section:last-child .kiosk-card em{display:none}
 .personal-games-reviewed .kiosk-side__fixed>section:last-child .kiosk-card b{font-size:22px}
 .personal-games-reviewed .kiosk-side__fixed>section:last-child .kiosk-cards{height:44px}
-.personal-games-preview .kiosk-console__sync{margin-top:0;min-width:0;gap:6px}
-.personal-games-preview .kiosk-console__sync>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.personal-games-preview .kiosk-console__sync>b{flex:none;white-space:nowrap;font-size:18px}
-.personal-games-preview .kiosk-console__title b{letter-spacing:0}
-
-.personal-games-pagination{flex:none;display:flex;justify-content:flex-end;height:44px}
-.personal-games-pagination .compact-pagination{margin-top:0}
-
-.personal-games-reviewed .kiosk-row{height:82px;min-height:82px;position:relative;align-items:flex-start;padding-bottom:30px}
-.personal-games-reviewed .rvpick{height:28px;justify-content:flex-start}
-.personal-games-reviewed .personal-game-match{position:absolute;left:10px;right:10px;bottom:6px;pointer-events:none}
-.personal-games-reviewed .kiosk-row__end{height:44px;flex-wrap:nowrap;max-width:210px;align-items:center}
-.personal-games-reviewed .kiosk-row__end .rvdanger{height:44px;min-height:44px;padding:0 6px}
-
-.personal-games-reviewed .rvpick{height:100%;min-height:44px}
-.personal-games-reviewed .personal-game-match{pointer-events:auto}

@@ -204,6 +204,7 @@ describe('屏 20 · 题头与状态', () => {
     expect(screen.getByTestId('live-board')).toHaveAttribute('data-board-size', '19');
     expect(screen.getByTestId('report-detail-status')).toHaveTextContent('生成中 · 深度报告');
     expect(within(screen.getByTestId('report-detail-ai')).getByTestId('report-detail-status')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     expect([...screen.getByTestId('report-detail-metadata').querySelectorAll('span')].map(span => span.textContent))
       .toEqual(['—', '中国规则', '贴目 7.5']);
     // 页控条的标题走的是复盘列表那套说法(同一局在两屏之间不许改口)

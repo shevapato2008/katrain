@@ -209,6 +209,7 @@ async def test_staged_game_needing_a_name_exits_before_network_when_key_missing(
             "event": {"Match": {"status": "qualified", "canonical_name": "Match"}},
         },
     )
+    monkeypatch.setattr(orchestration, "qualified_raw_player_templates", lambda *a, **k: {"templates": {}})
     monkeypatch.setattr(orchestration, "wiki_sources", lambda *a, **k: pytest.fail("network called"))
 
     class Names:
@@ -253,6 +254,176 @@ async def test_staged_game_reuses_qualified_literal_event_without_model(tmp_path
     )
     assert manifest["decisions"] == []
     assert manifest["games"][0]["identities"]["event"] is None
+
+
+def _reviewed_name_decision(kind, key, members):
+    from katrain.kifu_ingest.catalog import review_content_sha256
+
+    decision = {
+        "kind": kind,
+        "key": key,
+        "displays": {lang: key for lang in ("cn", "tw", "jp", "ko", "en")},
+        "methods": {lang: "retain_original" for lang in ("cn", "tw", "jp", "ko", "en")},
+        "original_language": "en",
+        "sources": [],
+        "source_items": members,
+        "producer": {"id": "p", "model": "m", "request_id": f"p-{key}", "at": "2026-10-01T00:00:00Z"},
+    }
+    decision["review"] = {
+        "id": "r",
+        "model": "m",
+        "request_id": f"r-{key}",
+        "at": "2026-10-01T00:00:01Z",
+        "decision": "approve",
+        "content_sha256": review_content_sha256(decision),
+    }
+    return decision
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("frozen_kind", ("raw_event", "raw_player"))
+@pytest.mark.parametrize(
+    "other_player_status",
+    ("missing_qualified_five_languages", "different_original_languages_require_separate_review"),
+)
+async def test_staged_batch_isolates_frozen_raw_profile_before_any_model_call(
+    tmp_path, monkeypatch, frozen_kind, other_player_status
+):
+    from katrain.kifu_ingest import orchestration
+
+    raw_frozen = "Frozen"
+    items = []
+    for source_id in ("42", "43"):
+        black = raw_frozen if frozen_kind == "raw_player" and source_id == "42" else "Shared"
+        event = raw_frozen if frozen_kind == "raw_event" and source_id == "42" else "NewMatch"
+        sgf = f"(;PB[{black}]PW[White]EV[{event}];B[aa])"
+        path = tmp_path / f"{source_id}.sgf"
+        path.write_text(sgf, encoding="utf-8")
+        items.append(
+            {"external_id": source_id, "raw_sgf_path": str(path), "raw_sha256": sha256(sgf.encode()).hexdigest()}
+        )
+    monkeypatch.setattr(
+        orchestration,
+        "lookup_qualified_identities",
+        lambda *a, **k: {
+            "player": {
+                "Frozen": {"status": "unresolved"},
+                "Shared": {"status": "unresolved"},
+                "White": {"status": "qualified", "canonical_name": "White"},
+            },
+            "event": {name: {"status": "unresolved"} for name in ("Frozen", "NewMatch")},
+        },
+    )
+    for kind in ("raw_player", "raw_event"):
+        unavailable = {
+            "Shared" if kind == "raw_player" else "NewMatch": (
+                other_player_status if kind == "raw_player" else "missing_qualified_five_languages"
+            )
+        }
+        if kind == frozen_kind:
+            unavailable[raw_frozen] = "no_native_generated_scope_refresh"
+        monkeypatch.setattr(
+            orchestration,
+            f"qualified_{kind}_templates",
+            lambda *a, unavailable=unavailable, **k: {"templates": {}, "unavailable": unavailable},
+        )
+
+    async def no_wiki(*args):
+        return {"status": "unavailable", "sources": []}
+
+    monkeypatch.setattr(orchestration, "wiki_sources", no_wiki)
+
+    class Names:
+        key = "test-only"
+
+        def __init__(self):
+            self.generated = []
+
+        async def translate_and_review(self, kind, key, members, *, sources, context):
+            self.generated.append((kind, key, [member["source_item_id"] for member in members]))
+            return _reviewed_name_decision(kind, key, members)
+
+        async def review_existing_decision(self, *args):
+            pytest.fail("unchanged surviving members must not pay for another review")
+
+    names = Names()
+    isolated = []
+    manifest = await orchestration.prepare_staged_games(
+        items, engine=object(), client=object(), names=names, isolated=isolated
+    )
+
+    assert [game["source_item_id"] for game in manifest["games"]] == ["43"]
+    assert isolated == [("42", f"{frozen_kind} 'Frozen': no_native_generated_scope_refresh")]
+    assert sorted(names.generated) == [("raw_event", "NewMatch", ["43"]), ("raw_player", "Shared", ["43"])]
+    assert {member["source_item_id"] for decision in manifest["decisions"] for member in decision["source_items"]} == {
+        "43"
+    }
+    orchestration._validated(manifest)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("frozen_kind", ("raw_event", "raw_player"))
+@pytest.mark.parametrize("names_enabled", (True, False))
+async def test_staged_batch_with_only_frozen_raw_profiles_rejects_without_model_or_credentials(
+    tmp_path, monkeypatch, frozen_kind, names_enabled
+):
+    from katrain.kifu_ingest import orchestration
+    from katrain.kifu_ingest.names import NameRejected
+
+    items = []
+    for source_id in ("42", "43"):
+        sgf = "(;PB[Frozen]PW[White]EV[Frozen];B[aa])"
+        path = tmp_path / f"{source_id}.sgf"
+        path.write_text(sgf, encoding="utf-8")
+        items.append(
+            {"external_id": source_id, "raw_sgf_path": str(path), "raw_sha256": sha256(sgf.encode()).hexdigest()}
+        )
+    monkeypatch.setattr(
+        orchestration,
+        "lookup_qualified_identities",
+        lambda *a, **k: {
+            "player": {
+                name: (
+                    {"status": "unresolved"}
+                    if frozen_kind == "raw_player" and name == "Frozen"
+                    else {"status": "qualified", "canonical_name": name}
+                )
+                for name in ("Frozen", "White")
+            },
+            "event": {
+                "Frozen": (
+                    {"status": "unresolved"}
+                    if frozen_kind == "raw_event"
+                    else {"status": "qualified", "canonical_name": "Frozen"}
+                )
+            },
+        },
+    )
+    monkeypatch.setattr(
+        orchestration,
+        f"qualified_{frozen_kind}_templates",
+        lambda *a, **k: {"templates": {}, "unavailable": {"Frozen": "no_native_generated_scope_refresh"}},
+    )
+    monkeypatch.setattr(orchestration, "wiki_sources", lambda *a, **k: pytest.fail("network called"))
+
+    class Names:
+        key = "test-only"
+
+        async def translate_and_review(self, *args, **kwargs):
+            pytest.fail("model called for frozen profile")
+
+    isolated = []
+    with pytest.raises(NameRejected, match="all staged games require isolated name review"):
+        await orchestration.prepare_staged_games(
+            items,
+            engine=object(),
+            client=object(),
+            names=Names() if names_enabled else None,
+            isolated=isolated,
+        )
+    assert isolated == [
+        (source_id, f"{frozen_kind} 'Frozen': no_native_generated_scope_refresh") for source_id in ("42", "43")
+    ]
 
 
 @pytest.mark.asyncio

@@ -18,13 +18,13 @@
 | 项目 | 已确认状态 | 尚未完成 |
 | --- | --- | --- |
 | A first pass | 原始 5,536 盘中 5,279 盘形成审核绑定就绪包，257 盘隔离 | 就绪数不是入库数；隔离盘不公开 |
-| A TEST | 2026-10-20 01:15 已验证 1,578 条来源记录：1,576 新增、2 精确复用 | 剩余固定包继续回填 |
-| A PROD | 同时点已验证 678 条来源记录，全部新增 | 仅接收 TEST 已验证的同一固定包，余量继续同步 |
+| A TEST | 2026-10-20 01:58 已验证 2,178 条来源记录：2,176 新增、2 精确复用 | 剩余固定包继续回填 |
+| A PROD | 同时点已验证 1,178 条来源记录：1,176 新增、2 精确复用 | 仅接收 TEST 已验证的同一固定包，余量继续同步 |
 | B 真实小样 | A 以外另 1 盘，两端 `prod_synced`；TEST173066 / PROD173046；五语、列表、幂等重放及 cron 重启恢复通过，专用账本 6,324 token | 4 条旧 prompt-only 隔离恢复脚本已准备、未执行 |
-| 代码与部署 | 已发布代码 e694；TEST cron 为 e694；两机 e694 Web 候选镜像已构建并通过离线 import/hash/metadata smoke | 当前 Web 仍 b894，待 A 完成并保存 runtime cache/helper 后选择性更新 |
+| 代码与部署 | 已发布完整整合代码 841b87622；TEST cron 当前 e694、两端 Web 当前 b894；841 完整 Web/cron 候选镜像已构建并通过全部源码/静态文件哈希及离线 import 检查 | 新发现的冻结原文范围隔离修复在审核中；最终候选和部署会使用通过审核并提交的版本 |
 | 持续调度 | 已批准 Qwen Plus 每 UTC 日 100,000 token、3,600 秒、每轮最多100盘/20新名称；持久 Compose 路径已核对 | B 仍 disabled / LLM disabled / cap0，全部 A 完成后协调恢复与启用，并观察真实下一轮 |
 
-临时 A ops 的两路只读校验只做过一次试验，没有提速证据；未来临时 ops 已恢复原审核串行脚本 `8cfbc8ce…`，已装载的试验进程可自然完成。该试验未改变 e694 产品代码。最终导出 `/tmp` 运维检查点时保留 `ops-publish.py`、`ops_coverage_cache.py`，以及存在的试验 helper `ops_api_verify_pool.py`；不把这些 helper 烘入产品镜像。
+临时 A ops 两路只读校验试验已收敛，不宣称加速。后续 A 采用已独立审核的全量原生事务检查、全量提交后 DB 对账和代表 HTTP 样本，实际口径见文末；B 产品代码保持逐盘 HTTP 验证。最终 Web 替换前保存最新 `/tmp/kifu-backfill` 与四份实际 ops/helper，不把临时工具烘入产品镜像。
 
 当前快照不表示已做完 20 次前后性能基准、全量 manifest 重放或浏览器视觉验收；相关未执行项继续保留在下方。
 
@@ -369,3 +369,21 @@ PROD：同上；本批新增/复用及两库差异
 - 已拉取并合并 develop `e36c9f7e1` 的92个后续提交，合并提交 `5ae9fa24a`；这些提交主要为教程/admin工作，没有改动本功能的 ingest、cron或kifu资格代码，合并无冲突。最终镜像需要从整合后的源码构建，不能仅覆盖旧镜像的三个文件就标成新整合版本。
 - 发布事务的每条SQL增加15分钟有限时限，提交 `6e5021a65`，独立Astra max审核APPROVE；真实PG用例证明写入后超时整批回滚，连接原5秒设置恢复。合并后主窗口实际运行 catalog、真实PG、cron三文件，共 **80 passed in 23.54s**，没有跳过PG。
 - 同时点A回填已核对 TEST1,578条来源（1,576新增、2复用）、PROD678条来源（均新增）。两端仍各一个writer，下一批在运行；没有把合并或新镜像构建应用到这些在途进程。
+
+### A 后续验收收敛 · 2026-10-20
+
+- 已发布整合提交 `841b87622` 到当前分支和develop；父仓库main `a8708837`更新子模块。两端完整整合镜像构建中，尚不重建正在回填的Web。
+- 累计实际逐盘五语HTTP核对已覆盖TEST1,678、PROD778条来源。独立Astra max根据这些实测及用户比例原则批准后续A批次改为“全量原生事务检查＋提交后全量只读DB对账＋代表HTTP样本”；持续B产品代码仍逐盘完整HTTP验证，不受此临时运维调整影响。
+- 每个后续包在同一REPEATABLE READ/READ ONLY快照核对完整manifest SHA、applied原回执、全部来源成员/原始及规范SGF哈希/链接、原PB/PW/EV、公开状态和全部五语原生资格。HTTP样本固定首/中/末，并按实际DB绑定补齐insert/reuse、canonical/raw player及canonical/raw event类型，沿用完整decisions、同一原回执及原验证器。
+- 实际ops SHA `43d378f60c35c44c7cc8a764510061fb915ab4cb614f08e6bfbae534a6a3b13f`、新helper `ops_batch_verification.py` SHA `2a1a247315472c3d0091de23aeaad590464fbc42212456e3ca2c56a464abc116`；独立Astra实读后APPROVE。两项新聚焦测试加原生verifier三项共5项通过（0.48s），覆盖抽样类型补齐、原回执/原始字段损坏拒绝。
+- 仅未来进程原子换脚本，现役进程自然完成；PROD首个新规则包为batch008，TEST从替换后的下一包开始。任一全量对账或样本失败都不发verified，队列停止。结果记录`database`全量数量、`api_scope=sampled`、实际`api.games/checks`、规则及样本source/album ID；顶层games是整体通过的包成员数，不等于HTTP样本数。最终汇总从保存的详细verification读取，不能伪称每盘HTTP全通过。
+- 全部A结束后，两库各对首/中/末批次各两条并补齐缺少绑定类型，再做一次五语HTTP核对。未抽中条目的个别HTTP显示/搜索差异是这一比例方案接受的剩余风险；不据此宣称性能提升百分比。
+- 最终Web替换前除原cache/receipt及coverage helper外，还需导出新的`ops_batch_verification.py`；任何临时helper均不烘入产品镜像。
+
+### 冻结原文隔离修复与运维工具审核 · 2026-10-20
+
+- catalog 的 `no_native_generated_scope_refresh` 表示旧证据不能自动扩展到新棋局。此前 prepare 未消费这一状态，会浪费模型请求并让整包在发布时失败。现只针对这一状态，在付费请求前隔离相关棋局，并从所有 pending 名称成员中移除它们。新名称缺五语及原文语言不一致仍按原流程处理，不复制旧签名到新范围。
+- 独立 GPT-6 Astra max 实读生产 diff 和新增测试后 **APPROVE**；主窗口实际复跑 preparation/CLI/cron 聚焦检查 **55 passed in 0.67s**。尚未部署该修复。
+- A 的257盘隔离报告见 [清单说明](reports/first-pass-isolations-20261020.md) 和 [完整JSON](reports/first-pass-isolations-20261020.json)。JSON SHA256 `42f335c6a65b1ca8e87defe359a8a32927b3358033158eb3a39e127273e4bc88`；保留逐项理由、原始哈希和5,536=5,279+257对账。
+- [隔离登记工具](operations/record_a_isolations.py) 只通过 StateStore 登记已发现/已隔离状态，绝不添加 Stage 或下载/发布成功字段。独立 Astra 对实际代码 **APPROVE**；真实 StateStore/Stage 两项检查 **2 passed in 0.68s**，包含零下载跳过、中断恢复及冲突前置拒绝。须待 A 两库完成、B关闭且cap0，持有既有session lock后执行。目前仅准备，未执行。
+- [四条提示失败恢复工具](operations/recover_prompt_quarantines.py) 仅把有效原始SGF恢复为 downloaded，留待正常任务重做名称审核，不手动推进发布成功；与257盘集合不相交。同样须在 B 启用前执行，目前未执行。

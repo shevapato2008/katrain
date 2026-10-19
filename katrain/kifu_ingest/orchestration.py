@@ -153,18 +153,34 @@ async def prepare_staged_games(items, *, engine, client, names, isolated=None):
             pending.setdefault(name_key, []).extend(members)
     decisions = []
     raw_event_keys = {key for kind, key in pending if kind == "raw_event"}
+    reusable_events = {"templates": {}}
     if raw_event_keys:
         reusable_events = await asyncio.to_thread(qualified_raw_event_templates, engine, raw_values=raw_event_keys)
         for key in reusable_events["templates"]:
             pending.pop(("raw_event", key), None)
-    if pending and (names is None or not getattr(names, "key", None)):
-        raise NeedsCredentials("needs_credentials: five-language name review is not enabled")
     raw_player_keys = {key for kind, key in pending if kind == "raw_player"}
     templates = (
         await asyncio.to_thread(qualified_raw_player_templates, engine, raw_values=raw_player_keys)
         if raw_player_keys
         else {"templates": {}}
     )
+    # Frozen native proofs cannot extend to these new occurrences. Isolate all
+    # their games before any name work, including other names shared with them.
+    for kind, result in (("raw_event", reusable_events), ("raw_player", templates)):
+        for key, reason in result.get("unavailable", {}).items():
+            if reason != "no_native_generated_scope_refresh":
+                continue
+            for member in pending.get((kind, key), ()):
+                source_id = member["source_item_id"]
+                if source_id not in excluded:
+                    excluded.add(source_id)
+                    isolated.append((source_id, f"{kind} {key!r}: {reason}"))
+    for name_key in list(pending):
+        pending[name_key] = [member for member in pending[name_key] if member["source_item_id"] not in excluded]
+        if not pending[name_key]:
+            del pending[name_key]
+    if pending and (names is None or not getattr(names, "key", None)):
+        raise NeedsCredentials("needs_credentials: five-language name review is not enabled")
     for (kind, key), members in pending.items():
         members = [member for member in members if member["source_item_id"] not in excluded]
         if not members:

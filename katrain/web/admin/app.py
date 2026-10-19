@@ -17,6 +17,7 @@ from katrain.web.admin.routers.tutorial_media import router as tutorial_media_ro
 from katrain.web.tutorials.media_tasks import MediaWorker
 from katrain.web.admin.routers.tutorials import get_admin_db, router as tutorial_write_router
 from katrain.web.admin.routers.tutorial_sources import router as tutorial_source_router
+from katrain.web.admin.routers.tutorial_ogs import router as tutorial_ogs_router
 from katrain.web.admin.routers.tutorial_workbench import router as tutorial_workbench_router
 from katrain.web.admin.routers.users import router as users_router
 from katrain.web.admin.routers.config_health import router as config_health_router
@@ -141,6 +142,7 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
     app.include_router(tutorial_media_router, prefix="/api/admin/tutorials", tags=["admin-tutorial-media"])
     app.include_router(tutorial_workbench_router, prefix="/api/admin/tutorials", tags=["admin-tutorial-workbench"])
     app.include_router(tutorial_source_router, prefix="/api/admin/tutorials", tags=["admin-tutorial-sources"])
+    app.include_router(tutorial_ogs_router, prefix="/api/admin/tutorials", tags=["admin-tutorial-ogs"])
     app.include_router(tutorial_read_router, prefix="/api/v1/tutorials", tags=["tutorial-reads"])
     app.dependency_overrides[get_db] = get_admin_db
 

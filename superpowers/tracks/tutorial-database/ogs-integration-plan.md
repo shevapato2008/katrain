@@ -148,4 +148,11 @@ GET /api/admin/tutorials/books/{book_id}/ogs-export
 
 ## 当前状态
 
-计划第一轮独立 Astra Max 审核 APPROVE，已纳入同色去重、0-based原站步骤和同版本补图细节；无需第二轮。开始三个独立所有权任务并行实施。前端预览不代表整本书接入完成。
+2026-10-19：按用户回家断网前的要求安全暂停，等待用户明确继续。
+
+- 计划第一轮 Astra Max APPROVE；来源／后端／截图采集代码 Stage1 审查通过，提交 `e8d31725f`。
+- 全量来源7章248课3551步32语言已缓存；隔离导入、复跑零新增及3551份SGF解析通过。
+- 已完成严格签名校验的真实截图2057/3551；剩1494，可从 `identity_version=2` 缓存续跑。旧弱校验缓存不计为完成。截图进程已停止，日志逐行JSON完整。
+- 前端保存为未提交WIP。最新62通过／5失败，最后的 Pass 标签整理引入 `OgsCourse.tsx:92` 自引用，恢复先修复再检查；此前67项及构建通过不能替代当前状态。前端本地Vite及Playwright已停。
+- 尚未向TEST数据库写入OGS，尚未发布新增后端／成品前端。现有测试服务继续运行。
+- 私有续跑检查点：`/Users/fan/.local/share/smartbox-admin/ogs-integration-20261019/pause-checkpoint.json`，包含工作区、缓存、待验收项及排除提交的临时文件。部署脚本仅草拟／编译，未审查或执行。

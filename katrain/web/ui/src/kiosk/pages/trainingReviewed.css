@@ -59,3 +59,8 @@
 .training-reviewed .tsumego-browser__board-message{font-size:18px}.training-reviewed .tsumego-browser__enter:disabled{opacity:.38;cursor:default;box-shadow:none}
 .training-reviewed .tsumego-browser__grid button{box-sizing:border-box;padding:5px 2px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;line-height:20px;overflow:hidden}.training-reviewed .tsumego-browser__grid button b{font-size:22px;line-height:22px;margin:0}.training-reviewed .tsumego-browser__grid button em,.training-reviewed .tsumego-browser__grid button small{font-size:18px;line-height:20px;margin:0}.training-reviewed .kiosk-card__t>b{font-size:22px}.training-reviewed .kiosk-card__t>em{font-size:18px}.training-reviewed .kiosk-card__tile.is-ring{width:56px;height:56px}.training-reviewed .kiosk-card__tile.is-ring svg{width:56px;height:56px}.training-reviewed .kiosk-card__tile.is-ring span{font-size:18px}.u-train-carousel-card:not(.is-center) .u-train-carousel-card-head{justify-content:center}.u-train-carousel-card:not(.is-center) .u-train-carousel-card-head>span{display:none}.u-train-carousel-card:not(.is-center) .u-train-carousel-pie{margin:0 auto}.u-train-carousel-card:not(.is-center) .u-train-carousel-card-body{justify-content:center}
 .training-reviewed .kiosk-card__tile.is-ring>b{font-size:18px}
+
+/* Keep the two training tab bars' 44px buttons centered inside their fixed heights. */
+.u-train-carousel-groups{padding:2px}
+.training-tabs{align-items:center;padding:3px}
+.u-train-carousel-groups button,.training-tabs button{display:flex;align-items:center;justify-content:center;line-height:1.2}

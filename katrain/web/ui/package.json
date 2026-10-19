@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "export:tutorial-stones": "node scripts/export-tutorial-stones.mjs",
     "dev:admin": "vite --config vite.admin.config.ts",
     "build": "tsc -b && vite build",
     "build:admin": "tsc -b && vite build --config vite.admin.config.ts",
@@ -17,7 +18,8 @@
     "test:e2e": "playwright test",
     "fourup": "playwright test --config=playwright.visual.config.ts tests/kiosk-screen-*.fourup.spec.ts",
     "preview": "vite preview",
-    "audit:rail": "node ../../../superpowers/tracks/galaxy-ui-redesign/audit_rail_width.mjs"
+    "audit:rail": "node ../../../superpowers/tracks/galaxy-ui-redesign/audit_rail_width.mjs",
+    "build:tutorial-media": "tsc --project tsconfig.tutorial-media.json && vite build --config vite.tutorial-media.config.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

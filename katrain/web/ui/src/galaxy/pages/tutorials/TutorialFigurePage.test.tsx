@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { vi, beforeEach, describe, expect, it, type Mock } from 'vitest';
 
@@ -153,9 +154,9 @@ describe('TutorialFigurePage', () => {
 
     await screen.findByText('旧讲解');
 
-    fireEvent.click(screen.getByRole('button', { name: /编辑讲解/i }));
+    await userEvent.click(screen.getByRole('button', { name: /编辑讲解/i }));
 
-    const input = screen.getByRole('textbox', { name: /讲解文本/i });
+    const input = await screen.findByRole('textbox', { name: /讲解文本/i });
     fireEvent.change(input, { target: { value: '新的讲解' } });
     fireEvent.click(screen.getByRole('button', { name: /生成语音并保存/i }));
 
@@ -178,9 +179,9 @@ describe('TutorialFigurePage', () => {
 
     await screen.findByText('旧讲解');
 
-    fireEvent.click(screen.getByRole('button', { name: /编辑讲解/i }));
+    await userEvent.click(screen.getByRole('button', { name: /编辑讲解/i }));
 
-    const input = screen.getByRole('textbox', { name: /讲解文本/i });
+    const input = await screen.findByRole('textbox', { name: /讲解文本/i });
     fireEvent.change(input, { target: { value: '只更新文字' } });
     fireEvent.click(screen.getByRole('button', { name: /保存文字/i }));
 
@@ -223,4 +224,18 @@ describe('TutorialFigurePage', () => {
       expect(screen.queryByRole('button', { name })).toBeNull();
     }
   });
+  it('plays the Galaxy 4K profile with controls and no invented poster', async () => {
+    (TutorialAPI.getSection as Mock).mockResolvedValue({ ...sectionResponse, figures: [{ ...sectionResponse.figures[0], video_asset: 'legacy.mp4', video_profiles: { 'galaxy-4k-v1': { asset: 'galaxy4k.mp4', duration_ms: 6000, output_profile: 'galaxy-4k-v1', playback_mode: 'static', timing_status: 'pending', timing_reason: '原书手顺尚未建立' }, 'kiosk-7-v1': { asset: 'device.mp4', output_profile: 'kiosk-7-v1' } } }] });
+    renderPage(); await screen.findByText('Galaxy · 4K');
+    expect(screen.getByText('静态讲解·落子时间待校准：原书手顺尚未建立')).toBeInTheDocument();
+    const video = document.querySelector('video')!;
+    expect(video).toHaveAttribute('src', '/assets/galaxy4k.mp4');
+    expect(video).toHaveAttribute('controls'); expect(video).not.toHaveAttribute('poster');
+  });
+  it('labels a missing Galaxy profile without playing a compatibility or device video', async () => {
+    (TutorialAPI.getSection as Mock).mockResolvedValue({ ...sectionResponse, figures: [{ ...sectionResponse.figures[0], video_asset: 'legacy.mp4', video_profiles: { 'kiosk-7-v1': { asset: 'device.mp4', output_profile: 'kiosk-7-v1' } } }] });
+    renderPage(); await screen.findByText('Galaxy · 4K 尚未生成');
+    expect(document.querySelector('video')).toBeNull();
+  });
+
 });

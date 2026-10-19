@@ -4,6 +4,7 @@
 import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
+import { Texture } from 'three';
 
 interface MockCanvasState {
   gl: { setSize: () => void; domElement: { clientWidth: number; clientHeight: number } };
@@ -24,7 +25,7 @@ vi.mock('@react-three/fiber', () => ({
 vi.mock('./Lights', () => ({ default: () => null }));
 vi.mock('./BoardMesh', () => ({ default: () => null }));
 vi.mock('./CameraController', () => ({ default: () => null }));
-vi.mock('./StoneGroup', () => ({ default: () => null }));
+vi.mock('./StoneGroup', () => ({ default: vi.fn(() => null) }));
 vi.mock('./RaycastClick', () => ({ default: () => null }));
 vi.mock('./GhostStone', () => ({ default: () => null }));
 vi.mock('./Overlays/Territory', () => ({ default: () => null }));
@@ -35,6 +36,7 @@ vi.mock('./Overlays/PolicyMap', () => ({ default: () => null }));
 vi.mock('./Overlays/MoveNumbers', () => ({ default: () => null }));
 
 import Board3D from './index';
+import StoneGroup from './StoneGroup';
 import type { GameState } from '../../api';
 
 const gameState = { board_size: [19, 19], board: {}, end_result: null } as unknown as GameState;
@@ -47,4 +49,12 @@ test('yaw slider absent by default (galaxy behavior)', () => {
 test('yaw slider present when enableAzimuth is set (kiosk)', () => {
   render(<Board3D gameState={gameState} onMove={() => {}} analysisToggles={{}} enableAzimuth />);
   expect(screen.getByLabelText('左右')).toBeInTheDocument();
+});
+
+test('approved sprite materials are passed only for overhead tutorial recording', () => {
+  const sprites = { B: new Texture(), W: [new Texture()] };
+  const { rerender } = render(<Board3D gameState={gameState} onMove={() => {}} analysisToggles={{}} recordingStoneSprites={sprites} />);
+  expect(vi.mocked(StoneGroup).mock.calls.at(-1)?.[0].recordingStoneSprites).toBeUndefined();
+  rerender(<Board3D gameState={gameState} onMove={() => {}} analysisToggles={{}} recordingAppearance="overhead" recordingStoneSprites={sprites} recordingVisualSeed="1030" />);
+  expect(vi.mocked(StoneGroup).mock.calls.at(-1)?.[0]).toMatchObject({ recordingStoneSprites: sprites, recordingVisualSeed: '1030' });
 });

@@ -1,0 +1,1021 @@
+{
+  "source_metadata": {
+    "format": "catalog-gpt-recognition-v1",
+    "catalog_id": "ko",
+    "pdf_pages": 255,
+    "sources": {
+      "/Users/fan/Repositories/go-topic-collections/curriculum/12_劫争/劫争制胜之道_石田芳夫/劫争致胜之道.pdf": "93e76980937bdc42584f9b6c619ecd639ed9e1c389816aec657899cbc0bad45e",
+      "/Users/fan/Repositories/go-topic-collections/curriculum/12_劫争/劫争制胜之道_石田芳夫/output/book.json": "0a49039f08cd65c83abd9650936660c2f94bdc4e9590a10b95b809a766600e2e"
+    }
+  },
+  "complete_state": {
+    "page": {
+      "page": 10,
+      "id": "p010",
+      "input_image": "/Users/fan/Repositories/go-topic-collections/curriculum/12_劫争/劫争制胜之道_石田芳夫/output/pages/page_010.png",
+      "page_sha256": "9d49b7f9f1e851a59a76628595c3ad0273f720a918b93bf94703fca69129975f",
+      "width": 4184,
+      "height": 6223,
+      "source": "../../../12_%E5%8A%AB%E4%BA%89/%E5%8A%AB%E4%BA%89%E5%88%B6%E8%83%9C%E4%B9%8B%E9%81%93_%E7%9F%B3%E7%94%B0%E8%8A%B3%E5%A4%AB/output/pages/page_010.png",
+      "rendered_missing_source": false,
+      "render_provenance": null,
+      "references": [
+        {
+          "type": "figure_ref",
+          "label": "1图",
+          "title": "1图（黑先）",
+          "text": "这是简单的角部死活，请考虑怎样应付白1扳为好。畏惧劫争的话，连最低限度的生存也难以维持。",
+          "bbox": {
+            "x_min": 0.15,
+            "y_min": 0.24,
+            "x_max": 0.46,
+            "y_max": 0.44
+          }
+        },
+        {
+          "type": "figure_ref",
+          "label": "2图",
+          "title": "2图（劫）",
+          "text": "正着是黑2挡，应该一眼看出。如果不挡，黑棋连最低限度的生存空间也没有了。劫争是唯一的活路。",
+          "bbox": {
+            "x_min": 0.53,
+            "y_min": 0.24,
+            "x_max": 0.85,
+            "y_max": 0.44
+          }
+        },
+        {
+          "type": "figure_ref",
+          "label": "3图",
+          "title": "3图（变化）",
+          "text": "白棋提劫后，黑1位做活，白2打吃时，黑棋继续做劫。",
+          "bbox": {
+            "x_min": 0.14,
+            "y_min": 0.6,
+            "x_max": 0.46,
+            "y_max": 0.85
+          }
+        },
+        {
+          "type": "figure_ref",
+          "label": "4图",
+          "title": "4图（白方）",
+          "text": "对白棋来说，白2如果不愿打劫而粘住，则黑3可以无条件地活棋。",
+          "bbox": {
+            "x_min": 0.53,
+            "y_min": 0.6,
+            "x_max": 0.86,
+            "y_max": 0.85
+          }
+        }
+      ],
+      "reference_pointers": [
+        "/chapters/0/sections/0/pages/1/elements/1",
+        "/chapters/0/sections/0/pages/1/elements/2",
+        "/chapters/0/sections/0/pages/1/elements/3",
+        "/chapters/0/sections/0/pages/1/elements/4"
+      ],
+      "descriptions": [
+        "回避劫争则绝对不能成为强手。请务必掌握有关劫争的基础知识，这是登堂入室的第一步。下面将顺序讲述惧怕劫争不能成为强手的理由，请体会劫争和棋局的有机联系。"
+      ],
+      "figure_ids": [
+        "p010-f01",
+        "p010-f02",
+        "p010-f03",
+        "p010-f04"
+      ],
+      "detection_status": "complete",
+      "detection_notes": "全页共四幅独立棋图，均与清单对应，无遗漏的未列棋图。",
+      "unrepresented_references": [],
+      "detected_count": 4
+    },
+    "figures": [
+      {
+        "id": "p010-f01",
+        "page": 10,
+        "label": "1图",
+        "ref_index": 1,
+        "source_pointer": "/chapters/0/sections/0/pages/1/elements/1",
+        "title": "1图（黑先）",
+        "text": "这是简单的角部死活，请考虑怎样应付白1扳为好。畏惧劫争的话，连最低限度的生存也难以维持。",
+        "page_context": "回避劫争则绝对不能成为强手。请务必掌握有关劫争的基础知识，这是登堂入室的第一步。下面将顺序讲述惧怕劫争不能成为强手的理由，请体会劫争和棋局的有机联系。\n\n这是简单的角部死活，请考虑怎样应付白1扳为好。畏惧劫争的话，连最低限度的生存也难以维持。\n\n正着是黑2挡，应该一眼看出。如果不挡，黑棋连最低限度的生存空间也没有了。劫争是唯一的活路。\n\n白棋提劫后，黑1位做活，白2打吃时，黑棋继续做劫。\n\n对白棋来说，白2如果不愿打劫而粘住，则黑3可以无条件地活棋。",
+        "caption": "1图\n1图（黑先） 这是简单的角部死活，请考虑怎样应付白1扳为好。畏惧劫争的话，连最低限度的生存也难以维持。",
+        "grid_bbox": [
+          148,
+          236,
+          464,
+          431
+        ],
+        "input_bbox": [
+          114,
+          236,
+          875,
+          535
+        ],
+        "bbox": {
+          "x_min": 0.148,
+          "y_min": 0.236,
+          "x_max": 0.464,
+          "y_max": 0.431
+        },
+        "bbox_pixels": [
+          471,
+          1463,
+          3666,
+          3334
+        ],
+        "crop": "assets/figures/p010-f01.png",
+        "crop_sha256": "76600e5f72702c648610099a448bb50dca60366d42edb9e32fb350f63ece03e5",
+        "input_image": "/Users/fan/Repositories/go-topic-collections/curriculum/12_劫争/劫争制胜之道_石田芳夫/output/pages/page_010.png",
+        "full_page_sha256": "9d49b7f9f1e851a59a76628595c3ad0273f720a918b93bf94703fca69129975f",
+        "detection_notes": "独立棋图；说明横跨版面，输入框包含右侧棋图。",
+        "result": {
+          "payload": {
+            "schema_version": 2,
+            "unknown_stones": [],
+            "source_region": {
+              "col": 7,
+              "row": 0,
+              "cols": 12,
+              "rows": 11,
+              "confirmed": false
+            },
+            "replay": {
+              "status": "needs_calibration",
+              "initial": null,
+              "moves": []
+            },
+            "viewport": {
+              "col": 7,
+              "row": 0,
+              "cols": 12,
+              "rows": 11
+            },
+            "size": 19,
+            "stones": {
+              "B": [
+                [
+                  15,
+                  1
+                ],
+                [
+                  15,
+                  2
+                ],
+                [
+                  16,
+                  2
+                ],
+                [
+                  15,
+                  3
+                ],
+                [
+                  16,
+                  4
+                ]
+              ],
+              "W": [
+                [
+                  14,
+                  1
+                ],
+                [
+                  13,
+                  2
+                ],
+                [
+                  14,
+                  3
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  16,
+                  5
+                ]
+              ]
+            },
+            "labels": {
+              "17,4": "1"
+            },
+            "letters": {},
+            "shapes": {}
+          },
+          "viewport": {
+            "col": 7,
+            "row": 0,
+            "cols": 12,
+            "rows": 11
+          },
+          "confidence": 1,
+          "origin_uncertain": false,
+          "inferences": [],
+          "uncertainties": [],
+          "notes": "右上角局部；白1已落子。星位不计作棋子。",
+          "issues": [],
+          "complete": true,
+          "coordinate_space": "full_board_zero_based",
+          "replay_status": "needs_calibration",
+          "replay_reason": "Static transcription only; no independently sourced initial setup and ordered history."
+        },
+        "model_response": {
+          "id": "p010-f01",
+          "cols": 12,
+          "rows": 11,
+          "origin_col": 7,
+          "origin_row": 0,
+          "origin_confidence": 1,
+          "black": [
+            "8,1",
+            "8,2",
+            "9,2",
+            "8,3",
+            "9,4"
+          ],
+          "white": [
+            "7,1",
+            "6,2",
+            "7,3",
+            "7,4",
+            "8,4",
+            "10,4",
+            "9,5"
+          ],
+          "unknown_stones": [],
+          "labels": [
+            "10,4=1"
+          ],
+          "marks": [],
+          "inferences": [],
+          "uncertainties": [],
+          "notes": "右上角局部；白1已落子。星位不计作棋子。"
+        },
+        "needs_review": true,
+        "recognition_provenance": {
+          "model": "gpt-6.1-sol",
+          "reasoning": "high",
+          "cache_key": "e826fb2a3aaa930ec37aade3fe138d614a92998302e9a0ba1178ea8dead35268",
+          "batch": "p010-f01-p010-f02",
+          "input_crop_sha256": "76600e5f72702c648610099a448bb50dca60366d42edb9e32fb350f63ece03e5",
+          "target_grid_sha256": "a2c8c2702d1eac57203d99fb0a89cf39803c34cbe57f661ae52b4d8b7d089ba2",
+          "full_page_sha256": "9d49b7f9f1e851a59a76628595c3ad0273f720a918b93bf94703fca69129975f",
+          "coordinate_conversion": "local_to_full_board_once"
+        }
+      },
+      {
+        "id": "p010-f02",
+        "page": 10,
+        "label": "2图",
+        "ref_index": 2,
+        "source_pointer": "/chapters/0/sections/0/pages/1/elements/2",
+        "title": "2图（劫）",
+        "text": "正着是黑2挡，应该一眼看出。如果不挡，黑棋连最低限度的生存空间也没有了。劫争是唯一的活路。",
+        "page_context": "回避劫争则绝对不能成为强手。请务必掌握有关劫争的基础知识，这是登堂入室的第一步。下面将顺序讲述惧怕劫争不能成为强手的理由，请体会劫争和棋局的有机联系。\n\n这是简单的角部死活，请考虑怎样应付白1扳为好。畏惧劫争的话，连最低限度的生存也难以维持。\n\n正着是黑2挡，应该一眼看出。如果不挡，黑棋连最低限度的生存空间也没有了。劫争是唯一的活路。\n\n白棋提劫后，黑1位做活，白2打吃时，黑棋继续做劫。\n\n对白棋来说，白2如果不愿打劫而粘住，则黑3可以无条件地活棋。",
+        "caption": "2图\n2图（劫） 正着是黑2挡，应该一眼看出。如果不挡，黑棋连最低限度的生存空间也没有了。劫争是唯一的活路。",
+        "grid_bbox": [
+          527,
+          239,
+          846,
+          432
+        ],
+        "input_bbox": [
+          114,
+          239,
+          875,
+          600
+        ],
+        "bbox": {
+          "x_min": 0.527,
+          "y_min": 0.239,
+          "x_max": 0.846,
+          "y_max": 0.432
+        },
+        "bbox_pixels": [
+          471,
+          1482,
+          3666,
+          3738
+        ],
+        "crop": "assets/figures/p010-f02.png",
+        "crop_sha256": "4a21f44b42f11b2ad164503bbfb8286793373a7d7241b5d1a3e1ecc69b3aec77",
+        "input_image": "/Users/fan/Repositories/go-topic-collections/curriculum/12_劫争/劫争制胜之道_石田芳夫/output/pages/page_010.png",
+        "full_page_sha256": "9d49b7f9f1e851a59a76628595c3ad0273f720a918b93bf94703fca69129975f",
+        "detection_notes": "独立变化图；说明横跨版面，输入框包含左侧棋图及上段说明。",
+        "result": {
+          "payload": {
+            "schema_version": 2,
+            "unknown_stones": [],
+            "source_region": {
+              "col": 7,
+              "row": 0,
+              "cols": 12,
+              "rows": 11,
+              "confirmed": false
+            },
+            "replay": {
+              "status": "needs_calibration",
+              "initial": null,
+              "moves": []
+            },
+            "viewport": {
+              "col": 7,
+              "row": 0,
+              "cols": 12,
+              "rows": 11
+            },
+            "size": 19,
+            "stones": {
+              "B": [
+                [
+                  15,
+                  1
+                ],
+                [
+                  15,
+                  2
+                ],
+                [
+                  16,
+                  2
+                ],
+                [
+                  15,
+                  3
+                ],
+                [
+                  17,
+                  3
+                ],
+                [
+                  16,
+                  4
+                ]
+              ],
+              "W": [
+                [
+                  14,
+                  1
+                ],
+                [
+                  13,
+                  2
+                ],
+                [
+                  14,
+                  3
+                ],
+                [
+                  16,
+                  3
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  16,
+                  5
+                ]
+              ]
+            },
+            "labels": {
+              "17,3": "2",
+              "16,3": "3"
+            },
+            "letters": {},
+            "shapes": {}
+          },
+          "viewport": {
+            "col": 7,
+            "row": 0,
+            "cols": 12,
+            "rows": 11
+          },
+          "confidence": 1,
+          "origin_uncertain": false,
+          "inferences": [],
+          "uncertainties": [],
+          "notes": "右上角局部；黑2挡、白3形成劫。前图白1仍在，但本图未印编号。",
+          "issues": [],
+          "complete": true,
+          "coordinate_space": "full_board_zero_based",
+          "replay_status": "needs_calibration",
+          "replay_reason": "Static transcription only; no independently sourced initial setup and ordered history."
+        },
+        "model_response": {
+          "id": "p010-f02",
+          "cols": 12,
+          "rows": 11,
+          "origin_col": 7,
+          "origin_row": 0,
+          "origin_confidence": 1,
+          "black": [
+            "8,1",
+            "8,2",
+            "9,2",
+            "8,3",
+            "10,3",
+            "9,4"
+          ],
+          "white": [
+            "7,1",
+            "6,2",
+            "7,3",
+            "9,3",
+            "7,4",
+            "8,4",
+            "10,4",
+            "9,5"
+          ],
+          "unknown_stones": [],
+          "labels": [
+            "10,3=2",
+            "9,3=3"
+          ],
+          "marks": [],
+          "inferences": [],
+          "uncertainties": [],
+          "notes": "右上角局部；黑2挡、白3形成劫。前图白1仍在，但本图未印编号。"
+        },
+        "needs_review": true,
+        "recognition_provenance": {
+          "model": "gpt-6.1-sol",
+          "reasoning": "high",
+          "cache_key": "e826fb2a3aaa930ec37aade3fe138d614a92998302e9a0ba1178ea8dead35268",
+          "batch": "p010-f01-p010-f02",
+          "input_crop_sha256": "4a21f44b42f11b2ad164503bbfb8286793373a7d7241b5d1a3e1ecc69b3aec77",
+          "target_grid_sha256": "64f33de118c9ee64c3ba71093df8418cf6007c0b7881dc95a54ec5ef5a12a030",
+          "full_page_sha256": "9d49b7f9f1e851a59a76628595c3ad0273f720a918b93bf94703fca69129975f",
+          "coordinate_conversion": "local_to_full_board_once"
+        }
+      },
+      {
+        "id": "p010-f03",
+        "page": 10,
+        "label": "3图",
+        "ref_index": 3,
+        "source_pointer": "/chapters/0/sections/0/pages/1/elements/3",
+        "title": "3图（变化）",
+        "text": "白棋提劫后，黑1位做活，白2打吃时，黑棋继续做劫。",
+        "page_context": "回避劫争则绝对不能成为强手。请务必掌握有关劫争的基础知识，这是登堂入室的第一步。下面将顺序讲述惧怕劫争不能成为强手的理由，请体会劫争和棋局的有机联系。\n\n这是简单的角部死活，请考虑怎样应付白1扳为好。畏惧劫争的话，连最低限度的生存也难以维持。\n\n正着是黑2挡，应该一眼看出。如果不挡，黑棋连最低限度的生存空间也没有了。劫争是唯一的活路。\n\n白棋提劫后，黑1位做活，白2打吃时，黑棋继续做劫。\n\n对白棋来说，白2如果不愿打劫而粘住，则黑3可以无条件地活棋。",
+        "caption": "3图",
+        "grid_bbox": [
+          147,
+          620,
+          475,
+          814
+        ],
+        "input_bbox": [
+          147,
+          620,
+          475,
+          847
+        ],
+        "bbox": {
+          "x_min": 0.147,
+          "y_min": 0.62,
+          "x_max": 0.475,
+          "y_max": 0.814
+        },
+        "bbox_pixels": [
+          610,
+          3853,
+          1992,
+          5275
+        ],
+        "crop": "assets/figures/p010-f03.png",
+        "crop_sha256": "0cafa91cfd8ab54a165ea71df67df536a8a6956d7c5b6731ffbdd160b28bc25d",
+        "input_image": "/Users/fan/Repositories/go-topic-collections/curriculum/12_劫争/劫争制胜之道_石田芳夫/output/pages/page_010.png",
+        "full_page_sha256": "9d49b7f9f1e851a59a76628595c3ad0273f720a918b93bf94703fca69129975f",
+        "detection_notes": "独立变化图。",
+        "result": {
+          "payload": {
+            "schema_version": 2,
+            "unknown_stones": [],
+            "source_region": {
+              "col": 7,
+              "row": 0,
+              "cols": 12,
+              "rows": 11,
+              "confirmed": false
+            },
+            "replay": {
+              "status": "needs_calibration",
+              "initial": null,
+              "moves": []
+            },
+            "viewport": {
+              "col": 7,
+              "row": 0,
+              "cols": 12,
+              "rows": 11
+            },
+            "size": 19,
+            "stones": {
+              "B": [
+                [
+                  15,
+                  1
+                ],
+                [
+                  17,
+                  1
+                ],
+                [
+                  15,
+                  2
+                ],
+                [
+                  16,
+                  2
+                ],
+                [
+                  18,
+                  2
+                ],
+                [
+                  15,
+                  3
+                ],
+                [
+                  17,
+                  3
+                ]
+              ],
+              "W": [
+                [
+                  14,
+                  1
+                ],
+                [
+                  13,
+                  2
+                ],
+                [
+                  14,
+                  3
+                ],
+                [
+                  16,
+                  3
+                ],
+                [
+                  18,
+                  3
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  16,
+                  5
+                ]
+              ]
+            },
+            "labels": {
+              "17,1": "1",
+              "18,2": "3",
+              "18,3": "2"
+            },
+            "letters": {},
+            "shapes": {}
+          },
+          "viewport": {
+            "col": 7,
+            "row": 0,
+            "cols": 12,
+            "rows": 11
+          },
+          "confidence": 1,
+          "origin_uncertain": false,
+          "inferences": [],
+          "uncertainties": [],
+          "notes": "右上角局部，上、右为棋盘边界。白提劫后的独立变化图。",
+          "issues": [],
+          "complete": true,
+          "coordinate_space": "full_board_zero_based",
+          "replay_status": "needs_calibration",
+          "replay_reason": "Static transcription only; no independently sourced initial setup and ordered history."
+        },
+        "model_response": {
+          "id": "p010-f03",
+          "cols": 12,
+          "rows": 11,
+          "origin_col": 7,
+          "origin_row": 0,
+          "origin_confidence": 1,
+          "black": [
+            "8,1",
+            "10,1",
+            "8,2",
+            "9,2",
+            "11,2",
+            "8,3",
+            "10,3"
+          ],
+          "white": [
+            "7,1",
+            "6,2",
+            "7,3",
+            "9,3",
+            "11,3",
+            "7,4",
+            "8,4",
+            "10,4",
+            "9,5"
+          ],
+          "unknown_stones": [],
+          "labels": [
+            "10,1=1",
+            "11,2=3",
+            "11,3=2"
+          ],
+          "marks": [],
+          "inferences": [],
+          "uncertainties": [],
+          "notes": "右上角局部，上、右为棋盘边界。白提劫后的独立变化图。"
+        },
+        "needs_review": true,
+        "recognition_provenance": {
+          "model": "gpt-6.1-sol",
+          "reasoning": "high",
+          "cache_key": "b66879a13f4932e356dce1b93d00998cf7a3b5c1f713f07ef8c45dbb315bb154",
+          "batch": "p010-f03-p010-f04",
+          "input_crop_sha256": "0cafa91cfd8ab54a165ea71df67df536a8a6956d7c5b6731ffbdd160b28bc25d",
+          "target_grid_sha256": "adc9e42b5a0c1e00aa6bce91102388e3e121cc36ea7eb0c6f75322155adc513c",
+          "full_page_sha256": "9d49b7f9f1e851a59a76628595c3ad0273f720a918b93bf94703fca69129975f",
+          "coordinate_conversion": "local_to_full_board_once"
+        }
+      },
+      {
+        "id": "p010-f04",
+        "page": 10,
+        "label": "4图",
+        "ref_index": 4,
+        "source_pointer": "/chapters/0/sections/0/pages/1/elements/4",
+        "title": "4图（白方）",
+        "text": "对白棋来说，白2如果不愿打劫而粘住，则黑3可以无条件地活棋。",
+        "page_context": "回避劫争则绝对不能成为强手。请务必掌握有关劫争的基础知识，这是登堂入室的第一步。下面将顺序讲述惧怕劫争不能成为强手的理由，请体会劫争和棋局的有机联系。\n\n这是简单的角部死活，请考虑怎样应付白1扳为好。畏惧劫争的话，连最低限度的生存也难以维持。\n\n正着是黑2挡，应该一眼看出。如果不挡，黑棋连最低限度的生存空间也没有了。劫争是唯一的活路。\n\n白棋提劫后，黑1位做活，白2打吃时，黑棋继续做劫。\n\n对白棋来说，白2如果不愿打劫而粘住，则黑3可以无条件地活棋。",
+        "caption": "4图",
+        "grid_bbox": [
+          533,
+          617,
+          855,
+          813
+        ],
+        "input_bbox": [
+          533,
+          617,
+          855,
+          846
+        ],
+        "bbox": {
+          "x_min": 0.533,
+          "y_min": 0.617,
+          "x_max": 0.855,
+          "y_max": 0.813
+        },
+        "bbox_pixels": [
+          2225,
+          3834,
+          3582,
+          5269
+        ],
+        "crop": "assets/figures/p010-f04.png",
+        "crop_sha256": "4c1f3e55dce6f581ea066e1c187e7b472b51110e6d30de612d148e0b41f30966",
+        "input_image": "/Users/fan/Repositories/go-topic-collections/curriculum/12_劫争/劫争制胜之道_石田芳夫/output/pages/page_010.png",
+        "full_page_sha256": "9d49b7f9f1e851a59a76628595c3ad0273f720a918b93bf94703fca69129975f",
+        "detection_notes": "独立变化图。",
+        "result": {
+          "payload": {
+            "schema_version": 2,
+            "unknown_stones": [],
+            "source_region": {
+              "col": 7,
+              "row": 0,
+              "cols": 12,
+              "rows": 11,
+              "confirmed": false
+            },
+            "replay": {
+              "status": "needs_calibration",
+              "initial": null,
+              "moves": []
+            },
+            "viewport": {
+              "col": 7,
+              "row": 0,
+              "cols": 12,
+              "rows": 11
+            },
+            "size": 19,
+            "stones": {
+              "B": [
+                [
+                  15,
+                  1
+                ],
+                [
+                  17,
+                  1
+                ],
+                [
+                  15,
+                  2
+                ],
+                [
+                  16,
+                  2
+                ],
+                [
+                  15,
+                  3
+                ],
+                [
+                  17,
+                  3
+                ],
+                [
+                  16,
+                  4
+                ]
+              ],
+              "W": [
+                [
+                  14,
+                  1
+                ],
+                [
+                  13,
+                  2
+                ],
+                [
+                  14,
+                  3
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  16,
+                  5
+                ],
+                [
+                  17,
+                  5
+                ]
+              ]
+            },
+            "labels": {
+              "17,1": "3",
+              "17,3": "1",
+              "17,5": "2"
+            },
+            "letters": {},
+            "shapes": {}
+          },
+          "viewport": {
+            "col": 7,
+            "row": 0,
+            "cols": 12,
+            "rows": 11
+          },
+          "confidence": 1,
+          "origin_uncertain": false,
+          "inferences": [],
+          "uncertainties": [],
+          "notes": "右上角局部，上、右为棋盘边界。白2粘住、黑3做活的独立变化图。",
+          "issues": [],
+          "complete": true,
+          "coordinate_space": "full_board_zero_based",
+          "replay_status": "needs_calibration",
+          "replay_reason": "Static transcription only; no independently sourced initial setup and ordered history."
+        },
+        "model_response": {
+          "id": "p010-f04",
+          "cols": 12,
+          "rows": 11,
+          "origin_col": 7,
+          "origin_row": 0,
+          "origin_confidence": 1,
+          "black": [
+            "8,1",
+            "10,1",
+            "8,2",
+            "9,2",
+            "8,3",
+            "10,3",
+            "9,4"
+          ],
+          "white": [
+            "7,1",
+            "6,2",
+            "7,3",
+            "7,4",
+            "8,4",
+            "10,4",
+            "9,5",
+            "10,5"
+          ],
+          "unknown_stones": [],
+          "labels": [
+            "10,1=3",
+            "10,3=1",
+            "10,5=2"
+          ],
+          "marks": [],
+          "inferences": [],
+          "uncertainties": [],
+          "notes": "右上角局部，上、右为棋盘边界。白2粘住、黑3做活的独立变化图。"
+        },
+        "needs_review": true,
+        "recognition_provenance": {
+          "model": "gpt-6.1-sol",
+          "reasoning": "high",
+          "cache_key": "b66879a13f4932e356dce1b93d00998cf7a3b5c1f713f07ef8c45dbb315bb154",
+          "batch": "p010-f03-p010-f04",
+          "input_crop_sha256": "4c1f3e55dce6f581ea066e1c187e7b472b51110e6d30de612d148e0b41f30966",
+          "target_grid_sha256": "d08d42db99eb66cbb9c7ee1e4f08e6132f31371c41c7605d30391f7f1b344fce",
+          "full_page_sha256": "9d49b7f9f1e851a59a76628595c3ad0273f720a918b93bf94703fca69129975f",
+          "coordinate_conversion": "local_to_full_board_once"
+        }
+      }
+    ]
+  },
+  "detection_only_state": {
+    "page": {
+      "page": 241,
+      "id": "p241",
+      "input_image": "/Users/fan/Repositories/go-topic-collections/curriculum/12_劫争/劫争制胜之道_石田芳夫/output/pages/page_241.png",
+      "page_sha256": "c24461fd7cf2bc40a4bccef210fb3e3a6786960e8a98a02dd415494e7660230e",
+      "width": 4184,
+      "height": 6223,
+      "source": "../../../12_%E5%8A%AB%E4%BA%89/%E5%8A%AB%E4%BA%89%E5%88%B6%E8%83%9C%E4%B9%8B%E9%81%93_%E7%9F%B3%E7%94%B0%E8%8A%B3%E5%A4%AB/output/pages/page_241.png",
+      "rendered_missing_source": false,
+      "render_provenance": null,
+      "references": [
+        {
+          "type": "figure_ref",
+          "label": "3图",
+          "title": "黑失败续",
+          "text": "于是白5点，7断，成为“金鸡独立”。请注意，白△的紧气作用十分关键。",
+          "bbox": {
+            "x_min": 0.161,
+            "y_min": 0.117,
+            "x_max": 0.487,
+            "y_max": 0.324
+          }
+        },
+        {
+          "type": "figure_ref",
+          "label": "4图",
+          "title": "假眼",
+          "text": "白棋断时，黑1在角上做一眼，白2、4紧气，黑做不出第二只眼来，这也是白△的效果。",
+          "bbox": {
+            "x_min": 0.55,
+            "y_min": 0.117,
+            "x_max": 0.88,
+            "y_max": 0.324
+          }
+        }
+      ],
+      "reference_pointers": [
+        "/chapters/3/sections/6/pages/2/elements/0",
+        "/chapters/3/sections/6/pages/2/elements/1"
+      ],
+      "descriptions": [],
+      "figure_ids": [
+        "p241-f01",
+        "p241-f02"
+      ],
+      "detection_status": "complete",
+      "detection_notes": "共2幅独立棋图。",
+      "unrepresented_references": [],
+      "detected_count": 2
+    },
+    "figures": [
+      {
+        "id": "p241-f01",
+        "page": 241,
+        "label": "3图",
+        "ref_index": 1,
+        "source_pointer": "/chapters/3/sections/6/pages/2/elements/0",
+        "title": "黑失败续",
+        "text": "于是白5点，7断，成为“金鸡独立”。请注意，白△的紧气作用十分关键。",
+        "page_context": "于是白5点，7断，成为“金鸡独立”。请注意，白△的紧气作用十分关键。\n\n白棋断时，黑1在角上做一眼，白2、4紧气，黑做不出第二只眼来，这也是白△的效果。",
+        "caption": "3图",
+        "grid_bbox": [
+          164,
+          117,
+          493,
+          326
+        ],
+        "input_bbox": [
+          164,
+          117,
+          493,
+          347
+        ],
+        "bbox": {
+          "x_min": 0.164,
+          "y_min": 0.117,
+          "x_max": 0.493,
+          "y_max": 0.326
+        },
+        "bbox_pixels": [
+          681,
+          723,
+          2067,
+          2164
+        ],
+        "crop": "assets/figures/p241-f01.png",
+        "crop_sha256": "8b796f7f511a39d99e5f173dd49837bbd675909a937d68fc1a2eaf4f31163920",
+        "input_image": "/Users/fan/Repositories/go-topic-collections/curriculum/12_劫争/劫争制胜之道_石田芳夫/output/pages/page_241.png",
+        "full_page_sha256": "c24461fd7cf2bc40a4bccef210fb3e3a6786960e8a98a02dd415494e7660230e",
+        "detection_notes": ""
+      },
+      {
+        "id": "p241-f02",
+        "page": 241,
+        "label": "4图",
+        "ref_index": 2,
+        "source_pointer": "/chapters/3/sections/6/pages/2/elements/1",
+        "title": "假眼",
+        "text": "白棋断时，黑1在角上做一眼，白2、4紧气，黑做不出第二只眼来，这也是白△的效果。",
+        "page_context": "于是白5点，7断，成为“金鸡独立”。请注意，白△的紧气作用十分关键。\n\n白棋断时，黑1在角上做一眼，白2、4紧气，黑做不出第二只眼来，这也是白△的效果。",
+        "caption": "4图",
+        "grid_bbox": [
+          550,
+          119,
+          883,
+          324
+        ],
+        "input_bbox": [
+          550,
+          119,
+          883,
+          347
+        ],
+        "bbox": {
+          "x_min": 0.55,
+          "y_min": 0.119,
+          "x_max": 0.883,
+          "y_max": 0.324
+        },
+        "bbox_pixels": [
+          2296,
+          735,
+          3699,
+          2164
+        ],
+        "crop": "assets/figures/p241-f02.png",
+        "crop_sha256": "92652e0a07836f32bc84432b263ec7a1c8327060076d18483080d63b51cde858",
+        "input_image": "/Users/fan/Repositories/go-topic-collections/curriculum/12_劫争/劫争制胜之道_石田芳夫/output/pages/page_241.png",
+        "full_page_sha256": "c24461fd7cf2bc40a4bccef210fb3e3a6786960e8a98a02dd415494e7660230e",
+        "detection_notes": ""
+      }
+    ]
+  },
+  "original_bindings": {
+    "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/ko/page-state/p241.json": "379b2b9bd2279f64faad4a9e2874dea4b033f6fc2cf4387d8d88163a96d15c5f",
+    "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/ko/page-state/p010.json": "00025cbc3b0af9f0a0a10e3893bd761b733bc3a100fbf87e52c58b5126449c5c",
+    "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/ko/source.json": "91930e825cd0924ceaafbfb628237d2cfedfbc913094495ede517a57d8634916"
+  }
+}

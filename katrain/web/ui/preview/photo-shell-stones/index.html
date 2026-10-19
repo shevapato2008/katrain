@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>实拍贝纹 · 蛤碁石模型</title></head>
+  <body>
+    <main>
+      <header><div><p class="eyebrow">StellaBox · 碁石材质预览</p><h1>实拍贝纹，落在双凸模型上</h1></div><span class="badge">本地预览 · 待确认</span></header>
+      <p class="intro">默认材质直接取自你确认的厂家原照，保留天然的疏密、弯曲和粗细变化。双凸形体沿用已确认的 21.9 × 8.8 mm 比例。</p>
+      <div class="primary-grid">
+        <aside class="panel source-panel">
+          <div class="panel-heading"><h2>来源原照</h2><span>2339 × 2356</span></div>
+          <div class="source-photo"><img id="source-photo" alt="黑木碁石店雪印蛤碁石原始实拍"><div class="sample-region" aria-label="模型纹理采样区域"></div></div>
+          <p>铜色框是模型实际使用的纹理区域。避开黑底、文字和两块强反光；原照片像素未由 AI 重绘。</p>
+          <a href="https://kurokigoishiten.com/en/products/clamshell-go-stones-premium-snow-grade" target="_blank" rel="noreferrer">查看厂家来源 ↗</a>
+        </aside>
+        <section class="panel viewer-panel">
+          <div class="panel-heading"><h2>双凸棋子模型</h2><div class="controls"><button data-view="top" aria-pressed="true">俯视</button><button data-view="oblique" aria-pressed="false">斜视</button><button data-view="side" aria-pressed="false">侧视</button></div></div>
+          <div id="model-stage"><p class="loading">正在加载实拍材质…</p></div>
+          <div class="viewer-footer"><span>拖动旋转 · 滚轮缩放</span><button id="download-model" disabled>下载 GLB 模型</button></div>
+        </section>
+      </div>
+      <div class="material-controls"><span>材质来源</span><button data-mode="photo" aria-pressed="true">实拍照片裁取</button><button data-mode="derived" aria-pressed="false">AI 辅助衍生对照</button><p id="material-caption">实拍照片裁取；没有使用程序条纹，也没有用 AI 补绘这块纹理。</p></div>
+      <section class="size-section"><div class="section-heading"><h2>实际大小与不同朝向</h2><p>24 / 32 / 48 px · 数字与符号保持正向</p></div><div id="size-grid"></div></section>
+      <footer><p>这是照片贴图与尺寸近似模型，不是实物三维扫描；AI 衍生版仅作对照，默认不使用。</p><p>素材版权归原作者；厂家页面未明确提供商用再分发许可。本页仅用于本地效果确认，尚未接入后台或视频。</p></footer>
+    </main>
+    <script type="module" src="./preview.ts"></script>
+  </body>
+</html>

@@ -236,8 +236,8 @@ describe('屏 19 · 列表与选中', () => {
   it('搜索写进 URL、页码归 1;翻页把搜索词留着', async () => {
     renderPage('/kiosk/report?page=3');
     await waitFor(() => expect(rows()).toHaveLength(2));
-    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
     const box = screen.getByTestId('review-search');
+    expect(box).toBeVisible();
     fireEvent.change(box, { target: { value: '  柯洁  ' } });
     fireEvent.keyDown(box, { key: 'Enter' });
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/kiosk/report?q=%E6%9F%AF%E6%B4%81'));
@@ -257,7 +257,6 @@ describe('屏 19 · 列表与选中', () => {
     const stale = deferred<ReturnType<typeof response>>();
     mocks.list.mockReturnValueOnce(stale.promise);
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: '筛选和搜索历史对局' }));
     const box = screen.getByTestId('review-search');
     fireEvent.change(box, { target: { value: '柯洁' } });
     fireEvent.keyDown(box, { key: 'Enter' });
@@ -270,7 +269,6 @@ describe('屏 19 · 列表与选中', () => {
     const stale = deferred<ReturnType<typeof response>>();
     mocks.list.mockReturnValueOnce(stale.promise);
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: '筛选和搜索历史对局' }));
     const box = screen.getByTestId('review-search');
     fireEvent.change(box, { target: { value: '柯洁' } });
     fireEvent.keyDown(box, { key: 'Enter' });
@@ -369,7 +367,6 @@ describe('屏 19 · 按来源筛', () => {
   it('筛「面对面」把 source 发给后端,并写进 URL', async () => {
     renderPage();
     await waitFor(() => expect(rows()).toHaveLength(2));
-    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
     fireEvent.click(screen.getByRole('button', { name: '面对面' }));
     await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith('token', {
       page: 1, page_size: 20, q: undefined, sort: 'created_at_desc', source: 'play_local',
@@ -795,6 +792,10 @@ describe('屏 19 · 删除', () => {
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
     expect(within(rows()[0]).getByRole('button', { name: '删除对局' })).toBeInTheDocument();
     expect(within(rows()[1]).queryByRole('button', { name: '删除对局' })).toBeNull();
+    fireEvent.click(within(rows()[1]).getByRole('button', { name: /vs 柯洁/ }));
+    await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
+    expect(within(rows()[0]).queryByRole('button', { name: '删除对局' })).toBeNull();
+    expect(within(rows()[1]).getByRole('button', { name: '删除对局' })).toBeInTheDocument();
   });
 
   it('棋谱库导入的职业棋局不显示删除，个人升降级对局显示删除', async () => {

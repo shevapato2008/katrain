@@ -61,10 +61,8 @@ import { whenLabel } from '../utils/whenLabel';
  * ① **行尾多了动作键。** 稿子的行尾只有一个状态标,而规范 §11 要求四种状态各有各的样子、
  *    且「开始 / 继续分析」要**就地干活不跳页**(Fan 2026-07-28)。国象稿子同一处画的就是
  *    「状态标 + 药丸键」。稿子这一屏是漏画,不是简化。
- * ② **组标题右端多了一个放大镜。** 稿子这一屏没画搜索,但**稿子自己的 `.sbox` 注释把复盘
- *    列进了「有搜索的四屏」**(`go-kiosk.tmpl.html:326`),而现状这条搜索是通的 ——
- *    是稿子漏画。常驻一条 44 的框会把列表视口从 168 压到 116,「露一半」当场破,
- *    所以做成开关:**收起时这一屏和稿子逐像素一样**。
+ * ② **历史搜索默认可见。** 这条搜索原本就可用,用户复核时明确要求保留可见的搜索栏。
+ *    标题右端的放大镜仍可收起它,收起时会清掉不可见的搜索和筛选条件。
  * ③ **第三张卡是能用的,不是「即将上线」。** 见 `ReportImportMenu` 头上那段。
  * ④ **选中的那一行有选中的样子。** 稿子没画,可稿子左栏写的是「选中这一局」——
  *    没有选中态,那三个字就没有出处。
@@ -106,7 +104,8 @@ export default function ReportsPage() {
    */
   const source: SourceFilter = searchParams.get('source') === 'play_local' ? 'play_local' : 'all';
   // 筛选活着就把带子撑开 —— 否则列表短了而屏上没有任何控件说得出为什么。
-  const [searchOpen, setSearchOpen] = useState(Boolean(query) || searchParams.get('source') === 'play_local');
+  // Keep the existing history search visible on entry. The header icon remains a compact collapse control.
+  const [searchOpen, setSearchOpen] = useState(true);
   const [searchInput, setSearchInput] = useState(query);
 
   const [games, setGames] = useState<UserGameSummary[]>([]);

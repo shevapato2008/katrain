@@ -181,6 +181,7 @@ test('approved personal history selection and tier menu', async ({ page }) => {
   } }));
   await page.goto('/kiosk/report');
   await page.waitForSelector('[data-testid="review-rows"] [data-testid="review-row"]:nth-child(3)');
+  await expect(page.getByTestId('review-search')).toBeVisible();
   await expect(page.getByText('这一局的胜率')).toHaveCount(0);
   await page.waitForFunction(() => !(Array.from(document.querySelectorAll('button')).find(button => button.textContent === '查看棋谱') as HTMLButtonElement | undefined)?.disabled);
   const rows = page.getByTestId('review-row');

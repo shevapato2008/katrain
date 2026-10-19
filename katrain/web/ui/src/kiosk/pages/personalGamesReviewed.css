@@ -20,9 +20,10 @@
 
 .personal-games-reviewed .kiosk-side__fixed{height:100%}
 .personal-games-reviewed .kiosk-section--grow{min-height:0}
+.personal-games-reviewed .kiosk-section--grow::after{display:none}
 .personal-games-reviewed .kiosk-rows{display:grid;gap:8px}
-.personal-game-row{display:flex;align-items:stretch;gap:8px;height:78px;min-height:78px}
-.personal-games-reviewed .personal-game-card{display:block;position:relative;flex:1;min-width:0;width:100%;height:78px;min-height:78px;padding:6px 10px;border:1px solid #405b49;border-radius:11px;background:linear-gradient(#334c3c,#1c3125 70%,#17291f);box-shadow:inset 0 1px #657d69,0 3px 0 #0a1a11;text-align:left;color:var(--text);cursor:pointer}
+.personal-game-row{display:flex;align-items:stretch;gap:8px;height:74px;min-height:74px}
+.personal-games-reviewed .personal-game-card{display:block;position:relative;flex:1;min-width:0;width:100%;height:74px;min-height:74px;padding:6px 10px;border:1px solid #405b49;border-radius:11px;background:linear-gradient(#334c3c,#1c3125 70%,#17291f);box-shadow:inset 0 1px #657d69,0 3px 0 #0a1a11;text-align:left;color:var(--text);cursor:pointer}
 .personal-game-row[data-selected="true"] .personal-game-card{border-color:#69c78a;background:linear-gradient(#41664e,#254733 70%,#1a3425)}
 .personal-games-reviewed .personal-game-card:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #0a1a11}
 .personal-game-card:focus-visible,.personal-game-delete:focus-visible{outline:2px solid var(--accent);outline-offset:2px}

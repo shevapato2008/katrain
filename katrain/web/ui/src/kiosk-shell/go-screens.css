@@ -886,12 +886,8 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 /* 导进来的谱没有「你」,黑白各一半 —— 拿 `.disc.b` 或 `.disc.w` 顶替等于替它选了一方。 */
 .disc.rnd { background: linear-gradient(90deg, #F3F0E7 50%, #16161A 50%); }
 
-/* ── 屏 19 复盘:组标题右端那个开关 ────────────────────────────────────
-   稿子这一屏没画搜索框,但**稿子自己的 `.sbox` 注释把复盘列进了「有搜索的四屏」**
-   (`go-kiosk.tmpl.html:326`),而现状 `ReportsPage` 的搜索是通的 —— 是稿子漏画,不是没有。
-   常驻一条 44 的搜索框会把列表视口从 168 压到 116,「露一半」当场破(三行变两行整),
-   所以做成**开关**:收起时这一屏和稿子逐像素一样。
-   靶子按触摸屏来 —— 视觉 20、可点 48,靠内边距撑出去再用负外边距收回来,不动版式。 */
+/* ── 屏 19 复盘:默认可见的搜索栏及组标题右端的收起开关 ────────────────
+   搜索保留在固定头部,列表仍独立滚动。开关是 48px 触控靶,收起时同时清除过滤条件。 */
 .kiosk-seclabel__act {
   flex: none; width: 20px; height: 20px; padding: 14px; margin: -14px -14px -14px 0;
   box-sizing: content-box; display: grid; place-items: center;
@@ -914,8 +910,8 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
    四家都在用。这里**按上下文**收窄它的盒子,不重定义那个裸类本身
    (`goScreensCssCollision.test.ts` 守的正是「同一个裸单类只许有一处定义」)。 */
 .rvfind { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.rvfind .kiosk-optseg { flex: none; width: auto; height: 44px; }
-.rvfind .kiosk-optseg button { padding: 0 14px; font-size: 13px; }
+.rvfind .kiosk-optseg { flex: none; width: 132px; height: 44px; }
+.rvfind .kiosk-optseg button { flex: 1; min-width: 0; padding: 0 3px; font-size: 16px; white-space: nowrap; }
 .rvsearch { flex: 1; min-width: 0; }
 
 /* 行分成两半:左半(整块)是「选中这一局」的靶,右半是这一行自己的动作。

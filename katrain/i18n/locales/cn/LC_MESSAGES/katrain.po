@@ -5206,7 +5206,7 @@ msgid "review:row_ai"
 msgstr "人机对弈"
 
 msgid "review:row_human"
-msgstr "人人对局"
+msgstr "人人对弈"
 
 msgid "review:row_ranked"
 msgstr "升降级对弈"

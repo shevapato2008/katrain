@@ -114,9 +114,26 @@ export function rowTitle(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn):
       : t('review:row_ranked', '升降级对弈');
   }
   if (game.source === 'play_human') {
-    return opponent ? `${t('review:row_human', '人人对局')} · ${opponent}` : t('review:row_human', '人人对局');
+    return opponent ? `${t('review:row_human', '人人对弈')} · ${opponent}` : t('review:row_human', '人人对弈');
   }
   return opponent ? `${t('review:row_vs', 'vs')} ${opponent}` : t('review:row_ai', '人机对弈');
+}
+
+/** Keep the game mode visible on history cards, even when the SGF also has a title or event. */
+export function historyCardTitle(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn): string {
+  if (isRankedGameType(game.game_type)) return t('review:row_ranked', '升降级对弈');
+  if (game.source === 'play_local' || game.source === 'play_human') return t('review:row_human', '人人对弈');
+  if (game.source === 'play_ai') {
+    return game.game_type === 'free' ? t('play:vs_ai_free', '自由对弈') : t('review:row_ai', '人机对弈');
+  }
+  return game.event || game.title || rowTitle(game, mine, t);
+}
+
+/** On the history card, put the winning method before 胜 without changing other report views. */
+export function historyResult(game: UserGameSummary, t: TFn): string {
+  const result = outcomeLine(game, null, t);
+  const chineseWin = result.match(/^([黑白])胜\s*(.+)$/);
+  return chineseWin ? `${chineseWin[1]}${chineseWin[2].replace(/\s+/g, '')}胜` : result;
 }
 
 /**

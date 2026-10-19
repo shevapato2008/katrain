@@ -182,9 +182,20 @@ test('approved personal history selection and tier menu', async ({ page }) => {
   await page.goto('/kiosk/report');
   await page.waitForSelector('[data-testid="review-rows"] [data-testid="review-row"]:nth-child(3)');
   await expect(page.getByTestId('review-search')).toBeVisible();
+  await expect(page.getByTestId('review-source')).toHaveCount(0);
   await expect(page.getByText('这一局的胜率')).toHaveCount(0);
   await page.waitForFunction(() => !(Array.from(document.querySelectorAll('button')).find(button => button.textContent === '查看棋谱') as HTMLButtonElement | undefined)?.disabled);
   const rows = page.getByTestId('review-row');
+  await expect(rows.nth(0).locator('.personal-game-head b')).toHaveText('自由对弈');
+  await expect(rows.nth(2).locator('.personal-game-head b')).toHaveText('升降级对弈');
+  await expect(rows.nth(3).locator('.personal-game-head b')).toHaveText('人人对弈');
+  await expect(rows.nth(0).locator('.personal-game-match em')).toHaveText('白中盘胜');
+  await expect(rows.nth(1).locator('.personal-game-match em')).toHaveText('黑6.5子胜');
+  const resultCenters = await rows.locator('.personal-game-match em').evaluateAll(elements => elements.slice(0, 3).map(element => {
+    const rect = element.getBoundingClientRect();
+    return rect.left + rect.width / 2;
+  }));
+  expect(Math.max(...resultCenters) - Math.min(...resultCenters)).toBeLessThanOrEqual(1);
   expect((await rows.nth(1).locator('.rvpick').boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await rows.nth(1).locator('.personal-game-match > span').last().click();
   await expect(rows.nth(1)).toHaveAttribute('data-selected', 'true');

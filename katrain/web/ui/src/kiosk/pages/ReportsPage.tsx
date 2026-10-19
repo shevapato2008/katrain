@@ -13,7 +13,6 @@ import { useAuth } from '../../context/AuthContext';
 import { toLibraryUserGameParams, toLocalUserGameParams } from '../../features/report/reportModel';
 import { summarizeReportMoves } from '../../features/report/reportStats';
 import { useReportTasks } from '../../features/report/useReportTasks';
-import { translateResult } from '../../utils/resultTranslation';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { replayBaipuSteps, type BoardState } from '../../utils/baipuReplay';
@@ -23,12 +22,11 @@ import ReportLibraryImportDialog from '../components/report/ReportLibraryImportD
 import ReportLocalImportDialog, { type LocalImportPayload } from '../components/report/ReportLocalImportDialog';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
-  failureLine, failureReason, isPlaySource, outcomeLine, rowState, rowTitle, yourColor, type RowState,
+  failureLine, failureReason, historyCardTitle, historyResult, isPlaySource, outcomeLine, rowState, rowTitle, yourColor, type RowState,
 } from '../components/report/reviewPresentation';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { Icon } from '../shell/icons';
 import { KioskConsoleRail } from '../shell/KioskConsoleRail';
-import { KioskOptSeg } from '../shell/KioskOptSeg';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import type { StatusCell } from '../shell/KioskStatusCells';
@@ -61,15 +59,11 @@ import { whenLabel } from '../utils/whenLabel';
  * ① **行尾多了动作键。** 稿子的行尾只有一个状态标,而规范 §11 要求四种状态各有各的样子、
  *    且「开始 / 继续分析」要**就地干活不跳页**(Fan 2026-07-28)。国象稿子同一处画的就是
  *    「状态标 + 药丸键」。稿子这一屏是漏画,不是简化。
- * ② **历史搜索默认可见。** 这条搜索原本就可用,用户复核时明确要求保留可见的搜索栏。
- *    标题右端的放大镜仍可收起它,收起时会清掉不可见的搜索和筛选条件。
+ * ② **历史搜索默认可见。** 标题右端的放大镜仍可收起它,收起时清掉搜索条件。
  * ③ **第三张卡是能用的,不是「即将上线」。** 见 `ReportImportMenu` 头上那段。
  * ④ **选中的那一行有选中的样子。** 稿子没画,可稿子左栏写的是「选中这一局」——
  *    没有选中态,那三个字就没有出处。
  */
-
-/** 来源筛选只有两档 —— 见 `source` 那段注。 */
-type SourceFilter = 'all' | 'play_local';
 
 const PAGE_SIZE = 20;
 
@@ -93,17 +87,6 @@ export default function ReportsPage() {
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const query = searchParams.get('q') || '';
-  /**
-   * 来源筛选。**只有两档**:全部 / 本地对局(`play_local` = 人人对弈·面对面那一种)。
-   * 它是从 27 屏改造前那一屏「对局历史」接过来的唯一一件东西 ——
-   * 那一屏这一轮删了(全仓没有任何入口),而这个筛选是它有、屏 19 没有的
-   * (Fan 2026-08-26 裁定要补)。稿子上没画,四图这一处会红。
-   *
-   * ⚠️ 认不得的值一律退回 `all` —— `?source=` 来自 URL,手输一个不存在的来源
-   * 不该让列表空着还说「还没有下过的棋」。
-   */
-  const source: SourceFilter = searchParams.get('source') === 'play_local' ? 'play_local' : 'all';
-  // 筛选活着就把带子撑开 —— 否则列表短了而屏上没有任何控件说得出为什么。
   // Keep the existing history search visible on entry. The header icon remains a compact collapse control.
   const [searchOpen, setSearchOpen] = useState(true);
   const [searchInput, setSearchInput] = useState(query);
@@ -166,7 +149,6 @@ export default function ReportsPage() {
     try {
       const response = await UserGamesAPI.list(token, {
         page, page_size: PAGE_SIZE, q: query || undefined, sort: 'created_at_desc',
-        source: source === 'all' ? undefined : source,
       });
       // 迟到的成功不许覆盖新结果 —— 搜索输入快过网络时,旧那批会盖掉刚回来的。
       if (requestGeneration !== listRequestGenerationRef.current) return null;
@@ -183,7 +165,7 @@ export default function ReportsPage() {
     } finally {
       if (requestGeneration === listRequestGenerationRef.current) setGamesLoading(false);
     }
-  }, [isAuthenticated, page, query, source, token]);
+  }, [isAuthenticated, page, query, token]);
 
   useEffect(() => setSearchInput(query), [query]);
   useEffect(() => {
@@ -308,24 +290,19 @@ export default function ReportsPage() {
     createReport({ userGameId: game.id, reportType, totalMoves: game.move_count })
   ), [createReport]);
 
-  const updateLocation = useCallback((
-    nextQuery: string, nextPage: number, nextSource: SourceFilter = source,
-  ) => {
+  const updateLocation = useCallback((nextQuery: string, nextPage: number) => {
     const params: Record<string, string> = {};
     if (nextQuery) params.q = nextQuery;
     if (nextPage > 1) params.page = String(nextPage);
-    if (nextSource !== 'all') params.source = nextSource;
     setSearchParams(params);
-  }, [setSearchParams, source]);
+  }, [setSearchParams]);
 
   const focusImportedGame = useCallback(async (game: UserGameDetail) => {
     setSelectedGameId(game.id);
     setSearchInput('');
-    // 刚导进来的那局 `source` 是 `import` —— 筛在「本地对局」上它根本不在结果里,
-    // 屏上就成了「导入成功,可列表里没有它」。所以顺带把筛选也收回「全部」。
-    if (page !== 1 || query || source !== 'all') setSearchParams({});
+    if (page !== 1 || query) setSearchParams({});
     else await loadGames();
-  }, [loadGames, page, query, setSearchParams, source]);
+  }, [loadGames, page, query, setSearchParams]);
 
   const handleLocalImport = useCallback(async (payload: LocalImportPayload, reportType?: ReportType) => {
     if (!isAuthenticated) return;
@@ -447,9 +424,7 @@ export default function ReportsPage() {
    */
   const countLabel = query
     ? interpolate(t('review:matched_games', '搜到 {n} 局'), { n: totalGames })
-    : source === 'play_local'
-      ? interpolate(t('review:facing_games', '面对面 {n} 局'), { n: totalGames })
-      : authority === 'cloud'
+    : authority === 'cloud'
         ? interpolate(t('review:all_games', '共 {n} 局'), { n: totalGames })
         : interpolate(t('review:local_games', '本机 {n} 局'), { n: totalGames });
 
@@ -514,40 +489,19 @@ export default function ReportsPage() {
                         type="button"
                         className="kiosk-seclabel__act"
                         aria-expanded={searchOpen}
-                        aria-label={t('review:search_toggle', '筛选和搜索历史对局')}
+                        aria-label={t('review:history_search_toggle', '显示或收起历史搜索')}
                         onClick={() => {
                           const next = !searchOpen;
                           setSearchOpen(next);
-                          // 收起来就把筛选一起清掉 —— **看不见的筛选是最坏的一种**:
-                          // 列表短了,而屏上没有任何控件解释为什么。
-                          if (!next && (query || source !== 'all')) updateLocation('', 1, 'all');
+                          if (!next && query) updateLocation('', 1);
                         }}
                       >
                         <Icon name="magnifying-glass" />
                       </button>
                     )}
                   />
-                  {/*
-                    筛与搜同住一条 44 高的带子(`.rvfind`,展开时头部 +54)。
-                    **筛选没有别处可去**:组标题行只有 20 高(`--l1-sec-label-h`),
-                    连 26 高的药丸都塞不进去;而单开一条常驻的筛选行要从列表里扣 54 ——
-                    列表是这一屏唯一会长的东西。挂进已经存在的这条带子,高度一分不多。
-                    分段用的是共享的 `KioskOptSeg`(同一套按下态和读屏语义),
-                    只在 `go-screens.css` 里按**上下文**收窄它的盒子(`.rvfind .kiosk-optseg`)——
-                    不是重定义 `.kiosk-optseg` 本身,那会波及另外三家。
-                  */}
                   {searchOpen && (
                     <div className="rvfind">
-                      <KioskOptSeg
-                        options={[
-                          { value: 'all', label: t('review:filter_all', '全部') },
-                          { value: 'play_local', label: t('review:filter_local', '面对面') },
-                        ]}
-                        value={source}
-                        onChange={(next) => updateLocation(query, 1, next)}
-                        ariaLabel={t('review:filter_label', '按来源筛对局')}
-                        testId="review-source"
-                      />
                       <input
                         className="ksearch__box rvsearch"
                         data-testid="review-search"
@@ -583,16 +537,12 @@ export default function ReportsPage() {
                   <h4>
                     {query
                       ? t('review:no_match', '没有对得上的对局')
-                      : source === 'play_local'
-                        ? t('review:no_local_games', '还没有面对面下过')
-                        : t('review:no_games', '还没有下过的棋')}
+                      : t('review:no_games', '还没有下过的棋')}
                   </h4>
                   <p>
                     {query
                       ? t('review:no_match_hint', '换棋手名或赛事名再试。')
-                      : source === 'play_local'
-                        ? t('review:no_local_games_hint', '「对弈 · 人人对弈」里两个人在同一台盒子上下的局会记在这里。')
-                        : t('review:no_games_hint', '下完一局会自动记在这里；也可以从下面导入一份 SGF。')}
+                      : t('review:no_games_hint', '下完一局会自动记在这里；也可以从下面导入一份 SGF。')}
                   </p>
                 </div>
               ) : (
@@ -722,7 +672,7 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onDelete }: {
       <button type="button" className="kiosk-row rvpick personal-game-card" onClick={onSelect} aria-pressed={selected} aria-label={rowTitle(game, mine, t)} title={sub}>
         <span className="personal-game-description">{sub}</span>
         <span className="personal-game-head">
-          <Icon name="books" /><b>{game.event || game.title || rowTitle(game, mine, t)}</b>
+          <Icon name="books" /><b>{historyCardTitle(game, mine, t)}</b>
           <span className="personal-game-state">{state.kind === 'analyzed' ? t('review:tag_analyzed', '已分析')
             : state.kind === 'running' ? interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: state.analyzed, b: state.total })
             : state.kind === 'partial' ? interpolate(t('review:tag_partial', '只算到 {a}/{b}'), { a: state.analyzed, b: state.total })
@@ -732,7 +682,7 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onDelete }: {
         </span>
         <span className="personal-game-match">
           <span><i className="personal-game-stone" />{game.player_black || t('game:black_side', '黑方')}</span>
-          <em>{game.result ? translateResult(game.result, t, game.rules) : outcomeLine(game, mine, t)}</em>
+          <em>{historyResult(game, t)}</em>
           <span>{game.player_white || t('game:white_side', '白方')}<i className="personal-game-stone is-white" /></span>
         </span>
       </button>

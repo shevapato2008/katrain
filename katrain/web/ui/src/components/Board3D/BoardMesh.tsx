@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useRef, memo, Suspense, lazy } from 'react';
 import * as THREE from 'three';
+import SolidWoodSlab from './SolidWoodSlab';
 import {
   getBoardDimensions,
   getStarPoints,
@@ -17,6 +18,7 @@ const CoordinateLabels = lazy(() => import('./CoordinateLabels'));
 interface BoardMeshProps {
   boardSize: number;
   showCoordinates: boolean;
+  solidWood?: boolean;
 }
 
 /** Procedural wood-grain canvas texture. Ported from go-board-3d.html. */
@@ -88,7 +90,7 @@ function createWoodTexture(
   return tex;
 }
 
-const BoardMesh = ({ boardSize, showCoordinates }: BoardMeshProps) => {
+const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshProps) => {
   const dims = useMemo(() => getBoardDimensions(boardSize), [boardSize]);
   const starPoints = useMemo(() => getStarPoints(boardSize), [boardSize]);
   const halfExtent = dims.boardExtent / 2;
@@ -98,6 +100,7 @@ const BoardMesh = ({ boardSize, showCoordinates }: BoardMeshProps) => {
   const materialsRef = useRef<THREE.Material[]>([]);
 
   const { materials } = useMemo(() => {
+    if (solidWood) return { materials: [] };
     const topTex = createWoodTexture(1024, 1024, '#DBA85A', [120, 75, 30], 150);
     const sideTex = createWoodTexture(1024, 256, '#C89848', [110, 70, 28], 120);
 
@@ -116,7 +119,7 @@ const BoardMesh = ({ boardSize, showCoordinates }: BoardMeshProps) => {
 
     // BoxGeometry face order: +x, -x, +y, -y, +z, -z
     return { materials: [sideMat, sideMat, topMat, bottomMat, sideMat, sideMat] };
-  }, [boardSize]);
+  }, [boardSize, solidWood]);
 
   // Cleanup on boardSize change and unmount (dispose is a side effect → useEffect, not useMemo)
   useEffect(() => {
@@ -171,14 +174,14 @@ const BoardMesh = ({ boardSize, showCoordinates }: BoardMeshProps) => {
   return (
     <group>
       {/* Board slab */}
-      <mesh
+      {solidWood ? <SolidWoodSlab width={dims.boardWidth} /> : <mesh
         position={[0, dims.boardHeight / 2, 0]}
         material={materials}
         castShadow
         receiveShadow
       >
         <boxGeometry args={[dims.boardWidth, dims.boardHeight, dims.boardWidth]} />
-      </mesh>
+      </mesh>}
 
       {/* Grid lines — single LineSegments for efficiency (1 draw call) */}
       <lineSegments geometry={gridGeometry}>

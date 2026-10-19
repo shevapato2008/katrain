@@ -1,0 +1,194 @@
+{
+  "assetId": "go.stones.clamshell-slate",
+  "version": 1,
+  "dimensionsMm": {
+    "W": {
+      "diameter": 21.9,
+      "thickness": 8.8
+    },
+    "B": {
+      "diameter": 22.2,
+      "thickness": 9.1
+    }
+  },
+  "geometry": {
+    "kind": "closed-symmetric-lathe",
+    "normalizedWhiteDiameter": 2,
+    "metresPerUnit": 0.01095,
+    "radialSegments": 128,
+    "domeSegments": 38,
+    "edgeSegments": 12,
+    "domeControlPoints": [
+      [
+        0,
+        1
+      ],
+      [
+        0.43,
+        1
+      ],
+      [
+        0.79,
+        0.76
+      ],
+      [
+        0.94,
+        0.32
+      ]
+    ],
+    "edgeControlPoints": [
+      [
+        0.94,
+        0.32
+      ],
+      [
+        0.975,
+        0.224
+      ],
+      [
+        1,
+        0.07
+      ],
+      [
+        1,
+        0
+      ]
+    ],
+    "uv": "planar xz per-color diameter; x/(2*radius)+0.5, z/(2*radius)+0.5",
+    "profile": "lower pole to equator to upper pole; mirrored around y=0"
+  },
+  "materials": {
+    "defaultWhite": "original-photo",
+    "white": {
+      "color": 16777215,
+      "metalness": 0,
+      "roughness": 0.3,
+      "ior": 1.53,
+      "clearcoat": 0.12,
+      "clearcoatRoughness": 0.38,
+      "envMapIntensity": 0.6,
+      "emissive": 16777215,
+      "emissiveIntensity": 0.18
+    },
+    "black": {
+      "color": 592653,
+      "metalness": 0,
+      "roughness": 0.46,
+      "ior": 1.5,
+      "clearcoat": 0.04,
+      "clearcoatRoughness": 0.55,
+      "envMapIntensity": 0.7
+    },
+    "photo": {
+      "file": "../materials/source-photo.jpg",
+      "width": 2339,
+      "height": 2356,
+      "cropPixels": {
+        "left": 700,
+        "top": 450,
+        "right": 1650,
+        "bottom": 1400
+      },
+      "colorSpace": "sRGB",
+      "anisotropyMax": 8
+    }
+  },
+  "studio": {
+    "outputColorSpace": "sRGB",
+    "toneMapping": "ACESFilmic",
+    "toneMappingExposure": 1,
+    "shadowMap": "PCF",
+    "environment": {
+      "background": [
+        0.08,
+        0.08,
+        0.08
+      ],
+      "sigma": 0.1,
+      "intensity": 0.48,
+      "cards": [
+        {
+          "position": [
+            -3,
+            5,
+            4
+          ],
+          "size": [
+            4.5,
+            5.5
+          ],
+          "intensity": 3
+        },
+        {
+          "position": [
+            5,
+            2,
+            -4
+          ],
+          "size": [
+            3,
+            4
+          ],
+          "intensity": 0.7
+        }
+      ]
+    },
+    "hemisphere": {
+      "skyColor": 15397119,
+      "groundColor": 10521456,
+      "intensity": 0.3
+    },
+    "key": {
+      "color": 16775662,
+      "intensity": 1.6,
+      "position": [
+        -3.8,
+        6.5,
+        4
+      ]
+    },
+    "fill": {
+      "color": 15331583,
+      "intensity": 0.2,
+      "position": [
+        4,
+        3,
+        -4
+      ]
+    },
+    "shadow": {
+      "mapSize": 2048,
+      "bounds": 5,
+      "near": 0.1,
+      "far": 20,
+      "normalBias": 0.012,
+      "bias": -0.0002,
+      "radius": 9,
+      "intensity": 0.4
+    }
+  },
+  "sprites": {
+    "width": 256,
+    "height": 256,
+    "transparent": true,
+    "whiteVariantCount": 32,
+    "whiteRotationStepDegrees": 11.25,
+    "camera": {
+      "projection": "orthographic",
+      "position": [
+        0,
+        9,
+        0
+      ],
+      "up": [
+        0,
+        0,
+        -1
+      ],
+      "near": 0.01,
+      "far": 30,
+      "bounds": 1
+    },
+    "black": "Preserved approved black.png; not rerendered by the photo exporter"
+  }
+}

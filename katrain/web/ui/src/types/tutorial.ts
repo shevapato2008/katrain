@@ -38,6 +38,21 @@ export interface TutorialSection {
   has_video: boolean;
 }
 
+export type OutputProfile = 'galaxy-4k-v1' | 'kiosk-7-v1';
+export interface OutputProfileSummary {
+  asset: string;
+  output_profile: OutputProfile;
+  width: number;
+  height: number;
+  fps: number;
+  duration_ms: number;
+  size_bytes: number;
+  playback_mode: 'static' | 'replay';
+  timing_status: string;
+  timing_reason: string | null;
+  renderer_recipe: string;
+}
+
 export interface TutorialFigure {
   id: number;
   section_id: number;
@@ -52,6 +67,8 @@ export interface TutorialFigure {
   narration: string | null;
   audio_asset: string | null;
   video_asset: string | null;
+  video_profiles?: Partial<Record<OutputProfile, OutputProfileSummary | null>>;
+  video_output_profile?: 'galaxy-4k-v1' | 'legacy' | null;
   video_duration_ms: number | null;
   video_size_bytes: number | null;
   order: number;

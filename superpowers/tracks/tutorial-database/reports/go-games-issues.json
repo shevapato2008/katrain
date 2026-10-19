@@ -1,0 +1,628 @@
+[
+  {
+    "recognition_id": "p038-f01",
+    "page": 38,
+    "source_pointer": "/chapters/1/sections/4/pages/4/elements/0",
+    "figure_id": 30362,
+    "candidate_id": 11687,
+    "inferences": [
+      {
+        "at": "18,3",
+        "value": "123",
+        "basis": "text",
+        "reason": "谱下注明“黑100＝白123”，白123复落于黑100所在点。",
+        "cell": "18,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p058-f01",
+    "page": 58,
+    "source_pointer": "/chapters/1/sections/11/pages/1/elements/0",
+    "figure_id": 30383,
+    "candidate_id": 11708,
+    "uncertainties": [
+      {
+        "at": "11,15",
+        "reason": "图面仍绘无号黑子；谱注“白62＝白58下”指向此点，涉及提掉原黑31后的复用。按可见图形录黑，未叠加白62。",
+        "candidates": [
+          "图面原黑31",
+          "复盘至100手时为白62"
+        ],
+        "cell": "11,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p067-f01",
+    "page": 67,
+    "source_pointer": "/chapters/1/sections/13/pages/2/elements/0",
+    "figure_id": 30394,
+    "candidate_id": 11719,
+    "inferences": [
+      {
+        "at": "5,3",
+        "value": "55",
+        "basis": "text",
+        "reason": "图注“黑55＝黑51”，55手复用51位。",
+        "cell": "5,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p137-f01",
+    "page": 137,
+    "source_pointer": "/chapters/1/sections/26/pages/4/elements/0",
+    "figure_id": 30494,
+    "candidate_id": 11819,
+    "uncertainties": [
+      {
+        "at": "7,9",
+        "reason": "黑子内有极淡浅痕，不能确认是残缺编号还是扫描斑点；不凭缺号补定。",
+        "candidates": [
+          "1",
+          "无编号"
+        ],
+        "cell": "7,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p148-f01",
+    "page": 148,
+    "source_pointer": "/chapters/1/sections/28/pages/5/elements/0",
+    "figure_id": 30508,
+    "candidate_id": 11833,
+    "inferences": [
+      {
+        "at": "18,9",
+        "value": "27",
+        "basis": "text",
+        "reason": "图下注明黑27＝黑21，复用21所在交点。",
+        "cell": "18,9"
+      },
+      {
+        "at": "18,10",
+        "value": "50",
+        "basis": "text",
+        "reason": "图下注明白50＝白24，复用24所在交点。",
+        "cell": "18,10"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p159-f01",
+    "page": 159,
+    "source_pointer": "/chapters/1/sections/30/pages/3/elements/0",
+    "figure_id": 30526,
+    "candidate_id": 11851,
+    "inferences": [
+      {
+        "at": "1,6",
+        "value": "56",
+        "basis": "combined",
+        "reason": "目标首位模糊；整页同点可辨56，与黑55、黑57之间的白手相符。",
+        "cell": "1,6"
+      },
+      {
+        "at": "17,10",
+        "value": "88,94,100",
+        "basis": "text",
+        "reason": "谱下注明白88、白94、白100＝白82，合并同点编号。",
+        "cell": "17,10"
+      },
+      {
+        "at": "16,10",
+        "value": "91,97",
+        "basis": "text",
+        "reason": "谱下注明黑91、黑97＝黑85，合并同点编号。",
+        "cell": "16,10"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p184-f01",
+    "page": 184,
+    "source_pointer": "/chapters/1/sections/35/pages/1/elements/0",
+    "figure_id": 30571,
+    "candidate_id": 11896,
+    "inferences": [
+      {
+        "at": "7,13",
+        "value": "黑89",
+        "basis": "text",
+        "reason": "图下注“89＝85下”；黑85在7,12，故黑89着于7,13。",
+        "cell": "7,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p196-f01",
+    "page": 196,
+    "source_pointer": "/chapters/1/sections/37/pages/3/elements/0",
+    "figure_id": 30595,
+    "candidate_id": 11920,
+    "inferences": [
+      {
+        "at": "7,8",
+        "value": "51",
+        "basis": "combined",
+        "reason": "首位字形稍糊；全页可辨51，与白50、52衔接，黑61另在左侧。",
+        "cell": "7,8"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p219-f01",
+    "page": 219,
+    "source_pointer": "/chapters/1/sections/42/pages/2/elements/0",
+    "figure_id": 30629,
+    "candidate_id": 11954,
+    "inferences": [
+      {
+        "at": "6,6",
+        "value": "9,15",
+        "basis": "text",
+        "reason": "谱下注明“黑9、15＝黑1”，与1共点。",
+        "cell": "6,6"
+      },
+      {
+        "at": "6,7",
+        "value": "12,18",
+        "basis": "text",
+        "reason": "谱下注明“白12、18＝白6”，与6共点。",
+        "cell": "6,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p220-f01",
+    "page": 220,
+    "source_pointer": "/chapters/1/sections/42/pages/3/elements/0",
+    "figure_id": 30630,
+    "candidate_id": 11955,
+    "inferences": [
+      {
+        "at": "6,2",
+        "value": "61,84",
+        "basis": "text",
+        "reason": "谱下注明“黑61、白84＝黑51”，三手共点。",
+        "cell": "6,2"
+      },
+      {
+        "at": "7,2",
+        "value": "80",
+        "basis": "text",
+        "reason": "谱下注明“白80＝白58”。",
+        "cell": "7,2"
+      },
+      {
+        "at": "7,7",
+        "value": "85",
+        "basis": "text",
+        "reason": "谱下注明“黑85＝白82上”，位于82正上方一格。",
+        "cell": "7,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p223-f02",
+    "page": 223,
+    "source_pointer": "/chapters/1/sections/43/pages/1/elements/2",
+    "figure_id": 30635,
+    "candidate_id": 11960,
+    "uncertainties": [
+      {
+        "at": "7,7",
+        "reason": "图注“⑨＝⑦下”指向此点，但图上保留无编号黑子。奇数着为白，正文“黑9”与图示冲突；未把未直接印出的9补作标签。",
+        "candidates": [
+          "白9复用被提黑子的位置，图中保留原黑子",
+          "图注或正文有误"
+        ],
+        "cell": "16,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p226-f01",
+    "page": 226,
+    "source_pointer": "/chapters/1/sections/43/pages/4/elements/0",
+    "figure_id": 30640,
+    "candidate_id": 11965,
+    "inferences": [
+      {
+        "at": "5,5",
+        "value": "143",
+        "basis": "text",
+        "reason": "图下注明“黑143＝黑137”，故143回填于137位。",
+        "cell": "5,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p244-f01",
+    "page": 244,
+    "source_pointer": "/chapters/1/sections/47/pages/1/elements/0",
+    "figure_id": 30674,
+    "candidate_id": 11999,
+    "inferences": [
+      {
+        "at": "1,7",
+        "value": "81",
+        "basis": "text",
+        "reason": "谱下注“黑81＝黑73”，故81与图中73同点复着。",
+        "cell": "1,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p257-f01",
+    "page": 257,
+    "source_pointer": "/chapters/1/sections/49/pages/4/elements/0",
+    "figure_id": 30693,
+    "candidate_id": 12018,
+    "inferences": [
+      {
+        "at": "13,12",
+        "value": "92,98",
+        "basis": "text",
+        "reason": "图下回提注记明确写有“白92、98＝白78”，故与78同点。",
+        "cell": "13,12"
+      },
+      {
+        "at": "13,13",
+        "value": "95",
+        "basis": "text",
+        "reason": "图下回提注记明确写有“黑95＝黑83”，故与83同点。",
+        "cell": "13,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p268-f01",
+    "page": 268,
+    "source_pointer": "/chapters/2/sections/1/pages/2/elements/0",
+    "figure_id": 30707,
+    "candidate_id": 12032,
+    "inferences": [
+      {
+        "at": "6,0",
+        "value": "26",
+        "basis": "text",
+        "reason": "图下注明“白26＝白20”，同点回提。",
+        "cell": "6,0"
+      },
+      {
+        "at": "7,0",
+        "value": "29",
+        "basis": "text",
+        "reason": "图下注明“黑29＝黑23”，同点回提。",
+        "cell": "7,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p277-f01",
+    "page": 277,
+    "source_pointer": "/chapters/2/sections/3/pages/2/elements/0",
+    "figure_id": 30721,
+    "candidate_id": 12046,
+    "inferences": [
+      {
+        "at": "17,4",
+        "value": "32",
+        "basis": "text",
+        "reason": "图下注“白32＝黑29”，明确白32与图中黑29同点。",
+        "cell": "17,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p295-f01",
+    "page": 295,
+    "source_pointer": "/chapters/2/sections/7/pages/4/elements/0",
+    "figure_id": 30749,
+    "candidate_id": 12074,
+    "inferences": [
+      {
+        "at": "7,1",
+        "value": "49",
+        "basis": "text",
+        "reason": "谱下注明“黑49＝白46下”，定位于46下方一格。",
+        "cell": "7,1"
+      },
+      {
+        "at": "7,0",
+        "value": "52",
+        "basis": "text",
+        "reason": "谱下注明“白52＝白46”，为46原点回提。",
+        "cell": "7,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p302-f01",
+    "page": 302,
+    "source_pointer": "/chapters/2/sections/9/pages/1/elements/0",
+    "figure_id": 30758,
+    "candidate_id": 12083,
+    "uncertainties": [
+      {
+        "at": "4,16",
+        "reason": "黑子内下方有偏心小白环，疑为印刷残点，是否圆形标记不明。",
+        "candidates": [
+          "印刷残点，无标记",
+          "circle"
+        ],
+        "cell": "4,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p308-f02",
+    "page": 308,
+    "source_pointer": "/chapters/2/sections/10/pages/3/elements/2",
+    "figure_id": 30768,
+    "candidate_id": 12093,
+    "uncertainties": [
+      {
+        "at": "4,8",
+        "reason": "图中13呈白子，1亦为白；解析文本“白18＝黑13”与图中配色冲突，提子注记颜色存疑。",
+        "candidates": [
+          "黑18＝白13",
+          "白18＝黑13"
+        ],
+        "cell": "4,8"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p360-f01",
+    "page": 360,
+    "source_pointer": "/chapters/2/sections/20/pages/4/elements/0",
+    "figure_id": 30849,
+    "candidate_id": 12174,
+    "inferences": [
+      {
+        "at": "17,11",
+        "value": "26",
+        "basis": "text",
+        "reason": "图下注“白26＝黑23”，故白26与黑23同点。",
+        "cell": "17,11"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p365-f01",
+    "page": 365,
+    "source_pointer": "/chapters/2/sections/21/pages/4/elements/0",
+    "figure_id": 30855,
+    "candidate_id": 12180,
+    "uncertainties": [
+      {
+        "at": "10,17",
+        "reason": "黑子上缘有小白环，疑为扫描斑点，是否圆圈标记不确定。",
+        "candidates": [
+          "无标记（扫描斑点）",
+          "circle"
+        ],
+        "cell": "10,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p389-f01",
+    "page": 389,
+    "source_pointer": "/chapters/2/sections/28/pages/2/elements/0",
+    "figure_id": 30887,
+    "candidate_id": 12212,
+    "inferences": [
+      {
+        "at": "1,5",
+        "value": "97",
+        "basis": "text",
+        "reason": "图下注明“黑97＝黑87”，97复用87位。",
+        "cell": "1,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p410-f02",
+    "page": 410,
+    "source_pointer": "/chapters/2/sections/32/pages/2/elements/2",
+    "figure_id": 30919,
+    "candidate_id": 12244,
+    "inferences": [
+      {
+        "at": "15,5",
+        "value": "9",
+        "basis": "text",
+        "reason": "图下注“白9＝黑6右”，故白9位于黑6右邻；该点白子未直接印号。",
+        "cell": "15,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p419-f02",
+    "page": 419,
+    "source_pointer": "/chapters/2/sections/33/pages/6/elements/2",
+    "figure_id": 30936,
+    "candidate_id": 12261,
+    "inferences": [
+      {
+        "at": "16,1",
+        "value": "11",
+        "basis": "text",
+        "reason": "图注“⑪＝①”明确黑11在黑1原位再着。",
+        "cell": "16,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p420-f02",
+    "page": 420,
+    "source_pointer": "/chapters/2/sections/33/pages/7/elements/2",
+    "figure_id": 30938,
+    "candidate_id": 12263,
+    "inferences": [
+      {
+        "at": "18,3",
+        "value": "18",
+        "basis": "text",
+        "reason": "图下注明黑18＝黑8，为同点再着。",
+        "cell": "18,3"
+      },
+      {
+        "at": "18,4",
+        "value": "19",
+        "basis": "text",
+        "reason": "图下注明白19＝黑12，为提子后同点再着。",
+        "cell": "18,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p437-f02",
+    "page": 437,
+    "source_pointer": "/chapters/2/sections/37/pages/1/elements/2",
+    "figure_id": 30969,
+    "candidate_id": 12294,
+    "uncertainties": [
+      {
+        "at": "5,9",
+        "reason": "黑子内部有淡方框状痕迹，难辨是否为正式标记。",
+        "candidates": [
+          "square",
+          "无标记，扫描杂纹"
+        ],
+        "cell": "16,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p437-f03",
+    "page": 437,
+    "source_pointer": "/chapters/2/sections/37/pages/1/elements/3",
+    "figure_id": 30970,
+    "candidate_id": 12295,
+    "inferences": [
+      {
+        "at": "6,10",
+        "value": "21",
+        "basis": "text",
+        "reason": "图下注黑子“21＝1”，表示黑21回提于黑1同点。",
+        "cell": "17,10"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p451-f03",
+    "page": 451,
+    "source_pointer": "/chapters/2/sections/40/pages/0/elements/3",
+    "figure_id": 30993,
+    "candidate_id": 12318,
+    "inferences": [
+      {
+        "at": "2,1",
+        "value": "5",
+        "basis": "combined",
+        "reason": "浅淡字形可辨为5，与图内黑1、白2、黑3、白4的次序吻合。",
+        "cell": "2,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p458-f01",
+    "page": 458,
+    "source_pointer": "/chapters/2/sections/41/pages/2/elements/0",
+    "figure_id": 31002,
+    "candidate_id": 12327,
+    "inferences": [
+      {
+        "at": "15,10",
+        "value": "71",
+        "basis": "text",
+        "reason": "图下注明“黑71＝黑59”，故71与59同点。",
+        "cell": "15,10"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p467-f01",
+    "page": 467,
+    "source_pointer": "/chapters/2/sections/43/pages/1/elements/0",
+    "figure_id": 31019,
+    "candidate_id": 12344,
+    "inferences": [
+      {
+        "at": "1,17",
+        "value": "55",
+        "basis": "sequence",
+        "reason": "首位字形模糊；左下53、54及56～61手的连续着手支持55，65另见于5,9。",
+        "cell": "1,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p485-f01",
+    "page": 485,
+    "source_pointer": "/chapters/2/sections/46/pages/4/elements/0",
+    "figure_id": 31050,
+    "candidate_id": 12375,
+    "inferences": [
+      {
+        "at": "4,12",
+        "value": "69",
+        "basis": "text",
+        "reason": "图下注明“黑69＝黑63”，故69复着于63所在点。",
+        "cell": "4,12"
+      },
+      {
+        "at": "4,13",
+        "value": "71",
+        "basis": "text",
+        "reason": "图下注明“黑71＝白64”，故71落于图示白64所在点。",
+        "cell": "4,13"
+      },
+      {
+        "at": "13,13",
+        "value": "92",
+        "basis": "text",
+        "reason": "图下注明“白92＝白86”，故92复着于86所在点。",
+        "cell": "13,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p488-f01",
+    "page": 488,
+    "source_pointer": "/chapters/2/sections/47/pages/2/elements/0",
+    "figure_id": 31055,
+    "candidate_id": 12380,
+    "inferences": [
+      {
+        "at": "16,15",
+        "value": "67",
+        "basis": "text",
+        "reason": "图下注明“黑67＝黑59”，两手同点复着。",
+        "cell": "16,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p497-f02",
+    "page": 497,
+    "source_pointer": "/chapters/2/sections/49/pages/1/elements/2",
+    "figure_id": 31071,
+    "candidate_id": 12396,
+    "inferences": [
+      {
+        "at": "7,16",
+        "value": "12",
+        "basis": "text",
+        "reason": "图注明示“白12＝黑5下”，即黑5正下方的白子位置；点内未印12。",
+        "cell": "16,16"
+      }
+    ]
+  }
+]

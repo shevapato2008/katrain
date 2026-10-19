@@ -1,0 +1,36 @@
+[
+  {
+    "recognition_id": "p162-f01",
+    "page": 162,
+    "source_pointer": "/chapters/9/intro/1/elements/0",
+    "figure_id": 4552,
+    "candidate_id": 878,
+    "inferences": [
+      {
+        "at": "5,15",
+        "value": "1",
+        "basis": "combined",
+        "reason": "目标图数字仅存浅色残笔；原页同位清晰标1，正文亦称“黑1攻击白棋”。",
+        "cell": "5,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p217-f02",
+    "page": 217,
+    "source_pointer": "/chapters/12/intro/6/elements/2",
+    "figure_id": 4655,
+    "candidate_id": 981,
+    "uncertainties": [
+      {
+        "at": "3,6",
+        "reason": "黑子内有不规则白斑，疑为印刷缺损，无法确认是否为标记。",
+        "candidates": [
+          "印刷缺损",
+          "不可辨标记"
+        ],
+        "cell": "3,17"
+      }
+    ]
+  }
+]

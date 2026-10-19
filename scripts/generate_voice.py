@@ -136,6 +136,8 @@ async def process_section(
     model: str = "sonnet",
     concurrency: int = 5,
 ):
+    if not dry_run:
+        raise RuntimeError("Legacy batch generation is disabled. Approve each static diagram and POST /figures/{figure_id}/media-tasks in the authenticated workbench.")
     db = SessionLocal()
     try:
         section = db.query(TutorialSection).filter_by(id=section_id).first()
@@ -145,7 +147,8 @@ async def process_section(
 
         book_slug = get_book_slug(db, section_id)
         audio_dir = REPO_ROOT / "data" / "tutorial_assets" / book_slug / "audio"
-        audio_dir.mkdir(parents=True, exist_ok=True)
+        if not dry_run:
+            audio_dir.mkdir(parents=True, exist_ok=True)
 
         figures = (
             db.query(TutorialFigure)

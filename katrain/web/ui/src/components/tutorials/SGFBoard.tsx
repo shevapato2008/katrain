@@ -24,6 +24,11 @@ interface SGFBoardProps {
   style?: React.CSSProperties;
   /** Optional className on the root <svg>. */
   className?: string;
+  /** Optional calibration overlays. Omitting them preserves legacy rendering. */
+  unknownStones?: { point: [number, number]; color: null; evidence?: string }[];
+  sourceRegion?: { col: number; row: number; cols: number; rows: number; confirmed: boolean } | null;
+  /** Known occupied/empty extent; null means all empty intersections are unknown. */
+  knownRegion?: { col: number; row: number; cols: number; rows: number } | null;
 }
 
 /** Resolve an exact book move number only when a real stone occupies that point. */
@@ -48,7 +53,7 @@ const HOSHI_19: [number, number][] = [
   [3, 15], [9, 15], [15, 15],
 ];
 
-export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, onClick, maxWidth, style, className }: SGFBoardProps) {
+export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, onClick, maxWidth, style, className, unknownStones = [], sourceRegion, knownRegion }: SGFBoardProps) {
   const { size, stones, labels = {}, letters = {}, shapes = {}, highlights = [], viewport } = payload;
 
   // Viewport: support rectangular {col, row, cols, rows} and square {col, row, size}
@@ -115,7 +120,7 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
     const { x, y } = toSvg(col, row);
     const key = `B-${col}-${row}`;
     stoneEls.push(
-      <circle key={key} cx={x} cy={y} r={STONE_R} fill="#1a1a1a" stroke="#000" strokeWidth={0.5} />
+      <circle key={key} data-stone-color="B" data-point={`${col},${row}`} cx={x} cy={y} r={STONE_R} fill="#1a1a1a" stroke="#000" strokeWidth={0.5} />
     );
     const label = labels[`${col},${row}`];
     if (label && (maxMoveStep === undefined || parseInt(label, 10) <= (maxMoveStep ?? Infinity))) {
@@ -133,7 +138,7 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
     const { x, y } = toSvg(col, row);
     const key = `W-${col}-${row}`;
     stoneEls.push(
-      <circle key={key} cx={x} cy={y} r={STONE_R} fill="#f0f0f0" stroke="#555" strokeWidth={0.8} />
+      <circle key={key} data-stone-color="W" data-point={`${col},${row}`} cx={x} cy={y} r={STONE_R} fill="#f0f0f0" stroke="#555" strokeWidth={0.8} />
     );
     const label = labels[`${col},${row}`];
     if (label && (maxMoveStep === undefined || parseInt(label, 10) <= (maxMoveStep ?? Infinity))) {
@@ -146,43 +151,54 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
     }
   }
 
-  // Letters (on empty intersections)
+  // Book annotations can occupy stones or empty intersections.
+  const blackPoints = new Set(stones.B.map(point => point.join(',')));
+  const whitePoints = new Set(stones.W.map(point => point.join(',')));
+  const calibrationOverlays = knownRegion !== undefined || sourceRegion !== undefined || unknownStones.length > 0;
+  const markerColor = (coordinate: string, legacyColor: string) => calibrationOverlays
+    ? blackPoints.has(coordinate) ? '#fff' : '#222' : legacyColor;
   const letterEls: React.ReactNode[] = [];
   for (const [coordStr, letter] of Object.entries(letters)) {
     const [col, row] = coordStr.split(',').map(Number);
     if (!inViewport(col, row)) continue;
     const { x, y } = toSvg(col, row);
+    const empty = !blackPoints.has(coordStr) && !whitePoints.has(coordStr) && !unknownStones.some(stone => stone.point.join(',') === coordStr);
+    const outsideKnown = knownRegion !== undefined && (!knownRegion || col < knownRegion.col || row < knownRegion.row || col >= knownRegion.col + knownRegion.cols || row >= knownRegion.row + knownRegion.rows);
+    if (empty && calibrationOverlays) letterEls.push(<g key={`letter-mask-${coordStr}`} data-letter-mask={coordStr}>
+      <rect x={x - STONE_R * .68} y={y - STONE_R * .68} width={STONE_R * 1.36} height={STONE_R * 1.36} fill={String(style?.background ?? '#dcb468')} />
+      {outsideKnown && <rect x={x - STONE_R * .68} y={y - STONE_R * .68} width={STONE_R * 1.36} height={STONE_R * 1.36} fill="#777d81" fillOpacity=".43" />}
+    </g>);
     letterEls.push(
-      <text key={`letter-${coordStr}`} x={x} y={y + 1} textAnchor="middle"
-        dominantBaseline="middle" fontSize={STONE_R * 1.2} fill="#d32f2f"
+      <text key={`letter-${coordStr}`} data-annotation-point={coordStr} x={x} y={y + 1} textAnchor="middle"
+        dominantBaseline="middle" fontSize={STONE_R * 1.2} fill={markerColor(coordStr, '#d32f2f')}
         fontWeight="bold" fontFamily="sans-serif">
         {letter}
       </text>
     );
   }
 
-  // Shapes (on empty intersections)
   const shapeEls: React.ReactNode[] = [];
   for (const [coordStr, shape] of Object.entries(shapes)) {
     const [col, row] = coordStr.split(',').map(Number);
     if (!inViewport(col, row)) continue;
     const { x, y } = toSvg(col, row);
     const r = STONE_R * 0.5;
+    const color = markerColor(coordStr, '#1565c0');
     if (shape === 'triangle') {
       const pts = `${x},${y - r} ${x - r * 0.866},${y + r * 0.5} ${x + r * 0.866},${y + r * 0.5}`;
-      shapeEls.push(<polygon key={`shape-${coordStr}`} points={pts} fill="none" stroke="#1565c0" strokeWidth={2} />);
+      shapeEls.push(<polygon key={`shape-${coordStr}`} data-annotation-point={coordStr} points={pts} fill="none" stroke={color} strokeWidth={2} />);
     } else if (shape === 'square') {
-      shapeEls.push(<rect key={`shape-${coordStr}`} x={x - r} y={y - r} width={r * 2} height={r * 2}
-        fill="none" stroke="#1565c0" strokeWidth={2} />);
+      shapeEls.push(<rect key={`shape-${coordStr}`} data-annotation-point={coordStr} x={x - r} y={y - r} width={r * 2} height={r * 2}
+        fill="none" stroke={color} strokeWidth={2} />);
     } else if (shape === 'circle') {
-      shapeEls.push(<circle key={`shape-${coordStr}`} cx={x} cy={y} r={r}
-        fill="none" stroke="#1565c0" strokeWidth={2} />);
+      shapeEls.push(<circle key={`shape-${coordStr}`} data-annotation-point={coordStr} cx={x} cy={y} r={r}
+        fill="none" stroke={color} strokeWidth={2} />);
     } else if (shape === 'cross') {
       const d = r * 0.7;
       shapeEls.push(
-        <g key={`shape-${coordStr}`}>
-          <line x1={x - d} y1={y - d} x2={x + d} y2={y + d} stroke="#1565c0" strokeWidth={2} />
-          <line x1={x - d} y1={y + d} x2={x + d} y2={y - d} stroke="#1565c0" strokeWidth={2} />
+        <g key={`shape-${coordStr}`} data-annotation-point={coordStr} stroke={color} strokeWidth={2}>
+          <line x1={x - d} y1={y - d} x2={x + d} y2={y + d} />
+          <line x1={x - d} y1={y + d} x2={x + d} y2={y - d} />
         </g>
       );
     }
@@ -245,6 +261,16 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
       {gridLines}
       {hoshiDots}
       {stoneEls}
+      {unknownStones.filter(stone => inViewport(...stone.point)).map(stone => {
+        const { x, y } = toSvg(...stone.point);
+        const coordinate = stone.point.join(',');
+        const annotation = labels[coordinate] || (letters[coordinate] || shapes[coordinate] ? null : '?');
+        return <g key={`unknown-${stone.point}`} data-testid="tutorial-unknown-stone">
+          <title>{stone.evidence || '棋子颜色待确认'}</title>
+          <circle cx={x} cy={y} r={STONE_R} fill="#999c9e" stroke="#4f5357" strokeDasharray="3 2" />
+          {annotation && <text x={x} y={y + 1} textAnchor="middle" dominantBaseline="middle" fontSize={STONE_R * 1.1} fill="#222" fontFamily="inherit">{annotation}</text>}
+        </g>;
+      })}
       {triangleEls}
       {letterEls}
       {shapeEls}

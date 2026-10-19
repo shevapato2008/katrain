@@ -751,7 +751,9 @@ async def process_figure(
     force: bool = False,
     polar_angle: float = 0.15,
 ):
-    """Process a single figure: build timeline, capture video, compose MP4."""
+    """Read-only preview; generation and fixed-path backfill are disabled."""
+    if not dry_run:
+        raise RuntimeError("Legacy video generation/backfill is disabled. Approve the static diagram and POST /figures/{figure_id}/media-tasks in the authenticated workbench.")
     db = SessionLocal()
     try:
         figure = db.query(TutorialFigure).filter_by(id=figure_id).first()
@@ -771,6 +773,10 @@ async def process_figure(
         print(f"  Stones: B={len(bp['stones'].get('B', []))}, W={len(bp['stones'].get('W', []))}")
         initial = build_initial_stones(bp)
         print(f"  Initial (setup) stones: {len(initial)}, Labeled moves: {len(build_moves_list(bp))}")
+
+        if dry_run:
+            print(json.dumps({"figure_id": figure.id, "board_payload": bp, "narration": figure.narration, "message": "Read-only preview; use authenticated media-tasks for timed rendering"}, ensure_ascii=False, indent=2))
+            return
 
         # Check if video already exists
         video_dir = REPO_ROOT / "data" / "tutorial_assets" / book_slug / "video"
@@ -866,7 +872,9 @@ async def process_figure(
 
 
 async def process_section(section_id: int, concurrency: int = 1, **kwargs):
-    """Process all figures in a section, optionally in parallel."""
+    """Read-only section preview; generation requires the durable task API."""
+    if not kwargs.get("dry_run", False):
+        raise RuntimeError("Legacy batch generation is disabled. Use authenticated /figures/{figure_id}/media-tasks after static diagram approval.")
     db = SessionLocal()
     try:
         figures = (
@@ -970,7 +978,8 @@ def generate_title_card(
 
 
 def concat_section_video(section_id: int, force: bool = False):
-    """Concatenate all figure videos in a section with title cards and fade transitions."""
+    """Legacy fixed-path section generation is disabled."""
+    raise RuntimeError("Legacy section generation is disabled. Use authenticated /figures/{figure_id}/media-tasks after static diagram approval.")
     db = SessionLocal()
     try:
         section = db.query(TutorialSection).filter_by(id=section_id).first()

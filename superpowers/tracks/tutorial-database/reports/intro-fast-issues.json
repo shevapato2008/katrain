@@ -1,0 +1,1454 @@
+[
+  {
+    "recognition_id": "p024-f01",
+    "figure_id": 5612,
+    "candidate_id": 478,
+    "source_pointer": "/chapters/2/sections/5/pages/1/elements/1",
+    "page": 24,
+    "uncertainties": [
+      {
+        "at": "2,1",
+        "reason": "黑子内白痕破碎，无法确定是否为三角标记。",
+        "candidates": [
+          "triangle",
+          "unmarked"
+        ],
+        "cell": "2,1"
+      },
+      {
+        "at": "2,2",
+        "reason": "黑子内白痕破碎，无法确定是否为三角标记。",
+        "candidates": [
+          "triangle",
+          "unmarked"
+        ],
+        "cell": "2,2"
+      },
+      {
+        "at": "4,2",
+        "reason": "黑子内浅色图形不清，可能是三角标记或扫描缺损。",
+        "candidates": [
+          "triangle",
+          "unmarked"
+        ],
+        "cell": "4,2"
+      },
+      {
+        "at": "3,3",
+        "reason": "黑子内浅色残痕无法可靠辨形。",
+        "candidates": [
+          "triangle",
+          "unmarked"
+        ],
+        "cell": "3,3"
+      },
+      {
+        "at": "15,3",
+        "reason": "黑子内白色图形疑似三角，边界残缺。",
+        "candidates": [
+          "triangle",
+          "unmarked"
+        ],
+        "cell": "15,3"
+      },
+      {
+        "at": "2,14",
+        "reason": "黑子内白痕不清，无法可靠判定标记。",
+        "candidates": [
+          "triangle",
+          "unmarked"
+        ],
+        "cell": "2,14"
+      },
+      {
+        "at": "3,15",
+        "reason": "黑子内白色图形疑似三角，但扫描破损明显。",
+        "candidates": [
+          "triangle",
+          "unmarked"
+        ],
+        "cell": "3,15"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p026-f01",
+    "figure_id": 5613,
+    "candidate_id": 479,
+    "source_pointer": "/chapters/2/sections/6/pages/1/elements/0",
+    "page": 26,
+    "uncertainties": [
+      {
+        "at": "2,2",
+        "reason": "黑子内白痕较碎，无法确定有无三角标记。",
+        "candidates": [
+          "triangle",
+          "unmarked"
+        ],
+        "cell": "2,2"
+      },
+      {
+        "at": "3,3",
+        "reason": "黑子内浅色图形疑似三角，印刷残缺。",
+        "candidates": [
+          "triangle",
+          "unmarked"
+        ],
+        "cell": "3,3"
+      },
+      {
+        "at": "3,4",
+        "reason": "黑子内浅色图形疑似三角，印刷残缺。",
+        "candidates": [
+          "triangle",
+          "unmarked"
+        ],
+        "cell": "3,4"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p030-f01",
+    "figure_id": 5616,
+    "candidate_id": 482,
+    "source_pointer": "/chapters/2/sections/7/pages/2/elements/0",
+    "page": 30,
+    "uncertainties": [
+      {
+        "at": "9,8",
+        "reason": "黑子内浅色痕迹疑为扫描缺损，不能确定是否有编号。",
+        "candidates": [
+          "无编号",
+          "2"
+        ],
+        "cell": "9,8"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p032-f01",
+    "figure_id": 5618,
+    "candidate_id": 484,
+    "source_pointer": "/chapters/2/sections/8/pages/1/elements/3",
+    "page": 32,
+    "uncertainties": [
+      {
+        "at": "17,14",
+        "reason": "空点上有近似小写p的残缺笔画，无法确认是字母还是扫描污迹，未列入确定标记。",
+        "candidates": [
+          "letter_p",
+          "无标记（扫描污迹）"
+        ],
+        "cell": "17,14"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p039-f01",
+    "figure_id": 5624,
+    "candidate_id": 490,
+    "source_pointer": "/chapters/2/sections/10/pages/2/elements/2",
+    "page": 39,
+    "uncertainties": [
+      {
+        "at": "16,1",
+        "reason": "棋子内部斑驳严重，近似白子轮廓，但黑白填色无法可靠判定。",
+        "candidates": [
+          "white",
+          "black"
+        ],
+        "cell": "16,1"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": [
+      {
+        "point": [
+          16,
+          1
+        ],
+        "color": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p045-f01",
+    "figure_id": 5628,
+    "candidate_id": 494,
+    "source_pointer": "/chapters/2/sections/11/pages/3/elements/0",
+    "page": 45,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "1,16",
+        "value": "4",
+        "basis": "combined",
+        "reason": "左下此黑子编号残损；结合可见白1、黑2、白3及局部着序，读作4。",
+        "cell": "1,16"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p046-f01",
+    "figure_id": 5629,
+    "candidate_id": 495,
+    "source_pointer": "/chapters/2/sections/11/pages/4/elements/0",
+    "page": 46,
+    "uncertainties": [
+      {
+        "at": "0,18",
+        "reason": "黑子内浅色笔画残损；结合左下白1、白3，可能为黑2，但无法排除印刷破损。",
+        "candidates": [
+          "2",
+          "无编号"
+        ],
+        "cell": "0,18"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p050-f01",
+    "figure_id": 5632,
+    "candidate_id": 498,
+    "source_pointer": "/chapters/2/sections/12/pages/3/elements/0",
+    "page": 50,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "3,1",
+        "value": "4",
+        "basis": "combined",
+        "reason": "残字形似4，与左上白1、黑2、白3后的黑方手数相合。",
+        "cell": "3,1"
+      },
+      {
+        "at": "16,18",
+        "value": "4",
+        "basis": "combined",
+        "reason": "残字结合正文“黑4再挡”及右下局部次序判为4。",
+        "cell": "16,18"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p052-f01",
+    "figure_id": 5634,
+    "candidate_id": 500,
+    "source_pointer": "/chapters/2/sections/13/pages/1/elements/1",
+    "page": 52,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原文明确为独立11路小棋盘，四边完整，无法唯一映射到19路棋盘；原点暂记为0,0。",
+        "candidates": [
+          "0,0",
+          "4,4",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": true,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p053-f01",
+    "figure_id": 5635,
+    "candidate_id": 501,
+    "source_pointer": "/chapters/2/sections/13/pages/2/elements/0",
+    "page": 53,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整可见，但实际仅11×11路，为简化示意盘；无法唯一对应19×19棋盘，暂取原点0,0。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": true,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p053-f02",
+    "figure_id": 5636,
+    "candidate_id": 502,
+    "source_pointer": "/chapters/2/sections/13/pages/2/elements/2",
+    "page": 53,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整可见，但实际仅11×11路，为简化示意盘；无法唯一对应19×19棋盘，暂取原点0,0。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": true,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p054-f01",
+    "figure_id": 5637,
+    "candidate_id": 503,
+    "source_pointer": "/chapters/2/sections/13/pages/3/elements/1",
+    "page": 54,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图文明确为独立十一道棋盘，四边完整，无法唯一映射至19路棋盘；原点暂按左上对齐填写。",
+        "candidates": [
+          "独立11路棋盘，无19路原点",
+          "约定左上对齐：0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": true,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p064-f01",
+    "figure_id": 5647,
+    "candidate_id": 513,
+    "source_pointer": "/chapters/3/sections/2/pages/3/elements/0",
+    "page": 64,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "4,2",
+        "value": "2",
+        "basis": "combined",
+        "reason": "字形残损；结合黑2切断及本角白3、黑4的后续次序判读。",
+        "cell": "4,2"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p065-f01",
+    "figure_id": 5648,
+    "candidate_id": 514,
+    "source_pointer": "/chapters/3/sections/3/pages/0/elements/1",
+    "page": 65,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "2,14",
+        "value": "1",
+        "basis": "combined",
+        "reason": "字迹残损；正文称左下黑1误断，与白2、黑3、白4的位置及残字形吻合。",
+        "cell": "2,14"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p066-f01",
+    "figure_id": 5649,
+    "candidate_id": 515,
+    "source_pointer": "/chapters/3/sections/3/pages/1/elements/1",
+    "page": 66,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "3,1",
+        "value": "5",
+        "basis": "combined",
+        "reason": "残字形结合本角黑4、6、8及白7、9的交替序列，辨为白5。",
+        "cell": "3,1"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p067-f01",
+    "figure_id": 5650,
+    "candidate_id": 516,
+    "source_pointer": "/chapters/3/sections/3/pages/2/elements/1",
+    "page": 67,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "13,1",
+        "value": "10",
+        "basis": "combined",
+        "reason": "残字似10；右上黑4、黑6续至黑12，与白9、白11的局部次序吻合。",
+        "cell": "13,1"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p068-f01",
+    "figure_id": 5651,
+    "candidate_id": 517,
+    "source_pointer": "/chapters/3/sections/3/pages/3/elements/1",
+    "page": 68,
+    "uncertainties": [
+      {
+        "at": "4,1",
+        "reason": "黑子内部白纹破损，无法确认是否含编号或标记。",
+        "candidates": [
+          "无标记，仅扫描白斑",
+          "编号或标记不可辨"
+        ],
+        "cell": "4,1"
+      },
+      {
+        "at": "3,2",
+        "reason": "黑子内部白纹破损，无法确认是否含编号或标记。",
+        "candidates": [
+          "无标记，仅扫描白斑",
+          "编号或标记不可辨"
+        ],
+        "cell": "3,2"
+      },
+      {
+        "at": "4,2",
+        "reason": "黑子内部横向白纹不形成可靠字形。",
+        "candidates": [
+          "无标记，仅扫描白斑",
+          "编号或标记不可辨"
+        ],
+        "cell": "4,2"
+      },
+      {
+        "at": "4,14",
+        "reason": "黑子中央白纹似1，也可能是破损或标记，未确定录为编号。",
+        "candidates": [
+          "无编号",
+          "1",
+          "triangle"
+        ],
+        "cell": "4,14"
+      },
+      {
+        "at": "14,13",
+        "reason": "黑子中央白纹似1，也可能是破损或标记，未确定录为编号。",
+        "candidates": [
+          "无编号",
+          "1",
+          "triangle"
+        ],
+        "cell": "14,13"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p070-f01",
+    "figure_id": 5652,
+    "candidate_id": 518,
+    "source_pointer": "/chapters/3/sections/3/pages/5/elements/0",
+    "page": 70,
+    "uncertainties": [
+      {
+        "at": "13,2",
+        "reason": "黑子内白斑破碎，无法确认是否另有印刷标记。",
+        "candidates": [
+          "无标记（印刷缺损）",
+          "有不可辨标记"
+        ],
+        "cell": "13,2"
+      },
+      {
+        "at": "14,3",
+        "reason": "黑子内浅色痕迹模糊，无法确认是否为标记。",
+        "candidates": [
+          "无标记（印刷缺损）",
+          "有不可辨标记"
+        ],
+        "cell": "14,3"
+      },
+      {
+        "at": "15,3",
+        "reason": "黑子内浅色痕迹模糊，无法确认是否为标记。",
+        "candidates": [
+          "无标记（印刷缺损）",
+          "有不可辨标记"
+        ],
+        "cell": "15,3"
+      },
+      {
+        "at": "17,4",
+        "reason": "黑子内部网点状缺损，未能辨认额外标记。",
+        "candidates": [
+          "无标记（印刷缺损）",
+          "有不可辨标记"
+        ],
+        "cell": "17,4"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p075-f01",
+    "figure_id": 5658,
+    "candidate_id": 524,
+    "source_pointer": "/chapters/3/sections/4/pages/4/elements/0",
+    "page": 75,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "4,3",
+        "value": "1",
+        "basis": "combined",
+        "reason": "编号笔画极淡；结合正文黑1压及左上白2、黑3的次序补读。",
+        "cell": "4,3"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p076-f01",
+    "figure_id": 5659,
+    "candidate_id": 525,
+    "source_pointer": "/chapters/3/sections/4/pages/5/elements/1",
+    "page": 76,
+    "uncertainties": [
+      {
+        "at": "12,3",
+        "reason": "黑子内部白色残痕不成清晰字形，无法确定是否另有标记。",
+        "candidates": [
+          "无标记，印刷破损",
+          "不明标记"
+        ],
+        "cell": "12,13"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p078-f01",
+    "figure_id": 5661,
+    "candidate_id": 527,
+    "source_pointer": "/chapters/3/sections/5/pages/2/elements/0",
+    "page": 78,
+    "uncertainties": [
+      {
+        "at": "4,6",
+        "reason": "白子圈内右侧有少量残墨，无法确认是否为字符，未赋标签。",
+        "candidates": [
+          "印刷污损",
+          "不可辨字符"
+        ],
+        "cell": "4,16"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p079-f01",
+    "figure_id": 5663,
+    "candidate_id": 529,
+    "source_pointer": "/chapters/3/sections/5/pages/3/elements/1",
+    "page": 79,
+    "uncertainties": [
+      {
+        "at": "14,3",
+        "reason": "白子内部短痕疑似残缺数字，也可能是轮廓破损或印刷噪点。",
+        "candidates": [
+          "1",
+          "无标号"
+        ],
+        "cell": "14,3"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p080-f01",
+    "figure_id": 5664,
+    "candidate_id": 530,
+    "source_pointer": "/chapters/3/sections/5/pages/4/elements/1",
+    "page": 80,
+    "uncertainties": [
+      {
+        "at": "5,15",
+        "reason": "黑子内白色符号残损，暂读作三角标记。",
+        "candidates": [
+          "triangle",
+          "数字不清"
+        ],
+        "cell": "5,15"
+      },
+      {
+        "at": "6,16",
+        "reason": "黑子内符号粘连严重，暂读作三角标记。",
+        "candidates": [
+          "triangle",
+          "数字不清"
+        ],
+        "cell": "6,16"
+      },
+      {
+        "at": "7,16",
+        "reason": "黑子内符号破损，暂读作三角标记。",
+        "candidates": [
+          "triangle",
+          "数字不清"
+        ],
+        "cell": "7,16"
+      },
+      {
+        "at": "11,2",
+        "reason": "黑子内有微小白痕，无法确定是否为残缺标记。",
+        "candidates": [
+          "无标记",
+          "triangle"
+        ],
+        "cell": "11,2"
+      },
+      {
+        "at": "12,2",
+        "reason": "黑子内有微小白痕，无法确定是否为残缺标记。",
+        "candidates": [
+          "无标记",
+          "triangle"
+        ],
+        "cell": "12,2"
+      },
+      {
+        "at": "15,13",
+        "reason": "黑子内白痕模糊，无法确定是否为三角标记。",
+        "candidates": [
+          "无标记",
+          "triangle"
+        ],
+        "cell": "15,13"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p086-f01",
+    "figure_id": 5670,
+    "candidate_id": 536,
+    "source_pointer": "/chapters/3/sections/7/pages/2/elements/0",
+    "page": 86,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "9,3",
+        "value": "2",
+        "basis": "combined",
+        "reason": "数字缺墨，残笔与2相符；同角白1、白3可辨，局部次序为白1、黑2、白3。",
+        "cell": "9,3"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p087-f01",
+    "figure_id": 5671,
+    "candidate_id": 537,
+    "source_pointer": "/chapters/3/sections/7/pages/3/elements/0",
+    "page": 87,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "5,1",
+        "value": "5",
+        "basis": "combined",
+        "reason": "残字结合正文“到白5形成龟不出头”判为白5。",
+        "cell": "5,1"
+      },
+      {
+        "at": "5,3",
+        "value": "2",
+        "basis": "combined",
+        "reason": "残字结合正文“黑2若长”，对应从左侧黑棋向右长出。",
+        "cell": "5,3"
+      },
+      {
+        "at": "3,14",
+        "value": "5",
+        "basis": "combined",
+        "reason": "可见5的残笔，与左下黑1、黑3、白6的次序相符。",
+        "cell": "3,14"
+      },
+      {
+        "at": "2,15",
+        "value": "2",
+        "basis": "combined",
+        "reason": "白子内残字近似2，结合左下黑1、黑3的局部次序判读。",
+        "cell": "2,15"
+      },
+      {
+        "at": "3,15",
+        "value": "4",
+        "basis": "combined",
+        "reason": "白子内可辨4的残笔，与黑3、黑5之间的白4相符。",
+        "cell": "3,15"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p089-f01",
+    "figure_id": 5673,
+    "candidate_id": 539,
+    "source_pointer": "/chapters/3/sections/7/pages/5/elements/1",
+    "page": 89,
+    "uncertainties": [
+      {
+        "at": "5,2",
+        "reason": "黑子内部白纹磨损严重，不能确定是否另有编号或三角标记。",
+        "candidates": [
+          "无标记",
+          "2",
+          "triangle"
+        ],
+        "cell": "5,2"
+      },
+      {
+        "at": "5,4",
+        "reason": "黑子内部白纹可能是磨损，也可能含编号或三角标记。",
+        "candidates": [
+          "无标记",
+          "4",
+          "triangle"
+        ],
+        "cell": "5,4"
+      },
+      {
+        "at": "4,5",
+        "reason": "黑子内部白纹不清，不能可靠判为数字。",
+        "candidates": [
+          "无标记",
+          "6",
+          "triangle"
+        ],
+        "cell": "4,5"
+      },
+      {
+        "at": "7,7",
+        "reason": "黑子内有浅色纹理，疑似三角标记，轮廓不完整。",
+        "candidates": [
+          "无标记",
+          "triangle"
+        ],
+        "cell": "7,7"
+      },
+      {
+        "at": "7,11",
+        "reason": "白子内符号呈三角形，磨损后也近似字母A。",
+        "candidates": [
+          "triangle",
+          "letter_A"
+        ],
+        "cell": "7,11"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p091-f01",
+    "figure_id": 5674,
+    "candidate_id": 540,
+    "source_pointer": "/chapters/3/sections/8/pages/1/elements/0",
+    "page": 91,
+    "uncertainties": [
+      {
+        "at": "15,3",
+        "reason": "棋子内部黑白粘连，能辨数字1，底色不确定。",
+        "candidates": [
+          "black",
+          "white"
+        ],
+        "cell": "15,3"
+      },
+      {
+        "at": "15,14",
+        "reason": "棋子及数字破损，疑为2，颜色难定。",
+        "candidates": [
+          "black; label=2",
+          "white; label=2",
+          "black; label=?",
+          "white; label=?"
+        ],
+        "cell": "15,14"
+      },
+      {
+        "at": "15,16",
+        "reason": "棋子及数字破损，疑为1，颜色难定。",
+        "candidates": [
+          "black; label=1",
+          "white; label=1",
+          "black; label=?",
+          "white; label=?"
+        ],
+        "cell": "15,16"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": [
+      {
+        "point": [
+          15,
+          3
+        ],
+        "color": null
+      },
+      {
+        "point": [
+          15,
+          14
+        ],
+        "color": null
+      },
+      {
+        "point": [
+          15,
+          16
+        ],
+        "color": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p096-f01",
+    "figure_id": 5679,
+    "candidate_id": 545,
+    "source_pointer": "/chapters/3/sections/9/pages/1/elements/1",
+    "page": 96,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "15,17",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字形淡损；结合右下白1、黑2、白3、黑4及后续黑6、白7，判为白5。",
+        "cell": "15,17"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p099-f01",
+    "figure_id": 5682,
+    "candidate_id": 548,
+    "source_pointer": "/chapters/3/sections/9/pages/4/elements/1",
+    "page": 99,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "5,2",
+        "value": "5",
+        "basis": "sequence",
+        "reason": "字形略糊；左上白1起，已有黑2、白3、黑4及黑6、白7，此处辨为白5。",
+        "cell": "5,2"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p107-f01",
+    "figure_id": 5689,
+    "candidate_id": 555,
+    "source_pointer": "/chapters/3/sections/11/pages/1/elements/1",
+    "page": 107,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "15,14",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字淡损；结合右下角“白2长，黑3粘”及该子紧贴原白子的局部次序，判为黑1。",
+        "cell": "15,14"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p112-f01",
+    "figure_id": 5694,
+    "candidate_id": 560,
+    "source_pointer": "/chapters/4/sections/0/pages/1/elements/2",
+    "page": 112,
+    "uncertainties": [
+      {
+        "at": "0,16",
+        "reason": "左下边线白子数字破损，十位不清。",
+        "candidates": [
+          "6",
+          "16"
+        ],
+        "cell": "0,16"
+      },
+      {
+        "at": "3,16",
+        "reason": "黑子白字与印刷缺损混杂。",
+        "candidates": [
+          "1",
+          "13"
+        ],
+        "cell": "3,16"
+      },
+      {
+        "at": "5,16",
+        "reason": "黑子上的白色数字笔画残缺。",
+        "candidates": [
+          "1",
+          "3"
+        ],
+        "cell": "5,16"
+      },
+      {
+        "at": "5,17",
+        "reason": "白子数字左侧竖画是否为十位不清。",
+        "candidates": [
+          "4",
+          "14"
+        ],
+        "cell": "5,17"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p114-f01",
+    "figure_id": 5696,
+    "candidate_id": 562,
+    "source_pointer": "/chapters/4/sections/0/pages/3/elements/0",
+    "page": 114,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "4,4",
+        "value": "4",
+        "basis": "combined",
+        "reason": "黑子内残笔近4，位于白3后连接黑子的应手处，与白5构成连续手顺。",
+        "cell": "4,4"
+      },
+      {
+        "at": "16,17",
+        "value": "1",
+        "basis": "combined",
+        "reason": "白圈内淡竖笔近1；本角白先，后续白3、白5可辨。",
+        "cell": "16,17"
+      },
+      {
+        "at": "18,17",
+        "value": "2",
+        "basis": "combined",
+        "reason": "数字退墨；正文白3打吃一子对应此黑子，结合白1及后续4、5、6辨为黑2。",
+        "cell": "18,17"
+      },
+      {
+        "at": "18,18",
+        "value": "5",
+        "basis": "combined",
+        "reason": "白圈内字形近5，与邻近黑4、黑6及本角白先的手顺一致。",
+        "cell": "18,18"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p116-f01",
+    "figure_id": 5698,
+    "candidate_id": 564,
+    "source_pointer": "/chapters/4/sections/0/pages/5/elements/1",
+    "page": 116,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "16,14",
+        "value": "1",
+        "basis": "combined",
+        "reason": "目标图数字淡失；原页同点可辨1，正文说明右下角“黑1粘”。",
+        "cell": "16,14"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p121-f01",
+    "figure_id": 5702,
+    "candidate_id": 568,
+    "source_pointer": "/chapters/4/sections/2/pages/2/elements/1",
+    "page": 121,
+    "uncertainties": [
+      {
+        "at": "7,6",
+        "reason": "白子内竖痕疑为网线或污损，未计作手数。",
+        "candidates": [
+          "无编号",
+          "1"
+        ],
+        "cell": "7,13"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p122-f01",
+    "figure_id": 5703,
+    "candidate_id": 569,
+    "source_pointer": "/chapters/4/sections/3/pages/1/elements/1",
+    "page": 122,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "2,2",
+        "value": "5",
+        "basis": "combined",
+        "reason": "残字似5或6；同排白1、3、7、9及黑偶数手顺支持读作5。",
+        "cell": "2,2"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p123-f01",
+    "figure_id": 5704,
+    "candidate_id": 570,
+    "source_pointer": "/chapters/4/sections/3/pages/2/elements/1",
+    "page": 123,
+    "uncertainties": [
+      {
+        "at": "4,13",
+        "reason": "黑子内残笔疑为1，也可能是印刷缺损。",
+        "candidates": [
+          "1",
+          "无编号"
+        ],
+        "cell": "4,13"
+      }
+    ],
+    "inferences": [
+      {
+        "at": "2,14",
+        "value": "3",
+        "basis": "combined",
+        "reason": "浅色残笔似3，结合本角清楚的白2、白4，判断为黑3。",
+        "cell": "2,14"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p127-f01",
+    "figure_id": 5707,
+    "candidate_id": 573,
+    "source_pointer": "/chapters/4/sections/4/pages/1/elements/1",
+    "page": 127,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "5,17",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字极淡；结合“都是白先”及本角清晰的黑2、白3，补读为白1。",
+        "cell": "5,17"
+      },
+      {
+        "at": "4,18",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字形残损，结合本角黑4、黑6及白7的连续编号，读为白5。",
+        "cell": "4,18"
+      },
+      {
+        "at": "17,18",
+        "value": "5",
+        "basis": "combined",
+        "reason": "末笔模糊；结合本角白1、黑2、白3、黑4及残存字形，读为白5。",
+        "cell": "17,18"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p131-f01",
+    "figure_id": 5711,
+    "candidate_id": 577,
+    "source_pointer": "/chapters/4/sections/5/pages/3/elements/0",
+    "page": 131,
+    "uncertainties": [
+      {
+        "at": "6,14",
+        "reason": "白子内有细竖线，疑为未擦净的棋盘线，也可能是数字1。",
+        "candidates": [
+          "无标号",
+          "1"
+        ],
+        "cell": "6,14"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p132-f01",
+    "figure_id": 5712,
+    "candidate_id": 578,
+    "source_pointer": "/chapters/4/sections/5/pages/4/elements/0",
+    "page": 132,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "18,18",
+        "value": "2",
+        "basis": "combined",
+        "reason": "右下角黑子残字近2；正文明确“白1先扑，黑2提”，与相邻白1及后续3至7相符。",
+        "cell": "18,18"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p133-f01",
+    "figure_id": 5713,
+    "candidate_id": 579,
+    "source_pointer": "/chapters/4/sections/6/pages/1/elements/1",
+    "page": 133,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "0,3",
+        "value": "6",
+        "basis": "combined",
+        "reason": "盘内注“⑥＝❶”指白6下在已被提去的黑1处；该点按图保留黑1。",
+        "cell": "0,3"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p135-f01",
+    "figure_id": 5715,
+    "candidate_id": 581,
+    "source_pointer": "/chapters/4/sections/6/pages/3/elements/0",
+    "page": 135,
+    "uncertainties": [
+      {
+        "at": "3,13",
+        "reason": "黑子内残白较重，不能确定是否另有三角标记。",
+        "candidates": [
+          "无标记（印刷破损）",
+          "triangle"
+        ],
+        "cell": "3,13"
+      },
+      {
+        "at": "16,14",
+        "reason": "黑子内白纹疑似三角，轮廓残损，暂不确定。",
+        "candidates": [
+          "triangle",
+          "无标记（印刷破损）"
+        ],
+        "cell": "16,14"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p138-f01",
+    "figure_id": 5718,
+    "candidate_id": 584,
+    "source_pointer": "/chapters/4/sections/7/pages/2/elements/1",
+    "page": 138,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "18,2",
+        "value": "7",
+        "basis": "combined",
+        "reason": "字形残缺；正文“黑7也打，逼白8提黑方四子”与右上编号及提子关系相合。",
+        "cell": "18,2"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p139-f01",
+    "figure_id": 5719,
+    "candidate_id": 585,
+    "source_pointer": "/chapters/4/sections/7/pages/3/elements/1",
+    "page": 139,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "1,17",
+        "value": "3",
+        "basis": "text",
+        "reason": "盘内注记“③＝△”指定白3在左下角白△处。",
+        "cell": "1,17"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p143-f01",
+    "figure_id": 5721,
+    "candidate_id": 587,
+    "source_pointer": "/chapters/5/sections/0/pages/2/elements/0",
+    "page": 143,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "17,4",
+        "value": "15",
+        "basis": "combined",
+        "reason": "数字严重褪色；结合右上白14、白16及局部连续着手，确定为黑15。",
+        "cell": "17,4"
+      },
+      {
+        "at": "16,3",
+        "value": "17",
+        "basis": "combined",
+        "reason": "残留数字笔画结合白16、白18之间的局部次序，确定为黑17。",
+        "cell": "16,3"
+      },
+      {
+        "at": "16,5",
+        "value": "21",
+        "basis": "combined",
+        "reason": "十位褪色；结合残留笔画及白20、白22之间的局部次序，确定为黑21。",
+        "cell": "16,5"
+      },
+      {
+        "at": "2,5",
+        "value": "25",
+        "basis": "combined",
+        "reason": "末位磨损；结合右上至白24、左侧白26及黑先交替，确定为黑25。",
+        "cell": "2,5"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p144-f01",
+    "figure_id": 5722,
+    "candidate_id": 588,
+    "source_pointer": "/chapters/5/sections/0/pages/3/elements/1",
+    "page": 144,
+    "uncertainties": [
+      {
+        "at": "15,15",
+        "reason": "黑座子内部有破损白痕，无法确认是否另有标记，未强行转录。",
+        "candidates": [
+          "无标记，印刷破损",
+          "不可辨标记"
+        ],
+        "cell": "15,15"
+      }
+    ],
+    "inferences": [
+      {
+        "at": "3,1",
+        "value": "18",
+        "basis": "combined",
+        "reason": "编号残缺；残留字形及白17、19之间的黑着支持18。",
+        "cell": "3,1"
+      },
+      {
+        "at": "2,3",
+        "value": "12",
+        "basis": "combined",
+        "reason": "末位模糊；残留字形及白11、13之间的黑着支持12。",
+        "cell": "2,3"
+      },
+      {
+        "at": "1,4",
+        "value": "10",
+        "basis": "combined",
+        "reason": "数字印迹较淡；残留“1”及白9、11之间的黑着支持10。",
+        "cell": "1,4"
+      },
+      {
+        "at": "7,13",
+        "value": "44",
+        "basis": "combined",
+        "reason": "末位破损；残留字形及白43、45之间的黑着支持44。",
+        "cell": "7,13"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p149-f01",
+    "figure_id": 5726,
+    "candidate_id": 592,
+    "source_pointer": "/chapters/5/sections/1/pages/4/elements/0",
+    "page": 149,
+    "uncertainties": [
+      {
+        "at": "2,13",
+        "reason": "黑子内有白色残痕，较像印刷破损，无法完全排除模糊印记。",
+        "candidates": [
+          "无标记（印刷破损）",
+          "印记不明"
+        ],
+        "cell": "2,13"
+      }
+    ],
+    "inferences": [
+      {
+        "at": "5,3",
+        "value": "5",
+        "basis": "combined",
+        "reason": "数字残损；结合白1、黑2、白3、黑4的局部顺序及残留字形，判为白5。",
+        "cell": "5,3"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p151-f01",
+    "figure_id": 5728,
+    "candidate_id": 594,
+    "source_pointer": "/chapters/5/sections/2/pages/1/elements/2",
+    "page": 151,
+    "uncertainties": [],
+    "inferences": [
+      {
+        "at": "2,15",
+        "value": "2",
+        "basis": "combined",
+        "reason": "残字形符合2，且与左下白1、白3及黑4的局部手顺吻合。",
+        "cell": "2,15"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p154-f01",
+    "figure_id": 5731,
+    "candidate_id": 597,
+    "source_pointer": "/chapters/5/sections/3/pages/1/elements/1",
+    "page": 154,
+    "uncertainties": [
+      {
+        "at": "2,12",
+        "reason": "黑子内部仅有微弱白痕，无法确认是否印有1，未补号。",
+        "candidates": [
+          "无编号",
+          "1"
+        ],
+        "cell": "2,12"
+      },
+      {
+        "at": "3,12",
+        "reason": "白子内部未辨出字形，可能为褪失的2，未凭序列补号。",
+        "candidates": [
+          "无编号",
+          "2"
+        ],
+        "cell": "3,12"
+      }
+    ],
+    "inferences": [
+      {
+        "at": "1,16",
+        "value": "11",
+        "basis": "combined",
+        "reason": "残字模糊；该点为前图没有的黑子，与左下白10、白12之间的黑11相符。",
+        "cell": "1,16"
+      }
+    ],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  },
+  {
+    "recognition_id": "p158-f01",
+    "figure_id": 5734,
+    "candidate_id": 600,
+    "source_pointer": "/chapters/5/sections/3/pages/5/elements/0",
+    "page": 158,
+    "uncertainties": [
+      {
+        "at": "2,14",
+        "reason": "空点处有不规则墨迹，无法确认是否为叉形标记。",
+        "candidates": [
+          "印刷噪点",
+          "cross"
+        ],
+        "cell": "2,14"
+      }
+    ],
+    "inferences": [],
+    "origin_uncertain": false,
+    "unknown_stones": []
+  }
+]

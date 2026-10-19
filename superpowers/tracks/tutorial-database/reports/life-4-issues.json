@@ -1,0 +1,187 @@
+[
+  {
+    "recognition_id": "p046-f02",
+    "page": 46,
+    "source_pointer": "/chapters/1/sections/18/pages/1/elements/1",
+    "figure_id": 12687,
+    "candidate_id": 9763,
+    "inferences": [
+      {
+        "at": "0,8",
+        "value": "8",
+        "basis": "text",
+        "reason": "图下注记“黑8＝黑4位”，故将8与棋盘内印出的4合记于同点。",
+        "cell": "0,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p056-f01",
+    "page": 56,
+    "source_pointer": "/chapters/1/sections/23/pages/1/elements/0",
+    "figure_id": 12706,
+    "candidate_id": 9782,
+    "inferences": [
+      {
+        "at": "5,9",
+        "value": "6",
+        "basis": "combined",
+        "reason": "底边数字残损；结合白5、白7及其间黑棋应手，辨为黑6。",
+        "cell": "5,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p130-f01",
+    "page": 130,
+    "source_pointer": "/chapters/2/sections/7/pages/1/elements/0",
+    "figure_id": 12850,
+    "candidate_id": 9926,
+    "inferences": [
+      {
+        "at": "0,8",
+        "value": "9",
+        "basis": "text",
+        "reason": "图下注记明确“黑9＝黑7位”。",
+        "cell": "0,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p134-f03",
+    "page": 134,
+    "source_pointer": "/chapters/2/sections/9/pages/1/elements/2",
+    "figure_id": 12860,
+    "candidate_id": 9936,
+    "inferences": [
+      {
+        "at": "3,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "黑子上的“1”较淡；图注明确“黑1尖”，与清晰的白2及局部着点吻合。",
+        "cell": "3,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p138-f03",
+    "page": 138,
+    "source_pointer": "/chapters/2/sections/11/pages/1/elements/2",
+    "figure_id": 12868,
+    "candidate_id": 9944,
+    "uncertainties": [
+      {
+        "at": "6,8",
+        "reason": "白子内及下方有杂乱墨迹，波及邻近白子；无法确认是否另有标记。",
+        "candidates": [
+          "印刷污损",
+          "未辨明的附加标记"
+        ],
+        "cell": "6,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p142-f02",
+    "page": 142,
+    "source_pointer": "/chapters/2/sections/13/pages/1/elements/1",
+    "figure_id": 12875,
+    "candidate_id": 9951,
+    "inferences": [
+      {
+        "at": "1,9",
+        "value": "6",
+        "basis": "text",
+        "reason": "注记“⑥…②”及“白6＝白2位”明确白6在此回提。",
+        "cell": "1,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p170-f01",
+    "page": 170,
+    "source_pointer": "/chapters/2/sections/27/pages/1/elements/0",
+    "figure_id": 12930,
+    "candidate_id": 10006,
+    "inferences": [
+      {
+        "at": "4,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字严重褪色；对照问题图，此处为新增黑子，结合其余可读着手及黑1点入确定。",
+        "cell": "4,17"
+      },
+      {
+        "at": "5,7",
+        "value": "白12＝黑5位",
+        "basis": "combined",
+        "reason": "图外注记末字近似5；白8提去黑5后白12可回填此点，黑1位仍有黑子，故解析文字中的黑1应为误读。",
+        "cell": "5,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p182-f01",
+    "page": 182,
+    "source_pointer": "/chapters/2/sections/33/pages/1/elements/0",
+    "figure_id": 12954,
+    "candidate_id": 10030,
+    "inferences": [
+      {
+        "at": "6,8",
+        "value": "7",
+        "basis": "combined",
+        "reason": "正文注明“黑7＝黑3位”，图下同点复下注记与之相符。",
+        "cell": "6,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p182-f02",
+    "page": 182,
+    "source_pointer": "/chapters/2/sections/33/pages/1/elements/1",
+    "figure_id": 12955,
+    "candidate_id": 10031,
+    "inferences": [
+      {
+        "at": "6,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字严重褪色；正文“黑1先扑”，结合图中白2、黑3、白4及扑入位置确定。",
+        "cell": "6,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p244-f03",
+    "page": 244,
+    "source_pointer": "/chapters/2/sections/64/pages/1/elements/2",
+    "figure_id": 13080,
+    "candidate_id": 10156,
+    "inferences": [
+      {
+        "at": "3,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "目标图数字墨糊，全页同图可辨“1”；正文说明黑1起至白6。",
+        "cell": "3,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p252-f03",
+    "page": 252,
+    "source_pointer": "/chapters/2/sections/68/pages/1/elements/2",
+    "figure_id": 13096,
+    "candidate_id": 10172,
+    "inferences": [
+      {
+        "at": "1,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "该黑子编号残淡；图注“黑1次序错误，白2应后”及本变化落点共同支持识读为1。",
+        "cell": "1,18"
+      }
+    ]
+  }
+]

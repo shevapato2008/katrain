@@ -1,0 +1,91 @@
+{
+  "date": "2026-10-04",
+  "environments": {
+    "prod": {
+      "album_id_sha256": "5b752da490657563d402acc63f74524d21e12d6c6d69f88cc6ae795733527f3e",
+      "captured_at": "2026-10-04 09:00:50.252526+00",
+      "counts": {
+        "album_sources": 4318,
+        "albums": 4318,
+        "aliases": 27,
+        "catalog": 3675,
+        "names": 4386,
+        "raw_staging": 17,
+        "slots": 4383,
+        "sources": 1
+      },
+      "database": "katrain_prod_20260725",
+      "file_sha256": "8165e684c9ddbc374b030d871d82198dd2045d0bdc3d4f405c696101a0e20838",
+      "path": "docs/resource/kifu-player-existing17-prod-full-readonly-2026-10-04.json.gz",
+      "per_raw_null_slots": {
+        "上村阳生": 140,
+        "东野弘昭": 189,
+        "加藤启子": 200,
+        "大桥拓文": 214,
+        "姜升旼": 354,
+        "宫泽吾朗": 250,
+        "小县真树": 306,
+        "朴键昊": 305,
+        "李小溪": 167,
+        "李昌锡": 408,
+        "桥本昌二": 199,
+        "梶原武雄": 240,
+        "金东烨": 194,
+        "金升宰": 354,
+        "金庭贤": 368,
+        "高根台": 215,
+        "鹤山淳志": 280
+      },
+      "slot_members_sha256": "c7735b80cfe9802d2ebaddbfda9ede143bd727171b32b841c88b2bbb4317b7f3",
+      "snapshot": "1725709:1725709:",
+      "source_summary_file_sha256": "cbcf9db6d2575bfc4db84bcc12eaf218a65b698b2fd4b329ba48f37ba1bea3c2",
+      "uncompressed_sha256": "86d999161771d89f2287c502297a5d24ed014f4981e7cfd54b22d61b94f52355"
+    },
+    "test": {
+      "album_id_sha256": "5b752da490657563d402acc63f74524d21e12d6c6d69f88cc6ae795733527f3e",
+      "captured_at": "2026-10-04 09:00:50.330123+00",
+      "counts": {
+        "album_sources": 4318,
+        "albums": 4318,
+        "aliases": 27,
+        "catalog": 3851,
+        "names": 5441,
+        "raw_staging": 17,
+        "slots": 4383,
+        "sources": 1
+      },
+      "database": "katrain_db",
+      "file_sha256": "760cda467edb413f9ffeb7659599e2865e36b75614d2ba058ec30d7aecb75a43",
+      "path": "docs/resource/kifu-player-existing17-test-full-readonly-2026-10-04.json.gz",
+      "per_raw_null_slots": {
+        "上村阳生": 140,
+        "东野弘昭": 189,
+        "加藤启子": 200,
+        "大桥拓文": 214,
+        "姜升旼": 354,
+        "宫泽吾朗": 250,
+        "小县真树": 306,
+        "朴键昊": 305,
+        "李小溪": 167,
+        "李昌锡": 408,
+        "桥本昌二": 199,
+        "梶原武雄": 240,
+        "金东烨": 194,
+        "金升宰": 354,
+        "金庭贤": 368,
+        "高根台": 215,
+        "鹤山淳志": 280
+      },
+      "slot_members_sha256": "c7735b80cfe9802d2ebaddbfda9ede143bd727171b32b841c88b2bbb4317b7f3",
+      "snapshot": "4115836:4115836:",
+      "source_summary_file_sha256": "17178db194329557276db69cdb4180c556fd139bb7bf8b6bfc3a2b89402ec26b",
+      "uncompressed_sha256": "867404ebd877d4a5196fba8f70a934d754f95adcfb2ca0f2f4c801a6ad9fdb48"
+    }
+  },
+  "format": "kifu-player-existing17-readonly-frozen-manifest-v1",
+  "proposal": {
+    "file_sha256": "3e84eb1e1449c7d583505e4a49512d7b21abfcefa58492503081e9a4f110823b",
+    "path": "docs/resource/kifu-player-existing17-independent-identity-proposal-2026-10-04.json"
+  },
+  "read_only": true
+}

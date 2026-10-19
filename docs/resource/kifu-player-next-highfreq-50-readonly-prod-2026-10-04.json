@@ -1,0 +1,630 @@
+{
+  "format": "kifu-next-highfreq-50-person-level-research-v1",
+  "generated_utc": "2026-10-04T08:26:52.470324+00:00",
+  "database": "katrain_prod_20260725",
+  "read_only": true,
+  "snapshot_file_sha256": "cbcf9db6d2575bfc4db84bcc12eaf218a65b698b2fd4b329ba48f37ba1bea3c2",
+  "live_remaining_null_slots": 46020,
+  "policy": "Research leads only. Exact raw names, current NULL-slot counts and collision scan are not FK approval. Require official person identity anchor, TEST catalog review, per-slot HOLD guards and fresh transaction plan.",
+  "candidates": [
+    {
+      "raw": "姜勋",
+      "prod_null_slots": 433,
+      "proposed_chinese_canonical": "姜勋",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "李昌锡",
+      "prod_null_slots": 408,
+      "proposed_chinese_canonical": "李昌锡",
+      "prod_existing_target_id": 193,
+      "prod_existing_canonical": "李昌锡",
+      "normalized_catalog_owners": [
+        193
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "金庭贤",
+      "prod_null_slots": 368,
+      "proposed_chinese_canonical": "金庭贤",
+      "prod_existing_target_id": 34,
+      "prod_existing_canonical": "金庭贤",
+      "normalized_catalog_owners": [
+        34
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "王尧",
+      "prod_null_slots": 355,
+      "proposed_chinese_canonical": "王尧",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "姜升旼",
+      "prod_null_slots": 354,
+      "proposed_chinese_canonical": "姜升旼",
+      "prod_existing_target_id": 398,
+      "prod_existing_canonical": "姜升旼",
+      "normalized_catalog_owners": [
+        398
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "金升宰",
+      "prod_null_slots": 354,
+      "proposed_chinese_canonical": "金升宰",
+      "prod_existing_target_id": 146,
+      "prod_existing_canonical": "金升宰",
+      "normalized_catalog_owners": [
+        146
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "蔡竞",
+      "prod_null_slots": 350,
+      "proposed_chinese_canonical": "蔡竞",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "周平强",
+      "prod_null_slots": 333,
+      "proposed_chinese_canonical": "周平强",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "杉内寿子",
+      "prod_null_slots": 314,
+      "proposed_chinese_canonical": "杉内寿子",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "小县真树",
+      "prod_null_slots": 306,
+      "proposed_chinese_canonical": "小县真树",
+      "prod_existing_target_id": 442,
+      "prod_existing_canonical": "小県真樹",
+      "normalized_catalog_owners": [
+        442
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "朴键昊",
+      "prod_null_slots": 305,
+      "proposed_chinese_canonical": "朴键昊",
+      "prod_existing_target_id": 145,
+      "prod_existing_canonical": "朴键昊",
+      "normalized_catalog_owners": [
+        145
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "鹤山淳志",
+      "prod_null_slots": 280,
+      "proposed_chinese_canonical": "鹤山淳志",
+      "prod_existing_target_id": 536,
+      "prod_existing_canonical": "鶴山淳志",
+      "normalized_catalog_owners": [
+        536
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "杨一",
+      "prod_null_slots": 272,
+      "proposed_chinese_canonical": "杨一",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "刘耀文",
+      "prod_null_slots": 270,
+      "proposed_chinese_canonical": "刘耀文",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "尹灿熙",
+      "prod_null_slots": 263,
+      "proposed_chinese_canonical": "尹灿熙",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "宫泽吾朗",
+      "prod_null_slots": 250,
+      "proposed_chinese_canonical": "宫泽吾朗",
+      "prod_existing_target_id": 542,
+      "prod_existing_canonical": "宮沢吾朗",
+      "normalized_catalog_owners": [
+        542
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "梶原武雄",
+      "prod_null_slots": 240,
+      "proposed_chinese_canonical": "梶原武雄",
+      "prod_existing_target_id": 6578,
+      "prod_existing_canonical": "梶原武雄",
+      "normalized_catalog_owners": [
+        6578
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "刘曦",
+      "prod_null_slots": 237,
+      "proposed_chinese_canonical": "刘曦",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "金世东",
+      "prod_null_slots": 234,
+      "proposed_chinese_canonical": "金世东",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "黄彦诚",
+      "prod_null_slots": 222,
+      "proposed_chinese_canonical": "黄彦诚",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "陈逸达",
+      "prod_null_slots": 221,
+      "proposed_chinese_canonical": "陈逸达",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "李泰贤",
+      "prod_null_slots": 215,
+      "proposed_chinese_canonical": "李泰贤",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "高根台",
+      "prod_null_slots": 215,
+      "proposed_chinese_canonical": "高根台",
+      "prod_existing_target_id": 484,
+      "prod_existing_canonical": "高根台",
+      "normalized_catalog_owners": [
+        484
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "大桥拓文",
+      "prod_null_slots": 214,
+      "proposed_chinese_canonical": "大桥拓文",
+      "prod_existing_target_id": 462,
+      "prod_existing_canonical": "大橋拓文",
+      "normalized_catalog_owners": [
+        462
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "仓桥正行",
+      "prod_null_slots": 212,
+      "proposed_chinese_canonical": "仓桥正行",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "付冲",
+      "prod_null_slots": 208,
+      "proposed_chinese_canonical": "付冲",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "夏大铭",
+      "prod_null_slots": 206,
+      "proposed_chinese_canonical": "夏大铭",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "杨嘉源",
+      "prod_null_slots": 205,
+      "proposed_chinese_canonical": "杨嘉源",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "金主镐",
+      "prod_null_slots": 205,
+      "proposed_chinese_canonical": "金主镐",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "汤川光久",
+      "prod_null_slots": 202,
+      "proposed_chinese_canonical": "汤川光久",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "加藤启子",
+      "prod_null_slots": 200,
+      "proposed_chinese_canonical": "加藤启子",
+      "prod_existing_target_id": 421,
+      "prod_existing_canonical": "加藤啓子",
+      "normalized_catalog_owners": [
+        421
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "桥本昌二",
+      "prod_null_slots": 199,
+      "proposed_chinese_canonical": "桥本昌二",
+      "prod_existing_target_id": 6582,
+      "prod_existing_canonical": "桥本昌二",
+      "normalized_catalog_owners": [
+        6582
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "陈义翔",
+      "prod_null_slots": 198,
+      "proposed_chinese_canonical": "陈义翔",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "横田茂昭",
+      "prod_null_slots": 197,
+      "proposed_chinese_canonical": "横田茂昭",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "金东烨",
+      "prod_null_slots": 194,
+      "proposed_chinese_canonical": "金东烨",
+      "prod_existing_target_id": 6776,
+      "prod_existing_canonical": "金东烨",
+      "normalized_catalog_owners": [
+        6776
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "陈锋",
+      "prod_null_slots": 191,
+      "proposed_chinese_canonical": "陈锋",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "东野弘昭",
+      "prod_null_slots": 189,
+      "proposed_chinese_canonical": "东野弘昭",
+      "prod_existing_target_id": 6687,
+      "prod_existing_canonical": "东野弘昭",
+      "normalized_catalog_owners": [
+        6687
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "杨孟允",
+      "prod_null_slots": 185,
+      "proposed_chinese_canonical": "杨孟允",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "张学斌",
+      "prod_null_slots": 184,
+      "proposed_chinese_canonical": "张学斌",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "温昭珍",
+      "prod_null_slots": 177,
+      "proposed_chinese_canonical": "温昭珍",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "韩友赈",
+      "prod_null_slots": 174,
+      "proposed_chinese_canonical": "韩友赈",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "后藤俊午",
+      "prod_null_slots": 172,
+      "proposed_chinese_canonical": "后藤俊午",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "秦悦欣",
+      "prod_null_slots": 172,
+      "proposed_chinese_canonical": "秦悦欣",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "李小溪",
+      "prod_null_slots": 167,
+      "proposed_chinese_canonical": "李小溪",
+      "prod_existing_target_id": 377,
+      "prod_existing_canonical": "李小溪94",
+      "normalized_catalog_owners": [
+        377
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "曹潇阳",
+      "prod_null_slots": 164,
+      "proposed_chinese_canonical": "曹潇阳",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "张正平",
+      "prod_null_slots": 160,
+      "proposed_chinese_canonical": "张正平",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "党希昀",
+      "prod_null_slots": 155,
+      "proposed_chinese_canonical": "党希昀",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "金成进",
+      "prod_null_slots": 147,
+      "proposed_chinese_canonical": "金成进",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    },
+    {
+      "raw": "上村阳生",
+      "prod_null_slots": 140,
+      "proposed_chinese_canonical": "上村阳生",
+      "prod_existing_target_id": 6685,
+      "prod_existing_canonical": "上村阳生",
+      "normalized_catalog_owners": [
+        6685
+      ],
+      "raw_staging_status": "pending",
+      "identity_gate": "existing_unique_catalog_identity_review"
+    },
+    {
+      "raw": "朴胜文",
+      "prod_null_slots": 140,
+      "proposed_chinese_canonical": "朴胜文",
+      "prod_existing_target_id": null,
+      "prod_existing_canonical": null,
+      "normalized_catalog_owners": [],
+      "raw_staging_status": "pending",
+      "identity_gate": "new_identity_official_anchor_required"
+    }
+  ],
+  "candidate_total_null_slots": 11756,
+  "exact_ambiguity_holds": [
+    {
+      "raw": "张涛",
+      "prod_null_slots": 465,
+      "normalized_catalog_owners": [
+        246
+      ],
+      "reason": "prior_review_hold"
+    },
+    {
+      "raw": "小松英树",
+      "prod_null_slots": 445,
+      "normalized_catalog_owners": [
+        535
+      ],
+      "reason": "prior_review_hold"
+    },
+    {
+      "raw": "林彦丞",
+      "prod_null_slots": 366,
+      "normalized_catalog_owners": [],
+      "reason": "prior_review_hold"
+    },
+    {
+      "raw": "韩升周",
+      "prod_null_slots": 317,
+      "normalized_catalog_owners": [
+        513,
+        668
+      ],
+      "reason": "multiple_catalog_owners"
+    },
+    {
+      "raw": "奥田彩",
+      "prod_null_slots": 246,
+      "normalized_catalog_owners": [
+        295,
+        392,
+        747
+      ],
+      "reason": "multiple_catalog_owners"
+    },
+    {
+      "raw": "鹤田和志",
+      "prod_null_slots": 155,
+      "normalized_catalog_owners": [
+        81,
+        491
+      ],
+      "reason": "multiple_catalog_owners"
+    },
+    {
+      "raw": "姚智腾",
+      "prod_null_slots": 147,
+      "normalized_catalog_owners": [
+        308,
+        843
+      ],
+      "reason": "multiple_catalog_owners"
+    },
+    {
+      "raw": "辻笃仁",
+      "prod_null_slots": 127,
+      "normalized_catalog_owners": [
+        191,
+        537
+      ],
+      "reason": "multiple_catalog_owners"
+    },
+    {
+      "raw": "久保胜昭",
+      "prod_null_slots": 111,
+      "normalized_catalog_owners": [
+        571,
+        573
+      ],
+      "reason": "multiple_catalog_owners"
+    }
+  ],
+  "excluded_current_three": [
+    "周鹤洋",
+    "赵善津",
+    "工藤纪夫"
+  ]
+}

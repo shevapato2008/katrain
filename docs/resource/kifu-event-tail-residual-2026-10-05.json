@@ -1,0 +1,3648 @@
+{
+  "format": "kifu-cn-event-residual-v1",
+  "capture_meta": {
+    "captured_at": "2026-10-04 15:58:00.134597+00",
+    "snapshot": "1745549:1745549:",
+    "read_only": "on"
+  },
+  "asset_generated_date": "2026-10-05",
+  "headlines": {
+    "games": 173025,
+    "nonblank_event_games": 170214,
+    "han_display_games": 168802,
+    "residual_nonhan_or_null_games": 4223,
+    "residual_nonhan_nonblank_games": 1412,
+    "null_event_games": 2811,
+    "asset_album_overrides_total": 6339,
+    "asset_album_overrides_counted": 4377,
+    "asset_album_overrides_already_han": 1962,
+    "residual_raw_groups": 241,
+    "residual_core_groups": 241,
+    "category_games": {
+      "corrupt_data": 2,
+      "null_event": 2811,
+      "program_source_label": 1160,
+      "unclassified_pending": 250
+    }
+  },
+  "raws": [
+    {
+      "raw": null,
+      "core": null,
+      "category": "null_event",
+      "event_id": null,
+      "display": null,
+      "games": 2811,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "GNUGo3.8",
+      "core": "GNUGo3.8",
+      "category": "program_source_label",
+      "event_id": null,
+      "display": "GNUGo3.8",
+      "games": 1160,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "DangerousConfrontations'85sponsoredbyBadukMo",
+      "core": "DangerousConfrontations'85sponsoredbyBadukMo",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "DangerousConfrontations'85sponsoredbyBadukMo",
+      "games": 4,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "DangerousConfrontations'85sponsoredbyBadukmo",
+      "core": "DangerousConfrontations'85sponsoredbyBadukmo",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "DangerousConfrontations'85sponsoredbyBadukmo",
+      "games": 3,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "14thNECCup\\[China-JapanShinshu",
+      "core": "14thNECCup\\[China-JapanShinshu",
+      "category": "corrupt_data",
+      "event_id": null,
+      "display": "14thNECCup\\[China-JapanShinshu",
+      "games": 2,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "3rdLordoftheRingsCupFinal",
+      "core": "LordoftheRingsCupFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "3rdLordoftheRingsCupFinal",
+      "games": 2,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "4thNihonSaikyo(=1stOldMeijin)",
+      "core": "NihonSaikyo(=1stOldMeijin)",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "4thNihonSaikyo(=1stOldMeijin)",
+      "games": 2,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "BCCard,8,Korea,",
+      "core": "BCCard,8,Korea,",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "BCCard,8,Korea,",
+      "games": 2,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Ch'eonpungCup,1st",
+      "core": "Ch'eonpungCup",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Ch'eonpungCup,1st",
+      "games": 2,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "GamestocommemorateHoninbo'saccession,sponsore",
+      "core": "GamestocommemorateHoninbo'saccession,sponsore",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "GamestocommemorateHoninbo'saccession,sponsore",
+      "games": 2,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "KATSystemsCup,WorldCupCitiesCompetition",
+      "core": "KATSystemsCup,WorldCupCitiesCompetition",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "KATSystemsCup,WorldCupCitiesCompetition",
+      "games": 2,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Kidomagazine",
+      "core": "Kidomagazine",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Kidomagazine",
+      "games": 2,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "11thWomen'sKakusei",
+      "core": "Women'sKakusei",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "11thWomen'sKakusei",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "12thSuperdoNECCup",
+      "core": "SuperdoNECCup",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "12thSuperdoNECCup",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "12thWorldAmateurChampionship",
+      "core": "WorldAmateurChampionship",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "12thWorldAmateurChampionship",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1988-11-12",
+      "core": "1988-11-12",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1988-11-12",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1989-06-00",
+      "core": "1989-06-00",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1989-06-00",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1989-06-03",
+      "core": "1989-06-03",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1989-06-03",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1989-12-02",
+      "core": "1989-12-02",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1989-12-02",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1996-05-27",
+      "core": "1996-05-27",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1996-05-27",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1996-06-14",
+      "core": "1996-06-14",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1996-06-14",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1996-06-17",
+      "core": "1996-06-17",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1996-06-17",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1996-06-21",
+      "core": "1996-06-21",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1996-06-21",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1996-06-29",
+      "core": "1996-06-29",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1996-06-29",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1996-07-12",
+      "core": "1996-07-12",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1996-07-12",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1998NationalTeamTournament",
+      "core": "1998NationalTeamTournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1998NationalTeamTournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1st Tengen Title",
+      "core": "Tengen Title",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1st Tengen Title",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1stChewang",
+      "core": "Chewang",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1stChewang",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1stSTVCupFinal",
+      "core": "STVCupFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1stSTVCupFinal",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1stStrongestFinal",
+      "core": "StrongestFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1stStrongestFinal",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1stTokyoShinbunCupFinal",
+      "core": "TokyoShinbunCupFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1stTokyoShinbunCupFinal",
+      "games": 1,
+      "overridden_album_games": 1
+    },
+    {
+      "raw": "1stToyotaCup",
+      "core": "ToyotaCup",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1stToyotaCup",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "1stWorldGo'sStrongestTournament",
+      "core": "WorldGo'sStrongestTournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "1stWorldGo'sStrongestTournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2000-08-21",
+      "core": "2000-08-21",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2000-08-21",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2002KATSystemsCup",
+      "core": "2002KATSystemsCup",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2002KATSystemsCup",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2003KATSystemsCup",
+      "core": "2003KATSystemsCup",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2003KATSystemsCup",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2005-02-17",
+      "core": "2005-02-17",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2005-02-17",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2005-05-12",
+      "core": "2005-05-12",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2005-05-12",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2006-03-02",
+      "core": "2006-03-02",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2006-03-02",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2006-05-04",
+      "core": "2006-05-04",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2006-05-04",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2006-08-17",
+      "core": "2006-08-17",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2006-08-17",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "200th anniversary of death of Honinbo Sansa",
+      "core": "anniversary of death of Honinbo Sansa",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "200th anniversary of death of Honinbo Sansa",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "26th NHK Cup Special Program",
+      "core": "NHK Cup Special Program",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "26th NHK Cup Special Program",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "26thShinjin-OFinal",
+      "core": "Shinjin-OFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "26thShinjin-OFinal",
+      "games": 1,
+      "overridden_album_games": 1
+    },
+    {
+      "raw": "2nd Prime Minister's Cup Winner vs the Honinbo",
+      "core": "Prime Minister's Cup Winner vs the Honinbo",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2nd Prime Minister's Cup Winner vs the Honinbo",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2nd Youth Championship",
+      "core": "Youth Championship",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2nd Youth Championship",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2ndHoninb",
+      "core": "Honinb",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2ndHoninb",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2ndNihonKi-inHighestDansChampionship",
+      "core": "NihonKi-inHighestDansChampionship",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2ndNihonKi-inHighestDansChampionship",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "2ndTailideCup(China-Koreawomen'smatch)",
+      "core": "TailideCup(China-Koreawomen'smatch)",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "2ndTailideCup(China-Koreawomen'smatch)",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "30thTaiwanMingrenFinal",
+      "core": "TaiwanMingrenFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "30thTaiwanMingrenFinal",
+      "games": 1,
+      "overridden_album_games": 3
+    },
+    {
+      "raw": "31kiseip03.sgf",
+      "core": "31kiseip03.sgf",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "31kiseip03.sgf",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "3cn-hs-niecaosgf",
+      "core": "3cn-hs-niecaosgf",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "3cn-hs-niecaosgf",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "45thKansaiKi-inFirstPlaceFinal",
+      "core": "KansaiKi-inFirstPlaceFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "45thKansaiKi-inFirstPlaceFinal",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "4th Women's Honinbo",
+      "core": "Women's Honinbo",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "4th Women's Honinbo",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "4thRyuenCup",
+      "core": "RyuenCup",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "4thRyuenCup",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "4thSBSCupFinal",
+      "core": "SBSCupFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "4thSBSCupFinal",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "4thSKNewStarsBestTen",
+      "core": "SKNewStarsBestTen",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "4thSKNewStarsBestTen",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "4thTaiwanKiinCup",
+      "core": "TaiwanKiinCup",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "4thTaiwanKiinCup",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "5thC|h'oegowiFinal",
+      "core": "C|h'oegowiFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "5thC|h'oegowiFinal",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "5thNECShuneiFinal",
+      "core": "NECShuneiFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "5thNECShuneiFinal",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "6kr-bd-cuilisgf",
+      "core": "6kr-bd-cuilisgf",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "6kr-bd-cuilisgf",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "6thShanghaiGames,OpenYouthChampionships",
+      "core": "ShanghaiGames,OpenYouthChampionships",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "6thShanghaiGames,OpenYouthChampionships",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "7thNihonKi-inFirstPlaceChampionshipFinal",
+      "core": "NihonKi-inFirstPlaceChampionshipFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "7thNihonKi-inFirstPlaceChampionshipFinal",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "7thNihonKi-inFirstPlaceChampiosnhip",
+      "core": "NihonKi-inFirstPlaceChampiosnhip",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "7thNihonKi-inFirstPlaceChampiosnhip",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "8thRyuenCupFinal",
+      "core": "RyuenCupFinal",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "8thRyuenCupFinal",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "?",
+      "core": "?",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "?",
+      "games": 1,
+      "overridden_album_games": 4
+    },
+    {
+      "raw": "ChoChikun90-96-040.SGF",
+      "core": "ChoChikun90-96-040.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-040.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-068.SGF",
+      "core": "ChoChikun90-96-068.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-068.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-136.SGF",
+      "core": "ChoChikun90-96-136.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-136.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-147.SGF",
+      "core": "ChoChikun90-96-147.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-147.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-152.SGF",
+      "core": "ChoChikun90-96-152.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-152.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-189.SGF",
+      "core": "ChoChikun90-96-189.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-189.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-239.SGF",
+      "core": "ChoChikun90-96-239.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-239.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-245.SGF",
+      "core": "ChoChikun90-96-245.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-245.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-267.SGF",
+      "core": "ChoChikun90-96-267.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-267.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-275.SGF",
+      "core": "ChoChikun90-96-275.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-275.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-302.SGF",
+      "core": "ChoChikun90-96-302.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-302.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-311.SGF",
+      "core": "ChoChikun90-96-311.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-311.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "ChoChikun90-96-350.SGF",
+      "core": "ChoChikun90-96-350.SGF",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "ChoChikun90-96-350.SGF",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "CostsenOpen,2002",
+      "core": "CostsenOpen,2002",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "CostsenOpen,2002",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "FangTianfeng(w)_YuBin(b)1988-07-15_a",
+      "core": "FangTianfeng(w)_YuBin(b)1988-07-15_a",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "FangTianfeng(w)_YuBin(b)1988-07-15_a",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Gosie,24th",
+      "core": "Gosie",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Gosie,24th",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Grace & favour games",
+      "core": "Grace & favour games",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Grace & favour games",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Greatrelaygametocommemorate15yearsoftheOteai,spons",
+      "core": "Greatrelaygametocommemorate15yearsoftheOteai,spons",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Greatrelaygametocommemorate15yearsoftheOteai,spons",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Hoensha selection",
+      "core": "Hoensha selection",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Hoensha selection",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "HongMin-p'yovsRuiNaiwei",
+      "core": "HongMin-p'yovsRuiNaiwei",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "HongMin-p'yovsRuiNaiwei",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "HoninboversusfiveplayersseriessponsoredbyKy",
+      "core": "HoninboversusfiveplayersseriessponsoredbyKy",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "HoninboversusfiveplayersseriessponsoredbyKy",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Igo Cub Series?",
+      "core": "Igo Cub Series?",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Igo Cub Series?",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Invitation game to commemorate cooperation in founding of Nihon Ki-in Main Branch",
+      "core": "Invitation game to commemorate cooperation in founding of Nihon Ki-in Main Branch",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Invitation game to commemorate cooperation in founding of Nihon Ki-in Main Branch",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Kansai Branch Oteai Select Tournament sponsored by Sunday Mainichi",
+      "core": "Kansai Branch Oteai Select Tournament sponsored by Sunday Mainichi",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Kansai Branch Oteai Select Tournament sponsored by Sunday Mainichi",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Kansai Twelve New Faces Tournament sponsored by Osaka Jiji Shinpo",
+      "core": "Kansai Twelve New Faces Tournament sponsored by Osaka Jiji Shinpo",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Kansai Twelve New Faces Tournament sponsored by Osaka Jiji Shinpo",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "KansaiBetsuinOteai",
+      "core": "KansaiBetsuinOteai",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "KansaiBetsuinOteai",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "KansaiBranchOteaiSelectTournamentsponsoredby",
+      "core": "KansaiBranchOteaiSelectTournamentsponsoredby",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "KansaiBranchOteaiSelectTournamentsponsoredby",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "KansaiKi-inChampionshipsponsoredbyKobeShinbun",
+      "core": "KansaiKi-inChampionshipsponsoredbyKobeShinbun",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "KansaiKi-inChampionshipsponsoredbyKobeShinbun",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "KansaiOzaTournament",
+      "core": "KansaiOzaTournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "KansaiOzaTournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "KidoHighDansvs.YoungPlayersWin&Continue",
+      "core": "KidoHighDansvs.YoungPlayersWin&Continue",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "KidoHighDansvs.YoungPlayersWin&Continue",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Kitani Dojo Live-in Pupils Teaching Game Series",
+      "core": "Kitani Dojo Live-in Pupils Teaching Game Series",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Kitani Dojo Live-in Pupils Teaching Game Series",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Kitani vs. winner of 6-dan championship",
+      "core": "Kitani vs. winner of 6-dan championship",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Kitani vs. winner of 6-dan championship",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Kitani's Conscription Game",
+      "core": "Kitani's Conscription Game",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Kitani's Conscription Game",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Korea-ChinaComputerGoTournament",
+      "core": "Korea-ChinaComputerGoTournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Korea-ChinaComputerGoTournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Korea-JapanComputerGoMatch",
+      "core": "Korea-JapanComputerGoMatch",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Korea-JapanComputerGoMatch",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Match between Nihon Ki-in's strong players and young players sponsored by Shin Aichi Shinbun",
+      "core": "Match between Nihon Ki-in's strong players and young players sponsored by Shin Aichi Shinbun",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Match between Nihon Ki-in's strong players and young players sponsored by Shin Aichi Shinbun",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Match between Oteai A and B groups sponsored by Shin Aichi Shinbun",
+      "core": "Match between Oteai A and B groups sponsored by Shin Aichi Shinbun",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Match between Oteai A and B groups sponsored by Shin Aichi Shinbun",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Match between male and female Honinbos, sponsored by Tokyo Times",
+      "core": "Match between male and female Honinbos, sponsored by Tokyo Times",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Match between male and female Honinbos, sponsored by Tokyo Times",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Match between pupils of Kubomatsu Katsukiyo and Mitsuhara Itaro",
+      "core": "Match between pupils of Kubomatsu Katsukiyo and Mitsuhara Itaro",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Match between pupils of Kubomatsu Katsukiyo and Mitsuhara Itaro",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "MatchbetweenOteaiAandBgroupssponsoredbySh",
+      "core": "MatchbetweenOteaiAandBgroupssponsoredbySh",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "MatchbetweenOteaiAandBgroupssponsoredbySh",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Meeting of Kiko-kai",
+      "core": "Meeting of Kiko-kai",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Meeting of Kiko-kai",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Meijin vs Honinbo quickplay game to mark 33rd anniversary of death of Honinbo Shusai",
+      "core": "Meijin vs Honinbo quickplay game to mark 33rd anniversary of death of Honinbo Shusai",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Meijin vs Honinbo quickplay game to mark 33rd anniversary of death of Honinbo Shusai",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Meijin.15th",
+      "core": "Meijin.15th",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Meijin.15th",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Meijinversus8thElementarySchoolChampion",
+      "core": "Meijinversus8thElementarySchoolChampion",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Meijinversus8thElementarySchoolChampion",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "MichaelRedmondvsRuiNaiwei",
+      "core": "MichaelRedmondvsRuiNaiwei",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "MichaelRedmondvsRuiNaiwei",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "NEC",
+      "core": "NEC",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "NEC",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "NHK \"New Year's Gift\" radio game",
+      "core": "NHK \"New Year's Gift\" radio game",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "NHK \"New Year's Gift\" radio game",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "NHK Special game",
+      "core": "NHK Special game",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "NHK Special game",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "NHK exhibition relay game",
+      "core": "NHK exhibition relay game",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "NHK exhibition relay game",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "NHK\"NewYear'sGift\"radiogame",
+      "core": "NHK\"NewYear'sGift\"radiogame",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "NHK\"NewYear'sGift\"radiogame",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "NHK,44th",
+      "core": "NHK",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "NHK,44th",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "NHK1995",
+      "core": "NHK1995",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "NHK1995",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "NakanoCupwinner'sMissiontoChina",
+      "core": "NakanoCupwinner'sMissiontoChina",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "NakanoCupwinner'sMissiontoChina",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "NationalTeamChampionship",
+      "core": "NationalTeamChampionship",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "NationalTeamChampionship",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "NationalTeamTournament",
+      "core": "NationalTeamTournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "NationalTeamTournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "New Nihon Ki-in on-call service",
+      "core": "New Nihon Ki-in on-call service",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "New Nihon Ki-in on-call service",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "New Stars versus High Dan Players Tournament",
+      "core": "New Stars versus High Dan Players Tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "New Stars versus High Dan Players Tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Nihon Ki-in Champions tournament",
+      "core": "Nihon Ki-in Champions tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Nihon Ki-in Champions tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Not known",
+      "core": "Not known",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Not known",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Oteai 1949 Special",
+      "core": "Oteai 1949 Special",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Oteai 1949 Special",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Oteai 1974?",
+      "core": "Oteai 1974?",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Oteai 1974?",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Oteai,7and8-danrankingtournament",
+      "core": "Oteai,7and8-danrankingtournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Oteai,7and8-danrankingtournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Oteai1965",
+      "core": "Oteai1965",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Oteai1965",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Party to celebrate 3d promotion of Kajikawa Shurei",
+      "core": "Party to celebrate 3d promotion of Kajikawa Shurei",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Party to celebrate 3d promotion of Kajikawa Shurei",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Party to celebrate 70th birthday of Ito Showa",
+      "core": "Party to celebrate 70th birthday of Ito Showa",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Party to celebrate 70th birthday of Ito Showa",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Party to celebrate promotion of Mitsuhara 7-dan",
+      "core": "Party to celebrate promotion of Mitsuhara 7-dan",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Party to celebrate promotion of Mitsuhara 7-dan",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Party to celebrate promotion of Okamura 2d",
+      "core": "Party to celebrate promotion of Okamura 2d",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Party to celebrate promotion of Okamura 2d",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Party to celebrate promotion of Takasaki Taisku to 5d",
+      "core": "Party to celebrate promotion of Takasaki Taisku to 5d",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Party to celebrate promotion of Takasaki Taisku to 5d",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Party to celebrate the promotion of Shusaku to 5d",
+      "core": "Party to celebrate the promotion of Shusaku to 5d",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Party to celebrate the promotion of Shusaku to 5d",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Party to celebrate the promotion of Toyota Gen to 3d",
+      "core": "Party to celebrate the promotion of Toyota Gen to 3d",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Party to celebrate the promotion of Toyota Gen to 3d",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "PhysicalEducationCup",
+      "core": "PhysicalEducationCup",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "PhysicalEducationCup",
+      "games": 1,
+      "overridden_album_games": 1
+    },
+    {
+      "raw": "Preparatory meeting for founding of Nihon Igo-kai",
+      "core": "Preparatory meeting for founding of Nihon Igo-kai",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Preparatory meeting for founding of Nihon Igo-kai",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Probably Oteai",
+      "core": "Probably Oteai",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Probably Oteai",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Promotion party of Inagaki Nissho 7-dan",
+      "core": "Promotion party of Inagaki Nissho 7-dan",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Promotion party of Inagaki Nissho 7-dan",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Quickplay game",
+      "core": "Quickplay game",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Quickplay game",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Quickplay game at go computer meeting",
+      "core": "Quickplay game at go computer meeting",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Quickplay game at go computer meeting",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Quickplay game at go festival to celebrate 20 years Kansai Ki-in",
+      "core": "Quickplay game at go festival to celebrate 20 years Kansai Ki-in",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Quickplay game at go festival to celebrate 20 years Kansai Ki-in",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Radio game, Two Greats Representing Tokyo and Osaka",
+      "core": "Radio game, Two Greats Representing Tokyo and Osaka",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Radio game, Two Greats Representing Tokyo and Osaka",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Radio game, Two Greats Representing Tokyo and Osaka, sponsored by NHK",
+      "core": "Radio game, Two Greats Representing Tokyo and Osaka, sponsored by NHK",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Radio game, Two Greats Representing Tokyo and Osaka, sponsored by NHK",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Radio match between East and West Japan",
+      "core": "Radio match between East and West Japan",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Radio match between East and West Japan",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Reimeikaimeeting",
+      "core": "Reimeikaimeeting",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Reimeikaimeeting",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Relay game \"The Four Immortals meet in Chengdu\"",
+      "core": "Relay game \"The Four Immortals meet in Chengdu\"",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Relay game \"The Four Immortals meet in Chengdu\"",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Relay game to mark death of Nihon Ki-in director Sakauchi",
+      "core": "Relay game to mark death of Nihon Ki-in director Sakauchi",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Relay game to mark death of Nihon Ki-in director Sakauchi",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Relay game to mark promotion of East Asia minister Aoki Kazuo to 4d",
+      "core": "Relay game to mark promotion of East Asia minister Aoki Kazuo to 4d",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Relay game to mark promotion of East Asia minister Aoki Kazuo to 4d",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "RicohPairGoCup,5th",
+      "core": "RicohPairGoCup",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "RicohPairGoCup,5th",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Rising Stars Win-and-Continue Invitation Tournament",
+      "core": "Rising Stars Win-and-Continue Invitation Tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Rising Stars Win-and-Continue Invitation Tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "RitualforHeaveneventTaebaekjeFestival",
+      "core": "RitualforHeaveneventTaebaekjeFestival",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "RitualforHeaveneventTaebaekjeFestival",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "RuiNaiweivsKweonHyo-chin",
+      "core": "RuiNaiweivsKweonHyo-chin",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "RuiNaiweivsKweonHyo-chin",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Runner-up of Shinei Select tournament vs Go",
+      "core": "Runner-up of Shinei Select tournament vs Go",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Runner-up of Shinei Select tournament vs Go",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Runner-up's game with Go of New Stars win-and-continue tournament",
+      "core": "Runner-up's game with Go of New Stars win-and-continue tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Runner-up's game with Go of New Stars win-and-continue tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Saturday Club",
+      "core": "Saturday Club",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Saturday Club",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Series of Go v. 1-dan members of Writers Go Association",
+      "core": "Series of Go v. 1-dan members of Writers Go Association",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Series of Go v. 1-dan members of Writers Go Association",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Shishokai meeting",
+      "core": "Shishokai meeting",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Shishokai meeting",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Special Exhibition Game",
+      "core": "Special Exhibition Game",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Special Exhibition Game",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Special Game between Leaders of the New School",
+      "core": "Special Game between Leaders of the New School",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Special Game between Leaders of the New School",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Special Six Heavenly Talents Tournament",
+      "core": "Special Six Heavenly Talents Tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Special Six Heavenly Talents Tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Special game sponsored by Kyoto Hinode Shinbun",
+      "core": "Special game sponsored by Kyoto Hinode Shinbun",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Special game sponsored by Kyoto Hinode Shinbun",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Special game with Go Seigen",
+      "core": "Special game with Go Seigen",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Special game with Go Seigen",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Special game with winner of the \"Honinbo Plus 8-dans Tournament\"",
+      "core": "Special game with winner of the \"Honinbo Plus 8-dans Tournament\"",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Special game with winner of the \"Honinbo Plus 8-dans Tournament\"",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Special study meeting",
+      "core": "Special study meeting",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Special study meeting",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Special teaching game arranged by Kido",
+      "core": "Special teaching game arranged by Kido",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Special teaching game arranged by Kido",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Special tournament to select participants in Oteai",
+      "core": "Special tournament to select participants in Oteai",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Special tournament to select participants in Oteai",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Special3-gamematchtoseeouttheoldyear",
+      "core": "Special3-gamematchtoseeouttheoldyear",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Special3-gamematchtoseeouttheoldyear",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "SpecialCommemorativeGames",
+      "core": "SpecialCommemorativeGames",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "SpecialCommemorativeGames",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "SpecialKBSSpringgame",
+      "core": "SpecialKBSSpringgame",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "SpecialKBSSpringgame",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Specialcommemorativegame",
+      "core": "Specialcommemorativegame",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Specialcommemorativegame",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "SpecialgamebetweentopplayersofKoreaandJapa",
+      "core": "SpecialgamebetweentopplayersofKoreaandJapa",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "SpecialgamebetweentopplayersofKoreaandJapa",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "SpecialgamesponsoredbyKyotoShinbun",
+      "core": "SpecialgamesponsoredbyKyotoShinbun",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "SpecialgamesponsoredbyKyotoShinbun",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "SpecialtournamenttoselectparticipantsinOteai",
+      "core": "SpecialtournamenttoselectparticipantsinOteai",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "SpecialtournamenttoselectparticipantsinOteai",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "SpringPromotionTournament",
+      "core": "SpringPromotionTournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "SpringPromotionTournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Successful Young Players Tournament",
+      "core": "Successful Young Players Tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Successful Young Players Tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Suiseikai",
+      "core": "Suiseikai",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Suiseikai",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Suiseikai Meeting",
+      "core": "Suiseikai Meeting",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Suiseikai Meeting",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Summer Rating Tournament of Kansai Branch of Nihon Ki-in",
+      "core": "Summer Rating Tournament of Kansai Branch of Nihon Ki-in",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Summer Rating Tournament of Kansai Branch of Nihon Ki-in",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Sunjanggo",
+      "core": "Sunjanggo",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Sunjanggo",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "TV New Year 1962",
+      "core": "TV New Year 1962",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "TV New Year 1962",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "TaiwamPromotionTournament",
+      "core": "TaiwamPromotionTournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "TaiwamPromotionTournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "TaiwanChiyuanAutumnPromotionTournament",
+      "core": "TaiwanChiyuanAutumnPromotionTournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "TaiwanChiyuanAutumnPromotionTournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "TaiwanPromotionTournament,SpringSession",
+      "core": "TaiwanPromotionTournament,SpringSession",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "TaiwanPromotionTournament,SpringSession",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Teaching game at Kitani Go School",
+      "core": "Teaching game at Kitani Go School",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Teaching game at Kitani Go School",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Teaching game sponsored by Seibundo",
+      "core": "Teaching game sponsored by Seibundo",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Teaching game sponsored by Seibundo",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Teaching game with pupils of Kawai Tetsuyuki",
+      "core": "Teaching game with pupils of Kawai Tetsuyuki",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Teaching game with pupils of Kawai Tetsuyuki",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "TeachinggamebyteacherofKajiwara'steacher",
+      "core": "TeachinggamebyteacherofKajiwara'steacher",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "TeachinggamebyteacherofKajiwara'steacher",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Telephone game sponsored by Hanguk Ilbo",
+      "core": "Telephone game sponsored by Hanguk Ilbo",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Telephone game sponsored by Hanguk Ilbo",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Tengeen,25th",
+      "core": "Tengeen",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Tengeen,25th",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Three-game match sponsored by Shin Yugata Shinbun",
+      "core": "Three-game match sponsored by Shin Yugata Shinbun",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Three-game match sponsored by Shin Yugata Shinbun",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Three-stone Games with Girls",
+      "core": "Three-stone Games with Girls",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Three-stone Games with Girls",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "TopPosition(Saikoi,3rd)SO",
+      "core": "TopPosition(Saikoi,3rd)SO",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "TopPosition(Saikoi,3rd)SO",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Tournament to mark Autumn Oteai sponsored by Asahi Shinbun",
+      "core": "Tournament to mark Autumn Oteai sponsored by Asahi Shinbun",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Tournament to mark Autumn Oteai sponsored by Asahi Shinbun",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "TournamenttomarkAutumnOteai,sponsoredbyAsah",
+      "core": "TournamenttomarkAutumnOteai,sponsoredbyAsah",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "TournamenttomarkAutumnOteai,sponsoredbyAsah",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Traininggamefor22ndWorldAmateurChampionship",
+      "core": "Traininggamefor22ndWorldAmateurChampionship",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Traininggamefor22ndWorldAmateurChampionship",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Trial game for acceptance into Nihon Ki-in school",
+      "core": "Trial game for acceptance into Nihon Ki-in school",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Trial game for acceptance into Nihon Ki-in school",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Trial game for entry to Kitani school",
+      "core": "Trial game for entry to Kitani school",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Trial game for entry to Kitani school",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Tsuki Ikkai Meeting",
+      "core": "Tsuki Ikkai Meeting",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Tsuki Ikkai Meeting",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Two-stone teaching games sponsored by Seibundo",
+      "core": "Two-stone teaching games sponsored by Seibundo",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Two-stone teaching games sponsored by Seibundo",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Unveiling of bust of go patron Okura Kishichiro",
+      "core": "Unveiling of bust of go patron Okura Kishichiro",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Unveiling of bust of go patron Okura Kishichiro",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Vice-Meijins (= 8-dan) Tournament",
+      "core": "Vice-Meijins (= 8-dan) Tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Vice-Meijins (= 8-dan) Tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Vigil game played before the spirit of Inoue Ichiro",
+      "core": "Vigil game played before the spirit of Inoue Ichiro",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Vigil game played before the spirit of Inoue Ichiro",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Visit to Chinese go circles by Hashimoto",
+      "core": "Visit to Chinese go circles by Hashimoto",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Visit to Chinese go circles by Hashimoto",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Visit to Chinese go circles by Hashimoto from Japan to test the strength of Go",
+      "core": "Visit to Chinese go circles by Hashimoto from Japan to test the strength of Go",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Visit to Chinese go circles by Hashimoto from Japan to test the strength of Go",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Win & continue tournament",
+      "core": "Win & continue tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Win & continue tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Win and Continue for 1- and 2-dans",
+      "core": "Win and Continue for 1- and 2-dans",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Win and Continue for 1- and 2-dans",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Win&continuetournamentsponsoredbyHakodateShinbun",
+      "core": "Win&continuetournamentsponsoredbyHakodateShinbun",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Win&continuetournamentsponsoredbyHakodateShinbun",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Win-and-Continue tournament",
+      "core": "Win-and-Continue tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Win-and-Continue tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Winner of Shinei Select tournament vs Go",
+      "core": "Winner of Shinei Select tournament vs Go",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Winner of Shinei Select tournament vs Go",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Winner's game with Go of Asahi Shinbun's New Stars win-and-continue tournament",
+      "core": "Winner's game with Go of Asahi Shinbun's New Stars win-and-continue tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Winner's game with Go of Asahi Shinbun's New Stars win-and-continue tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "WorldStrongest",
+      "core": "WorldStrongest",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "WorldStrongest",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Yomiuri Tournament sponsored by Yomiuri Shinbun",
+      "core": "Yomiuri Tournament sponsored by Yomiuri Shinbun",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Yomiuri Tournament sponsored by Yomiuri Shinbun",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Yomiuri Uchikomi Win & Continue",
+      "core": "Yomiuri Uchikomi Win & Continue",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Yomiuri Uchikomi Win & Continue",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "YomiuriHigh-danPlayers3000yenWin&Continue3-gameMatches",
+      "core": "YomiuriHigh-danPlayers3000yenWin&Continue3-gameMatches",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "YomiuriHigh-danPlayers3000yenWin&Continue3-gameMatches",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Young Players Exhibition Game",
+      "core": "Young Players Exhibition Game",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Young Players Exhibition Game",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "YoungGoPlayers'GamesofBlood,sponsoredbyTokyoAsahiShinbun",
+      "core": "YoungGoPlayers'GamesofBlood,sponsoredbyTokyoAsahiShinbun",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "YoungGoPlayers'GamesofBlood,sponsoredbyTokyoAsahiShinbun",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "Yukan Osaka Shinbun tournament",
+      "core": "Yukan Osaka Shinbun tournament",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "Yukan Osaka Shinbun tournament",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "a2",
+      "core": "a2",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "a2",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "a3",
+      "core": "a3",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "a3",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "a4",
+      "core": "a4",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "a4",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "a5",
+      "core": "a5",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "a5",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "a6",
+      "core": "a6",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "a6",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "a78",
+      "core": "a78",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "a78",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "cao_016",
+      "core": "cao_016",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "cao_016",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "cao_040",
+      "core": "cao_040",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "cao_040",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "cao_053",
+      "core": "cao_053",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "cao_053",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "cao_108",
+      "core": "cao_108",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "cao_108",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "cao_128",
+      "core": "cao_128",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "cao_128",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "cao_155",
+      "core": "cao_155",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "cao_155",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "cao_311",
+      "core": "cao_311",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "cao_311",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "cao_320",
+      "core": "cao_320",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "cao_320",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "game-4-Ma(w)-Takemiya\\(b\\)",
+      "core": "game-4-Ma(w)-Takemiya\\(b\\)",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "game-4-Ma(w)-Takemiya\\(b\\)",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "misc.",
+      "core": "misc.",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "misc.",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "mxc02sgf",
+      "core": "mxc02sgf",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "mxc02sgf",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "pr0058252",
+      "core": "pr0058252",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "pr0058252",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "tengze-changhaosgf",
+      "core": "tengze-changhaosgf",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "tengze-changhaosgf",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "yili-3sgf",
+      "core": "yili-3sgf",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "yili-3sgf",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "yili-4sgf",
+      "core": "yili-4sgf",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "yili-4sgf",
+      "games": 1,
+      "overridden_album_games": 0
+    },
+    {
+      "raw": "？",
+      "core": "？",
+      "category": "unclassified_pending",
+      "event_id": null,
+      "display": "？",
+      "games": 1,
+      "overridden_album_games": 0
+    }
+  ],
+  "cores": [
+    {
+      "core": null,
+      "category": "null_event",
+      "games": 2811,
+      "raw_groups": 1
+    },
+    {
+      "core": "GNUGo3.8",
+      "category": "program_source_label",
+      "games": 1160,
+      "raw_groups": 1
+    },
+    {
+      "core": "DangerousConfrontations'85sponsoredbyBadukMo",
+      "category": "unclassified_pending",
+      "games": 4,
+      "raw_groups": 1
+    },
+    {
+      "core": "DangerousConfrontations'85sponsoredbyBadukmo",
+      "category": "unclassified_pending",
+      "games": 3,
+      "raw_groups": 1
+    },
+    {
+      "core": "14thNECCup\\[China-JapanShinshu",
+      "category": "corrupt_data",
+      "games": 2,
+      "raw_groups": 1
+    },
+    {
+      "core": "BCCard,8,Korea,",
+      "category": "unclassified_pending",
+      "games": 2,
+      "raw_groups": 1
+    },
+    {
+      "core": "Ch'eonpungCup",
+      "category": "unclassified_pending",
+      "games": 2,
+      "raw_groups": 1
+    },
+    {
+      "core": "GamestocommemorateHoninbo'saccession,sponsore",
+      "category": "unclassified_pending",
+      "games": 2,
+      "raw_groups": 1
+    },
+    {
+      "core": "KATSystemsCup,WorldCupCitiesCompetition",
+      "category": "unclassified_pending",
+      "games": 2,
+      "raw_groups": 1
+    },
+    {
+      "core": "Kidomagazine",
+      "category": "unclassified_pending",
+      "games": 2,
+      "raw_groups": 1
+    },
+    {
+      "core": "LordoftheRingsCupFinal",
+      "category": "unclassified_pending",
+      "games": 2,
+      "raw_groups": 1
+    },
+    {
+      "core": "NihonSaikyo(=1stOldMeijin)",
+      "category": "unclassified_pending",
+      "games": 2,
+      "raw_groups": 1
+    },
+    {
+      "core": "1988-11-12",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "1989-06-00",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "1989-06-03",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "1989-12-02",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "1996-05-27",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "1996-06-14",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "1996-06-17",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "1996-06-21",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "1996-06-29",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "1996-07-12",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "1998NationalTeamTournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "2000-08-21",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "2002KATSystemsCup",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "2003KATSystemsCup",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "2005-02-17",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "2005-05-12",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "2006-03-02",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "2006-05-04",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "2006-08-17",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "31kiseip03.sgf",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "3cn-hs-niecaosgf",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "6kr-bd-cuilisgf",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "?",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Chewang",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-040.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-068.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-136.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-147.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-152.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-189.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-239.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-245.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-267.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-275.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-302.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-311.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ChoChikun90-96-350.SGF",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "CostsenOpen,2002",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "C|h'oegowiFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "FangTianfeng(w)_YuBin(b)1988-07-15_a",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Gosie",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Grace & favour games",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Greatrelaygametocommemorate15yearsoftheOteai,spons",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Hoensha selection",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "HongMin-p'yovsRuiNaiwei",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Honinb",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "HoninboversusfiveplayersseriessponsoredbyKy",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Igo Cub Series?",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Invitation game to commemorate cooperation in founding of Nihon Ki-in Main Branch",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Kansai Branch Oteai Select Tournament sponsored by Sunday Mainichi",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Kansai Twelve New Faces Tournament sponsored by Osaka Jiji Shinpo",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "KansaiBetsuinOteai",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "KansaiBranchOteaiSelectTournamentsponsoredby",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "KansaiKi-inChampionshipsponsoredbyKobeShinbun",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "KansaiKi-inFirstPlaceFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "KansaiOzaTournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "KidoHighDansvs.YoungPlayersWin&Continue",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Kitani Dojo Live-in Pupils Teaching Game Series",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Kitani vs. winner of 6-dan championship",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Kitani's Conscription Game",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Korea-ChinaComputerGoTournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Korea-JapanComputerGoMatch",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Match between Nihon Ki-in's strong players and young players sponsored by Shin Aichi Shinbun",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Match between Oteai A and B groups sponsored by Shin Aichi Shinbun",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Match between male and female Honinbos, sponsored by Tokyo Times",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Match between pupils of Kubomatsu Katsukiyo and Mitsuhara Itaro",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "MatchbetweenOteaiAandBgroupssponsoredbySh",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Meeting of Kiko-kai",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Meijin vs Honinbo quickplay game to mark 33rd anniversary of death of Honinbo Shusai",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Meijin.15th",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Meijinversus8thElementarySchoolChampion",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "MichaelRedmondvsRuiNaiwei",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NEC",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NECShuneiFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NHK",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NHK \"New Year's Gift\" radio game",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NHK Cup Special Program",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NHK Special game",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NHK exhibition relay game",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NHK\"NewYear'sGift\"radiogame",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NHK1995",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NakanoCupwinner'sMissiontoChina",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NationalTeamChampionship",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NationalTeamTournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "New Nihon Ki-in on-call service",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "New Stars versus High Dan Players Tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Nihon Ki-in Champions tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NihonKi-inFirstPlaceChampionshipFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NihonKi-inFirstPlaceChampiosnhip",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "NihonKi-inHighestDansChampionship",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Not known",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Oteai 1949 Special",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Oteai 1974?",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Oteai,7and8-danrankingtournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Oteai1965",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Party to celebrate 3d promotion of Kajikawa Shurei",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Party to celebrate 70th birthday of Ito Showa",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Party to celebrate promotion of Mitsuhara 7-dan",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Party to celebrate promotion of Okamura 2d",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Party to celebrate promotion of Takasaki Taisku to 5d",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Party to celebrate the promotion of Shusaku to 5d",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Party to celebrate the promotion of Toyota Gen to 3d",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "PhysicalEducationCup",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Preparatory meeting for founding of Nihon Igo-kai",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Prime Minister's Cup Winner vs the Honinbo",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Probably Oteai",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Promotion party of Inagaki Nissho 7-dan",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Quickplay game",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Quickplay game at go computer meeting",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Quickplay game at go festival to celebrate 20 years Kansai Ki-in",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Radio game, Two Greats Representing Tokyo and Osaka",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Radio game, Two Greats Representing Tokyo and Osaka, sponsored by NHK",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Radio match between East and West Japan",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Reimeikaimeeting",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Relay game \"The Four Immortals meet in Chengdu\"",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Relay game to mark death of Nihon Ki-in director Sakauchi",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Relay game to mark promotion of East Asia minister Aoki Kazuo to 4d",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "RicohPairGoCup",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Rising Stars Win-and-Continue Invitation Tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "RitualforHeaveneventTaebaekjeFestival",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "RuiNaiweivsKweonHyo-chin",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Runner-up of Shinei Select tournament vs Go",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Runner-up's game with Go of New Stars win-and-continue tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "RyuenCup",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "RyuenCupFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "SBSCupFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "SKNewStarsBestTen",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "STVCupFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Saturday Club",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Series of Go v. 1-dan members of Writers Go Association",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ShanghaiGames,OpenYouthChampionships",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Shinjin-OFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Shishokai meeting",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Special Exhibition Game",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Special Game between Leaders of the New School",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Special Six Heavenly Talents Tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Special game sponsored by Kyoto Hinode Shinbun",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Special game with Go Seigen",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Special game with winner of the \"Honinbo Plus 8-dans Tournament\"",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Special study meeting",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Special teaching game arranged by Kido",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Special tournament to select participants in Oteai",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Special3-gamematchtoseeouttheoldyear",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "SpecialCommemorativeGames",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "SpecialKBSSpringgame",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Specialcommemorativegame",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "SpecialgamebetweentopplayersofKoreaandJapa",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "SpecialgamesponsoredbyKyotoShinbun",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "SpecialtournamenttoselectparticipantsinOteai",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "SpringPromotionTournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "StrongestFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Successful Young Players Tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Suiseikai",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Suiseikai Meeting",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Summer Rating Tournament of Kansai Branch of Nihon Ki-in",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Sunjanggo",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "SuperdoNECCup",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TV New Year 1962",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TailideCup(China-Koreawomen'smatch)",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TaiwamPromotionTournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TaiwanChiyuanAutumnPromotionTournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TaiwanKiinCup",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TaiwanMingrenFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TaiwanPromotionTournament,SpringSession",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Teaching game at Kitani Go School",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Teaching game sponsored by Seibundo",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Teaching game with pupils of Kawai Tetsuyuki",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TeachinggamebyteacherofKajiwara'steacher",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Telephone game sponsored by Hanguk Ilbo",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Tengeen",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Tengen Title",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Three-game match sponsored by Shin Yugata Shinbun",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Three-stone Games with Girls",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TokyoShinbunCupFinal",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TopPosition(Saikoi,3rd)SO",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Tournament to mark Autumn Oteai sponsored by Asahi Shinbun",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "TournamenttomarkAutumnOteai,sponsoredbyAsah",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "ToyotaCup",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Traininggamefor22ndWorldAmateurChampionship",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Trial game for acceptance into Nihon Ki-in school",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Trial game for entry to Kitani school",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Tsuki Ikkai Meeting",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Two-stone teaching games sponsored by Seibundo",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Unveiling of bust of go patron Okura Kishichiro",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Vice-Meijins (= 8-dan) Tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Vigil game played before the spirit of Inoue Ichiro",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Visit to Chinese go circles by Hashimoto",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Visit to Chinese go circles by Hashimoto from Japan to test the strength of Go",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Win & continue tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Win and Continue for 1- and 2-dans",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Win&continuetournamentsponsoredbyHakodateShinbun",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Win-and-Continue tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Winner of Shinei Select tournament vs Go",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Winner's game with Go of Asahi Shinbun's New Stars win-and-continue tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Women's Honinbo",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Women'sKakusei",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "WorldAmateurChampionship",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "WorldGo'sStrongestTournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "WorldStrongest",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Yomiuri Tournament sponsored by Yomiuri Shinbun",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Yomiuri Uchikomi Win & Continue",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "YomiuriHigh-danPlayers3000yenWin&Continue3-gameMatches",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Young Players Exhibition Game",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "YoungGoPlayers'GamesofBlood,sponsoredbyTokyoAsahiShinbun",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Youth Championship",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "Yukan Osaka Shinbun tournament",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "a2",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "a3",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "a4",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "a5",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "a6",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "a78",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "anniversary of death of Honinbo Sansa",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "cao_016",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "cao_040",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "cao_053",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "cao_108",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "cao_128",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "cao_155",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "cao_311",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "cao_320",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "game-4-Ma(w)-Takemiya\\(b\\)",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "misc.",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "mxc02sgf",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "pr0058252",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "tengze-changhaosgf",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "yili-3sgf",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "yili-4sgf",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    },
+    {
+      "core": "？",
+      "category": "unclassified_pending",
+      "games": 1,
+      "raw_groups": 1
+    }
+  ],
+  "limitation": "Album overrides are counted from the asset and matching raw aggregate; their runtime SGF SHA guards cannot be rechecked without SGF bytes."
+}

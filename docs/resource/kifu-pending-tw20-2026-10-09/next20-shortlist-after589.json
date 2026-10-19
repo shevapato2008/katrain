@@ -1,0 +1,1049 @@
+{
+  "created_at_utc": "2026-10-08T19:01:37Z",
+  "basis": {
+    "catalog": "docs/resource/kifu-five-language-progress-2026-10-05.html",
+    "catalog_generated_at": "2026-10-09 02:55 CST",
+    "catalog_applied_batch_id": 589,
+    "excluded_ko_proof_gap_path": "docs/resource/kifu-pending-tw20-2026-10-09/PROD-old-ko-proof-gap-readonly.json",
+    "excluded_ko_proof_gap_count": 28,
+    "batch589_names_path": "docs/resource/kifu-pending-tw20-2026-10-09/PROD-new589-names-live.json",
+    "tw_exception_source": "docs/resource/kifu-pending-jp20-2026-10-09/tw-rule.approved.json"
+  },
+  "scope": {
+    "four_of_five_after_exclusions": 82,
+    "top40_rows": 40,
+    "batch589_four_of_five_in_top40": 12,
+    "recommended_count": 20,
+    "recommended_tw": 17,
+    "recommended_ko": 3,
+    "recommended_owner_games_sum": 1613
+  },
+  "top40": [
+    {
+      "player_id": 4771,
+      "canonical_name": "日下包夫",
+      "en": "Kusaka Kaneo",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 293,
+      "source_lang": "jp",
+      "qualified_source_name": "日下包夫",
+      "source_urls": [
+        "https://www.igorating.com/players/kaneo-kusaka",
+        "https://www.igorating.com/en/players/kaneo-kusaka"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 5397,
+      "canonical_name": "浜岛久义",
+      "en": "Hamajima Hisayoshi",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 281,
+      "source_lang": "jp",
+      "qualified_source_name": "浜島久義",
+      "source_urls": [
+        "https://www.igorating.com/players/hisayoshi-hamajima",
+        "https://www.igorating.com/en/players/hisayoshi-hamajima"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 5297,
+      "canonical_name": "武田博爱",
+      "en": "Takeda Hakuai",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 203,
+      "source_lang": "jp",
+      "qualified_source_name": "武田博愛",
+      "source_urls": [
+        "https://www.igorating.com/players/hakuai-takeda",
+        "https://www.cyberoro.com/info/player_view.oro?prpl_code=20001283"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 6599,
+      "canonical_name": "小松伸昭",
+      "en": "Komatsu Nobuaki",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 181,
+      "source_lang": "jp",
+      "qualified_source_name": "小松伸昭",
+      "source_urls": [
+        "https://www.igorating.com/players/nobuaki-komatsu",
+        "https://www.igorating.com/en/players/nobuaki-komatsu"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 6626,
+      "canonical_name": "早濑玄堂",
+      "en": "Hayase Gendo",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 118,
+      "source_lang": "jp",
+      "qualified_source_name": "早瀬玄堂",
+      "source_urls": [
+        "https://www.igorating.com/players/gendo-hayase",
+        "https://www.igorating.com/en/players/gendo-hayase"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 4235,
+      "canonical_name": "塩入逸造",
+      "en": "Shioiri Itsuzo",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 114,
+      "source_lang": "jp",
+      "qualified_source_name": "塩入逸造",
+      "source_urls": [
+        "https://www.igorating.com/players/itsuzo-shioiri",
+        "https://www.igorating.com/en/players/itsuzo-shioiri"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 6629,
+      "canonical_name": "福原义虎",
+      "en": "Fukuhara Yoshitora",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 106,
+      "source_lang": "jp",
+      "qualified_source_name": "福原義虎",
+      "source_urls": [
+        "https://www.igorating.com/players/yoshitora-fukuhara",
+        "https://www.igorating.com/en/players/yoshitora-fukuhara"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 6686,
+      "canonical_name": "安井算知（九世）",
+      "en": "Yasui Sanchi IX",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 86,
+      "source_lang": "jp",
+      "qualified_source_name": "九世安井算知",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/etc/writer/column20260420.html",
+        "https://homepages.cwi.nl/~aeb/go/games/games/Shusaku/index.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 6259,
+      "canonical_name": "铃木越雄",
+      "en": "Suzuki Etsuo",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 77,
+      "source_lang": "jp",
+      "qualified_source_name": "鈴木越雄",
+      "source_urls": [
+        "https://www.igorating.com/players/etsuo-suzuki",
+        "https://www.igorating.com/en/players/etsuo-suzuki"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 4071,
+      "canonical_name": "华伟荣",
+      "en": "Hua Weirong",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 38,
+      "source_lang": "jp",
+      "qualified_source_name": "华伟荣",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/844.html",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 6714,
+      "canonical_name": "田村升",
+      "en": "Tamura Noboru",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 34,
+      "source_lang": "jp",
+      "qualified_source_name": "田村昇",
+      "source_urls": [
+        "https://igorating.com/players/noboru-tamura",
+        "https://db.u-go.net/1546/"
+      ],
+      "status": "hold_excluded_character_昇",
+      "in_batch_589": true,
+      "recommended_20": false
+    },
+    {
+      "player_id": 6366,
+      "canonical_name": "陈瑞",
+      "en": "Chen Rui",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 30,
+      "source_lang": "jp",
+      "qualified_source_name": "陳瑞",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/395.html",
+        "https://www.kihuu.net/index.php?key=%E9%99%B3%E7%91%9E&type=2"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 6531,
+      "canonical_name": "黄家胤",
+      "en": "Huang Jia-Yin",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 29,
+      "source_lang": "jp",
+      "qualified_source_name": "黄家胤",
+      "source_urls": [
+        "https://kifudepot.net/kifucontents.php?id=hItQkO%2FmK5vm8K0QqfueJw%3D%3D",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 6547,
+      "canonical_name": "黄良玉",
+      "en": "Huang Liangyu",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 28,
+      "source_lang": "jp",
+      "qualified_source_name": "黄良玉",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/713.html",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 5101,
+      "canonical_name": "李青海",
+      "en": "Li Qinghai",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 26,
+      "source_lang": "jp",
+      "qualified_source_name": "李青海",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/1442.html",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 696,
+      "canonical_name": "高若环",
+      "en": "Gao Ruohuan",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 25,
+      "source_lang": "jp",
+      "qualified_source_name": "高若环",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/2048.html",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 3820,
+      "canonical_name": "乔诗尧",
+      "en": "Qiao Shiyao",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 22,
+      "source_lang": "jp",
+      "qualified_source_name": "乔诗尧",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/1515.html",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 6329,
+      "canonical_name": "陈惠民",
+      "en": "Chen Huimin",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 22,
+      "source_lang": "jp",
+      "qualified_source_name": "陳惠民",
+      "source_urls": [
+        "https://www.kihuu.net/index.php?key=%E9%99%B3%E6%83%A0%E6%B0%91&type=2",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 5351,
+      "canonical_name": "沙星宇",
+      "en": null,
+      "country_if_known": null,
+      "missing_lang": "en",
+      "games": 19,
+      "source_lang": null,
+      "qualified_source_name": null,
+      "source_urls": [
+        "https://www.kihuu.net/index.php?key=%E6%B2%99%E6%98%9F%E5%AE%87&type=2",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_other_language_requires_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 5495,
+      "canonical_name": "王学传",
+      "en": "Wang Xuezhuan",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 19,
+      "source_lang": "jp",
+      "qualified_source_name": "王學傳",
+      "source_urls": [
+        "https://www.kihuu.net/index.php?key=%E7%8E%8B%E5%AD%B8%E5%82%B3&type=2",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 5806,
+      "canonical_name": "萧睿杉",
+      "en": "Wesley Hsiao",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 19,
+      "source_lang": "jp",
+      "qualified_source_name": "蕭睿杉",
+      "source_urls": [
+        "https://kifudepot.net/index.php?player=%E8%95%AD%E7%9D%BF%E6%9D%89",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 368,
+      "canonical_name": "赵健男",
+      "en": "Zhao Jiannan",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 18,
+      "source_lang": "jp",
+      "qualified_source_name": "趙健男",
+      "source_urls": [
+        "https://www.kihuu.net/index.php?key=%E8%B6%99%E5%81%A5%E7%94%B7&type=2",
+        "https://zh.wikipedia.org/zh-cn/%E7%99%BE%E7%81%B5%E6%9D%AF%E4%B8%96%E7%95%8C%E5%9B%B4%E6%A3%8B%E5%85%AC%E5%BC%80%E8%B5%9B"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 600,
+      "canonical_name": "肖泽彬",
+      "en": "Xiao Zebin",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 18,
+      "source_lang": "cn",
+      "qualified_source_name": "肖泽彬",
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2276.html",
+        "https://www.goratings.org/ja/players/2276.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 5473,
+      "canonical_name": "王伯刚",
+      "en": "Wang Bogang",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 18,
+      "source_lang": "jp",
+      "qualified_source_name": "王伯刚",
+      "source_urls": [
+        "https://goratings.org/ja/players/227.html",
+        "https://www.goratings.org/zh/players/227.html"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 6552,
+      "canonical_name": "黄进先",
+      "en": "Huang Jinxian",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 18,
+      "source_lang": "jp",
+      "qualified_source_name": "黄进先",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/545.html",
+        "https://www.goratings.org/zh/players/545.html"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 229,
+      "canonical_name": "叶子萌",
+      "en": "Ye Zimeng",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 17,
+      "source_lang": "cn",
+      "qualified_source_name": "叶子萌",
+      "source_urls": [
+        "https://goratings.org/zh/players/2451.html",
+        "https://goratings.org/ja/players/2451.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 595,
+      "canonical_name": "周雨萱",
+      "en": "Zhou Yuxuan",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 17,
+      "source_lang": "cn",
+      "qualified_source_name": "周雨萱",
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2253.html",
+        "https://www.goratings.org/ja/players/2309.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 5115,
+      "canonical_name": "杨以伦",
+      "en": "Yang Yilun",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 17,
+      "source_lang": "jp",
+      "qualified_source_name": "杨以伦",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/1604.html",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 385,
+      "canonical_name": "行泓丞",
+      "en": "Xing Hongcheng",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 16,
+      "source_lang": "cn",
+      "qualified_source_name": "行泓丞",
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2528.html",
+        "https://www.goratings.org/ja/players/2528.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 662,
+      "canonical_name": "朱彦臻",
+      "en": "Zhu Yanzhen",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 16,
+      "source_lang": "cn",
+      "qualified_source_name": "朱彦臻",
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2287.html",
+        "https://www.goratings.org/ja/players/2287.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 5214,
+      "canonical_name": "柯沛辰",
+      "en": "Ke Peichen",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 16,
+      "source_lang": "jp",
+      "qualified_source_name": "柯沛辰",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/2480.html",
+        "https://goratings.org/zh/players/2480.html"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 320,
+      "canonical_name": "桂诗云",
+      "en": "Gui Shiyun",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 15,
+      "source_lang": "cn",
+      "qualified_source_name": "桂诗云",
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2398.html",
+        "https://www.goratings.org/ja/players/2398.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 4340,
+      "canonical_name": "安东阳向",
+      "en": "Ando Hinata",
+      "country_if_known": "JP",
+      "missing_lang": "ko",
+      "games": 15,
+      "source_lang": "jp",
+      "qualified_source_name": "安東陽向",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/2402.html",
+        "https://www.goratings.org/zh/players/2402.html"
+      ],
+      "status": "hold_no_original_full_kana_source",
+      "in_batch_589": true,
+      "recommended_20": false
+    },
+    {
+      "player_id": 5349,
+      "canonical_name": "沈静",
+      "en": "Shen Jing",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 15,
+      "source_lang": "jp",
+      "qualified_source_name": "沈静",
+      "source_urls": [
+        "https://goratings.org/ja/players/495.html",
+        "https://goratings.org/zh/players/495.html"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 5468,
+      "canonical_name": "王业辉",
+      "en": "Wang Yehui",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 15,
+      "source_lang": "jp",
+      "qualified_source_name": "王业辉",
+      "source_urls": [
+        "https://goratings.org/ja/players/738.html",
+        "https://goratings.org/zh/players/738.html"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 5952,
+      "canonical_name": "赵子骥",
+      "en": "Zhao Ziji",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 15,
+      "source_lang": "jp",
+      "qualified_source_name": "赵子骥",
+      "source_urls": [
+        "https://goratings.org/ja/players/497.html",
+        "https://goratings.org/zh/players/497.html"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 446,
+      "canonical_name": "李贞垠",
+      "en": "Lee Jeongeun",
+      "country_if_known": "KR",
+      "missing_lang": "tw",
+      "games": 14,
+      "source_lang": "cn",
+      "qualified_source_name": "李貞垠",
+      "source_urls": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10001264",
+        "https://www.goratings.org/zh/players/2516.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 5543,
+      "canonical_name": "王紫涵",
+      "en": "Wang Zihan",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 14,
+      "source_lang": "jp",
+      "qualified_source_name": "王紫涵",
+      "source_urls": [
+        "https://www.goratings.org/ja/players/2445.html",
+        "https://www.goratings.org/zh/players/2445.html"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    },
+    {
+      "player_id": 5675,
+      "canonical_name": "秦思玥",
+      "en": "Qin Siyue",
+      "country_if_known": "CN",
+      "missing_lang": "ko",
+      "games": 14,
+      "source_lang": "jp",
+      "qualified_source_name": "秦思玥",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/match/goseigen/007.html",
+        "https://yigo.org/godata/wr/f-wuqingyuan/07-2024.php"
+      ],
+      "status": "hold_chinese_original_not_ja_to_ko",
+      "in_batch_589": true,
+      "recommended_20": false
+    },
+    {
+      "player_id": 5790,
+      "canonical_name": "范希钰",
+      "en": "Fan Xiyu",
+      "country_if_known": null,
+      "missing_lang": "ko",
+      "games": 14,
+      "source_lang": "jp",
+      "qualified_source_name": "范希鈺",
+      "source_urls": [
+        "https://kifudepot.net/index.php?player=%E8%8C%83%E5%B8%8C%E9%88%BA",
+        "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+      ],
+      "status": "hold_no_japanese_original_full_kana_source",
+      "in_batch_589": false,
+      "recommended_20": false
+    }
+  ],
+  "recommended_20": [
+    {
+      "player_id": 4771,
+      "canonical_name": "日下包夫",
+      "en": "Kusaka Kaneo",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 293,
+      "source_lang": "jp",
+      "qualified_source_name": "日下包夫",
+      "source_urls": [
+        "https://www.igorating.com/players/kaneo-kusaka",
+        "https://www.igorating.com/en/players/kaneo-kusaka"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 5397,
+      "canonical_name": "浜岛久义",
+      "en": "Hamajima Hisayoshi",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 281,
+      "source_lang": "jp",
+      "qualified_source_name": "浜島久義",
+      "source_urls": [
+        "https://www.igorating.com/players/hisayoshi-hamajima",
+        "https://www.igorating.com/en/players/hisayoshi-hamajima"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 5297,
+      "canonical_name": "武田博爱",
+      "en": "Takeda Hakuai",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 203,
+      "source_lang": "jp",
+      "qualified_source_name": "武田博愛",
+      "source_urls": [
+        "https://www.igorating.com/players/hakuai-takeda",
+        "https://www.cyberoro.com/info/player_view.oro?prpl_code=20001283"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 6599,
+      "canonical_name": "小松伸昭",
+      "en": "Komatsu Nobuaki",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 181,
+      "source_lang": "jp",
+      "qualified_source_name": "小松伸昭",
+      "source_urls": [
+        "https://www.igorating.com/players/nobuaki-komatsu",
+        "https://www.igorating.com/en/players/nobuaki-komatsu"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 6626,
+      "canonical_name": "早濑玄堂",
+      "en": "Hayase Gendo",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 118,
+      "source_lang": "jp",
+      "qualified_source_name": "早瀬玄堂",
+      "source_urls": [
+        "https://www.igorating.com/players/gendo-hayase",
+        "https://www.igorating.com/en/players/gendo-hayase"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 4235,
+      "canonical_name": "塩入逸造",
+      "en": "Shioiri Itsuzo",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 114,
+      "source_lang": "jp",
+      "qualified_source_name": "塩入逸造",
+      "source_urls": [
+        "https://www.igorating.com/players/itsuzo-shioiri",
+        "https://www.igorating.com/en/players/itsuzo-shioiri"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 6629,
+      "canonical_name": "福原义虎",
+      "en": "Fukuhara Yoshitora",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 106,
+      "source_lang": "jp",
+      "qualified_source_name": "福原義虎",
+      "source_urls": [
+        "https://www.igorating.com/players/yoshitora-fukuhara",
+        "https://www.igorating.com/en/players/yoshitora-fukuhara"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 6686,
+      "canonical_name": "安井算知（九世）",
+      "en": "Yasui Sanchi IX",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 86,
+      "source_lang": "jp",
+      "qualified_source_name": "九世安井算知",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/etc/writer/column20260420.html",
+        "https://homepages.cwi.nl/~aeb/go/games/games/Shusaku/index.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 6259,
+      "canonical_name": "铃木越雄",
+      "en": "Suzuki Etsuo",
+      "country_if_known": "JP",
+      "missing_lang": "tw",
+      "games": 77,
+      "source_lang": "jp",
+      "qualified_source_name": "鈴木越雄",
+      "source_urls": [
+        "https://www.igorating.com/players/etsuo-suzuki",
+        "https://www.igorating.com/en/players/etsuo-suzuki"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": true,
+      "recommended_20": true
+    },
+    {
+      "player_id": 600,
+      "canonical_name": "肖泽彬",
+      "en": "Xiao Zebin",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 18,
+      "source_lang": "cn",
+      "qualified_source_name": "肖泽彬",
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2276.html",
+        "https://www.goratings.org/ja/players/2276.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 229,
+      "canonical_name": "叶子萌",
+      "en": "Ye Zimeng",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 17,
+      "source_lang": "cn",
+      "qualified_source_name": "叶子萌",
+      "source_urls": [
+        "https://goratings.org/zh/players/2451.html",
+        "https://goratings.org/ja/players/2451.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 595,
+      "canonical_name": "周雨萱",
+      "en": "Zhou Yuxuan",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 17,
+      "source_lang": "cn",
+      "qualified_source_name": "周雨萱",
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2253.html",
+        "https://www.goratings.org/ja/players/2309.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 385,
+      "canonical_name": "行泓丞",
+      "en": "Xing Hongcheng",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 16,
+      "source_lang": "cn",
+      "qualified_source_name": "行泓丞",
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2528.html",
+        "https://www.goratings.org/ja/players/2528.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 662,
+      "canonical_name": "朱彦臻",
+      "en": "Zhu Yanzhen",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 16,
+      "source_lang": "cn",
+      "qualified_source_name": "朱彦臻",
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2287.html",
+        "https://www.goratings.org/ja/players/2287.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 320,
+      "canonical_name": "桂诗云",
+      "en": "Gui Shiyun",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 15,
+      "source_lang": "cn",
+      "qualified_source_name": "桂诗云",
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2398.html",
+        "https://www.goratings.org/ja/players/2398.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 446,
+      "canonical_name": "李贞垠",
+      "en": "Lee Jeongeun",
+      "country_if_known": "KR",
+      "missing_lang": "tw",
+      "games": 14,
+      "source_lang": "cn",
+      "qualified_source_name": "李貞垠",
+      "source_urls": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10001264",
+        "https://www.goratings.org/zh/players/2516.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 5396,
+      "canonical_name": "浜中隆光",
+      "en": "Hamanaka Takamitsu",
+      "country_if_known": "JP",
+      "missing_lang": "ko",
+      "games": 12,
+      "source_lang": "jp",
+      "qualified_source_name": "浜中隆光",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/player/htm/ki000173.html"
+      ],
+      "status": "ko_official_full_kana_source_found",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 391,
+      "canonical_name": "王琛",
+      "en": "Wang Chen",
+      "country_if_known": null,
+      "missing_lang": "tw",
+      "games": 11,
+      "source_lang": "cn",
+      "qualified_source_name": "王琛",
+      "source_urls": [
+        "https://db.u-go.net/playerdb/players/496/",
+        "https://www.nihonkiin.or.jp/event/area/other/40_34.html"
+      ],
+      "status": "tw_finite_rule_research_candidate",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 4276,
+      "canonical_name": "奥村靖",
+      "en": "Okumura Yasushi",
+      "country_if_known": "JP",
+      "missing_lang": "ko",
+      "games": 9,
+      "source_lang": "jp",
+      "qualified_source_name": "奥村靖",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/player/htm/ki000240.htm"
+      ],
+      "status": "ko_official_full_kana_source_found",
+      "in_batch_589": false,
+      "recommended_20": true
+    },
+    {
+      "player_id": 4782,
+      "canonical_name": "明户和巳",
+      "en": "Akedo Kazumi",
+      "country_if_known": "JP",
+      "missing_lang": "ko",
+      "games": 9,
+      "source_lang": "jp",
+      "qualified_source_name": "明戸和巳",
+      "source_urls": [
+        "https://archive.nihonkiin.or.jp/player/abc.html"
+      ],
+      "status": "ko_official_full_kana_source_found",
+      "in_batch_589": false,
+      "recommended_20": true
+    }
+  ],
+  "notes": [
+    "Read-only source triage. These are not approved name candidates or an apply-ready packet.",
+    "The games sum is owner incidence and can double-count a game if two selected players appear together. It is not a projected card-coverage delta.",
+    "TW rows require a new finite, person-specific reviewed rule and current anchors. KO rows require approved NIKL proof, identity bridge, and target review.",
+    "The top40 is ranked strictly by listed games. Recommended 20 substitutes four feasible lower-ranked rows for unsupported high-ranked KO rows.",
+    "All 28 prior KO normative-proof-gap owners are excluded because a separate restoration packet owns them."
+  ]
+}

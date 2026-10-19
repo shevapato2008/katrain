@@ -1,0 +1,2068 @@
+{
+  "started_at": "2026-10-04T13:42:49.082434+00:00",
+  "seed": "kifu-event-longtail-timed-pilot-2026-10-04-v1",
+  "selection_sql": "WITH candidates AS (\n SELECT r.parsed_data->>'series_core' AS series_core, count(*) AS game_count, count(DISTINCT r.raw_value) AS raw_count\n FROM kifu_albums a JOIN kifu_raw_event_values r ON r.raw_value=a.event\n WHERE a.event_id IS NULL AND r.category='unclassified_pending' AND NULLIF(r.parsed_data->>'series_core','') IS NOT NULL\n GROUP BY r.parsed_data->>'series_core'\n), selected AS (\n SELECT *, md5(:seed || E'\\n' || series_core) AS selection_hash FROM candidates WHERE game_count=1\n ORDER BY selection_hash, series_core COLLATE \"C\" LIMIT 30\n)\nSELECT s.*, r.id AS raw_event_id, r.raw_value, r.parsed_data, a.id AS album_id, a.player_black, a.player_white, a.date_played, a.round_name, a.place, a.source, a.source_path\nFROM selected s JOIN kifu_raw_event_values r ON r.parsed_data->>'series_core'=s.series_core\nJOIN kifu_albums a ON a.event=r.raw_value AND a.event_id IS NULL\nWHERE r.category='unclassified_pending' ORDER BY s.selection_hash, s.series_core COLLATE \"C\", a.id",
+  "meta": {
+    "read_only": "on",
+    "snapshot": "1739128:1739128:",
+    "captured_at": "2026-10-04 13:42:49.157851+00"
+  },
+  "population": {
+    "games": "62675",
+    "cores": 15417,
+    "singleton_cores": 9532
+  },
+  "rows": [
+    {
+      "series_core": "台湾UMC联电杯快棋争霸战8强战",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "000a487f4ff71bb5ab0e63e855d83942",
+      "raw_event_id": 85724,
+      "raw_value": "第2届台湾UMC联电杯快棋争霸战8强战",
+      "parsed_data": {
+        "original_raw_value": "第2届台湾UMC联电杯快棋争霸战8强战",
+        "occurrences": 1,
+        "series_core": "台湾UMC联电杯快棋争霸战8强战",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "第2届台湾UMC联电杯快棋争霸战8强战",
+          "core": "台湾UMC联电杯快棋争霸战8强战",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "edition",
+              "value": "2届",
+              "text": "第2届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "core",
+              "value": "台湾UMC联电杯快棋争霸战8强战",
+              "text": "台湾UMC联电杯快棋争霸战8强战",
+              "start": 3,
+              "end": 19
+            }
+          ],
+          "components": [
+            {
+              "kind": "edition",
+              "value": "2届",
+              "text": "第2届",
+              "start": 0,
+              "end": 3
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 82103,
+      "player_black": "杨博崴",
+      "player_white": "简靖庭",
+      "date_played": "2021-11-26",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41374168.sgf",
+      "sample_index": 1,
+      "classification": "real_event_type",
+      "canonical_type_zh": "台湾UMC联电杯快棋争霸战",
+      "edition_candidate": 2,
+      "year_from_album": 2021,
+      "round_candidate": "8强战",
+      "source_urls": [
+        "https://www.haifong.org/news/content/F3914781A7088AA194160D9AC5EA7463"
+      ],
+      "decision": "SAFE",
+      "reason": "Organizer report identifies second rapid championship and same player pairing; distinct from 联电杯职业围棋赛.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "2022日本关西围棋公开赛决赛",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "0010ca9c8f51b8b3b07e215331453815",
+      "raw_event_id": 62494,
+      "raw_value": "2022日本关西围棋公开赛决赛",
+      "parsed_data": {
+        "original_raw_value": "2022日本关西围棋公开赛决赛",
+        "occurrences": 1,
+        "series_core": "2022日本关西围棋公开赛决赛",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "2022日本关西围棋公开赛决赛",
+          "core": "2022日本关西围棋公开赛决赛",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "2022日本关西围棋公开赛决赛",
+              "text": "2022日本关西围棋公开赛决赛",
+              "start": 0,
+              "end": 15
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 6753,
+      "player_black": "村川大介",
+      "player_white": "井山裕太",
+      "date_played": "2022-12-11",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41333940.sgf",
+      "sample_index": 2,
+      "classification": "real_event_type",
+      "canonical_type_zh": "日本关西围棋公开赛",
+      "edition_candidate": 3,
+      "year_from_album": 2022,
+      "round_candidate": "决赛",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/match/k_open/003.html"
+      ],
+      "decision": "SAFE",
+      "reason": "Official third edition, 2022 final pairing/date; 2022 retained by parser core is year, not identity.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "00129dc7941cc6f80626fc83e49045af",
+      "raw_event_id": 69996,
+      "raw_value": "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+      "parsed_data": {
+        "original_raw_value": "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+        "occurrences": 1,
+        "series_core": "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+          "core": "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+              "text": "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+              "start": 0,
+              "end": 48
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 142468,
+      "player_black": "中野宽也",
+      "player_white": "小林光一",
+      "date_played": "2000-04-05",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41567236.sgf",
+      "sample_index": 3,
+      "classification": "game_fixture_description",
+      "canonical_type_zh": null,
+      "edition_candidate": null,
+      "year_from_album": 2000,
+      "round_candidate": null,
+      "source_urls": [],
+      "decision": "HOLD",
+      "reason": "Player/color/date filename describes a game, does not identify event. Do not turn filename into event type.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "46jp-10duan-heshansgf",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "001e1a6707bc795b46eb556a2306aa3b",
+      "raw_event_id": 66862,
+      "raw_value": "46jp-10duan-heshansgf",
+      "parsed_data": {
+        "original_raw_value": "46jp-10duan-heshansgf",
+        "occurrences": 1,
+        "series_core": "46jp-10duan-heshansgf",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "46jp-10duan-heshansgf",
+          "core": "46jp-10duan-heshansgf",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "46jp-10duan-heshansgf",
+              "text": "46jp-10duan-heshansgf",
+              "start": 0,
+              "end": 21
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 72554,
+      "player_black": "河野临",
+      "player_white": "山城宏",
+      "date_played": "2007-05-31",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41359349.sgf",
+      "sample_index": 4,
+      "classification": "real_event_type",
+      "canonical_type_zh": "日本十段战",
+      "edition_candidate": 46,
+      "year_from_album": 2007,
+      "round_candidate": "本赛第1轮",
+      "source_urls": [
+        "https://www.kifudepot.net/kifucontents.php?id=jVWo0UXmj2PF8k6fakkLlg%3D%3D"
+      ],
+      "decision": "SAFE",
+      "reason": "External SGF root GN/DT/PB/PW confirms shorthand and matchup. Edition 46 is not year 2007.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "2014世界智力精英运动会女子4-5名战",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "001e9ec6ac2bbdc3616bbd4cdfc8ed27",
+      "raw_event_id": 56828,
+      "raw_value": "2014世界智力精英运动会女子4-5名战",
+      "parsed_data": {
+        "original_raw_value": "2014世界智力精英运动会女子4-5名战",
+        "occurrences": 1,
+        "series_core": "2014世界智力精英运动会女子4-5名战",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "2014世界智力精英运动会女子4-5名战",
+          "core": "2014世界智力精英运动会女子4-5名战",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "2014世界智力精英运动会女子4-5名战",
+              "text": "2014世界智力精英运动会女子4-5名战",
+              "start": 0,
+              "end": 20
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 74482,
+      "player_black": "张凯馨",
+      "player_white": "黑嘉嘉",
+      "date_played": "2014-12-14",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41362345.sgf",
+      "sample_index": 5,
+      "classification": "real_event_type",
+      "canonical_type_zh": "世界智力精英运动会",
+      "edition_candidate": 4,
+      "year_from_album": 2014,
+      "round_candidate": "女子个人4、5名战",
+      "source_urls": [
+        "https://sports.sina.com.cn/go/2014-12-14/17547447128.shtml",
+        "https://zh.wikipedia.org/wiki/第四届世界智力精英运动会"
+      ],
+      "decision": "SAFE",
+      "reason": "Contemporaneous exact date/pairing and placing; edition 4 additionally documented in event history. Do not merge with later IMSA elite games by 智英 abbreviation.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "32jp-ming-f-6sgf",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "0024fb6aa504ed4e8d4cd19d18a81627",
+      "raw_event_id": 65970,
+      "raw_value": "32jp-ming-f-6sgf",
+      "parsed_data": {
+        "original_raw_value": "32jp-ming-f-6sgf",
+        "occurrences": 1,
+        "series_core": "32jp-ming-f-6sgf",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "32jp-ming-f-6sgf",
+          "core": "32jp-ming-f-6sgf",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "32jp-ming-f-6sgf",
+              "text": "32jp-ming-f-6sgf",
+              "start": 0,
+              "end": 16
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 64645,
+      "player_black": "张栩",
+      "player_white": "高尾绅路",
+      "date_played": "2007-11-01",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41349575.sgf",
+      "sample_index": 6,
+      "classification": "real_event_type",
+      "canonical_type_zh": "日本名人战",
+      "edition_candidate": 32,
+      "year_from_album": 2007,
+      "round_candidate": "挑战赛第6局",
+      "source_urls": [
+        "https://archive.nihonkiin.or.jp/match/meijin/032.html"
+      ],
+      "decision": "SAFE",
+      "reason": "Official schedule: November 1–2, Takao white versus Cho black; shorthand ming-f-6 resolves. DB has start date only.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "韩国SG名人败者决赛",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "002e6bc68ff2f0c5ce536e26d1ee1d1b",
+      "raw_event_id": 66832,
+      "raw_value": "45届韩国SG名人败者决赛",
+      "parsed_data": {
+        "original_raw_value": "45届韩国SG名人败者决赛",
+        "occurrences": 1,
+        "series_core": "韩国SG名人败者决赛",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "45届韩国SG名人败者决赛",
+          "core": "韩国SG名人败者决赛",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "edition",
+              "value": "45届",
+              "text": "45届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "core",
+              "value": "韩国SG名人败者决赛",
+              "text": "韩国SG名人败者决赛",
+              "start": 3,
+              "end": 13
+            }
+          ],
+          "components": [
+            {
+              "kind": "edition",
+              "value": "45届",
+              "text": "45届",
+              "start": 0,
+              "end": 3
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 628,
+      "player_black": "申旻埈",
+      "player_white": "朴廷桓",
+      "date_played": "2022-09-21",
+      "round_name": null,
+      "place": null,
+      "source": "弈客直播员",
+      "source_path": "data/kifu-album/19x19/18224350.sgf",
+      "sample_index": 7,
+      "classification": "real_event_type",
+      "canonical_type_zh": "韩国名人战",
+      "edition_candidate": 45,
+      "year_from_album": 2022,
+      "round_candidate": "败者组决赛",
+      "source_urls": [
+        "https://kifubara.app/zh/players/a42b2257-fad2-4fc5-b978-b76b607239ee?year=2022"
+      ],
+      "decision": "HOLD",
+      "reason": "External exact pairing/date/losers final supports raw label; SG sponsor is not separate event identity. Strict evidence gate: directory-only external evidence had not independently confirmed original SGF context during first pass.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      },
+      "original_first_pass_decision": "SAFE"
+    },
+    {
+      "series_core": "日本女子本因坊战,round2",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "00380d577423dd436ad6ac9dc0f5a823",
+      "raw_event_id": 84316,
+      "raw_value": "第26期日本女子本因坊战,round2",
+      "parsed_data": {
+        "original_raw_value": "第26期日本女子本因坊战,round2",
+        "occurrences": 1,
+        "series_core": "日本女子本因坊战,round2",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "第26期日本女子本因坊战,round2",
+          "core": "日本女子本因坊战,round2",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "edition",
+              "value": "26期",
+              "text": "第26期",
+              "start": 0,
+              "end": 4
+            },
+            {
+              "kind": "core",
+              "value": "日本女子本因坊战,round2",
+              "text": "日本女子本因坊战,round2",
+              "start": 4,
+              "end": 19
+            }
+          ],
+          "components": [
+            {
+              "kind": "edition",
+              "value": "26期",
+              "text": "第26期",
+              "start": 0,
+              "end": 4
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 79620,
+      "player_black": "谢依旻",
+      "player_white": "吉田美香",
+      "date_played": "2007-06-07",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41370751.sgf",
+      "sample_index": 8,
+      "classification": "real_event_type",
+      "canonical_type_zh": "日本女子本因坊战",
+      "edition_candidate": 26,
+      "year_from_album": 2007,
+      "round_candidate": "round2",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/match/fhoninbo/archive.html"
+      ],
+      "decision": "HOLD",
+      "reason": "Official history establishes edition 26/year 2007; exact June 7 pairing/round not verified. Literal round2 cannot be treated as challenge-series game 2.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "台湾大森杯女子围棋名人赛决赛反则3番棋",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "0045797754f0d78cc4d59f084ed15503",
+      "raw_event_id": 85798,
+      "raw_value": "第2届台湾大森杯女子围棋名人赛决赛反则3番棋第1局",
+      "parsed_data": {
+        "original_raw_value": "第2届台湾大森杯女子围棋名人赛决赛反则3番棋第1局",
+        "occurrences": 1,
+        "series_core": "台湾大森杯女子围棋名人赛决赛反则3番棋",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "第2届台湾大森杯女子围棋名人赛决赛反则3番棋第1局",
+          "core": "台湾大森杯女子围棋名人赛决赛反则3番棋",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "edition",
+              "value": "2届",
+              "text": "第2届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "core",
+              "value": "台湾大森杯女子围棋名人赛决赛反则3番棋",
+              "text": "台湾大森杯女子围棋名人赛决赛反则3番棋",
+              "start": 3,
+              "end": 22
+            },
+            {
+              "kind": "game",
+              "value": "1局",
+              "text": "第1局",
+              "start": 22,
+              "end": 25
+            }
+          ],
+          "components": [
+            {
+              "kind": "edition",
+              "value": "2届",
+              "text": "第2届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "game",
+              "value": "1局",
+              "text": "第1局",
+              "start": 22,
+              "end": 25
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 56109,
+      "player_black": "卢钰桦",
+      "player_white": "党希昀",
+      "date_played": "2019-10-18",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41339305.sgf",
+      "sample_index": 9,
+      "classification": "real_event_type",
+      "canonical_type_zh": "台湾大森杯女子名人赛",
+      "edition_candidate": 2,
+      "year_from_album": 2019,
+      "round_candidate": "决赛变则三番棋；实际对局序号待核",
+      "source_urls": [
+        "https://taiwangorg.blogspot.com/2019/10/blog-post_24.html"
+      ],
+      "decision": "HOLD",
+      "reason": "Official Taiwan academy same date/pairing says final game 2, raw says game 1. A credited initial win may explain numbering, but must preserve both scopes.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "weijia-9-qiuzhangsgf",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "004953fe2d070c3ecd3ec6f17cc8ddba",
+      "raw_event_id": 71295,
+      "raw_value": "weijia-9-qiuzhangsgf",
+      "parsed_data": {
+        "original_raw_value": "weijia-9-qiuzhangsgf",
+        "occurrences": 1,
+        "series_core": "weijia-9-qiuzhangsgf",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "weijia-9-qiuzhangsgf",
+          "core": "weijia-9-qiuzhangsgf",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "weijia-9-qiuzhangsgf",
+              "text": "weijia-9-qiuzhangsgf",
+              "start": 0,
+              "end": 20
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 125773,
+      "player_black": "邱峻",
+      "player_white": "张东岳",
+      "date_played": "2001-06-17",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41444733.sgf",
+      "sample_index": 10,
+      "classification": "source_label",
+      "canonical_type_zh": null,
+      "edition_candidate": null,
+      "year_from_album": 2001,
+      "round_candidate": "9（文件名候选）",
+      "source_urls": [],
+      "decision": "HOLD",
+      "reason": "weijia suggests Chinese A league, but year/round/identity unverified; do not infer edition from filename number.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "004eea7d66d658a5ddbfca932fa9d6d9",
+      "raw_event_id": 81136,
+      "raw_value": "第1届衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+      "parsed_data": {
+        "original_raw_value": "第1届衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+        "occurrences": 1,
+        "series_core": "衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "第1届衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+          "core": "衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "edition",
+              "value": "1届",
+              "text": "第1届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "core",
+              "value": "衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+              "text": "衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+              "start": 3,
+              "end": 22
+            }
+          ],
+          "components": [
+            {
+              "kind": "edition",
+              "value": "1届",
+              "text": "第1届",
+              "start": 0,
+              "end": 3
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 9200,
+      "player_black": "李立言",
+      "player_white": "杨凯文",
+      "date_played": "2022-11-01",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41403142.sgf",
+      "sample_index": 11,
+      "classification": "real_event_type",
+      "canonical_type_zh": "衢州烂柯杯世界围棋公开赛",
+      "edition_candidate": 1,
+      "year_from_album": 2022,
+      "round_candidate": "北美选拔赛决赛（原文）",
+      "source_urls": [
+        "https://k.sina.com.cn/article_1730866981_672aef25019018aei.html"
+      ],
+      "decision": "HOLD",
+      "reason": "Contemporaneous first-edition roster confirms North American Kevin Yang, but no exact November 1 selector final corroboration. Selection took place in 2022 for event later spanning 2023.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "00525e50a0bbdf1659413662d0f08725",
+      "raw_event_id": 73356,
+      "raw_value": "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4",
+      "parsed_data": {
+        "original_raw_value": "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4",
+        "occurrences": 1,
+        "series_core": "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4",
+          "core": "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4",
+              "text": "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4",
+              "start": 0,
+              "end": 24
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 941,
+      "player_black": "韩恩溢",
+      "player_white": "许一笛",
+      "date_played": "2022-11-21",
+      "round_name": null,
+      "place": null,
+      "source": null,
+      "source_path": "data/kifu-album/19x19/20618802.sgf",
+      "sample_index": 12,
+      "classification": "real_event_type",
+      "canonical_type_zh": "中国围棋乙级联赛",
+      "edition_candidate": null,
+      "year_from_album": 2022,
+      "round_candidate": "第6轮/第4台（原文候选）",
+      "source_urls": [
+        "https://www.ttplus.cn/publish/app/data/2022/11/23/449346/os_news.html"
+      ],
+      "decision": "HOLD",
+      "reason": "League/year/teams supported; exact Nov21 pairing/round not checked. 6 and 4 are round/board hints, never editions.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "2007cn-duan-5-zhoukzhuangysgf",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "0057187d05a007dc0ca20e06ea83ca0b",
+      "raw_event_id": 54946,
+      "raw_value": "2007cn-duan-5-zhoukzhuangysgf",
+      "parsed_data": {
+        "original_raw_value": "2007cn-duan-5-zhoukzhuangysgf",
+        "occurrences": 1,
+        "series_core": "2007cn-duan-5-zhoukzhuangysgf",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "2007cn-duan-5-zhoukzhuangysgf",
+          "core": "2007cn-duan-5-zhoukzhuangysgf",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "2007cn-duan-5-zhoukzhuangysgf",
+              "text": "2007cn-duan-5-zhoukzhuangysgf",
+              "start": 0,
+              "end": 29
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 148486,
+      "player_black": "周逵",
+      "player_white": "庄园",
+      "date_played": "2007-07-16",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41609929.sgf",
+      "sample_index": 13,
+      "classification": "source_label",
+      "canonical_type_zh": null,
+      "edition_candidate": null,
+      "year_from_album": 2007,
+      "round_candidate": "5（文件名候选）",
+      "source_urls": [],
+      "decision": "HOLD",
+      "reason": "cn-duan may indicate grading competition. No reliable exact identity evidence; retain filename and year only.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "44jp-10duan-sanhesgf",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "0059aba3eb7340a4a9f6f3ecac109878",
+      "raw_event_id": 66712,
+      "raw_value": "44jp-10duan-sanhesgf",
+      "parsed_data": {
+        "original_raw_value": "44jp-10duan-sanhesgf",
+        "occurrences": 1,
+        "series_core": "44jp-10duan-sanhesgf",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "44jp-10duan-sanhesgf",
+          "core": "44jp-10duan-sanhesgf",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "44jp-10duan-sanhesgf",
+              "text": "44jp-10duan-sanhesgf",
+              "start": 0,
+              "end": 20
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 72254,
+      "player_black": "三村智保",
+      "player_white": "河野临",
+      "date_played": "2005-05-26",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41359026.sgf",
+      "sample_index": 14,
+      "classification": "real_event_type",
+      "canonical_type_zh": "日本十段战",
+      "edition_candidate": 44,
+      "year_from_album": 2005,
+      "round_candidate": null,
+      "source_urls": [
+        "https://igorating.com/compare/rin-kono/tomoyasu-mimura"
+      ],
+      "decision": "HOLD",
+      "reason": "Secondary result list confirms May26 2005 pairing as 十段战; edition44 comes only from filename and round unresolved. Needs official/SGF cross-check.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "世界智英会女子快棋季军战",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "006151c4fffb4a898864bd5327c01730",
+      "raw_event_id": 85463,
+      "raw_value": "第2届世界智英会女子快棋季军战",
+      "parsed_data": {
+        "original_raw_value": "第2届世界智英会女子快棋季军战",
+        "occurrences": 1,
+        "series_core": "世界智英会女子快棋季军战",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "第2届世界智英会女子快棋季军战",
+          "core": "世界智英会女子快棋季军战",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "edition",
+              "value": "2届",
+              "text": "第2届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "core",
+              "value": "世界智英会女子快棋季军战",
+              "text": "世界智英会女子快棋季军战",
+              "start": 3,
+              "end": 15
+            }
+          ],
+          "components": [
+            {
+              "kind": "edition",
+              "value": "2届",
+              "text": "第2届",
+              "start": 0,
+              "end": 3
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 74570,
+      "player_black": "黑嘉嘉",
+      "player_white": "藤泽里菜",
+      "date_played": "2017-12-15",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41362438.sgf",
+      "sample_index": 15,
+      "classification": "real_event_type",
+      "canonical_type_zh": "国际智力运动联盟智力运动精英赛",
+      "edition_candidate": 2,
+      "year_from_album": 2017,
+      "round_candidate": "女子快棋季军战",
+      "source_urls": [
+        "https://sports.sohu.com/20171215/n525382838.shtml",
+        "https://zh.wikipedia.org/wiki/2017国际智力运动联盟智力运动精英赛"
+      ],
+      "decision": "SAFE",
+      "reason": "Contemporaneous semifinal pairings produce same consolation matchup; 2017 result table corroborates Fujisawa bronze/Hei fourth. Second edition from raw, not collapsed with 2014 SportAccord event.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "2014太阳谷避暑季四城市围棋赛决赛",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "00636c4ab94dd27811bf89382fc1f268",
+      "raw_event_id": 56919,
+      "raw_value": "2014太阳谷避暑季四城市围棋赛决赛",
+      "parsed_data": {
+        "original_raw_value": "2014太阳谷避暑季四城市围棋赛决赛",
+        "occurrences": 1,
+        "series_core": "2014太阳谷避暑季四城市围棋赛决赛",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "2014太阳谷避暑季四城市围棋赛决赛",
+          "core": "2014太阳谷避暑季四城市围棋赛决赛",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "2014太阳谷避暑季四城市围棋赛决赛",
+              "text": "2014太阳谷避暑季四城市围棋赛决赛",
+              "start": 0,
+              "end": 18
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 56156,
+      "player_black": "党毅飞",
+      "player_white": "唐韦星",
+      "date_played": "2014-09-27",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41339352.sgf",
+      "sample_index": 16,
+      "classification": "real_event_type",
+      "canonical_type_zh": "太阳谷避暑季四城市围棋巅峰对决",
+      "edition_candidate": null,
+      "year_from_album": 2014,
+      "round_candidate": "决赛",
+      "source_urls": [
+        "https://sports.sina.com.cn/go/suncityweiqi2014/"
+      ],
+      "decision": "SAFE",
+      "reason": "Contemporaneous event feature exact Sept27 final/pairing; one-off event is valid identity, not generic fixture description.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "晋城职业围棋公开赛8强",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "006769cfd56605527834b1150b929792",
+      "raw_event_id": 86023,
+      "raw_value": "第2届晋城职业围棋公开赛8强",
+      "parsed_data": {
+        "original_raw_value": "第2届晋城职业围棋公开赛8强",
+        "occurrences": 1,
+        "series_core": "晋城职业围棋公开赛8强",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "第2届晋城职业围棋公开赛8强",
+          "core": "晋城职业围棋公开赛8强",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "edition",
+              "value": "2届",
+              "text": "第2届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "core",
+              "value": "晋城职业围棋公开赛8强",
+              "text": "晋城职业围棋公开赛8强",
+              "start": 3,
+              "end": 14
+            }
+          ],
+          "components": [
+            {
+              "kind": "edition",
+              "value": "2届",
+              "text": "第2届",
+              "start": 0,
+              "end": 3
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 23368,
+      "player_black": "赵晨宇",
+      "player_white": "丁浩",
+      "date_played": "2025-12-12",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/73296088.sgf",
+      "sample_index": 17,
+      "classification": "real_event_type",
+      "canonical_type_zh": "晋城职业围棋公开赛",
+      "edition_candidate": 2,
+      "year_from_album": 2025,
+      "round_candidate": "8强战",
+      "source_urls": [
+        "https://m.sohu.com/a/964216341_121609438/"
+      ],
+      "decision": "HOLD",
+      "reason": "Thirdparty preview gives same Dec12 pairing/quarterfinal. Lack organizer evidence; canonical 全国 qualifier and tournament continuity need review.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "22cn-ty-3-wangwangsgf",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "006824211de38e9bb01cdff3a1a2f91a",
+      "raw_event_id": 63571,
+      "raw_value": "22cn-ty-3-wangwangsgf",
+      "parsed_data": {
+        "original_raw_value": "22cn-ty-3-wangwangsgf",
+        "occurrences": 1,
+        "series_core": "22cn-ty-3-wangwangsgf",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "22cn-ty-3-wangwangsgf",
+          "core": "22cn-ty-3-wangwangsgf",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "22cn-ty-3-wangwangsgf",
+              "text": "22cn-ty-3-wangwangsgf",
+              "start": 0,
+              "end": 21
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 139417,
+      "player_black": "王煜辉",
+      "player_white": "王檄",
+      "date_played": "2008-02-02",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41560626.sgf",
+      "sample_index": 18,
+      "classification": "real_event_type",
+      "canonical_type_zh": "中国天元赛",
+      "edition_candidate": 22,
+      "year_from_album": 2008,
+      "round_candidate": "本赛第3轮（8强战）",
+      "source_urls": [
+        "https://sports.sina.com.cn/go/2008-02-02/16193457972.shtml"
+      ],
+      "decision": "SAFE",
+      "reason": "Exact contemporary edition/date/pairing corroborates cryptic 22cn-ty-3 filename; 3 is round, 22 edition.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "2019韩国英才-女子冠军对抗",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "006fdac9f36510cbb27e5767421d1c11",
+      "raw_event_id": 60713,
+      "raw_value": "2019韩国英才-女子冠军对抗第5局",
+      "parsed_data": {
+        "original_raw_value": "2019韩国英才-女子冠军对抗第5局",
+        "occurrences": 1,
+        "series_core": "2019韩国英才-女子冠军对抗",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "2019韩国英才-女子冠军对抗第5局",
+          "core": "2019韩国英才-女子冠军对抗",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "2019韩国英才-女子冠军对抗",
+              "text": "2019韩国英才-女子冠军对抗",
+              "start": 0,
+              "end": 15
+            },
+            {
+              "kind": "game",
+              "value": "5局",
+              "text": "第5局",
+              "start": 15,
+              "end": 18
+            }
+          ],
+          "components": [
+            {
+              "kind": "game",
+              "value": "5局",
+              "text": "第5局",
+              "start": 15,
+              "end": 18
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 122955,
+      "player_black": "朴炫洙",
+      "player_white": "吴侑珍",
+      "date_played": "2019-06-01",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41441281.sgf",
+      "sample_index": 19,
+      "classification": "real_event_type",
+      "canonical_type_zh": "韩国历届英才战冠军对顶尖女子擂台赛",
+      "edition_candidate": null,
+      "year_from_album": 2019,
+      "round_candidate": "第5局（原文）",
+      "source_urls": [
+        "https://sports.sina.cn/others/qipai/2020-07-08/detail-iircuyvk2717641.d.html"
+      ],
+      "decision": "HOLD",
+      "reason": "2020 retrospective establishes 2019 inaugural event and teams, but exact June1 game5 unverified; seventh 영재 event edition should not automatically become confrontation edition.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "韩国KB联赛6轮陕川-元益决胜",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "007d3520bad33b299a1b0cf141758cd8",
+      "raw_event_id": 63395,
+      "raw_value": "20届韩国KB联赛6轮陕川-元益决胜5局",
+      "parsed_data": {
+        "original_raw_value": "20届韩国KB联赛6轮陕川-元益决胜5局",
+        "occurrences": 1,
+        "series_core": "韩国KB联赛6轮陕川-元益决胜",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "20届韩国KB联赛6轮陕川-元益决胜5局",
+          "core": "韩国KB联赛6轮陕川-元益决胜",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "edition",
+              "value": "20届",
+              "text": "20届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "core",
+              "value": "韩国KB联赛6轮陕川-元益决胜",
+              "text": "韩国KB联赛6轮陕川-元益决胜",
+              "start": 3,
+              "end": 18
+            },
+            {
+              "kind": "game",
+              "value": "5局",
+              "text": "5局",
+              "start": 18,
+              "end": 20
+            }
+          ],
+          "components": [
+            {
+              "kind": "edition",
+              "value": "20届",
+              "text": "20届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "game",
+              "value": "5局",
+              "text": "5局",
+              "start": 18,
+              "end": 20
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 5114,
+      "player_black": "元晟溱",
+      "player_white": "李志贤",
+      "date_played": "2024-02-03",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/39341379.sgf",
+      "sample_index": 20,
+      "classification": "real_event_type",
+      "canonical_type_zh": "韩国KB围棋联赛",
+      "edition_candidate": 20,
+      "year_from_album": 2024,
+      "round_candidate": "第6轮/决胜第5局",
+      "source_urls": [
+        "https://www.ntdtv.com/gb/2024/02/07/a103850093.html"
+      ],
+      "decision": "HOLD",
+      "reason": "Exact match/day supported, season is 2023–2024. Article says Lee black versus Won white; DB colors reversed. Hold before any album association or dedup decision.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "61byf-f-6sgf",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "007d9a222b612910a162a4e41856d74b",
+      "raw_event_id": 67907,
+      "raw_value": "61byf-f-6sgf",
+      "parsed_data": {
+        "original_raw_value": "61byf-f-6sgf",
+        "occurrences": 1,
+        "series_core": "61byf-f-6sgf",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "61byf-f-6sgf",
+          "core": "61byf-f-6sgf",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "61byf-f-6sgf",
+              "text": "61byf-f-6sgf",
+              "start": 0,
+              "end": 12
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 64277,
+      "player_black": "高尾绅路",
+      "player_white": "山田规三生",
+      "date_played": "2006-07-10",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41349121.sgf",
+      "sample_index": 21,
+      "classification": "real_event_type",
+      "canonical_type_zh": "日本本因坊战",
+      "edition_candidate": 61,
+      "year_from_album": 2006,
+      "round_candidate": "挑战赛第6局",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/match/honinbo/061.html"
+      ],
+      "decision": "HOLD",
+      "reason": "Official exact pairing/edition confirms shorthand but game6 dated July11–12; DB July10 conflicts. No automatic date correction or duplicate merge.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "龙华杯世界围棋传奇大师赛决赛",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "008081226cc6958805c72774cff1599f",
+      "raw_event_id": 81493,
+      "raw_value": "第1届龙华杯世界围棋传奇大师赛决赛",
+      "parsed_data": {
+        "original_raw_value": "第1届龙华杯世界围棋传奇大师赛决赛",
+        "occurrences": 1,
+        "series_core": "龙华杯世界围棋传奇大师赛决赛",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "第1届龙华杯世界围棋传奇大师赛决赛",
+          "core": "龙华杯世界围棋传奇大师赛决赛",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "edition",
+              "value": "1届",
+              "text": "第1届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "core",
+              "value": "龙华杯世界围棋传奇大师赛决赛",
+              "text": "龙华杯世界围棋传奇大师赛决赛",
+              "start": 3,
+              "end": 17
+            }
+          ],
+          "components": [
+            {
+              "kind": "edition",
+              "value": "1届",
+              "text": "第1届",
+              "start": 0,
+              "end": 3
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 9957,
+      "player_black": "马晓春",
+      "player_white": "刘昌赫",
+      "date_played": "2023-11-26",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41426223.sgf",
+      "sample_index": 22,
+      "classification": "real_event_type",
+      "canonical_type_zh": "龙华杯世界围棋传奇大师赛",
+      "edition_candidate": 1,
+      "year_from_album": 2023,
+      "round_candidate": "决赛",
+      "source_urls": [
+        "https://www.foxwq.com/news/14902.html?lang=th",
+        "https://www.epochtimes.com/gb/23/11/28/n14125373.htm"
+      ],
+      "decision": "SAFE",
+      "reason": "Contemporary coverage identifies event and champion final opponent; precise date Nov26 and inaugural edition additionally corroborated by full event report.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "2kr-gglt-10-lijinsgf",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "00acc7a154a847647566968d09a3f8dd",
+      "raw_event_id": 65408,
+      "raw_value": "2kr-gglt-10-lijinsgf",
+      "parsed_data": {
+        "original_raw_value": "2kr-gglt-10-lijinsgf",
+        "occurrences": 1,
+        "series_core": "2kr-gglt-10-lijinsgf",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "2kr-gglt-10-lijinsgf",
+          "core": "2kr-gglt-10-lijinsgf",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "2kr-gglt-10-lijinsgf",
+              "text": "2kr-gglt-10-lijinsgf",
+              "start": 0,
+              "end": 20
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 93118,
+      "player_black": "金钟秀",
+      "player_white": "李玟真",
+      "date_played": "2008-05-29",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41392452.sgf",
+      "sample_index": 23,
+      "classification": "source_label",
+      "canonical_type_zh": null,
+      "edition_candidate": 2,
+      "year_from_album": 2008,
+      "round_candidate": "10（文件名候选）",
+      "source_urls": [],
+      "decision": "HOLD",
+      "reason": "kr-gglt abbreviation not safely resolved; number10 could be league round/board. No event mapping.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "Tengen80_1.13*",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "00bf13e8565cd62789d199f90ad717c2",
+      "raw_event_id": 70694,
+      "raw_value": "Tengen80_1.13*",
+      "parsed_data": {
+        "original_raw_value": "Tengen80_1.13*",
+        "occurrences": 1,
+        "series_core": "Tengen80_1.13*",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "Tengen80_1.13*",
+          "core": "Tengen80_1.13*",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "Tengen80_1.13*",
+              "text": "Tengen80_1.13*",
+              "start": 0,
+              "end": 14
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 135942,
+      "player_black": "赵治勋",
+      "player_white": "FujisawaShuko",
+      "date_played": "1980-05-01",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41550442.sgf",
+      "sample_index": 24,
+      "classification": "source_label",
+      "canonical_type_zh": null,
+      "edition_candidate": null,
+      "year_from_album": 1980,
+      "round_candidate": null,
+      "source_urls": [],
+      "decision": "HOLD",
+      "reason": "Tengen80 suggests Japanese Tengen in 1980, but 1.13* could date/position/version and conflicts with DB May1 if read as date. Hold all linkage.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "32jp-xrw-kongsongsgf",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "00c05f39bf70029da8ba4092a590426b",
+      "raw_event_id": 65980,
+      "raw_value": "32jp-xrw-kongsongsgf",
+      "parsed_data": {
+        "original_raw_value": "32jp-xrw-kongsongsgf",
+        "occurrences": 1,
+        "series_core": "32jp-xrw-kongsongsgf",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "32jp-xrw-kongsongsgf",
+          "core": "32jp-xrw-kongsongsgf",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "32jp-xrw-kongsongsgf",
+              "text": "32jp-xrw-kongsongsgf",
+              "start": 0,
+              "end": 20
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 96107,
+      "player_black": "孔令文",
+      "player_white": "松本武久",
+      "date_played": "2007-02-01",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41396355.sgf",
+      "sample_index": 25,
+      "classification": "source_label",
+      "canonical_type_zh": null,
+      "edition_candidate": 32,
+      "year_from_album": 2007,
+      "round_candidate": null,
+      "source_urls": [],
+      "decision": "HOLD",
+      "reason": "jp-xrw may mean Japanese 新人王; numbered filename is insufficient external evidence, round/player romanization encoding ambiguous.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "日本十段战.败者",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "00cf4c1e347bde51993293f9af98dbc6",
+      "raw_event_id": 74044,
+      "raw_value": "日本十段战.败者",
+      "parsed_data": {
+        "original_raw_value": "日本十段战.败者",
+        "occurrences": 1,
+        "series_core": "日本十段战.败者",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "日本十段战.败者",
+          "core": "日本十段战.败者",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "日本十段战.败者",
+              "text": "日本十段战.败者",
+              "start": 0,
+              "end": 8
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 32858,
+      "player_black": "坂田荣男",
+      "player_white": "久岛国夫",
+      "date_played": "1987-08-06",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41295997.sgf",
+      "sample_index": 26,
+      "classification": "real_event_type",
+      "canonical_type_zh": "日本十段战",
+      "edition_candidate": null,
+      "year_from_album": 1987,
+      "round_candidate": "败者组（原文）",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/match/jyudan/043.htm"
+      ],
+      "decision": "HOLD",
+      "reason": "Raw clearly names Japanese 十段战; official page confirms identity only, not 1987 edition/date/round. Do not map 1987 blindly to edition25: qualifying cycles cross years.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "7kr-xrls-9-piaojinsgf",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "00f40a818d6fd1cf2fa77f323dce7dfc",
+      "raw_event_id": 68437,
+      "raw_value": "7kr-xrls-9-piaojinsgf",
+      "parsed_data": {
+        "original_raw_value": "7kr-xrls-9-piaojinsgf",
+        "occurrences": 1,
+        "series_core": "7kr-xrls-9-piaojinsgf",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "7kr-xrls-9-piaojinsgf",
+          "core": "7kr-xrls-9-piaojinsgf",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "7kr-xrls-9-piaojinsgf",
+              "text": "7kr-xrls-9-piaojinsgf",
+              "start": 0,
+              "end": 21
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 88111,
+      "player_black": "朴升哲",
+      "player_white": "金恩善",
+      "date_played": "2007-07-02",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41383554.sgf",
+      "sample_index": 27,
+      "classification": "source_label",
+      "canonical_type_zh": null,
+      "edition_candidate": 7,
+      "year_from_album": 2007,
+      "round_candidate": "9（文件名候选）",
+      "source_urls": [],
+      "decision": "HOLD",
+      "reason": "kr-xrls ambiguous newcomer/league abbreviation; names suggest Korean game but no confirmed event. Hold.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "“金陵无想杯”全国业余围棋公开赛",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "00f8bbade6cac8b598bf2f0dc774a638",
+      "raw_event_id": 62798,
+      "raw_value": "2024年“金陵无想杯”全国业余围棋公开赛第四轮",
+      "parsed_data": {
+        "original_raw_value": "2024年“金陵无想杯”全国业余围棋公开赛第四轮",
+        "occurrences": 1,
+        "series_core": "“金陵无想杯”全国业余围棋公开赛",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "2024年“金陵无想杯”全国业余围棋公开赛第四轮",
+          "core": "“金陵无想杯”全国业余围棋公开赛",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "year",
+              "value": "2024",
+              "text": "2024年",
+              "start": 0,
+              "end": 5
+            },
+            {
+              "kind": "core",
+              "value": "“金陵无想杯”全国业余围棋公开赛",
+              "text": "“金陵无想杯”全国业余围棋公开赛",
+              "start": 5,
+              "end": 21
+            },
+            {
+              "kind": "round",
+              "value": "四轮",
+              "text": "第四轮",
+              "start": 21,
+              "end": 24
+            }
+          ],
+          "components": [
+            {
+              "kind": "year",
+              "value": "2024",
+              "text": "2024年",
+              "start": 0,
+              "end": 5
+            },
+            {
+              "kind": "round",
+              "value": "四轮",
+              "text": "第四轮",
+              "start": 21,
+              "end": 24
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 11785,
+      "player_black": "山峻哲",
+      "player_white": "司马旭",
+      "date_played": "2024-04-05",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/42171280.sgf",
+      "sample_index": 28,
+      "classification": "real_event_type",
+      "canonical_type_zh": "金陵无想杯全国业余围棋公开赛",
+      "edition_candidate": null,
+      "year_from_album": 2024,
+      "round_candidate": "第4轮（原文）",
+      "source_urls": [
+        "https://blog.19x19.com/archives/2024_04_08_17_15_30_1031"
+      ],
+      "decision": "SAFE",
+      "reason": "Chinese Go Association report reposted by source establishes exact 2024 event and explicit rename from 金陵杯. Round from raw; no implied edition1 or rename dedup.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    },
+    {
+      "series_core": "世界未来之星新锐最强战16强战",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "010356058de854e94ffa55d411a03633",
+      "raw_event_id": 88996,
+      "raw_value": "第3届世界未来之星新锐最强战16强战",
+      "parsed_data": {
+        "original_raw_value": "第3届世界未来之星新锐最强战16强战",
+        "occurrences": 1,
+        "series_core": "世界未来之星新锐最强战16强战",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "第3届世界未来之星新锐最强战16强战",
+          "core": "世界未来之星新锐最强战16强战",
+          "grammar": "explicit_components",
+          "parts": [
+            {
+              "kind": "edition",
+              "value": "3届",
+              "text": "第3届",
+              "start": 0,
+              "end": 3
+            },
+            {
+              "kind": "core",
+              "value": "世界未来之星新锐最强战16强战",
+              "text": "世界未来之星新锐最强战16强战",
+              "start": 3,
+              "end": 18
+            }
+          ],
+          "components": [
+            {
+              "kind": "edition",
+              "value": "3届",
+              "text": "第3届",
+              "start": 0,
+              "end": 3
+            }
+          ],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 31125,
+      "player_black": "白现宇",
+      "player_white": "王星昊",
+      "date_played": "2018-01-16",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41293202.sgf",
+      "sample_index": 29,
+      "classification": "real_event_type",
+      "canonical_type_zh": "世界未来之星新锐最强战",
+      "edition_candidate": 3,
+      "year_from_album": 2018,
+      "round_candidate": "16强战",
+      "source_urls": [
+        "https://kifudepot.net/index.php?event=&move=&page=3&player=%E7%99%BD%E7%8F%BE%E5%AE%87&sort="
+      ],
+      "decision": "HOLD",
+      "reason": "External SGF catalog exact date/pairing/edition/round supports full event identity. Strict evidence gate: directory-only external evidence had not independently confirmed original SGF context during first pass.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      },
+      "original_first_pass_decision": "SAFE"
+    },
+    {
+      "series_core": "2004-12-25",
+      "game_count": 1,
+      "raw_count": 1,
+      "selection_hash": "010b1a269ee44ee8953529ef595e6990",
+      "raw_event_id": 53985,
+      "raw_value": "2004-12-25",
+      "parsed_data": {
+        "original_raw_value": "2004-12-25",
+        "occurrences": 1,
+        "series_core": "2004-12-25",
+        "parse_exceptions": [
+          "classification_review"
+        ],
+        "structure": {
+          "raw_value": "2004-12-25",
+          "core": "2004-12-25",
+          "grammar": "unparsed",
+          "parts": [
+            {
+              "kind": "core",
+              "value": "2004-12-25",
+              "text": "2004-12-25",
+              "start": 0,
+              "end": 10
+            }
+          ],
+          "components": [],
+          "status": "pending_review",
+          "rule_version": "event-components-v5",
+          "exceptions": []
+        }
+      },
+      "album_id": 29383,
+      "player_black": "YunChun-sang",
+      "player_white": "AnCho-yeong",
+      "date_played": "2004-12-25",
+      "round_name": null,
+      "place": null,
+      "source": "https://19x19.com",
+      "source_path": "data/kifu-album/19x19/41291087.sgf",
+      "sample_index": 30,
+      "classification": "undecidable",
+      "canonical_type_zh": null,
+      "edition_candidate": null,
+      "year_from_album": 2004,
+      "round_candidate": null,
+      "source_urls": [],
+      "decision": "HOLD",
+      "reason": "EV is only ISO date, matching DT; no event semantics. Date-only value must not become canonical event nor dedup key.",
+      "dedup_decision": "NONE; identity/filename similarity is not game duplication evidence",
+      "field_authority": {
+        "raw_value": "unchanged",
+        "year": "album DT year; may differ from competition season/year",
+        "edition": "candidate from explicit raw/filename unless reason identifies external confirmation",
+        "round": "candidate; external confirmation only where reason says so"
+      }
+    }
+  ],
+  "format": "kifu-event-longtail-timed-pilot-v1",
+  "completed_at": "2026-10-04T13:48:15.052398+00:00",
+  "wall_clock_minutes": 5.433,
+  "minutes_per_singleton": 0.181,
+  "stop_reason": "Completed 30 preselected cores within 45 minute limit",
+  "singleton_definition": "Exactly one currently unlinked album among unclassified_pending raw values for a parsed series_core (not one distinct raw spelling)",
+  "summary": {
+    "reviewed": 30,
+    "safe": 10,
+    "uncertain_hold": 20,
+    "classifications": {
+      "real_event_type": 22,
+      "game_fixture_description": 1,
+      "source_label": 6,
+      "undecidable": 1
+    }
+  },
+  "safety": {
+    "database_writes": 0,
+    "code_changes": 0,
+    "translations": 0,
+    "dedup_merges": 0,
+    "production_transaction": "REPEATABLE READ READ ONLY; ROLLBACK"
+  },
+  "safe_scope": "SAFE means enough evidence for event-type preprocessing candidate. Edition/round fields preserve provenance and do not authorize DB writes; not a full linkage or dedup approval. HOLD means at least one material identity/metadata ambiguity remains.",
+  "measurement_limit": "Wall clock covers first production selection query through final bundle and focused verification; no per-item stopwatch, so average only. Snapshot-specific fixed hash sample, not changing RNG or cherry-picking. Singleton pilot does not estimate game-weighted throughput for whole backlog. This is first-pass research time ONLY; excludes later fresh-evidence review and all ingestion work.",
+  "verification": "30 distinct singleton cores; MD5 hashes recomputed locally and order checked; read_only=on; no postselection DB query or writes.",
+  "original_first_pass_summary": {
+    "reviewed": 30,
+    "safe": 12,
+    "uncertain_hold": 18,
+    "classifications": {
+      "real_event_type": 22,
+      "game_fixture_description": 1,
+      "source_label": 6,
+      "undecidable": 1
+    }
+  },
+  "snapshot_explanation": "PostgreSQL txid_current_snapshot format xmin:xmax:xip_list. Trailing colon with empty active transaction list is valid, not placeholder.",
+  "superseded_by": "kifu-event-longtail-review-2026-10-04.json"
+}

@@ -1,0 +1,734 @@
+{
+  "format": "kifu-player-independent-identity-target-decision-v1",
+  "reviewer": "Astra independent reviewer",
+  "reviewed_at": "2026-10-04T07:33:48.055715+00:00",
+  "scope": "15 exact Chinese raw spellings only; identity and target decision, no database writes performed; not an executable apply plan",
+  "decision": "13 exact raw identities approved for live slot capture; 小松英树 and 林彦丞 held for catalog resolution",
+  "inputs": {
+    "producer": {
+      "path": "docs/resource/kifu-player-next15-identity-review-2026-10-04.json",
+      "sha256": "95fd0111834adb70ac90777f011b36534cb8a170368dbfc5a2c476df4ce44164"
+    },
+    "inventories": {
+      "TEST": {
+        "path": "/tmp/kifu-five-test-inventory-post7.json.gz",
+        "file_sha256": "08007a829412fc585888cbbcadd2e0d1e2fd0080af3017f4a85019170689e52b",
+        "inventory_sha256": "cc46067736fa3895c85963d88fdacd91aaf6dd1d2b5da3dc843d3df26a8d237c",
+        "snapshot_time": "2026-10-03T17:03:14.216863Z",
+        "games": 173025
+      },
+      "PROD": {
+        "path": "/tmp/kifu-five-prod-inventory-post7.json.gz",
+        "file_sha256": "dcc4f547ec196bbe850b79b6ce11a97dfda64e92343fcb2640dbd1aebaaad743",
+        "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+        "snapshot_time": "2026-10-03T17:03:14.625467Z",
+        "games": 173025
+      }
+    },
+    "live_catalogs": {
+      "TEST": {
+        "path": "/tmp/next15-identity-decision-evidence/TEST-live-catalog.json",
+        "file_sha256": "7473fe7faaee10b20a0bc2085dd61073c440a970c2fa7447ad767eacc0fc5f00",
+        "snapshot_time": "2026-10-04 07:23:37.638658+00:00",
+        "database": "katrain_db",
+        "counts": {
+          "kifu_players": 3845,
+          "kifu_player_aliases": 27,
+          "kifu_player_names": 5441
+        }
+      },
+      "PROD": {
+        "path": "/tmp/next15-identity-decision-evidence/PROD-live-catalog.json",
+        "file_sha256": "ad30816d6a563a5421eed452b23935c3611059ffa6e850ddc4c221f35aeba064",
+        "snapshot_time": "2026-10-04 07:23:37.479512+00:00",
+        "database": "katrain_prod_20260725",
+        "counts": {
+          "kifu_players": 3669,
+          "kifu_player_aliases": 27,
+          "kifu_player_names": 4386
+        }
+      }
+    }
+  },
+  "totals": {
+    "exact_slots": 6265,
+    "approved_raws": 13,
+    "approved_identity_slots_before_slot_holds": 5454,
+    "whole_raw_held_slots": 811,
+    "known_slot_holds": 31,
+    "maximum_candidate_slots_after_known_holds": 5423,
+    "new_id_candidates": 6,
+    "reused_id_candidates": 7
+  },
+  "entries": [
+    {
+      "raw": "林士勋",
+      "slots": 655,
+      "canonical": "林士勋",
+      "official_name": "林士勛",
+      "prod_target": "new",
+      "test_target": "new",
+      "birth_date": "1997-07-12",
+      "professional_from": "2012",
+      "note": "2011 junior/amateur games are chronologically possible; source-date conflicts are held individually.",
+      "sources": [
+        "https://haifong.org/profession/venue/39DB6A531FEBD95C2829A32DA88CCCE0",
+        "https://taiwangorg.blogspot.com/2011/01/2011_97.html"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "create_if_live_collision_check_still_clear",
+      "known_slot_holds": [
+        {
+          "album_id": 78123,
+          "side": "black",
+          "raw": "林士勋",
+          "date_played": "2011-08-13",
+          "black": "林士勋",
+          "white": "黄彦诚",
+          "event": "2011台湾感恩杯新锐赛",
+          "reason": "date_conflicts_with_official_taiwan_go_game_index"
+        },
+        {
+          "album_id": 107990,
+          "side": "white",
+          "raw": "林士勋",
+          "date_played": "2011-08-14",
+          "black": "林杰汉",
+          "white": "林士勋",
+          "event": "2011台湾感恩杯新锐赛",
+          "reason": "date_conflicts_with_official_taiwan_go_game_index"
+        },
+        {
+          "album_id": 109021,
+          "side": "white",
+          "raw": "林士勋",
+          "date_played": "2011-08-13",
+          "black": "王元均",
+          "white": "林士勋",
+          "event": "2011台湾感恩杯新锐赛",
+          "reason": "date_conflicts_with_official_taiwan_go_game_index"
+        }
+      ],
+      "maximum_slots_after_known_holds": 652
+    },
+    {
+      "raw": "周俊勋",
+      "slots": 567,
+      "canonical": "周俊勋",
+      "official_name": "周俊勛",
+      "prod_target": "new",
+      "test_target": "new",
+      "birth_date": "1980-02-23",
+      "professional_from": "1993",
+      "note": "1990 and 1992 world-youth entries may precede professional status and are not impossible-date holds.",
+      "sources": [
+        "https://haifong.org/profession/venue/524D63AB167F4AC82887FD1660977B3E"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "create_if_live_collision_check_still_clear",
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 567
+    },
+    {
+      "raw": "李志贤",
+      "slots": 486,
+      "canonical": "李志贤",
+      "official_name": "李志賢",
+      "prod_target": 151,
+      "test_target": 152,
+      "birth_date": "1992-09-30",
+      "professional_from": "2010-04-04",
+      "native_name": "이지현(남)",
+      "note": "Male 李志賢, distinct from female 李知炫 (1979-05-21, pkey10000133). No unqualified Korean/Latin alias approval. 2009 amateur BC Cup/Samsung entries are possible.",
+      "sources": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10000570",
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10000133",
+        "https://sports.sohu.com/20090227/n262508745.shtml"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "reuse_existing",
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 486
+    },
+    {
+      "raw": "小松英树",
+      "slots": 445,
+      "canonical": "小松英樹",
+      "prod_target": 535,
+      "test_target": 536,
+      "conflicting_test_target": 1017,
+      "birth_date": "1967-03-04",
+      "native_name": "Komatsu Hideki",
+      "note": "Identity established, but TEST536 and TEST1017 duplicate same person; whole exact raw held pending a catalog decision.",
+      "sources": [
+        "https://archive.nihonkiin.or.jp/player/htm/ki000148.htm"
+      ],
+      "identity_supported": true,
+      "decision": "hold",
+      "catalog_action": "hold_duplicate_ids",
+      "hold_reason": "TEST536 and TEST1017 refer to same official 小松英樹; preserve both until dedicated merge decision",
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 0
+    },
+    {
+      "raw": "沟上知亲",
+      "slots": 442,
+      "canonical": "溝上知親",
+      "prod_target": 275,
+      "test_target": 276,
+      "birth_date": "1977-06-22",
+      "professional_from": "1993",
+      "native_name": "Mizokami Tomochika",
+      "note": "Reuse existing canonical 溝上知親, protect distinct son 溝上大介.",
+      "sources": [
+        "https://www.nihonkiin.or.jp/news/docs/h26_godohyosyo.pdf",
+        "https://www.nihonkiin.or.jp/player/htm/ki000321.html"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "reuse_existing",
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 442
+    },
+    {
+      "raw": "蔡丞韦",
+      "slots": 423,
+      "canonical": "蔡丞韦",
+      "official_name": "蔡丞韋",
+      "prod_target": 5826,
+      "test_target": 11595,
+      "professional_from": "2014-01",
+      "note": "Existing 蔡丞伟 ID has two games. 2015-09-20 vs 林立祥 is anchored by Taiwan Go Institute 2015-09-13 pairing notice. Reuse existing identity; do not create another.",
+      "sources": [
+        "https://www.haifong.org/profession",
+        "https://www.haifong.org/news/content/FE15E9D30449AED92A9B4DD1AC75FAD2",
+        "https://taiwangorg.blogspot.com/2014/01/103.html",
+        "https://taiwangorg.blogspot.com/2015/09/2015.html"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "reuse_existing",
+      "current_canonical": "蔡丞伟",
+      "canonical_preference": "蔡丞韦",
+      "canonical_correction_recommended": true,
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 423
+    },
+    {
+      "raw": "偰玹准",
+      "slots": 399,
+      "canonical": "偰玹准",
+      "official_name": "偰玹準",
+      "prod_target": 3946,
+      "test_target": 9743,
+      "birth_date": "1999-01-29",
+      "professional_from": "2013-07-13",
+      "native_name": "설현준",
+      "note": "Existing 偰炫准 ID has three 2017 Korean League games. Official 2017-08-13 report matches 2017-08-12 vs 강승민 (姜升旼). Reuse existing identity.",
+      "sources": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10000767",
+        "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000767",
+        "https://m.baduk.or.kr/news/B02_view.asp?news_sum_no=183",
+        "https://m.baduk.or.kr/news/B01_view.asp?news_no=771"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "reuse_existing",
+      "current_canonical": "偰炫准",
+      "canonical_preference": "偰玹准",
+      "canonical_correction_recommended": true,
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 399
+    },
+    {
+      "raw": "黄世元",
+      "slots": 380,
+      "canonical": "黄世元",
+      "official_name": "黃世元",
+      "prod_target": "new",
+      "test_target": "new",
+      "birth_date": "2000-08-31",
+      "professional_from": "2015",
+      "note": "Exact simplified Chinese matches official 黃世元; no corresponding live canonical, alias or display-name identity found.",
+      "sources": [
+        "https://www.haifong.org/profession/venue/4CE8E505BBEEC3B5C043C1C50291CDD9"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "create_if_live_collision_check_still_clear",
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 380
+    },
+    {
+      "raw": "林彦丞",
+      "slots": 366,
+      "canonical": "林彦丞",
+      "official_name": "林彥丞",
+      "prod_target": null,
+      "test_target": null,
+      "birth_date": "2001-09-18",
+      "professional_from": "2017",
+      "native_name": "林彥丞",
+      "note": "Official identity clear, but 林彦杰 PROD5180/TEST10961 already has album22955 vs 曾品杰 on 2025-11-14 in Taiwan 2nd Bawang league R4. Potential duplicate not resolved by authoritative game anchor; neither create new nor reuse typo ID yet.",
+      "sources": [
+        "https://www.haifong.org/profession",
+        "https://haifong.org/profession/venue/AE4B5AB0DFEB900CDE0CBD2979FAFEA0",
+        "https://www.haifong.org/elite/40466E1FFD8AD5CA6538D6FDD8497320"
+      ],
+      "identity_supported": true,
+      "decision": "hold",
+      "catalog_action": "hold_possible_duplicate",
+      "possible_existing_targets": {
+        "PROD": 5180,
+        "TEST": 10961
+      },
+      "possible_existing_canonical": "林彦杰",
+      "hold_reason": "Potential duplicate person behind live album22955 is unresolved; do not create or guess target",
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 0
+    },
+    {
+      "raw": "张凯馨",
+      "slots": 364,
+      "canonical": "张凯馨",
+      "official_name": "張凱馨",
+      "prod_target": "new",
+      "test_target": "new",
+      "birth_date": "1980-07-04",
+      "professional_from": "2003",
+      "note": "Exact simplified Chinese matches official 張凱馨; no corresponding live canonical, alias or display-name identity found.",
+      "sources": [
+        "https://haifong.org/profession/venue/C69D6010E6103B10BE46C2050F1B73ED"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "create_if_live_collision_check_still_clear",
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 364
+    },
+    {
+      "raw": "岛村俊广",
+      "slots": 362,
+      "canonical": "岛村俊广",
+      "official_name": "島村俊廣",
+      "prod_target": 4511,
+      "test_target": 10302,
+      "birth_year": 1912,
+      "last_game_date": "1982-03-11",
+      "native_name": "Shimamura Toshihiro",
+      "note": "Current canonical 岛村俊宏 is a documented former name, not a different player. Scholarly history gives 利博→俊宏→俊広→俊廣. Existing target already carries 345 Shimamura Toshihiro slots. Reuse current ID; no rename is required for linking.",
+      "sources": [
+        "https://www.nihonkiin.or.jp/profile/enkaku/jyokun.html",
+        "https://www.nihonkiin.or.jp/special/100anniversary/kishi_select/44.html",
+        "https://ritsumei.repo.nii.ac.jp/record/13960/files/ir_33_2_kago_kahyo.pdf"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "reuse_existing",
+      "current_canonical": "岛村俊宏",
+      "canonical_preference": "岛村俊广",
+      "canonical_correction_recommended": false,
+      "known_slot_holds": [
+        {
+          "album_id": 56484,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "木谷实",
+          "white": "岛村俊广",
+          "event": "1stProBestTen",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56487,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "木谷实",
+          "event": "3rdNihonKi-inChampionship",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56500,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "前田陈尔",
+          "white": "岛村俊广",
+          "event": "ProBestTen,2nd",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56509,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "山部俊郎",
+          "white": "岛村俊广",
+          "event": "GoChampionship,9th",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56515,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "林有太郎",
+          "white": "岛村俊广",
+          "event": "NihonKi-inNumberOnePosition,4th",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56517,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "林有太郎",
+          "event": "ProBestTen,2nd",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56530,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "杉内雅男",
+          "white": "岛村俊广",
+          "event": "ProBestTen,1st",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56532,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "濑川良雄",
+          "white": "岛村俊广",
+          "event": "NihonKi-inNumberOnePosition,4th",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56539,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "藤泽朋斋",
+          "event": "GoChampionship,8th",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56544,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "山部俊郎",
+          "white": "岛村俊广",
+          "event": "NihonKi-inChampionship,9th",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56546,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "杉内雅男",
+          "white": "岛村俊广",
+          "event": "NihonKi-inNumberOnePosition,2nd",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56550,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "加藤正夫",
+          "event": "NihonKi-inChampionship,21st",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56555,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "山部俊郎",
+          "white": "岛村俊广",
+          "event": "NihonKi-inChampionship,15th",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56570,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "林有太郎",
+          "white": "岛村俊广",
+          "event": "NihonKi-inChampionship,8th",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56572,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "宫下秀洋",
+          "white": "岛村俊广",
+          "event": "NihonKi-inChampionship,8th",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56578,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "林海峰",
+          "white": "岛村俊广",
+          "event": "7thNihonKi-inChampionship",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56597,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "梶原武雄",
+          "event": "3rdAll-JapanFirstPlace",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56603,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "藤泽库之助",
+          "white": "岛村俊广",
+          "event": "Oteai,LateSession",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56611,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "关山利一",
+          "event": "Oteai,SpringSession",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56615,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "武宫正树",
+          "white": "岛村俊广",
+          "event": "1stHayagoChampionship",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56616,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "小野田千代太郎",
+          "event": "Oteai,AutumnSession",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56619,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "前田陈尔",
+          "event": "Oteai,AutumnSession",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56627,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "桥本宇太郎",
+          "event": "1936AutumnOteaiWinners'PlayoffSeriessponsoredbyAsahiShinbun",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56649,
+          "side": "white",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "宫下秀洋",
+          "white": "岛村俊广",
+          "event": "NihonKi-inChampionship,19th",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56653,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "濑尾寿",
+          "event": "NihonKi-inChampionship,19th",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56671,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "高川格",
+          "event": "2ndNihonKi-inHighestDansTournament",
+          "reason": "placeholder_date"
+        },
+        {
+          "album_id": 56674,
+          "side": "black",
+          "raw": "岛村俊广",
+          "date_played": "1900-01-01",
+          "black": "岛村俊广",
+          "white": "高川格",
+          "event": "1stNihonKi-inChampionship",
+          "reason": "placeholder_date"
+        }
+      ],
+      "maximum_slots_after_known_holds": 335
+    },
+    {
+      "raw": "崔明勋",
+      "slots": 351,
+      "canonical": "崔明勋",
+      "official_name": "崔明勳",
+      "prod_target": 188,
+      "test_target": 189,
+      "birth_date": "1975-05-12",
+      "professional_from": "1991",
+      "native_name": "최명훈",
+      "note": "Reuse correct existing identity. Protect separate provisional 崔明薰 IDs4545/10335; this review does not merge them or approve that raw. Album39168 predates birth.",
+      "sources": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10000065"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "reuse_existing",
+      "known_slot_holds": [
+        {
+          "album_id": 39168,
+          "side": "white",
+          "raw": "崔明勋",
+          "date_played": "1971-04-28",
+          "black": "梁宰豪",
+          "white": "崔明勋",
+          "event": "第32届韩国名人战循环圈",
+          "reason": "date_before_birth"
+        }
+      ],
+      "maximum_slots_after_known_holds": 350
+    },
+    {
+      "raw": "韩尚勋",
+      "slots": 351,
+      "canonical": "韩尚勋",
+      "official_name": "韓尙勳",
+      "prod_target": "new",
+      "test_target": "new",
+      "birth_date": "1988-05-16",
+      "professional_from": "2006-12-02",
+      "native_name": "한상훈",
+      "note": "Official 韓尙勳 establishes this spelling; 尙/尚 is a graphic variant. No general Hangul/Latin alias extension.",
+      "sources": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10000467"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "create_if_live_collision_check_still_clear",
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 351
+    },
+    {
+      "raw": "安国铉",
+      "slots": 337,
+      "canonical": "安国铉",
+      "official_name": "安國鉉",
+      "prod_target": 4349,
+      "test_target": 10143,
+      "birth_date": "1992-07-23",
+      "professional_from": "2009-12-07",
+      "native_name": "안국현",
+      "note": "Existing 安国炫 ID has three games; official 2017 GS Caltex final vs 金志锡 confirms the identity behind that catalog. Reuse existing ID.",
+      "sources": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10000548",
+        "https://m.baduk.or.kr/news/B01_view.asp?news_no=2145",
+        "https://www.baduk.or.kr/game/game_view.asp?cmpt_code=2117"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "reuse_existing",
+      "current_canonical": "安国炫",
+      "canonical_preference": "安国铉",
+      "canonical_correction_recommended": true,
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 337
+    },
+    {
+      "raw": "张哲豪",
+      "slots": 337,
+      "canonical": "张哲豪",
+      "official_name": "張哲豪",
+      "prod_target": "new",
+      "test_target": "new",
+      "birth_date": "1986-04-07",
+      "professional_from": "2007",
+      "note": "Official Taiwan professional. Protect distinct unreviewed 张子豪/张家豪 rather than merge based on one-character similarity.",
+      "sources": [
+        "https://www.haifong.org/profession/venue/A171DFC04906431680FC73EB858CC94A"
+      ],
+      "identity_supported": true,
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "catalog_action": "create_if_live_collision_check_still_clear",
+      "known_slot_holds": [],
+      "maximum_slots_after_known_holds": 337
+    }
+  ],
+  "guard_requirements": [
+    "Capture current TEST and PROD separately. Match frozen raw, album id, side, target identity and complete preimages. NULL FKs only; preserve any existing FK.",
+    "Check exact SGF PB/PW and side, game date, opponent identity and source consistency. A valid amateur/junior game before professional entry is not automatically an impossible date.",
+    "Apply the 31 explicit slot holds. Hold any additional placeholder/impossible dates, same-person opponents (including known former names), source/opponent conflicts or live catalog drift.",
+    "No global alias creation, substring match, rank stripping, whitespace equivalence, romanization generalization or Hangul homophone merge. Rank-suffixed spellings remain outside this scope.",
+    "For the four corrected targets reuse the existing environment-specific person ID. Never create a second person merely because preferred simplified name differs from current canonical.",
+    "Any canonical correction must be an explicit preimage-bound change with complete live references checked; this identity decision does not prescribe merging or rewriting historical raw values.",
+    "Keep previously pending raw rows pending unless a separate approved slot plan permits an exact status change; do not transfer authority from provisional metadata."
+  ],
+  "protected_names": [
+    "小松英树 rank variants",
+    "李知炫",
+    "李知铉",
+    "이지현",
+    "Lee Jihyun",
+    "Lee Ji-hyun",
+    "崔明薰",
+    "林彦杰",
+    "张子豪",
+    "张家豪",
+    "溝上大介",
+    "小松大树",
+    "小松英子",
+    "小松英松"
+  ],
+  "source_notes": [
+    "baduk.or.kr desktop page10000767 failed; official mobile profile and2013 official admission report verified same pkey/person.",
+    "Generic Haifong profession list is dynamic; use direct profiles and dated official reports, not absence from one rendered roster, for identity.",
+    "島村俊宏 is a former name, not a spelling error; 2020 Ritsumeikan paper PDF page23 verifies full name chain."
+  ]
+}

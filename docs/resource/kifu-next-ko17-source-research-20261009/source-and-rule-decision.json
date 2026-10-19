@@ -1,0 +1,620 @@
+{
+  "artifact_kind": "ko17_four_name_source_and_rule_decision",
+  "decided_at_utc": "2026-10-08T23:21:44.376566+00:00",
+  "reviewer": {
+    "id": "/root/zh_ko_native_adapter_review_astra",
+    "model": "gpt-6-astra",
+    "reasoning_effort": "max"
+  },
+  "approval_level": "four_exact_source_readings_and_ten_finite_rule_entries_only",
+  "candidate_approval": false,
+  "database_candidate_signed": false,
+  "source_basis": "normative_zh_ko_v1",
+  "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+  "selected_owner_ids": [
+    6531,
+    5115,
+    5214,
+    5543
+  ],
+  "input_packets": [
+    {
+      "path": "6531.json",
+      "sha256": "3f9ada234e90e5c8d1f55c2f84c6ce5df5aeffd04437d1201d268a5500b736ef"
+    },
+    {
+      "path": "5115.json",
+      "sha256": "d9cf60f7a4a063971ad5991c170c99f363aeea9799a546886074d33b288bbf31"
+    },
+    {
+      "path": "5214.json",
+      "sha256": "51d5c0bca61d9cf3c1652118b032faaab9080655c8b61f820e64d555a19fc6d2"
+    },
+    {
+      "path": "5543.json",
+      "sha256": "c447d2ea4a55395dadaae5741a23b75dda60be87b56b147c97bebf67ec47db87"
+    },
+    {
+      "path": "5806.json",
+      "sha256": "3a9a749fe13979b45ddc0cb4014708376e1a4c7bde5ceede91f05c26a64d78be"
+    }
+  ],
+  "scope_decision": {
+    "approved_scope": "Only the four exact modern personal names and published ordinary Mandarin readings enumerated here, in their captured professional Go context, including the Taiwan-published forms. No pronunciation is selected from nationality, residence, or Han glyphs alone.",
+    "pinyin_classification": "Independent linguistic determination for the actual complete published strings. It does not label all English columns or a publisher-wide romanization policy as Hanyu Pinyin.",
+    "not_allowed": "English aliases, incomplete surname-only romanization, unresolved regional or reading variants, inferred Han readings, historical Sino-Korean reading substitution, or generic transliteration.",
+    "conventional_name_priority": "Any reliable same-person Korean publication remains prior to generation; no global absence claim. One same-owner community ranking hit is retained below as reference agreement.",
+    "display_spacing": "Join surname and given name for this project while preserving both boundaries in evidence; no special NIKL Chinese-name spacing mandate is asserted.",
+    "existing_owner_and_four_physical_name_preconditions": "Accepted as the task input; not independently requalified against a current DB by this source-only review."
+  },
+  "approved_inputs": [
+    {
+      "owner": {
+        "kind": "player",
+        "id": 6531
+      },
+      "status": "approved_source_input_and_rule_only",
+      "queue_canonical_name": "黄家胤",
+      "original_name": "黃家胤",
+      "original_language": "zh-Hant",
+      "published_reading": "Huang Jia-Yin",
+      "reading_words": [
+        [
+          "huang"
+        ],
+        [
+          "jia",
+          "yin"
+        ]
+      ],
+      "reading_determination": "The actual Taiwan Kiin profile pairs 黃家胤 and the complete English-name field Huang Jia-Yin in one paragraph. For this exact Han/Latin pair, huang + jia + yin is a complete ordinary Mandarin sequence directly compatible with Hanyu Pinyin; Jia-Yin publishes both given-name boundaries. The hyphen is preserved as a declared separator before normalization. No pronunciation or syllable is supplied from Han alone. This is an independent linguistic classification of this spelling, not a claim that the page explicitly calls it Hanyu Pinyin or that every Taiwan Latin name uses Pinyin.",
+      "identity_locator": "Official Taiwan Kiin profile, raw line 626: 黃家胤初段 英文名: Huang Jia-Yin. Haifong independently prints 黃家胤 and the same birth date. Use the captured traditional original; the queue canonical 黄家胤 is an already verified script variant, not a literal on this page.",
+      "capture_shape": "single_body_han_and_latin",
+      "identity_reading_source_url": "https://taiwangorg.blogspot.com/2022/12/blog-post_91.html",
+      "reading_system": "pinyin-syllables-v1",
+      "pinyin_label_is_reviewer_determination": true,
+      "publisher_explicitly_labels_hanyu_pinyin": false,
+      "reading_inferred_from_han": false,
+      "syllable_outputs": [
+        [
+          "황"
+        ],
+        [
+          "자",
+          "인"
+        ]
+      ],
+      "rule_output": "황자인",
+      "used_entries": {
+        "huang": {
+          "hangul": "황",
+          "kind": "reviewed_composition",
+          "locator": "Chapter 2 Table 5, raw HTML line 1573: initial h -> ㅎ plus final wang (uang) -> 왕; select post-initial uang under the note at line 1578, giving 황."
+        },
+        "jia": {
+          "hangul": "자",
+          "kind": "reviewed_composition",
+          "locator": "Chapter 2 Table 5, raw HTML line 1573: initial j -> ㅈ plus final ya (ia) -> 야; post-initial ia under note line 1578. Chapter 3 Chinese section item 2, raw line 6707 and example line 6710: 쟈 -> 자."
+        },
+        "yin": {
+          "hangul": "인",
+          "kind": "direct_table_entry",
+          "locator": "Chapter 2 Table 5 finals, raw HTML line 1573: yin (in) -> 인; zero-initial yin."
+        }
+      },
+      "source_ids": [
+        "6531-identity-1",
+        "6531-identity-0"
+      ],
+      "contrary_result": "no_qualified_Korean_name_found_in_stated_finite_checks"
+    },
+    {
+      "owner": {
+        "kind": "player",
+        "id": 5115
+      },
+      "status": "approved_source_input_and_rule_only",
+      "queue_canonical_name": "杨以伦",
+      "original_name": "杨以伦",
+      "original_language": "zh-Hans",
+      "published_reading": "Yang Yilun",
+      "reading_words": [
+        [
+          "yang"
+        ],
+        [
+          "yi",
+          "lun"
+        ]
+      ],
+      "reading_determination": "U-Go /2275/ actually pairs Yang Yilun and 杨以伦, and identifies Yang Yilun as the sorting name. The complete published words segment as yang | yi lun; each is an ordinary Mandarin/Hanyu-Pinyin syllable and the given-name segmentation is unambiguous. GoRatings /1604/ is a supporting identity/profile correspondence. The review applies to this published Chinese name in Go use; it makes no nationality or current-residence inference and supplies no alternative reading from Han.",
+      "identity_locator": "U-Go /2275/, raw lines 75/82/103: Yang Yilun; 杨以伦; Key name (used for sorting): Yang Yilun. GoRatings /ja/players/1604.html gives 杨以伦; /ko/players/1604.html retains Latin Yang Yilun.",
+      "capture_shape": "single_body_han_and_latin",
+      "identity_reading_source_url": "https://db.u-go.net/2275/",
+      "reading_system": "pinyin-syllables-v1",
+      "pinyin_label_is_reviewer_determination": true,
+      "publisher_explicitly_labels_hanyu_pinyin": false,
+      "reading_inferred_from_han": false,
+      "syllable_outputs": [
+        [
+          "양"
+        ],
+        [
+          "이",
+          "룬"
+        ]
+      ],
+      "rule_output": "양이룬",
+      "used_entries": {
+        "yang": {
+          "hangul": "양",
+          "kind": "direct_table_entry",
+          "locator": "Chapter 2 Table 5 finals, raw HTML line 1573: yang (iang) -> 양; zero-initial yang."
+        },
+        "yi": {
+          "hangul": "이",
+          "kind": "direct_table_entry",
+          "locator": "Chapter 2 Table 5 finals, raw HTML line 1573: yi (i) -> 이; zero-initial yi."
+        },
+        "lun": {
+          "hangul": "룬",
+          "kind": "reviewed_composition",
+          "locator": "Chapter 2 Table 5, raw HTML line 1573: initial l -> ㄹ plus final wen (un) -> 원 (운); select parenthetical post-initial un -> 운 under note line 1578, giving 룬."
+        }
+      },
+      "source_ids": [
+        "5115-identity-0",
+        "5115-identity-1",
+        "5115-identity-2"
+      ],
+      "contrary_result": "no_qualified_Korean_name_found_in_stated_finite_checks"
+    },
+    {
+      "owner": {
+        "kind": "player",
+        "id": 5214
+      },
+      "status": "approved_source_input_and_rule_only",
+      "queue_canonical_name": "柯沛辰",
+      "original_name": "柯沛辰",
+      "original_language": "zh-Hans",
+      "published_reading": "Ke Peichen",
+      "reading_words": [
+        [
+          "ke"
+        ],
+        [
+          "pei",
+          "chen"
+        ]
+      ],
+      "reading_determination": "The Chinese and English GoRatings pages share player ID 2480 and the exact same outbound Haifong profile URL; their actual headings are 柯沛辰 and Ke Peichen. In that exact person/name pairing the published complete Latin sequence is ordinary Mandarin/Hanyu Pinyin ke | pei chen, not an English alias or a silently repaired regional spelling. The two source bodies are separate evidence and must remain separately hashed.",
+      "identity_locator": "GoRatings /zh/players/2480.html and /en/players/2480.html, raw title line 2 and h1 line 165; both link https://www.haifong.org/profession/venue/ACBF499C50310A39B5ED50FBD5B1E4E3 and show the same date 2010-01-17.",
+      "capture_shape": "two_actual_localizations_same_profile_id_and_same_outbound_official_link",
+      "paired_profile_id": 2480,
+      "reading_system": "pinyin-syllables-v1",
+      "pinyin_label_is_reviewer_determination": true,
+      "publisher_explicitly_labels_hanyu_pinyin": false,
+      "reading_inferred_from_han": false,
+      "syllable_outputs": [
+        [
+          "커"
+        ],
+        [
+          "페이",
+          "천"
+        ]
+      ],
+      "rule_output": "커페이천",
+      "used_entries": {
+        "ke": {
+          "hangul": "커",
+          "kind": "reviewed_composition",
+          "locator": "Chapter 2 Table 5, raw HTML line 1573: initial k -> ㅋ plus final e -> 어, giving 커."
+        },
+        "pei": {
+          "hangul": "페이",
+          "kind": "reviewed_composition",
+          "locator": "Chapter 2 Table 5, raw HTML line 1573: initial p -> ㅍ plus final ei -> 에이, giving 페이."
+        },
+        "chen": {
+          "hangul": "천",
+          "kind": "reviewed_composition",
+          "locator": "Chapter 2 Table 5, raw HTML line 1573: initial ch -> ㅊ plus final en -> 언, giving 천; this is not the independent chi -> 츠 entry."
+        }
+      },
+      "source_ids": [
+        "5214-identity-0",
+        "5214-identity-1",
+        "5214-identity-2"
+      ],
+      "contrary_result": "no_qualified_Korean_name_found_in_stated_finite_checks"
+    },
+    {
+      "owner": {
+        "kind": "player",
+        "id": 5543
+      },
+      "status": "approved_source_input_and_rule_only",
+      "queue_canonical_name": "王紫涵",
+      "original_name": "王紫涵",
+      "original_language": "zh-Hans",
+      "published_reading": "Wang Zihan",
+      "reading_words": [
+        [
+          "wang"
+        ],
+        [
+          "zi",
+          "han"
+        ]
+      ],
+      "reading_determination": "The English and Chinese GoRatings pages share player ID 2445 and the same outbound Haifong profile URL; their actual headings are Wang Zihan and 王紫涵. The literal sequence wang | zi han is a complete, unambiguous ordinary Mandarin/Hanyu-Pinyin reading for this paired name. In particular the published zi is retained; no zhi or alternative vowel is inferred from the characters.",
+      "identity_locator": "GoRatings /en/players/2445.html and /zh/players/2445.html, raw title line 2 and h1 line 165; both link https://www.haifong.org/profession/venue/B15AD71345F8FF8D7E2E8FC2D7037F82.",
+      "capture_shape": "two_actual_localizations_same_profile_id_and_same_outbound_official_link",
+      "paired_profile_id": 2445,
+      "reading_system": "pinyin-syllables-v1",
+      "pinyin_label_is_reviewer_determination": true,
+      "publisher_explicitly_labels_hanyu_pinyin": false,
+      "reading_inferred_from_han": false,
+      "syllable_outputs": [
+        [
+          "왕"
+        ],
+        [
+          "쯔",
+          "한"
+        ]
+      ],
+      "rule_output": "왕쯔한",
+      "used_entries": {
+        "wang": {
+          "hangul": "왕",
+          "kind": "direct_table_entry",
+          "locator": "Table 5 finals: wang (uang) -> 왕, zero-initial form."
+        },
+        "zi": {
+          "hangul": "쯔",
+          "kind": "direct_table_entry",
+          "locator": "Table 5 initials: z [zi] -> ㅉ [쯔]; bracketed independent syllable. Note at raw line 1578."
+        },
+        "han": {
+          "hangul": "한",
+          "kind": "reviewed_composition",
+          "locator": "Chapter 2 Table 5, raw HTML line 1573: initial h -> ㅎ plus final an -> 안, giving 한."
+        }
+      },
+      "source_ids": [
+        "5543-identity-0",
+        "5543-identity-1",
+        "5543-identity-2"
+      ],
+      "contrary_result": "same_owner_reference_usage_agrees_with_rule_not_conventional_gate"
+    }
+  ],
+  "approved_new_syllable_mappings": {
+    "huang": {
+      "hangul": "황",
+      "kind": "reviewed_composition",
+      "locator": "Chapter 2 Table 5, raw HTML line 1573: initial h -> ㅎ plus final wang (uang) -> 왕; select post-initial uang under the note at line 1578, giving 황."
+    },
+    "jia": {
+      "hangul": "자",
+      "kind": "reviewed_composition",
+      "locator": "Chapter 2 Table 5, raw HTML line 1573: initial j -> ㅈ plus final ya (ia) -> 야; post-initial ia under note line 1578. Chapter 3 Chinese section item 2, raw line 6707 and example line 6710: 쟈 -> 자."
+    },
+    "yin": {
+      "hangul": "인",
+      "kind": "direct_table_entry",
+      "locator": "Chapter 2 Table 5 finals, raw HTML line 1573: yin (in) -> 인; zero-initial yin."
+    },
+    "yang": {
+      "hangul": "양",
+      "kind": "direct_table_entry",
+      "locator": "Chapter 2 Table 5 finals, raw HTML line 1573: yang (iang) -> 양; zero-initial yang."
+    },
+    "yi": {
+      "hangul": "이",
+      "kind": "direct_table_entry",
+      "locator": "Chapter 2 Table 5 finals, raw HTML line 1573: yi (i) -> 이; zero-initial yi."
+    },
+    "lun": {
+      "hangul": "룬",
+      "kind": "reviewed_composition",
+      "locator": "Chapter 2 Table 5, raw HTML line 1573: initial l -> ㄹ plus final wen (un) -> 원 (운); select parenthetical post-initial un -> 운 under note line 1578, giving 룬."
+    },
+    "ke": {
+      "hangul": "커",
+      "kind": "reviewed_composition",
+      "locator": "Chapter 2 Table 5, raw HTML line 1573: initial k -> ㅋ plus final e -> 어, giving 커."
+    },
+    "pei": {
+      "hangul": "페이",
+      "kind": "reviewed_composition",
+      "locator": "Chapter 2 Table 5, raw HTML line 1573: initial p -> ㅍ plus final ei -> 에이, giving 페이."
+    },
+    "chen": {
+      "hangul": "천",
+      "kind": "reviewed_composition",
+      "locator": "Chapter 2 Table 5, raw HTML line 1573: initial ch -> ㅊ plus final en -> 언, giving 천; this is not the independent chi -> 츠 entry."
+    },
+    "han": {
+      "hangul": "한",
+      "kind": "reviewed_composition",
+      "locator": "Chapter 2 Table 5, raw HTML line 1573: initial h -> ㅎ plus final an -> 안, giving 한."
+    }
+  },
+  "reused_existing_syllables": {
+    "wang": {
+      "hangul": "왕",
+      "kind": "direct_table_entry",
+      "locator": "Table 5 finals: wang (uang) -> 왕, zero-initial form."
+    },
+    "zi": {
+      "hangul": "쯔",
+      "kind": "direct_table_entry",
+      "locator": "Table 5 initials: z [zi] -> ㅉ [쯔]; bracketed independent syllable. Note at raw line 1578."
+    }
+  },
+  "rule_source": {
+    "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+    "body_file": "../kifu-nikl-cn-ko-research-20261009/captures/foreign-regulation-full.html",
+    "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+    "http_status": 200,
+    "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+    "table_locator": "Chapter 2 Table 5, raw line 1573; post-initial/independent-form note line 1578",
+    "tone_locator": "Chapter 3 Chinese section item 1, raw line 6666: tones are not distinguished in Hangul",
+    "adjustment_locator": "Chapter 3 Chinese section item 2, raw line 6707; jia example 쟈→자 at line 6710",
+    "scope_locator": "Chapter 4 section 2 item 1, raw line 13706: modern Chinese personal names",
+    "person_specific_NIKL_endorsement_claimed": false
+  },
+  "contrary_checks": {
+    "reused_sources": "Each original packet preserves Bing/Naver Han and published-Latin queries plus exact GoRatings Korean-path captures where available. Original raw source and search hashes were recomputed.",
+    "limitations": [
+      "The saved KBA/TVBaduk China roster scans are bounded China-corpus checks, not proof of absence for Taiwan players.",
+      "The captured Naver Ke Peichen response contains a temporary-error message; treat that particular response as unavailable, not not_found.",
+      "GoRatings /ko/ headings retain English Latin names for 5115, 5214 and 5543; Korean site chrome alone does not publish a Korean name.",
+      "The named ko60 queue directory was absent at review time; the five supplied source packets were available and reviewed."
+    ],
+    "new_search_capture": {
+      "path": "source-rule-contrary-search-transcripts.json",
+      "sha256": "f8d367bf237c16650fa04f4a85760619f98fe08bb75d8dd07b435808de644c5f",
+      "capture_kind": "actual_web_search_tool_transcript",
+      "queried_at_utc": "2026-10-08T23:16:55Z",
+      "http_status": null
+    },
+    "queries": [
+      {
+        "query": "\"황자인\" 바둑",
+        "response_status": "completed_with_results",
+        "resolution": "Results contain ordinary Korean phrase 황자인 and unrelated fiction/person references, not this player; no qualified same-person Korean Go publication."
+      },
+      {
+        "query": "\"양이룬\" 바둑 \"Yang\"",
+        "response_status": "completed_empty",
+        "resolution": "No results in this specific tool response; this is bounded query evidence only."
+      },
+      {
+        "query": "\"커페이천\" 바둑",
+        "response_status": "completed_empty",
+        "resolution": "No results in this specific tool response; this is bounded query evidence only."
+      },
+      {
+        "query": "\"왕쯔한\" 바둑",
+        "response_status": "completed_with_results",
+        "resolution": "One Go ranking community result links the exact same GoRatings ID 2445 and agrees in Hangul; other results are unrelated. See the separately fetched original below."
+      }
+    ],
+    "same_owner_community_usage": {
+      "url": "https://qkrrhkdfo1.tistory.com/640",
+      "method": "GET",
+      "fetched_at_utc": "2026-10-08T23:18:04.393354+00:00",
+      "source_role": "community_copied_Go_ranking",
+      "capture_kind": "contrary_owner_resolution",
+      "http_status": 200,
+      "final_url": "https://qkrrhkdfo1.tistory.com/640",
+      "body_bytes": 521949,
+      "body_sha256": "c04ae12fa723fea6bf69054e4ca095cbefa17c5f541be3cef2df72825cc0da15",
+      "body_file": "captures/source-rule-wang-korean-ranking.body",
+      "matched_rows": [
+        {
+          "text": "723 왕쯔한(王子漢) ♀ 2819",
+          "links": [
+            [
+              "왕쯔한(王子漢)",
+              "https://www.goratings.org/en/players/2445.html"
+            ]
+          ]
+        }
+      ],
+      "row_locator": "HTML table row 723, anchor href https://www.goratings.org/en/players/2445.html",
+      "observed_hangul": "왕쯔한",
+      "observed_han_label": "王子漢",
+      "expected_verified_han": "王紫涵",
+      "resolution": "The outbound exact profile ID establishes which profile the copied row names. The Hangul equals the normative output. The copied row has a different Han label; do not treat 王子漢 as a simplified/traditional equivalent of 王紫涵 or replace the verified original. This community copy is reference agreement, not an authoritative Korean conventional-name approval.",
+      "conventional_gate_qualified": false,
+      "unresolved_pronunciation_conflict": false
+    },
+    "unavailable_open": {
+      "url": "https://qkrrhkdfo1.tistory.com/640",
+      "method": "web open",
+      "response_status": "unavailable_timeout",
+      "absence_claim": false,
+      "subsequent_direct_GET": "Succeeded; raw body retained in same_owner_community_usage."
+    },
+    "global_absence_claim": false
+  },
+  "not_selected": [
+    {
+      "owner": {
+        "kind": "player",
+        "id": 5806
+      },
+      "original_name": "蕭睿杉",
+      "queue_canonical_name": "萧睿杉",
+      "published_reading": "Wesley Hsiao",
+      "status": "hold_missing_complete_published_Mandarin_reading",
+      "reason": "The official page publishes an English given name plus a surname in a non-Hanyu-Pinyin spelling. Wesley does not supply 睿杉 syllables and Hsiao must not silently be rewritten as xiao. The Han name and official profile do not license deriving its complete Mandarin reading.",
+      "approved_syllables": [],
+      "approved_output": null
+    }
+  ],
+  "candidate_implementation_preconditions": [
+    "The current validator requires scope.modern_mainland=True. Do not fabricate this for Taiwan records. A separately reviewed narrow scope-contract update must represent the actual modern ordinary-Mandarin name basis before these candidates can pass.",
+    "The current single reading capture must contain both original_name and published reading. The 5214 and 5543 actual localized pages do not individually do so. Preserve both real bodies and the exact shared profile ID/outbound official-link binding in a supported proof shape; never concatenate bodies and claim one HTTP response. Otherwise retain those candidates pending.",
+    "For 6531, retain actual original 黃家胤 and observed traditional-Chinese page language with embedded Latin. Do not relabel the whole page English or replace raw glyphs with 黄家胤. Bind any reused current CN/EN source using its exact name/evidence/applied-batch images; do not force a simplified CN anchor to equal a traditional original.",
+    "Bind fresh KO null preimages, cross-owner normalized Korean collisions and all reused source live proofs; obtain independent approval of the exact final candidate/research payload. This source decision signs no DB candidate."
+  ],
+  "sources": [
+    {
+      "url": "https://haifong.org/profession/venue/A3086B92CB5CF060FA04DDA30E0A2058",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:04.490337+00:00",
+      "body_file": "captures/6531-authority-ret99-haifong-bare-18.body",
+      "body_sha256": "b42dc9913aa0f0140f333a65e3654e75409f12a77ee71a2e810d20faca0afbfc",
+      "id": "6531-identity-0",
+      "source_role": "official_person_page",
+      "publisher_class": "official_go_institution",
+      "observed_page_language": "zh-Hant"
+    },
+    {
+      "url": "https://taiwangorg.blogspot.com/2022/12/blog-post_91.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:03.502798+00:00",
+      "body_file": "captures/6531-authority-ret151-taiwan-kiin-legacy-profile-33.body",
+      "body_sha256": "25f3fff28b22c3b1c9f6c4a76d1ea00efcc3b3ffeb17cabd7cbfa8211d81e607",
+      "id": "6531-identity-1",
+      "source_role": "official_person_page",
+      "publisher_class": "official_go_institution",
+      "observed_page_language": "zh-Hant_with_embedded_Latin_name"
+    },
+    {
+      "url": "https://db.u-go.net/2275/",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:03.710526+00:00",
+      "body_file": "captures/5115-authority-ret97-ugo-en-12.body",
+      "body_sha256": "3209f0358d3404761a9da4cb9406f09b09cc4b436499ebbc92c006efdfac2f5e",
+      "id": "5115-identity-0",
+      "source_role": "published_player_profile",
+      "publisher_class": "language_go_reference_database",
+      "observed_page_language": "en"
+    },
+    {
+      "url": "https://www.goratings.org/ja/players/1604.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:05.813827+00:00",
+      "body_file": "captures/5115-authority-ret100-goratings-ja-19.body",
+      "body_sha256": "36081159bf796e4778a12e18684107cfb5de537a86e5d7ae26b792e82bd3c0fa",
+      "id": "5115-identity-1",
+      "source_role": "published_player_profile",
+      "publisher_class": "language_go_reference_database",
+      "observed_page_language": "ja"
+    },
+    {
+      "url": "https://www.goratings.org/ko/players/1604.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:58.350304+00:00",
+      "body_file": "captures/5115-authority-ko.body",
+      "body_sha256": "c0f41414e1e62b9f40e5b28ad86fab116e4e256a62c58e6640007c8fb13ba121",
+      "id": "5115-identity-2",
+      "source_role": "published_player_profile",
+      "publisher_class": "language_go_reference_database",
+      "observed_page_language": "ko"
+    },
+    {
+      "url": "https://goratings.org/zh/players/2480.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:07.493750+00:00",
+      "body_file": "captures/5214-authority-ret110-goratings-zh-19.body",
+      "body_sha256": "7c3d69a3738909f20c9505cf00d9b528866e1ff86c8628fa3f0fa8405dba864c",
+      "id": "5214-identity-0",
+      "source_role": "published_player_profile",
+      "publisher_class": "language_go_reference_database",
+      "observed_page_language": "zh-Hans"
+    },
+    {
+      "url": "https://www.goratings.org/en/players/2480.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:05.813696+00:00",
+      "body_file": "captures/5214-authority-ret110-goratings-en-19.body",
+      "body_sha256": "68a4d28d027d274a5c33a0f0ea3b2dfd871e445a96a0ceb3311be741bced031f",
+      "id": "5214-identity-1",
+      "source_role": "published_player_profile",
+      "publisher_class": "language_go_reference_database",
+      "observed_page_language": "en"
+    },
+    {
+      "url": "https://www.goratings.org/ko/players/2480.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:58.337616+00:00",
+      "body_file": "captures/5214-authority-ko.body",
+      "body_sha256": "a509152bb06fbb4efe2db512a22a17c7fb7063b604c0c7e4114a21e3cc5d5f98",
+      "id": "5214-identity-2",
+      "source_role": "published_player_profile",
+      "publisher_class": "language_go_reference_database",
+      "observed_page_language": "ko"
+    },
+    {
+      "url": "https://www.goratings.org/en/players/2445.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:06.057401+00:00",
+      "body_file": "captures/5543-authority-ret110-goratings-en-19.body",
+      "body_sha256": "32e91199c5553e631720c0d9f7590f6807445ff3b1c3ef09d2b1f1b69c700bf1",
+      "id": "5543-identity-0",
+      "source_role": "published_player_profile",
+      "publisher_class": "language_go_reference_database",
+      "observed_page_language": "en"
+    },
+    {
+      "url": "https://www.goratings.org/zh/players/2445.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:06.040449+00:00",
+      "body_file": "captures/5543-authority-ret110-goratings-zh-19.body",
+      "body_sha256": "d8b2389975c37ef8c6d8e271b1f57854bf41023451ac4c1892501f652ccb1676",
+      "id": "5543-identity-1",
+      "source_role": "published_player_profile",
+      "publisher_class": "language_go_reference_database",
+      "observed_page_language": "zh-Hans"
+    },
+    {
+      "url": "https://www.goratings.org/ko/players/2445.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:58.332969+00:00",
+      "body_file": "captures/5543-authority-ko.body",
+      "body_sha256": "4c10d3425773f60d822de470709dd2c279161f78bfd74185c72d70d2956e65e4",
+      "id": "5543-identity-2",
+      "source_role": "published_player_profile",
+      "publisher_class": "language_go_reference_database",
+      "observed_page_language": "ko"
+    },
+    {
+      "url": "https://haifong.org/profession/venue/8AB03BA6DA9332148C3AC88706421907",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:04.490256+00:00",
+      "body_file": "captures/5806-authority-ret101-haifong-bare-19.body",
+      "body_sha256": "fc73233beb77160b36d50e7a33f671005f0c65d5a4817edd8f8a931a2f915d20",
+      "id": "5806-identity-0",
+      "source_role": "official_person_page",
+      "publisher_class": "official_go_institution",
+      "observed_page_language": "zh-Hant"
+    },
+    {
+      "url": "https://taiwangorg.blogspot.com/2021/12/blog-post_85.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T23:05:03.596720+00:00",
+      "body_file": "captures/5806-authority-ret101-taiwan-kiin-blog-23.body",
+      "body_sha256": "1987d1d869093a1b79e0a175f23c5f7baae8894c5bff5e5067dcac7f4790be10",
+      "id": "5806-identity-1",
+      "source_role": "official_person_page",
+      "publisher_class": "official_go_institution",
+      "observed_page_language": "zh-Hant_with_embedded_Latin_name"
+    }
+  ],
+  "verification": {
+    "source_identity_search_rule_and_community_hashes_recomputed": true,
+    "outputs_composed_from_ten_new_plus_two_existing_entries": true,
+    "database_or_SSH_performed": false,
+    "code_or_deployment_changed": false,
+    "candidate_bundle_or_signature_created": false
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "format": "kifu-player-nonhan-ranks-361-380-exact-allowlist-v1",
+  "scope": "read-only identity review; exact raw values only; importer requires fresh FK/catalog/preimage gates",
+  "reviewed_against_live_fk": {
+    "test_prod_counts_identical": true,
+    "existing_fk_conflict_slots_prod": 0,
+    "existing_fk_conflict_slots_test": 0
+  },
+  "summary": {
+    "raw_values": 15,
+    "slots_each_environment": 316,
+    "new_catalog_players": 5
+  },
+  "rows": [
+    {
+      "raw_value": "Kano Kazuo",
+      "expected_slots_each_environment": 22,
+      "chinese_name": "加纳一夫",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "Murashima Yoshikatsu",
+      "expected_slots_each_environment": 22,
+      "chinese_name": "村岛谊纪",
+      "target_player_id_prod": 6606,
+      "target_player_id_test": 12370,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "Nagasaka Inosuke",
+      "expected_slots_each_environment": 22,
+      "chinese_name": "长坂猪之助",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/"
+    },
+    {
+      "raw_value": "Nie Weiping",
+      "expected_slots_each_environment": 22,
+      "chinese_name": "聂卫平",
+      "target_player_id_prod": 5744,
+      "target_player_id_test": 11513,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://www.nihonkiin.or.jp/event/amakisen/worldama/41/history.html"
+    },
+    {
+      "raw_value": "Seki Genkichi",
+      "expected_slots_each_environment": 22,
+      "chinese_name": "关源吉",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://www.ndl.go.jp/kaleido/e/entry/22/3.html"
+    },
+    {
+      "raw_value": "CheongHyeon-san",
+      "expected_slots_each_environment": 21,
+      "chinese_name": "丁铉山",
+      "target_player_id_prod": 3741,
+      "target_player_id_test": 9539,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://db.u-go.net/?page=20"
+    },
+    {
+      "raw_value": "CheongTae-sang",
+      "expected_slots_each_environment": 21,
+      "chinese_name": "郑大相",
+      "target_player_id_prod": 6020,
+      "target_player_id_test": 11788,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000043"
+    },
+    {
+      "raw_value": "Kanai Shinichi",
+      "expected_slots_each_environment": 21,
+      "chinese_name": "金井新一",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "KimSeungJoon",
+      "expected_slots_each_environment": 21,
+      "chinese_name": "金承俊",
+      "target_player_id_prod": 163,
+      "target_player_id_test": 164,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000059"
+    },
+    {
+      "raw_value": "Murakami Bunsho",
+      "expected_slots_each_environment": 21,
+      "chinese_name": "村上文祥",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://www.nihonkiin.or.jp/event/amakisen/worldama/41/history.html"
+    },
+    {
+      "raw_value": "Yokoyama Kunitada",
+      "expected_slots_each_environment": 21,
+      "chinese_name": "横山国忠",
+      "target_player_id_prod": 5285,
+      "target_player_id_test": 11063,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "ChenYongan",
+      "expected_slots_each_environment": 20,
+      "chinese_name": "陈永安",
+      "target_player_id_prod": 6358,
+      "target_player_id_test": 12124,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://db.u-go.net/?page=18"
+    },
+    {
+      "raw_value": "Hua Yigang",
+      "expected_slots_each_environment": 20,
+      "chinese_name": "华以刚",
+      "target_player_id_prod": 4070,
+      "target_player_id_test": 9866,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://sports.sina.com.cn/star/huayigang/"
+    },
+    {
+      "raw_value": "Inoue Gennan Inseki",
+      "expected_slots_each_environment": 20,
+      "chinese_name": "井上幻庵因硕",
+      "target_player_id_prod": 6665,
+      "target_player_id_test": 12434,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/"
+    },
+    {
+      "raw_value": "KimHeui-chung",
+      "expected_slots_each_environment": 20,
+      "chinese_name": "金熙中",
+      "target_player_id_prod": 6197,
+      "target_player_id_test": 11964,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000007"
+    }
+  ],
+  "source_review_sha256": "8d18ddb88b833568729e4043e4fa1564bbf96b5b52b9c56dacfd9412ccae5270"
+}

@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "observed_at": "2026-10-11T16:31:59.504969+00:00",
+  "tests": 4,
+  "result": "4 passed in 0.97s",
+  "purpose": "single canonical player plus qualified raw names excludes unrelated event title; shared players and shared raw events keep existing matching",
+  "files_sha256": {
+    "katrain/web/api/v1/endpoints/kifu.py": "0a47df6b6ef2ce2c9c03b3a0ff5fdcdf54d3f055780f8042bcdb5f761255cc42",
+    "tests/web_ui/test_kifu_name_first_pass.py": "d08813bc8d0a6fbd7097323ce2741742ea3adbbf5eb71568701b4c8e9717b41a"
+  }
+}

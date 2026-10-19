@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko"><head><title>Chen Yongqi</title><link rel="icon" type="image/png" href="/apple-touch-icon.png"/><link href="/css/nv.d3.min.css" rel="stylesheet">
+<script src="/javascript/d3.min.js" charset="utf-8"></script>
+<script src="/javascript/nv.d3.min.js" charset="utf-8"></script>
+<meta name=viewport content="width=device-width, initial-scale=1"><meta charset="UTF-8"><style>
+body
+{
+ font-family: sans-serif;
+}
+
+p
+{
+ text-align:center;
+}
+
+h1,h2,h3
+{
+ color: #fff;
+ background-color: #777;
+ padding: 0.3em;
+ text-align: center;
+}
+
+table
+{
+ margin: 0px auto;
+ border-collapse: collapse;
+ color: black;
+ background-color: white;
+}
+
+th
+{
+ padding-left: 0.2em;
+ padding-right: 0.2em;
+ color: black;
+ background-color: #ccc;
+ font-family: sans-serif;
+ font-weight: bold;
+ border: 1px solid white;
+}
+
+th.missing
+{
+ background-color: white;
+}
+
+td
+{
+ padding-left:0.2em;
+ padding-right:0.2em;
+ border:1px solid white;
+ color:black;
+ background-color:#eee;
+ white-space:nowrap;
+}
+
+th.r
+{
+ text-align:right;
+}
+
+td.r
+{
+ text-align:right;
+}
+
+td.c
+{
+ text-align:center;
+}
+
+td.w
+{
+ color: white;
+ background-color: white;
+ border: none;
+}
+
+#graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#history-graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    width:100%;
+    height:75vh;
+}
+
+#chartContainer
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#lang-ctn
+{
+  padding: 10px;
+  text-align: center;
+}
+
+#lang-ctn div
+{
+ background-color: #ccc;
+ display: inline-block;
+ padding-top: 10px;
+ padding-bottom: 5px;
+ padding-right: 5px;
+ padding-left: 5px;
+}
+
+.flag-lang
+{
+  margin-left: 3px;
+  margin-right: 3px;
+  width: 30px;
+  height: 20px;
+}
+
+.banner-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+  margin: 12px auto;
+  background-color: #eee;
+  padding: 1rem;
+}
+
+.banner-container > * {
+  flex: 1 1 25rem;
+  min-width: 16rem;
+}
+
+.banner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.store-badge {
+  height: 3em;
+  width: auto;
+  max-width: 100%;
+  margin: auto 6px;
+}
+
+.review-stars {
+  color: #f5c518;
+}
+</style></head><body><h1>Chen Yongqi</h1><div id="lang-ctn"><div><a href="../../en/players/565.html"><img alt="en translation" class="flag-lang" src="/flags/en.svg" /></a><a href="../../zh/players/565.html"><img alt="zh translation" class="flag-lang" src="/flags/zh.svg" /></a><a href="../../ja/players/565.html"><img alt="ja translation" class="flag-lang" src="/flags/ja.svg" /></a><a href="../../ko/players/565.html"><img alt="ko translation" class="flag-lang" src="/flags/ko.svg" /></a></div></div><p><a href="..">메인 페이지로 돌아가기</a></p><h2>그래프</h2>
+<div id='chartContainer'>
+<svg id='graph' style='height:450px; width:600px'> </svg>
+</div>
+<script type="text/javascript">
+var format = d3.time.format("%Y-%m-%d");
+var format2 = d3.time.format("%Y/%m/%d");
+d3.json('/players-json/data-565.json', function(data) {
+nv.addGraph(function() {
+var chart = nv.models.lineChart()
+.x(function(d) { return format.parse(d[0]) })
+.y(function(d) { return d[1] })
+.margin({top:20, left: 50, right:50})
+.useInteractiveGuideline(true)
+.showYAxis(true)
+.showXAxis(true)
+.showLegend(false)
+;
+
+ chart.xAxis
+.tickFormat(function(d) {
+return format(new Date(d))
+});
+d3.select('#chartContainer svg')
+.datum(data)
+.call(chart);
+nv.utils.windowResize(function() { chart.update() });
+return chart;
+});
+});
+</script>
+<h2>데이터</h2><table><tr><th class="r">승리</th><td class="r">0</td></tr><tr><th class="r">패배</th><td class="r">6</td></tr><tr><th class="r">합계</th><td class="r">6</td></tr><tr><th class="r">링크</th><td class="r" style="text-align: left;"><a href="https://www.haifong.org/profession/venue/32AEA3B47BF32E1DDF31A8EB04BB6CEF">https://www.haifong.org/p...</a></td></tr><tr><th class="r">링크</th><td class="r" style="text-align: left;"><a href="http://senseis.xmp.net/?ChenYongqi">http://senseis.xmp.net/?C...</a></td></tr><tr><th class="r">생년월일</th><td class="r">1955-12-31</td></tr></table><h2>대국 기록</h2><table><tr><th>날짜</th><th>레이팅</th><th>흑백</th><th>결과</th><th colspan="4">상대</th><th>기보</th></tr><tr><td>2014-03-03</td><td>2665</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1533.html">린리샹</a></td>
+<td>3208</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/82740">go4go</a> | </td>
+</tr>
+<tr><td>2013-03-07</td><td>2666</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1541.html">Lin Xiuping</a></td>
+<td>3064</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/82649">go4go</a> | </td>
+</tr>
+<tr><td>2012-10-18</td><td>2667</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1701.html">Ye Hongyuan</a></td>
+<td>3027</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/82513">go4go</a> | </td>
+</tr>
+<tr><td>2011-09-29</td><td>2670</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="583.html">천이샹</a></td>
+<td>2822</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/82562">go4go</a> | </td>
+</tr>
+<tr><td>2010-09-02</td><td>2678</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="571.html">저우핑창</a></td>
+<td>2951</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/82438">go4go</a> | </td>
+</tr>
+<tr><td>2009-08-27</td><td>2687</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="571.html">저우핑창</a></td>
+<td>2956</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/82366">go4go</a> | </td>
+</tr>
+</table>
+<p><small>문의<a href="https://www.remi-coulom.fr/">Rémi Coulom</a>. Powered by <a href="https://github.com/Remi-Coulom/joedb">joedb, the C++ database</a>.</small></p></body></html>

@@ -9,9 +9,10 @@ import { kioskTheme } from '../../theme';
 import ReportLibraryImportDialog from './ReportLibraryImportDialog';
 
 vi.mock('../../../api/kifuApi', () => ({ KifuAPI: { getAlbums: vi.fn() } }));
+const { language } = vi.hoisted(() => ({ language: { current: 'cn' } }));
 vi.mock('../../../hooks/useTranslation', () => ({
   useTranslation: () => ({
-    lang: 'zh-CN',
+    lang: language.current,
     t: (key: string, fallback?: string) => (
       key === 'report:library_players_title' ? '{black} against {white}' :
       key === 'report:library_game_accessible' ? '{title} / {black} versus {white}' : (fallback ?? key)
@@ -28,7 +29,9 @@ function deferred<T>() {
 
 const album = (id: number, event = `赛事 ${id}`): KifuAlbumSummary => ({
   id, player_black: `黑棋 ${id}`, player_white: `白棋 ${id}`, black_rank: '2D', white_rank: '3D',
-  event, result: 'B+R', rules: 'chinese', date_played: '2026-07-15', komi: 7.5,
+  display_player_black: `黑棋 ${id}`, display_player_white: `白棋 ${id}`,
+  display_black_rank: '2D', display_white_rank: '3D',
+  event, display_event: event, result: 'B+R', rules: 'chinese', date_played: '2026-07-15', komi: 7.5,
   handicap: 0, board_size: 19, round_name: '决赛', move_count: 188,
 });
 
@@ -53,11 +56,23 @@ function renderDialog(options: { loading?: boolean; open?: boolean } = {}) {
 }
 
 beforeEach(() => {
+  language.current = 'cn';
   vi.mocked(KifuAPI.getAlbums).mockReset();
   vi.mocked(KifuAPI.getAlbums).mockResolvedValue(response([album(1), album(2)]));
 });
 
 describe('ReportLibraryImportDialog data flow', () => {
+  it('keeps the selected game when its language-specific list reloads', async () => {
+    const user = userEvent.setup();
+    const view = renderDialog();
+    await user.click(await screen.findByRole('button', { name: /赛事 2/ }));
+    language.current = 'ru';
+    vi.mocked(KifuAPI.getAlbums).mockResolvedValueOnce(response([album(1, 'Турнир 1'), album(2, 'Турнир 2')]));
+    view.rerender(<ThemeProvider theme={kioskTheme}><ReportLibraryImportDialog open onClose={view.onClose} onImport={view.onImport} /></ThemeProvider>);
+    await waitFor(() => expect(screen.getByRole('button', { name: /Турнир 2/ })).toHaveAttribute('aria-pressed', 'true'));
+    await user.click(screen.getByRole('button', { name: '仅导入' }));
+    expect(view.onImport).toHaveBeenCalledWith(album(2, 'Турнир 2'));
+  });
   it('fetches only when opened, searches on Enter, and paginates', async () => {
     const user = userEvent.setup();
     const view = renderDialog({ open: false });
@@ -67,15 +82,15 @@ describe('ReportLibraryImportDialog data flow', () => {
         <ReportLibraryImportDialog open onClose={view.onClose} onImport={view.onImport} />
       </ThemeProvider>,
     );
-    await waitFor(() => expect(KifuAPI.getAlbums).toHaveBeenCalledWith({ page: 1, page_size: 10 }));
+    await waitFor(() => expect(KifuAPI.getAlbums).toHaveBeenCalledWith({ page: 1, page_size: 10, lang: 'cn' }));
 
     vi.mocked(KifuAPI.getAlbums).mockResolvedValueOnce(response([album(11)], 21));
     await user.type(screen.getByRole('textbox', { name: '搜索棋谱库' }), '春兰杯{Enter}');
-    await waitFor(() => expect(KifuAPI.getAlbums).toHaveBeenLastCalledWith({ q: '春兰杯', page: 1, page_size: 10 }));
+    await waitFor(() => expect(KifuAPI.getAlbums).toHaveBeenLastCalledWith({ q: '春兰杯', page: 1, page_size: 10, lang: 'cn' }));
 
     await waitFor(() => expect(screen.getByRole('navigation')).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
-    await waitFor(() => expect(KifuAPI.getAlbums).toHaveBeenLastCalledWith({ q: '春兰杯', page: 2, page_size: 10 }));
+    await waitFor(() => expect(KifuAPI.getAlbums).toHaveBeenLastCalledWith({ q: '春兰杯', page: 2, page_size: 10, lang: 'cn' }));
   });
 
   it('resets selection to the first result whenever the fetched result set changes', async () => {

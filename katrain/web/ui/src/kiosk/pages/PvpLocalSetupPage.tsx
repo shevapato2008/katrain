@@ -1,7 +1,9 @@
-import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Alert } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
+import { useGeometry } from '../context/GeometryContext';
+import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationScreen';
 import { useVision } from '../context/VisionContext';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
@@ -65,7 +67,8 @@ const PvpLocalSetupPage = () => {
   const location = useLocation();
   const { t } = useTranslation();
   const { token } = useAuth();
-  const { isVisionEnabled } = useVision();
+  const { isVisionEnabled, loaded: visionLoaded } = useVision();
+  const geometry = useGeometry();
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
@@ -95,6 +98,25 @@ const PvpLocalSetupPage = () => {
   const [railEl, setRailEl] = useState<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [calibrationOpen, setCalibrationOpen] = useState(false);
+  const attempt = useRef({ active: true, request: 0, busy: false });
+  useEffect(() => {
+    const current = attempt.current;
+    current.active = true;
+    return () => { current.active = false; current.request += 1; };
+  }, []);
+  // Calibration returns to this same setup instance; starting remains a separate user action.
+  useEffect(() => {
+    if (calibrationOpen && geometry.status.phase === 'ready' && geometry.status.session_calibrated
+      && geometry.status.capabilities.geometry_ready && geometry.status.capabilities.recognition_ready
+      && geometry.status.capabilities.model_ready !== false) setCalibrationOpen(false);
+  }, [calibrationOpen, geometry.status]);
+  const leave = () => {
+    attempt.current.request += 1;
+    attempt.current.busy = false;
+    navigate('/kiosk/play');
+  };
   const [error, setError] = useState('');
 
   const timePresets = TIME_PRESETS(t);
@@ -114,9 +136,9 @@ const PvpLocalSetupPage = () => {
   // localStorage 之后这一屏重算一次 —— 偏好不在 React state 里,它跨屏活着。
   const [inputTick, setInputTick] = useState(0);
   const playInput = useMemo(
-    () => playInputState(isVisionEnabled, boardSize),
+    () => playInputState(visionLoaded === false || isVisionEnabled, boardSize),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- inputTick 就是「偏好刚被改过」这个信号
-    [isVisionEnabled, boardSize, inputTick],
+    [visionLoaded, isVisionEnabled, boardSize, inputTick],
   );
   const setPlayOnBoard = (next: boolean) => {
     writePlayOnBoard(next);
@@ -153,10 +175,35 @@ const PvpLocalSetupPage = () => {
       : t('setup:seat_hint_uncalibrated', '这台机器没标定过摄像头,只能下在屏幕上');
 
   const handleStart = async () => {
+    if (attempt.current.busy) return;
+    if (visionLoaded === false && playInput.onBoard) {
+      setError(t('local:device_check_pending', '正在读取设备状态，请稍后再试'));
+      return;
+    }
+    const request = ++attempt.current.request;
+    attempt.current.busy = true;
+    const current = () => attempt.current.active && attempt.current.request === request;
+    let createdSession: string | null = null;
+    let published = false;
+    let checkingBoard = playInput.onBoard;
     setError('');
     setLoading(true);
+    setChecking(checkingBoard);
     try {
+      if (checkingBoard) {
+        const result = await geometry.preflight();
+        if (!current()) return;
+        if (!result.ready) {
+          if (['required', 'degraded', 'failed', 'cancelled'].includes(result.status.phase)) setCalibrationOpen(true);
+          else setError(t('local:board_check_not_ready', '棋盘检查未就绪，请保持盘面稳定后重试'));
+          return;
+        }
+      }
+      checkingBoard = false;
+      setChecking(false);
       const { session_id } = await API.createSession(token ?? undefined);
+      createdSession = session_id;
+      if (!current()) return;
       await API.gameSetup(session_id, 'pvp_local', {
         board_size: boardSize,
         // 见屏 02 同一处的注释:develop 那版(aeae84e1)在这里写
@@ -172,6 +219,7 @@ const PvpLocalSetupPage = () => {
         byo_length: byoyomiTime,
         byo_periods: byoyomiPeriods,
       });
+      if (!current()) return;
       writeActiveSession({
         kind: 'game',
         // 铸的是新键,不套 PO 里的 `Black` / `White` —— 那两条是「黑棋 / 白棋」(说的是子),
@@ -182,13 +230,27 @@ const PvpLocalSetupPage = () => {
         // 这一局下不下实体盘,开局这一刻定下(v2 §3.5):守卫和对局屏都读它,不再各自判断。
         onBoard: playInput.onBoard,
       });
+      published = true;
       navigate(`/kiosk/play/pvp/local/game/${session_id}`, { state: backToState(location) });
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('Failed to create game', '创建对局失败'));
+      if (current()) setError(checkingBoard
+        ? t('local:board_check_failed', '检查棋盘失败，请检查连接后重试')
+        : e instanceof Error ? e.message : t('Failed to create game', '创建对局失败'));
     } finally {
-      setLoading(false);
+      if (createdSession && !published) await API.deleteSession(createdSession).catch(() => undefined);
+      if (current()) {
+        attempt.current.busy = false;
+        setLoading(false);
+        setChecking(false);
+      }
     }
   };
+
+  if (calibrationOpen) return <GeometryCalibrationScreen
+    backLabel={t('local:return_setup', '返回设置')} onBack={() => setCalibrationOpen(false)}
+    title={t('local:prestart_calibration', '先检查棋盘标定')}
+    sub={t('local:prestart_calibration_sub', '标定完成后返回设置，再开始对局')} requireRecognition
+  />;
 
   return (
     <div className="kiosk-layout-a" data-testid="pvp-local-setup-page">
@@ -202,7 +264,7 @@ const PvpLocalSetupPage = () => {
         <KioskPagebar
           testId="kiosk-setup-pagebar"
           backLabel={t('Back to play', '返回对弈')}
-          onBack={() => navigate('/kiosk/play')}
+          onBack={leave}
           title={t('game:local_pvp', '本地对局')}
           sub={t('local:setup_sub', '开局设置 · 两人面对面')}
         />
@@ -373,7 +435,7 @@ const PvpLocalSetupPage = () => {
           disabled={loading}
           onClick={handleStart}
         >
-          {loading ? t('Creating...', '创建中...') : t('setup:start', '开始对局')}
+          {checking ? t('local:checking_board', '检查棋盘…') : loading ? t('Creating...', '创建中...') : t('setup:start', '开始对局')}
         </button>
         </SetupPopoverHost.Provider>
       </div>

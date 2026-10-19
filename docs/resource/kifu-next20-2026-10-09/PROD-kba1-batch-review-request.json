@@ -1,0 +1,299 @@
+{
+  "content": {
+    "approved_name_snapshot_sha256": "96a9fe015d7c663b5b31787c2bae06ee9de683c97b91bfe0e19b33f07794e4fc",
+    "catalog_sha256": "83512f432dd3bdd3a61132a0272f71348d6d1ff00226715785fb585151d4aad7",
+    "complete_name_review": [
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+F9E1",
+            "output": "U+F9E1",
+            "position": 0
+          },
+          {
+            "input": "U+8C9E",
+            "output": "U+8C9E",
+            "position": 1
+          },
+          {
+            "input": "U+57A0",
+            "output": "U+57A0",
+            "position": 2
+          }
+        ],
+        "display_name": "李貞垠",
+        "lang": "tw",
+        "name_preimage_sha256": "86e43ae79b33f3ba2d2eb98a7a4c5adf1ca8b63c120bed3c971b12e48e54f533",
+        "original_name": "李貞垠",
+        "owner": {
+          "id": 446,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "9bd041d42ad1ea228dd53f282fb1d6ee4228c5f5eb7cbf53dae1aecc4e5075f9",
+        "reference_kind": "official_hanja_preserved",
+        "rule_sha256": "fcc159ad31ac70647df65cf152e5832a6d4123c8bebd703bddb8ea3ad9f19451",
+        "source_anchor_sha256": "31ab4f3aa85d0e23cb6bef4511e205847e35073fd17ecb0ae1fadbbc6d081237"
+      }
+    ],
+    "frozen_at": "2026-10-08T19:49:55.765726+00:00",
+    "known_aliases": [
+      {
+        "name": "Go Seigen",
+        "owner": {
+          "id": 1,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Wu Qingyuan",
+        "owner": {
+          "id": 1,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "吳清源",
+        "owner": {
+          "id": 1,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "吴清源",
+        "owner": {
+          "id": 1,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "呉清源",
+        "owner": {
+          "id": 1,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Hon'inbō Dōsaku",
+        "owner": {
+          "id": 2,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Honinbo Dosaku",
+        "owner": {
+          "id": 2,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "本因坊道策",
+        "owner": {
+          "id": 2,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "道策",
+        "owner": {
+          "id": 2,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Hon'inbō Jōwa",
+        "owner": {
+          "id": 3,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Honinbo Jowa",
+        "owner": {
+          "id": 3,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "丈和",
+        "owner": {
+          "id": 3,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "本因坊丈和",
+        "owner": {
+          "id": 3,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Hon'inbō Shūsaku",
+        "owner": {
+          "id": 4,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Honinbo Shusaku",
+        "owner": {
+          "id": 4,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Shusaku",
+        "owner": {
+          "id": 4,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "本因坊秀策",
+        "owner": {
+          "id": 4,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "秀策",
+        "owner": {
+          "id": 4,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Kitani Minoru",
+        "owner": {
+          "id": 5,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Minoru Kitani",
+        "owner": {
+          "id": 5,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "木谷实",
+        "owner": {
+          "id": 5,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "木谷実",
+        "owner": {
+          "id": 5,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "木谷實",
+        "owner": {
+          "id": 5,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "岩田正男",
+        "owner": {
+          "id": 4519,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "前田陈二",
+        "owner": {
+          "id": 4043,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "趙善津",
+        "owner": {
+          "id": 541,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "工藤紀夫",
+        "owner": {
+          "id": 347,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "朴文尧",
+        "owner": {
+          "id": 4885,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "李哲",
+        "owner": {
+          "id": 752,
+          "kind": "player"
+        }
+      }
+    ],
+    "members": [
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+F9E1",
+            "output": "U+F9E1",
+            "position": 0
+          },
+          {
+            "input": "U+8C9E",
+            "output": "U+8C9E",
+            "position": 1
+          },
+          {
+            "input": "U+57A0",
+            "output": "U+57A0",
+            "position": 2
+          }
+        ],
+        "display_name": "李貞垠",
+        "lang": "tw",
+        "name_preimage_sha256": "86e43ae79b33f3ba2d2eb98a7a4c5adf1ca8b63c120bed3c971b12e48e54f533",
+        "original_name": "李貞垠",
+        "owner": {
+          "id": 446,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "9bd041d42ad1ea228dd53f282fb1d6ee4228c5f5eb7cbf53dae1aecc4e5075f9",
+        "reference_kind": "official_hanja_preserved",
+        "rule_sha256": "fcc159ad31ac70647df65cf152e5832a6d4123c8bebd703bddb8ea3ad9f19451",
+        "source_anchor_sha256": "31ab4f3aa85d0e23cb6bef4511e205847e35073fd17ecb0ae1fadbbc6d081237"
+      }
+    ],
+    "members_sha256": "a3e72855c9383bf897905b3c476ffc1e42a79c2c5f1bd5b0f949b1bfef446d36",
+    "rule_sha256": "fcc159ad31ac70647df65cf152e5832a6d4123c8bebd703bddb8ea3ad9f19451",
+    "sampled_members": [
+      "16f104571ebe9b9b261edb68b8e6abc270b791ea22834f20fc199df9f14446bb"
+    ],
+    "unresolved_conflicts": [],
+    "version": "primary-orthographic-v1"
+  },
+  "dependencies": {
+    "anchor_sha256": [
+      "31ab4f3aa85d0e23cb6bef4511e205847e35073fd17ecb0ae1fadbbc6d081237"
+    ],
+    "rule_sha256": "fcc159ad31ac70647df65cf152e5832a6d4123c8bebd703bddb8ea3ad9f19451",
+    "source_capture_file_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521"
+  },
+  "production": {
+    "content_sha256": "dfc276bd81aae1e34e48c531764bef10412ca17e16744a1e6690d562c5adf145",
+    "produced_at": "2026-10-08T19:49:55.444083+00:00",
+    "producer_id": "/root/next20_packet_recovered",
+    "producer_model": "gpt-6-sol"
+  },
+  "status": "pending_root_independent_batch_approval"
+}

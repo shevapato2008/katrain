@@ -1,0 +1,375 @@
+{
+  "format": "kifu-player-nonhan-top20-review-v1",
+  "scope": "top 20 human-looking Latin raw values after excluding Unknown/Black/White; exact raw only",
+  "snapshot_note": "TEST/PROD live read-only queries on 2026-10-04 Asia/Shanghai; IDs observed at capture and must be rebound in fresh dry-run",
+  "summary": {
+    "reviewed_raw_values": 20,
+    "reviewed_unlinked_slots": 7117,
+    "approved_raw_values": 17,
+    "approved_slots": 6012,
+    "held_raw_values": 3,
+    "held_slots": 1105,
+    "excluded_placeholders": {
+      "Unknown": 1198,
+      "Black": 1158,
+      "White": 1158
+    }
+  },
+  "rows": [
+    {
+      "raw_value": "Hane Yasumasa",
+      "unlinked_slots_prod": 524,
+      "unlinked_slots_test": 524,
+      "canonical_chinese_name": "羽根泰正",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5737
+        ],
+        "test": [
+          11506
+        ]
+      },
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000035.htm",
+      "identity_note": "official profile directly prints HANE, Yasumasa and 羽根泰正; distinguish son 羽根直树",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Shinohara Masami",
+      "unlinked_slots_prod": 388,
+      "unlinked_slots_test": 388,
+      "canonical_chinese_name": "筱原正美",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5706
+        ],
+        "test": [
+          11477
+        ]
+      },
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "Go professional born 1904, matches 1925–1978 games; CiNii Go-book author corroborates exact spelling; unrelated 1892 Hawaii namesake is not the Go player",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Iwamoto Kaoru",
+      "unlinked_slots_prod": 384,
+      "unlinked_slots_test": 384,
+      "canonical_chinese_name": "岩本薰",
+      "review_status": "hold_catalog_duplicates",
+      "observed_target_ids": {
+        "prod": [
+          4517
+        ],
+        "test": [
+          10308
+        ]
+      },
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki001002.htm",
+      "identity_note": "official profile IWAMOTO, Kaoru / 岩本薫; PROD catalog has three separate Chinese/Japanese spellings IDs 4515/4516/4517; consolidate identity before choosing target",
+      "proposed_catalog_action": "hold_no_game_fk"
+    },
+    {
+      "raw_value": "Maeda Nobuaki",
+      "unlinked_slots_prod": 367,
+      "unlinked_slots_test": 367,
+      "canonical_chinese_name": "前田陈尔",
+      "review_status": "hold_catalog_name_error",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000026.htm",
+      "identity_note": "official Kudo profile names mentor 前田陳爾, and CWI pairs roman spelling; current canonical 前田陈二 is likely a character error; resolve existing ID/rename first",
+      "proposed_catalog_action": "hold_no_game_fk"
+    },
+    {
+      "raw_value": "Kudo Norio",
+      "unlinked_slots_prod": 366,
+      "unlinked_slots_test": 366,
+      "canonical_chinese_name": "工藤纪夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          347
+        ],
+        "test": [
+          348
+        ]
+      },
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000026.htm",
+      "identity_note": "official profile directly prints KUDO, Norio / 工藤紀夫",
+      "proposed_catalog_action": "retain_observed_id_and_review_canonical_rename"
+    },
+    {
+      "raw_value": "Nakamura Yutaro",
+      "unlinked_slots_prod": 360,
+      "unlinked_slots_test": 360,
+      "canonical_chinese_name": "中村勇太郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3793
+        ],
+        "test": [
+          9591
+        ]
+      },
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI roster directly pairs roman and Kanji; Nihon Ki-in Chino profile independently names this Go teacher",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Tamura Hoju (later Shusai)",
+      "unlinked_slots_prod": 357,
+      "unlinked_slots_test": 357,
+      "canonical_chinese_name": "本因坊秀哉",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4833
+        ],
+        "test": [
+          10619
+        ]
+      },
+      "evidence_url": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list05.html",
+      "identity_note": "official Go Hall of Fame names 田村保寿 as 21st Honinbo Shusai; raw explicitly says later Shusai and dates 1887–1908",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Hashimoto Utaro",
+      "unlinked_slots_prod": 356,
+      "unlinked_slots_test": 356,
+      "canonical_chinese_name": "桥本宇太郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI pairs roman/Kanji; Kansai Ki-in institutional history identifies 橋本宇太郎 as its former chairman",
+      "proposed_catalog_action": "create_chinese_canonical_player_in_each_environment"
+    },
+    {
+      "raw_value": "Fujisawa Hosai",
+      "unlinked_slots_prod": 354,
+      "unlinked_slots_test": 354,
+      "canonical_chinese_name": "藤泽朋斋",
+      "review_status": "hold_catalog_duplicates",
+      "observed_target_ids": {
+        "prod": [
+          5854
+        ],
+        "test": [
+          11623
+        ]
+      },
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI distinguishes 藤沢朋斎 from 藤沢秀行 and notes birth 1919; PROD catalog has two IDs 5854/5855 for 斋/斎",
+      "proposed_catalog_action": "hold_no_game_fk"
+    },
+    {
+      "raw_value": "Chino Tadahiko",
+      "unlinked_slots_prod": 349,
+      "unlinked_slots_test": 349,
+      "canonical_chinese_name": "茅野直彦",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5798
+        ],
+        "test": [
+          11567
+        ]
+      },
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000024.htm",
+      "identity_note": "official profile directly prints CHINO, Tadahiko / 茅野直彦; not 千野忠彦",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Hisai Keishi",
+      "unlinked_slots_prod": 349,
+      "unlinked_slots_test": 349,
+      "canonical_chinese_name": "久井敬史",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3813
+        ],
+        "test": [
+          9611
+        ]
+      },
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki001006.htm",
+      "identity_note": "official profile directly prints HISAI, Keishi / 久井敬史",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Shimamura Toshihiro",
+      "unlinked_slots_prod": 345,
+      "unlinked_slots_test": 345,
+      "canonical_chinese_name": "岛村俊广",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4511
+        ],
+        "test": [
+          10302
+        ]
+      },
+      "evidence_url": "https://ritsumei.repo.nii.ac.jp/record/13960/files/ir_33_2_kago_kahyo.pdf",
+      "identity_note": "University Go history article explicitly identifies 島村利博 later renamed 俊宏, 俊広, and 俊廣; current catalog 岛村俊宏 is same person, distinct from 岛村导弘",
+      "proposed_catalog_action": "retain_observed_id_and_review_canonical_rename"
+    },
+    {
+      "raw_value": "Hayashi Yutaro",
+      "unlinked_slots_prod": 341,
+      "unlinked_slots_test": 341,
+      "canonical_chinese_name": "林有太郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5188
+        ],
+        "test": [
+          10968
+        ]
+      },
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI pairs roman/Kanji and birth 1900; do not confuse with 林裕太郎",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Sometani Kazuo",
+      "unlinked_slots_prod": 330,
+      "unlinked_slots_test": 330,
+      "canonical_chinese_name": "染谷一雄",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5211
+        ],
+        "test": [
+          10991
+        ]
+      },
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI pairs roman/Kanji and professional career 1927–1980",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Ohira Shuzo",
+      "unlinked_slots_prod": 328,
+      "unlinked_slots_test": 328,
+      "canonical_chinese_name": "大平修三",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4249
+        ],
+        "test": [
+          10044
+        ]
+      },
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000019.html",
+      "identity_note": "official profile directly prints Ohira Shuzo / 大平修三",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Takagawa Kaku",
+      "unlinked_slots_prod": 327,
+      "unlinked_slots_test": 327,
+      "canonical_chinese_name": "高川格",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6472
+        ],
+        "test": [
+          12236
+        ]
+      },
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki001043.html",
+      "identity_note": "official profile directly prints TAKAGAWA, Kaku / 高川格; honorary 本因坊秀格 is same person",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Ishii Kunio",
+      "unlinked_slots_prod": 325,
+      "unlinked_slots_test": 325,
+      "canonical_chinese_name": "石井邦生",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5639
+        ],
+        "test": [
+          11412
+        ]
+      },
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000028.htm",
+      "identity_note": "official profile directly prints ISHII, Kunio / 石井邦生; distinct from brother 石井卫",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Nakagawa Shinji",
+      "unlinked_slots_prod": 325,
+      "unlinked_slots_test": 325,
+      "canonical_chinese_name": "中川新之",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3792
+        ],
+        "test": [
+          9590
+        ]
+      },
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI pairs roman/Kanji and historical aliases Nakagawa Arata / Onodera Arata; not unrelated modern 中川慎二",
+      "proposed_catalog_action": "retain_observed_id"
+    },
+    {
+      "raw_value": "Kajiwara Takeo",
+      "unlinked_slots_prod": 322,
+      "unlinked_slots_test": 322,
+      "canonical_chinese_name": "梶原武雄",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "evidence_url": "https://archive.nihonkiin.or.jp/player/htm/ki000012.htm",
+      "identity_note": "official profile directly prints Kajiwara Takeo / 梶原武雄; distinct catalog 梶原政之助",
+      "proposed_catalog_action": "create_chinese_canonical_player_in_each_environment"
+    },
+    {
+      "raw_value": "Kageyama Toshiro",
+      "unlinked_slots_prod": 320,
+      "unlinked_slots_test": 320,
+      "canonical_chinese_name": "影山利郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4698
+        ],
+        "test": [
+          10488
+        ]
+      },
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI pairs roman/Kanji; Nihon Ki-in publishing page independently identifies professional 影山利郎",
+      "proposed_catalog_action": "retain_observed_id"
+    }
+  ],
+  "additional_sources": {
+    "Shinohara_CiNii": "https://ci.nii.ac.jp/author/DB00641035",
+    "Nakamura_Nihon_Kiin": "https://www.nihonkiin.or.jp/player/htm/ki000024.htm",
+    "Hashimoto_Kansai_Kiin": "https://kansaikiin.jp/subpage/kiinjouhou.html",
+    "Kageyama_Nihon_Kiin": "https://www.nihonkiin.or.jp/publishing/books/amatopuro.html",
+    "Maeda_CWI": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+  }
+}

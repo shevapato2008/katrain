@@ -12,6 +12,7 @@ import os
 import queue
 import threading
 import time
+from dataclasses import dataclass, field
 from typing import Any
 
 import cv2
@@ -31,8 +32,8 @@ from katrain.vision.gating import (
     should_feed_sync,
     should_feed_sync_frame,
 )
-from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
-from katrain.vision.led_geometry_calibrator import ROI_CELLS, ROI_RADIUS_MIN_PX, detect_led_centroid
+from katrain.vision.ipc import CommandType, ConfirmedMove, LocalWindowObservation, WorkerCommand, WorkerStatus
+from katrain.vision.led_geometry_calibrator import ROI_CELLS, ROI_RADIUS_MIN_PX, check_frame_exposure, detect_led_centroid
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
 from katrain.vision.parallax import ParallaxParams, mount_parallax_for_lock
@@ -102,6 +103,51 @@ REFERENCE_MODES = ("off", "shadow", "on")
 # 这一点很重要 —— 旧的「忽略」走 adopt='physical',把假阳性**收进基线**当成现实,
 # 而且顺手销毁了参考帧(RESET_SYNC → _invalidate_reference),等于在最需要否决的时刻自废武功。
 DENIAL_ZNCC = REFERENCE_ZNCC
+LOCAL_BOOTSTRAP_SECONDS = 8.0
+
+
+@dataclass
+class _LocalWindow:
+    token: str
+    opened_monotonic: float
+    deadline_monotonic: float
+    expected_node_id: int | None
+    expected_color: int
+    geometry: Any
+    last_camera_seq: int = 0
+    last_camera_ts: float = 0.0
+    light_reason: str | None = None
+    light_bad_frames: int = 0
+    light_first_camera_ts: float | None = None
+    candidate: ConfirmedMove | None = None
+    ambiguous_points: set[tuple[int, int]] = field(default_factory=set)
+    raw_voted: np.ndarray | None = None
+    raw_observed: np.ndarray | None = None
+    gray: np.ndarray | None = None
+    vetoing: bool = False
+    lit: bool = False
+
+    def reset_lighting(self) -> None:
+        self.light_reason = None
+        self.light_bad_frames = 0
+        self.light_first_camera_ts = None
+
+    def observe_lighting(self, reason, stats, camera_ts, controls_pending) -> dict:
+        if reason is None or controls_pending or reason != self.light_reason:
+            self.reset_lighting()
+        if reason is not None and not controls_pending:
+            self.light_reason = reason
+            self.light_bad_frames += 1
+            if self.light_first_camera_ts is None:
+                self.light_first_camera_ts = camera_ts
+        span_ms = 0.0 if self.light_first_camera_ts is None else (camera_ts - self.light_first_camera_ts) * 1000
+        return {
+            **stats,
+            "reason": reason,
+            "bad_frames": self.light_bad_frames,
+            "span_ms": span_ms,
+            "confirmed": self.light_bad_frames >= 3 and span_ms >= 1000,
+        }
 
 
 def _glow_roi(frame: np.ndarray, geometry, row: int, col: int):
@@ -210,6 +256,10 @@ class InProcessAdapter:
     Mimics the VisionWorkerProcess API so VisionService can use either.
     """
 
+    @property
+    def supports_local_confirmation(self) -> bool:
+        return self._ref_mode == "on" and callable(getattr(self._camera, "read_frame_identified", None))
+
     def __init__(self, config: dict[str, Any], camera=None):
         self._config = config
         self._thread: threading.Thread | None = None
@@ -227,7 +277,7 @@ class InProcessAdapter:
         self._owns_camera = camera is None
         self._require_geometry = camera is not None
         self._camera = camera or CameraManager(device_id=config.get("camera_device", 0))
-        self._motion_filter = MotionFilter()
+        self._motion_filter = MotionFilter(pixel_diff_threshold=13, illumination_invariant=True)
         self._motion_mask_cache = MotionRoiMaskCache()
         self._last_motion_log: float | None = None
         self._last_motion_at: float | None = None
@@ -359,8 +409,21 @@ class InProcessAdapter:
         # ConfirmedMove so a consumer can tell whether a board reading is newer than the
         # confirmation it is being used to judge.
         self._observation_seq = 0
+        # Local play keeps the camera/exposure ready, but only these bounded activities
+        # are allowed through the inference gate. `_paused` remains the free-play gate.
+        self._local_confirmation_mode = False
+        self._local_confirmation_session_id: str | None = None
+        self._local_confirmation_game_id: str | None = None
+        self._local_mode_generation = 0
+        self._local_bootstrap_state = "idle"
+        self._local_bootstrap_deadline = 0.0
+        self._local_last_camera_seq = 0
+        self._local_window: _LocalWindow | None = None
 
     def set_geometry(self, geometry) -> None:
+        if self._local_confirmation_mode:
+            self._local_window = None
+            self._local_bootstrap_state = "unavailable"
         self._geometry = geometry
         self._motion_mask_cache.invalidate()
         self._motion_filter.reset()
@@ -712,7 +775,7 @@ class InProcessAdapter:
             self._ref_mode == "off"
             or gray is None
             or not (self._bound or self._monitor)
-            or self._paused
+            or (self._paused and not self._local_confirmation_mode)
             or self._lit_points
             or expected is None
             or self._geometry is None
@@ -885,7 +948,7 @@ class InProcessAdapter:
         if hit is None:
             return
         r, c, class_id, conf = hit
-        self._event_queue.put(
+        self._queue_move_event(
             {
                 "type": "ambiguous_stone",
                 "data": {"row": int(r), "col": int(c), "color": int(class_id) + 1, "confidence": round(float(conf), 3)},
@@ -970,6 +1033,36 @@ class InProcessAdapter:
     def is_alive(self) -> bool:
         return self._thread is not None and self._thread.is_alive()
 
+    def _reset_local_accumulators(self, *, reset_motion=True) -> None:
+        self._averager.reset()
+        if reset_motion:
+            self._motion_filter.reset()
+        self._prev_observed_board = None
+        self._last_stable_board = None
+        self._prev_conf_map = {}
+        self._conf_peak.observe(None, {})
+        self._ambig_last_emit.clear()
+        self._promoter.reset()
+        for extractor in (self._state_extractor, self._state_extractor_locked):
+            extractor._color_flip_streak.clear()
+            extractor._color_flip_released.clear()
+
+    def _queue_move_event(self, event: dict) -> None:
+        if self._local_confirmation_mode:
+            if self._local_window is not None and event.get("type") == "ambiguous_stone":
+                data = event["data"]
+                self._local_window.ambiguous_points.add((int(data["row"]), int(data["col"])))
+            return
+        self._event_queue.put(event)
+
+    def _expire_local_activity(self, now: float) -> None:
+        if self._local_bootstrap_state == "bootstrap" and now >= self._local_bootstrap_deadline:
+            self._local_bootstrap_state = "unavailable"
+        if self._local_window is not None and now >= self._local_window.deadline_monotonic:
+            self._local_window = None
+            if self._expected_np is not None:
+                self._move_detector.force_sync(self._expected_np)
+
     def _loop(self) -> None:
         if self._owns_camera and not self._camera.open():
             logger.error("Failed to open camera")
@@ -980,6 +1073,7 @@ class InProcessAdapter:
         while self._running:
             loop_start = time.monotonic()
             self._drain_commands()
+            self._expire_local_activity(loop_start)
 
             if not self.needs_frames():
                 # 启动器、菜单、屏幕对弈:不读帧、不做图像处理,只照常上报状态(左栏「摄像头已连接」
@@ -996,7 +1090,9 @@ class InProcessAdapter:
             tr = _FrameTrace(loop_start) if os.path.exists(TRACE_FLAG) else None
 
             observer = self._observer
-            identified = observer is not None and hasattr(self._camera, "read_frame_identified")
+            identified = (observer is not None or self._local_confirmation_mode) and hasattr(
+                self._camera, "read_frame_identified"
+            )
             if identified:
                 frame, camera_seq, camera_ts = self._camera.read_frame_identified()
             else:
@@ -1008,9 +1104,37 @@ class InProcessAdapter:
             if tr:
                 tr.mark("read")
 
+            local_inference = True
+            local_active = False
+            local_exposure = None
+            if self._local_confirmation_mode:
+                window = self._local_window
+                local_active = window is not None or self._local_bootstrap_state == "bootstrap"
+                local_inference = local_active
+                if local_active:
+                    after = window.opened_monotonic if window is not None else self._local_bootstrap_started
+                    last_seq = window.last_camera_seq if window is not None else self._local_last_camera_seq
+                    local_inference = bool(
+                        camera_seq is not None
+                        and camera_ts is not None
+                        and camera_ts > after
+                        and camera_seq > last_seq
+                        and (window is None or camera_ts > window.last_camera_ts)
+                    )
+                    if local_inference:
+                        self._local_last_camera_seq = int(camera_seq)
+                        if window is not None:
+                            window.last_camera_seq = int(camera_seq)
+                            window.last_camera_ts = float(camera_ts)
+                            window.ambiguous_points.clear()
+                    elif window is not None:
+                        window.reset_lighting()
+
             motion_stable = False
-            if frame is not None:
+            if frame is not None and (not local_active or local_inference):
                 motion_stable = self._motion_is_stable(frame)
+            if self._local_window is not None and (frame is None or not motion_stable):
+                self._local_window.reset_lighting()
             if self._glow_pending and frame is not None and motion_stable:
                 if self._glow_wait > 0:
                     self._glow_wait -= 1
@@ -1031,15 +1155,63 @@ class InProcessAdapter:
                         # Meter the raw warped frame (pre-average, pre-CLAHE) — the reading
                         # must reflect the actual sensor exposure, not our processing.
                         self._run_ae(meter_brightness(warped))
+                    window = self._local_window
+                    if window is not None and local_inference:
+                        _ok, light_reason, light_stats = check_frame_exposure(warped)
+                        # Real camera owners use None while runtime controls are unknown/pending.
+                        # Cameras without a controls interface retain the AE-off compatibility path.
+                        controls_pending = (
+                            callable(getattr(self._camera, "request_controls", None))
+                            and getattr(self._camera, "controls_effective", None) is None
+                        )
+                        local_exposure = window.observe_lighting(light_reason, light_stats, camera_ts, controls_pending)
+                        if light_reason is not None or controls_pending:
+                            # No board can be trusted here. Clear the candidate on the first bad
+                            # frame and send honest lighting-only evidence before board inference.
+                            window.candidate = None
+                            window.raw_voted = window.raw_observed = window.gray = None
+                            window.ambiguous_points.clear()
+                            self._reset_local_accumulators(reset_motion=False)
+                            if self._expected_np is not None:
+                                self._move_detector.force_sync(self._expected_np)
+                            self._observation_seq += 1
+                            self._event_queue.put(
+                                LocalWindowObservation(
+                                    token=window.token,
+                                    board=[],
+                                    observation_seq=self._observation_seq,
+                                    camera_seq=int(camera_seq),
+                                    camera_ts=float(camera_ts),
+                                    session_id=self._local_confirmation_session_id,
+                                    exposure=local_exposure,
+                                )
+                            )
+                            self._maybe_send_preview(warped)
+                            self._publish_status(None)
+                            self._last_raw = frame
+                            elapsed = time.monotonic() - loop_start
+                            if target_interval > elapsed:
+                                time.sleep(target_interval - elapsed)
+                            continue
                     if tr:
                         tr.mark("ae")
+                    if not local_inference:
+                        # Camera reads, motion, geometry and AE remain live between turns.
+                        # No average, model inference or board comparison runs while idle.
+                        self._maybe_send_preview(warped)
+                        self._publish_status(None)
+                        self._last_raw = frame
+                        elapsed = time.monotonic() - loop_start
+                        if target_interval > elapsed:
+                            time.sleep(target_interval - elapsed)
+                        continue
                     # Reference-frame check runs on the warped frame BEFORE the averager and BEFORE
                     # CLAHE -- see to_gray's docstring for why either one would break it.
                     # The user's "not a move" label and baipu monitor both use these unenhanced pixels.
                     want_gray = (
                         (self._ref_mode != "off" or self._denied or self._pending_denials or self._denial_unlit_wait)
                         and (self._bound or self._monitor)
-                        and not self._paused
+                        and (not self._paused or self._local_confirmation_mode)
                     )
                     ref_gray = to_gray(warped) if want_gray else None
                     if ref_gray is not None:
@@ -1049,7 +1221,7 @@ class InProcessAdapter:
                     _t_enh = time.monotonic()
                     warped = (
                         self._averager.add(warped, ident=camera_seq)
-                        if observer is not None
+                        if observer is not None or self._local_confirmation_mode
                         else self._averager.add(warped)
                     )
                     if tr:
@@ -1148,6 +1320,16 @@ class InProcessAdapter:
                     denied_observation = self._mask_denied(raw_observation, denied_cells)
                     observed_board = self._reference_check(denied_stable, ref_gray)
                     self._maybe_capture_reference(denied_stable, denied_observation, ref_gray)
+                    if self._local_confirmation_mode and self._local_bootstrap_state == "bootstrap":
+                        if self._reference is not None:
+                            self._local_bootstrap_state = "ready"
+                    local_window = self._local_window
+                    if local_window is not None:
+                        local_window.raw_voted = denied_stable.copy()
+                        local_window.raw_observed = denied_observation.copy()
+                        local_window.gray = ref_gray
+                        local_window.vetoing = self._ref_vetoing
+                        local_window.lit = bool(self._lit_points)
                     if tr:
                         tr.mark("refchk")
                     self._observation_seq += 1
@@ -1192,8 +1374,11 @@ class InProcessAdapter:
                     # bound → develop's confidence-gated game pipeline (ambiguous dialog / ConfirmedMove);
                     # monitor (physical tsumego) → our move_event dict, no ambiguous dialog (the tsumego
                     # frontend consumes move_confirmed).
-                    if should_detect_moves(
-                        self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
+                    if local_window is not None or (
+                        not self._local_confirmation_mode
+                        and should_detect_moves(
+                            self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
+                        )
                     ):
                         conf_map = self._active_extractor().cell_confidences(detections, img_w=w, img_h=h)
                         pending_before = self._move_detector.pending_move
@@ -1287,7 +1472,7 @@ class InProcessAdapter:
                                             candidate_sightings + 1,
                                             self._move_detector.suspicion_of(row, col),
                                         )
-                                        self._event_queue.put(
+                                        self._queue_move_event(
                                             {
                                                 "type": "ambiguous_stone",
                                                 "data": {
@@ -1321,24 +1506,28 @@ class InProcessAdapter:
                                         candidate_sightings + 1,
                                         self._move_detector.suspicion_of(row, col),
                                     )
-                                    self._event_queue.put(
-                                        ConfirmedMove(
-                                            col=col, row=row, color=color, observation_seq=self._observation_seq
-                                        )
+                                    confirmed = ConfirmedMove(
+                                        col=col, row=row, color=color, observation_seq=self._observation_seq
                                     )
+                                    if local_window is not None:
+                                        if local_window.candidate is None:
+                                            local_window.candidate = confirmed
+                                    else:
+                                        self._event_queue.put(confirmed)
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
                                     # round-trip force_syncs the new expected board. If the
                                     # poller rejects the move (out of turn / gateway), it
                                     # re-pushes the expected board, which re-arms detection
                                     # via the SET_EXPECTED_BOARD handler.
-                                    self._move_detector.force_sync(observed_board)
+                                    if local_window is None:
+                                        self._move_detector.force_sync(observed_board)
                         else:
                             pending_after = self._move_detector.pending_move
                             if pending_after is not None and pending_after != pending_before:
                                 r, c, clr = pending_after
                                 # "确认中" chip (PRD §3.2/Q3): first frame of the 3-frame window
-                                self._event_queue.put(
+                                self._queue_move_event(
                                     {
                                         "type": "move_pending",
                                         "data": {"row": int(r), "col": int(c), "color": int(clr)},
@@ -1349,18 +1538,49 @@ class InProcessAdapter:
                         if move_result is None and not self._move_detector.about_to_confirm:
                             self._promote_stuck_stone(detections, w, h, observed_board, masked)
 
+                    if local_window is not None:
+                        candidate = local_window.candidate
+                        if (
+                            candidate is not None
+                            and int(observed_board[candidate.row, candidate.col]) != candidate.color
+                        ):
+                            local_window.candidate = None
+                        self._event_queue.put(
+                            LocalWindowObservation(
+                                token=local_window.token,
+                                board=observed_board.tolist(),
+                                observation_seq=self._observation_seq,
+                                camera_seq=int(camera_seq),
+                                camera_ts=float(camera_ts),
+                                candidate=local_window.candidate,
+                                pending=bool(
+                                    self._move_detector.pending_move is not None
+                                    or local_window.ambiguous_points
+                                    or self._promoter._streaks
+                                ),
+                                ambiguous_points=[list(cell) for cell in sorted(local_window.ambiguous_points)],
+                                session_id=self._local_confirmation_session_id,
+                                exposure=local_exposure,
+                            )
+                        )
+
                     if tr:
                         tr.mark("move")
                     self._maybe_send_preview(warped, all_detections)
                     if tr:
                         tr.mark("preview")
 
+                elif self._local_window is not None:
+                    self._local_window.reset_lighting()
+
             elif frame is None:
                 # Camera dropout has no motion-frame decision to reset the average for us.
                 self._averager.reset()
 
-            if should_feed_sync(self._bound, self._monitor, self._paused) and should_feed_sync_frame(
-                frame is not None, motion_stable
+            if (
+                not self._local_confirmation_mode
+                and should_feed_sync(self._bound, self._monitor, self._paused)
+                and should_feed_sync_frame(frame is not None, motion_stable)
             ):
                 events = self._sync.update(
                     observed_board=observed_board,
@@ -1411,6 +1631,22 @@ class InProcessAdapter:
         # as a property, never called) — mirror that tolerance here.
         c = self._camera.is_connected
         camera_connected = bool(c() if callable(c) else c)
+        local_ready = bool(
+            self._local_confirmation_mode
+            and self._bound
+            and self._local_confirmation_session_id is not None
+            and self._local_bootstrap_state == "ready"
+            and self._reference is not None
+            and camera_connected
+            and self._geometry is not None
+        )
+        if self._local_confirmation_mode:
+            # Bootstrap validates the real reference against the current game. Local idle
+            # deliberately never feeds _sync.update, so finish its pose transition here.
+            if local_ready:
+                self._sync.confirm_pose_lock()
+            else:
+                self._sync.bind()
         self._status = WorkerStatus(
             camera_status="connected" if camera_connected else "disconnected",
             pose_lock_status=(
@@ -1422,10 +1658,14 @@ class InProcessAdapter:
             camera_ready=bool(camera_connected),
             geometry_ready=self._geometry is not None or not self._require_geometry,
             model_ready=True,
-            recognition_ready=bool(
-                camera_connected and (self._geometry is not None or not self._require_geometry)
-            ),
+            recognition_ready=bool(camera_connected and (self._geometry is not None or not self._require_geometry)),
             observation_seq=self._observation_seq,
+            local_confirmation_mode=self._local_confirmation_mode,
+            local_confirmation_session_id=self._local_confirmation_session_id,
+            local_confirmation_game_id=self._local_confirmation_game_id,
+            local_confirmation_mode_generation=self._local_mode_generation,
+            local_confirmation_ready=local_ready,
+            local_confirmation_bootstrap_state=self._local_bootstrap_state,
         )
 
     def _drain_commands(self) -> None:
@@ -1444,6 +1684,11 @@ class InProcessAdapter:
                 self._invalidate_reference("bind")
                 self._drop_denials("bind")
             elif cmd.action == CommandType.UNBIND:
+                self._local_confirmation_mode = False
+                self._local_confirmation_session_id = None
+                self._local_confirmation_game_id = None
+                self._local_window = None
+                self._local_bootstrap_state = "idle"
                 self._bound = False
                 self._sync = SyncStateMachine()
                 self._motion_filter.reset()
@@ -1458,6 +1703,90 @@ class InProcessAdapter:
                 self._drop_denials("unbind")
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._sync.confirm_pose_lock()
+            elif cmd.action == CommandType.SET_LOCAL_CONFIRMATION_MODE:
+                enabled = bool(cmd.data.get("enabled", False))
+                session_id = cmd.data.get("session_id")
+                game_id = cmd.data.get("game_id")
+                generation = int(cmd.data.get("mode_generation", self._local_mode_generation + 1))
+                if generation < self._local_mode_generation:
+                    continue
+                self._local_mode_generation = generation
+                if (enabled, session_id, game_id) == (
+                    self._local_confirmation_mode,
+                    self._local_confirmation_session_id,
+                    self._local_confirmation_game_id,
+                ):
+                    self._publish_status(None)
+                    continue
+                if enabled and (session_id, game_id) != (
+                    self._local_confirmation_session_id,
+                    self._local_confirmation_game_id,
+                ):
+                    self._invalidate_reference("local game changed")
+                    self._drop_denials("local game changed")
+                self._local_confirmation_mode = enabled
+                self._local_confirmation_session_id = session_id
+                self._local_confirmation_game_id = game_id
+                self._local_window = None
+                self._reset_local_accumulators()
+                if not enabled:
+                    self._local_bootstrap_state = "idle"
+                elif not self.supports_local_confirmation:
+                    self._local_bootstrap_state = "unavailable"
+                elif self._reference is not None:
+                    self._local_bootstrap_state = "ready"
+                else:
+                    self._local_bootstrap_started = time.monotonic()
+                    self._local_bootstrap_deadline = self._local_bootstrap_started + LOCAL_BOOTSTRAP_SECONDS
+                    self._local_bootstrap_state = "bootstrap"
+                    if self._expected_np is not None:
+                        self._move_detector.force_sync(self._expected_np)
+                self._publish_status(None)
+            elif cmd.action == CommandType.OPEN_LOCAL_WINDOW:
+                if not (
+                    self._local_confirmation_mode
+                    and self._bound
+                    and self._local_bootstrap_state == "ready"
+                    and self._reference is not None
+                    and self._geometry is not None
+                    and callable(getattr(self._camera, "read_frame_identified", None))
+                    and cmd.data["deadline_monotonic"] > time.monotonic()
+                ):
+                    continue
+                expected = np.array(cmd.data["expected_board"], dtype=int)
+                self._expected_np = expected
+                self._sync.set_expected_board(expected, expected_node_id=cmd.data.get("expected_node_id"))
+                self._move_detector.force_sync(expected)
+                self._reset_local_accumulators()
+                self._local_window = _LocalWindow(
+                    token=cmd.data["token"],
+                    opened_monotonic=cmd.data["opened_monotonic"],
+                    deadline_monotonic=cmd.data["deadline_monotonic"],
+                    expected_node_id=cmd.data.get("expected_node_id"),
+                    expected_color=int(cmd.data["expected_color"]),
+                    geometry=self._geometry,
+                    last_camera_seq=self._local_last_camera_seq,
+                    last_camera_ts=cmd.data["opened_monotonic"],
+                )
+            elif cmd.action == CommandType.CANCEL_LOCAL_WINDOW:
+                if self._local_window is not None and self._local_window.token == cmd.data["token"]:
+                    self._local_window = None
+                    if self._expected_np is not None:
+                        self._move_detector.force_sync(self._expected_np)
+            elif cmd.action == CommandType.COMPLETE_LOCAL_WINDOW:
+                window = self._local_window
+                if window is None or window.token != cmd.data["token"]:
+                    continue
+                accepted = np.array(cmd.data["accepted_board"], dtype=int)
+                self._expected_np = accepted
+                self._sync.set_expected_board(accepted, expected_node_id=cmd.data.get("expected_node_id"))
+                self._move_detector.force_sync(accepted)
+                # Reuse the final qualified raw frame, never the reference-corrected board.
+                # The original guards still demand raw agreement, no lamps and no veto.
+                if window.geometry is self._geometry and window.raw_voted is not None and not window.lit:
+                    self._ref_vetoing = window.vetoing
+                    self._maybe_capture_reference(window.raw_voted, window.raw_observed, window.gray)
+                self._local_window = None
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
                 board = np.array(cmd.data["board"], dtype=int)
                 unchanged = self._expected_np is not None and np.array_equal(board, self._expected_np)

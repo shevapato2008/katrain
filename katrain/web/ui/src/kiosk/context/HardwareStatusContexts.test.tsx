@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { API, type VisionStatusResponse } from '../../api';
 import { GeometryAPI, type GeometryStatus } from '../../api/geometryApi';
 import { VisionProvider, useVision } from './VisionContext';
@@ -41,7 +42,7 @@ describe('hardware status cache on request failure', () => {
 
   it.each(['offline', 'geometry request failed 404'])('geometry invalidates green LED on %s and recovers', async (error) => {
     const status = vi.spyOn(GeometryAPI, 'status').mockResolvedValue(geometryResponse(true));
-    render(<GeometryProvider><GeometryProbe /></GeometryProvider>);
+    render(<MemoryRouter><GeometryProvider><GeometryProbe /></GeometryProvider></MemoryRouter>);
     await waitFor(() => expect(screen.getByRole('button')).toHaveTextContent('true'));
     status.mockRejectedValue(new Error(error));
     await act(async () => fireEvent.click(screen.getByRole('button')));

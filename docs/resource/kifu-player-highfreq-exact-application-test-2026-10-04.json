@@ -1,0 +1,18 @@
+{
+  "environment": "test",
+  "plan_sha256": "33ae23a772f50da57f841d311db611f221fd4c05f7943bc6fe5edf349a60b0f9",
+  "review_sha256": "fa5ab38a6aef38be30ce60a0e122ded24112ee7963903a1a6f06f795d63bd89d",
+  "before": {
+    "linked_slots": 269890,
+    "catalog_ids": 3848
+  },
+  "after": {
+    "linked_slots": 273695,
+    "catalog_ids": 3848
+  },
+  "verified_new_fk_slots": 3805,
+  "verified_protected": 5,
+  "verified_hold": 2,
+  "verified_all_pb_pw_games": 173025,
+  "catalog_unchanged": true
+}

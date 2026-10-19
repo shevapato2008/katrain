@@ -1,0 +1,284 @@
+{
+  "data_write_state": "cleanup_names_final_metrics_and_release_all_verified",
+  "last_batch_id": 724,
+  "source_commit": "a53f20678d099ae7304e425a0b944802a7890186",
+  "parent_commit": "b7212f7530ca849da207541b6d19a170b4ac5f29",
+  "files": [
+    {
+      "path": "PROD-changhao-apply.json",
+      "sha256": "ca30d4c1d2e3e52f4c9e37f85b90c749e044c5b2d471406da95520a2cb3acf81"
+    },
+    {
+      "path": "PROD-changhao-backup.json.gz",
+      "sha256": "f84c985b08629f7aa433dd19414973369dd31f86c54aa3057760cf60ea81cb43"
+    },
+    {
+      "path": "PROD-changhao-dry.json",
+      "sha256": "f88f3576d3f04bebe2830d9925dd9cc009ba39068c5b1188c47202342f7bcba9"
+    },
+    {
+      "path": "PROD-changhao-request.json",
+      "sha256": "ed8c1133d0397b53e48f7b65233f100f6b820212e02bc4b4ea691a65d575a14f"
+    },
+    {
+      "path": "PROD-cleanup-apply.json",
+      "sha256": "57a10d0b30a485fcfd5b40e12e52c27e861b4acbe78fcd5ad23a54c2691829b8"
+    },
+    {
+      "path": "PROD-cleanup-backup-plan.json.gz",
+      "sha256": "2d2e213dd2bf4637208a71952d8f3ef2d29f6715e66759383286b293a7fdce97"
+    },
+    {
+      "path": "PROD-cleanup-deployment.json",
+      "sha256": "4119f6a952131d8f570955740108d8cfa67fd9ed0b75534a29e131f1219a2348"
+    },
+    {
+      "path": "PROD-cleanup-dry.json",
+      "sha256": "a4096673f4d63f7a75aff2961570209d538f7f22c6f18451a2243bc044a39367"
+    },
+    {
+      "path": "PROD-deployment.json",
+      "sha256": "533e365f37266de997ab8a1437a117779b4efe56c30d7f3925d8284d459669e3"
+    },
+    {
+      "path": "PROD-final-text-apply.json",
+      "sha256": "06724511843211c3821c993f6ef9135ee0a9b0e05a931b132a4c934b981f60c4"
+    },
+    {
+      "path": "PROD-final-text-backup.json.gz",
+      "sha256": "74d85e229b1ef27e1bdc465e25ea5d7ad3fe683a94ab1b4e7f77d0f019671208"
+    },
+    {
+      "path": "PROD-final-text-dry.json",
+      "sha256": "6e17783b948de6d5848396a71fadb9cafdd8a6faf4e26a78a9114fa1458b76f3"
+    },
+    {
+      "path": "PROD-live-search.json",
+      "sha256": "a76579258cd6518f39e82e772976563bb5ccfdd3a0b521a0f9ffb02829ded9af"
+    },
+    {
+      "path": "PROD-metrics-after.json",
+      "sha256": "52a39a2c84a442b24784648f907b171fa3294186f0e0aef6a327c4ee921b1490"
+    },
+    {
+      "path": "TEST-changhao-apply.json",
+      "sha256": "2587032e7d8df261d896b26b6bc66b6bf0182a2d196692116063824670f71cf5"
+    },
+    {
+      "path": "TEST-changhao-backup.json.gz",
+      "sha256": "cb14ac77743809d8099554c47efac03a10fff6ccfae538b88d0bfea6fa500f3c"
+    },
+    {
+      "path": "TEST-changhao-dry.json",
+      "sha256": "8596d5ac52b5e0f1fdd33d0021502d69962fd57b800826b0f0c28641fe8a531e"
+    },
+    {
+      "path": "TEST-changhao-request.json",
+      "sha256": "b582ae75247e42e0a09576ee3f9b6b8dd3c6f1e0134de366b388a837d9f4f15f"
+    },
+    {
+      "path": "TEST-cleanup-apply.json",
+      "sha256": "f2a9b02de1c4f48631e6d7c4885efbe8071172ef0176013ee8bcf23a99d55266"
+    },
+    {
+      "path": "TEST-cleanup-backup-plan.json.gz",
+      "sha256": "e17efffb2a5a3a3eb78b9e9593890b5297b09b40b74b7cd697c60a086c216d80"
+    },
+    {
+      "path": "TEST-cleanup-deployment.json",
+      "sha256": "ac7fba09db4e85b9e84c39e607b24443f4ef95ca72b187a327500746573a69bf"
+    },
+    {
+      "path": "TEST-cleanup-dry.json",
+      "sha256": "708b861c9964fa12491f8bc3dde72df7ebb05c8e60b2d11fd3e4648cb12c16bc"
+    },
+    {
+      "path": "TEST-deployment.json",
+      "sha256": "087b9ea219631aadd025fbd33d5b48f24ebf7d9acc3c6ca56a369c0332467212"
+    },
+    {
+      "path": "TEST-final-gap-analysis.json",
+      "sha256": "cf1d598e76a2cd5dbfc24bb2db3c8a8b5e103d57a86372529de2a94270cca44b"
+    },
+    {
+      "path": "TEST-final-gap-supplemental-player-decisions.json",
+      "sha256": "da4ee3e9f614c18ac3af50aa8f2177a447dbe650b49f5635defed58bce9b6de0"
+    },
+    {
+      "path": "TEST-final-text-apply.json",
+      "sha256": "e621af2aa090d7e77b8eebd0396078b6479ed8db95d5c49a6cc0f620c4043119"
+    },
+    {
+      "path": "TEST-final-text-backup.json.gz",
+      "sha256": "1c3870cc4ef8004ed6da6eea05ddee787fa46ef8134ed2eddfed5503926ccf3d"
+    },
+    {
+      "path": "TEST-final-text-dry.json",
+      "sha256": "bc1bc60b2b1c9dc437206be3cb7adf6eece724e26159be81fc5486b7be6d1f98"
+    },
+    {
+      "path": "TEST-live-search.json",
+      "sha256": "d46c3b2b5903bfba2659858c9bf1eb3491292ffd7772152b52bc81f8803ee853"
+    },
+    {
+      "path": "TEST-metrics-after.json",
+      "sha256": "fc2a1db6573905995dc053d2abe0f4f2a75e3c6b6e2608c1bb265429acea0556"
+    },
+    {
+      "path": "cleanup-count-summary.json",
+      "sha256": "f9704620c792455e823245e87d665fc380e2489a6d77cf67bd8351bde255d728"
+    },
+    {
+      "path": "event-translation-decisions.json",
+      "sha256": "7844e9668ce2370312a88fd2b9466cf98480e62ba73752ef3014a0f8304bd7ed"
+    },
+    {
+      "path": "final-release-publication.json",
+      "sha256": "77609f05462177929fa103b15f3bacc1d7bb4240075756cc6b65ee63ff3d9e14"
+    },
+    {
+      "path": "independent-astra-changhao-review.json",
+      "sha256": "dee1aa2d04eaad1b55abdaf4803e1f6701f3440e50f00ce852f05b3653a6165f"
+    },
+    {
+      "path": "live-after-language-check.json",
+      "sha256": "306029367ac84b0150d3641cf69a1ca336404df19184333e32408b60e063e0e1"
+    },
+    {
+      "path": "live-final-supplement-check.json",
+      "sha256": "8af4da0ea1314ed1c6ebeec2278d9b44d5bade879ba8a82a2ca97fa302240281"
+    },
+    {
+      "path": "native-v10-reviewed-prod-uid1000/001-apply-receipt.json",
+      "sha256": "4c6e52697a246284e4d44430f5622b9f6dc1d9024789354bf1959295d1031998"
+    },
+    {
+      "path": "native-v10-reviewed-prod-uid1000/001-dry-run-receipt.json",
+      "sha256": "ac82fd051092be99c9ac526fc971e36ef32ae628ee3188dba7063f128c88ef6f"
+    },
+    {
+      "path": "native-v10-reviewed-prod-uid1000/001-verify-receipt.json",
+      "sha256": "39efaaa84b88238867fcd45672e1c447980088bdbef9879e95ca6d1d26eac1dc"
+    },
+    {
+      "path": "native-v10-reviewed-prod-uid1000/002-apply-receipt.json",
+      "sha256": "fef8e811dc660fd8714630c3b7dda4746b3823db7cf32812f35323f8fc8ab4e6"
+    },
+    {
+      "path": "native-v10-reviewed-prod-uid1000/002-dry-run-receipt.json",
+      "sha256": "47fab83c7415d022185a3bfe846c03937ebc28818ec2c337b0c01e7211e79a19"
+    },
+    {
+      "path": "native-v10-reviewed-prod-uid1000/002-verify-receipt.json",
+      "sha256": "6cf595d401d4f61f8a7ea360f65ff8084ea33b10387eb79521524619f1a523f2"
+    },
+    {
+      "path": "native-v10-reviewed-prod-uid1000/003-apply-receipt.json",
+      "sha256": "d4098c2093c3be6d543c067ad8305d9d7dae92332a4270c4d3dbada8d58534d2"
+    },
+    {
+      "path": "native-v10-reviewed-prod-uid1000/003-dry-run-receipt.json",
+      "sha256": "3c9445c82afec53c0a5835f0eeec91c7cb2671444c4cdd66f862b7f548e93612"
+    },
+    {
+      "path": "native-v10-reviewed-prod-uid1000/003-verify-receipt.json",
+      "sha256": "5fc4fdfcf03c8bb47296a11c32c9612d75d57433876fd899498369082f99bf41"
+    },
+    {
+      "path": "native-v10-reviewed-prod-uid1000/PROD-complete.json",
+      "sha256": "07b5977dd9495b13afb34206dd4f1edc1f13eb99c07376793e2f3795b6f1af53"
+    },
+    {
+      "path": "native-v10-reviewed-test/001-apply-receipt.json",
+      "sha256": "9c5375906e75eefb4e27286305cb3f09f002388fdff168c5625d03fa32474c50"
+    },
+    {
+      "path": "native-v10-reviewed-test/001-dry-run-receipt.json",
+      "sha256": "b02a02b9c5b4b6bf9da3c640a3ceeaac4dc253dce60744bfc5c0fa5b92da9d45"
+    },
+    {
+      "path": "native-v10-reviewed-test/001-verify-receipt.json",
+      "sha256": "2f649c1c601ecfb200c59c6d082bbf3057f19f44a658fba35b4617b78a91db4d"
+    },
+    {
+      "path": "native-v10-reviewed-test/002-apply-receipt.json",
+      "sha256": "6093d577aef35143fcd5b232b42cd5a4019b7fce3662c93a928c978157004849"
+    },
+    {
+      "path": "native-v10-reviewed-test/002-dry-run-receipt.json",
+      "sha256": "dd92491b0ac125b033c7b14865b7ab31ab9b2785dcf2f6cb3f0a03e14c34b944"
+    },
+    {
+      "path": "native-v10-reviewed-test/002-verify-receipt.json",
+      "sha256": "abf6910dcad0845f0965e62e816198fe3db078b53b748c5408c93a9d3d367fee"
+    },
+    {
+      "path": "native-v10-reviewed-test/003-apply-receipt.json",
+      "sha256": "3473bed6c81c80acef20110c5b1b5d8dc17411218661835e61e766a8f49cc332"
+    },
+    {
+      "path": "native-v10-reviewed-test/003-dry-run-receipt.json",
+      "sha256": "7a29218bffbc85938366e9884887d4f9b47f53dc98d5874e5b44010bdef301da"
+    },
+    {
+      "path": "native-v10-reviewed-test/003-verify-receipt.json",
+      "sha256": "70cf8412c9034b2b2d895e89a3e0e33e11af651d174229c191a654f8a9ee864c"
+    },
+    {
+      "path": "native-v10-reviewed-test/TEST-complete.json",
+      "sha256": "1443de676bad53917beaf2a2685245b9f65bb397259ccd1dbcf9e88121723e65"
+    },
+    {
+      "path": "native-v11-reviewed-prod/001-apply-receipt.json",
+      "sha256": "d39e0c8163eaf3a0dd8c58872b16c60d10cff3460b127456c48d13dd2bd59bee"
+    },
+    {
+      "path": "native-v11-reviewed-prod/001-dry-run-receipt.json",
+      "sha256": "9dab44c7b95efbd2ef56998eadbdc6dcd7dd87723c4b17e7fe050f09852e510a"
+    },
+    {
+      "path": "native-v11-reviewed-prod/001-verify-receipt.json",
+      "sha256": "ad1c0bc6a7234cfcded93010806ed362b9febde4f06d57706db67a054c2d654f"
+    },
+    {
+      "path": "native-v11-reviewed-prod/PROD-complete.json",
+      "sha256": "8931aa3b78a6be7399db43c98dda29004d8af050b40ef01d2d514a5f5274e206"
+    },
+    {
+      "path": "native-v11-reviewed-test/001-apply-receipt.json",
+      "sha256": "72bb4d590507dc501ee04e83e2a99a21f61ded65c9f55cebfa9878a7032fd1ac"
+    },
+    {
+      "path": "native-v11-reviewed-test/001-dry-run-receipt.json",
+      "sha256": "4edbfcd7ea776e60c3c88c1ff98d1c4dc04ffc7dcc4c100b8d4f02630027054a"
+    },
+    {
+      "path": "native-v11-reviewed-test/001-verify-receipt.json",
+      "sha256": "b1c3d61835f723d7bbaf969947ca6c65369f0420c1026cb4671508c04b23d9e5"
+    },
+    {
+      "path": "native-v11-reviewed-test/TEST-complete.json",
+      "sha256": "879b2af27d95f302a4ed8095ae89aaee5f53e7cdbdd0aa3c025ce9cb13a699a8"
+    },
+    {
+      "path": "player-cleaning-decisions.json",
+      "sha256": "830c56a9723627dbb90840957a2105754cde70e9346a1fa44d73994865e7f22b"
+    },
+    {
+      "path": "search-followup-cn-review.json",
+      "sha256": "8208444f3ab0e15235e44d22289281dc4c3e13aa32ef891858ad460151db401d"
+    },
+    {
+      "path": "search-followup-cn-root-tests.json",
+      "sha256": "57d9473143a6b0e3150fa8c7ba4f167c1b8c173f6095ea35cb959a5e18779212"
+    },
+    {
+      "path": "search-followup-review.json",
+      "sha256": "9a65904cc83e69a5a0e84615f1a61cdfe82dc71dd131d8ffdea3eb924de2f279"
+    },
+    {
+      "path": "search-followup-root-tests.json",
+      "sha256": "8e144a844cc5cdc5b89256df1566e3b1f5c79e246021107e7674bbdad3ea4f5f"
+    }
+  ]
+}

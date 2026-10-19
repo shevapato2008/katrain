@@ -1,0 +1,38 @@
+[
+  {
+    "environment": "test",
+    "plan_sha256": "4aa59c839ff269ea5a9db585707d7ca4edb04e54b574596d615f8c82aab0e862",
+    "mode": "apply",
+    "matched_albums": 1532,
+    "held_albums": 132,
+    "target_event_id": 1,
+    "updated_albums": 1532,
+    "post_commit_verified": 1532,
+    "held_verified": 132,
+    "coverage": {
+      "total": 173025,
+      "event_linked": 83458,
+      "edition_linked": 78650,
+      "event_types": 73
+    },
+    "verified_at": "2026-10-04 05:19:18.823547+00:00"
+  },
+  {
+    "environment": "prod",
+    "plan_sha256": "dfdce8dd0297750f687c520407d963480e345dfa1c6e86f710b6258402e83042",
+    "mode": "apply",
+    "matched_albums": 1532,
+    "held_albums": 132,
+    "target_event_id": 22,
+    "updated_albums": 1532,
+    "post_commit_verified": 1532,
+    "held_verified": 132,
+    "coverage": {
+      "total": 173025,
+      "event_linked": 83940,
+      "edition_linked": 78650,
+      "event_types": 73
+    },
+    "verified_at": "2026-10-04 05:19:21.714159+00:00"
+  }
+]

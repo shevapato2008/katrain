@@ -1,0 +1,69 @@
+{
+  "created_at_utc": "2026-10-05T02:06:41.701701+00:00",
+  "database_writes_performed_by_reviewer": 0,
+  "decision": "APPROVE_REVISED_EXECUTOR_AND_UNCHANGED_EXACT_PLANS",
+  "delta_finding": "The only behavioral dependency change removes the deployed ORM-model import. SQL UPDATE retains exact id/raw WHERE conditions, the same review_status/review_metadata values, typed JSON serialization via SQLAlchemy JSON bindparam, and rowcount 1 checks. Table locks, preimage comparison, all 407 FK operations, postimage checks, transaction commit/rollback and independent verification are unchanged.",
+  "delta_verification": "Reversing exactly the import change and raw-staging UPDATE replacement reproduced the prior independently reviewed executor SHA. No other code change exists.",
+  "environments": {
+    "prod": {
+      "approved_compressed_plan_sha256": "22238d591eb15b4c9fb34347087f8792ad860b31c4371a9e342c045fc53f53ff",
+      "dry_result": "docs/resource/kifu-player-existing3-PROD-final-dry-result-2026-10-05.json",
+      "dry_result_contents": {
+        "committed": false,
+        "created_player_ids": [],
+        "linked_slots": 407,
+        "raw_review_rows": 3
+      },
+      "dry_result_sha256": "1e7fa15d324d022bc63cf44bd909b38280de92659e90410a151aa4e6808b8e8e",
+      "expected_committed_postimage_sha256": "0b0b1e30c08df90610df5493bc268dd1151eafd577522fc073bf7514d763415e",
+      "independent_post_dry_live_matches_approved_preimage": true,
+      "independent_post_dry_live_snapshot_sha256": "23bdb84b698259be6fa3b550dba06d17e03ee2a89001f5f9ec59753d21023fed",
+      "raw_statuses": [
+        "pending",
+        "pending",
+        "pending"
+      ],
+      "remaining_null_slots": 407
+    },
+    "test": {
+      "approved_compressed_plan_sha256": "cda8f5406db26a8ec280ccd47e2ed5f6e371bcc22dce2ff0af4face202355d93",
+      "dry_result": "docs/resource/kifu-player-existing3-TEST-final-dry-result-2026-10-05.json",
+      "dry_result_contents": {
+        "committed": false,
+        "created_player_ids": [],
+        "linked_slots": 407,
+        "raw_review_rows": 3
+      },
+      "dry_result_sha256": "1e7fa15d324d022bc63cf44bd909b38280de92659e90410a151aa4e6808b8e8e",
+      "expected_committed_postimage_sha256": "13e095e27b0cc811a824885fbf4fe5d59227306601cdb4a42d328d1bc3394ce8",
+      "independent_post_dry_live_matches_approved_preimage": true,
+      "independent_post_dry_live_snapshot_sha256": "3056621791ccbf4fe068284b46dc2e15f7dc8c4679b2e3ccf9cfc4a3c4892bb2",
+      "raw_statuses": [
+        "pending",
+        "pending",
+        "pending"
+      ],
+      "remaining_null_slots": 407
+    }
+  },
+  "execution_authorization": "The same exact approved final plans may now be applied in TEST then PROD using the revised executor SHA above and the unchanged CLI/identity review. The executor live preimage gate must pass separately immediately before each commit. No other modification, catalog merge, rank correction, name approval or expanded raw scope is approved.",
+  "format": "kifu-player-existing3-executor-delta-attestation-v1",
+  "identity_review_sha256": "37dc016ed4233e3b234d3a85ebb35b448bf9dc6ff2a94c8d3066bea5665ec988",
+  "prior_attestation_sha256": "b0df40e8d28d1e91f8cb92d34dcd17f1b2d418ff10765264925eb380d042e2f9",
+  "prior_final_plan_attestation": "docs/resource/kifu-player-existing3-final-plan-independent-attestation-astra-2026-10-05.json",
+  "reviewer": "independent review agent /root/link407_review_astra",
+  "supersedes_only": {
+    "approved_new_sha256": "0efa316f9807554508c5df9b68ce6acc3f6e654a6becf0de95f994db5aee6481",
+    "executor": "katrain/web/kifu/player_existing3_exact.py",
+    "old_sha256": "696a5fa8509d858e664e2927db4e15b362233447632ab854192cb3d8d6235c8b"
+  },
+  "unchanged_code_sha256": {
+    "scripts/kifu_player_existing3_exact.py": "9d452f216eb8f478992593803f1054d89a8343f5d206f02e315930471fc493e6",
+    "tests/web_ui/test_player_existing3_exact.py": "e706dbcc7378bfe20fd29aa490b8547bd99a65963863520d4007a3fa09833804"
+  },
+  "verification": {
+    "focused_tests": "uv run pytest -q tests/web_ui/test_player_existing3_exact.py: 5 passed in 0.15s",
+    "initial_failed_dry": "Implementation agent reported deployed model import failure on the first PROD dry; subsequent independent live preimage equality confirms no persistent scope changes.",
+    "postgresql_dry_results": "Read both saved successful actual PostgreSQL dry rollback results. Independently queried each live DB in REPEATABLE READ READ ONLY after dry; full snapshot digest exactly matches its approved preimage, with all 407 FKs still NULL and all three raw rows pending."
+  }
+}

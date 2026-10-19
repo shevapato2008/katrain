@@ -154,13 +154,16 @@ class CameraHub:
         finally:
             self._lifecycle_lock.release()
 
-    def grab_fresh(self, after_ts=None, settle_ms: float = 150.0):
+    def grab_fresh(self, after_ts=None, settle_ms: float = 150.0, timeout: float | None = None):
         if not self._lifecycle_lock.acquire(blocking=False):
             return None, 0, 0.0
         try:
             if not self._started:
                 return None, 0, 0.0
-            return self._camera.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+            kwargs = {"after_ts": after_ts, "settle_ms": settle_ms}
+            if timeout is not None:
+                kwargs["timeout"] = timeout
+            return self._camera.grab_fresh(**kwargs)
         finally:
             self._lifecycle_lock.release()
 

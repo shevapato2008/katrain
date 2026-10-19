@@ -43,6 +43,10 @@ const album = (id: number, over: Partial<KifuAlbumSummary> = {}): KifuAlbumSumma
   event: '第 29 届三星杯', result: 'B+R', move_count: 241,
   date_played: '2026-06-30', board_size: 19, handicap: 0,
   komi: 7.5, rules: 'chinese', round_name: '半决赛',
+  // 页面展示 API 按当前语言返回的 display_* 字段，原始 SGF 字段仅保留为源数据。
+  display_player_black: '柯洁', display_player_white: '申真谞',
+  display_black_rank: '九段', display_white_rank: '九段',
+  display_event: '第 29 届三星杯', display_round_name: '半决赛',
   ...over,
 });
 
@@ -75,6 +79,7 @@ const seedRecent = (
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  sessionStorage.clear();
   __resetKioskActivityStorageForTests();
   setKioskIdentity(TEST_UUID, false);
   getAlbums.mockResolvedValue({ items: [album(1), album(2)], total: 2, page: 1, page_size: 20 });
@@ -217,15 +222,26 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     await waitFor(() => expect(getAlbums.mock.calls.length).toBe(before + 1));
   });
 
-  it('棋谱库连不上云端(503)时说「要联网」,不印原文,也不说「没搜到」', async () => {
-    getAlbums.mockRejectedValue(new ApiError(503, 'Request failed 503: {"detail":"Remote kifu service unavailable"}'));
+  it('棋谱库连不上云端时提示检查连接或重试，不断言盒子离线', async () => {
+    getAlbums.mockRejectedValue(new ApiError(503, 'Request failed 503', { code: 'kifu_cloud_unreachable' }));
     renderPage();
-    expect(await screen.findByText('棋谱库要联网才能搜')).toBeInTheDocument();
+    expect(await screen.findByText('无法连接棋谱库')).toBeInTheDocument();
+    expect(screen.getByText('请检查网络连接或稍后重试。')).toBeInTheDocument();
     expect(screen.queryByText(/Request failed/)).toBeNull();
     expect(screen.queryByText('没有对得上的谱')).toBeNull();
     expect(screen.getByRole('button', { name: '重试' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '最近摆过' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '跳转' })).toBeDisabled();
+  });
+
+  it.each([500, 503])('云端服务报错(%i)时提示暂不可用和重试，不误报断网', async (status) => {
+    getAlbums.mockRejectedValue(new ApiError(status, `Request failed ${status}`, { code: 'kifu_cloud_error' }));
+    renderPage();
+    expect(await screen.findByText('棋谱库暂时不可用')).toBeInTheDocument();
+    expect(screen.getByText('云端服务暂时出了问题，请稍后重试。')).toBeInTheDocument();
+    expect(screen.queryByText('无法连接棋谱库')).toBeNull();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+    expect(screen.getByRole('button', { name: '重试' })).toBeInTheDocument();
   });
 });
 

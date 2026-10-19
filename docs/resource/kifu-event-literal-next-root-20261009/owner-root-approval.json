@@ -1,0 +1,10 @@
+{
+  "status": "approved_owner_review",
+  "request_canonical_sha256": "41c9c85ea1c2c0916f24c07835de30f7de8e8af895165847acc5bc7835c95ec1",
+  "manifest_canonical_sha256": "170cd67ab820c50575d7dd65cceb43bd300acb7f4a9ee596fcf553e6c2cc9747",
+  "name_matrix_canonical_sha256": "d4a25340b2d2ac20ff138dd49c07f92ac726f882534e4dd5ad5de7ae88c8bab1",
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T21:04:12.265595+00:00",
+  "review_conclusion": "Root actual finite 13-core literal translation review plus independent Astra max owner helper PASS: exact first GN/empty EV, public NULL-event eligible 122 owners/938 games, complete physical scope and 610-name collision guard. Only literal raw owners review_status/metadata; no formal identities, SGF, ranks, FK or names. Exact live prepare/dry-run plan review required before root-only TEST/PROD apply."
+}

@@ -44,6 +44,9 @@ export interface BoardProps {
   suppressEndResultOverlay?: boolean;
   /** Reports that the visible canvas has finished drawing this game-state node. */
   onPaintedNode?: (nodeId: number) => void;
+  /** Local screen selection; never added to the authoritative game-state stones. */
+  previewMove?: { x: number; y: number; color: 'B' | 'W' } | null;
+  interactionDisabled?: boolean;
 }
 
 const ASSETS = {
@@ -69,6 +72,7 @@ const EVAL_COLORS = [
 const Board: React.FC<BoardProps> = ({
   gameState, onMove, onNavigate, analysisToggles, playerColor, engineOverlay = null,
   externalRulers = false, suppressEndResultOverlay = false, onPaintedNode,
+  previewMove = null, interactionDisabled = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -174,7 +178,7 @@ const Board: React.FC<BoardProps> = ({
       const interval = setInterval(renderBoard, 100);
       return () => clearInterval(interval);
     }
-  }, [gameState, analysisToggles, canvasSize, engineOverlay, externalRulers, suppressEndResultOverlay, imagesReady]);
+  }, [gameState, analysisToggles, canvasSize, engineOverlay, externalRulers, suppressEndResultOverlay, imagesReady, previewMove, interactionDisabled]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
     const m = externalRulers ? 0.5 : 1.5;
@@ -481,7 +485,7 @@ const Board: React.FC<BoardProps> = ({
 
     // Last Move
     const lastStone = gameState.last_move && gameState.stones.find(s => s[1] && s[1][0] === gameState.last_move![0] && s[1][1] === gameState.last_move![1]);
-    if (gameState.last_move && lastStone) {
+    if (gameState.last_move && lastStone && !previewMove) {
       const pos = gridToCanvas(layout, gameState.last_move[0], gameState.last_move[1], boardSize);
       const lastPlayer = lastStone[0];
 
@@ -503,7 +507,7 @@ const Board: React.FC<BoardProps> = ({
     }
 
     // Hover ghost stone preview
-    if (hoverPosRef.current && !gameState.end_result
+    if (hoverPosRef.current && !previewMove && !interactionDisabled && !gameState.end_result
         && (!playerColor || gameState.player_to_move === playerColor)) {
       const { x: hx, y: hy } = hoverPosRef.current;
       if (hx >= 0 && hx < boardSize && hy >= 0 && hy < boardSize) {
@@ -526,6 +530,21 @@ const Board: React.FC<BoardProps> = ({
           ctx.restore();
         }
       }
+    }
+
+    if (previewMove) {
+      const pos = gridToCanvas(layout, previewMove.x, previewMove.y, boardSize);
+      ctx.save();
+      ctx.globalAlpha = 0.75;
+      const img = previewMove.color === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
+      if (img) ctx.drawImage(img, pos.x - stoneSize, pos.y - stoneSize, stoneSize * 2, stoneSize * 2);
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, layout.gridSize * 0.35, 0, Math.PI * 2);
+      ctx.strokeStyle = previewMove.color === 'B' ? '#fff' : '#101a14';
+      ctx.lineWidth = Math.max(2.5, layout.gridSize * 0.09);
+      ctx.stroke();
+      ctx.restore();
     }
 
     // Game End Result
@@ -663,6 +682,7 @@ const Board: React.FC<BoardProps> = ({
   };
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (interactionDisabled) return;
     if (gameState.end_result) return;
     if (playerColor && gameState.player_to_move !== playerColor) return;
     const canvas = canvasRef.current;
@@ -704,6 +724,7 @@ const Board: React.FC<BoardProps> = ({
       }}
     >
       <canvas
+        data-preview-coord={previewMove ? `${previewMove.x},${previewMove.y}` : undefined}
         ref={canvasRef}
         width={canvasSize}
         height={canvasSize}

@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from katrain.web.core.db import engine, Base
 from katrain.web.core.models_db import KifuAlbum
 from katrain.web.kifu.identity import identity_lookup_name, normalize_alias
+from katrain.web.kifu.event_selection import selected_second_gn
 from katrain.web.kifu.provenance import audited_alias_ids, ensure_album_source, mainline_signature, sgf_sha256
 from katrain.core.sgf_parser import SGF
 
@@ -96,13 +97,18 @@ def parse_sgf_file(sgf_path: Path) -> dict:
     sgf_content = root.sgf()
 
     date_played = root.get_property("DT")
+    event = root.get_property("EV") or root.get_property("GN")
+    selected = selected_second_gn(root, sgf_path.relative_to(DATA_DIR).parts[0])
+    if selected is not None:
+        # This source stores its program label before the actual game name.
+        event = selected
 
     data = {
         "player_black": root.get_property("PB", "Unknown"),
         "player_white": root.get_property("PW", "Unknown"),
         "black_rank": root.get_property("BR"),
         "white_rank": root.get_property("WR"),
-        "event": root.get_property("EV") or root.get_property("GN"),
+        "event": event,
         "result": root.get_property("RE"),
         "date_played": date_played,
         # DTX often records a publication date, so use it for approximate

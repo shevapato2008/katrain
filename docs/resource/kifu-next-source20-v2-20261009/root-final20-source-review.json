@@ -1,0 +1,496 @@
+{
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T20:49:38.485040+00:00",
+  "status": "source_level_actual_review_only_context_deferred",
+  "source_independent_decision_file": "astra-source-decision.json",
+  "source_independent_decision_sha256": "1a366aadfdfd05987d90384291b851553cd3e838025fa3145812cd9d17780a73",
+  "final_source_packet_sha256": "9d6bfab35dd5dbca5d1bcc79f49cfa022c304c77e769e6008fa00cf5a7aa3b1a",
+  "held_prod_id": 339,
+  "replacement_prod_id": 696,
+  "configured_producer_model": "gpt-6-sol",
+  "registry_sha256": "612791156bd1131c9efe1f6b577a1c0825d54276496f24354c9e0a8156087617",
+  "rationale": "Direct published locale spellings for 18; actual complete Japanese kana and official NIKL finite positive rules for2. Three partial profiles carry precise retained identity bridges, Cyberoro/TV uses shared data not independent corroboration. 696 uses official opponent record and specialist Go news with independent Chinese women league identity. No current whole-database write approval yet.",
+  "members": [
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 9569,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "시모히라 아키오",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": "e4dc757b83577895219ddeee62c017922e8dc3974cc042a5906a80b373070aea",
+      "research_sha256": "d32c1ef12f3e44344b5407e313d303a93b71bc59732920212c3f6c092993db7e"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 12411,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "다이나카 신",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": "393085564a72a56281200fc7e9c6d282866fd34ecc0a01bde6d8fe88efbdad26",
+      "research_sha256": "065d3658ba44b5865f1dd2f0dad9888ea9afb5a45340ad49b4c1fe1d9de39cae"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 12404,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "마에타니 신고",
+      "decision_kind": "generated",
+      "name_preimage_sha256": "d3016fd3d51859c06bed6a86a86dc0ac3ed69fcdf9960649be5007fdfcfee4a7",
+      "research_sha256": "261c80fcabc1d9fcab2861b5274c67778326becd3910a1e616a2102a71f695b1"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 10358,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "가와무라 마사미치",
+      "decision_kind": "generated",
+      "name_preimage_sha256": "ef844ee9a85b44e2121385230959e4ede403bee5f53b24d4aedb7a027fd38b0c",
+      "research_sha256": "d0dc635203a84bd16a7b761f61880a8b2f6ac6e13669730998e8c5c6a858fd83"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 10876,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "리강",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "485f451747cc2d367fe434b6bcdaaff16d36339f1772ef5aca74d839b72e4811"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 369,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "자오젠난",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": "74502adb2eaf4d346da75c27db8648c09e7c098a878d8f3c4149f23d663f9028",
+      "research_sha256": "d9cc779b1f5789b3cec2f8d13befbe54df3fef380568311d9f66045abc74af97"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 9618,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "차오스야오",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "d4d94585bf8a6ebdec7863808dc67f1f6c892778fb86760014c7d75dde4bbcd9"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 10424,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "장자야오",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "23ef41b3e1e17830af9de53e94aecd23f6edaf6de97311c8de27c2cff2f0e333"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 10914,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "양원카이",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "bc2c9928cfa5e980c54378f004eaae6f2c15bbef965141c5e66ef9d3dec9a63a"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 11247,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "왕보강",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "9c766e3891c9d5dc0002375ab0521fe3df76bbc68ffbfcafdba5d0dcbeaef17a"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 11448,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "친쓰웨",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "21b2a5a3fbb43a86839637b0bc07329410553b02318dfa0e0d22b7ed72c336f1"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 11559,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "판시위",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "2a8dc9d965650bb79bb8d8d6fb3f40df570ab9b8ec5dc4c97017a0265ed3c310"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 12062,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "천야펑",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "aee19545a8042b46a8a0339babbf4d19f80a4b933f1db97227a63a9e62370239"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 12144,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "천창칭",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "5cf6733dd7f6dd907d8efd2b1e33ecf3c888f097e63df431f042244d1a64f63b"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 12311,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "황량위",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "0ee4c28a136c4a6fb399e37313e9f2f41d5ae57c858060e2b586ef85b746eaa4"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 11127,
+        "kind": "player"
+      },
+      "lang": "en",
+      "display_name": "Sha Xingyu",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "c88a4baa252d85f44b6b4b4f532e2844f8611462092d8492af062ab84c0f8419"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 10134,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "안도 히나타",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "6f0d80035c905f41c78bbc6b7ad109dbbc4b56298cee3d2eaf4964cb5c05975d"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 9837,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "마에다 료",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "a3494fb49ba41c51ec0e80b08370c0b4a098a88046b2d5be8a709ff3cba1f46b"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 9642,
+        "kind": "player"
+      },
+      "lang": "tw",
+      "display_name": "亞歷山大·迪那斯塔因",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "df9ecf0ec6ce948297f42b06de7e10ac81d51d74704d156eb363395aee361a5d"
+    },
+    {
+      "environment": "TEST",
+      "owner": {
+        "id": 697,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "가오뤄환",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": "d4531281d23916e58a324a5ca23b2b95b71a0d0bf98afe951301a7fe625acf36",
+      "research_sha256": "79a6fdde8ae74c25487a8638b2e359594211febdfba42c78cf8f7e7828560173"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 3771,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "시모히라 아키오",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": "d1d03ed0e21791bfafc706a2a322a68e416a90dbb4dd44f416013bb878f0ac98",
+      "research_sha256": "2fb8f21ab65cc44b796e14bd96772fe726a30c38db5e3ed1df8b804d08d3effd"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 6642,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "다이나카 신",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": "e5a98401e2adba9cf551faa2047f3417421737db2479d22779800c7f0dde06db",
+      "research_sha256": "c55787b4622a40ef5d9e028b1a5eaa5ddf475e42183203b209e64a6d74c0576c"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 6635,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "마에타니 신고",
+      "decision_kind": "generated",
+      "name_preimage_sha256": "17a60d92771c5ce52b489b439d4921d6fb9dc2f6726174382b212b06bb299ccb",
+      "research_sha256": "a65cb4421adb2cadd7c5d3494ffc068f8f544acdce84534ba91f329adba3b837"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 4568,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "가와무라 마사미치",
+      "decision_kind": "generated",
+      "name_preimage_sha256": "ceb0b3fcb00e0cdab3e1d8a255962b2c9010c32c7c47ffcbff31a756a4850b57",
+      "research_sha256": "1c9b428cd4a2259dc0019a260e48d2f2a58a877173aa67729782d75fd0ee608a"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 5094,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "리강",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "295e051e4487238306bf0427b1f87c6159009c5d61bec448e1ff64401db0120f"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 368,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "자오젠난",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": "d2b2dc825e92fff879b45e05149589a90615449287d171fd6423f2c588479d9e",
+      "research_sha256": "0e850c014686f9164aa912c19ec3a36e39677274aa9704c77d6fa14b2a51ea44"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 3820,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "차오스야오",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "e5203ffe1dae86b85d5455ef75c0f67c27e3d4ef943a8d15704a3a55db55d102"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 4634,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "장자야오",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "3dc00dba1e9263798342fb0cf748e0c17c97049bd7b6d5948e4c68f8e81cea2d"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 5133,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "양원카이",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "07545e5c2f4fb3db9df0477225c4bfc85ce5412a89c6c5c1887d4758970ed91f"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 5473,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "왕보강",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "43536638ef2a82b02f18c00aaad987e4f9ad0201d00c62fc69aa2282711e32a2"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 5675,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "친쓰웨",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "dabd74182bf0170e49ab7b1398bd2f60a742333a0bbf790dc00c5fc7dbfbe524"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 5790,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "판시위",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "339e74875b1c6d8c12148c04d8c9cca98d02e5eeedc611aa560edb15bd9dac4c"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 6296,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "천야펑",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "f2a5d396c4fc043c94bbeee37c856d51d9061ecd8327654a60ae3b6dad13fbd1"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 6378,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "천창칭",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "7a8780dd700d93e505971ada8a56aee15e64ed9864da217a5c2c909a65ab8dd4"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 6547,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "황량위",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "6df4ccc4a14b6ead7e3b2bdd919a636951c1d80b32683ed5951f749744d4ca67"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 5351,
+        "kind": "player"
+      },
+      "lang": "en",
+      "display_name": "Sha Xingyu",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "14511181af7cb8bf94ebd3e64732667339849f43e6d715619df4887413758678"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 4340,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "안도 히나타",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "77fe204f39fc4b2e50d37ba5c5b30c3f8c2b69b36acabb5b3986cf0cf61d3f4f"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 4041,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "마에다 료",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "97b3677496ad976a798aa04e1c8fd2e516c8707f54a52aadbb5436c9cca31dd8"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 3844,
+        "kind": "player"
+      },
+      "lang": "tw",
+      "display_name": "亞歷山大·迪那斯塔因",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": null,
+      "research_sha256": "0e26eaccc80708f643c1d8a5d80fb66a644db7defad60ac222c13246dd8b9d86"
+    },
+    {
+      "environment": "PROD",
+      "owner": {
+        "id": 696,
+        "kind": "player"
+      },
+      "lang": "ko",
+      "display_name": "가오뤄환",
+      "decision_kind": "conventional",
+      "name_preimage_sha256": "15d52b492b7740729213298d8be0feab943b4cc1201e9f790878333fb3ee15ee",
+      "research_sha256": "91fff189388841c28a5ddba011dd9fe0a772d37f294ba33222271727848d997a"
+    }
+  ]
+}

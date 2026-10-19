@@ -1,0 +1,191 @@
+{
+  "artifact_kind": "ko_name_source_only_research",
+  "queue_player_id": 5806,
+  "queue_order_slots": 19,
+  "selection_scope": "latest read-only PROD batch 597 shortlist; KO NULL with four physical verified rows; shortlist is not final qualification proof",
+  "canonical_name": "萧睿杉",
+  "available_non_ko_anchor_names": {
+    "cn": "萧睿杉",
+    "en": "Wesley Hsiao",
+    "jp": "蕭睿杉",
+    "tw": "蕭睿杉"
+  },
+  "status": "pending_no_direct_Korean_publication_found_in_bounded_checks",
+  "source_reading": {
+    "published_latin": "Wesley Hsiao",
+    "observed_romanization": "Wesley Hsiao",
+    "interpretation": "Source-published Latin only. No Korean spelling inferred. Regional system or Korean transcription is not assigned without source evidence.",
+    "source_capture_ids": [
+      "ret101-taiwan-kiin-blog"
+    ]
+  },
+  "identity_bridges": [
+    {
+      "url": "https://haifong.org/profession/venue/8AB03BA6DA9332148C3AC88706421907",
+      "final_url": "https://haifong.org/profession/venue/8AB03BA6DA9332148C3AC88706421907",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "fetched_at_utc": "2026-10-08T23:05:04.490256+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:01.932964+00:00",
+      "body_bytes": 18642,
+      "body_sha256": "fc73233beb77160b36d50e7a33f671005f0c65d5a4817edd8f8a931a2f915d20",
+      "body_file": "captures/5806-authority-ret101-haifong-bare-19.body",
+      "publisher": "ret101-haifong-bare",
+      "source_role": "official",
+      "capture_kind": "authority_page_capture",
+      "source_id": "ret101-haifong-bare",
+      "source_language": "zh-Hant",
+      "evidence_ids": [
+        59790,
+        59791
+      ],
+      "body_text_excerpt": "海峰棋院-蕭睿杉 棋譜 關於海峰 最新消息 職業棋士 世界賽 職業賽 院生天地 業餘賽 相關活動 其它 精銳隊/道場 影片專區 關於海峰 關於海峰 創辦人簡介 大事紀 行事曆 聯絡方式 最新消息 職業棋士 世界賽 職業賽 院生天地 業餘賽 相關活動 其它 精銳隊/道場 精銳隊 道場 精銳隊交流 影片專區 關於海峰 創辦人簡介 大事紀 行事曆 聯絡方式 精銳隊 道場 精銳隊交流 棋譜 職業棋士 蕭睿杉 初段 2026年度成績(10/1更新) 台灣職業賽 2勝5負 勝率28.6% 世界賽 0勝0負 勝率0% 去年度總成績 0勝1負 勝率0% 簡介 生日:2010年08月05日 2022年入段 第五屆海峰盃全國長青圍棋賽(北區)(南區)(中區) 全國大專盃圍棋錦標賽(第七屆) 第五屆海峰盃全國長青圍棋賽(北區)(南區)(中區) 第五屆海峰盃全國長青圍棋賽(北區)(南區)(中區) 全國大專盃圍棋錦標賽(第七屆) 第五屆海峰盃全國長青圍棋賽(北區)(南區)(中區) 合作廠商 台灣棋院文化基金會 友士股份有限公司 健喬信元醫藥生技股份有限公司 環旭電子股份有限公司 風傳媒 智林體育臺 Award Style 圍棋友站 中華職業圍棋協會 日本棋院 中華民國圍棋協會 野狐圍棋 Japan Pair Go Association Copyright 海峰棋院. All Rights Reserved.",
+      "body_text_locator": "Visible heading/profile text around the exact same-person name in captured source; body file/hash preserves original response."
+    },
+    {
+      "url": "https://taiwangorg.blogspot.com/2021/12/blog-post_85.html",
+      "final_url": "https://taiwangorg.blogspot.com/2021/12/blog-post_85.html",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "fetched_at_utc": "2026-10-08T23:05:03.596720+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:01.933033+00:00",
+      "body_bytes": 49532,
+      "body_sha256": "1987d1d869093a1b79e0a175f23c5f7baae8894c5bff5e5067dcac7f4790be10",
+      "body_file": "captures/5806-authority-ret101-taiwan-kiin-blog-23.body",
+      "publisher": "ret101-taiwan-kiin-blog",
+      "source_role": "official",
+      "capture_kind": "authority_page_capture",
+      "source_id": "ret101-taiwan-kiin-blog",
+      "source_language": "en",
+      "evidence_ids": [
+        59792
+      ],
+      "body_text_excerpt": "台灣棋院: 棋士資訊-蕭睿杉初段 棋士資訊-蕭睿杉初段 蕭睿杉初段 英文名: Wesley Hsiao 生 日: 2010 年 8 月 5 日 住 址: 台北市羅斯福路三段28號8樓 類 型: 臺灣 簡介 自五歲半始習棋，受名人棋院永春分院之翁天亮及陳紹翔老師啟蒙；升初段後跟隨林聖賢及劉耀文老師鑽研棋道，並短暫接受多位職業及業餘老師指導。此外，仁愛國小圍棋校隊之諸位教練亦予其諸多鼓勵及教誨。 2019 年進入海峰圍棋道場訓練，接受周俊勳、黃祥任、劉耀文及夏大銘等諸位職業棋士指導。 2021 年 7 月於院生組職棋甄選定段。 2022年1月1日晉升職業初段 主要戰績 《業餘》 2020 年 : 韓國日曜報紙盃季軍。 中等以下學校圍棋運動錦標賽國小男子組冠軍。 第十五屆榮三盃全國學生棋王賽小學組亞軍。 第七屆大成盃全國圍棋棋聖賽高段組冠軍。 高雄市第十六屆中山盃全國圍棋錦標賽六段組冠軍。 2021 年 : 中等以下學校圍棋運動錦標賽國小男子組冠軍。 高雄市第十一屆體育盃全國圍棋錦標賽六段組冠軍 《職業》 at 12月 29, 2021 以電子郵件傳送這篇文章 BlogThis！ 分享至 X 分享至 Facebook 分享到 Pinterest Labels: 棋士資訊 較新的文章 較舊的文章 首頁 文章搜尋 聯絡台灣棋院 聯絡窗口: 陳小姐 聯絡電話: 02-2598-9890 數位典藏網站:林小姐(You Cian Lin) 聯絡電話: 02-2598-9890 #245 通訊地址: 台北市中山區民權西路53號15樓 台灣棋院 Copyright(C) 2008 All Rights Reserved",
+      "body_text_locator": "Visible heading/profile text around the exact same-person name in captured source; body file/hash preserves original response."
+    }
+  ],
+  "searches": [
+    {
+      "url": "https://www.bing.com/search?q=%22%E8%90%A7%E7%9D%BF%E6%9D%89%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://www.bing.com/search?q=%22%E8%90%A7%E7%9D%BF%E6%9D%89%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "fetched_at_utc": "2026-10-08T23:04:46.930301+00:00",
+      "request_started_at_utc": "2026-10-08T23:04:45.564997+00:00",
+      "body_bytes": 121723,
+      "body_sha256": "f47784d47f27b503e98d584653ec109294d0125520db3db663dedf4a7878cb28",
+      "body_file": "captures/5806-search-bing.html",
+      "publisher": "bing",
+      "source_role": "web_search_capture",
+      "capture_kind": "web_search_capture",
+      "query": "\"萧睿杉\" 바둑",
+      "search_scope": "literal exact Han name plus 바둑 in web search engine; results are discovery evidence only",
+      "body_text_excerpt": "\"萧睿杉\" 바둑 - Search Skip to content Accessibility Feedback All Search Images Videos Maps News More Shopping Flights Tools About 145,000 results Open links in new tab Any time outlook.com https://www.outlook.com Outlook .com - Official Site Outlook.com is a free, personal email service from Microsoft. Keep your inbox clutter-free with powerful organizational tools, and … office365.com https:// outlook .office365.com › mail › login.html Outlook Sign in to your Outlook account to manage emails and access Office 365 services. microsoft.com https://www.microsoft.com › en-us › outlook › log-in Outlook Log In | Microsoft 365 Sign in to Outlook with Microsoft 365 to access your email, calendar, and more. Download the app or log in online for enhanced … outlook.com https://www. outlook .com Outlook Outlook office.com https:// outlook .office.com › mail › mini › opxdeeplink › mail › inbox Outlook Access your email, calendar, and contacts with Outlook. office.com https://portal.office.com › Home Sign in to your account - portal.office.com No account? Create one! Can’t access your account? microsoft.com https://www.microsoft.com › en-us › outlook › email-and-calendar-software... Microsoft Outlook Personal Email and Calendar | Microsoft 365 Download free Microsoft Outlook email and calendar, plu",
+      "body_text_locator": "Visible search result text near the literal query in the captured response body; search engine result set is bounded and discovery-only."
+    },
+    {
+      "url": "https://search.naver.com/search.naver?query=%22%E8%90%A7%E7%9D%BF%E6%9D%89%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22%E8%90%A7%E7%9D%BF%E6%9D%89%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "fetched_at_utc": "2026-10-08T23:04:47.486078+00:00",
+      "request_started_at_utc": "2026-10-08T23:04:45.565085+00:00",
+      "body_bytes": 103977,
+      "body_sha256": "b4d48b7ccceca09f057cdab465913f5faf032bfd48248edef94ef77833a1434e",
+      "body_file": "captures/5806-search-naver.html",
+      "publisher": "naver",
+      "source_role": "web_search_capture",
+      "capture_kind": "web_search_capture",
+      "query": "\"萧睿杉\" 바둑",
+      "search_scope": "literal exact Han name plus 바둑 in web search engine; results are discovery evidence only",
+      "body_text_excerpt": "\"萧睿杉\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"萧睿杉\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"萧睿杉\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 AI 브리핑 '\"萧睿杉\" 바둑' 에 대한 검색결과가 없습니다. 단어의 철자가 정확한지 확인해 주세요. 검색어를 줄이거나, 더 일반적인 검색어로 검색해 보세요. 설정한 검색 조건이 있다면 일부 해제 하거나 변경해 보세요. 찾으시는 검색결과가 없다면 아래 기능을 이용해 보세요. 지식인 지식iN에 질문하기 궁금한 것은 지식iN에서 도움을 받아보세요 새 창 열림 네이버 검색 도움말 보기 검색 고객센터를 확인해보세요 새 창 열림 브라우저를 업데이트하세요 최신 기술을 품은 네이버 웨일에서 빠른 인터넷을 만나보세요 웨일 다운로드 7일 내 다시보지 않기 배너 닫기 지나고 나면 그리울, 오늘의 가을 기록 클립에 올리면 매월 최대 12만 8천원 적립 참여 누르고 쇼핑하면 최대 3만3천P 추가 적립! 적립적인 멤버십 전용카드 네이버 현대카드 Ed.3 끝까지 끝내주는 AI, 네이버 AI탭 검색이 대화가 되다 이전 정보를 가져오는 중입니다. 죄송합니다. 일시적인 오류입니다. 잠시 후 다시 시도해주십시오. 재시도 맨위로 이용약관 새 창 열림 개인정보처리방침 새 창 열림 검색 고객센터 새 창 열림 © NAVER Corp. 새 창 열림 맨위로 전체서비스 새 창 열림 이용약관 새 창 열림 개인정보처리방침 새 창 열림 검색 고객센터 새 창 열림 © NAVER Corp. 새 창 열림",
+      "body_text_locator": "Visible search result text near the literal query in the captured response body; search engine result set is bounded and discovery-only."
+    },
+    {
+      "url": "https://search.naver.com/search.naver?query=%22Wesley%20Hsiao%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22Wesley%20Hsiao%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "fetched_at_utc": "2026-10-08T23:05:41.614738+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:39.050210+00:00",
+      "body_bytes": 503261,
+      "body_sha256": "6c18858051c6acb9d115f5115f4ab7769316f9af5b523bfab98a5a3ce3035dc0",
+      "body_file": "captures/5806-search-naver-latin.html",
+      "publisher": "naver",
+      "source_role": "web_search_capture",
+      "capture_kind": "web_search_capture",
+      "query": "\"Wesley Hsiao\" 바둑",
+      "search_scope": "literal exact published Latin name plus 바둑 in Naver web search; discovery evidence only",
+      "body_text_excerpt": "\"Wesley Hsiao\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Wesley Hsiao\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Wesley Hsiao\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 서울시립대학교중앙도서관 library.uos.ac.kr › download XLS 새 창 열림 AI 출처 정보 서울시립대학교 중앙도서관은 통합검색을 통해 도서·학술자료를 검색하고, 공지·행사 안내를 제공하는 대학 도서관 서비스입니다. 열람실 좌석 현황 확인 및 전자정보실 이용 등 학습 지원 기능을 운영합니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 비도서_총_소장리스트(20141014).xlsx 새 창 열림 2MB AV(VD) - DVD 등록번호 서명 감독(제작) 제작사(출판사) 출판년 별치기호 청구기호 현재5,390종 A3017 비포 선라이즈 [비디오 녹화자료] = Before sunrise 링클레이터, 리차드 (주) 동우영상 1996 AV(VD) 688.2 링998뱌 A6086 Whitney Houston Live in Concert 휴스턴, 휘트니 삼성전자 1997 AV(VD) 673.5 휴887ㅎ A6087 Whitney Houston... 새 창 열림 서울시립(AV)자료(20120921).xls 새 창 열림 비디오 등록번호 서명 저자 출판사 출판년 별치기호 형태 청구기호 A00000000001 닥터 지바고 [비디오 녹화자료]. 상, 하 = Doctor Zhivago 린, 데이비드 세신영상(주) 1988 AV(VC) video cassette tape 688.2 린966ㄷ A00000000002 닥터 지바고 [비디오 녹화자료]. 상, 하 = Doctor Zhivago 린, 데이비드 세신영상(주) 1988 AV(VC)... 관련문서 더보기 한국지식재산연구원 www.kiip.re.kr › download XLS 새 창 열림 AI 출처 정보 한국지",
+      "body_text_locator": "Visible search result text near the literal query in the captured response body; search engine result set is bounded and discovery-only."
+    }
+  ],
+  "additional_bounded_cross_checks": [
+    {
+      "publisher": "Korean Baduk Association",
+      "url": "https://www.baduk.or.kr/record/player_in.asp",
+      "method": "POST",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+      "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+      "body_bytes": 80097,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+      "source_role": "official_China_player_roster_bounded_literal_scan",
+      "locator": "Full saved response scanned for each exact original Han and published Latin string; this is a roster response scan, not exhaustive Korean usage search.",
+      "queries": [
+        "萧睿杉",
+        "Wesley Hsiao"
+      ],
+      "status": "not_found_in_this_capture",
+      "body_text_excerpt": "Literal scan terms: 萧睿杉; Wesley Hsiao. Exact matching strings present: []."
+    },
+    {
+      "publisher": "TVBaduk",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "body_bytes": 119151,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+      "locator": "Full saved China roster index scanned for exact original Han and published Latin string; bounded to this captured response.",
+      "queries": [
+        "萧睿杉",
+        "Wesley Hsiao"
+      ],
+      "status": "not_found_in_this_capture",
+      "body_text_excerpt": "Literal scan terms: 萧睿杉; Wesley Hsiao. Exact matching strings present: []."
+    },
+    {
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "publisher": "Daum Cafe community roster (2012)",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+      "body_bytes": 153004,
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "source_role": "community_reference_only_not_official",
+      "queries": [
+        "萧睿杉",
+        "Wesley Hsiao"
+      ],
+      "status": "not_found_in_saved_body",
+      "body_text_excerpt": "Literal scan terms: 萧睿杉; Wesley Hsiao. Exact matching strings present: [].",
+      "locator": "Full saved community roster body scanned for the exact queue Han and English spellings. No same-person Korean name hit."
+    }
+  ],
+  "conclusion": {
+    "direct_korean_go_publication_of_name": "not_found_in_checked_sources",
+    "exact_korean_hangul_name": "not_found; no output guessed",
+    "global_absence_claim": false,
+    "next_step": "Keep pending. A future sourced Korean name may be accepted from a same-person Korean professional, tournament or publication source; otherwise keep reading evidence and run the rule work separately."
+  },
+  "review_status": "source_only_not_conventional_name_approved_not_candidate_signed"
+}

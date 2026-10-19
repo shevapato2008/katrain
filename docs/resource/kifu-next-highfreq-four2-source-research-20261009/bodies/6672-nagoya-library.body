@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>調査報告書 : 調査団報告書No.102 | 名古屋市図書館ホームページ</title>
+<meta name="Description" content="" />
+<meta name="Keywords" content="" />
+<link rel="stylesheet" type="text/css" href="/common/css/import.css" media="screen, print" />
+<link rel="stylesheet" type="text/css" href="/common/css/index.css" media="screen, print" />
+<script type="text/javascript" src="/common/js/jquery.min.js"></script>
+<script type="text/javascript" src="/common/js/jquery.cookie.js"></script>
+<script type="text/javascript" src="/common/js/default.js"></script>
+<script type="text/javascript" src="/js/common.js"></script>
+
+<script type="text/javascript">
+$(function() {
+	$("#gNavi li").hover(function() {
+		$(this).children('ul').show();
+	}, function() {
+		$(this).children('ul').hide();
+	});
+});
+</script>
+<script type="text/javascript" src="/common/js/tab.js"></script>
+<!-- ↓highslide -->
+<script type="text/javascript" src="/highslide/highslide.js"></script>
+<link rel="stylesheet" type="text/css" href="/highslide/highslide.css" />
+<script type="text/javascript">
+    hs.graphicsDir = '/highslide/graphics/';
+	hs.wrapperClassName = 'wide-border';
+</script>
+<script type="text/javascript">
+function addHighSlideAttribute() {
+  var isIE = (document.documentElement.getAttribute('style') ==
+              document.documentElement.style);
+  var anchors = document.getElementsByTagName('a');
+  for (var i = 0, len = anchors.length; i < len; i++) {
+    if (anchors[i].className == 'highslide') {
+      if (!anchors[i].getAttribute('onclick')) {
+        isIE ? anchors[i].setAttribute('onclick', new Function('return hs.expand(this)')) :
+               anchors[i].setAttribute('onclick','return hs.expand(this)');
+        isIE ? anchors[i].setAttribute('onkeypress', new Function('return hs.expand(this)')) :
+               anchors[i].setAttribute('onkeypress','return hs.expand(this)');
+      }
+    }
+  }
+}
+</script>
+<!-- ↑highslide -->
+<link rel="stylesheet" href="/common/temp_v2/css/wrapper.css">
+<link rel="stylesheet" href="/common/temp_v2/css/wrapper_sp.css">
+<link rel="stylesheet" href="/common/temp_v2/css/switchLayout.css">
+<script src="/common/temp_v2/js/common.js"></script>
+
+<!-- <script id="pt_loader" src="//ewb-c.infocreate.co.jp/ewbc/ptspk_loader.js?siteId=091_lib_nagoya" async defer></script> -->
+<script id="pt_loader" src="//ewb-c.infocreate.co.jp/ewbc/ptspk_loader.js?siteId=227_lib_city_nagoya" async defer></script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-99308338-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-99308338-2');
+</script>
+</head>
+<body id="tisPageTop">
+<div id="page-top" class="c-reader"><a>ページの先頭です。</a></div>
+<div><a class="c-skip-link" href="#mainArea">本文へジャンプする。</a></div>
+<noscript>JavaScript対応ブラウザで表示してください。</noscript>
+<div id="headerWraper"></div>
+<div class="c-reader"><a id="mainArea">ここから本文です。</a></div>
+<!-- start:Topick Path -->
+<div id="topicPath">
+	<ul class="clearfix">
+    <li><a href="https://www.library.city.nagoya.jp/index.html">名古屋市図書館 ホーム</a></li>
+        <li><a href="../index.html">調べ物案内</a></li>
+        <li><a href="../nandemo.html">名古屋なんでも調査団</a></li>
+        <li><a href="index.html">調査団報告書一覧</a></li>
+        <li>調査団報告書No.138</li>
+        
+	</ul>
+</div>
+<!-- end:Topick Path -->
+<div id="mainWrap" class="clearfix">
+
+
+<!-- start:Left Area -->
+	<div id="leftArea">
+        
+        <h2 id="categoryName"><a href="/reference/index.html"><img src="/reference/images/title_reference.jpg" width="212" height="130" alt="調べ物案内"/></a></h2>
+		
+        <ul class="lnavi">
+			<!--<li><a href="/reference/reference.html">調べ物案内</a></li>-->
+			<li><a href="/reference/jireishu.html">レファレンスサービス・事例集</a></li>
+			<li><a href="/reference/collection.html">コレクションの紹介</a></li>        
+			<li><a href="/reference/research.html">調べ方案内（パスファインダー）</a></li>
+			<li><a href="/reference/nandemo.html">名古屋なんでも調査団</a></li>
+			<!--<li><a href="/reference/nagoyacalender.html">なごやカレンダー</a></li>-->
+			<li><a href="/reference/ruien.html">名古屋市内の類縁機関</a></li>        
+		</ul>
+	</div>
+	<!-- end:Left Area --> 
+
+
+	<!-- start:MainContent -->
+	<div id="mainArea">
+    
+    <h2><img src="/page_cms_images/icon_nandemo.png" alt="" width="35" height="35" /><span>調査団報告書No.102</span></h2>
+    
+    <article>
+<div class="description">
+<!-- start:Pagelink -->
+<ul class="pagelink">
+<li>最近の調査団報告書は<a href="../nandemo.html#chap04">名古屋なんでも調査団</a>へ</li>
+<li>これまでの調査団報告書は<a href="index.html">調査団報告書一覧</a>へ</li>
+<li>PDF版の一覧は<a href="chosahoukoku_pdf.html">調査団報告書一覧（PDF版）</a>へどうぞ</li>
+</ul>
+<!-- end:Pagelink -->
+</div>
+
+<!-- ★★↓調査団報告書　貼り付けここから↓★★ -->
+<h3>調査内容</h3>
+<div class="description">
+<p style="font-size:125%;">最近囲碁を習いに行き始めてね。江戸時代、名古屋出身の囲碁棋士っていたのかな？
+有名な人がいれば知りたいな。その人の打った対局の記録も残っているだろうか？
+</p>
+</div>
+
+<h3>調査手順</h3>
+<div class="description">
+<div class="img-right-article">
+<!-- ★★↓画像挿入ここから↓★★ -->
+<!--<p><img alt="758くん画像" src="../../img/reference/758kun.jpg" height="254" width="100" /></p>-->
+<!-- ★★↑画像挿入ここまで↑★★ -->
+<p style="font-size:110%;">現代も囲碁棋士の名簿が載る『囲碁年鑑』の各種特集で、江戸時代の囲碁棋士の情報を探してみた。1993年版に「江戸・明治著名棋士名鑑」のページがあり、「名古屋の生まれ」という伊藤松和を見つけた。名前を手掛かりに、江戸時代の囲碁棋士に関する他の本も見てみる。</p>
+</div>
+</div>
+
+<h3>調査結果</h3>
+<div class="description">
+<div class="img-right-article">
+<p><img alt="解決スタンプ" src="../../img/reference/kaiketu.jpg" height="143" width="143" /></p>
+<p style="font-size:110%;">『囲碁年鑑』1993年版の略歴のほか、いくつか囲碁の本で「伊藤松和（いとうしょうわ）」が名古屋出身という記載が確認できた。<br />
+伊藤松和は、名古屋の商家出身。幼名は松次郎という。<br />
+12歳で尾州家の藩士が素質を見込んで出資し、囲碁の家元の1つ、本因坊家に入門。しばらくして修行に飽き自信を失い郷里に戻った松和は、親せきや知人の反対にあい再び上京する。刻苦勉励して文政5年（1822年）初段を許された。五段で郷里に戻り、知己に昔の恩を謝したといわれている。「尾張の松次郎」の名は高まり、天保2年（1831年）、尾州侯は御目見得のうえ苗字帯刀を許した。<br />
+ふたたび江戸に出て、七段に進められて「松和」と改名。嘉永2年（1849年）、松和は49歳で「御城碁」と言われる将軍の御前で囲碁を打つ対局に初出仕。「天保四傑」と呼ばれた1人として、幕末を代表する一流棋士と称えられている。長寿を得、78歳で亡くなった。<br />
+「御城碁」を含む松和の対局の記録（棋譜）は、『日本囲碁大系　第13巻』等に載っている。
+</p>
+</div>
+</div>
+
+<h3>今回の調査で使った資料</h3>
+<div class="description" style="font-size:110%;">
+<ul class="lst03">
+<li><a href="/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1009510009254">『囲碁年鑑　1993』</a>日本棋院　1993</li>
+<li><a href="/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1009210171597">『日本囲碁大系　第13巻』</a>筑摩書房　1975</li>
+<li><a href="/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1009917025739">『碁界黄金の十九世紀』</a>福井正明／監修　日本棋院　2007</li>
+<li><a href="/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1009940069304">『坐隠談叢』</a>安藤如意／原著　新編増補　新樹社　1955</li>
+</ul>
+</div>
+<!-- ★★↑調査団報告書　貼り付けここまで↑★★ -->
+
+<h3>pdfダウンロード</h3>
+<div class="description">
+<ul class="lst03">
+<li>調査団報告書No.102　<a href="../../img/reference/chosahoukoku_102.pdf" target="_blank">
+    「最近囲碁を習いに行き始めてね。江戸時代、名古屋出身の囲碁棋士っていたのかな？
+有名な人がいれば知りたいな。その人の打った対局の記録も残っているだろうか？」　＜PDF形式，379KB＞（2021年5月作成）</a>
+</li>
+</ul>
+
+<p><a href="http://www.adobe.co.jp/products/acrobat/readstep2.html" target="_blank"><img alt="get adobe reader" src="../../img/guide/get_adobe_reader.gif" height="31" width="88" /></a><br />PDF形式のファイルを閲覧するにはAdobe Reader（無料）が必要です。<br />※AcrobatReader5.0以上を推奨しています。</p>
+</div>
+
+<p class="pagetop"><a href="#page-top">▲ページトップへ</a></p>
+</article>
+<!-- ★★↑MT貼り付けここまで↑★★ -->
+	</div>
+	<!-- end:MainContent --> 
+</div>
+<!-- end:main Wrap -->
+<div id="footerWraper"></div>
+<!-- ↓highslide -->
+<script type="text/javascript">
+addHighSlideAttribute();
+</script>
+<!-- ↑highslide -->
+</body>
+</html>

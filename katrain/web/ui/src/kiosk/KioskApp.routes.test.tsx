@@ -9,7 +9,7 @@ vi.mock('../context/AuthContext', () => ({
 }));
 vi.mock('../hooks/useTranslation', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 vi.mock('./components/layout/KioskLayout', () => ({ default: Outlet }));
-vi.mock('./components/vision/PlayInputGuard', () => ({ default: ({ children }: { children: React.ReactNode }) => children }));
+vi.mock('./components/vision/PlayInputGuard', () => ({ default: ({ children }: { children: React.ReactNode }) => <div data-testid="play-input-guard">{children}</div> }));
 vi.mock('./pages/PlayPage', () => ({ default: () => <div data-testid="play-page" /> }));
 vi.mock('./pages/PlatformLobbyPage', () => ({ default: () => <div data-testid="ogs-home-page" /> }));
 vi.mock('./pages/GolaxyPregameSetupPage', () => ({ default: () => <div data-testid="golaxy-pregame-page" /> }));
@@ -64,4 +64,12 @@ describe('dedicated platform routes', () => {
     open('/kiosk/play/cross-platform/game/ogs-session');
     expect(await screen.findByTestId('platform-game')).toHaveAttribute('data-engine-mode', 'false');
   });
+});
+
+
+it('keeps the local game mounted directly while other physical routes retain their guard', async () => {
+  auth.authenticated = true;
+  open('/kiosk/play/pvp/local/game/original');
+  expect(await screen.findByTestId('platform-game')).toBeInTheDocument();
+  expect(screen.queryByTestId('play-input-guard')).not.toBeInTheDocument();
 });

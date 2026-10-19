@@ -122,8 +122,33 @@ class SQLAlchemyUserRepository(UserRepository):
         from katrain.web.core import ledger_immutability, migrations
 
         engine = self._bind()
-
-        models_db.Base.metadata.create_all(bind=engine)
+        # An existing application database must run the explicit catalog CLI
+        # before these authoritative name tables appear. A truly empty database
+        # is bootstrapped with its history triggers in one transaction.
+        fresh_database = not inspect(engine).get_table_names()
+        startup_tables = [
+            table for table in models_db.Base.metadata.sorted_tables
+            if table.name not in migrations.KIFU_NAME_TABLES | migrations.KIFU_EVENT_SELECTION_TABLES
+        ]
+        if fresh_database:
+            with engine.begin() as conn:
+                if engine.dialect.name == "sqlite":
+                    # sqlite3 legacy transaction mode does not begin for DDL.
+                    conn.exec_driver_sql("BEGIN")
+                models_db.Base.metadata.create_all(bind=conn)
+                migrations.install_kifu_name_change_immutability(conn)
+        else:
+            # Refuse an unmigrated existing database before any startup DDL.
+            migrations.verify_kifu_name_schema(engine)
+            migrations.verify_kifu_event_selection_schema(engine)
+            migrations.verify_kifu_name_change_immutability(engine)
+            migrations.verify_kifu_name_indexes(engine)
+            models_db.Base.metadata.create_all(bind=engine, tables=startup_tables)
+        if fresh_database:
+            migrations.verify_kifu_name_schema(engine)
+            migrations.verify_kifu_event_selection_schema(engine)
+            migrations.verify_kifu_name_change_immutability(engine)
+            migrations.verify_kifu_name_indexes(engine)
 
         # Dev migration: drop old 'games' table and recreate 'rating_history'
         # to update game_id FK from games.id (Integer) to user_games.id (String)
@@ -133,7 +158,7 @@ class SQLAlchemyUserRepository(UserRepository):
                 conn.execute(text("DROP TABLE IF EXISTS rating_history"))
                 conn.execute(text("DROP TABLE IF EXISTS games"))
             # Recreate rating_history with the new schema
-            models_db.Base.metadata.create_all(bind=engine)
+            models_db.Base.metadata.create_all(bind=engine, tables=startup_tables)
 
         # Lightweight, non-destructive migration (all dialects): ADD COLUMN / CREATE
         # INDEX for anything missing (e.g. users.is_admin, billing indexes). Runs

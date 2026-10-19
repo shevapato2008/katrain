@@ -1,0 +1,16 @@
+{
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T21:00:53.000627+00:00",
+  "allow_apply": true,
+  "manifest_sha256": "5b3be29ff4cedfddc07ec515fe065613b5df5bc6d79fa61b7db1ebf506a427b3",
+  "bundle_sha256": {
+    "PROD": "ebc710e18a440e875a6e7d0d6fc3e86aaac647fc956f853440c942903622d1aa",
+    "TEST": "e13e4eb7a338450304141601cd7b3c89a500e59daf4e0fb4cf9fb55d633413d5"
+  },
+  "image_ids": {
+    "PROD": "sha256:6ffe9b6dad44ae280dc756d8468f1695337ca786541976413b515e614ebab3c5",
+    "TEST": "sha256:61ffcb3f86e9733b63eb7b25c2e34005e651e5ab1da4e7ad353d64f5815df1f1"
+  },
+  "review_conclusion": "Reviewed actual source and complete readings/proofs, post591 approved snapshots, twenty 13-field CAS targets and four-language preimages, helper physical all-column SGF/FK/rank scope, exact native importer/image pins. Root will execute TEST then PROD only after preceding phase passes."
+}

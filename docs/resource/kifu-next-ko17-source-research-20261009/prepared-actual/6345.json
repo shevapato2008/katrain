@@ -1,0 +1,355 @@
+{
+  "artifact_kind": "ko_name_source_only_research",
+  "queue_player_id": 6345,
+  "queue_order_slots": 10,
+  "selection_scope": "Batch 597 read-only shortlist: KO missing and four physically verified primary rows; this shortlist is not final qualification proof.",
+  "owner_binding": {
+    "status": "placeholder_not_validated_not_eligible",
+    "queue_id_read_only": 6345,
+    "note": "Fresh CN/EN anchor bindings and latest owner preimages are intentionally left for root to bind from the new current capture; this source packet does not qualify the owner."
+  },
+  "canonical_name": "陈明进",
+  "available_non_ko_anchor_names": {
+    "cn": "陈明进",
+    "en": "Chen Mingjin",
+    "jp": "陳明進",
+    "tw": "陳明進",
+    "binding_status": "queue labels only; not current owner preimages"
+  },
+  "status": "pending_no_direct_same_person_Korean_Hangul_name_identified_in_bounded_sources",
+  "scope": {
+    "shortlist_context": "queue selection is prioritization only",
+    "language_scope": "not assigned from name characters alone",
+    "eligibility": "not established by this source-only packet"
+  },
+  "identity": {
+    "capture": [
+      {
+        "player_id": 6345,
+        "canonical_name": "陈明进",
+        "published_latin": "Chen Mingjin",
+        "source_id": "ret97-ugo-en",
+        "source_language": "en",
+        "source_role": "language_go",
+        "url": "https://db.u-go.net/playerdb/players/2085/",
+        "evidence_ids": [
+          61323,
+          61324,
+          61325
+        ],
+        "method": "GET",
+        "http_status": 200,
+        "final_url": "https://db.u-go.net/playerdb/players/2085/",
+        "content_type": "application/json",
+        "request_started_at_utc": "2026-10-08T23:07:59.726406+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:01.533509+00:00",
+        "body_bytes": 1004,
+        "body_sha256": "db8ed7d25ec79d4c6d4849b148cdb674460bfc97be2d05e16aea558b2651b1ec",
+        "body_file": "captures/6345-authority-ret97-ugo-en.body",
+        "publisher": "U-Go / GoGoD / Go4go",
+        "body_text_excerpt": "\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":7126,\"playername\":\"https://db.u-go.net/playerdb/names/175/\",\"name\":\"陈明进\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"566\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[{\"player\":\"https://db.u-go.net/playerdb/players/2085/\",\"url\":\"http://senseis.xmp.net/?ChenMingjin\",\"affiliation\":false,\"wikipedia\":\"\",\"senseislibrary\":true}],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-12T21:15:10.792948Z\",\"last_changed\":\"2016-12-17T11:33:28.228241Z\"}",
+        "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+        "subject_role": "target_same_person_profile_or_roster",
+        "capture_kind": "authority_page_capture"
+      }
+    ],
+    "conclusion": "Captured Go-source bodies associate the queue Han spelling with the profiled Go player. A Latin form is described only when it appears in that specific captured body; otherwise the queue Latin string remains a search term only. Binding the profile to the current owner remains pending root validation."
+  },
+  "reading": {
+    "capture": [],
+    "published_latin": null,
+    "status": "No Korean reading or Hangul form is established. The Latin string is included solely as the queue-provided exact search query; this packet does not claim it was published as the player preferred spelling.",
+    "note": "No Korean-locale profile capture found for this player in the existing authority capture set.",
+    "queue_latin_query": "Chen Mingjin"
+  },
+  "rule": {
+    "capture": {
+      "status": "not_applied_to_this_owner",
+      "source_basis": "normative_zh_ko_v1",
+      "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+      "decision_reference": "docs/resource/kifu-zh-ko-firstbatch-20261009/source-and-rule-decision.json",
+      "decision_sha256": "dca4e25367ede21a4b162e7ebe4551d6a13a499b084322ebcd44c04f43cdee00",
+      "rule_capture_index": "docs/resource/kifu-nikl-cn-ko-research-20261009/capture-index.json",
+      "rule_capture_index_sha256": "38cacb787678bec8e6d051d90c957f1ea203c2bcb6d58b94eec620f780763609",
+      "pinned_full_rule_body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "approved_owner_ids_in_rule_decision": [
+        5498,
+        5739
+      ],
+      "note": "The finite six-map approval is specific to two different owners and their reviewed readings. No spelling/output has been generated or declared verified for this queue owner; any future rule extension is separate.",
+      "normative_source_capture": {
+        "id": "foreign-regulation-full",
+        "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "method": "GET",
+        "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+        "http_status": 200,
+        "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "content_type": "text/html;charset=UTF-8",
+        "body_bytes": 456809,
+        "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+        "body_file": "captures/foreign-regulation-full.html"
+      },
+      "rule_excerpt_locator": "Foreign-language table 5 at saved original HTML line 1573; notation note at line 1578. The six approved mappings apply only to owners 5498 and 5739 in source-and-rule-decision.json; no mapping is applied here.",
+      "original_rule_excerpt": "The saved NIKL full-body response is the normative reference. This packet intentionally records no generated reading/output for this owner."
+    }
+  },
+  "contrary_checks": {
+    "saved_roster_scans": [
+      {
+        "publisher": "Korean Baduk Association",
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+        "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+        "body_bytes": 80097,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+        "source_role": "official_China_player_roster_bounded_literal_scan",
+        "literal_scan_terms": [
+          "陈明进",
+          "Chen Mingjin"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 陈明进; Chen Mingjin. Exact matching strings present: []."
+      },
+      {
+        "publisher": "TVBaduk",
+        "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+        "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+        "body_bytes": 119151,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+        "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+        "literal_scan_terms": [
+          "陈明进",
+          "Chen Mingjin"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 陈明进; Chen Mingjin. Exact matching strings present: []."
+      },
+      {
+        "publisher": "Daum Cafe community roster (2012)",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+        "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "body_bytes": 153004,
+        "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+        "source_role": "community_reference_only_not_official",
+        "literal_scan_terms": [
+          "陈明进",
+          "Chen Mingjin"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 陈明进; Chen Mingjin. Exact matching strings present: []."
+      }
+    ],
+    "web_search_captures": [
+      {
+        "player_id": 6345,
+        "engine": "naver",
+        "query": "\"陈明进\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E6%98%8E%E8%BF%9B%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E6%98%8E%E8%BF%9B%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:08.374127+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:10.057698+00:00",
+        "body_bytes": 98526,
+        "body_sha256": "c99113efbfe75ee36a47ec00cbc8557a2184c51669a9ab9e61777587acfb97be",
+        "body_file": "captures/6345-search-naver-han.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "\"陈明进\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"陈明进\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"陈明进\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 mosan.or.kr mosan.or.kr › file PDF 새 창 열림 AI 출처 정보 동아인문학회는 인문학 분야 학술활동을 지원하는 학회로, 공지사항·학술행사 안내와 논문 검색·투고 서비스를 제공합니다. 회원 전용 온라인 논문투고 시스템을 통해 간편하게 논문을 제출할 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 東亞人文學叢書 01 - 동아인문학회 새 창 열림 1024페이지 22MB 1 東亞人文學叢書 01 〚東亞人文學叢書 01〛 우리시대 석학들, 인문학에 길을 묻다 应答, 人文学 我们的 未来 慕山沈載完先生 誕辰100周年紀念 第19回 東亞人文學會 國際學術大會 崔漢善, 李志葉, 洪成姬, 權聖訓 편 4 ❚차례 5 ❚차례 6 ❚차례 7 ❚차례 8 ❚대회사 나뭇잎이 붉게 물들고, 오곡백과가 빨갛게 익으며, 덩달아 내 마음도 붉그스레 상기되는 三紅 의 佳節입니다.... 새 창 열림 브라우저를 업데이트하세요 최신 기술을 품은 네이버 웨일에서 빠른 인터넷을 만나보세요 웨일 다운로드 7일 내 다시보지 않기 배너 닫기 이전 1 페이지 다음 지나고 나면 그리울, 오늘의 가을 기록 클립에 올리면 매월 최대 12만 8천원 적립 참여 누르고 쇼핑하면 최대 3만3천P 추가 적립! 적립적인 멤버십 전용카드 네이버 현대카드 Ed.3 끝까지 끝내주는 AI, 네이버 AI탭 검색이 대화가 되다 이전 정보를 가져오는 중입니다. 죄송합니다. 일시적인 오류입니다. 잠시 후 다시 시도해주십시오. 재시도 맨위로 이용약관 새 창 열림 개인정보",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 6345,
+        "engine": "naver",
+        "query": "\"Chen Mingjin\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22Chen%20Mingjin%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22Chen%20Mingjin%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:08.464800+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:10.311296+00:00",
+        "body_bytes": 135389,
+        "body_sha256": "e3db090b2904b680df74372b3866351d4e698b7939595607923380c89153ec28",
+        "body_file": "captures/6345-search-naver-latin.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "\"Chen Mingjin\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Chen Mingjin\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Chen Mingjin\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 부산도서관 library.busan.go.kr › archive PDF 새 창 열림 AI 출처 정보 부산도서관은 부산시가 운영하는 공공 도서관으로, 도서관 소개와 시설 안내, 전자·실물 자료 검색 서비스를 제공합니다. 또한 다양한 문화 행사와 강좌 신청·예약을 온라인으로 이용할 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 aemdtpti.uhb 새 창 열림 163페이지 38MB 당신의 속 ち시네마 J 엔티테인먼트 Entertainment POPCORN. POPCORN 「계 12회 부산국제영화제의 개최를 축하합니다.」 이 곳에서 꿈꾸는 사람들은 영화를 만들고 행복을 찾는 사람들은 영화를 봅니다. 더 다양한 영화의 즐거움이 더 많은 관객과 만날 수 있도록 바쁘게 돌아가는... 새 창 열림 이미지 이미지 신고하기 신고할 이미지를 선택 후 확인 버튼을 눌러주세요. 확인 취소 브라우저를 업데이트하세요 최신 기술을 품은 네이버 웨일에서 빠른 인터넷을 만나보세요 웨일 다운로드 7일 내 다시보지 않기 배너 닫기 이전 1 페이지 다음 지나고 나면 그리울, 오늘의 가을 기록 클립에 올리면 매월 최대 12만 8천원 적립 참여 누르고 쇼핑하면 최대 3만3천P 추가 적립! 적립적인 멤버십 전용카드 네이버 현대카드 Ed.3 끝까지 끝내주는 AI, 네이버 AI탭 검색이 대화가 되다 이전 정보를 가져오는 중입니다. 죄송합니다. 일시적인 오류입니다. 잠시 후 다시 시도해주십시오. 재",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      }
+    ],
+    "coverage_note": "Exact Han and exact published Latin searches were captured where available. HTTP 403 is preserved as unavailable; an alternative Bing capture is included when available. Results are bounded and do not support global absence. Similar names were not accepted without a same-person Go identity bridge."
+  },
+  "source_reading": {
+    "queue_latin_query": "Chen Mingjin",
+    "queue_string_source": "read-only shortlist row, not current source/owner binding",
+    "observed_romanization": null,
+    "interpretation": "No Korean spelling or reading generated or inferred. The literal queue Latin string is used only as the second search query."
+  },
+  "identity_bridges": [
+    {
+      "player_id": 6345,
+      "canonical_name": "陈明进",
+      "published_latin": "Chen Mingjin",
+      "source_id": "ret97-ugo-en",
+      "source_language": "en",
+      "source_role": "language_go",
+      "url": "https://db.u-go.net/playerdb/players/2085/",
+      "evidence_ids": [
+        61323,
+        61324,
+        61325
+      ],
+      "method": "GET",
+      "http_status": 200,
+      "final_url": "https://db.u-go.net/playerdb/players/2085/",
+      "content_type": "application/json",
+      "request_started_at_utc": "2026-10-08T23:07:59.726406+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:01.533509+00:00",
+      "body_bytes": 1004,
+      "body_sha256": "db8ed7d25ec79d4c6d4849b148cdb674460bfc97be2d05e16aea558b2651b1ec",
+      "body_file": "captures/6345-authority-ret97-ugo-en.body",
+      "publisher": "U-Go / GoGoD / Go4go",
+      "body_text_excerpt": "\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":7126,\"playername\":\"https://db.u-go.net/playerdb/names/175/\",\"name\":\"陈明进\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"566\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[{\"player\":\"https://db.u-go.net/playerdb/players/2085/\",\"url\":\"http://senseis.xmp.net/?ChenMingjin\",\"affiliation\":false,\"wikipedia\":\"\",\"senseislibrary\":true}],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-12T21:15:10.792948Z\",\"last_changed\":\"2016-12-17T11:33:28.228241Z\"}",
+      "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+      "subject_role": "target_same_person_profile_or_roster",
+      "capture_kind": "authority_page_capture"
+    }
+  ],
+  "searches": [
+    {
+      "player_id": 6345,
+      "engine": "naver",
+      "query": "\"陈明进\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E6%98%8E%E8%BF%9B%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22%E9%99%88%E6%98%8E%E8%BF%9B%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:08.374127+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:10.057698+00:00",
+      "body_bytes": 98526,
+      "body_sha256": "c99113efbfe75ee36a47ec00cbc8557a2184c51669a9ab9e61777587acfb97be",
+      "body_file": "captures/6345-search-naver-han.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "\"陈明进\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"陈明进\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"陈明进\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 mosan.or.kr mosan.or.kr › file PDF 새 창 열림 AI 출처 정보 동아인문학회는 인문학 분야 학술활동을 지원하는 학회로, 공지사항·학술행사 안내와 논문 검색·투고 서비스를 제공합니다. 회원 전용 온라인 논문투고 시스템을 통해 간편하게 논문을 제출할 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 東亞人文學叢書 01 - 동아인문학회 새 창 열림 1024페이지 22MB 1 東亞人文學叢書 01 〚東亞人文學叢書 01〛 우리시대 석학들, 인문학에 길을 묻다 应答, 人文学 我们的 未来 慕山沈載完先生 誕辰100周年紀念 第19回 東亞人文學會 國際學術大會 崔漢善, 李志葉, 洪成姬, 權聖訓 편 4 ❚차례 5 ❚차례 6 ❚차례 7 ❚차례 8 ❚대회사 나뭇잎이 붉게 물들고, 오곡백과가 빨갛게 익으며, 덩달아 내 마음도 붉그스레 상기되는 三紅 의 佳節입니다.... 새 창 열림 브라우저를 업데이트하세요 최신 기술을 품은 네이버 웨일에서 빠른 인터넷을 만나보세요 웨일 다운로드 7일 내 다시보지 않기 배너 닫기 이전 1 페이지 다음 지나고 나면 그리울, 오늘의 가을 기록 클립에 올리면 매월 최대 12만 8천원 적립 참여 누르고 쇼핑하면 최대 3만3천P 추가 적립! 적립적인 멤버십 전용카드 네이버 현대카드 Ed.3 끝까지 끝내주는 AI, 네이버 AI탭 검색이 대화가 되다 이전 정보를 가져오는 중입니다. 죄송합니다. 일시적인 오류입니다. 잠시 후 다시 시도해주십시오. 재시도 맨위로 이용약관 새 창 열림 개인정보",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Chen Mingjin",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 6345,
+      "engine": "naver",
+      "query": "\"Chen Mingjin\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22Chen%20Mingjin%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22Chen%20Mingjin%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:08.464800+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:10.311296+00:00",
+      "body_bytes": 135389,
+      "body_sha256": "e3db090b2904b680df74372b3866351d4e698b7939595607923380c89153ec28",
+      "body_file": "captures/6345-search-naver-latin.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "\"Chen Mingjin\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Chen Mingjin\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Chen Mingjin\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 부산도서관 library.busan.go.kr › archive PDF 새 창 열림 AI 출처 정보 부산도서관은 부산시가 운영하는 공공 도서관으로, 도서관 소개와 시설 안내, 전자·실물 자료 검색 서비스를 제공합니다. 또한 다양한 문화 행사와 강좌 신청·예약을 온라인으로 이용할 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 aemdtpti.uhb 새 창 열림 163페이지 38MB 당신의 속 ち시네마 J 엔티테인먼트 Entertainment POPCORN. POPCORN 「계 12회 부산국제영화제의 개최를 축하합니다.」 이 곳에서 꿈꾸는 사람들은 영화를 만들고 행복을 찾는 사람들은 영화를 봅니다. 더 다양한 영화의 즐거움이 더 많은 관객과 만날 수 있도록 바쁘게 돌아가는... 새 창 열림 이미지 이미지 신고하기 신고할 이미지를 선택 후 확인 버튼을 눌러주세요. 확인 취소 브라우저를 업데이트하세요 최신 기술을 품은 네이버 웨일에서 빠른 인터넷을 만나보세요 웨일 다운로드 7일 내 다시보지 않기 배너 닫기 이전 1 페이지 다음 지나고 나면 그리울, 오늘의 가을 기록 클립에 올리면 매월 최대 12만 8천원 적립 참여 누르고 쇼핑하면 최대 3만3천P 추가 적립! 적립적인 멤버십 전용카드 네이버 현대카드 Ed.3 끝까지 끝내주는 AI, 네이버 AI탭 검색이 대화가 되다 이전 정보를 가져오는 중입니다. 죄송합니다. 일시적인 오류입니다. 잠시 후 다시 시도해주십시오. 재",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Chen Mingjin",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    }
+  ],
+  "additional_bounded_cross_checks": [
+    {
+      "publisher": "Korean Baduk Association",
+      "url": "https://www.baduk.or.kr/record/player_in.asp",
+      "method": "POST",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+      "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+      "body_bytes": 80097,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+      "source_role": "official_China_player_roster_bounded_literal_scan",
+      "literal_scan_terms": [
+        "陈明进",
+        "Chen Mingjin"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 陈明进; Chen Mingjin. Exact matching strings present: []."
+    },
+    {
+      "publisher": "TVBaduk",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "body_bytes": 119151,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+      "literal_scan_terms": [
+        "陈明进",
+        "Chen Mingjin"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 陈明进; Chen Mingjin. Exact matching strings present: []."
+    },
+    {
+      "publisher": "Daum Cafe community roster (2012)",
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "body_bytes": 153004,
+      "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "source_role": "community_reference_only_not_official",
+      "literal_scan_terms": [
+        "陈明进",
+        "Chen Mingjin"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 陈明进; Chen Mingjin. Exact matching strings present: []."
+    }
+  ],
+  "conclusion": "Source-only research packet. No Korean name candidate, reviewer signature, eligibility claim, or target preimage validation.",
+  "review_status": "source assembly only; independent candidate review/signature not performed"
+}

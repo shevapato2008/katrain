@@ -8,7 +8,8 @@ protects authoritative tables from the SQLite schema-drift rebuild fallback.
 
 import logging
 
-from sqlalchemy import inspect, text
+from sqlalchemy import CheckConstraint, UniqueConstraint, inspect, text
+from sqlalchemy.engine import Connection
 
 from katrain.web.core import models_db
 
@@ -36,6 +37,7 @@ KIFU_CATALOG_TABLES = {
     "kifu_albums",
     "kifu_players",
     "kifu_events",
+    "kifu_event_editions",
     "kifu_player_aliases",
     "kifu_event_aliases",
     "kifu_player_names",
@@ -44,6 +46,16 @@ KIFU_CATALOG_TABLES = {
     "kifu_album_sources",
     "kifu_dedup_batches",
     "kifu_dedup_changes",
+    "kifu_raw_player_values",
+    "kifu_raw_event_values",
+    "kifu_raw_player_names",
+    "kifu_raw_event_names",
+    "kifu_name_source_registry",
+    "kifu_name_research_evidence",
+    "kifu_name_batches",
+    "kifu_name_changes",
+    "kifu_event_selection_batches",
+    "kifu_album_event_selections",
     "kifu_analysis_jobs",
     "kifu_analysis_moves",
 }
@@ -206,6 +218,104 @@ def _assert_kifu_album_fk_targets(fks: dict[str, dict]) -> None:
             raise RuntimeError(f"kifu_albums.{column} must reference {target}.id")
 
 
+def postgres_kifu_album_edition_constraint_statements(
+    *, existing_fks: set[str], existing_checks: set[str]
+) -> list[str]:
+    """Add pair consistency without validating legacy album rows at startup."""
+
+    statements = []
+    if "ck_kifu_album_edition_requires_event" not in existing_checks:
+        statements.append(
+            'ALTER TABLE "kifu_albums" ADD CONSTRAINT "ck_kifu_album_edition_requires_event" '
+            'CHECK ("event_edition_id" IS NULL OR "event_id" IS NOT NULL) NOT VALID'
+        )
+    if "fk_kifu_albums_event_edition_type" not in existing_fks:
+        statements.append(
+            'ALTER TABLE "kifu_albums" ADD CONSTRAINT "fk_kifu_albums_event_edition_type" '
+            'FOREIGN KEY ("event_edition_id", "event_id") '
+            'REFERENCES "kifu_event_editions" (id, event_id) NOT VALID'
+        )
+    return statements
+
+
+def migrate_kifu_event_editions_schema(engine) -> None:
+    """Create competition editions and add a nullable album FK without assigning old rows."""
+
+    inspector = inspect(engine)
+    if "kifu_events" not in inspector.get_table_names():
+        return
+    models_db.KifuEventEdition.__table__.create(bind=engine, checkfirst=True)
+    for index in models_db.KifuEventEdition.__table__.indexes:
+        index.create(bind=engine, checkfirst=True)
+    if "kifu_albums" not in inspector.get_table_names():
+        return
+
+    column = "event_edition_id"
+    columns = {item["name"] for item in inspector.get_columns("kifu_albums")}
+    fk = _kifu_album_foreign_keys(inspector).get(column)
+    if fk and (fk["referred_table"] != "kifu_event_editions" or fk.get("referred_columns") != ["id"]):
+        raise RuntimeError("kifu_albums.event_edition_id must reference kifu_event_editions.id")
+    if column in columns:
+        with engine.connect() as conn:
+            mismatch = conn.scalar(text(
+                'SELECT 1 FROM "kifu_albums" AS album '
+                'LEFT JOIN "kifu_event_editions" AS edition ON edition.id = album.event_edition_id '
+                'WHERE album.event_edition_id IS NOT NULL '
+                'AND (album.event_id IS NULL OR edition.id IS NULL OR edition.event_id <> album.event_id) LIMIT 1'
+            ))
+        if mismatch is not None:
+            raise RuntimeError("Existing kifu_albums.event_edition_id conflicts with competition type")
+    if engine.dialect.name == "sqlite":
+        if column in columns and fk is None:
+            raise RuntimeError("kifu_albums.event_edition_id has no foreign key; SQLite cannot repair it in place")
+        with engine.begin() as conn:
+            if column not in columns:
+                conn.execute(text('ALTER TABLE "kifu_albums" ADD COLUMN "event_edition_id" '
+                                  'INTEGER REFERENCES "kifu_event_editions"(id)'))
+            for action, trigger in (("INSERT", "trg_kifu_album_edition_insert"),
+                                    ("UPDATE OF event_id, event_edition_id", "trg_kifu_album_edition_update")):
+                conn.execute(text(f'DROP TRIGGER IF EXISTS "{trigger}"'))
+                conn.execute(text(
+                    f'CREATE TRIGGER "{trigger}" BEFORE {action} ON "kifu_albums" '
+                    'FOR EACH ROW WHEN NEW.event_edition_id IS NOT NULL AND '
+                    '(NEW.event_id IS NULL OR NOT EXISTS '
+                    '(SELECT 1 FROM "kifu_event_editions" WHERE id = NEW.event_edition_id '
+                    'AND event_id = NEW.event_id)) '
+                    "BEGIN SELECT RAISE(ABORT, 'album event edition mismatch'); END"
+                ))
+            trigger = "trg_kifu_event_edition_type_update"
+            conn.execute(text(f'DROP TRIGGER IF EXISTS "{trigger}"'))
+            conn.execute(text(
+                f'CREATE TRIGGER "{trigger}" BEFORE UPDATE OF event_id ON "kifu_event_editions" '
+                'FOR EACH ROW WHEN EXISTS (SELECT 1 FROM "kifu_albums" '
+                'WHERE event_edition_id = OLD.id AND event_id <> NEW.event_id) '
+                "BEGIN SELECT RAISE(ABORT, 'album event edition mismatch'); END"
+            ))
+    elif engine.dialect.name == "postgresql":
+        album_fks = inspector.get_foreign_keys("kifu_albums")
+        for item in album_fks:
+            if (item.get("name") == "fk_kifu_albums_event_edition_type" or
+                    item.get("constrained_columns") == ["event_edition_id", "event_id"]):
+                if (item.get("constrained_columns") != ["event_edition_id", "event_id"] or
+                        item.get("referred_table") != "kifu_event_editions" or
+                        item.get("referred_columns") != ["id", "event_id"]):
+                    raise RuntimeError("kifu_albums edition/type foreign key has the wrong target")
+        composite_fks = {item["name"] for item in album_fks if item.get("name")}
+        checks = {item["name"] for item in inspector.get_check_constraints("kifu_albums") if item.get("name")}
+        with engine.begin() as conn:
+            if column not in columns:
+                conn.execute(text('ALTER TABLE "kifu_albums" ADD COLUMN IF NOT EXISTS "event_edition_id" INTEGER'))
+            if fk is None:
+                conn.execute(text('ALTER TABLE "kifu_albums" ADD CONSTRAINT "fk_kifu_albums_event_edition_id" '
+                                  'FOREIGN KEY ("event_edition_id") REFERENCES "kifu_event_editions" (id) NOT VALID'))
+            for statement in postgres_kifu_album_edition_constraint_statements(
+                existing_fks=composite_fks, existing_checks=checks
+            ):
+                conn.execute(text(statement))
+    else:
+        raise RuntimeError(f"Kifu event edition migration unsupported for {engine.dialect.name}")
+
+
 def migrate_kifu_catalog_schema(engine) -> None:
     """Add nullable catalog FKs to existing albums without rewriting SGFs or rows.
 
@@ -216,6 +326,7 @@ def migrate_kifu_catalog_schema(engine) -> None:
 
     inspector = inspect(engine)
     if "kifu_albums" not in inspector.get_table_names():
+        migrate_kifu_event_editions_schema(engine)
         return
     columns = {column["name"] for column in inspector.get_columns("kifu_albums")}
     fks = _kifu_album_foreign_keys(inspector)
@@ -240,6 +351,461 @@ def migrate_kifu_catalog_schema(engine) -> None:
                 conn.execute(text(statement))
     else:
         raise RuntimeError(f"Kifu catalog migration unsupported for {engine.dialect.name}")
+    migrate_kifu_event_editions_schema(engine)
+
+
+KIFU_NAME_TABLES = {
+    "kifu_player_names",
+    "kifu_event_names",
+    "kifu_raw_player_values",
+    "kifu_raw_event_values",
+    "kifu_raw_player_names",
+    "kifu_raw_event_names",
+    "kifu_name_source_registry",
+    "kifu_name_research_evidence",
+    "kifu_name_batches",
+    "kifu_name_changes",
+}
+KIFU_EVENT_SELECTION_TABLES = {"kifu_event_selection_batches", "kifu_album_event_selections"}
+KIFU_LEGACY_NAME_COLUMNS = {
+    "decision_kind": "VARCHAR(32)",
+    "generation_rule_version": "VARCHAR(64)",
+    "revision": "INTEGER",
+    "evidence_id": "INTEGER",
+}
+
+
+def _kifu_name_required_indexes() -> dict[str, tuple[str, tuple[str, ...]]]:
+    return {
+        index.name: (table_name, tuple(column.name for column in index.columns))
+        for table_name in sorted(KIFU_NAME_TABLES)
+        for index in sorted(models_db.Base.metadata.tables[table_name].indexes, key=lambda index: index.name)
+    }
+
+
+def _kifu_name_missing_indexes(
+    existing_indexes: dict[str, tuple[str, tuple[str, ...], bool, bool, bool]],
+) -> dict[str, tuple[str, tuple[str, ...]]]:
+    missing = {}
+    for name, (table, columns) in _kifu_name_required_indexes().items():
+        status = existing_indexes.get(name)
+        if status is None:
+            missing[name] = (table, columns)
+        elif status != (table, columns, True, True, False):
+            raise RuntimeError(f"Invalid kifu name index {name}; repair it before migrate_catalog")
+    return missing
+
+
+def postgres_kifu_name_index_statements(
+    *, existing_indexes: dict[str, tuple[str, tuple[str, ...], bool, bool, bool]]
+) -> list[str]:
+    """Build missing name indexes concurrently, including populated legacy tables."""
+
+    statements = []
+    for name, (table, columns) in _kifu_name_missing_indexes(existing_indexes).items():
+        quoted_columns = ", ".join('"' + column + '"' for column in columns)
+        statements.append(f'CREATE INDEX CONCURRENTLY IF NOT EXISTS "{name}" ON "{table}" ({quoted_columns})')
+    return statements
+
+
+def _kifu_name_index_status(engine) -> dict[str, tuple[str, tuple[str, ...], bool, bool, bool]]:
+    required = _kifu_name_required_indexes()
+    if engine.dialect.name == "sqlite":
+        inspector = inspect(engine)
+        return {
+            index["name"]: (table, tuple(index["column_names"]), True, True, bool(index["unique"]))
+            for table in KIFU_NAME_TABLES
+            if table in inspector.get_table_names()
+            for index in inspector.get_indexes(table)
+            if index["name"] in required
+        }
+    if engine.dialect.name == "postgresql":
+        names = ", ".join("'" + name.replace("'", "''") + "'" for name in required)
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT index_table.relname, indexed_table.relname, "
+                    "ARRAY(SELECT attribute.attname FROM unnest(pg_index.indkey::smallint[]) "
+                    "WITH ORDINALITY AS index_key(attnum, ordinal) "
+                    "LEFT JOIN pg_attribute attribute ON attribute.attrelid = pg_index.indrelid "
+                    "AND attribute.attnum = index_key.attnum ORDER BY index_key.ordinal), "
+                    "(pg_index.indisvalid AND pg_index.indisready), "
+                    "(pg_index.indpred IS NULL AND pg_index.indexprs IS NULL AND access_method.amname = 'btree'), "
+                    "pg_index.indisunique FROM pg_index "
+                    "JOIN pg_class index_table ON index_table.oid = pg_index.indexrelid "
+                    "JOIN pg_class indexed_table ON indexed_table.oid = pg_index.indrelid "
+                    "JOIN pg_am access_method ON access_method.oid = index_table.relam "
+                    "JOIN pg_namespace namespace ON namespace.oid = index_table.relnamespace "
+                    f"WHERE namespace.nspname = current_schema() AND index_table.relname IN ({names})"
+                )
+            )
+            return {
+                name: (table, tuple(columns), bool(valid), bool(full_btree), bool(unique))
+                for name, table, columns, valid, full_btree, unique in rows
+            }
+    raise RuntimeError(f"Kifu name index verification unsupported for {engine.dialect.name}")
+
+
+def verify_kifu_name_indexes(engine) -> None:
+    """Startup metadata check; never build indexes on authoritative name tables."""
+
+    missing = _kifu_name_missing_indexes(_kifu_name_index_status(engine))
+    if missing:
+        raise RuntimeError(f"Missing kifu name index {next(iter(missing))}; run migrate_catalog")
+
+
+def create_kifu_name_indexes(engine) -> None:
+    """Explicit catalog migration step; PostgreSQL builds outside transactions."""
+
+    status = _kifu_name_index_status(engine)
+    missing = _kifu_name_missing_indexes(status)
+    if engine.dialect.name == "postgresql":
+        for statement in postgres_kifu_name_index_statements(existing_indexes=status):
+            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+                conn.execute(text(statement))
+    elif engine.dialect.name == "sqlite":
+        with engine.begin() as conn:
+            for name, (table, _) in missing.items():
+                next(index for index in models_db.Base.metadata.tables[table].indexes if index.name == name).create(
+                    bind=conn, checkfirst=True
+                )
+    else:
+        raise RuntimeError(f"Kifu name index migration unsupported for {engine.dialect.name}")
+    verify_kifu_name_indexes(engine)
+
+
+def _kifu_name_foreign_keys(inspector, table: str) -> dict[str, dict]:
+    return {
+        fk["constrained_columns"][0]: fk
+        for fk in inspector.get_foreign_keys(table)
+        if len(fk.get("constrained_columns") or []) == 1
+    }
+
+
+def _assert_name_evidence_fk(table: str, fks: dict[str, dict]) -> None:
+    fk = fks.get("evidence_id")
+    if fk and (fk["referred_table"] != "kifu_name_research_evidence" or fk.get("referred_columns") != ["id"]):
+        raise RuntimeError(f"{table}.evidence_id must reference kifu_name_research_evidence.id")
+
+
+def _legacy_name_constraint_status(inspector, table: str) -> tuple[bool, bool]:
+    owner = "player_id" if table == "kifu_player_names" else "event_id"
+    has_unique = (owner, "lang") in {
+        tuple(item["column_names"]) for item in inspector.get_unique_constraints(table)
+    }
+    check_name = "ck_kifu_player_name_status" if owner == "player_id" else "ck_kifu_event_name_status"
+    has_check = check_name in {item["name"] for item in inspector.get_check_constraints(table)}
+    return has_unique, has_check
+
+
+def _repair_legacy_name_constraints(engine, table: str) -> None:
+    """Repair missing small legacy-table constraints only during explicit migration."""
+
+    has_unique, has_check = _legacy_name_constraint_status(inspect(engine), table)
+    if has_unique and has_check:
+        return
+    if engine.dialect.name != "postgresql":
+        raise RuntimeError(f"Missing {table} name integrity constraint; SQLite requires manual repair")
+    owner = "player_id" if table == "kifu_player_names" else "event_id"
+    kind = "player" if owner == "player_id" else "event"
+    with engine.begin() as conn:
+        if not has_unique:
+            conn.execute(
+                text(f'ALTER TABLE "{table}" ADD CONSTRAINT "uq_kifu_{kind}_name_lang" '
+                     f'UNIQUE ("{owner}", "lang")')
+            )
+        if not has_check:
+            conn.execute(
+                text(f'ALTER TABLE "{table}" ADD CONSTRAINT "ck_kifu_{kind}_name_status" '
+                     "CHECK (status IN ('verified', 'review', 'missing'))")
+            )
+
+
+def postgres_kifu_name_statements(
+    *, table: str, existing_columns: set[str], existing_fks: dict[str, dict]
+) -> list[str]:
+    """Plan short PostgreSQL ALTERs; defer existing-row FK validation."""
+
+    if table not in {"kifu_player_names", "kifu_event_names"}:
+        raise ValueError(table)
+    _assert_name_evidence_fk(table, existing_fks)
+    statements = [
+        f'ALTER TABLE "{table}" ADD COLUMN IF NOT EXISTS "{column}" {column_type}'
+        for column, column_type in KIFU_LEGACY_NAME_COLUMNS.items()
+        if column not in existing_columns
+    ]
+    if "evidence_id" not in existing_fks:
+        statements.append(
+            f'ALTER TABLE "{table}" ADD CONSTRAINT "fk_{table}_evidence_id" '
+            'FOREIGN KEY ("evidence_id") REFERENCES "kifu_name_research_evidence" (id) NOT VALID'
+        )
+    return statements
+
+
+def migrate_kifu_name_schema(engine) -> None:
+    """Explicit in-place upgrade of legacy name rows, preserving their review state."""
+
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    if "kifu_name_research_evidence" not in tables:
+        raise RuntimeError("Create kifu name evidence tables before migrating legacy names")
+    for table in ("kifu_player_names", "kifu_event_names"):
+        if table not in tables:
+            continue
+        columns = {column["name"] for column in inspector.get_columns(table)}
+        fks = _kifu_name_foreign_keys(inspector, table)
+        _assert_name_evidence_fk(table, fks)
+        if engine.dialect.name == "sqlite":
+            _repair_legacy_name_constraints(engine, table)
+        if engine.dialect.name == "sqlite":
+            if "evidence_id" in columns and "evidence_id" not in fks:
+                raise RuntimeError(f"{table}.evidence_id exists without foreign key; SQLite cannot repair in place")
+            with engine.begin() as conn:
+                for column, column_type in KIFU_LEGACY_NAME_COLUMNS.items():
+                    if column not in columns:
+                        clause = (
+                            f'{column_type} REFERENCES "kifu_name_research_evidence"(id)'
+                            if column == "evidence_id"
+                            else column_type
+                        )
+                        conn.execute(text(f'ALTER TABLE "{table}" ADD COLUMN "{column}" {clause}'))
+        elif engine.dialect.name == "postgresql":
+            with engine.begin() as conn:
+                for statement in postgres_kifu_name_statements(table=table, existing_columns=columns, existing_fks=fks):
+                    conn.execute(text(statement))
+        else:
+            raise RuntimeError(f"Kifu name migration unsupported for {engine.dialect.name}")
+        if engine.dialect.name == "postgresql":
+            _repair_legacy_name_constraints(engine, table)
+
+
+def verify_kifu_name_schema(engine) -> None:
+    """Metadata-only startup guard; no row scan or implicit legacy migration."""
+
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    missing_tables = KIFU_NAME_TABLES - tables
+    if missing_tables:
+        raise RuntimeError(f"Missing kifu name tables {sorted(missing_tables)}; run migrate_catalog")
+    for table in sorted(KIFU_NAME_TABLES):
+        model_table = models_db.Base.metadata.tables[table]
+        columns = {column["name"] for column in inspector.get_columns(table)}
+        expected = {column.name for column in model_table.columns}
+        fks = _kifu_name_foreign_keys(inspector, table)
+        if not expected.issubset(columns):
+            raise RuntimeError(f"Incomplete {table} name schema; run migrate_catalog")
+        for column in model_table.columns:
+            for expected_fk in column.foreign_keys:
+                actual = fks.get(column.name)
+                target = expected_fk.column
+                if (
+                    not actual
+                    or actual["referred_table"] != target.table.name
+                    or actual.get("referred_columns") != [target.name]
+                ):
+                    raise RuntimeError(f"{table}.{column.name} foreign key missing or incorrect; run migrate_catalog")
+        expected_unique = {
+            tuple(column.name for column in constraint.columns)
+            for constraint in model_table.constraints
+            if isinstance(constraint, UniqueConstraint)
+        }
+        actual_unique = {
+            tuple(constraint["column_names"]) for constraint in inspector.get_unique_constraints(table)
+        }
+        if not expected_unique.issubset(actual_unique):
+            raise RuntimeError(f"{table} unique constraint missing; run migrate_catalog")
+        expected_checks = {
+            constraint.name for constraint in model_table.constraints if isinstance(constraint, CheckConstraint)
+        }
+        actual_checks = {constraint["name"] for constraint in inspector.get_check_constraints(table)}
+        if not expected_checks.issubset(actual_checks):
+            raise RuntimeError(f"{table} check constraint missing; run migrate_catalog")
+
+
+def verify_kifu_event_selection_schema(engine) -> None:
+    """Reject absent or weakened selection tables before normal Web startup."""
+
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    missing = KIFU_EVENT_SELECTION_TABLES - tables
+    if missing:
+        raise RuntimeError(f"Missing {', '.join(sorted(missing))}; run migrate_catalog")
+    for table in sorted(KIFU_EVENT_SELECTION_TABLES):
+        model_table = models_db.Base.metadata.tables[table]
+        actual_columns = {column["name"]: column for column in inspector.get_columns(table)}
+        if not set(model_table.columns.keys()).issubset(actual_columns):
+            raise RuntimeError(f"Incomplete {table} selection schema; run migrate_catalog")
+        if set(inspector.get_pk_constraint(table)["constrained_columns"]) != {
+            column.name for column in model_table.primary_key.columns
+        }:
+            raise RuntimeError(f"{table} primary key missing; run migrate_catalog")
+        fks = _kifu_name_foreign_keys(inspector, table)
+        for column in model_table.columns:
+            if not column.nullable and actual_columns[column.name]["nullable"]:
+                raise RuntimeError(f"{table}.{column.name} NOT NULL missing; run migrate_catalog")
+            for expected_fk in column.foreign_keys:
+                actual = fks.get(column.name)
+                target = expected_fk.column
+                if (
+                    not actual
+                    or actual["referred_table"] != target.table.name
+                    or actual.get("referred_columns") != [target.name]
+                ):
+                    raise RuntimeError(f"{table}.{column.name} foreign key missing; run migrate_catalog")
+        expected_unique = {
+            tuple(column.name for column in constraint.columns)
+            for constraint in model_table.constraints
+            if isinstance(constraint, UniqueConstraint)
+        }
+        actual_unique = {
+            tuple(constraint["column_names"]) for constraint in inspector.get_unique_constraints(table)
+        }
+        if not expected_unique.issubset(actual_unique):
+            raise RuntimeError(f"{table} unique constraint missing; run migrate_catalog")
+        expected_checks = {
+            constraint.name for constraint in model_table.constraints if isinstance(constraint, CheckConstraint)
+        }
+        actual_checks = {constraint["name"] for constraint in inspector.get_check_constraints(table)}
+        if not expected_checks.issubset(actual_checks):
+            raise RuntimeError(f"{table} check constraint missing; run migrate_catalog")
+
+
+def postgres_kifu_name_validation_statements(statuses: dict[str, tuple[str, bool]]) -> list[str]:
+    statements = []
+    for table in ("kifu_player_names", "kifu_event_names"):
+        if table not in statuses:
+            raise RuntimeError(f"Missing {table}.evidence_id foreign key")
+        name, validated = statuses[table]
+        if not validated:
+            quoted_name = name.replace('"', '""')
+            statements.append(f'ALTER TABLE "{table}" VALIDATE CONSTRAINT "{quoted_name}"')
+    return statements
+
+
+def validate_kifu_name_foreign_keys(engine) -> None:
+    """Run the PostgreSQL legacy-row FK scan only from the explicit CLI."""
+
+    if engine.dialect.name != "postgresql":
+        return
+    inspector = inspect(engine)
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT table_class.relname, constraint_info.conname, constraint_info.convalidated "
+                "FROM pg_constraint constraint_info "
+                "JOIN pg_class table_class ON table_class.oid = constraint_info.conrelid "
+                "WHERE constraint_info.conrelid IN "
+                "(to_regclass('kifu_player_names'), to_regclass('kifu_event_names')) "
+                "AND constraint_info.contype = 'f'"
+            )
+        )
+        validation = {(table, name): bool(validated) for table, name, validated in rows}
+    statuses = {}
+    for table in ("kifu_player_names", "kifu_event_names"):
+        fk = _kifu_name_foreign_keys(inspector, table).get("evidence_id")
+        if not fk:
+            raise RuntimeError(f"Missing {table}.evidence_id foreign key")
+        _assert_name_evidence_fk(table, {"evidence_id": fk})
+        statuses[table] = (fk["name"], validation.get((table, fk["name"]), False))
+    for statement in postgres_kifu_name_validation_statements(statuses):
+        with engine.begin() as conn:
+            conn.execute(text(statement))
+
+
+def _kifu_name_change_immutability_statements(dialect_name: str) -> list[str]:
+    table = "kifu_name_changes"
+    if dialect_name == "sqlite":
+        statements = [
+            f'DROP TRIGGER IF EXISTS "trg_{table}_no_{action.lower()}"' for action in ("UPDATE", "DELETE")
+        ] + [
+            f'CREATE TRIGGER "trg_{table}_no_{action.lower()}" BEFORE {action} ON "{table}" '
+            "BEGIN SELECT RAISE(ABORT, 'kifu name change history is immutable'); END"
+            for action in ("UPDATE", "DELETE")
+        ]
+    elif dialect_name == "postgresql":
+        statements = [
+            "CREATE OR REPLACE FUNCTION reject_kifu_name_change_mutation() RETURNS trigger AS $$ "
+            "BEGIN RAISE EXCEPTION 'kifu name change history is immutable'; END; $$ LANGUAGE plpgsql"
+        ]
+        for action in ("UPDATE", "DELETE"):
+            trigger = f"trg_{table}_no_{action.lower()}"
+            statements.extend(
+                [
+                    f'DROP TRIGGER IF EXISTS "{trigger}" ON "{table}"',
+                    f'CREATE TRIGGER "{trigger}" BEFORE {action} ON "{table}" '
+                    "FOR EACH ROW EXECUTE FUNCTION reject_kifu_name_change_mutation()",
+                ]
+            )
+    else:
+        raise RuntimeError(f"Kifu name change immutability unsupported for {dialect_name}")
+    return statements
+
+
+def install_kifu_name_change_immutability(bind) -> None:
+    """Install immutable history in the explicit CLI or a fresh bootstrap transaction."""
+
+    if "kifu_name_changes" not in inspect(bind).get_table_names():
+        return
+    statements = _kifu_name_change_immutability_statements(bind.dialect.name)
+    if isinstance(bind, Connection):
+        for statement in statements:
+            bind.execute(text(statement))
+    else:
+        with bind.begin() as conn:
+            for statement in statements:
+                conn.execute(text(statement))
+
+
+def postgres_name_change_trigger_valid(status: tuple, action: str) -> bool:
+    expected_type = {"UPDATE": 19, "DELETE": 11}[action]  # ROW | BEFORE | action
+    enabled, trigger_type, unconditional, function_name, function_body = status
+    expected_body = "BEGIN RAISE EXCEPTION 'kifu name change history is immutable'; END;"
+    return (
+        enabled == "O"
+        and trigger_type == expected_type
+        and unconditional
+        and function_name == "reject_kifu_name_change_mutation"
+        and " ".join(function_body.split()) == expected_body
+    )
+
+
+def verify_kifu_name_change_immutability(engine) -> None:
+    """Read only metadata check; startup never repairs or replaces name triggers."""
+
+    table = "kifu_name_changes"
+    if engine.dialect.name == "sqlite":
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text("SELECT name, sql FROM sqlite_master WHERE type='trigger' AND tbl_name='kifu_name_changes'")
+            )
+            actual = {name: ddl for name, ddl in rows}
+        expected = _kifu_name_change_immutability_statements("sqlite")[2:]
+        for action, statement in zip(("update", "delete"), expected):
+            name = f"trg_{table}_no_{action}"
+            if " ".join((actual.get(name) or "").split()).lower() != " ".join(statement.split()).lower():
+                raise RuntimeError(f"{table} trigger {name} missing or changed; run migrate_catalog")
+    elif engine.dialect.name == "postgresql":
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT trigger_info.tgname, trigger_info.tgenabled, trigger_info.tgtype, "
+                    "(trigger_info.tgqual IS NULL), procedure_info.proname, procedure_info.prosrc "
+                    "FROM pg_trigger trigger_info "
+                    "JOIN pg_proc procedure_info ON procedure_info.oid = trigger_info.tgfoid "
+                    "WHERE trigger_info.tgrelid = to_regclass('kifu_name_changes') AND NOT trigger_info.tgisinternal"
+                )
+            )
+            actual = {
+                name: (enabled, trigger_type, unconditional, function_name, function_body)
+                for name, enabled, trigger_type, unconditional, function_name, function_body in rows
+            }
+        for action in ("UPDATE", "DELETE"):
+            name = f"trg_{table}_no_{action.lower()}"
+            if name not in actual or not postgres_name_change_trigger_valid(actual[name], action):
+                raise RuntimeError(f"{table} trigger {name} missing or changed; run migrate_catalog")
+    else:
+        raise RuntimeError(f"Kifu name change trigger verification unsupported for {engine.dialect.name}")
+
 
 AI_LADDER_TERMINAL_AUDIT_CONDITION = (
     "(terminal_source IS NULL AND origin_device_id IS NULL "
@@ -540,11 +1106,14 @@ def add_missing_columns(engine) -> None:
         for table in models_db.Base.metadata.sorted_tables:
             if table.name not in existing_tables:
                 continue
+            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES:
+                # The explicit catalog CLI owns authoritative name and selection tables.
+                continue
             existing_cols = {c["name"] for c in inspector.get_columns(table.name)}
             for col in table.columns:
                 if col.name in existing_cols:
                     continue
-                if table.name == "kifu_albums" and col.name in KIFU_ALBUM_FKS:
+                if table.name == "kifu_albums" and (col.name in KIFU_ALBUM_FKS or col.name == "event_edition_id"):
                     raise RuntimeError("Run migrate_kifu_catalog_schema before adding kifu album columns")
                 col_type = col.type.compile(engine.dialect)
                 ddl = f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {col_type}'
@@ -588,6 +1157,8 @@ def create_missing_indexes(engine) -> None:
         for table in models_db.Base.metadata.sorted_tables:
             if table.name not in existing_tables:
                 continue
+            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES:
+                continue  # Explicit catalog CLI owns these indexes, including PostgreSQL CONCURRENTLY.
             existing_idx = {ix["name"] for ix in inspector.get_indexes(table.name)}
             for index in table.indexes:
                 if index.name in existing_idx:

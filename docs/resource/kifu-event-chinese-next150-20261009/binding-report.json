@@ -1,0 +1,11 @@
+{
+  "status": "unsigned",
+  "manifests": {
+    "sgf_chinese_mixed": {
+      "raw_titles": 150,
+      "current_games": 174,
+      "canonical_sha256": "aa8e33006d43f0b23736555a4b0a072e0f3c1311354a703f55d3ff300816f2e4"
+    }
+  },
+  "excluded": []
+}

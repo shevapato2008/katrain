@@ -1,0 +1,36 @@
+{
+  "albums": 173025,
+  "batch_size": 500,
+  "candidate_series_games": 166234,
+  "excluded_games": 6791,
+  "excluded_games_by_category": {
+    "corrupt_data": 2,
+    "empty": 2811,
+    "game_description": 143,
+    "generic_event_description": 1539,
+    "historic_game_label": 1136,
+    "program_source_label": 1160
+  },
+  "grammar_raw_values": {
+    "cwi_japan_promotion": 27,
+    "english_ordinal_edition": 428,
+    "english_ordinal_joined": 1448,
+    "english_ordinal_suffix": 693,
+    "explicit_components": 33893,
+    "oteai_year": 48,
+    "single_edition_fragment": 499,
+    "single_round_fragment": 340,
+    "unparsed": 12847
+  },
+  "inventory_sha256": "dcc4f547ec196bbe850b79b6ce11a97dfda64e92343fcb2640dbd1aebaaad743",
+  "legacy_event_ids": 22,
+  "legacy_ids_matching_raw_ev": 20,
+  "possible_alias_groups": 105,
+  "raw_values": 50223,
+  "series_cores": 26314,
+  "snapshot_time": "2026-10-03T17:03:14.625467Z",
+  "type_candidates": 13227,
+  "unresolved_games": 29591,
+  "unresolved_raw_values": 12697,
+  "version": "kifu-event-preprocess-v1"
+}

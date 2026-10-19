@@ -1,0 +1,32 @@
+{
+  "environments": {
+    "PROD": {
+      "count": 20,
+      "candidate_request_sha256": "fb93012f3278b695dff28b11505cf73ba10f2ece9f1d55b1a6fef80ce43c3b98",
+      "research_array_sha256": "3b4ffeea0d138105af67c86958d9ade1423f7229af4938eb68c013587a9145fa",
+      "capture_sha256": "e29a3b5ae4ebad949e73f4c908b0c8333709ea34f0b0cf146c91931861a4eecb",
+      "game_slots": 4663,
+      "unique_albums": 4406,
+      "captured_at": "2026-10-08T18:33:32.918553+00:00"
+    },
+    "TEST": {
+      "count": 20,
+      "candidate_request_sha256": "183d89693803713537e5471a9e74dfe379965db3e6bfada2cf32b0d78ad1258d",
+      "research_array_sha256": "43601ea331d39d39f35852aae71e915e1e735d6c40a919fe85c5dfdb30622f65",
+      "capture_sha256": "78f4625a72609d7a3eefc7ac79409b26cad9357101defb4025b6391754e4a7d5",
+      "game_slots": 4663,
+      "unique_albums": 4406,
+      "captured_at": "2026-10-08T18:33:36.850703+00:00"
+    }
+  },
+  "member_sgf_side_native_rank_result_cross_environment_equal": true,
+  "member_scope_sha256": "0db79eaac28514ed8e47420d32d9da11a4f894d7e6eb7d3247341dfd232c8c50",
+  "review_status": "unsigned_pending_independent_review",
+  "global_context_status": "awaiting_after_589_snapshot",
+  "held_owners": [
+    6496,
+    5244,
+    4499,
+    3900
+  ]
+}

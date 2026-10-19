@@ -1,0 +1,230 @@
+{
+  "artifact_kind": "ko_name_source_only_research",
+  "queue_player_id": 5543,
+  "queue_order_slots": 14,
+  "selection_scope": "latest read-only PROD batch 597 shortlist; KO NULL with four physical verified rows; shortlist is not final qualification proof",
+  "canonical_name": "王紫涵",
+  "available_non_ko_anchor_names": {
+    "cn": "王紫涵",
+    "en": "Wang Zihan",
+    "jp": "王紫涵",
+    "tw": "王紫涵"
+  },
+  "status": "pending_no_direct_Korean_publication_found_in_bounded_checks",
+  "source_reading": {
+    "published_latin": "Wang Zihan",
+    "observed_romanization": "Wang Zihan",
+    "interpretation": "Source-published Latin only. No Korean spelling inferred. Regional system or Korean transcription is not assigned without source evidence.",
+    "source_capture_ids": [
+      "ret110-goratings-en",
+      "ret110-goratings-ko"
+    ]
+  },
+  "identity_bridges": [
+    {
+      "url": "https://www.goratings.org/en/players/2445.html",
+      "final_url": "https://www.goratings.org/en/players/2445.html",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html",
+      "fetched_at_utc": "2026-10-08T23:05:06.057401+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:04.490682+00:00",
+      "body_bytes": 4364,
+      "body_sha256": "32e91199c5553e631720c0d9f7590f6807445ff3b1c3ef09d2b1f1b69c700bf1",
+      "body_file": "captures/5543-authority-ret110-goratings-en-19.body",
+      "publisher": "ret110-goratings-en",
+      "source_role": "language_go",
+      "capture_kind": "authority_page_capture",
+      "source_id": "ret110-goratings-en",
+      "source_language": "en",
+      "evidence_ids": [
+        61601
+      ],
+      "body_text_excerpt": "Wang Zihan Wang Zihan Back to main list Graph Data Wins 0 Losses 0 Total 0 Link https://www.haifong.org/p... Date of Birth - Game List Date Rating Color Result Opponent Kifu Contact: Rémi Coulom . Powered by joedb, the C++ database .",
+      "body_text_locator": "Visible heading/profile text around the exact same-person name in captured source; body file/hash preserves original response."
+    },
+    {
+      "url": "https://www.goratings.org/zh/players/2445.html",
+      "final_url": "https://www.goratings.org/zh/players/2445.html",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html",
+      "fetched_at_utc": "2026-10-08T23:05:06.040449+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:04.490799+00:00",
+      "body_bytes": 4372,
+      "body_sha256": "d8b2389975c37ef8c6d8e271b1f57854bf41023451ac4c1892501f652ccb1676",
+      "body_file": "captures/5543-authority-ret110-goratings-zh-19.body",
+      "publisher": "ret110-goratings-zh",
+      "source_role": "language_go",
+      "capture_kind": "authority_page_capture",
+      "source_id": "ret110-goratings-zh",
+      "source_language": "zh-Hans",
+      "evidence_ids": [
+        61598
+      ],
+      "body_text_excerpt": "王紫涵 王紫涵 返回首页 等级分曲线 数据 胜 0 负 0 总计 0 链接 https://www.haifong.org/p... 生日 - 对局列表 日期 等级分 黑白 对局结果 对手 棋谱 联系： Rémi Coulom . Powered by joedb, the C++ database .",
+      "body_text_locator": "Visible heading/profile text around the exact same-person name in captured source; body file/hash preserves original response."
+    },
+    {
+      "url": "https://www.goratings.org/ko/players/2445.html",
+      "final_url": "https://www.goratings.org/ko/players/2445.html",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html",
+      "fetched_at_utc": "2026-10-08T23:05:58.332969+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:56.713204+00:00",
+      "body_bytes": 4395,
+      "body_sha256": "4c10d3425773f60d822de470709dd2c279161f78bfd74185c72d70d2956e65e4",
+      "body_file": "captures/5543-authority-ko.body",
+      "publisher": "ret110-goratings-ko",
+      "source_role": "language_go_localized_profile",
+      "capture_kind": "authority_page_capture",
+      "source_id": "ret110-goratings-ko",
+      "source_language": "ko",
+      "evidence_ids": null,
+      "body_text_excerpt": "Wang Zihan Wang Zihan 메인 페이지로 돌아가기 그래프 데이터 승리 0 패배 0 합계 0 링크 https://www.haifong.org/p... 생년월일 - 대국 기록 날짜 레이팅 흑백 결과 상대 기보 문의 Rémi Coulom . Powered by joedb, the C++ database .",
+      "body_text_locator": "Visible heading/profile text around the exact same-person name in captured source; body file/hash preserves original response."
+    }
+  ],
+  "searches": [
+    {
+      "url": "https://www.bing.com/search?q=%22%E7%8E%8B%E7%B4%AB%E6%B6%B5%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://www.bing.com/search?q=%22%E7%8E%8B%E7%B4%AB%E6%B6%B5%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "fetched_at_utc": "2026-10-08T23:04:49.569083+00:00",
+      "request_started_at_utc": "2026-10-08T23:04:48.286314+00:00",
+      "body_bytes": 113431,
+      "body_sha256": "d19438aec161aa2d68520e460af598081e1b45ab54ca6681e980e5a01cdcf1d0",
+      "body_file": "captures/5543-search-bing.html",
+      "publisher": "bing",
+      "source_role": "web_search_capture",
+      "capture_kind": "web_search_capture",
+      "query": "\"王紫涵\" 바둑",
+      "search_scope": "literal exact Han name plus 바둑 in web search engine; results are discovery evidence only",
+      "body_text_excerpt": "\"王紫涵\" 바둑 - Search Skip to content Accessibility Feedback All Search Images Videos Maps News More Shopping Flights Tools Open links in new tab Any time starbucks.com https://www.starbucks.com Starbucks Coffee Company Explore our menu of handcrafted drinks, order ahead, sign up for Starbucks® Rewards, manage your gift card and more. starbucks.com https://www.starbucks.com › menu Menu: Starbucks Coffee Company Check out Starbucks menu and get nutritional information about each menu item. starbucks.com https://content-prod-live.cert.starbucks.com › binary › asset [PDF] STARBUCKS COFFEE COMPANY ACCOUNTS PAYABLE STARBUCKS COFFEE COMPANY ACCOUNTS PAYABLE AP is committed to paying all accurate and undisputed supplier invoices … starbucks.com https://www.starbucks.com › en-us Starbucks Coffee Company *Free refills of hot and iced brewed coffee and tea during same store visit. Excludes Cold Brew, Nitro Cold Brew, Iced Tea … starbucks.com https://careers.starbucks.com Starbucks Careers Starbucks Coffee Company is an equal opportunity employer. All qualified applicants will receive consideration for employment … starbucks.com https://www.starbucks.com › gift Gift Cards: Starbucks Coffee Company Browse physical cards Looking to gift irl? Visit your local coffeehouse or a Starbucks Card retaile",
+      "body_text_locator": "Visible search result text near the literal query in the captured response body; search engine result set is bounded and discovery-only."
+    },
+    {
+      "url": "https://search.naver.com/search.naver?query=%22%E7%8E%8B%E7%B4%AB%E6%B6%B5%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22%E7%8E%8B%E7%B4%AB%E6%B6%B5%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "fetched_at_utc": "2026-10-08T23:04:50.524737+00:00",
+      "request_started_at_utc": "2026-10-08T23:04:48.623713+00:00",
+      "body_bytes": 181520,
+      "body_sha256": "a1d1d3cd3a3368fe253d0747caa568a0cc4f5e875e4db31fc72f2bbfae0e7cd8",
+      "body_file": "captures/5543-search-naver.html",
+      "publisher": "naver",
+      "source_role": "web_search_capture",
+      "capture_kind": "web_search_capture",
+      "query": "\"王紫涵\" 바둑",
+      "search_scope": "literal exact Han name plus 바둑 in web search engine; results are discovery evidence only",
+      "body_text_excerpt": "\"王紫涵\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"王紫涵\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"王紫涵\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 101바둑망 www.101weiqi.com › play 새 창 열림 AI 출처 정보 101바둑망은 바둑 학습과 문제 풀이를 제공하는 온라인 커뮤니티입니다. 매일 여덟 개의 바둑 문제와 지식 포인트, 최근 활동·바둑 교실 등을 통해 사용자들이 실력을 향상하고 토론할 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 蛋挞2018对局列表 새 창 열림 对局 赛事 状态 1. 蛋挞2018 VS 李光彬 --- 进行中 2. 蛋挞2018 VS 许秀艾 --- 进行中 3. 蛋挞2018 VS 黄子昂A 黑胜 새 창 열림 97행 더보기 새 창 열림 周欣艳对局列表 - 101 바둑 망 새 창 열림 , 对局, 赛事, 状态 ; 1., 郭晨希4520 VS 周欣艳, ---, 进行中 ; 2., 周欣艳 VS 郝晨嘉, ---, 进行中 ; 3., 周欣艳 VS 柳斐娅7220, ---, 进行中 ; 4., 周欣艳 VS 祝颂蛟0213, ---, 进行中 ; 5., 周欣艳 VS 祝颂蛟0213, ---, 进行中 ; 6., 周欣艳 VS 白羽然9551, ---, 进行中 ; 7., 周欣艳 VS Wkrui, ---, 进行中 ; 8., 高宗昊 VS 周欣艳, ---, 进行中 ; 9., 周欣艳 VS 15091379518, ---, 进行中 ; 10., 庚庚5952 VS 周欣艳, ---, 进行中 ; 11..... 관련문서 더보기 네이버 가격비교 이 정보가 표시된 이유 다른 사이트를 보시려면 클릭 하세요 찾으시는 상품과 유사한 상품을 노출합니다. N배송 빠르게 받기 빠른배송 배송지 설정 새 창으로 열기 젬블로 추상전략 보드게임 퍼즐 최저 29,240 원 배송비 무료 4.84 ( 208 ) 찜 4 판매처 7 젬블로 팝콘게임즈 아니오리다 1개 최저 10,930 원 배송",
+      "body_text_locator": "Visible search result text near the literal query in the captured response body; search engine result set is bounded and discovery-only."
+    },
+    {
+      "url": "https://search.naver.com/search.naver?query=%22Wang%20Zihan%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22Wang%20Zihan%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "fetched_at_utc": "2026-10-08T23:05:43.610225+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:41.239198+00:00",
+      "body_bytes": 469379,
+      "body_sha256": "cd7f4ca62e311da6c5f081488572787075754347ffbaaceddf39699495fc645a",
+      "body_file": "captures/5543-search-naver-latin.html",
+      "publisher": "naver",
+      "source_role": "web_search_capture",
+      "capture_kind": "web_search_capture",
+      "query": "\"Wang Zihan\" 바둑",
+      "search_scope": "literal exact published Latin name plus 바둑 in Naver web search; discovery evidence only",
+      "body_text_excerpt": "\"Wang Zihan\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Wang Zihan\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Wang Zihan\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 gokifu.com › 3h49 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 Wang Yubo 바둑 장즈한 바둑 Zhang Zihan - Wang Yubo , . 2025-11-04 새 창 열림 Wang Yubo 바둑 장즈한 바둑 Zhang Zihan - Wang Yubo , . 2025-11-04 친구와 기보를 공유하기. Easy way to put played games in blog -블로그에 대국보를 저장하는 쉬운 방법, social network-사회 통신망 ,forums -토론 새 창 열림 문화체육관광부 www.mcst.go.kr › [0622]보도자료-중국포털관계자방한.hwp HWP 새 창 열림 AI 출처 정보 문화체육관광부는 문화·예술·영상·광고·출판·체육·관광 등 관련 정책과 지원사업, 공고·보도자료 등을 제공하는 대한민국 중앙행정기관 공식 포털입니다. 이용자는 정책 안내와 각종 행사·지원 프로그램 정보를 확인할 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 [0622]보도자료-중국포털관계자방한.hwp 새 창 열림 5MB 6월 29일에는 ‘SK 커뮤니케이션스’를 방문, 한중 포털 간 협력방안을 논의하고, 오후에는 ‘성균관대학교 유교문화연구소와’와 한국 바둑 의 본산인 ‘한국기원’을... Chu Zihan (褚子含) / 작가 여(32세) 12 CCTV 영화채널 국제제작 감독, 사회자, 유명 블로거 Wang Ningtong(王寧彤) / 영화채널 감독 여(40세) 13 환 구 망 Shi Ding(石丁) / 부편집장 남(35세) 14... 새 창 열림 Go Ratings www.goratings.org 새 창 열림 AI 출처 정",
+      "body_text_locator": "Visible search result text near the literal query in the captured response body; search engine result set is bounded and discovery-only."
+    }
+  ],
+  "additional_bounded_cross_checks": [
+    {
+      "publisher": "Korean Baduk Association",
+      "url": "https://www.baduk.or.kr/record/player_in.asp",
+      "method": "POST",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+      "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+      "body_bytes": 80097,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+      "source_role": "official_China_player_roster_bounded_literal_scan",
+      "locator": "Full saved response scanned for each exact original Han and published Latin string; this is a roster response scan, not exhaustive Korean usage search.",
+      "queries": [
+        "王紫涵",
+        "Wang Zihan"
+      ],
+      "status": "not_found_in_this_capture",
+      "body_text_excerpt": "Literal scan terms: 王紫涵; Wang Zihan. Exact matching strings present: []."
+    },
+    {
+      "publisher": "TVBaduk",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "body_bytes": 119151,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+      "locator": "Full saved China roster index scanned for exact original Han and published Latin string; bounded to this captured response.",
+      "queries": [
+        "王紫涵",
+        "Wang Zihan"
+      ],
+      "status": "not_found_in_this_capture",
+      "body_text_excerpt": "Literal scan terms: 王紫涵; Wang Zihan. Exact matching strings present: []."
+    },
+    {
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "publisher": "Daum Cafe community roster (2012)",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+      "body_bytes": 153004,
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "source_role": "community_reference_only_not_official",
+      "queries": [
+        "王紫涵",
+        "Wang Zihan"
+      ],
+      "status": "not_found_in_saved_body",
+      "body_text_excerpt": "Literal scan terms: 王紫涵; Wang Zihan. Exact matching strings present: [].",
+      "locator": "Full saved community roster body scanned for the exact queue Han and English spellings. No same-person Korean name hit."
+    },
+    {
+      "url": "https://www.goratings.org/ko/players/2445.html",
+      "final_url": "https://www.goratings.org/ko/players/2445.html",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html",
+      "fetched_at_utc": "2026-10-08T23:05:58.332969+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:56.713204+00:00",
+      "body_bytes": 4395,
+      "body_sha256": "4c10d3425773f60d822de470709dd2c279161f78bfd74185c72d70d2956e65e4",
+      "body_file": "captures/5543-authority-ko.body",
+      "publisher": "ret110-goratings-ko",
+      "source_role": "language_go_Korean_localization_path",
+      "capture_kind": "language_go_Korean_path_check",
+      "status": "English_fallback_not_Korean_form",
+      "displayed_heading": "Wang Zihan Wang Zihan",
+      "body_text_excerpt": "Wang Zihan Wang Zihan 메인 페이지로 돌아가기 그래프 데이터 승리 0 패배 0 합계 0 링크 https://www.haifong.org/p... 생년월일 - 대국 기록 날짜 레이팅 흑백 결과 상대 기보 문의 Rémi Coulom . Powered by joedb, the C++ database .",
+      "body_text_locator": "Visible heading/profile text around the exact same-person name in captured source; body file/hash preserves original response."
+    }
+  ],
+  "conclusion": {
+    "direct_korean_go_publication_of_name": "not_found_in_checked_sources",
+    "exact_korean_hangul_name": "not_found; no output guessed",
+    "global_absence_claim": false,
+    "next_step": "Keep pending. A future sourced Korean name may be accepted from a same-person Korean professional, tournament or publication source; otherwise keep reading evidence and run the rule work separately."
+  },
+  "review_status": "source_only_not_conventional_name_approved_not_candidate_signed"
+}

@@ -1,0 +1,735 @@
+{
+  "basis": {
+    "excluded_prepared_mixed20": [
+      229,
+      320,
+      385,
+      391,
+      446,
+      595,
+      600,
+      662,
+      4235,
+      4276,
+      4771,
+      4782,
+      5297,
+      5396,
+      5397,
+      6259,
+      6599,
+      6626,
+      6629,
+      6686
+    ],
+    "preceding_batch": 590,
+    "prod_file_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+    "prod_fresh_capture": "docs/resource/kifu-next20-2026-10-09/PROD-mixed20-fresh-post590-pages.json.gz",
+    "prod_inventory_sha256": "e038934b83c2733b02b6f3ab9b1e1da3e435eccc5ebf3d4c0d05080ce94e390a",
+    "test_file_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+    "test_fresh_capture": "docs/resource/kifu-next20-2026-10-09/TEST-mixed20-fresh-post590-pages.json.gz",
+    "test_inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f"
+  },
+  "limits": [
+    "Only the missing cell is a target; the four qualified names per owner are unchanged and are not re-reviewed here.",
+    "A shared Chinese Wikipedia player-list page is an original-language identity lead, not a Korean or English publication for an individual.",
+    "Old hidden KO rows and rejected Wikidata labels remain unqualified; no generated KO spelling is approved by this shortlist.",
+    "Current authoritative_pages JSON is unavailable in the saved native r3 context; this sheet does not claim current page URLs or permissions.",
+    "No source was fetched, no database query or SQL write was made, and no candidate was signed."
+  ],
+  "players": [
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 333,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Resolve the recorded conflicting Korean spelling/identity against a direct same-person Korean Go publication.",
+      "prior_canonical_label": "桥本谊",
+      "prod_player_id": 5244,
+      "qualified_existing_names": {
+        "cn": "桥本谊",
+        "en": "Hashimoto Yoshimi",
+        "jp": "橋本 誼",
+        "tw": "橋本誼"
+      },
+      "rank": 1,
+      "source": {
+        "archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5eg-20261006-PROD.json.gz",
+        "archived_ko_positive_count": 0,
+        "archived_ko_rejected_leads": [
+          {
+            "candidate_name": "하시모토 요시미",
+            "reason": "The exact same-person Wikidata item Q15197135 genuinely has Korean label 하시모토 요시미, but this discovery-tier label alone does not establish published conventional Korean Go usage. No ko aliases or kowiki sitelink appear, while the completed Korean Baduk and exact Korean Wikipedia checks yield no matching Go-player name; the label remains a positive discovery lead, not an absence claim or an error."
+          }
+        ],
+        "archived_ko_scope_status": "not_found_in_scope",
+        "hold_reason": "Nihon Kiin name contains a fullwidth surname/given space; Igo uses 橋本善美 and requires a separately reviewed identity bridge.",
+        "japanese_source": {
+          "body_sha256": "5a6e23d15aad4f169b87133177c6f0a07003d42a22f493111f74a974dae465f6",
+          "http_status": 200,
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki000021.htm"
+        },
+        "retained_profile_capture": {
+          "body_sha256": "5a6e23d15aad4f169b87133177c6f0a07003d42a22f493111f74a974dae465f6",
+          "file_sha256": "a4da2aeb0e5578d2fdcd57e073f411ffc1ee05d0d7406e4008ebb21657a0eb0d",
+          "http_status": 200,
+          "path": "docs/resource/kifu-next-throughput-2026-10-09/fresh-known-source-captures/5244.json.gz",
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki000021.htm"
+        },
+        "source_reuse_scope": "Original Japanese identity and reading lead only; hidden KO proof remains unqualified.",
+        "status": "archived_japanese_source_reusable_for_identity_only"
+      },
+      "test_player_id": 11023,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 255,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Resolve the recorded conflicting Korean spelling/identity against a direct same-person Korean Go publication.",
+      "prior_canonical_label": "山崎祐男",
+      "prod_player_id": 4499,
+      "qualified_existing_names": {
+        "cn": "山崎祐男",
+        "en": "Yamazaki Masuo",
+        "jp": "山崎祐男",
+        "tw": "山崎祐男"
+      },
+      "rank": 2,
+      "source": {
+        "archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5ek-20261006-PROD.json.gz",
+        "archived_ko_positive_count": 0,
+        "archived_ko_rejected_leads": [
+          {
+            "candidate_name": "야마자키 마스오",
+            "reason": "True same-person Korean Wikidata label is retained as a positive discovery lead. The saved exact entity has no kowiki sitelink; database label alone is not independently published Korean Go conventional use within the finite scope."
+          }
+        ],
+        "archived_ko_scope_status": "not_found_in_scope",
+        "hold_reason": "Nihon Kiin fullwidth spaced original and alternate Igo spelling differ; prior positive path was held.",
+        "japanese_source": {
+          "body_sha256": "35527c7ef4c87a99dabf7882582fd6041547e5b15e3a8b744bcae112302fa5e8",
+          "http_status": 200,
+          "url": "https://archive.nihonkiin.or.jp/player/index.html"
+        },
+        "retained_profile_capture": {
+          "body_sha256": "955cbcb220a54878da05a3f65791ed980bca066ea82d95f8cee509fc8178c2b7",
+          "file_sha256": "00876d3f242b1400869b6bb23660eb741a8f8dd89361ca0280def7ffaa5dc6a6",
+          "http_status": 200,
+          "path": "docs/resource/kifu-next-throughput-2026-10-09/fresh-known-source-captures/4499.json.gz",
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki000071.htm"
+        },
+        "source_reuse_scope": "Original Japanese identity and reading lead only; hidden KO proof remains unqualified.",
+        "status": "archived_japanese_source_reusable_for_identity_only"
+      },
+      "test_player_id": 10290,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 127,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Resolve the recorded conflicting Korean spelling/identity against a direct same-person Korean Go publication.",
+      "prior_canonical_label": "高见泽忠夫",
+      "prod_player_id": 6496,
+      "qualified_existing_names": {
+        "cn": "高见泽忠夫",
+        "en": "Takamizawa Tadao",
+        "jp": "高見沢忠夫",
+        "tw": "高見澤忠夫"
+      },
+      "rank": 3,
+      "source": {
+        "archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5fb-20261007-PROD.json.gz",
+        "archived_ko_positive_count": 0,
+        "archived_ko_rejected_leads": [
+          {
+            "candidate_name": "다카미자와 다다오",
+            "reason": "Saved Q104708953 Korean label is genuine and belongs to the Japanese Go player 高見沢忠夫, as corroborated by the saved Japanese entity fields and Nihon Ki-in person page. It is a positive discovery lead, but an isolated multilingual database label does not attest conventional Korean Go publication in the recorded finite scope. The KBA exact forms show no player row; Korean Wikipedia exact title is missing and exact phrase has zero hits."
+          }
+        ],
+        "archived_ko_scope_status": "not_found_in_scope",
+        "hold_reason": "Captured Hangame Korean name uses 타다오; prior generated candidate used 다다오.",
+        "japanese_source": {
+          "body_sha256": "e79b71911583f6a9183b9c70a183d9f4f132f7b4601fbcf21636b88a9fe2c065",
+          "http_status": 200,
+          "url": "https://www.igorating.com/players/tadao-takamizawa"
+        },
+        "retained_profile_capture": {
+          "body_sha256": "21a049a5c10da7b94b245bf42a21d20cd4620fa43ad63908b4dd5af762be3636",
+          "file_sha256": "bfe9224f2b9770da24b64fbc01bc2ace66c8a8d777bc64ec2205ad1a3f397d81",
+          "http_status": 200,
+          "path": "docs/resource/kifu-next-throughput-2026-10-09/fresh-known-source-captures/6496.json.gz",
+          "url": "https://www.igorating.com/players/tadao-takamizawa"
+        },
+        "source_reuse_scope": "Original Japanese identity and reading lead only; hidden KO proof remains unqualified.",
+        "status": "archived_japanese_source_reusable_for_identity_only"
+      },
+      "test_player_id": 12260,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 118,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Resolve the recorded conflicting Korean spelling/identity against a direct same-person Korean Go publication.",
+      "prior_canonical_label": "佐藤直男",
+      "prod_player_id": 3900,
+      "qualified_existing_names": {
+        "cn": "佐藤直男",
+        "en": "Sato Sunao",
+        "jp": "佐藤直男",
+        "tw": "佐藤直男"
+      },
+      "rank": 4,
+      "source": {
+        "archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5en-20261007-PROD.json.gz",
+        "archived_ko_positive_count": 0,
+        "archived_ko_rejected_leads": [
+          {
+            "candidate_name": "사토 스나오",
+            "reason": "Q7638837 identifies this Japanese Go professional and actually contains Korean label 사토 스나오. The label is a positive discovery lead. Its isolated multilingual database field, without Korean Wikipedia article or independently published Korean Go usage within the saved finite checks, does not establish a conventional Korean name."
+          }
+        ],
+        "archived_ko_scope_status": "not_found_in_scope",
+        "hold_reason": "Captured Korean Wikipedia pupil article uses 사토우 스나오; prior generated candidate used 사토 스나오.",
+        "japanese_source": {
+          "body_sha256": "a49661315e7bc39af99b0affa078709c608aaa29a15e1c7d38e0f818ef4074cf",
+          "http_status": 200,
+          "url": "https://www.igorating.com/players/sunao-sato"
+        },
+        "retained_profile_capture": {
+          "body_sha256": "46bc8b791d8fd27651eead0a4c725b1b1a96374dfca50c13e8d564a24ce5ac7f",
+          "file_sha256": "aac116ac7a30205d5ba5450c9941dc353a6fa3f26b240d818d777317c1387371",
+          "http_status": 200,
+          "path": "docs/resource/kifu-next-throughput-2026-10-09/fresh-known-source-captures/3900.json.gz",
+          "url": "https://www.igorating.com/players/sunao-sato"
+        },
+        "source_reuse_scope": "Original Japanese identity and reading lead only; hidden KO proof remains unqualified.",
+        "status": "archived_japanese_source_reusable_for_identity_only"
+      },
+      "test_player_id": 9697,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 111,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Reuse the archived Japanese identity proof; retain an actual same-person complete kana profile and review NIKL output, or find a direct Korean publication.",
+      "prior_canonical_label": "下平昭夫",
+      "prod_player_id": 3771,
+      "qualified_existing_names": {
+        "cn": "下平昭夫",
+        "en": "Shimohira Akio",
+        "jp": "下平昭夫",
+        "tw": "下平昭夫"
+      },
+      "rank": 5,
+      "source": {
+        "archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5en-20261007-PROD.json.gz",
+        "archived_ko_positive_count": 0,
+        "archived_ko_rejected_leads": [
+          {
+            "candidate_name": "시모히라 아키오",
+            "reason": "Q107695267 identifies this Japanese Go professional and actually contains Korean label 시모히라 아키오. The label is a positive discovery lead. Its isolated multilingual database field, without Korean Wikipedia article or independently published Korean Go usage within the saved finite checks, does not establish a conventional Korean name."
+          }
+        ],
+        "archived_ko_scope_status": "not_found_in_scope",
+        "hold_reason": "Archived Korean search has no approved direct Korean publication; positive path needs actual complete kana and independent review.",
+        "japanese_source": {
+          "body_sha256": "e2422b84caa8f298fc746f3575033bf96a687bbdbe2ea7867170efead5010187",
+          "http_status": 200,
+          "url": "https://www.igorating.com/players/akio-shimohira"
+        },
+        "source_reuse_scope": "Original Japanese identity and reading lead only; hidden KO proof remains unqualified.",
+        "status": "archived_japanese_source_reusable_for_identity_only"
+      },
+      "test_player_id": 9569,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 105,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Reuse the archived Japanese identity proof; retain an actual same-person complete kana profile and review NIKL output, or find a direct Korean publication.",
+      "prior_canonical_label": "鲷中新",
+      "prod_player_id": 6642,
+      "qualified_existing_names": {
+        "cn": "鲷中新",
+        "en": "Tainaka Shin",
+        "jp": "鯛中新",
+        "tw": "鯛中新"
+      },
+      "rank": 6,
+      "source": {
+        "archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5ep-20261007-PROD.json.gz",
+        "archived_ko_positive_count": 0,
+        "archived_ko_rejected_leads": [
+          {
+            "candidate_name": "다이나카 신",
+            "reason": "The saved same-person Wikidata entity has an actual Korean label for this Japanese Go player. This positive discovery label by itself is not independently published Korean Go usage; exact KBA and Korean Wikipedia checks in the stated finite scope do not corroborate conventional usage."
+          }
+        ],
+        "archived_ko_scope_status": "not_found_in_scope",
+        "hold_reason": "Archived Korean search has no approved direct Korean publication; positive path needs actual complete kana and independent review.",
+        "japanese_source": {
+          "body_sha256": "a2733af4631d73497d628b9190e318b381a2d89503f8ed71a830a78255cb6483",
+          "http_status": 200,
+          "url": "https://www.igorating.com/players/shin-tainaka"
+        },
+        "source_reuse_scope": "Original Japanese identity and reading lead only; hidden KO proof remains unqualified.",
+        "status": "archived_japanese_source_reusable_for_identity_only"
+      },
+      "test_player_id": 12411,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 84,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Reuse the archived Japanese identity proof; retain an actual same-person complete kana profile and review NIKL output, or find a direct Korean publication.",
+      "prior_canonical_label": "前谷信吾",
+      "prod_player_id": 6635,
+      "qualified_existing_names": {
+        "cn": "前谷信吾",
+        "en": "Maetani Shingo",
+        "jp": "前谷信吾",
+        "tw": "前谷信吾"
+      },
+      "rank": 7,
+      "source": {
+        "archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5eq-20261007-PROD.json.gz",
+        "archived_ko_positive_count": 0,
+        "archived_ko_rejected_leads": [
+          {
+            "candidate_name": "마에타니 신고",
+            "reason": "This is a genuine Korean Wikidata label on the independently identified same-person Japanese Go-player item. It is a positive discovery lead, but an isolated multilingual database label does not establish independently published Korean Go usage in this finite scope."
+          }
+        ],
+        "archived_ko_scope_status": "not_found_in_scope",
+        "hold_reason": "Archived Korean search has no approved direct Korean publication; positive path needs actual complete kana and independent review.",
+        "japanese_source": {
+          "body_sha256": "41215f3bc45c22250628c459ff5a72fbfc54d86a31d7ac4c68b322e87e3612ac",
+          "http_status": 200,
+          "url": "https://www.igorating.com/players/shingo-maetani"
+        },
+        "source_reuse_scope": "Original Japanese identity and reading lead only; hidden KO proof remains unqualified.",
+        "status": "archived_japanese_source_reusable_for_identity_only"
+      },
+      "test_player_id": 12404,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 78,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Reuse the archived Japanese identity proof; retain an actual same-person complete kana profile and review NIKL output, or find a direct Korean publication.",
+      "prior_canonical_label": "川村匡迪",
+      "prod_player_id": 4568,
+      "qualified_existing_names": {
+        "cn": "川村匡迪",
+        "en": "Kawamura Masamichi",
+        "jp": "川村匡迪",
+        "tw": "川村匡迪"
+      },
+      "rank": 8,
+      "source": {
+        "archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5eq-20261007-PROD.json.gz",
+        "archived_ko_positive_count": 0,
+        "archived_ko_rejected_leads": [
+          {
+            "candidate_name": "가와무라 마사미치",
+            "reason": "This is a genuine Korean Wikidata label on the independently identified same-person Japanese Go-player item. It is a positive discovery lead, but an isolated multilingual database label does not establish independently published Korean Go usage in this finite scope."
+          }
+        ],
+        "archived_ko_scope_status": "not_found_in_scope",
+        "hold_reason": "Archived Korean search has no approved direct Korean publication; positive path needs actual complete kana and independent review.",
+        "japanese_source": {
+          "body_sha256": "5bfa3c93bd04f871b4371fb746a9f5385ee3ff7cd7700d1020e10b272c29f6bd",
+          "http_status": 200,
+          "url": "https://www.igorating.com/players/masamichi-kawamura"
+        },
+        "source_reuse_scope": "Original Japanese identity and reading lead only; hidden KO proof remains unqualified.",
+        "status": "archived_japanese_source_reusable_for_identity_only"
+      },
+      "test_player_id": 10358,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 38,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find a direct same-person Korean publication; the saved original-language list/profile links do not establish Korean spelling.",
+      "prior_canonical_label": "华伟荣",
+      "prod_player_id": 4071,
+      "qualified_existing_names": {
+        "cn": "华伟荣",
+        "en": "Hua Weirong",
+        "jp": "华伟荣",
+        "tw": "華偉榮"
+      },
+      "rank": 9,
+      "source": {
+        "hold_reason": "hold_no_japanese_original_full_kana_source",
+        "prior_source_urls": [
+          "https://www.goratings.org/ja/players/844.html",
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "shared_original_language_list_pages": [
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 9867,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 34,
+      "missing_language": "tw",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find direct published Taiwanese personal-name form or review this 昇 exception individually; do not apply the broad character rule.",
+      "prior_canonical_label": "田村升",
+      "prod_player_id": 6714,
+      "qualified_existing_names": {
+        "cn": "田村昇",
+        "en": "Tamura Noboru",
+        "jp": "田村昇",
+        "ko": "다무라 노보루"
+      },
+      "rank": 10,
+      "source": {
+        "hold_reason": "hold_excluded_character_昇",
+        "prior_source_urls": [
+          "https://igorating.com/players/noboru-tamura",
+          "https://db.u-go.net/1546/"
+        ],
+        "shared_original_language_list_pages": [],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 12483,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 30,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find a direct same-person Korean publication; the saved original-language list/profile links do not establish Korean spelling.",
+      "prior_canonical_label": "陈瑞",
+      "prod_player_id": 6366,
+      "qualified_existing_names": {
+        "cn": "陈瑞",
+        "en": "Chen Rui",
+        "jp": "陳瑞",
+        "tw": "陳瑞"
+      },
+      "rank": 11,
+      "source": {
+        "hold_reason": "hold_no_japanese_original_full_kana_source",
+        "prior_source_urls": [
+          "https://www.goratings.org/ja/players/395.html",
+          "https://www.kihuu.net/index.php?key=%E9%99%B3%E7%91%9E&type=2"
+        ],
+        "shared_original_language_list_pages": [],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 12132,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 29,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find a direct same-person Korean publication; the saved original-language list/profile links do not establish Korean spelling.",
+      "prior_canonical_label": "黄家胤",
+      "prod_player_id": 6531,
+      "qualified_existing_names": {
+        "cn": "黄家胤",
+        "en": "Huang Jia-Yin",
+        "jp": "黄家胤",
+        "tw": "黃家胤"
+      },
+      "rank": 12,
+      "source": {
+        "hold_reason": "hold_no_japanese_original_full_kana_source",
+        "prior_source_urls": [
+          "https://kifudepot.net/kifucontents.php?id=hItQkO%2FmK5vm8K0QqfueJw%3D%3D",
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "shared_original_language_list_pages": [
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 12295,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 28,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find a direct same-person Korean publication; the saved original-language list/profile links do not establish Korean spelling.",
+      "prior_canonical_label": "黄良玉",
+      "prod_player_id": 6547,
+      "qualified_existing_names": {
+        "cn": "黄良玉",
+        "en": "Huang Liangyu",
+        "jp": "黄良玉",
+        "tw": "黃良玉"
+      },
+      "rank": 13,
+      "source": {
+        "hold_reason": "hold_no_japanese_original_full_kana_source",
+        "prior_source_urls": [
+          "https://www.goratings.org/ja/players/713.html",
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "shared_original_language_list_pages": [
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 12311,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 26,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find a direct same-person Korean publication; the saved original-language list/profile links do not establish Korean spelling.",
+      "prior_canonical_label": "李青海",
+      "prod_player_id": 5101,
+      "qualified_existing_names": {
+        "cn": "李青海",
+        "en": "Li Qinghai",
+        "jp": "李青海",
+        "tw": "李青海"
+      },
+      "rank": 14,
+      "source": {
+        "hold_reason": "hold_no_japanese_original_full_kana_source",
+        "prior_source_urls": [
+          "https://www.goratings.org/ja/players/1442.html",
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "shared_original_language_list_pages": [
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 10883,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 25,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find a direct same-person Korean publication; the saved original-language list/profile links do not establish Korean spelling.",
+      "prior_canonical_label": "高若环",
+      "prod_player_id": 696,
+      "qualified_existing_names": {
+        "cn": "高若环",
+        "en": "Gao Ruohuan",
+        "jp": "高若环",
+        "tw": "高若環"
+      },
+      "rank": 15,
+      "source": {
+        "hold_reason": "hold_no_japanese_original_full_kana_source",
+        "prior_source_urls": [
+          "https://www.goratings.org/ja/players/2048.html",
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "shared_original_language_list_pages": [
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 697,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 22,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find a direct same-person Korean publication; the saved original-language list/profile links do not establish Korean spelling.",
+      "prior_canonical_label": "乔诗尧",
+      "prod_player_id": 3820,
+      "qualified_existing_names": {
+        "cn": "乔诗尧",
+        "en": "Qiao Shiyao",
+        "jp": "乔诗尧",
+        "tw": "喬詩堯"
+      },
+      "rank": 16,
+      "source": {
+        "hold_reason": "hold_no_japanese_original_full_kana_source",
+        "prior_source_urls": [
+          "https://www.goratings.org/ja/players/1515.html",
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "shared_original_language_list_pages": [
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 9618,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 22,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find a direct same-person Korean publication; the saved original-language list/profile links do not establish Korean spelling.",
+      "prior_canonical_label": "陈惠民",
+      "prod_player_id": 6329,
+      "qualified_existing_names": {
+        "cn": "陈惠民",
+        "en": "Chen Huimin",
+        "jp": "陳惠民",
+        "tw": "陳惠民"
+      },
+      "rank": 17,
+      "source": {
+        "hold_reason": "hold_no_japanese_original_full_kana_source",
+        "prior_source_urls": [
+          "https://www.kihuu.net/index.php?key=%E9%99%B3%E6%83%A0%E6%B0%91&type=2",
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "shared_original_language_list_pages": [
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 12095,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 19,
+      "missing_language": "en",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find direct published English name and bind it to this player; existing CN/JP/KO/TW names remain unchanged.",
+      "prior_canonical_label": "沙星宇",
+      "prod_player_id": 5351,
+      "qualified_existing_names": {
+        "cn": "沙星宇",
+        "jp": "沙星宇",
+        "ko": "사성우",
+        "tw": "沙星宇"
+      },
+      "rank": 18,
+      "source": {
+        "hold_reason": "hold_other_language_requires_source",
+        "prior_source_urls": [
+          "https://www.kihuu.net/index.php?key=%E6%B2%99%E6%98%9F%E5%AE%87&type=2",
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "shared_original_language_list_pages": [
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 11127,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 19,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find a direct same-person Korean publication; the saved original-language list/profile links do not establish Korean spelling.",
+      "prior_canonical_label": "王学传",
+      "prod_player_id": 5495,
+      "qualified_existing_names": {
+        "cn": "王学传",
+        "en": "Wang Xuezhuan",
+        "jp": "王學傳",
+        "tw": "王學傳"
+      },
+      "rank": 19,
+      "source": {
+        "hold_reason": "hold_no_japanese_original_full_kana_source",
+        "prior_source_urls": [
+          "https://www.kihuu.net/index.php?key=%E7%8E%8B%E5%AD%B8%E5%82%B3&type=2",
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "shared_original_language_list_pages": [
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 11269,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current per-owner JSON pages were not in the pinned r3 read-only capture; no saved 2026-10-05/08 page-apply record matched this owner. Recheck only before an authorized write.",
+      "linked_slots_per_environment": 19,
+      "missing_language": "ko",
+      "missing_name_proposal": null,
+      "next_source_needed": "Find a direct same-person Korean publication; the saved original-language list/profile links do not establish Korean spelling.",
+      "prior_canonical_label": "萧睿杉",
+      "prod_player_id": 5806,
+      "qualified_existing_names": {
+        "cn": "萧睿杉",
+        "en": "Wesley Hsiao",
+        "jp": "蕭睿杉",
+        "tw": "蕭睿杉"
+      },
+      "rank": 20,
+      "source": {
+        "hold_reason": "hold_no_japanese_original_full_kana_source",
+        "prior_source_urls": [
+          "https://kifudepot.net/index.php?player=%E8%95%AD%E7%9D%BF%E6%9D%89",
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "shared_original_language_list_pages": [
+          "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        ],
+        "source_reuse_scope": "Saved URLs may support the already qualified original-language identity; they do not prove the missing target-language name.",
+        "status": "source_leads_only_no_target_language_publication_retained"
+      },
+      "test_player_id": 11575,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    }
+  ],
+  "produced_at": "2026-10-08T20:00:21.912098+00:00",
+  "producer_id": "/root/next20_packet_recovered",
+  "producer_model": "gpt-6-sol",
+  "scope": {
+    "linked_slots_per_environment": 1522,
+    "missing_language_counts": {
+      "en": 1,
+      "ko": 18,
+      "tw": 1
+    },
+    "players": 20
+  },
+  "status": "source_only_no_new_capture_or_sql"
+}

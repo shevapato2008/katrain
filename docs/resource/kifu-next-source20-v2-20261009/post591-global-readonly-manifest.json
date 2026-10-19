@@ -1,0 +1,30 @@
+{
+  "PROD": {
+    "path": "PROD-post591-global-readonly.json.gz",
+    "file_sha256": "a5908d59c97ac823d8d3ca93bd87620cef3cdd4f47d26528722107d9b7cf6740",
+    "captured_at": "2026-10-08T20:49:29.266394+00:00",
+    "image_id": "sha256:02e58b41bac1ca2bdb4cd0aa1d15a319c63781e098b0cb1523dbbc318f2bc7bc",
+    "inventory_sha256": "e038934b83c2733b02b6f3ab9b1e1da3e435eccc5ebf3d4c0d05080ce94e390a",
+    "catalog_sha256": "83512f432dd3bdd3a61132a0272f71348d6d1ff00226715785fb585151d4aad7",
+    "approved_name_snapshot_count": 64019,
+    "current20_four_qualified_count": 80,
+    "latest_batch_id": 591,
+    "same_inventory_sha_as_post590": true,
+    "same_catalog_sha_as_post590": true,
+    "album_association_count": 173025
+  },
+  "TEST": {
+    "path": "TEST-post591-global-readonly.json.gz",
+    "file_sha256": "f2167d8964232ef3884c4c2528332b2067cb193e8004313e374da17e557dadac",
+    "captured_at": "2026-10-08T20:52:28.665267+00:00",
+    "image_id": "sha256:b606992b2f6c6ce6a7c00bd6c49f1a9fcc7330fc5ee44dd426bd6ecf30267e48",
+    "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+    "catalog_sha256": "aedaab6720cf4035533827d63dc90669e3b5ee35e97855e5b72e02c42616a9d2",
+    "approved_name_snapshot_count": 64014,
+    "current20_four_qualified_count": 80,
+    "latest_batch_id": 591,
+    "same_inventory_sha_as_post590": true,
+    "same_catalog_sha_as_post590": true,
+    "album_association_count": 173025
+  }
+}

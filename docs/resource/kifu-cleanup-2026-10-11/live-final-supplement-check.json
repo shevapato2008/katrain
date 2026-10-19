@@ -1,0 +1,112 @@
+[
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/132944?lang=en",
+    "seconds": 4.136,
+    "id": 132944,
+    "black": "SvetlanaShikshin",
+    "white": "Janice Kim",
+    "black_rank": "6p",
+    "white_rank": "1p",
+    "event": "1st China Eastern Airlines Cup"
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/132944?lang=jp",
+    "seconds": 4.144,
+    "id": 132944,
+    "black": "エアナシシン",
+    "white": "ジャニス・キム",
+    "black_rank": "6p",
+    "white_rank": "1p",
+    "event": "第1回中国 Eastern Airlines 杯"
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/132944?lang=ko",
+    "seconds": 4.136,
+    "id": 132944,
+    "black": "사바에타라아나아사하이카신",
+    "white": "재니스 김",
+    "black_rank": "6p",
+    "white_rank": "1p",
+    "event": "제1회 중국 Eastern Airlines 배"
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/35?lang=en",
+    "seconds": 2.126,
+    "id": 35,
+    "black": "Yang Dingxin",
+    "white": "Xu Jiayang",
+    "black_rank": "",
+    "white_rank": "",
+    "event": "24th Huawei Mobile Phone A League Round 3 Zhejiang Zhejiang Merchants Securities - Chongqing T23 Captain Board"
+  },
+  {
+    "environment": "TEST",
+    "path": "/api/v1/kifu/albums/32747?lang=en",
+    "seconds": 2.132,
+    "id": 32747,
+    "black": "Sakata Eio",
+    "white": "Go Seigen",
+    "black_rank": "七段",
+    "white_rank": "九段",
+    "event": "Go Seigen Dui Qi . Ba Duan Tournament Game 4"
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/132944?lang=en",
+    "seconds": 2.071,
+    "id": 132944,
+    "black": "SvetlanaShikshin",
+    "white": "Janice Kim",
+    "black_rank": "6p",
+    "white_rank": "1p",
+    "event": "1st China Eastern Airlines Cup"
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/132944?lang=jp",
+    "seconds": 4.652,
+    "id": 132944,
+    "black": "エアナシシン",
+    "white": "ジャニス・キム",
+    "black_rank": "6p",
+    "white_rank": "1p",
+    "event": "第1回中国 Eastern Airlines 杯"
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/132944?lang=ko",
+    "seconds": 4.609,
+    "id": 132944,
+    "black": "사바에타라아나아사하이카신",
+    "white": "재니스 김",
+    "black_rank": "6p",
+    "white_rank": "1p",
+    "event": "제1회 중국 Eastern Airlines 배"
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/35?lang=en",
+    "seconds": 4.599,
+    "id": 35,
+    "black": "Yang Dingxin",
+    "white": "Xu Jiayang",
+    "black_rank": "",
+    "white_rank": "",
+    "event": "24th Huawei Mobile Phone A League Round 3 Zhejiang Zhejiang Merchants Securities - Chongqing T23 Captain Board"
+  },
+  {
+    "environment": "PROD",
+    "path": "/api/v1/kifu/albums/32747?lang=en",
+    "seconds": 1.18,
+    "id": 32747,
+    "black": "Sakata Eio",
+    "white": "Go Seigen",
+    "black_rank": "七段",
+    "white_rank": "九段",
+    "event": "Go Seigen Dui Qi . Ba Duan Tournament Game 4"
+  }
+]

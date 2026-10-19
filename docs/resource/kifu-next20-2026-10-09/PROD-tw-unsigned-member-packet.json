@@ -1,0 +1,263 @@
+{
+  "count": 10,
+  "environment": "PROD",
+  "members": [
+    {
+      "canonical_name": "日下包夫",
+      "current_target": null,
+      "display_name": "日下包夫",
+      "environment": "PROD",
+      "linked_games": 293,
+      "original_name": "日下包夫",
+      "owner_preimage": {
+        "canonical_name": "日下包夫",
+        "created_at": "2026-10-03T22:16:28.440694+00:00",
+        "id": 4771
+      },
+      "player_id": 4771,
+      "prod_id": 4771,
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "81b7885a94d3342d65f63636c65d1d214e896f042aecf1c323000dddc9f1c140",
+      "source_evidence_id": 53937,
+      "source_evidence_sha256": "c8b772ac667863434e5911c3c236ee4d2c1c275f7becc7041edb86bb37cc1810",
+      "source_name_sha256": "e8b1d118239d3c78d2d390f61491c18ba74929b8d45ef9057b4c2d6489767fa5",
+      "source_urls": [
+        "https://www.igorating.com/players/kaneo-kusaka",
+        "https://www.igorating.com/en/players/kaneo-kusaka"
+      ]
+    },
+    {
+      "canonical_name": "浜岛久义",
+      "current_target": null,
+      "display_name": "浜島久義",
+      "environment": "PROD",
+      "linked_games": 281,
+      "original_name": "浜島久義",
+      "owner_preimage": {
+        "canonical_name": "浜岛久义",
+        "created_at": "2026-10-03T22:16:28.440694+00:00",
+        "id": 5397
+      },
+      "player_id": 5397,
+      "prod_id": 5397,
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "338c8e088c2dba5e837c1cd05ec88b6774c7e7396328164db6ace82d9ad8bed5",
+      "source_evidence_id": 53942,
+      "source_evidence_sha256": "5b84d1c19c88bad3ff636b208446521619ec87125ec4fdddb5bbd80bab49e8ef",
+      "source_name_sha256": "7005911b6e72e56302f30e88de3b4bda875da3e451e88beb2000dd52982bd3b6",
+      "source_urls": [
+        "https://www.igorating.com/players/hisayoshi-hamajima",
+        "https://www.igorating.com/en/players/hisayoshi-hamajima"
+      ]
+    },
+    {
+      "canonical_name": "武田博爱",
+      "current_target": null,
+      "display_name": "武田博愛",
+      "environment": "PROD",
+      "linked_games": 203,
+      "original_name": "武田博愛",
+      "owner_preimage": {
+        "canonical_name": "武田博爱",
+        "created_at": "2026-10-03T22:16:28.440694+00:00",
+        "id": 5297
+      },
+      "player_id": 5297,
+      "prod_id": 5297,
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "4814cc4d07fe1c9bb1271d3e3bebd077e2961ddc317fa24d92560467c2fdcb53",
+      "source_evidence_id": 54163,
+      "source_evidence_sha256": "7bc1dbd23762c167e1273d23f2cf4ac8b92caa3bb789412618d27be665ea46a5",
+      "source_name_sha256": "7c3e8f6c2d3ffb3fd321a2d842bde890bd5d07666ff9d2cbeed73e356f282064",
+      "source_urls": [
+        "https://www.igorating.com/players/hakuai-takeda",
+        "https://www.cyberoro.com/info/player_view.oro?prpl_code=20001283"
+      ]
+    },
+    {
+      "canonical_name": "小松伸昭",
+      "current_target": null,
+      "display_name": "小松伸昭",
+      "environment": "PROD",
+      "linked_games": 181,
+      "original_name": "小松伸昭",
+      "owner_preimage": {
+        "canonical_name": "小松伸昭",
+        "created_at": "2026-10-03T23:43:11.976340+00:00",
+        "id": 6599
+      },
+      "player_id": 6599,
+      "prod_id": 6599,
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "343f496d94fb10314f674c2b84c57fa018c4b4bab38150bb878cc364e4544dc5",
+      "source_evidence_id": 54178,
+      "source_evidence_sha256": "d46297ee08c6fa1933258b1f8675ee172bf498ebbfaa0bc7fd694b3fe31bc9f7",
+      "source_name_sha256": "3051f634798b245ee99bd06e4401c052c9e8d8da914b95b05a5d2dd335c571a5",
+      "source_urls": [
+        "https://www.igorating.com/players/nobuaki-komatsu",
+        "https://www.igorating.com/en/players/nobuaki-komatsu"
+      ]
+    },
+    {
+      "canonical_name": "早濑玄堂",
+      "current_target": null,
+      "display_name": "早瀬玄堂",
+      "environment": "PROD",
+      "linked_games": 118,
+      "original_name": "早瀬玄堂",
+      "owner_preimage": {
+        "canonical_name": "早濑玄堂",
+        "created_at": "2026-10-04T00:06:03.022219+00:00",
+        "id": 6626
+      },
+      "player_id": 6626,
+      "prod_id": 6626,
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "430f4252fffcebf510d18bdee89f763c48c5a10159902a3da585770c59a989d1",
+      "source_evidence_id": 54166,
+      "source_evidence_sha256": "b9e1b29ec50c9957edb2b2d1e9a09e08f5f41307d49fcab50306bfd5f277ce8e",
+      "source_name_sha256": "db3ae3c8c6341523c1b15d16aab8e4214f09b0332a73cf99b664b8997a9d8047",
+      "source_urls": [
+        "https://www.igorating.com/players/gendo-hayase",
+        "https://www.igorating.com/en/players/gendo-hayase"
+      ]
+    },
+    {
+      "canonical_name": "塩入逸造",
+      "current_target": null,
+      "display_name": "塩入逸造",
+      "environment": "PROD",
+      "linked_games": 114,
+      "original_name": "塩入逸造",
+      "owner_preimage": {
+        "canonical_name": "塩入逸造",
+        "created_at": "2026-10-03T22:16:28.440694+00:00",
+        "id": 4235
+      },
+      "player_id": 4235,
+      "prod_id": 4235,
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "76af4aa208c8b18f12e65dbc125f3a462c55f2343a52f62b39dba640af3c104a",
+      "source_evidence_id": 54169,
+      "source_evidence_sha256": "7d02b574dc6eacab1bc47acd970b842fecb8a880b3adca14c48402e49e35bee2",
+      "source_name_sha256": "3e385a2c55b9d024fe5820fa450978c217033add737db60210daacdb17b58b83",
+      "source_urls": [
+        "https://www.igorating.com/players/itsuzo-shioiri",
+        "https://www.igorating.com/en/players/itsuzo-shioiri"
+      ]
+    },
+    {
+      "canonical_name": "福原义虎",
+      "current_target": null,
+      "display_name": "福原義虎",
+      "environment": "PROD",
+      "linked_games": 106,
+      "original_name": "福原義虎",
+      "owner_preimage": {
+        "canonical_name": "福原义虎",
+        "created_at": "2026-10-04T00:06:03.022219+00:00",
+        "id": 6629
+      },
+      "player_id": 6629,
+      "prod_id": 6629,
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "589bed9de3a4933748fbd2e14a541a802a8b19981aa28bb6fe31161c31305686",
+      "source_evidence_id": 54172,
+      "source_evidence_sha256": "15427d6f29461d3fd5248a4d00eabc44fe1df7c40608e9e8dabe8363193773aa",
+      "source_name_sha256": "2976a1b416f2f09672f52c5a8d84d906a6ce1a09c6199e78842a789711c10514",
+      "source_urls": [
+        "https://www.igorating.com/players/yoshitora-fukuhara",
+        "https://www.igorating.com/en/players/yoshitora-fukuhara"
+      ]
+    },
+    {
+      "canonical_name": "安井算知（九世）",
+      "current_target": null,
+      "display_name": "九世安井算知",
+      "environment": "PROD",
+      "linked_games": 86,
+      "original_name": "九世安井算知",
+      "owner_preimage": {
+        "canonical_name": "安井算知（九世）",
+        "created_at": "2026-10-04T00:52:40.295661+00:00",
+        "id": 6686
+      },
+      "player_id": 6686,
+      "prod_id": 6686,
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "2400bd1970c5ec67684844545c1858786b05273a62f9714ceab7f8d1f15f3f0a",
+      "source_evidence_id": 54185,
+      "source_evidence_sha256": "dbc62b925ca4d93469defe1e77952338d85af6490f85d6190d710cc7bf7acef5",
+      "source_name_sha256": "d561b0a36a45192ca60e8d2849a7710342883c80430d22965b7ae9e54b29d893",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/etc/writer/column20260420.html",
+        "https://homepages.cwi.nl/~aeb/go/games/games/Shusaku/index.html"
+      ]
+    },
+    {
+      "canonical_name": "铃木越雄",
+      "current_target": null,
+      "display_name": "鈴木越雄",
+      "environment": "PROD",
+      "linked_games": 77,
+      "original_name": "鈴木越雄",
+      "owner_preimage": {
+        "canonical_name": "铃木越雄",
+        "created_at": "2026-10-03T22:16:28.440694+00:00",
+        "id": 6259
+      },
+      "player_id": 6259,
+      "prod_id": 6259,
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "55fb8e0558fc7d2f7536dbc87da4b28660af3f422433943dd743ea3f314e9a9e",
+      "source_evidence_id": 54188,
+      "source_evidence_sha256": "e04001e6893157e6e7da86872041d1e00a1b84d4df766f3101b82ed8f90b4745",
+      "source_name_sha256": "5ffbd153ca7feae48e67463201936e36ba3420a4143f8989ff0d43ea139ee6ca",
+      "source_urls": [
+        "https://www.igorating.com/players/etsuo-suzuki",
+        "https://www.igorating.com/en/players/etsuo-suzuki"
+      ]
+    },
+    {
+      "canonical_name": "李贞垠",
+      "current_target": {
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "decision_kind": null,
+        "display_name": "李貞垠",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 2225,
+        "lang": "tw",
+        "player_id": 446,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      "display_name": "李貞垠",
+      "environment": "PROD",
+      "linked_games": 14,
+      "original_name": "李貞垠",
+      "owner_preimage": {
+        "canonical_name": "李贞垠",
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "id": 446
+      },
+      "player_id": 446,
+      "prod_id": 446,
+      "reference_kind": "official_hanja_preserved",
+      "source_anchor_content_sha256": "600672bb3d4fc3e5303ccdb0a13ec92d6c4efb8b85699e8fa2ec7837bcb5c03a",
+      "source_evidence_id": 61594,
+      "source_evidence_sha256": "41a28581e4bce1d2206b74d248c7b064fd15ab5d2bbfa722b354958dba6c7350",
+      "source_name_sha256": "9ea875715615b508bcf8ad5623207b40726ae9f2a728640a60bb86c4aabab5f9",
+      "source_urls": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10001264",
+        "https://www.goratings.org/zh/players/2516.html"
+      ]
+    }
+  ],
+  "source_capture_sha256": "a15ea7caa7a844caafb30e6af149f1175f0ecbad090ead17e8aa32ad52502aab",
+  "source_captured_at": "2026-10-08T19:10:01.970663+00:00",
+  "status": "unsigned_source_ready_final_context_deferred_until_post590_pages"
+}

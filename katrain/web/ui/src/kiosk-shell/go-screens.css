@@ -1764,7 +1764,7 @@ button.kiosk-row.figrow { flex: none; }
    复用会让「这屏是 A 还是 B」在闸和读码的人眼里说不清;② 它的 `height:100%` 在别处落在
    **516** 的容器里,这里落在 **460** 的容器里 —— 同一个类量出两个高度,哪天有人拿它断言
    516 就会误伤这屏。四行 CSS 比这两笔账便宜。 */
-.calib-screen { display: flex; flex-direction: column; gap: var(--rail-gap); height: 100%; min-height: 0; }
+.calib-screen { position: relative; display: flex; flex-direction: column; gap: var(--rail-gap); height: 100%; min-height: 0; }
 .calib-body {
   /* `flex:1` 不是可省的:少了它这一格按**内容**定高 —— 实测塌成 392(右栏那五块的高度),
      摄像头画面跟着矮 68,而右栏中段永远不会溢出、那条滚动逻辑一辈子不响。 */
@@ -1806,6 +1806,28 @@ button.kiosk-row.figrow { flex: none; }
   font-style: normal; margin-left: auto;
   font-family: var(--font-mono); font-size: 11px; color: var(--accent);
 }
+.calib-preview-label {
+  position: absolute; z-index: 3; top: 12px; left: 12px;
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 27px; padding: 4px 9px;
+  border: 1px solid var(--hair); border-radius: 6px;
+  background: rgba(12, 29, 21, .9); color: var(--text);
+  font-family: var(--font-serif); font-size: 11px; font-weight: 600;
+}
+.calib-preview-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.calib-preview-banner {
+  position: absolute; z-index: 3; top: 47px; left: 12px; right: 12px;
+  display: flex; align-items: center; gap: 8px;
+  min-height: 40px; padding: 7px 11px;
+  border: 1px solid var(--accent); border-radius: 8px;
+  background: rgba(12, 33, 23, .88); color: var(--text);
+  font-family: var(--font-serif); font-size: 12px;
+}
+.calib-preview-banner b { font-weight: 600; }
+.calib-preview-banner small { margin-left: auto; color: var(--dim); font-size: 11px; }
+.calib-preview-banner.is-paused {
+  border-color: var(--warn); background: rgba(59, 40, 24, .94); color: #fff2dc;
+}
 
 /* 右栏:头(状态格)尾(按钮行)固定,中间那块滚。
    **不叫 `.kiosk-rail`** —— 那个类的 gap 是 12,而稿子这一屏写的是 8;而且它第一个间隙的
@@ -1831,12 +1853,37 @@ button.kiosk-row.figrow { flex: none; }
 .calib-acts .kiosk-btn.is-danger { border-color: var(--bad); color: var(--bad); background: none; }
 .calib-acts .kiosk-btn:disabled { opacity: .45; cursor: default; }
 .calib-diag__raw { font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); opacity: .7; }
+.calib-light-scrim {
+  position: absolute; z-index: 8; inset: 0;
+  display: grid; place-items: center;
+  background: rgba(5, 9, 7, .75);
+}
+.calib-light-dialog {
+  width: 455px; max-width: calc(100% - 32px);
+  padding: 22px 24px 20px; border: 1px solid var(--warn); border-radius: 16px;
+  background: var(--panel); box-shadow: 0 18px 60px #000b;
+  font-family: var(--font-serif);
+}
+.calib-light-eyebrow { color: var(--warn); font-size: 11px; letter-spacing: .08em; }
+.calib-light-dialog h2 { margin: 10px 0; color: var(--text); font-size: 22px; line-height: 1.25; }
+.calib-light-dialog p { margin: 0 0 18px; color: var(--text); font-size: 14px; line-height: 1.55; }
+.calib-light-voice {
+  margin: 0 0 17px; padding: 7px 10px;
+  border-left: 3px solid var(--warn); background: var(--raise);
+  color: var(--dim); font-size: 11px; line-height: 1.45;
+}
+.calib-light-voice b { color: var(--text); }
+.calib-light-dialog .calib-light-error { color: var(--bad); font-size: 12px; }
+.calib-light-actions { display: flex; gap: 10px; }
+.calib-light-actions .kiosk-btn { min-height: 44px; justify-content: center; padding: 0 15px; }
+.calib-light-actions .kiosk-btn--secondary { margin-right: auto; border: 1px solid var(--bad); color: var(--bad); }
+.calib-light-actions .kiosk-btn:disabled { opacity: .55; cursor: default; }
 
-/* 标定五步 → **四步**(见 `GeometryCalibrationScreen.tsx` 页头注)。
+/* 标定五步(准备空盘、曝光、四角、星位、基线)。
    用共享 `.kiosk-row` 的骨架,只换序号那一格:稿子要圆的 26×26,不是等宽数字。
    ⚠️ **绝不覆盖 `.kiosk-row` 的 `flex` 和 `height`** —— 那条 `flex:none` 的注释写着
    「不写死的话 flex 会先把它们压扁再滚(2026-07-29 真浏览器量出来 18 行被压成 33px)」,
-   而这四行现在**真的住在一个会滚的容器里**,正是那条注释描述的场景。 */
+   而这五行现在**真的住在一个会滚的容器里**,正是那条注释描述的场景。 */
 .kiosk-row--step > .kiosk-row__lead {
   width: 26px; height: 26px; flex: none; display: grid; place-items: center;
   border-radius: 50%; border: 1px solid var(--hair); background: var(--panel);
@@ -1851,6 +1898,8 @@ button.kiosk-row.figrow { flex: none; }
 .kiosk-row--step.is-bad { border-color: color-mix(in srgb, var(--bad) 55%, transparent); }
 .kiosk-row--step.is-bad > .kiosk-row__lead { border-color: var(--bad); color: var(--bad); }
 .kiosk-row--step.is-warn > .kiosk-row__lead { border-color: var(--warn); color: var(--warn); }
+.kiosk-row--step.is-paused { border-color: var(--warn); }
+.kiosk-row--step.is-paused > .kiosk-row__lead { border-color: var(--warn); color: var(--warn); }
 
 /* ── 屏 03 升降级 ·「对手」那一格 ──────────────────────────────────────────
    共享件 `features/aiLadder/AiLadderSetupOpponent` 用的是 MUI(Chip / LinearProgress /

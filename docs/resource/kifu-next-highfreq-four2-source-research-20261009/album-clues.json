@@ -1,0 +1,100 @@
+{
+  "source_inventory": "docs/resource/kifu-next-source20-roster3-20261009/bounded-version-v2/PROD-next16-inventory.json.gz",
+  "source_inventory_file_sha256": "a0ba7baaac24e8a76c5e1f783d3682176c5de757cacaea05a470f6f3250c7371",
+  "source_inventory_snapshot_time": "2026-10-08T20:47:31.822175Z",
+  "selected_album_associations": [
+    {
+      "id": 34503,
+      "duplicate_of_id": null,
+      "player_black": "卞相壹",
+      "player_white": "李劼",
+      "event": "国家二队vs韩国交流赛第5轮",
+      "round_name": null,
+      "black_rank": "初段",
+      "white_rank": "六段",
+      "date_played": "2013-01-21",
+      "black_player_id": 189,
+      "white_player_id": 4970,
+      "event_id": null,
+      "sources": [
+        [
+          34506,
+          1,
+          "19x19",
+          "data/kifu-album/19x19/41297932.sgf",
+          "source_path"
+        ]
+      ]
+    },
+    {
+      "id": 51988,
+      "duplicate_of_id": null,
+      "player_black": "大桥拓文",
+      "player_white": "大场惇也",
+      "event": "第3期日本SGW杯中庸战本战第3轮",
+      "round_name": null,
+      "black_rank": "六段",
+      "white_rank": "七段",
+      "date_played": "2020-11-01",
+      "black_player_id": null,
+      "white_player_id": 460,
+      "event_id": 71,
+      "sources": [
+        [
+          51991,
+          1,
+          "19x19",
+          "data/kifu-album/19x19/41334476.sgf",
+          "source_path"
+        ]
+      ]
+    },
+    {
+      "id": 136907,
+      "duplicate_of_id": null,
+      "player_black": "KubouchiShuchi",
+      "player_white": "吴清源",
+      "event": "NHKCup,23rd",
+      "round_name": null,
+      "black_rank": "9p",
+      "white_rank": "9p",
+      "date_played": "1976-02-29",
+      "black_player_id": 6634,
+      "white_player_id": 1,
+      "event_id": 70,
+      "sources": [
+        [
+          136914,
+          1,
+          "19x19",
+          "data/kifu-album/19x19/41553060.sgf",
+          "source_path"
+        ]
+      ]
+    },
+    {
+      "id": 151647,
+      "duplicate_of_id": null,
+      "player_black": "Yasuda Eisai",
+      "player_white": "Ito Matsujiro",
+      "event": null,
+      "round_name": null,
+      "black_rank": "1d",
+      "white_rank": "6d",
+      "date_played": "1840-04-16",
+      "black_player_id": null,
+      "white_player_id": 6672,
+      "event_id": null,
+      "sources": [
+        [
+          151656,
+          2,
+          "CWI",
+          "data/kifu-album/CWI_Shusaku/004.sgf",
+          "source_path"
+        ]
+      ]
+    }
+  ],
+  "note": "Saved PROD association clues only; refresh actual owner preimage before any naming or merge."
+}

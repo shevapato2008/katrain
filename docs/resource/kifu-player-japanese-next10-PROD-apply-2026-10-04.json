@@ -1,0 +1,1 @@
+{"mode": "apply", "environment": "prod", "sha256": "a62d627332a839e3149994fb730ec448e4473aef68cd33581cd9889a62118f97", "result": {"held_slots": 20, "new_fk_slots": 3035, "protected_slots": 0, "raw_values": 10, "applied": true}, "postcommit_scope_verified": true}

@@ -1,0 +1,302 @@
+[
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.852289+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "49980290a1f7d135a5ba2296aaada800ae2c4e371ee2e3607547a4e95ac1d341"
+    },
+    "owner": {
+      "id": 12521,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.852536+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "cac25b5c5416dc3c766b986ebd42b60dd44b60919781e3f6591ef512d277fe0c"
+    },
+    "owner": {
+      "id": 12534,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.852729+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "4d454cc28e461eef7bb7203e7153b9b84da5d0c27d4601bc314e9038cb8f96c4"
+    },
+    "owner": {
+      "id": 12537,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.852858+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "eafa9b0126523fb0af0e595c6756ce22f08a7b3a3b8d92068db533a42961aa0e"
+    },
+    "owner": {
+      "id": 11141,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.852964+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "370a23568915e06ce2a70dc61682ffb4938f85f1e776fc5a8e4e2fcbf7557906"
+    },
+    "owner": {
+      "id": 10991,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.853068+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "b7ed7aaa1d726cb9d39ea3c494805d90cef40a562c432ba24bc7e3396b4ef4a3"
+    },
+    "owner": {
+      "id": 9789,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.853172+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "193739aebbb2fde86655ff71ddc09a5897b56105e988a77a8987537beb3dc1d3"
+    },
+    "owner": {
+      "id": 12482,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.853273+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "a6efd501a7f08f909fb537d2e52f5277d33059b5a9e16c8d6e6de92b8fbf828f"
+    },
+    "owner": {
+      "id": 12211,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.853388+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "0f6ba356811510e27670866a1c2498480b8b407a2146b63ca7556323ac115957"
+    },
+    "owner": {
+      "id": 11354,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.853502+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "46311b65483e9fe093c1b6d74fa320b377c618d82c02bf0eb9e8431ca2f11853"
+    },
+    "owner": {
+      "id": 12142,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.853607+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "7415b47abd800d44ec4f99cbb7244de0fb47dee67aaa041aa0508261339e6d8b"
+    },
+    "owner": {
+      "id": 11662,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.853715+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "c5b246ffae9becb0c7cab77fc601d38106f6deb220d069fa3186ab74f40358e9"
+    },
+    "owner": {
+      "id": 10342,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.853822+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "3a310141d5c8caf0730afa7c42a302092464907d406e9b28e06874ddc416c7aa"
+    },
+    "owner": {
+      "id": 9703,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.853936+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "2132c78aef43e7403561ea4e4203d2ec919b8dbb5e5fad756cfd19c33f3b60bf"
+    },
+    "owner": {
+      "id": 11702,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.854052+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "88a647bc1e8dd2dfa7c9efd645b59829696272cc39584ad361a56b657db21c83"
+    },
+    "owner": {
+      "id": 9819,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.854189+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "4be3282247d2998c1524d6df6ec201780e94e931591ab046ad6607c9b7df8bfa"
+    },
+    "owner": {
+      "id": 10362,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.854320+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "f2dba1a95423ec7fa3b60b88993ef7c1128283e6bfca4c605fb6c0f9bed512a7"
+    },
+    "owner": {
+      "id": 10822,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.854458+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "a5d17987f8ac89c44ddf964c3980c317a2e651c8068029730731188d790746e4"
+    },
+    "owner": {
+      "id": 10588,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.854615+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "6a13021303d49401aa2770d9d549a8319f730b86139cb519b534f88f712db22e"
+    },
+    "owner": {
+      "id": 11981,
+      "kind": "player"
+    }
+  },
+  {
+    "binding": {
+      "actor_id": "/root/restore_tw_twenty",
+      "actor_model": "GPT-6 (exact runtime variant unavailable)",
+      "bound_at": "2026-10-08T17:37:08.854768+00:00",
+      "capture_sha256": "d64bca675388f0d9a0debaadecfe9b1e3707b973eb0cd24cb3c9ceca977d3950",
+      "captured_at": "2026-10-08T17:37:08.363238+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "f5af677161846298b094c7c3217ee2cb5773740ba7e2e3ba4c89e9ade742e838"
+    },
+    "owner": {
+      "id": 12222,
+      "kind": "player"
+    }
+  }
+]

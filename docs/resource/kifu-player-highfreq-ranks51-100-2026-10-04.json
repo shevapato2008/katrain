@@ -1,0 +1,626 @@
+{
+  "format": "kifu-player-highfreq-ranks51-100-readonly-prod-v1",
+  "generated_utc": "2026-10-04T09:37:24.969183+00:00",
+  "database": "katrain_prod_20260725",
+  "read_only": true,
+  "source": "live PROD REPEATABLE READ READ ONLY transaction",
+  "selection": "next 52 exact Han raw names after excluding old top50, existing17, and nine known HOLDs; rank labels 51-102 by fresh NULL-slot frequency",
+  "policy": "Research leads only; no FK approval or database writes. Every candidate requires per-slot SGF/date/opponent verification.",
+  "candidates": [
+    {
+      "rank": 51,
+      "raw": "谷口彻",
+      "prod_null_slots": 140,
+      "proposed_chinese_canonical": "谷口彻",
+      "prod_normalized_catalog_owners": [
+        156
+      ],
+      "identity_status": "VERIFIED_WIKIDATA_GO_ANCHOR",
+      "official_source_urls": [
+        "https://www.wikidata.org/wiki/Q25252676"
+      ],
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata Go-player identity anchor; verify SGF era/country before any FK decision."
+    },
+    {
+      "rank": 52,
+      "raw": "赵哲伦",
+      "prod_null_slots": 140,
+      "proposed_chinese_canonical": "赵哲伦",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "VERIFIED_WIKIDATA_GO_ANCHOR",
+      "official_source_urls": [
+        "https://www.wikidata.org/wiki/Q104726960"
+      ],
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata Go-player identity anchor; verify SGF era/country before any FK decision."
+    },
+    {
+      "rank": 53,
+      "raw": "沼馆沙辉哉",
+      "prod_null_slots": 139,
+      "proposed_chinese_canonical": "沼馆沙辉哉",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "VERIFIED_WIKIDATA_GO_ANCHOR",
+      "official_source_urls": [
+        "https://www.wikidata.org/wiki/Q11554629"
+      ],
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata Go-player identity anchor; verify SGF era/country before any FK decision."
+    },
+    {
+      "rank": 54,
+      "raw": "梅泽由香里",
+      "prod_null_slots": 138,
+      "proposed_chinese_canonical": "梅泽由香里",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "VERIFIED_WIKIDATA_GO_ANCHOR",
+      "official_source_urls": [
+        "https://www.wikidata.org/wiki/Q2599301"
+      ],
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata Go-player identity anchor; verify SGF era/country before any FK decision."
+    },
+    {
+      "rank": 55,
+      "raw": "冈田结美子",
+      "prod_null_slots": 127,
+      "proposed_chinese_canonical": "冈田结美子",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "VERIFIED_WIKIDATA_GO_ANCHOR",
+      "official_source_urls": [
+        "https://www.wikidata.org/wiki/Q8061124"
+      ],
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata Go-player identity anchor; verify SGF era/country before any FK decision."
+    },
+    {
+      "rank": 56,
+      "raw": "村松大树",
+      "prod_null_slots": 127,
+      "proposed_chinese_canonical": "村松大树",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "VERIFIED_WIKIDATA_GO_ANCHOR",
+      "official_source_urls": [
+        "https://www.wikidata.org/wiki/Q25252528"
+      ],
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata Go-player identity anchor; verify SGF era/country before any FK decision."
+    },
+    {
+      "rank": 57,
+      "raw": "陈嘉锐",
+      "prod_null_slots": 125,
+      "proposed_chinese_canonical": "陈嘉锐",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "VERIFIED_WIKIDATA_GO_ANCHOR",
+      "official_source_urls": [
+        "https://www.wikidata.org/wiki/Q9367031"
+      ],
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata Go-player identity anchor; verify SGF era/country before any FK decision."
+    },
+    {
+      "rank": 58,
+      "raw": "黄宰渊",
+      "prod_null_slots": 125,
+      "proposed_chinese_canonical": "黄宰渊",
+      "prod_normalized_catalog_owners": [
+        215
+      ],
+      "identity_status": "VERIFIED_WIKIDATA_GO_ANCHOR",
+      "official_source_urls": [
+        "https://www.wikidata.org/wiki/Q22975402"
+      ],
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata Go-player identity anchor; verify SGF era/country before any FK decision."
+    },
+    {
+      "rank": 59,
+      "raw": "石田笃司",
+      "prod_null_slots": 124,
+      "proposed_chinese_canonical": "石田笃司",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "VERIFIED_WIKIDATA_GO_ANCHOR",
+      "official_source_urls": [
+        "https://www.wikidata.org/wiki/Q25252691"
+      ],
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata Go-player identity anchor; verify SGF era/country before any FK decision."
+    },
+    {
+      "rank": 60,
+      "raw": "李相勋",
+      "prod_null_slots": 117,
+      "proposed_chinese_canonical": "李相勋",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "VERIFIED_WIKIDATA_GO_ANCHOR",
+      "official_source_urls": [
+        "https://www.wikidata.org/wiki/Q11266025"
+      ],
+      "homonym_era_collision_flag": "medium",
+      "research_note": "Wikidata Go-player identity anchor; verify SGF era/country before any FK decision."
+    },
+    {
+      "rank": 61,
+      "raw": "萧爱霖",
+      "prod_null_slots": 117,
+      "proposed_chinese_canonical": "萧爱霖",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 62,
+      "raw": "横塚力",
+      "prod_null_slots": 115,
+      "proposed_chinese_canonical": "横塚力",
+      "prod_normalized_catalog_owners": [
+        244
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 63,
+      "raw": "陈一纯",
+      "prod_null_slots": 115,
+      "proposed_chinese_canonical": "陈一纯",
+      "prod_normalized_catalog_owners": [
+        20
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 64,
+      "raw": "田中康湧",
+      "prod_null_slots": 113,
+      "proposed_chinese_canonical": "田中康湧",
+      "prod_normalized_catalog_owners": [
+        630
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 65,
+      "raw": "河灿锡",
+      "prod_null_slots": 112,
+      "proposed_chinese_canonical": "河灿锡",
+      "prod_normalized_catalog_owners": [
+        6644
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 66,
+      "raw": "青木绅一",
+      "prod_null_slots": 112,
+      "proposed_chinese_canonical": "青木绅一",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 67,
+      "raw": "韩晗",
+      "prod_null_slots": 110,
+      "proposed_chinese_canonical": "韩晗",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 68,
+      "raw": "桥本雄二郎",
+      "prod_null_slots": 104,
+      "proposed_chinese_canonical": "桥本雄二郎",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 69,
+      "raw": "权孝珍",
+      "prod_null_slots": 102,
+      "proposed_chinese_canonical": "权孝珍",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 70,
+      "raw": "长谷川直",
+      "prod_null_slots": 102,
+      "proposed_chinese_canonical": "长谷川直",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 71,
+      "raw": "宫崎志摩子",
+      "prod_null_slots": 96,
+      "proposed_chinese_canonical": "宫崎志摩子",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 72,
+      "raw": "高梨圣健",
+      "prod_null_slots": 93,
+      "proposed_chinese_canonical": "高梨圣健",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 73,
+      "raw": "有村比吕司",
+      "prod_null_slots": 89,
+      "proposed_chinese_canonical": "有村比吕司",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 74,
+      "raw": "王硕",
+      "prod_null_slots": 88,
+      "proposed_chinese_canonical": "王硕",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 75,
+      "raw": "韩钟振",
+      "prod_null_slots": 88,
+      "proposed_chinese_canonical": "韩钟振",
+      "prod_normalized_catalog_owners": [
+        166
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 76,
+      "raw": "村岛谊纪",
+      "prod_null_slots": 83,
+      "proposed_chinese_canonical": "村岛谊纪",
+      "prod_normalized_catalog_owners": [
+        6606
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 77,
+      "raw": "松冈秀树",
+      "prod_null_slots": 83,
+      "proposed_chinese_canonical": "松冈秀树",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 78,
+      "raw": "酒井真树",
+      "prod_null_slots": 81,
+      "proposed_chinese_canonical": "酒井真树",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 79,
+      "raw": "吕立言",
+      "prod_null_slots": 80,
+      "proposed_chinese_canonical": "吕立言",
+      "prod_normalized_catalog_owners": [
+        176
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 80,
+      "raw": "朴只玹",
+      "prod_null_slots": 80,
+      "proposed_chinese_canonical": "朴只玹",
+      "prod_normalized_catalog_owners": [
+        766
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 81,
+      "raw": "伊藤优诗",
+      "prod_null_slots": 79,
+      "proposed_chinese_canonical": "伊藤优诗",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 82,
+      "raw": "朴升哲",
+      "prod_null_slots": 79,
+      "proposed_chinese_canonical": "朴升哲",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 83,
+      "raw": "下岛阳平",
+      "prod_null_slots": 78,
+      "proposed_chinese_canonical": "下岛阳平",
+      "prod_normalized_catalog_owners": [
+        517
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 84,
+      "raw": "萧钰洋",
+      "prod_null_slots": 76,
+      "proposed_chinese_canonical": "萧钰洋",
+      "prod_normalized_catalog_owners": [
+        764
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 85,
+      "raw": "安倍吉辉",
+      "prod_null_slots": 74,
+      "proposed_chinese_canonical": "安倍吉辉",
+      "prod_normalized_catalog_owners": [
+        6593
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 86,
+      "raw": "柳泽理志",
+      "prod_null_slots": 74,
+      "proposed_chinese_canonical": "柳泽理志",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 87,
+      "raw": "莊承濬",
+      "prod_null_slots": 74,
+      "proposed_chinese_canonical": "莊承濬",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 88,
+      "raw": "久岛国夫",
+      "prod_null_slots": 73,
+      "proposed_chinese_canonical": "久岛国夫",
+      "prod_normalized_catalog_owners": [
+        6669
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 89,
+      "raw": "铃木嘉伦",
+      "prod_null_slots": 73,
+      "proposed_chinese_canonical": "铃木嘉伦",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 90,
+      "raw": "桑原树",
+      "prod_null_slots": 72,
+      "proposed_chinese_canonical": "桑原树",
+      "prod_normalized_catalog_owners": [
+        99
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 91,
+      "raw": "黄孟正",
+      "prod_null_slots": 72,
+      "proposed_chinese_canonical": "黄孟正",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 92,
+      "raw": "茂吕有纱",
+      "prod_null_slots": 71,
+      "proposed_chinese_canonical": "茂吕有纱",
+      "prod_normalized_catalog_owners": [
+        142
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 93,
+      "raw": "金昇珍",
+      "prod_null_slots": 71,
+      "proposed_chinese_canonical": "金昇珍",
+      "prod_normalized_catalog_owners": [
+        231
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 94,
+      "raw": "白大铉",
+      "prod_null_slots": 70,
+      "proposed_chinese_canonical": "白大铉",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 95,
+      "raw": "郑铭瑝",
+      "prod_null_slots": 70,
+      "proposed_chinese_canonical": "郑铭瑝",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 96,
+      "raw": "金湊笌",
+      "prod_null_slots": 70,
+      "proposed_chinese_canonical": "金湊笌",
+      "prod_normalized_catalog_owners": [
+        137
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 97,
+      "raw": "元齐焄",
+      "prod_null_slots": 69,
+      "proposed_chinese_canonical": "元齐焄",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 98,
+      "raw": "朴升贤",
+      "prod_null_slots": 69,
+      "proposed_chinese_canonical": "朴升贤",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 99,
+      "raw": "田中康涌",
+      "prod_null_slots": 67,
+      "proposed_chinese_canonical": "田中康涌",
+      "prod_normalized_catalog_owners": [],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    },
+    {
+      "rank": 100,
+      "raw": "藤井浩贵",
+      "prod_null_slots": 65,
+      "proposed_chinese_canonical": "藤井浩贵",
+      "prod_normalized_catalog_owners": [
+        158
+      ],
+      "identity_status": "UNVERIFIED_RESEARCH_REQUIRED",
+      "official_source_urls": [],
+      "homonym_era_collision_flag": "high",
+      "research_note": "No sufficient official Go identity anchor found in this pass."
+    }
+  ],
+  "candidate_total_null_slots": 4711,
+  "excluded_sets": [
+    "kifu-player-next-highfreq-50-readonly-prod-2026-10-04.json",
+    "existing17 prod per_raw_null_slots",
+    "known HOLDs: 张涛、小松英树、林彦丞、韩升周、奥田彩、鹤田和志、姚智腾、辻笃仁、久保胜昭",
+    "current batch 周鹤洋、赵善津、工藤纪夫"
+  ]
+}

@@ -85,6 +85,9 @@ class _Led:
     def start(self):
         self.started = True
 
+    def is_board_connected(self):
+        return self.started
+
 
 class _LedBusy(_Led):
     def start(self):
@@ -627,8 +630,9 @@ async def test_baipu_collect_startup_wiring(server_module, monkeypatch, tmp_path
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("has_generation", [True, False])
+@pytest.mark.parametrize("auto_exposure", ["off", "hardware"])
 async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
-    server_module, monkeypatch, tmp_path, has_generation
+    server_module, monkeypatch, tmp_path, has_generation, auto_exposure
 ):
     server = server_module
     _CameraUnavailable.instances.clear()
@@ -640,7 +644,8 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
         server.settings,
         "_vision_config",
         SimpleNamespace(
-            enabled=True, camera_device="/dev/video73", camera_width=1280, camera_height=720, backend="fake"
+            enabled=True, camera_device="/dev/video73", camera_width=1280, camera_height=720, backend="fake",
+            auto_exposure=auto_exposure,
         ),
         raising=False,
     )
@@ -697,7 +702,7 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
 
     assert FakeHardwareVisionStore.instances[0].load_calls == [("/dev/video73", 1280, 720)]
     config = _CameraUnavailable.instances[0].config
-    assert config.lock_exposure is has_generation
+    assert config.lock_exposure is (has_generation and auto_exposure != "hardware")
     assert config.exposure is None
 
     await _cancel_startup_tasks(app)

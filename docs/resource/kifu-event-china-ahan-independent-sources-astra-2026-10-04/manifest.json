@@ -1,0 +1,93 @@
+{
+  "format": "independent-source-capture-v1",
+  "sources": [
+    {
+      "key": "china-identity-and-japan-boundary",
+      "url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c26786492/content.html",
+      "final_url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c26786492/content.html",
+      "retrieved_utc": "2026-10-04T11:00:19.686649+00:00",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-identity-and-japan-boundary.html",
+      "file_sha256": "b35ac5ffee9cf5c6fcdd44f488b2c3650141a017a72f19e2c238920640c6e464",
+      "bytes": 15182,
+      "text_path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-identity-and-japan-boundary.txt",
+      "text_sha256": "7aa097c5b4b46a0876ab92ac1f266418f109b5639e771d4f65cb91a02b6465ef"
+    },
+    {
+      "key": "china-qualifying-stages",
+      "url": "https://www.sport.gov.cn/n20001280/n20745751/n20767274/c22077607/content.html",
+      "final_url": "https://www.sport.gov.cn/n20001280/n20745751/n20767274/c22077607/content.html",
+      "retrieved_utc": "2026-10-04T11:00:19.684865+00:00",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-qualifying-stages.html",
+      "file_sha256": "3e79412d7ac95d165983cc7f1147381e2bb8c811411027c535d1218c5f98a05e",
+      "bytes": 14555,
+      "text_path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-qualifying-stages.txt",
+      "text_sha256": "bc200eb718667a4f6d149aca2860facfa8050dc5d622f10407354f1228a12e20"
+    },
+    {
+      "key": "china-2017-sina-organizer-rules",
+      "url": "https://sports.sina.com.cn/go/2017-03-24/doc-ifycstww0946531.shtml",
+      "final_url": "https://sports.sina.com.cn/go/2017-03-24/doc-ifycstww0946531.shtml",
+      "retrieved_utc": "2026-10-04T11:00:19.684725+00:00",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-2017-sina-organizer-rules.html",
+      "file_sha256": "d0b9ed00f555831bf29c8fec7254d29b17fc8bd6af77011a29a62a6ed14f230f",
+      "bytes": 112007,
+      "text_path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-2017-sina-organizer-rules.txt",
+      "text_sha256": "473e586c1f7c46719dfea9681b3c7b94635ebf6f4563a33e198a758c76323873"
+    },
+    {
+      "key": "china-2025-final",
+      "url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c29066012/content.html",
+      "final_url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c29066012/content.html",
+      "retrieved_utc": "2026-10-04T11:00:19.741862+00:00",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-2025-final.html",
+      "file_sha256": "47ef220f01c3f2497b75ab8f040b3059f9f6f866c3ad9f901b986eef70230071",
+      "bytes": 14360,
+      "text_path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-2025-final.txt",
+      "text_sha256": "db12de60ce5d2a5be260f5b13dc0c3c519c7bd873a21d8919066094c20dcce58"
+    },
+    {
+      "key": "china-2022-final",
+      "url": "https://ent.people.com.cn/n1/2022/1217/c1012-32588804.html",
+      "error": "HTTPSConnectionPool(host='ent.people.com.cn', port=443): Max retries exceeded with url: /n1/2022/1217/c1012-32588804.html (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'ent.people.com.cn'. (_ssl.c:1032)\")))",
+      "observation_path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-2022-final-observation.json",
+      "observation_sha256": "c588a69e5ee4d768a49eeb6896309b88846b908207f108f9630c80c77fbd35e6",
+      "usable_via_rendered_web_evidence": true
+    },
+    {
+      "key": "china-sixth-2004-contemporary",
+      "url": "https://sports.sina.com.cn/o/2004-11-01/11061226075.shtml",
+      "final_url": "https://sports.sina.com.cn/o/2004-11-01/11061226075.shtml",
+      "retrieved_utc": "2026-10-04T11:00:19.659355+00:00",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-sixth-2004-contemporary.html",
+      "file_sha256": "7af72504e6f08f99b75fa235c6ffce6bfbe21b9885f5a600a8b32d03c6d3b6af",
+      "bytes": 73106,
+      "text_path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/china-sixth-2004-contemporary.txt",
+      "text_sha256": "25a22cb0b1c7922bb4ef2fab3d89342616c85f8a773eac5b42e777a1687004e0"
+    },
+    {
+      "key": "japan-official-history",
+      "url": "https://www.nihonkiin.or.jp/match/kiriyama/",
+      "final_url": "https://www.nihonkiin.or.jp/match/kiriyama/",
+      "retrieved_utc": "2026-10-04T11:00:21.436618+00:00",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/japan-official-history.html",
+      "file_sha256": "0d96b0f0ed236915edbd0a525ddc0f776eb8bfdefbf76ff95154a0698568bde1",
+      "bytes": 136,
+      "text_path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/japan-official-history.txt",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usable_body": false,
+      "retrieval_limit": "HTTP 200 returned a 136-byte JavaScript/challenge body with empty rendered text. Not used as archived tournament evidence; Chinese official association reporting independently establishes the Japan/China distinction."
+    },
+    {
+      "key": "secondary-chronology",
+      "url": "https://zh.wikipedia.org/wiki/%E9%98%BF%E5%90%AB%C2%B7%E6%A1%90%E5%B1%B1%E6%9D%AF",
+      "observation_path": "docs/resource/kifu-event-china-ahan-independent-sources-astra-2026-10-04/secondary-chronology-observation.json",
+      "observation_sha256": "fd49de85b4f50cb8cf73566505e7e3e9ccba097c71f167428095765a9d2d8a54"
+    }
+  ]
+}

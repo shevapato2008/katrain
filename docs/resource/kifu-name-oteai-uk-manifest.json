@@ -1,0 +1,387 @@
+{
+  "status": "pending_review",
+  "purpose": "Ownerless research obligations; no negative closure or display name approved",
+  "scope_id": "oteai-uk-public-2026-10-02",
+  "scope_version": "1",
+  "lang": "ua",
+  "source_lang": "ja",
+  "registry_sha256": "e2ed3cafa9b6f32d8ba30c78aecdf9667801df3cf34745227e5da588e98dd58e",
+  "scope_boundary": "Four named UFGO pages, both pages of forum topic 824, nine ukwiki API searches, and Q4335071 exact uk entity fields; UFGO native-search results are retained as a limitation.",
+  "retained_limitations": [
+    "Unindexed forum posts and offline publications are outside this scope",
+    "Other Ukrainian Go communities are outside this scope",
+    "UFGO native site-search responses could not be parsed and are not claimed complete; pending exact queries: Oteai | Ōteai | 大手合 | Отеай | Оотэаи | Отэай | підвищення рангу японських професійних гравців го | просування дану професійне го Японія | турнір підвищення рангу Японія го"
+  ],
+  "required_check_ids": [
+    "ufgo-pro-go-1",
+    "ufgo-pro-go-2",
+    "ufgo-pro-go-3",
+    "ufgo-go-literature",
+    "forum-824-page-1",
+    "forum-824-page-2",
+    "ukwiki-search-1",
+    "ukwiki-search-2",
+    "ukwiki-search-3",
+    "ukwiki-search-4",
+    "ukwiki-search-5",
+    "ukwiki-search-6",
+    "ukwiki-search-7",
+    "ukwiki-search-8",
+    "ukwiki-search-9",
+    "wikidata-q4335071-uk"
+  ],
+  "required_checks": [
+    {
+      "check_id": "ufgo-pro-go-1",
+      "source_id": "ufgo",
+      "method": "named_page",
+      "query": "Oteai and Japanese professional promotion event",
+      "url": "https://ufgo.org/pro-go-1/",
+      "searched_forms": [
+        "Oteai",
+        "Ōteai",
+        "大手合",
+        "Отеай",
+        "Оотэаи",
+        "Отэай",
+        "підвищення рангу японських професійних гравців го",
+        "просування дану професійне го Японія",
+        "турнір підвищення рангу Японія го"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ufgo-pro-go-1",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Review complete named-page body and visible links"
+    },
+    {
+      "check_id": "ufgo-pro-go-2",
+      "source_id": "ufgo",
+      "method": "named_page",
+      "query": "Oteai and Japanese professional promotion event",
+      "url": "https://ufgo.org/pro-go-2/",
+      "searched_forms": [
+        "Oteai",
+        "Ōteai",
+        "大手合",
+        "Отеай",
+        "Оотэаи",
+        "Отэай",
+        "підвищення рангу японських професійних гравців го",
+        "просування дану професійне го Японія",
+        "турнір підвищення рангу Японія го"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ufgo-pro-go-2",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Review complete named-page body and visible links"
+    },
+    {
+      "check_id": "ufgo-pro-go-3",
+      "source_id": "ufgo",
+      "method": "named_page",
+      "query": "Oteai and Japanese professional promotion event",
+      "url": "https://ufgo.org/pro-go-3/",
+      "searched_forms": [
+        "Oteai",
+        "Ōteai",
+        "大手合",
+        "Отеай",
+        "Оотэаи",
+        "Отэай",
+        "підвищення рангу японських професійних гравців го",
+        "просування дану професійне го Японія",
+        "турнір підвищення рангу Японія го"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ufgo-pro-go-3",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Review complete named-page body and visible links"
+    },
+    {
+      "check_id": "ufgo-go-literature",
+      "source_id": "ufgo",
+      "method": "named_page",
+      "query": "Oteai and Japanese professional promotion event",
+      "url": "https://ufgo.org/go-literature/",
+      "searched_forms": [
+        "Oteai",
+        "Ōteai",
+        "大手合",
+        "Отеай",
+        "Оотэаи",
+        "Отэай",
+        "підвищення рангу японських професійних гравців го",
+        "просування дану професійне го Японія",
+        "турнір підвищення рангу Японія го"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ufgo-go-literature",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Review complete named-page body and visible links"
+    },
+    {
+      "check_id": "forum-824-page-1",
+      "source_id": "ufgo",
+      "method": "forum_topic",
+      "query": "Oteai forum topic 824",
+      "url": "https://forum.ufgo.org/viewtopic.php?t=824",
+      "searched_forms": [
+        "Oteai",
+        "Ōteai",
+        "大手合",
+        "Отеай",
+        "Оотэаи",
+        "Отэай",
+        "підвищення рангу японських професійних гравців го",
+        "просування дану професійне го Японія",
+        "турнір підвищення рангу Японія го"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "forum-824",
+      "page_index": 1,
+      "page_count": 2,
+      "next_page_url": "https://forum.ufgo.org/viewtopic.php?t=824&start=10",
+      "pagination_exhausted": false,
+      "pagination_basis": "Topic navigation links to page 2"
+    },
+    {
+      "check_id": "forum-824-page-2",
+      "source_id": "ufgo",
+      "method": "forum_topic",
+      "query": "Oteai forum topic 824",
+      "url": "https://forum.ufgo.org/viewtopic.php?t=824&start=10",
+      "searched_forms": [
+        "Oteai",
+        "Ōteai",
+        "大手合",
+        "Отеай",
+        "Оотэаи",
+        "Отэай",
+        "підвищення рангу японських професійних гравців го",
+        "просування дану професійне го Японія",
+        "турнір підвищення рангу Японія го"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "forum-824",
+      "page_index": 2,
+      "page_count": 2,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Topic page 2 has no next link"
+    },
+    {
+      "check_id": "ukwiki-search-1",
+      "source_id": "wikipedia-uk",
+      "method": "mediawiki_search",
+      "query": "Oteai",
+      "url": "https://uk.wikipedia.org/w/api.php?action=query&list=search&srsearch=Oteai&format=json",
+      "searched_forms": [
+        "Oteai"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ukwiki-search-1",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Verify API response has no continuation within declared search"
+    },
+    {
+      "check_id": "ukwiki-search-2",
+      "source_id": "wikipedia-uk",
+      "method": "mediawiki_search",
+      "query": "Ōteai",
+      "url": "https://uk.wikipedia.org/w/api.php?action=query&list=search&srsearch=%C5%8Cteai&format=json",
+      "searched_forms": [
+        "Ōteai"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ukwiki-search-2",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Verify API response has no continuation within declared search"
+    },
+    {
+      "check_id": "ukwiki-search-3",
+      "source_id": "wikipedia-uk",
+      "method": "mediawiki_search",
+      "query": "大手合",
+      "url": "https://uk.wikipedia.org/w/api.php?action=query&list=search&srsearch=%E5%A4%A7%E6%89%8B%E5%90%88&format=json",
+      "searched_forms": [
+        "大手合"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ukwiki-search-3",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Verify API response has no continuation within declared search"
+    },
+    {
+      "check_id": "ukwiki-search-4",
+      "source_id": "wikipedia-uk",
+      "method": "mediawiki_search",
+      "query": "Отеай",
+      "url": "https://uk.wikipedia.org/w/api.php?action=query&list=search&srsearch=%D0%9E%D1%82%D0%B5%D0%B0%D0%B9&format=json",
+      "searched_forms": [
+        "Отеай"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ukwiki-search-4",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Verify API response has no continuation within declared search"
+    },
+    {
+      "check_id": "ukwiki-search-5",
+      "source_id": "wikipedia-uk",
+      "method": "mediawiki_search",
+      "query": "Оотэаи",
+      "url": "https://uk.wikipedia.org/w/api.php?action=query&list=search&srsearch=%D0%9E%D0%BE%D1%82%D1%8D%D0%B0%D0%B8&format=json",
+      "searched_forms": [
+        "Оотэаи"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ukwiki-search-5",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Verify API response has no continuation within declared search"
+    },
+    {
+      "check_id": "ukwiki-search-6",
+      "source_id": "wikipedia-uk",
+      "method": "mediawiki_search",
+      "query": "Отэай",
+      "url": "https://uk.wikipedia.org/w/api.php?action=query&list=search&srsearch=%D0%9E%D1%82%D1%8D%D0%B0%D0%B9&format=json",
+      "searched_forms": [
+        "Отэай"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ukwiki-search-6",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Verify API response has no continuation within declared search"
+    },
+    {
+      "check_id": "ukwiki-search-7",
+      "source_id": "wikipedia-uk",
+      "method": "mediawiki_search",
+      "query": "підвищення рангу японських професійних гравців го",
+      "url": "https://uk.wikipedia.org/w/api.php?action=query&list=search&srsearch=%D0%BF%D1%96%D0%B4%D0%B2%D0%B8%D1%89%D0%B5%D0%BD%D0%BD%D1%8F+%D1%80%D0%B0%D0%BD%D0%B3%D1%83+%D1%8F%D0%BF%D0%BE%D0%BD%D1%81%D1%8C%D0%BA%D0%B8%D1%85+%D0%BF%D1%80%D0%BE%D1%84%D0%B5%D1%81%D1%96%D0%B9%D0%BD%D0%B8%D1%85+%D0%B3%D1%80%D0%B0%D0%B2%D1%86%D1%96%D0%B2+%D0%B3%D0%BE&format=json",
+      "searched_forms": [
+        "підвищення рангу японських професійних гравців го"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ukwiki-search-7",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Verify API response has no continuation within declared search"
+    },
+    {
+      "check_id": "ukwiki-search-8",
+      "source_id": "wikipedia-uk",
+      "method": "mediawiki_search",
+      "query": "просування дану професійне го Японія",
+      "url": "https://uk.wikipedia.org/w/api.php?action=query&list=search&srsearch=%D0%BF%D1%80%D0%BE%D1%81%D1%83%D0%B2%D0%B0%D0%BD%D0%BD%D1%8F+%D0%B4%D0%B0%D0%BD%D1%83+%D0%BF%D1%80%D0%BE%D1%84%D0%B5%D1%81%D1%96%D0%B9%D0%BD%D0%B5+%D0%B3%D0%BE+%D0%AF%D0%BF%D0%BE%D0%BD%D1%96%D1%8F&format=json",
+      "searched_forms": [
+        "просування дану професійне го Японія"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ukwiki-search-8",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Verify API response has no continuation within declared search"
+    },
+    {
+      "check_id": "ukwiki-search-9",
+      "source_id": "wikipedia-uk",
+      "method": "mediawiki_search",
+      "query": "турнір підвищення рангу Японія го",
+      "url": "https://uk.wikipedia.org/w/api.php?action=query&list=search&srsearch=%D1%82%D1%83%D1%80%D0%BD%D1%96%D1%80+%D0%BF%D1%96%D0%B4%D0%B2%D0%B8%D1%89%D0%B5%D0%BD%D0%BD%D1%8F+%D1%80%D0%B0%D0%BD%D0%B3%D1%83+%D0%AF%D0%BF%D0%BE%D0%BD%D1%96%D1%8F+%D0%B3%D0%BE&format=json",
+      "searched_forms": [
+        "турнір підвищення рангу Японія го"
+      ],
+      "entity_field_scope": null,
+      "scan_id": "ukwiki-search-9",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Verify API response has no continuation within declared search"
+    },
+    {
+      "check_id": "wikidata-q4335071-uk",
+      "source_id": "wikidata",
+      "method": "entity_api",
+      "query": "Q4335071 exact uk labels aliases ukwiki",
+      "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q4335071&props=labels%7Caliases%7Csitelinks&languages=uk&format=json",
+      "searched_forms": [
+        "Oteai",
+        "Ōteai",
+        "大手合",
+        "Отеай",
+        "Оотэаи",
+        "Отэай"
+      ],
+      "entity_field_scope": {
+        "entity_id": "Q4335071",
+        "requested_lang": "uk",
+        "fields": [
+          "labels",
+          "aliases",
+          "sitelinks"
+        ],
+        "sitelink_site": "ukwiki"
+      },
+      "scan_id": "wikidata-q4335071-uk",
+      "page_index": 1,
+      "page_count": 1,
+      "next_page_url": "",
+      "pagination_exhausted": true,
+      "pagination_basis": "Single exact entity response has no pagination"
+    }
+  ],
+  "known_leads": [
+    {
+      "check_id": "forum-824-page-1",
+      "candidate_name": "Отеаи",
+      "url": "https://forum.ufgo.org/viewtopic.php?t=824"
+    },
+    {
+      "check_id": "forum-824-page-1",
+      "candidate_name": "Отэаи",
+      "url": "https://forum.ufgo.org/viewtopic.php?t=824"
+    },
+    {
+      "check_id": "forum-824-page-1",
+      "candidate_name": "Oteai",
+      "url": "https://forum.ufgo.org/viewtopic.php?t=824"
+    }
+  ],
+  "scope_template_sha256": "489b505914c248f60fc956c54ce0d5ed2665bd69c6e94dbd889117efb70d022b"
+}

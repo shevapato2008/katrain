@@ -1,0 +1,26 @@
+{
+  "bundle_sha256": "3c5cc62fbb9034a712be60c67b5545afdc54b158db5e8df8e1bfe3843384525d",
+  "code_sha256": {
+    "identity.py": "932d36940b2ddd3a90c4cbfc38802daf4ecb6255d1678fe1a8f3d2e3d457b127",
+    "name_batch.py": "cd91d45b1671ea10924661880094980e21e6d170efba03c83036ef5c03b94a00",
+    "name_candidates.py": "13530e667a8a73e0ee3929aa30987131f00f852daf2c50301aff94e5246a3760",
+    "name_evidence.py": "7f841117402635a7cfd3044c177f7591315f7175f917095b2adadb89ffdf1a42",
+    "name_inventory.py": "157a9393a3be27ddc2e4047135492ee18797c74db6a7576cbc736aa7cc47f5b6",
+    "name_orthographic.py": "d210965d365b766498d520df50294ee5622b827d07324813f6c4f79adff7af91"
+  },
+  "image_id": "sha256:62283df0e9c81b3367e7865acaa8015a9d4931be9f162b6ec969e80c9073d845",
+  "offline_native_validation": true,
+  "validation": {
+    "approved": 20,
+    "candidate_count": 20,
+    "errors": [],
+    "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+    "member_count": 20,
+    "missing": 0,
+    "pending": 0,
+    "ready": true,
+    "rejected": 0,
+    "write_errors": [],
+    "write_ready": true
+  }
+}

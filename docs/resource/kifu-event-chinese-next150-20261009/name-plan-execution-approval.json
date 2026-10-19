@@ -1,0 +1,21 @@
+{
+  "status": "approved_name_bundle_execution",
+  "allow_apply": true,
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T22:57:54.066599+00:00",
+  "review_conclusion": "Independent helper code review PASS; both exact native dry runs ready for 750 NULL name cells/174 unchanged physical albums, 150 owner afterimages fixed, hidden250 unchanged. Authorize only name/evidence inserts with locked scope guards and exact receipt recovery. No album/SGF/FK/rank/visibility writes.",
+  "request_canonical_sha256": "17c404d0ffd25fabc79cb665526a636235c1e1b06a12c0762ce491e4f3c89924",
+  "environments": {
+    "TEST": {
+      "image_id": "sha256:82124209ad6425190d587fec10b06eb7cab8b80067cd345cc523bd9a760523c4",
+      "approved_artifact_canonical_sha256": "35150ca8b48447bca1b5e297d7fed2e9a1e422ddfd4be465bf1415921f082f36",
+      "bundle_canonical_sha256": "adef59d215f6579b2a634d6dac999473a3fe41796c3ac48f764fce72a3539e89"
+    },
+    "PROD": {
+      "image_id": "sha256:6eb7597b5b478c082fe91405c0223531a46380bf53b9d7dc33e8e74cfb642b02",
+      "approved_artifact_canonical_sha256": "7e97dd71f5e02c68aba59843be5b529c1be6d75de787bb3de97897c2962d44d8",
+      "bundle_canonical_sha256": "d5d943b0d0c52bb069fb49a6d0501b63e252801c5d2c9252e8fdb40182eb8052"
+    }
+  }
+}

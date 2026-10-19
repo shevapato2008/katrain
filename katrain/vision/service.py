@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections import deque
 from typing import Any, Callable
 
 import numpy as np
 
 from katrain.vision.config_service import VisionServiceConfig
-from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
+from katrain.vision.ipc import CommandType, ConfirmedMove, LocalWindowObservation, WorkerCommand, WorkerStatus
 from katrain.vision.sync import game_state_stones_to_board
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,13 @@ class VisionService:
         self._latest_status: WorkerStatus = WorkerStatus()
         self._pending_events: deque = deque()
         self._pending_moves: deque = deque()
+        self._pending_local_observations: deque = deque(maxlen=1)
+        self._local_confirmation_mode = False
+        self._local_confirmation_session_id: str | None = None
+        self._local_confirmation_game_id: str | None = None
+        self._local_mode_generation = 0
+        self._local_window_token: str | None = None
+        self._local_window_deadline = 0.0
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -56,6 +64,9 @@ class VisionService:
         if self._worker:
             self._worker.stop()
             self._worker = None
+        self._local_confirmation_mode = False
+        self._local_window_token = None
+        self._pending_local_observations.clear()
         logger.info("VisionService stopped")
 
     # -- status --------------------------------------------------------------
@@ -150,8 +161,11 @@ class VisionService:
         M1): a stale camera confirmation for whatever was bound previously (or
         never unbound, e.g. a server-restart edge case) must never be injected
         into the newly-bound session's game."""
+        if self._local_confirmation_mode and session_id == self._bound_session_id:
+            return
         self._bound_session_id = session_id
         self._pending_moves.clear()
+        self._pending_local_observations.clear()
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.BIND))
 
@@ -161,6 +175,11 @@ class VisionService:
         next."""
         self._bound_session_id = None
         self._pending_moves.clear()
+        self._pending_local_observations.clear()
+        self._local_confirmation_mode = False
+        self._local_confirmation_session_id = None
+        self._local_confirmation_game_id = None
+        self._local_window_token = None
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.UNBIND))
 
@@ -173,6 +192,117 @@ class VisionService:
         """Pause/resume recognition (hint display, try mode). Single-owner aggregate bool."""
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.SET_PAUSED, data={"paused": paused}))
+
+    @property
+    def supports_local_confirmation(self) -> bool:
+        return getattr(self._worker, "supports_local_confirmation", False) is True
+
+    @property
+    def local_confirmation_frames(self) -> int:
+        return max(1, int(self._config.move_confirm_frames))
+
+    @property
+    def local_confirmation_ready(self) -> bool:
+        if not self.supports_local_confirmation:
+            return False
+        self.refresh_status()
+        return bool(
+            self.supports_local_confirmation
+            and self._local_confirmation_mode
+            and self._latest_status.local_confirmation_session_id == self._local_confirmation_session_id
+            and self._latest_status.local_confirmation_game_id == self._local_confirmation_game_id
+            and self._latest_status.local_confirmation_mode_generation == self._local_mode_generation
+            and self._latest_status.local_confirmation_ready
+        )
+
+    @property
+    def local_confirmation_bootstrap_state(self) -> str:
+        self.refresh_status()
+        if self._latest_status.local_confirmation_mode_generation != self._local_mode_generation:
+            return "bootstrap" if self._local_confirmation_mode else "idle"
+        return self._latest_status.local_confirmation_bootstrap_state
+
+    def set_local_confirmation_mode(
+        self, enabled: bool, *, session_id: str | None = None, game_id: str | None = None
+    ) -> bool:
+        if not self.supports_local_confirmation:
+            return False
+        if (enabled, session_id, game_id) == (
+            self._local_confirmation_mode,
+            self._local_confirmation_session_id,
+            self._local_confirmation_game_id,
+        ):
+            return True
+        self._local_mode_generation += 1
+        self._local_confirmation_mode = enabled
+        self._local_confirmation_session_id = session_id
+        self._local_confirmation_game_id = game_id
+        self._local_window_token = None
+        self._pending_local_observations.clear()
+        self._pending_moves.clear()
+        self._worker.send_command(
+            WorkerCommand(
+                action=CommandType.SET_LOCAL_CONFIRMATION_MODE,
+                data={
+                    "enabled": enabled,
+                    "session_id": session_id,
+                    "game_id": game_id,
+                    "mode_generation": self._local_mode_generation,
+                },
+            )
+        )
+        return True
+
+    def open_local_window(
+        self,
+        token: str,
+        expected_board: np.ndarray,
+        *,
+        expected_node_id: int | None,
+        expected_color: int,
+        deadline_monotonic: float,
+    ) -> bool:
+        opened = time.monotonic()
+        if not self.local_confirmation_ready or deadline_monotonic <= opened:
+            return False
+        self._local_window_token = token
+        self._local_window_deadline = deadline_monotonic
+        self._pending_local_observations.clear()
+        self._worker.send_command(
+            WorkerCommand(
+                action=CommandType.OPEN_LOCAL_WINDOW,
+                data={
+                    "token": token,
+                    "expected_board": expected_board.tolist(),
+                    "expected_node_id": expected_node_id,
+                    "expected_color": expected_color,
+                    "opened_monotonic": opened,
+                    "deadline_monotonic": deadline_monotonic,
+                },
+            )
+        )
+        return True
+
+    def cancel_local_window(self, token: str) -> bool:
+        if not self.supports_local_confirmation or token != self._local_window_token:
+            return False
+        self._local_window_token = None
+        self._pending_local_observations.clear()
+        self._worker.send_command(WorkerCommand(action=CommandType.CANCEL_LOCAL_WINDOW, data={"token": token}))
+        return True
+
+    def complete_local_window(self, token: str, accepted_board: np.ndarray, *, expected_node_id: int | None) -> bool:
+        if not self.supports_local_confirmation or token != self._local_window_token:
+            return False
+        self._local_window_token = None
+        self._pending_local_observations.clear()
+        self._worker.send_command(
+            WorkerCommand(
+                action=CommandType.COMPLETE_LOCAL_WINDOW,
+                data={"token": token, "accepted_board": accepted_board.tolist(), "expected_node_id": expected_node_id},
+            )
+        )
+        return True
 
     def set_move_armed(self, armed: bool) -> None:
         """Arm/disarm monitor-mode move detection (frontend arms only in the 'ready' phase)."""
@@ -267,8 +397,16 @@ class VisionService:
             evt = self._worker.get_event()
             if evt is None:
                 break
-            if isinstance(evt, ConfirmedMove):
-                self._pending_moves.append(evt)
+            if isinstance(evt, LocalWindowObservation):
+                if (
+                    self._local_confirmation_mode
+                    and evt.token == self._local_window_token
+                    and evt.session_id == self._local_confirmation_session_id
+                ):
+                    self._pending_local_observations.append(evt)
+            elif isinstance(evt, ConfirmedMove):
+                if not self._local_confirmation_mode:
+                    self._pending_moves.append(evt)
             else:
                 self._pending_events.append(evt)
 
@@ -285,6 +423,17 @@ class VisionService:
         self._drain_worker()
         if self._pending_moves:
             return self._pending_moves.popleft()
+        return None
+
+    def get_local_window_observation(self, token: str | None = None) -> LocalWindowObservation | None:
+        self._drain_worker()
+        if token is not None and token != self._local_window_token:
+            return None
+        if time.monotonic() >= self._local_window_deadline:
+            self._pending_local_observations.clear()
+            return None
+        if self._pending_local_observations:
+            return self._pending_local_observations.pop()
         return None
 
     @property

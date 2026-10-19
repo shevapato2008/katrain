@@ -1,0 +1,11 @@
+{
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T17:43:25.732289+00:00",
+  "hashes": {
+    "TEST": "3a1674c16863a0e95dd7782156b0b05cd757afdd429e5b01519d649324bffec0",
+    "PROD": "f3dd90706ac81fa93cbb24624765ffc3a4420a07fc68fffc8b56b60a879e833b"
+  },
+  "scope": "20 distinct owners; TW NULL only; same-owner qualified CN source; 80 old names and1185 SGF/FK slots preserved; productgate PASS pinned7ba importers; actualread all20 finalmembers bothenv",
+  "result": "approved_for_bounded_execution"
+}

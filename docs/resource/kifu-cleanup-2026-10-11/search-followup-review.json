@@ -1,0 +1,28 @@
+{
+  "files_sha256": {
+    "katrain/web/api/v1/endpoints/kifu.py": "0a47df6b6ef2ce2c9c03b3a0ff5fdcdf54d3f055780f8042bcdb5f761255cc42",
+    "tests/web_ui/test_kifu_name_first_pass.py": "d08813bc8d0a6fbd7097323ce2741742ea3adbbf5eb71568701b4c8e9717b41a"
+  },
+  "findings": [],
+  "review_basis": [
+    "The added branch requires exactly one qualified canonical player plus qualified raw-player matches, and excludes canonical event IDs, raw event name IDs and reviewed selected-event matches before narrowing the query.",
+    "It returns the union of canonical black/white FK matches and the existing strict raw-player scope predicate. The scope predicate checks its complete signed association context; the outer public/nonduplicate filters still apply to both items and count.",
+    "Queries with event matches continue through existing event/fallback paths; multiple canonical player matches continue through the unchanged shared-player path. Existing non-strict fallback behavior remains in its existing postprocessing path.",
+    "No new SQL text interpolation, evidence bypass, identity assignment or database write path is introduced. The identical needle is used for list and total queries.",
+    "The updated regression test requires the exact three expected game IDs and total, while excluding an unrelated event title containing the player display. Existing shared-player/raw-event tests were included in the root focused run."
+  ],
+  "reviewed_at": "2026-10-11T16:33:24.238908+00:00",
+  "reviewer_id": "/root/cleanup_final_review_astra",
+  "reviewer_model": "gpt-6-astra",
+  "scope": "Focused review of the added canonical-plus-raw player search branch and its regression assertion only. No database, SSH, Git or code mutations by reviewer.",
+  "status": "approved",
+  "test_evidence": {
+    "current_file_hashes_match": true,
+    "executor": "/root",
+    "path": "/tmp/kifu-cleanup-20261011/search-followup-root-tests.json",
+    "reported_exit_code": 0,
+    "reported_result": "4 passed in 0.97s",
+    "reviewer_repeated_tests": false,
+    "sha256": "8e144a844cc5cdc5b89256df1566e3b1f5c79e246021107e7674bbdad3ea4f5f"
+  }
+}

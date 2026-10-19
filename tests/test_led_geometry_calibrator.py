@@ -1,4 +1,5 @@
 import logging
+import time
 from threading import Event
 
 import cv2
@@ -8,12 +9,137 @@ import pytest
 from katrain.vision import led_geometry_calibrator, stone_classifier
 from katrain.vision.led_geometry_calibrator import (
     CALIBRATION_ANCHORS,
+    FIVE_POINT_ANCHORS,
+    FivePointLedGeometryCalibrator,
+    CalibrationInterrupted,
     LedGeometryCalibrator,
     check_frame_exposure,
     detect_led_centroid,
     first_nondegenerate_quad,
     fit_geometry_from_anchors,
+    fit_five_point_geometry,
 )
+
+
+def test_five_point_fit_checks_center_and_rejects_clumped_corners():
+    good = [((0, 0), (505, 977)), ((0, 18), (258, 100)),
+            ((18, 18), (1647, 101)), ((18, 0), (1395, 993)), ((9, 9), (951, 600))]
+    # Exact perspective center, rather than the arithmetic mean of corners.
+    corners = np.asarray([point for _coord, point in good[:4]], np.float32)
+    H = cv2.getPerspectiveTransform(np.array([[0, 0], [949, 0], [949, 949], [0, 949]], np.float32), corners)
+    center = cv2.perspectiveTransform(np.array([[[474.5, 474.5]]], np.float32), H)[0, 0]
+    good[4] = ((9, 9), center)
+    assert fit_five_point_geometry(good, frame_shape=(1080, 1920)).ok
+    shifted = good.copy()
+    shifted[4] = ((9, 9), center + (45, 0))
+    assert fit_five_point_geometry(shifted, frame_shape=(1080, 1920)).reason == "center_mismatch"
+    bad = good.copy()
+    bad[:4] = [((0, 0), (361, 881)), ((0, 18), (163, 1024)),
+               ((18, 18), (179, 947)), ((18, 0), (1394, 992))]
+    assert fit_five_point_geometry(bad, frame_shape=(1080, 1920)).reason == "corner_geometry_invalid"
+
+
+def test_five_point_calibrator_only_flashes_five_positions():
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    calibrator = FivePointLedGeometryCalibrator(led=led, capture=capture)
+    calibrator.anchor_roi = lambda row, col: (*_synthetic_camera_points()[(row, col)], 80)
+    result = calibrator.calibrate()
+    assert result.ok
+    assert [coord for coord, _rgb in led.attempts] == list(FIVE_POINT_ANCHORS)
+
+
+def test_five_point_baseline_retries_a_short_camera_burst():
+    led = FakeLed()
+
+    class ShortBurstCapture(FakeCapture):
+        burst_calls = 0
+
+        def grab_burst(self, n=8, interval=0.1):
+            self.burst_calls += 1
+            frames = super().grab_burst(n=n, interval=interval)
+            return frames[:-1] if self.burst_calls == 1 else frames
+
+    capture = ShortBurstCapture(led, _synthetic_camera_points())
+    calibrator = FivePointLedGeometryCalibrator(led=led, capture=capture)
+    calibrator.anchor_roi = lambda row, col: (*_synthetic_camera_points()[(row, col)], 80)
+
+    result = calibrator.calibrate()
+
+    assert result.ok
+    assert capture.burst_calls == 2
+
+
+def test_five_point_baseline_retries_shadow_held_out_failure_without_reflashing():
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    calibrator = FivePointLedGeometryCalibrator(led=led, capture=capture)
+    calibrator.anchor_roi = lambda row, col: (*_synthetic_camera_points()[(row, col)], 80)
+    build_lock = calibrator._build_lock
+    builds = 0
+
+    def one_shadow_failure(fit, frames, detected, attempts):
+        nonlocal builds
+        builds += 1
+        if builds == 1:
+            raise led_geometry_calibrator.BaselineNotEmpty("empty baseline held-out check failed: black=0, white=5")
+        return build_lock(fit, frames, detected, attempts)
+
+    calibrator._build_lock = one_shadow_failure
+    result = calibrator.calibrate()
+
+    assert result.ok
+    assert builds == 2
+    assert [coord for coord, _rgb in led.attempts] == list(FIVE_POINT_ANCHORS)
+
+
+def test_five_point_interruption_retries_only_unconfirmed_position():
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    seen = []
+    calibrator = FivePointLedGeometryCalibrator(led=led, capture=capture,
+        anchor_observer=lambda row, col, _point, _color: seen.append((row, col)))
+    interrupted = False
+
+    def guard(_frame, dark):
+        nonlocal interrupted
+        if dark and len(seen) == 3 and not interrupted:
+            interrupted = True
+            raise CalibrationInterrupted("board_occluded")
+
+    calibrator.anchor_roi = lambda row, col: (*_synthetic_camera_points()[(row, col)], 80)
+    calibrator.frame_guard = guard
+    result = calibrator.calibrate()
+    assert result.ok and interrupted
+    assert seen == list(FIVE_POINT_ANCHORS)
+    assert [coord for coord, _rgb in led.attempts] == list(FIVE_POINT_ANCHORS)
+
+
+def test_five_point_retries_one_ambiguous_flash_without_discarding_confirmed_points():
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    seen = []
+    calibrator = FivePointLedGeometryCalibrator(
+        led=led, capture=capture,
+        anchor_observer=lambda row, col, _point, _color: seen.append((row, col)),
+    )
+    calibrator.anchor_roi = lambda row, col: (*_synthetic_camera_points()[(row, col)], 80)
+    locate = calibrator._locate_anchor
+    calls = []
+
+    def locate_with_one_ambiguous_flash(row, col, attempts, roi=None):
+        calls.append((row, col))
+        if (row, col) == FIVE_POINT_ANCHORS[1] and calls.count((row, col)) == 1:
+            attempts.append({"row": row, "col": col, "reason": "ambiguous_blobs"})
+            return None
+        return locate(row, col, attempts, roi=roi)
+
+    calibrator._locate_anchor = locate_with_one_ambiguous_flash
+    result = calibrator.calibrate()
+
+    assert result.ok
+    assert calls == [FIVE_POINT_ANCHORS[0], FIVE_POINT_ANCHORS[1], FIVE_POINT_ANCHORS[1], *FIVE_POINT_ANCHORS[2:]]
+    assert seen == list(FIVE_POINT_ANCHORS)
 
 
 def test_detect_led_centroid_rejects_reflection_and_returns_main_blob():
@@ -121,6 +247,7 @@ class FakeCapture:
         self.camera_points = camera_points
         self.green_missing_for = green_missing_for
         self.seq = 0
+        self.started_at = time.monotonic() + 1
 
     def _frame(self):
         frame = np.full((900, 1000, 3), 90, np.uint8)
@@ -138,7 +265,7 @@ class FakeCapture:
 
     def grab_fresh(self, after_ts=None, settle_ms=150.0):
         self.seq += 1
-        return self._frame(), self.seq, float(self.seq + 10)
+        return self._frame(), self.seq, time.monotonic()
 
     def grab_burst(self, n=8, interval=0.1):
         current = self.led.current
@@ -711,6 +838,57 @@ def test_exposure_gate_still_rejects_when_two_of_three_frames_are_blown():
     assert result.reason == "frame_overexposed"
     assert led.attempts == []
     assert result.exposure_stats["median"] == pytest.approx(253, abs=1)
+
+
+@pytest.mark.parametrize("freshness", ["cached", "old_distinct", "insufficient", "same_seq", "same_ts"])
+def test_exposure_gate_requires_three_frames_captured_after_probe_started(freshness):
+    led = FakeLed()
+
+    class StaleCapture(FakeCapture):
+        def __init__(self):
+            super().__init__(led, _synthetic_camera_points())
+            self.old_ts = time.monotonic() - 1.0
+            self.first_ts = None
+
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            frame, seq, ts = super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+            if freshness == "cached":
+                return frame, 1, self.old_ts
+            if freshness == "old_distinct":
+                return frame, seq, self.old_ts + seq * 0.001
+            if freshness == "same_seq":
+                return frame, 1, ts
+            if freshness == "same_ts":
+                self.first_ts = ts if self.first_ts is None else self.first_ts
+                return frame, seq, self.first_ts
+            if seq >= 2:
+                return frame, 1, self.old_ts
+            return frame, seq, ts
+
+    result = LedGeometryCalibrator(led=led, capture=StaleCapture()).calibrate()
+
+    assert result.ok is False
+    assert result.reason == "no_frames"
+    assert result.exposure_stats is None
+    assert led.attempts == []
+
+
+def test_exposure_probe_cancellation_does_not_flash_leds_or_collect_more_frames():
+    led = FakeLed()
+    cancel = Event()
+
+    class CancellingCapture(FakeCapture):
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            result = super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+            cancel.set()
+            return result
+
+    capture = CancellingCapture(led, _synthetic_camera_points())
+    result = LedGeometryCalibrator(led=led, capture=capture, cancel_event=cancel).calibrate()
+
+    assert result.reason == "cancelled"
+    assert capture.seq == 1
+    assert led.attempts == []
 
 
 class TransientCapture(FakeCapture):

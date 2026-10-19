@@ -62,6 +62,7 @@ export function KioskTopbar({ identity, onHome, homeBusy = false }: {
       <span className="kiosk-topbar__rule" aria-hidden="true" />
       <span className="kiosk-topbar__game">围棋</span>
       <div className="kiosk-topbar__right">
+        <div id="kiosk-topbar-actions" />
         {onHome && (
           <button
             type="button"

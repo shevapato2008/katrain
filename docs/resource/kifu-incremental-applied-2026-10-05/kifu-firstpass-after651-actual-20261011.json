@@ -1,0 +1,31 @@
+{
+  "album_ids_sha256": "86bdd3baec4a078df42097c229e75d55fd63f160f08924541ed3c1674294cd28",
+  "captured_at": "2026-10-10T23:10:24.581338+00:00",
+  "denominators": {
+    "E5": 85,
+    "P5": 3689,
+    "fixedwide": 173025,
+    "strictcomplete": 173025
+  },
+  "environment": "PROD",
+  "latest_batch": {
+    "bundle_sha256": "43778e76e6d36f93d686b6025b2ccc697260c37bf2450d7d17f00c82cb4cd07d",
+    "id": 651,
+    "status": "applied"
+  },
+  "metrics": {
+    "E5": 64,
+    "P5": 2769,
+    "fixedwide": 130550,
+    "strictcomplete": 82339
+  },
+  "population": {
+    "albums": 173025,
+    "duplicate": 9,
+    "excluded_from_public": 259,
+    "list_hidden": 250,
+    "public_visible": 172766
+  },
+  "read_only": true,
+  "source_rehashed": false
+}

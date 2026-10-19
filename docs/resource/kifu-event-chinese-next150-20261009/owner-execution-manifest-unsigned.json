@@ -1,0 +1,29 @@
+{
+  "status": "unsigned_execution_manifest",
+  "scope": "owner review fields only; 150 raw owners and 174 exact albums; zero name/FK/SGF writes",
+  "request_canonical_sha256": "04e470f3d31c09e570617a83dab2ee8be0c24942c5738d07c5d5430c0f37bf05",
+  "manifest_canonical_sha256": "aa8e33006d43f0b23736555a4b0a072e0f3c1311354a703f55d3ff300816f2e4",
+  "name_matrix_canonical_sha256": "5ff473a4fe24c7aedfc6b5283601d7996b2343341445ebb36fe50496de6a635d",
+  "capture_file_sha256": {
+    "TEST": "da098188dbb996b51ba413d0751b8a42cf4bd8fdd0c4757c54fbcbeda48b2b01",
+    "PROD": "bd9cbb5a91258d2954286a7ac53e00a5a300c68f1b7cffd62b2473e2cbf534ff"
+  },
+  "native_importer_image_id": {
+    "TEST": "sha256:82124209ad6425190d587fec10b06eb7cab8b80067cd345cc523bd9a760523c4",
+    "PROD": "sha256:6eb7597b5b478c082fe91405c0223531a46380bf53b9d7dc33e8e74cfb642b02"
+  },
+  "sequence": [
+    "root independent owner review",
+    "TEST prepare and dry-run",
+    "PROD prepare and dry-run",
+    "root review of both exact plans and dry-run receipts",
+    "TEST apply and verify",
+    "PROD apply and verify",
+    "fresh post-owner read-only captures"
+  ],
+  "approved": false,
+  "plan_canonical_sha256": {
+    "TEST": null,
+    "PROD": null
+  }
+}

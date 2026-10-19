@@ -1,0 +1,82 @@
+[
+  {
+    "id": "foreign-regulation-full",
+    "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+    "method": "GET",
+    "request_headers": {
+      "User-Agent": "Mozilla/5.0 (compatible; source research)"
+    },
+    "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+    "http_status": 200,
+    "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+    "content_type": "text/html;charset=UTF-8",
+    "date_header": "Thu, 08 Oct 2026 21:30:16 GMT",
+    "body_bytes": 456809,
+    "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+    "body_file": "captures/foreign-regulation-full.html"
+  },
+  {
+    "id": "nikl-chinese-diaspora-name-guidance",
+    "url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=&pageIndex=1&qna_seq=328375",
+    "method": "GET",
+    "request_headers": {
+      "User-Agent": "Mozilla/5.0 (compatible; source research)"
+    },
+    "fetched_at_utc": "2026-10-08T21:30:19.278502+00:00",
+    "http_status": 200,
+    "final_url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=&pageIndex=1&qna_seq=328375",
+    "content_type": "text/html;charset=UTF-8",
+    "date_header": "Thu, 08 Oct 2026 21:30:20 GMT",
+    "body_bytes": 86002,
+    "body_sha256": "75f6b4f4ad61654f3a0f72aac9bbfc03eb57f76bebcb99738476be007f51af9b",
+    "body_file": "captures/nikl-chinese-diaspora-name-guidance.html"
+  },
+  {
+    "id": "nikl-simplified-traditional-guidance",
+    "url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=261&pageIndex=1&qna_seq=325065",
+    "method": "GET",
+    "request_headers": {
+      "User-Agent": "Mozilla/5.0 (compatible; source research)"
+    },
+    "fetched_at_utc": "2026-10-08T21:30:22.449293+00:00",
+    "http_status": 200,
+    "final_url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=261&pageIndex=1&qna_seq=325065",
+    "content_type": "text/html;charset=UTF-8",
+    "date_header": "Thu, 08 Oct 2026 21:30:23 GMT",
+    "body_bytes": 93690,
+    "body_sha256": "f52bdf67b89693ff519f06c5e30e036fbb91845a450790288f36eb218fd8bb15",
+    "body_file": "captures/nikl-simplified-traditional-guidance.html"
+  },
+  {
+    "id": "nikl-chinese-phonology-guidance",
+    "url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=97&pageIndex=1&qna_seq=334794",
+    "method": "GET",
+    "request_headers": {
+      "User-Agent": "Mozilla/5.0 (compatible; source research)"
+    },
+    "fetched_at_utc": "2026-10-08T21:30:26.047244+00:00",
+    "http_status": 200,
+    "final_url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=97&pageIndex=1&qna_seq=334794",
+    "content_type": "text/html;charset=UTF-8",
+    "date_header": "Thu, 08 Oct 2026 21:30:27 GMT",
+    "body_bytes": 85651,
+    "body_sha256": "e02f9d089f28be35a1ae265c1910df7c2a8c65bbce458be524f0f37390674106",
+    "body_file": "captures/nikl-chinese-phonology-guidance.html"
+  },
+  {
+    "id": "nikl-east-asian-name-principle",
+    "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146",
+    "method": "GET",
+    "request_headers": {
+      "User-Agent": "Mozilla/5.0 (compatible; source research)"
+    },
+    "fetched_at_utc": "2026-10-08T21:30:29.399408+00:00",
+    "http_status": 200,
+    "final_url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146",
+    "content_type": "text/html;charset=UTF-8",
+    "date_header": "Thu, 08 Oct 2026 21:30:30 GMT",
+    "body_bytes": 87121,
+    "body_sha256": "91ca51068bdf397629c183aa6b537d3ace51ba1a852c72e9ba8cb358a0422f38",
+    "body_file": "captures/nikl-east-asian-name-principle.html"
+  }
+]

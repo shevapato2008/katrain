@@ -1,0 +1,11 @@
+{
+  "key": "cwa-zhangtao",
+  "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhangtao.json",
+  "raw_sha256": "ba69b715d6a7feb3a59fcdd003723e20f72dc45aacf04c2c6c6c5033c1cb49a7",
+  "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000126",
+  "retrieved_at_utc": "2026-10-04T12:03:17.864371+00:00",
+  "status": 200,
+  "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhangtao.txt",
+  "text_sha256": "7a18cfa25acf9c80a465d44708629c18e823a5d1ae044442d9db1d8f04184259",
+  "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000126"
+}

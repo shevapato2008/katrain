@@ -3,6 +3,17 @@ import GameLibraryModal from './CloudSGFPanel';
 import { vi, describe, it, expect, Mock, beforeEach } from 'vitest';
 import { useAuth } from '../../../context/AuthContext';
 
+const { locale } = vi.hoisted(() => ({ locale: { current: 'cn' } }));
+vi.mock('../../../hooks/useTranslation', () => ({
+  useTranslation: () => ({
+    lang: locale.current,
+    t: (key: string, fallback?: string) => ({
+      'result:black_win': { cn: '黑胜', en: 'B+' },
+      'result:resign': { cn: '中盘', en: 'R' },
+    } as Record<string, Record<string, string>>)[key]?.[locale.current] ?? fallback ?? key,
+  }),
+}));
+
 // Mock fetch
 global.fetch = vi.fn();
 
@@ -40,6 +51,7 @@ describe('GameLibraryModal', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    locale.current = 'cn';
     (useAuth as Mock).mockReturnValue({ token: 'mock-token', status: 'authenticated', isAuthenticated: true, isGuest: false, identityKey: 'one' });
   });
 
@@ -122,7 +134,9 @@ describe('GameLibraryModal', () => {
     });
     (KifuAPI.getAlbums as Mock).mockResolvedValueOnce({
       items: [
-        { id: 1, title: 'Tournament Game', player_black: 'Lee', player_white: 'Ke', result: 'W+2.5', move_count: 250, sgf_content: '(;FF[4];B[pd])' },
+        { id: 1, title: 'Tournament Game', player_black: 'Lee', player_white: 'Ke',
+          display_event: 'Tournament Game', display_player_black: 'Lee', display_player_white: 'Ke',
+          result: 'W+2.5', move_count: 250, sgf_content: '(;FF[4];B[pd])' },
       ],
       total: 1,
     });
@@ -144,6 +158,20 @@ describe('GameLibraryModal', () => {
     await waitFor(() => {
       expect(screen.getByText('Tournament Game')).toBeInTheDocument();
     });
+  });
+
+  it('formats a public kifu result in Chinese without changing the raw result', async () => {
+    locale.current = 'cn';
+    const album = { id: 1, display_event: 'Tournament', display_player_black: 'Lee',
+      display_player_white: 'Ke', result: 'B+R', move_count: 100 };
+    (UserGamesAPI.list as Mock).mockResolvedValueOnce({ items: [], total: 0 });
+    (KifuAPI.getAlbums as Mock).mockResolvedValueOnce({ items: [album], total: 1 });
+    render(<GameLibraryModal open onClose={mockOnClose} onLoadGame={mockOnLoadGame} />);
+    fireEvent.click(screen.getByText('大赛棋谱'));
+    expect(await screen.findByText('黑胜中盘')).toBeInTheDocument();
+    expect(KifuAPI.getAlbums).toHaveBeenCalledWith(expect.objectContaining({ lang: 'cn' }));
+    expect(album.result).toBe('B+R');
+    expect(screen.queryByText('B+R')).not.toBeInTheDocument();
   });
 
   it('loads a game and closes modal', async () => {

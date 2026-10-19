@@ -1,0 +1,294 @@
+{
+  "prod": {
+    "catalog_file": "/tmp/kifu-prod-catalog-post-cn-20261004.json",
+    "targets": [
+      {
+        "raw": "卢奕铨",
+        "target_id": 474,
+        "canonicals": [
+          {
+            "id": 474,
+            "canonical_name": "卢奕铨"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "伊田笃史",
+        "target_id": 75,
+        "canonicals": [
+          {
+            "id": 75,
+            "canonical_name": "伊田笃史"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "淡路修三",
+        "target_id": 591,
+        "canonicals": [
+          {
+            "id": 591,
+            "canonical_name": "淡路修三"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "杨子萱",
+        "target_id": 197,
+        "canonicals": [
+          {
+            "id": 197,
+            "canonical_name": "杨子萱"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "张涛",
+        "target_id": 246,
+        "canonicals": [
+          {
+            "id": 246,
+            "canonical_name": "张涛"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "杨楷文",
+        "target_id": 14,
+        "canonicals": [
+          {
+            "id": 14,
+            "canonical_name": "杨楷文"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "苏耀国",
+        "target_id": 167,
+        "canonicals": [
+          {
+            "id": 167,
+            "canonical_name": "苏耀国"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "三村智保",
+        "target_id": 190,
+        "canonicals": [
+          {
+            "id": 190,
+            "canonical_name": "三村智保"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "李维清",
+        "target_id": 382,
+        "canonicals": [
+          {
+            "id": 382,
+            "canonical_name": "李维清"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "邬光亚",
+        "target_id": 568,
+        "canonicals": [
+          {
+            "id": 568,
+            "canonical_name": "邬光亚"
+          }
+        ],
+        "aliases": []
+      }
+    ],
+    "counts": {
+      "李维清": 495,
+      "杨楷文": 450,
+      "张涛": 465,
+      "邬光亚": 482,
+      "三村智保": 482,
+      "伊田笃史": 550,
+      "卢奕铨": 559,
+      "杨子萱": 489,
+      "苏耀国": 448,
+      "淡路修三": 514
+    },
+    "candidate_slots": 4934,
+    "protected_slots": 0,
+    "same_person_opponents": [],
+    "excluded_variants": {
+      "杨楷文文兆京": 1,
+      "楊杨子萱": 1,
+      "淡路修三　九段": 1,
+      "淡路修三七段": 1,
+      "淡路修三六段": 1,
+      "淡路修三八段": 1,
+      "淡路修三九段": 3,
+      "建桥李维清": 2,
+      "张涛三段": 1,
+      "三村智保九段": 1,
+      "三村智保五段": 1,
+      "苏耀国八段": 1,
+      "邬光亚六段": 1
+    },
+    "review_sha256": "e7823756c148a8e06ee141730c4c16a72d6bdd93e950b74bc59bb76ee6a9d7e9"
+  },
+  "test": {
+    "catalog_file": "/tmp/kifu-test-player-catalog-2026-10-04.json",
+    "targets": [
+      {
+        "raw": "卢奕铨",
+        "target_id": 475,
+        "canonicals": [
+          {
+            "id": 475,
+            "canonical_name": "卢奕铨"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "伊田笃史",
+        "target_id": 75,
+        "canonicals": [
+          {
+            "id": 75,
+            "canonical_name": "伊田笃史"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "淡路修三",
+        "target_id": 592,
+        "canonicals": [
+          {
+            "id": 592,
+            "canonical_name": "淡路修三"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "杨子萱",
+        "target_id": 198,
+        "canonicals": [
+          {
+            "id": 198,
+            "canonical_name": "杨子萱"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "张涛",
+        "target_id": 247,
+        "canonicals": [
+          {
+            "id": 247,
+            "canonical_name": "张涛"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "杨楷文",
+        "target_id": 14,
+        "canonicals": [
+          {
+            "id": 14,
+            "canonical_name": "杨楷文"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "苏耀国",
+        "target_id": 168,
+        "canonicals": [
+          {
+            "id": 168,
+            "canonical_name": "苏耀国"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "三村智保",
+        "target_id": 191,
+        "canonicals": [
+          {
+            "id": 191,
+            "canonical_name": "三村智保"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "李维清",
+        "target_id": 383,
+        "canonicals": [
+          {
+            "id": 383,
+            "canonical_name": "李维清"
+          }
+        ],
+        "aliases": []
+      },
+      {
+        "raw": "邬光亚",
+        "target_id": 569,
+        "canonicals": [
+          {
+            "id": 569,
+            "canonical_name": "邬光亚"
+          }
+        ],
+        "aliases": []
+      }
+    ],
+    "counts": {
+      "李维清": 495,
+      "杨楷文": 450,
+      "张涛": 465,
+      "邬光亚": 482,
+      "三村智保": 482,
+      "伊田笃史": 550,
+      "卢奕铨": 559,
+      "杨子萱": 489,
+      "苏耀国": 448,
+      "淡路修三": 514
+    },
+    "candidate_slots": 4934,
+    "protected_slots": 0,
+    "same_person_opponents": [],
+    "excluded_variants": {
+      "杨楷文文兆京": 1,
+      "楊杨子萱": 1,
+      "淡路修三　九段": 1,
+      "淡路修三七段": 1,
+      "淡路修三六段": 1,
+      "淡路修三八段": 1,
+      "淡路修三九段": 3,
+      "建桥李维清": 2,
+      "张涛三段": 1,
+      "三村智保九段": 1,
+      "三村智保五段": 1,
+      "苏耀国八段": 1,
+      "邬光亚六段": 1
+    },
+    "review_sha256": "7d91a98d6efdaab02ff4770e2e02eb29f33cf10eb29bb8890fd2a07d21e7b3de"
+  }
+}

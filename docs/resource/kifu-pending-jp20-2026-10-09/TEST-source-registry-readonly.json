@@ -1,0 +1,740 @@
+{
+  "created_at": "2026-10-08T14:32:19.714993+00:00",
+  "id": 371,
+  "registry": {
+    "description": "Two actualpublished JPmissing cells, prior16qualified rows untouched. Requested5owners65scope;3JPomitted and4otherKO/ENholes unresearched. Actual KifuDepot namedgames, notownprofiles.",
+    "language_scopes": {
+      "cn": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "weiqi-association",
+          "wikipedia-zh",
+          "wikidata"
+        ]
+      },
+      "de": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "dgob",
+          "wikipedia-de",
+          "wikidata"
+        ]
+      },
+      "en": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "cwi-go",
+          "wikipedia-en",
+          "wikidata"
+        ]
+      },
+      "es": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "aego",
+          "wikipedia-es",
+          "wikidata"
+        ]
+      },
+      "fr": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "ffg",
+          "wikipedia-fr",
+          "wikidata"
+        ]
+      },
+      "jp": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "nihon-kiin",
+          "wikipedia-ja",
+          "wikidata"
+        ]
+      },
+      "ko": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "korea-baduk",
+          "wikipedia-ko",
+          "wikidata"
+        ]
+      },
+      "ru": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "rusgolib",
+          "wikipedia-ru",
+          "wikidata"
+        ]
+      },
+      "tr": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "tgod",
+          "wikipedia-tr",
+          "wikidata"
+        ]
+      },
+      "tw": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "haifong",
+          "wikipedia-zh",
+          "wikidata"
+        ]
+      },
+      "ua": {
+        "complete_for_negative_claims": false,
+        "required_source_ids": [
+          "ufgo",
+          "wikipedia-uk",
+          "wikidata"
+        ]
+      }
+    },
+    "language_tags": {
+      "cn": "zh-Hans",
+      "de": "de",
+      "en": "en",
+      "es": "es",
+      "fr": "fr",
+      "jp": "ja",
+      "ko": "ko",
+      "ru": "ru",
+      "tr": "tr",
+      "tw": "zh-Hant",
+      "ua": "uk"
+    },
+    "sources": [
+      {
+        "description": "Professional Go-history publication and specialist site; not an official federation source.",
+        "home_url": "https://blog.19x19.com/",
+        "id": "19x19-go",
+        "language": "zh-Hans",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://aego.biz/",
+        "id": "aego",
+        "language": "es",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.asialogy.com/",
+        "id": "asialogy-tr",
+        "language": "tr",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://m.baduk.or.kr/",
+        "id": "baduk-mobile",
+        "language": "ko",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://www.centroculturalsol.com/",
+        "id": "centrocultural-sol",
+        "language": "es",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://www.sport.gov.cn/",
+        "id": "china-sport",
+        "language": "zh-Hans",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://note.com/curon154/",
+        "id": "curon-go-history",
+        "language": "ja",
+        "notes": "Japanese independent Go history article with original old name; not an association biography.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://homepages.cwi.nl/~aeb/go/games/",
+        "id": "cwi-go",
+        "language": "en",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.cyberoro.com/",
+        "id": "cyberoro",
+        "language": "ko",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.dgob.de/",
+        "id": "dgob",
+        "language": "de",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://ffg.jeudego.org/",
+        "id": "ffg",
+        "language": "fr",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.gookulu.com/",
+        "id": "go-school-tr",
+        "language": "tr",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.gofed.be/",
+        "id": "gofed-be",
+        "language": "fr",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://gomagic.org/",
+        "id": "gomagic-ru",
+        "language": "ru",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.haifong.org/",
+        "id": "haifong",
+        "language": "zh-Hant",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://www.igorating.com/",
+        "id": "igorating",
+        "language": "ja",
+        "notes": "Japanese professional Go player profile/rating pages; use page H1 and native reading as published specialist-source evidence, not as an official federation source.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://igorating.com/",
+        "id": "igorating-bare",
+        "language": "ja",
+        "notes": "Same independent Go rating publisher as www host; separate registered host only, not an independent source.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.igorating.com/en/",
+        "id": "igorating-en",
+        "language": "en",
+        "notes": "English pages of the same professional Go rating publisher; not a second independent source or an official federation.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://igorating.com/en/",
+        "id": "igorating-en-bare",
+        "language": "en",
+        "notes": "Same independent Go rating publisher as www host; separate registered host only, not an independent source.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.baduk.or.kr/",
+        "id": "korea-baduk",
+        "language": "ko",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://koubokukei.blogspot.com/",
+        "id": "koubokukei-go-history",
+        "language": "zh-Hant",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://merdivengo.blogspot.com/",
+        "id": "merdiven-go-tr",
+        "language": "tr",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://www.nihonkiin.or.jp/",
+        "id": "nihon-kiin",
+        "language": "ja",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://news.pts.org.tw/",
+        "id": "pts-tw",
+        "language": "zh-Hant",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://rendaico.jp/igo/",
+        "id": "ret75-gohistory",
+        "language": "ja",
+        "notes": "Independent Japanese Go chronology, not a federation source; actual game context writes 大澤銀次郎.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://kansaikiin.jp/",
+        "id": "ret75-kansai-kiin",
+        "language": "ja",
+        "notes": "Actual Kansai Kiin own profiles publish original/Latin identity and completehiragana; captured script is preserved without inferredKatakana field.",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://id.ndl.go.jp/auth/",
+        "id": "ret75-ndl-authority",
+        "language": "ja",
+        "notes": "National Diet Library author name authority, kana and book reference; not a Go federation or sole person-game identity proof.",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://rusgolib.gofederation.ru/",
+        "id": "rusgolib",
+        "language": "ru",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.tgod.org.tr/",
+        "id": "tgod",
+        "language": "tr",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://ufgo.org/",
+        "id": "ufgo",
+        "language": "uk",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.weiqi.org.cn/",
+        "id": "weiqi-association",
+        "language": "zh-Hans",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://www.wikidata.org/",
+        "id": "wikidata",
+        "language": "mul",
+        "tier": "discovery"
+      },
+      {
+        "home_url": "https://de.wikipedia.org/",
+        "id": "wikipedia-de",
+        "language": "de",
+        "tier": "wikipedia_article"
+      },
+      {
+        "home_url": "https://en.wikipedia.org/",
+        "id": "wikipedia-en",
+        "language": "en",
+        "tier": "wikipedia_article"
+      },
+      {
+        "home_url": "https://es.wikipedia.org/",
+        "id": "wikipedia-es",
+        "language": "es",
+        "tier": "wikipedia_article"
+      },
+      {
+        "home_url": "https://fr.wikipedia.org/",
+        "id": "wikipedia-fr",
+        "language": "fr",
+        "tier": "wikipedia_article"
+      },
+      {
+        "home_url": "https://ja.wikipedia.org/",
+        "id": "wikipedia-ja",
+        "language": "ja",
+        "tier": "wikipedia_article"
+      },
+      {
+        "home_url": "https://ko.wikipedia.org/",
+        "id": "wikipedia-ko",
+        "language": "ko",
+        "tier": "wikipedia_article"
+      },
+      {
+        "home_url": "https://ru.wikipedia.org/",
+        "id": "wikipedia-ru",
+        "language": "ru",
+        "tier": "wikipedia_article"
+      },
+      {
+        "home_url": "https://tr.wikipedia.org/",
+        "id": "wikipedia-tr",
+        "language": "tr",
+        "tier": "wikipedia_article"
+      },
+      {
+        "home_url": "https://uk.wikipedia.org/",
+        "id": "wikipedia-uk",
+        "language": "uk",
+        "tier": "wikipedia_article"
+      },
+      {
+        "home_url": "https://zh.wikipedia.org/",
+        "id": "wikipedia-zh",
+        "language": "zh",
+        "tier": "wikipedia_article"
+      },
+      {
+        "description": "Korean professional Go specialist publisher; real game publications and ownprofiles, each evidence role preserved.",
+        "home_url": "https://baduk.hangame.com/",
+        "id": "hangame-ko",
+        "language": "ko",
+        "tier": "language_go"
+      },
+      {
+        "description": "Korean Go column publication, native Taiwanese original and actual Korean name use.",
+        "home_url": "https://baduk.netmarble.net/",
+        "id": "netmarble-go-ko",
+        "language": "ko",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.goratings.org/ja/",
+        "id": "ret97-goratings-ja",
+        "language": "ja",
+        "notes": "Same independent professional Go ratings archive; localized same person IDs are one publisher, not independent authorities or federation.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.goratings.org/en/",
+        "id": "ret97-goratings-en",
+        "language": "en",
+        "notes": "Same independent professional Go ratings archive; localized same person IDs are one publisher, not independent authorities or federation.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.goratings.org/ko/",
+        "id": "ret97-goratings-ko",
+        "language": "ko",
+        "notes": "Same independent professional Go ratings archive; localized same person IDs are one publisher, not independent authorities or federation.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://db.u-go.net/",
+        "id": "ret97-ugo-en",
+        "language": "en",
+        "notes": "Independent published professional Go name dictionary; true native/Latin own entry links retained. Female homonym excluded.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.kihuu.net/",
+        "id": "ret97-kihuu-ja",
+        "language": "ja",
+        "notes": "Japanese professional Go game database. Only actual professional named game rows qualify; query headings without games excluded.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.goratings.org/ja/",
+        "id": "ret98-goratings-ja",
+        "language": "ja",
+        "notes": "Independent professional Go ratings localization, same player ID across locale views.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.goratings.org/en/",
+        "id": "ret98-goratings-en",
+        "language": "en",
+        "notes": "Independent professional Go ratings localization, same player ID across locale views.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.tvbaduk.com/",
+        "id": "ret98-tvbaduk-ko",
+        "language": "ko",
+        "notes": "Korean Go broadcaster own professional player profile. Original Han glyph and professional context checked per player.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://foxwq.com/",
+        "id": "ret100-fox-cn",
+        "language": "zh-Hans",
+        "notes": "Chinese Go professional publication, exact Korean association and dan row.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://daydaynews.cc/",
+        "id": "ret100-daydaynews-tw",
+        "language": "zh-Hant",
+        "notes": "Traditional Chinese presentation of a named 1991 Korean Go game.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://kifudepot.net/",
+        "id": "ret100-kifudepot-ja",
+        "language": "ja",
+        "notes": "Japanese Go match archive with named Korean professional players and SGF.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://kifubara.app/",
+        "id": "ret100-kifubara-en",
+        "language": "en",
+        "notes": "English Go tournament archive, named Korean Myeongin game.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://m.baduk.or.kr/",
+        "id": "ret100-baduk-official-ko",
+        "language": "ko",
+        "notes": "Korean Baduk Association interview naming late six-dan professional.",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://tjwqw.com/",
+        "id": "ret100-tianjin-cn",
+        "language": "zh-Hans",
+        "notes": "Tianjin Go school roster, names professional second dan.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/zh/",
+        "id": "ret100-goratings-zh",
+        "language": "zh-Hans",
+        "notes": "Localized own professional player profile, used for independent identity corroboration.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/ja/",
+        "id": "ret100-goratings-ja",
+        "language": "ja",
+        "notes": "Localized own professional player profile.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/en/",
+        "id": "ret100-goratings-en",
+        "language": "en",
+        "notes": "Localized own professional player profile.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/ko/",
+        "id": "ret100-goratings-ko",
+        "language": "ko",
+        "notes": "Localized own professional player profile; only actual Korean title selected.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/zh/",
+        "id": "ret108-goratings-zh",
+        "language": "zh-Hans",
+        "notes": "Same independent localized player profile publisher; Korean Latin fallback excluded.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/ja/",
+        "id": "ret108-goratings-ja",
+        "language": "ja",
+        "notes": "Same independent localized player profile publisher; Korean Latin fallback excluded.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/en/",
+        "id": "ret108-goratings-en",
+        "language": "en",
+        "notes": "Same independent localized player profile publisher; Korean Latin fallback excluded.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/ko/",
+        "id": "ret108-goratings-ko",
+        "language": "ko",
+        "notes": "Same independent localized player profile publisher; Korean Latin fallback excluded.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/zh/",
+        "id": "ret110-goratings-zh",
+        "language": "zh-Hans",
+        "notes": "Localized own player pages or exact linked opponent row. 404 and timeout bodies not selected.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/ja/",
+        "id": "ret110-goratings-ja",
+        "language": "ja",
+        "notes": "Localized own player pages or exact linked opponent row. 404 and timeout bodies not selected.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/en/",
+        "id": "ret110-goratings-en",
+        "language": "en",
+        "notes": "Localized own player pages or exact linked opponent row. 404 and timeout bodies not selected.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://goratings.org/ko/",
+        "id": "ret110-goratings-ko",
+        "language": "ko",
+        "notes": "Localized own player pages or exact linked opponent row. 404 and timeout bodies not selected.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://taiwangorg.blogspot.com/",
+        "id": "ret110-taiwango-tw",
+        "language": "zh-Hant",
+        "notes": "Published Taiwanese Go tournament game row; not treated as a keyed own player page.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.haifong.org/",
+        "id": "ret110-haifong-tw",
+        "language": "zh-Hant",
+        "notes": "Haifong Go Foundation historical professional article subject title.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.nihonkiin.or.jp/",
+        "id": "ret112-nihonkiin-jp",
+        "language": "ja",
+        "notes": "Japanese Go Association participant names in 2026 Dream Lily Cup official report.",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://baduk.hangame.com/",
+        "id": "ret112-hangame-ko",
+        "language": "ko",
+        "notes": "Korean professional Go news with 2017 career and 2026 Dream Lily participant details.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://lifein19x19.com/",
+        "id": "ret112-lifein19-en",
+        "language": "en",
+        "notes": "English Go forum professional qualification account explicitly prints Latin and Han; corroborated by independent sources.",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://www.nju.edu.cn/",
+        "id": "ret112-nju-cn",
+        "language": "zh-Hans",
+        "notes": "Nanjing University official Go tournament news separately identifies 史记初段.",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://note.com/",
+        "id": "ret114-nihon-note",
+        "language": "ja",
+        "notes": "Actually captured source for the stated role; target locale text and author/own game row reviewed. No identity merge or aliases.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.nihonkiin.or.jp/",
+        "id": "ret114-nihon-kiin",
+        "language": "ja",
+        "notes": "Actually captured source for the stated role; target locale text and author/own game row reviewed. No identity merge or aliases.",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://id.ndl.go.jp/",
+        "id": "ret114-ndl-ja",
+        "language": "ja",
+        "notes": "Actually captured source for the stated role; target locale text and author/own game row reviewed. No identity merge or aliases.",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://ndlsearch.ndl.go.jp/",
+        "id": "ret114-ndl-search-ja",
+        "language": "ja",
+        "notes": "Actually captured source for the stated role; target locale text and author/own game row reviewed. No identity merge or aliases.",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://kotobank.jp/",
+        "id": "ret114-kotobank-ja",
+        "language": "ja",
+        "notes": "Actually captured source for the stated role; target locale text and author/own game row reviewed. No identity merge or aliases.",
+        "tier": "encyclopedia"
+      },
+      {
+        "home_url": "https://igorating.com/",
+        "id": "ret114-igorating-ja",
+        "language": "ja",
+        "notes": "Actually captured source for the stated role; target locale text and author/own game row reviewed. No identity merge or aliases.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://keima.net/",
+        "id": "ret114-keima-en",
+        "language": "en",
+        "notes": "Actually captured source for the stated role; target locale text and author/own game row reviewed. No identity merge or aliases.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://homepages.cwi.nl/",
+        "id": "ret114-cwi-en",
+        "language": "en",
+        "notes": "Actually captured source for the stated role; target locale text and author/own game row reviewed. No identity merge or aliases.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://sports.sina.cn/",
+        "id": "ret116-sina-go",
+        "language": "zh-Hans",
+        "notes": "Actual dated professional Go result; identity corroboration only.",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://k.sina.cn/",
+        "id": "ret116-sina-k-go",
+        "language": "zh-Hans",
+        "notes": "Actual 2018 professional-entry list; identity corroboration only.",
+        "tier": "reference"
+      },
+      {
+        "home_url": "https://www.pandanet.co.jp/",
+        "id": "ret116-pandanet-ja",
+        "language": "ja",
+        "notes": "Actual Japanese Go-publisher 2016 Chinese entry table; support for names and DOB only.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://taiwangorg.blogspot.com/",
+        "id": "ret120-taiwan-kiin-official",
+        "language": "zh-Hant",
+        "notes": "Taiwan Kiin professional own profile explicitly publishes original Han and English name.",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://yigo.org/",
+        "id": "ret122-yigo-tw",
+        "language": "zh-Hant",
+        "notes": "Taiwan Go tournament archive prints exact Han player and target-dated Go Seigen Cup row; original Big5 raw body preserved.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://www.olympic.cn/",
+        "id": "ret126-china-olympic",
+        "language": "zh-Hans",
+        "notes": "Chinese Olympic Committee official historical Go article names 1957-1959 national champions.",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://m.baduk.or.kr/",
+        "id": "ret126-kba-mobile",
+        "language": "ko",
+        "notes": "Korean Baduk Association mobile own professional profile URL, same organization as www.baduk.or.kr but distinct host.",
+        "tier": "official"
+      },
+      {
+        "home_url": "https://whiteigo.wixsite.com/jilta/",
+        "id": "ret126-jilta-go",
+        "language": "ja+en",
+        "notes": "Japanese Go instructors association own professional biography publishes native and Latin names; not a Go federation.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://kifudepot.net/",
+        "id": "ret157-kifudepot-ja",
+        "language": "ja",
+        "notes": "Japanese professional Go game database; actual named datedrows withJapaneseevents, notfederation/ownbiography/queryheading-proof.",
+        "tier": "language_go"
+      },
+      {
+        "home_url": "https://m.baduk.or.kr/",
+        "id": "ret157-kba-native",
+        "language": "ko",
+        "notes": "ActualKBA ownprofessional profile reused onlyfor original전영선/田永善 person corroboration; notclaimJapanese publication fromKoreanHanja.",
+        "tier": "official"
+      }
+    ],
+    "version": "2026-10-08-ret163-five-literal-EN-JP-supplements-v1"
+  },
+  "sha256": "e82b7fce9527f199005bba0b2aabf84f230018a8cbbaad64fe5a0a63af0b8ee9",
+  "version": "2026-10-08-ret163-five-literal-EN-JP-supplements-v1"
+}

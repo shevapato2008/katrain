@@ -1,0 +1,23 @@
+{
+  "url": "https://qkrrhkdfo1.tistory.com/640",
+  "method": "GET",
+  "fetched_at_utc": "2026-10-08T23:18:04.393354+00:00",
+  "source_role": "community_copied_Go_ranking",
+  "capture_kind": "contrary_owner_resolution",
+  "http_status": 200,
+  "final_url": "https://qkrrhkdfo1.tistory.com/640",
+  "body_bytes": 521949,
+  "body_sha256": "c04ae12fa723fea6bf69054e4ca095cbefa17c5f541be3cef2df72825cc0da15",
+  "body_file": "captures/source-rule-wang-korean-ranking.body",
+  "matched_rows": [
+    {
+      "text": "723 왕쯔한(王子漢) ♀ 2819",
+      "links": [
+        [
+          "왕쯔한(王子漢)",
+          "https://www.goratings.org/en/players/2445.html"
+        ]
+      ]
+    }
+  ]
+}

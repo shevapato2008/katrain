@@ -1,0 +1,646 @@
+{
+  "archive": {
+    "id_map": [
+      [
+        1028,
+        1048
+      ],
+      [
+        9988,
+        1048
+      ],
+      [
+        9989,
+        1048
+      ]
+    ],
+    "names": [
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "Zhou Heyang",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5133,
+        "lang": "en",
+        "player_id": 1028,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "周鹤洋",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5134,
+        "lang": "cn",
+        "player_id": 1028,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "周鶴洋",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5135,
+        "lang": "tw",
+        "player_id": 1028,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "チョウ・カヨウ",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5136,
+        "lang": "jp",
+        "player_id": 1028,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "주학양",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5137,
+        "lang": "ko",
+        "player_id": 1028,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      }
+    ],
+    "players": [
+      {
+        "canonical_name": "周鶴洋",
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "id": 1028
+      },
+      {
+        "canonical_name": "周鹤样",
+        "created_at": "2026-10-03T22:12:48.58749+00:00",
+        "id": 9988
+      },
+      {
+        "canonical_name": "周鹤羊",
+        "created_at": "2026-10-03T22:12:48.58749+00:00",
+        "id": 9989
+      }
+    ]
+  },
+  "counts": {
+    "archived_deleted_names": 5,
+    "canonical_renames": 0,
+    "changed_fk_slots": 2,
+    "created_aliases": 0,
+    "deleted_players": 3,
+    "metadata_repoints": 2,
+    "protected_exact_slots": 0
+  },
+  "decision_sha256": "a2a444ceeb7895ab03ba7a912c823431adb30b9e84f5e73c0f2389024888d1ef",
+  "environment": "TEST",
+  "format": "kifu-player-zhou-exact-dedup-plan-v1",
+  "postimage_sha256": "525b02360d23c2678ffe30018da1eef5dacd0577bd7778e8dbf00fe01c2fce87",
+  "preimage": {
+    "album_sources": [
+      {
+        "album_id": 87152,
+        "created_at": "2026-09-30T19:52:10.47246+00:00",
+        "id": 87156,
+        "match_method": "source_path",
+        "origin_path": "data/kifu-album/19x19/41382336.sgf",
+        "source_id": 1
+      },
+      {
+        "album_id": 148135,
+        "created_at": "2026-09-30T19:52:26.715937+00:00",
+        "id": 148144,
+        "match_method": "source_path",
+        "origin_path": "data/kifu-album/19x19/41606249.sgf",
+        "source_id": 1
+      }
+    ],
+    "albums": [
+      {
+        "black_player_id": 164,
+        "black_rank": null,
+        "board_size": 19,
+        "created_at": "2026-03-02T07:59:10.259642+00:00",
+        "date_played": "2005-10-14",
+        "date_sort": "2005-10-14",
+        "duplicate_of_id": null,
+        "event": "2005年澳特来围甲联赛第14轮",
+        "event_edition_id": 785,
+        "event_id": 41,
+        "handicap": 0,
+        "id": 87152,
+        "komi": 7.5,
+        "move_count": 150,
+        "place": null,
+        "player_black": "金承俊",
+        "player_white": "周鹤样",
+        "result": "W+R",
+        "round_name": null,
+        "rules": "chinese",
+        "search_text": "金承俊 周鹤样 2005年澳特来围甲联赛第14轮 w+r 2005-10-14 https://19x19.com",
+        "sgf_content": "(;CA[utf8]FF[4]AP[golaxy]SZ[19]RU[chinese]KM[7.5]HA[0]RE[W+R]PB[金承俊]PW[周鹤样]PL[B]GN[2005年澳特来围甲联赛第14轮][2005年澳特来围甲联赛第14轮]SO[https://19x19.com]DT[2005-10-14]GC[2005年澳特来围甲联赛第14轮 | 结果: W+R | 150手];B[pd];W[dd];B[qp];W[dq];B[oq];W[qj];B[co];W[cj];B[cl];W[cp];B[do];W[fq];B[ql];W[qf];B[mc];W[rd];B[qh];W[of];B[pi];W[qg];B[ri];W[oc];B[od];W[pc];B[nc];W[qd];B[jc];W[ej];B[go];W[hp];B[kp];W[no];B[mp];W[qo];B[rp];W[pl];B[pk];W[ok];B[pj];W[qm];B[pm];W[ol];B[om];W[pp];B[qn];W[rm];B[rl];W[rn];B[pn];W[ro];B[po];W[qq];B[rq];W[pq];B[so];W[nm];B[sm];W[nq];B[mr];W[or];B[cf];W[ce];B[df];W[fc];B[ch];W[be];B[bj];W[ho];B[ep];W[eq];B[iq];W[hq];B[nr];W[ir];B[jr];W[jq];B[kq];W[ip];B[mn];W[nn];B[km];W[mk];B[hm];W[ck];B[bk];W[dl];B[cm];W[ci];B[bi];W[dh];B[eh];W[gj];B[mm];W[kk];B[hk];W[ni];B[ki];W[ml];B[gh];W[hj];B[ik];W[ij];B[jk];W[jj];B[kj];W[kl];B[jm];W[hh];B[kg];W[gg];B[fg];W[gf];B[gd];W[fd];B[hg];W[ih];B[hf];W[fe];B[jg];W[cg];B[bh];W[dg];B[bf];W[lf];B[mh];W[mo];B[lo];W[mi];B[ng];W[nf];B[mf];W[mq];B[ef];W[gi];B[fh];W[fl];B[me];W[id];B[ji];W[gn];B[hn];W[gm];B[gk];W[fk];B[gl];W[em];B[ll];W[op];B[dc];W[cc])",
+        "source": "https://19x19.com",
+        "source_path": "data/kifu-album/19x19/41382336.sgf",
+        "white_player_id": 9988,
+        "white_rank": null
+      },
+      {
+        "black_player_id": 9989,
+        "black_rank": "九段",
+        "board_size": 19,
+        "created_at": "2026-03-02T07:59:10.259642+00:00",
+        "date_played": "2006-06-15",
+        "date_sort": "2006-06-15",
+        "duplicate_of_id": null,
+        "event": "2006中国和围甲联赛第06轮",
+        "event_edition_id": 786,
+        "event_id": 41,
+        "handicap": 0,
+        "id": 148135,
+        "komi": 7.5,
+        "move_count": 211,
+        "place": null,
+        "player_black": "周鹤羊",
+        "player_white": "赵守洵",
+        "result": "B+R",
+        "round_name": null,
+        "rules": "chinese",
+        "search_text": "周鹤羊 赵守洵 九段 四段 2006中国和围甲联赛第06轮 b+r 2006-06-15 https://19x19.com",
+        "sgf_content": "(;CA[utf8]FF[4]AP[golaxy]SZ[19]RU[chinese]KM[7.5]HA[0]RE[B+R]PB[周鹤羊]PW[赵守洵]BR[九段]WR[四段]PL[B]GN[2006中国和围甲联赛第06轮][2006中国和围甲联赛第06轮]SO[https://19x19.com]DT[2006-06-15]GC[2006中国和围甲联赛第06轮 | 结果: B+R | 211手];B[pd];W[dd];B[qp];W[dp];B[fq];W[cn];B[kq];W[qj];B[ql];W[qf];B[nc];W[rd];B[qh];W[of];B[oh];W[oj];B[qc];W[rh];B[pg];W[qi];B[pf];W[qg];B[fc];W[hc];B[fe];W[df];B[id];W[ic];B[jd];W[hd];B[he];W[jc];B[kd];W[kc];B[ge];W[mc];B[mb];W[lc];B[nd];W[le];B[ch];W[eg];B[jf];W[lb];B[ce];W[de];B[bf];W[cj];B[di];W[dj];B[ei];W[db];B[ej];W[bd];B[cl];W[dl];B[dm];W[ek];B[cm];W[fk];B[gi];W[fm];B[em];W[fp];B[fn];W[gm];B[gn];W[en];B[dn];W[eo];B[cp];W[cq];B[co];W[hn];B[go];W[gq];B[ho];W[io];B[hq];W[im];B[ip];W[gp];B[jo];W[bq];B[fl];W[ci];B[eh];W[bh];B[cg];W[gl];B[el];W[gj];B[dk];W[ck];B[dq];W[bn];B[do];W[ep];B[bk];W[bj];B[aj];W[dl];B[gr];W[fr];B[dk];W[qq];B[bi];W[pp];B[po];W[oq];B[qo];W[rq];B[in];W[hi];B[ji];W[gh];B[fg];W[jj];B[kj];W[jk];B[hm];W[ki];B[jh];W[li];B[lj];W[mj];B[kl];W[kg];B[jg];W[kk];B[lk];W[ll];B[mk];W[km];B[nj];W[ml];B[nk];W[ol];B[nl];W[nm];B[ni];W[mn];B[om];W[on];B[pm];W[oo];B[ok];W[me];B[np];W[op];B[hk];W[hj];B[lg];W[mg];B[lh];W[mh];B[mi];W[fd];B[gd];W[fb];B[cd];W[cc];B[gc];W[gb];B[ec];W[dc];B[dr];W[cr];B[bp];W[aq];B[fs];W[er];B[eb];W[ea];B[da];W[ca];B[hr];W[es];B[nq];W[nr];B[mr];W[rc];B[or];W[pr];B[ns];W[rm];B[pn];W[rl];B[gk];W[lf];B[kh];W[oe];B[pe];W[ph];B[rb];W[sb];B[ra];W[pb];B[ob];W[ma];B[nb];W[be];B[fj];W[ij];B[cf];W[ap];B[lm];W[mm];B[ln];W[kn];B[lo])",
+        "source": "https://19x19.com",
+        "source_path": "data/kifu-album/19x19/41606249.sgf",
+        "white_player_id": 11722,
+        "white_rank": "四段"
+      }
+    ],
+    "aliases": [],
+    "collision_aliases": [],
+    "collision_players": [
+      {
+        "canonical_name": "周鶴洋",
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "id": 1028
+      },
+      {
+        "canonical_name": "周鹤洋",
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "id": 1048
+      },
+      {
+        "canonical_name": "周鹤样",
+        "created_at": "2026-10-03T22:12:48.58749+00:00",
+        "id": 9988
+      },
+      {
+        "canonical_name": "周鹤羊",
+        "created_at": "2026-10-03T22:12:48.58749+00:00",
+        "id": 9989
+      }
+    ],
+    "database": "katrain_db",
+    "evidence": [],
+    "foreign_keys": [
+      {
+        "columns": [
+          "black_player_id"
+        ],
+        "constraint": "fk_kifu_albums_black_player_id",
+        "definition": "FOREIGN KEY (black_player_id) REFERENCES kifu_players(id)",
+        "schema": "public",
+        "table": "kifu_albums",
+        "target_columns": [
+          "id"
+        ],
+        "target_schema": "public",
+        "target_table": "kifu_players"
+      },
+      {
+        "columns": [
+          "white_player_id"
+        ],
+        "constraint": "fk_kifu_albums_white_player_id",
+        "definition": "FOREIGN KEY (white_player_id) REFERENCES kifu_players(id)",
+        "schema": "public",
+        "table": "kifu_albums",
+        "target_columns": [
+          "id"
+        ],
+        "target_schema": "public",
+        "target_table": "kifu_players"
+      },
+      {
+        "columns": [
+          "player_id"
+        ],
+        "constraint": "kifu_name_research_evidence_player_id_fkey",
+        "definition": "FOREIGN KEY (player_id) REFERENCES kifu_players(id)",
+        "schema": "public",
+        "table": "kifu_name_research_evidence",
+        "target_columns": [
+          "id"
+        ],
+        "target_schema": "public",
+        "target_table": "kifu_players"
+      },
+      {
+        "columns": [
+          "player_id"
+        ],
+        "constraint": "kifu_player_aliases_player_id_fkey",
+        "definition": "FOREIGN KEY (player_id) REFERENCES kifu_players(id)",
+        "schema": "public",
+        "table": "kifu_player_aliases",
+        "target_columns": [
+          "id"
+        ],
+        "target_schema": "public",
+        "target_table": "kifu_players"
+      },
+      {
+        "columns": [
+          "player_id"
+        ],
+        "constraint": "kifu_player_names_player_id_fkey",
+        "definition": "FOREIGN KEY (player_id) REFERENCES kifu_players(id)",
+        "schema": "public",
+        "table": "kifu_player_names",
+        "target_columns": [
+          "id"
+        ],
+        "target_schema": "public",
+        "target_table": "kifu_players"
+      }
+    ],
+    "names": [
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "Zhou Heyang",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5133,
+        "lang": "en",
+        "player_id": 1028,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "周鹤洋",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5134,
+        "lang": "cn",
+        "player_id": 1028,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "周鶴洋",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5135,
+        "lang": "tw",
+        "player_id": 1028,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "チョウ・カヨウ",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5136,
+        "lang": "jp",
+        "player_id": 1028,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "주학양",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5137,
+        "lang": "ko",
+        "player_id": 1028,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "Zhou Heyang",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5233,
+        "lang": "en",
+        "player_id": 1048,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "周鹤洋",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5234,
+        "lang": "cn",
+        "player_id": 1048,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "周鶴洋",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5235,
+        "lang": "tw",
+        "player_id": 1048,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "チョウ・ホーヤン",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5236,
+        "lang": "jp",
+        "player_id": 1048,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      },
+      {
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "decision_kind": null,
+        "display_name": "저우 헤양",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 5237,
+        "lang": "ko",
+        "player_id": 1048,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      }
+    ],
+    "players": [
+      {
+        "canonical_name": "周鶴洋",
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "id": 1028
+      },
+      {
+        "canonical_name": "周鹤洋",
+        "created_at": "2026-09-30T19:52:41.471629+00:00",
+        "id": 1048
+      },
+      {
+        "canonical_name": "周鹤样",
+        "created_at": "2026-10-03T22:12:48.58749+00:00",
+        "id": 9988
+      },
+      {
+        "canonical_name": "周鹤羊",
+        "created_at": "2026-10-03T22:12:48.58749+00:00",
+        "id": 9989
+      }
+    ],
+    "raw_rows": [
+      {
+        "category": "readable_unlinked",
+        "created_at": "2026-10-03T17:38:40.427873+00:00",
+        "id": 10144,
+        "parsed_data": {
+          "affected_games": 1,
+          "base_name": "周鶴洋",
+          "confidence": "medium",
+          "embedded_rank": null,
+          "exceptions": [],
+          "name": "周鶴洋",
+          "occurrences": 1,
+          "slot_count": 1
+        },
+        "parser_version": "catalog-player-v1",
+        "raw_value": "周鶴洋",
+        "review_metadata": null,
+        "review_status": "pending"
+      },
+      {
+        "category": "readable_unlinked",
+        "created_at": "2026-10-03T17:38:40.427873+00:00",
+        "id": 10145,
+        "parsed_data": {
+          "affected_games": 1,
+          "base_name": "周鹤样",
+          "confidence": "medium",
+          "embedded_rank": null,
+          "exceptions": [],
+          "name": "周鹤样",
+          "occurrences": 1,
+          "slot_count": 1
+        },
+        "parser_version": "catalog-player-v1",
+        "raw_value": "周鹤样",
+        "review_metadata": {
+          "inventory_sha256": "cc46067736fa3895c85963d88fdacd91aaf6dd1d2b5da3dc843d3df26a8d237c",
+          "kind": "provisional_person_link",
+          "player_id": 9988
+        },
+        "review_status": "pending"
+      },
+      {
+        "category": "readable_unlinked",
+        "created_at": "2026-10-03T17:38:40.427873+00:00",
+        "id": 10146,
+        "parsed_data": {
+          "affected_games": 860,
+          "base_name": "周鹤洋",
+          "confidence": "medium",
+          "embedded_rank": null,
+          "exceptions": [],
+          "name": "周鹤洋",
+          "occurrences": 860,
+          "slot_count": 860
+        },
+        "parser_version": "catalog-player-v1",
+        "raw_value": "周鹤洋",
+        "review_metadata": null,
+        "review_status": "pending"
+      },
+      {
+        "category": "readable_unlinked",
+        "created_at": "2026-10-03T17:38:40.427873+00:00",
+        "id": 10148,
+        "parsed_data": {
+          "affected_games": 1,
+          "base_name": "周鹤羊",
+          "confidence": "medium",
+          "embedded_rank": null,
+          "exceptions": [],
+          "name": "周鹤羊",
+          "occurrences": 1,
+          "slot_count": 1
+        },
+        "parser_version": "catalog-player-v1",
+        "raw_value": "周鹤羊",
+        "review_metadata": {
+          "inventory_sha256": "cc46067736fa3895c85963d88fdacd91aaf6dd1d2b5da3dc843d3df26a8d237c",
+          "kind": "provisional_person_link",
+          "player_id": 9989
+        },
+        "review_status": "pending"
+      }
+    ],
+    "sources": [
+      {
+        "created_at": "2026-09-30T19:51:44.860563+00:00",
+        "display_name": "19x19",
+        "id": 1,
+        "source_key": "19x19"
+      }
+    ]
+  },
+  "scope": {
+    "aliases_to_create": [],
+    "database": "katrain_db",
+    "delete_name_ids": [
+      5133,
+      5134,
+      5135,
+      5136,
+      5137
+    ],
+    "inventory_sha256": "cc46067736fa3895c85963d88fdacd91aaf6dd1d2b5da3dc843d3df26a8d237c",
+    "metadata_repoints": [
+      [
+        10145,
+        9988,
+        1048
+      ],
+      [
+        10148,
+        9989,
+        1048
+      ]
+    ],
+    "players": [
+      [
+        1028,
+        "周鶴洋"
+      ],
+      [
+        1048,
+        "周鹤洋"
+      ],
+      [
+        9988,
+        "周鹤样"
+      ],
+      [
+        9989,
+        "周鹤羊"
+      ]
+    ],
+    "rename": null,
+    "retire": [
+      1028,
+      9988,
+      9989
+    ],
+    "slots": [
+      {
+        "album_id": 87152,
+        "date": "2005-10-14",
+        "moves": 150,
+        "new_fk": 1048,
+        "old_fk": 9988,
+        "opponent": "金承俊",
+        "raw": "周鹤样",
+        "result": "W+R",
+        "sgf_sha256": "30aa83fc32380a89161e660551a22b941cb2bf1e7855645438b983806651eaa6",
+        "side": "white"
+      },
+      {
+        "album_id": 148135,
+        "date": "2006-06-15",
+        "moves": 211,
+        "new_fk": 1048,
+        "old_fk": 9989,
+        "opponent": "赵守洵",
+        "raw": "周鹤羊",
+        "result": "B+R",
+        "sgf_sha256": "6af57520297a303ac5cb4aa81ee01e04d5f49d49754a9209f43195c4871771f6",
+        "side": "black"
+      }
+    ],
+    "survivor": 1048
+  },
+  "script_sha256": "91ff92c538ee9b16545ff674dcdade2175b792c7fbe49382e4b98bf316064818",
+  "sha256": "b5d1f5cb1dc9fd6176bbfad64a7b1f2185565b124e6127205c9adf81163e37fe"
+}

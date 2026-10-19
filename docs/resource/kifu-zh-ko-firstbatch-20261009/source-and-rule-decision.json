@@ -1,0 +1,134 @@
+{
+  "artifact_kind": "zh_ko_firstbatch_source_and_rule_decision",
+  "decided_at_utc": "2026-10-08T21:57:59Z",
+  "approval_level": "source_inputs_and_six_finite_rule_entries_only",
+  "candidate_approval": false,
+  "source_basis": "normative_zh_ko_v1",
+  "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+  "selected_owner_ids": [5498, 5739],
+  "input_packet": {
+    "path": "source-only.json",
+    "sha256": "f4032eee33ac7bd6102203ae2ade60e9fb96527fa9fab2decdd40feb46c9ca0b",
+    "capture_index_path": "capture-index.json",
+    "capture_index_sha256": "a6e3d4406e8120fdca3f92dc07f1d6782df0b0d8d6997bbe86f41ff293dc422c",
+    "catalog_binding_status": "Saved pre-592 CN/EN snapshot only. Root must bind fresh current names/evidence and KO target before candidate approval."
+  },
+  "scope_decision": {
+    "approved_scope": "Modern mainland Chinese professional Go players with these exact original Han names and complete published Hanyu Pinyin readings.",
+    "reason": "Same-person U-Go Han+Latin+CHN profiles, original published name spellings attributed there to Go4go/GoGoD, and matching names in the Chinese association professional roster establish ordinary Mandarin original-name context for the selected two owners.",
+    "pinyin_label_is_reviewer_determination": true,
+    "pinyin_label_not_explicitly_published_by_ugo": true,
+    "reading_inferred_from_han": false,
+    "surname_given_boundary": "The two words already separated in each published Latin form; each given word has the recorded complete syllable segmentation.",
+    "no_fixed_source_count_or_dob_requirement": true,
+    "known_contrary_names_resolved_for_selected_inputs": true,
+    "global_negative_closure_claimed": false,
+    "display_spacing": "Join surname and given name for this project; preserve both boundaries in evidence. No Chinese-specific NIKL spacing mandate is claimed."
+  },
+  "approved_inputs": [
+    {
+      "owner": {"kind": "player", "id": 5498},
+      "status": "approved_inputs",
+      "original_language": "zh-Hans",
+      "original_name": "王宏伟",
+      "published_reading": "Wang Hongwei",
+      "reading_system": "pinyin-syllables-v1",
+      "reading_words": [["wang"], ["hong", "wei"]],
+      "syllable_outputs": [["왕"], ["훙", "웨이"]],
+      "rule_output": "왕훙웨이",
+      "source_ids": ["ugo-5498-search", "ugo-5498-profile", "cwa-professional-roster"],
+      "identity_locator": "U-Go /1923/: Latin line 75, Han line 82, CHN line 112; CWA $.data.Z02[94] has playerName 王宏伟 (CWA000406).",
+      "pinyin_determination": "The complete published Wang Hongwei in this mainland Han-name context is ordinary Hanyu Pinyin; Hongwei separates hong+wei. No English alias or competing reading appears in the actual profile.",
+      "community_usage": {"source_id": "daum-chinese-player-roster", "line": 893, "excerpt": "왕훙웨이 王宏伟/王宏偉", "result": "matching_positive_reference_usage", "conventional_gate_qualified": false},
+      "contrary_check_ids": ["ugo-5498-full-name", "saved-korean-rosters-5498", "bounded-korean-web-search"],
+      "contrary_resolution": "Known community form agrees exactly. The bounded official/professional roster scans found no exact proposed-Hangul entry. Web response actor/politician names are distinct people and do not supply this Go player's name."
+    },
+    {
+      "owner": {"kind": "player", "id": 5739},
+      "status": "approved_inputs",
+      "original_language": "zh-Hans",
+      "original_name": "翁子瑜",
+      "published_reading": "Weng Ziyu",
+      "reading_system": "pinyin-syllables-v1",
+      "reading_words": [["weng"], ["zi", "yu"]],
+      "syllable_outputs": [["웡"], ["쯔", "위"]],
+      "rule_output": "웡쯔위",
+      "source_ids": ["ugo-5739-search", "ugo-5739-profile", "cwa-professional-roster"],
+      "identity_locator": "U-Go /1942/: Latin line 75, Han line 82, CHN line 112; CWA $.data.Z06[63] has playerName 翁子瑜 (CWA001094).",
+      "pinyin_determination": "The complete published Weng Ziyu in this mainland Han-name context is ordinary Hanyu Pinyin; Ziyu separates zi+yu. No English alias or competing reading appears in the actual profile.",
+      "community_usage": {"source_id": "daum-chinese-player-roster", "line": 925, "excerpt": "웡쯔위 翁子瑜/翁子瑜", "result": "matching_positive_reference_usage", "conventional_gate_qualified": false},
+      "contrary_check_ids": ["ugo-5739-full-name", "saved-korean-rosters-5739", "bounded-korean-web-search"],
+      "contrary_resolution": "Known community form agrees exactly; no competing same-person form was found in the stated finite captures."
+    }
+  ],
+  "approved_syllable_mappings": {
+    "wang": {"hangul": "왕", "kind": "direct_table_entry", "locator": "Table 5 finals: wang (uang) -> 왕, zero-initial form."},
+    "hong": {"hangul": "훙", "kind": "reviewed_composition", "locator": "Table 5 initial h -> ㅎ plus final weng (ong) -> 웡 (웅); the parenthetical ong -> 웅 follows an initial, giving 훙. Table note at raw line 1578."},
+    "wei": {"hangul": "웨이", "kind": "direct_table_entry", "locator": "Table 5 finals: wei (ui) -> 웨이 (우이); select unparenthesized zero-initial wei."},
+    "weng": {"hangul": "웡", "kind": "direct_table_entry", "locator": "Table 5 finals: weng (ong) -> 웡 (웅); select unparenthesized zero-initial weng."},
+    "zi": {"hangul": "쯔", "kind": "direct_table_entry", "locator": "Table 5 initials: z [zi] -> ㅉ [쯔]; bracketed independent syllable. Table note at raw line 1578."},
+    "yu": {"hangul": "위", "kind": "direct_table_entry", "locator": "Table 5 finals: yu (u) -> 위; distinct from wu (u) -> 우."}
+  },
+  "rule_source": {
+    "source_id": "nikl-full-foreign-regulation",
+    "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+    "table_locator": "Chapter 2 Table 5, raw HTML line 1573; note line 1578.",
+    "scope_locator": "Chapter 4 section 2 item 1, raw HTML line 13706, contemporary Chinese personal names.",
+    "tone_locator": "Chapter 3 Chinese section item 1, raw HTML line 6666; do not distinguish tones in Hangul.",
+    "table_count": 6,
+    "no_person_specific_endorsement": true,
+    "unused_syllables_not_frozen": ["xu", "jian", "ying", "li", "qing", "hai"]
+  },
+  "not_selected": [
+    {
+      "owner": {"kind": "player", "id": 5890},
+      "status": "redirect_conventional_review",
+      "original_name": "许俭颖",
+      "published_reading": "Xu Jianying",
+      "observed_reliable_hangul": "쉬젠잉",
+      "source_ids": ["ugo-5890-profile", "tvbaduk-china-index", "tvbaduk-5890-profile", "kba-china-roster"],
+      "reason": "Saved TVBaduk professional profile prpl_code=20000820 publishes 쉬젠잉 1段 [許儉潁], affiliated with China; KBA and TVBaduk indices have the same Hangul/profile code. This is a reliable published-use lead, not a negative result.",
+      "essential_resolution": "Explicitly resolve 潁 in the published TVBaduk Han form versus 颖/穎 in the existing owner, or supply an adequate same-person bridge. Do not claim these are an exact simplified/traditional glyph pair. Then use conventional review; no generated candidate is approved here."
+    },
+    {
+      "owner": {"kind": "player", "id": 5101},
+      "status": "hold_unresolved_published_reading_variant",
+      "original_name": "李青海",
+      "source_ids": ["ugo-5101-profile"],
+      "actual_conflict": {"locator": "U-Go /1816/ raw HTML lines 75, 82, 89", "published_forms": ["Lin Qinghai", "Li Qinghai", "李青海"]},
+      "reason": "The raw source publishes a Lin/Li surname discrepancy omitted from the source-only summary. Its cause has not been resolved.",
+      "essential_resolution": "Resolve the actual Lin/Li discrepancy before generation. Residence in Japan alone does not disprove an original Mandarin name or require a new biography; investigate another actual language only if source evidence indicates such a name/pronunciation."
+    }
+  ],
+  "contrary_checks": [
+    {"id": "ugo-5498-full-name", "query": "Wang Hongwei", "source_ids": ["ugo-5498-search", "ugo-5498-profile"], "scope": "Actual U-Go query response and linked /1923/ profile", "result": "same_person_han_pinyin_found_no_variant_in_profile"},
+    {"id": "ugo-5739-full-name", "query": "Weng Ziyu", "source_ids": ["ugo-5739-search", "ugo-5739-profile"], "scope": "Actual U-Go query response and linked /1942/ profile", "result": "same_person_han_pinyin_found_no_variant_in_profile"},
+    {"id": "saved-korean-rosters-5498", "queries": ["왕훙웨이", "王宏伟", "王宏偉"], "method": "Literal search of saved bodies on 2026-10-08", "source_ids": ["daum-chinese-player-roster", "tvbaduk-china-index", "kba-china-roster"], "results": {"daum-chinese-player-roster": "positive_matching_row_line_893", "tvbaduk-china-index": "proposed_hangul_not_found_in_this_capture", "kba-china-roster": "proposed_hangul_not_found_in_this_capture"}},
+    {"id": "saved-korean-rosters-5739", "queries": ["웡쯔위", "翁子瑜"], "method": "Literal search of saved bodies on 2026-10-08", "source_ids": ["daum-chinese-player-roster", "tvbaduk-china-index", "kba-china-roster"], "results": {"daum-chinese-player-roster": "positive_matching_row_line_925", "tvbaduk-china-index": "proposed_hangul_not_found_in_this_capture", "kba-china-roster": "proposed_hangul_not_found_in_this_capture"}},
+    {"id": "bounded-korean-web-search", "queries": ["\"쉬젠잉\" 바둑", "\"왕훙웨이\" 바둑", "\"웡쯔위\" 바둑"], "queried_at_utc": "2026-10-08T21:56:01Z", "response_status": "completed_with_results", "source_id": "bounded-korean-web-search-response", "result": "Reliable published Hangul lead for 5890; Wang results include an actor and a politician, which are unrelated to these Go owners. Combined tool output is not per-site or global negative closure."},
+    {"id": "tvbaduk-online-open", "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2", "method": "web open/find", "response_status": "unavailable", "result": "Tool reports timeout fetching. No not_found inference; the separately saved HTTP 200 body is used instead."}
+  ],
+  "sources": [
+    {"id": "ugo-5498-search", "url": "https://db.u-go.net/?q=Wang+Hongwei", "method": "GET", "http_status": 200, "fetched_at_utc": "2026-10-08T21:50:11.330703+00:00", "body_file": "captures/ugo-5498-search.html", "body_sha256": "4a3ef8b3cd7563de46fbd5fcf4deaac25c307323228839f5c3ee1680beeda4ec", "role": "Published same-person Han/Latin search result; row links /1923/. Provenance legend lines 353-366 explains g/4."},
+    {"id": "ugo-5498-profile", "url": "https://db.u-go.net/1923/", "method": "GET", "http_status": 200, "fetched_at_utc": "2026-10-08T21:50:12.700400+00:00", "body_file": "captures/ugo-5498-profile.html", "body_sha256": "e8bd7f2f4910baac35b43889ba0f6455b3a27ed99d43a44d1ef0dddf42600df8", "role": "Published complete Han/Latin player profile, CHN; lines 75/82/112."},
+    {"id": "ugo-5739-search", "url": "https://db.u-go.net/?q=Weng+Ziyu", "method": "GET", "http_status": 200, "fetched_at_utc": "2026-10-08T21:50:14.118657+00:00", "body_file": "captures/ugo-5739-search.html", "body_sha256": "1420642895fb83bb2cc144cc592bebd7b16e7e6772fe29c9903b859a68fd2e10", "role": "Published same-person Han/Latin search result; row links /1942/. Provenance legend lines 353-366 explains g/4."},
+    {"id": "ugo-5739-profile", "url": "https://db.u-go.net/1942/", "method": "GET", "http_status": 200, "fetched_at_utc": "2026-10-08T21:50:15.502476+00:00", "body_file": "captures/ugo-5739-profile.html", "body_sha256": "f83f810003cc0b6fde9d53ff5558aab68152583a80fa718c6c650f1ee3cc993d", "role": "Published complete Han/Latin player profile, CHN; lines 75/82/112."},
+    {"id": "ugo-5890-profile", "url": "https://db.u-go.net/500/", "method": "GET", "http_status": 200, "fetched_at_utc": "2026-10-08T21:50:09.773599+00:00", "body_file": "captures/ugo-5890-profile.html", "body_sha256": "5d0129bbaeecc62bed5740ec736dcd561237496800bc8de04822e962b6a0d390", "role": "Han/Latin same-person lead for separately routed owner."},
+    {"id": "ugo-5101-profile", "url": "https://db.u-go.net/1816/", "method": "GET", "http_status": 200, "fetched_at_utc": "2026-10-08T21:50:07.075660+00:00", "body_file": "captures/ugo-5101-profile.html", "body_sha256": "4ddcdeae7dd5b290a70bf3f629d54abb434563a375f219e12deb238909b738c3", "role": "Actual Lin/Li published reading discrepancy, lines 75/82/89."},
+    {"id": "cwa-professional-roster", "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list", "http_status": 200, "fetched_at_utc": "2026-10-04T09:31:54.283371+00:00", "body_file": "../kifu-player-new33-independent-sources-2026-10-04/cwa-roster.json", "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9", "role": "Official Chinese association professional roster context; exact Han names at $.data.Z02[94] and $.data.Z06[63]."},
+    {"id": "daum-chinese-player-roster", "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA", "http_status": 200, "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00", "body_file": "../kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body", "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41", "role": "Community/reference positive Han+Hangul rows 893 and 925, under Chinese Go players; dated 2012 roster, not current exhaustive coverage."},
+    {"id": "tvbaduk-china-index", "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2", "method": "GET", "http_status": 200, "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00", "body_file": "../kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body", "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a", "role": "Professional Go roster bounded contrary check; line 3034 lists 쉬젠잉 with code 20000820."},
+    {"id": "tvbaduk-5890-profile", "url": "https://www.tvbaduk.com/info/gisa_view.asp", "method": "POST", "request_parameters": {"S_nation": "2", "S_ob_forc": "", "S_sort_mode": "A", "prpl_code": "20000820"}, "http_status": 200, "fetched_at_utc": "2026-10-08T20:21:17.660755+00:00", "body_file": "../kifu-next-source20-v2-20261009/tvbaduk-5890.body", "body_sha256": "8a4cd28fd24ddf9c30e556f0df8d367eb5b6f2050cc20823292d0ebb35e1e44b", "role": "Reliable published-use lead: 쉬젠잉 1段 [許儉潁], China affiliation; exact final Han glyph differs from current owner."},
+    {"id": "kba-china-roster", "url": "https://www.baduk.or.kr/record/player_in.asp", "method": "POST", "request_body": "pageNo=1&keyColumn=2&keyWord=&etcKey=&etcKey2=A&etcKey3=", "http_status": 200, "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00", "body_file": "../kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body", "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934", "role": "Official Chinese-player list response, finite literal search; line 1574 lists 쉬젠잉 with code 20000820."},
+    {"id": "nikl-full-foreign-regulation", "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003", "method": "GET", "http_status": 200, "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00", "body_file": "../kifu-nikl-cn-ko-research-20261009/captures/foreign-regulation-full.html", "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b", "role": "Official finite conversion rules; no person-specific source endorsement."},
+    {"id": "bounded-korean-web-search-response", "capture_kind": "web_tool_response_not_raw_publisher_html", "queried_at_utc": "2026-10-08T21:56:01Z", "body_file": "contrary-web-search.json", "body_sha256": "a625cc0dc03fedd71cdb8fd1a54862731e01e78159cf1b0718894d325914f00e", "role": "Actual combined query/result transcript; no HTTP status asserted."}
+  ],
+  "verification": {
+    "source_body_hashes_recomputed": true,
+    "selected_outputs_recomputed_from_only_six_entries": true,
+    "current_database_read_performed": false,
+    "candidate_bundle_or_signature_created": false,
+    "sql_cloud_code_git_or_deployment_performed": false,
+    "remaining_root_work": "Bind fresh same-owner current CN/EN evidence and applied source status; confirm absent KO target and cross-owner collision checks; construct final research/candidate contents and obtain exact independent candidate approval."
+  }
+}

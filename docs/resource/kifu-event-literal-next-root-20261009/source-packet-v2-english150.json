@@ -1,0 +1,3554 @@
+{
+  "status": "unsigned_source_only",
+  "selection_sha256": "b10685b6cdcceb50d3c49e0f98abff3dafc02a97475cba6693491821c06cecad",
+  "sources": {
+    "kifu-event-title-next212-source-only-20261009.json": {
+      "source_status": "unsigned_source_only",
+      "core_lexicon": {
+        "Nihon Ki-in #1": {
+          "cn": "日本棋院第一位",
+          "tw": "日本棋院第一位",
+          "jp": "日本棋院第1位",
+          "ko": "일본기원 제1위",
+          "en": "Nihon Ki-in No. 1"
+        },
+        "Kiseong": {
+          "cn": "棋圣战",
+          "tw": "棋聖戰",
+          "jp": "棋聖戦",
+          "ko": "기성전",
+          "en": "Kiseong Tournament"
+        },
+        "All-Japan Women's Championship": {
+          "cn": "全日本女子冠军赛",
+          "tw": "全日本女子冠軍賽",
+          "jp": "全日本女子選手権",
+          "ko": "전일본 여자 선수권",
+          "en": "All-Japan Women's Championship"
+        },
+        "P'aewang": {
+          "cn": "霸王战",
+          "tw": "霸王戰",
+          "jp": "覇王戦",
+          "ko": "패왕전",
+          "en": "P'aewang Tournament"
+        },
+        "NihonKi-inChampionship": {
+          "cn": "日本棋院选手权赛",
+          "tw": "日本棋院選手權賽",
+          "jp": "日本棋院選手権戦",
+          "ko": "일본기원 선수권전",
+          "en": "Nihon Ki-in Championship"
+        },
+        "Kukgi": {
+          "cn": "国棋战",
+          "tw": "國棋戰",
+          "jp": "国棋戦",
+          "ko": "국기전",
+          "en": "Kukgi Tournament"
+        },
+        "Nihon Saikyo": {
+          "cn": "日本最强战",
+          "tw": "日本最強戰",
+          "jp": "日本最強戦",
+          "ko": "일본 최강전",
+          "en": "Nihon Saikyo Tournament"
+        },
+        "Taewang": {
+          "cn": "大王战",
+          "tw": "大王戰",
+          "jp": "大王戦",
+          "ko": "대왕전",
+          "en": "Taewang Tournament"
+        },
+        "BacchusCup": {
+          "cn": "巴克斯杯",
+          "tw": "巴克斯盃",
+          "jp": "バッカス杯",
+          "ko": "박카스배",
+          "en": "Bacchus Cup"
+        },
+        "Ch'oegowi": {
+          "cn": "最高位战",
+          "tw": "最高位戰",
+          "jp": "最高位戦",
+          "ko": "최고위전",
+          "en": "Ch'oegowi Tournament"
+        },
+        "JapaneseTengen": {
+          "cn": "日本天元战",
+          "tw": "日本天元戰",
+          "jp": "日本天元戦",
+          "ko": "일본 천원전",
+          "en": "Japanese Tengen Tournament"
+        },
+        "HayagoChampionship": {
+          "cn": "快棋选手权赛",
+          "tw": "快棋選手權賽",
+          "jp": "早碁選手権戦",
+          "ko": "속기 선수권전",
+          "en": "Hayago Championship"
+        },
+        "NECCup": {
+          "cn": "NEC杯",
+          "tw": "NEC盃",
+          "jp": "NEC杯",
+          "ko": "NEC배",
+          "en": "NEC Cup"
+        }
+      },
+      "records": [
+        {
+          "raw_value": "6th Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 68087,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "6th "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 71,
+          "names": {
+            "cn": "第6届日本棋院第一位",
+            "tw": "第6屆日本棋院第一位",
+            "jp": "第6回日本棋院第1位",
+            "ko": "제6회 일본기원 제1위",
+            "en": "6th Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "4th Nihon Saikyo",
+          "raw_owner_id_hint_2026_10_04": 67268,
+          "core": "Nihon Saikyo",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "4th "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Saikyo"
+            }
+          ],
+          "saved_inventory_game_count": 68,
+          "names": {
+            "cn": "第4届日本最强战",
+            "tw": "第4屆日本最強戰",
+            "jp": "第4回日本最強戦",
+            "ko": "제4회 일본 최강전",
+            "en": "4th Nihon Saikyo Tournament"
+          }
+        },
+        {
+          "raw_value": "4th Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 67264,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "4th "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 63,
+          "names": {
+            "cn": "第4届日本棋院第一位",
+            "tw": "第4屆日本棋院第一位",
+            "jp": "第4回日本棋院第1位",
+            "ko": "제4회 일본기원 제1위",
+            "en": "4th Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "7th Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 68458,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "7th "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 62,
+          "names": {
+            "cn": "第7届日本棋院第一位",
+            "tw": "第7屆日本棋院第一位",
+            "jp": "第7回日本棋院第1位",
+            "ko": "제7회 일본기원 제1위",
+            "en": "7th Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "5th Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 67680,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "5th "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 57,
+          "names": {
+            "cn": "第5届日本棋院第一位",
+            "tw": "第5屆日本棋院第一位",
+            "jp": "第5回日本棋院第1位",
+            "ko": "제5회 일본기원 제1위",
+            "en": "5th Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "2nd Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 65459,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "2nd "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 51,
+          "names": {
+            "cn": "第2届日本棋院第一位",
+            "tw": "第2屆日本棋院第一位",
+            "jp": "第2回日本棋院第1位",
+            "ko": "제2회 일본기원 제1위",
+            "en": "2nd Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "3rd Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 66388,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "3rd "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 49,
+          "names": {
+            "cn": "第3届日本棋院第一位",
+            "tw": "第3屆日本棋院第一位",
+            "jp": "第3回日本棋院第1位",
+            "ko": "제3회 일본기원 제1위",
+            "en": "3rd Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "29thJapaneseTengen",
+          "raw_owner_id_hint_2026_10_04": 65253,
+          "core": "JapaneseTengen",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "29th"
+            },
+            {
+              "kind": "core",
+              "text": "JapaneseTengen"
+            }
+          ],
+          "saved_inventory_game_count": 28,
+          "names": {
+            "cn": "第29届日本天元战",
+            "tw": "第29屆日本天元戰",
+            "jp": "第29回日本天元戦",
+            "ko": "제29회 일본 천원전",
+            "en": "29th Japanese Tengen Tournament"
+          }
+        },
+        {
+          "raw_value": "30thJapaneseTengen",
+          "raw_owner_id_hint_2026_10_04": 65790,
+          "core": "JapaneseTengen",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "30th"
+            },
+            {
+              "kind": "core",
+              "text": "JapaneseTengen"
+            }
+          ],
+          "saved_inventory_game_count": 27,
+          "names": {
+            "cn": "第30届日本天元战",
+            "tw": "第30屆日本天元戰",
+            "jp": "第30回日本天元戦",
+            "ko": "제30회 일본 천원전",
+            "en": "30th Japanese Tengen Tournament"
+          }
+        },
+        {
+          "raw_value": "31stJapaneseTengen",
+          "raw_owner_id_hint_2026_10_04": 65908,
+          "core": "JapaneseTengen",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "31st"
+            },
+            {
+              "kind": "core",
+              "text": "JapaneseTengen"
+            }
+          ],
+          "saved_inventory_game_count": 26,
+          "names": {
+            "cn": "第31届日本天元战",
+            "tw": "第31屆日本天元戰",
+            "jp": "第31回日本天元戦",
+            "ko": "제31회 일본 천원전",
+            "en": "31st Japanese Tengen Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,11th",
+          "raw_owner_id_hint_2026_10_04": 70031,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",11th"
+            }
+          ],
+          "saved_inventory_game_count": 23,
+          "names": {
+            "cn": "第11届国棋战",
+            "tw": "第11屆國棋戰",
+            "jp": "第11回国棋戦",
+            "ko": "제11회 국기전",
+            "en": "11th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,12th",
+          "raw_owner_id_hint_2026_10_04": 70032,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",12th"
+            }
+          ],
+          "saved_inventory_game_count": 23,
+          "names": {
+            "cn": "第12届国棋战",
+            "tw": "第12屆國棋戰",
+            "jp": "第12回国棋戦",
+            "ko": "제12회 국기전",
+            "en": "12th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,1st",
+          "raw_owner_id_hint_2026_10_04": 69971,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",1st"
+            }
+          ],
+          "saved_inventory_game_count": 21,
+          "names": {
+            "cn": "第1届棋圣战",
+            "tw": "第1屆棋聖戰",
+            "jp": "第1回棋聖戦",
+            "ko": "제1회 기성전",
+            "en": "1st Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,2nd",
+          "raw_owner_id_hint_2026_10_04": 69972,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",2nd"
+            }
+          ],
+          "saved_inventory_game_count": 20,
+          "names": {
+            "cn": "第2届棋圣战",
+            "tw": "第2屆棋聖戰",
+            "jp": "第2回棋聖戦",
+            "ko": "제2회 기성전",
+            "en": "2nd Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "P'aewang,20th",
+          "raw_owner_id_hint_2026_10_04": 70502,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",20th"
+            }
+          ],
+          "saved_inventory_game_count": 20,
+          "names": {
+            "cn": "第20届霸王战",
+            "tw": "第20屆霸王戰",
+            "jp": "第20回覇王戦",
+            "ko": "제20회 패왕전",
+            "en": "20th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "P'aewang,22nd",
+          "raw_owner_id_hint_2026_10_04": 70504,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",22nd"
+            }
+          ],
+          "saved_inventory_game_count": 20,
+          "names": {
+            "cn": "第22届霸王战",
+            "tw": "第22屆霸王戰",
+            "jp": "第22回覇王戦",
+            "ko": "제22회 패왕전",
+            "en": "22nd P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "1st Nihon Saikyo",
+          "raw_owner_id_hint_2026_10_04": 53261,
+          "core": "Nihon Saikyo",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "1st "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Saikyo"
+            }
+          ],
+          "saved_inventory_game_count": 19,
+          "names": {
+            "cn": "第1届日本最强战",
+            "tw": "第1屆日本最強戰",
+            "jp": "第1回日本最強戦",
+            "ko": "제1회 일본 최강전",
+            "en": "1st Nihon Saikyo Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,4th",
+          "raw_owner_id_hint_2026_10_04": 69974,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",4th"
+            }
+          ],
+          "saved_inventory_game_count": 19,
+          "names": {
+            "cn": "第4届棋圣战",
+            "tw": "第4屆棋聖戰",
+            "jp": "第4回棋聖戦",
+            "ko": "제4회 기성전",
+            "en": "4th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,9th",
+          "raw_owner_id_hint_2026_10_04": 69979,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",9th"
+            }
+          ],
+          "saved_inventory_game_count": 19,
+          "names": {
+            "cn": "第9届棋圣战",
+            "tw": "第9屆棋聖戰",
+            "jp": "第9回棋聖戦",
+            "ko": "제9회 기성전",
+            "en": "9th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,3rd",
+          "raw_owner_id_hint_2026_10_04": 69973,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",3rd"
+            }
+          ],
+          "saved_inventory_game_count": 17,
+          "names": {
+            "cn": "第3届棋圣战",
+            "tw": "第3屆棋聖戰",
+            "jp": "第3回棋聖戦",
+            "ko": "제3회 기성전",
+            "en": "3rd Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "19th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 52962,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "19th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 16,
+          "names": {
+            "cn": "第19届全日本女子冠军赛",
+            "tw": "第19屆全日本女子冠軍賽",
+            "jp": "第19回全日本女子選手権",
+            "ko": "제19회 전일본 여자 선수권",
+            "en": "19th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "Kukgi,10th",
+          "raw_owner_id_hint_2026_10_04": 70030,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",10th"
+            }
+          ],
+          "saved_inventory_game_count": 16,
+          "names": {
+            "cn": "第10届国棋战",
+            "tw": "第10屆國棋戰",
+            "jp": "第10回国棋戦",
+            "ko": "제10회 국기전",
+            "en": "10th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "18th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 52236,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "18th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 15,
+          "names": {
+            "cn": "第18届全日本女子冠军赛",
+            "tw": "第18屆全日本女子冠軍賽",
+            "jp": "第18回全日本女子選手権",
+            "ko": "제18회 전일본 여자 선수권",
+            "en": "18th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "Taewang,5th",
+          "raw_owner_id_hint_2026_10_04": 70656,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Taewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",5th"
+            }
+          ],
+          "saved_inventory_game_count": 15,
+          "names": {
+            "cn": "第5届大王战",
+            "tw": "第5屆大王戰",
+            "jp": "第5回大王戦",
+            "ko": "제5회 대왕전",
+            "en": "5th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "17th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 52158,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "17th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第17届全日本女子冠军赛",
+            "tw": "第17屆全日本女子冠軍賽",
+            "jp": "第17回全日本女子選手権",
+            "ko": "제17회 전일본 여자 선수권",
+            "en": "17th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "24th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 63761,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "24th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第24届全日本女子冠军赛",
+            "tw": "第24屆全日本女子冠軍賽",
+            "jp": "第24回全日本女子選手権",
+            "ko": "제24회 전일본 여자 선수권",
+            "en": "24th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "2nd Nihon Saikyo",
+          "raw_owner_id_hint_2026_10_04": 65464,
+          "core": "Nihon Saikyo",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "2nd "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Saikyo"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第2届日本最强战",
+            "tw": "第2屆日本最強戰",
+            "jp": "第2回日本最強戦",
+            "ko": "제2회 일본 최강전",
+            "en": "2nd Nihon Saikyo Tournament"
+          }
+        },
+        {
+          "raw_value": "3rd Nihon Saikyo",
+          "raw_owner_id_hint_2026_10_04": 66390,
+          "core": "Nihon Saikyo",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "3rd "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Saikyo"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第3届日本最强战",
+            "tw": "第3屆日本最強戰",
+            "jp": "第3回日本最強戦",
+            "ko": "제3회 일본 최강전",
+            "en": "3rd Nihon Saikyo Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,13th",
+          "raw_owner_id_hint_2026_10_04": 70033,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",13th"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第13届国棋战",
+            "tw": "第13屆國棋戰",
+            "jp": "第13回国棋戦",
+            "ko": "제13회 국기전",
+            "en": "13th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,14th",
+          "raw_owner_id_hint_2026_10_04": 70034,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",14th"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第14届国棋战",
+            "tw": "第14屆國棋戰",
+            "jp": "第14回国棋戦",
+            "ko": "제14회 국기전",
+            "en": "14th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "P'aewang,21st",
+          "raw_owner_id_hint_2026_10_04": 70503,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",21st"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第21届霸王战",
+            "tw": "第21屆霸王戰",
+            "jp": "第21回覇王戦",
+            "ko": "제21회 패왕전",
+            "en": "21st P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "12th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 51339,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "12th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 13,
+          "names": {
+            "cn": "第12届全日本女子冠军赛",
+            "tw": "第12屆全日本女子冠軍賽",
+            "jp": "第12回全日本女子選手権",
+            "ko": "제12회 전일본 여자 선수권",
+            "en": "12th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "32ndHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 66001,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "32nd"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 13,
+          "names": {
+            "cn": "第32届快棋选手权赛",
+            "tw": "第32屆快棋選手權賽",
+            "jp": "第32回早碁選手権戦",
+            "ko": "제32회 속기 선수권전",
+            "en": "32nd Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "Kiseong,6th",
+          "raw_owner_id_hint_2026_10_04": 69976,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",6th"
+            }
+          ],
+          "saved_inventory_game_count": 13,
+          "names": {
+            "cn": "第6届棋圣战",
+            "tw": "第6屆棋聖戰",
+            "jp": "第6回棋聖戦",
+            "ko": "제6회 기성전",
+            "en": "6th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "13th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 51686,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "13th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 12,
+          "names": {
+            "cn": "第13届全日本女子冠军赛",
+            "tw": "第13屆全日本女子冠軍賽",
+            "jp": "第13回全日本女子選手権",
+            "ko": "제13회 전일본 여자 선수권",
+            "en": "13th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "15th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 51928,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "15th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 12,
+          "names": {
+            "cn": "第15届全日本女子冠军赛",
+            "tw": "第15屆全日本女子冠軍賽",
+            "jp": "第15回全日本女子選手権",
+            "ko": "제15회 전일본 여자 선수권",
+            "en": "15th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "21stHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 63507,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "21st"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 12,
+          "names": {
+            "cn": "第21届快棋选手权赛",
+            "tw": "第21屆快棋選手權賽",
+            "jp": "第21回早碁選手権戦",
+            "ko": "제21회 속기 선수권전",
+            "en": "21st Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "BacchusCup,4th",
+          "raw_owner_id_hint_2026_10_04": 69256,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            },
+            {
+              "kind": "edition",
+              "text": ",4th"
+            }
+          ],
+          "saved_inventory_game_count": 12,
+          "names": {
+            "cn": "第4届巴克斯杯",
+            "tw": "第4屆巴克斯盃",
+            "jp": "第4回バッカス杯",
+            "ko": "제4회 박카스배",
+            "en": "4th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,14th",
+          "raw_owner_id_hint_2026_10_04": 70344,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",14th"
+            }
+          ],
+          "saved_inventory_game_count": 12,
+          "names": {
+            "cn": "第14届日本棋院选手权赛",
+            "tw": "第14屆日本棋院選手權賽",
+            "jp": "第14回日本棋院選手権戦",
+            "ko": "제14회 일본기원 선수권전",
+            "en": "14th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "10thTaewang",
+          "raw_owner_id_hint_2026_10_04": 50467,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "10th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 11,
+          "names": {
+            "cn": "第10届大王战",
+            "tw": "第10屆大王戰",
+            "jp": "第10回大王戦",
+            "ko": "제10회 대왕전",
+            "en": "10th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "18thNECCup",
+          "raw_owner_id_hint_2026_10_04": 52254,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "18th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 11,
+          "names": {
+            "cn": "第18届NEC杯",
+            "tw": "第18屆NEC盃",
+            "jp": "第18回NEC杯",
+            "ko": "제18회 NEC배",
+            "en": "18th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "19thNECCup",
+          "raw_owner_id_hint_2026_10_04": 52983,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "19th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 11,
+          "names": {
+            "cn": "第19届NEC杯",
+            "tw": "第19屆NEC盃",
+            "jp": "第19回NEC杯",
+            "ko": "제19회 NEC배",
+            "en": "19th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "Kukgi,15th",
+          "raw_owner_id_hint_2026_10_04": 70035,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",15th"
+            }
+          ],
+          "saved_inventory_game_count": 11,
+          "names": {
+            "cn": "第15届国棋战",
+            "tw": "第15屆國棋戰",
+            "jp": "第15回国棋戦",
+            "ko": "제15회 국기전",
+            "en": "15th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "15thTaewang",
+          "raw_owner_id_hint_2026_10_04": 51960,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "15th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第15届大王战",
+            "tw": "第15屆大王戰",
+            "jp": "第15回大王戦",
+            "ko": "제15회 대왕전",
+            "en": "15th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "30thP'aewang",
+          "raw_owner_id_hint_2026_10_04": 65799,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "30th"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第30届霸王战",
+            "tw": "第30屆霸王戰",
+            "jp": "第30回覇王戦",
+            "ko": "제30회 패왕전",
+            "en": "30th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,7th",
+          "raw_owner_id_hint_2026_10_04": 69977,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",7th"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第7届棋圣战",
+            "tw": "第7屆棋聖戰",
+            "jp": "第7回棋聖戦",
+            "ko": "제7회 기성전",
+            "en": "7th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,8th",
+          "raw_owner_id_hint_2026_10_04": 69978,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",8th"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第8届棋圣战",
+            "tw": "第8屆棋聖戰",
+            "jp": "第8回棋聖戦",
+            "ko": "제8회 기성전",
+            "en": "8th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,19th",
+          "raw_owner_id_hint_2026_10_04": 70349,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",19th"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第19届日本棋院选手权赛",
+            "tw": "第19屆日本棋院選手權賽",
+            "jp": "第19回日本棋院選手権戦",
+            "ko": "제19회 일본기원 선수권전",
+            "en": "19th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "P'aewang,23rd",
+          "raw_owner_id_hint_2026_10_04": 70505,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",23rd"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第23届霸王战",
+            "tw": "第23屆霸王戰",
+            "jp": "第23回覇王戦",
+            "ko": "제23회 패왕전",
+            "en": "23rd P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "16th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 52064,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "16th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第16届全日本女子冠军赛",
+            "tw": "第16屆全日本女子冠軍賽",
+            "jp": "第16回全日本女子選手権",
+            "ko": "제16회 전일본 여자 선수권",
+            "en": "16th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "31stHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 65903,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "31st"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第31届快棋选手权赛",
+            "tw": "第31屆快棋選手權賽",
+            "jp": "第31回早碁選手権戦",
+            "ko": "제31회 속기 선수권전",
+            "en": "31st Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "8thBacchusCup",
+          "raw_owner_id_hint_2026_10_04": 68706,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "8th"
+            },
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第8届巴克斯杯",
+            "tw": "第8屆巴克斯盃",
+            "jp": "第8回バッカス杯",
+            "ko": "제8회 박카스배",
+            "en": "8th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "9thBacchusCup",
+          "raw_owner_id_hint_2026_10_04": 68986,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "9th"
+            },
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第9届巴克斯杯",
+            "tw": "第9屆巴克斯盃",
+            "jp": "第9回バッカス杯",
+            "ko": "제9회 박카스배",
+            "en": "9th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "9thTaewang",
+          "raw_owner_id_hint_2026_10_04": 69020,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "9th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第9届大王战",
+            "tw": "第9屆大王戰",
+            "jp": "第9回大王戦",
+            "ko": "제9회 대왕전",
+            "en": "9th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "BacchusCup,2nd",
+          "raw_owner_id_hint_2026_10_04": 69254,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            },
+            {
+              "kind": "edition",
+              "text": ",2nd"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第2届巴克斯杯",
+            "tw": "第2屆巴克斯盃",
+            "jp": "第2回バッカス杯",
+            "ko": "제2회 박카스배",
+            "en": "2nd Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "BacchusCup,3rd",
+          "raw_owner_id_hint_2026_10_04": 69255,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            },
+            {
+              "kind": "edition",
+              "text": ",3rd"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第3届巴克斯杯",
+            "tw": "第3屆巴克斯盃",
+            "jp": "第3回バッカス杯",
+            "ko": "제3회 박카스배",
+            "en": "3rd Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "Ch'oegowi,27th",
+          "raw_owner_id_hint_2026_10_04": 69281,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            },
+            {
+              "kind": "edition",
+              "text": ",27th"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第27届最高位战",
+            "tw": "第27屆最高位戰",
+            "jp": "第27回最高位戦",
+            "ko": "제27회 최고위전",
+            "en": "27th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "10th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 50427,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "10th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第10届全日本女子冠军赛",
+            "tw": "第10屆全日本女子冠軍賽",
+            "jp": "第10回全日本女子選手権",
+            "ko": "제10회 전일본 여자 선수권",
+            "en": "10th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "22nd All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 63596,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "22nd "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第22届全日本女子冠军赛",
+            "tw": "第22屆全日本女子冠軍賽",
+            "jp": "第22回全日本女子選手権",
+            "ko": "제22회 전일본 여자 선수권",
+            "en": "22nd All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "25th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 64359,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "25th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第25届全日本女子冠军赛",
+            "tw": "第25屆全日本女子冠軍賽",
+            "jp": "第25回全日本女子選手権",
+            "ko": "제25회 전일본 여자 선수권",
+            "en": "25th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "35thP'aewang",
+          "raw_owner_id_hint_2026_10_04": 66142,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "35th"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第35届霸王战",
+            "tw": "第35屆霸王戰",
+            "jp": "第35回覇王戦",
+            "ko": "제35회 패왕전",
+            "en": "35th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "Ch'oegowi,30th",
+          "raw_owner_id_hint_2026_10_04": 69284,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            },
+            {
+              "kind": "edition",
+              "text": ",30th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第30届最高位战",
+            "tw": "第30屆最高位戰",
+            "jp": "第30回最高位戦",
+            "ko": "제30회 최고위전",
+            "en": "30th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,5th",
+          "raw_owner_id_hint_2026_10_04": 69975,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",5th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第5届棋圣战",
+            "tw": "第5屆棋聖戰",
+            "jp": "第5回棋聖戦",
+            "ko": "제5회 기성전",
+            "en": "5th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,18th",
+          "raw_owner_id_hint_2026_10_04": 70038,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",18th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第18届国棋战",
+            "tw": "第18屆國棋戰",
+            "jp": "第18回国棋戦",
+            "ko": "제18회 국기전",
+            "en": "18th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,10th",
+          "raw_owner_id_hint_2026_10_04": 70340,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",10th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第10届日本棋院选手权赛",
+            "tw": "第10屆日本棋院選手權賽",
+            "jp": "第10回日本棋院選手権戦",
+            "ko": "제10회 일본기원 선수권전",
+            "en": "10th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,12th",
+          "raw_owner_id_hint_2026_10_04": 70342,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",12th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第12届日本棋院选手权赛",
+            "tw": "第12屆日本棋院選手權賽",
+            "jp": "第12回日本棋院選手権戦",
+            "ko": "제12회 일본기원 선수권전",
+            "en": "12th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,17th",
+          "raw_owner_id_hint_2026_10_04": 70347,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",17th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第17届日本棋院选手权赛",
+            "tw": "第17屆日本棋院選手權賽",
+            "jp": "第17回日本棋院選手権戦",
+            "ko": "제17회 일본기원 선수권전",
+            "en": "17th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "Taewang,4th",
+          "raw_owner_id_hint_2026_10_04": 70655,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Taewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",4th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第4届大王战",
+            "tw": "第4屆大王戰",
+            "jp": "第4回大王戦",
+            "ko": "제4회 대왕전",
+            "en": "4th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "11th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 50919,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "11th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第11届全日本女子冠军赛",
+            "tw": "第11屆全日本女子冠軍賽",
+            "jp": "第11回全日本女子選手権",
+            "ko": "제11회 전일본 여자 선수권",
+            "en": "11th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "12thBacchusCup",
+          "raw_owner_id_hint_2026_10_04": 51358,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "12th"
+            },
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第12届巴克斯杯",
+            "tw": "第12屆巴克斯盃",
+            "jp": "第12回バッカス杯",
+            "ko": "제12회 박카스배",
+            "en": "12th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "23rd All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 63675,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "23rd "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第23届全日本女子冠军赛",
+            "tw": "第23屆全日本女子冠軍賽",
+            "jp": "第23回全日本女子選手権",
+            "ko": "제23회 전일본 여자 선수권",
+            "en": "23rd All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "Ch'oegowi,25th",
+          "raw_owner_id_hint_2026_10_04": 69279,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            },
+            {
+              "kind": "edition",
+              "text": ",25th"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第25届最高位战",
+            "tw": "第25屆最高位戰",
+            "jp": "第25回最高位戦",
+            "ko": "제25회 최고위전",
+            "en": "25th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "Ch'oegowi,26th",
+          "raw_owner_id_hint_2026_10_04": 69280,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            },
+            {
+              "kind": "edition",
+              "text": ",26th"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第26届最高位战",
+            "tw": "第26屆最高位戰",
+            "jp": "第26回最高位戦",
+            "ko": "제26회 최고위전",
+            "en": "26th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,15th",
+          "raw_owner_id_hint_2026_10_04": 70345,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",15th"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第15届日本棋院选手权赛",
+            "tw": "第15屆日本棋院選手權賽",
+            "jp": "第15回日本棋院選手権戦",
+            "ko": "제15회 일본기원 선수권전",
+            "en": "15th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,18th",
+          "raw_owner_id_hint_2026_10_04": 70348,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",18th"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第18届日本棋院选手权赛",
+            "tw": "第18屆日本棋院選手權賽",
+            "jp": "第18回日本棋院選手権戦",
+            "ko": "제18회 일본기원 선수권전",
+            "en": "18th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "P'aewang,24th",
+          "raw_owner_id_hint_2026_10_04": 70506,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",24th"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第24届霸王战",
+            "tw": "第24屆霸王戰",
+            "jp": "第24回覇王戦",
+            "ko": "제24회 패왕전",
+            "en": "24th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "16thNihonKi-inChampionship",
+          "raw_owner_id_hint_2026_10_04": 52092,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "16th"
+            },
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 6,
+          "names": {
+            "cn": "第16届日本棋院选手权赛",
+            "tw": "第16屆日本棋院選手權賽",
+            "jp": "第16回日本棋院選手権戦",
+            "ko": "제16회 일본기원 선수권전",
+            "en": "16th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "17thNECCup",
+          "raw_owner_id_hint_2026_10_04": 52180,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "17th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 6,
+          "names": {
+            "cn": "第17届NEC杯",
+            "tw": "第17屆NEC盃",
+            "jp": "第17回NEC杯",
+            "ko": "제17회 NEC배",
+            "en": "17th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "26thP'aewang",
+          "raw_owner_id_hint_2026_10_04": 64462,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "26th"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 6,
+          "names": {
+            "cn": "第26届霸王战",
+            "tw": "第26屆霸王戰",
+            "jp": "第26回覇王戦",
+            "ko": "제26회 패왕전",
+            "en": "26th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "31stCh'oegowi",
+          "raw_owner_id_hint_2026_10_04": 65901,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "31st"
+            },
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            }
+          ],
+          "saved_inventory_game_count": 6,
+          "names": {
+            "cn": "第31届最高位战",
+            "tw": "第31屆最高位戰",
+            "jp": "第31回最高位戦",
+            "ko": "제31회 최고위전",
+            "en": "31st Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "5thNihonKi-inChampionship",
+          "raw_owner_id_hint_2026_10_04": 67743,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "5th"
+            },
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 6,
+          "names": {
+            "cn": "第5届日本棋院选手权赛",
+            "tw": "第5屆日本棋院選手權賽",
+            "jp": "第5回日本棋院選手権戦",
+            "ko": "제5회 일본기원 선수권전",
+            "en": "5th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "BacchusCup,5th",
+          "raw_owner_id_hint_2026_10_04": 69257,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            },
+            {
+              "kind": "edition",
+              "text": ",5th"
+            }
+          ],
+          "saved_inventory_game_count": 6,
+          "names": {
+            "cn": "第5届巴克斯杯",
+            "tw": "第5屆巴克斯盃",
+            "jp": "第5回バッカス杯",
+            "ko": "제5회 박카스배",
+            "en": "5th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "Ch'oegowi,38th",
+          "raw_owner_id_hint_2026_10_04": 69285,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            },
+            {
+              "kind": "edition",
+              "text": ",38th"
+            }
+          ],
+          "saved_inventory_game_count": 6,
+          "names": {
+            "cn": "第38届最高位战",
+            "tw": "第38屆最高位戰",
+            "jp": "第38回最高位戦",
+            "ko": "제38회 최고위전",
+            "en": "38th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,13th",
+          "raw_owner_id_hint_2026_10_04": 70343,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",13th"
+            }
+          ],
+          "saved_inventory_game_count": 6,
+          "names": {
+            "cn": "第13届日本棋院选手权赛",
+            "tw": "第13屆日本棋院選手權賽",
+            "jp": "第13回日本棋院選手権戦",
+            "ko": "제13회 일본기원 선수권전",
+            "en": "13th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "P'aewang,25th",
+          "raw_owner_id_hint_2026_10_04": 70507,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",25th"
+            }
+          ],
+          "saved_inventory_game_count": 6,
+          "names": {
+            "cn": "第25届霸王战",
+            "tw": "第25屆霸王戰",
+            "jp": "第25回覇王戦",
+            "ko": "제25회 패왕전",
+            "en": "25th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "P'aewang,33rd",
+          "raw_owner_id_hint_2026_10_04": 70508,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",33rd"
+            }
+          ],
+          "saved_inventory_game_count": 6,
+          "names": {
+            "cn": "第33届霸王战",
+            "tw": "第33屆霸王戰",
+            "jp": "第33回覇王戦",
+            "ko": "제33회 패왕전",
+            "en": "33rd P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "10thBacchusCup",
+          "raw_owner_id_hint_2026_10_04": 50442,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "10th"
+            },
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第10届巴克斯杯",
+            "tw": "第10屆巴克斯盃",
+            "jp": "第10回バッカス杯",
+            "ko": "제10회 박카스배",
+            "en": "10th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "11thTaewang",
+          "raw_owner_id_hint_2026_10_04": 50965,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "11th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第11届大王战",
+            "tw": "第11屆大王戰",
+            "jp": "第11回大王戦",
+            "ko": "제11회 대왕전",
+            "en": "11th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "15thNECCup",
+          "raw_owner_id_hint_2026_10_04": 51951,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "15th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第15届NEC杯",
+            "tw": "第15屆NEC盃",
+            "jp": "第15回NEC杯",
+            "ko": "제15회 NEC배",
+            "en": "15th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "32ndCh'oegowi",
+          "raw_owner_id_hint_2026_10_04": 66000,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "32nd"
+            },
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第32届最高位战",
+            "tw": "第32屆最高位戰",
+            "jp": "第32回最高位戦",
+            "ko": "제32회 최고위전",
+            "en": "32nd Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "32ndP'aewang",
+          "raw_owner_id_hint_2026_10_04": 66012,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "32nd"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第32届霸王战",
+            "tw": "第32屆霸王戰",
+            "jp": "第32回覇王戦",
+            "ko": "제32회 패왕전",
+            "en": "32nd P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "34thCh'oegowi",
+          "raw_owner_id_hint_2026_10_04": 66099,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "34th"
+            },
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第34届最高位战",
+            "tw": "第34屆最高位戰",
+            "jp": "第34回最高位戦",
+            "ko": "제34회 최고위전",
+            "en": "34th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "34thP'aewang",
+          "raw_owner_id_hint_2026_10_04": 66109,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "34th"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第34届霸王战",
+            "tw": "第34屆霸王戰",
+            "jp": "第34回覇王戦",
+            "ko": "제34회 패왕전",
+            "en": "34th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "36thP'aewang",
+          "raw_owner_id_hint_2026_10_04": 66195,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "36th"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第36届霸王战",
+            "tw": "第36屆霸王戰",
+            "jp": "第36回覇王戦",
+            "ko": "제36회 패왕전",
+            "en": "36th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "37thCh'oegowi",
+          "raw_owner_id_hint_2026_10_04": 66237,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "37th"
+            },
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第37届最高位战",
+            "tw": "第37屆最高位戰",
+            "jp": "第37回最高位戦",
+            "ko": "제37회 최고위전",
+            "en": "37th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "4thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 67294,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "4th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第4届快棋选手权赛",
+            "tw": "第4屆快棋選手權賽",
+            "jp": "第4回早碁選手権戦",
+            "ko": "제4회 속기 선수권전",
+            "en": "4th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "4thNihonKi-inChampionship",
+          "raw_owner_id_hint_2026_10_04": 67318,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "4th"
+            },
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第4届日本棋院选手权赛",
+            "tw": "第4屆日本棋院選手權賽",
+            "jp": "第4回日本棋院選手権戦",
+            "ko": "제4회 일본기원 선수권전",
+            "en": "4th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "6thNihonKi-inChampionship",
+          "raw_owner_id_hint_2026_10_04": 68135,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "6th"
+            },
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第6届日本棋院选手权赛",
+            "tw": "第6屆日本棋院選手權賽",
+            "jp": "第6回日本棋院選手権戦",
+            "ko": "제6회 일본기원 선수권전",
+            "en": "6th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "7thTaewang",
+          "raw_owner_id_hint_2026_10_04": 68525,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "7th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第7届大王战",
+            "tw": "第7屆大王戰",
+            "jp": "第7回大王戦",
+            "ko": "제7회 대왕전",
+            "en": "7th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "8thTaewang",
+          "raw_owner_id_hint_2026_10_04": 68744,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "8th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第8届大王战",
+            "tw": "第8屆大王戰",
+            "jp": "第8回大王戦",
+            "ko": "제8회 대왕전",
+            "en": "8th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "9th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 68967,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "9th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第9届全日本女子冠军赛",
+            "tw": "第9屆全日本女子冠軍賽",
+            "jp": "第9回全日本女子選手権",
+            "ko": "제9회 전일본 여자 선수권",
+            "en": "9th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "9thNihonKi-inChampionship",
+          "raw_owner_id_hint_2026_10_04": 69011,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "9th"
+            },
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第9届日本棋院选手权赛",
+            "tw": "第9屆日本棋院選手權賽",
+            "jp": "第9回日本棋院選手権戦",
+            "ko": "제9회 일본기원 선수권전",
+            "en": "9th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "BacchusCup,6th",
+          "raw_owner_id_hint_2026_10_04": 69258,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            },
+            {
+              "kind": "edition",
+              "text": ",6th"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第6届巴克斯杯",
+            "tw": "第6屆巴克斯盃",
+            "jp": "第6回バッカス杯",
+            "ko": "제6회 박카스배",
+            "en": "6th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "BacchusCup,7th",
+          "raw_owner_id_hint_2026_10_04": 69259,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            },
+            {
+              "kind": "edition",
+              "text": ",7th"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第7届巴克斯杯",
+            "tw": "第7屆巴克斯盃",
+            "jp": "第7回バッカス杯",
+            "ko": "제7회 박카스배",
+            "en": "7th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "Ch'oegowi,29th",
+          "raw_owner_id_hint_2026_10_04": 69283,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            },
+            {
+              "kind": "edition",
+              "text": ",29th"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第29届最高位战",
+            "tw": "第29屆最高位戰",
+            "jp": "第29回最高位戦",
+            "ko": "제29회 최고위전",
+            "en": "29th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,10th",
+          "raw_owner_id_hint_2026_10_04": 69967,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",10th"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第10届棋圣战",
+            "tw": "第10屆棋聖戰",
+            "jp": "第10回棋聖戦",
+            "ko": "제10회 기성전",
+            "en": "10th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,20th",
+          "raw_owner_id_hint_2026_10_04": 70350,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",20th"
+            }
+          ],
+          "saved_inventory_game_count": 5,
+          "names": {
+            "cn": "第20届日本棋院选手权赛",
+            "tw": "第20屆日本棋院選手權賽",
+            "jp": "第20回日本棋院選手権戦",
+            "ko": "제20회 일본기원 선수권전",
+            "en": "20th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "14thNECCup",
+          "raw_owner_id_hint_2026_10_04": 51860,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "14th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第14届NEC杯",
+            "tw": "第14屆NEC盃",
+            "jp": "第14回NEC杯",
+            "ko": "제14회 NEC배",
+            "en": "14th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "16thNECCup",
+          "raw_owner_id_hint_2026_10_04": 52088,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "16th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第16届NEC杯",
+            "tw": "第16屆NEC盃",
+            "jp": "第16回NEC杯",
+            "ko": "제16회 NEC배",
+            "en": "16th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "1stNihonKi-inChampionship",
+          "raw_owner_id_hint_2026_10_04": 53344,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "1st"
+            },
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第1届日本棋院选手权赛",
+            "tw": "第1屆日本棋院選手權賽",
+            "jp": "第1回日本棋院選手権戦",
+            "ko": "제1회 일본기원 선수권전",
+            "en": "1st Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "20thNECCup",
+          "raw_owner_id_hint_2026_10_04": 63348,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "20th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第20届NEC杯",
+            "tw": "第20屆NEC盃",
+            "jp": "第20回NEC杯",
+            "ko": "제20회 NEC배",
+            "en": "20th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "31stP'aewang",
+          "raw_owner_id_hint_2026_10_04": 65918,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "31st"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第31届霸王战",
+            "tw": "第31屆霸王戰",
+            "jp": "第31回覇王戦",
+            "ko": "제31회 패왕전",
+            "en": "31st P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "3rdHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 66419,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "3rd"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第3届快棋选手权赛",
+            "tw": "第3屆快棋選手權賽",
+            "jp": "第3回早碁選手権戦",
+            "ko": "제3회 속기 선수권전",
+            "en": "3rd Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "3rdNihonKi-inChampionship",
+          "raw_owner_id_hint_2026_10_04": 66448,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "3rd"
+            },
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第3届日本棋院选手权赛",
+            "tw": "第3屆日本棋院選手權賽",
+            "jp": "第3回日本棋院選手権戦",
+            "ko": "제3회 일본기원 선수권전",
+            "en": "3rd Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "5thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 67714,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "5th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第5届快棋选手权赛",
+            "tw": "第5屆快棋選手權賽",
+            "jp": "第5回早碁選手権戦",
+            "ko": "제5회 속기 선수권전",
+            "en": "5th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "7thNihonKi-inChampionship",
+          "raw_owner_id_hint_2026_10_04": 68508,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "7th"
+            },
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第7届日本棋院选手权赛",
+            "tw": "第7屆日本棋院選手權賽",
+            "jp": "第7回日本棋院選手権戦",
+            "ko": "제7회 일본기원 선수권전",
+            "en": "7th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "Kiseong,12th",
+          "raw_owner_id_hint_2026_10_04": 69969,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",12th"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第12届棋圣战",
+            "tw": "第12屆棋聖戰",
+            "jp": "第12回棋聖戦",
+            "ko": "제12회 기성전",
+            "en": "12th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,11th",
+          "raw_owner_id_hint_2026_10_04": 70341,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",11th"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第11届日本棋院选手权赛",
+            "tw": "第11屆日本棋院選手權賽",
+            "jp": "第11回日本棋院選手権戦",
+            "ko": "제11회 일본기원 선수권전",
+            "en": "11th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,8th",
+          "raw_owner_id_hint_2026_10_04": 70353,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",8th"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第8届日本棋院选手权赛",
+            "tw": "第8屆日本棋院選手權賽",
+            "jp": "第8回日本棋院選手権戦",
+            "ko": "제8회 일본기원 선수권전",
+            "en": "8th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "Taewang,3rd",
+          "raw_owner_id_hint_2026_10_04": 70654,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Taewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",3rd"
+            }
+          ],
+          "saved_inventory_game_count": 4,
+          "names": {
+            "cn": "第3届大王战",
+            "tw": "第3屆大王戰",
+            "jp": "第3回大王戦",
+            "ko": "제3회 대왕전",
+            "en": "3rd Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "13thTaewang",
+          "raw_owner_id_hint_2026_10_04": 51716,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "13th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第13届大王战",
+            "tw": "第13屆大王戰",
+            "jp": "第13回大王戦",
+            "ko": "제13회 대왕전",
+            "en": "13th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "1stHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 53305,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "1st"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第1届快棋选手权赛",
+            "tw": "第1屆快棋選手權賽",
+            "jp": "第1回早碁選手権戦",
+            "ko": "제1회 속기 선수권전",
+            "en": "1st Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "1stNECCup",
+          "raw_owner_id_hint_2026_10_04": 53338,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "1st"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第1届NEC杯",
+            "tw": "第1屆NEC盃",
+            "jp": "第1回NEC杯",
+            "ko": "제1회 NEC배",
+            "en": "1st NEC Cup"
+          }
+        },
+        {
+          "raw_value": "27thP'aewang",
+          "raw_owner_id_hint_2026_10_04": 64603,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "27th"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第27届霸王战",
+            "tw": "第27屆霸王戰",
+            "jp": "第27回覇王戦",
+            "ko": "제27회 패왕전",
+            "en": "27th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "28thP'aewang",
+          "raw_owner_id_hint_2026_10_04": 65156,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "28th"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第28届霸王战",
+            "tw": "第28屆霸王戰",
+            "jp": "第28回覇王戦",
+            "ko": "제28회 패왕전",
+            "en": "28th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "2ndNECCup",
+          "raw_owner_id_hint_2026_10_04": 65531,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "2nd"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第2届NEC杯",
+            "tw": "第2屆NEC盃",
+            "jp": "第2回NEC杯",
+            "ko": "제2회 NEC배",
+            "en": "2nd NEC Cup"
+          }
+        },
+        {
+          "raw_value": "35thCh'oegowi",
+          "raw_owner_id_hint_2026_10_04": 66132,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "35th"
+            },
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第35届最高位战",
+            "tw": "第35屆最高位戰",
+            "jp": "第35回最高位戦",
+            "ko": "제35회 최고위전",
+            "en": "35th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "6thNECCup",
+          "raw_owner_id_hint_2026_10_04": 68132,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "6th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第6届NEC杯",
+            "tw": "第6屆NEC盃",
+            "jp": "第6回NEC杯",
+            "ko": "제6회 NEC배",
+            "en": "6th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "7thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 68480,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "7th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第7届快棋选手权赛",
+            "tw": "第7屆快棋選手權賽",
+            "jp": "第7回早碁選手権戦",
+            "ko": "제7회 속기 선수권전",
+            "en": "7th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "8thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 68710,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "8th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第8届快棋选手权赛",
+            "tw": "第8屆快棋選手權賽",
+            "jp": "第8回早碁選手権戦",
+            "ko": "제8회 속기 선수권전",
+            "en": "8th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "Ch'oegowi,28th",
+          "raw_owner_id_hint_2026_10_04": 69282,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            },
+            {
+              "kind": "edition",
+              "text": ",28th"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第28届最高位战",
+            "tw": "第28屆最高位戰",
+            "jp": "第28回最高位戦",
+            "ko": "제28회 최고위전",
+            "en": "28th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,17th",
+          "raw_owner_id_hint_2026_10_04": 70037,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",17th"
+            }
+          ],
+          "saved_inventory_game_count": 3,
+          "names": {
+            "cn": "第17届国棋战",
+            "tw": "第17屆國棋戰",
+            "jp": "第17回国棋戦",
+            "ko": "제17회 국기전",
+            "en": "17th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "10thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 50447,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "10th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第10届快棋选手权赛",
+            "tw": "第10屆快棋選手權賽",
+            "jp": "第10回早碁選手権戦",
+            "ko": "제10회 속기 선수권전",
+            "en": "10th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "11thBacchusCup",
+          "raw_owner_id_hint_2026_10_04": 50936,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "11th"
+            },
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第11届巴克斯杯",
+            "tw": "第11屆巴克斯盃",
+            "jp": "第11回バッカス杯",
+            "ko": "제11회 박카스배",
+            "en": "11th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "11thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 50940,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "11th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第11届快棋选手权赛",
+            "tw": "第11屆快棋選手權賽",
+            "jp": "第11回早碁選手権戦",
+            "ko": "제11회 속기 선수권전",
+            "en": "11th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "12thNECCup",
+          "raw_owner_id_hint_2026_10_04": 51378,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "12th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第12届NEC杯",
+            "tw": "第12屆NEC盃",
+            "jp": "第12回NEC杯",
+            "ko": "제12회 NEC배",
+            "en": "12th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "16thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 52078,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "16th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第16届快棋选手权赛",
+            "tw": "第16屆快棋選手權賽",
+            "jp": "第16回早碁選手権戦",
+            "ko": "제16회 속기 선수권전",
+            "en": "16th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "19thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 52971,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "19th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第19届快棋选手权赛",
+            "tw": "第19屆快棋選手權賽",
+            "jp": "第19回早碁選手権戦",
+            "ko": "제19회 속기 선수권전",
+            "en": "19th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "21st All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 63495,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "21st "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第21届全日本女子冠军赛",
+            "tw": "第21屆全日本女子冠軍賽",
+            "jp": "第21回全日本女子選手権",
+            "ko": "제21회 전일본 여자 선수권",
+            "en": "21st All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "21stCh'oegowi",
+          "raw_owner_id_hint_2026_10_04": 63504,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "21st"
+            },
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第21届最高位战",
+            "tw": "第21屆最高位戰",
+            "jp": "第21回最高位戦",
+            "ko": "제21회 최고위전",
+            "en": "21st Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "26thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 64448,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "26th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第26届快棋选手权赛",
+            "tw": "第26屆快棋選手權賽",
+            "jp": "第26回早碁選手権戦",
+            "ko": "제26회 속기 선수권전",
+            "en": "26th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "27thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 64592,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "27th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第27届快棋选手权赛",
+            "tw": "第27屆快棋選手權賽",
+            "jp": "第27回早碁選手権戦",
+            "ko": "제27회 속기 선수권전",
+            "en": "27th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "30thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 65784,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "30th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第30届快棋选手权赛",
+            "tw": "第30屆快棋選手權賽",
+            "jp": "第30回早碁選手権戦",
+            "ko": "제30회 속기 선수권전",
+            "en": "30th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "3rdNECCup",
+          "raw_owner_id_hint_2026_10_04": 66444,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "3rd"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第3届NEC杯",
+            "tw": "第3屆NEC盃",
+            "jp": "第3回NEC杯",
+            "ko": "제3회 NEC배",
+            "en": "3rd NEC Cup"
+          }
+        },
+        {
+          "raw_value": "5thNECCup",
+          "raw_owner_id_hint_2026_10_04": 67739,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "5th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第5届NEC杯",
+            "tw": "第5屆NEC盃",
+            "jp": "第5回NEC杯",
+            "ko": "제5회 NEC배",
+            "en": "5th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "6thHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 68110,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "6th"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第6届快棋选手权赛",
+            "tw": "第6屆快棋選手權賽",
+            "jp": "第6回早碁選手権戦",
+            "ko": "제6회 속기 선수권전",
+            "en": "6th Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "6thTaewang",
+          "raw_owner_id_hint_2026_10_04": 68151,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "6th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第6届大王战",
+            "tw": "第6屆大王戰",
+            "jp": "第6回大王戦",
+            "ko": "제6회 대왕전",
+            "en": "6th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "7thNECCup",
+          "raw_owner_id_hint_2026_10_04": 68503,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "7th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第7届NEC杯",
+            "tw": "第7屆NEC盃",
+            "jp": "第7回NEC杯",
+            "ko": "제7회 NEC배",
+            "en": "7th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "7thP'aewang",
+          "raw_owner_id_hint_2026_10_04": 68516,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "7th"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第7届霸王战",
+            "tw": "第7屆霸王戰",
+            "jp": "第7回覇王戦",
+            "ko": "제7회 패왕전",
+            "en": "7th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "8thNECCup",
+          "raw_owner_id_hint_2026_10_04": 68728,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "8th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 2,
+          "names": {
+            "cn": "第8届NEC杯",
+            "tw": "第8屆NEC盃",
+            "jp": "第8回NEC杯",
+            "ko": "제8회 NEC배",
+            "en": "8th NEC Cup"
+          }
+        }
+      ]
+    }
+  }
+}

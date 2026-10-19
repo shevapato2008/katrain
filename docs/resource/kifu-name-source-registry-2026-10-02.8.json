@@ -1,0 +1,431 @@
+{
+  "version": "2026-10-02.8",
+  "description": "Research starting points only. Appends the reviewed Tiyu+ (体坛+) reportage host and Hong Kong Miu Sau Go Institute (妙手棋院) player-reference host for the 41–60 follow-up. All existing sources, language tags and all eleven language scopes are unchanged. Registration does not verify a capture, name, identity, transport, URL language path or database provenance; no language scope supports a negative conventional-name claim.",
+  "language_tags": {
+    "en": "en",
+    "cn": "zh-Hans",
+    "tw": "zh-Hant",
+    "jp": "ja",
+    "ko": "ko",
+    "de": "de",
+    "es": "es",
+    "fr": "fr",
+    "ru": "ru",
+    "tr": "tr",
+    "ua": "uk"
+  },
+  "sources": [
+    {
+      "id": "cwi-go",
+      "tier": "language_go",
+      "language": "en",
+      "home_url": "https://homepages.cwi.nl/~aeb/go/games/"
+    },
+    {
+      "id": "weiqi-association",
+      "tier": "official",
+      "language": "zh-Hans",
+      "home_url": "https://www.weiqi.org.cn/"
+    },
+    {
+      "id": "haifong",
+      "tier": "official",
+      "language": "zh-Hant",
+      "home_url": "https://www.haifong.org/"
+    },
+    {
+      "id": "nihon-kiin",
+      "tier": "official",
+      "language": "ja",
+      "home_url": "https://www.nihonkiin.or.jp/"
+    },
+    {
+      "id": "korea-baduk",
+      "tier": "official",
+      "language": "ko",
+      "home_url": "https://www.baduk.or.kr/"
+    },
+    {
+      "id": "dgob",
+      "tier": "language_go",
+      "language": "de",
+      "home_url": "https://www.dgob.de/"
+    },
+    {
+      "id": "aego",
+      "tier": "language_go",
+      "language": "es",
+      "home_url": "https://aego.biz/"
+    },
+    {
+      "id": "ffg",
+      "tier": "language_go",
+      "language": "fr",
+      "home_url": "https://ffg.jeudego.org/"
+    },
+    {
+      "id": "rusgolib",
+      "tier": "language_go",
+      "language": "ru",
+      "home_url": "https://rusgolib.gofederation.ru/"
+    },
+    {
+      "id": "tgod",
+      "tier": "language_go",
+      "language": "tr",
+      "home_url": "https://www.tgod.org.tr/"
+    },
+    {
+      "id": "ufgo",
+      "tier": "language_go",
+      "language": "uk",
+      "home_url": "https://ufgo.org/"
+    },
+    {
+      "id": "china-sport",
+      "tier": "official",
+      "language": "zh-Hans",
+      "home_url": "https://www.sport.gov.cn/"
+    },
+    {
+      "id": "pts-tw",
+      "tier": "reference",
+      "language": "zh-Hant",
+      "home_url": "https://news.pts.org.tw/"
+    },
+    {
+      "id": "baduk-mobile",
+      "tier": "official",
+      "language": "ko",
+      "home_url": "https://m.baduk.or.kr/"
+    },
+    {
+      "id": "cyberoro",
+      "tier": "language_go",
+      "language": "ko",
+      "home_url": "https://www.cyberoro.com/"
+    },
+    {
+      "id": "centrocultural-sol",
+      "tier": "reference",
+      "language": "es",
+      "home_url": "https://www.centroculturalsol.com/"
+    },
+    {
+      "id": "gofed-be",
+      "tier": "language_go",
+      "language": "fr",
+      "home_url": "https://www.gofed.be/"
+    },
+    {
+      "id": "gomagic-ru",
+      "tier": "language_go",
+      "language": "ru",
+      "home_url": "https://gomagic.org/"
+    },
+    {
+      "id": "go-school-tr",
+      "tier": "language_go",
+      "language": "tr",
+      "home_url": "https://www.gookulu.com/"
+    },
+    {
+      "id": "asialogy-tr",
+      "tier": "reference",
+      "language": "tr",
+      "home_url": "https://www.asialogy.com/"
+    },
+    {
+      "id": "merdiven-go-tr",
+      "tier": "reference",
+      "language": "tr",
+      "home_url": "https://merdivengo.blogspot.com/"
+    },
+    {
+      "id": "wikipedia-en",
+      "tier": "wikipedia_article",
+      "language": "en",
+      "home_url": "https://en.wikipedia.org/"
+    },
+    {
+      "id": "wikipedia-zh",
+      "tier": "wikipedia_article",
+      "language": "zh",
+      "home_url": "https://zh.wikipedia.org/"
+    },
+    {
+      "id": "wikipedia-ja",
+      "tier": "wikipedia_article",
+      "language": "ja",
+      "home_url": "https://ja.wikipedia.org/"
+    },
+    {
+      "id": "wikipedia-ko",
+      "tier": "wikipedia_article",
+      "language": "ko",
+      "home_url": "https://ko.wikipedia.org/"
+    },
+    {
+      "id": "wikipedia-de",
+      "tier": "wikipedia_article",
+      "language": "de",
+      "home_url": "https://de.wikipedia.org/"
+    },
+    {
+      "id": "wikipedia-es",
+      "tier": "wikipedia_article",
+      "language": "es",
+      "home_url": "https://es.wikipedia.org/"
+    },
+    {
+      "id": "wikipedia-fr",
+      "tier": "wikipedia_article",
+      "language": "fr",
+      "home_url": "https://fr.wikipedia.org/"
+    },
+    {
+      "id": "wikipedia-ru",
+      "tier": "wikipedia_article",
+      "language": "ru",
+      "home_url": "https://ru.wikipedia.org/"
+    },
+    {
+      "id": "wikipedia-tr",
+      "tier": "wikipedia_article",
+      "language": "tr",
+      "home_url": "https://tr.wikipedia.org/"
+    },
+    {
+      "id": "wikipedia-uk",
+      "tier": "wikipedia_article",
+      "language": "uk",
+      "home_url": "https://uk.wikipedia.org/"
+    },
+    {
+      "id": "wikidata",
+      "tier": "discovery",
+      "language": "mul",
+      "home_url": "https://www.wikidata.org/"
+    },
+    {
+      "id": "gobasearticles-en",
+      "tier": "language_go",
+      "language": "en",
+      "home_url": "https://gobasearticles.org/"
+    },
+    {
+      "id": "godokoro-es",
+      "tier": "language_go",
+      "language": "es",
+      "home_url": "https://godokoro.es/"
+    },
+    {
+      "id": "chile-go-federation",
+      "tier": "language_go",
+      "language": "es",
+      "home_url": "https://igochile.cl/igochile2/"
+    },
+    {
+      "id": "nikoraido-ru",
+      "tier": "language_go",
+      "language": "ru",
+      "home_url": "https://nikoraido.ru/"
+    },
+    {
+      "id": "kifudepot-jp",
+      "tier": "language_go",
+      "language": "ja",
+      "home_url": "https://kifudepot.net/"
+    },
+    {
+      "id": "kifubara-jp",
+      "tier": "language_go",
+      "language": "ja",
+      "home_url": "https://kifubara.app/"
+    },
+    {
+      "id": "argentine-go",
+      "tier": "official",
+      "language": "es",
+      "home_url": "https://go.org.ar/"
+    },
+    {
+      "id": "goratings-zh",
+      "tier": "language_go",
+      "language": "zh",
+      "home_url": "https://www.goratings.org/zh/",
+      "notes": "GoRatings is one publisher across these four language editions, not four independent publishers. Retain the exact /zh/players/<id>.html path, actual page language and same profile ID when comparing editions. The current host matcher does not enforce this language path. Retained Chinese pages declare zh, which alone does not establish zh-Hans or zh-Hant; script-specific evidence requires separate review."
+    },
+    {
+      "id": "goratings-ja",
+      "tier": "language_go",
+      "language": "ja",
+      "home_url": "https://www.goratings.org/ja/",
+      "notes": "GoRatings is one publisher across these four language editions, not four independent publishers. Retain the exact /ja/players/<id>.html path, actual page language and same profile ID when comparing editions. The current host matcher does not enforce this language path."
+    },
+    {
+      "id": "goratings-ko",
+      "tier": "language_go",
+      "language": "ko",
+      "home_url": "https://www.goratings.org/ko/",
+      "notes": "GoRatings is one publisher across these four language editions, not four independent publishers. Retain the exact /ko/players/<id>.html path, actual page language and same profile ID when comparing editions. The current host matcher does not enforce this language path."
+    },
+    {
+      "id": "goratings-en",
+      "tier": "language_go",
+      "language": "en",
+      "home_url": "https://www.goratings.org/en/",
+      "notes": "GoRatings is one publisher across these four language editions, not four independent publishers. Retain the exact /en/players/<id>.html path, actual page language and same profile ID when comparing editions. The current host matcher does not enforce this language path."
+    },
+    {
+      "id": "nihon-kiin-archive-jp",
+      "tier": "official",
+      "language": "ja",
+      "home_url": "https://archive.nihonkiin.or.jp/",
+      "notes": "Japanese pages in the Nihon Ki-in archive; retained profiles may also print roman names. Same publisher as nihon-kiin and nihon-kiin-archive-en. Determine each captured page language from the body, not the shared host."
+    },
+    {
+      "id": "nihon-kiin-archive-en",
+      "tier": "official",
+      "language": "en",
+      "home_url": "https://archive.nihonkiin.or.jp/match/oza/061-e.html",
+      "notes": "English Nihon Ki-in archive pages, including retained -e.html tournament pages. Same publisher as nihon-kiin and nihon-kiin-archive-jp. This home_url is a cited English starting page, not an enforced URL path restriction."
+    },
+    {
+      "id": "weiqi-association-culture",
+      "tier": "official",
+      "language": "zh-Hans",
+      "home_url": "https://wqwh.weiqi.org.cn/",
+      "notes": "China Weiqi Association culture and teaching subsite; same publisher as weiqi-association. Association publication may contain attributed editorial or reprinted material. Host registration does not approve retained captures whose TLS verification was disabled."
+    },
+    {
+      "id": "foxwq-cn",
+      "tier": "language_go",
+      "language": "zh-Hans",
+      "home_url": "https://foxwq.com/",
+      "notes": "Fox Weiqi specialist Go platform and news publisher; commercial, not an official association. Both foxwq.com and cited www.foxwq.com match this registered host. Preserve each article attribution and reprint origin; reprints are not independent publications of the original report."
+    },
+    {
+      "id": "cna-tw",
+      "tier": "reference",
+      "language": "zh-Hant",
+      "home_url": "https://www.cna.com.tw/",
+      "notes": "Central News Agency (CNA) Taiwan news reporting. Reference tier for editorial reporting, not a Go association or tournament organizer. Actual Traditional Chinese passage and person/event context require retained page evidence."
+    },
+    {
+      "id": "sina-sports-cn",
+      "tier": "reference",
+      "language": "zh-Hans",
+      "home_url": "https://sports.sina.com.cn/",
+      "notes": "Sina Sports mainland Chinese sports reporting and player pages; editorial reference, not an official Go association. Preserve byline and reprint attribution. This exact host entry does not cover sports.sina.cn, k.sina.cn or other sibling hosts."
+    },
+    {
+      "id": "ttplus-go",
+      "tier": "reference",
+      "language": "zh-Hans",
+      "home_url": "https://www.ttplus.cn/",
+      "notes": "Tiyu+ (体坛+) / Tiyu Zhoubao (体坛周报) and Tiyu Media Group editorial sports publisher. The retained Go article names reporter Xie Rui (谢锐), identifies him as the paper’s chief board-game reporter/editor, and describes Tiyu+ as a Tiyu Media Group platform. Reference tier, not an association or official player register. The reviewed body is Simplified Chinese although its HTML lang is the generic zh; assess each article body and attribution."
+    },
+    {
+      "id": "hk2-go",
+      "tier": "language_go",
+      "language": "zh-Hant-HK",
+      "home_url": "https://hk2.com/",
+      "notes": "Hong Kong Miu Sau Go Institute (香港妙手棋院), a specialist Go training publisher; not an official association or player register. The retained personages page has no HTML language declaration, clear author or update date, and includes dated or repeated material. Its reviewed body is Traditional Chinese decoded from the original bytes as CP950/Big5; retain that decoding caution and review each person passage against independent professional records."
+    }
+  ],
+  "language_scopes": {
+    "en": {
+      "required_source_ids": [
+        "cwi-go",
+        "gobasearticles-en",
+        "wikipedia-en",
+        "wikidata"
+      ],
+      "complete_for_negative_claims": false
+    },
+    "cn": {
+      "required_source_ids": [
+        "weiqi-association",
+        "wikipedia-zh",
+        "wikidata"
+      ],
+      "complete_for_negative_claims": false
+    },
+    "tw": {
+      "required_source_ids": [
+        "haifong",
+        "wikipedia-zh",
+        "wikidata"
+      ],
+      "complete_for_negative_claims": false
+    },
+    "jp": {
+      "required_source_ids": [
+        "nihon-kiin",
+        "wikipedia-ja",
+        "wikidata"
+      ],
+      "complete_for_negative_claims": false
+    },
+    "ko": {
+      "required_source_ids": [
+        "korea-baduk",
+        "wikipedia-ko",
+        "wikidata"
+      ],
+      "complete_for_negative_claims": false
+    },
+    "de": {
+      "required_source_ids": [
+        "dgob",
+        "wikipedia-de",
+        "wikidata"
+      ],
+      "complete_for_negative_claims": false
+    },
+    "es": {
+      "required_source_ids": [
+        "aego",
+        "godokoro-es",
+        "wikipedia-es",
+        "wikidata",
+        "chile-go-federation"
+      ],
+      "complete_for_negative_claims": false
+    },
+    "fr": {
+      "required_source_ids": [
+        "ffg",
+        "wikipedia-fr",
+        "wikidata"
+      ],
+      "complete_for_negative_claims": false
+    },
+    "ru": {
+      "required_source_ids": [
+        "rusgolib",
+        "wikipedia-ru",
+        "wikidata",
+        "nikoraido-ru"
+      ],
+      "complete_for_negative_claims": false
+    },
+    "tr": {
+      "required_source_ids": [
+        "tgod",
+        "wikipedia-tr",
+        "wikidata"
+      ],
+      "complete_for_negative_claims": false
+    },
+    "ua": {
+      "required_source_ids": [
+        "ufgo",
+        "wikipedia-uk",
+        "wikidata"
+      ],
+      "complete_for_negative_claims": false
+    }
+  }
+}

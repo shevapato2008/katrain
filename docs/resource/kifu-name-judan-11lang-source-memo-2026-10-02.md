@@ -1,0 +1,35 @@
+# Judan series name evidence by product language (2026-10-02)
+
+Read-only source research for the Japanese Judan/十段戦 English-ordinal group (1,384 games in the requested product scope). This memo records source-attested name candidates; it does not approve canonical IDs, display names, or production changes. Access date for reviewed pages: 2026-10-02.
+
+## Identity and edition boundary
+
+The target is the recurring Japanese professional Go title series named 十段戦. The Nihon Ki-in's official Japanese archive gives the event field as `棋戦名称` (tournament name), lists the Sankei Shimbun, Nihon Ki-in, and Kansai Ki-in as organizers, describes the challenger tournament and title match, and maintains numbered editions. Its official English archive labels the event `Judan Title` and likewise separates the tournament from the title holder. The Chinese-language page states that 十段 is not a permanent player rank but the title awarded to the competition's winner. These establish that the English prefix ordinal is edition metadata; retain the source edition independently and preserve round/stage where available.
+
+This is a source-name memo, not a decision to merge any additional raw strings. Keep the Japanese series separate from Korea's historical Siptan/십단전 tournament, and do not confuse the title `Judan` with a player's professional dan rank or current title-holder identity.
+
+## Language evidence
+
+| Product language | Source and actual page language | Exact witnessed name | Series identity evidence / boundary | Source status |
+|---|---|---|---|---|
+| en | Nihon Ki-in official archive, English: [Judan Title](https://archive.nihonkiin.or.jp/match/jyudan/index-e.html) | `Judan Title`; name stem `Judan` | Archive has one event page, labels tournament name, identifies organizers and format, and indexes numbered editions/results separately from the current holder. CWI's [Judan title games](https://homepages.cwi.nl/~aeb/go/games/games/Jūdan/) is corroborating historical game archive. | Strong primary source. Archive has no displayed publication date; accessed 2026-10-02. |
+| cn | Chinese Wikipedia, Mainland Simplified rendering: [十段战](https://zh.wikipedia.org/wiki/%E5%8D%81%E6%AE%B5%E6%88%98?variant=zh-cn) | `十段战` | Identifies it as one of Japan's seven major Go tournaments, names the Japanese source form 十段戦, organizers, and says the winning player receives the 十段 title; numbered editions and holders appear separately. | Encyclopedia evidence; page last revised 2026-04-28; accessed 2026-10-02. |
+| tw | Chinese Wikipedia, Taiwan Traditional rendering: [十段戰](https://zh.wikipedia.org/wiki/%E5%8D%81%E6%AE%B5%E6%88%98?variant=zh-tw) | `十段戰` | Same series/holder distinction and numbered results as the Simplified rendering. This is the page's Taiwan Traditional variant, not an independently authored Taiwan federation source. | Encyclopedia evidence; page last revised 2026-04-28; accessed 2026-10-02. |
+| jp | Nihon Ki-in official Japanese event archive: [十段戦](https://www.nihonkiin.or.jp/match/jyudan/059.htm) and [historic archive](https://archive.nihonkiin.or.jp/match/jyudan/) | `十段戦`; current event field: `大和ハウス杯十段戦` | The official event field says 棋戦名称, identifies hosts/format/founding year, and gives a continuous numbered archive. The `十段` title-holder label is shown separately in results. Sponsor prefix varies by era; it is not part of the stable series core. | Strong primary source; accessed 2026-10-02. |
+| ko | Search lead only: Korean Go coverage/profile pages use `십단전`, but the same term names Korea's distinct Siptan event (2005–2012); no reviewed Korean-language source clearly attests the Japanese series under that exact label. | — | Ambiguous homonym. Do not copy `십단전` into this product row without a Korean source that explicitly identifies the Japanese Nihon Ki-in/Kansai Ki-in event. | Pending; source/identity gap. |
+| de | Deutsche Go-Zeitung, German: [2020 issue 1](https://www.dgob.de/wp-content/uploads/dgoz/pdf/2020/dgoz2020_1_low.pdf) | `Judan-Turnier`; also `Judan` | The German Go-Bund journal describes Iyama trying to qualify as challenger in the Judan tournament, distinguishing the recurring competition from the holder/title match. Contemporary German Go-Zeitung [2021 issue 2](https://www.dgob.de/wp-content/uploads/dgoz/pdf/2021/dgoz2021_2_high.pdf) reports the Judan title match. | Direct German Go-community source; good name evidence, secondary. PDF issue dates 2020/2021; accessed 2026-10-02. |
+| es | Spanish Wikipedia: [Jūdan](https://es.wikipedia.org/wiki/J%C5%ABdan) | `Judan` (article heading `Jūdan`) | Calls Judan a Japanese Go competition and one of the seven major professional titles; describes challenger qualification and a match against the title holder, with past winners listed by year. | Encyclopedia evidence; no page date recorded; accessed 2026-10-02. |
+| fr | French Wikipedia: [Judan (go)](https://fr.wikipedia.org/wiki/Judan_(go)) | `Judan` | Explicitly says “Le Judan … est un tournoi de jeu de go,” identifies Nihon Ki-in/Kansai Ki-in organizers, describes challenger vs. title-holder match, and presents edition-numbered winners. | Encyclopedia evidence; page has a May 2026 citation-needed notice; accessed 2026-10-02. Keep candidate pending stronger corroboration if required. |
+| ru | Russian Wikipedia: [Дзюдан](https://ru.wikipedia.org/wiki/%D0%94%D0%B7%D1%8E%D0%B4%D0%B0%D0%BD) | `Дзюдан` | Text distinguishes the Go title from dan rank and shogi homonym, describes a challenger tournament and match with title holder, and separately lists title holders. Russian Go Library player records also use `титул Дзюдан` / `претендент на титул Дзюдан`. | Encyclopedia plus Russian Go Library corroboration; accessed 2026-10-02. |
+| tr | No direct Turkish Go federation/club/history or encyclopedia source naming the Japanese series was found in this pass. | — | Search results were unrelated or lacked a series-identity statement; no translation or transliteration inferred. | Pending; source gap. |
+| ua | No direct Ukrainian Go federation/club/history or encyclopedia source naming the Japanese series was found in this pass. | — | No language-specific spelling or series-identity proof located; no translation inferred. | Pending; source gap. |
+
+## Review notes
+
+- Preserve ordinal separately as the source edition (`11th`–`15th` in this work batch); do not fold it into the recurring series name or infer editions from calendar years.
+- Sponsor wording such as `森ビル杯` and `大和ハウス杯` is time-dependent. Preserve it as source/sponsor metadata when relevant; the stable Japanese series stem is 十段戦.
+- Chinese Simplified `十段战` and Taiwan Traditional `十段戰` are script-local forms for this Japanese series. Do not infer a Korean localization from either.
+- Korean, Turkish, and Ukrainian remain pending. The Korean result is especially unsafe to infer because 십단전 also names a separate Korean tournament.
+- The research agent was configured as `gpt-6-luna`; no separate runtime model attestation was available.
+
+No database access or writes, code edits, alias links, deployments, event-ID approvals, translation approvals, or git staging/commits were made.

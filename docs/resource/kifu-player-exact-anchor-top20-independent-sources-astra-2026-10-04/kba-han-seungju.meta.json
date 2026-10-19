@@ -1,0 +1,11 @@
+{
+  "key": "kba-han-seungju",
+  "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-han-seungju.html",
+  "raw_sha256": "468e27286595eb2736a9c4755805da41ec1ce22d6b102ce5d8d302e97560b90b",
+  "resolved_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000744",
+  "retrieved_at_utc": "2026-10-04T12:03:17.910263+00:00",
+  "status": 200,
+  "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-han-seungju.txt",
+  "text_sha256": "5d4099599bb3e9ad5ba3e8851aa03394c2747914e38a37e06c86c01752333f6f",
+  "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000744"
+}

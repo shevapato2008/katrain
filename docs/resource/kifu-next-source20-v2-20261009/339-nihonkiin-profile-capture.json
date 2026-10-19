@@ -1,0 +1,13 @@
+{
+  "id": "339-nihonkiin-profile",
+  "url": "https://www.nihonkiin.or.jp/player/htm/ki000533.html",
+  "method": "GET",
+  "http_status": 200,
+  "final_url": "https://www.nihonkiin.or.jp/player/htm/ki000533.html",
+  "fetched_at": "2026-10-08T20:31:42.903953+00:00",
+  "body_file": "339-nihonkiin-profile.body",
+  "body_bytes": 36109,
+  "body_sha256": "1b2b090921d51d3f606b4b3654d0aee7dbe305f59f8421a42206c89a601b85d3",
+  "content_type": "text/html",
+  "visible_excerpt": "陳　柏劭（チン　ハクショウ / CHEN, Bo-Shao）"
+}

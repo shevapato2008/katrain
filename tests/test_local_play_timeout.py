@@ -89,6 +89,49 @@ def _recorded_results(client):
     return [call.kwargs["result"] for call in client.app.state.user_game_repo.create.call_args_list]
 
 
+def test_local_geometry_pause_discards_only_paused_interval(client, monkeypatch):
+    session = _start_pvp_local(client, monkeypatch, time_enabled=True, main_time=10)
+    katrain = session.katrain
+    katrain.timer_paused = False
+    katrain.start_clock()
+    before = katrain.main_time_used_by_player["B"]
+    katrain.last_timer_update -= 4
+    assert katrain.set_local_geometry_paused(True, expected_game_id=katrain.game.game_id)
+    settled = katrain.main_time_used_by_player["B"]
+    assert settled >= before + 4
+    assert katrain.get_state()["timer"]["paused"] is True
+    katrain.last_timer_update -= 80
+    katrain.update_timer()
+    assert katrain.main_time_used_by_player["B"] == settled
+    assert katrain.clock_exhausted() is False
+    katrain.set_local_geometry_paused(False, expected_game_id=katrain.game.game_id)
+    assert katrain.main_time_used_by_player["B"] == settled
+    assert katrain.timer_paused is False
+    katrain.timer_paused = True
+    katrain.set_local_geometry_paused(True, expected_game_id=katrain.game.game_id)
+    katrain.set_local_geometry_paused(False, expected_game_id=katrain.game.game_id)
+    assert katrain.get_state()["timer"]["paused"] is True
+
+
+def test_geometry_callback_pauses_only_current_bound_physical_local_game(client, monkeypatch):
+    from katrain.web.server import _set_bound_local_geometry_pause
+
+    session = _start_pvp_local(client, monkeypatch, time_enabled=True)
+    app = client.app
+    app.state.vision = types.SimpleNamespace(bound_session_id=session.session_id, stop=lambda: None)
+    controller = types.SimpleNamespace(ready_game_id=session.katrain.game.game_id, input="physical", close=lambda: None)
+    session.local_confirmation_controller = controller
+    controller.input = "screen"
+    _set_bound_local_geometry_pause(app, True)
+    assert session.katrain.local_geometry_paused is False
+    controller.input = "physical"
+    _set_bound_local_geometry_pause(app, True)
+    assert session.katrain.local_geometry_paused is True
+    controller.ready_game_id = "old-game"
+    _set_bound_local_geometry_pause(app, False)
+    assert session.katrain.local_geometry_paused is True
+
+
 def test_timeout_judges_loss_when_clock_exhausted(client, monkeypatch):
     session = _start_pvp_local(client, monkeypatch, time_enabled=True, main_time=1, byo_length=30, byo_periods=1)
     turn_player = session.katrain.next_player_info.player
@@ -109,7 +152,7 @@ def test_move_after_clock_exhausted_judges_loss_before_changing_turn(client, mon
     session.katrain.main_time_used_by_player[turn_player] = 60
     session.katrain.next_player_info.periods_used = 1
 
-    r = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
+    r = _confirm(client, session)
 
     assert r.status_code == 200, r.text
     state = r.json()["state"]
@@ -123,14 +166,14 @@ def test_move_cannot_resume_local_game_after_timeout_result(client, monkeypatch)
     turn_player = session.katrain.next_player_info.player
     session.katrain.main_time_used_by_player[turn_player] = 60
     session.katrain.next_player_info.periods_used = 1
-    first = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
+    first = _confirm(client, session)
     assert first.status_code == 200, first.text
     state = first.json()["state"]
 
-    second = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
+    second = _confirm(client, session, request_id="resume-ended-game")
 
     assert second.status_code == 409, second.text
-    assert second.json()["detail"] == "Game is already over"
+    assert "no longer current" in second.json()["detail"]
     assert _recorded_results(client) == [state["end_result"]]
 
 
@@ -170,3 +213,24 @@ def test_free_game_timeout_unchanged_regardless_of_clock(client, monkeypatch):
     state = r.json()["state"]
     assert state["end_result"].endswith("+T")
     assert _recorded_results(client) == [state["end_result"]]
+
+
+def _confirm(client, session, request_id=None):
+    state = session.katrain.get_state()
+    client.post(
+        "/api/local/ready",
+        json={"session_id": session.session_id, "expected_game_id": state["game_id"], "input": "screen"},
+    )
+    return client.post(
+        "/api/local/confirm",
+        json={
+            "session_id": session.session_id,
+            "expected_game_id": state["game_id"],
+            "expected_node_id": state["current_node_id"],
+            "color": state["player_to_move"],
+            "request_id": request_id or f"confirm-{state['current_node_id']}",
+            "input": "screen",
+            "action": "move",
+            "coords": [3, 3],
+        },
+    )

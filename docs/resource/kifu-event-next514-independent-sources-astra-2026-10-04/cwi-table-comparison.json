@@ -1,0 +1,3515 @@
+{
+  "scope": "169 exact China-Japan candidate IDs; comparison is supporting series evidence only, not authorization to edit players, score, date, or SGF",
+  "source_keys": [
+    "cwi-cj-main",
+    "cwi-cj-1987",
+    "cwi-cj-1989",
+    "cwi-cj-1990",
+    "cwi-cj-1991"
+  ],
+  "comparison_name_map_is_not_catalog_alias_authority": {
+    "奥村靖": "Okumura Yasushi",
+    "李星": "Li Xing",
+    "仓桥正行": "Kurahashi Masayuki",
+    "曹大元": "Cao Dayuan",
+    "苑田勇一": "Sonoda Yuichi",
+    "上村阳生": "Kamimura Haruo",
+    "曹志林": "Cao Zhilin",
+    "东野政治": "Tono Masaharu",
+    "常昊": "Chang Hao",
+    "中小野田智": "Nakaonoda Tomomi",
+    "结城聪": "Yuki Satoshi",
+    "车泽武": "Che Zewu",
+    "森田道博": "Morita Michihiro",
+    "森山直棋": "Moriyama Naoki",
+    "柳时熏": "Ryu Shikun",
+    "陈临新": "Chen Linxin",
+    "今村俊也": "Imamura Toshiya",
+    "石井邦生": "Ishii Kunio",
+    "陈祖德": "Chen Zude",
+    "酒井通温": "Sakai Michiharu",
+    "大矢浩一": "Oya Koichi",
+    "张文东": "Zhang Wendong",
+    "汪见虹": "Wang Jianhong",
+    "梁伟棠": "Liang Weitang",
+    "俞斌": "Yu Bin",
+    "杨晖": "Yang Hui",
+    "廖桂永": "Liao Guiyong",
+    "大渊盛人": "Obuchi Morito",
+    "王汝南": "Wang Runan",
+    "淡路修三": "Awaji Shuzo",
+    "马晓春": "Ma Xiaochun",
+    "方天丰": "Fang Tianfeng",
+    "钱宇平": "Qian Yuping",
+    "江铸久": "Jiang Zhujiu",
+    "段嵘": "Duan Rong",
+    "关山利道": "Sekiyama Toshimichi",
+    "神原史子": "Sakakibara Fumiko",
+    "王剑坤": "Wang Jiankun",
+    "恩田烈彦": "Onda Yasuhiko",
+    "依田纪基": "Yoda Norimoto",
+    "方捷": "Fang Jie",
+    "松冈秀树": "Matsuoka Hideki",
+    "山田至宝": "Yamada Shiho",
+    "井秀一郎": "Iguchi Hideichiro",
+    "泉谷英雄": "Izumitani Hideo",
+    "青木喜久代": "Aoki Kikuyo",
+    "丰云": "Feng Yun",
+    "宫崎龙太郎": "Miyazaki Ryutaro",
+    "余平": "Yu Ping",
+    "张欣": "Zhang Xin",
+    "王佰刚": "Wang Bogang",
+    "张璇": "Zhang Xuan",
+    "宫崎志摩子": "Miyazaki Shimako",
+    "李亮": "Li Liang",
+    "中辰光": "Zhong Chenguang",
+    "赵栋": "Zhao Dong",
+    "刘菁": "Liu Jing",
+    "井上尚美": "Inoue Naomi",
+    "鹤丸敬一": "Tsurumaru Keiichi",
+    "邵炜刚": "Shao Weigang",
+    "横田茂昭": "Yokota Shigeaki",
+    "小林光一": "Kobayashi Koichi",
+    "华以刚": "Hua Yigang",
+    "上村邦夫": "Kamimura Kunio",
+    "吉田美香": "Yoshida Mika",
+    "加藤正夫": "Kato Masao",
+    "邵震中": "Shao Zhenzhong",
+    "王冠军": "Wang Guanjun",
+    "吴肇毅": "Wu Zhaoyi",
+    "宋雪林": "Song Xuelin",
+    "酒井真树": "Sakai Maki",
+    "康占斌": "Kang Zhanbin",
+    "孔祥明": "Kong Xiangming",
+    "小林千寿": "Kobayashi Chizu",
+    "小川诚子": "Ogawa Tomoko",
+    "赵善津": "Cho Sonjin",
+    "藤泽一就": "Fujisawa Kazunari",
+    "中泽彩子": "Nakazawa Ayako",
+    "梁雅娣": "Liang Yadi",
+    "有村比吕司": "Arimura Hiroshi",
+    "汤川光久": "Yukawa Mitsuhisa",
+    "筱田秀行": "Shinoda Hideyuki",
+    "刘波": "Liu Bo",
+    "刘小光": "Liu Xiaoguang",
+    "马石": "Ma Shi",
+    "杨士海": "Yang Shihai",
+    "罗洗河": "Luo Xihe",
+    "庞延": "Pang Yan",
+    "三村智保": "Mimura Tomoyasu",
+    "彦坂直人": "Hikosaka Naoto",
+    "青木绅一": "Aoki Shinichi",
+    "伊田纪基": "Yoda Norimoto",
+    "芮乃伟": "Rui Naiwei",
+    "山田规三生": "Yamada Kimio",
+    "闫安": "Yan An",
+    "山田和贵雄": "Yamada Wakio",
+    "王洪军": "Wang Hongjun",
+    "王群": "Wang Qun",
+    "中根直行": "Nakane Naoyuki",
+    "石田笃司": "Ishida Atsushi",
+    "王磊": "Wang Lei (b)",
+    "王亦民": "Wang Yimin",
+    "小松英树": "Komatsu Hideki",
+    "杨爽": "Yang Shuang",
+    "本田邦久": "Honda Kunihisa",
+    "宫本义久": "Miyamoto Yoshihisa",
+    "大平修三": "Ohira Shuzo",
+    "吴凇笙": "Wu Songsheng",
+    "宫川史彦": "Miyagawa Fumihiko",
+    "周鹤洋": "Zhou Heyang",
+    "白宏江": "Hiroe Hiroyuki",
+    "后藤俊午": "Goto Shungo",
+    "小县真树": "Ogata Masaki",
+    "佐板志朗": "Sasaka Shiro",
+    "聂卫平": "Nie Weiping",
+    "石田芳夫": "Ishida Yoshio",
+    "徐莹": "Xu Ying",
+    "丹田秀树": "Enda Hideki",
+    "佐藤昌晴": "Sato Masaharu",
+    "伊藤诚": "Ito Makoto"
+  },
+  "rows": [
+    {
+      "id": 29764,
+      "date_played": "1990-04-22",
+      "player_black": "奥村靖",
+      "player_white": "李星",
+      "result": "W+R",
+      "move_count": 200,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-22",
+          "black": "Okumura Yasushi",
+          "white": "Li Xing",
+          "result": "W+R",
+          "moves": 200,
+          "sgf_link": "2.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 33602,
+      "date_played": "1976-04-13",
+      "player_black": "本田邦久",
+      "player_white": "华以刚",
+      "result": "B+7.5",
+      "move_count": 167,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-13",
+          "black": "Honda Kunihisa",
+          "white": "Hua Yigang",
+          "result": "B+7",
+          "moves": 167,
+          "sgf_link": "1976/1976-04-13.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 35821,
+      "date_played": "1990-04-19",
+      "player_black": "李星",
+      "player_white": "仓桥正行",
+      "result": "W+R",
+      "move_count": 248,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-19",
+          "black": "Li Xing",
+          "white": "Kurahashi Masayuki",
+          "result": "W+R",
+          "moves": 248,
+          "sgf_link": "16.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 36530,
+      "date_played": "1987-05-20",
+      "player_black": "曹大元",
+      "player_white": "苑田勇一",
+      "result": "B+3.5",
+      "move_count": 225,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-20",
+          "black": "Cao Dayuan",
+          "white": "Sonoda Yuichi",
+          "result": "B+3.5",
+          "moves": 225,
+          "sgf_link": "5.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 36531,
+      "date_played": "1987-05-22",
+      "player_black": "苑田勇一",
+      "player_white": "曹大元",
+      "result": "B+R",
+      "move_count": 183,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-22",
+          "black": "Sonoda Yuichi",
+          "white": "Cao Dayuan",
+          "result": "B+R",
+          "moves": 183,
+          "sgf_link": "12.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 36532,
+      "date_played": "1987-05-24",
+      "player_black": "曹大元",
+      "player_white": "苑田勇一",
+      "result": "B+3.5",
+      "move_count": 220,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-24",
+          "black": "Cao Dayuan",
+          "white": "Sonoda Yuichi",
+          "result": "B+3.5",
+          "moves": 220,
+          "sgf_link": "24.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 36533,
+      "date_played": "1987-05-28",
+      "player_black": "曹大元",
+      "player_white": "上村阳生",
+      "result": "W+0.5",
+      "move_count": 269,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-28",
+          "black": "Cao Dayuan",
+          "white": "Kamimura Haruo",
+          "result": "W+0.5",
+          "moves": 269,
+          "sgf_link": "38.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 36534,
+      "date_played": "1987-05-31",
+      "player_black": "上村阳生",
+      "player_white": "曹大元",
+      "result": "W+R",
+      "move_count": 210,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-31",
+          "black": "Kamimura Haruo",
+          "white": "Cao Dayuan",
+          "result": "W+R",
+          "moves": 210,
+          "sgf_link": "43.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 36535,
+      "date_played": "1987-06-03",
+      "player_black": "曹大元",
+      "player_white": "上村阳生",
+      "result": "W+R",
+      "move_count": 166,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-06-03",
+          "black": "Cao Dayuan",
+          "white": "Kamimura Haruo",
+          "result": "W+R",
+          "moves": 166,
+          "sgf_link": "48.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 39219,
+      "date_played": "1976-04-10",
+      "player_black": "曹志林",
+      "player_white": "上村阳生",
+      "result": "B+R",
+      "move_count": 171,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-10",
+          "black": "Cao Zhilin",
+          "white": "Kamimura Haruo",
+          "result": "B+R",
+          "moves": 171,
+          "sgf_link": "1976/1976-04-10b.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 39220,
+      "date_played": "1976-04-13",
+      "player_black": "宫本义久",
+      "player_white": "曹志林",
+      "result": "W+2.5",
+      "move_count": 284,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-13",
+          "black": "Miyamoto Yoshihisa",
+          "white": "Cao Zhilin",
+          "result": "W+2",
+          "moves": 284,
+          "sgf_link": "1976/1976-04-13c.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 39229,
+      "date_played": "1976-04-15",
+      "player_black": "曹志林",
+      "player_white": "东野政治",
+      "result": "W+R",
+      "move_count": 194,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-15",
+          "black": "Cao Zhilin",
+          "white": "Tono Masaharu",
+          "result": "W+R",
+          "moves": 194,
+          "sgf_link": "1976/1976-04-15a.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 40058,
+      "date_played": "1991-06-04",
+      "player_black": "常昊",
+      "player_white": "中小野田智",
+      "result": "W+R",
+      "move_count": 202,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-06-04",
+          "black": "Chang Hao",
+          "white": "Nakaonoda Tomomi",
+          "result": "W+R",
+          "moves": 202,
+          "sgf_link": "36.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 41113,
+      "date_played": "1989-05-10",
+      "player_black": "结城聪",
+      "player_white": "车泽武",
+      "result": "B+R",
+      "move_count": 183,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-10",
+          "black": "Yuki Satoshi",
+          "white": "Che Zewu",
+          "result": "B+R",
+          "moves": 183,
+          "sgf_link": "3.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 41114,
+      "date_played": "1989-05-11",
+      "player_black": "车泽武",
+      "player_white": "森田道博",
+      "result": "B+R",
+      "move_count": 103,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-11",
+          "black": "Che Zewu",
+          "white": "Morita Michihiro",
+          "result": "B+R",
+          "moves": 103,
+          "sgf_link": "10.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 41115,
+      "date_played": "1991-05-24",
+      "player_black": "车泽武",
+      "player_white": "森山直棋",
+      "result": "W+0.5",
+      "move_count": 308,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-24",
+          "black": "Che Zewu",
+          "white": "Moriyama Naoki",
+          "result": "W+0.5",
+          "moves": 308,
+          "sgf_link": "16.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 41116,
+      "date_played": "1991-05-26",
+      "player_black": "柳时熏",
+      "player_white": "车泽武",
+      "result": "W+4.5",
+      "move_count": 272,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-26",
+          "black": "Ryu Shikun",
+          "white": "Che Zewu",
+          "result": "W+4.5",
+          "moves": 272,
+          "sgf_link": "24.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 42345,
+      "date_played": "1987-05-26",
+      "player_black": "苑田勇一",
+      "player_white": "陈临新",
+      "result": "B+R",
+      "move_count": 201,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-26",
+          "black": "Sonoda Yuichi",
+          "white": "Chen Linxin",
+          "result": "B+R",
+          "moves": 201,
+          "sgf_link": "29.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 42347,
+      "date_played": "1987-05-28",
+      "player_black": "陈临新",
+      "player_white": "今村俊也",
+      "result": "B+3.5",
+      "move_count": 261,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-28",
+          "black": "Chen Linxin",
+          "white": "Imamura Toshiya",
+          "result": "B+3.5",
+          "moves": 261,
+          "sgf_link": "37.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 42349,
+      "date_played": "1987-05-31",
+      "player_black": "今村俊也",
+      "player_white": "陈临新",
+      "result": "B+R",
+      "move_count": 225,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-31",
+          "black": "Imamura Toshiya",
+          "white": "Chen Linxin",
+          "result": "B+R",
+          "moves": 225,
+          "sgf_link": "44.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 42350,
+      "date_played": "1987-06-03",
+      "player_black": "陈临新",
+      "player_white": "今村俊也",
+      "result": "W+R",
+      "move_count": 220,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-06-03",
+          "black": "Chen Linxin",
+          "white": "Imamura Toshiya",
+          "result": "W+R",
+          "moves": 220,
+          "sgf_link": "50.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 47342,
+      "date_played": "1976-04-10",
+      "player_black": "石井邦生",
+      "player_white": "陈祖德",
+      "result": "B+R",
+      "move_count": 185,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-10",
+          "black": "Ishii Kunio",
+          "white": "Chen Zude",
+          "result": "B+R",
+          "moves": 185,
+          "sgf_link": "1976/1976-04-10.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 47344,
+      "date_played": "1976-04-15",
+      "player_black": "苑田勇一",
+      "player_white": "陈祖德",
+      "result": "B+2",
+      "move_count": 282,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-15",
+          "black": "Sonoda Yuichi",
+          "white": "Chen Zude",
+          "result": "B+2",
+          "moves": 282,
+          "sgf_link": "1976/1976-04-15.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 47345,
+      "date_played": "1976-04-17",
+      "player_black": "陈祖德",
+      "player_white": "酒井通温",
+      "result": "W+R",
+      "move_count": 206,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-17",
+          "black": "Chen Zude",
+          "white": "Sakai Michiharu",
+          "result": "W+R",
+          "moves": 206,
+          "sgf_link": "1976/1976-04-17.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 52054,
+      "date_played": "1976-04-19",
+      "player_black": "大平修三",
+      "player_white": "吴凇笙",
+      "result": "B+9.5",
+      "move_count": 191,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-19",
+          "black": "Ohira Shuzo",
+          "white": "Wu Songsheng",
+          "result": "B+9",
+          "moves": 191,
+          "sgf_link": "1976/1976-04-19c.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 52818,
+      "date_played": "1987-05-20",
+      "player_black": "大矢浩一",
+      "player_white": "张文东",
+      "result": "B+R",
+      "move_count": 119,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-20",
+          "black": "Oya Koichi",
+          "white": "Zhang Wendong",
+          "result": "B+R",
+          "moves": 119,
+          "sgf_link": "3.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 52819,
+      "date_played": "1987-05-22",
+      "player_black": "张文东",
+      "player_white": "大矢浩一",
+      "result": "W+R",
+      "move_count": 210,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-22",
+          "black": "Zhang Wendong",
+          "white": "Oya Koichi",
+          "result": "W+R",
+          "moves": 210,
+          "sgf_link": "14.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 52820,
+      "date_played": "1987-05-24",
+      "player_black": "大矢浩一",
+      "player_white": "汪见虹",
+      "result": "B+R",
+      "move_count": 183,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-24",
+          "black": "Oya Koichi",
+          "white": "Wang Jianhong",
+          "result": "B+R",
+          "moves": 183,
+          "sgf_link": "22.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 52821,
+      "date_played": "1987-05-26",
+      "player_black": "梁伟棠",
+      "player_white": "大矢浩一",
+      "result": "W+R",
+      "move_count": 214,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-26",
+          "black": "Liang Weitang",
+          "white": "Oya Koichi",
+          "result": "W+R",
+          "moves": 214,
+          "sgf_link": "30.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 52822,
+      "date_played": "1987-05-28",
+      "player_black": "俞斌",
+      "player_white": "大矢浩一",
+      "result": "B+1.5",
+      "move_count": 315,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-28",
+          "black": "Yu Bin",
+          "white": "Oya Koichi",
+          "result": "B+1.5",
+          "moves": 315,
+          "sgf_link": "39.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 52823,
+      "date_played": "1987-05-31",
+      "player_black": "大矢浩一",
+      "player_white": "俞斌",
+      "result": "W+0.5",
+      "move_count": 266,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-31",
+          "black": "Oya Koichi",
+          "white": "Yu Bin",
+          "result": "W+0.5",
+          "moves": 266,
+          "sgf_link": "47.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 52824,
+      "date_played": "1987-06-03",
+      "player_black": "大矢浩一",
+      "player_white": "杨晖",
+      "result": "B+1.5",
+      "move_count": 308,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-06-03",
+          "black": "Oya Koichi",
+          "white": "Yang Hui",
+          "result": "B+1.5",
+          "moves": 308,
+          "sgf_link": "54.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 52825,
+      "date_played": "1990-04-28",
+      "player_black": "廖桂永",
+      "player_white": "大矢浩一",
+      "result": "B+R",
+      "move_count": 149,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-28",
+          "black": "Liao Guiyong",
+          "white": "Oya Koichi",
+          "result": "B+R",
+          "moves": 149,
+          "sgf_link": "37.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 52827,
+      "date_played": "1990-04-30",
+      "player_black": "大矢浩一",
+      "player_white": "杨晖",
+      "result": "B+1",
+      "move_count": 231,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-30",
+          "black": "Oya Koichi",
+          "white": "Yang Hui",
+          "result": "B+1.5",
+          "moves": 231,
+          "sgf_link": "50.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 52830,
+      "date_played": "1990-04-29",
+      "player_black": "廖桂永",
+      "player_white": "大矢浩一",
+      "result": "W+1",
+      "move_count": 267,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-29",
+          "black": "Oya Koichi",
+          "white": "Liao Guiyong",
+          "result": "W+0.5",
+          "moves": 267,
+          "sgf_link": "45.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "color_assignment",
+        "result"
+      ]
+    },
+    {
+      "id": 53455,
+      "date_played": "1990-04-26",
+      "player_black": "大渊盛人",
+      "player_white": "廖桂永",
+      "result": "W+R",
+      "move_count": 186,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-26",
+          "black": "Obuchi Morito",
+          "white": "Liao Guiyong",
+          "result": "W+R",
+          "moves": 186,
+          "sgf_link": "32.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 55277,
+      "date_played": "1976-04-19",
+      "player_black": "王汝南",
+      "player_white": "淡路修三",
+      "result": "B+R",
+      "move_count": 141,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-19",
+          "black": "Wang Runan",
+          "white": "Awaji Shuzo",
+          "result": "B+R",
+          "moves": 141,
+          "sgf_link": "1976/1976-04-19d.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 55312,
+      "date_played": "1987-05-20",
+      "player_black": "淡路修三",
+      "player_white": "马晓春",
+      "result": "B+R",
+      "move_count": 163,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-20",
+          "black": "Awaji Shuzo",
+          "white": "Ma Xiaochun",
+          "result": "B+R",
+          "moves": 163,
+          "sgf_link": "4.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 55316,
+      "date_played": "1987-05-22",
+      "player_black": "马晓春",
+      "player_white": "淡路修三",
+      "result": "W+3.5",
+      "move_count": 206,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-22",
+          "black": "Ma Xiaochun",
+          "white": "Awaji Shuzo",
+          "result": "W+2.5",
+          "moves": 206,
+          "sgf_link": "13.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 55320,
+      "date_played": "1987-05-24",
+      "player_black": "淡路修三",
+      "player_white": "方天丰",
+      "result": "B+R",
+      "move_count": 161,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-24",
+          "black": "Awaji Shuzo",
+          "white": "Fang Tianfeng",
+          "result": "B+R",
+          "moves": 161,
+          "sgf_link": "20.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 55323,
+      "date_played": "1987-05-26",
+      "player_black": "钱宇平",
+      "player_white": "淡路修三",
+      "result": "B+R",
+      "move_count": 205,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-26",
+          "black": "Qian Yuping",
+          "white": "Awaji Shuzo",
+          "result": "B+R",
+          "moves": 205,
+          "sgf_link": "26.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 55327,
+      "date_played": "1987-05-28",
+      "player_black": "江铸久",
+      "player_white": "淡路修三",
+      "result": "B+R",
+      "move_count": 223,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-28",
+          "black": "Jiang Zhujiu",
+          "white": "Awaji Shuzo",
+          "result": "B+R",
+          "moves": 225,
+          "sgf_link": "34.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "move_count"
+      ]
+    },
+    {
+      "id": 55335,
+      "date_played": "1987-06-03",
+      "player_black": "淡路修三",
+      "player_white": "江铸久",
+      "result": "B+R",
+      "move_count": 281,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-06-03",
+          "black": "Awaji Shuzo",
+          "white": "Jiang Zhujiu",
+          "result": "B+R",
+          "moves": 281,
+          "sgf_link": "53.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 59023,
+      "date_played": "1989-05-13",
+      "player_black": "森田道博",
+      "player_white": "段嵘",
+      "result": "B+R",
+      "move_count": 179,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-13",
+          "black": "Morita Michihiro",
+          "white": "Duan Rong",
+          "result": "B+R",
+          "moves": 179,
+          "sgf_link": "19.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 59026,
+      "date_played": "1991-05-23",
+      "player_black": "段嵘",
+      "player_white": "关山利道",
+      "result": "B+5.5",
+      "move_count": 244,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-23",
+          "black": "Duan Rong",
+          "white": "Sekiyama Toshimichi",
+          "result": "B+5.5",
+          "moves": 244,
+          "sgf_link": "5.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 59027,
+      "date_played": "1991-05-26",
+      "player_black": "神原史子",
+      "player_white": "段嵘",
+      "result": "W+R",
+      "move_count": 172,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-26",
+          "black": "Sakakibara Fumiko",
+          "white": "Duan Rong",
+          "result": "W+R",
+          "moves": 172,
+          "sgf_link": "17.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 59258,
+      "date_played": "1990-04-30",
+      "player_black": "王剑坤",
+      "player_white": "恩田烈彦",
+      "result": "B+R",
+      "move_count": 245,
+      "cwi_pair_date_matches": []
+    },
+    {
+      "id": 59259,
+      "date_played": "1990-04-29",
+      "player_black": "王剑坤",
+      "player_white": "恩田烈彦",
+      "result": "W+R",
+      "move_count": 92,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-29",
+          "black": "Wang Jiankun",
+          "white": "Onda Yasuhiko",
+          "result": "W+R",
+          "moves": 92,
+          "sgf_link": "46.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 59980,
+      "date_played": "1987-05-28",
+      "player_black": "依田纪基",
+      "player_white": "方天丰",
+      "result": "B+R",
+      "move_count": 325,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-28",
+          "black": "Yoda Norimoto",
+          "white": "Fang Tianfeng",
+          "result": "B+R",
+          "moves": 325,
+          "sgf_link": "40.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 59984,
+      "date_played": "1987-05-31",
+      "player_black": "方天丰",
+      "player_white": "依田纪基",
+      "result": "W+R",
+      "move_count": 226,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-31",
+          "black": "Fang Tianfeng",
+          "white": "Yoda Norimoto",
+          "result": "W+R",
+          "moves": 226,
+          "sgf_link": "45.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 60040,
+      "date_played": "1990-04-22",
+      "player_black": "方捷",
+      "player_white": "松冈秀树",
+      "result": "W+R",
+      "move_count": 194,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-22",
+          "black": "Fang Jie",
+          "white": "Matsuoka Hideki",
+          "result": "W+R",
+          "moves": 194,
+          "sgf_link": "25.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 60045,
+      "date_played": "1990-04-20",
+      "player_black": "方捷",
+      "player_white": "山田至宝",
+      "result": "W+R",
+      "move_count": 270,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-20",
+          "black": "Fang Jie",
+          "white": "Yamada Shiho",
+          "result": "W+R",
+          "moves": 270,
+          "sgf_link": "22.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 60050,
+      "date_played": "1990-04-26",
+      "player_black": "方捷",
+      "player_white": "井秀一郎",
+      "result": "B+R",
+      "move_count": 189,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-26",
+          "black": "Fang Jie",
+          "white": "Iguchi Hideichiro",
+          "result": "B+R",
+          "moves": 189,
+          "sgf_link": "33.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 60053,
+      "date_played": "1990-04-29",
+      "player_black": "方捷",
+      "player_white": "泉谷英雄",
+      "result": "B+R",
+      "move_count": 125,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-29",
+          "black": "Fang Jie",
+          "white": "Izumitani Hideo",
+          "result": "B+R",
+          "moves": 125,
+          "sgf_link": "41.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 60058,
+      "date_played": "1990-04-30",
+      "player_black": "方捷",
+      "player_white": "泉谷英雄",
+      "result": "B+7",
+      "move_count": 222,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-30",
+          "black": "Fang Jie",
+          "white": "Izumitani Hideo",
+          "result": "B+6.5",
+          "moves": 222,
+          "sgf_link": "49.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 60065,
+      "date_played": "1990-04-28",
+      "player_black": "泉谷英雄",
+      "player_white": "方捷",
+      "result": "B+1",
+      "move_count": 296,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-28",
+          "black": "Izumitani Hideo",
+          "white": "Fang Jie",
+          "result": "B+0.5",
+          "moves": 296,
+          "sgf_link": "39.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 60069,
+      "date_played": "1990-04-19",
+      "player_black": "方捷",
+      "player_white": "关山利道",
+      "result": "B+R",
+      "move_count": 145,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-19",
+          "black": "Fang Jie",
+          "white": "Sekiyama Toshimichi",
+          "result": "B+R",
+          "moves": 145,
+          "sgf_link": "12.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 61668,
+      "date_played": "1989-05-13",
+      "player_black": "青木喜久代",
+      "player_white": "丰云",
+      "result": "B+R",
+      "move_count": 181,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-13",
+          "black": "Aoki Kikuyo",
+          "white": "Feng Yun",
+          "result": "B+R",
+          "moves": 181,
+          "sgf_link": "20.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 61674,
+      "date_played": "1991-06-04",
+      "player_black": "森山直棋",
+      "player_white": "丰云",
+      "result": "B+R",
+      "move_count": 111,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-06-04",
+          "black": "Moriyama Naoki",
+          "white": "Feng Yun",
+          "result": "B+R",
+          "moves": 111,
+          "sgf_link": "33.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 63706,
+      "date_played": "1976-04-06",
+      "player_black": "聂卫平",
+      "player_white": "高木祥一",
+      "result": "B+R",
+      "move_count": 209,
+      "cwi_pair_date_matches": []
+    },
+    {
+      "id": 65497,
+      "date_played": "1990-04-22",
+      "player_black": "刘菁",
+      "player_white": "宫川史彦",
+      "result": "W+2",
+      "move_count": 217,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-22",
+          "black": "Liu Jing",
+          "white": "Miyagawa Fumihiko",
+          "result": "W+2.5",
+          "moves": 217,
+          "sgf_link": "26.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 65589,
+      "date_played": "1991-05-23",
+      "player_black": "宫崎龙太郎",
+      "player_white": "余平",
+      "result": "W+R",
+      "move_count": 126,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-23",
+          "black": "Miyazaki Ryutaro",
+          "white": "Yu Ping",
+          "result": "W+R",
+          "moves": 126,
+          "sgf_link": "1.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 65593,
+      "date_played": "1991-05-24",
+      "player_black": "张欣",
+      "player_white": "宫崎龙太郎",
+      "result": "B+R",
+      "move_count": 149,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-24",
+          "black": "Zhang Xin",
+          "white": "Miyazaki Ryutaro",
+          "result": "B+R",
+          "moves": 149,
+          "sgf_link": "11.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 65600,
+      "date_played": "1991-05-26",
+      "player_black": "宫崎龙太郎",
+      "player_white": "王佰刚",
+      "result": "W+4.5",
+      "move_count": 255,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-26",
+          "black": "Miyazaki Ryutaro",
+          "white": "Wang Bogang",
+          "result": "W+4.5",
+          "moves": 255,
+          "sgf_link": "22.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 65702,
+      "date_played": "1989-05-10",
+      "player_black": "张璇",
+      "player_white": "宫崎志摩子",
+      "result": "B+R",
+      "move_count": 221,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-10",
+          "black": "Zhang Xuan",
+          "white": "Miyazaki Shimako",
+          "result": "B+R",
+          "moves": 221,
+          "sgf_link": "5.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 65710,
+      "date_played": "1989-05-11",
+      "player_black": "宫崎志摩子",
+      "player_white": "周鹤洋",
+      "result": "W+0.5",
+      "move_count": 189,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-11",
+          "black": "Miyazaki Shimako",
+          "white": "Zhou Heyang",
+          "result": "W+1.5",
+          "moves": 189,
+          "sgf_link": "13.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 65717,
+      "date_played": "1989-05-13",
+      "player_black": "李亮",
+      "player_white": "宫崎志摩子",
+      "result": "B+R",
+      "move_count": 251,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-13",
+          "black": "Li Liang",
+          "white": "Miyazaki Shimako",
+          "result": "B+R",
+          "moves": 251,
+          "sgf_link": "23.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 69416,
+      "date_played": "1991-05-24",
+      "player_black": "关山利道",
+      "player_white": "中辰光",
+      "result": "B+1.5",
+      "move_count": 241,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-24",
+          "black": "Sekiyama Toshimichi",
+          "white": "Zhong Chenguang",
+          "result": "B+1.5",
+          "moves": 241,
+          "sgf_link": "14.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 69419,
+      "date_played": "1991-05-26",
+      "player_black": "赵栋",
+      "player_white": "关山利道",
+      "result": "B+R",
+      "move_count": 183,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-26",
+          "black": "Zhao Dong",
+          "white": "Sekiyama Toshimichi",
+          "result": "B+R",
+          "moves": 183,
+          "sgf_link": "18.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 69470,
+      "date_played": "1990-04-22",
+      "player_black": "王剑坤",
+      "player_white": "白宏江",
+      "result": "W+1",
+      "move_count": 261,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-22",
+          "black": "Wang Jiankun",
+          "white": "Hiroe Hiroyuki",
+          "result": "W+0.5",
+          "moves": 261,
+          "sgf_link": "28.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 70061,
+      "date_played": "1990-04-26",
+      "player_black": "刘菁",
+      "player_white": "井上尚美",
+      "result": "B+R",
+      "move_count": 135,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-26",
+          "black": "Liu Jing",
+          "white": "Inoue Naomi",
+          "result": "B+R",
+          "moves": 135,
+          "sgf_link": "30.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 73157,
+      "date_played": "1990-04-26",
+      "player_black": "鹤丸敬一",
+      "player_white": "邵炜刚",
+      "result": "W+R",
+      "move_count": 174,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-26",
+          "black": "Tsurumaru Keiichi",
+          "white": "Shao Weigang",
+          "result": "W+R",
+          "moves": 174,
+          "sgf_link": "31.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 73249,
+      "date_played": "1990-04-19",
+      "player_black": "张璇",
+      "player_white": "横田茂昭",
+      "result": "B+R",
+      "move_count": 135,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-19",
+          "black": "Zhang Xuan",
+          "white": "Yokota Shigeaki",
+          "result": "B+R",
+          "moves": 135,
+          "sgf_link": "11.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 75293,
+      "date_played": "1990-04-20",
+      "player_black": "后藤俊午",
+      "player_white": "廖桂永",
+      "result": "B+1",
+      "move_count": 261,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-20",
+          "black": "Goto Shungo",
+          "white": "Liao Guiyong",
+          "result": "W+0.5",
+          "moves": 261,
+          "sgf_link": "21.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 76800,
+      "date_played": "1976-04-05",
+      "player_black": "小林光一",
+      "player_white": "华以刚",
+      "result": "B+R",
+      "move_count": 167,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-05",
+          "black": "Kobayashi Koichi",
+          "white": "Hua Yigang",
+          "result": "B+R",
+          "moves": 167,
+          "sgf_link": "1976/1976-04-05c.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 76801,
+      "date_played": "1976-04-19",
+      "player_black": "上村邦夫",
+      "player_white": "华以刚",
+      "result": "B+R",
+      "move_count": 187,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-19",
+          "black": "Kamimura Kunio",
+          "white": "Hua Yigang",
+          "result": "B+R",
+          "moves": 187,
+          "sgf_link": "1976/1976-04-19a.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 79603,
+      "date_played": "1990-04-19",
+      "player_black": "吉田美香",
+      "player_white": "邵炜刚",
+      "result": "W+R",
+      "move_count": 174,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-19",
+          "black": "Yoshida Mika",
+          "white": "Shao Weigang",
+          "result": "W+R",
+          "moves": 174,
+          "sgf_link": "13.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 80723,
+      "date_played": "1987-05-24",
+      "player_black": "加藤正夫",
+      "player_white": "邵震中",
+      "result": "B+R",
+      "move_count": 185,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-24",
+          "black": "Kato Masao",
+          "white": "Shao Zhenzhong",
+          "result": "B+R",
+          "moves": 185,
+          "sgf_link": "23.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 80724,
+      "date_played": "1987-05-26",
+      "player_black": "加藤正夫",
+      "player_white": "江铸久",
+      "result": "W+R",
+      "move_count": 252,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-26",
+          "black": "Kato Masao",
+          "white": "Jiang Zhujiu",
+          "result": "W+R",
+          "moves": 252,
+          "sgf_link": "32.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 80725,
+      "date_played": "1987-05-28",
+      "player_black": "加藤正夫",
+      "player_white": "马晓春",
+      "result": "W+R",
+      "move_count": 216,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-28",
+          "black": "Kato Masao",
+          "white": "Ma Xiaochun",
+          "result": "W+R",
+          "moves": 216,
+          "sgf_link": "36.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 80726,
+      "date_played": "1987-05-31",
+      "player_black": "马晓春",
+      "player_white": "加藤正夫",
+      "result": "W+R",
+      "move_count": 192,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-31",
+          "black": "Ma Xiaochun",
+          "white": "Kato Masao",
+          "result": "W+R",
+          "moves": 192,
+          "sgf_link": "42.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 80727,
+      "date_played": "1987-06-03",
+      "player_black": "马晓春",
+      "player_white": "加藤正夫",
+      "result": "B+R",
+      "move_count": 219,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-06-03",
+          "black": "Ma Xiaochun",
+          "white": "Kato Masao",
+          "result": "B+R",
+          "moves": 219,
+          "sgf_link": "49.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 85269,
+      "date_played": "1989-05-11",
+      "player_black": "王冠军",
+      "player_white": "结城聪",
+      "result": "B+R",
+      "move_count": 119,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-11",
+          "black": "Wang Guanjun",
+          "white": "Yuki Satoshi",
+          "result": "B+R",
+          "moves": 119,
+          "sgf_link": "11.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 85270,
+      "date_played": "1989-05-13",
+      "player_black": "结城聪",
+      "player_white": "吴肇毅",
+      "result": "W+R",
+      "move_count": 140,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-13",
+          "black": "Yuki Satoshi",
+          "white": "Wu Zhaoyi",
+          "result": "W+R",
+          "moves": 140,
+          "sgf_link": "17.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 85271,
+      "date_played": "1990-04-19",
+      "player_black": "结城聪",
+      "player_white": "王剑坤",
+      "result": "B+R",
+      "move_count": 127,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-19",
+          "black": "Yuki Satoshi",
+          "white": "Wang Jiankun",
+          "result": "B+R",
+          "moves": 127,
+          "sgf_link": "9.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 86030,
+      "date_played": "1987-05-20",
+      "player_black": "今村俊也",
+      "player_white": "宋雪林",
+      "result": "B+R",
+      "move_count": 232,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-20",
+          "black": "Imamura Toshiya",
+          "white": "Song Xuelin",
+          "result": "B+R",
+          "moves": 232,
+          "sgf_link": "7.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 86031,
+      "date_played": "1987-05-22",
+      "player_black": "宋雪林",
+      "player_white": "今村俊也",
+      "result": "W+R",
+      "move_count": 240,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-22",
+          "black": "Song Xuelin",
+          "white": "Imamura Toshiya",
+          "result": "W+R",
+          "moves": 240,
+          "sgf_link": "16.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 86032,
+      "date_played": "1987-05-24",
+      "player_black": "张璇",
+      "player_white": "今村俊也",
+      "result": "W+R",
+      "move_count": 154,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-24",
+          "black": "Zhang Xuan",
+          "white": "Imamura Toshiya",
+          "result": "W+R",
+          "moves": 154,
+          "sgf_link": "19.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 86033,
+      "date_played": "1987-05-26",
+      "player_black": "汪见虹",
+      "player_white": "今村俊也",
+      "result": "B+R",
+      "move_count": 173,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-26",
+          "black": "Wang Jianhong",
+          "white": "Imamura Toshiya",
+          "result": "B+R",
+          "moves": 173,
+          "sgf_link": "27.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 94714,
+      "date_played": "1990-04-28",
+      "player_black": "邵炜刚",
+      "player_white": "酒井真树",
+      "result": "B+6",
+      "move_count": 281,
+      "cwi_pair_date_matches": []
+    },
+    {
+      "id": 94715,
+      "date_played": "1990-04-29",
+      "player_black": "酒井真树",
+      "player_white": "邵炜刚",
+      "result": "B+R",
+      "move_count": 239,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-29",
+          "black": "Sakai Maki",
+          "white": "Shao Weigang",
+          "result": "B+R",
+          "moves": 239,
+          "sgf_link": "4.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 94716,
+      "date_played": "1990-04-30",
+      "player_black": "邵炜刚",
+      "player_white": "酒井真树",
+      "result": "B+6",
+      "move_count": 257,
+      "cwi_pair_date_matches": []
+    },
+    {
+      "id": 94963,
+      "date_played": "1991-05-30",
+      "player_black": "森山直棋",
+      "player_white": "康占斌",
+      "result": "B+1.5",
+      "move_count": 270,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-30",
+          "black": "Moriyama Naoki",
+          "white": "Kang Zhanbin",
+          "result": "B+1.5",
+          "moves": 270,
+          "sgf_link": "29.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 96157,
+      "date_played": "1976-04-05",
+      "player_black": "孔祥明",
+      "player_white": "小林千寿",
+      "result": "B+R",
+      "move_count": 185,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-05",
+          "black": "Kong Xiangming",
+          "white": "Kobayashi Chizu",
+          "result": "B+R",
+          "moves": 185,
+          "sgf_link": "1976/1976-04-05b.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 96158,
+      "date_played": "1976-04-19",
+      "player_black": "小川诚子",
+      "player_white": "孔祥明",
+      "result": "W+R",
+      "move_count": 188,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-19",
+          "black": "Ogawa Tomoko",
+          "white": "Kong Xiangming",
+          "result": "W+R",
+          "moves": 188,
+          "sgf_link": "1976/1976-04-19e.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 103005,
+      "date_played": "1990-04-29",
+      "player_black": "赵善津",
+      "player_white": "李星",
+      "result": "B+R",
+      "move_count": 153,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-29",
+          "black": "Cho Sonjin",
+          "white": "Li Xing",
+          "result": "B+R",
+          "moves": 153,
+          "sgf_link": "38.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 103006,
+      "date_played": "1990-04-30",
+      "player_black": "李星",
+      "player_white": "青木绅一",
+      "result": "W+4",
+      "move_count": 269,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-30",
+          "black": "Li Xing",
+          "white": "Aoki Shinichi",
+          "result": "W+3.5",
+          "moves": 269,
+          "sgf_link": "51.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 103007,
+      "date_played": "1990-04-26",
+      "player_black": "藤泽一就",
+      "player_white": "李星",
+      "result": "W+R",
+      "move_count": 200,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-26",
+          "black": "Fujisawa Kazunari",
+          "white": "Li Xing",
+          "result": "W+R",
+          "moves": 200,
+          "sgf_link": "34.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 105736,
+      "date_played": "1991-05-24",
+      "player_black": "中泽彩子",
+      "player_white": "梁雅娣",
+      "result": "B+R",
+      "move_count": 247,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-24",
+          "black": "Nakazawa Ayako",
+          "white": "Liang Yadi",
+          "result": "B+R",
+          "moves": 247,
+          "sgf_link": "15.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 106140,
+      "date_played": "1990-04-22",
+      "player_black": "小县真树",
+      "player_white": "廖桂永",
+      "result": "W+3",
+      "move_count": 249,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-22",
+          "black": "Ogata Masaki",
+          "white": "Liao Guiyong",
+          "result": "W+2.5",
+          "moves": 249,
+          "sgf_link": "27.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 106141,
+      "date_played": "1990-04-30",
+      "player_black": "廖桂永",
+      "player_white": "有村比吕司",
+      "result": "B+R",
+      "move_count": 201,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-30",
+          "black": "Liao Guiyong",
+          "white": "Arimura Hiroshi",
+          "result": "B+R",
+          "moves": 201,
+          "sgf_link": "48.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 106142,
+      "date_played": "1990-04-19",
+      "player_black": "廖桂永",
+      "player_white": "汤川光久",
+      "result": "B+R",
+      "move_count": 131,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-19",
+          "black": "Liao Guiyong",
+          "white": "Yukawa Mitsuhisa",
+          "result": "B+R",
+          "moves": 131,
+          "sgf_link": "10.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 106143,
+      "date_played": "1991-05-23",
+      "player_black": "森山直棋",
+      "player_white": "廖桂永",
+      "result": "B+R",
+      "move_count": 235,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-23",
+          "black": "Moriyama Naoki",
+          "white": "Liao Guiyong",
+          "result": "B+R",
+          "moves": 235,
+          "sgf_link": "4.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 111166,
+      "date_played": "1989-05-11",
+      "player_black": "筱田秀行",
+      "player_white": "刘波",
+      "result": "B+R",
+      "move_count": 221,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-11",
+          "black": "Shinoda Hideyuki",
+          "white": "Liu Bo",
+          "result": "B+R",
+          "moves": 221,
+          "sgf_link": "15.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 111918,
+      "date_played": "1989-05-10",
+      "player_black": "刘菁",
+      "player_white": "森田道博",
+      "result": "W+R",
+      "move_count": 196,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-10",
+          "black": "Liu Jing",
+          "white": "Morita Michihiro",
+          "result": "W+R",
+          "moves": 196,
+          "sgf_link": "4.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 111919,
+      "date_played": "1990-04-20",
+      "player_black": "佐板志朗",
+      "player_white": "刘菁",
+      "result": "W+4",
+      "move_count": 256,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-20",
+          "black": "Sasaka Shiro",
+          "white": "Liu Jing",
+          "result": "W+3.5",
+          "moves": 256,
+          "sgf_link": "20.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 111920,
+      "date_played": "1990-04-29",
+      "player_black": "有村比吕司",
+      "player_white": "刘菁",
+      "result": "B+R",
+      "move_count": 205,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-29",
+          "black": "Arimura Hiroshi",
+          "white": "Liu Jing",
+          "result": "B+R",
+          "moves": 205,
+          "sgf_link": "43.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 111921,
+      "date_played": "1990-04-30",
+      "player_black": "青木喜久代",
+      "player_white": "刘菁",
+      "result": "W+3",
+      "move_count": 276,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-30",
+          "black": "Aoki Kikuyo",
+          "white": "Liu Jing",
+          "result": "W+2.5",
+          "moves": 276,
+          "sgf_link": "52.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 111922,
+      "date_played": "1991-05-30",
+      "player_black": "刘菁",
+      "player_white": "中小野田智",
+      "result": "B+R",
+      "move_count": 229,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-30",
+          "black": "Liu Jing",
+          "white": "Nakaonoda Tomomi",
+          "result": "B+R",
+          "moves": 229,
+          "sgf_link": "28.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 111923,
+      "date_played": "1991-06-04",
+      "player_black": "神原史子",
+      "player_white": "刘菁",
+      "result": "W+6.5",
+      "move_count": 274,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-06-04",
+          "black": "Sakakibara Fumiko",
+          "white": "Liu Jing",
+          "result": "W+6.5",
+          "moves": 274,
+          "sgf_link": "37.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 112654,
+      "date_played": "1987-05-26",
+      "player_black": "依田纪基",
+      "player_white": "刘小光",
+      "result": "W+R",
+      "move_count": 176,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-26",
+          "black": "Yoda Norimoto",
+          "white": "Liu Xiaoguang",
+          "result": "W+R",
+          "moves": 176,
+          "sgf_link": "28.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 112655,
+      "date_played": "1987-05-31",
+      "player_black": "刘小光",
+      "player_white": "苑田勇一",
+      "result": "W+R",
+      "move_count": 242,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-31",
+          "black": "Liu Xiaoguang",
+          "white": "Sonoda Yuichi",
+          "result": "W+R",
+          "moves": 242,
+          "sgf_link": "46.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 113604,
+      "date_played": "1991-05-23",
+      "player_black": "柳时熏",
+      "player_white": "马石",
+      "result": "W+R",
+      "move_count": 190,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-23",
+          "black": "Ryu Shikun",
+          "white": "Ma Shi",
+          "result": "W+R",
+          "moves": 190,
+          "sgf_link": "2.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 113605,
+      "date_played": "1991-05-24",
+      "player_black": "杨士海",
+      "player_white": "柳时熏",
+      "result": "W+R",
+      "move_count": 132,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-24",
+          "black": "Yang Shihai",
+          "white": "Ryu Shikun",
+          "result": "W+R",
+          "moves": 132,
+          "sgf_link": "10.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 113607,
+      "date_played": "1991-06-04",
+      "player_black": "柳时熏",
+      "player_white": "张文东",
+      "result": "B+R",
+      "move_count": 177,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-06-04",
+          "black": "Ryu Shikun",
+          "white": "Zhang Wendong",
+          "result": "B+R",
+          "moves": 177,
+          "sgf_link": "35.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 115442,
+      "date_played": "1991-05-23",
+      "player_black": "罗洗河",
+      "player_white": "中泽彩子",
+      "result": "B+1.5",
+      "move_count": 245,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-23",
+          "black": "Luo Xihe",
+          "white": "Nakazawa Ayako",
+          "result": "B+1.5",
+          "moves": 245,
+          "sgf_link": "6.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 116009,
+      "date_played": "1991-05-26",
+      "player_black": "马石",
+      "player_white": "中小野田智",
+      "result": "B+7.5",
+      "move_count": 219,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-26",
+          "black": "Ma Shi",
+          "white": "Nakaonoda Tomomi",
+          "result": "B+7.5",
+          "moves": 219,
+          "sgf_link": "19.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 119316,
+      "date_played": "1976-04-19",
+      "player_black": "聂卫平",
+      "player_white": "石田芳夫",
+      "result": "B+7.5",
+      "move_count": 268,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-19",
+          "black": "Nie Weiping",
+          "white": "Ishida Yoshio",
+          "result": "B+7",
+          "moves": 171,
+          "sgf_link": "1976/1976-04-19.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result",
+        "move_count"
+      ]
+    },
+    {
+      "id": 120329,
+      "date_played": "1989-05-13",
+      "player_black": "庞延",
+      "player_white": "三村智保",
+      "result": "W+R",
+      "move_count": 222,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-13",
+          "black": "Pang Yan",
+          "white": "Mimura Tomoyasu",
+          "result": "W+R",
+          "moves": 222,
+          "sgf_link": "22.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 124086,
+      "date_played": "1987-05-20",
+      "player_black": "钱宇平",
+      "player_white": "彦坂直人",
+      "result": "B+1.5",
+      "move_count": 306,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-20",
+          "black": "Qian Yuping",
+          "white": "Hikosaka Naoto",
+          "result": "B+1.5",
+          "moves": 306,
+          "sgf_link": "8.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 124087,
+      "date_played": "1987-05-22",
+      "player_black": "彦坂直人",
+      "player_white": "钱宇平",
+      "result": "B+R",
+      "move_count": 223,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-22",
+          "black": "Hikosaka Naoto",
+          "white": "Qian Yuping",
+          "result": "B+R",
+          "moves": 223,
+          "sgf_link": "15.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 124088,
+      "date_played": "1987-05-24",
+      "player_black": "彦坂直人",
+      "player_white": "钱宇平",
+      "result": "W+0.5",
+      "move_count": 249,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-24",
+          "black": "Hikosaka Naoto",
+          "white": "Qian Yuping",
+          "result": "W+2.5",
+          "moves": 249,
+          "sgf_link": "18.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 125173,
+      "date_played": "1990-04-29",
+      "player_black": "青木绅一",
+      "player_white": "杨晖",
+      "result": "W+R",
+      "move_count": 204,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-29",
+          "black": "Aoki Shinichi",
+          "white": "Yang Hui",
+          "result": "W+R",
+          "moves": 204,
+          "sgf_link": "3.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 125222,
+      "date_played": "1989-05-10",
+      "player_black": "青木喜久代",
+      "player_white": "杨晖",
+      "result": "W+R",
+      "move_count": 226,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-10",
+          "black": "Aoki Kikuyo",
+          "white": "Yang Hui",
+          "result": "W+R",
+          "moves": 226,
+          "sgf_link": "6.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 125223,
+      "date_played": "1990-04-29",
+      "player_black": "张璇",
+      "player_white": "青木喜久代",
+      "result": "B+R",
+      "move_count": 183,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-29",
+          "black": "Zhang Xuan",
+          "white": "Aoki Kikuyo",
+          "result": "B+R",
+          "moves": 183,
+          "sgf_link": "42.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 125593,
+      "date_played": "1987-03-16",
+      "player_black": "清成哲也",
+      "player_white": "芮乃伟",
+      "result": "W+R",
+      "move_count": 172,
+      "cwi_pair_date_matches": []
+    },
+    {
+      "id": 126835,
+      "date_played": "1987-05-22",
+      "player_black": "伊田纪基",
+      "player_white": "芮乃伟",
+      "result": "B+R",
+      "move_count": 157,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-22",
+          "black": "Yoda Norimoto",
+          "white": "Rui Naiwei",
+          "result": "B+R",
+          "moves": 157,
+          "sgf_link": "10.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 126836,
+      "date_played": "1987-05-24",
+      "player_black": "芮乃伟",
+      "player_white": "依田纪基",
+      "result": "B+R",
+      "move_count": 173,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-24",
+          "black": "Rui Naiwei",
+          "white": "Yoda Norimoto",
+          "result": "B+R",
+          "moves": 173,
+          "sgf_link": "21.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 126837,
+      "date_played": "1987-05-26",
+      "player_black": "芮乃伟",
+      "player_white": "上村阳生",
+      "result": "B+R",
+      "move_count": 255,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-26",
+          "black": "Rui Naiwei",
+          "white": "Kamimura Haruo",
+          "result": "B+R",
+          "moves": 255,
+          "sgf_link": "33.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 127263,
+      "date_played": "1989-05-10",
+      "player_black": "三村智保",
+      "player_white": "邵炜刚",
+      "result": "W+R",
+      "move_count": 182,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-10",
+          "black": "Mimura Tomoyasu",
+          "white": "Shao Weigang",
+          "result": "W+R",
+          "moves": 182,
+          "sgf_link": "2.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 127264,
+      "date_played": "1989-05-11",
+      "player_black": "三村智保",
+      "player_white": "张文东",
+      "result": "B+R",
+      "move_count": 217,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-11",
+          "black": "Mimura Tomoyasu",
+          "white": "Zhang Wendong",
+          "result": "B+R",
+          "moves": 217,
+          "sgf_link": "14.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 127265,
+      "date_played": "1990-04-26",
+      "player_black": "张璇",
+      "player_white": "三村智保",
+      "result": "B+R",
+      "move_count": 115,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-26",
+          "black": "Zhang Xuan",
+          "white": "Mimura Tomoyasu",
+          "result": "B+R",
+          "moves": 115,
+          "sgf_link": "29.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 127876,
+      "date_played": "1990-04-19",
+      "player_black": "森山直棋",
+      "player_white": "杨晖",
+      "result": "B+4",
+      "move_count": 246,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-19",
+          "black": "Moriyama Naoki",
+          "white": "Yang Hui",
+          "result": "B+3.5",
+          "moves": 246,
+          "sgf_link": "15.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 127877,
+      "date_played": "1991-05-26",
+      "player_black": "森山直棋",
+      "player_white": "杨晖",
+      "result": "B+1.5",
+      "move_count": 250,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-26",
+          "black": "Moriyama Naoki",
+          "white": "Yang Hui",
+          "result": "B+1.5",
+          "moves": 250,
+          "sgf_link": "21.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 127911,
+      "date_played": "1990-04-26",
+      "player_black": "森田道博",
+      "player_white": "杨晖",
+      "result": "W+1",
+      "move_count": 279,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-26",
+          "black": "Morita Michihiro",
+          "white": "Yang Hui",
+          "result": "W+0.5",
+          "moves": 279,
+          "sgf_link": "36.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 128762,
+      "date_played": "1990-04-20",
+      "player_black": "邵炜刚",
+      "player_white": "山田规三生",
+      "result": "B+R",
+      "move_count": 133,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-20",
+          "black": "Shao Weigang",
+          "white": "Yamada Kimio",
+          "result": "B+R",
+          "moves": 133,
+          "sgf_link": "17.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 129210,
+      "date_played": "1989-05-10",
+      "player_black": "闫安",
+      "player_white": "山田和贵雄",
+      "result": "B+R",
+      "move_count": 145,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-10",
+          "black": "Yan An",
+          "white": "Yamada Wakio",
+          "result": "B+R",
+          "moves": 145,
+          "sgf_link": "1.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 129211,
+      "date_played": "1989-05-11",
+      "player_black": "山田和贵雄",
+      "player_white": "杨士海",
+      "result": "W+R",
+      "move_count": 158,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-11",
+          "black": "Yamada Wakio",
+          "white": "Yang Shihai",
+          "result": "W+R",
+          "moves": 158,
+          "sgf_link": "12.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 129212,
+      "date_played": "1989-05-13",
+      "player_black": "王洪军",
+      "player_white": "山田和贵雄",
+      "result": "B+R",
+      "move_count": 163,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-13",
+          "black": "Wang Hongjun",
+          "white": "Yamada Wakio",
+          "result": "B+R",
+          "moves": 163,
+          "sgf_link": "18.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 130272,
+      "date_played": "1987-05-20",
+      "player_black": "上村阳生",
+      "player_white": "王群",
+      "result": "B+R",
+      "move_count": 245,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-20",
+          "black": "Kamimura Haruo",
+          "white": "Wang Qun",
+          "result": "B+R",
+          "moves": 229,
+          "sgf_link": "6.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "move_count"
+      ]
+    },
+    {
+      "id": 130273,
+      "date_played": "1987-05-22",
+      "player_black": "上村阳生",
+      "player_white": "王群",
+      "result": "B+R",
+      "move_count": 167,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-22",
+          "black": "Wang Qun",
+          "white": "Kamimura Haruo",
+          "result": "B+R",
+          "moves": 167,
+          "sgf_link": "11.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "color_assignment"
+      ]
+    },
+    {
+      "id": 130274,
+      "date_played": "1987-05-24",
+      "player_black": "王群",
+      "player_white": "上村阳生",
+      "result": "W+6.5",
+      "move_count": 273,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-24",
+          "black": "Wang Qun",
+          "white": "Kamimura Haruo",
+          "result": "W+6.5",
+          "moves": 273,
+          "sgf_link": "25.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 130627,
+      "date_played": "1990-04-22",
+      "player_black": "中根直行",
+      "player_white": "邵炜刚",
+      "result": "W+R",
+      "move_count": 128,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-22",
+          "black": "Nakane Naoyuki",
+          "white": "Shao Weigang",
+          "result": "W+R",
+          "moves": 128,
+          "sgf_link": "24.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 130628,
+      "date_played": "1991-06-04",
+      "player_black": "邵炜刚",
+      "player_white": "有村比吕司",
+      "result": "B+R",
+      "move_count": 161,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-06-04",
+          "black": "Shao Weigang",
+          "white": "Arimura Hiroshi",
+          "result": "B+R",
+          "moves": 161,
+          "sgf_link": "34.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 130797,
+      "date_played": "1987-05-28",
+      "player_black": "彦坂直人",
+      "player_white": "邵震中",
+      "result": "B+R",
+      "move_count": 107,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-28",
+          "black": "Hikosaka Naoto",
+          "white": "Shao Zhenzhong",
+          "result": "B+R",
+          "moves": 107,
+          "sgf_link": "35.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 130798,
+      "date_played": "1987-05-31",
+      "player_black": "邵震中",
+      "player_white": "彦坂直人",
+      "result": "W+R",
+      "move_count": 158,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-31",
+          "black": "Shao Zhenzhong",
+          "white": "Hikosaka Naoto",
+          "result": "W+R",
+          "moves": 158,
+          "sgf_link": "41.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 131195,
+      "date_played": "1991-05-23",
+      "player_black": "神原史子",
+      "player_white": "徐莹",
+      "result": "W+6.5",
+      "move_count": 276,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-23",
+          "black": "Sakakibara Fumiko",
+          "white": "Xu Ying",
+          "result": "W+6.5",
+          "moves": 307,
+          "sgf_link": "8.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "move_count"
+      ]
+    },
+    {
+      "id": 131196,
+      "date_played": "1991-05-24",
+      "player_black": "余平",
+      "player_white": "神原史子",
+      "result": "B+R",
+      "move_count": 129,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-24",
+          "black": "Yu Ping",
+          "white": "Sakakibara Fumiko",
+          "result": "B+R",
+          "moves": 129,
+          "sgf_link": "9.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 131717,
+      "date_played": "1990-04-20",
+      "player_black": "张璇",
+      "player_white": "石田笃司",
+      "result": "B+R",
+      "move_count": 215,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-20",
+          "black": "Zhang Xuan",
+          "white": "Ishida Atsushi",
+          "result": "B+R",
+          "moves": 215,
+          "sgf_link": "18.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 137786,
+      "date_played": "1990-04-26",
+      "player_black": "王剑坤",
+      "player_white": "中小野田智",
+      "result": "B+R",
+      "move_count": 233,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-26",
+          "black": "Wang Jiankun",
+          "white": "Nakaonoda Tomomi",
+          "result": "B+R",
+          "moves": 233,
+          "sgf_link": "35.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 137787,
+      "date_played": "1990-04-20",
+      "player_black": "王剑坤",
+      "player_white": "丹田秀树",
+      "result": "B+8",
+      "move_count": 237,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-20",
+          "black": "Wang Jiankun",
+          "white": "Enda Hideki",
+          "result": "B+7.5",
+          "moves": 237,
+          "sgf_link": "19.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 138091,
+      "date_played": "1991-05-26",
+      "player_black": "王磊",
+      "player_white": "中泽彩子",
+      "result": "B+R",
+      "move_count": 241,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-26",
+          "black": "Wang Lei (b)",
+          "white": "Nakazawa Ayako",
+          "result": "B+R",
+          "moves": 241,
+          "sgf_link": "20.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 139783,
+      "date_played": "1991-05-23",
+      "player_black": "王亦民",
+      "player_white": "中小野田智",
+      "result": "W+0.5",
+      "move_count": 231,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-23",
+          "black": "Wang Yimin",
+          "white": "Nakaonoda Tomomi",
+          "result": "W+0.5",
+          "moves": 231,
+          "sgf_link": "3.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 139784,
+      "date_played": "1991-05-24",
+      "player_black": "有村比吕司",
+      "player_white": "王亦民",
+      "result": "W+R",
+      "move_count": 204,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-24",
+          "black": "Arimura Hiroshi",
+          "white": "Wang Yimin",
+          "result": "W+R",
+          "moves": 204,
+          "sgf_link": "12.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 140883,
+      "date_played": "1976-04-05",
+      "player_black": "佐藤昌晴",
+      "player_white": "吴凇笙",
+      "result": "B+1.5",
+      "move_count": 224,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-05",
+          "black": "Sato Masaharu",
+          "white": "Wu Songsheng",
+          "result": "B+1",
+          "moves": 224,
+          "sgf_link": "1976/1976-04-05a.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 140884,
+      "date_played": "1976-04-17",
+      "player_black": "吴凇笙",
+      "player_white": "伊藤诚",
+      "result": "B+3.5",
+      "move_count": 197,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-main",
+          "date": "1976-04-17",
+          "black": "Wu Songsheng",
+          "white": "Ito Makoto",
+          "result": "B+4",
+          "moves": 197,
+          "sgf_link": "1976/1976-04-17b.sgf"
+        }
+      ],
+      "metadata_differences": [
+        "result"
+      ]
+    },
+    {
+      "id": 143281,
+      "date_played": "1989-05-10",
+      "player_black": "小松英树",
+      "player_white": "张文东",
+      "result": "W+0.5",
+      "move_count": 234,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-10",
+          "black": "Komatsu Hideki",
+          "white": "Zhang Wendong",
+          "result": "W+0.5",
+          "moves": 234,
+          "sgf_link": "7.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 143282,
+      "date_played": "1989-05-11",
+      "player_black": "张璇",
+      "player_white": "小松英树",
+      "result": "W+R",
+      "move_count": 246,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-11",
+          "black": "Zhang Xuan",
+          "white": "Komatsu Hideki",
+          "result": "W+R",
+          "moves": 246,
+          "sgf_link": "8.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 143283,
+      "date_played": "1990-04-27",
+      "player_black": "杨晖",
+      "player_white": "小松英树",
+      "result": "W+R",
+      "move_count": 192,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-27",
+          "black": "Yang Hui",
+          "white": "Komatsu Hideki",
+          "result": "W+R",
+          "moves": 192,
+          "sgf_link": "1.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 143528,
+      "date_played": "1989-05-10",
+      "player_black": "杨士海",
+      "player_white": "筱田秀行",
+      "result": "B+R",
+      "move_count": 87,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-10",
+          "black": "Yang Shihai",
+          "white": "Shinoda Hideyuki",
+          "result": "B+R",
+          "moves": 87,
+          "sgf_link": "9.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 143529,
+      "date_played": "1989-05-13",
+      "player_black": "中辰光",
+      "player_white": "筱田秀行",
+      "result": "B+R",
+      "move_count": 191,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1989",
+          "date": "1989-05-13",
+          "black": "Zhong Chenguang",
+          "white": "Shinoda Hideyuki",
+          "result": "B+R",
+          "moves": 191,
+          "sgf_link": "21.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 143530,
+      "date_played": "1990-04-22",
+      "player_black": "张璇",
+      "player_white": "筱田秀行",
+      "result": "B+R",
+      "move_count": 109,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-22",
+          "black": "Zhang Xuan",
+          "white": "Shinoda Hideyuki",
+          "result": "B+R",
+          "moves": 109,
+          "sgf_link": "23.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 145079,
+      "date_played": "1987-05-26",
+      "player_black": "彦坂直人",
+      "player_white": "杨晖",
+      "result": "W+0.5",
+      "move_count": 244,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-05-26",
+          "black": "Hikosaka Naoto",
+          "white": "Yang Hui",
+          "result": "W+0.5",
+          "moves": 244,
+          "sgf_link": "31.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 145381,
+      "date_played": "1991-05-24",
+      "player_black": "中小野田智",
+      "player_white": "杨晖",
+      "result": "B+R",
+      "move_count": 215,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-24",
+          "black": "Nakaonoda Tomomi",
+          "white": "Yang Hui",
+          "result": "B+R",
+          "moves": 215,
+          "sgf_link": "13.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 145544,
+      "date_played": "1991-05-23",
+      "player_black": "杨士海",
+      "player_white": "有村比吕司",
+      "result": "W+0.5",
+      "move_count": 307,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-23",
+          "black": "Yang Shihai",
+          "white": "Arimura Hiroshi",
+          "result": "W+0.5",
+          "moves": 307,
+          "sgf_link": "7.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 145560,
+      "date_played": "1991-05-30",
+      "player_black": "杨爽",
+      "player_white": "中泽彩子",
+      "result": "B+1.5",
+      "move_count": 275,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-30",
+          "black": "Yang Shuang",
+          "white": "Nakazawa Ayako",
+          "result": "B+1.5",
+          "moves": 275,
+          "sgf_link": "30.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 146105,
+      "date_played": "1987-06-03",
+      "player_black": "俞斌",
+      "player_white": "依田纪基",
+      "result": "W+R",
+      "move_count": 224,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1987",
+          "date": "1987-06-03",
+          "black": "Yu Bin",
+          "white": "Yoda Norimoto",
+          "result": "W+R",
+          "moves": 224,
+          "sgf_link": "51.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 146562,
+      "date_played": "1991-05-26",
+      "player_black": "张文东",
+      "player_white": "有村比吕司",
+      "result": "B+R",
+      "move_count": 257,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1991",
+          "date": "1991-05-26",
+          "black": "Zhang Wendong",
+          "white": "Arimura Hiroshi",
+          "result": "B+R",
+          "moves": 257,
+          "sgf_link": "23.sgf"
+        }
+      ],
+      "metadata_differences": []
+    },
+    {
+      "id": 147850,
+      "date_played": "1990-04-30",
+      "player_black": "赵善津",
+      "player_white": "张璇",
+      "result": "B+R",
+      "move_count": 135,
+      "cwi_pair_date_matches": [
+        {
+          "source_key": "cwi-cj-1990",
+          "date": "1990-04-30",
+          "black": "Cho Sonjin",
+          "white": "Zhang Xuan",
+          "result": "B+R",
+          "moves": 135,
+          "sgf_link": "47.sgf"
+        }
+      ],
+      "metadata_differences": []
+    }
+  ]
+}

@@ -8,18 +8,31 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, defer
+from katrain.core.sgf_parser import SGF
 from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
 
 from katrain.web.core.db import get_db
-from katrain.web.core.models_db import KifuAlbum, KifuAnalysisJob, KifuAnalysisMove
+from katrain.web.core.models_db import (
+    KifuAlbum, KifuAlbumEventSelection, KifuAnalysisJob, KifuAnalysisMove, KifuEvent,
+)
 from katrain.web.core.repository import RemoteServiceUnavailableError
 from katrain.web.kifu.identity import (
     LANGUAGES,
+    name_display_language,
     display_event_name,
     display_maps,
+    live_event_selections,
     matching_entity_ids,
-    split_player_rank,
+    obscured_program_event_ids,
+    resolve_strict_display,
+    strict_display_maps,
+    strict_matching_names,
+    strict_raw_player_search_clause,
+    strict_raw_event_search_clause,
+    strict_names_enabled,
+    strict_selected_event_search_ids,
 )
+from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.round_names import display_round_name
 from katrain.web.kifu.library import report_availability
 
@@ -39,12 +52,38 @@ _HISTORICAL_PLAYER_ALIASES = {
 }
 
 
+def _obscured_program_event_ids_loaded(db: Session, albums: list, selected_events: dict) -> set[int]:
+    """Use SGF content already loaded for the list preview and analysis status."""
+    candidates = [album for album in albums if album.event == "GNUGo3.8" and album.id not in selected_events]
+    if not candidates:
+        return set()
+    obscured = {
+        album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
+            KifuAlbumEventSelection.album_id.in_([album.id for album in candidates])
+        )
+    }
+    for album in candidates:
+        try:
+            names = SGF.parse_sgf(album.sgf_content).get_list_property("GN") or []
+        except Exception:
+            obscured.add(album.id)
+            continue
+        if names and names[0] == "GNUGo3.8" and any(
+            name and name != names[0]
+            and parse_event(name, None).category not in {"program_source_label", "corrupt_data"}
+            for name in names[1:]
+        ):
+            obscured.add(album.id)
+    return obscured
+
+
 async def _from_dispatcher(call, not_found_detail: str):
-    """board 模式走云端。**连不上是 503,不是空库**(见 `RepositoryDispatcher.kifu_list_albums` 那段注释)。"""
+    """Board proxy: distinguish cloud HTTP failure from an unreachable cloud."""
     try:
         return await call()
     except RemoteServiceUnavailableError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        code = "kifu_cloud_error" if isinstance(exc.__cause__, httpx.HTTPStatusError) else "kifu_cloud_unreachable"
+        raise HTTPException(status_code=503, detail={"code": code, "message": str(exc)}) from exc
     except httpx.HTTPStatusError as exc:
         status = exc.response.status_code
         detail = not_found_detail if status == 404 else f"Remote kifu request failed ({status})"
@@ -232,21 +271,56 @@ async def list_kifu_albums(
         return await _from_dispatcher(
             lambda: dispatcher.kifu_list_albums(q, page, page_size, lang), "Kifu albums not found"
         )
+    requested_lang = lang
+    lang = name_display_language(lang)
+    orthographic_batch_contexts = {}
 
     query = db.query(KifuAlbum).options(defer(KifuAlbum.search_text))
-    query = query.filter(KifuAlbum.duplicate_of_id.is_(None))
-    count_query = db.query(func.count(KifuAlbum.id)).filter(KifuAlbum.duplicate_of_id.is_(None))
+    visible = (KifuAlbum.duplicate_of_id.is_(None), KifuAlbum.list_hidden_reason.is_(None))
+    query = query.filter(*visible)
+    count_query = db.query(func.count(KifuAlbum.id)).filter(*visible)
 
     if q:
-        player_ids, event_ids = matching_entity_ids(db, q, exact=True)
-        if len(player_ids) == 1 and not event_ids:
+        strict = strict_names_enabled()
+        raw_name_rows = []
+        player_ids, event_ids, raw_players, raw_event_name_ids = strict_matching_names(
+            db, q, raw_name_rows=raw_name_rows, orthographic_batch_contexts=orthographic_batch_contexts
+        )
+        shared_player_ids = set(player_ids) if len(player_ids) > 1 else set()
+        selected_event_ids = strict_selected_event_search_ids(db, q, raw_event_name_ids, event_ids)
+        if not strict:
+            legacy_players, legacy_events = matching_entity_ids(
+                db, q, exact=True, orthographic_batch_contexts=orthographic_batch_contexts
+            )
+            player_ids |= legacy_players
+            event_ids |= legacy_events
+        exact_raw_event = bool(raw_event_name_ids) and not player_ids and not event_ids and not raw_players
+        exact_player = len(player_ids) == 1 and not event_ids and not raw_players and not raw_event_name_ids
+        exact_player_with_raw = (len(player_ids) == 1 and bool(raw_players) and not event_ids
+                                 and not raw_event_name_ids and not selected_event_ids)
+        player_only_search = (exact_player or exact_player_with_raw) and not selected_event_ids
+        shared_players = bool(shared_player_ids) and not event_ids and not raw_event_name_ids
+        if exact_player:
             player_id = next(iter(player_ids))
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
-        elif len(event_ids) == 1 and not player_ids:
+        elif exact_player_with_raw:
+            player_id = next(iter(player_ids))
+            needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id,
+                         strict_raw_player_search_clause(db, raw_players, q, names=raw_name_rows))
+        elif shared_players:
+            needle = or_(KifuAlbum.black_player_id.in_(shared_player_ids),
+                         KifuAlbum.white_player_id.in_(shared_player_ids))
+            if raw_players:
+                needle = or_(needle, strict_raw_player_search_clause(db, raw_players, q, names=raw_name_rows))
+        elif len(event_ids) == 1 and not player_ids and not raw_players and not raw_event_name_ids:
             needle = KifuAlbum.event_id == next(iter(event_ids))
+        elif exact_raw_event:
+            needle = strict_raw_event_search_clause(db, raw_event_name_ids)
         else:
-            partial_players, partial_events = matching_entity_ids(db, q, exact=False)
-            terms = (q.lower(), *_HISTORICAL_PLAYER_ALIASES.get(q.removeprefix("本因坊"), ()))
+            partial_players, partial_events = (set(), set()) if strict else matching_entity_ids(db, q, exact=False)
+            terms = (
+                (q.lower(),) if strict else (q.lower(), *_HISTORICAL_PLAYER_ALIASES.get(q.removeprefix("本因坊"), ()))
+            )
             player_match = or_(
                 *(
                     func.lower(field).contains(term, autoescape=True)
@@ -261,8 +335,43 @@ async def list_kifu_albums(
                 )
             if partial_events:
                 clauses.append(KifuAlbum.event_id.in_(partial_events))
+            if strict or raw_players or raw_event_name_ids:
+                if player_ids:
+                    clauses.extend(
+                        (KifuAlbum.black_player_id.in_(player_ids), KifuAlbum.white_player_id.in_(player_ids))
+                    )
+                if event_ids:
+                    clauses.append(KifuAlbum.event_id.in_(event_ids))
+                if raw_players:
+                    clauses.append(strict_raw_player_search_clause(db, raw_players, q, names=raw_name_rows))
+                if raw_event_name_ids:
+                    clauses.append(strict_raw_event_search_clause(db, raw_event_name_ids))
             needle = or_(*clauses)
             query = query.order_by(case((player_match, 0), else_=1))
+        if selected_event_ids and not shared_players:
+            needle = or_(needle, KifuAlbum.id.in_(selected_event_ids))
+        if not strict and lang == "cn" and not exact_raw_event and not shared_players and not player_only_search:
+            from katrain.web.kifu.first_pass_cn import search_raw_names, valid_override_search_ids
+
+            provisional_players, provisional_events, provisional_albums = search_raw_names(q)
+            if provisional_players:
+                needle = or_(needle, KifuAlbum.player_black.in_(provisional_players),
+                             KifuAlbum.player_white.in_(provisional_players))
+            if provisional_events and not exact_player:
+                no_selection = ~KifuAlbum.id.in_(db.query(KifuAlbumEventSelection.album_id))
+                unlinked_raws = {raw for raw, canonical in provisional_events if canonical is None}
+                if unlinked_raws:
+                    needle = or_(needle, KifuAlbum.event_id.is_(None) & KifuAlbum.event.in_(unlinked_raws)
+                                 & no_selection)
+                for canonical in {canonical for _, canonical in provisional_events if canonical is not None}:
+                    raws = {raw for raw, name in provisional_events if name == canonical}
+                    matching_ids = db.query(KifuEvent.id).filter(KifuEvent.canonical_name == canonical)
+                    needle = or_(needle, KifuAlbum.event.in_(raws) & KifuAlbum.event_id.in_(matching_ids)
+                                 & no_selection)
+            if provisional_albums and not exact_player:
+                verified_albums = valid_override_search_ids(db, provisional_albums)
+                if verified_albums:
+                    needle = or_(needle, KifuAlbum.id.in_(verified_albums))
         query = query.filter(needle)
         count_query = count_query.filter(needle)
 
@@ -276,10 +385,21 @@ async def list_kifu_albums(
     total = count_query.scalar() or 0
     records = query.offset((page - 1) * page_size).limit(page_size).all()
 
-    players, events, sources = display_maps(db, records, lang)
+    selected_events = live_event_selections(db, records)
+    strict = strict_names_enabled()
+    fallback_maps = None if strict else display_maps(db, records, lang, selected_events=selected_events)
+    obscured_event_ids = _obscured_program_event_ids_loaded(db, records, selected_events)
+    players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
+        db, records, lang, selected_events=selected_events, orthographic_batch_contexts=orthographic_batch_contexts
+    )
     availability = report_availability(db, records, KIFU_MODEL_SHA256, KIFU_VISITS)
     items = [
-        _summary(r, players, events, sources, lang).model_copy(update={"has_analysis": availability[r.id]})
+        _summary(
+            r, players, events, event_canonical_names, sources, lang,
+            round_lang=requested_lang, raw_players=raw_players, raw_events=raw_events,
+            obscured_event_ids=obscured_event_ids, selected_events=selected_events,
+            fallback_maps=fallback_maps,
+        ).model_copy(update={"has_analysis": availability[r.id]})
         for r in records
     ]
     preview = (
@@ -317,13 +437,34 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
         if not result:
             raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
         return result
+    requested_lang = lang
+    lang = name_display_language(lang)
 
     record = db.query(KifuAlbum).filter(KifuAlbum.id == album_id).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
 
-    players, events, sources = display_maps(db, [record], lang)
-    values = _summary(record, players, events, sources, lang).model_dump()
+    selected_events = live_event_selections(db, [record])
+    strict = strict_names_enabled()
+    fallback_maps = None if strict else display_maps(db, [record], lang, selected_events=selected_events)
+    obscured_event_ids = obscured_program_event_ids(db, [record], selected_events=selected_events)
+    players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
+        db, [record], lang, selected_events=selected_events
+    )
+    values = _summary(
+        record,
+        players,
+        events,
+        event_canonical_names,
+        sources,
+        lang,
+        round_lang=requested_lang,
+        raw_players=raw_players,
+        raw_events=raw_events,
+        obscured_event_ids=obscured_event_ids,
+        selected_events=selected_events,
+        fallback_maps=fallback_maps,
+    ).model_dump()
     values["has_analysis"] = report_availability(db, [record], KIFU_MODEL_SHA256, KIFU_VISITS)[record.id]
     return KifuAlbumDetail.model_validate(
         {**values, "place": record.place, "source": record.source, "sgf_content": record.sgf_content}
@@ -331,19 +472,73 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
 
 
 def _summary(
-    record: KifuAlbum, players: dict[int, str], events: dict[int, str], sources: dict[int, list[str]], lang: str
+    record: KifuAlbum,
+    players: dict[int, str],
+    events: dict[int, str],
+    event_canonical_names: dict[int, str],
+    sources: dict[int, list[str]],
+    lang: str,
+    *,
+    round_lang: str | None = None,
+    raw_players: dict[str, str] | None = None,
+    raw_events: dict[str, str] | None = None,
+    obscured_event_ids: set[int] | None = None,
+    selected_events: dict[int, tuple[str, int | None]] | None = None,
+    fallback_maps: tuple | None = None,
 ) -> KifuAlbumSummary:
     summary = KifuAlbumSummary.model_validate(record)
-    black_name, embedded_black_rank = split_player_rank(record.player_black)
-    white_name, embedded_white_rank = split_player_rank(record.player_white)
+    black = parse_player(record.player_black, record.black_rank)
+    white = parse_player(record.player_white, record.white_rank)
+    strict = raw_players is not None and raw_events is not None
+    fallback_names = None
+    if fallback_maps is not None:
+        fallback_players, fallback_events, fallback_canonical, _, event_hints = fallback_maps
+        if lang == "cn":
+            from katrain.web.kifu.first_pass_cn import player_name
+
+            black_raw_hint = player_name(record.player_black)
+            white_raw_hint = player_name(record.player_white)
+        else:
+            black_raw_hint = white_raw_hint = None
+        linked_canonical = fallback_canonical.get(record.event_id)
+        if record.event_id in fallback_events:
+            fallback_event = display_event_name(
+                record.event, fallback_events[record.event_id], lang, linked_canonical_name=linked_canonical
+            )
+        else:
+            fallback_event = event_hints.get(record.id) or display_event_name(
+                record.event, linked_canonical if lang == "cn" else None, lang,
+                linked_canonical_name=linked_canonical,
+            )
+        fallback_names = (
+            fallback_players.get(record.black_player_id) or black_raw_hint or black.name,
+            fallback_players.get(record.white_player_id) or white_raw_hint or white.name,
+            fallback_event,
+        )
+    if strict:
+        black_name, white_name, displayed_event = resolve_strict_display(
+            record, lang, players, events, event_canonical_names, raw_players, raw_events,
+            obscured_event_ids=obscured_event_ids,
+            selected_events=selected_events,
+            fallback_names=fallback_names,
+        )
+    else:
+        black_name = players.get(record.black_player_id, black.name)
+        white_name = players.get(record.white_player_id, white.name)
+        displayed_event = display_event_name(
+            record.event,
+            events.get(record.event_id),
+            lang,
+            linked_canonical_name=event_canonical_names.get(record.event_id),
+        )
     return summary.model_copy(
         update={
-            "display_player_black": players.get(record.black_player_id, black_name),
-            "display_player_white": players.get(record.white_player_id, white_name),
-            "display_black_rank": record.black_rank or embedded_black_rank,
-            "display_white_rank": record.white_rank or embedded_white_rank,
-            "display_event": display_event_name(record.event, events.get(record.event_id), lang),
-            "display_round_name": display_round_name(record.round_name, lang),
+            "display_player_black": black_name,
+            "display_player_white": white_name,
+            "display_black_rank": black.display_rank,
+            "display_white_rank": white.display_rank,
+            "display_event": displayed_event,
+            "display_round_name": display_round_name(record.round_name, round_lang or lang),
             "sources": sources.get(record.id, []),
         }
     )

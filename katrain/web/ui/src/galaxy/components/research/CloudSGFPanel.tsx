@@ -19,7 +19,9 @@ import { accessAllowed } from '../../../components/auth/accessPolicy';
 import { useAuth } from '../../../context/AuthContext';
 import { UserGamesAPI, type UserGameSummary } from '../../api/userGamesApi';
 import { KifuAPI } from '../../../api/kifuApi';
+import type { KifuAlbumSummary } from '../../../types/kifu';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { translateResult } from '../../../utils/resultTranslation';
 
 type Category = 'my_games' | 'my_positions' | 'public_kifu';
 
@@ -40,14 +42,15 @@ const PAGE_SIZE = 15;
 export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibraryModalProps) {
   const { token, status, isAuthenticated, isGuest, identityKey } = useAuth();
   const privateAllowed = accessAllowed(status, isAuthenticated, isGuest, false);
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [category, setCategory] = useState<Category>('my_games');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   // Data
-  const scopeKey = `${identityKey ?? 'anonymous'}:${status}:${category}`;
+  const scopeKey = `${identityKey ?? 'anonymous'}:${status}:${category}:${lang}`;
   const scopeRef = useRef(scopeKey);
   scopeRef.current = scopeKey;
   const openRef = useRef(open);
@@ -74,19 +77,22 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
     };
     if (category !== 'public_kifu' && !privateAllowed) { commit([], 0); setLoading(false); return; }
     setLoading(true);
+    setLoadError(false);
     try {
       if (category === 'public_kifu') {
-        const resp = await KifuAPI.getAlbums({ q: searchQuery || undefined, page, page_size: PAGE_SIZE });
-        commit(resp.items.map((item: any) => ({
+        const resp = await KifuAPI.getAlbums({ q: searchQuery || undefined, page, page_size: PAGE_SIZE, lang });
+        commit(resp.items.map((item: KifuAlbumSummary) => ({
           id: String(item.id),
-          title: item.title || `${item.player_black || '?'} vs ${item.player_white || '?'}`,
-          playerBlack: item.player_black || '',
-          playerWhite: item.player_white || '',
+          title: item.display_event || (item.display_event === undefined ? (item as KifuAlbumSummary & { title?: string }).title : undefined)
+            || `${item.display_player_black ?? t('game:black_side', '黑方')} vs ${item.display_player_white ?? t('game:white_side', '白方')}`,
+          playerBlack: item.display_player_black ?? t('game:black_side', '黑方'),
+          playerWhite: item.display_player_white ?? t('game:white_side', '白方'),
           result: item.result || '',
+          rules: item.rules,
           moveCount: item.move_count || 0,
-          date: item.game_date || item.event_date || '',
+          date: item.date_played || '',
           source: 'public_kifu' as const,
-          sgfContent: item.sgf_content,
+          sgfContent: (item as KifuAlbumSummary & { sgf_content?: string }).sgf_content,
         })), resp.total);
       } else if (privateAllowed) {
         const catFilter = category === 'my_positions' ? 'position' : 'game';
@@ -110,12 +116,15 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
         commit([], 0);
       }
     } catch (err) {
-      console.error('Failed to fetch games:', err);
-      commit([], 0);
+      if (current()) {
+        console.error('Failed to fetch games:', err);
+        setLoadError(true);
+        commit([], 0);
+      }
     } finally {
       if (current()) setLoading(false);
     }
-  }, [category, page, searchQuery, token, privateAllowed, scopeKey]);
+  }, [category, page, searchQuery, token, privateAllowed, scopeKey, lang]);
 
   const handleSearch = () => {
     setPage(1);
@@ -255,7 +264,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
             ) : items.length === 0 ? (
               <Box sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
-                  {!privateAllowed && category !== 'public_kifu' ? t('research:please_login', '请先登录') : t('research:no_games', '暂无棋谱')}
+                  {!privateAllowed && category !== 'public_kifu' ? t('research:please_login', '请先登录') : loadError ? t('research:list_failed', '棋谱列表暂时无法加载') : t('research:no_games', '暂无棋谱')}
                 </Typography>
               </Box>
             ) : (
@@ -270,7 +279,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
                               {item.title}
                             </Typography>
                             {item.result && (
-                              <Chip label={item.result} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+                              <Chip label={translateResult(item.result, t, item.rules)} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
                             )}
                           </Box>
                         }
@@ -314,6 +323,7 @@ interface GameListItem {
   playerBlack: string;
   playerWhite: string;
   result: string;
+  rules?: string | null;
   moveCount: number;
   date: string;
   source: Category | 'public_kifu';

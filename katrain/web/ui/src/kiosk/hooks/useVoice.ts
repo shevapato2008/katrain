@@ -16,8 +16,18 @@ export type VoiceName =
   | 'capture_remove'
   | 'stone_offcenter'
   | 'suspected_move'
+  | 'calibration_move_hand'
+  | 'calibration_running'
+  | 'calibration_obstructed'
+  | 'calibration_too_bright'
+  | 'calibration_too_dark'
+  | 'calibration_done'
   | 'board_mismatch'
-  | 'judge_undecided';
+  | 'judge_undecided'
+  | 'local_confirm_physical'
+  | 'local_confirm_screen'
+  | 'lighting_overexposed'
+  | 'lighting_underexposed';
 
 export function useVoice() {
   // Only one voice line at a time — new line interrupts the previous.

@@ -11,12 +11,16 @@ import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
 import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
+import LocalConfirmGame from '../components/game/LocalConfirmGame';
+import { useLocalMoveConfirmation } from '../hooks/useLocalMoveConfirmation';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import KioskResultBadge from '../components/game/KioskResultBadge';
 import RecalibrationModal from '../components/game/RecalibrationModal';
+import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationScreen';
 import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
 import { useVoice } from '../hooks/useVoice';
+import { useOptionalGeometry } from '../context/GeometryContext';
 import { useVision } from '../context/VisionContext';
 import { readSessionPlayOnBoard } from '../utils/playInput';
 import { useVisionSync } from '../hooks/useVisionSync';
@@ -345,7 +349,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
   const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
 
-  const { visionStatus, isVisionEnabled } = useVision();
+  const { visionStatus, isVisionEnabled, loaded: visionLoaded, refreshStatus } = useVision();
 
   // ── 这一局到底落在哪儿 ────────────────────────────────────────────────
   // **`isVisionEnabled` 只是设备那一段。** 2026-08-23 起开局设置屏上有一颗真的
@@ -372,7 +376,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     try { sessionStorage.setItem(screenFallbackKey, '1'); } catch { /* 本页仍降级，刷新后可能无法保留 */ }
     setPhysicalSession((previous) => ({ ...previous, screenFallback: true }));
   }, [screenFallbackKey]);
-  const physicalPlay = !physicalSession.screenFallback && isVisionEnabled
+  const localPhysicalIntent = (playOnBoard.fromSession || visionLoaded === false)
+    && (pathname.includes('/pvp/local/game/') || session.gameState?.game_type === 'pvp_local');
+  const physicalPlay = !physicalSession.screenFallback && (isVisionEnabled || (playOnBoard.fromSession && visionLoaded === false) || localPhysicalIntent)
     && playOnBoard.onBoard
     && (playOnBoard.fromSession || (session.gameState?.board_size?.[0] ?? 19) === 19);
   const poseEverLocked = physicalSession.poseEverLocked;
@@ -380,7 +386,111 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   if (physicalSession.sessionId === sessionId && physicalPlay && visionStatus.poseLocked && !poseEverLocked) {
     setPhysicalSession({ ...physicalSession, poseEverLocked: true });
   }
-  const visionSync = useVisionSync(physicalPlay ? sessionId ?? null : null);
+  const geometry = useOptionalGeometry();
+  const visionSync = useVisionSync(physicalPlay && visionLoaded !== false ? sessionId ?? null : null, geometry?.completeRecalibration);
+  const localPhysicalGame = physicalPlay && session.gameState?.game_type === 'pvp_local';
+  const recoveryScope = `${sessionId}|${session.gameState?.game_id}`;
+  const geometryReady = !geometry?.status || (geometry.loaded !== false && geometry.status.phase === 'ready'
+    && geometry.status.session_calibrated && geometry.status.capabilities.geometry_ready
+    && geometry.status.capabilities.recognition_ready && geometry.status.capabilities.model_ready !== false);
+  const revision = geometry?.loaded !== false ? geometry?.status?.geometry_revision : undefined;
+  const [localRecovery, setLocalRecovery] = useState({ scope: recoveryScope, required: false, calibration: false, revision });
+  const recoveryCurrent = useRef({ scope: recoveryScope, revision });
+  recoveryCurrent.current = { scope: recoveryScope, revision };
+  // A reload needs the current geometry, not a remembered 'ever ready' flag. Once lost,
+  // recovery stays blocked until the original session actually binds a new reference.
+  const needsRecovery = localPhysicalGame && (geometry?.loaded !== false && !geometryReady
+    || visionLoaded !== false && (poseEverLocked || (session.gameState?.current_node_index ?? 0) > 0)
+      && (!visionStatus.cameraConnected || !visionStatus.poseLocked)
+    || visionSync.bindState === 'error'
+    || (session.gameState?.current_node_index ?? 0) > 0 && session.gameState?.local_confirmation?.reason === 'unavailable');
+  if (localRecovery.scope !== recoveryScope) {
+    setLocalRecovery({ scope: recoveryScope, required: needsRecovery, calibration: false, revision });
+  } else if (localPhysicalGame && (needsRecovery || (localRecovery.revision !== undefined && revision !== undefined && revision !== localRecovery.revision))
+    && (!localRecovery.required || revision !== localRecovery.revision)) {
+    setLocalRecovery({ ...localRecovery, required: true, revision });
+  } else if (localRecovery.revision === undefined && revision !== undefined) {
+    setLocalRecovery({ ...localRecovery, revision });
+  }
+  const localRecoveryBlocked = localPhysicalGame && (localRecovery.required || needsRecovery || !geometryReady);
+  const retryLocalRecovery = async () => {
+    const scope = recoveryScope;
+    await geometry?.refresh();
+    await refreshStatus();
+    if (recoveryCurrent.current.scope !== scope) return false;
+    const bindRevision = recoveryCurrent.current.revision;
+    const bound = await visionSync.retryBind();
+    if (!bound || recoveryCurrent.current.scope !== scope || recoveryCurrent.current.revision !== bindRevision || !sessionId) return false;
+    // Bind publishes readiness, but its WebSocket state can arrive later. Read the
+    // authoritative snapshot before clearing an unavailable reference or paused clock.
+    const response = await API.getState(sessionId, token ?? undefined);
+    if (recoveryCurrent.current.scope !== scope || recoveryCurrent.current.revision !== bindRevision
+      || response.state.game_id !== session.gameState?.game_id || response.state.local_confirmation?.reason === 'unavailable') return false;
+    // Geometry can be ready before bind has prepared this game's reference. Publish
+    // post-bind hardware snapshots before clearing recovery, so an older unlocked
+    // pose cannot re-arm the recovery latch on the next render.
+    const [boundGeometry, boundVision] = await Promise.all([geometry?.refresh(), refreshStatus()]);
+    if (recoveryCurrent.current.scope !== scope || recoveryCurrent.current.revision !== bindRevision
+      || !boundGeometry || boundGeometry.geometry_revision !== bindRevision || boundGeometry.phase !== 'ready'
+      || !boundGeometry.session_calibrated || !boundGeometry.capabilities.geometry_ready
+      || !boundGeometry.capabilities.recognition_ready || boundGeometry.capabilities.model_ready === false
+      || !boundVision?.cameraConnected || !boundVision.poseLocked || !boundVision.recognitionReady
+      || boundVision.boundSessionId !== sessionId) return false;
+    session.setGameState(response.state);
+    setLocalRecovery({ scope, required: false, calibration: false, revision: bindRevision });
+    return true;
+  };
+  const physicalPreparation = visionSync.bindState === 'error' || (localPhysicalGame && (localRecovery.required || needsRecovery)) ? 'error'
+    : visionSync.bindState === 'ready' && visionLoaded !== false && visionStatus.cameraConnected && visionStatus.poseLocked && (!localPhysicalGame || geometryReady) ? 'ready' : 'preparing';
+  const confirmationGame = session.gameState;
+  const confirmationScope = `${sessionId}|${confirmationGame?.game_id}|${confirmationGame?.current_node_id}|${confirmationGame?.player_to_move}|${physicalPlay}`;
+  const latestConfirmationScope = useRef(confirmationScope);
+  useEffect(() => { latestConfirmationScope.current = confirmationScope; }, [confirmationScope]);
+  // Screen play must count thinking/selection time, including on a camera-enabled box.
+  // The ready operation is idempotent; a reload or transport retry never restarts the clock.
+  const readyLocalScreen = useRef<{ key: string; promise: Promise<unknown> } | null>(null);
+  const readyGameId = confirmationGame?.game_id;
+  const screenConfirmation = !physicalPlay && confirmationGame?.game_type === 'pvp_local'
+    && confirmationGame.local_confirmation?.enabled === true && !sessionIsGameOver && !confirmationGame.awaiting_count;
+  useEffect(() => {
+    if (!screenConfirmation || !sessionId || !readyGameId) return;
+    const key = `${sessionId}|${readyGameId}`;
+    const scope = latestConfirmationScope.current;
+    const promise = API.readyLocalGame(sessionId, readyGameId, 'screen', token ?? undefined);
+    readyLocalScreen.current = { key, promise };
+    void promise.then((response) => {
+      // Ready may finish before the game WebSocket is connected; apply its clock
+      // snapshot so the first player's display also starts immediately.
+      if (latestConfirmationScope.current === scope) session.setGameState(response.state);
+    }).catch(() => {
+      if (readyLocalScreen.current?.promise === promise) readyLocalScreen.current = null;
+    });
+  }, [screenConfirmation, sessionId, readyGameId, token, session.connectionLost, session.setGameState]);
+  const localConfirmation = useLocalMoveConfirmation({
+    scope: confirmationScope,
+    input: physicalPlay ? 'physical' : 'screen',
+    enabled: confirmationGame?.game_type === 'pvp_local' && confirmationGame.local_confirmation?.enabled === true
+      && !sessionIsGameOver && !confirmationGame.awaiting_count && !session.connectionLost
+      && (!physicalPlay || physicalPreparation === 'ready'),
+    recognizing: confirmationGame?.local_confirmation?.status === 'recognizing',
+    submit: async (request) => {
+      if (!sessionId || !confirmationGame) throw new Error('No active game');
+      if (!physicalPlay) {
+        const key = `${sessionId}|${confirmationGame.game_id}`;
+        if (readyLocalScreen.current?.key === key) await readyLocalScreen.current.promise;
+        else await API.readyLocalGame(sessionId, confirmationGame.game_id, 'screen', token ?? undefined);
+      } else if (request.action === 'move') {
+        // A failed initial reference preparation can be retried by this explicit
+        // confirmation. A ready same-game bind preserves its reference and clock.
+        await API.visionBind(sessionId);
+      }
+      const response = await API.confirmLocalMove({ ...request, session_id: sessionId,
+        expected_game_id: confirmationGame.game_id, expected_node_id: confirmationGame.current_node_id,
+        color: confirmationGame.player_to_move === 'W' ? 'W' : 'B' }, token ?? undefined);
+      if (latestConfirmationScope.current === confirmationScope) session.setGameState(response.state);
+      return response;
+    },
+  });
 
   // Exact-board acknowledgements can race the game-state WebSocket in either order.
   // Keep a small versioned cache and consume the vision stream by monotonic `seq`
@@ -660,6 +770,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const isGameOver = !!endResultOf(gameState) && !gameState.awaiting_count;
   // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
   const localGame = gameState.game_type === 'pvp_local';
+  const localConfirmationLayout = localGame && !isGameOver && !gameState.awaiting_count
+    && gameState.local_confirmation?.enabled === true;
   const lobbyGame = gameState.game_type === 'pvp_lobby';
   const lobbyCountRetry = lobbyGame && !!gameState.degraded && !!gameState.awaiting_count;
   const lobbyAutoCountPending = lobbyGame && !!gameState.end_result && !!gameState.awaiting_count && !gameState.degraded;
@@ -847,7 +959,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // generic 10s "board detection abnormal" dialog: recalOpen both gates RecalibrationModal
   // itself (further suppressed `&& !escalationOpen`) AND feeds into VisionSyncOverlay's
   // suppressBoardLost, so at most one board-loss surface is ever visible at a time.
-  const recalOpen = physicalPlay && poseEverLocked && !visionStatus.poseLocked && !isGameOver;
+  const recalOpen = physicalPlay && !isGameOver && (localPhysicalGame ? localRecovery.required || needsRecovery : poseEverLocked && !visionStatus.poseLocked);
 
   // State C: force territory coloring while scoring, without mutating the user's own
   // analysisToggles selection (so the toggle panel keeps reflecting their real picks).
@@ -958,6 +1070,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const handleBoardMove = async (x: number, y: number) => {
     // 服务端允许退回历史后另开分支，kiosk 终局后只允许查看。
     if (isGameOver || lobbyAutoCountPending || lobbyCountRetry) return;
+    if (localConfirmationLayout) { localConfirmation.select(x, y); return; }
     if (onlineGame && (!myColor
       || gameState.player_to_move !== myColor
       || (onlinePhase != null && onlinePhase !== 'playing'))) return;
@@ -1223,6 +1336,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     </div>
   ) : null;
 
+  // Only visible content switches; the session hook, SGF and game identity remain mounted.
+  if (localPhysicalGame && localRecovery.calibration) return <GeometryCalibrationScreen
+    backLabel={t('local:return_original_game', '返回原局')}
+    onBack={() => setLocalRecovery(previous => ({ ...previous, calibration: false }))}
+    title={t('local:empty_calibration_title', '空盘标定 · 原局保留')}
+    sub={t('local:empty_calibration_sub', '先拿走棋子；完成后按棋谱摆回已确认棋子，再重新检查')}
+    requireRecognition
+  />;
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
       <Box sx={{ position: 'absolute', top: 8, right: 56, zIndex: 90, width: 380 }}>
@@ -1308,7 +1430,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Alert>
       </Snackbar>
 
-      {physicalPlay && (
+      {physicalPlay && !localConfirmationLayout && (
         <PhysicalPlayStatusChip
           latestEvent={visionSync.latestEvent}
           currentNodeId={session.gameState?.current_node_id ?? null}
@@ -1320,13 +1442,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           precedence comment above recalOpen. */}
       {physicalPlay && (
         <RecalibrationModal
-          key={String(visionStatus.poseLocked)}
-          open={recalOpen && !escalationOpen}
-          // Intentionally inert: RecalibrationModal is not fully controlled — it owns its
-          // own dismissal (local `dismissed` state set by 仍要继续/Escape/backdrop) and
-          // relies on the `key` above to remount (and thus reset `dismissed`) on a fresh
-          // pose-loss. GamePage has no state of its own to clear here.
-          onClose={() => undefined}
+          gameType={session.gameState?.game_type}
+          onRetryBind={localPhysicalGame ? retryLocalRecovery : undefined}
+          onEmptyCalibration={localPhysicalGame ? () => setLocalRecovery(previous => ({ ...previous, calibration: true })) : undefined}
+          key={localPhysicalGame ? `${recoveryScope}|${showExitConfirm}` : String(visionStatus.poseLocked)}
+          open={recalOpen && !escalationOpen && !showExitConfirm}
+          // Other modes keep their existing dismissal; local recovery exposes the
+          // original game's exit flow and reopens after an exit is cancelled.
+          onClose={localPhysicalGame ? handleExit : () => undefined}
         />
       )}
 
@@ -1339,7 +1462,21 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             · 三颗常亮状态灯是 **L1 镜像栏**的东西(§5),L3 上没有它们的位置。
               它们**没有白丢**:出故障时那句话落在下面开关排右端的 `.ghint` 上
               (`GameControlPanel`),平时不占地方 —— 比三颗一直亮着的灯说得还清楚。 */}
-      <div className="kiosk-layout-a">
+      {localConfirmationLayout ? (
+        <LocalConfirmGame key={`${sessionId}|${gameState.game_id}`}
+          gameState={gameState} input={physicalPlay ? 'physical' : 'screen'}
+          point={localConfirmation.point} busy={localConfirmation.busy} failed={localConfirmation.failed}
+          physicalPreparation={physicalPlay ? physicalPreparation : undefined}
+          onRetryPreparation={!session.connectionLost && !counting && visionStatus.cameraConnected ? (localPhysicalGame ? retryLocalRecovery : visionSync.retryBind) : undefined}
+          analysisToggles={analysisToggles}
+          onToggle={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+          onSelect={handleBoardMove} onConfirm={() => { void localConfirmation.confirm(); }}
+          onPass={() => { void localConfirmation.pass(); }} onCount={() => { void handleAction('count'); }}
+          onResign={(color) => { void handleLocalResign(color); }} onExit={handleExit}
+          onPaintedNode={session.acknowledgePaintedNode} onExpired={() => { void handleTimeExpired(); }}
+          blocked={!!session.connectionLost || counting || (physicalPlay && (!visionStatus.cameraConnected || !visionStatus.poseLocked || localRecoveryBlocked))}
+        />
+      ) : <div className="kiosk-layout-a">
         <div className="kiosk-board" data-testid="game-board">
           {/* 四条 28 刻度带。`坐标` 开关关掉时**只清字、不撤带** ——
               撤了带落子区就从 460 变 516,盘会当场跳一下。 */}
@@ -1426,6 +1563,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </div>
       </div>
 
+      }
       {/* State C: 终局数子 — territory coloring is forced via boardAnalysisToggles above.
           留在棋盘 ONLY flips EndgameCard's own local `dismissed` state to hide the card — the
           game stays ended (useGameSession's handleAction has no 'resume' branch; calling it
@@ -1642,7 +1780,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* 终局后整个卸掉,不只是「不再新弹」。`visionRecovery` 里**唯一**能清掉 blocking 的
           路径是收到 `synced`(visionRecovery.ts:84),而终局后那 26 分钟里 `synced` 是 0 条
           (RK3562 2026-09-20 实测) ⇒ 后端停止比对也清不掉已经开着的那个弹窗,只有卸载能。 */}
-      {physicalPlay && !isGameOver && (
+      {physicalPlay && !isGameOver && !localConfirmationLayout && (
         <VisionSyncOverlay
           syncEvents={visionSync.syncEvents}
           sessionId={sessionId ?? null}

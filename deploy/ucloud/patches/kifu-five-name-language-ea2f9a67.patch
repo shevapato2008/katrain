@@ -1,0 +1,56 @@
+--- a/katrain/web/api/v1/endpoints/kifu.py
++++ b/katrain/web/api/v1/endpoints/kifu.py
+@@ -178,6 +178,9 @@
+         return await _from_dispatcher(
+             lambda: dispatcher.kifu_list_albums(q, page, page_size, lang), "Kifu albums not found"
+         )
++
++    requested_lang = lang
++    lang = lang if lang in {"en", "cn", "tw", "jp", "ko"} else "en"
+ 
+     query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
+     query = query.filter(KifuAlbum.duplicate_of_id.is_(None))
+@@ -224,7 +227,7 @@
+ 
+     players, events, sources = display_maps(db, records, lang)
+     return KifuAlbumListResponse(
+-        items=[_summary(r, players, events, sources, lang) for r in records],
++        items=[_summary(r, players, events, sources, lang, requested_lang) for r in records],
+         total=total,
+         page=page,
+         page_size=page_size,
+@@ -246,19 +249,23 @@
+             raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
+         return result
+ 
++    requested_lang = lang
++    lang = lang if lang in {"en", "cn", "tw", "jp", "ko"} else "en"
++
+     record = db.query(KifuAlbum).filter(KifuAlbum.id == album_id).first()
+     if not record:
+         raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
+ 
+     players, events, sources = display_maps(db, [record], lang)
+-    values = _summary(record, players, events, sources, lang).model_dump()
++    values = _summary(record, players, events, sources, lang, requested_lang).model_dump()
+     return KifuAlbumDetail.model_validate(
+         {**values, "place": record.place, "source": record.source, "sgf_content": record.sgf_content}
+     )
+ 
+ 
+ def _summary(
+-    record: KifuAlbum, players: dict[int, str], events: dict[int, str], sources: dict[int, list[str]], lang: str
++    record: KifuAlbum, players: dict[int, str], events: dict[int, str], sources: dict[int, list[str]],
++    lang: str, round_lang: str,
+ ) -> KifuAlbumSummary:
+     summary = KifuAlbumSummary.model_validate(record)
+     black_name, embedded_black_rank = split_player_rank(record.player_black)
+@@ -270,7 +277,7 @@
+             "display_black_rank": record.black_rank or embedded_black_rank,
+             "display_white_rank": record.white_rank or embedded_white_rank,
+             "display_event": display_event_name(record.event, events.get(record.event_id), lang),
+-            "display_round_name": display_round_name(record.round_name, lang),
++            "display_round_name": display_round_name(record.round_name, round_lang),
+             "sources": sources.get(record.id, []),
+         }
+     )

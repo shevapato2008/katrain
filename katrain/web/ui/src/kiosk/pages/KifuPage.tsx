@@ -21,6 +21,15 @@ import './kifuLibrary.css';
 const DEBOUNCE_MS = 350;
 /** Fetch only the current 20 records; the existing list owns its scroll area. */
 const PAGE_SIZE = 20;
+const SEARCH_SESSION_KEY = 'katrain_kiosk_kifu_search';
+
+const readSearchSession = (): { query: string; page: number } => {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SEARCH_SESSION_KEY) ?? 'null');
+    if (typeof saved?.query === 'string' && Number.isInteger(saved.page) && saved.page >= 1) return saved;
+  } catch { /* Session storage may be unavailable. */ }
+  return { query: '', page: 1 };
+};
 
 interface RecentItem extends BaipuRecentEntry {
   progress: BaipuProgress | null;
@@ -43,17 +52,23 @@ const KifuPage = () => {
   const [showRecent, setShowRecent] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
-  // ── 名局棋谱:一进来就是第一页 ──
-  const [searchInput, setSearchInput] = useState('');
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
+  // Preserve the current search and page when returning from Settings.
+  const [initialSearch] = useState(readSearchSession);
+  const [searchInput, setSearchInput] = useState(initialSearch.query);
+  const [query, setQuery] = useState(initialSearch.query);
+  const [page, setPage] = useState(initialSearch.page);
   const [albums, setAlbums] = useState<KifuAlbumSummary[] | null>(null);
   const [albumsLang, setAlbumsLang] = useState<string | null>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [listError, setListError] = useState<string | null>(null);
-  /** 列表失败是不是「连不上云端」(503)。棋谱库只在云端,这一种要说「要联网」,别的照原样报。 */
-  const [listOffline, setListOffline] = useState(false);
+  const [listFailure, setListFailure] = useState<'unreachable' | 'service' | 'other'>('other');
   const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SEARCH_SESSION_KEY, JSON.stringify({ query, page }));
+    } catch { /* Keep searching even if session storage is unavailable. */ }
+  }, [query, page]);
 
   // 只在输入**真变了**时才起表。挂载时 `'' === ''` 也起表的话,350ms 后那一下 `setPage(1)`
   // 会把进屏就翻的页弹回第 1 页 —— 列表藏在开关后面时没人碰得到,默认摊开后就碰得到了。
@@ -81,7 +96,11 @@ const KifuPage = () => {
       .catch((err: Error) => {
         if (!cancelled) {
           setListError(err.message);
-          setListOffline(err instanceof ApiError && err.status === 503);
+          const detail = err instanceof ApiError ? err.detail : null;
+          const unreachable = err instanceof ApiError && err.status === 503
+            && typeof detail === 'object' && detail !== null
+            && 'code' in detail && detail.code === 'kifu_cloud_unreachable';
+          setListFailure(unreachable ? 'unreachable' : err instanceof ApiError && err.status >= 500 ? 'service' : 'other');
           setAlbums(null);
         }
       });
@@ -205,10 +224,16 @@ const KifuPage = () => {
             </section>
           ) : listError ? (
             <div className="empty" role="alert">
-              <h4>{listOffline ? t('kifu:list_offline', '棋谱库要联网才能搜') : t('kifu:list_failed', '棋谱库读不到')}</h4>
-              <p>{listOffline
-                ? t('kifu:list_offline_hint', '这台盒子现在连不上云端。摆过的谱和导入的 SGF 不受影响。')
-                : listError}</p>
+              <h4>{listFailure === 'unreachable'
+                ? t('kifu:list_offline', '无法连接棋谱库')
+                : listFailure === 'service'
+                  ? t('kifu:service_unavailable', '棋谱库暂时不可用')
+                  : t('kifu:list_failed', '棋谱库读不到')}</h4>
+              <p>{listFailure === 'unreachable'
+                ? t('kifu:list_offline_hint', '请检查网络连接或稍后重试。')
+                : listFailure === 'service'
+                  ? t('kifu:service_unavailable_hint', '云端服务暂时出了问题，请稍后重试。')
+                  : listError}</p>
               <button
                 type="button"
                 className="kiosk-btn kiosk-btn--pill pill"
@@ -229,8 +254,8 @@ const KifuPage = () => {
           ) : (
             <div className="kifu-records" data-testid="kifu-records">
               {visibleAlbums.map((a) => {
-                const event = a.display_event ?? a.event;
-                const round = a.display_round_name ?? a.round_name;
+                const event = a.display_event ?? '';
+                const round = a.display_round_name ?? '';
                 const winner = /^[Bb黑]/.test(a.result || '') ? 'black'
                   : /^[Ww白]/.test(a.result || '') ? 'white' : null;
                 return (
@@ -258,16 +283,16 @@ const KifuPage = () => {
                     <span className="kifu-record__match">
                       <span className={`kifu-record__player${winner === 'black' ? ' is-winner' : ''}`}>
                         <span className="kifu-record__stone kifu-record__stone--black" aria-hidden="true" />
-                        <span className="kifu-record__name">{(a.display_player_black ?? a.player_black) || t('game:black_side', '黑方')}</span>
-                        {(a.display_black_rank ?? a.black_rank) && <small>{formatRank(a.display_black_rank ?? a.black_rank, t)}</small>}
+                        <span className="kifu-record__name">{a.display_player_black ?? t('game:black_side', '黑方')}</span>
+                        {a.display_black_rank && <small>{formatRank(a.display_black_rank, t)}</small>}
                       </span>
                       <span className={`kifu-record__result${winner ? ` kifu-record__result--${winner}` : ''}`}>
                         {translateResult(a.result, t, a.rules)}
                       </span>
                       <span className={`kifu-record__player kifu-record__player--white${winner === 'white' ? ' is-winner' : ''}`}>
                         <span className="kifu-record__stone kifu-record__stone--white" aria-hidden="true" />
-                        {(a.display_white_rank ?? a.white_rank) && <small>{formatRank(a.display_white_rank ?? a.white_rank, t)}</small>}
-                        <span className="kifu-record__name">{(a.display_player_white ?? a.player_white) || t('game:white_side', '白方')}</span>
+                        {a.display_white_rank && <small>{formatRank(a.display_white_rank, t)}</small>}
+                        <span className="kifu-record__name">{a.display_player_white ?? t('game:white_side', '白方')}</span>
                       </span>
                     </span>
                   </button>

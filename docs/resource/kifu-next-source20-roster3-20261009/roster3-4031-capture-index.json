@@ -1,0 +1,49 @@
+[
+  {
+    "pid": 4031,
+    "kind": "TV",
+    "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+    "method": "POST",
+    "post_data": {
+      "S_nation": "2",
+      "S_ob_forc": "",
+      "S_sort_mode": "A",
+      "prpl_code": "20002099"
+    },
+    "status": 200,
+    "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+    "fetched_at_utc": "2026-10-08T21:11:16.568033+00:00",
+    "body_file": "captures/roster3-4031-tv.body.gz",
+    "body_bytes": 15805,
+    "body_sha256": "3354a494c2b6c0be192a6bda57a53dc50e4f1bef65892cb724e6f82e4e1426fa",
+    "excerpt": "이름 : 류위신 1段 [禹欣 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스트시즌 "
+  },
+  {
+    "pid": 4031,
+    "kind": "KBA",
+    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002099",
+    "method": "GET",
+    "post_data": null,
+    "status": 200,
+    "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002099",
+    "fetched_at_utc": "2026-10-08T21:11:19.618561+00:00",
+    "body_file": "captures/roster3-4031-kba.body.gz",
+    "body_bytes": 17450,
+    "body_sha256": "5f05fd1277b2a2934f4214a433bcb4fd1df5ba1560d18ec6ba732cdfbfd4dfb1",
+    "excerpt": "기사정보 상세 류위신( 禹欣 ) 1단 생년월일 소속 중국 통산전적 기사랭킹 승률 0전 0승 0패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / / 경력사항 최근기보 더보기 제19회 아시안게임 여자단체3위결정전 우에노 리사 VS 류위신 181수 "
+  },
+  {
+    "pid": 4031,
+    "kind": "UGO",
+    "url": "https://db.u-go.net/?q=Liu+Yuxin",
+    "method": "GET",
+    "post_data": null,
+    "status": 200,
+    "final_url": "https://db.u-go.net/?q=Liu+Yuxin",
+    "fetched_at_utc": "2026-10-08T21:11:20.959554+00:00",
+    "body_file": "captures/roster3-4031-ugo.body.gz",
+    "body_bytes": 23578,
+    "body_sha256": "bf45ab9fe37558e3d795a23bd3738b1ab4db23f6a764a1834ca127ae0b14c769",
+    "excerpt": "u-go.net GoGoD Go4go AEB Goratings SL WD Wikipedia Liu Yuxin g4 刘禹欣 CHN 1 (1 entries) Show 12 25 50 100 items.* Language data* * We use a cookie "
+  }
+]

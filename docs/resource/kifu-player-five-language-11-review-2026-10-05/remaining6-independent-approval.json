@@ -1,0 +1,418 @@
+{
+  "reviewer_id": "/root/five_lang_db_decision",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-05T01:49:05.736634+00:00",
+  "environments": {
+    "TEST": {
+      "source_pending_bundle_sha256": "b127be92200b68db0fd4c44df1ee6cc7dbf15bb9fe02ec278ef1097a428b2585",
+      "batches": {
+        "next5": {
+          "bundle_sha256": "0f22712a0fb8a5e1a3fc82fcc3797b3616692e2a2d603a26e88acbb7c630fadd",
+          "path": "/tmp/kifu-name55-packaging-20261005/TEST/bundle.next5.approved.json",
+          "validation": {
+            "ready": true,
+            "write_ready": true,
+            "write_errors": [],
+            "inventory_sha256": "964ceae9a09268c5dc70fb9ce71a33c59a00fdf43f4b2bf0497f2685a5dc2682",
+            "member_count": 25,
+            "candidate_count": 25,
+            "approved": 25,
+            "pending": 0,
+            "rejected": 0,
+            "missing": 0,
+            "errors": []
+          }
+        },
+        "final1": {
+          "bundle_sha256": "29d119b10384ec9f2db16e2fda2bd352d447f96969adb2cd1b2071a8ed24933d",
+          "path": "/tmp/kifu-name55-packaging-20261005/TEST/bundle.final1.approved.json",
+          "validation": {
+            "ready": true,
+            "write_ready": true,
+            "write_errors": [],
+            "inventory_sha256": "964ceae9a09268c5dc70fb9ce71a33c59a00fdf43f4b2bf0497f2685a5dc2682",
+            "member_count": 5,
+            "candidate_count": 5,
+            "approved": 5,
+            "pending": 0,
+            "rejected": 0,
+            "missing": 0,
+            "errors": []
+          }
+        }
+      }
+    },
+    "PROD": {
+      "source_pending_bundle_sha256": "5216416e734e1f94dafca2c21131db26c71b9dc8091149f1718a93ef624a69e3",
+      "batches": {
+        "next5": {
+          "bundle_sha256": "24b47733147993a43bccb7ae777b149d384302dc524f9e865901045aa16ea217",
+          "path": "/tmp/kifu-name55-packaging-20261005/PROD/bundle.next5.approved.json",
+          "validation": {
+            "ready": true,
+            "write_ready": true,
+            "write_errors": [],
+            "inventory_sha256": "9692dd2a6e1fd36816cbdac2a9c656741a05789e1a24a04c81c4ccdd934e1e92",
+            "member_count": 25,
+            "candidate_count": 25,
+            "approved": 25,
+            "pending": 0,
+            "rejected": 0,
+            "missing": 0,
+            "errors": []
+          }
+        },
+        "final1": {
+          "bundle_sha256": "60beec2ca4420e8e341a7ddd5d42aac518b247d5070baa2235f7fc9bcd5d0106",
+          "path": "/tmp/kifu-name55-packaging-20261005/PROD/bundle.final1.approved.json",
+          "validation": {
+            "ready": true,
+            "write_ready": true,
+            "write_errors": [],
+            "inventory_sha256": "9692dd2a6e1fd36816cbdac2a9c656741a05789e1a24a04c81c4ccdd934e1e92",
+            "member_count": 5,
+            "candidate_count": 5,
+            "approved": 5,
+            "pending": 0,
+            "rejected": 0,
+            "missing": 0,
+            "errors": []
+          }
+        }
+      }
+    }
+  },
+  "source_checks": [
+    {
+      "prod_owner_id": 17,
+      "test_owner_id": 17,
+      "lang": "cn",
+      "display_name": "王立诚",
+      "url": "https://www.foxwq.com/news/4601.html",
+      "body_sha256": "f993ae9e8979766b9e511e6bb9df4acd1b03fb27c19ed400c797925cdfd17a34",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000065.htm",
+      "dob": "1958-11-07",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 17,
+      "test_owner_id": 17,
+      "lang": "tw",
+      "display_name": "王立誠",
+      "url": "https://www.haifong.org/news/content/DA2080B81489A3DA035BE72E6528AEB3",
+      "body_sha256": "743e90c89ec7bace32663d465f0983cf17f456274832bc9f2d79ec2520772ff0",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000065.htm",
+      "dob": "1958-11-07",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 17,
+      "test_owner_id": 17,
+      "lang": "jp",
+      "display_name": "王立誠",
+      "url": "https://www.goratings.org/ja/players/71.html",
+      "body_sha256": "e2d7d879124657d0ad961421f9accbbf59731eb2a114fa6457c1f0bf323b3cb6",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000065.htm",
+      "dob": "1958-11-07",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 17,
+      "test_owner_id": 17,
+      "lang": "ko",
+      "display_name": "왕리청",
+      "url": "https://www.goratings.org/ko/players/71.html",
+      "body_sha256": "dab4a3e3dcbf9d84914e738ddb1af199b2c1c9a9c6aacad2b2675198e40a7a06",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000065.htm",
+      "dob": "1958-11-07",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 17,
+      "test_owner_id": 17,
+      "lang": "en",
+      "display_name": "Wang Li Chen",
+      "url": "https://www.goratings.org/en/players/71.html",
+      "body_sha256": "f375ddc6d0096d9bb1ac90b4510d56d2f376c7e1161981da9b9d5852beec89a1",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000065.htm",
+      "dob": "1958-11-07",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 69,
+      "test_owner_id": 69,
+      "lang": "cn",
+      "display_name": "刘昌赫",
+      "url": "https://wqwh.weiqi.org.cn/石佛李昌镐的成长之路（一）/",
+      "body_sha256": "cc30ebb593cd4ab6293979e87421148dc98a9cc7718366b64bb4f67739128b63",
+      "native_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000003",
+      "dob": "1966-04-25",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 69,
+      "test_owner_id": 69,
+      "lang": "tw",
+      "display_name": "劉昌赫",
+      "url": "https://www.haifong.org/news/content/DA2080B81489A3DA035BE72E6528AEB3",
+      "body_sha256": "743e90c89ec7bace32663d465f0983cf17f456274832bc9f2d79ec2520772ff0",
+      "native_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000003",
+      "dob": "1966-04-25",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 69,
+      "test_owner_id": 69,
+      "lang": "jp",
+      "display_name": "劉昌赫",
+      "url": "https://archive.nihonkiin.or.jp/player/htm/ki000065.htm",
+      "body_sha256": "12fd6d7c2e517543894f58a15fc29dd37a6b7d4b2f6272626d0a967de6a50c22",
+      "native_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000003",
+      "dob": "1966-04-25",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 69,
+      "test_owner_id": 69,
+      "lang": "ko",
+      "display_name": "유창혁",
+      "url": "https://www.goratings.org/ko/players/30.html",
+      "body_sha256": "adedf74abc38549be61bc3258ce65bf7a27cfd4cc70843892213254cbff4160d",
+      "native_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000003",
+      "dob": "1966-04-25",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 69,
+      "test_owner_id": 69,
+      "lang": "en",
+      "display_name": "Yoo Changhyuk",
+      "url": "https://www.goratings.org/en/players/30.html",
+      "body_sha256": "42a1c72b16da728a3de7a023693aaa87a9c851d20758c81d64f4793176c0d592",
+      "native_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000003",
+      "dob": "1966-04-25",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 108,
+      "test_owner_id": 109,
+      "lang": "cn",
+      "display_name": "徐奉洙",
+      "url": "https://wqwh.weiqi.org.cn/石佛李昌镐的成长之路（一）/",
+      "body_sha256": "cc30ebb593cd4ab6293979e87421148dc98a9cc7718366b64bb4f67739128b63",
+      "native_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000008",
+      "dob": "1953-02-01",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 108,
+      "test_owner_id": 109,
+      "lang": "tw",
+      "display_name": "徐奉洙",
+      "url": "https://www.haifong.org/game/classes/8AD0F09CC001B8A2EEBBC376AEEAB539",
+      "body_sha256": "364efc3b2eff1bd20bccab38e2287dc6de30da9999a75d3be55b78dbde5d0b32",
+      "native_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000008",
+      "dob": "1953-02-01",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 108,
+      "test_owner_id": 109,
+      "lang": "jp",
+      "display_name": "徐奉洙",
+      "url": "https://www.goratings.org/ja/players/49.html",
+      "body_sha256": "b13808b455ad0bafc6660c6743e325a93351ae2e2fa84904b61673e0c6fabc09",
+      "native_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000008",
+      "dob": "1953-02-01",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 108,
+      "test_owner_id": 109,
+      "lang": "ko",
+      "display_name": "서봉수",
+      "url": "https://www.goratings.org/ko/players/49.html",
+      "body_sha256": "d620b22657e7612dbf38d8f07d672f03260b35ff79793e167737676e6707bf43",
+      "native_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000008",
+      "dob": "1953-02-01",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 108,
+      "test_owner_id": 109,
+      "lang": "en",
+      "display_name": "Seo Bongsoo",
+      "url": "https://www.goratings.org/en/players/49.html",
+      "body_sha256": "6a6b55982c1957637d134f66b49f3ce51ae9a3b26a971966a62aca1a3a2e518a",
+      "native_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000008",
+      "dob": "1953-02-01",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 878,
+      "test_owner_id": 1090,
+      "lang": "cn",
+      "display_name": "加藤正夫",
+      "url": "https://wqwh.weiqi.org.cn/石佛李昌镐的成长之路（一）/",
+      "body_sha256": "cc30ebb593cd4ab6293979e87421148dc98a9cc7718366b64bb4f67739128b63",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000002.htm",
+      "dob": "1947-03-15",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 878,
+      "test_owner_id": 1090,
+      "lang": "tw",
+      "display_name": "加藤正夫",
+      "url": "https://www.haifong.org/news/content/DA2080B81489A3DA035BE72E6528AEB3",
+      "body_sha256": "743e90c89ec7bace32663d465f0983cf17f456274832bc9f2d79ec2520772ff0",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000002.htm",
+      "dob": "1947-03-15",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 878,
+      "test_owner_id": 1090,
+      "lang": "jp",
+      "display_name": "加藤正夫",
+      "url": "https://www.goratings.org/ja/players/193.html",
+      "body_sha256": "5231614133fc5c5e0ec17cd727aa2140ea2236b9c5d670a93b18cd5e7eaf4040",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000002.htm",
+      "dob": "1947-03-15",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 878,
+      "test_owner_id": 1090,
+      "lang": "ko",
+      "display_name": "가토 마사오",
+      "url": "https://www.goratings.org/ko/players/193.html",
+      "body_sha256": "bea75f44c3d0e688466e3b3e2cb4b6fe51916b75289cffb6a17b43f98edce2ec",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000002.htm",
+      "dob": "1947-03-15",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 878,
+      "test_owner_id": 1090,
+      "lang": "en",
+      "display_name": "Kato Masao",
+      "url": "https://www.goratings.org/en/players/193.html",
+      "body_sha256": "fe86102e4f611af83aa2d2429dccfe16ad69315b5ed106112bf68aede9029497",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000002.htm",
+      "dob": "1947-03-15",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 879,
+      "test_owner_id": 1091,
+      "lang": "cn",
+      "display_name": "大竹英雄",
+      "url": "https://wqwh.weiqi.org.cn/石佛李昌镐的成长之路（一）/",
+      "body_sha256": "cc30ebb593cd4ab6293979e87421148dc98a9cc7718366b64bb4f67739128b63",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000008.htm",
+      "dob": "1942-05-12",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 879,
+      "test_owner_id": 1091,
+      "lang": "tw",
+      "display_name": "大竹英雄",
+      "url": "https://www.haifong.org/news/content/DA2080B81489A3DA035BE72E6528AEB3",
+      "body_sha256": "743e90c89ec7bace32663d465f0983cf17f456274832bc9f2d79ec2520772ff0",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000008.htm",
+      "dob": "1942-05-12",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 879,
+      "test_owner_id": 1091,
+      "lang": "jp",
+      "display_name": "大竹英雄",
+      "url": "https://www.goratings.org/ja/players/158.html",
+      "body_sha256": "581b938423f6ec5cd15fe82c120999d1262a6601d63e2059b109de95c906c88b",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000008.htm",
+      "dob": "1942-05-12",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 879,
+      "test_owner_id": 1091,
+      "lang": "ko",
+      "display_name": "오타케 히데오",
+      "url": "https://www.goratings.org/ko/players/158.html",
+      "body_sha256": "2abadc6dcf2da79f2291b802b8c819e837c50727259a95974db75bd53356ef92",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000008.htm",
+      "dob": "1942-05-12",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 879,
+      "test_owner_id": 1091,
+      "lang": "en",
+      "display_name": "Otake Hideo",
+      "url": "https://www.goratings.org/en/players/158.html",
+      "body_sha256": "80493da929438d88adc2976bdf5a69a7634140c04047d866b217a430bea4bc5e",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000008.htm",
+      "dob": "1942-05-12",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 880,
+      "test_owner_id": 1092,
+      "lang": "cn",
+      "display_name": "藤泽秀行",
+      "url": "https://wqwh.weiqi.org.cn/石佛李昌镐的成长之路（一）/",
+      "body_sha256": "cc30ebb593cd4ab6293979e87421148dc98a9cc7718366b64bb4f67739128b63",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000005.htm",
+      "dob": "1925-06-14",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 880,
+      "test_owner_id": 1092,
+      "lang": "tw",
+      "display_name": "藤澤秀行",
+      "url": "https://www.haifong.org/news/content/A37ECCFD369A6389C48235D6128E3838",
+      "body_sha256": "d2ed2ad7c9a2d5a5d47e78661eb1822803d473ac206785481c842297fda53a49",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000005.htm",
+      "dob": "1925-06-14",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 880,
+      "test_owner_id": 1092,
+      "lang": "jp",
+      "display_name": "藤沢秀行",
+      "url": "https://www.goratings.org/ja/players/293.html",
+      "body_sha256": "522a17a4cc704ff06ddb2265d5f438a7452558a7f19ee95ea468e04add5e5c09",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000005.htm",
+      "dob": "1925-06-14",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 880,
+      "test_owner_id": 1092,
+      "lang": "ko",
+      "display_name": "후지사와 히데유키",
+      "url": "https://www.goratings.org/ko/players/293.html",
+      "body_sha256": "a09a2a59ee65e3b591fe717524c04dadd7e79fefdced4f8cb1fe038d50e1c33c",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000005.htm",
+      "dob": "1925-06-14",
+      "result": "PASS exact body, subject and language"
+    },
+    {
+      "prod_owner_id": 880,
+      "test_owner_id": 1092,
+      "lang": "en",
+      "display_name": "Fujisawa Hideyuki",
+      "url": "https://www.goratings.org/en/players/293.html",
+      "body_sha256": "b41aeffa32c2dc55f6402e71fbaec3b3edfb1aaf4dd69ee31b19cf0590080bd1",
+      "native_profile": "https://archive.nihonkiin.or.jp/player/htm/ki000005.htm",
+      "dob": "1925-06-14",
+      "result": "PASS exact body, subject and language"
+    }
+  ],
+  "decision": "Approved next5 (25 cells) then final1 (5 cells), in separate existing-owner name-only bundles. No database writes by reviewer. Live dry-run and conditional apply remain required."
+}

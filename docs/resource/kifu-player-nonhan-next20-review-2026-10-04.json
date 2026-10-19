@@ -1,0 +1,420 @@
+{
+  "format": "kifu-player-nonhan-next20-review-v1",
+  "scope": "next 20 highest-frequency human-looking Latin exact raw after prior top20; TEST/PROD current FK query",
+  "snapshot_note": "2026-10-04 Asia/Shanghai read-only snapshots; IDs must be rebound before import",
+  "summary": {
+    "reviewed_raw_values": 20,
+    "reviewed_slots": 6028,
+    "approved_raw_values": 18,
+    "approved_slots": 5416,
+    "held_raw_values": 2,
+    "held_slots": 612,
+    "new_chinese_catalog_players": 2
+  },
+  "rows": [
+    {
+      "raw_value": "Seo Hisashi",
+      "slots_each_environment": 318,
+      "current_unlinked_slots_each_environment": 318,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1934-09-08",
+      "last_raw_date": "1978-12-07",
+      "canonical_chinese_name": "濑尾寿",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5432
+        ],
+        "test": [
+          11207
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI pairs 瀬尾寿 with Seo Hisashi (1917–1981); not similarly named 瀬越憲作"
+    },
+    {
+      "raw_value": "Segawa Yoshio",
+      "slots_each_environment": 317,
+      "current_unlinked_slots_each_environment": 317,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1928-05",
+      "last_raw_date": "1978-11-30",
+      "canonical_chinese_name": "濑川良雄",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5433
+        ],
+        "test": [
+          11208
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki001005.htm",
+      "identity_note": "Nihon Ki-in profile directly pairs SEGAWA, Yoshio with 瀬川良雄"
+    },
+    {
+      "raw_value": "Tozawa Akinobu",
+      "slots_each_environment": 317,
+      "current_unlinked_slots_each_environment": 317,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-06,07",
+      "last_raw_date": "1978-12-07",
+      "canonical_chinese_name": "户泽昭宣",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4736
+        ],
+        "test": [
+          10526
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000027.htm",
+      "identity_note": "Nihon Ki-in profile directly pairs TOZAWA, Akinobu with 戸沢昭宣"
+    },
+    {
+      "raw_value": "Nabeshima Ichiro",
+      "slots_each_environment": 312,
+      "current_unlinked_slots_each_environment": 312,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1927-12-13",
+      "last_raw_date": "1978-10-19",
+      "canonical_chinese_name": "锅岛一郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6260
+        ],
+        "test": [
+          12026
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI roster pairs 鍋島一郎 with Nabeshima Ichiro, born 1909"
+    },
+    {
+      "raw_value": "Hoshino Toshi",
+      "slots_each_environment": 311,
+      "current_unlinked_slots_each_environment": 311,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1943-04-28",
+      "last_raw_date": "1978-12-14",
+      "canonical_chinese_name": "星野纪",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_chinese_canonical_player_in_each_environment",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI roster pairs 星野紀 with Hoshino Toshi, born 1918; no current exact Chinese catalog ID"
+    },
+    {
+      "raw_value": "Yoshida Yoichi",
+      "slots_each_environment": 311,
+      "current_unlinked_slots_each_environment": 311,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1953-04-15,16",
+      "last_raw_date": "1978-12-14",
+      "canonical_chinese_name": "吉田阳一 / 吉田洋逸",
+      "review_status": "hold_homonym",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_no_game_fk",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ProBest10/09/index.html",
+      "identity_note": "Two professional players have exactly this romanized name: 吉田陽一 born 1935/pro 1953 and 吉田洋逸 born 1944/pro 1967; raw games span both eras, exact raw cannot assign one ID"
+    },
+    {
+      "raw_value": "HashimotoShoji",
+      "slots_each_environment": 310,
+      "current_unlinked_slots_each_environment": 310,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1900-01-01",
+      "last_raw_date": "2001-09-06",
+      "canonical_chinese_name": "桥本昌二",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_chinese_canonical_player_in_each_environment",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "Joined roman spelling; CWI pairs Hashimoto Shoji with 橋本昌二 born 1935; game opponents/context match Kansai professional"
+    },
+    {
+      "raw_value": "Sakata Eio",
+      "slots_each_environment": 308,
+      "current_unlinked_slots_each_environment": 308,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1933-02-04",
+      "last_raw_date": "1978-12-14",
+      "canonical_chinese_name": "坂田荣男",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4227
+        ],
+        "test": [
+          10022
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000006.htm",
+      "identity_note": "Nihon Ki-in profile directly pairs SAKATA, Eio with 坂田栄男"
+    },
+    {
+      "raw_value": "Magari Reiki",
+      "slots_each_environment": 307,
+      "current_unlinked_slots_each_environment": 307,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1949-05-04,05",
+      "last_raw_date": "1978-12-21",
+      "canonical_chinese_name": "曲励起",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4797
+        ],
+        "test": [
+          10585
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000014.htm",
+      "identity_note": "Nihon Ki-in profile directly pairs MAGARI, Reiki with 曲励起"
+    },
+    {
+      "raw_value": "Sakai Michiharu",
+      "slots_each_environment": 307,
+      "current_unlinked_slots_each_environment": 307,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1942-10-28,29",
+      "last_raw_date": "1978-10-12",
+      "canonical_chinese_name": "酒井通温",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6071
+        ],
+        "test": [
+          11839
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI roster pairs 酒井通温 with Sakai Michiharu, born 1912"
+    },
+    {
+      "raw_value": "Ito Tomoe",
+      "slots_each_environment": 301,
+      "current_unlinked_slots_each_environment": 301,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1934-03-14,15",
+      "last_raw_date": "1978-12-20",
+      "canonical_chinese_name": "伊藤友惠 / 伊藤清子",
+      "review_status": "hold_catalog_duplicates",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_no_game_fk",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI explicitly lists 伊藤友恵, 伊藤清子, 伊藤きよ子 as one player; PROD catalog has three IDs 3878/3879/3884, must reconcile before FK"
+    },
+    {
+      "raw_value": "Sakakibara Shoji",
+      "slots_each_environment": 300,
+      "current_unlinked_slots_each_environment": 300,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1946-05-29,30",
+      "last_raw_date": "1978-12-14",
+      "canonical_chinese_name": "榊原章二",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5282
+        ],
+        "test": [
+          11060
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000018.htm",
+      "identity_note": "Nihon Ki-in profile directly pairs SAKAKIBARA, Shoji with 榊原章二"
+    },
+    {
+      "raw_value": "Sanno Hirotaka",
+      "slots_each_environment": 298,
+      "current_unlinked_slots_each_environment": 298,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1957-09-18,19",
+      "last_raw_date": "1978-11-23",
+      "canonical_chinese_name": "三王裕孝",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3750
+        ],
+        "test": [
+          9548
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000029.htm",
+      "identity_note": "Nihon Ki-in profile directly pairs SANNO, Hirotaka with 三王裕孝"
+    },
+    {
+      "raw_value": "Kojima Takaho",
+      "slots_each_environment": 295,
+      "current_unlinked_slots_each_environment": 295,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-20,21",
+      "last_raw_date": "1978-10-05",
+      "canonical_chinese_name": "小岛高穗",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4415
+        ],
+        "test": [
+          10206
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000031.htm",
+      "identity_note": "Nihon Ki-in profile directly pairs KOJIMA, Takaho with 小島高穂"
+    },
+    {
+      "raw_value": "Miwa Yoshiro",
+      "slots_each_environment": 292,
+      "current_unlinked_slots_each_environment": 292,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1938-04-13,14",
+      "last_raw_date": "1978-11-16",
+      "canonical_chinese_name": "三轮芳郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3752
+        ],
+        "test": [
+          9550
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI roster pairs 三輪芳郎 with Miwa Yoshiro born 1921"
+    },
+    {
+      "raw_value": "Hashimoto Yoshimi",
+      "slots_each_environment": 286,
+      "current_unlinked_slots_each_environment": 286,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-02-10",
+      "last_raw_date": "1978-11-02",
+      "canonical_chinese_name": "桥本谊",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5244
+        ],
+        "test": [
+          11023
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000021.htm",
+      "identity_note": "Nihon Ki-in profile directly pairs HASHIMOTO, Yoshimi with 橋本誼; distinct from Utaro and Shoji"
+    },
+    {
+      "raw_value": "Ishii Mamoru",
+      "slots_each_environment": 285,
+      "current_unlinked_slots_each_environment": 285,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-02-17",
+      "last_raw_date": "1977-12-08",
+      "canonical_chinese_name": "石井卫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5634
+        ],
+        "test": [
+          11407
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000022.htm",
+      "identity_note": "Nihon Ki-in profile directly pairs ISHII, Mamoru with 石井衛; distinct from younger brother 石井邦生"
+    },
+    {
+      "raw_value": "Kuwahara Munehisa",
+      "slots_each_environment": 285,
+      "current_unlinked_slots_each_environment": 285,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1943?",
+      "last_raw_date": "1978-08-10",
+      "canonical_chinese_name": "桑原宗久",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5237
+        ],
+        "test": [
+          11016
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI roster pairs 桑原宗久 with Kuwahara Munehisa born 1923"
+    },
+    {
+      "raw_value": "Suzuki Goro",
+      "slots_each_environment": 285,
+      "current_unlinked_slots_each_environment": 285,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1936-11-04,05",
+      "last_raw_date": "1978-09-28",
+      "canonical_chinese_name": "铃木五良",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6252
+        ],
+        "test": [
+          12018
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI roster pairs 鈴木五良 with Suzuki Goro born 1917"
+    },
+    {
+      "raw_value": "Miyashita Shuyo",
+      "slots_each_environment": 283,
+      "current_unlinked_slots_each_environment": 283,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1925-06-17,19",
+      "last_raw_date": "1976-03-04",
+      "canonical_chinese_name": "宫下秀洋",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4388
+        ],
+        "test": [
+          10180
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI roster pairs 宮下秀洋 with Miyashita Shuyo, alias Hidehiro; distinct from 宮下秀人"
+    }
+  ]
+}

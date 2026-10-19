@@ -1,0 +1,16 @@
+# Opt-in overlay for the test cron only. Runtime private paths and host are supplied externally.
+services:
+  katrain-cron:
+    environment:
+      CRON_KIFU_INGEST_ENABLED: ${CRON_KIFU_INGEST_ENABLED:-false}
+      CRON_KIFU_INGEST_LLM_ENABLED: ${CRON_KIFU_INGEST_LLM_ENABLED:-false}
+      CRON_KIFU_INGEST_MAX_TOKENS: ${CRON_KIFU_INGEST_MAX_TOKENS:-0}
+      CRON_KIFU_INGEST_STAGING_DIR: /app/data/kifu_ingest
+      CRON_KIFU_INGEST_SSH_HOST: ${CRON_KIFU_INGEST_SSH_HOST:-}
+      CRON_KIFU_INGEST_PROD_API_URL: ${CRON_KIFU_INGEST_PROD_API_URL:-}
+      CRON_KIFU_INGEST_SSH_KEY: /run/secrets/kifu_ingest_key
+      CRON_KIFU_INGEST_KNOWN_HOSTS: /run/secrets/kifu_ingest_known_hosts
+    volumes:
+      - ${KIFU_INGEST_STAGE_DIR:-./data/kifu_ingest}:/app/data/kifu_ingest
+      - ${KIFU_INGEST_KEY_FILE:?set a dedicated SSH key path}:/run/secrets/kifu_ingest_key:ro
+      - ${KIFU_INGEST_KNOWN_HOSTS_FILE:?set a known_hosts path}:/run/secrets/kifu_ingest_known_hosts:ro

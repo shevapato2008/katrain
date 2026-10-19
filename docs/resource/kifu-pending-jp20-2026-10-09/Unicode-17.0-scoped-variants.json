@@ -1,0 +1,83 @@
+{
+  "moe_changed_mapping_locators": [
+    {
+      "extracted_line": "东－東     务－ 務        讯－ 訊",
+      "input": "东",
+      "output": "東",
+      "pdf_page": 5
+    },
+    {
+      "extracted_line": "伞－傘    兴－ 興        阳－ 陽",
+      "input": "阳",
+      "output": "陽",
+      "pdf_page": 7
+    }
+  ],
+  "moe_source_sha256": "5e7173d5aa11064d3d5662d5ce4723626f2b4d2122da264f7d63e946a5815434",
+  "moe_source_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+  "moe_title": "臺灣教育部《簡化字對照標準字表》筆畫序",
+  "normative_version": "Unicode 17.0.0",
+  "scoped_characters": [
+    {
+      "examples": [
+        {
+          "player_id": 4340,
+          "position": 1
+        }
+      ],
+      "input": "东",
+      "moe_locator": {
+        "extracted_line": "东－東     务－ 務        讯－ 訊",
+        "input": "东",
+        "output": "東",
+        "pdf_page": 5
+      },
+      "output": "東",
+      "unihan_line": "U+4E1C\tkTraditionalVariant\tU+6771"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4340,
+          "position": 3
+        }
+      ],
+      "input": "向",
+      "moe_locator": null,
+      "output": "向",
+      "unihan_line": "U+5411\tkTraditionalVariant\tU+5411 U+56AE U+66CF"
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4340,
+          "position": 0
+        }
+      ],
+      "input": "安",
+      "moe_locator": null,
+      "output": "安",
+      "unihan_line": null
+    },
+    {
+      "examples": [
+        {
+          "player_id": 4340,
+          "position": 2
+        }
+      ],
+      "input": "阳",
+      "moe_locator": {
+        "extracted_line": "伞－傘    兴－ 興        阳－ 陽",
+        "input": "阳",
+        "output": "陽",
+        "pdf_page": 7
+      },
+      "output": "陽",
+      "unihan_line": "U+9633\tkTraditionalVariant\tU+967D"
+    }
+  ],
+  "source_file": "Unihan_Variants.txt",
+  "source_sha256": "f7a48b2b545acfaa77b2d607ae28747404ce02baefee16396c5d2d7a8ef34b5e",
+  "source_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip"
+}

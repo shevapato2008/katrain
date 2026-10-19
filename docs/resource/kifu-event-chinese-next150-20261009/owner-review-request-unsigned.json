@@ -1,0 +1,24 @@
+{
+  "status": "pending_independent_root_review",
+  "scope": "owner review only; 150 exact sgf_chinese_mixed raw SGF literal titles; no names, event identities, FK or album changes",
+  "producer_id": "/root/next_chinese_event_native_prep",
+  "producer_model": "gpt-6-sol",
+  "produced_at": "2026-10-08T22:33:48.071267+00:00",
+  "profile": "sgf_chinese_mixed",
+  "raw_owners": 150,
+  "current_null_public_games": 174,
+  "proposed_name_cells_for_later_phase": 750,
+  "selection_sha256": "f06a6a87d600f3fa6d710ce35914f65534b0a11d257c749941c7dedcd48d43eb",
+  "source_packet_sha256": "eacd589a90178e806c7b76239d7d9444cbfc7d3d46f628b683e16eced6a928bb",
+  "manifest_canonical_sha256": "aa8e33006d43f0b23736555a4b0a072e0f3c1311354a703f55d3ff300816f2e4",
+  "name_matrix_canonical_sha256": "5ff473a4fe24c7aedfc6b5283601d7996b2343341445ebb36fe50496de6a635d",
+  "capture_file_sha256": {
+    "TEST": "da098188dbb996b51ba413d0751b8a42cf4bd8fdd0c4757c54fbcbeda48b2b01",
+    "PROD": "bd9cbb5a91258d2954286a7ac53e00a5a300c68f1b7cffd62b2473e2cbf534ff"
+  },
+  "native_importer_image_id": {
+    "TEST": "sha256:82124209ad6425190d587fec10b06eb7cab8b80067cd345cc523bd9a760523c4",
+    "PROD": "sha256:6eb7597b5b478c082fe91405c0223531a46380bf53b9d7dc33e8e74cfb642b02"
+  },
+  "required_before_prepare": "Root independently reviews the exact current 150 owner/174 game scope, source matrix, complete physical SGF guards and native image; root creates a separate actual owner-root-approval.json before prepare."
+}

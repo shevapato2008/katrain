@@ -1,0 +1,24 @@
+{
+  "approved_name_snapshot_sha256": "aa407ec8b0ddb3fd5edffe726eb732f67c80ef45d1c43d0f5b8376b0ac29e134",
+  "bundle_members": 20,
+  "bundle_sha256": "3a1674c16863a0e95dd7782156b0b05cd757afdd429e5b01519d649324bffec0",
+  "catalog_sha256": "aedaab6720cf4035533827d63dc90669e3b5ee35e97855e5b72e02c42616a9d2",
+  "environment": "TEST",
+  "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+  "orthographic_batch_sha256": "0e88bd0de9dcc0f91aae5880fee663b7625934855ae9c63725f7d6e307c874a3",
+  "registry_sha256": "e82b7fce9527f199005bba0b2aabf84f230018a8cbbaad64fe5a0a63af0b8ee9",
+  "status": "candidate_dependencies_approved_outer_execution_unsigned",
+  "validation": {
+    "approved": 20,
+    "candidate_count": 20,
+    "errors": [],
+    "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+    "member_count": 20,
+    "missing": 0,
+    "pending": 0,
+    "ready": true,
+    "rejected": 0,
+    "write_errors": [],
+    "write_ready": true
+  }
+}

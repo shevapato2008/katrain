@@ -233,3 +233,8 @@ katrain/web/ui/test-results/
 # Disposable browser CLI snapshots; reviewed design evidence lives under superpowers/tracks/
 /.playwright-cli/
 /superpowers/tracks/admin-console/prototype/index.html
+
+# Failed research intermediates: HTTP 403 response saved as a PDF, and an
+# empty text extraction of a scanned PDF. The source PDF and useful OCR remain tracked.
+/tmp/pdfs/es-sol.pdf
+/tmp/pdfs/fr-belgo.txt

@@ -1,0 +1,11 @@
+{
+  "key": "cwa-zhangtao-homophone",
+  "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhangtao-homophone.json",
+  "raw_sha256": "1cddb8de93215cbe27b7ac26be28ebd1ac3fad412c792b19d2d236726de8fdf0",
+  "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000460",
+  "retrieved_at_utc": "2026-10-04T12:05:45.006880+00:00",
+  "status": 200,
+  "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhangtao-homophone.txt",
+  "text_sha256": "4990e42397fd4d5e69a7455e60b1bc66eb02463f56acdbf8495c633cd05f1dc1",
+  "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000460"
+}

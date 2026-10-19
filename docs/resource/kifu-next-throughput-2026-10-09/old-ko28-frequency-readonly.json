@@ -1,0 +1,1626 @@
+[
+  {
+    "id": 3792,
+    "canonical_name": "中川新之",
+    "games": 397,
+    "names": [
+      {
+        "id": 6792,
+        "lang": "cn",
+        "display_name": "中川新之",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23957
+      },
+      {
+        "id": 6796,
+        "lang": "en",
+        "display_name": "Nakagawa Shinji",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23961
+      },
+      {
+        "id": 6794,
+        "lang": "jp",
+        "display_name": "中川新之",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23959
+      },
+      {
+        "id": 6795,
+        "lang": "ko",
+        "display_name": "나카가와 신지",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 23960
+      },
+      {
+        "id": 6793,
+        "lang": "tw",
+        "display_name": "中川新之",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23958
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 5237,
+    "canonical_name": "桑原宗久",
+    "games": 345,
+    "names": [
+      {
+        "id": 6837,
+        "lang": "cn",
+        "display_name": "桑原宗久",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 24017
+      },
+      {
+        "id": 6841,
+        "lang": "en",
+        "display_name": "Kuwahara Munehisa",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 24021
+      },
+      {
+        "id": 6839,
+        "lang": "jp",
+        "display_name": "桑原宗久",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 24019
+      },
+      {
+        "id": 6840,
+        "lang": "ko",
+        "display_name": "구와하라 무네히사",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 24020
+      },
+      {
+        "id": 6838,
+        "lang": "tw",
+        "display_name": "桑原宗久",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 24018
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6270,
+    "canonical_name": "长谷川章",
+    "games": 334,
+    "names": [
+      {
+        "id": 6687,
+        "lang": "cn",
+        "display_name": "长谷川章",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22352
+      },
+      {
+        "id": 6691,
+        "lang": "en",
+        "display_name": "Hasegawa Akira",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22356
+      },
+      {
+        "id": 6689,
+        "lang": "jp",
+        "display_name": "長谷川 章",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22354
+      },
+      {
+        "id": 6690,
+        "lang": "ko",
+        "display_name": "하세가와 아키라",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 22355
+      },
+      {
+        "id": 6688,
+        "lang": "tw",
+        "display_name": "長谷川章",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22353
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 5244,
+    "canonical_name": "桥本谊",
+    "games": 333,
+    "names": [
+      {
+        "id": 6692,
+        "lang": "cn",
+        "display_name": "桥本谊",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22357
+      },
+      {
+        "id": 6696,
+        "lang": "en",
+        "display_name": "Hashimoto Yoshimi",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22361
+      },
+      {
+        "id": 6694,
+        "lang": "jp",
+        "display_name": "橋本 誼",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22359
+      },
+      {
+        "id": 6695,
+        "lang": "ko",
+        "display_name": "하시모토 요시미",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 22360
+      },
+      {
+        "id": 6693,
+        "lang": "tw",
+        "display_name": "橋本誼",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22358
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6260,
+    "canonical_name": "锅岛一郎",
+    "games": 329,
+    "names": [
+      {
+        "id": 6697,
+        "lang": "cn",
+        "display_name": "锅岛一郎",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22362
+      },
+      {
+        "id": 6701,
+        "lang": "en",
+        "display_name": "Nabeshima Ichiro",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22366
+      },
+      {
+        "id": 6699,
+        "lang": "jp",
+        "display_name": "鍋島一郎",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22364
+      },
+      {
+        "id": 6700,
+        "lang": "ko",
+        "display_name": "나베시마 이치로",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 22365
+      },
+      {
+        "id": 6698,
+        "lang": "tw",
+        "display_name": "鍋島一郎",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22363
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6252,
+    "canonical_name": "铃木五良",
+    "games": 313,
+    "names": [
+      {
+        "id": 6702,
+        "lang": "cn",
+        "display_name": "铃木五良",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22367
+      },
+      {
+        "id": 6706,
+        "lang": "en",
+        "display_name": "Suzuki Goro",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22371
+      },
+      {
+        "id": 6704,
+        "lang": "jp",
+        "display_name": "鈴木五良",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22369
+      },
+      {
+        "id": 6705,
+        "lang": "ko",
+        "display_name": "스즈키 고로",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 22370
+      },
+      {
+        "id": 6703,
+        "lang": "tw",
+        "display_name": "鈴木五良",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22368
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6581,
+    "canonical_name": "星野纪",
+    "games": 311,
+    "names": [
+      {
+        "id": 6707,
+        "lang": "cn",
+        "display_name": "星野纪",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22372
+      },
+      {
+        "id": 6711,
+        "lang": "en",
+        "display_name": "Hoshino Toshi",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22376
+      },
+      {
+        "id": 6709,
+        "lang": "jp",
+        "display_name": "星野紀",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22374
+      },
+      {
+        "id": 6710,
+        "lang": "ko",
+        "display_name": "호시노 도시",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 22375
+      },
+      {
+        "id": 6708,
+        "lang": "tw",
+        "display_name": "星野紀",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 22373
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 4121,
+    "canonical_name": "向井一男",
+    "games": 308,
+    "names": [
+      {
+        "id": 6872,
+        "lang": "cn",
+        "display_name": "向井一男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 24802
+      },
+      {
+        "id": 6876,
+        "lang": "en",
+        "display_name": "Mukai Kazuo",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 24806
+      },
+      {
+        "id": 6874,
+        "lang": "jp",
+        "display_name": "向井一男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 24804
+      },
+      {
+        "id": 6875,
+        "lang": "ko",
+        "display_name": "무카이 가즈오",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 24805
+      },
+      {
+        "id": 6873,
+        "lang": "tw",
+        "display_name": "向井一男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 24803
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 5158,
+    "canonical_name": "松本笃二",
+    "games": 294,
+    "names": [
+      {
+        "id": 6802,
+        "lang": "cn",
+        "display_name": "松本笃二",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23967
+      },
+      {
+        "id": 6806,
+        "lang": "en",
+        "display_name": "Matsumoto Tokuji",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23971
+      },
+      {
+        "id": 6804,
+        "lang": "jp",
+        "display_name": "松本　篤二",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23969
+      },
+      {
+        "id": 6805,
+        "lang": "ko",
+        "display_name": "마쓰모토 도쿠지",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 23970
+      },
+      {
+        "id": 6803,
+        "lang": "tw",
+        "display_name": "松本篤二",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23968
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 3778,
+    "canonical_name": "中冈二郎",
+    "games": 293,
+    "names": [
+      {
+        "id": 6787,
+        "lang": "cn",
+        "display_name": "中冈二郎",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23952
+      },
+      {
+        "id": 6791,
+        "lang": "en",
+        "display_name": "Nakaoka Jiro",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23956
+      },
+      {
+        "id": 6789,
+        "lang": "jp",
+        "display_name": "中岡二郎",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23954
+      },
+      {
+        "id": 6790,
+        "lang": "ko",
+        "display_name": "나카오카 지로",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 23955
+      },
+      {
+        "id": 6788,
+        "lang": "tw",
+        "display_name": "中岡二郎",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 23953
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 4499,
+    "canonical_name": "山崎祐男",
+    "games": 255,
+    "names": [
+      {
+        "id": 6917,
+        "lang": "cn",
+        "display_name": "山崎祐男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25602
+      },
+      {
+        "id": 6921,
+        "lang": "en",
+        "display_name": "Yamazaki Masuo",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25606
+      },
+      {
+        "id": 6919,
+        "lang": "jp",
+        "display_name": "山崎祐男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25604
+      },
+      {
+        "id": 6920,
+        "lang": "ko",
+        "display_name": "야마자키 마스오",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 25605
+      },
+      {
+        "id": 6918,
+        "lang": "tw",
+        "display_name": "山崎祐男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25603
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 5413,
+    "canonical_name": "渡边英夫",
+    "games": 223,
+    "names": [
+      {
+        "id": 6932,
+        "lang": "cn",
+        "display_name": "渡边英夫",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25617
+      },
+      {
+        "id": 6936,
+        "lang": "en",
+        "display_name": "Watanabe Hideo",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25621
+      },
+      {
+        "id": 6934,
+        "lang": "jp",
+        "display_name": "渡辺英夫",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25619
+      },
+      {
+        "id": 6935,
+        "lang": "ko",
+        "display_name": "와타나베 히데오",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 25620
+      },
+      {
+        "id": 6933,
+        "lang": "tw",
+        "display_name": "渡邊英夫",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25618
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 4842,
+    "canonical_name": "本间明男",
+    "games": 203,
+    "names": [
+      {
+        "id": 6967,
+        "lang": "cn",
+        "display_name": "本间明男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25668
+      },
+      {
+        "id": 6971,
+        "lang": "en",
+        "display_name": "Honma Akio",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25672
+      },
+      {
+        "id": 6969,
+        "lang": "jp",
+        "display_name": "本間明男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25670
+      },
+      {
+        "id": 6970,
+        "lang": "ko",
+        "display_name": "혼마 아키오",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 25671
+      },
+      {
+        "id": 6968,
+        "lang": "tw",
+        "display_name": "本間明男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25669
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 4421,
+    "canonical_name": "小杉清",
+    "games": 198,
+    "names": [
+      {
+        "id": 6972,
+        "lang": "cn",
+        "display_name": "小杉清",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25673
+      },
+      {
+        "id": 6976,
+        "lang": "en",
+        "display_name": "Kosugi Kiyoshi",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25677
+      },
+      {
+        "id": 6974,
+        "lang": "jp",
+        "display_name": "小杉清",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25675
+      },
+      {
+        "id": 6975,
+        "lang": "ko",
+        "display_name": "고스기 기요시",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 25676
+      },
+      {
+        "id": 6973,
+        "lang": "tw",
+        "display_name": "小杉清",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 25674
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 3902,
+    "canonical_name": "佐藤馨",
+    "games": 190,
+    "names": [
+      {
+        "id": 7002,
+        "lang": "cn",
+        "display_name": "佐藤馨",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26453
+      },
+      {
+        "id": 7006,
+        "lang": "en",
+        "display_name": "Sato Kaoru",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26457
+      },
+      {
+        "id": 7004,
+        "lang": "jp",
+        "display_name": "佐藤馨",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26455
+      },
+      {
+        "id": 7005,
+        "lang": "ko",
+        "display_name": "사토 가오루",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 26456
+      },
+      {
+        "id": 7003,
+        "lang": "tw",
+        "display_name": "佐藤馨",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26454
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 5877,
+    "canonical_name": "西上好彦",
+    "games": 176,
+    "names": [
+      {
+        "id": 7022,
+        "lang": "cn",
+        "display_name": "西上好彦",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26473
+      },
+      {
+        "id": 7026,
+        "lang": "en",
+        "display_name": "Nishigami Yoshihiko",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26477
+      },
+      {
+        "id": 7024,
+        "lang": "jp",
+        "display_name": "西上好彦",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26475
+      },
+      {
+        "id": 7025,
+        "lang": "ko",
+        "display_name": "니시가미 요시히코",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 26476
+      },
+      {
+        "id": 7023,
+        "lang": "tw",
+        "display_name": "西上好彥",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26474
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6608,
+    "canonical_name": "细川千仞",
+    "games": 150,
+    "names": [
+      {
+        "id": 7867,
+        "lang": "cn",
+        "display_name": "细川千仞",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 35987
+      },
+      {
+        "id": 7871,
+        "lang": "en",
+        "display_name": "Hosokawa Senjin",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 35991
+      },
+      {
+        "id": 7869,
+        "lang": "jp",
+        "display_name": "細川千仭",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 35989
+      },
+      {
+        "id": 7870,
+        "lang": "ko",
+        "display_name": "호소카와 센진",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 35990
+      },
+      {
+        "id": 7868,
+        "lang": "tw",
+        "display_name": "細川千仞",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 35988
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 4587,
+    "canonical_name": "广江胜彦",
+    "games": 137,
+    "names": [
+      {
+        "id": 7052,
+        "lang": "cn",
+        "display_name": "广江胜彦",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27253
+      },
+      {
+        "id": 7056,
+        "lang": "en",
+        "display_name": "Hiroe Katsuhiko",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27257
+      },
+      {
+        "id": 7054,
+        "lang": "jp",
+        "display_name": "広江勝彦",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27255
+      },
+      {
+        "id": 7055,
+        "lang": "ko",
+        "display_name": "히로에 가쓰히코",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 27256
+      },
+      {
+        "id": 7053,
+        "lang": "tw",
+        "display_name": "廣江勝彥",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27254
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6261,
+    "canonical_name": "锅岛昭",
+    "games": 128,
+    "names": [
+      {
+        "id": 7057,
+        "lang": "cn",
+        "display_name": "锅岛昭",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27258
+      },
+      {
+        "id": 7061,
+        "lang": "en",
+        "display_name": "Nabeshima Akira",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27262
+      },
+      {
+        "id": 7059,
+        "lang": "jp",
+        "display_name": "鍋島昭",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27260
+      },
+      {
+        "id": 7060,
+        "lang": "ko",
+        "display_name": "나베시마 아키라",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 27261
+      },
+      {
+        "id": 7058,
+        "lang": "tw",
+        "display_name": "鍋島昭",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27259
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6496,
+    "canonical_name": "高见泽忠夫",
+    "games": 127,
+    "names": [
+      {
+        "id": 7517,
+        "lang": "cn",
+        "display_name": "高见泽忠夫",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 33077
+      },
+      {
+        "id": 7521,
+        "lang": "en",
+        "display_name": "Takamizawa Tadao",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 33081
+      },
+      {
+        "id": 7519,
+        "lang": "jp",
+        "display_name": "高見沢忠夫",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 33079
+      },
+      {
+        "id": 7520,
+        "lang": "ko",
+        "display_name": "다카미자와 다다오",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 33080
+      },
+      {
+        "id": 7518,
+        "lang": "tw",
+        "display_name": "高見澤忠夫",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 33078
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 3900,
+    "canonical_name": "佐藤直男",
+    "games": 118,
+    "names": [
+      {
+        "id": 7037,
+        "lang": "cn",
+        "display_name": "佐藤直男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26488
+      },
+      {
+        "id": 7041,
+        "lang": "en",
+        "display_name": "Sato Sunao",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26492
+      },
+      {
+        "id": 7039,
+        "lang": "jp",
+        "display_name": "佐藤直男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26490
+      },
+      {
+        "id": 7040,
+        "lang": "ko",
+        "display_name": "사토 스나오",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 26491
+      },
+      {
+        "id": 7038,
+        "lang": "tw",
+        "display_name": "佐藤直男",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26489
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6627,
+    "canonical_name": "小野田千代太郎",
+    "games": 118,
+    "names": [
+      {
+        "id": 7852,
+        "lang": "cn",
+        "display_name": "小野田千代太郎",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 35972
+      },
+      {
+        "id": 7856,
+        "lang": "en",
+        "display_name": "Chiyotaro Onoda",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 35976
+      },
+      {
+        "id": 7854,
+        "lang": "jp",
+        "display_name": "小野田千代太郎",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 35974
+      },
+      {
+        "id": 7855,
+        "lang": "ko",
+        "display_name": "오노다 지요타로",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 35975
+      },
+      {
+        "id": 7853,
+        "lang": "tw",
+        "display_name": "小野田千代太郎",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 35973
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 3771,
+    "canonical_name": "下平昭夫",
+    "games": 111,
+    "names": [
+      {
+        "id": 7047,
+        "lang": "cn",
+        "display_name": "下平昭夫",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26498
+      },
+      {
+        "id": 7051,
+        "lang": "en",
+        "display_name": "Shimohira Akio",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26502
+      },
+      {
+        "id": 7049,
+        "lang": "jp",
+        "display_name": "下平昭夫",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26500
+      },
+      {
+        "id": 7050,
+        "lang": "ko",
+        "display_name": "시모히라 아키오",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 26501
+      },
+      {
+        "id": 7048,
+        "lang": "tw",
+        "display_name": "下平昭夫",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 26499
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 4266,
+    "canonical_name": "天宅信雄",
+    "games": 111,
+    "names": [
+      {
+        "id": 7097,
+        "lang": "cn",
+        "display_name": "天宅信雄",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27303
+      },
+      {
+        "id": 7101,
+        "lang": "en",
+        "display_name": "Amayake Nobuo",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27307
+      },
+      {
+        "id": 7099,
+        "lang": "jp",
+        "display_name": "天宅信雄",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27305
+      },
+      {
+        "id": 7100,
+        "lang": "ko",
+        "display_name": "아마야케 노부오",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 27306
+      },
+      {
+        "id": 7098,
+        "lang": "tw",
+        "display_name": "天宅信雄",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27304
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6631,
+    "canonical_name": "酒井利雄",
+    "games": 105,
+    "names": [
+      {
+        "id": 7107,
+        "lang": "cn",
+        "display_name": "酒井利雄",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27313
+      },
+      {
+        "id": 7111,
+        "lang": "en",
+        "display_name": "Sakai Toshio",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27317
+      },
+      {
+        "id": 7109,
+        "lang": "jp",
+        "display_name": "酒井利雄",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27315
+      },
+      {
+        "id": 7110,
+        "lang": "ko",
+        "display_name": "사카이 도시오",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 27316
+      },
+      {
+        "id": 7108,
+        "lang": "tw",
+        "display_name": "酒井利雄",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27314
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6642,
+    "canonical_name": "鲷中新",
+    "games": 105,
+    "names": [
+      {
+        "id": 7112,
+        "lang": "cn",
+        "display_name": "鲷中新",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27318
+      },
+      {
+        "id": 7116,
+        "lang": "en",
+        "display_name": "Tainaka Shin",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27322
+      },
+      {
+        "id": 7114,
+        "lang": "jp",
+        "display_name": "鯛中新",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27320
+      },
+      {
+        "id": 7115,
+        "lang": "ko",
+        "display_name": "다이나카 신",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 27321
+      },
+      {
+        "id": 7113,
+        "lang": "tw",
+        "display_name": "鯛中新",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 27319
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 6635,
+    "canonical_name": "前谷信吾",
+    "games": 84,
+    "names": [
+      {
+        "id": 7122,
+        "lang": "cn",
+        "display_name": "前谷信吾",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 28078
+      },
+      {
+        "id": 7126,
+        "lang": "en",
+        "display_name": "Maetani Shingo",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 28082
+      },
+      {
+        "id": 7124,
+        "lang": "jp",
+        "display_name": "前谷信吾",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 28080
+      },
+      {
+        "id": 7125,
+        "lang": "ko",
+        "display_name": "마에타니 신고",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 28081
+      },
+      {
+        "id": 7123,
+        "lang": "tw",
+        "display_name": "前谷信吾",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 28079
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  },
+  {
+    "id": 4568,
+    "canonical_name": "川村匡迪",
+    "games": 78,
+    "names": [
+      {
+        "id": 7127,
+        "lang": "cn",
+        "display_name": "川村匡迪",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 28083
+      },
+      {
+        "id": 7131,
+        "lang": "en",
+        "display_name": "Kawamura Masamichi",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 28087
+      },
+      {
+        "id": 7129,
+        "lang": "jp",
+        "display_name": "川村匡迪",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 28085
+      },
+      {
+        "id": 7130,
+        "lang": "ko",
+        "display_name": "가와무라 마사미치",
+        "status": "verified",
+        "decision_kind": "generated",
+        "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+        "evidence_id": 28086
+      },
+      {
+        "id": 7128,
+        "lang": "tw",
+        "display_name": "川村匡迪",
+        "status": "verified",
+        "decision_kind": "conventional",
+        "generation_rule_version": "none",
+        "evidence_id": 28084
+      }
+    ],
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ]
+  }
+]

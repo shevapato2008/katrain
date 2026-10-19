@@ -1,0 +1,355 @@
+{
+  "artifact_kind": "ko_name_source_only_research",
+  "queue_player_id": 6045,
+  "queue_order_slots": 12,
+  "selection_scope": "Batch 597 read-only shortlist: KO missing and four physically verified primary rows; this shortlist is not final qualification proof.",
+  "owner_binding": {
+    "status": "placeholder_not_validated_not_eligible",
+    "queue_id_read_only": 6045,
+    "note": "Fresh CN/EN anchor bindings and latest owner preimages are intentionally left for root to bind from the new current capture; this source packet does not qualify the owner."
+  },
+  "canonical_name": "郑铭琦",
+  "available_non_ko_anchor_names": {
+    "cn": "郑铭琦",
+    "en": "Cheng Ming Chi",
+    "jp": "鄭銘琦",
+    "tw": "鄭銘琦",
+    "binding_status": "queue labels only; not current owner preimages"
+  },
+  "status": "pending_no_direct_same_person_Korean_Hangul_name_identified_in_bounded_sources",
+  "scope": {
+    "shortlist_context": "queue selection is prioritization only",
+    "language_scope": "not assigned from name characters alone",
+    "eligibility": "not established by this source-only packet"
+  },
+  "identity": {
+    "capture": [
+      {
+        "player_id": 6045,
+        "canonical_name": "郑铭琦",
+        "published_latin": "Cheng Ming Chi",
+        "source_id": "igorating",
+        "source_language": "ja",
+        "source_role": "language_go",
+        "url": "https://www.igorating.com/players/meiki-tei",
+        "evidence_ids": [
+          57761,
+          57762,
+          57763
+        ],
+        "method": "GET",
+        "http_status": 200,
+        "final_url": "https://www.igorating.com/players/meiki-tei",
+        "content_type": "text/html",
+        "request_started_at_utc": "2026-10-08T23:07:59.726202+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:01.282327+00:00",
+        "body_bytes": 23588,
+        "body_sha256": "49e72524899fd091605dfc1be6ef036f7ccc086cfc287c1cdca8fe5e7ebcb6e2",
+        "body_file": "captures/6045-authority-igorating.body",
+        "publisher": "IgoRating",
+        "body_text_excerpt": "鄭銘琦｜囲碁棋士レーティング（日本） 囲碁棋士レーティング EN レートとは 棋士 女流棋戦 韓国のレートを見る データ更新が遅れています 囲碁棋士レーティング › 棋士を探す › 鄭銘琦 鄭銘琦 鄭銘琦（てい めいき）のレートは1469です。 鄭銘琦 七段 てい めいき 日本棋院 東京 レート 1469 順位 － 1年変動 — 最高レート － 直近10局 ○ 勝ち ● 負け ○ 勝ち ● 負け ● 負け ● 負け ● 負け ● 負け ● 負け ● 負け 10勝18敗 1997年の成績 0勝1敗 1927年以降の成績 10勝18敗 勝率 .357 直近1年対局なし レートは公表された対局結果から計算した値です。黒番の有利さはこの数値に含まれていません。 棋士ランキング 棋士を探す ほかの棋士と比べる 最近の対局 新しい順に最大20局。増減はレートの動きです。 対局日 相手・棋戦 結果 増減 1997年12月16日 山下敬吾 竜星戦 黒番 ● 負け ↓10 1996年11月21日 片岡聡 王座戦 三次予選 黒番 ● 負け ↓5 1994年11月19日 菅野清規 キリンカップ 準決勝 第3将 白番 ● 負け ↓11 1994年10月24日 中小野田智己 キリンカップ 2回戦 第3将 黒番 ● 負け ↓10 1994年10月24日 秋山次郎 キリンカップ 1回戦 第3将 黒番 ● 負け ",
+        "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+        "subject_role": "target_same_person_profile_or_roster",
+        "capture_kind": "authority_page_capture"
+      }
+    ],
+    "conclusion": "Captured Go-source bodies associate the queue Han spelling with the profiled Go player. A Latin form is described only when it appears in that specific captured body; otherwise the queue Latin string remains a search term only. Binding the profile to the current owner remains pending root validation."
+  },
+  "reading": {
+    "capture": [],
+    "published_latin": null,
+    "status": "No Korean reading or Hangul form is established. The Latin string is included solely as the queue-provided exact search query; this packet does not claim it was published as the player preferred spelling.",
+    "note": "No Korean-locale profile capture found for this player in the existing authority capture set.",
+    "queue_latin_query": "Cheng Ming Chi"
+  },
+  "rule": {
+    "capture": {
+      "status": "not_applied_to_this_owner",
+      "source_basis": "normative_zh_ko_v1",
+      "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+      "decision_reference": "docs/resource/kifu-zh-ko-firstbatch-20261009/source-and-rule-decision.json",
+      "decision_sha256": "dca4e25367ede21a4b162e7ebe4551d6a13a499b084322ebcd44c04f43cdee00",
+      "rule_capture_index": "docs/resource/kifu-nikl-cn-ko-research-20261009/capture-index.json",
+      "rule_capture_index_sha256": "38cacb787678bec8e6d051d90c957f1ea203c2bcb6d58b94eec620f780763609",
+      "pinned_full_rule_body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "approved_owner_ids_in_rule_decision": [
+        5498,
+        5739
+      ],
+      "note": "The finite six-map approval is specific to two different owners and their reviewed readings. No spelling/output has been generated or declared verified for this queue owner; any future rule extension is separate.",
+      "normative_source_capture": {
+        "id": "foreign-regulation-full",
+        "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "method": "GET",
+        "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+        "http_status": 200,
+        "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "content_type": "text/html;charset=UTF-8",
+        "body_bytes": 456809,
+        "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+        "body_file": "captures/foreign-regulation-full.html"
+      },
+      "rule_excerpt_locator": "Foreign-language table 5 at saved original HTML line 1573; notation note at line 1578. The six approved mappings apply only to owners 5498 and 5739 in source-and-rule-decision.json; no mapping is applied here.",
+      "original_rule_excerpt": "The saved NIKL full-body response is the normative reference. This packet intentionally records no generated reading/output for this owner."
+    }
+  },
+  "contrary_checks": {
+    "saved_roster_scans": [
+      {
+        "publisher": "Korean Baduk Association",
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+        "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+        "body_bytes": 80097,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+        "source_role": "official_China_player_roster_bounded_literal_scan",
+        "literal_scan_terms": [
+          "郑铭琦",
+          "Cheng Ming Chi"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 郑铭琦; Cheng Ming Chi. Exact matching strings present: []."
+      },
+      {
+        "publisher": "TVBaduk",
+        "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+        "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+        "body_bytes": 119151,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+        "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+        "literal_scan_terms": [
+          "郑铭琦",
+          "Cheng Ming Chi"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 郑铭琦; Cheng Ming Chi. Exact matching strings present: []."
+      },
+      {
+        "publisher": "Daum Cafe community roster (2012)",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+        "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "body_bytes": 153004,
+        "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+        "source_role": "community_reference_only_not_official",
+        "literal_scan_terms": [
+          "郑铭琦",
+          "Cheng Ming Chi"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 郑铭琦; Cheng Ming Chi. Exact matching strings present: []."
+      }
+    ],
+    "web_search_captures": [
+      {
+        "player_id": 6045,
+        "engine": "naver",
+        "query": "\"郑铭琦\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22%E9%83%91%E9%93%AD%E7%90%A6%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22%E9%83%91%E9%93%AD%E7%90%A6%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:06.246800+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:08.373823+00:00",
+        "body_bytes": 119231,
+        "body_sha256": "1dd033ceda11fdd9a112ae1a4c827abe8ec6ed68cc8673f965ffcc99e76f0c7f",
+        "body_file": "captures/6045-search-naver-han.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "\"郑铭琦\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"郑铭琦\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"郑铭琦\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 AI 브리핑 101바둑망 www.101weiqi.com 새 창 열림 AI 출처 정보 101바둑망은 바둑 학습과 문제 풀이를 제공하는 온라인 커뮤니티입니다. 매일 여덟 개의 바둑 문제와 지식 포인트, 최근 활동·바둑 교실 등을 통해 사용자들이 실력을 향상하고 토론할 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 Q-35477 - 문제집 새 창 열림 출처： · 诘棋名家专著—— 郑铭琦 棋道附册9610及9804 · 其他日本詰棋名家的传世精品—— 郑铭琦 棋道9610、9804附册无答案缺1 ; 보이기댓글 목록( : 21), 내 댓글 : 注册三天之后, 以及在실력 테스트中有通关记录的棋友才能发言。 새 창 열림 Q-35497 - 문제집 새 창 열림 출처： · 诘棋名家专著—— 郑铭琦 棋道附册9610及9804 · 其他日本詰棋名家的传世精品—— 郑铭琦 棋道9610、9804附册无答案缺1 ; 보이기댓글 목록( : 15), 내 댓글 : 注册三天之后, 以及在실력 테스트中有通关记录的棋友才能发言。 관련문서 더보기 브라우저를 업데이트하세요 최신 기술을 품은 네이버 웨일에서 빠른 인터넷을 만나보세요 웨일 다운로드 7일 내 다시보지 않기 배너 닫기 이전 1 페이지 2 페이지 3 페이지 다음 지나고 나면 그리울, 오늘의 가을 기록 클립에 올리면 매월 최대 12만 8천원 적립 참여 누르고 쇼핑하면 최대 3만3천P 추가 적립! 적립적인 멤버십 전용카드 네이버 현대카드 Ed.3 끝까지 끝내주는 AI, 네이버 AI탭 검색이 대화가 되다 이전 정보를 가져오는 중입니다.",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 6045,
+        "engine": "naver",
+        "query": "\"Cheng Ming Chi\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22Cheng%20Ming%20Chi%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22Cheng%20Ming%20Chi%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:06.246941+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:08.779905+00:00",
+        "body_bytes": 546347,
+        "body_sha256": "a31571c6ddd10dccdb5de5cbb4bf327625bae53a576613f7c6d1eb1926227fd6",
+        "body_file": "captures/6045-search-naver-latin.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "\"Cheng Ming Chi\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Cheng Ming Chi\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Cheng Ming Chi\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 Go Ratings www.goratings.org 새 창 열림 AI 출처 정보 Go Ratings는 전 세계 바둑 기사들의 Elo 레이팅 순위를 제공하는 사이트입니다. 최신 경기 기록과 통계, 전체 선수 수 등을 확인할 수 있어 바둑 실력 비교에 활용됩니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 Go Ratings 새 창 열림 Statistics ; Games : 171969, Players : 2430, Most Recent Game : 2026-10-07 새 창 열림 Cheng Ming Huang 새 창 열림 Wins, 23 ; Losses, 56 ; Total, 79 ; Link, https://www.nihonkiin.or.... ; Link, http://senseis.xmp.net/?T... ; Date of Birth, 1963-06-27 관련문서 더보기 eduin.net eduin.net › hn 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 한 자(漢字) 새 창 열림 '漢字'를 엔글로 'hanzi'로 표기 - 한글식으로 읽으면 '한저(쩌)'처럼 된다 - 하고 한글로는 [한자]로 표기하는거에 뭔가 좀 미흡하다고 여겨져 요모조모 살펴보니 기존의 한자 표기와 현지 어에 문외한인 필자가 미처 파악치못한 지식으로 어긋나거나 갈피를 못잡는 둥 적잖이 당혹스러운 경우가 허다했다. 그래서 필자는 기존 한글에 점(dot)이 가미된 겹",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      }
+    ],
+    "coverage_note": "Exact Han and exact published Latin searches were captured where available. HTTP 403 is preserved as unavailable; an alternative Bing capture is included when available. Results are bounded and do not support global absence. Similar names were not accepted without a same-person Go identity bridge."
+  },
+  "source_reading": {
+    "queue_latin_query": "Cheng Ming Chi",
+    "queue_string_source": "read-only shortlist row, not current source/owner binding",
+    "observed_romanization": null,
+    "interpretation": "No Korean spelling or reading generated or inferred. The literal queue Latin string is used only as the second search query."
+  },
+  "identity_bridges": [
+    {
+      "player_id": 6045,
+      "canonical_name": "郑铭琦",
+      "published_latin": "Cheng Ming Chi",
+      "source_id": "igorating",
+      "source_language": "ja",
+      "source_role": "language_go",
+      "url": "https://www.igorating.com/players/meiki-tei",
+      "evidence_ids": [
+        57761,
+        57762,
+        57763
+      ],
+      "method": "GET",
+      "http_status": 200,
+      "final_url": "https://www.igorating.com/players/meiki-tei",
+      "content_type": "text/html",
+      "request_started_at_utc": "2026-10-08T23:07:59.726202+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:01.282327+00:00",
+      "body_bytes": 23588,
+      "body_sha256": "49e72524899fd091605dfc1be6ef036f7ccc086cfc287c1cdca8fe5e7ebcb6e2",
+      "body_file": "captures/6045-authority-igorating.body",
+      "publisher": "IgoRating",
+      "body_text_excerpt": "鄭銘琦｜囲碁棋士レーティング（日本） 囲碁棋士レーティング EN レートとは 棋士 女流棋戦 韓国のレートを見る データ更新が遅れています 囲碁棋士レーティング › 棋士を探す › 鄭銘琦 鄭銘琦 鄭銘琦（てい めいき）のレートは1469です。 鄭銘琦 七段 てい めいき 日本棋院 東京 レート 1469 順位 － 1年変動 — 最高レート － 直近10局 ○ 勝ち ● 負け ○ 勝ち ● 負け ● 負け ● 負け ● 負け ● 負け ● 負け ● 負け 10勝18敗 1997年の成績 0勝1敗 1927年以降の成績 10勝18敗 勝率 .357 直近1年対局なし レートは公表された対局結果から計算した値です。黒番の有利さはこの数値に含まれていません。 棋士ランキング 棋士を探す ほかの棋士と比べる 最近の対局 新しい順に最大20局。増減はレートの動きです。 対局日 相手・棋戦 結果 増減 1997年12月16日 山下敬吾 竜星戦 黒番 ● 負け ↓10 1996年11月21日 片岡聡 王座戦 三次予選 黒番 ● 負け ↓5 1994年11月19日 菅野清規 キリンカップ 準決勝 第3将 白番 ● 負け ↓11 1994年10月24日 中小野田智己 キリンカップ 2回戦 第3将 黒番 ● 負け ↓10 1994年10月24日 秋山次郎 キリンカップ 1回戦 第3将 黒番 ● 負け ",
+      "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+      "subject_role": "target_same_person_profile_or_roster",
+      "capture_kind": "authority_page_capture"
+    }
+  ],
+  "searches": [
+    {
+      "player_id": 6045,
+      "engine": "naver",
+      "query": "\"郑铭琦\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22%E9%83%91%E9%93%AD%E7%90%A6%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22%E9%83%91%E9%93%AD%E7%90%A6%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:06.246800+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:08.373823+00:00",
+      "body_bytes": 119231,
+      "body_sha256": "1dd033ceda11fdd9a112ae1a4c827abe8ec6ed68cc8673f965ffcc99e76f0c7f",
+      "body_file": "captures/6045-search-naver-han.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "\"郑铭琦\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"郑铭琦\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"郑铭琦\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 AI 브리핑 101바둑망 www.101weiqi.com 새 창 열림 AI 출처 정보 101바둑망은 바둑 학습과 문제 풀이를 제공하는 온라인 커뮤니티입니다. 매일 여덟 개의 바둑 문제와 지식 포인트, 최근 활동·바둑 교실 등을 통해 사용자들이 실력을 향상하고 토론할 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 Q-35477 - 문제집 새 창 열림 출처： · 诘棋名家专著—— 郑铭琦 棋道附册9610及9804 · 其他日本詰棋名家的传世精品—— 郑铭琦 棋道9610、9804附册无答案缺1 ; 보이기댓글 목록( : 21), 내 댓글 : 注册三天之后, 以及在실력 테스트中有通关记录的棋友才能发言。 새 창 열림 Q-35497 - 문제집 새 창 열림 출처： · 诘棋名家专著—— 郑铭琦 棋道附册9610及9804 · 其他日本詰棋名家的传世精品—— 郑铭琦 棋道9610、9804附册无答案缺1 ; 보이기댓글 목록( : 15), 내 댓글 : 注册三天之后, 以及在실력 테스트中有通关记录的棋友才能发言。 관련문서 더보기 브라우저를 업데이트하세요 최신 기술을 품은 네이버 웨일에서 빠른 인터넷을 만나보세요 웨일 다운로드 7일 내 다시보지 않기 배너 닫기 이전 1 페이지 2 페이지 3 페이지 다음 지나고 나면 그리울, 오늘의 가을 기록 클립에 올리면 매월 최대 12만 8천원 적립 참여 누르고 쇼핑하면 최대 3만3천P 추가 적립! 적립적인 멤버십 전용카드 네이버 현대카드 Ed.3 끝까지 끝내주는 AI, 네이버 AI탭 검색이 대화가 되다 이전 정보를 가져오는 중입니다.",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Cheng Ming Chi",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 6045,
+      "engine": "naver",
+      "query": "\"Cheng Ming Chi\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22Cheng%20Ming%20Chi%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22Cheng%20Ming%20Chi%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:06.246941+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:08.779905+00:00",
+      "body_bytes": 546347,
+      "body_sha256": "a31571c6ddd10dccdb5de5cbb4bf327625bae53a576613f7c6d1eb1926227fd6",
+      "body_file": "captures/6045-search-naver-latin.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "\"Cheng Ming Chi\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Cheng Ming Chi\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Cheng Ming Chi\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 Go Ratings www.goratings.org 새 창 열림 AI 출처 정보 Go Ratings는 전 세계 바둑 기사들의 Elo 레이팅 순위를 제공하는 사이트입니다. 최신 경기 기록과 통계, 전체 선수 수 등을 확인할 수 있어 바둑 실력 비교에 활용됩니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 Go Ratings 새 창 열림 Statistics ; Games : 171969, Players : 2430, Most Recent Game : 2026-10-07 새 창 열림 Cheng Ming Huang 새 창 열림 Wins, 23 ; Losses, 56 ; Total, 79 ; Link, https://www.nihonkiin.or.... ; Link, http://senseis.xmp.net/?T... ; Date of Birth, 1963-06-27 관련문서 더보기 eduin.net eduin.net › hn 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 한 자(漢字) 새 창 열림 '漢字'를 엔글로 'hanzi'로 표기 - 한글식으로 읽으면 '한저(쩌)'처럼 된다 - 하고 한글로는 [한자]로 표기하는거에 뭔가 좀 미흡하다고 여겨져 요모조모 살펴보니 기존의 한자 표기와 현지 어에 문외한인 필자가 미처 파악치못한 지식으로 어긋나거나 갈피를 못잡는 둥 적잖이 당혹스러운 경우가 허다했다. 그래서 필자는 기존 한글에 점(dot)이 가미된 겹",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Cheng Ming Chi",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    }
+  ],
+  "additional_bounded_cross_checks": [
+    {
+      "publisher": "Korean Baduk Association",
+      "url": "https://www.baduk.or.kr/record/player_in.asp",
+      "method": "POST",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+      "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+      "body_bytes": 80097,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+      "source_role": "official_China_player_roster_bounded_literal_scan",
+      "literal_scan_terms": [
+        "郑铭琦",
+        "Cheng Ming Chi"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 郑铭琦; Cheng Ming Chi. Exact matching strings present: []."
+    },
+    {
+      "publisher": "TVBaduk",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "body_bytes": 119151,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+      "literal_scan_terms": [
+        "郑铭琦",
+        "Cheng Ming Chi"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 郑铭琦; Cheng Ming Chi. Exact matching strings present: []."
+    },
+    {
+      "publisher": "Daum Cafe community roster (2012)",
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "body_bytes": 153004,
+      "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "source_role": "community_reference_only_not_official",
+      "literal_scan_terms": [
+        "郑铭琦",
+        "Cheng Ming Chi"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 郑铭琦; Cheng Ming Chi. Exact matching strings present: []."
+    }
+  ],
+  "conclusion": "Source-only research packet. No Korean name candidate, reviewer signature, eligibility claim, or target preimage validation.",
+  "review_status": "source assembly only; independent candidate review/signature not performed"
+}

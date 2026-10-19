@@ -13,9 +13,13 @@ export interface GeometryLockResult {
 }
 
 export type GeometryPhase =
-  | 'disabled' | 'required' | 'waiting_empty' | 'dark_reference'
+  | 'disabled' | 'required' | 'waiting_empty' | 'waiting_stable' | 'converging_exposure' | 'dark_reference'
   | 'flashing_corners' | 'verifying' | 'building_baseline'
+  | 'obstructed' | 'lighting_paused' | 'lighting_rechecking'
   | 'ready' | 'degraded' | 'failed' | 'cancelled';
+
+export type GeometryPauseReason =
+  | 'board_motion' | 'board_occluded' | 'frame_overexposed' | 'frame_underexposed';
 
 export interface GeometryPoint {
   row: number;
@@ -46,13 +50,50 @@ export interface GeometryLayout {
   points: [number, number][][];
 }
 
+export type LightingReason = 'frame_overexposed' | 'frame_underexposed';
+
+export interface GeometryExposureMetrics {
+  median: number;
+  clip_frac: number;
+  shadow_frac: number;
+  reason?: LightingReason | null;
+  confirmed?: boolean;
+}
+
+export interface GeometryAnchorAttempt {
+  row: number;
+  col: number;
+  color: string;
+  level: number;
+  ok?: boolean;
+  peak?: number | null;
+  area?: number | null;
+  margin?: number | null;
+  reason?: string | null;
+  roi_fallback?: boolean;
+}
+
+export interface GeometryMetrics {
+  inlier_count?: number | null;
+  rms_residual?: number | null;
+  max_residual?: number | null;
+  exposure?: GeometryExposureMetrics | null;
+  attempts?: GeometryAnchorAttempt[];
+  relocated?: number;
+  shift_cells?: number;
+  drift_response?: number;
+}
+
 export interface GeometryStatus {
   phase: GeometryPhase;
+  /** 失败或取消前的真实阶段；旧服务端可能不提供。 */
+  stopped_phase?: GeometryPhase | null;
   session_calibrated: boolean;
   last_valid: boolean;
   progress?: { current: number; total: number };
   error?: string | null;
-  metrics?: Record<string, number | null>;
+  pause_reason?: GeometryPauseReason | null;
+  metrics?: GeometryMetrics;
   geometry_revision?: number;
   detected_anchors?: GeometryAnchor[];
   /** 最近一次外框重定位为什么没成(`no_board_detected` / `orientation_ambiguous` / `moved_too_far` / `delivery_failed` …);成了或没试过为 null。 */
@@ -73,7 +114,16 @@ const json = async <T>(res: Response): Promise<T> => {
   return res.json();
 };
 
+export interface GeometryPreflightResult {
+  ready: boolean;
+  reason?: string;
+  status: GeometryStatus;
+}
+
 export const GeometryAPI = {
+  preflight: async (): Promise<GeometryPreflightResult> => json(await fetch(`${API_BASE}/preflight`, {
+    method: 'POST', signal: AbortSignal.timeout(15000),
+  })),
   lock: async (): Promise<GeometryLockResult> => {
     const res = await fetch(`${API_BASE}/lock`, { method: 'POST' });
     if (!res.ok) throw new Error(`geometry/lock failed ${res.status}`);
@@ -97,6 +147,7 @@ export const GeometryAPI = {
   })),
   confirmExisting: async (): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/confirm-existing`, { method: 'POST' })),
   cancel: async (): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/cancel`, { method: 'POST' })),
+  recheckLighting: async (): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/recheck-lighting`, { method: 'POST' })),
   layout: async (): Promise<GeometryLayout> => json(await fetch(`${API_BASE}/layout`)),
   // 自己读 detail:共享的 json() 失败时只给状态码,而屏上要靠 detail 分辨「找不到外框」与其它失败。
   relocate: async (): Promise<GeometryStatus> => {

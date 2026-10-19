@@ -1,0 +1,29 @@
+{
+  "CN_to_TW_count": 1,
+  "JP_to_CN_count": 19,
+  "approved_name_snapshot_sha256": "7266bad14767a04c3a3158be289ba796dd49c6d63c14cd586da98fa7debf5207",
+  "bundle_sha256": "ebc1a45c8aad3ffcc0fafa05df07861918019fa4b8c8396dc5fbb278fbfb25f1",
+  "catalog_sha256": "83512f432dd3bdd3a61132a0272f71348d6d1ff00226715785fb585151d4aad7",
+  "context_refreshed_at": "2026-10-08T18:11:08.276976+00:00",
+  "distinct_players": 20,
+  "environment": "PROD",
+  "inner_batches": 2,
+  "inner_rules": 2,
+  "inventory_sha256": "e038934b83c2733b02b6f3ab9b1e1da3e435eccc5ebf3d4c0d05080ce94e390a",
+  "name_writes": 20,
+  "registry_sha256": "e82b7fce9527f199005bba0b2aabf84f230018a8cbbaad64fe5a0a63af0b8ee9",
+  "status": "root_dependencies_signed_outer_execution_unsigned",
+  "validation": {
+    "approved": 20,
+    "candidate_count": 20,
+    "errors": [],
+    "inventory_sha256": "e038934b83c2733b02b6f3ab9b1e1da3e435eccc5ebf3d4c0d05080ce94e390a",
+    "member_count": 20,
+    "missing": 0,
+    "pending": 0,
+    "ready": true,
+    "rejected": 0,
+    "write_errors": [],
+    "write_ready": true
+  }
+}

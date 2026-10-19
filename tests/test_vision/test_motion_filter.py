@@ -1,5 +1,7 @@
 import numpy as np
 import pytest
+import cv2
+from pathlib import Path
 from katrain.vision.motion_filter import MotionFilter
 
 
@@ -141,3 +143,36 @@ class TestMotionFilter:
         assert stable is True
         assert roi_ratio is None
         assert full_ratio == pytest.approx(0.0)
+
+
+def test_moving_body_shadow_keeps_board_motion_stable():
+    folder = Path(__file__).parents[1] / "data"
+    before = cv2.imread(str(folder / "rk3562_shadow_before_20261013.jpg"))
+    shaded = cv2.imread(str(folder / "rk3562_shadow_during_20261013.jpg"))
+    from katrain.vision.calibration_stability import find_visible_grid
+
+    quad = find_visible_grid(before)
+    assert quad is not None
+    roi = np.zeros(before.shape[:2], np.uint8)
+    cv2.fillConvexPoly(roi, quad.astype(np.int32), 1)
+    raw = MotionFilter(change_ratio_threshold=0.035)
+    raw.is_stable_with_regions(before, roi.astype(bool))
+    assert raw.is_stable_with_regions(shaded, roi.astype(bool))[0] is False
+
+    robust = MotionFilter(change_ratio_threshold=0.035, pixel_diff_threshold=13, illumination_invariant=True)
+    robust.is_stable_with_regions(before, roi.astype(bool))
+    stable, roi_ratio, _ = robust.is_stable_with_regions(shaded, roi.astype(bool))
+    assert stable is True
+    assert roi_ratio < 0.035
+
+
+def test_illumination_invariant_filter_still_rejects_hand_and_no_light():
+    folder = Path(__file__).parents[1] / "data"
+    clear = cv2.imread(str(folder / "rk3562_hand_removed_crop_20261013.jpg"))
+    hand = cv2.imread(str(folder / "rk3562_hand_present_crop_20261013.jpg"))
+    robust = MotionFilter(illumination_invariant=True, pixel_diff_threshold=13)
+    robust.is_stable(clear)
+    assert robust.is_stable(hand) is False
+    robust.reset()
+    robust.is_stable(clear)
+    assert robust.is_stable(np.zeros_like(clear)) is False

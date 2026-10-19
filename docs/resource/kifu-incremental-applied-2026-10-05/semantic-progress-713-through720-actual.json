@@ -1,0 +1,391 @@
+{
+  "baseline_full_scan_batch_id": 712,
+  "batches": [
+    {
+      "batch_id": 713,
+      "coverage_metric_delta": {
+        "E5": 0,
+        "P5": 0,
+        "fixedwide": 0,
+        "strictcomplete": 0
+      },
+      "environments": {
+        "PROD": {
+          "all_distinct_scope_games": 4,
+          "corrected_name_cells": 14,
+          "corrected_title_owners": 4,
+          "cumulative_distinct_public_games": 4,
+          "new_distinct_public_games": 4,
+          "packet_sha256": "628106db0f43e435dda37e961aa6b7d562105ff0c344c07fdd487b8cadcf57eb",
+          "public_album_ids_sha256": "2d09ad8719398932a45c2f60ea8e86d5292acad1d85594f357330e29a21496bf",
+          "public_distinct_scope_games": 4,
+          "scope_extract_member": "batch-713/PROD/public-scope-extract.json",
+          "source_manifest_sha256": "d2f2db67d6a7b8ab78758d467f463c270d9d75e70495d5d4f2fb5c55b13089b7",
+          "verified_at": "2026-10-11T06:12:58.009257+00:00",
+          "verify_receipt_sha256": "b2298c5f5366aed19899a3aae2c98746e1f44843a97dbaebcd6c14da9579da1c"
+        },
+        "TEST": {
+          "all_distinct_scope_games": 4,
+          "corrected_name_cells": 14,
+          "corrected_title_owners": 4,
+          "cumulative_distinct_public_games": 4,
+          "new_distinct_public_games": 4,
+          "packet_sha256": "b40cc3f706f1a7ae7fac66994331b74a1c1cd80d1e5b6e1b5a1a3ec5ad43f002",
+          "public_album_ids_sha256": "2d09ad8719398932a45c2f60ea8e86d5292acad1d85594f357330e29a21496bf",
+          "public_distinct_scope_games": 4,
+          "scope_extract_member": "batch-713/TEST/public-scope-extract.json",
+          "source_manifest_sha256": "c22bcebf911d80364dd0fbe46b39539d8fa7cdb8b03995a9eab461e11d85551e",
+          "verified_at": "2026-10-11T06:06:17.777083+00:00",
+          "verify_receipt_sha256": "cfef649e4b388ec1cf91a09b6713d316ac06054d45ca8298aa28195bd98a118e"
+        }
+      },
+      "status": "both_environments_applied_and_verified"
+    },
+    {
+      "batch_id": 714,
+      "coverage_metric_delta": {
+        "E5": 0,
+        "P5": 0,
+        "fixedwide": 0,
+        "strictcomplete": 0
+      },
+      "environments": {
+        "PROD": {
+          "all_distinct_scope_games": 345,
+          "corrected_name_cells": 52,
+          "corrected_title_owners": 20,
+          "cumulative_distinct_public_games": 349,
+          "new_distinct_public_games": 345,
+          "packet_sha256": "88d3f03d78e77109172b9cc7da69f39f2957949cd7dee3f6b62dcf607865808c",
+          "public_album_ids_sha256": "3bceebcd4b2426b2f781d8863460a94697c8d2ea3d1d01a024c49f3c6af8286f",
+          "public_distinct_scope_games": 345,
+          "scope_extract_member": "batch-714/PROD/public-scope-extract.json",
+          "source_manifest_sha256": "5c284b948c44113cf02150f024130189c004cfb09eb4ccfb76745c475c295053",
+          "verified_at": "2026-10-11T06:27:28.818072+00:00",
+          "verify_receipt_sha256": "d543216013ebd3d045471e91576b85eca2778537cb11481cfb5d4c37649d9c55"
+        },
+        "TEST": {
+          "all_distinct_scope_games": 345,
+          "corrected_name_cells": 52,
+          "corrected_title_owners": 20,
+          "cumulative_distinct_public_games": 349,
+          "new_distinct_public_games": 345,
+          "packet_sha256": "d8d507d21fd495b29a8a547f4bc59e0583f986c79102ae937c8b595f80bd97ad",
+          "public_album_ids_sha256": "3bceebcd4b2426b2f781d8863460a94697c8d2ea3d1d01a024c49f3c6af8286f",
+          "public_distinct_scope_games": 345,
+          "scope_extract_member": "batch-714/TEST/public-scope-extract.json",
+          "source_manifest_sha256": "adae5c06f33f5b0606789b1806920e5501e8f7185a67c9cfc50e8bd2159318ac",
+          "verified_at": "2026-10-11T06:23:21.113694+00:00",
+          "verify_receipt_sha256": "f33e7b661d731a49a2b5a23b85be2abe3fbd2145467efaa35033b2905195306f"
+        }
+      },
+      "status": "both_environments_applied_and_verified"
+    },
+    {
+      "batch_id": 715,
+      "coverage_metric_delta": {
+        "E5": 0,
+        "P5": 0,
+        "fixedwide": 0,
+        "strictcomplete": 0
+      },
+      "environments": {
+        "PROD": {
+          "all_distinct_scope_games": 439,
+          "corrected_name_cells": 276,
+          "corrected_title_owners": 100,
+          "cumulative_distinct_public_games": 786,
+          "new_distinct_public_games": 437,
+          "packet_sha256": "e607c37b0f2af98491731dd91c523972f65efd344b6448c063746563de64ca9b",
+          "public_album_ids_sha256": "eef76f5a86a5f7f8b918751f749dd309e02d4c34096e7e9c75a1c2f55c9ced4d",
+          "public_distinct_scope_games": 437,
+          "scope_extract_member": "batch-715/PROD/public-scope-extract.json",
+          "source_manifest_sha256": "58e816bea27a2083662ac8695a9df9025364f1d2ae015400750271e394e8e72c",
+          "verified_at": "2026-10-11T07:21:28.868260+00:00",
+          "verify_receipt_sha256": "e4ca074eb52e3f6a75b932a9add397acd81e3eef1daf45fa8f5b137732fa39b8"
+        },
+        "TEST": {
+          "all_distinct_scope_games": 439,
+          "corrected_name_cells": 276,
+          "corrected_title_owners": 100,
+          "cumulative_distinct_public_games": 786,
+          "new_distinct_public_games": 437,
+          "packet_sha256": "2507588dccd5e31c2c836785887a98460071caf748f4d0eeb36bd9771d28835e",
+          "public_album_ids_sha256": "eef76f5a86a5f7f8b918751f749dd309e02d4c34096e7e9c75a1c2f55c9ced4d",
+          "public_distinct_scope_games": 437,
+          "scope_extract_member": "batch-715/TEST/public-scope-extract.json",
+          "source_manifest_sha256": "8788105f8c78cf88eaed050d63eb64285baade85898279cbf199906ee27e85bd",
+          "verified_at": "2026-10-11T07:13:32.828201+00:00",
+          "verify_receipt_sha256": "bfff6d5eb862630f9380e90325008dcf94fac18eef6ebdd88ff54ffb7c83fcea"
+        }
+      },
+      "status": "both_environments_applied_and_verified"
+    },
+    {
+      "batch_id": 716,
+      "coverage_metric_delta": {
+        "E5": 0,
+        "P5": 0,
+        "fixedwide": 0,
+        "strictcomplete": 0
+      },
+      "environments": {
+        "PROD": {
+          "all_distinct_scope_games": 1042,
+          "corrected_name_cells": 480,
+          "corrected_title_owners": 200,
+          "cumulative_distinct_public_games": 1826,
+          "new_distinct_public_games": 1040,
+          "packet_sha256": "39c7c2d7cb26858012a3fc64027411cc315e85c24299408be2676c9f148ee3bc",
+          "public_album_ids_sha256": "bfdfd88a22769f2666b2e85f763cdf1e16f029d7ab01ac615c0f7e7eeece82e6",
+          "public_distinct_scope_games": 1040,
+          "scope_extract_member": "batch-716/PROD/public-scope-extract.json",
+          "source_manifest_sha256": "c839d373527f8cdd2da17fbf48c12833ca7c549154a38901c6cedb5af4d4cfca",
+          "verified_at": "2026-10-11T07:27:05.802163+00:00",
+          "verify_receipt_sha256": "43c6a72c2dc3dfeef97994ba63b4c306f3d8d15b1c0115df2b538925a7f5d52f"
+        },
+        "TEST": {
+          "all_distinct_scope_games": 1042,
+          "corrected_name_cells": 480,
+          "corrected_title_owners": 200,
+          "cumulative_distinct_public_games": 1826,
+          "new_distinct_public_games": 1040,
+          "packet_sha256": "404437857d290260ff474adf240b6cb768a27b3b5313b9af3785412451f488ca",
+          "public_album_ids_sha256": "bfdfd88a22769f2666b2e85f763cdf1e16f029d7ab01ac615c0f7e7eeece82e6",
+          "public_distinct_scope_games": 1040,
+          "scope_extract_member": "batch-716/TEST/public-scope-extract.json",
+          "source_manifest_sha256": "8b74ffb4f25d2ec8daf454ed59024c1fba18aa8a00bb6f492e2450937d40ef7f",
+          "verified_at": "2026-10-11T07:24:57.075147+00:00",
+          "verify_receipt_sha256": "31c75ad42847f00487063cf020201a14e4bfe605b597c1ffa742bb1824cf1a19"
+        }
+      },
+      "status": "both_environments_applied_and_verified"
+    },
+    {
+      "batch_id": 717,
+      "coverage_metric_delta": {
+        "E5": 0,
+        "P5": 0,
+        "fixedwide": 0,
+        "strictcomplete": 0
+      },
+      "environments": {
+        "PROD": {
+          "all_distinct_scope_games": 93,
+          "corrected_name_cells": 254,
+          "corrected_title_owners": 93,
+          "cumulative_distinct_public_games": 1919,
+          "new_distinct_public_games": 93,
+          "packet_sha256": "be2d4cf617df8f914eccc8f7e151c54604710a6bbc7da3e45a2e383cf1eb4e1b",
+          "public_album_ids_sha256": "f68a8e309ae0141dc7b161d5699dbb64fb1cd8fef966ac559e2ae3b3f9e3c4a8",
+          "public_distinct_scope_games": 93,
+          "scope_extract_member": "batch-717/PROD/public-scope-extract.json",
+          "source_manifest_sha256": "5484aee5eb62d732527dfbac06e94b01df8317ef02f7ba8203be42b17ed0eb14",
+          "verified_at": "2026-10-11T07:30:32.853546+00:00",
+          "verify_receipt_sha256": "174893e419c5f6cd0f09e198464e8a9b0bdf781c4da2ea619ba2419d3d30855c"
+        },
+        "TEST": {
+          "all_distinct_scope_games": 93,
+          "corrected_name_cells": 254,
+          "corrected_title_owners": 93,
+          "cumulative_distinct_public_games": 1919,
+          "new_distinct_public_games": 93,
+          "packet_sha256": "e8d8fc80d1fb47d01c0c1b6adb0ce9ce1c221d987e6025a11bd9351cfb96709e",
+          "public_album_ids_sha256": "f68a8e309ae0141dc7b161d5699dbb64fb1cd8fef966ac559e2ae3b3f9e3c4a8",
+          "public_distinct_scope_games": 93,
+          "scope_extract_member": "batch-717/TEST/public-scope-extract.json",
+          "source_manifest_sha256": "6197109b1771204d22fa0434246f3e15cda007d2cb7c3817345d7c9d1e79e4c9",
+          "verified_at": "2026-10-11T07:28:47.017717+00:00",
+          "verify_receipt_sha256": "b418c5b2d01115849f87e62365a163747c69cbd8c50dcc74005906f928363675"
+        }
+      },
+      "status": "both_environments_applied_and_verified"
+    },
+    {
+      "batch_id": 718,
+      "coverage_metric_delta": {
+        "E5": 0,
+        "P5": 0,
+        "fixedwide": 0,
+        "strictcomplete": 0
+      },
+      "environments": {
+        "PROD": {
+          "all_distinct_scope_games": 513,
+          "corrected_name_cells": 456,
+          "corrected_title_owners": 199,
+          "cumulative_distinct_public_games": 2431,
+          "new_distinct_public_games": 512,
+          "packet_sha256": "84d2b5d0f8ad68b55328033f5f374f763361f890ac0a389b1ea707497f66d65a",
+          "public_album_ids_sha256": "c78a782fe5cf751171c0470850954ce5c283b989172683302817b342819edc2b",
+          "public_distinct_scope_games": 512,
+          "scope_extract_member": "batch-718/PROD/public-scope-extract.json",
+          "source_manifest_sha256": "04aa978aef1899ca027f390f202cd81bf3b1d651b636080898ad84f35e56e9b0",
+          "verified_at": "2026-10-11T07:35:02.351215+00:00",
+          "verify_receipt_sha256": "1fed21a1e9a3be2d0550ab7b2ec394c0a569377b33dc1de95dcfc41d6be4644a"
+        },
+        "TEST": {
+          "all_distinct_scope_games": 513,
+          "corrected_name_cells": 456,
+          "corrected_title_owners": 199,
+          "cumulative_distinct_public_games": 2431,
+          "new_distinct_public_games": 512,
+          "packet_sha256": "149a6abae9d3b4af37b4637b6fd27419bd3391f8f4ddc7a04ff089465a0dc954",
+          "public_album_ids_sha256": "c78a782fe5cf751171c0470850954ce5c283b989172683302817b342819edc2b",
+          "public_distinct_scope_games": 512,
+          "scope_extract_member": "batch-718/TEST/public-scope-extract.json",
+          "source_manifest_sha256": "15033c5815d02bf0196121d9e34ee3c32b47489dce39a508c3cfa5121203ae6a",
+          "verified_at": "2026-10-11T07:32:57.443653+00:00",
+          "verify_receipt_sha256": "750dc61382e89d08b7e155483cdd67efac2d1f9407139dc49d1797f52be33624"
+        }
+      },
+      "status": "both_environments_applied_and_verified"
+    },
+    {
+      "batch_id": 719,
+      "coverage_metric_delta": {
+        "E5": 0,
+        "P5": 0,
+        "fixedwide": 0,
+        "strictcomplete": 0
+      },
+      "environments": {
+        "PROD": {
+          "all_distinct_scope_games": 243,
+          "corrected_name_cells": 446,
+          "corrected_title_owners": 200,
+          "cumulative_distinct_public_games": 2674,
+          "new_distinct_public_games": 243,
+          "packet_sha256": "f08ef48af6ef9b79892e3808fb64be09af1086f893c594577a8201e053da07a9",
+          "public_album_ids_sha256": "d78de5fdf74482074f378113ca47c866dd980df428b50a3ad29d1db667d2ebb1",
+          "public_distinct_scope_games": 243,
+          "scope_extract_member": "batch-719/PROD/public-scope-extract.json",
+          "source_manifest_sha256": "6b70825d8e733973c6a98a44ede1722d41346b0c0a766b87baf15bee7fd14db0",
+          "verified_at": "2026-10-11T07:39:10.457704+00:00",
+          "verify_receipt_sha256": "41a2ef00804f374f0ba957ae5674ee0c9a015247f342792df8d255a9a005aed8"
+        },
+        "TEST": {
+          "all_distinct_scope_games": 243,
+          "corrected_name_cells": 446,
+          "corrected_title_owners": 200,
+          "cumulative_distinct_public_games": 2674,
+          "new_distinct_public_games": 243,
+          "packet_sha256": "153d86ad8e35cf2dd8fcf14485332fc5b901cbaadcbfad53fb817f85b3b5e055",
+          "public_album_ids_sha256": "d78de5fdf74482074f378113ca47c866dd980df428b50a3ad29d1db667d2ebb1",
+          "public_distinct_scope_games": 243,
+          "scope_extract_member": "batch-719/TEST/public-scope-extract.json",
+          "source_manifest_sha256": "b6c4270c0206ce4c34b93fdd68dbc14062f2451be1c439bc97f4afdaa105bb09",
+          "verified_at": "2026-10-11T07:37:02.820452+00:00",
+          "verify_receipt_sha256": "385e8b47a65dc6339a363ab60f32956d4bcafe941df12079fb5e6060f2452136"
+        }
+      },
+      "status": "both_environments_applied_and_verified"
+    },
+    {
+      "batch_id": 720,
+      "coverage_metric_delta": {
+        "E5": 0,
+        "P5": 0,
+        "fixedwide": 0,
+        "strictcomplete": 0
+      },
+      "environments": {
+        "PROD": {
+          "all_distinct_scope_games": 96,
+          "corrected_name_cells": 205,
+          "corrected_title_owners": 96,
+          "cumulative_distinct_public_games": 2770,
+          "new_distinct_public_games": 96,
+          "packet_sha256": "0ded3a5550a079c647f7e50c30794122d20820a91f5e36d831441b0bcc649f8a",
+          "public_album_ids_sha256": "b96d06b232380dd25bfcf1c9169790f2cb4c560a89b40da09d83f2b916d173c7",
+          "public_distinct_scope_games": 96,
+          "scope_extract_member": "batch-720/PROD/public-scope-extract.json",
+          "source_manifest_sha256": "b79b1173678513e0a42e99d2e64c49e73844918699d568fa7b279d0879bf6bc4",
+          "verified_at": "2026-10-11T07:42:08.258106+00:00",
+          "verify_receipt_sha256": "366b1b2b0f394004f78255ba5c6945803fb3da7e2a80c43a69d1d32fa4a9cc60"
+        },
+        "TEST": {
+          "all_distinct_scope_games": 96,
+          "corrected_name_cells": 205,
+          "corrected_title_owners": 96,
+          "cumulative_distinct_public_games": 2770,
+          "new_distinct_public_games": 96,
+          "packet_sha256": "924bc8160edb012e64e601179a6143fb5cd787e970ef1c9b3c4eb24d6f29adbe",
+          "public_album_ids_sha256": "b96d06b232380dd25bfcf1c9169790f2cb4c560a89b40da09d83f2b916d173c7",
+          "public_distinct_scope_games": 96,
+          "scope_extract_member": "batch-720/TEST/public-scope-extract.json",
+          "source_manifest_sha256": "3cc7fb5b4393d0555d51852d9acf996ec3afaaec5b76a3bc2b6fce6dcbdf4bd8",
+          "verified_at": "2026-10-11T07:40:37.633200+00:00",
+          "verify_receipt_sha256": "c231aab7da38a722fd234c6b6ff7e40e12a6e85ba17ff446d0078d9ca56a8b87"
+        }
+      },
+      "status": "both_environments_applied_and_verified"
+    }
+  ],
+  "completed_batches": [
+    713,
+    714,
+    715,
+    716,
+    717,
+    718,
+    719,
+    720
+  ],
+  "cumulative": {
+    "PROD": {
+      "corrected_name_cells": 2183,
+      "distinct_corrected_title_owners": 912,
+      "distinct_public_scope_games": 2770,
+      "public_album_ids_sha256": "a331471ac5064e988e43bb4dc2b4699e839bd6ca868ae0385d0c2adcba8d4384"
+    },
+    "TEST": {
+      "corrected_name_cells": 2183,
+      "distinct_corrected_title_owners": 912,
+      "distinct_public_scope_games": 2770,
+      "public_album_ids_sha256": "a331471ac5064e988e43bb4dc2b4699e839bd6ca868ae0385d0c2adcba8d4384"
+    }
+  },
+  "environment_public_id_sets_equal": true,
+  "generated_at": "2026-10-11T07:42:46.158231+00:00",
+  "metric_delta_per_completed_batch": {
+    "E5": 0,
+    "P5": 0,
+    "fixedwide": 0,
+    "strictcomplete": 0
+  },
+  "metric_method": "沿用712最新正式库全量扫描；fixedwide按规范实体ID关联计算五语覆盖，不是单纯ID存在率。strictcomplete可使用合格原始姓名，故可高于fixedwide。本批只纠正已合格名称内容，不改变资格字段或实体/棋局关联ID。未重新全库扫描，不把字段完整率称为全库语义正确率。",
+  "metrics": {
+    "E5": {
+      "completed": 84,
+      "denominator": 85,
+      "denominator_kind": "canonical_event_type",
+      "label": "规范赛事类型五语字段资格齐全",
+      "percent": 98.8235
+    },
+    "P5": {
+      "completed": 3663,
+      "denominator": 3689,
+      "label": "棋手五语字段资格齐全",
+      "percent": 99.2952
+    },
+    "fixedwide": {
+      "completed": 153998,
+      "denominator": 173025,
+      "label": "按规范实体ID关联的五语覆盖",
+      "percent": 89.0033
+    },
+    "strictcomplete": {
+      "completed": 167870,
+      "denominator": 173025,
+      "label": "卡片五语字段完整（逐原始标题）",
+      "percent": 97.0207
+    }
+  },
+  "public_receipts_archive": "public-receipts-713-through720-actual.tar.gz",
+  "schema": "kifu-semantic-correction-progress-v1",
+  "scope_method": "从实际已核packet的raw_event owner.raw_display_scope.slots提取album_id；list_hidden_reason与duplicate_of_id均为null才计公开，按环境与跨批album_id集合去重。",
+  "status": "both_environments_applied_and_verified",
+  "through_actual_batch_id": 720,
+  "title_owner_count_kind": "raw_event_title_owner; independent of canonical event type denominator 85"
+}

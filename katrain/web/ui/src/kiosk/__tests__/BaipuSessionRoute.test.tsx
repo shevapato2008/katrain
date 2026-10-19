@@ -89,6 +89,23 @@ describe('摆谱入口:拍不拍照决定要不要先标定(K4)', () => {
     expect(sessionRendered).not.toHaveBeenCalled();
   });
 
+  it.each(['waiting_stable', 'obstructed', 'lighting_paused', 'lighting_rechecking'] as const)(
+    '%s 时摆谱页仍不可挂载抢 LED', async (phase) => {
+      modeMock.mockResolvedValue({ collect: false });
+      vi.mocked(GeometryAPI.status).mockResolvedValue(geo(phase));
+      renderRoute();
+      expect(await screen.findByTestId('calib-running')).toBeInTheDocument();
+      expect(sessionRendered).not.toHaveBeenCalled();
+    },
+  );
+  it('曝光收敛期间保留进行中守卫，不能挂摆谱页点灯', async () => {
+    modeMock.mockResolvedValue({ collect: false });
+    vi.mocked(GeometryAPI.status).mockResolvedValue(geo('converging_exposure'));
+    renderRoute();
+    expect(await screen.findByTestId('calib-running')).toHaveTextContent('棋盘标定还在进行');
+    expect(sessionRendered).not.toHaveBeenCalled();
+  });
+
   // 刷新直接进这条 URL(或服务刚起)时 Provider 还没读到状态:phase 是**初值** required、loaded=false。
   // /mode 先回 false 的话,只看 phase 就会先挂摆谱屏点灯,等迟到的 flashing_corners 再卸掉 —— 灯已经被冲过一次。
   it('上线态 /mode 先回、棋盘状态迟到而标定在跑:摆谱屏一次都不许挂', async () => {

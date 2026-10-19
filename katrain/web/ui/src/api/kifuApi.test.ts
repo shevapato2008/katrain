@@ -18,6 +18,14 @@ describe('棋谱 HTTP 错误保留状态码，供列表和详情识别离线', (
       expect(error).toMatchObject({ status, message: `Request failed ${status}: ${body}` });
     }
   });
+
+  it('保留盒端的具体失败原因：云端服务报错不当成断网', async () => {
+    const body = JSON.stringify({ detail: { code: 'kifu_cloud_error', message: 'Remote kifu service unavailable' } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status: 503 })));
+    const error = await KifuAPI.getAlbums().catch((reason: unknown) => reason);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 503, detail: { code: 'kifu_cloud_error' } });
+  });
 });
 
 describe('棋谱展示语言', () => {

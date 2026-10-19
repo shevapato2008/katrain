@@ -1,0 +1,495 @@
+{
+  "format": "kifu-player-multi-id-family-review-v1",
+  "as_of": "2026-10-04",
+  "snapshot_note": "TEST exact raw and both environments' catalog FK references queried live, read only. PROD exact raw SSH timed out; PROD newly linkable estimate uses frozen inventory and requires live dry-run.",
+  "summary": {
+    "families": 8,
+    "safe_new_fk_slots_test": 504,
+    "safe_existing_fk_repoint_slots_each_environment": 20,
+    "held_unlinked_slots_test": 8,
+    "prod_safe_new_fk_slots_estimate_from_frozen_raw": 504,
+    "prod_live_exact_raw_verified": false
+  },
+  "families": [
+    {
+      "family": "岩田达明",
+      "canonical_chinese_name": "岩田达明",
+      "survivor_id_prod": 4519,
+      "survivor_id_test": 10310,
+      "retire_ids_prod": [],
+      "retire_ids_test": [],
+      "safe_exact_raw": [
+        {
+          "raw_value": "岩田达明",
+          "slots": 257,
+          "unlinked_test": 257,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "岩田达明七段",
+          "slots": 1,
+          "unlinked_test": 1,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "岩田达明九段",
+          "slots": 3,
+          "unlinked_test": 3,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "岩田达明八段",
+          "slots": 2,
+          "unlinked_test": 2,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "岩田达明六段",
+          "slots": 1,
+          "unlinked_test": 1,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "岩田達明",
+          "slots": 3,
+          "unlinked_test": 3,
+          "fk_ids_test": []
+        }
+      ],
+      "hold_exact_raw": [],
+      "safe_new_fk_slots_test": 267,
+      "existing_fk_repoint_slots_each_environment": 0,
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000016.htm",
+      "migration_decision": "复用现有岩田正男 ID（PROD 4519／TEST 10310），先核对其 8 个已关联槽，改中文 canonical 为岩田达明并将岩田正男保留为旧名别名；日本棋院记载其旧名正男。不得新建 ID、删除旧译名或修改原始棋谱姓名。",
+      "catalog_refs_live": {
+        "prod": [{"id": 4519, "canonical_name": "岩田正男", "fk_slots": 8, "fk_name_mismatch_slots": 3}],
+        "test": [{"id": 10310, "canonical_name": "岩田正男", "fk_slots": 8, "fk_name_mismatch_slots": 3}]
+      }
+    },
+    {
+      "family": "前田陈尔",
+      "canonical_chinese_name": "前田陈尔",
+      "survivor_id_prod": 4043,
+      "survivor_id_test": 9839,
+      "retire_ids_prod": [],
+      "retire_ids_test": [],
+      "safe_exact_raw": [
+        {
+          "raw_value": "前田陈尔",
+          "slots": 176,
+          "unlinked_test": 176,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "前田陈尔七段",
+          "slots": 3,
+          "unlinked_test": 3,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "前田陈尔八段",
+          "slots": 2,
+          "unlinked_test": 2,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "前田陳爾",
+          "slots": 4,
+          "unlinked_test": 4,
+          "fk_ids_test": []
+        }
+      ],
+      "hold_exact_raw": [],
+      "safe_new_fk_slots_test": 185,
+      "existing_fk_repoint_slots_each_environment": 0,
+      "evidence_url": "https://ndlsearch.ndl.go.jp/books/R100000039-I2509284",
+      "migration_decision": "保留现有错字目录 ID，改 canonical 前田陈尔。原“前田陈二”1 槽为 1954 年对藤泽秀行；勿并入前田亮/前田良二。",
+      "catalog_refs_live": {
+        "prod": [
+          {
+            "id": 4043,
+            "canonical_name": "前田陈二",
+            "fk_slots": 1,
+            "fk_name_mismatch_slots": 0
+          }
+        ],
+        "test": [
+          {
+            "id": 9839,
+            "canonical_name": "前田陈二",
+            "fk_slots": 1,
+            "fk_name_mismatch_slots": 0
+          }
+        ]
+      }
+    },
+    {
+      "family": "林海峰",
+      "canonical_chinese_name": "林海峰",
+      "survivor_id_prod": 298,
+      "survivor_id_test": 299,
+      "retire_ids_prod": [
+        5193
+      ],
+      "retire_ids_test": [
+        10973
+      ],
+      "safe_exact_raw": [
+        {
+          "raw_value": "RinKaiho林海峰",
+          "slots": 3,
+          "unlinked_test": 3,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "林海峰RinKaiho",
+          "slots": 22,
+          "unlinked_test": 22,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "林海峰名人",
+          "slots": 3,
+          "unlinked_test": 3,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "林海峰,九段,天元",
+          "slots": 1,
+          "unlinked_test": 1,
+          "fk_ids_test": []
+        }
+      ],
+      "hold_exact_raw": [],
+      "safe_new_fk_slots_test": 29,
+      "existing_fk_repoint_slots_each_environment": 1,
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000009.htm",
+      "migration_decision": "保留主 ID；林海蜂错字目录 1 槽（2006 年对铃木步）改指主 ID。名誉天元是同人头衔。",
+      "catalog_refs_live": {
+        "prod": [
+          {
+            "id": 298,
+            "canonical_name": "林海峰",
+            "fk_slots": 1696,
+            "fk_name_mismatch_slots": 27
+          },
+          {
+            "id": 5193,
+            "canonical_name": "林海蜂",
+            "fk_slots": 1,
+            "fk_name_mismatch_slots": 0
+          }
+        ],
+        "test": [
+          {
+            "id": 299,
+            "canonical_name": "林海峰",
+            "fk_slots": 1696,
+            "fk_name_mismatch_slots": 27
+          },
+          {
+            "id": 10973,
+            "canonical_name": "林海蜂",
+            "fk_slots": 1,
+            "fk_name_mismatch_slots": 0
+          }
+        ]
+      }
+    },
+    {
+      "family": "赵治勋",
+      "canonical_chinese_name": "赵治勋",
+      "survivor_id_prod": 608,
+      "survivor_id_test": 609,
+      "retire_ids_prod": [
+        350
+      ],
+      "retire_ids_test": [
+        351
+      ],
+      "safe_exact_raw": [
+        {
+          "raw_value": "趙治勲",
+          "slots": 5,
+          "unlinked_test": 5,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "赵治勋名人",
+          "slots": 1,
+          "unlinked_test": 1,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "赵治勋挑战者",
+          "slots": 3,
+          "unlinked_test": 3,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "赵治勋本因坊",
+          "slots": 2,
+          "unlinked_test": 2,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "赵治勋棋圣",
+          "slots": 2,
+          "unlinked_test": 2,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "赵治勋,九段,棋圣",
+          "slots": 1,
+          "unlinked_test": 1,
+          "fk_ids_test": []
+        }
+      ],
+      "hold_exact_raw": [
+        {
+          "raw_value": "赵治勋赵治勋",
+          "slots": 7,
+          "unlinked_test": 7,
+          "fk_ids_test": []
+        },
+        {
+          "raw_value": "趙治勳(",
+          "slots": 1,
+          "unlinked_test": 1,
+          "fk_ids_test": []
+        }
+      ],
+      "safe_new_fk_slots_test": 14,
+      "existing_fk_repoint_slots_each_environment": 0,
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000004_2.html",
+      "migration_decision": "保留主 ID；名誉目录零引用，可转别名后停用。重复连写和截断原文暂缓。",
+      "catalog_refs_live": {
+        "prod": [
+          {
+            "id": 608,
+            "canonical_name": "赵治勋",
+            "fk_slots": 2066,
+            "fk_name_mismatch_slots": 14
+          },
+          {
+            "id": 350,
+            "canonical_name": "趙治勲名誉",
+            "fk_slots": 0,
+            "fk_name_mismatch_slots": 0
+          }
+        ],
+        "test": [
+          {
+            "id": 609,
+            "canonical_name": "赵治勋",
+            "fk_slots": 2066,
+            "fk_name_mismatch_slots": 14
+          },
+          {
+            "id": 351,
+            "canonical_name": "趙治勲名誉",
+            "fk_slots": 0,
+            "fk_name_mismatch_slots": 0
+          }
+        ]
+      }
+    },
+    {
+      "family": "武宫正树",
+      "canonical_chinese_name": "武宫正树",
+      "survivor_id_prod": 490,
+      "survivor_id_test": 491,
+      "retire_ids_prod": [],
+      "retire_ids_test": [],
+      "safe_exact_raw": [
+        {
+          "raw_value": "武宫正树TakemiyaMasaki",
+          "slots": 9,
+          "unlinked_test": 9,
+          "fk_ids_test": []
+        }
+      ],
+      "hold_exact_raw": [],
+      "safe_new_fk_slots_test": 9,
+      "existing_fk_repoint_slots_each_environment": 0,
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000003.htm",
+      "migration_decision": "保留主 ID；混写同人。武宫阳光为其儿子，必须分离。",
+      "catalog_refs_live": {
+        "prod": [
+          {
+            "id": 490,
+            "canonical_name": "武宫正树",
+            "fk_slots": 1358,
+            "fk_name_mismatch_slots": 74
+          }
+        ],
+        "test": [
+          {
+            "id": 491,
+            "canonical_name": "武宫正树",
+            "fk_slots": 1358,
+            "fk_name_mismatch_slots": 74
+          }
+        ]
+      }
+    },
+    {
+      "family": "岩本薰",
+      "canonical_chinese_name": "岩本薰",
+      "survivor_id_prod": 4517,
+      "survivor_id_test": 10308,
+      "retire_ids_prod": [
+        4515,
+        4516
+      ],
+      "retire_ids_test": [
+        10306,
+        10307
+      ],
+      "safe_exact_raw": [],
+      "hold_exact_raw": [],
+      "safe_new_fk_slots_test": 0,
+      "existing_fk_repoint_slots_each_environment": 15,
+      "evidence_url": "https://archive.nihonkiin.or.jp/player/htm/ki001002.htm",
+      "migration_decision": "保留岩本薰主 ID；岩本熏 1 槽、岩本薫 14 槽重指主 ID，记字体别名。",
+      "catalog_refs_live": {
+        "prod": [
+          {
+            "id": 4517,
+            "canonical_name": "岩本薰",
+            "fk_slots": 235,
+            "fk_name_mismatch_slots": 10
+          },
+          {
+            "id": 4515,
+            "canonical_name": "岩本熏",
+            "fk_slots": 1,
+            "fk_name_mismatch_slots": 0
+          },
+          {
+            "id": 4516,
+            "canonical_name": "岩本薫",
+            "fk_slots": 14,
+            "fk_name_mismatch_slots": 0
+          }
+        ],
+        "test": [
+          {
+            "id": 10308,
+            "canonical_name": "岩本薰",
+            "fk_slots": 235,
+            "fk_name_mismatch_slots": 10
+          },
+          {
+            "id": 10306,
+            "canonical_name": "岩本熏",
+            "fk_slots": 1,
+            "fk_name_mismatch_slots": 0
+          },
+          {
+            "id": 10307,
+            "canonical_name": "岩本薫",
+            "fk_slots": 14,
+            "fk_name_mismatch_slots": 0
+          }
+        ]
+      }
+    },
+    {
+      "family": "加纳嘉德",
+      "canonical_chinese_name": "加纳嘉德",
+      "survivor_id_prod": 4049,
+      "survivor_id_test": 9845,
+      "retire_ids_prod": [
+        4048
+      ],
+      "retire_ids_test": [
+        9844
+      ],
+      "safe_exact_raw": [],
+      "hold_exact_raw": [],
+      "safe_new_fk_slots_test": 0,
+      "existing_fk_repoint_slots_each_environment": 3,
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000015.html",
+      "migration_decision": "保留嘉德主 ID；嘉徳目录 3 槽重指主 ID，记字体别名。",
+      "catalog_refs_live": {
+        "prod": [
+          {
+            "id": 4049,
+            "canonical_name": "加纳嘉德",
+            "fk_slots": 79,
+            "fk_name_mismatch_slots": 2
+          },
+          {
+            "id": 4048,
+            "canonical_name": "加纳嘉徳",
+            "fk_slots": 3,
+            "fk_name_mismatch_slots": 0
+          }
+        ],
+        "test": [
+          {
+            "id": 9845,
+            "canonical_name": "加纳嘉德",
+            "fk_slots": 79,
+            "fk_name_mismatch_slots": 2
+          },
+          {
+            "id": 9844,
+            "canonical_name": "加纳嘉徳",
+            "fk_slots": 3,
+            "fk_name_mismatch_slots": 0
+          }
+        ]
+      }
+    },
+    {
+      "family": "藤泽朋斋",
+      "canonical_chinese_name": "藤泽朋斋",
+      "survivor_id_prod": 5854,
+      "survivor_id_test": 11623,
+      "retire_ids_prod": [
+        5855
+      ],
+      "retire_ids_test": [
+        11624
+      ],
+      "safe_exact_raw": [],
+      "hold_exact_raw": [],
+      "safe_new_fk_slots_test": 0,
+      "existing_fk_repoint_slots_each_environment": 1,
+      "evidence_url": "https://www.nihonkiin.or.jp/event/area/online/post_1294.html",
+      "migration_decision": "保留朋斋主 ID；朋斎目录 1 槽重指主 ID。与藤泽秀行是不同人。",
+      "catalog_refs_live": {
+        "prod": [
+          {
+            "id": 5854,
+            "canonical_name": "藤泽朋斋",
+            "fk_slots": 441,
+            "fk_name_mismatch_slots": 20
+          },
+          {
+            "id": 5855,
+            "canonical_name": "藤泽朋斎",
+            "fk_slots": 1,
+            "fk_name_mismatch_slots": 0
+          }
+        ],
+        "test": [
+          {
+            "id": 11623,
+            "canonical_name": "藤泽朋斋",
+            "fk_slots": 441,
+            "fk_name_mismatch_slots": 20
+          },
+          {
+            "id": 11624,
+            "canonical_name": "藤泽朋斎",
+            "fk_slots": 1,
+            "fk_name_mismatch_slots": 0
+          }
+        ]
+      }
+    }
+  ]
+}

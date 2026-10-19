@@ -1,0 +1,75 @@
+{
+  "alias_policy": "No aliases created; 周鶴洋 retained for later full name reconciliation; 周鹤样/周鹤羊 remain prohibited global typo aliases.",
+  "apply_invoked": false,
+  "artifact_sha256": {
+    "docs/resource/kifu-player-canonical-dedup-independent-decision-astra-2026-10-04.json": "a2a444ceeb7895ab03ba7a912c823431adb30b9e84f5e73c0f2389024888d1ef",
+    "docs/resource/kifu-player-zhou-dedup-PROD-capture-payload-2026-10-04.json": "34cb111935417b3901d84af8c84809ecb66a05e58f8bcced2cdfe482e6091a00",
+    "docs/resource/kifu-player-zhou-dedup-PROD-dry-2026-10-04.json": "a44dac50f02c842fcbf556380c5ff7e297d43ed6bad1f47b71aba49066d3370a",
+    "docs/resource/kifu-player-zhou-dedup-PROD-dry-payload-2026-10-04.json": "75767d972c6563c5f5f4a47d3d3e4b7d35ead80a5325d6580e60f5ba6eedbc3c",
+    "docs/resource/kifu-player-zhou-dedup-PROD-plan-2026-10-04.json": "6e5c15ed2fcaf17355d55de85449db56ac7870da523d7a12fcfc65c0faf6b48c",
+    "docs/resource/kifu-player-zhou-dedup-TEST-capture-payload-2026-10-04.json": "b8c16110e9e8e4f637c4e521cbab9582f913f0d42354bf7665b9b5a5ed1aab57",
+    "docs/resource/kifu-player-zhou-dedup-TEST-dry-2026-10-04.json": "477f16316bedbe4191c96cb8a131c9e78cb3f8350d04c05ea12e2972f2f08d57",
+    "docs/resource/kifu-player-zhou-dedup-TEST-dry-payload-2026-10-04.json": "ffc159a1c953b7f8d24255bb2c394b7e320946599276df008d38cec7d99a6014",
+    "docs/resource/kifu-player-zhou-dedup-TEST-plan-2026-10-04.json": "ac1aa6e5709ed97d81dd142b7f71657ce66210d46ce9a26cf0f25a810bed329c",
+    "scripts/kifu_player_zhou_exact_dedup.py": "91ff92c538ee9b16545ff674dcdade2175b792c7fbe49382e4b98bf316064818",
+    "tests/test_kifu_player_zhou_exact_dedup.py": "2251979e300456cc54bd13e7580f2d404e73e1084471ce423a85343131b7f9bc"
+  },
+  "date": "2026-10-04",
+  "environments": {
+    "PROD": {
+      "counts": {
+        "archived_deleted_names": 0,
+        "canonical_renames": 1,
+        "changed_fk_slots": 1,
+        "created_aliases": 0,
+        "deleted_players": 1,
+        "metadata_repoints": 1,
+        "protected_exact_slots": 1
+      },
+      "database": "katrain_prod_20260725",
+      "dry": "docs/resource/kifu-player-zhou-dedup-PROD-dry-2026-10-04.json",
+      "plan": "docs/resource/kifu-player-zhou-dedup-PROD-plan-2026-10-04.json",
+      "plan_sha256": "f4dc01fed501e645e65625a9f086f3725dff457201856d5c10b1ae8741192613",
+      "remaining_references_before_delete": {
+        "kifu_albums.black_player_id": 0,
+        "kifu_albums.white_player_id": 0,
+        "kifu_name_research_evidence.player_id": 0,
+        "kifu_player_aliases.player_id": 0,
+        "kifu_player_names.player_id": 0,
+        "raw_metadata.player_id": 0
+      },
+      "rollback_preimage_sha256": "bc90f66dacd8abe66e7d4a52fcc3401073b03ca29c1529ad6dd9cd15cb4c82fa",
+      "rollback_preimage_unchanged": true
+    },
+    "TEST": {
+      "counts": {
+        "archived_deleted_names": 5,
+        "canonical_renames": 0,
+        "changed_fk_slots": 2,
+        "created_aliases": 0,
+        "deleted_players": 3,
+        "metadata_repoints": 2,
+        "protected_exact_slots": 0
+      },
+      "database": "katrain_db",
+      "dry": "docs/resource/kifu-player-zhou-dedup-TEST-dry-2026-10-04.json",
+      "plan": "docs/resource/kifu-player-zhou-dedup-TEST-plan-2026-10-04.json",
+      "plan_sha256": "b5d1f5cb1dc9fd6176bbfad64a7b1f2185565b124e6127205c9adf81163e37fe",
+      "remaining_references_before_delete": {
+        "kifu_albums.black_player_id": 0,
+        "kifu_albums.white_player_id": 0,
+        "kifu_name_research_evidence.player_id": 0,
+        "kifu_player_aliases.player_id": 0,
+        "kifu_player_names.player_id": 0,
+        "raw_metadata.player_id": 0
+      },
+      "rollback_preimage_sha256": "1a70d93bd4b2acaef16a527c1dd123fd8023a0413dfd0a9e2e95602540bbea24",
+      "rollback_preimage_unchanged": true
+    }
+  },
+  "status": "capture_and_transaction_rollback_dry_complete_no_apply",
+  "tests": {
+    "command": "python -m pytest --noconftest -q tests/test_kifu_player_zhou_exact_dedup.py",
+    "passed": 14
+  }
+}

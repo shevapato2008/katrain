@@ -7,7 +7,7 @@
 .personal-games-preview .kiosk-console__sync>b{flex:none;white-space:nowrap;font-size:18px}
 
 .personal-games-preview__actions{position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:8px}
-.personal-games-preview__actions>.kiosk-btn{flex:none;width:126px;height:48px;font-size:22px;padding:0 6px;white-space:nowrap}
+.personal-games-preview__actions>.kiosk-btn{flex:none;justify-content:center;text-align:center;width:126px;height:48px;font-size:22px;padding:0 6px;white-space:nowrap}
 .personal-games-preview__actions .kiosk-btn,.archive-preview__actions .kiosk-btn{border:1px solid #4f765a;border-radius:11px;background:linear-gradient(#405a48,#25432f 65%,#1a3225);color:#e8f3ea;box-shadow:inset 0 1px #729579,0 3px 0 #0d2117}
 .personal-games-preview__actions .kiosk-btn:active,.archive-preview__actions .kiosk-btn:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #07130c}
 .personal-games-preview__actions .kiosk-btn:disabled{opacity:.4;box-shadow:none}

@@ -1,0 +1,120 @@
+{
+  "stage": "TEST static frontend published",
+  "manifest": {
+    "kind": "OGS frontend review preview",
+    "base_console_commit": "7518b4b237236905b252e46adc029747700912f5",
+    "backend_changed": false,
+    "preview_flag": true,
+    "examples": 4,
+    "languages": [
+      "zh-cn",
+      "en",
+      "ja"
+    ],
+    "index_sha256": "83cae98e4a31bf742719c1eae19d28f30b2a2faa6999f8b379ac164849be6d9d",
+    "preview_module": "OgsPreview-ClRQsLO3.js",
+    "database_import": false,
+    "frontend_commit": "99bb6e064795f86bf49c6429095b20079445893b"
+  },
+  "assets": [
+    {
+      "path": "/assets/index-DH3poXl3.js",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/index-D10HNVLw.css",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/OgsPreview-ByzyEa2o.css",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/OgsPreview-ClRQsLO3.js",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/removal-zh-cn-DV27PZC2.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/liberties-zh-cn-DFsuglir.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/capture-ja-DAXaGv57.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/opening-ja-C4XusKzn.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/opening-en-DLS4CTAE.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/capture-en-BODAH3Aj.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/removal-ja-BB_7ZQQC.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/liberties-en-C23W4LBJ.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/removal-en-DUA10YWF.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/liberties-ja-BfdNWLBZ.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/opening-zh-cn-DrgsRBsT.png",
+      "http": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "/assets/capture-zh-cn-B_-oAZf8.png",
+      "http": 200,
+      "sha256_match": true
+    }
+  ],
+  "health": {
+    "status": "ok",
+    "build": "7518b4b237236905b252e46adc029747700912f5",
+    "env": "test",
+    "providers": {
+      "katrain": {
+        "state": "available",
+        "env": "test",
+        "build": "0bcc1d65f7c5f5ea7131e869b56718258b66b737"
+      },
+      "platform": {
+        "state": "available",
+        "env": "test",
+        "build": "419d2c7cb42145951ff62710faaf4ed31b369b03"
+      }
+    }
+  },
+  "database_write": false,
+  "ui_preview_only": true
+}

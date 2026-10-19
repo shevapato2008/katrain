@@ -1,24 +1,20 @@
 """Versioned tutorial authoring for the dedicated admin process."""
 
 import logging
-import tempfile
-import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import String, cast, delete, select, update
+from sqlalchemy import String, cast, select, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from katrain.web.admin.session import get_current_admin
 from katrain.web.core.models_db import AdminAuditLog, BoardPayloadHistory, TrainingSample, TutorialFigure
 from katrain.web.core.storage import get_storage_backend
-from katrain.web.tutorials.models import StrictBoardPayload, TutorialFigureOut
+from katrain.web.tutorials.models import StrictBoardPayload, TutorialFigureAdminOut as TutorialFigureOut
 from katrain.web.tutorials.services import _get_book_slug
-from katrain.web.tutorials.viewport import compute_viewport
-
 
 logger = logging.getLogger(__name__)
 router = APIRouter(dependencies=[Depends(get_current_admin)])
@@ -81,7 +77,10 @@ def _utc(value: datetime) -> datetime:
 
 
 def _output(figure: TutorialFigure) -> TutorialFigureOut:
+    from katrain.web.tutorials.manual_review import review_validity
+
     result = TutorialFigureOut.model_validate(figure)
+    result.review_validity = review_validity(figure)
     if result.updated_at is not None:
         result.updated_at = _utc(result.updated_at)
     return result
@@ -161,6 +160,11 @@ def _commit(db: Session) -> None:
         raise
 
 
+@router.get("/figures/{figure_id}", response_model=TutorialFigureOut)
+def get_figure(figure_id: int, db: Session = Depends(get_admin_db)):
+    return _output(_load(db, figure_id))
+
+
 @router.put("/figures/{figure_id}/board", response_model=TutorialFigureOut)
 def update_board(
     figure_id: int,
@@ -168,36 +172,18 @@ def update_board(
     db: Session = Depends(get_admin_db),
     admin: dict = Depends(get_current_admin),
 ):
-    figure = _load(db, figure_id)
-    payload = body.board_payload.model_dump(exclude_none=True)
-    payload["viewport"] = compute_viewport(payload)
-    debug = dict(figure.recognition_debug or {})
-    debug["human_verified"] = False
-    debug.pop("verified_at", None)
-    debug.pop("verified_by", None)
-    # A rendered video belongs to the previous board (and its audio).
-    values = {
-        "board_payload": payload,
-        "recognition_debug": debug,
-        "video_asset": None,
-        "video_duration_ms": None,
-        "video_size_bytes": None,
-    }
-    if "narration" in body.model_fields_set:
-        values["narration"] = body.narration
-        if figure.narration != body.narration:
-            values["audio_asset"] = None
-    figure = _cas_update(db, figure, body.expected_updated_at, values)
-    db.execute(delete(TrainingSample).where(TrainingSample.figure_id == figure_id))
-    db.add(
-        BoardPayloadHistory(
-            figure_id=figure_id,
-            board_payload=payload,
-            changed_by=admin["username"],
-            change_type="edit",
-        )
+    from katrain.web.admin.routers.tutorial_workbench import _save_payload
+
+    figure = _save_payload(
+        db,
+        _load(db, figure_id),
+        payload=body.board_payload.model_dump(exclude_unset=True),
+        expected=body.expected_updated_at,
+        admin=admin,
+        narration_set="narration" in body.model_fields_set,
+        narration=body.narration,
+        action="tutorial.board",
     )
-    _audit(db, admin, "tutorial.board", figure_id)
     _commit(db)
     db.refresh(figure)
     return _output(figure)
@@ -213,6 +199,10 @@ def update_narration(
     figure = _load(db, figure_id)
     values = {"narration": body.narration}
     if figure.narration != body.narration:
+        from katrain.web.tutorials.media_tasks import invalidate_media
+
+        values.update(video_2d_review=None, video_3d_review=None)
+        values["recognition_debug"] = invalidate_media(figure.recognition_debug, narration=True)
         values["audio_asset"] = None
         values["video_asset"] = None
         values["video_duration_ms"] = None
@@ -237,47 +227,11 @@ async def generate_audio(
     db: Session = Depends(get_admin_db),
     admin: dict = Depends(get_current_admin),
 ):
-    figure = _load(db, figure_id)
-    # A preflight avoids generating an object for an already stale editor.
-    if body.expected_updated_at is None:
-        stale = figure.updated_at is not None
-    else:
-        stale = figure.updated_at is None or _utc(figure.updated_at) != _utc(
-            datetime.fromisoformat(body.expected_updated_at.replace("Z", "+00:00"))
-        )
-    if stale:
-        raise HTTPException(status_code=409, detail="Figure was modified by another session. Reload and retry.")
-
-    book_slug = _get_book_slug(db, figure)
-    key = f"tutorial_assets/{book_slug}/audio/fig_{figure_id}_{uuid.uuid4().hex}.mp3"
-    with tempfile.TemporaryDirectory(prefix="katrain-admin-tts-") as directory:
-        path = Path(directory) / "audio.mp3"
-        try:
-            await _synthesize_audio(body.narration, path)
-            if not path.is_file() or path.stat().st_size == 0:
-                raise RuntimeError("TTS returned empty audio")
-            with path.open("rb") as audio:
-                get_storage_backend().put(key, audio, content_type="audio/mpeg")
-        except Exception as exc:
-            logger.warning("Admin TTS or upload failed for figure %d: %s", figure_id, exc)
-            raise HTTPException(status_code=502, detail="Audio generation or upload failed") from exc
-
-    figure = _cas_update(
-        db,
-        figure,
-        body.expected_updated_at,
-        {
-            "narration": body.narration,
-            "audio_asset": key,
-            "video_asset": None,
-            "video_duration_ms": None,
-            "video_size_bytes": None,
-        },
+    _load(db, figure_id)
+    raise HTTPException(
+        status_code=409,
+        detail=f"Legacy audio generation is disabled. Save narration, approve the static diagram, then POST /figures/{figure_id}/media-tasks with kind=audio and expected_updated_at.",
     )
-    _audit(db, admin, "tutorial.generate_audio", figure_id)
-    _commit(db)
-    db.refresh(figure)
-    return _output(figure)
 
 
 def _export_training(db: Session, figure: TutorialFigure) -> TrainingExportResult:
@@ -323,6 +277,14 @@ def verify_figure(
     admin: dict = Depends(get_current_admin),
 ):
     figure = _load(db, figure_id)
+    if (figure.board_payload or {}).get("schema_version") == 2:
+        from katrain.web.admin.routers.tutorial_workbench import _verify
+
+        verified = _verify(figure_id, body, db, admin, "board")
+        return VerifyResult(
+            figure=verified,
+            training_export=TrainingExportResult(status="skipped", count=0, reason="v2_workbench"),
+        )
     debug = dict(figure.recognition_debug or {})
     debug.update(human_verified=True, verified_at=datetime.now(timezone.utc).isoformat(), verified_by=admin["username"])
     figure = _cas_update(db, figure, body.expected_updated_at, {"recognition_debug": debug})

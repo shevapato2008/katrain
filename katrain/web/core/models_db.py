@@ -640,6 +640,9 @@ class TutorialFigure(Base):
     page_image_path = Column(String(512), nullable=True)
     board_payload = Column(JSON, nullable=True)
     recognition_debug = Column(JSON, nullable=True)
+    board_review = Column(JSON, nullable=True)
+    video_2d_review = Column(JSON, nullable=True)
+    video_3d_review = Column(JSON, nullable=True)
     narration = Column(Text, nullable=True)
     audio_asset = Column(String(512), nullable=True)
     video_asset = Column(String(512), nullable=True)
@@ -652,6 +655,31 @@ class TutorialFigure(Base):
     section = relationship("TutorialSection", back_populates="figures")
 
     __table_args__ = (UniqueConstraint("section_id", "order", name="uq_figure_section_order"),)
+
+
+class TutorialMediaTask(Base):
+    """Durable bounded authoring queue. Inputs are immutable content snapshots."""
+
+    __tablename__ = "tutorial_media_tasks"
+    id = Column(String(32), primary_key=True, default=lambda: uuid_module.uuid4().hex)
+    figure_id = Column(Integer, ForeignKey("tutorial_figures.id", ondelete="CASCADE"), nullable=False, index=True)
+    kind = Column(String(8), nullable=False)
+    render_mode = Column(String(2), nullable=False, default="2d")
+    status = Column(String(16), nullable=False, default="queued", index=True)
+    stage = Column(String(32), nullable=False, default="queued")
+    input_digest = Column(String(64), nullable=False)
+    snapshot = Column(JSON, nullable=False)
+    requested_by = Column(String(128), nullable=False)
+    error = Column(Text, nullable=True)
+    result = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    __table_args__ = (
+        CheckConstraint("kind IN ('audio','video')", name="ck_tutorial_media_kind"),
+        CheckConstraint("render_mode IN ('2d','3d')", name="ck_tutorial_media_mode"),
+        CheckConstraint("status IN ('queued','running','succeeded','failed','stale')", name="ck_tutorial_media_status"),
+    )
 
 
 class BoardPayloadHistory(Base):

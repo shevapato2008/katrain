@@ -1,0 +1,100 @@
+[
+  {
+    "recognition_id": "p017-f03",
+    "page": 17,
+    "source_pointer": "/chapters/1/sections/4/pages/1/elements/2",
+    "figure_id": 11648,
+    "candidate_id": 10692,
+    "inferences": [
+      {
+        "at": "4,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字较淡；结合正文“黑1虎”及图中白2、黑3、白4的位置确认。",
+        "cell": "4,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p091-f02",
+    "page": 91,
+    "source_pointer": "/chapters/1/sections/41/pages/1/elements/1",
+    "figure_id": 11795,
+    "candidate_id": 10839,
+    "inferences": [
+      {
+        "at": "3,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字较淡；正文“黑1点”及白2、黑3、白4的图示顺序共同确认。",
+        "cell": "3,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p107-f03",
+    "page": 107,
+    "source_pointer": "/chapters/1/sections/49/pages/1/elements/2",
+    "figure_id": 11828,
+    "candidate_id": 10872,
+    "inferences": [
+      {
+        "at": "2,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字较淡；结合原页残留字形及正文“黑1挖”确认。",
+        "cell": "2,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p113-f03",
+    "page": 113,
+    "source_pointer": "/chapters/1/sections/52/pages/1/elements/2",
+    "figure_id": 11840,
+    "candidate_id": 10884,
+    "uncertainties": [
+      {
+        "at": "5,9",
+        "reason": "黑子内部细白痕模糊，无法确认是否印有三角标记。",
+        "candidates": [
+          "triangle",
+          "none"
+        ],
+        "cell": "5,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p173-f03",
+    "page": 173,
+    "source_pointer": "/chapters/2/sections/21/pages/1/elements/2",
+    "figure_id": 11956,
+    "candidate_id": 11000,
+    "inferences": [
+      {
+        "at": "3,7",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字较淡，残留竖笔；正文“白1时”及后续黑2支持读作1。",
+        "cell": "3,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p179-f02",
+    "page": 179,
+    "source_pointer": "/chapters/2/sections/24/pages/1/elements/1",
+    "figure_id": 11967,
+    "candidate_id": 11011,
+    "inferences": [
+      {
+        "at": "0,8",
+        "value": "6",
+        "basis": "combined",
+        "reason": "数字印迹残损；结合“黑6劫吃”及白5后的次序判为6。",
+        "cell": "0,17"
+      }
+    ]
+  }
+]

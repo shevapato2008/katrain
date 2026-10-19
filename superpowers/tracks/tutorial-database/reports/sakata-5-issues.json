@@ -1,0 +1,225 @@
+[
+  {
+    "recognition_id": "p012-f02",
+    "page": 12,
+    "source_pointer": "/chapters/2/sections/0/pages/4/elements/1",
+    "figure_id": 18039,
+    "candidate_id": 5512,
+    "uncertainties": [
+      {
+        "at": "8,5",
+        "reason": "小黑点似印刷星点，但偏离标准星位；未计为棋子。",
+        "candidates": [
+          "偏位星点",
+          "网线墨点"
+        ],
+        "cell": "8,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p012-f03",
+    "page": 12,
+    "source_pointer": "/chapters/2/sections/0/pages/4/elements/2",
+    "figure_id": 18040,
+    "candidate_id": 5513,
+    "uncertainties": [
+      {
+        "at": "8,5",
+        "reason": "小黑点似印刷星点，但偏离标准星位；未计为棋子。",
+        "candidates": [
+          "偏位星点",
+          "网线墨点"
+        ],
+        "cell": "8,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p016-f03",
+    "page": 16,
+    "source_pointer": "/chapters/2/sections/1/pages/2/elements/2",
+    "figure_id": 18052,
+    "candidate_id": 5525,
+    "uncertainties": [
+      {
+        "at": "move_3",
+        "reason": "图下注“③粘”，盘面未印3，落点未明确，不补造坐标。",
+        "candidates": [],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p017-f01",
+    "page": 17,
+    "source_pointer": "/chapters/2/sections/1/pages/3/elements/0",
+    "figure_id": 18054,
+    "candidate_id": 5527,
+    "uncertainties": [
+      {
+        "at": "caption:10",
+        "reason": "图注为黑底⑩粘，正文明确称白10；盘内未印10，未补编号。",
+        "candidates": [
+          "白10粘（正文及交替次序）",
+          "黑10粘（图注字形及提供的说明）"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p040-f02",
+    "page": 40,
+    "source_pointer": "/chapters/2/sections/6/pages/2/elements/1",
+    "figure_id": 18109,
+    "candidate_id": 5582,
+    "uncertainties": [
+      {
+        "at": "6,4",
+        "reason": "黑子内有残损白色符号，无法确定是否为三角标记。",
+        "candidates": [
+          "triangle",
+          "扫描破损"
+        ],
+        "cell": "6,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p043-f02",
+    "page": 43,
+    "source_pointer": "/chapters/2/sections/7/pages/1/elements/2",
+    "figure_id": 18114,
+    "candidate_id": 5587,
+    "inferences": [
+      {
+        "at": "7,8",
+        "value": "8",
+        "basis": "combined",
+        "reason": "图注“⑧粘”；白6提去黑1，白8在黑1原处粘，网格未另印8。",
+        "cell": "7,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p063-f02",
+    "page": 63,
+    "source_pointer": "/chapters/2/sections/11/pages/5/elements/1",
+    "figure_id": 18166,
+    "candidate_id": 5639,
+    "uncertainties": [
+      {
+        "at": "moves_7_13",
+        "reason": "图下注“⑦⑬粘”，格内未印这两个编号，落点未能确定，不补标。",
+        "candidates": [],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p166-f01",
+    "page": 166,
+    "source_pointer": "/chapters/4/sections/4/pages/0/elements/0",
+    "figure_id": 18383,
+    "candidate_id": 5856,
+    "uncertainties": [
+      {
+        "at": "4,11",
+        "reason": "白子上有横向楔形黑迹，无法确认具体标记。",
+        "candidates": [
+          "triangle",
+          "箭头",
+          "印刷污迹"
+        ],
+        "cell": "4,11"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p169-f02",
+    "page": 169,
+    "source_pointer": "/chapters/4/sections/4/pages/3/elements/1",
+    "figure_id": 18389,
+    "candidate_id": 5862,
+    "uncertainties": [
+      {
+        "at": "6,6",
+        "reason": "图示黑子，按图录入；但白3提子及图下注“⑤粘”暗示此处可能应为白5，图文存在矛盾。",
+        "candidates": [
+          "黑（图示）",
+          "白5（变化推演）"
+        ],
+        "cell": "6,6"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p246-f03",
+    "page": 246,
+    "source_pointer": "/chapters/5/sections/6/pages/2/elements/2",
+    "figure_id": 18552,
+    "candidate_id": 6025,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "下边为实边；左右横线均向外延伸，无可定位星位，列起点未定，暂取1。",
+        "candidates": [
+          "origin_col=1,origin_row=10",
+          "origin_col=2,origin_row=10",
+          "origin_col=3,origin_row=10",
+          "origin_col=4,origin_row=10"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p258-f02",
+    "page": 258,
+    "source_pointer": "/chapters/6/sections/5/pages/0/elements/2",
+    "figure_id": 18576,
+    "candidate_id": 6049,
+    "inferences": [
+      {
+        "at": "5,9",
+        "value": "47",
+        "basis": "combined",
+        "reason": "黑子标号残淡，结合可见字形及邻近白44、46、48的局部次序判为47。",
+        "cell": "5,9"
+      },
+      {
+        "at": "8,9",
+        "value": "49",
+        "basis": "combined",
+        "reason": "右端黑子标号较淡，结合字形及白48、50的连续次序判为49。",
+        "cell": "8,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p266-f01",
+    "page": 266,
+    "source_pointer": "/chapters/6/sections/13/pages/0/elements/0",
+    "figure_id": 18591,
+    "candidate_id": 6064,
+    "inferences": [
+      {
+        "at": "5,2",
+        "value": "86",
+        "basis": "text",
+        "reason": "图下注“86＝△”，对应此处三角白子。",
+        "cell": "5,2"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "caption",
+        "reason": "“85粘”未明确给出落点，未补标85。",
+        "candidates": [],
+        "cell": null
+      }
+    ]
+  }
+]

@@ -31,6 +31,8 @@ import { useSound } from '../../../hooks/useSound';
 import BoardEditToolbar from '../../components/tutorials/BoardEditToolbar';
 import RecognitionDebugPanel from '../../components/tutorials/RecognitionDebugPanel';
 import AudioPlayer from '../../components/tutorials/AudioPlayer';
+import TutorialVideoPlayer from '../../../components/tutorials/TutorialVideoPlayer';
+import { selectTutorialVideoProfile, tutorialVideoCalibrationNote } from '../../../components/tutorials/tutorialVideoProfile';
 import { useBoardEditor } from '../../hooks/useBoardEditor';
 import { useAuth } from '../../../context/AuthContext';
 import type { TutorialSectionDetail, TutorialFigure, BoardPayload } from '../../../types/tutorial';
@@ -57,6 +59,8 @@ export default function TutorialFigurePage() {
   const canEdit = user?.is_admin === true;
 
   const currentFigure = section?.figures[currentFigureIndex] ?? null;
+  const video = selectTutorialVideoProfile(currentFigure, 'galaxy-4k-v1');
+  const videoCalibrationNote = tutorialVideoCalibrationNote(video);
 
   const updateCurrentFigure = useCallback((updater: (figure: TutorialFigure) => TutorialFigure) => {
     setSection(prev => {
@@ -522,25 +526,16 @@ export default function TutorialFigurePage() {
             )}
 
             <AudioPlayer src={currentFigure?.audio_asset ? TutorialAPI.assetUrl(currentFigure.audio_asset) : null} />
-            {currentFigure?.video_asset && (
-              <Box sx={{ mt: 2 }}>
-                <video
-                  controls
-                  preload="none"
-                  poster={TutorialAPI.assetUrl(currentFigure.video_asset.replace('.mp4', '.jpg'))}
-                  width="100%"
-                  style={{ borderRadius: 8, display: 'block' }}
-                  src={TutorialAPI.assetUrl(currentFigure.video_asset)}
-                  onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
-                />
-                {currentFigure.video_duration_ms && (
-                  <Typography variant="caption" color="text.secondary">
-                    {Math.floor(currentFigure.video_duration_ms / 60000)}:
-                    {String(Math.floor((currentFigure.video_duration_ms % 60000) / 1000)).padStart(2, '0')}
-                  </Typography>
-                )}
-              </Box>
-            )}
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="caption" color="text.secondary">{video ? 'Galaxy · 4K' : 'Galaxy · 4K 尚未生成'}</Typography>
+              {videoCalibrationNote && <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{videoCalibrationNote}</Typography>}
+              {video && <TutorialVideoPlayer key={video.asset} src={TutorialAPI.assetUrl(video.asset)} />}
+              {video?.duration_ms != null && (
+                <Typography variant="caption" color="text.secondary">
+                  {Math.floor(video.duration_ms / 60000)}:{String(Math.floor((video.duration_ms % 60000) / 1000)).padStart(2, '0')}
+                </Typography>
+              )}
+            </Box>
           </Box>
 
           {canEdit && currentFigure?.recognition_debug && (

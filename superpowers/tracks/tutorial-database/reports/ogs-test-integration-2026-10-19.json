@@ -1,0 +1,210 @@
+{
+  "status": "PASS",
+  "test_only": true,
+  "url": "http://127.0.0.1:18012/admin?book=80&page=1&lang=zh-cn",
+  "book_id": 80,
+  "target": {
+    "database_system_id": "7596941912817897507",
+    "database_name": "katrain_db",
+    "storage_verified": true,
+    "admin_environment": "test"
+  },
+  "counts": {
+    "chapters": 7,
+    "lessons": 248,
+    "steps": 3551,
+    "languages": 32,
+    "screenshots": 3551,
+    "exercise_kinds": {
+      "puzzle": 3028,
+      "choice": 520,
+      "pass": 1,
+      "remove": 1,
+      "finish": 1
+    },
+    "unsupported": 0
+  },
+  "dry_run_status": "new",
+  "apply": {
+    "status": "imported",
+    "counts": {
+      "chapters": 7,
+      "lessons": 248,
+      "figures": 3551,
+      "new_figures": 3551,
+      "screenshots_added": 3551,
+      "languages": 32
+    },
+    "conflicts": []
+  },
+  "repeat": {
+    "status": "unchanged",
+    "counts": {
+      "chapters": 7,
+      "lessons": 248,
+      "figures": 3551,
+      "new_figures": 0,
+      "screenshots_added": 0,
+      "languages": 32
+    },
+    "conflicts": []
+  },
+  "source": {
+    "commit": "1c1c2b82d027f7c307ab25886112cf0a6baf680a",
+    "goban_commit": "d7eb38eb4e9e1c48ace12befb98d9f3c821ec2f3",
+    "locale_version": "5304fd731af8856a16d198d506111d61",
+    "content_sha256": "9b61f2f14233e23f4a1967a2f55b9f20c5221012badefa56d4bd9a3b7dfbdfc0"
+  },
+  "commits": {
+    "provider": "e8d31725f48a7f271d5509e171993623f9dee5dc",
+    "console": "aab2a4c7f51d383077d066ac3bb773038daad3de"
+  },
+  "api_verification": {
+    "status": "PASS",
+    "test_only": true,
+    "book_id": 80,
+    "url": "http://127.0.0.1:18012/admin?book=80&page=1&lang=zh-cn",
+    "counts": {
+      "chapters": 7,
+      "lessons": 248,
+      "steps": 3551,
+      "languages": 32,
+      "screenshots": 3551,
+      "exercise_kinds": {
+        "puzzle": 3028,
+        "choice": 520,
+        "pass": 1,
+        "remove": 1,
+        "finish": 1
+      },
+      "unsupported": 0
+    },
+    "representative_steps": [
+      {
+        "page": 1,
+        "source_id": "ogs-learning:rules-intro:1",
+        "figure_id": 42101,
+        "kind": "puzzle",
+        "source_image_bytes": 26274
+      },
+      {
+        "page": 31,
+        "source_id": "ogs-learning:ending-the-game:1",
+        "figure_id": 42131,
+        "kind": "pass",
+        "source_image_bytes": 61302
+      },
+      {
+        "page": 32,
+        "source_id": "ogs-learning:ending-the-game:2",
+        "figure_id": 42132,
+        "kind": "remove",
+        "source_image_bytes": 59856
+      },
+      {
+        "page": 33,
+        "source_id": "ogs-learning:ending-the-game:3",
+        "figure_id": 42133,
+        "kind": "finish",
+        "source_image_bytes": 55485
+      },
+      {
+        "page": 37,
+        "source_id": "ogs-learning:count-liberties:1",
+        "figure_id": 42137,
+        "kind": "choice",
+        "source_image_bytes": 17825
+      },
+      {
+        "page": 206,
+        "source_id": "ogs-learning:atari-to-side:16",
+        "figure_id": 42306,
+        "kind": "puzzle",
+        "source_image_bytes": 28532
+      },
+      {
+        "page": 2249,
+        "source_id": "ogs-learning:bl;3-skills-5:1",
+        "figure_id": 44349,
+        "kind": "choice",
+        "source_image_bytes": 46248
+      },
+      {
+        "page": 3006,
+        "source_id": "ogs-learning:bl4-opening-4:1",
+        "figure_id": 45106,
+        "kind": "puzzle",
+        "source_image_bytes": 30615
+      },
+      {
+        "page": 3551,
+        "source_id": "ogs-learning:bl4-capturing-race-9:20",
+        "figure_id": 45651,
+        "kind": "puzzle",
+        "source_image_bytes": 38582
+      }
+    ],
+    "all_32_languages_checked_at_page": 37,
+    "export_sgfs": 3551,
+    "export_bytes": 4933593,
+    "export_sha256": "d0fc76e680ba43cbdffc2378e3422eac5aa53d5b28e5e8d1e1ff43ed6fa85427"
+  },
+  "browser_verification": {
+    "status": "PASS",
+    "book_id": 80,
+    "checks": [
+      "existing_book_dropdown_to_OGS",
+      "real_source_image_and_empty_media",
+      "board_play_and_undo",
+      "language_switch_keeps_attempt",
+      "chapter_lesson_navigation_white_first_opening",
+      "white_first_multi_ply_auto_reply_undo",
+      "capture_and_undo",
+      "choice_wrong_retry_correct",
+      "pass_remove_finish",
+      "semicolon_route_and_last_step",
+      "compact_view_collapse_source_enlargement",
+      "ordinary_book_return_and_refresh"
+    ],
+    "console_errors": [],
+    "failed_responses": [],
+    "viewports": [
+      "1920x1080",
+      "1440x900"
+    ],
+    "authentication": "existing_TEST_account_normal_login",
+    "mocked_requests": 0
+  },
+  "database_empty_media_and_reviews": {
+    "figures": 3551,
+    "board_reviews": 0,
+    "video_reviews": 0,
+    "narrations": 0,
+    "audio_assets": 0,
+    "video_assets": 0
+  },
+  "service_health": {
+    "katrain-admin": "healthy",
+    "smartbox-admin-admin-console-1": "healthy"
+  },
+  "reviews": {
+    "reviewer": "Astra Max",
+    "plan": "APPROVE round 1 of maximum 2",
+    "source_backend_capture": "APPROVE",
+    "frontend_release": "APPROVE",
+    "capture_bundle_canonicalization_delta": "APPROVE"
+  },
+  "limits": {
+    "screenshot_language": "zh-cn; all 3551 steps",
+    "text_languages": 32,
+    "attempts": "Page-local; reset on refresh; no learning-record database writes",
+    "commercial_release": "Not cleared; TEST integration only",
+    "manual_content_review": "Not performed or marked approved"
+  },
+  "export": {
+    "file": "/Users/fan/.local/share/smartbox-admin/ogs-integration-20261019/ogs-learn-to-play-go-test-export.zip",
+    "sgf_count": 3551,
+    "bytes": 4933593,
+    "sha256": "d0fc76e680ba43cbdffc2378e3422eac5aa53d5b28e5e8d1e1ff43ed6fa85427"
+  }
+}

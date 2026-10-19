@@ -1,0 +1,3 @@
+recognition_id,page,source_pointer,canonical_source_id,source_figure_id,figure_id,candidate_id,status,protected,protection_reason,applied,supplemental,proposed_new,error
+p080-f04,80,/chapters/2/intro/3/elements/3,curriculum:shape:p80:o4,2894,7168,3307,protected,True,existing_payload,False,False,False,
+p083-f03,83,/chapters/2/intro/6/elements/2,curriculum:shape:p83:o3,2905,7179,3308,protected,True,existing_payload,False,False,False,

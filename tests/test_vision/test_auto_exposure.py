@@ -235,6 +235,44 @@ class TestCameraRuntimeControls:
         assert cam.open() is True
         assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_ON) in cap.control_writes
         assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_ON
+        assert cam.controls_effective is True
+        assert cam._pending_controls == {}
+        cam.close()
+
+    @pytest.mark.parametrize("failure", ["write", "readback"])
+    def test_open_reports_unverified_hardware_ae(self, monkeypatch, failure):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_ON, CameraManager
+
+        cap = self.FakeCapture(auto_exposure=1.0)
+        if failure == "write":
+            cap.failed_writes.add((cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_ON))
+        else:
+            cap.readback_overrides[cv2.CAP_PROP_AUTO_EXPOSURE] = 1.0
+        cam = CameraManager(device_id=0, warmup_seconds=0, lock_exposure=False)
+        self.open_with_captures(monkeypatch, cam, [cap])
+
+        assert cam.open() is True
+        assert cam.controls_effective is False
+        assert cam._pending_controls == {}
+        cam.close()
+
+    def test_reopen_reverifies_hardware_ae(self, monkeypatch):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_ON, CameraManager
+
+        first = self.FakeCapture(auto_exposure=1.0)
+        reopened = self.FakeCapture(auto_exposure=1.0)
+        reopened.failed_writes.add((cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_ON))
+        cam = CameraManager(device_id=0, warmup_seconds=0, lock_exposure=False)
+        self.open_with_captures(monkeypatch, cam, [first, reopened])
+
+        assert cam.open() is True
+        assert cam.controls_effective is True
+        assert cam.open() is True
+        assert cam.controls_effective is False
         cam.close()
 
     def test_open_configuration_does_not_report_a_runtime_control_result(self, monkeypatch):

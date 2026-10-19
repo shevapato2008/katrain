@@ -1,6 +1,6 @@
 """Nonblocking ownership of a local camera or serial device.
 
-Processes must run as the same Unix user with the same HOME to share these leases.
+Processes must share SMARTBOX_DEVICE_LEASE_DIR, or the same HOME when unset.
 """
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ from __future__ import annotations
 import errno
 import fcntl
 import hashlib
+import os
 import sys
 from pathlib import Path
 
@@ -22,17 +23,26 @@ class DeviceLease:
 
     @classmethod
     def acquire(cls, kind: str, device_id: int | str) -> "DeviceLease":
-        identity = str(device_id)
-        # Match CameraManager._device_to_capture_arg on Linux: high integer
-        # indices are opened as /dev/videoN, so both spellings need one lease.
-        if kind == "camera" and sys.platform == "linux" and isinstance(device_id, int) and device_id > 9:
-            identity = f"/dev/video{device_id}"
-        if identity.startswith("/"):
-            identity = str(Path(identity).resolve())
-        digest = hashlib.sha256(f"{kind}\0{identity}".encode("utf-8")).hexdigest()
-        lease_dir = Path.home() / ".katrain" / "device-leases"
+        configured_dir = os.environ.get("SMARTBOX_DEVICE_LEASE_DIR")
+        if configured_dir:
+            lease_dir = Path(configured_dir)
+            if not lease_dir.is_absolute():
+                raise ValueError("SMARTBOX_DEVICE_LEASE_DIR must be absolute")
+            # SmartBox has one camera and one LED controller. A kind-wide lock
+            # survives alias creation and also blocks direct /dev node callers.
+            lock_name = f"{kind}-device.lock"
+        else:
+            lease_dir = Path.home() / ".katrain" / "device-leases"
+            identity = str(device_id)
+            # Preserve multi-device behavior for non-SmartBox installations.
+            if kind == "camera" and sys.platform == "linux" and isinstance(device_id, int) and device_id > 9:
+                identity = f"/dev/video{device_id}"
+            if identity.startswith("/"):
+                identity = str(Path(identity).resolve())
+            digest = hashlib.sha256(f"{kind}\0{identity}".encode("utf-8")).hexdigest()
+            lock_name = f"{kind}-{digest}.lock"
         lease_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
-        handle = (lease_dir / f"{kind}-{digest}.lock").open("a+b")
+        handle = (lease_dir / lock_name).open("a+b")
         try:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as exc:

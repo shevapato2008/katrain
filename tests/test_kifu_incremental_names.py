@@ -76,6 +76,38 @@ def test_two_distinct_requests_produce_catalog_decision_and_hash():
     assert result["producer"]["request_attempts"] == 1
 
 
+def test_event_producer_prompt_lists_exact_digit_tokens_for_every_language():
+    key = "第12届国手山脉杯世界赛8强赛"
+    candidate = {
+        "displays": {lang: f"{key} ({lang} 12 8)" for lang in ("cn", "tw", "jp", "ko", "en")},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in ("cn", "tw", "jp", "ko", "en")},
+        "source_urls": [],
+    }
+    candidate["displays"]["cn"] = key
+    candidate["methods"]["cn"] = "retain_original"
+    service, client, calls = mock_service([candidate, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            await service.translate_and_review("raw_event", key, [{**ITEM, "slot": "event"}])
+
+    run(check())
+    body = json.loads(calls[0].content)
+    prompt = json.loads(body["messages"][1]["content"])
+    assert prompt["required_digit_tokens"] == ["12", "8"]
+    assert "Each of cn, tw, jp, ko and en" in prompt["digit_rule"]
+    assert "12" in prompt["digit_rule"] and "8" in prompt["digit_rule"]
+    assert "original" in prompt["digit_rule"]
+    assert prompt["required_cn_literal"] == key
+    assert "character for character" in prompt["cn_literal_rule"]
+    assert prompt["output_shape"]["displays"] == ["cn", "tw", "jp", "ko", "en"]
+    assert set(prompt["allowed_methods"]) == {
+        "retain_original", "orthographic_conversion", "transliteration", "translation"
+    }
+    assert "required_digit_tokens literally" in body["messages"][0]["content"]
+
+
 def test_token_budget_stops_before_another_paid_request():
     service, client, calls = mock_service([CANDIDATE, {"decision": "approve"}], max_total_tokens=1200)
 

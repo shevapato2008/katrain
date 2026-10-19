@@ -189,8 +189,12 @@ class QwenNameService:
                         "You are an independent Go name reviewer. Return one JSON object only; approve only if "
                         "all names, methods, identity, digits and cited sources are supported."
                         if role == "reviewer"
-                        else "You translate Go names. Return one JSON object only. Keep the same entity, preserve "
-                        "years and round numbers, use supplied source URLs only, and mark generated names honestly."
+                        else "You translate Go names. Return one JSON object only with displays and methods keyed "
+                        "by cn, tw, jp, ko, en; original_language and source_urls. Each method must be "
+                        "retain_original, orthographic_conversion, transliteration, or translation. "
+                        "Keep the same entity. For event and raw_event names, preserve every token in "
+                        "required_digit_tokens literally in all five displays. "
+                        "use supplied source URLs only, and mark generated names honestly."
                     ),
                 },
                 {"role": "user", "content": json.dumps(content, ensure_ascii=False)},
@@ -369,7 +373,30 @@ class QwenNameService:
                     "source_urls",
                     "optional cn_conversion_note for an explained Chinese orthographic conversion",
                 ],
+                "output_shape": {
+                    "displays": list(LANGUAGES),
+                    "methods": list(LANGUAGES),
+                    "original_language": "language code of the original",
+                    "source_urls": "list of supplied URLs actually used",
+                },
             }
+            literal = _RANK.sub("", key).strip() if kind == "raw_player" else key.strip()
+            if re.search(r"[\u3400-\u9fff]", literal):
+                prompt["required_cn_literal"] = literal
+                prompt["cn_literal_rule"] = (
+                    "Set displays.cn to required_cn_literal exactly, character for character; do not add or remove "
+                    "第, 赛, spaces, ranks, or other text. Only a necessary simplified/traditional character "
+                    "conversion may differ, with methods.cn=orthographic_conversion and a cn_conversion_note."
+                )
+            if kind in {"event", "raw_event"}:
+                digits = re.findall(r"\d+", key)
+                prompt["required_digit_tokens"] = digits
+                prompt["digit_rule"] = (
+                    f"Each of cn, tw, jp, ko and en must contain every original digit token exactly: {digits}. "
+                    "Use natural translated round names if useful, then add a localized numeric explanation. "
+                    "Before returning JSON, check all five displays for every token. "
+                    "Keep the cn original unchanged unless an orthographic conversion is explained."
+                )
             repair_reason = None
             for repair in range(2):
                 try:

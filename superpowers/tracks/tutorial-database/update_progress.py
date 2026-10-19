@@ -84,6 +84,8 @@ def render_plan(data):
 
 本文件已替换早期媒体存储迁移计划，以本轮实际任务为准。完整书单、教学模块与78本制作阶段见 [go-curriculum.html](go-curriculum.html#progress)；状态数据保存在 [progress.json](progress.json)。
 
+本阶段交付数量、逐书测试入口和未决注记见 [23本核心教材测试交付汇总](reports/core23-test-delivery.md)。测试交付与全书机器识别完整、人工校准完成分别记录。
+
 ## 当前范围
 
 - 当前连续执行目标为23本核心教材、5827个PDF页，直到识别、校验和TEST增量接入完成；完成一本即接下一核心书。其他层级后置；intro-fast作为此前已启动的补充任务单独记录，不计入23本。人工审核及媒体独立记录，不自动完成。
@@ -106,7 +108,7 @@ def render_plan(data):
 ## 现有可操作后台
 
 - [测试教程后台](http://127.0.0.1:18012/admin?book=4&page=11&figure=1030&filter=all)，沿用现有SSH隧道和后台登录。
-- 最新双档样例：第11页两图，各有Galaxy原生4K与RK1024×600版；新视频待人工审核。当前TEST provider `0bcc1d65f`，console `f23f06ba`。普通消费者/RK实机未在本阶段部署。
+- 最新双档样例：第11页两图，各有Galaxy原生4K与RK1024×600版；新视频待人工审核。当前TEST provider `0bcc1d65f`，console `7518b4b2`。普通消费者/RK实机未在本阶段部署。
 - 2026-10-18：78本书的入口与代表性识别数据读取检查通过；修复10本书首页不为第1页时无法打开，以及未识别图误显示为空棋盘的问题。未识别图显示“待识别”，不能误登记人工审核。检查范围与逐书结果见 [加载检查报告](reports/all-book-load-audit-2026-10-18.json)。
 
 ## 当前工具与写入边界

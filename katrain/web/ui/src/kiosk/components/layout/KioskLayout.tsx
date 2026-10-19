@@ -51,11 +51,13 @@ const KioskShell = ({ username, accessBlocked = false }: KioskLayoutProps) => {
   const aiPlayJourney = location.pathname === '/kiosk/play'
     || location.pathname.startsWith('/kiosk/play/ai/setup/')
     || location.pathname.startsWith('/kiosk/play/ai/game/');
+  const localPlayJourney = location.pathname === '/kiosk/play/pvp/setup'
+    || location.pathname.startsWith('/kiosk/play/pvp/local/game/');
 
   return (
     <KioskFrame
       level={level}
-      journey={aiPlayJourney ? 'ai-play' : undefined}
+      journey={aiPlayJourney ? 'ai-play' : localPlayJourney ? 'local-play' : undefined}
       // 顶栏**无条件渲染** —— 规范 §5 防跳铁律 1:「顶栏永远占 y 0–56,任何层级、
       // 任何模块都不变高、不隐藏」。这里曾经有一个 `immersive` 开关能把它抽掉,
       // 而 `.kiosk-content` 的 `top` 是写死的 `var(--topbar-h)`(tokens.css:419)⇒

@@ -26,6 +26,7 @@ import '../kiosk-shell/go-screens.css';
 import '../kiosk-shell/shell-redesign.css';
 import '../kiosk-shell/play-redesign.css';
 import '../kiosk-shell/setup-redesign.css';
+import '../kiosk-shell/local-setup-redesign.css';
 import '../kiosk-shell/game-redesign.css';
 
 import { lazy, Suspense, useEffect } from 'react';

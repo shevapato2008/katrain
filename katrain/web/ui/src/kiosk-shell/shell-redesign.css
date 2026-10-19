@@ -1,20 +1,20 @@
-/* Approved AI-play journey shell at the fixed 1024 × 600 canvas. */
-.kiosk-screen[data-journey="ai-play"] .kiosk-topbar__game {
+/* Approved play journey shell at the fixed 1024 × 600 canvas. */
+:is(.kiosk-screen[data-journey="ai-play"], .kiosk-screen[data-journey="local-play"]) .kiosk-topbar__game {
   font-size: 22px;
   letter-spacing: 0;
 }
-.kiosk-screen[data-journey="ai-play"] .kiosk-topbar__user {
+:is(.kiosk-screen[data-journey="ai-play"], .kiosk-screen[data-journey="local-play"]) .kiosk-topbar__user {
   font-size: 18px;
 }
-.kiosk-screen[data-journey="ai-play"] .kiosk-topbar__clock {
+:is(.kiosk-screen[data-journey="ai-play"], .kiosk-screen[data-journey="local-play"]) .kiosk-topbar__clock {
   font-size: 22px;
 }
-.kiosk-screen[data-journey="ai-play"] .kiosk-topbar__avatar {
+:is(.kiosk-screen[data-journey="ai-play"], .kiosk-screen[data-journey="local-play"]) .kiosk-topbar__avatar {
   width: 32px;
   height: 32px;
   font-size: 18px;
 }
-.kiosk-screen[data-journey="ai-play"] .kiosk-topbar__home {
+:is(.kiosk-screen[data-journey="ai-play"], .kiosk-screen[data-journey="local-play"]) .kiosk-topbar__home {
   min-height: 46px;
   font-size: 22px;
   background: var(--raise);

@@ -1,0 +1,151 @@
+{
+  "schema_version": "independent-finite-data-correction-review-v1",
+  "decision": "approve",
+  "reviewed_at": "2026-10-19T19:50:42.895080+00:00",
+  "reviewer": {
+    "id": "/root/kifu_backfill_names_astra_review",
+    "model": "gpt-6-astra",
+    "reasoning_effort": "max",
+    "configuration_basis": "Parent explicitly configured this independent task as gpt-6-astra / max / fork_turns none."
+  },
+  "review_request": {
+    "file": "corrections/round4-review-request.json",
+    "file_sha256": "7cd2b2bbdfe13336891ce92b13d70d64dfe08d13a98b51d91b14f3fe308cd5d3",
+    "note": "request.draft_sha256 is the canonical manifest hash, not the draft file bytes hash."
+  },
+  "original": {
+    "file": "signed-manifests/batch038.json",
+    "file_sha256": "7a4b62b79acbb498b2d0d1af6013f03b8a196f86c10dad4e53bddbb039eb21d4",
+    "manifest_sha256": "eadcec69d29474c2cdb73a0702d5ae808438d5c257d709dc83887ca64e03a66d",
+    "publication_key": "kifu-backfill5536-20261019-reviewed-batch038"
+  },
+  "draft": {
+    "file": "corrections/batch038c.draft.json",
+    "file_sha256": "33729f9290961be8a3663422c9bc776560e21fc8ff2abc623004ca9e92be4ab9",
+    "manifest_sha256": "295b5414355bdaecddb872e94fc524c40bfb8f8ac50813bc8d7f857eaec2ac3c"
+  },
+  "approved": {
+    "file": "corrections/batch038c.json",
+    "file_sha256": "45bfc5e0670c8e52434c2e3e43453ecbb5f0e268a4522448c118a78bdba442da",
+    "manifest_sha256": "1efdcc0be252ca8f1dc3bd8344d6f16330ff71fc7393ea04bc577c3c4456900e",
+    "publication_key": "kifu-backfill5536-20261019-reviewed-batch038-c1",
+    "games": 100,
+    "decisions": 60,
+    "changed_decision_index": 24,
+    "decision_content_sha256": "55a1e36176cc1ceb9f33f882d5f073eb8a2a6e0cfa8eca38cf621b3548c66455"
+  },
+  "semantic_correction": {
+    "kind": "raw_event",
+    "key": "第31届韩国GS加德士杯胜者组4强战",
+    "approved_names5": {
+      "cn": "第31届韩国GS加德士杯胜者组4强战",
+      "tw": "第31屆韓國GS加德士杯勝者組4強戰",
+      "jp": "第31回 韓国GSカルテックス杯勝者組 4強戦",
+      "ko": "제31회 한국 GS칼텍스배 승자조 4강전",
+      "en": "31st Korean GS Caltex Cup Winners’ Bracket Round of 4"
+    },
+    "changed_languages": [
+      "jp",
+      "ko",
+      "en"
+    ],
+    "rationale": "4強戦, 4강전, and Round of 4 are readable literal renderings of 4强战; they retain source numbers 31 and 4, the GS Caltex sponsor and the winners bracket. CN/TW and source meaning remain unchanged. No new canonical identity is asserted.",
+    "source_items": [
+      {
+        "source_key": "19x19",
+        "source_item_id": "81035186",
+        "slot": "event",
+        "sgf_sha256": "e44c26cd81eee9f5a8edb226da19f1660d48a8161ef65d355b9bec0d376f8f81"
+      }
+    ]
+  },
+  "semantic_approval_precedence": {
+    "historical_base_artifact": {
+      "artifact": "translation-final-data-review.json",
+      "artifact_sha256": "809910945ca7593625541115bb711e71b5523f0683b41251040c191af27d61ba",
+      "kind": "event",
+      "raw": "第31届韩国GS加德士杯胜者组4强战",
+      "decision": "approve_with_finite_corrections"
+    },
+    "interpretation": "The unchanged semantic_approval field records the historical base review. This actual correction review expressly supersedes only its JP/KO/EN strings for this exact raw key and finite source binding; the historical artifact is not represented as approving the corrected strings. All other approved words and decisions retain their original reviews.",
+    "binding": "This record binds the exact corrected decision content hash and complete signed manifest hash above. No old signature is used for changed content."
+  },
+  "verification": {
+    "original_and_draft_pinned": true,
+    "games_byte_values_unchanged": 100,
+    "other_decisions_identical": 59,
+    "source_items_unchanged": true,
+    "methods_sources_original_language_unchanged": true,
+    "native_validate_decision": "pass",
+    "native_validate_manifest_games": 100,
+    "native_shared_event_display_predicate_all_five": "pass",
+    "numeric_multiset_31_4_retained_all_five": true,
+    "partition": "Replacing this one package with identical game membership preserves 5279 ready / 257 isolated. No partition recomputation or new source addition is implied.",
+    "catalog_file": "/Users/fan/Repositories/katrain-kiosk-go-kifu/.worktrees/kifu-hourly-incremental/katrain/kifu_ingest/catalog.py",
+    "catalog_file_sha256": "7abc91d18a38429ed40b35cc09d8fc9bdb072fa4e6d58c562f30abeca039e4fb"
+  },
+  "live_state_evidence": {
+    "basis": "Parent reported read-only checks on TEST and PROD; not independently queried in this offline review.",
+    "reported_original_manifest_batch_exists": false,
+    "reported_exact_raw_event_name_rows_exist": false,
+    "note": "Normal native qualification, collision, lock and atomic publication guards remain required; approval is not a publication receipt."
+  },
+  "exact_diff_from_original": [
+    {
+      "path": "/decisions/24/displays/en",
+      "before": "31st Korean GS Caltex Cup Winners’ Bracket Semifinal",
+      "after": "31st Korean GS Caltex Cup Winners’ Bracket Round of 4"
+    },
+    {
+      "path": "/decisions/24/displays/jp",
+      "before": "第31回 韓国GSカルテックス杯勝者組 準決勝",
+      "after": "第31回 韓国GSカルテックス杯勝者組 4強戦"
+    },
+    {
+      "path": "/decisions/24/displays/ko",
+      "before": "제31회 한국 GS칼텍스배 승자조 준결승",
+      "after": "제31회 한국 GS칼텍스배 승자조 4강전"
+    },
+    {
+      "path": "/decisions/24/producer/at",
+      "before": "2026-10-19T11:22:26.909949+00:00",
+      "after": "2026-10-19T19:48:19.034419+00:00"
+    },
+    {
+      "path": "/decisions/24/producer/id",
+      "before": "/root/kifu_full_backfill_package_assembly",
+      "after": "/root"
+    },
+    {
+      "path": "/decisions/24/producer/model",
+      "before": "Codex GPT-6 session; deterministic offline assembly",
+      "after": "Codex session"
+    },
+    {
+      "path": "/decisions/24/producer/request_id",
+      "before": "finite-backfill-assembly-20261019",
+      "after": "local-task:A-round4-translation-correction-20261020"
+    },
+    {
+      "path": "/decisions/24/review/at",
+      "before": "2026-10-19T11:37:16.525439+00:00",
+      "after": "2026-10-19T19:50:42.895080+00:00"
+    },
+    {
+      "path": "/decisions/24/review/content_sha256",
+      "before": "2a40a75f322685f5adbd3de2845f743ffb6d3f72d92521deb412797cd1791ed8",
+      "after": "55a1e36176cc1ceb9f33f882d5f073eb8a2a6e0cfa8eca38cf621b3548c66455"
+    },
+    {
+      "path": "/decisions/24/review/request_id",
+      "before": "/root/kifu_backfill_names_astra_review/finite-binding-review/batch038.json/2026-10-19T11:37:16.525439+00:00",
+      "after": "/root/kifu_backfill_names_astra_review/finite-correction-review/batch038-c1/2026-10-19T19:50:42.895080+00:00"
+    },
+    {
+      "path": "/publication_key",
+      "before": "kifu-backfill5536-20261019-reviewed-batch038",
+      "after": "kifu-backfill5536-20261019-reviewed-batch038-c1"
+    }
+  ],
+  "scope_limit": "Only creation of this corrected signed package and independent correction review; no DB/network/Git/server action. Original signed manifests, index and approval artifacts remain unchanged."
+}

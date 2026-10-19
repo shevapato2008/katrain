@@ -76,6 +76,82 @@ def test_two_distinct_requests_produce_catalog_decision_and_hash():
     assert result["producer"]["request_attempts"] == 1
 
 
+@pytest.mark.parametrize("key,japanese", [("菲特拉·R·S", "フィトラ・R・S"), ("菲特拉", "フィトラ")])
+def test_fresh_raw_player_retention_mismatch_repairs_before_reviewer(key, japanese):
+    wrong = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, "jp": japanese},
+        "original_language": "und",
+        "methods": {lang: "retain_original" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    with pytest.raises(NameRejected, match="retain_original differs from parsed name"):
+        QwenNameService._candidate(wrong, "raw_player", key, [])
+    corrected = {**wrong, "methods": {**wrong["methods"], "jp": "transliteration"}}
+    service, client, calls = mock_service([wrong, corrected, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_player", key, [ITEM])
+
+    decision = run(check())
+    prompts = [json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls]
+    assert len(prompts) == 3
+    assert "candidate" not in prompts[0] and "candidate" not in prompts[1]
+    assert "retain_original differs from parsed name" in prompts[1]["repair_reason"]
+    assert prompts[2]["candidate"] == corrected
+    assert decision["displays"] == wrong["displays"]
+    assert decision["methods"]["jp"] == "transliteration"
+
+
+def test_repeated_fresh_raw_player_retention_mismatch_rejects_without_reviewer():
+    wrong = {
+        **CANDIDATE,
+        "displays": {lang: "柯洁" if lang != "jp" else "柯潔" for lang in CANDIDATE["displays"]},
+        "methods": {lang: "retain_original" for lang in CANDIDATE["displays"]},
+    }
+    service, client, calls = mock_service([wrong, wrong, wrong, wrong])
+
+    async def check():
+        async with client:
+            with pytest.raises(NameRejected, match="retain_original differs from parsed name"):
+                await service.translate_and_review("raw_player", "柯洁", [ITEM])
+
+    run(check())
+    assert len(calls) == 2
+    assert all("candidate" not in json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls)
+
+
+def test_fresh_raw_player_can_retain_native_parsed_name_without_embedded_rank():
+    candidate = {
+        **CANDIDATE,
+        "displays": {lang: "菲特拉" for lang in CANDIDATE["displays"]},
+        "methods": {lang: "retain_original" for lang in CANDIDATE["displays"]},
+    }
+    service, client, calls = mock_service([candidate, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_player", "菲特拉九段", [ITEM])
+
+    decision = run(check())
+    assert decision["displays"] == candidate["displays"]
+    assert len(calls) == 2
+
+
+def test_qualified_raw_player_template_keeps_original_generation_provenance():
+    context = {"verified_reuse_displays": CANDIDATE["displays"]}
+    service, client, calls = mock_service([CANDIDATE, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_player", "柯洁", [ITEM], context=context)
+
+    decision = run(check())
+    assert decision["displays"] == CANDIDATE["displays"]
+    assert decision["methods"] == CANDIDATE["methods"]
+    assert len(calls) == 2
+
+
 def test_event_producer_prompt_lists_exact_digit_tokens_for_every_language():
     key = "第12届国手山脉杯世界赛8强赛"
     candidate = {
@@ -102,11 +178,18 @@ def test_event_producer_prompt_lists_exact_digit_tokens_for_every_language():
     assert prompt["required_cn_literal"] == key
     assert "character for character" in prompt["cn_literal_rule"]
     assert prompt["output_shape"]["displays"] == {
-        "cn": "string", "tw": "string", "jp": "string", "ko": "string", "en": "string"
+        "cn": "string",
+        "tw": "string",
+        "jp": "string",
+        "ko": "string",
+        "en": "string",
     }
     assert set(prompt["output_shape"]["methods"]) == {"cn", "tw", "jp", "ko", "en"}
     assert set(prompt["allowed_methods"]) == {
-        "retain_original", "orthographic_conversion", "transliteration", "translation"
+        "retain_original",
+        "orthographic_conversion",
+        "transliteration",
+        "translation",
     }
     assert "required_digit_tokens literally" in body["messages"][0]["content"]
 

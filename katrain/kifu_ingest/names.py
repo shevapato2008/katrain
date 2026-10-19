@@ -18,6 +18,8 @@ from uuid import uuid4
 
 import httpx
 
+from katrain.web.kifu.name_parse import parse_player
+
 
 LANGUAGES = ("cn", "tw", "jp", "ko", "en")
 METHODS = frozenset({"retain_original", "orthographic_conversion", "transliteration", "translation"})
@@ -289,7 +291,7 @@ class QwenNameService:
         raise NameServiceError("Qwen rate limited")
 
     @staticmethod
-    def _candidate(candidate: dict, kind: str, key: str, sources: list[dict]) -> dict:
+    def _candidate(candidate: dict, kind: str, key: str, sources: list[dict], context=None) -> dict:
         if not {"displays", "methods", "original_language", "source_urls"} <= set(candidate) or not set(candidate) <= {
             "displays",
             "methods",
@@ -307,6 +309,10 @@ class QwenNameService:
             raise NameRejected("candidate requires five nonempty displays")
         if not isinstance(methods, dict) or set(methods) != set(LANGUAGES) or not set(methods.values()) <= METHODS:
             raise NameRejected("candidate methods invalid")
+        if kind == "raw_player" and not (isinstance(context, dict) and context.get("verified_reuse_displays")):
+            retained = parse_player(key, None).name
+            if any(methods[lang] == "retain_original" and displays[lang] != retained for lang in LANGUAGES):
+                raise NameRejected("raw player retain_original differs from parsed name")
         if not isinstance(candidate["original_language"], str) or not candidate["original_language"].strip():
             raise NameRejected("original language missing")
         urls = candidate["source_urls"]
@@ -404,7 +410,7 @@ class QwenNameService:
                     candidate, producer = await self._call(
                         "producer", {**prompt, "repair_attempt": repair, "repair_reason": repair_reason}
                     )
-                    self._candidate(candidate, kind, key, sources)
+                    self._candidate(candidate, kind, key, sources, context=context)
                     review, reviewer = await self._call(
                         "reviewer",
                         {

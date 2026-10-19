@@ -133,6 +133,7 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
           : !active ? `${t('game:local_wait', '等待')}${other}` : physicalNotReady ? preparationFailed ? t('game:local_prepare_failed', '实体盘准备失败') : t('game:local_preparing', '正在准备实体盘') : ownError ? errorTitle : selected ? `${t('game:local_selected', '已选')} ${selected}` : t('game:local_your_turn', '轮到你落子')}</h2>
         {copy && <p>{copy}</p>}
       </div>
+      <div className="lc-controls">
       <div className="lc-view-toggles" aria-label={t('game:local_board_display', '棋盘显示')}>
         {['coords', 'numbers'].map(key => <button key={key} type="button" aria-pressed={!!analysisToggles[key]} onClick={() => onToggle(key)}>
           <Icon name={key === 'coords' ? 'grid-nine' : 'list-numbers'} />
@@ -141,9 +142,10 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
         </button>)}
       </div>
       <div className="lc-actions">
-        <button type="button" disabled={!active || busy || !capable} onClick={() => setDialog('pass')}>{t('game:pass', '停一手')}</button>
-        <button type="button" title={!countAvailable ? t('game:local_count_threshold', '数子需满 {n} 手').replace('{n}', String(minMoves)) : undefined} disabled={!active || busy || blocked || !countAvailable} onClick={onCount}>{t('game:count_stones', '数子')}</button>
-        <button type="button" className="lc-resign" disabled={busy || blocked} onClick={() => setDialog(color)}>{t('Resign', '认输')}</button>
+        <button type="button" disabled={!active || busy || !capable} onClick={() => setDialog('pass')}><Icon name="hand-pointing" />{t('game:pass', '停一手')}</button>
+        <button type="button" title={!countAvailable ? t('game:local_count_threshold', '数子需满 {n} 手').replace('{n}', String(minMoves)) : undefined} disabled={!active || busy || blocked || !countAvailable} onClick={onCount}><Icon name="squares-four" />{t('game:count_stones', '数子')}</button>
+        <button type="button" className="lc-resign" disabled={busy || blocked} onClick={() => setDialog(color)}><Icon name="flag" />{t('Resign', '认输')}</button>
+      </div>
       </div>
       <button type="button" className={`lc-confirm${physicalNotReady ? " is-preparation" : ""}`} disabled={preparationFailed ? !active || busy || !onRetryPreparation : !active || busy || !capable || (input === 'screen' && !point)} onClick={preparationFailed ? onRetryPreparation : beginConfirm}>
         <span className="lc-confirm-label">{busy && active ? <span className="lc-spinner" aria-hidden="true" /> : active && !physicalNotReady ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg> : null}

@@ -102,6 +102,18 @@ describe('local confirmation panels', () => {
     rerender(<LocalConfirmGame {...p} point={{ x: 3, y: 3 }} />);
     expect(black.getByText('已选 D4')).toBeInTheDocument();
     expect(black.getByRole('button', { name: /确认落子/ })).toBeEnabled();
+    expect(black.getByText('走棋中')).toBeInTheDocument();
+    expect(black.getByRole('button', { name: '停一手' })).toBeEnabled();
+    const white = within(screen.getByRole('region', { name: '白方玩家面板' }));
+    expect(white.getByText('等待中')).toBeInTheDocument();
+    expect(white.getByRole('button', { name: '停一手' })).toBeDisabled();
+    expect(white.getByRole('button', { name: /等待黑方/ })).toBeDisabled();
+    fireEvent.click(black.getByRole('button', { name: /确认落子/ }));
+    expect(p.onConfirm).toHaveBeenCalledTimes(1);
+    rerender(<LocalConfirmGame {...p} point={{ x: 3, y: 3 }} gameState={{ ...game, player_to_move: 'W' }} />);
+    expect(white.getByText('走棋中')).toBeInTheDocument();
+    expect(white.getByRole('button', { name: /确认落子/ })).toBeEnabled();
+    expect(black.getByRole('button', { name: '停一手' })).toBeDisabled();
   });
   it('lets the waiting side resign itself with a second confirmation', () => {
     const p = props();

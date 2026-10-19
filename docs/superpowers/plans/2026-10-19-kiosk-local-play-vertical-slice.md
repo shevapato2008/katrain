@@ -73,3 +73,5 @@ At 1024 × 600, setup must keep the 516 px board and 460 px rail, offer working 
 ## Completion record
 
 Record focused test results, real API/turn-switch result, screenshot paths, Astra decision, commit hashes, and the physical-device limitation. Do not merge or deploy as part of this slice without a separate release request.
+
+**2026-10-19 frontend result:** Setup and local game are implemented in the isolated worktree. The 35 focused Vitest cases, production UI build, and `git diff --check` passed. At 1024 × 600, the local API created a screen-input game with 5 minutes plus three 30-second periods; Black selected D16 and confirmed, White selected E16 and confirmed, with the active clock and disabled waiting-side confirmation switching correctly. Screenshots and right-rail overlays are under `output/playwright/kiosk-local-*`. Astra Max requested two corrections (raised game controls and accurate rule help); both were fixed and its targeted visual/code re-review passed. Physical-board recognition still needs device acceptance and was not simulated on this Mac.

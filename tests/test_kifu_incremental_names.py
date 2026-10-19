@@ -101,7 +101,10 @@ def test_event_producer_prompt_lists_exact_digit_tokens_for_every_language():
     assert "original" in prompt["digit_rule"]
     assert prompt["required_cn_literal"] == key
     assert "character for character" in prompt["cn_literal_rule"]
-    assert prompt["output_shape"]["displays"] == ["cn", "tw", "jp", "ko", "en"]
+    assert prompt["output_shape"]["displays"] == {
+        "cn": "string", "tw": "string", "jp": "string", "ko": "string", "en": "string"
+    }
+    assert set(prompt["output_shape"]["methods"]) == {"cn", "tw", "jp", "ko", "en"}
     assert set(prompt["allowed_methods"]) == {
         "retain_original", "orthographic_conversion", "transliteration", "translation"
     }

@@ -271,3 +271,19 @@ PROD：同上；本批新增/复用及两库差异
 - 名称数据独立审核通过 1,922/1,923 个赛事字段、113/121 个棋手候选及全部 21 条字形身份映射；按实际棋谱成员组包后核对有限绑定，不能把此计为已入库。
 - A 发布基础已推送 feature/develop：`fccdeaf70c17455bf11434979057da3ba90c1034`；smartbox-software main 子模块指针提交 `0d26a33f`。两机兼容镜像构建中，尚未重启应用或写入新增棋谱。
 - 用户已确认小时任务使用现有 Qwen Plus，每日最多 100,000 token，达到上限持久暂存并次日恢复。启用前仍执行小样及真实 TEST→PROD 验证。
+
+### 用户要求安全暂停 · 2026-10-19
+
+- 已关闭 TEST 新增抓取和付费翻译：持久 override `/mnt/disk1/fan/kifu-hourly-incremental-20261019/cron-kifu.override.yml` 中 ENABLED=false、LLM_ENABLED=false、MAX_TOKENS=0。正常 Analyze/ReportAnalyzer 与 GPU1 :8002、独立 1000 盘 GPU 任务保持运行。
+- 两机 Web 已部署 `0cf3d8b4be6913da0e30d555193100dc2b565156`，健康、棋谱列表、Galaxy/kiosk 页面入口 HTTP200；TEST cron 当前已提交镜像 `748dc3e5109f742cd654615316e3ab901df29ca4`。功能分支已推送748；develop/父仓库指针仍为0cf（父提交e4c95771），748 develop push曾网络超时，恢复后先核对。
+- 5536 原始盘中5279盘（95.36%）审核并绑定就绪（53签署包5201盘+不可变78盘），257盘隔离；不是已入库率。实际首20盘因既有两个赛事raw共用JP显示名的原子续签检查顺序问题整体回滚；新谱实际发布0盘。两库003迁移已完成。
+- 付费4个样本均被隔离，发布批次0；最终专用账本4698 token。已定位并保存未提交提示示例修复：displays/methods必须是五语对象而非数组；22项名称测试通过，但尚未独立复核该最后修复并部署。
+- 未提交 A 修复位于 catalog.py 和对应catalog测试：把同一个native cross-bundle检查移至完整child后像写齐、commit之前。最小复现已RED；修后47项通过，新增测试夹具错误已保存修正但尚未重跑。恢复后先重跑48项并独立Astra审查，不能直接部署未审代码。
+- 两机SGF去重缓存已完成（TEST777秒、PROD992秒）并备份到各自主机任务目录 `sgf-cache.json`；重建Web后恢复至 `/tmp/kifu-backfill/sgf-cache.json`（注意运行用户写权限），避免重跑首次全库解析。TEST真实指标快照已完成：171272总盘，171013公开；fixedwide154985，strictcomplete171013，P5 3838/3865，E5 84/85。PROD指标只读任务暂停时终止，尚无新完整结果。
+- 运维、签署包、完整排除表、重试脚本和补丁保存在 `/tmp/kifu-hourly-incremental-20261019`；安全暂停快照 `safe-pause-uncommitted.patch`。恢复后继续先TEST验证再PROD发布；小时任务保持关闭，直到明确恢复后样本全链路成功。
+
+### 恢复实施 · 2026-10-19 22:16 CST
+
+- 用户已明确继续。A共享译名续签检查顺序与B五语对象示例两处最小修复均获独立Astra APPROVE；主窗口合并重跑70项聚焦测试全部通过。
+- 新小时任务仍保持关闭，待部署已审代码并通过真实单盘TEST→PROD后启用；每日10万token授权仍有效。
+- TEST/PROD SSH可用、两机SGF缓存备份仍在。PROD健康端点可读但棋谱列表出现10–15秒超时，正在一次聚焦只读核对，未新增写入。

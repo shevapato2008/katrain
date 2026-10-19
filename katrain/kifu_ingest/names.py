@@ -374,11 +374,12 @@ class QwenNameService:
                     "optional cn_conversion_note for an explained Chinese orthographic conversion",
                 ],
                 "output_shape": {
-                    "displays": list(LANGUAGES),
-                    "methods": list(LANGUAGES),
+                    "displays": {lang: "string" for lang in LANGUAGES},
+                    "methods": {lang: "one allowed method" for lang in LANGUAGES},
                     "original_language": "language code of the original",
                     "source_urls": "list of supplied URLs actually used",
                 },
+                "output_shape_rule": "displays and methods must be objects keyed by language, never arrays",
             }
             literal = _RANK.sub("", key).strip() if kind == "raw_player" else key.strip()
             if re.search(r"[\u3400-\u9fff]", literal):

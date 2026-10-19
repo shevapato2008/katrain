@@ -649,7 +649,6 @@ def _write_name_batch(conn, candidates, records, declarations, inventory_sha, ma
     _check_incoming_collisions(candidates, research_by_hash)
     name_batch._check_name_preimages(conn, candidates, _REGISTRY)
     name_batch._check_first_pass_sources(conn, candidates, research_by_hash, declarations)
-    name_batch._check_cross_bundle_collisions(conn, candidates, owners=declarations, research_by_hash=research_by_hash)
     for candidate, research in zip(candidates, records):
         name_first_pass.validate_research(research)
         name_first_pass.validate_candidate(candidate, research)
@@ -695,6 +694,10 @@ def _write_name_batch(conn, candidates, records, declarations, inventory_sha, ma
         .where(KifuNameBatch.id == batch_id)
         .values(status="applied", applied_at=datetime.now(timezone.utc))
     )
+    # Simultaneous scope renewals temporarily invalidate each other's old proof.
+    # Check the complete pending postimage with the native qualification reader;
+    # any unproved collision still aborts this locked transaction before commit.
+    name_batch._check_cross_bundle_collisions(conn, candidates, owners=declarations, research_by_hash=research_by_hash)
     return batch_id
 
 

@@ -267,6 +267,67 @@ def test_incremental_publication_renews_existing_raw_event_and_keeps_history(eng
     assert state(engine)[KifuNameResearchEvidence.__table__][:15] == before[KifuNameResearchEvidence.__table__]
 
 
+def test_atomic_scope_renewal_preserves_two_qualified_raw_events_sharing_display(engine):
+    first = manifest("124", event="Summer Tournament")
+    approved = decision(first, "raw_event", "Summer Tournament")
+    approved["displays"] = publisher().qualified_raw_event_templates(engine)["templates"]["Summer Cup"]["displays"]
+    approved["review"]["content_sha256"] = publisher().review_content_sha256(approved)
+    first["decisions"] = [approved]
+    prior = publish(engine, first)
+    old_ids = [11, prior["games"][0]["album_id"]]
+    assert_qualified(engine, old_ids)
+    before = state(engine)
+
+    value = manifest("125")
+    second = manifest("126", event="Summer Tournament")["games"][0]
+    second["sgf_content"] = second["sgf_content"].replace("B[bb]", "B[dd]")
+    second["sgf_sha256"] = second["raw_sha256"] = sha256(second["sgf_content"].encode()).hexdigest()
+    value["games"].append(second)
+    receipt = publish(engine, value)
+
+    assert_qualified(engine, old_ids + [row["album_id"] for row in receipt["games"]])
+    with engine.connect() as conn:
+        assert set(conn.scalars(select(KifuRawEventName.revision))) == {2}
+    assert state(engine)[KifuNameResearchEvidence.__table__][:20] == before[KifuNameResearchEvidence.__table__]
+
+
+@pytest.mark.parametrize("new_title", [False, True])
+def test_scope_or_new_title_cannot_launder_an_unqualified_existing_display_collision(engine, new_title):
+    raw = "Spring Cup" if new_title else "Summer Cup"
+    display = "春季杯" if new_title else "夏季杯"
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventValue.__table__.insert().values(
+            id=8, raw_value="Unreviewed Other Cup", category="readable_unlinked", review_status="pending"
+        ))
+        conn.execute(KifuRawEventName.__table__.insert().values(
+            raw_event_id=8, lang="jp", display_name=display, status="verified",
+            decision_kind="generated", generation_rule_version=VERSION,
+            evidence_id=conn.scalar(select(KifuRawEventName.evidence_id).where(KifuRawEventName.lang == "jp"))
+        ))
+    value = manifest("127", event=raw)
+    if new_title:
+        value["decisions"] = [decision(value, "raw_event", raw)]
+    before = state(engine)
+    with pytest.raises(publisher().PublicationError, match="normalized name collision"):
+        publish(engine, value)
+    assert state(engine) == before
+    assert_qualified(engine, [11])
+
+
+def test_two_new_candidates_need_explicit_shared_display_before_any_proof_is_written(engine):
+    records = [{"owner": {"kind": "raw_event", "id": owner_id}} for owner_id in (8, 9)]
+    candidates = [
+        {"owner": {"kind": "raw_event", "id": owner_id}, "lang": "jp", "display_name": "同名大会",
+         "decision_kind": "generated", "generation_rule_version": VERSION, "research_sha256": canonical_sha256(record)}
+        for owner_id, record in zip((8, 9), records)
+    ]
+    before = state(engine)
+    with name_batch._locked_write(engine) as conn:
+        with pytest.raises(publisher().PublicationError, match="incoming name decisions have conflicting displays"):
+            publisher()._write_name_batch(conn, candidates, records, [], "a" * 64, "b" * 64)
+    assert state(engine) == before
+
+
 def test_incremental_failure_rolls_back_sgf_sources_names_and_receipt(engine, monkeypatch):
     api = publisher()
     before = state(engine)

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { KioskPagebar } from '../../shell/KioskPagebar';
+import { Icon } from '../../shell/icons';
 import { KioskStatusCells, type StatusCell } from '../../shell/KioskStatusCells';
 import { KioskScrollZone } from '../../shell/KioskScrollZone';
 import GeometryVideoPanel from './GeometryVideoPanel';
@@ -166,6 +167,7 @@ export function GeometryCalibrationScreen({
   const [relocateError, setRelocateError] = useState<string | null>(null);
   const [lightError, setLightError] = useState<string | null>(null);
   const [rechecking, setRechecking] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const phase = status.phase;
   const active = ACTIVE_PHASES.has(phase);
@@ -325,21 +327,24 @@ export function GeometryCalibrationScreen({
 
   useEffect(() => { setRelocateError(null); }, [phase]);
 
-  // ── 五步的状态 ─────────────────────────────────────────────────────────────
+  // ── 四步的状态 ─────────────────────────────────────────────────────────────
   //
   const paused = phase === 'obstructed' || phase === 'lighting_paused' || phase === 'lighting_rechecking';
-  const runningStep = phase === 'building_baseline' || (paused && anchorCount === 5) ? 3
-    : phase === 'flashing_corners' || phase === 'verifying' || (paused && anchorCount > 0) ? 2
+  const retainingAnchors = paused || phase === 'waiting_stable';
+  const runningStep = phase === 'building_baseline' || (retainingAnchors && anchorCount === 5) ? 3
+    : phase === 'flashing_corners' || phase === 'verifying' || (retainingAnchors && anchorCount > 0) ? 2
     : phase === 'converging_exposure' || phase === 'dark_reference' || phase === 'lighting_paused' || phase === 'lighting_rechecking' ? 1
         : 0;
 
   /**
    * 优先使用服务端保存的失败 / 取消前阶段。旧响应才通过曝光错误或锚点计数回落。
    */
-  const brokenStep = status.stopped_phase === 'building_baseline' || anchorCount === 5 ? 3
-    : status.stopped_phase === 'flashing_corners' || status.stopped_phase === 'verifying' || anchorCount > 0 ? 2
-      : status.stopped_phase === 'converging_exposure' || status.stopped_phase === 'dark_reference'
-        || isExposureError(status.error) ? 1 : 0;
+  const stoppedStep = status.stopped_phase === 'building_baseline' ? 3
+    : status.stopped_phase === 'flashing_corners' || status.stopped_phase === 'verifying' ? 2
+      : status.stopped_phase === 'converging_exposure' || status.stopped_phase === 'dark_reference' ? 1
+        : status.stopped_phase === 'waiting_empty' ? 0 : undefined;
+  const brokenStep = stoppedStep ?? (anchorCount === 5 ? 3
+    : anchorCount > 0 ? 2 : isExposureError(status.error) ? 1 : 0);
   const failed = phase === 'failed';
   const cancelled = phase === 'cancelled';
   const stopped = failed || cancelled;
@@ -371,7 +376,7 @@ export function GeometryCalibrationScreen({
     if (state === 'now') return { text: waitingForBoard && i === 0 ? '等待中' : '进行中', cls: '' };
     if (state === 'paused') return { text: '已暂停', cls: 'kiosk-tag--warn' };
     if (state === 'bad') return { text: '失败', cls: 'kiosk-tag--bad' };
-    // 第 5 步的 warn 是「完成但点数不足」,别的步骤的 warn 是「已取消」。
+    // 第 4 步的 warn 是「完成但点数不足」,别的步骤的 warn 是「已取消」。
     if (state === 'warn') {
       return i === 3 && phase === 'ready'
         ? { text: `完成 · ${inliers} / 5`, cls: 'kiosk-tag--warn' }
@@ -383,8 +388,8 @@ export function GeometryCalibrationScreen({
   // ── 摄像头画面底下那条 ─────────────────────────────────────────────────────
   const capLeft = (): string => {
     if (phase === 'ready' || anchorCount === 5) return '5 / 5 已定位';
-    if (anchorCount > 0) return `已完成 ${anchorCount} 个点 · ${paused ? '灯已熄灭' : '继续标定'}`;
-    return active ? '双手离开后自动点灯' : '共 5 个定位点 · 四角和天元';
+    if (anchorCount > 0) return `已完成 ${anchorCount} 个点 · ${stopped ? '标定已停止，请重新开始' : paused ? '灯已熄灭' : '继续标定'}`;
+    return active ? '双手离开后自动点灯' : '四角 + 天元 · 共 5 个定位点';
   };
   const capRight = (): string => {
     if (phase === 'ready') return '已完成';
@@ -432,6 +437,11 @@ export function GeometryCalibrationScreen({
   const primaryLabel = phase === 'ready' && !confirmingManual ? '重新标定棋盘'
     : confirmingManual ? '已清空，确认重新标定'
       : '重新开始标定';
+  const startUnavailable = !loaded ? '正在读取设备状态'
+    : !cameraReady && ledReady === false ? '设备未连接'
+    : !cameraReady ? '摄像头未连接'
+      : ledReady === null ? 'LED 未确认'
+        : ledReady === false ? 'LED 未连接' : null;
 
   // 刚按的「对齐外框」没成,排在最前;原来那条链接在它后面,一字不改。
   const diagnostic: Diagnostic | null = relocateError
@@ -494,8 +504,13 @@ export function GeometryCalibrationScreen({
       testId="calib-pagebar"
       backLabel={backLabel}
       onBack={onBack}
-      title={title}
-      sub={sub}
+      title={<>
+        {title}
+        <button type="button" className="kiosk-pagebar__iconbtn calib-help-button"
+          aria-label="标定说明" aria-expanded={helpOpen} onClick={() => setHelpOpen(true)}>
+          <Icon name="info" />
+        </button>
+      </>}
       segment={active ? undefined : {
         value: view,
         options: [['raw', '原始画面'], ['warped', '俯视矫正']] as const,
@@ -505,9 +520,22 @@ export function GeometryCalibrationScreen({
     />
   );
 
+  const helpDialog = helpOpen && (
+    <div className="calib-light-scrim">
+      <section className="calib-light-dialog" role="dialog" aria-modal="true" aria-labelledby="calib-help-title"
+        style={{ borderColor: 'var(--accent)' }}>
+        <h2 id="calib-help-title">标定说明</h2>
+        <p>{sub}。棋盘稳定后才开始；遮挡时灯熄灭，移手后从未完成的点继续。失败时屏幕会给出具体诊断。</p>
+        <div className="calib-light-actions">
+          <button type="button" className="kiosk-btn kiosk-btn--primary" onClick={() => setHelpOpen(false)}>知道了</button>
+        </div>
+      </section>
+    </div>
+  );
+
   /**
    * 这台盒子压根没有摄像头(`/status` 404 ⇒ `disabled`)。
-   * 那台机器上 `/geometry/stream` 会 404、`/calibrate` 会 404、五步一步都不会走 ——
+   * 那台机器上 `/geometry/snapshot` 会 404、`/calibrate` 会 404、四步一步都不会走 ——
    * **把这些控件摆出来全是假的。** 页控条照旧(返回必须在)。
    */
   if (phase === 'disabled') {
@@ -518,6 +546,7 @@ export function GeometryCalibrationScreen({
           <h4>这台盒子没有配摄像头</h4>
           <p>实体棋盘识别、摆谱、实体做题都用不了；<b>屏幕上的功能不受影响</b>。</p>
         </div>
+        {helpDialog}
       </div>
     );
   }
@@ -590,13 +619,6 @@ export function GeometryCalibrationScreen({
             <p className="setnote calib-note">
               {/* 第一行**永远在**:这是 Fan 定的硬规矩,不因为屏上正在发生什么而消失。 */}
               <b data-testid="geometry-led-advisory">LED 只在你按下之后才亮，不会自动点亮 LED</b>
-              。棋盘稳定后才开始；遮挡时灯熄灭，移手后从未完成的点继续。
-              {/* 诊断真在场时,那句「失败时给诊断」的预告就成了自我指涉 ⇒ 只在没失败时说。 */}
-              {!diagnostic && (
-                <><br />失败时给<b>诊断</b>不给「重试」：多半是子压着星位、灯太暗，或摄像头挪过。</>
-              )}
-              {/* 旁注最多两行(稿子 §5)。原先还有「每个定位点先熄灯再亮灯各拍一张」和「LED 那格只说串口通了」两句,
-                  Fan 2026-09-27 裁定删掉,别再加回来。 */}
               {allowExistingReuse && reuseBlockedWhy && status.last_valid && (
                 <><br />「沿用上次标定」此刻按不了：{reuseBlockedWhy}。</>
               )}
@@ -668,7 +690,7 @@ export function GeometryCalibrationScreen({
                   disabled={!canStart}
                   onClick={handleStart}
                 >
-                  {primaryLabel}
+                  {startUnavailable ? `${primaryLabel} · ${startUnavailable}` : primaryLabel}
                 </button>
               </>
             )}
@@ -695,6 +717,7 @@ export function GeometryCalibrationScreen({
           </section>
         </div>
       )}
+      {helpDialog}
     </div>
   </>);
 }

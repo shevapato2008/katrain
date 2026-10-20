@@ -14,6 +14,8 @@ import {
   readLastCategory,
 } from './tsumegoUnits';
 
+import './trainingReviewed.css';
+
 interface CategoryInfo {
   category: string;
   name: string;
@@ -103,7 +105,7 @@ const TsumegoCategoriesPage = () => {
 
   if (loading || error || categories.length === 0) {
     return (
-      <div className="kiosk-layout-b">
+      <div className="kiosk-layout-b training-reviewed">
         {pagebar}
         <KioskScrollZone>
           {loading ? (
@@ -137,7 +139,7 @@ const TsumegoCategoriesPage = () => {
   }
 
   return (
-    <div className="kiosk-layout-b">
+    <div className="kiosk-layout-b training-reviewed">
       {pagebar}
       <KioskScrollZone resetKey={level}>
         <section className="kiosk-section">
@@ -159,12 +161,6 @@ const TsumegoCategoriesPage = () => {
                 />
               );
             })}
-          </div>
-        </section>
-
-        <section className="kiosk-section tsumego-mixed-section">
-          <KioskSecLabel zh={t('Mixed categories', '混合题型')} en="Mixed" value={`${totalCount} 题`} />
-          <div className="tsumego-mixed-card">
             <KioskCard
               title={t('Mixed training', '综合训练')}
               sub={t('Mix all categories at this level and group every 20 problems into a unit', '混合当前难度全部题型，也按每 20 题分成单元')}

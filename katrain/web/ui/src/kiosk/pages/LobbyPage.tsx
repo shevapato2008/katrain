@@ -6,6 +6,7 @@ import { getAiLadderStatus } from '../../features/aiLadder/api';
 import { websocketUrl } from '../../utils/websocketUrl';
 import { isStrictBoxKiosk } from '../shell/boxUrls';
 import './LobbyPage.css';
+import './platformReviewed.css';
 
 type Person = { id: number; username: string; ladder_rung: number | null; rank_label: string | null; presence: 'idle' | 'playing' };
 type Game = { session_id: string; player_b: string; player_w: string; player_b_id?: number; player_w_id?: number; player_b_rank_label?: string | null; player_w_rank_label?: string | null; move_count: number; spectator_count?: number };

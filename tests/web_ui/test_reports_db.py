@@ -57,5 +57,23 @@ def test_report_task_relationships():
         assert loaded_task.moves[0].move_number == 1
         assert loaded_task.moves[0].task.id == task.id
         assert game.report_tasks[0].id == task.id
+
+        # The personal-games delete action must remove every report and its
+        # move analysis for that game, including both report tiers.
+        deep_task = models_db.ReportTask(
+            user_id=user.id,
+            user_game_id=game.id,
+            report_type="deep",
+            requested_visits=2000,
+            status="completed",
+        )
+        session.add(deep_task)
+        session.commit()
+        task_ids = [task.id, deep_task.id]
+        move_id = move.id
+        session.delete(game)
+        session.commit()
+        assert session.query(models_db.ReportTask).filter(models_db.ReportTask.id.in_(task_ids)).count() == 0
+        assert session.query(models_db.ReportTaskMove).filter_by(id=move_id).count() == 0
     finally:
         session.close()

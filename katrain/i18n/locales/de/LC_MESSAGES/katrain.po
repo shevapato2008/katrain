@@ -3999,7 +3999,7 @@ msgid "login:box_gate_cta"
 msgstr "Zum StellaBox-Startbildschirm"
 
 msgid "vision:back_settings"
-msgstr "Einstellungen"
+msgstr "Zurück zu Einstellungen"
 
 msgid "vision:board_lost_hint"
 msgstr ""
@@ -4010,7 +4010,7 @@ msgid "vision:calibrate_title"
 msgstr "Brettkalibrierung"
 
 msgid "vision:calibrate_sub"
-msgstr "Zuerst das Brett leeren · 13 Punkte: 4 Ecken + 9 Sternpunkte"
+msgstr "Zuerst das Brett leeren · 5 Punkte: 4 Ecken und Mitte"
 
 msgid "vision:cancel_calibration"
 msgstr "Kalibrierung abbrechen"

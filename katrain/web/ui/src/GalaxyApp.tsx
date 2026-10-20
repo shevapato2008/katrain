@@ -6,6 +6,7 @@ import { useSettings } from './context/SettingsContext';
 import { createGalaxyTheme } from './galaxy/theme';
 import './galaxy/assets/fonts/galaxy-fonts.css';
 import './kiosk-shell/fonts.css';
+import './kiosk-shell/brand-font.css';
 import { AuthGuard } from './galaxy/components/guards/AuthGuard';
 import MainLayout from './galaxy/components/layout/MainLayout';
 const Dashboard = lazy(() => import('./galaxy/pages/Dashboard'));

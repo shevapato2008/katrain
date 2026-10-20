@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 
@@ -28,6 +28,7 @@ import { useOptionalGeometry } from '../context/GeometryContext';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { usePhysicalBaipu, type NextStone } from '../hooks/usePhysicalBaipu';
 import { useBaipuHint } from '../hooks/useBaipuHint';
+import './baipuReviewed.css';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
 /** 目差带符号、一位小数;先舍入再判号,-0.04 不会印成「-0.0」。 */
@@ -114,9 +115,9 @@ const PCARD_CLASS: Record<Mood, string> = {
  *
  * ## 右栏空间
  *
- * 常态展示两张棋手卡,当前方高亮;「当前待摆」和灯色图例让位给双方姓名。
+ * 常态展示当前待摆与横排的两张棋手卡,当前方高亮。
  * 放错、提子、试下、灯坏和手动兜底时才显示状态卡;采集机仍保留拍照状态和帧数。
- * 动作区始终贴底,着法表吃剩余空间。
+ * 动作区始终贴底,着法 / 棋谱信息由同组 Tab 切换,着法表吃剩余空间。
  * 状态优先级:`拍照遮罩` > `采集失败` > `待移除` > `已完成` > `试下` > `支招` > `把盘面摆对` > `待摆`。
  *
  * ## 没有「虚手」键
@@ -161,6 +162,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const [meta, setMeta] = useState<BaipuMeta | null>(null);
   const [k, setK] = useState(0);                       // 已经摆到实体盘上的手数
   const [exitOpen, setExitOpen] = useState(false);
+  const [railTab, setRailTab] = useState<'moves' | 'info'>('moves');
   const [undoOpen, setUndoOpen] = useState(false);
   const [resumePrompt, setResumePrompt] = useState<number | null>(null);
   const [ledOk, setLedOk] = useState<boolean | null>(null);
@@ -356,8 +358,27 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
     return () => { mountedRef.current = false; LedAPI.clear().catch(() => undefined); };
   }, []);
 
-  // 着法表滚到当前那一手 —— 241 手的谱靠手指翻是翻不到第 200 手的。
-  useEffect(() => { nowRef.current?.scrollIntoView({ block: 'nearest' }); }, [k]);
+  // Keep complete rows and the latest placed move visible when the rail changes height.
+  useLayoutEffect(() => {
+    const body = nowRef.current?.closest<HTMLElement>('.mvrows');
+    const fold = body?.closest<HTMLElement>('.kiosk-fold');
+    if (!body || !fold) return;
+    const alignRows = () => {
+      const head = fold.querySelector<HTMLElement>('.kiosk-fold__head');
+      const rowHeight = nowRef.current?.getBoundingClientRect().height ?? 0;
+      const available = fold.clientHeight - (head?.offsetHeight ?? 0);
+      if (!rowHeight || available < rowHeight) return;
+      const style = getComputedStyle(body);
+      const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      const visibleRows = Math.max(1, Math.floor((available - padding) / rowHeight));
+      body.style.maxHeight = `${visibleRows * rowHeight + padding}px`;
+      body.scrollTop = Math.max(0, (Math.floor((k - 1) / 2) - visibleRows + 1) * rowHeight);
+    };
+    alignRows();
+    const observer = new ResizeObserver(alignRows);
+    observer.observe(fold);
+    return () => observer.disconnect();
+  }, [k, phase, railTab]);
 
   const relight = () => {
     if (camera) { physical.relight(); return; }
@@ -691,7 +712,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       <div className="kiosk-rail">
         <KioskPagebar
           testId="baipu-pagebar"
-          backLabel={backLabel}
+          backLabel={`${t('common:back', '返回')}${backLabel}`}
           onBack={() => setExitOpen(true)}
           title={title}
           sub={interpolate(
@@ -710,7 +731,12 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           }}
         />
 
-        {/* 常态由棋手卡承载信息；只有异常、试下和采集态才占一行提示。 */}
+        {!showStatusCard && !hint.open && <div className="baipu-next" role="status">
+          <span className={nextColor === 'W' ? 'disc w' : 'disc b'} aria-hidden="true" />
+          <strong>{coord ? interpolate(t('baipu:place_at', '当前待摆 · {c}'), { c: coord }) : t('baipu:place_none', '这一步不用摆子')}</strong>
+          <span>{t('baipu:auto_recognize', '识别后自动继续')}</span>
+        </div>}
+        {/* 异常、试下和采集态保留完整的当前操作说明。 */}
         {showStatusCard && <div className={`pcard ${PCARD_CLASS[mood]}`.trim()} data-testid="baipu-pcard" data-mood={mood}>
           {nextColor && (mood === 'guiding' || mood === 'hint' || mood === 'setup' || mood === 'trying')
             && <span className={nextColor === 'B' ? 'disc b' : 'disc w'} />}
@@ -768,7 +794,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           </div>
         </div>}
 
-        {!collect && ([
+        <div className="baipu-players">{!collect && ([
           { color: 'B' as const, name: meta?.player_black?.trim() || t('game:black_side', '黑方'), side: t('game:plays_black', '执黑') },
           { color: 'W' as const, name: meta?.player_white?.trim() || t('game:white_side', '白方'), side: t('game:plays_white', '执白') },
         ]).map(({ color, name, side }) => {
@@ -782,15 +808,15 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
               </div>
             </div>
           );
-        })}
+        })}</div>
 
         {/* ── AI 支招只在打开时出现；采集机保留帧数和几何状态。 */}
         {hint.open ? (
           <KioskFold
             fold="hint"
             testId="baipu-hint-fold"
-            title={t('baipu:hint_title', 'AI 支招 · 白灯闪烁处')}
-            value={t('baipu:hint_value', '再按一次收起')}
+            title={camera ? t('baipu:hint_paused_title', 'AI支招 · 识别暂停') : t('baipu:hint_title', 'AI 支招 · 白灯闪烁处')}
+            value={t('baipu:hint_resume', '再按AI支招继续摆谱')}
             bodyClassName="ledger"
           >
             {hint.status === 'loading' ? (
@@ -843,6 +869,11 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           </KioskFold>
         ) : null}
 
+        <div className="baipu-tabs" role="tablist" aria-label={t('baipu:panel_tabs', '摆谱信息')}>
+          <button type="button" role="tab" id="baipu-tab-moves" aria-controls="baipu-panel-moves" aria-selected={railTab === 'moves'} onClick={() => setRailTab('moves')}>{t('baipu:moves_tab', '着法')}</button>
+          <button type="button" role="tab" id="baipu-tab-info" aria-controls="baipu-panel-info" aria-selected={railTab === 'info'} onClick={() => setRailTab('info')}>{t('baipu:info_tab', '棋谱')}</button>
+        </div>
+        <div id="baipu-panel-moves" role="tabpanel" aria-labelledby="baipu-tab-moves" className="baipu-tab-panel" hidden={railTab !== 'moves'}>
         {/* ── 已经摆过的 ── */}
         <KioskFold
           fold="moves"
@@ -858,6 +889,12 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
             <BaipuMoveRow key={r.n} row={r} k={k} nowRef={nowRef} passLabel={t('baipu:pass', '虚手')} />
           ))}
         </KioskFold>
+        </div>
+        <section id="baipu-panel-info" role="tabpanel" aria-labelledby="baipu-tab-info" className="baipu-tab-panel baipu-info" hidden={railTab !== 'info'}>
+          <h3>{title}</h3>
+          <p>{boardSize} {t('game:board_size_unit', '路')} · {t('game:komi', '贴目')} {meta?.komi ?? '—'}</p>
+          <p>{guidingLine}</p>
+        </section>
 
         <KioskActions
           testId="baipu-actions"
@@ -867,14 +904,14 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       </div>
 
       {capturePending && (
-        <Dialog open disableEscapeKeyDown data-testid="baipu-capture-pending">
+        <Dialog className="baipu-dialog" open disableEscapeKeyDown data-testid="baipu-capture-pending">
           <DialogTitle>{t('baipu:capturing', '正在拍照，请勿伸手')}</DialogTitle>
           <DialogContent><Typography>{t('baipu:capturing_hint', '手挡住了这一手就采不到，得重来。')}</Typography></DialogContent>
         </Dialog>
       )}
 
       {resumePrompt !== null && (
-        <Dialog open data-testid="baipu-resume">
+        <Dialog className="baipu-dialog" open data-testid="baipu-resume">
           <DialogTitle>{t('baipu:resume_ask', '接着上次摆？')}</DialogTitle>
           <DialogContent><Typography>{interpolate(
               collect
@@ -900,7 +937,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       )}
 
       {undoOpen && (
-        <Dialog open onClose={() => setUndoOpen(false)} data-testid="baipu-undo-confirm">
+        <Dialog className="baipu-dialog" open onClose={() => setUndoOpen(false)} data-testid="baipu-undo-confirm">
           <DialogTitle>{t('baipu:undo_ask', '撤回上一手？')}</DialogTitle>
           <DialogContent><Typography>{t('baipu:undo_body', '先把刚摆的那颗子从盘上拿下来（被提的子也放回去），再按「已撤回」。')}</Typography></DialogContent>
           <DialogActions sx={{ gap: 1 }}>
@@ -915,7 +952,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       {/* 退出确认。**不是实现遗留,是这一屏已采纳的裁定**:「确认落子」一局按约 250 次,
           退出按一次,两颗不能同排;解法是移到角上(页控条)+ 二次确认,两半配套。 */}
       {exitOpen && (
-        <Dialog open onClose={() => setExitOpen(false)} data-testid="baipu-exit-confirm">
+        <Dialog className="baipu-dialog" open onClose={() => setExitOpen(false)} data-testid="baipu-exit-confirm">
           <DialogTitle>{t('baipu:exit_ask', '退出摆谱？')}</DialogTitle>
           <DialogContent><Typography>{t('baipu:exit_body', '进度已经存下了，回来还能接着摆。')}</Typography></DialogContent>
           <DialogActions sx={{ gap: 1 }}>

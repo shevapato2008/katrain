@@ -42,7 +42,7 @@ vi.mock('../../api', () => ({
   API: { platformLogin, platformSmsRequest, platformEngineLevels, platformStatus, platformScanStart },
 }));
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: 'tok', user: { id: 1, username: 'u' }, isAuthenticated: true, isLoading: false }),
+  useAuth: () => ({ token: 'tok', user: { id: 1, username: 'u' }, isAuthenticated: true, isLoading: false, status: 'authenticated', isGuest: false }),
 }));
 // 只有「真 Router 证明目标路由存在」那一条会真的挂载 `PlatformEngineSetupPage`,
 // 它用 `useVision()` —— 其余用例都不碰这个 context,mock 放这里对它们零影响。

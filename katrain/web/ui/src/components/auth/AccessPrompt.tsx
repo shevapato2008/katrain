@@ -44,7 +44,9 @@ export function AccessPrompt({ open, surface, status, feature, onPrimary, onBack
     className={`access-modal access-${surface}`}
     slotProps={{
       backdrop: { sx: { backgroundColor: 'rgba(7,14,10,.42)' } },
-      paper: { className: 'access-dialog', style: { fontFamily: surface === 'kiosk' ? '"SmartBox Kai", "Kaiti SC", serif' : theme.typography.fontFamily } },
+      paper: { className: 'access-dialog', style: { fontFamily: surface === 'kiosk'
+        ? '"SmartBox Serif", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", serif'
+        : theme.typography.fontFamily } },
     }}
   >
     <div className="access-symbol" aria-hidden="true">{checking ? <span className="access-loading" /> : unavailable ? <WifiOffOutlinedIcon /> : <LockOutlinedIcon />}</div>

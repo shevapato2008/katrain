@@ -142,7 +142,7 @@ export default function KifuReportDetailPage() {
 
       {!album || !parsed ? (
         <div className="kiosk-rail" data-testid="kifu-report-detail-shell">
-          <KioskPagebar backLabel={t('kifu:back_kifu', '棋谱')} onBack={() => navigate('/kiosk/kifu')} title={title} />
+          <KioskPagebar backLabel={t('kifu:back_kifu_full', '返回棋谱')} onBack={() => navigate('/kiosk/kifu')} title={title} />
           <div className="empty" data-testid="kifu-report-loading">
             <h4>{loadError || id === null ? t('kifu:report_load_failed', '职业棋局暂时无法读取') : album ? t('report:no_sgf', '没有可用于复盘展示的 SGF 数据。') : t('kifu:report_loading', '正在读取职业棋局报告')}</h4>
             {(loadError || album) && <button type="button" className="kiosk-btn" onClick={retryLoad}>{t('report:retry_load', '重试加载')}</button>}
@@ -153,7 +153,7 @@ export default function KifuReportDetailPage() {
           key={id} testId="kifu-report" shellTestId="kifu-report-detail-shell"
           players={[album.display_player_black ?? album.player_black, album.display_player_white ?? album.player_white]}
           pagebar={(<KioskPagebar
-            backLabel={t('kifu:back_kifu', '棋谱')} onBack={() => navigate('/kiosk/kifu')} title={title}
+            backLabel={t('kifu:back_kifu_full', '返回棋谱')} onBack={() => navigate('/kiosk/kifu')} title={title}
             sub={`${album.date_played ?? ''} · ${at} / ${totalMoves} ${t('kifu:moves_unit', '手')}`}
           />)}
           analysis={currentAnalysis} analysisByMove={analysisByMove}

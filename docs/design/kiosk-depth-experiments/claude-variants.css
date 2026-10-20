@@ -1,0 +1,479 @@
+/* Claude Design explorations for the fixed 1024 × 600 game surface.
+   Geometry, copy, icon selection, and typography are supplied by the shared demo. */
+
+#kiosk:where([data-theme="c1"],[data-theme="c2"],[data-theme="c3"],[data-theme="c4"],[data-theme="c5"]) {
+  isolation: isolate;
+}
+
+#kiosk:where([data-theme="c1"],[data-theme="c2"],[data-theme="c3"],[data-theme="c4"],[data-theme="c5"]) :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  min-height: 44px;
+  border-style: solid;
+  border-width: 1px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#kiosk:where([data-theme="c1"],[data-theme="c2"],[data-theme="c3"],[data-theme="c4"],[data-theme="c5"]) :is(.back-btn, .toggle-btn, .action-btn, .info-btn):focus-visible {
+  outline: 3px solid #f3c779;
+  outline-offset: 2px;
+}
+
+#kiosk:where([data-theme="c1"],[data-theme="c2"],[data-theme="c3"],[data-theme="c4"],[data-theme="c5"]) :is(.back-btn, .toggle-btn, .action-btn, .info-btn):disabled {
+  opacity: .56;
+  box-shadow: none;
+}
+
+#kiosk:where([data-theme="c1"],[data-theme="c2"],[data-theme="c3"],[data-theme="c4"],[data-theme="c5"]) .board-surface {
+  /* The Go grid remains an optically flat and sharp playing surface. */
+  filter: none;
+  backdrop-filter: none;
+}
+
+#kiosk:where([data-theme="c1"],[data-theme="c2"],[data-theme="c3"],[data-theme="c4"],[data-theme="c5"]) .board-coords {
+  text-shadow: 0 1px 1px #2a1a0b55;
+}
+
+#kiosk:where([data-theme="c1"],[data-theme="c2"],[data-theme="c3"],[data-theme="c4"],[data-theme="c5"]) :is(.topbar, .rail, .match-head, .brand, .player-card, .chart-card) {
+  color: var(--text);
+}
+
+#kiosk:where([data-theme="c1"],[data-theme="c2"],[data-theme="c3"],[data-theme="c4"],[data-theme="c5"]) .stone.black {
+  background: radial-gradient(circle at 33% 25%, #656962 0, #252b27 26%, #090d0b 72%, #020503 100%);
+  box-shadow: inset 0 1px 1px #ffffff3b, inset 0 -2px 3px #000b, 0 2px 4px #0009;
+}
+
+#kiosk:where([data-theme="c1"],[data-theme="c2"],[data-theme="c3"],[data-theme="c4"],[data-theme="c5"]) .stone.white {
+  background: radial-gradient(circle at 31% 21%, #ffffff 0, #f8f8f3 31%, #dadbd1 72%, #aeb5aa 100%);
+  box-shadow: inset 0 1px 1px #fff, inset 0 -2px 3px #7b82728a, 0 2px 4px #0009;
+}
+
+/* C1 — Verdant Glass. A translucent control layer over a quiet dark-green well.
+   Blurring stays on chrome/cards, never on the board or graph ink. */
+#kiosk[data-theme="c1"] {
+  --bg: #0d1b19;
+  --top: #1d3330e8;
+  --rail: #102320;
+  --card: #274239cc;
+  --line: #a9d1bb51;
+  --text: #f5faf5;
+  --muted: #c4d6c9;
+  --accent: #77d6a1;
+  --accent-dark: #143e30;
+  --shadow: 0 12px 28px #010d0b70;
+  background: radial-gradient(ellipse at 81% -14%, #446b5b8a 0, transparent 52%),
+    radial-gradient(ellipse at 20% 106%, #31554483 0, transparent 39%), #0d1b19;
+  color: var(--text);
+}
+
+#kiosk[data-theme="c1"] .topbar {
+  background: linear-gradient(180deg, #365249da, #1e3932d9 58%, #192f2ccf);
+  border-bottom: 1px solid #d3f5dc45;
+  box-shadow: inset 0 1px #ffffff42, 0 7px 17px #00100d59;
+  backdrop-filter: blur(16px) saturate(1.35);
+}
+
+#kiosk[data-theme="c1"] .rail {
+  background: linear-gradient(120deg, #162e2a95, #1024207a 52%, #21453a61);
+  border-left: 1px solid #e0fae219;
+  backdrop-filter: blur(12px);
+}
+
+#kiosk[data-theme="c1"] :is(.player-card, .chart-card) {
+  background: linear-gradient(145deg, #3c5d50c7, #203d34cf 36%, #162d28e6);
+  border: 1px solid #d7f3df5e;
+  border-radius: 15px;
+  box-shadow: inset 0 1px #ffffff52, inset 0 -1px #00160d5c, 0 9px 19px #00110e80;
+  backdrop-filter: blur(14px) saturate(1.18);
+}
+
+#kiosk[data-theme="c1"] .player-card.active {
+  background: linear-gradient(145deg, #416e56e0, #245342e0 47%, #173e34f2);
+  border-color: #a1efba;
+  box-shadow: inset 0 1px #ffffff80, inset 0 -2px #103b24a8,
+    0 0 0 1px #3e936579, 0 10px 22px #00130da1;
+}
+
+#kiosk[data-theme="c1"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  color: #f6fff7;
+  background: linear-gradient(180deg, #4b6a5bc9 0, #2b4b3fc4 51%, #1b382fdc 100%);
+  border-color: #d3f1dd73;
+  border-radius: 12px;
+  box-shadow: inset 0 1px #ffffff55, inset 0 -2px #10292075,
+    0 5px 11px #00130f91;
+  backdrop-filter: blur(12px) saturate(1.25);
+}
+
+#kiosk[data-theme="c1"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn):active {
+  box-shadow: inset 0 2px 5px #001e188a, 0 1px 3px #00110d8c;
+  transform: translateY(1px);
+}
+
+#kiosk[data-theme="c1"] .toggle-btn[aria-pressed="true"] {
+  background: linear-gradient(#518b68df, #225a40e8);
+  border-color: #b1f8c6;
+}
+
+#kiosk[data-theme="c1"] .action-btn.danger {
+  color: #ffd4ca;
+  background: linear-gradient(#61423fc9, #452b2cde);
+  border-color: #f1a1939c;
+}
+
+#kiosk[data-theme="c1"] .chart-plot {
+  background: #102720df;
+  border-color: #acd3b24d;
+  box-shadow: inset 0 2px 8px #00110ca8, inset 0 1px #ffffff1c;
+}
+
+#kiosk[data-theme="c1"] .board-shell {
+  box-shadow: 0 16px 26px #000b, 0 3px 5px #0006, 0 0 0 1px #ffffff29;
+}
+
+#kiosk[data-theme="c1"] .board-frame {
+  box-shadow: inset 0 2px 3px #eec89260, inset 0 -4px 5px #2b130d66;
+}
+
+/* C2 — Jade Lacquer. Saturated enamel, carved edges, concentrated specular rim. */
+#kiosk[data-theme="c2"] {
+  --bg: #061913;
+  --top: #0b3024;
+  --rail: #072119;
+  --card: #10382b;
+  --line: #44745a;
+  --text: #f4f4e7;
+  --muted: #cbdaca;
+  --accent: #8ce4ab;
+  --accent-dark: #153d2d;
+  --shadow: 0 11px 23px #00100bc2;
+  background: radial-gradient(circle at 72% 33%, #14513b, transparent 43%), #071913;
+  color: var(--text);
+}
+
+#kiosk[data-theme="c2"] .topbar {
+  background: linear-gradient(180deg, #1c5540, #0e392a 13%, #062b20 76%, #041a14);
+  border-bottom: 2px solid #90d59b87;
+  box-shadow: inset 0 2px #b5f5b65e, inset 0 -4px 6px #010d09bd, 0 5px 12px #001009aa;
+}
+
+#kiosk[data-theme="c2"] .rail {
+  background: radial-gradient(ellipse at 88% 18%, #20533a7d, transparent 61%),
+    linear-gradient(105deg, #041b14, #0a2a1e 53%, #0a251b);
+  border-left: 2px solid #467f57a8;
+  box-shadow: inset 4px 0 6px #010b08aa;
+}
+
+#kiosk[data-theme="c2"] :is(.player-card, .chart-card) {
+  background: linear-gradient(156deg, #22503b 0, #123a2b 18%, #092b21 73%, #041b16);
+  border: 1px solid #719e71;
+  border-radius: 13px;
+  box-shadow: inset 0 1px #bce3a069, inset 0 -3px 5px #02150fc9,
+    0 2px 0 #011710, 0 8px 12px #00110dc7;
+}
+
+#kiosk[data-theme="c2"] .player-card.active {
+  background: linear-gradient(156deg, #316f4d, #12523b 37%, #073322 100%);
+  border-color: #d0eaa8;
+  box-shadow: inset 0 1px #e4ffbead, inset 0 -3px 6px #00190fcc,
+    0 0 0 2px #5d9d60, 0 8px 16px #001109e6;
+}
+
+#kiosk[data-theme="c2"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  color: #f7f8e9;
+  background: linear-gradient(180deg, #407252 0, #1c583a 12%, #0b3d2b 51%, #072b20 100%);
+  border-color: #a3c98b;
+  border-radius: 9px;
+  box-shadow: inset 0 1px #e5ffbe70, inset 0 -3px 3px #011f13b8,
+    0 3px 0 #021710, 0 6px 9px #00130ca1;
+}
+
+#kiosk[data-theme="c2"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn):active {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 5px #001c11bb, 0 1px 0 #011710;
+}
+
+#kiosk[data-theme="c2"] .toggle-btn[aria-pressed="true"] {
+  background: linear-gradient(#4c895a, #1f6542 37%, #0a402b);
+  border-color: #d4ecab;
+}
+
+#kiosk[data-theme="c2"] .action-btn.danger {
+  color: #ffe0cf;
+  border-color: #d59175;
+  background: linear-gradient(#6a4139, #3c2220);
+}
+
+#kiosk[data-theme="c2"] .chart-plot {
+  background: #041a14;
+  border-color: #4c8b60;
+  box-shadow: inset 0 3px 7px #000c07d9, 0 1px #98bf8861;
+}
+
+#kiosk[data-theme="c2"] .board-shell {
+  box-shadow: 0 3px 0 #18351f, 0 15px 20px #000e0bd1, 0 0 0 2px #719b62;
+}
+
+#kiosk[data-theme="c2"] .board-frame {
+  box-shadow: inset 0 3px 5px #ffe4ab73, inset 0 -4px 6px #4b230d9c;
+}
+
+/* C3 — Instrument Graphite. Machined dark metal surrounding a warm wood board. */
+#kiosk[data-theme="c3"] {
+  --bg: #171d1d;
+  --top: #292f2e;
+  --rail: #1c2422;
+  --card: #2b3430;
+  --line: #64716a;
+  --text: #f4f5ed;
+  --muted: #c7d0c8;
+  --accent: #83d7a1;
+  --accent-dark: #254b34;
+  --shadow: 0 9px 15px #060b0ac0;
+  background: linear-gradient(120deg, #151c19, #2b3230 48%, #141c19);
+  color: var(--text);
+}
+
+#kiosk[data-theme="c3"] .topbar {
+  background: repeating-linear-gradient(0deg, #ffffff04 0 1px, transparent 1px 8px),
+    linear-gradient(180deg, #515a55, #252d2a 17%, #222a28 78%, #121b17);
+  border-bottom: 1px solid #7d9083;
+  box-shadow: inset 0 1px #ffffff7d, inset 0 -2px #08120db0, 0 5px 11px #050d0bc9;
+}
+
+#kiosk[data-theme="c3"] .rail {
+  background: linear-gradient(90deg, #121a17, #242c29 5%, #1f2824 96%, #111a15);
+  border-left: 1px solid #9eaaa14d;
+}
+
+#kiosk[data-theme="c3"] :is(.player-card, .chart-card) {
+  background: linear-gradient(158deg, #4a5550, #2b3630 13%, #202b25 72%, #161f1c);
+  border: 1px solid #7a877c;
+  border-radius: 8px;
+  box-shadow: inset 0 1px #d6e3d058, inset 0 -2px #09120eb8,
+    0 3px 0 #111b15, 0 8px 12px #020806a3;
+}
+
+#kiosk[data-theme="c3"] .player-card.active {
+  background: linear-gradient(157deg, #42684e, #294638 23%, #1d3027 84%);
+  border-color: #9ad4a1;
+  box-shadow: inset 0 1px #dbffe578, inset 0 -2px #0b2517,
+    0 0 0 1px #4b9364, 0 8px 14px #020806b8;
+}
+
+#kiosk[data-theme="c3"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  color: #f3f6ed;
+  background: linear-gradient(180deg, #59675e, #344239 15%, #26332c 78%, #1a261f);
+  border-color: #839485;
+  border-radius: 7px;
+  box-shadow: inset 0 1px #ffffff75, inset 0 -2px #0a1a11aa,
+    0 3px 0 #0b170e, 0 5px 8px #020806ad;
+}
+
+#kiosk[data-theme="c3"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn):active {
+  transform: translateY(2px);
+  box-shadow: inset 0 3px 5px #091b11c9, 0 1px 0 #0b170e;
+}
+
+#kiosk[data-theme="c3"] .toggle-btn[aria-pressed="true"] {
+  background: linear-gradient(#477e58, #28543c 30%, #1c3b2b);
+  border-color: #c8edbe;
+}
+
+#kiosk[data-theme="c3"] .action-btn.danger {
+  color: #ffd4c7;
+  border-color: #c28678;
+  background: linear-gradient(#654944, #332723);
+}
+
+#kiosk[data-theme="c3"] .chart-plot {
+  background: #0f1a15;
+  border-color: #526657;
+  box-shadow: inset 0 3px 8px #000b07d6;
+}
+
+#kiosk[data-theme="c3"] .board-shell {
+  box-shadow: 0 0 0 3px #353c37, 0 0 0 4px #859285,
+    0 11px 19px #020604e0;
+}
+
+#kiosk[data-theme="c3"] .board-frame {
+  box-shadow: inset 0 1px #ffe2ad9e, inset 0 -3px 5px #321d0a92;
+}
+
+/* C4 — Porcelain Cabinet. Light glazed controls, dark-green typography, strong cast shadows. */
+#kiosk[data-theme="c4"] {
+  --bg: #dfe7dc;
+  --top: #f5f7ee;
+  --rail: #e8efe5;
+  --card: #f7f9f2;
+  --line: #899f8d;
+  --text: #173129;
+  --muted: #456052;
+  --accent: #287349;
+  --accent-dark: #e2f0e3;
+  --shadow: 0 10px 19px #3858464d;
+  background: radial-gradient(circle at 80% 12%, #fff 0, #e3ecdf 45%, #d7e2d5 100%);
+  color: var(--text);
+}
+
+#kiosk[data-theme="c4"] .topbar {
+  background: linear-gradient(180deg, #fffef8 0, #f8faf2 42%, #e3ecdf 100%);
+  border-bottom: 1px solid #6b9278;
+  box-shadow: inset 0 1px #fff, 0 5px 12px #3f60455c;
+}
+
+#kiosk[data-theme="c4"] .brand-mark {
+  filter: brightness(0) saturate(100%);
+  opacity: .78;
+}
+
+#kiosk[data-theme="c4"] .rail {
+  background: linear-gradient(110deg, #e3ece1, #edf4e8 59%, #dce8dd);
+  border-left: 1px solid #9db5a4;
+  box-shadow: inset 5px 0 10px #8bad9070;
+}
+
+#kiosk[data-theme="c4"] :is(.player-card, .chart-card) {
+  color: #173129;
+  background: linear-gradient(143deg, #ffffff 0, #fbfcf6 31%, #e8eee4 100%);
+  border: 1px solid #a5bba7;
+  border-radius: 16px;
+  box-shadow: inset 0 2px #ffffff, inset 0 -2px 4px #afc3ad85,
+    0 3px 0 #b3c7b5, 0 9px 17px #48634e66;
+}
+
+#kiosk[data-theme="c4"] .player-card.active {
+  background: linear-gradient(145deg, #f8fff7, #d9eedb 71%, #cee5d2);
+  border-color: #39885b;
+  box-shadow: inset 0 2px #fff, inset 0 -2px #a7d0b4,
+    0 0 0 1px #4a9b66, 0 10px 17px #3a694968;
+}
+
+#kiosk[data-theme="c4"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  color: #183b2c;
+  background: linear-gradient(180deg, #fff 0, #f7faf2 40%, #dce9dd 100%);
+  border-color: #8fab95;
+  border-radius: 13px;
+  box-shadow: inset 0 1px #fff, inset 0 -2px #b7cab7b5,
+    0 3px 0 #adbfad, 0 6px 10px #4d705064;
+}
+
+#kiosk[data-theme="c4"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn):active {
+  transform: translateY(2px);
+  box-shadow: inset 0 3px 5px #94ad9995, 0 1px 0 #adbfad;
+}
+
+#kiosk[data-theme="c4"] .toggle-btn[aria-pressed="true"] {
+  background: linear-gradient(#e0f8e1, #b4dfbf);
+  border-color: #368c55;
+  color: #11432b;
+}
+
+#kiosk[data-theme="c4"] .action-btn.danger {
+  color: #783a30;
+  background: linear-gradient(#fffaf6, #ead4ca);
+  border-color: #b87866;
+}
+
+#kiosk[data-theme="c4"] .chart-plot {
+  background: #e6efe4;
+  border-color: #a4baa4;
+  box-shadow: inset 0 3px 6px #90aa9682, inset 0 1px #fff;
+}
+
+#kiosk[data-theme="c4"] .board-shell {
+  box-shadow: 0 0 0 3px #f3f1de, 0 0 0 4px #9ba997,
+    0 12px 20px #4a4c398a;
+}
+
+#kiosk[data-theme="c4"] .board-frame {
+  box-shadow: inset 0 2px 3px #fff0cd, inset 0 -4px 6px #78543887;
+}
+
+/* C5 — Folded Washi. Matte layered paper and ink, with physical cut edges. */
+#kiosk[data-theme="c5"] {
+  --bg: #d8d2bb;
+  --top: #efe8d4;
+  --rail: #e5dfca;
+  --card: #f2eedf;
+  --line: #a69f83;
+  --text: #273528;
+  --muted: #4d604f;
+  --accent: #326f4c;
+  --accent-dark: #dce7d4;
+  --shadow: 5px 8px 0 #64766055;
+  background: repeating-linear-gradient(107deg, #fff8 0 1px, transparent 1px 7px),
+    linear-gradient(125deg, #d0ceb6, #ece6d1 48%, #c9d0b8);
+  color: var(--text);
+}
+
+#kiosk[data-theme="c5"] .topbar {
+  background: repeating-linear-gradient(100deg, #765a270a 0 1px, transparent 1px 7px),
+    linear-gradient(180deg, #f6f0dc, #e1ddc8);
+  border-bottom: 2px solid #6c8c6d;
+  box-shadow: 0 4px 0 #8192777c, 0 7px 11px #4a513e3d;
+}
+
+#kiosk[data-theme="c5"] .rail {
+  background: repeating-linear-gradient(103deg, #876a3b0c 0 1px, transparent 1px 8px),
+    #e9e3ce;
+  border-left: 2px solid #8a9d84;
+  box-shadow: inset 5px 0 0 #b1bea5;
+}
+
+#kiosk[data-theme="c5"] :is(.player-card, .chart-card) {
+  color: #25372c;
+  background: repeating-linear-gradient(111deg, #9b85520b 0 1px, transparent 1px 9px),
+    linear-gradient(135deg, #f7f3e6, #e9e6d6);
+  border: 1px solid #a8aa8d;
+  border-radius: 5px;
+  box-shadow: 3px 3px 0 #9ea98a, 7px 7px 10px #5b674e59;
+}
+
+#kiosk[data-theme="c5"] .player-card.active {
+  background: repeating-linear-gradient(109deg, #2d63340b 0 1px, transparent 1px 9px),
+    linear-gradient(135deg, #e2edda, #cedfc7);
+  border-color: #488359;
+  box-shadow: 3px 3px 0 #51865d, 7px 7px 11px #39523d69;
+}
+
+#kiosk[data-theme="c5"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  color: #263e2d;
+  background: repeating-linear-gradient(104deg, #5f6a4c0e 0 1px, transparent 1px 8px),
+    linear-gradient(180deg, #faf5e6, #e0e3d2);
+  border-color: #889f84;
+  border-radius: 5px;
+  box-shadow: 2px 3px 0 #8a9e81, 4px 5px 8px #4c5c4a5c;
+}
+
+#kiosk[data-theme="c5"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn):active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 1px 0 #8a9e81;
+}
+
+#kiosk[data-theme="c5"] .toggle-btn[aria-pressed="true"] {
+  background: #cee2c6;
+  border-color: #48865a;
+  color: #1c5131;
+  box-shadow: 2px 3px 0 #5d9069, 4px 5px 8px #4c5c4a5c;
+}
+
+#kiosk[data-theme="c5"] .action-btn.danger {
+  color: #843f31;
+  background: #f1dfd3;
+  border-color: #b57668;
+  box-shadow: 2px 3px 0 #ae8474, 4px 5px 8px #5c504455;
+}
+
+#kiosk[data-theme="c5"] .chart-plot {
+  background: #e7e9d6;
+  border-color: #9da98a;
+  box-shadow: inset 2px 3px 0 #b8c2aa;
+}
+
+#kiosk[data-theme="c5"] .board-shell {
+  box-shadow: 4px 4px 0 #697d54, 8px 9px 0 #abbb8e,
+    13px 16px 15px #414a3485;
+}
+
+#kiosk[data-theme="c5"] .board-frame {
+  box-shadow: inset 0 2px #f5dcb2ad, inset 0 -3px #693f2269;
+}

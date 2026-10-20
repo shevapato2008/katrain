@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTsumegoProblem } from './useTsumegoProblem';
 import type { MoveResult } from './useTsumegoProblem';
+import * as progressContext from '../context/TsumegoProgressContext';
 import { sgfToCoords } from '../utils/sgfParser';
 
 // 9x9 board. Initial stones: black ba, white aa (white's only liberty is ab).
@@ -175,5 +176,121 @@ describe('load errors', () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })));
     const missing = renderHook(() => useTsumegoProblem('p2'));
     await waitFor(() => expect(missing.result.current.error).toBe('Problem not found'));
+  });
+});
+
+
+describe('cumulative progress per problem', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('navigates A → B → A with independent persisted cumulative counts', async () => {
+    const progress = { A: { completed: false, attempts: 4 }, B: { completed: false, attempts: 1 } };
+    const markProgress = vi.fn((id: string, input: progressContext.MarkProgressInput) => {
+      progress[id as keyof typeof progress] = { completed: input.completed, attempts: input.attempts };
+    });
+    vi.spyOn(progressContext, 'useTsumegoProgress').mockReturnValue({
+      progress, markProgress, progressLoading: false, serverLoadFailed: false,
+      isCompleted: () => false, unitProgress: () => ({ completed: 0, total: 0 }),
+      categoryProgress: () => ({ completed: 0, total: 0 }), refresh: vi.fn(),
+    });
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => ({ ok: true, json: async () => ({ ...problemJson, id: url.split('/').pop() }) })));
+    const { result, rerender } = renderHook(({ id }) => useTsumegoProblem(id), { initialProps: { id: 'A' } });
+    await waitFor(() => expect(result.current.problem?.id).toBe('A'));
+    expect(result.current.attempts).toBe(4);
+    act(() => { result.current.placeStone(...sgfToCoords('ab', 9)!); });
+    expect(result.current.attempts).toBe(5);
+    rerender({ id: 'B' });
+    await waitFor(() => expect(result.current.problem?.id).toBe('B'));
+    expect(markProgress).toHaveBeenCalledWith('A', expect.objectContaining({ attempts: 5 }));
+    expect(result.current.attempts).toBe(1);
+    rerender({ id: 'A' });
+    await waitFor(() => expect(result.current.problem?.id).toBe('A'));
+    act(() => { result.current.placeStone(...sgfToCoords('ab', 9)!); });
+    act(() => result.current.flushProgress());
+    expect(result.current.attempts).toBe(6);
+    expect(markProgress).toHaveBeenLastCalledWith('A', expect.objectContaining({ attempts: 6 }));
+  });
+
+  it('adds failures made before account history arrives to its authoritative baseline', async () => {
+    vi.spyOn(progressContext, 'readLocalProgress').mockReturnValue({});
+    const context = {
+      progress: {} as progressContext.TsumegoProgressMap, markProgress: vi.fn(),
+      progressLoading: true, serverLoadFailed: false, isCompleted: () => false,
+      unitProgress: () => ({ completed: 0, total: 0 }), categoryProgress: () => ({ completed: 0, total: 0 }), refresh: vi.fn(),
+    };
+    vi.spyOn(progressContext, 'useTsumegoProgress').mockImplementation(() => context);
+    const { result, rerender } = renderHook(() => useTsumegoProblem('p1'));
+    await waitFor(() => expect(result.current.problem?.id).toBe('p1'));
+    act(() => result.current.placeStone(...sgfToCoords('ab', 9)!));
+    expect(result.current.attempts).toBe(1);
+    context.progress = { p1: { completed: false, attempts: 9 } };
+    context.progressLoading = false;
+    rerender();
+    expect(result.current.attempts).toBe(10);
+    act(() => result.current.flushProgress());
+    expect(context.markProgress).toHaveBeenLastCalledWith('p1', expect.objectContaining({ attempts: 10 }));
+    // The provider echoes our cumulative write; it must not count that write again.
+    context.progress = { p1: { completed: false, attempts: 10 } };
+    rerender();
+    expect(result.current.attempts).toBe(10);
+    act(() => result.current.undo());
+    act(() => result.current.placeStone(...sgfToCoords('ab', 9)!));
+    expect(result.current.attempts).toBe(11);
+  });
+
+  it('republishes a solved total when history arrives after the initial solve write', async () => {
+    vi.spyOn(progressContext, 'readLocalProgress').mockReturnValue({});
+    // Use a one-move solution so this regression has no delayed AI response.
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({
+      ...problemJson, sgfContent: '(;GM[1]SZ[9]AB[ba]AW[aa]PL[B];B[cc]C[正解])',
+    }) })));
+    const context = {
+      progress: {} as progressContext.TsumegoProgressMap, markProgress: vi.fn(),
+      progressLoading: true, serverLoadFailed: false, isCompleted: () => false,
+      unitProgress: () => ({ completed: 0, total: 0 }), categoryProgress: () => ({ completed: 0, total: 0 }), refresh: vi.fn(),
+    };
+    vi.spyOn(progressContext, 'useTsumegoProgress').mockImplementation(() => context);
+    const { result, rerender, unmount } = renderHook(() => useTsumegoProblem('p1'));
+    await waitFor(() => expect(result.current.problem?.id).toBe('p1'));
+    act(() => result.current.placeStone(...sgfToCoords('ab', 9)!));
+    act(() => result.current.undo());
+    act(() => result.current.placeStone(...sgfToCoords('cc', 9)!));
+    expect(result.current.isSolved).toBe(true);
+    expect(context.markProgress).toHaveBeenLastCalledWith('p1', expect.objectContaining({ completed: true, attempts: 1 }));
+    context.progress = { p1: { completed: true, attempts: 9 } };
+    context.progressLoading = false;
+    rerender();
+    expect(result.current.attempts).toBe(10);
+    expect(context.markProgress).toHaveBeenLastCalledWith('p1', expect.objectContaining({ completed: true, attempts: 10 }));
+    expect(context.markProgress).toHaveBeenCalledTimes(2);
+    context.progress = { p1: { completed: true, attempts: 10 } };
+    rerender();
+    expect(result.current.attempts).toBe(10);
+    unmount();
+    expect(context.markProgress).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses late account history for the next failure and ignores try exploration', async () => {
+    vi.spyOn(progressContext, 'readLocalProgress').mockReturnValue({});
+    const context = {
+      progress: {} as progressContext.TsumegoProgressMap, markProgress: vi.fn(),
+      progressLoading: true, serverLoadFailed: false, isCompleted: () => false,
+      unitProgress: () => ({ completed: 0, total: 0 }), categoryProgress: () => ({ completed: 0, total: 0 }), refresh: vi.fn(),
+    };
+    vi.spyOn(progressContext, 'useTsumegoProgress').mockImplementation(() => context);
+    const { result, rerender } = renderHook(() => useTsumegoProblem('p1'));
+    await waitFor(() => expect(result.current.problem?.id).toBe('p1'));
+    context.progress = { p1: { completed: false, attempts: 9 } };
+    rerender();
+    expect(result.current.attempts).toBe(9);
+    act(() => result.current.enterTryMode());
+    act(() => result.current.placeStone(...sgfToCoords('ab', 9)!));
+    act(() => result.current.flushProgress());
+    expect(context.markProgress).not.toHaveBeenCalled();
+    expect(result.current.attempts).toBe(9);
+    act(() => result.current.exitTryMode());
+    act(() => result.current.placeStone(...sgfToCoords('ab', 9)!));
+    act(() => result.current.flushProgress());
+    expect(context.markProgress).toHaveBeenCalledWith('p1', expect.objectContaining({ attempts: 10 }));
   });
 });

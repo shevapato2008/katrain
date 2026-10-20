@@ -11,9 +11,12 @@ import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskOptSeg } from '../shell/KioskOptSeg';
 import { PLATFORM_META } from '../constants/platforms';
+import { PLATFORM_MARKS } from '../constants/platformMarks';
+import { Icon } from '../shell/icons';
 import GOLAXY_PHONE_AREAS from '../constants/golaxyPhoneAreas.json';
 import { PlatformLoginAside } from '../components/platform/PlatformLoginAside';
 import { GolaxyScanPanel } from '../components/platform/GolaxyScanPanel';
+import './platformReviewed.css';
 
 /**
  * 登录独立成页(屏 07b/08,`sample-go/shots/07b-platform-login-pw.png` /
@@ -219,7 +222,18 @@ const PlatformLoginPage = () => {
         sub={sub}
       />
       <section className="setgrp inputgrp xplogin">
-        <PlatformLoginAside platform={platform} />
+        <aside className="reviewed-login-aside">
+          <div className="reviewed-login-brand">
+            {PLATFORM_MARKS[platform] && <img src={PLATFORM_MARKS[platform].src} alt="" />}
+            <div><strong>{name}</strong><span>{platform === 'ogs' ? 'online-go.com' : '19x19.com'}</span></div>
+          </div>
+          <p>{interpolate(t('platform:connect_account_hint', '使用{name}账号连接'), { name })}</p>
+          <details className="reviewed-login-info">
+            <summary aria-label={t('Info', '说明')}><Icon name="info" /></summary>
+            <PlatformLoginAside platform={platform} />
+          </details>
+          <span className="reviewed-login-disconnected">{t('platform:not_connected', '尚未连接')}</span>
+        </aside>
         <div className="xplogin__main">
           <div className="xpcol">
             <KioskSecLabel

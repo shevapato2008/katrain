@@ -147,7 +147,7 @@ function Lollipop({
 }
 
 export default function MoveGradePanel({
-  analysis, totalMoves, onMoveClick, trend, recommendation,
+  analysis, totalMoves, onMoveClick, trend, recommendation, expandControlContainer,
 }: {
   analysis: Record<number, MoveAnalysis>;
   /** 整局手数 —— 棒棒糖图的横轴量程。**不能拿画出来的最后一个点顶替**,见 `Lollipop`。 */
@@ -157,12 +157,24 @@ export default function MoveGradePanel({
   trend: ReactNode;
   /** Current-position candidates supplied by the report rail. */
   recommendation?: ReactNode;
+  /** Header owns the expand action while the workspace is collapsed. */
+  expandControlContainer?: HTMLElement | null;
 }) {
   const { t } = useTranslation();
   const hasRecommendation = recommendation !== undefined;
   const [selectedTab, setTab] = useState<TabId>(hasRecommendation ? 'recommend' : 'trend');
   const tab = selectedTab === 'recommend' && !hasRecommendation ? 'trend' : selectedTab;
   const [expanded, setExpanded] = useState(false);
+  const tabStripRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const strip = tabStripRef.current;
+    const item = strip?.querySelector<HTMLElement>('[data-active="true"]');
+    if (!strip || !item) return;
+    const left = item.offsetLeft - strip.offsetLeft;
+    const available = strip.clientWidth - (strip.querySelector('.report-workspace__expand') ? 44 : 0);
+    if (left < strip.scrollLeft) strip.scrollLeft = left;
+    else if (left + item.offsetWidth > strip.scrollLeft + available) strip.scrollLeft = left + item.offsetWidth - available;
+  }, [tab, expanded, expandControlContainer]);
   const hostRef = useRef<HTMLDivElement>(null);
   const mainMountRef = useRef<HTMLDivElement>(null);
   const dialogMountRef = useRef<HTMLDivElement>(null);
@@ -442,6 +454,12 @@ export default function MoveGradePanel({
     );
   };
 
+  const expandButton = (<button type="button" className="report-workspace__expand" aria-expanded={expanded}
+          aria-label={expanded ? t('report:collapse_workspace', '收起分析工作区') : t('report:expand_workspace', '放大当前分析图表或推荐列表')}
+          onClick={() => setExpanded(value => !value)}>
+          {expanded ? <CloseIcon /> : <Icon name="corners-out" />}
+        </button>);
+
   const content = (
     <div className="gradebody report-workspace__panel" data-tab={tab} data-testid="grade-panel"
       onKeyDown={event => {
@@ -451,19 +469,23 @@ export default function MoveGradePanel({
           setExpanded(false);
         }
       }}>
-      <div className="report-workspace__tabs" role="group" aria-label={t('grade:tabs', '着手评价')}>
+      <div ref={tabStripRef} className="report-workspace__tabs" role="group" aria-label={t('grade:tabs', '着手评价')}>
         {TABS.map(x => <div className="grade-tab" key={x.id} data-tab-id={x.id} data-active={tab === x.id}>
-          <button type="button" aria-pressed={tab === x.id} onClick={() => { setTab(x.id); setPicked(null); }}>{x.label}</button>
+          <button type="button" aria-pressed={tab === x.id} onFocus={event => {
+            const item = event.currentTarget.parentElement;
+            const strip = item?.parentElement;
+            if (item && strip) {
+              const left = item.offsetLeft - strip.offsetLeft;
+              if (left < strip.scrollLeft) strip.scrollLeft = left;
+              else if (left + item.offsetWidth > strip.scrollLeft + strip.clientWidth) strip.scrollLeft = left + item.offsetWidth - strip.clientWidth;
+            }
+          }} onClick={() => { setTab(x.id); setPicked(null); }}>{x.label}</button>
           {tab === x.id && <ChartTabHelp key={x.id} label={x.label}>
             {x.id === 'recommend' ? <p>{t('report:recommend_help', '推荐度是 AI 对候选着点的选择倾向，不是人类落子的概率。目差和胜率以待落子方为基准；正目差表示该方领先。点按候选可预览变化，实战着点不在前五时追加显示；缺少评估以 — 表示。')}</p>
               : <AnalysisHelpContent tab={x.id} selection={tab === 'brilliant' ? brilliants : bads} histogram={histogram} matchRate={matchRate} />}
           </ChartTabHelp>}
         </div>)}
-        <button type="button" className="report-workspace__expand" aria-expanded={expanded}
-          aria-label={expanded ? t('report:collapse_workspace', '收起分析工作区') : t('report:expand_workspace', '放大当前分析图表或推荐列表')}
-          onClick={() => setExpanded(value => !value)}>
-          {expanded ? <CloseIcon /> : <Icon name="corners-out" />}
-        </button>
+        {expanded || !expandControlContainer ? expandButton : createPortal(expandButton, expandControlContainer)}
       </div>
       <div className="grade-workspace" data-filters={tab !== 'trend' && tab !== 'recommend'}>
         {tab !== 'trend' && tab !== 'recommend' && filterBar(tab === 'match' ? viewSeg : null)}

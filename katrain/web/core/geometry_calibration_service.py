@@ -54,6 +54,10 @@ class CalibrationCancelled(RuntimeError):
     """Cancellation accepted before the durable publication boundary."""
 
 
+class CalibrationBoardMoved(RuntimeError):
+    """Confirmed LED points no longer align with the newly stable board."""
+
+
 class LegacyPublishRollbackError(RuntimeError):
     """Legacy geometry publication failed and its previous files could not be restored."""
 
@@ -874,6 +878,11 @@ class GeometryCalibrationService:
                 self._wait_lighting(issue, gate)
                 gate.reset()
                 continue
+            if gate.anchors_displaced():
+                # A stable new position cannot share LED points fitted at the old position.
+                with self._lock:
+                    self._status["phase"] = resume_phase
+                raise CalibrationBoardMoved("board_moved")
             self._progress(resume_phase, current, 5)
             logger.info("geometry stability ready phase=%s point=%d motion=%s",
                         resume_phase, current, gate.last_motion_ratios)
@@ -912,12 +921,19 @@ class GeometryCalibrationService:
             self.on_suspend()
             # Exposure can be too dark for the grid to be visible at all. Brighten
             # first without flashing, then require a clear, stable grid before LED.
+            gate = None
+
+            def observe_anchor(row, col, point, color):
+                self._anchor_observed(row, col, point, color)
+                if gate is not None:
+                    gate.confirm_anchor()
+
             calibrator = self.calibrator_factory(
                 led=self.led,
                 capture=self.capture,
                 cancel_event=self._cancel_event,
                 progress=self._progress,
-                anchor_observer=self._anchor_observed,
+                anchor_observer=observe_anchor,
             )
             if hasattr(calibrator, "configure_live"):
                 gate = CalibrationStabilityGate()
@@ -1016,6 +1032,17 @@ class GeometryCalibrationService:
             with self._lock:
                 self._status["stopped_phase"] = self._status["phase"]
                 self._status["phase"] = "cancelled"
+        except CalibrationBoardMoved:
+            with self._lock:
+                self._status["stopped_phase"] = self._status["phase"]
+                self._status.update(
+                    phase="failed", error="board_moved", session_calibrated=False, lock_moved=True,
+                )
+            # Invalidate the old runtime warp before on_resume can re-arm the worker.
+            try:
+                self.on_degraded()
+            except Exception as invalidate_exc:
+                logger.error("runtime geometry invalidation failed after board movement: %s", invalidate_exc)
         except LegacyPublishRollbackError as exc:
             logger.error("legacy geometry rollback failed; invalidating runtime geometry: %s", exc)
             with self._lock:

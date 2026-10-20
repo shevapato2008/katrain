@@ -363,7 +363,7 @@ describe('Golaxy home', () => {
     const opener = screen.getByRole('button', { name: '查看可邀棋友的个人资料' });
     act(() => { opener.focus(); opener.click(); });
     act(() => screen.getByRole('button', { name: '邀请对局', exact: true }).click());
-    const physicalMode = screen.getByRole('button', { name: '实体棋盘' });
+    const physicalMode = screen.getByRole('button', { name: '实体盘' });
     act(() => { physicalMode.focus(); physicalMode.click(); });
     expect(physicalMode).toHaveFocus();
     expect(physicalMode).toHaveAttribute('aria-pressed', 'true');

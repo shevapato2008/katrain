@@ -1,0 +1,141 @@
+/* Claude Design · five tactile treatments for the existing Go palette.
+   The shell, top bar, board, rail, content, type and functional colors stay
+   with the shared 1024 × 600 demo. Only enabled controls gain material depth. */
+
+#kiosk[data-theme="c1"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+#kiosk[data-theme="c2"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+#kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+#kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+#kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn) {
+  --material-base: var(--card);
+  --press-depth: 3px;
+  --pressed-shadow: inset 0 3px 8px #0008, 0 1px 0 #0005;
+  --pressed-background: color-mix(in srgb,var(--material-base) 88%,black);
+  transform: translateY(0);
+  transition: transform 130ms ease, box-shadow 130ms ease, background 130ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#kiosk[data-theme="c1"] :is(.toggle-btn.on,.info-btn),
+#kiosk[data-theme="c2"] :is(.toggle-btn.on,.info-btn),
+#kiosk[data-theme="c3"] :is(.toggle-btn.on,.info-btn),
+#kiosk[data-theme="c4"] :is(.toggle-btn.on,.info-btn),
+#kiosk[data-theme="c5"] :is(.toggle-btn.on,.info-btn) {
+  --material-base: var(--accent-dark);
+}
+
+/* C1 · 清透玻璃：原有深绿透出顶栏与卡片，右栏容器依旧透明。 */
+#kiosk[data-theme="c1"] .topbar {
+  background: linear-gradient(180deg,#ffffff13,transparent 51%),
+    color-mix(in srgb,var(--top) 91%,transparent);
+  box-shadow: inset 0 1px 0 #ffffff24, 0 5px 12px #0004;
+  backdrop-filter: blur(12px) saturate(1.05);
+}
+
+#kiosk[data-theme="c1"] :is(.player-card,.chart-card) {
+  background: linear-gradient(150deg,#ffffff18,transparent 42%,#0000000a),
+    color-mix(in srgb,var(--card) 88%,transparent);
+  box-shadow: inset 0 1px 0 #ffffff27, inset 0 -1px 0 #0000002b,
+    0 7px 13px #0005;
+  backdrop-filter: blur(10px) saturate(1.05);
+}
+
+#kiosk[data-theme="c1"] .player-card.active {
+  background: linear-gradient(150deg,#ffffff1a,transparent 42%,#0000000a),
+    color-mix(in srgb,color-mix(in srgb,var(--card) 76%,var(--accent-dark)) 88%,transparent);
+}
+
+#kiosk[data-theme="c1"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 2px;
+  --pressed-shadow: inset 0 3px 8px #0008, inset 0 1px 0 #ffffff18, 0 1px 1px #0007;
+  border-radius: 12px;
+  background: linear-gradient(160deg,#ffffff30,transparent 38%,#00000012),
+    color-mix(in srgb,var(--material-base) 88%,transparent);
+  box-shadow: inset 0 1px 0 #ffffff45, inset 0 -1px 0 #00000045,
+    0 2px 0 #07120e, 0 7px 15px #0007;
+  backdrop-filter: blur(10px) saturate(1.08);
+}
+
+/* C2 · 漆面按键：原有深绿表面，窄高光与厚实的底缘。 */
+#kiosk[data-theme="c2"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 4px;
+  --pressed-shadow: inset 0 4px 8px #0009, inset 0 1px 0 #ffffff15, 0 1px 0 #08180f;
+  border-radius: 10px;
+  background: linear-gradient(180deg,#ffffff27 0%,#ffffff09 14%,transparent 38%,#00000018 100%),
+    var(--material-base);
+  box-shadow: inset 0 1px 0 #ffffff40, inset 0 -2px 0 #00000042,
+    0 4px 0 #0b1b13, 0 8px 11px #0008;
+}
+
+/* C3 · 精密仪表：短行程、较直的角和清晰机械切边。 */
+#kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 2px;
+  --pressed-shadow: inset 0 3px 5px #0009, inset 0 0 0 1px #ffffff0b, 0 1px 0 #07150d;
+  border-radius: 6px;
+  background: linear-gradient(180deg,#ffffff20 0%,transparent 25%,#00000010 100%),
+    var(--material-base);
+  box-shadow: inset 0 1px 0 #ffffff40, inset 1px 0 0 #ffffff12,
+    inset 0 -1px 0 #0008, 0 2px 0 #08190f, 0 4px 5px #0008;
+}
+
+/* C4 · 圆润软键：宽而柔和的反射，按下后向内收光。 */
+#kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 3px;
+  --pressed-shadow: inset 0 4px 9px #0008, inset 0 1px 0 #ffffff14, 0 1px 2px #0006;
+  border-radius: 17px;
+  background: radial-gradient(ellipse 90% 70% at 50% -8%,#ffffff29,transparent 75%),
+    linear-gradient(180deg,transparent 57%,#00000016),var(--material-base);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 2px #0004,
+    0 3px 0 #102019, 0 8px 17px #0007;
+}
+
+/* C5 · 层叠实体：两级下缘、紧实面板和最长的按键行程。 */
+#kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 5px;
+  --pressed-shadow: inset 0 5px 8px #000a, inset 0 1px 0 #ffffff11, 0 1px 0 #07140c;
+  border-radius: 9px;
+  background: linear-gradient(180deg,#ffffff24 0%,#ffffff08 24%,transparent 47%,#0000001a 100%),
+    var(--material-base);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 0 #0008,
+    0 3px 0 #11241a, 0 5px 0 #07160e, 0 8px 11px #0008;
+}
+
+#kiosk[data-theme="c1"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):is(:active,.is-pressing):not(:disabled),
+#kiosk[data-theme="c2"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):is(:active,.is-pressing):not(:disabled),
+#kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):is(:active,.is-pressing):not(:disabled),
+#kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):is(:active,.is-pressing):not(:disabled),
+#kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):is(:active,.is-pressing):not(:disabled) {
+  transform: translateY(var(--press-depth));
+  background: var(--pressed-background);
+  box-shadow: var(--pressed-shadow);
+}
+
+#kiosk[data-theme="c1"] .info-btn:not(:disabled),
+#kiosk[data-theme="c2"] .info-btn:not(:disabled),
+#kiosk[data-theme="c3"] .info-btn:not(:disabled),
+#kiosk[data-theme="c4"] .info-btn:not(:disabled),
+#kiosk[data-theme="c5"] .info-btn:not(:disabled) {
+  border-radius: 50%;
+}
+
+#kiosk[data-theme="c1"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):disabled,
+#kiosk[data-theme="c2"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):disabled,
+#kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):disabled,
+#kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):disabled,
+#kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):disabled {
+  background: var(--card);
+  box-shadow: none;
+  transform: none;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #kiosk[data-theme="c1"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+  #kiosk[data-theme="c2"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+  #kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+  #kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+  #kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn) {
+    transition: none;
+  }
+}

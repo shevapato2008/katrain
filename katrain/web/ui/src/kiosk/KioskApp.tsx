@@ -15,6 +15,7 @@
 // 引在 KioskApp.tsx 而不是 main.tsx:AppRouter 是 lazy(() => import('./kiosk/KioskApp')),
 // 引在这里 CSS 就落进 kiosk 分块,galaxy 不受影响;kiosk-2d 构建里 galaxy 整条被 DCE。
 import '../kiosk-shell/fonts.css';
+import '../kiosk-shell/brand-font.css';
 import '../kiosk-shell/tokens.css';
 import '../kiosk-shell/go-tokens.css';
 import '../kiosk-shell/seclabel.css';
@@ -22,11 +23,18 @@ import '../kiosk-shell/icon.css';
 import '../kiosk-shell/card.css';
 import '../kiosk-shell/status.css';
 import '../kiosk-shell/go-screens.css';
+import '../kiosk-shell/shell-redesign.css';
+import '../kiosk-shell/play-redesign.css';
+import '../kiosk-shell/setup-redesign.css';
+import '../kiosk-shell/local-setup-redesign.css';
+import '../kiosk-shell/game-redesign.css';
 
 import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
+import { KioskTypographyProvider, useKioskTypography } from './typography/KioskTypographyContext';
+import { installKioskTextSizing } from './typography/applyTextSizing';
 import { accessAllowed, kioskAccessPolicy } from '../components/auth/accessPolicy';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -202,8 +210,17 @@ export const KioskRoutes = () => {
   );
 };
 
+function KioskTypographyGate({ children }: { children: React.ReactNode }) {
+  const { loading } = useKioskTypography();
+  useEffect(() => {
+    if (!loading) return installKioskTextSizing();
+  }, [loading]);
+  if (loading) return <div data-testid="kiosk-typography-loading" style={{ position: 'fixed', inset: 0, background: '#0f1416' }} />;
+  return children;
+}
+
 const KioskApp = () => {
-  const { setLanguage } = useSettings();
+  const { language, setLanguage } = useSettings();
   useEffect(() => {
     // The kiosk is a Chinese-market terminal: default to Simplified Chinese
     // unless the user has explicitly picked a language before (persisted in
@@ -220,21 +237,25 @@ const KioskApp = () => {
   }, []);
 
   return (
-    <ThemeProvider theme={kioskTheme}>
-      <CssBaseline />
-      <VisionProvider>
-        <GeometryProvider>
-          <TsumegoProgressProvider>
-            {/* 承重的视口盒子(画布的包含块、登录页的高度来源)—— 见 KioskViewport 头注。 */}
-            <KioskViewport>
-              <EngineReadinessProvider>
-                <KioskRoutes />
-              </EngineReadinessProvider>
-            </KioskViewport>
-          </TsumegoProgressProvider>
-        </GeometryProvider>
-      </VisionProvider>
-    </ThemeProvider>
+    <KioskTypographyProvider language={language}>
+      <ThemeProvider theme={kioskTheme}>
+        <CssBaseline />
+        <KioskTypographyGate>
+          <VisionProvider>
+            <GeometryProvider>
+              <TsumegoProgressProvider>
+                {/* 承重的视口盒子(画布的包含块、登录页的高度来源)—— 见 KioskViewport 头注。 */}
+                <KioskViewport>
+                  <EngineReadinessProvider>
+                    <KioskRoutes />
+                  </EngineReadinessProvider>
+                </KioskViewport>
+              </TsumegoProgressProvider>
+            </GeometryProvider>
+          </VisionProvider>
+        </KioskTypographyGate>
+      </ThemeProvider>
+    </KioskTypographyProvider>
   );
 };
 

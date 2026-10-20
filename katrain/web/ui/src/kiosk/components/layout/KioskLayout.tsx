@@ -10,24 +10,20 @@ import EngineWarmupBanner from './EngineWarmupBanner';
 
 /**
  * 哪些 L1 屏出左边的镜像栏。规范 §5 的判据是**「这个模块的活动会不会发生在实体盘上」**——
- * 对弈/训练营/课程/棋谱会,看直播不会。
- * 现在覆盖 `/kiosk/play`(Task 10)、`/kiosk/tsumego`(Task 12)、`/kiosk/kifu`(Task 15)
- * 和 `/kiosk/tutorial`(Task 17)。**棋谱这一项过判据靠的是摆谱**:选中的谱要一手一手
- * 摆到实体盘上、灯点着下一手,那正是「活动发生在实体盘上」;**课程过判据靠的是「课上的图
- * 会摆到盘上」**,同步行那句话说的就是它。
- * 复盘不走这条路 —— 它的左栏装的不是实体盘镜像,见下面的 `SELF_LAYOUT_ROUTES`。
+ * 对弈和课程在此处显示实体盘镜像。训练营首页使用整幅卡片轮播，
+ * 棋谱库使用随选中棋局变化的预览，因此由页面自己安排宽度和左栏。
  * ⚠️ 比的是**整条 pathname 相等**,不是前缀 —— `/kiosk/tsumego/15k` 是 L2,`dockLevelOf` 已经
  * 把它挡在外面了,但这里写成 `startsWith` 会让两条判据各说各的,而只有一条会被人记住。
  */
-const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tsumego', '/kiosk/kifu', '/kiosk/tutorial'];
+const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tutorial'];
 
 /**
- * 自己拼两栏的屏。**复盘的左栏装的不是实体盘镜像**,是「选中的那一局」——
- * 它的内容跟着页面里的选中状态走,外壳拿不到那个状态,所以这一屏的
+ * 自己布局的屏。训练营首页是全宽卡片轮播；棋谱库和复盘的左栏随
+ * 页面里的选中状态走，外壳拿不到那个状态，所以这些屏的
  * `.kiosk-layout-l1` 由页面自己出。外壳只负责别再往它外面套一层滚动容器
  * (那层 `<Box overflow:auto>` 会让 434 高的两栏在自己里面再滚一次)。
  */
-const SELF_LAYOUT_ROUTES = ['/kiosk/report', '/kiosk/settings'];
+const SELF_LAYOUT_ROUTES = ['/kiosk/tsumego', '/kiosk/kifu', '/kiosk/report', '/kiosk/settings'];
 
 /**
  * `EngineWarmupBanner` 报的是**本地 KataGo** 的就绪状态。跨平台这几屏(`/kiosk/play/
@@ -48,10 +44,16 @@ const KioskShell = ({ username, accessBlocked = false }: KioskLayoutProps) => {
   const level = dockLevelOf(location.pathname);
   const showRail = !accessBlocked && level === 1 && RAIL_ROUTES.includes(location.pathname);
   const showEngineBanner = !accessBlocked && !location.pathname.startsWith(ENGINE_BANNER_SUPPRESSED_PREFIX);
+  const aiPlayJourney = location.pathname === '/kiosk/play'
+    || location.pathname.startsWith('/kiosk/play/ai/setup/')
+    || location.pathname.startsWith('/kiosk/play/ai/game/');
+  const localPlayJourney = location.pathname === '/kiosk/play/pvp/setup'
+    || location.pathname.startsWith('/kiosk/play/pvp/local/game/');
 
   return (
     <KioskFrame
       level={level}
+      journey={aiPlayJourney ? 'ai-play' : localPlayJourney ? 'local-play' : undefined}
       // 顶栏**无条件渲染** —— 规范 §5 防跳铁律 1:「顶栏永远占 y 0–56,任何层级、
       // 任何模块都不变高、不隐藏」。这里曾经有一个 `immersive` 开关能把它抽掉,
       // 而 `.kiosk-content` 的 `top` 是写死的 `var(--topbar-h)`(tokens.css:419)⇒
@@ -86,6 +88,7 @@ const KioskShell = ({ username, accessBlocked = false }: KioskLayoutProps) => {
       {showRail ? (
         <div className="kiosk-layout-l1">
           <GoConsoleRail
+            help={location.pathname === '/kiosk/play'}
             // 课程屏那句同步行是「课上的图会摆到盘上 / 等选课」—— 规范 §5 允许的唯一差别。
             {...(location.pathname === '/kiosk/tutorial'
               ? { syncLeft: '课上的图会摆到盘上', syncRight: '等选课' }

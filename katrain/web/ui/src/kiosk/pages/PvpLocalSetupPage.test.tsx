@@ -83,7 +83,7 @@ describe('PvpLocalSetupPage', () => {
     const [, , settings] = lastSetup();
     expect(settings.black_name).toBe('');
     expect(settings.white_name).toBe('');
-    // 屏上那句话说的正是这件事,和送出去的载荷得对得上。
+    await userEvent.click(screen.getByRole('button', { name: '对局双方说明' }));
     expect(screen.getByText('留空就记成「黑方 / 白方」,不编名字')).toBeInTheDocument();
   });
 
@@ -113,7 +113,7 @@ describe('PvpLocalSetupPage', () => {
     renderPage();
     const user = userEvent.setup();
     await pick(user, 'setup-handicap', '3');
-    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('不贴目 · 黑先摆 3 子');
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('不贴目');
 
     await user.click(screen.getByRole('button', { name: /开始对局/ }));
     await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
@@ -224,8 +224,10 @@ describe('PvpLocalSetupPage', () => {
   // P10/P11:说明要说实际发生的事 —— 没有死子交互,数子是 AI 估算;段位只在升降级对弈改。
   // F7:文案表定稿版 —— 「由 AI 估算胜负」换成「死活按引擎判断」,并补上「中途退出不存谱」(D2),
   // 不再提「在线大厅」(定级赛权威在「升降级对弈」,见文件头注释②)。
-  it('底下那段说明如实:自动数子后死活按引擎判断,只留档不动段位,中途退出不存谱', () => {
+  it('说明如实并可打开关闭:自动数子后死活按引擎判断,只留档不动段位,中途退出不存谱', async () => {
     renderPage();
+    expect(screen.queryByTestId('setup-note')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '怎么坐说明' }));
     const note = screen.getByTestId('setup-note');
     expect(note).toHaveTextContent('双方各停一手后自动数子');
     expect(note).toHaveTextContent('死活按引擎判断');
@@ -235,6 +237,8 @@ describe('PvpLocalSetupPage', () => {
     expect(note).not.toHaveTextContent('自己确认');
     expect(note).not.toHaveTextContent('在线大厅');
     expect(note).not.toHaveTextContent('由 AI 估算胜负');
+    await userEvent.click(screen.getByRole('button', { name: '关闭' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });
 

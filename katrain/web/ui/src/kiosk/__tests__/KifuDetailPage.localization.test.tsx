@@ -63,10 +63,11 @@ describe('kiosk 棋谱详情语言展示', () => {
       expect(hero).toHaveTextContent(`${lang}-white`);
       expect(hero).toHaveTextContent(lang === 'en' ? '9dan' : '9段');
       expect(hero).toHaveTextContent(lang === 'cn' ? '黑胜中盘' : lang === 'en' ? 'B+R' : '黒勝中押し');
-      expect(screen.getByTestId('kifu-detail-pagebar')).toHaveTextContent(`${lang}-event · ${lang}-round`);
+      expect(hero).toHaveTextContent(`${lang}-event · ${lang}-round`);
+      expect(screen.getByTestId('kifu-detail-pagebar')).toHaveTextContent('职业棋谱');
     }
     expect(baipuLoad).toHaveBeenLastCalledWith({ sgf: RAW_SGF });
-    fireEvent.click(screen.getByRole('button', { name: '摆到实体盘' }));
+    fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
     expect(cacheSgf).toHaveBeenCalledWith('kifu_7', expect.any(String), RAW_SGF);
   });
 

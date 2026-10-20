@@ -24,9 +24,10 @@ import { useOptionalGeometry } from '../../context/GeometryContext';
  * (对弈:「识别的盘面还没接进来」;课程:「课上的图会摆到盘上 / 等选课」)。
  * 所以开的口子只有这一处 —— 标题、盘、三格状态一律不给改。
  */
-export function GoConsoleRail({ syncLeft, syncRight }: {
+export function GoConsoleRail({ syncLeft, syncRight, help = false }: {
   syncLeft?: string;
   syncRight?: string;
+  help?: boolean;
 } = {}) {
   const vision = useOptionalVision();
   const geometry = useOptionalGeometry();
@@ -45,6 +46,7 @@ export function GoConsoleRail({ syncLeft, syncRight }: {
       syncLeft={syncLeft ?? '识别的盘面还没接进来'}
       syncRight={syncRight ?? '暂不可用'}
       statuses={statuses}
+      help={help ? '这里展示实体棋盘与设备状态。识别盘面尚未接入时，预览显示空盘；摄像头、标定和 LED 的状态来自设备。' : undefined}
     />
   );
 }

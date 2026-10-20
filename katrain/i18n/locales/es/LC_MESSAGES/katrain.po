@@ -3828,7 +3828,7 @@ msgid "login:box_gate_cta"
 msgstr "Ir al inicio de StellaBox"
 
 msgid "vision:back_settings"
-msgstr "Ajustes"
+msgstr "Volver a ajustes"
 
 msgid "vision:board_lost_hint"
 msgstr ""
@@ -3839,7 +3839,7 @@ msgid "vision:calibrate_title"
 msgstr "Calibración del tablero"
 
 msgid "vision:calibrate_sub"
-msgstr "Vacía primero el tablero · 13 puntos: 4 esquinas + 9 hoshi"
+msgstr "Vacía primero el tablero · 5 puntos: 4 esquinas y el centro"
 
 msgid "vision:cancel_calibration"
 msgstr "Cancelar calibración"

@@ -81,7 +81,7 @@ const detail = (summary: UserGameSummary, sgf?: string): UserGameDetail => ({
   ...summary,
   sgf_content: sgf ?? `(;FF[4]GM[1]SZ[${summary.board_size}];B[pd];W[dd])`,
 });
-const response = (items: UserGameSummary[], page = 1, total = items.length) => ({ items, total, page, page_size: 12 });
+const response = (items: UserGameSummary[], page = 1, total = items.length) => ({ items, total, page, page_size: 20 });
 
 const step = (over: Record<string, unknown>) => ({
   kind: 'move', move_index: 0, property: 'B', row: null, col: null, color: null,
@@ -177,7 +177,7 @@ beforeEach(() => {
   mocks.getAlbum.mockResolvedValue({ sgf_content: '(;SZ[13];B[aa])' });
   mocks.getAlbums.mockResolvedValue({ items: [{
     id: 10, player_black: '库黑', player_white: '库白', black_rank: '', white_rank: '',
-    event: '库赛事', result: 'W+R', move_count: 1, date_played: '2026-07-15', board_size: 13,
+    event: '库赛事', display_event: '库赛事', display_player_black: '库黑', display_player_white: '库白', result: 'W+R', move_count: 1, date_played: '2026-07-15', board_size: 13,
     handicap: 0, komi: 7.5, rules: 'chinese', round_name: null,
   }], total: 1, page: 1, page_size: 10 });
   mocks.createReport.mockResolvedValue({ id: 99 });
@@ -194,7 +194,7 @@ describe('屏 19 · 列表与选中', () => {
   it('从 URL 读搜索词和页码,并默认选中第一行', async () => {
     renderPage('/kiosk/report?q=柯洁&page=2');
     await waitFor(() => expect(mocks.list).toHaveBeenCalledWith('token', {
-      page: 2, page_size: 12, q: '柯洁', sort: 'created_at_desc',
+      page: 2, page_size: 20, q: '柯洁', sort: 'created_at_desc',
     }));
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
     expect(rows()[1]).toHaveAttribute('data-selected', 'false');
@@ -229,15 +229,15 @@ describe('屏 19 · 列表与选中', () => {
     fireEvent.click(within(rows()[1]).getByRole('button', { name: /vs 柯洁/ }));
     await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
     mocks.list.mockResolvedValue(response([game('a'), game('b', { player_white: '柯洁', white_rank: '九段' })]));
-    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
+    fireEvent.click(screen.getByRole('button', { name: '显示或收起历史搜索' }));
     await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
   });
 
   it('搜索写进 URL、页码归 1;翻页把搜索词留着', async () => {
     renderPage('/kiosk/report?page=3');
     await waitFor(() => expect(rows()).toHaveLength(2));
-    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
     const box = screen.getByTestId('review-search');
+    expect(box).toBeVisible();
     fireEvent.change(box, { target: { value: '  柯洁  ' } });
     fireEvent.keyDown(box, { key: 'Enter' });
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/kiosk/report?q=%E6%9F%AF%E6%B4%81'));
@@ -247,7 +247,7 @@ describe('屏 19 · 列表与选中', () => {
     renderPage('/kiosk/report?q=柯洁');
     await waitFor(() => expect(rows()).toHaveLength(2));
     expect(screen.getByTestId('review-search')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
+    fireEvent.click(screen.getByRole('button', { name: '显示或收起历史搜索' }));
     await waitFor(() => expect(screen.queryByTestId('review-search')).toBeNull());
     expect(screen.getByTestId('location')).toHaveTextContent('/kiosk/report');
     expect(screen.getByTestId('location')).not.toHaveTextContent('q=');
@@ -257,7 +257,6 @@ describe('屏 19 · 列表与选中', () => {
     const stale = deferred<ReturnType<typeof response>>();
     mocks.list.mockReturnValueOnce(stale.promise);
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: '筛选和搜索历史对局' }));
     const box = screen.getByTestId('review-search');
     fireEvent.change(box, { target: { value: '柯洁' } });
     fireEvent.keyDown(box, { key: 'Enter' });
@@ -270,7 +269,6 @@ describe('屏 19 · 列表与选中', () => {
     const stale = deferred<ReturnType<typeof response>>();
     mocks.list.mockReturnValueOnce(stale.promise);
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: '筛选和搜索历史对局' }));
     const box = screen.getByTestId('review-search');
     fireEvent.change(box, { target: { value: '柯洁' } });
     fireEvent.keyDown(box, { key: 'Enter' });
@@ -357,7 +355,7 @@ describe('屏 19 · 这个数是谁数的', () => {
     expect(label).not.toHaveTextContent('共');
   });
 
-  it('搜到 / 面对面 那两句不声称完整,云端与否都不改口', async () => {
+  it('搜索计数不声称全库完整,云端与否都不改口', async () => {
     mocks.list.mockResolvedValue({ ...response([game('a')], 1, 2), authority: 'cloud' });
     renderPage('/kiosk/report?q=柯洁');
     await waitFor(() => expect(rows()).toHaveLength(1));
@@ -365,80 +363,30 @@ describe('屏 19 · 这个数是谁数的', () => {
   });
 });
 
-describe('屏 19 · 按来源筛', () => {
-  it('筛「面对面」把 source 发给后端,并写进 URL', async () => {
+describe('屏 19 · 搜索与卡片信息', () => {
+  it('只显示搜索栏,旧来源参数也不会偷偷筛选', async () => {
+    renderPage('/kiosk/report?source=play_local');
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    expect(screen.getByTestId('review-search')).toBeVisible();
+    expect(screen.queryByTestId('review-source')).toBeNull();
+    expect(mocks.list).toHaveBeenLastCalledWith('token', {
+      page: 1, page_size: 20, q: undefined, sort: 'created_at_desc',
+    });
+  });
+
+  it('卡片标明对局类型,并把结果写成「白中盘胜」「黑6.5子胜」', async () => {
+    mocks.list.mockResolvedValue(response([
+      game('free', { result: 'W+R' }),
+      game('ranked', { game_type: 'ai_ladder_ranked', result: 'B+6.5' }),
+      game('local', { source: 'play_local', player_black: '小明', player_white: '小红', result: 'W+R' }),
+    ]));
     renderPage();
-    await waitFor(() => expect(rows()).toHaveLength(2));
-    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
-    fireEvent.click(screen.getByRole('button', { name: '面对面' }));
-    await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith('token', {
-      page: 1, page_size: 12, q: undefined, sort: 'created_at_desc', source: 'play_local',
-    }));
-    expect(screen.getByTestId('location')).toHaveTextContent('source=play_local');
-  });
-
-  it('「全部」不往后端发 source —— 别把默认值也当成一个筛选条件', async () => {
-    renderPage('/kiosk/report?source=play_local');
-    await waitFor(() => expect(rows()).toHaveLength(2));
-    fireEvent.click(screen.getByRole('button', { name: '全部' }));
-    await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith('token', {
-      page: 1, page_size: 12, q: undefined, sort: 'created_at_desc', source: undefined,
-    }));
-    expect(screen.getByTestId('location')).not.toHaveTextContent('source=');
-  });
-
-  it('URL 上带着筛选进来时,那条带子是**开着**的', async () => {
-    renderPage('/kiosk/report?source=play_local');
-    await waitFor(() => expect(rows()).toHaveLength(2));
-    // 收着的话列表短了,而屏上没有任何控件说得出为什么。
-    expect(screen.getByTestId('review-source')).toBeInTheDocument();
-    expect(within(screen.getByTestId('review-source')).getByRole('button', { name: '面对面' }))
-      .toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('收起那条带子会把筛选一起撤掉,不是只撤搜索词', async () => {
-    renderPage('/kiosk/report?source=play_local');
-    await waitFor(() => expect(rows()).toHaveLength(2));
-    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
-    await waitFor(() => expect(screen.queryByTestId('review-source')).toBeNull());
-    expect(screen.getByTestId('location')).not.toHaveTextContent('source=');
-  });
-
-  it('计数写的是筛出来那一档,不是「本机 N 局」', async () => {
-    mocks.list.mockResolvedValue(response([game('a')], 1, 1));
-    renderPage('/kiosk/report?source=play_local');
-    await waitFor(() => expect(rows()).toHaveLength(1));
-    const label = document.querySelector('.kiosk-section--grow .secval') as HTMLElement;
-    expect(label).toHaveTextContent('面对面 1 局');
-    expect(label).not.toHaveTextContent('本机');
-  });
-
-  it('筛出来是空的,说的是「还没有面对面下过」——**不是**「还没有下过的棋」', async () => {
-    // 把筛选的后果栽到用户头上是这一族最常见的谎:他可能下过一百局人机。
-    mocks.list.mockResolvedValue(response([], 1, 0));
-    renderPage('/kiosk/report?source=play_local');
-    expect(await screen.findByText('还没有面对面下过')).toBeInTheDocument();
-    expect(screen.queryByText('还没有下过的棋')).toBeNull();
-  });
-
-  it('认不得的 source 退回全部 —— URL 是手输得到的,不该让列表空着还怪用户', async () => {
-    renderPage('/kiosk/report?source=乱写的');
-    await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith('token', {
-      page: 1, page_size: 12, q: undefined, sort: 'created_at_desc', source: undefined,
-    }));
-    expect(document.querySelector('.kiosk-section--grow .secval')).toHaveTextContent('本机');
-  });
-
-  it('导入一局之后筛选收回全部 —— 导进来的是 import,筛在面对面上它根本不在结果里', async () => {
-    mocks.create.mockResolvedValue({ ...game('imported'), sgf_content: '(;FF[4]SZ[19];B[pd])' });
-    renderPage('/kiosk/report?source=play_local');
-    await waitFor(() => expect(rows()).toHaveLength(2));
-    fireEvent.click(screen.getByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: '从本地导入 SGF' }));
-    const box = await screen.findByLabelText('SGF 内容');
-    fireEvent.change(box, { target: { value: '(;FF[4]GM[1]SZ[19];B[pd];W[dd])' } });
-    fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
-    await waitFor(() => expect(screen.getByTestId('location')).not.toHaveTextContent('source='));
+    await waitFor(() => expect(rows()).toHaveLength(3));
+    expect(within(rows()[0]).getByText('自由对弈')).toBeInTheDocument();
+    expect(within(rows()[0]).getByText('白中盘胜')).toBeInTheDocument();
+    expect(within(rows()[1]).getByText('升降级对弈')).toBeInTheDocument();
+    expect(within(rows()[1]).getByText('黑6.5子胜')).toBeInTheDocument();
+    expect(within(rows()[2]).getByText('人人对弈')).toBeInTheDocument();
   });
 });
 
@@ -451,6 +399,30 @@ describe('屏 19 · 左栏(选中这一局)', () => {
     expect(stoneAt('Q16')).toBeNull();
     expect(stoneAt('Q4')).toHaveAttribute('data-stone', 'w');
     expect(stoneAt('D16')).toHaveAttribute('data-stone', 'w');
+  });
+
+  it('SGF 详情先返回、终局回放稍后返回时仍应用盘面', async () => {
+    const loaded = deferred<{ board_size: number; steps: typeof STEPS; meta: object }>();
+    mocks.baipuLoad.mockReturnValue(loaded.promise);
+    renderPage();
+    await waitFor(() => expect(mocks.baipuLoad).toHaveBeenCalled());
+    await act(async () => { loaded.resolve({ board_size: 19, steps: STEPS, meta: {} }); });
+    await waitFor(() => expect(stones()).toHaveLength(2));
+    expect(screen.getByRole('button', { name: '查看棋谱', exact: true })).toBeEnabled();
+  });
+
+  it('选择 B 后等待 B 回放时不显示 A 的盘面', async () => {
+    const loaded = deferred<{ board_size: number; steps: typeof STEPS; meta: object }>();
+    renderPage();
+    await waitFor(() => expect(stones()).toHaveLength(2));
+    mocks.baipuLoad.mockReturnValueOnce(loaded.promise);
+    fireEvent.click(within(rows()[1]).getByRole('button', { name: /vs 柯洁/ }));
+    await waitFor(() => expect(mocks.baipuLoad).toHaveBeenCalledTimes(2));
+    expect(stones()).toHaveLength(0);
+    expect(screen.getByRole('button', { name: '查看棋谱', exact: true })).toBeDisabled();
+    await act(async () => { loaded.resolve({ board_size: 19, steps: STEPS, meta: {} }); });
+    await waitFor(() => expect(stones()).toHaveLength(2));
+    expect(screen.getByRole('button', { name: '查看棋谱', exact: true })).toBeEnabled();
   });
 
   it('谱铺不开时画空盘并说明,不摆一盘不是这一局的子当装饰', async () => {
@@ -490,67 +462,12 @@ describe('屏 19 · 左栏(选中这一局)', () => {
   });
 });
 
-describe('屏 19 · 这一局的胜率', () => {
-  it('没算过的时候不画线,写明为什么空', async () => {
+describe('屏 19 · 历史列表布局', () => {
+  it('移除占空间的胜率区，保留选中对局和列表', async () => {
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
-    const plot = screen.getByTestId('review-winrate-plot');
-    expect(plot).toHaveAttribute('data-state', 'empty');
-    expect(plot.textContent).toContain('这一局还没分析');
-    expect(plot.querySelector('polyline')).toBeNull();
-  });
-
-  it('算过了就按黑方胜率画,掉分最狠的那一手单独一段红', async () => {
-    mocks.hookResult = { ...mocks.hookResult, reportStatesByGame: { a: { completedNormal: task() } } };
-    renderPage();
-    await waitFor(() => expect(screen.getByTestId('review-winrate-plot')).toHaveAttribute('data-state', 'plotted'));
-    expect(screen.getByTestId('review-winrate-plot')).toHaveAttribute('data-points', '4');
-    expect(screen.getByTestId('review-winrate-drop')).toBeInTheDocument();
-  });
-
-  it('报告读不出来时那句话说的是这件事(不印原文),不是一条假曲线', async () => {
-    mocks.hookResult = { ...mocks.hookResult, reportStatesByGame: { a: { completedNormal: task() } } };
-    mocks.getMoves.mockRejectedValue(
-      Object.assign(new Error('Request failed 404: {"detail":"Report task not found"}'), { status: 404 }),
-    );
-    renderPage();
-    expect(await screen.findByText('报告读不出来 · 已经不在了')).toBeInTheDocument();
-    expect(screen.getByTestId('review-winrate-plot')).toHaveAttribute('data-state', 'empty');
-  });
-
-  // F2 回归钉子:`movesError` 只在成功时才清,选中一局读不出来的报告之后,再选一局
-  // 没分析过的新局,`plotEmpty` 先查 `movesError` ⇒ 上一局的错粘到了这一局身上。
-  it('上一局报告读不出来的错不会粘到下一局身上', async () => {
-    mocks.hookResult = { ...mocks.hookResult, reportStatesByGame: { a: { completedNormal: task() } } };
-    mocks.getMoves.mockRejectedValue(
-      Object.assign(new Error('Request failed 404: {"detail":"Report task not found"}'), { status: 404 }),
-    );
-    renderPage();
-    expect(await screen.findByText('报告读不出来 · 已经不在了')).toBeInTheDocument();
-    fireEvent.click(within(rows()[1]).getByRole('button', { name: /vs 柯洁/ }));
-    await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
-    await waitFor(() => expect(screen.queryByText('报告读不出来 · 已经不在了')).toBeNull());
-    expect(screen.getByText('这一局还没分析 —— 在下面「生成报告」里挑一档')).toBeInTheDocument();
-  });
-
-  /**
-   * R1 回归钉子(2026-09-14 调研):三格与红段都要和屏 20 用同一套判据。
-   * 第 1 手「两次搜索之差」掉 4 分(过了旧失误线),可服务端在同一次搜索里只算它亏 1 目、判「尚可」。
-   * 旧实现会在这里数出「失误 1 手」并画红段;按七档,这一局没有坏手。
-   */
-  it('三格和红段都按服务端七档 —— 旧失误线上的「尚可」不算失误、不画红', async () => {
-    mocks.getMoves.mockResolvedValue([
-      reportMove({ move_number: 0, winrate: 0.5, score_lead: 0 }),
-      reportMove({ move_number: 1, winrate: 0.3, score_lead: -4, actual_player: 'B', delta_score: -4, grade: 'playable' }),
-      reportMove({ move_number: 2, winrate: 0.35, score_lead: -5, actual_player: 'W', delta_score: -1, grade: 'very_good' }),
-      reportMove({ move_number: 3, winrate: 0.55, score_lead: -2, actual_player: 'B', delta_score: 3, grade: 'best' }),
-    ]);
-    mocks.hookResult = { ...mocks.hookResult, reportStatesByGame: { a: { completedNormal: task() } } };
-    renderPage();
-    await waitFor(() => expect(screen.getByTestId('review-winrate-plot')).toHaveAttribute('data-state', 'plotted'));
-    expect(cellValue('失误')).toBe('0 手');
-    expect(cellValue('妙手')).toBe('0 手');
-    expect(screen.queryByTestId('review-winrate-drop')).toBeNull();
+    expect(screen.queryByText('这一局的胜率')).toBeNull();
+    expect(rows()).toHaveLength(2);
   });
 });
 
@@ -559,25 +476,45 @@ describe('屏 19 · 行的五种状态', () => {
     mocks.hookResult = { ...mocks.hookResult, reportStatesByGame: { a: state } };
   };
 
-  it('只跑了一档:标 + 一个「查看报告」,点了进报告屏', async () => {
+  it('只跑了一档:状态标和左侧菜单查看报告', async () => {
     withState({ completedNormal: task() });
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'analyzed'));
     expect(within(rows()[0]).getByText('已分析')).toBeInTheDocument();
-    fireEvent.click(within(rows()[0]).getByRole('button', { name: '查看报告' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '分析报告' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /查看普通报告/ }));
     expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/report/41');
+  });
+
+  it('左侧档位菜单区分标准已完成与精读未生成', async () => {
+    withState({ completedNormal: task() });
+    renderPage();
+    await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'analyzed'));
+    await waitFor(() => expect(screen.getByRole('button', { name: '分析报告' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /查看普通报告/ }));
+    expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/report/41');
+    await waitFor(() => expect(screen.getByRole('button', { name: '分析报告' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /生成深度报告/ }));
+    expect(mocks.createReport).toHaveBeenCalledWith({ userGameId: 'a', reportType: 'deep', totalMoves: 187 });
   });
 
   // ⚠️ **报告按档发** —— 两档都跑完时一个「查看报告」指不了两个 id。
   // 上一版的 `ReportGameCard` 本来就是两个键,收成一个等于丢了一条路。
-  it('两档都跑完:拆成「标准」「精读」两个键,各自只有一个宾语', async () => {
+  it('两档都跑完:左侧菜单按档位查看不同报告', async () => {
     withState({ completedNormal: task(), completedDeep: task({ id: 88, report_type: 'deep' }) });
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'analyzed'));
     expect(within(rows()[0]).queryByRole('button', { name: '查看报告' })).toBeNull();
-    fireEvent.click(within(rows()[0]).getByRole('button', { name: '标准' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '分析报告' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /查看普通报告/ }));
     expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/report/41');
-    fireEvent.click(within(rows()[0]).getByRole('button', { name: '精读' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '分析报告' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /查看深度报告/ }));
     expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/report/88');
   });
 
@@ -590,12 +527,15 @@ describe('屏 19 · 行的五种状态', () => {
     expect(within(rows()[0]).queryByRole('button', { name: '继续分析' })).toBeNull();
   });
 
-  it('未分析行可直接开始标准分析,并把动作的那局选中', async () => {
+  it('选中未分析行后从左侧菜单开始标准分析', async () => {
     renderPage();
     await waitFor(() => expect(rows()).toHaveLength(2));
     const second = rows()[1];
 
-    fireEvent.click(within(second).getByRole('button', { name: '开始分析' }));
+    fireEvent.click(within(second).getByRole('button', { name: /vs 柯洁/ }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '分析报告' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /生成普通报告/ }));
 
     await waitFor(() => expect(second).toHaveAttribute('data-selected', 'true'));
     expect(mocks.createReport).toHaveBeenCalledWith({
@@ -605,12 +545,14 @@ describe('屏 19 · 行的五种状态', () => {
 
   // **「算了一半」既不是成功也不是失败**,它必须自己一档。后端没有「暂停」这个状态:
   // 跑了一半断掉的任务落在 failed 上、`analyzed_moves` 还留着,重试会从断点续算。
-  it('只算到一半:自己一档,行尾说的是「继续分析」而不是「重试」', async () => {
+  it('只算到一半:保留进度并从档位菜单重试', async () => {
     withState({ failedNormal: task({ status: 'failed', analyzed_moves: 96 }) });
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'partial'));
     expect(within(rows()[0]).getByText('只算到 96/187')).toBeInTheDocument();
-    fireEvent.click(within(rows()[0]).getByRole('button', { name: '继续分析' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '分析报告' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /重试普通报告/ }));
     expect(mocks.retryReport).toHaveBeenCalledWith(41);
     expect(mocks.navigate).not.toHaveBeenCalled();       // 就地干活,不跳页
   });
@@ -620,7 +562,9 @@ describe('屏 19 · 行的五种状态', () => {
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'failed'));
     expect(within(rows()[0]).getByText('分析失败')).toBeInTheDocument();
-    fireEvent.click(within(rows()[0]).getByRole('button', { name: '重试' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '分析报告' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /重试普通报告/ }));
     expect(mocks.retryReport).toHaveBeenCalledWith(41);
   });
 
@@ -643,8 +587,10 @@ describe('屏 19 · 行的五种状态', () => {
     // 那句话自己带着手数,后面不许再挂一段「22 手」—— 同一个数说两遍。
     expect(within(rows()[0]).getByText(/^下到第 22 手就退出了 · /)).toBeInTheDocument();
     expect(within(rows()[0]).queryByText(/就退出了 · 22 手/)).toBeNull();
-    expect(screen.getByRole('button', { name: /标准/ })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /精读/ })).toBeDisabled();
+    if (screen.getByRole('button', { name: '分析报告' }).getAttribute('aria-expanded') !== 'true') fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    expect(screen.getByRole('button', { name: /普通报告/ })).toBeDisabled();
+    if (screen.getByRole('button', { name: '分析报告' }).getAttribute('aria-expanded') !== 'true') fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    expect(screen.getByRole('button', { name: /深度报告/ })).toBeDisabled();
   });
 
   // P14:导入的谱没写 RE 不是「没下完」。以前被标「未终局」、念成「下到第 187 手就退出了」、不给报告。
@@ -656,8 +602,10 @@ describe('屏 19 · 行的五种状态', () => {
     expect(within(rows()[0]).getByText('未分析')).toBeInTheDocument();
     expect(within(rows()[0]).getByText(/^谱里没写结果 · 187 手/)).toBeInTheDocument();
     expect(within(rows()[0]).queryByText(/就退出了/)).toBeNull();
-    expect(screen.getByRole('button', { name: /标准/ })).not.toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: /标准/ }));
+    if (screen.getByRole('button', { name: '分析报告' }).getAttribute('aria-expanded') !== 'true') fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    expect(screen.getByRole('button', { name: /普通报告/ })).not.toBeDisabled();
+    if (screen.getByRole('button', { name: '分析报告' }).getAttribute('aria-expanded') !== 'true') fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /普通报告/ }));
     expect(mocks.createReport).toHaveBeenCalledWith({ userGameId: 'a', reportType: 'normal', totalMoves: 187 });
   });
 
@@ -666,8 +614,10 @@ describe('屏 19 · 行的五种状态', () => {
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'unanalyzed'));
     await selectedRow();
-    expect(screen.getByRole('button', { name: /标准/ })).not.toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: /标准/ }));
+    if (screen.getByRole('button', { name: '分析报告' }).getAttribute('aria-expanded') !== 'true') fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    expect(screen.getByRole('button', { name: /普通报告/ })).not.toBeDisabled();
+    if (screen.getByRole('button', { name: '分析报告' }).getAttribute('aria-expanded') !== 'true') fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /普通报告/ }));
     expect(mocks.createReport).toHaveBeenCalledWith({ userGameId: 'a', reportType: 'normal', totalMoves: 187 });
   });
 
@@ -690,54 +640,52 @@ describe('屏 19 · 生成报告那一组', () => {
     await waitFor(() => expect(rows()).toHaveLength(2));
     fireEvent.click(within(rows()[1]).getByRole('button', { name: /vs 柯洁/ }));
     await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
-    fireEvent.click(screen.getByRole('button', { name: /标准/ }));
+    if (screen.getByRole('button', { name: '分析报告' }).getAttribute('aria-expanded') !== 'true') fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /普通报告/ }));
     expect(mocks.createReport).toHaveBeenCalledWith({ userGameId: 'b', reportType: 'normal', totalMoves: 187 });
-    fireEvent.click(screen.getByRole('button', { name: /精读/ }));
+    if (screen.getByRole('button', { name: '分析报告' }).getAttribute('aria-expanded') !== 'true') fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: /深度报告/ }));
     expect(mocks.createReport).toHaveBeenCalledWith({ userGameId: 'b', reportType: 'deep', totalMoves: 187 });
   });
 
-  it('一局都没有时两张档位卡按不了 —— 按了没有作用对象', async () => {
+  it('一局都没有时分析报告入口不可用', async () => {
     mocks.list.mockResolvedValue(response([], 1, 0));
     renderPage();
     await screen.findByText('还没有下过的棋');
-    expect(screen.getByRole('button', { name: /标准/ })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /精读/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '分析报告' })).toBeDisabled();
   });
 
-  // ⚠️ 稿子把第三张卡画成「接口还没有 · 即将上线」,那是稿子写错了:两条导入路都在跑。
-  // 这条断言把那个裁定钉住 —— 谁把它改回 `is-soon` 就红。
-  it('第三张卡是能用的,点开有本地 SGF 和棋谱库两条路', async () => {
+  it('导入卡片打开职业棋谱库,Kiosk 不提供本地 SGF 入口', async () => {
     renderPage();
     const card = await screen.findByRole('button', { name: /导入棋谱复盘/ });
     expect(card).not.toBeDisabled();
     expect(screen.queryByText('即将上线')).toBeNull();
     fireEvent.click(card);
-    expect(await screen.findByRole('menuitem', { name: '从本地导入 SGF' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: '从棋谱库导入' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '搜索棋谱库' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '从本地导入 SGF' })).not.toBeInTheDocument();
   });
 
-  it('本地导入可以只存不分析,也可以存完直接建报告', async () => {
+  it('职业棋谱可以只存不分析', async () => {
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: '从本地导入 SGF' }));
-    fireEvent.change(await screen.findByLabelText('SGF 内容'), { target: { value: '(;SZ[19];B[aa])' } });
+    fireEvent.click(await screen.findByText('库赛事'));
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
     await waitFor(() => expect(mocks.create).toHaveBeenCalled());
     expect(mocks.createReport).not.toHaveBeenCalled();
   });
 
-  it('导入失败时错留在对话框里,输入不丢', async () => {
+  it('导入失败时错留在对话框里,职业棋谱选择保留', async () => {
     mocks.create.mockRejectedValueOnce(new Error('SGF 不合法'));
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: '从本地导入 SGF' }));
-    const box = await screen.findByLabelText('SGF 内容');
-    fireEvent.change(box, { target: { value: '(;SZ[19];B[aa])' } });
+    const choice = await screen.findByRole('button', { name: /库赛事/ });
+    fireEvent.click(choice);
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
     // 没有 status 的错落 other ⇒ 只说「做什么没成」,不把 error.message 贴进对话框。
-    expect(await screen.findByText('导入 SGF 失败')).toBeInTheDocument();
+    expect(await screen.findByText('从棋谱库导入失败')).toBeInTheDocument();
     expect(screen.queryByText('SGF 不合法')).toBeNull();
-    expect(box).toHaveValue('(;SZ[19];B[aa])');
+    expect(choice).toHaveAttribute('aria-pressed', 'true');
   });
 
   // F1 回归钉子:`create` 成功之后 `createForGame` 再炸(典型是 402 积分不足),对局已经
@@ -749,19 +697,18 @@ describe('屏 19 · 生成报告那一组', () => {
     );
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: '从本地导入 SGF' }));
-    fireEvent.change(await screen.findByLabelText('SGF 内容'), { target: { value: '(;SZ[19];B[aa])' } });
+    fireEvent.click(await screen.findByText('库赛事'));
     fireEvent.click(screen.getByRole('button', { name: '导入并生成普通报告' }));
     await waitFor(() => expect(mocks.createReport).toHaveBeenCalled());
     expect(mocks.create).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.queryByLabelText('SGF 内容')).toBeNull());
-    expect(screen.queryByText('导入 SGF 失败')).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.queryByText('从棋谱库导入失败')).toBeNull();
   });
 
   it('从棋谱库导入走的是同一条路 —— 把那一局复制进你自己的对局表', async () => {
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: '从棋谱库导入' }));
+    // 首击已直接进入可搜索的职业棋谱库。
     fireEvent.click(await screen.findByText('库赛事'));
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
     await waitFor(() => expect(mocks.getAlbum).toHaveBeenCalledWith(10));
@@ -774,7 +721,7 @@ describe('屏 19 · 生成报告那一组', () => {
     mocks.getAlbum.mockRejectedValueOnce(new Error('Request failed 503: {"detail":"Remote server unavailable"}'));
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: '从棋谱库导入' }));
+    // 首击已直接进入可搜索的职业棋谱库。
     fireEvent.click(await screen.findByText('库赛事'));
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
     expect(await screen.findByText('从棋谱库导入失败')).toBeInTheDocument();
@@ -789,8 +736,12 @@ describe('屏 19 · 删除', () => {
   it('删除只出现在选中的那一行上', async () => {
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
-    expect(within(rows()[0]).getByRole('button', { name: '删除' })).toBeInTheDocument();
-    expect(within(rows()[1]).queryByRole('button', { name: '删除' })).toBeNull();
+    expect(within(rows()[0]).getByRole('button', { name: '删除对局' })).toBeInTheDocument();
+    expect(within(rows()[1]).queryByRole('button', { name: '删除对局' })).toBeNull();
+    fireEvent.click(within(rows()[1]).getByRole('button', { name: /vs 柯洁/ }));
+    await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
+    expect(within(rows()[0]).queryByRole('button', { name: '删除对局' })).toBeNull();
+    expect(within(rows()[1]).getByRole('button', { name: '删除对局' })).toBeInTheDocument();
   });
 
   it('棋谱库导入的职业棋局不显示删除，个人升降级对局显示删除', async () => {
@@ -801,19 +752,19 @@ describe('屏 19 · 删除', () => {
     renderPage();
     await waitFor(() => expect(rows()).toHaveLength(2));
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
-    expect(within(rows()[0]).queryByRole('button', { name: '删除' })).toBeNull();
+    expect(within(rows()[0]).queryByRole('button', { name: '删除对局' })).toBeNull();
     fireEvent.click(within(rows()[1]).getByRole('button', { name: /升降级对弈/ }));
     await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
-    expect(within(rows()[1]).getByRole('button', { name: '删除' })).toBeInTheDocument();
+    expect(within(rows()[1]).getByRole('button', { name: '删除对局' })).toBeInTheDocument();
   });
 
   it('确认之后才删,删完重新拉列表', async () => {
     renderPage();
     await waitFor(() => expect(rows()).toHaveLength(2));
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
-    fireEvent.click(within(rows()[0]).getByRole('button', { name: '删除' }));
+    fireEvent.click(within(rows()[0]).getByRole('button', { name: '删除对局' }));
     expect(mocks.deleteGame).not.toHaveBeenCalled();
-    fireEvent.click(await screen.findByRole('button', { name: '删除对局' }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: '确认删除' })).getByRole('button', { name: '删除对局' }));
     await waitFor(() => expect(mocks.deleteGame).toHaveBeenCalledWith('token', 'a'));
     await waitFor(() => expect(mocks.refreshTasks).toHaveBeenCalled());
   });
@@ -823,8 +774,8 @@ describe('屏 19 · 删除', () => {
     renderPage();
     await waitFor(() => expect(rows()).toHaveLength(2));
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
-    fireEvent.click(within(rows()[0]).getByRole('button', { name: '删除' }));
-    fireEvent.click(await screen.findByRole('button', { name: '删除对局' }));
+    fireEvent.click(within(rows()[0]).getByRole('button', { name: '删除对局' }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: '确认删除' })).getByRole('button', { name: '删除对局' }));
     expect(await screen.findByText('删除对局失败')).toBeInTheDocument();
     expect(screen.queryByText('删不掉')).toBeNull();
     expect(rows()).toHaveLength(2);

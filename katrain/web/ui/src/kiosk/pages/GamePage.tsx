@@ -1121,6 +1121,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     navigate('/kiosk/play');
   };
 
+  // The dedicated 弃局 action promises that the game disappears from the session.
+  // Unlike the legacy exit shortcut, do not report success or navigate if deletion fails.
+  const handleAbandonLocalGame = async () => {
+    if (!sessionId || !localGame || isGameOver) throw new Error('No active local game to abandon');
+    await API.deleteSession(sessionId);
+    clearActiveSession('game');
+    navigate('/kiosk/play');
+  };
+
   const handleLocalResign = async (color: 'B' | 'W') => {
     try {
       await session.handleAction('resign', { color });
@@ -1472,7 +1481,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           onToggle={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
           onSelect={handleBoardMove} onConfirm={() => { void localConfirmation.confirm(); }}
           onPass={() => { void localConfirmation.pass(); }} onCount={() => { void handleAction('count'); }}
-          onResign={(color) => { void handleLocalResign(color); }} onExit={handleExit}
+          onResign={(color) => { void handleLocalResign(color); }} onAbandon={handleAbandonLocalGame} onExit={handleExit}
           onPaintedNode={session.acknowledgePaintedNode} onExpired={() => { void handleTimeExpired(); }}
           blocked={!!session.connectionLost || counting || (physicalPlay && (!visionStatus.cameraConnected || !visionStatus.poseLocked || localRecoveryBlocked))}
         />

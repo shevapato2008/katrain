@@ -52,9 +52,25 @@ for (const professional of [false, true]) {
     await page.getByRole('button', { name: '坐标', exact: true }).click();
     await page.screenshot({ path: `/private/tmp/kiosk-${professional ? 'professional' : 'personal'}-report.png` });
     const tabs = page.getByRole('group', { name: '着手评价' });
+    expect((await tabs.boundingBox())!.height).toBe(50);
+    expect((await tabs.boundingBox())!.y).toBe(162);
+    expect((await page.locator('.report-analysis-rail__head').boundingBox())!.height).toBe(92);
+    await expect(page.locator('.report-analysis-rail__head .report-workspace__expand')).toBeVisible();
+    const tabItems = await tabs.locator('.grade-tab').evaluateAll(items => items.map(item => {
+      const rect = item.getBoundingClientRect();
+      return { y: rect.y, height: rect.height };
+    }));
+    expect(new Set(tabItems.map(item => item.y)).size).toBe(1);
+    expect(tabItems.every(item => item.height === 44)).toBe(true);
+    expect(await tabs.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(true);
+    expect(await tabs.locator('[data-active="true"]').evaluate(el => getComputedStyle(el).boxShadow)).not.toBe('none');
     for (const tab of ['推荐', '走势', '妙手', '失误', '发挥水准', 'AI吻合度']) await expect(tabs.getByRole('button', { name: tab, exact: true })).toBeVisible();
     for (const tab of ['妙手', '发挥水准', 'AI吻合度']) {
       await tabs.getByRole('button', { name: tab, exact: true }).click();
+      const active = await tabs.locator('[data-active="true"]').boundingBox();
+      const strip = (await tabs.boundingBox())!;
+      expect(active!.x).toBeGreaterThanOrEqual(strip.x);
+      expect(active!.x + active!.width).toBeLessThanOrEqual(strip.x + strip.width);
       for (const filter of await page.locator('.gfilters button').all()) {
         const bounds = (await filter.boundingBox())!;
         expect(bounds.width).toBe(54); expect(bounds.height).toBe(44);

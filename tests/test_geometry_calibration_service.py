@@ -431,7 +431,7 @@ class _LiveCallbackCalibrator:
         return CalibrationResult(ok=False, reason="fixture_finished")
 
 
-def _run_five_point_live_chain(tmp_path, scenario="stable"):
+def _run_five_point_live_chain(tmp_path, scenario="stable", *, prior_lock=None):
     """Run the real service/gate/calibrator; replace only hardware and final publication."""
     folder = Path(__file__).parent / "data"
     board = cv2.imread(str(folder / (
@@ -442,7 +442,10 @@ def _run_five_point_live_chain(tmp_path, scenario="stable"):
     if scenario in ("hand", "baseline"):
         assert find_visible_grid(hand) is None
     shadow = cv2.imread(str(folder / "rk3562_shadow_during_20261013.jpg"))
+    moved = cv2.warpAffine(board, np.float32([[1, 0, 24], [0, 1, 0]]),
+                           (board.shape[1], board.shape[0]))
     events, waits, builds = [], [], []
+    runtime = {"geometry": prior_lock, "worker_geometry": prior_lock}
     active_gate = None
     checking_stability = False
     injected = False
@@ -489,6 +492,8 @@ def _run_five_point_live_chain(tmp_path, scenario="stable"):
                 remaining_hand -= 1
             elif scenario == "shadow" and led.current == FIVE_POINT_ANCHORS[2] and lit_samples == 2:
                 frame, label = shadow.copy(), "shadow"
+            elif scenario == "moved" and baseline_samples >= 3:
+                frame, label = moved.copy(), "moved"
             if led.current is not None and label != "hand":
                 x, y, _radius = active_gate.anchor_roi(*led.current)
                 cv2.circle(frame, (round(x), round(y)), 5, (40, 255, 40), -1)
@@ -512,9 +517,25 @@ def _run_five_point_live_chain(tmp_path, scenario="stable"):
         calibrator._build_lock = build_lock
         return calibrator
 
+    def suspend():
+        runtime["worker_geometry"] = None
+        record("suspend")
+
+    def invalidate():
+        runtime["geometry"] = None
+        runtime["worker_geometry"] = None
+        record("degraded")
+
+    def resume():
+        runtime["worker_geometry"] = runtime["geometry"]
+        record("resume", worker_geometry=runtime["worker_geometry"])
+
     service = GeometryCalibrationService(
         led=led, capture=capture, save_path=tmp_path / "geometry.npz", calibrator_factory=factory,
+        initial_lock=prior_lock, on_suspend=suspend, on_degraded=invalidate, on_resume=resume,
     )
+    if prior_lock is not None:
+        service._status.update(phase="waiting_empty", session_calibrated=True)
     capture.status = service.status
     service._converge_exposure = lambda **_kwargs: record("exposure")
     service._prepare_drift_monitor = lambda _lock: None
@@ -539,6 +560,18 @@ def _run_five_point_live_chain(tmp_path, scenario="stable"):
     service._wait_stable, service._anchor_observed = wait, anchor
     try:
         service._run()
+        if scenario == "moved":
+            assert service.status()["phase"] == "failed", service.status()
+            assert service.status()["error"] == "board_moved"
+            assert service.status()["stopped_phase"] == "building_baseline"
+            assert service.current_lock is prior_lock
+            assert len(builds) == 0
+            assert not any(event["kind"] == "publish" for event in events)
+            if prior_lock is not None:
+                with pytest.raises(ValueError, match="no longer matches the moved board"):
+                    service.confirm_existing()
+            assert [event["coord"] for event in events if event["kind"] == "show"] == list(FIVE_POINT_ANCHORS)
+            return events, waits, builds
         assert service.status()["phase"] == "ready", service.status()
         assert service.current_lock is lock
         assert led.current is None
@@ -602,6 +635,26 @@ def test_real_five_point_chain_discards_interrupted_baseline_without_reflashing(
     assert waits[-1][0:4] == ("building_baseline", 5, False, 3 + waits[-1][4].required_frames)
     assert all(len(event["status"]["detected_anchors"]) == 5
                for event in events if event.get("label") == "hand")
+
+
+def test_live_baseline_rejects_stably_moved_board_after_five_anchors(tmp_path):
+    events, waits, builds = _run_five_point_live_chain(tmp_path, "moved")
+    assert any(event.get("label") == "moved" for event in events)
+    assert waits[-1][0] == "building_baseline"
+    assert builds == []
+
+
+def test_moved_baseline_invalidates_prior_ready_lock_before_resuming_worker(tmp_path):
+    prior_lock = object()
+    events, _waits, _builds = _run_five_point_live_chain(tmp_path, "moved", prior_lock=prior_lock)
+    degraded = [event for event in events if event["kind"] == "degraded"]
+    resumed = [event for event in events if event["kind"] == "resume"]
+    assert len(degraded) == len(resumed) == 1
+    assert events.index(degraded[0]) < events.index(resumed[0])
+    assert degraded[0]["status"]["session_calibrated"] is False
+    assert degraded[0]["status"]["lock_moved"] is True
+    assert degraded[0]["status"]["capabilities"]["geometry_ready"] is False
+    assert resumed[0]["worker_geometry"] is None
 
 
 def test_live_calibration_reuses_stability_between_all_five_points_and_baseline(tmp_path):

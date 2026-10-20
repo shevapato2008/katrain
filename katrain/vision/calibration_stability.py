@@ -105,6 +105,7 @@ class CalibrationStabilityGate:
                                            illumination_invariant=True)
         self.stable_frames = 0
         self.quad: np.ndarray | None = None
+        self.anchor_quad: np.ndarray | None = None
         self.last_motion_ratios: tuple[float | None, float] = (None, 0.0)
 
     @staticmethod
@@ -117,6 +118,21 @@ class CalibrationStabilityGate:
         self.motion.reset()
         self.capture_motion.reset()
         self.stable_frames = 0
+
+    def confirm_anchor(self) -> None:
+        """Keep the board position of the first confirmed LED point across transient resets."""
+        if self.anchor_quad is None and self.quad is not None:
+            self.anchor_quad = self.quad.copy()
+
+    def anchors_displaced(self) -> bool:
+        """A newly stable board must still align with the already confirmed LED points."""
+        if self.anchor_quad is None or self.quad is None:
+            return False
+        edges = np.linalg.norm(np.roll(self.anchor_quad, -1, axis=0) - self.anchor_quad, axis=1)
+        cell_px = float(np.median(edges)) / 18.0
+        # One corner can jump a few pixels when an LED or passing shadow changes
+        # the contour; a moved board shifts multiple corners together.
+        return bool(np.median(np.linalg.norm(self.quad - self.anchor_quad, axis=1)) > 0.25 * cell_px)
 
     @staticmethod
     def _board_mask(small: np.ndarray, frame: np.ndarray, quad: np.ndarray | None) -> np.ndarray | None:

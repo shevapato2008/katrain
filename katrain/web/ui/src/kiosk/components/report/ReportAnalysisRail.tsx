@@ -41,6 +41,7 @@ interface Props {
 export function ReportAnalysisRail(props: Props) {
   const { t } = useTranslation();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [expandControlContainer, setExpandControlContainer] = useState<HTMLDivElement | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const playedMove = props.actualMove ?? props.analysisByMove[props.currentMove + 1]?.move;
   const displayCandidates = reportCandidates(props.analysis?.top_moves ?? [], props.analysis ? playedMove : null);
@@ -77,14 +78,13 @@ export function ReportAnalysisRail(props: Props) {
 
   return <div ref={railRef} className="kiosk-rail report-analysis-rail report-rail-v2" data-testid={props.shellTestId ?? `${props.testId}-shell`}>
     <div className="report-analysis-rail__head">
-      <div className="report-analysis-rail__pagebar">{props.pagebar}<button type="button" className="report-details-button" aria-label={detailsLabel} onClick={() => setDetailsOpen(true)}><Icon name="info" /></button></div>
+      <div className="report-analysis-rail__pagebar">{props.pagebar}<div className="report-workspace report-analysis-rail__expand-slot" ref={setExpandControlContainer} /><button type="button" className="report-details-button" aria-label={detailsLabel} onClick={() => setDetailsOpen(true)}><Icon name="info" /></button></div>
       <div className="report-analysis-rail__scores" data-testid={`${props.testId}-scores`}>
         <div className="report-analysis-rail__players"><strong title={props.players[0]}><i className="kifu-record__stone kifu-record__stone--black" aria-label={black} /><span>{props.players[0]}</span></strong><b>{props.analysis ? Math.abs(props.analysis.score_lead) < .05 ? t('report:even_position', '形势均衡') : `${props.analysis.score_lead > 0 ? black : white}${t('report:leads', '领先')} ${Math.abs(props.analysis.score_lead).toFixed(1)} ${t('report:points_unit', '目')}` : t('report:position_number', '第 {n} 手').replace('{n}', String(props.currentMove))}</b><strong title={props.players[1]}><span>{props.players[1]}</span><i className="kifu-record__stone kifu-record__stone--white" aria-label={white} /></strong></div>
-        <div className="report-analysis-rail__win"><span>{black} {percentage(props.analysis?.winrate)}</span><i data-empty={!props.analysis || undefined}>{props.analysis && <em style={{ width: `${Math.max(0, Math.min(100, props.analysis.winrate * 100))}%` }} />}</i><span>{white} {percentage(props.analysis ? 1 - props.analysis.winrate : null)}</span></div>
+        <div className="report-analysis-rail__win"><span>{black}{t('live:winrate', '胜率')} {percentage(props.analysis?.winrate)}</span><i data-empty={!props.analysis || undefined}>{props.analysis && <em style={{ width: `${Math.max(0, Math.min(100, props.analysis.winrate * 100))}%` }} />}</i><span>{white}{t('live:winrate', '胜率')} {percentage(props.analysis ? 1 - props.analysis.winrate : null)}</span></div>
       </div>
-      {props.metadata}
     </div>
-    <MoveGradePanel analysis={props.analysisByMove} totalMoves={props.totalMoves} onMoveClick={props.onMoveClick}
+    <MoveGradePanel expandControlContainer={expandControlContainer} analysis={props.analysisByMove} totalMoves={props.totalMoves} onMoveClick={props.onMoveClick}
       recommendation={recommendation}
       trend={<div className="report-trend">
         <div className="tline"><span className="wr">{t('live:black_winrate', '黑方胜率')} <b>{percentage(props.analysis?.winrate)}</b></span><span className="sl">{t('live:black_lead', '黑方领先')} <b>{leadLabel(props.analysis?.score_lead)}</b> {t('live:points_unit', '目')}</span></div>
@@ -104,7 +104,7 @@ export function ReportAnalysisRail(props: Props) {
     <Modal open={detailsOpen} onClose={close} disablePortal disableScrollLock container={() => railRef.current!} className="report-analysis-modal report-details-modal">
       <div className="report-analysis-modal__box" role="dialog" aria-modal="true" aria-label={detailsLabel}>
         <div className="report-analysis-modal__head"><h3>{detailsLabel}</h3><button type="button" onClick={close} aria-label={t('Close', '关闭')}>×</button></div>
-        <div className="report-analysis-modal__body">{props.status}
+        <div className="report-analysis-modal__body">{props.status}{props.metadata}
           <dl className="report-analysis-modal__details">{props.details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value == null || value === '' ? '—' : value}</dd></div>)}</dl>
           {props.detailActions && <div className="report-analysis-rail__detail-actions" onClick={close}>{props.detailActions}</div>}
         </div>

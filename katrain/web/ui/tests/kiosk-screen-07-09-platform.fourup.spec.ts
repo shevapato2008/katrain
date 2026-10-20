@@ -40,7 +40,7 @@ async function boot(page: Page, path: string) {
       { platform: 'ogs', challenge_id: 'sample-3', from_user: { platform: 'ogs', user_id: '3', username: 'tenuki_now', rank: '2d', rank_numeric: 32, status: 'idle' }, board_size: 13, time_control: { system: 'absolute', main_time: 180 }, rules: 'chinese', ranked: false, handicap: 0, komi: null },
     ] },
   }));
-  await page.route('**/api/v1/platforms/golaxy/rooms', (route) => route.fulfill({ json: { rooms: [
+  await page.route('**/api/v1/platforms/golaxy/rooms?*', (route) => route.fulfill({ json: { rooms: [
     ['8799', 0, '甲', '乙', 83],
     ['8895', -1, '丙', '丁', 104],
     ['8843', 0, '戊', '己', 118],
@@ -52,7 +52,7 @@ async function boot(page: Page, path: string) {
     white: { user_id: `white-${number}`, username: `棋手${white}`, rank: null },
     phase: `${moveNumber}手`, spectator_count: null,
   })) } }));
-  await page.route('**/api/v1/platforms/golaxy/users', (route) => route.fulfill({ json: { users: [
+  await page.route('**/api/v1/platforms/golaxy/users?*', (route) => route.fulfill({ json: { users: [
     { user_id: 'fixture-a', username: '棋友甲', rank: null, status: null },
     { user_id: 'fixture-b', username: '棋友乙', rank: null, status: null },
     { user_id: 'fixture-c', username: '棋友丙', rank: null, status: null },

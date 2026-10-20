@@ -106,6 +106,14 @@ describe('屏 26 棋盘标定', () => {
       .not.toHaveTextContent('先熄灯拍一张');
   });
 
+  it('标题旁说明按钮保留五点提示，关闭后返回标定屏', () => {
+    renderScreen();
+    fireEvent.click(screen.getByRole('button', { name: '标定说明' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('四角和天元共 5 个定位点');
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '知道了' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('没在跑的时候第 1 步是「进行中」—— 清空棋盘本来就是按下之前要做的', () => {
     renderScreen();
     expect(steps()[0]).toHaveAttribute('data-state', 'now');
@@ -137,6 +145,39 @@ describe('屏 26 棋盘标定', () => {
     renderScreen();
     // 3 个 ⇒ 曝光已锁、断在五点定位那一步
     expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'done', 'bad', 'todo']);
+  });
+
+  it('服务端 stopped_phase 比错误字串和已定位点数更权威', () => {
+    status = {
+      ...status, phase: 'failed', stopped_phase: 'converging_exposure',
+      error: 'anchor_not_found:9,9',
+      detected_anchors: Array.from({ length: 5 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+    };
+    renderScreen();
+    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'bad', 'todo', 'todo']);
+    expect(screen.getByTestId('calib-cap')).toHaveTextContent('停在第 2 步');
+  });
+
+  it.each([2, 5])('等待重新稳定时保留 %i 个锚点所在的步骤', (count) => {
+    status = {
+      ...status, phase: 'waiting_stable',
+      detected_anchors: Array.from({ length: count }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+    };
+    renderScreen();
+    const currentStep = count === 5 ? 3 : 2;
+    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(
+      steps().map((_s, i) => i < currentStep ? 'done' : i === currentStep ? 'now' : 'todo'),
+    );
+  });
+
+  it.each(['failed', 'cancelled'] as const)('%s 后已有锚点的说明提示重新开始，不说继续标定', (phase) => {
+    status = {
+      ...status, phase,
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+    };
+    renderScreen();
+    expect(screen.getByTestId('calib-cap')).toHaveTextContent('标定已停止，请重新开始');
+    expect(screen.getByTestId('calib-cap')).not.toHaveTextContent('继续标定');
   });
 
   // ── 诊断,不是「重试」 ─────────────────────────────────────────────────────
@@ -181,6 +222,7 @@ describe('屏 26 棋盘标定', () => {
     renderScreen();
     expect(cells()).toEqual(['摄像头—', '标定—', 'LED未确认']);
     expect(screen.queryByText('未连接')).toBeNull();
+    expect(within(acts()).getByRole('button', { name: '重新开始标定 · 正在读取设备状态' })).toBeDisabled();
   });
 
   it('读到了才说连没连上', () => {
@@ -201,7 +243,7 @@ describe('屏 26 棋盘标定', () => {
     status = { ...status, capabilities: { camera_ready: true, led_ready: null, geometry_ready: false } };
     renderScreen();
     expect(cells()).toContain('LED未确认');
-    expect(screen.getByRole('button', { name: /开始标定/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '重新开始标定 · LED 未确认' })).toBeDisabled();
   });
 
   // ── 标定质量:不许把「不知道」画成「满分」 ─────────────────────────────────
@@ -372,7 +414,7 @@ describe('屏 26 棋盘标定', () => {
   it('摄像头或 LED 掉线时按不了开始 —— 这条上一版就有,口径没变', () => {
     status = { ...status, capabilities: { camera_ready: false, led_ready: true, geometry_ready: false } };
     renderScreen();
-    expect(within(acts()).getByRole('button', { name: '重新开始标定' })).toBeDisabled();
+    expect(within(acts()).getByRole('button', { name: '重新开始标定 · 摄像头未连接' })).toBeDisabled();
   });
 
   /** 标定好了要按两次:第一次是「我真的要作废现在这份」。上一版就有这条。 */

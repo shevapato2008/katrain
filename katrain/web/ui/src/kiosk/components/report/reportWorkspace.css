@@ -17,7 +17,7 @@
 
 .report-workspace .gradebody.report-workspace__panel {
   display: grid;
-  grid-template-rows: 44px minmax(0, 1fr);
+  grid-template-rows: 50px minmax(0, 1fr);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -25,7 +25,7 @@
   gap: 0;
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--hair);
+  border: 0;
   border-radius: 12px;
   background: var(--panel);
   color: var(--text);
@@ -34,13 +34,28 @@
 
 .report-workspace .report-workspace__tabs {
   display: flex;
-  height: 44px;
-  padding: 0 5px;
-  box-shadow: inset 0 -1px var(--hair);
+  align-items: center;
+  flex-wrap: nowrap;
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  height: 50px;
+  padding: 2px 3px;
+  gap: 3px;
+  border: 1px solid #46634d;
+  border-radius: 15px;
+  background: #19291f;
+  box-shadow: inset 0 2px 4px #07140bb3, 0 1px 0 #486750;
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .report-workspace .grade-tab {
-  --tab-width: 56px;
+  --tab-width: 116px;
   display: flex;
   flex: 0 0 var(--tab-width);
   width: var(--tab-width);
@@ -49,19 +64,24 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  color: var(--dim);
+  border-radius: 11px;
+  color: #c7d9ca;
+  scroll-snap-align: center;
+  transition: background 130ms ease, box-shadow 130ms ease, filter 130ms ease, translate 130ms ease;
 }
-
-.report-workspace .grade-tab[data-tab-id="perf"] { --tab-width: 84px; }
-.report-workspace .grade-tab[data-tab-id="match"] { --tab-width: 88px; }
 .report-workspace .grade-tab[data-active="true"] {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
-  box-shadow: inset 0 -2px var(--accent);
+  color: #f0f7ee;
+  background: linear-gradient(#3d674b, #284936);
+  box-shadow: inset 0 1px 0 #ffffff68, inset 0 -2px 0 #142f1b, 0 3px 5px #0008;
+}
+.report-workspace .grade-tab:has(> button:active) {
+  translate: 0 2px;
+  filter: brightness(.88);
+  box-shadow: inset 0 3px 6px #0008;
 }
 
 .report-workspace .grade-tab > button:not(.chart-tab-help) {
-  flex: 0 0 auto;
+  flex: 1;
   min-width: 0;
   height: 44px;
   min-height: 44px;
@@ -71,7 +91,7 @@
   background: none;
   color: inherit;
   font: inherit;
-  font-size: 13px;
+  font-size: 22px;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -86,6 +106,7 @@
   max-height: 44px;
   padding: 0;
   justify-content: center;
+  margin-right: 4px;
   color: inherit;
 }
 .report-workspace .grade-tab > .chart-tab-help svg { font-size: 18px; }
@@ -115,42 +136,42 @@
   min-height: 0;
   padding: 8px;
   gap: 8px;
+  border: 1px solid var(--hair);
+  border-top: 0;
+  border-radius: 0 0 11px 11px;
   overflow: hidden;
 }
-.report-workspace .grade-workspace[data-filters="true"] { grid-template-columns: 62px minmax(0, 1fr); }
+.report-workspace .grade-workspace[data-filters="true"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: 50px minmax(0, 1fr); }
 
 .report-workspace .gfilters {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  width: 62px;
-  min-height: 0;
-  gap: 4px;
-  overflow-x: hidden;
-  overflow-y: auto;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 50px;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: var(--dim) transparent;
+  scrollbar-width: none;
+  touch-action: pan-x;
 }
-.report-workspace .gfilters::-webkit-scrollbar { width: 6px; }
+.report-workspace .gfilters::-webkit-scrollbar { display: none; }
 .report-workspace .gfilters .gseg {
   display: flex;
-  flex-direction: column;
   flex: 0 0 auto;
-  width: 54px;
-  height: auto;
-  padding: 0;
-  gap: 4px;
-  border: 0;
-  border-radius: 0;
-  background: none;
+  width: auto;
+  height: 50px;
   margin: 0;
+  padding: 2px;
+  gap: 3px;
+  border: 1px solid #46634d;
+  border-radius: 15px;
+  background: #19291f;
+  box-shadow: inset 0 2px 4px #07140bb3, 0 1px 0 #486750;
 }
-.report-workspace .gfilters .gseg + .gseg { border-top: 1px solid var(--hair); padding-top: 6px; margin-top: 2px; }
 .report-workspace .gfilters button {
-  flex: 0 0 44px;
+  flex: 0 0 54px;
   width: 54px;
   min-width: 54px;
   max-width: 54px;
@@ -158,20 +179,20 @@
   min-height: 44px;
   max-height: 44px;
   padding: 0;
-  border: 1px solid var(--hair);
-  border-radius: 6px;
-  background: var(--raise);
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #c7d9ca;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 22px;
   line-height: 1.3;
   font-weight: 500;
   white-space: nowrap;
 }
 .report-workspace .gfilters button[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--accent) 22%, var(--panel));
-  border-color: var(--accent);
-  color: var(--text);
-  box-shadow: inset 3px 0 var(--accent);
+  background: linear-gradient(#3d674b, #284936);
+  color: #f0f7ee;
+  box-shadow: inset 0 1px 0 #ffffff68, inset 0 -2px 0 #142f1b, 0 3px 5px #0008;
 }
 
 .report-workspace .grade-chart-main {
@@ -182,7 +203,7 @@
   gap: 6px;
   overflow: hidden;
 }
-.report-workspace .gempty { display: grid; place-items: center; flex: 1; font-size: 13px; }
+.report-workspace .gempty { display: grid; place-items: center; flex: 1; font-size: 18px; }
 .report-workspace .selline { flex: none; height: auto; font-size: 12px; line-height: 1.5; }
 
 /* Measure only the SVG canvas, so the scale does not distort circles or ticks. */
@@ -197,7 +218,7 @@
 .report-workspace .lscale { position: static; flex: 0 0 20px; height: 20px; align-items: center; }
 
 .report-workspace .report-trend { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 6px; }
-.report-workspace .tline { flex: none; font-size: 13px; line-height: 20px; }
+.report-workspace .tline { flex: none; font-size: 18px; line-height: 20px; }
 .report-workspace .evalpad { flex: 1; min-height: 0; display: flex; padding: 0; }
 .report-workspace .evalpad .wrbox { height: 100%; min-height: 0; }
 .report-workspace .wraxis { width: 48px; }
@@ -213,7 +234,7 @@
 .report-workspace .report-trend__scale { flex: none; margin: 0 36px 0 48px; font-size: 12px; line-height: 16px; text-align: center; color: var(--dim); }
 .report-workspace .report-trend__scale > div { display: flex; justify-content: space-between; }
 
-.report-workspace .grade-chart-legend { display: flex; justify-content: center; flex: none; height: 20px; gap: 20px; font-size: 13px; }
+.report-workspace .grade-chart-legend { display: flex; justify-content: center; flex: none; height: 20px; gap: 20px; font-size: 18px; }
 .report-workspace .grade-chart-legend span { display: flex; align-items: center; gap: 6px; }
 .report-workspace .hist { flex: 1; min-height: 0; padding-top: 32px; }
 .report-workspace .hcols,
@@ -230,15 +251,15 @@
 .report-workspace .hg small { flex: none; text-align: center; line-height: 14px; color: var(--dim); }
 
 .report-workspace .mtab { flex: 1; min-height: 0; justify-content: space-around; }
-.report-workspace .mr { grid-template-columns: 82px minmax(0, 1fr); grid-template-rows: repeat(2, 22px); gap: 4px 8px; height: auto; }
-.report-workspace .ml { grid-row: 1 / 3; font-size: 13px; }
+.report-workspace .mr { grid-template-columns: 120px minmax(0, 1fr); grid-template-rows: repeat(2, 22px); gap: 4px 8px; height: auto; }
+.report-workspace .ml { grid-row: 1 / 3; font-size: 18px; }
 .report-workspace .mu { grid-column: 2; gap: 6px; }
 .report-workspace .mu i { height: 9px; background: color-mix(in srgb, var(--dim) 24%, var(--panel)); }
-.report-workspace .mu u { width: 40px; font-size: 13px; color: var(--text); }
+.report-workspace .mu u { width: 46px; font-size: 18px; color: var(--text); }
 .report-workspace .mu .sm { width: 14px; height: 14px; }
 .report-workspace .mband { flex: 1; min-height: 0; justify-content: center; gap: 16px; }
 .report-workspace .mtrack { height: clamp(40px, 16vh, 100px); }
-.report-workspace .mband .kiosk-ribbon__lead { width: 32px; font-size: 13px; }
+.report-workspace .mband .kiosk-ribbon__lead { width: 32px; font-size: 18px; }
 .report-workspace .mband .kiosk-ribbon__scale { padding-left: 32px; font-size: 12px; }
 
 /* Modal is portalled into the rail; the board keeps its full 516px square. */
@@ -258,3 +279,39 @@
 }
 .report-chart-dialog .report-workspace__panel { border-color: var(--accent); }
 .report-chart-dialog .mtrack { height: 150px; }
+
+.report-workspace .report-workspace__tabs::-webkit-scrollbar { display: none; }
+.report-workspace .report-workspace__expand {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: #243e2d;
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 2px #0004, 0 3px 5px #0008;
+}
+.report-workspace .report-workspace__expand:active {
+  translate: 0 2px;
+  box-shadow: inset 0 3px 6px #0008;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .report-workspace .grade-tab { transition: none; }
+}
+
+.report-workspace__panel[data-tab="recommend"] .grade-workspace { padding: 0; }
+
+.report-workspace .gfilters .gseg > button {
+  border-radius: 11px;
+  background-image: none;
+  box-shadow: none;
+}
+.report-workspace .gfilters .gseg > button[aria-pressed="true"] {
+  background: linear-gradient(#3d674b, #284936);
+  box-shadow: inset 0 1px 0 #ffffff68, inset 0 -2px 0 #142f1b, 0 3px 5px #0008;
+}
+.report-workspace .gfilters .gseg > button:active {
+  translate: 0 2px;
+  filter: brightness(.88);
+  box-shadow: inset 0 3px 6px #0008;
+}

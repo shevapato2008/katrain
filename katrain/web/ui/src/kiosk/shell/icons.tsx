@@ -1,6 +1,6 @@
 // Phosphor v2(MIT)。规范 §10:图标只能从 Phosphor v2 出、成对导出,四个前端用**同一份字节**
 // —— 所以 `src/kiosk-shell/icons/` 是整目录抄来的 86 个文件(43 对),不挑,由
-// `kiosk-shell/MANIFEST.sha256` 钉住(294 行)。
+// `kiosk-shell/MANIFEST.sha256` 钉住。
 //
 // 2026-09-02 加了 `map-trifold` / `list-numbers` 两对:屏 20 的显示开关按 galaxy 对齐
 // 名字与图标(领地 = MUI Map、手数 = MUI FormatListNumbered),这两个同义件目录里没有。
@@ -12,7 +12,7 @@
 // `.kiosk-dock__item[aria-current="page"] { color: var(--ink) }` 翻色全靠 `currentColor`,
 // 选中那一格的图标会一直是灰的。
 //
-// `eager: true` 把 82 个一次性打进包:全部加起来 40KB 源码,分块的收益小于多一层动态
+// `eager: true` 把这些小 SVG 一次性打进包:分块的收益小于多一层动态
 // import 的复杂度(而且 kiosk 是离线盒子,没有"按需拉"这回事)。
 const modules = import.meta.glob('../../kiosk-shell/icons/*.svg', {
   eager: true,
@@ -29,7 +29,7 @@ for (const [path, source] of Object.entries(modules)) {
 }
 
 /**
- * 目录里 41 个基础名(每个都还有一份 `-fill`)。
+ * 目录里每个基础名都还有一份 `-fill`。
  *
  * **手写的**:TS 推不出 `import.meta.glob` 的键,拿不到字面量联合。手写就会和目录漂,
  * 所以 `icons.test.tsx` 里有两条把这份名单和真实目录对死的断言,两个方向都堵 ——
@@ -39,12 +39,12 @@ export const ICON_NAMES = [
   'arrow-clockwise', 'arrow-counter-clockwise', 'arrow-left', 'arrow-right',
   'arrows-clockwise', 'book-open', 'books', 'broadcast', 'camera',
   'caret-double-left', 'caret-double-right', 'caret-down', 'caret-left', 'caret-right',
-  'circuitry', 'corners-out', 'crown-simple', 'cube', 'flag', 'game-controller', 'gear',
-  'globe-hemisphere-west', 'grid-nine', 'hand-pointing', 'handshake', 'house', 'info',
+  'circuitry', 'corners-out', 'crown-simple', 'cube', 'eraser', 'flag', 'floppy-disk',
+  'game-controller', 'gear', 'globe-hemisphere-west', 'grid-nine', 'hand-pointing', 'handshake', 'house', 'info',
   'lightbulb', 'list-numbers', 'magnifying-glass', 'map-trifold', 'puzzle-piece', 'qr-code',
   'robot', 'skip-forward',
   'sliders-horizontal', 'speaker-high', 'squares-four', 'trend-up', 'trophy',
-  'upload-simple', 'user-circle', 'users',
+  'trash', 'upload-simple', 'user-circle', 'users',
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];

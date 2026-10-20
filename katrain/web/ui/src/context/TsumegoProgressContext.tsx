@@ -252,6 +252,8 @@ export interface TsumegoProgressContextValue {
    * 重读途中保持原值；只有云端权威读取成功才清除。盒端本机降级缓存仍算读取失败。
    */
   serverLoadFailed: boolean;
+  /** Account history is pending; empty progress is not yet authoritative. */
+  progressLoading: boolean;
   /** Write progress for one problem: localStorage always, in-memory + server only under Provider. */
   markProgress: (id: string, input: MarkProgressInput) => void;
   isCompleted: (id: string) => boolean;
@@ -269,6 +271,7 @@ const defaultContextValue: TsumegoProgressContextValue = {
   progress: {},
   // 没有 Provider 就没人去读服务端 ⇒ 谈不上失败。
   serverLoadFailed: false,
+  progressLoading: false,
   markProgress: (id, input) => {
     // R3 safety: localStorage persistence must survive even without a Provider.
     writeLocalProgress(id, entryFromMark(input));
@@ -314,17 +317,20 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
     : kioskActivityStorage(isGuest ? null : identityKey, isGuest || !identityKey);
   const [progress, setProgress] = useState<TsumegoProgressMap>(() => readLocalProgress(initialStore));
   const [serverLoadFailed, setServerLoadFailed] = useState(false);
+  const [progressLoading, setProgressLoading] = useState(Boolean(isLoading || (user && !isGuest)));
   const storeRef = useRef<KioskActivityStorage>(initialStore);
   const resolvedSignatureRef = useRef<string | null>(null);
   const fetchedSignatureRef = useRef<string | null>(null);
   const latestRequestRef = useRef(0);
 
   const fetchAndMerge = useCallback((authToken: string | undefined, store: KioskActivityStorage) => {
+    setProgressLoading(true);
     const request = ++latestRequestRef.current;
     const stale = () => request !== latestRequestRef.current || store !== storeRef.current;
     TsumegoAPI.getProgress(authToken)
       .then(({ progress: serverMap, degraded }) => {
         if (stale()) return;
+        setProgressLoading(false);
         setServerLoadFailed(degraded);
         setProgress((prev) => {
           if (stale()) return prev;
@@ -339,7 +345,10 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
         });
       })
       .catch(() => {
-        if (!stale()) setServerLoadFailed(true);
+        if (!stale()) {
+          setServerLoadFailed(true);
+          setProgressLoading(false);
+        }
       });
   }, []);
 
@@ -367,6 +376,7 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
     // authentication gate. Guests are local-only and must never write progress to the server.
     const shouldSync = Boolean(user && !isGuest);
     if (!shouldSync) {
+      setProgressLoading(false);
       fetchedSignatureRef.current = null;
       return;
     }
@@ -433,8 +443,8 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
   );
 
   const value = useMemo<TsumegoProgressContextValue>(
-    () => ({ progress, serverLoadFailed, markProgress, isCompleted, unitProgress, categoryProgress, refresh }),
-    [progress, serverLoadFailed, markProgress, isCompleted, unitProgress, categoryProgress, refresh],
+    () => ({ progress, serverLoadFailed, progressLoading, markProgress, isCompleted, unitProgress, categoryProgress, refresh }),
+    [progress, serverLoadFailed, progressLoading, markProgress, isCompleted, unitProgress, categoryProgress, refresh],
   );
 
   return (

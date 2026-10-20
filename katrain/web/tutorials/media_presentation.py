@@ -80,6 +80,36 @@ def discover_objects(payload, presentation_plan=None, source_identity=None):
                     "stone_color": occupants.get(key),
                 }
             )
+    # Initial-only teaching objects can be captured before the saved final diagram.
+    # Their identity and lifetime belong to the initial rule position, not its replacement stone.
+    if validate_replay(payload)["status"] == "complete":
+        initial = payload["replay"]["initial"]
+        initial_occupants = {tuple(point): color for color in ("B", "W") for point in initial["stones"].get(color, [])}
+        moved_points = {tuple(move["point"]) for move in payload["replay"]["moves"] if move.get("point") is not None}
+        for field in ("labels", "letters", "shapes"):
+            for key, value in sorted((initial.get(field) or {}).items()):
+                point = _point(key, size)
+                color = initial_occupants.get(tuple(point))
+                if not isinstance(value, str) or not value.strip():
+                    raise ValueError("Initial annotation must have nonempty text")
+                if tuple(point) not in moved_points and any(
+                    obj["kind"] == field
+                    and obj["point"] == point
+                    and obj["value"] == value
+                    and obj["stone_color"] == color
+                    for obj in objects
+                ):
+                    continue
+                objects.append(
+                    {
+                        "id": f"initial.{field}:{key}",
+                        "kind": field,
+                        "point": point,
+                        "value": value,
+                        "stone_color": color,
+                        "scope": "initial",
+                    }
+                )
     annotations = (plan or {}).get("annotation_object_ids", [])
     if annotations:
         if (
@@ -127,6 +157,7 @@ def _prepare_objects(payload, objects):
                 for obj in objects
                 if obj["kind"] == "labels"
                 and obj.get("role") != "annotation"
+                and obj.get("scope") != "initial"
                 and obj["point"] == move.get("point")
                 and _number(obj["value"]) == _number(move.get("printed_number"))
                 and _number(obj["value"]) is not None
@@ -270,6 +301,7 @@ def _validate_order(ordered, objects, events):
             if (
                 obj["id"] != numbered["id"]
                 and not obj.get("replay_step")
+                and obj.get("scope") != "initial"
                 and obj["point"] == numbered["point"]
                 and obj.get("stone_color")
             ):
@@ -311,29 +343,25 @@ def _frames(payload, objects, events, real_frames):
             for color in ("B", "W")
         }
         for field in ("labels", "letters", "shapes"):
-            # Replay's rule snapshots remove annotations on captures. Preserve that authority.
-            mapping = base.get(field) or {}
-            base[field] = {key: val for key, val in mapping.items() if f"{field}:{key}" in visible}
+            base[field] = {}
         arrows = [by_id[key]["arrow"] for key in sorted(visible) if by_id[key]["kind"] == "arrow"]
         if arrows or any(obj["kind"] == "arrow" for obj in objects):
             base["presentation_arrows"] = arrows
-        if real_frames:
-            # Saved independent annotations are presentation objects, even if absent from replay.initial.
-            occupied = {tuple(p) for points in base["stones"].values() for p in points}
-            for key in visible:
-                obj = by_id[key]
-                if obj["kind"] in ("labels", "letters", "shapes") and (
-                    not obj["stone_color"] or tuple(obj["point"]) in occupied
-                ):
-                    rule_mapping = real_frames[current_rule_step]["payload"].get(obj["kind"]) or {}
-                    # Never resurrect a captured numbered label.
-                    if (
-                        obj.get("replay_step")
-                        and obj["point"] is not None
-                        and ",".join(map(str, obj["point"])) not in rule_mapping
-                    ):
-                        continue
-                    base[obj["kind"]][",".join(map(str, obj["point"]))] = obj["value"]
+        for object_id in sorted(visible):
+            obj = by_id[object_id]
+            kind = obj["kind"]
+            # Captured numbered moves have synthetic IDs but retain their real printed labels.
+            field = "labels" if kind == "replay" and obj.get("number") is not None else kind
+            if field not in ("labels", "letters", "shapes") or obj["point"] is None:
+                continue
+            key = ",".join(map(str, obj["point"]))
+            if obj["stone_color"] and obj["point"] not in base["stones"][obj["stone_color"]]:
+                continue
+            if real_frames and (obj.get("scope") == "initial" or obj.get("replay_step")):
+                rule_mapping = real_frames[current_rule_step]["payload"].get(field) or {}
+                if rule_mapping.get(key) != obj["value"]:
+                    continue  # The source annotation was captured, replaced, or has not been placed.
+            base[field][key] = obj["value"]
         appeared = (
             [
                 {"color": color, "point": point}

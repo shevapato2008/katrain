@@ -8,6 +8,8 @@ import hashlib
 from datetime import datetime, timezone
 
 from pydantic import ValidationError
+from sqlalchemy import select
+from sqlalchemy.orm import object_session
 
 from katrain.web.tutorials.media_timing import VOICE, digest
 from katrain.web.tutorials.media_profiles import GALAXY, OUTPUT_PROFILES, profile_entry
@@ -93,7 +95,38 @@ def video_artifact(figure, mode, output_profile=None):
     return profile_entry(container, output_profile)
 
 
-def video_problem(figure, mode, output_profile=None):
+def presentation_source_identity(figure, plan, *, db=None):
+    """Read current server provenance at both generation and manual approval boundaries."""
+    if not plan or not (plan.get("arrows") or plan.get("annotation_object_ids")):
+        return None
+    from katrain.web.tutorials.source_models import TutorialSourceFigure, TutorialSourcePage
+
+    db = db if db is not None else object_session(figure)
+    if db is None:
+        raise ValueError("Current source identity requires an attached database session")
+    rows = db.execute(
+        select(TutorialSourceFigure, TutorialSourcePage)
+        .join(
+            TutorialSourcePage,
+            (TutorialSourcePage.source_book_id == TutorialSourceFigure.source_book_id)
+            & (TutorialSourcePage.page == TutorialSourceFigure.page),
+        )
+        .where(
+            TutorialSourceFigure.figure_id == figure.id,
+            TutorialSourceFigure.page == figure.page,
+            TutorialSourcePage.page_image_path == figure.page_image_path,
+        )
+    ).all()
+    identities = {(source.source_pointer, page.image_sha256) for source, page in rows}
+    if len(identities) != 1:
+        raise ValueError(
+            "Source-backed presentation requires one registered source figure and matching source page image"
+        )
+    pointer, checksum = identities.pop()
+    return {"source_pointer": pointer, "image_sha256": checksum}
+
+
+def video_problem(figure, mode, output_profile=None, *, db=None):
     approval = board_approval(figure)
     if not approval["approved"]:
         return approval["reason"]
@@ -104,12 +137,21 @@ def video_problem(figure, mode, output_profile=None):
     if video.get("presentation_sha256"):
         from katrain.web.tutorials.media_timing import build_step_cues
 
+        current = ((figure.recognition_debug or {}).get("workbench_media") or {}).get("step_cues") or {}
+        if current.get("presentation_sha256") != video["presentation_sha256"]:
+            return "Video presentation differs from the current shared presentation; regenerate this profile"
+        try:
+            source_identity = presentation_source_identity(figure, current.get("presentation_plan"), db=db)
+        except ValueError as exc:
+            return str(exc)
+        if source_identity != current.get("source_identity"):
+            return "Video source identity changed; regenerate using the current registered source"
         proof = build_step_cues(
             figure.board_payload or {},
             figure.narration,
             dependencies.get("speech_timing") or {},
-            presentation_plan=video.get("presentation_plan"),
-            source_identity=video.get("source_identity"),
+            presentation_plan=current.get("presentation_plan"),
+            source_identity=source_identity,
         )
         if (
             proof["status"] != "complete"

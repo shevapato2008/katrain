@@ -128,7 +128,7 @@ def approve_video(
             output_profile, artifact = GALAXY, galaxy
     if not artifact or artifact.get("asset") != body.expected_asset:
         raise HTTPException(status_code=409, detail="Video asset changed. Reload and review the current video.")
-    problem = video_problem(figure, body.render_mode, output_profile)
+    problem = video_problem(figure, body.render_mode, output_profile, db=db)
     if problem:
         raise HTTPException(status_code=422, detail=problem)
     try:

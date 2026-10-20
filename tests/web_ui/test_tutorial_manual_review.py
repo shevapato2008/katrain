@@ -227,6 +227,10 @@ def enqueue_historical_3d(media):
 
 def generate_video(media, mode="2d"):
     client, factory, worker, storage, app = media
+    with factory() as db:
+        has_audio = bool(db.get(models_db.TutorialFigure, 1).audio_asset)
+    if not has_audio:
+        prepare_audio(media)
     if mode == "3d":
         task = enqueue_historical_3d(media)
     else:
@@ -388,8 +392,11 @@ def test_static_video_allowed_without_sequence_review(media, monkeypatch):
         figure = db.get(models_db.TutorialFigure, 1)
         payload = copy.deepcopy(figure.board_payload)
         payload["replay"] = {"status": "needs_calibration", "initial": None, "moves": []}
+        payload["labels"] = {}  # A genuinely static concept diagram has no teaching annotations.
         figure.board_payload = payload
+        figure.narration = "观察这个局部棋形。"
         db.commit()
+    approve(client, factory)
     calls = []
 
     def render(**kwargs):
@@ -398,7 +405,8 @@ def test_static_video_allowed_without_sequence_review(media, monkeypatch):
 
     monkeypatch.setattr(worker, "_render_video", render)
     generate_video(media)
-    assert calls[0]["frames"] == []
+    assert len(calls[0]["frames"]) == 1
+    assert calls[0]["step_cues"]["mode"] == "static"
     with factory() as db:
         figure = db.get(models_db.TutorialFigure, 1)
         assert (

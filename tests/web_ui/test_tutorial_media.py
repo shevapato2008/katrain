@@ -19,7 +19,7 @@ def board():
             "initial": {
                 "stones": {"B": [[0, 1], [1, 0], [2, 1]], "W": [[1, 1]]},
                 "unknown_stones": [],
-                "labels": {"1,1": "old"},
+                "labels": {},
                 "known_region": {"col": 0, "row": 0, "cols": 9, "rows": 9},
                 "to_play": "B",
             },
@@ -37,6 +37,7 @@ def test_replay_frames_capture_rewind_and_reuse_with_alive_annotations():
     from katrain.web.tutorials.replay import replay_frames
 
     value = board()
+    value["replay"]["initial"]["labels"] = {"1,1": "old"}
     assert validate_replay(value)["status"] == "complete"
     frames = replay_frames(value)
     assert len(frames) == 4
@@ -959,3 +960,132 @@ def test_source_arrows_require_registered_current_figure_identity(media):
     plan["arrows"][0]["image_sha256"] = "e" * 64
     body["expected_updated_at"] = current_version(factory)
     assert client.post("/api/admin/tutorials/figures/1/media-tasks", json=body).status_code == 422
+
+
+def test_changing_presentation_plan_invalidates_sibling_and_same_plan_preserves_it(media):
+    from katrain.web.tutorials.manual_review import video_problem, video_artifact
+
+    client, factory, worker, storage, *_ = media
+    prepare_audio(media)
+    assert enqueue_profile(media, GALAXY).status_code == 202
+    worker.run_next()
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        original = copy.deepcopy(video_artifact(figure, "2d", GALAXY))
+        assert video_problem(figure, "2d", GALAXY) is None
+    # Same narration/audio/order but explicit color spans include the following punctuation.
+    plan = {
+        "schema_version": 1,
+        "bindings": [
+            {"span": [0, 4], "object_ids": ["labels:1,2"]},
+            {"span": [4, 8], "object_ids": ["replay:2"]},
+            {"span": [10, 14], "object_ids": ["labels:1,1"]},
+        ],
+    }
+    response = client.post(
+        "/api/admin/tutorials/figures/1/media-tasks",
+        json={
+            "kind": "video",
+            "output_profile": KIOSK,
+            "expected_updated_at": current_version(factory),
+            "presentation_plan": plan,
+        },
+    )
+    assert response.status_code == 202, response.text
+    worker.run_next()
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        assert video_problem(figure, "2d", GALAXY) is not None
+        assert video_problem(figure, "2d", KIOSK) is None
+        assert video_artifact(figure, "2d", GALAXY) == original
+        assert storage.exists(original["asset"])
+    assert enqueue_profile(media, GALAXY).status_code == 202
+    worker.run_next()
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        assert video_problem(figure, "2d", GALAXY) is None
+        assert video_problem(figure, "2d", KIOSK) is None
+
+
+def test_approval_revalidates_registered_source_after_video_publication(media):
+    from katrain.web.tutorials.source_models import TutorialSourceBook, TutorialSourceFigure, TutorialSourcePage
+    from katrain.web.tutorials.manual_review import make_review, board_content_sha256, video_problem, video_artifact
+
+    client, factory, worker, *_ = media
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        figure.page_image_path = "tutorial_assets/test/page1.png"
+        figure.narration += "箭头。"
+        figure.board_review = make_review({"username": "reviewer"}, board_content_sha256(figure))
+        db.add(
+            TutorialSourceBook(
+                id=1,
+                source_namespace="test",
+                catalog_id="test",
+                book_id=1,
+                source_json_sha256="b" * 64,
+                assets_manifest_sha256="c" * 64,
+                source_metadata={},
+                matching_evidence={},
+            )
+        )
+        db.flush()
+        db.add(
+            TutorialSourceFigure(
+                source_book_id=1, source_figure_id="one", source_pointer="/one", page=1, figure_id=1, source_metadata={}
+            )
+        )
+        db.add(
+            TutorialSourcePage(
+                source_book_id=1,
+                page=1,
+                page_image_path=figure.page_image_path,
+                image_sha256="a" * 64,
+                text_fragments=[],
+                page_context_text="",
+            )
+        )
+        db.commit()
+    prepare_audio(media)
+    plan = {
+        "schema_version": 1,
+        "arrows": [
+            {"id": "arrow:one", "from": [3, 3], "to": [4, 4], "source_pointer": "/one", "image_sha256": "a" * 64}
+        ],
+        "bindings": [
+            {"span": [0, 3], "object_ids": ["labels:1,2"]},
+            {"span": [4, 7], "object_ids": ["replay:2"]},
+            {"span": [10, 13], "object_ids": ["labels:1,1"]},
+            {"span": [14, 16], "object_ids": ["arrow:one"]},
+        ],
+    }
+    response = client.post(
+        "/api/admin/tutorials/figures/1/media-tasks",
+        json={
+            "kind": "video",
+            "output_profile": GALAXY,
+            "expected_updated_at": current_version(factory),
+            "presentation_plan": plan,
+        },
+    )
+    assert response.status_code == 202, response.text
+    worker.run_next()
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        assert video_problem(figure, "2d", GALAXY) is None
+        asset = video_artifact(figure, "2d", GALAXY)["asset"]
+        db.query(TutorialSourcePage).one().image_sha256 = "d" * 64
+        db.query(TutorialSourceFigure).one().source_pointer = "/new-source"
+        db.commit()
+        assert video_problem(figure, "2d", GALAXY) is not None
+    response = client.put(
+        "/api/admin/tutorials/figures/1/approve-video",
+        json={
+            "render_mode": "2d",
+            "output_profile": GALAXY,
+            "expected_asset": asset,
+            "expected_updated_at": current_version(factory),
+        },
+    )
+    assert response.status_code == 422, response.text
+    assert "source" in response.json()["detail"].lower()

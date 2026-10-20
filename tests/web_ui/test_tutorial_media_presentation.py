@@ -279,3 +279,61 @@ def test_video_rejects_audio_metadata_inconsistent_with_its_own_timing(tmp_path,
     }
     with pytest.raises(RuntimeError, match="completed audio"):
         worker._generate("id", snapshot, "video", "2d", tmp_path)
+
+
+def captured_number_board():
+    # White 1 at the corner is later captured by black 2; no final white label survives.
+    return {
+        "schema_version": 2,
+        "size": 9,
+        "stones": {"B": [[1, 0], [0, 1]], "W": []},
+        "labels": {"0,1": "2"},
+        "unknown_stones": [],
+        "source_region": {"col": 0, "row": 0, "cols": 9, "rows": 9, "confirmed": True},
+        "replay": {
+            "status": "complete",
+            "initial": {
+                "stones": {"B": [[1, 0]], "W": []},
+                "unknown_stones": [],
+                "known_region": {"col": 0, "row": 0, "cols": 9, "rows": 9},
+                "to_play": "W",
+            },
+            "moves": [
+                {"kind": "move", "color": "W", "point": [0, 0], "printed_number": "1"},
+                {"kind": "move", "color": "B", "point": [0, 1], "printed_number": "2"},
+            ],
+            "evidence": {"kind": "source", "source_pointer": "/local/0", "description": "checked"},
+        },
+    }
+
+
+def test_captured_numbered_replay_move_keeps_its_printed_label_until_capture():
+    value = captured_number_board()
+    result = build(value, "白1，黑2。")
+    assert result["status"] == "complete", result
+    assert result["frames"][1]["payload"]["stones"]["W"] == [[0, 0]]
+    assert result["frames"][1]["payload"]["labels"] == {"0,0": "1"}
+    assert result["frames"][2]["payload"]["stones"]["W"] == []
+    assert result["frames"][2]["payload"]["labels"] == {"0,1": "2"}
+    assert result["frames"][2]["captured"] == [[0, 0]]
+
+
+def test_initial_only_marker_is_discovered_hidden_then_revealed_without_changing_capture_rules():
+    value = captured_number_board()
+    value["replay"]["initial"]["stones"]["W"] = [[0, 0]]
+    value["replay"]["initial"]["shapes"] = {"0,0": "triangle"}
+    value["replay"]["initial"]["to_play"] = "B"
+    value["replay"]["moves"] = value["replay"]["moves"][1:]
+    before = copy.deepcopy(value)
+    assert build(value, "黑2。")["status"] == "pending"
+    result = build(value, "白三角，黑2。")
+    assert result["status"] == "complete", result
+    assert any(obj["kind"] == "shapes" and obj["value"] == "triangle" for obj in result["objects"])
+    assert result["frames"][0]["payload"]["stones"]["W"] == []
+    assert result["frames"][0]["payload"]["shapes"] == {}
+    assert result["frames"][1]["payload"]["stones"]["W"] == [[0, 0]]
+    assert result["frames"][1]["payload"]["shapes"] == {"0,0": "triangle"}
+    assert result["frames"][-1]["payload"]["stones"]["W"] == []
+    assert result["frames"][-1]["payload"]["shapes"] == {}
+    assert result["frames"][-1]["captured"] == [[0, 0]]
+    assert value == before

@@ -55,30 +55,9 @@ def invalidate_media(debug, *, narration=False):
 
 
 def _source_identity(db, figure, plan):
-    if not plan or not (plan.get("arrows") or plan.get("annotation_object_ids")):
-        return None
-    from katrain.web.tutorials.source_models import TutorialSourceFigure, TutorialSourcePage
+    from katrain.web.tutorials.manual_review import presentation_source_identity
 
-    rows = db.execute(
-        select(TutorialSourceFigure, TutorialSourcePage)
-        .join(
-            TutorialSourcePage,
-            (TutorialSourcePage.source_book_id == TutorialSourceFigure.source_book_id)
-            & (TutorialSourcePage.page == TutorialSourceFigure.page),
-        )
-        .where(
-            TutorialSourceFigure.figure_id == figure.id,
-            TutorialSourceFigure.page == figure.page,
-            TutorialSourcePage.page_image_path == figure.page_image_path,
-        )
-    ).all()
-    identities = {(source.source_pointer, page.image_sha256) for source, page in rows}
-    if len(identities) != 1:
-        raise ValueError(
-            "Source-backed presentation requires one registered source figure and matching source page image"
-        )
-    pointer, checksum = identities.pop()
-    return {"source_pointer": pointer, "image_sha256": checksum}
+    return presentation_source_identity(figure, plan, db=db)
 
 
 def content_inputs(figure, kind, voice=VOICE, output_profile=None, *, presentation_plan=None, source_identity=None):

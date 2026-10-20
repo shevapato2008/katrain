@@ -200,3 +200,51 @@ it('keeps the last move ring clear of multiple co-located marks', () => {
   expect(document.querySelectorAll('[data-annotation-point="2,0"]')).toHaveLength(3);
   expect(screen.queryByTestId('tutorial-last-move')).not.toBeInTheDocument();
 });
+
+it.each([{ profile: 'galaxy-4k-v1', width: 1880 }, { profile: 'kiosk-7-v1', width: 576 }] as const)(
+  'reserves fixed edge margins and reveals sixteen source callouts at group cues in $profile', async ({ profile, width }) => {
+    const data = recordingData({ output_profile: profile });
+    const source = { source_pointer: '/routes/0', image_sha256: 'a'.repeat(64) };
+    const callouts = ['top-left', 'top-right', 'right-top', 'right-bottom'].flatMap((group, index) =>
+      Array.from({ length: 4 }, (_, route) => ({ id: `callout:${group}-${route + 1}`, text: `${'一二三四'[route]}路线`,
+        side: index < 2 ? 'top' as const : 'right' as const,
+        anchor: (index < 2 ? [index === 0 ? route : 18 - route, 0] : [18, index === 2 ? route : 18 - route]) as [number, number], ...source })));
+    const frames: ReplayFrame[] = Array.from({ length: 5 }, (_, step) => ({ step,
+      payload: { size: 19, stones: { B: [], W: [] }, presentation_callouts: callouts.slice(0, step * 4) },
+      last: null, currentMove: null, appeared_stones: [] }));
+    window.__TUTORIAL_MEDIA_DATA = { ...data, frames, board_payload: frames[0].payload,
+      step_cues: { ...data.step_cues, frames, mode: 'presentation', presentation_plan: { callouts },
+        cues: frames.map(frame => ({ step: frame.step, at_ms: frame.step * 500, source: frame.step ? 'speech_end' as const : 'initial' as const })) } };
+    render(<TutorialMediaRecorder />);
+    expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0].orthographicSpan).toBe(28);
+    const camera = new OrthographicCamera(-14, 14, 14, -14, .1, 100);
+    camera.position.set(0, 26, 0); camera.up.set(0, 0, -1); camera.lookAt(0, 1.2, 0); camera.updateMatrixWorld();
+    attachCanvas(width, camera);
+    await act(async () => resolveSprites(sprites));
+    expect(document.querySelector('[data-presentation-callout]')).toBeNull();
+    for (let step = 1; step <= 4; step++) {
+      await act(async () => { await window.__tutorialSetFrame!(step * 500 - 1); });
+      expect(document.querySelectorAll('[data-presentation-callout]')).toHaveLength((step - 1) * 4);
+      await act(async () => { await window.__tutorialSetFrame!(step * 500); });
+      expect(document.querySelectorAll('[data-presentation-callout]')).toHaveLength(step * 4);
+      expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0].orthographicSpan).toBe(28);
+      expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0].recordingPlacement).toEqual([]);
+    }
+    const top = document.querySelector('[data-presentation-callout="callout:top-left-1"]')!;
+    expect(top.querySelectorAll('tspan')).toHaveLength(3);
+    expect(top.querySelector('text')).toHaveTextContent('一路线');
+    const right = document.querySelector('[data-presentation-callout="callout:right-top-1"]')!;
+    expect(right.querySelector('text')).toHaveTextContent('一路线');
+    expect(right.querySelectorAll('tspan')).toHaveLength(0);
+    for (const group of document.querySelectorAll('[data-presentation-callout]')) {
+      const path = group.querySelector('path')!;
+      const [x1,y1,x2,y2] = path.getAttribute('d')!.match(/-?[0-9.]+/g)!.map(Number);
+      expect([x1,y1,x2,y2].every(value => value > 0 && value < width)).toBe(true);
+      if (group.getAttribute('data-callout-side') === 'top') expect(y2).toBeLessThan(y1);
+      else expect(x2).toBeGreaterThan(x1);
+      expect(path).toHaveAttribute('marker-end', 'url(#tm-callout-arrowhead)');
+    }
+    await act(async () => { await window.__tutorialSetFrame!(0); });
+    expect(document.querySelector('[data-presentation-callout]')).toBeNull();
+    expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0].orthographicSpan).toBe(28);
+  });

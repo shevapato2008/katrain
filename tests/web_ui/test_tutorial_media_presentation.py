@@ -777,3 +777,117 @@ def test_source_unnumbered_action_requires_source_note_and_explicit_spoken_bindi
     no_span = copy.deepcopy(plan)
     no_span["bindings"] = no_span["bindings"][:-1]
     assert build(value, text, presentation_plan=no_span, source_identity=source)["status"] == "pending"
+
+
+def margin_callout_fixture():
+    source = {"source_pointer": "/routes/0", "image_sha256": "a" * 64}
+    value = {
+        "schema_version": 2,
+        "size": 19,
+        "stones": {"B": [], "W": []},
+        "unknown_stones": [],
+        "labels": {},
+        "letters": {},
+        "shapes": {},
+        "replay": {"status": "needs_calibration"},
+    }
+    text, bindings, callouts = "", [], []
+    for group, side, indexes in [
+        ("top-left", "top", range(4)),
+        ("top-right", "top", range(18, 14, -1)),
+        ("right-top", "right", range(4)),
+        ("right-bottom", "right", range(18, 14, -1)),
+    ]:
+        start = len(text)
+        text += {"top-left": "左上", "top-right": "右上", "right-top": "右侧上", "right-bottom": "右侧下"}[
+            group
+        ] + "四个。"
+        ids = []
+        for number, index in enumerate(indexes, 1):
+            object_id = f"callout:{group}-{number}"
+            ids.append(object_id)
+            callouts.append(
+                {
+                    "id": object_id,
+                    "anchor": [index, 0] if side == "top" else [18, index],
+                    "side": side,
+                    "text": "一二三四"[number - 1] + "路线",
+                    **source,
+                }
+            )
+        bindings.append({"span": [start, len(text) - 1], "object_ids": ids})
+    return value, text, {"schema_version": 1, "bindings": bindings, "callouts": callouts}, source
+
+
+def test_source_margin_callouts_reveal_four_groups_without_stones_clicks_or_saved_board_changes():
+    from katrain.web.tutorials.media_render import _stone_click_times
+
+    value, text, plan, source = margin_callout_fixture()
+    original = copy.deepcopy(value)
+    proof = build(value, text, presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "complete", proof
+    assert proof["mode"] == "presentation"
+    assert len(proof["objects"]) == 16 and all(
+        obj["kind"] == "callout" and obj["point"] is None for obj in proof["objects"]
+    )
+    assert [len(frame["payload"]["presentation_callouts"]) for frame in proof["frames"]] == [0, 4, 8, 12, 16]
+    assert all(
+        frame["payload"]["stones"] == {"B": [], "W": []}
+        and not frame["appeared_stones"]
+        and frame["currentMove"] is None
+        and frame["last"] is None
+        for frame in proof["frames"]
+    )
+    assert _stone_click_times(proof["frames"], proof, 10000) == []
+    assert value == original
+    assert build(value, text, presentation_plan=plan)["status"] == "pending"
+    assert (
+        build(value, text, presentation_plan=plan, source_identity={**source, "image_sha256": "b" * 64})["status"]
+        == "pending"
+    )
+    plan["bindings"].pop()
+    assert build(value, text, presentation_plan=plan, source_identity=source)["status"] == "pending"
+
+
+@pytest.mark.parametrize(
+    "update",
+    [
+        {"anchor": [0, 1]},
+        {"side": "left"},
+        {"anchor": [19, 0]},
+        {"text": "这是一段过长文字"},
+        {"text": "   "},
+        {"id": "arrow:wrong"},
+        {"extra_world_point": [0, -2]},
+    ],
+)
+def test_callouts_accept_only_short_source_bound_top_or_right_grid_edge_captions(update):
+    value, text, plan, source = margin_callout_fixture()
+    plan["callouts"][0].update(update)
+    assert build(value, text, presentation_plan=plan, source_identity=source)["status"] == "pending"
+
+
+def test_absent_or_empty_callouts_leave_existing_nested_plan_and_proof_bytes_stable():
+    from katrain.web.admin.routers.tutorial_media import MediaTaskWrite
+    from katrain.web.tutorials.media_presentation import PresentationPlan
+
+    plan = {
+        "schema_version": 1,
+        "bindings": [{"span": [i * 3, i * 3 + 2], "object_ids": [f"labels:{i},1"]} for i in range(5)],
+    }
+    for candidate in (plan, {**plan, "callouts": []}):
+        canonical = PresentationPlan.model_validate(candidate).model_dump(by_alias=True)
+        assert "callouts" not in canonical
+        nested = MediaTaskWrite.model_validate(
+            {"kind": "audio", "expected_updated_at": None, "presentation_plan": candidate}
+        ).model_dump()
+        assert "callouts" not in nested["presentation_plan"]
+        import json
+
+        serialized = MediaTaskWrite.model_validate(
+            {"kind": "audio", "expected_updated_at": None, "presentation_plan": candidate}
+        ).model_dump_json()
+        assert "callouts" not in json.loads(serialized)["presentation_plan"]
+        proof = build(diagram(), "白1，黑2，白3，黑4，白5。", presentation_plan=candidate)
+        assert proof["presentation_sha256"] == "01ffb03202fa6e59123a644453a46fe20f90e7b2f6297c75d2a39e284f54a1ef"
+        assert all("presentation_callouts" not in frame["payload"] for frame in proof["frames"])

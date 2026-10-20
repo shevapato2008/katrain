@@ -893,7 +893,8 @@ def test_presentation_plan_is_typed_snapshotted_and_video_proof_is_profile_local
     assert response.status_code == 422
 
 
-def test_source_arrows_require_registered_current_figure_identity(media):
+@pytest.mark.parametrize("supplemental", ["arrows", "callouts"])
+def test_source_arrows_require_registered_current_figure_identity(media, supplemental):
     from katrain.web.tutorials.source_models import TutorialSourceBook, TutorialSourceFigure, TutorialSourcePage
 
     client, factory, worker, *_ = media
@@ -903,6 +904,9 @@ def test_source_arrows_require_registered_current_figure_identity(media):
         "arrows": [{"id": "arrow:direction", "from": [0, 0], "to": [2, 2], **source}],
         "bindings": [],
     }
+    if supplemental == "callouts":
+        plan.pop("arrows")
+        plan["callouts"] = [{"id": "callout:route", "anchor": [0, 0], "side": "top", "text": "一路线", **source}]
     body = {"kind": "audio", "expected_updated_at": current_version(factory), "presentation_plan": plan}
     assert client.post("/api/admin/tutorials/figures/1/media-tasks", json=body).status_code == 422
     with factory() as db:
@@ -957,7 +961,7 @@ def test_source_arrows_require_registered_current_figure_identity(media):
     worker.run_next()
     with factory() as db:
         assert db.get(models_db.TutorialMediaTask, task_id).status == "stale"
-    plan["arrows"][0]["image_sha256"] = "e" * 64
+    plan[supplemental][0]["image_sha256"] = "e" * 64
     body["expected_updated_at"] = current_version(factory)
     assert client.post("/api/admin/tutorials/figures/1/media-tasks", json=body).status_code == 422
 
@@ -1007,7 +1011,8 @@ def test_changing_presentation_plan_invalidates_sibling_and_same_plan_preserves_
         assert video_problem(figure, "2d", KIOSK) is None
 
 
-def test_approval_revalidates_registered_source_after_video_publication(media):
+@pytest.mark.parametrize("supplemental", ["arrows", "callouts"])
+def test_approval_revalidates_registered_source_after_video_publication(media, supplemental):
     from katrain.web.tutorials.source_models import TutorialSourceBook, TutorialSourceFigure, TutorialSourcePage
     from katrain.web.tutorials.manual_review import make_review, board_content_sha256, video_problem, video_artifact
 
@@ -1059,6 +1064,19 @@ def test_approval_revalidates_registered_source_after_video_publication(media):
             {"span": [14, 16], "object_ids": ["arrow:one"]},
         ],
     }
+    if supplemental == "callouts":
+        plan.pop("arrows")
+        plan["callouts"] = [
+            {
+                "id": "callout:one",
+                "anchor": [8, 0],
+                "side": "right",
+                "text": "一路线",
+                "source_pointer": "/one",
+                "image_sha256": "a" * 64,
+            }
+        ]
+        plan["bindings"][-1]["object_ids"] = ["callout:one"]
     response = client.post(
         "/api/admin/tutorials/figures/1/media-tasks",
         json={

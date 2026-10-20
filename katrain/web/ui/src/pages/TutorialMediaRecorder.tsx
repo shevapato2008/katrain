@@ -39,7 +39,7 @@ function asGameState(frame: ReplayFrame): GameState {
 }
 
 function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones = false, placements }: { frame: ReplayFrame; state: RootState; surfaceMarkers?: boolean; spriteStones?: boolean; placements: RecordingPlacement[] }) {
-  const { size, stones, labels = {}, letters = {}, shapes = {}, unknown_stones = [], presentation_arrows = [] } = frame.payload;
+  const { size, stones, labels = {}, letters = {}, shapes = {}, unknown_stones = [], presentation_arrows = [], presentation_callouts = [] } = frame.payload;
   const width = state.gl.domElement.clientWidth;
   const height = state.gl.domElement.clientHeight;
   const project = (col: number, row: number, onStone = false, extraHeight = 0) => {
@@ -80,6 +80,26 @@ function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones 
       return <path key={arrow.id} data-presentation-arrow={arrow.id} data-source-pointer={arrow.source_pointer}
         d={`M${from.x} ${from.y}L${to.x} ${to.y}`} fill="none" stroke="#9a3127"
         strokeWidth={radius(...arrow.from) * .12} strokeLinecap="round" markerEnd="url(#tm-presentation-arrowhead)" />;
+    })}
+    {presentation_callouts.length > 0 && <defs><marker id="tm-callout-arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0,0L6,3L0,6Z" fill="#f4f1e9" />
+    </marker></defs>}
+    {presentation_callouts.map(callout => {
+      const anchor = project(...callout.anchor);
+      const next = project(callout.anchor[0] + 1, callout.anchor[1]);
+      const unit = Math.hypot(next.x - anchor.x, next.y - anchor.y);
+      const top = callout.side === 'top';
+      const from = { x: anchor.x + (top ? 0 : .35 * unit), y: anchor.y - (top ? .35 * unit : 0) };
+      const to = { x: anchor.x + (top ? 0 : 1.15 * unit), y: anchor.y - (top ? 1.15 * unit : 0) };
+      const fontSize = .8 * unit;
+      const x = top ? to.x : to.x + .5 * unit;
+      const y = top ? to.y - .5 * unit - (callout.text.length - 1) * fontSize : to.y;
+      return <g key={callout.id} data-presentation-callout={callout.id} data-callout-side={callout.side} data-source-pointer={callout.source_pointer}>
+        <path d={`M${from.x} ${from.y}L${to.x} ${to.y}`} stroke="#f4f1e9" strokeWidth={.06 * unit} fill="none" markerEnd="url(#tm-callout-arrowhead)" />
+        <text x={x} y={y} textAnchor={top ? 'middle' : 'start'} dominantBaseline="central" fill="#f4f1e9" fontSize={fontSize} fontWeight="600">
+          {top ? [...callout.text].map((character, index) => <tspan key={index} x={x} dy={index ? fontSize : 0}>{character}</tspan>) : callout.text}
+        </text>
+      </g>;
     })}
     {unknown_stones.map(stone => {
       const [col, row] = stone.point;
@@ -175,13 +195,15 @@ export default function TutorialMediaRecorder() {
   const angle = 35 * Math.PI / 180;
   const cameraPosition: [number, number, number] = [0, 1.2 + distance * Math.cos(angle), distance * Math.sin(angle)];
   const outputProfile = data.output_profile === 'galaxy-4k-v1' || data.output_profile === 'kiosk-7-v1' ? data.output_profile : undefined;
+  const hasCallouts = Boolean(data.step_cues.presentation_plan?.callouts?.length);
+  const orthographicSpan = frame.payload.size + (hasCallouts ? 9 : overhead ? .6 : 2.6);
   const gameState = asGameState(frame);
   gameState.last_move = null; // The SVG ring stays clear of material highlights.
   return <main className="tm-recorder" data-output-profile={outputProfile} data-step={frame.step} data-render-mode={data.render_mode} data-board-appearance={solidWood ? 'solid-wood' : 'overhead'}>
     <div className="tm-board-area"><div className="tm-board-square">
       <Board3D gameState={gameState} onMove={noop} analysisToggles={TOGGLES} readOnly disableControls
         cameraPosition={overhead ? [0, 26, 0] : cameraPosition} cameraTarget={[0, 1.2, 0]}
-        cameraUp={overhead ? [0, 0, -1] : undefined} orthographicSpan={frame.payload.size + (overhead ? .6 : 2.6)}
+        cameraUp={overhead ? [0, 0, -1] : undefined} orthographicSpan={orthographicSpan}
         recordingAppearance={overhead ? 'overhead' : 'solid-wood'} recordingPlacement={recordingPlacement}
         recordingStoneSprites={overhead ? stoneSprites ?? undefined : undefined} recordingVisualSeed={overhead ? data.visual_seed ?? 'tutorial' : undefined}
         frameloop="demand" onCanvasReady={onCanvasReady} />

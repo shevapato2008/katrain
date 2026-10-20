@@ -2,10 +2,15 @@ import type { SGFPayload } from '../components/tutorials/SGFBoard';
 
 export type Point = [number, number];
 export interface Region { col: number; row: number; cols: number; rows: number }
+export interface PresentationCallout {
+  id: string; anchor: Point; side: 'top' | 'right'; text: string;
+  source_pointer: string; image_sha256: string;
+}
 export interface RecorderPayload extends SGFPayload {
   unknown_stones?: { point: Point; color: null; evidence?: string }[];
   source_region?: (Region & { confirmed: boolean }) | null;
   presentation_arrows?: { id: string; from: Point; to: Point; source_pointer: string; image_sha256: string }[];
+  presentation_callouts?: PresentationCallout[];
   replay?: { initial?: { known_region?: Region | null } | null } | null;
 }
 export interface ReplayFrame {
@@ -31,10 +36,10 @@ export interface StepCues {
   replay_sha256?: string;
   mode: 'presentation' | 'replay' | 'source_replay' | 'static';
   frames: ReplayFrame[];
-  objects: { id: string; kind: 'labels' | 'letters' | 'shapes' | 'arrow' | 'replay'; point: Point | null;
-    stone_color: 'B' | 'W' | null; value?: string; number?: number; replay_step?: number; role?: string }[];
+  objects: { id: string; kind: 'labels' | 'letters' | 'shapes' | 'arrow' | 'callout' | 'replay'; point: Point | null;
+    stone_color: 'B' | 'W' | null; value?: string | null; number?: number | null; callout?: PresentationCallout; replay_step?: number; role?: string }[];
   events: { step: number; at_ms: number; object_ids: string[]; span: [number, number] }[];
-  presentation_plan?: { source_replay?: { initial: { known_region?: Region | null } } | null } | null;
+  presentation_plan?: { callouts?: PresentationCallout[]; source_replay?: { initial: { known_region?: Region | null } } | null } | null;
   status: 'complete' | 'pending';
   reason?: string;
   cues: { step: number; at_ms: number; source: 'initial' | 'speech_end' }[];

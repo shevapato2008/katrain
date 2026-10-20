@@ -97,7 +97,9 @@ def video_artifact(figure, mode, output_profile=None):
 
 def presentation_source_identity(figure, plan, *, db=None):
     """Read current server provenance at both generation and manual approval boundaries."""
-    if not plan or not (plan.get("arrows") or plan.get("annotation_object_ids") or plan.get("source_replay")):
+    if not plan or not (
+        plan.get("arrows") or plan.get("annotation_object_ids") or plan.get("source_replay") or plan.get("callouts")
+    ):
         return None
     from katrain.web.tutorials.source_models import TutorialSourceBook, TutorialSourceFigure, TutorialSourcePage
     from katrain.web.tutorials.recognition_models import TutorialRecognitionCandidate

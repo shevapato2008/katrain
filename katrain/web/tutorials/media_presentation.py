@@ -5,7 +5,7 @@ import math
 import re
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_serializer
 
 from katrain.web.tutorials.replay import replay_frames, validate_replay, recording_source_frames
 from katrain.web.tutorials.workbench_models import ReplayInitial, ReplayMove
@@ -41,6 +41,16 @@ class SourceReplay(BaseModel):
     evidence_description: str = Field(min_length=1, max_length=8000)
 
 
+class PresentationCallout(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    id: str = Field(pattern=r"^callout:[A-Za-z0-9_-]+$", max_length=100)
+    anchor: list[int] = Field(min_length=2, max_length=2)
+    side: Literal["top", "right"]
+    text: str = Field(min_length=1, max_length=4)
+    source_pointer: str = Field(min_length=1, max_length=2048)
+    image_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
 class PresentationPlan(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     schema_version: Literal[1]
@@ -48,6 +58,14 @@ class PresentationPlan(BaseModel):
     arrows: list[PresentationArrow] = Field(default_factory=list, max_length=128)
     annotation_object_ids: list[str] = Field(default_factory=list, max_length=512)
     source_replay: SourceReplay | None = None
+    callouts: list[PresentationCallout] = Field(default_factory=list, max_length=16)
+
+    @model_serializer(mode="wrap")
+    def serialize_plan(self, handler):
+        value = handler(self)
+        if not self.callouts:
+            value.pop("callouts", None)  # Preserve every existing plan/task/profile proof byte-for-byte.
+        return value
 
 
 SHAPE_WORDS = {
@@ -168,6 +186,31 @@ def discover_objects(payload, presentation_plan=None, source_identity=None):
             raise ValueError("Supplemental arrow must have different endpoints")
         objects.append({"id": arrow["id"], "kind": "arrow", "arrow": arrow, "stone_color": None, "point": None})
     source_replay = (plan or {}).get("source_replay")
+    occupied_edges = set()
+    for callout in (plan or {}).get("callouts", []):
+        if not source_identity or any(callout[k] != source_identity.get(k) for k in ("source_pointer", "image_sha256")):
+            raise ValueError("Margin callout does not match the server-owned figure source identity")
+        col, row = callout["anchor"]
+        if (
+            not (0 <= col < size and 0 <= row < size)
+            or (callout["side"] == "top" and row != 0)
+            or (callout["side"] == "right" and col != size - 1)
+        ):
+            raise ValueError("Margin callout anchor must lie on its declared top or right grid edge")
+        edge = (callout["side"], col, row)
+        if edge in occupied_edges or not callout["text"].strip() or any(char.isspace() for char in callout["text"]):
+            raise ValueError("Margin callouts require distinct edge anchors and short nonempty captions")
+        occupied_edges.add(edge)
+        objects.append(
+            {
+                "id": callout["id"],
+                "kind": "callout",
+                "point": None,
+                "stone_color": None,
+                "value": callout["text"],
+                "callout": callout,
+            }
+        )
     if source_replay and (
         not source_identity
         or any(source_replay[k] != source_identity.get(k) for k in ("source_pointer", "image_sha256"))
@@ -498,6 +541,10 @@ def _frames(payload, objects, events, real_frames):
         arrows = [by_id[key]["arrow"] for key in sorted(visible) if by_id[key]["kind"] == "arrow"]
         if arrows or any(obj["kind"] == "arrow" for obj in objects):
             base["presentation_arrows"] = arrows
+        if any(obj["kind"] == "callout" for obj in objects):
+            base["presentation_callouts"] = [
+                by_id[key]["callout"] for key in sorted(visible) if by_id[key]["kind"] == "callout"
+            ]
         shown_now = set()
         for object_id in sorted(visible):
             obj = by_id[object_id]

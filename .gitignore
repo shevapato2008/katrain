@@ -232,9 +232,11 @@ katrain/web/ui/test-results/
 
 # Local admin-console screenshots and browser smoke artifacts; not runtime inputs
 /output/
+/katrain/web/ui/output/
 
 # Disposable browser CLI snapshots; reviewed design evidence lives under superpowers/tracks/
 /.playwright-cli/
+/katrain/web/ui/.playwright-cli/
 /superpowers/tracks/admin-console/prototype/index.html
 
 # Failed research intermediates: HTTP 403 response saved as a PDF, and an

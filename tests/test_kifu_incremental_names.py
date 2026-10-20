@@ -1,4 +1,5 @@
 import asyncio
+from copy import deepcopy
 import json
 from hashlib import sha256
 
@@ -139,7 +140,11 @@ def test_fresh_raw_player_can_retain_native_parsed_name_without_embedded_rank():
 
 
 def test_qualified_raw_player_template_keeps_original_generation_provenance():
-    context = {"verified_reuse_displays": CANDIDATE["displays"]}
+    context = {
+        "verified_reuse_displays": CANDIDATE["displays"],
+        "verified_reuse_original_language": CANDIDATE["original_language"],
+        "verified_reuse_methods": CANDIDATE["methods"],
+    }
     service, client, calls = mock_service([CANDIDATE, {"decision": "approve"}])
 
     async def check():
@@ -150,6 +155,56 @@ def test_qualified_raw_player_template_keeps_original_generation_provenance():
     assert decision["displays"] == CANDIDATE["displays"]
     assert decision["methods"] == CANDIDATE["methods"]
     assert len(calls) == 2
+
+
+@pytest.mark.parametrize("field", ("displays", "original_language", "methods"))
+def test_qualified_raw_player_template_mismatch_repairs_before_reviewer(field):
+    candidate = {
+        "displays": {"cn": "姜勋", "tw": "姜勳", "jp": "姜勲", "ko": "강훈", "en": "Kang Hun"},
+        "original_language": "und",
+        "methods": {**CANDIDATE["methods"], "jp": "transliteration"},
+        "source_urls": [],
+    }
+    context = {f"verified_reuse_{key}": candidate[key] for key in ("displays", "original_language", "methods")}
+    wrong = deepcopy(candidate)
+    if field == "original_language":
+        wrong[field] = "ko"
+    else:
+        wrong[field]["jp"] = "姜勳" if field == "displays" else "orthographic_conversion"
+    with pytest.raises(NameRejected, match="qualified raw player template"):
+        QwenNameService._candidate(wrong, "raw_player", "姜勋", [], context=context)
+    service, client, calls = mock_service([wrong, candidate, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_player", "姜勋", [ITEM], context=context)
+
+    decision = run(check())
+    prompts = [json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls]
+    assert len(prompts) == 3
+    assert "candidate" not in prompts[1]
+    assert "qualified raw player template" in prompts[1]["repair_reason"]
+    assert prompts[2]["candidate"] == candidate
+    assert all(decision[key] == candidate[key] for key in ("displays", "original_language", "methods"))
+
+
+def test_repeated_qualified_raw_player_method_mismatch_rejects_without_reviewer():
+    context = {
+        "verified_reuse_displays": CANDIDATE["displays"],
+        "verified_reuse_original_language": "und",
+        "verified_reuse_methods": {**CANDIDATE["methods"], "jp": "transliteration"},
+    }
+    wrong = {**CANDIDATE, "original_language": "und"}
+    service, client, calls = mock_service([wrong, wrong, wrong, wrong])
+
+    async def check():
+        async with client:
+            with pytest.raises(NameRejected, match="qualified raw player template"):
+                await service.translate_and_review("raw_player", "柯洁", [ITEM], context=context)
+
+    run(check())
+    assert len(calls) == 2
+    assert all("candidate" not in json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls)
 
 
 def test_event_producer_prompt_lists_exact_digit_tokens_for_every_language():

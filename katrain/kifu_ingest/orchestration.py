@@ -197,10 +197,19 @@ async def prepare_staged_games(items, *, engine, client, names, isolated=None):
                 key,
                 members,
                 sources=evidence,
-                context={"verified_reuse_displays": template["displays"]} if template else None,
+                context=(
+                    {
+                        f"verified_reuse_{field}": template[field]
+                        for field in ("displays", "original_language", "methods")
+                    }
+                    if template
+                    else None
+                ),
             )
-            if template and decision["displays"] != template["displays"]:
-                raise NameRejected("reviewed raw player text differs from qualified reusable text")
+            if template and any(
+                decision[field] != template[field] for field in ("displays", "original_language", "methods")
+            ):
+                raise NameRejected("reviewed raw player meaning differs from qualified reusable text")
             decisions.append(decision)
         except NameRejected as exc:
             for source_id in {member["source_item_id"] for member in members}:

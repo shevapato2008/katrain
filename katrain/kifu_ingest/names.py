@@ -315,6 +315,10 @@ class QwenNameService:
                 raise NameRejected("raw player retain_original differs from parsed name")
         if not isinstance(candidate["original_language"], str) or not candidate["original_language"].strip():
             raise NameRejected("original language missing")
+        if kind == "raw_player" and isinstance(context, dict) and context.get("verified_reuse_displays"):
+            for field in ("displays", "original_language", "methods"):
+                if candidate[field] != context.get(f"verified_reuse_{field}"):
+                    raise NameRejected(f"{field} differs from qualified raw player template")
         urls = candidate["source_urls"]
         if not isinstance(urls, list) or len(urls) != len(set(urls)) or not set(urls) <= {s["url"] for s in sources}:
             raise NameRejected("candidate invented a source URL")
@@ -387,6 +391,11 @@ class QwenNameService:
                 },
                 "output_shape_rule": "displays and methods must be objects keyed by language, never arrays",
             }
+            if kind == "raw_player" and isinstance(context, dict) and context.get("verified_reuse_displays"):
+                prompt["verified_reuse_rule"] = (
+                    "Preserve displays, original_language and methods exactly as supplied in context's "
+                    "verified_reuse fields; they describe existing qualified provenance, not a new identity claim."
+                )
             literal = _RANK.sub("", key).strip() if kind == "raw_player" else key.strip()
             if re.search(r"[\u3400-\u9fff]", literal):
                 prompt["required_cn_literal"] = literal

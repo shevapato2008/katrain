@@ -281,6 +281,84 @@ def _reviewed_name_decision(kind, key, members):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("fault", (None, "displays", "original_language", "methods"))
+async def test_staged_game_preserves_qualified_raw_player_template_meaning(tmp_path, monkeypatch, fault):
+    from katrain.kifu_ingest import orchestration
+    from katrain.kifu_ingest.catalog import review_content_sha256
+    from katrain.kifu_ingest.names import NameRejected
+
+    sgf = "(;PB[姜勋]PW[White]EV[Match];B[aa])"
+    path = tmp_path / "42.sgf"
+    path.write_text(sgf, encoding="utf-8")
+    item = {"external_id": "42", "raw_sgf_path": str(path), "raw_sha256": sha256(sgf.encode()).hexdigest()}
+    template = {
+        "displays": {"cn": "姜勋", "tw": "姜勳", "jp": "姜勲", "ko": "강훈", "en": "Kang Hun"},
+        "original_language": "und",
+        "methods": {
+            "cn": "retain_original",
+            "tw": "orthographic_conversion",
+            "jp": "transliteration",
+            "ko": "transliteration",
+            "en": "transliteration",
+        },
+        "sources": [],
+    }
+    monkeypatch.setattr(
+        orchestration,
+        "lookup_qualified_identities",
+        lambda *a, **k: {
+            "player": {"姜勋": {"status": "unresolved"}, "White": {"status": "qualified", "canonical_name": "White"}},
+            "event": {"Match": {"status": "qualified", "canonical_name": "Match"}},
+        },
+    )
+    monkeypatch.setattr(
+        orchestration, "qualified_raw_player_templates", lambda *a, **k: {"templates": {"姜勋": template}}
+    )
+
+    async def no_wiki(*args):
+        return {"status": "unavailable", "sources": []}
+
+    monkeypatch.setattr(orchestration, "wiki_sources", no_wiki)
+
+    class Names:
+        key = "test-only"
+
+        async def translate_and_review(self, kind, key, members, *, sources, context):
+            assert context == {
+                f"verified_reuse_{field}": template[field] for field in ("displays", "original_language", "methods")
+            }
+            result = _reviewed_name_decision(kind, key, members)
+            result.update(
+                {
+                    field: template[field].copy() if isinstance(template[field], dict) else template[field]
+                    for field in ("displays", "original_language", "methods")
+                }
+            )
+            if fault == "original_language":
+                result[fault] = "ko"
+            elif fault:
+                result[fault]["jp"] = "姜勳" if fault == "displays" else "orthographic_conversion"
+            result["review"]["content_sha256"] = review_content_sha256(result)
+            return result
+
+    isolated = []
+    if fault:
+        with pytest.raises(NameRejected, match="all staged games require isolated name review"):
+            await orchestration.prepare_staged_games(
+                [item], engine=object(), client=object(), names=Names(), isolated=isolated
+            )
+        assert len(isolated) == 1 and isolated[0][0] == "42"
+        assert "qualified reusable" in isolated[0][1]
+    else:
+        result = await orchestration.prepare_staged_games(
+            [item], engine=object(), client=object(), names=Names(), isolated=isolated
+        )
+        assert result["decisions"][0]["methods"] == template["methods"]
+        assert result["decisions"][0]["original_language"] == "und"
+        assert isolated == []
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("frozen_kind", ("raw_event", "raw_player"))
 @pytest.mark.parametrize(
     "other_player_status",

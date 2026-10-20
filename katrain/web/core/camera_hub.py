@@ -155,15 +155,18 @@ class CameraHub:
             self._lifecycle_lock.release()
 
     def grab_fresh(self, after_ts=None, settle_ms: float = 150.0, timeout: float | None = None):
-        if not self._lifecycle_lock.acquire(blocking=False):
+        # Lifecycle access and the frame wait share CameraManager's default budget.
+        timeout = 2.0 if timeout is None else max(0.0, timeout)
+        deadline = time.monotonic() + timeout
+        if not self._lifecycle_lock.acquire(timeout=timeout):
             return None, 0, 0.0
         try:
             if not self._started:
                 return None, 0, 0.0
-            kwargs = {"after_ts": after_ts, "settle_ms": settle_ms}
-            if timeout is not None:
-                kwargs["timeout"] = timeout
-            return self._camera.grab_fresh(**kwargs)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return None, 0, 0.0
+            return self._camera.grab_fresh(after_ts=after_ts, settle_ms=settle_ms, timeout=remaining)
         finally:
             self._lifecycle_lock.release()
 

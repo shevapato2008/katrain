@@ -1,0 +1,8 @@
+{
+  "mode": "prepared_only",
+  "path": "/app/data/kifu_ingest/pending-recovery/91315699-0f64c2b366a0d9ba.json",
+  "publication_key": "19x19-event-recovery-870a06d9f6b3f234b354a5f4",
+  "manifest_sha256": "0f64c2b366a0d9ba59b452d4aac4148dc5609d19c57c6befa1deacde06459e67",
+  "file_sha256": "2d34a4d6fc8bb12a29e8da7fb6461362cffceb52c7aeaa4e06cfd2a167d16867",
+  "paid_requests": 0
+}

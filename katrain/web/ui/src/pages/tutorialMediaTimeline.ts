@@ -77,14 +77,24 @@ export interface RecordingPlacement { point: Point; lift: number; scale: number 
 /** Pure recording poses: seeking to a timestamp always produces the same placements. */
 export function placementsAtTime(data: RecordingData, timeMs: number): RecordingPlacement[] {
   const frame = frameAtTime(data, timeMs);
-  let active: StepCues['cues'][number] | null = null;
+  const visible = new Set((['B', 'W'] as const).flatMap(color =>
+    frame.payload.stones[color].map(point => `${color}:${point.join(',')}`)));
+  const appearances = new Map<string, { point: Point; atMs: number }>();
   for (const cue of data.step_cues.cues) {
     if (cue.at_ms > timeMs) break;
-    active = cue;
+    if (cue.source !== 'speech_end' || timeMs - cue.at_ms >= 360) continue;
+    const appearedFrame = data.step_cues.frames.find(item => item.step === cue.step);
+    if (!appearedFrame) throw new Error(`Missing validated presentation frame ${cue.step}`);
+    for (const { color, point } of appearedFrame.appeared_stones) {
+      const identity = `${color}:${point.join(',')}`;
+      // Later appearances replace the old lifetime; marker-only cues leave its clock alone.
+      if (visible.has(identity)) appearances.set(identity, { point, atMs: cue.at_ms });
+    }
   }
-  if (!active || active.source !== 'speech_end' || timeMs - active.at_ms >= 360) return [];
-  const remaining = (1 - (timeMs - active.at_ms) / 360) ** 2;
-  return frame.appeared_stones.map(({ point }) => ({ point, lift: .25 * remaining, scale: 1 - .04 * remaining }));
+  return [...appearances.values()].map(({ point, atMs }) => {
+    const remaining = (1 - (timeMs - atMs) / 360) ** 2;
+    return { point, lift: .25 * remaining, scale: 1 - .04 * remaining };
+  });
 }
 
 export function knownRegion(data: RecordingData): Region | null {

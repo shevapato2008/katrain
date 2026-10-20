@@ -55,6 +55,56 @@ describe('tutorial recorder time axis', () => {
     expect(placementsAtTime(data, 0)).toEqual([]);
     expect(placementsAtTime(data, 2500)).toEqual([]);
   });
+  it('keeps a stone settling across an annotation-only cue without restarting its pose', () => {
+    const closelySpaced = { ...data, step_cues: { ...data.step_cues, cues: data.step_cues.cues.map(cue =>
+      cue.step === 2 ? { ...cue, at_ms: 1100 } : cue) } };
+    expect(placementsAtTime(closelySpaced, 1099)[0].lift).toBeCloseTo(.25 * (261 / 360) ** 2);
+    expect(placementsAtTime(closelySpaced, 1100)).toHaveLength(2);
+    expect(placementsAtTime(closelySpaced, 1100)[0].lift).toBeCloseTo(.25 * (260 / 360) ** 2);
+    expect(placementsAtTime(closelySpaced, 1180)[0].lift).toBeCloseTo(.0625);
+    expect(placementsAtTime(closelySpaced, 1360)).toEqual([]);
+  });
+  it('keeps an appearance when an annotation event shares its exact cue time', () => {
+    const simultaneous = { ...data, step_cues: { ...data.step_cues, cues: data.step_cues.cues.map(cue =>
+      cue.step === 2 ? { ...cue, at_ms: 1000 } : cue) } };
+    expect(frameAtTime(simultaneous, 1000)).toBe(frames[2]);
+    expect(placementsAtTime(simultaneous, 1000)).toEqual([
+      { point: [2, 0], lift: .25, scale: .96 }, { point: [3, 0], lift: .25, scale: .96 },
+    ]);
+  });
+  it('settles overlapping stone cues independently using each appearance time', () => {
+    const overlappingFrames: ReplayFrame[] = [frames[0], frames[1], { ...frames[2],
+      payload: { ...frames[2].payload, stones: { ...frames[2].payload.stones, W: [[3, 0], [4, 0]] } },
+      appeared_stones: [{ color: 'W', point: [4, 0] }],
+    }];
+    const overlapping: RecordingData = { ...data, frames: overlappingFrames, step_cues: { ...data.step_cues,
+      frames: overlappingFrames, cues: [data.step_cues.cues[0], data.step_cues.cues[1], { step: 2, at_ms: 1100, source: 'speech_end' }],
+    } };
+    const poses = placementsAtTime(overlapping, 1100);
+    expect(poses.map(pose => pose.point)).toEqual([[2, 0], [3, 0], [4, 0]]);
+    expect(poses[0].lift).toBeCloseTo(.25 * (260 / 360) ** 2);
+    expect(poses[2]).toEqual({ point: [4, 0], lift: .25, scale: .96 });
+    expect(placementsAtTime(overlapping, 1360).map(pose => pose.point)).toEqual([[4, 0]]);
+    expect(placementsAtTime(overlapping, 1460)).toEqual([]);
+    expect(placementsAtTime(overlapping, 1100)).toEqual(poses);
+  });
+  it('stops captured poses and starts fresh for opposite-color and same-color point reuse', () => {
+    const lifecycleFrames: ReplayFrame[] = [
+      { step: 0, payload: { size: 9, stones: { B: [], W: [] } }, last: null, appeared_stones: [] },
+      { step: 1, payload: { size: 9, stones: { B: [[2, 0]], W: [] } }, last: [2, 0], appeared_stones: [{ color: 'B', point: [2, 0] }] },
+      { step: 2, payload: { size: 9, stones: { B: [], W: [[2, 0]] } }, last: [2, 0], captured: [[2, 0]], appeared_stones: [{ color: 'W', point: [2, 0] }] },
+      { step: 3, payload: { size: 9, stones: { B: [], W: [] } }, last: null, captured: [[2, 0]], appeared_stones: [] },
+      { step: 4, payload: { size: 9, stones: { B: [[2, 0]], W: [] } }, last: [2, 0], appeared_stones: [{ color: 'B', point: [2, 0] }] },
+    ];
+    const lifecycle: RecordingData = { ...data, frames: lifecycleFrames, step_cues: { ...data.step_cues,
+      frames: lifecycleFrames, cues: [0, 1000, 1100, 1200, 1250].map((at_ms, step) => ({ step, at_ms, source: step ? 'speech_end' : 'initial' })),
+    } };
+    expect(placementsAtTime(lifecycle, 1100)).toEqual([{ point: [2, 0], lift: .25, scale: .96 }]);
+    expect(placementsAtTime(lifecycle, 1200)).toEqual([]);
+    expect(placementsAtTime(lifecycle, 1250)).toEqual([{ point: [2, 0], lift: .25, scale: .96 }]);
+    expect(placementsAtTime(lifecycle, 1360)[0].lift).toBeCloseTo(.25 * (250 / 360) ** 2);
+    expect(placementsAtTime(lifecycle, 1610)).toEqual([]);
+  });
   it('blocks pending proof instead of exposing the fully annotated saved diagram', () => {
     const pending: RecordingData = { ...data, step_cues: { ...data.step_cues, status: 'pending', reason: 'Missing spoken A', frames: [], cues: [] }, frames: [] };
     expect(() => frameAtTime(pending, 0)).toThrow(/Missing spoken A/);

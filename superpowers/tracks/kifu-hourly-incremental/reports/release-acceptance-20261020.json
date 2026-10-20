@@ -1,0 +1,455 @@
+{
+  "recorded_at": "2026-10-20T03:16:53.383656+00:00",
+  "code_publication": {
+    "feature": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
+    "develop": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
+    "parent_main": "2b6d62d9e5327fd1d6bc99a21f23c79ada15961b"
+  },
+  "A": {
+    "inventory": 5536,
+    "verified_sources_each_environment": 5279,
+    "packages_each_environment": 55,
+    "inserted_albums_each_environment": 5276,
+    "reused_each_environment": 3,
+    "isolated": 257,
+    "ready_percent": 95.3577,
+    "first_pass_raw_display_keys": {
+      "raw_event": 1890,
+      "raw_player": 164
+    },
+    "isolation_report": "first-pass-isolations-20261020.json",
+    "final_http": {
+      "TEST": {
+        "status": "verified",
+        "http_scope": "finite_samples_only",
+        "original_packages_checked": 55,
+        "original_source_games": 5279,
+        "sample_games": 12,
+        "five_language_detail_checks": 60,
+        "covered_features": [
+          "action:inserted",
+          "action:reused",
+          "canonical_event",
+          "canonical_player",
+          "raw_event",
+          "raw_player"
+        ]
+      },
+      "PROD": {
+        "status": "verified",
+        "http_scope": "finite_samples_only",
+        "original_packages_checked": 55,
+        "original_source_games": 5279,
+        "sample_games": 12,
+        "five_language_detail_checks": 60,
+        "covered_features": [
+          "action:inserted",
+          "action:reused",
+          "canonical_event",
+          "canonical_player",
+          "raw_event",
+          "raw_player"
+        ]
+      }
+    }
+  },
+  "metrics_at_A_closepoint": {
+    "TEST": {
+      "point": "A completed, before newly enabled hourly publication",
+      "albums": 176549,
+      "public_complete_cards": 176290,
+      "fixedwide": 160261,
+      "fixedwide_percent": 90.7742,
+      "strictcomplete": 176290,
+      "strictcomplete_percent": 99.8533,
+      "measurement_basis": "fresh native snapshot plus already native-qualified inserted increments; actual binding columns checked for the wide delta; not a new full post-A scan",
+      "baseline": {
+        "captured_at": "2026-10-19T11:45:45.532143+00:00",
+        "read_only": true,
+        "source_rehashed": false,
+        "population": {
+          "albums": 171272,
+          "public_visible": 171013,
+          "duplicate": 9,
+          "list_hidden": 250
+        },
+        "metrics": {
+          "fixedwide": 154985,
+          "strictcomplete": 171013,
+          "public_complete": 171013,
+          "P5": 3838,
+          "E5": 84
+        },
+        "denominators": {
+          "fixedwide": 171272,
+          "strictcomplete": 171272,
+          "public_complete": 171013,
+          "P5": 3865,
+          "E5": 85
+        },
+        "measurement": {
+          "elapsed_seconds": 512.263,
+          "reader": "current native eligibility with snapshot-local scheduling/caches",
+          "historical_audit_totals_reused": false,
+          "sgf_scope_checks": "native current checks; full source inventory not rehashed"
+        }
+      },
+      "verified_increment": {
+        "environment": "TEST",
+        "verified_increment_rows": 5277,
+        "wide_eligible_increment": 5276,
+        "wide_excluded_album_ids": [
+          178437
+        ],
+        "catalog_total_at_read": 176549,
+        "eligibility_basis": "all selected increments already native-qualified; this read checks actual binding columns only"
+      }
+    },
+    "PROD": {
+      "point": "A completed, before newly enabled hourly publication",
+      "albums": 176549,
+      "public_complete_cards": 176290,
+      "fixedwide": 160775,
+      "fixedwide_percent": 91.0654,
+      "strictcomplete": 176290,
+      "strictcomplete_percent": 99.8533,
+      "measurement_basis": "fresh native snapshot plus already native-qualified inserted increments; actual binding columns checked for the wide delta; not a new full post-A scan",
+      "baseline": {
+        "snapshot_started_at": "2026-10-19T15:08:16.587053+00:00",
+        "captured_at": "2026-10-20T01:53:15.986930+00:00",
+        "read_only": true,
+        "source_rehashed": false,
+        "population": {
+          "albums": 171293,
+          "public_visible": 171034,
+          "duplicate": 9,
+          "list_hidden": 250
+        },
+        "metrics": {
+          "fixedwide": 155520,
+          "strictcomplete": 171034,
+          "public_complete": 171034,
+          "P5": 3663,
+          "E5": 84
+        },
+        "denominators": {
+          "fixedwide": 171293,
+          "strictcomplete": 171293,
+          "public_complete": 171034,
+          "P5": 3689,
+          "E5": 85
+        },
+        "measurement": {
+          "elapsed_seconds": 38699.819,
+          "reader": "native eligibility, 1000-album chunks in one repeatable-read snapshot",
+          "historical_audit_totals_reused": false,
+          "sgf_scope_checks": "native current checks; full source inventory not rehashed"
+        }
+      },
+      "verified_increment": {
+        "environment": "PROD",
+        "verified_increment_rows": 5256,
+        "wide_eligible_increment": 5255,
+        "wide_excluded_album_ids": [
+          178117
+        ],
+        "catalog_total_at_read": 176549,
+        "eligibility_basis": "all selected increments already native-qualified; this read checks actual binding columns only"
+      }
+    }
+  },
+  "deployed_runtime": {
+    "source": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
+    "TEST_Web_image": "sha256:4dc8d19a7027c3774112d9eb60b1768721fce0f1e167b7473458d20e8dbfe97b",
+    "PROD_Web_image": "sha256:bbcdd5b1b90731d4781abfca13d0fbe6416b158d0a8f84cf6d39d205e95e7f0e",
+    "TEST_cron_image": "sha256:136846c59bf00f4118064141ae60cddfe9f07896adc6f2ff04d1170152fc96ed"
+  },
+  "Web_acceptance": {
+    "TEST": {
+      "assets": [
+        {
+          "bytes": 14609,
+          "path": "/assets/index-C90zRD53.js",
+          "status": 200
+        },
+        {
+          "bytes": 12883,
+          "path": "/assets/index-DFEU3Joj.css",
+          "status": 200
+        }
+      ],
+      "build": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
+      "equivalent_searches": [
+        {
+          "ids": [
+            140859,
+            124442,
+            118394,
+            140858,
+            25055,
+            25048,
+            152161,
+            25047,
+            152117,
+            25046,
+            152160,
+            52081,
+            32136,
+            25043,
+            136907,
+            25045,
+            25042,
+            124247,
+            25041,
+            80785
+          ],
+          "query": "吴清源",
+          "total": 1231
+        },
+        {
+          "ids": [
+            140859,
+            124442,
+            118394,
+            140858,
+            25055,
+            25048,
+            152161,
+            25047,
+            152117,
+            25046,
+            152160,
+            52081,
+            32136,
+            25043,
+            136907,
+            25045,
+            25042,
+            124247,
+            25041,
+            80785
+          ],
+          "query": "Go Seigen",
+          "total": 1231
+        }
+      ],
+      "health": {
+        "engines": {
+          "cloud": "unconfigured",
+          "local": "reachable"
+        },
+        "status": "ok",
+        "version": "1.17.1"
+      },
+      "languages": [
+        "cn",
+        "tw",
+        "jp",
+        "ko",
+        "en",
+        "ru"
+      ],
+      "latest_album_id": 173066,
+      "list_seconds": 0.719,
+      "pages": [
+        {
+          "path": "/galaxy/kifu",
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "status": 200
+        },
+        {
+          "path": "/kiosk/kifu",
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "status": 200
+        }
+      ],
+      "public_total": 176290,
+      "russian_uses_english_names": true,
+      "scope": "finite_http_acceptance_not_browser_render",
+      "status": "verified"
+    },
+    "PROD": {
+      "assets": [
+        {
+          "bytes": 14609,
+          "path": "/assets/index-C90zRD53.js",
+          "status": 200
+        },
+        {
+          "bytes": 12883,
+          "path": "/assets/index-DFEU3Joj.css",
+          "status": 200
+        }
+      ],
+      "build": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
+      "equivalent_searches": [
+        {
+          "ids": [
+            140859,
+            124442,
+            118394,
+            140858,
+            25055,
+            25048,
+            152161,
+            25047,
+            152117,
+            25046,
+            152160,
+            52081,
+            32136,
+            25043,
+            136907,
+            25045,
+            25042,
+            124247,
+            25041,
+            80785
+          ],
+          "query": "吴清源",
+          "total": 1231
+        },
+        {
+          "ids": [
+            140859,
+            124442,
+            118394,
+            140858,
+            25055,
+            25048,
+            152161,
+            25047,
+            152117,
+            25046,
+            152160,
+            52081,
+            32136,
+            25043,
+            136907,
+            25045,
+            25042,
+            124247,
+            25041,
+            80785
+          ],
+          "query": "Go Seigen",
+          "total": 1231
+        }
+      ],
+      "health": {
+        "engines": {
+          "cloud": "unconfigured",
+          "local": "reachable"
+        },
+        "status": "ok",
+        "version": "1.17.1"
+      },
+      "languages": [
+        "cn",
+        "tw",
+        "jp",
+        "ko",
+        "en",
+        "ru"
+      ],
+      "latest_album_id": 173046,
+      "list_seconds": 0.825,
+      "pages": [
+        {
+          "path": "/galaxy/kifu",
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "status": 200
+        },
+        {
+          "path": "/kiosk/kifu",
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "status": 200
+        }
+      ],
+      "public_total": 176290,
+      "russian_uses_english_names": true,
+      "scope": "finite_http_acceptance_not_browser_render",
+      "status": "verified"
+    }
+  },
+  "public_http_acceptance": [
+    {
+      "url": "https://go.sailorvoyage.top/api/v1/health",
+      "status": 200,
+      "content_type": "application/json",
+      "bytes": 89
+    },
+    {
+      "url": "https://go.sailorvoyage.top/galaxy/kifu",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 4558
+    },
+    {
+      "url": "https://go.sailorvoyage.top/kiosk/kifu",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 4558
+    },
+    {
+      "url": "https://modelstella.com/api/v1/health",
+      "status": 200,
+      "content_type": "application/json",
+      "bytes": 89
+    },
+    {
+      "url": "https://modelstella.com/galaxy/kifu",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 4558
+    },
+    {
+      "url": "https://modelstella.com/kiosk/kifu",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 4558
+    }
+  ],
+  "headless_startup": {
+    "independent_review": "Astra max APPROVE",
+    "focused_tests": "2 passed (reviewer 1.22s)",
+    "old_image_isolated_initialization_exit": 0,
+    "d2_image_isolated_initialization_exit": 102,
+    "fixed_image_isolated_initialization_exit": 0,
+    "fixed_image_font_switch_null_engine_play_and_state": "passed",
+    "prod_temporarily_rolled_back_then_fixed_image_deployed": true
+  },
+  "B": {
+    "activated_at": "2026-10-20T03:08:59.501101+00:00",
+    "enabled": true,
+    "interval_seconds": 3600,
+    "daily_utc_token_cap": 100000,
+    "max_games_per_run": 100,
+    "max_new_names_per_run": 20,
+    "known_qualified_canonical_five_language_hits_llm_calls": 0,
+    "restart_policy": "unless-stopped",
+    "normal_analysis_gpu": "GPU1:8002",
+    "A_isolations_persisted": 257,
+    "prompt_only_records_restored_to_downloaded": 4,
+    "prior_real_test_to_prod_sample": "prod_synced; five languages, public list, idempotent replay and cron recreation passed",
+    "latest_observed_run": {
+      "id": 61788,
+      "started_at": "2026-10-20T03:09:07.181583+00:00",
+      "status": "running",
+      "current_run_error_count": 0,
+      "paid_tokens_observed_today": 32986,
+      "phase": "names_ready",
+      "frozen_games": 72,
+      "frozen_batch": "fa32f3c4-bb8b-431e-859f-aa51cfed8238",
+      "new_metadata_quarantines": 9,
+      "new_name_validation_quarantines": 2,
+      "paid_calls_today": 42,
+      "pending_discovered": 15,
+      "downloaded_this_run": 100,
+      "recovered_prior_downloads": 4,
+      "metadata_conflict_diagnosis": "6 color reversals, 2 different name characters, 1 malformed SGF property fragment; no harmless rank/space-only cases",
+      "diagnostic_report": "B-nine-player-conflicts-readonly.json"
+    },
+    "note": "First enabled iteration is still being observed; this record does not claim its publication is complete."
+  }
+}

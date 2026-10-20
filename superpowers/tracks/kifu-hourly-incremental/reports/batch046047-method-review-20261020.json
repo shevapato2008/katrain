@@ -1,0 +1,266 @@
+{
+  "schema_version": "independent-finite-method-correction-review-v1",
+  "decision": "approve",
+  "reviewed_at": "2026-10-19T21:02:33.207252+00:00",
+  "reviewer": {
+    "id": "/root/kifu_backfill_names_astra_review",
+    "model": "gpt-6-astra",
+    "reasoning_effort": "max",
+    "configuration_basis": "Parent explicitly configured this independent task as gpt-6-astra / max / fork_turns none."
+  },
+  "scope": "Two finite Japanese method corrections only, on the actual independent-review request artifacts. All display strings, identity instructions, source memberships and game payloads remain unchanged. Changed content receives a real new review rather than an old signature.",
+  "batches": [
+    {
+      "batch": "batch046",
+      "decision": "approve",
+      "reviewed_at": "2026-10-19T21:02:33.207252+00:00",
+      "review_request": {
+        "file": "corrections/046-method-review-request.json",
+        "file_sha256": "9b76cb905f7268ffe1dbddb8069bc10db3eb7ec4a3b0932b919675156e5c0bc4"
+      },
+      "original": {
+        "file": "signed-manifests/batch046.json",
+        "file_sha256": "19859ba5a2c195e7eac52051e12c3c06eb031703797fafb7be0571fa0def05ed",
+        "manifest_sha256": "cbe1b48be168df93a9db766365eeca299fce0c3d4671c7d0ba0b45ccb14fca3d",
+        "publication_key": "kifu-backfill5536-20261019-reviewed-batch046"
+      },
+      "draft": {
+        "file": "corrections/batch046c.draft.json",
+        "file_sha256": "4cca300e5c5d240ddb36b175ec98113f6b09513d755783bb506e0b6688932ead",
+        "manifest_sha256": "28af823c9564a2f66c9e49c08855d53872a1dd9aa95e726a2a296b6fbaf8deb3"
+      },
+      "approved": {
+        "file": "corrections/batch046c.json",
+        "file_sha256": "be69d416a7d3e9c003114df683a02d3ebb55e8fe41883450a37c61a01dbb8b4f",
+        "manifest_sha256": "c8d73169f2f89966035f0d6630d0118bb103103dc6a0c79a751711b9d6a4b4b8",
+        "publication_key": "kifu-backfill5536-20261019-reviewed-batch046-c1",
+        "games": 100,
+        "decisions": 31,
+        "changed_decision_index": 29,
+        "decision_content_sha256": "aad0401ea287b6d2af9b53650f03e04e7fb08859fefb54a1e19e5ef7deff4059"
+      },
+      "method_correction": {
+        "kind": "raw_player",
+        "raw": "菲特拉·R·S",
+        "language": "jp",
+        "before": "retain_original",
+        "after": "transliteration",
+        "unchanged_display": "フィトラ・R・S",
+        "unchanged_names5": {
+          "cn": "菲特拉·R·S",
+          "tw": "菲特拉·R·S",
+          "jp": "フィトラ・R・S",
+          "ko": "피트라 R. S.",
+          "en": "Fitra R. S."
+        },
+        "source_items": [
+          {
+            "source_key": "19x19",
+            "source_item_id": "76455813",
+            "slot": "white",
+            "sgf_sha256": "b18c90ba3884e9e94638b9b09a23716b4d05a29f612664b850c310cfa698c272"
+          }
+        ],
+        "rationale": "The already approved Katakana display is a phonetic rendering of the literal Chinese-script raw player name. Transliteration accurately describes this output; retain_original requires exact equality to the native parsed name. No identity linkage, new reading claim or text change is made."
+      },
+      "historical_semantic_approval": {
+        "artifact": "translation-final-data-review.json",
+        "artifact_sha256": "809910945ca7593625541115bb711e71b5523f0683b41251040c191af27d61ba",
+        "kind": "player",
+        "raw": "菲特拉·R·S",
+        "decision": "approve_with_finite_corrections"
+      },
+      "verification": {
+        "all_100_game_payloads_unchanged": true,
+        "all_five_displays_unchanged": true,
+        "source_members_and_sgf_hashes_unchanged": true,
+        "other_decisions_identical": 30,
+        "sources_original_language_and_other_methods_unchanged": true,
+        "native_raw_player_parse_category": "readable_unlinked",
+        "remaining_retain_original_fields_equal_native_parsed_name": true,
+        "native_validate_decision": "pass",
+        "native_validate_manifest_games": 100
+      },
+      "exact_diff_from_original": [
+        {
+          "path": "/decisions/29/methods/jp",
+          "before": "retain_original",
+          "after": "transliteration"
+        },
+        {
+          "path": "/decisions/29/producer/at",
+          "before": "2026-10-19T11:22:26.909949+00:00",
+          "after": "2026-10-19T21:00:57.484405+00:00"
+        },
+        {
+          "path": "/decisions/29/producer/id",
+          "before": "/root/kifu_full_backfill_package_assembly",
+          "after": "/root"
+        },
+        {
+          "path": "/decisions/29/producer/model",
+          "before": "Codex GPT-6 session; deterministic offline assembly",
+          "after": "Codex session"
+        },
+        {
+          "path": "/decisions/29/producer/request_id",
+          "before": "finite-backfill-assembly-20261019",
+          "after": "local-task:A-fitra-method-correction-20261020"
+        },
+        {
+          "path": "/decisions/29/review/at",
+          "before": "2026-10-19T11:37:21.214180+00:00",
+          "after": "2026-10-19T21:02:33.207252+00:00"
+        },
+        {
+          "path": "/decisions/29/review/content_sha256",
+          "before": "79cfc30cc7ae74ac8f553ee0ecb15aa9fc08c811787b9cf6b39604dc0190fa96",
+          "after": "aad0401ea287b6d2af9b53650f03e04e7fb08859fefb54a1e19e5ef7deff4059"
+        },
+        {
+          "path": "/decisions/29/review/request_id",
+          "before": "/root/kifu_backfill_names_astra_review/finite-binding-review/batch046.json/2026-10-19T11:37:21.214180+00:00",
+          "after": "/root/kifu_backfill_names_astra_review/finite-method-correction-review/batch046-c1/2026-10-19T21:02:33.207252+00:00"
+        },
+        {
+          "path": "/publication_key",
+          "before": "kifu-backfill5536-20261019-reviewed-batch046",
+          "after": "kifu-backfill5536-20261019-reviewed-batch046-c1"
+        }
+      ]
+    },
+    {
+      "batch": "batch047",
+      "decision": "approve",
+      "reviewed_at": "2026-10-19T21:02:33.207252+00:00",
+      "review_request": {
+        "file": "corrections/047-method-review-request.json",
+        "file_sha256": "59fa4b67de9c4daa70bdc523f8d9686c77cc3bce7a8050292634eccad6f24dd7"
+      },
+      "original": {
+        "file": "signed-manifests/batch047.json",
+        "file_sha256": "8114cba6f79925b304d91fcd6384104c6e80480a89743a3f7be4f6adfa77f042",
+        "manifest_sha256": "4d0648c97dce8289bf951deda1b9bbef29df63135e0d231853054e8ca61bcb83",
+        "publication_key": "kifu-backfill5536-20261019-reviewed-batch047"
+      },
+      "draft": {
+        "file": "corrections/batch047c.draft.json",
+        "file_sha256": "c20af34df420a8e8f1efab2e2e7aec1e08c7aa589ae0824dae52c9fa14bc7669",
+        "manifest_sha256": "41fdb3880cda4cc2acd2f5321272977ec014588074607e10d56bc4e31fba100c"
+      },
+      "approved": {
+        "file": "corrections/batch047c.json",
+        "file_sha256": "cd9547bd1c34b6ff1618735dd67629aad03fa6abe80b65052a3ea13f2ce1731a",
+        "manifest_sha256": "39700b99c3d59d2c8c5f4772a050fd62d038a7c114e41f2c0d273977915fa10a",
+        "publication_key": "kifu-backfill5536-20261019-reviewed-batch047-c1",
+        "games": 100,
+        "decisions": 39,
+        "changed_decision_index": 36,
+        "decision_content_sha256": "6b2f5f1cc47b5e996f590c654cc2253a5952d7b9f0b332d86af79e52fe467766"
+      },
+      "method_correction": {
+        "kind": "raw_player",
+        "raw": "菲特拉",
+        "language": "jp",
+        "before": "retain_original",
+        "after": "transliteration",
+        "unchanged_display": "フィトラ",
+        "unchanged_names5": {
+          "cn": "菲特拉",
+          "tw": "菲特拉",
+          "jp": "フィトラ",
+          "ko": "피트라",
+          "en": "Fitra"
+        },
+        "source_items": [
+          {
+            "source_key": "19x19",
+            "source_item_id": "87287397",
+            "slot": "white",
+            "sgf_sha256": "a15bf71d33a2dfb80acca660351e2e531798657aaf1dc356d144213f448623f7"
+          }
+        ],
+        "rationale": "The already approved Katakana display is a phonetic rendering of the literal Chinese-script raw player name. Transliteration accurately describes this output; retain_original requires exact equality to the native parsed name. No identity linkage, new reading claim or text change is made."
+      },
+      "historical_semantic_approval": {
+        "artifact": "translation-final-data-review.json",
+        "artifact_sha256": "809910945ca7593625541115bb711e71b5523f0683b41251040c191af27d61ba",
+        "kind": "player",
+        "raw": "菲特拉",
+        "decision": "approve_with_finite_corrections"
+      },
+      "verification": {
+        "all_100_game_payloads_unchanged": true,
+        "all_five_displays_unchanged": true,
+        "source_members_and_sgf_hashes_unchanged": true,
+        "other_decisions_identical": 38,
+        "sources_original_language_and_other_methods_unchanged": true,
+        "native_raw_player_parse_category": "readable_unlinked",
+        "remaining_retain_original_fields_equal_native_parsed_name": true,
+        "native_validate_decision": "pass",
+        "native_validate_manifest_games": 100
+      },
+      "exact_diff_from_original": [
+        {
+          "path": "/decisions/36/methods/jp",
+          "before": "retain_original",
+          "after": "transliteration"
+        },
+        {
+          "path": "/decisions/36/producer/at",
+          "before": "2026-10-19T11:22:26.909949+00:00",
+          "after": "2026-10-19T21:01:20.200597+00:00"
+        },
+        {
+          "path": "/decisions/36/producer/id",
+          "before": "/root/kifu_full_backfill_package_assembly",
+          "after": "/root"
+        },
+        {
+          "path": "/decisions/36/producer/model",
+          "before": "Codex GPT-6 session; deterministic offline assembly",
+          "after": "Codex session"
+        },
+        {
+          "path": "/decisions/36/producer/request_id",
+          "before": "finite-backfill-assembly-20261019",
+          "after": "local-task:A-fitra-short-method-correction-20261020"
+        },
+        {
+          "path": "/decisions/36/review/at",
+          "before": "2026-10-19T11:37:21.921305+00:00",
+          "after": "2026-10-19T21:02:33.207252+00:00"
+        },
+        {
+          "path": "/decisions/36/review/content_sha256",
+          "before": "dbfe050eb7754dd3dfa0da98b8aeaea05d3e7815c3f670392b86390f0da60c58",
+          "after": "6b2f5f1cc47b5e996f590c654cc2253a5952d7b9f0b332d86af79e52fe467766"
+        },
+        {
+          "path": "/decisions/36/review/request_id",
+          "before": "/root/kifu_backfill_names_astra_review/finite-binding-review/batch047.json/2026-10-19T11:37:21.921305+00:00",
+          "after": "/root/kifu_backfill_names_astra_review/finite-method-correction-review/batch047-c1/2026-10-19T21:02:33.207252+00:00"
+        },
+        {
+          "path": "/publication_key",
+          "before": "kifu-backfill5536-20261019-reviewed-batch047",
+          "after": "kifu-backfill5536-20261019-reviewed-batch047-c1"
+        }
+      ]
+    }
+  ],
+  "semantic_approval_precedence": "The unchanged semantic_approval fields identify historical base artifacts. This correction review supersedes only the Japanese method for the two exact raw keys and finite source bindings above; the historical artifact is not claimed to have approved these corrected methods. All display approvals and unchanged decisions retain their existing review.",
+  "native_code": {
+    "catalog_file": "/Users/fan/Repositories/katrain-kiosk-go-kifu/.worktrees/kifu-hourly-incremental/katrain/kifu_ingest/catalog.py",
+    "catalog_file_sha256": "7abc91d18a38429ed40b35cc09d8fc9bdb072fa4e6d58c562f30abeca039e4fb",
+    "first_pass_file_sha256": "e9663c82af9c832fb133016b7700a41e12a5caf91a84d96bea872aa471d4b006"
+  },
+  "partition": "Identical source membership preserves the previously established 5279 ready / 257 isolated partition. No sources were added or removed.",
+  "live_state_and_broader_scan": "Parent reported no applied batch046 and no existing exact Fitra R. S. raw-name rows on TEST/PROD, and a separate whole-set method scan identifying only these two mismatches. This reviewer made no live query and does not independently attest those external checks. Normal native qualification, scope, collision, lock and atomic publication checks remain mandatory.",
+  "unchanged_prior_correction": {
+    "file": "corrections/batch038c.json",
+    "file_sha256": "45bfc5e0670c8e52434c2e3e43453ecbb5f0e268a4522448c118a78bdba442da",
+    "note": "Read only for hash; neither the prior correction nor its review is modified."
+  },
+  "output_limit": "Only these two signed corrected packages and this independent review were written; no DB, cloud, Git, model call or native publication occurred."
+}

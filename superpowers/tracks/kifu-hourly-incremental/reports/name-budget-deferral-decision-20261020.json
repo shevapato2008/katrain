@@ -1,0 +1,73 @@
+{
+  "actions": {
+    "cloud_database_model_calls": false,
+    "product_edits": false,
+    "tests_run": false,
+    "written_only_this_decision_file": true
+  },
+  "current_run_recovery": "The existing usage ledger alone cannot reconstruct the lost names or review approvals. Unless root finds separately preserved real request/response artifacts, record those tokens as spent and do not manufacture recovered decisions or make new paid calls beyond the unchanged budget.",
+  "decision": "APPROVE_MINIMAL_IMPLEMENTATION_DIRECTION",
+  "files_read_sha256": {
+    "katrain/cron/jobs/kifu_ingest.py": "b36407bef9613674cf53b9d48f846ebdeaabf280ff5c05beeb268f082c393680",
+    "katrain/kifu_ingest/catalog.py": "07b41bac096b3f46a832ab01e968b3aaccccbac8e879bdb94bf0b8c623872fdc",
+    "katrain/kifu_ingest/names.py": "6cbc7f070dbc7b163e86f9875fbb5f3b144374973a30d21fd8fb1bd9d6b6cc60",
+    "katrain/kifu_ingest/orchestration.py": "6e96c0e0ab720c34c96500b97897325da0358ca0415fb6bf6b0904b53042aa36",
+    "katrain/kifu_ingest/staging.py": "1f705e0aa8ccc55fcf32640c3e7acd9a16fb81c2abe7917f201f87d4378d1e51"
+  },
+  "format": "kifu-name-budget-deferral-decision-v1",
+  "minimum_boundaries": [
+    "Use the existing private Stage filesystem and atomic-write pattern, after the real producer/reviewer operation has completed, validation and qualified-template checks pass, and before the next paid request. No new database tables/service or publication-state writes; hold no database transaction across network calls.",
+    "Store the original complete decision unchanged, including producer/reviewer IDs, timestamps, usage, sources with original retrieval timestamps/content hashes, methods, optional note, finite source_items, and review.content_sha256. Preserve the supplied source-evidence snapshot and template context separately as actual request inputs; do not claim unseen inputs were sent to the model.",
+    "Bind the checkpoint to kind/key, exact finite source_items including SGF hashes/slots, actual evidence snapshot and current template constraints, using a deterministic bounded intent/content hash. Check for a hit before refreshing Wikipedia evidence; reuse the saved evidence snapshot instead of replacing its retrieval time or text. Never reuse by display/name string alone.",
+    "On load, recheck validate_decision/content hash, exact current finite membership and SGF hashes, current candidate rules and current qualified-template constraints. Keep fresh TEST/PROD identity and scope preflight. Corruption or changed context is never accepted as an approved hit.",
+    "Scope shrink/expansion, changed source evidence or template meaning cannot reuse the old approval. A real narrowed review may use the existing review_existing_decision path; persist its independently approved result separately. The minimal first patch may treat non-exact matches as misses, retaining prior artifacts without granting broader reuse.",
+    "Persist completed narrowed reviews as well as initial complete decisions. Budget/transport/deadline cancellation leaves earlier completed checkpoints usable; an incomplete producer-only call is not an approved decision and need not introduce a new partial-review state.",
+    "Do not raise budgets, reset or reimburse the durable token ledger, weaken reservations, mark items names_ready/published from checkpoints, or emit an incomplete package. Preserve current deferral and resume normal publication only after full manifest validation."
+  ],
+  "minimum_verification": [
+    "Existing focused preparation test: first decision succeeds, next request defers for budget; a second process/preparation reuses the exact stored decision without a paid call for it and eventually validates the complete manifest.",
+    "Focused parameter cases: changed finite membership/SGF or template context misses; tampered decision/hash is rejected. Original sources and real reviewer metadata remain unchanged on a hit.",
+    "Budget or cancellation during a later call/narrowed review preserves earlier complete checkpoints, creates no unreviewed partial package, and leaves existing ledger accounting intact. Reuse the existing ledger tests rather than building another test layer."
+  ],
+  "preferred_fix": "Persist each complete, validated reviewed decision as a narrowly bound private Stage checkpoint, then reuse only an exactly matching finite request on retry. Keep existing all-or-nothing manifest preparation and native publication guards.",
+  "reported_live_context": {
+    "daily_actual_tokens": 94513,
+    "daily_calls": 104,
+    "new_frozen_packages": 0,
+    "run_ended_at": "2026-10-20T06:54:35Z",
+    "run_paid_calls": 25,
+    "run_paid_tokens": 24964,
+    "source": "root actual run62158 summary; not independently queried by this review",
+    "unsettled_reservations": 0
+  },
+  "reviewed_at": "2026-10-20T07:00:58.916079+00:00",
+  "reviewer": {
+    "agent_id": "/root/kifu_backfill_names_astra_review",
+    "model": "gpt-6-astra",
+    "reasoning_effort": "max"
+  },
+  "root_cause": [
+    {
+      "fact": "Audit records request identity and usage metadata, not candidate/reviewer response bodies.",
+      "file": "katrain/kifu_ingest/names.py",
+      "lines": "166-182,247-290"
+    },
+    {
+      "fact": "A complete validated decision returns to the caller without durable storage.",
+      "file": "katrain/kifu_ingest/names.py",
+      "lines": "465-483"
+    },
+    {
+      "fact": "Approved decisions accumulate in a local list. A later NameServiceError escapes before any manifest is returned.",
+      "file": "katrain/kifu_ingest/orchestration.py",
+      "lines": "206-305"
+    },
+    {
+      "fact": "NameServiceError defers the group; package persistence occurs only after successful preparation.",
+      "file": "katrain/cron/jobs/kifu_ingest.py",
+      "lines": "658-705"
+    }
+  ],
+  "scope": "Observed normal run62158 loss of completed reviewed decisions after later budget deferral; implementation not yet reviewed or executed.",
+  "why_not_partial_freeze": "Already approved decisions can span games that still lack another name. Native validation requires every signed source_item to be present. Freezing an arbitrary completed subset would require scope closure or fresh narrowed reviews, which may themselves need unavailable tokens; that is not the smallest fix for losing completed work."
+}

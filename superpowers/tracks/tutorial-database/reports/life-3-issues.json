@@ -1,0 +1,287 @@
+[
+  {
+    "recognition_id": "p009-f03",
+    "page": 9,
+    "source_pointer": "/chapters/1/sections/0/pages/1/elements/2",
+    "figure_id": 12124,
+    "candidate_id": 9200,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "左边界明确；首行星位允许全盘行3、9或15。参照同页图1的上部布局，暂取行9；下部扫描缺失，不能独立确定。",
+        "candidates": [
+          "origin_col=0,origin_row=3",
+          "origin_col=0,origin_row=9",
+          "origin_col=0,origin_row=15"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p011-f03",
+    "page": 11,
+    "source_pointer": "/chapters/1/sections/1/pages/1/elements/2",
+    "figure_id": 12128,
+    "candidate_id": 9204,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "左边界可见，但下部扫描截断；星位不能唯一确定纵向位置，结合相邻图取起始行9。",
+        "candidates": [
+          "origin_row=3",
+          "origin_row=9",
+          "origin_row=15"
+        ],
+        "cell": null
+      },
+      {
+        "at": "region",
+        "reason": "底部截断处有零碎墨迹，无法确认是否属于棋子，未据此补子。",
+        "candidates": [
+          "截断棋子残迹",
+          "网格或扫描残迹"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p014-f01",
+    "page": 14,
+    "source_pointer": "/chapters/1/sections/3/pages/0/elements/0",
+    "figure_id": 12133,
+    "candidate_id": 9209,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "左边界明确；星位支持起始行为9或3，下边界破损，暂取9。",
+        "candidates": [
+          "0,9",
+          "0,3"
+        ],
+        "cell": null
+      },
+      {
+        "at": "rows",
+        "reason": "可清楚辨认7条横线；下部严重破损，残线是否构成额外网格行无法确定。",
+        "candidates": [
+          "7",
+          "8",
+          "9"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p023-f02",
+    "page": 23,
+    "source_pointer": "/chapters/1/sections/7/pages/1/elements/1",
+    "figure_id": 12151,
+    "candidate_id": 9227,
+    "inferences": [
+      {
+        "at": "1,6",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字残缺；正文“黑1打吃”，结合白2、黑3提子、白4做劫的局部次序可确定。",
+        "cell": "1,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p053-f03",
+    "page": 53,
+    "source_pointer": "/chapters/1/sections/22/pages/1/elements/2",
+    "figure_id": 12212,
+    "candidate_id": 9288,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "左边界明确；首行星位与同页题形支持起点为(0,9)，但下边界被遮损，单凭目标残图仍可能为(0,3)。",
+        "candidates": [
+          "0,9",
+          "0,3"
+        ],
+        "cell": null
+      },
+      {
+        "at": "grid",
+        "reason": "可确认六条横线；其下短横残片受扫描损坏，无法确认是否另有一条变形棋盘线。",
+        "candidates": [
+          "rows=6",
+          "rows=7"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p056-f01",
+    "page": 56,
+    "source_pointer": "/chapters/1/sections/24/pages/0/elements/0",
+    "figure_id": 12217,
+    "candidate_id": 9293,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "左边线明确；上下边界缺失，星位可对应两种纵向位置，暂取左下区域。",
+        "candidates": [
+          "origin_col=0,origin_row=9",
+          "origin_col=0,origin_row=3"
+        ],
+        "cell": null
+      },
+      {
+        "at": "grid",
+        "reason": "八条横线明确；底部零碎短划疑为第九条横线残迹，暂计九行。",
+        "candidates": [
+          "rows=9",
+          "rows=8"
+        ],
+        "cell": null
+      },
+      {
+        "at": "0,8",
+        "reason": "底部有弧形残迹，无法确认是白子轮廓还是扫描伪影，未计入棋子。",
+        "candidates": [
+          "white",
+          "扫描伪影"
+        ],
+        "cell": "0,17"
+      },
+      {
+        "at": "3,8",
+        "reason": "底部有断裂框弧，无法确认是白子轮廓还是扫描伪影，未计入棋子。",
+        "candidates": [
+          "white",
+          "扫描伪影"
+        ],
+        "cell": "3,17"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p085-f03",
+    "page": 85,
+    "source_pointer": "/chapters/1/sections/38/pages/1/elements/2",
+    "figure_id": 12276,
+    "candidate_id": 9352,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "左边界可辨；残图星位不足以唯一确定纵向位置，参照同页棋图暂取起始行9。",
+        "candidates": [
+          "0,3",
+          "0,9",
+          "0,15"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p124-f01",
+    "page": 124,
+    "source_pointer": "/chapters/1/sections/58/pages/0/elements/0",
+    "figure_id": 12353,
+    "candidate_id": 9429,
+    "uncertainties": [
+      {
+        "at": "3,3",
+        "reason": "扫描污损遮挡交点，未见可确认的完整棋子轮廓。",
+        "candidates": [
+          "empty",
+          "black",
+          "white"
+        ],
+        "cell": "3,12"
+      },
+      {
+        "at": "4,3",
+        "reason": "扫描缺损遮挡交点，无法完全确认是否为空点。",
+        "candidates": [
+          "empty",
+          "black",
+          "white"
+        ],
+        "cell": "4,12"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p133-f03",
+    "page": 133,
+    "source_pointer": "/chapters/2/sections/1/pages/1/elements/2",
+    "figure_id": 12368,
+    "candidate_id": 9444,
+    "inferences": [
+      {
+        "at": "2,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "编号残淡；结合“黑1扳”、底线残留字形及白2、黑3的局部次序补读。",
+        "cell": "2,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p233-f03",
+    "page": 233,
+    "source_pointer": "/chapters/2/sections/51/pages/1/elements/2",
+    "figure_id": 12568,
+    "candidate_id": 9644,
+    "uncertainties": [
+      {
+        "at": "4,7",
+        "reason": "黑子内有浅色横痕，较像扫描缺损，是否另有标记不清。",
+        "candidates": [
+          "无标记",
+          "triangle"
+        ],
+        "cell": "4,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p237-f02",
+    "page": 237,
+    "source_pointer": "/chapters/2/sections/53/pages/1/elements/1",
+    "figure_id": 12575,
+    "candidate_id": 9651,
+    "uncertainties": [
+      {
+        "at": "footnote",
+        "reason": "盘外黑子复用落点注记数字模糊；所附OCR注记与盘内编号位置存在冲突，未据此补号或改动棋子。",
+        "candidates": [
+          "黑7＝黑3位；白6＝黑1位",
+          "黑5＝黑3位；白6＝黑1位"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p249-f02",
+    "page": 249,
+    "source_pointer": "/chapters/2/sections/59/pages/1/elements/1",
+    "figure_id": 12599,
+    "candidate_id": 9675,
+    "inferences": [
+      {
+        "at": "3,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字残缺，结合“黑1如果尖”及相邻白2确认。",
+        "cell": "3,18"
+      }
+    ]
+  }
+]

@@ -1,0 +1,977 @@
+{
+  "catalog_id": "intro-fast",
+  "title": "围棋入门速成",
+  "scope": "Already-started non-core exception; excluded from23 core completions",
+  "dataset": "curriculum-intro-fast-gpt61sol-v1",
+  "book_id": 13,
+  "source_book_id": 3,
+  "summary": {
+    "pdf_pages": 160,
+    "pages_detected": 160,
+    "pages_recognized_validated": 160,
+    "figures": 132,
+    "completed": 132,
+    "failed_pages": 0,
+    "pending_pages": 0,
+    "baseline_references": 132,
+    "uncertain_figures": 27,
+    "inferred_figures": 26,
+    "coverage_missing": 0
+  },
+  "source_files": {
+    "/Users/fan/Repositories/go-topic-collections/curriculum/01_入门_规则与第一盘棋/围棋入门速成_沈果孙/围棋入门速成(沈果孙).pdf": "a85c1f9396595121c923963a5b2fc10edd83888bf93ed902d52b56ce10eaf842",
+    "/Users/fan/Repositories/go-topic-collections/curriculum/01_入门_规则与第一盘棋/围棋入门速成_沈果孙/output/book.json": "6fdadb9d5754cb5b82f08d94edda67c1699f96773efe53aa08c218d35689838c"
+  },
+  "coverage": {
+    "canonical_references": 132,
+    "physical_diagrams": 132,
+    "missing": [],
+    "extra": [],
+    "split": [],
+    "all160_pdf_pages_checked": true
+  },
+  "test_import": {
+    "applied": 132,
+    "rerun_existing": 132,
+    "new_duplicates": 0,
+    "full_rerun_snapshot_unchanged": true,
+    "unrelated_original_fields_unchanged": true
+  },
+  "review": {
+    "recognition_completed": 132,
+    "human_approved": 0,
+    "awaiting_human_calibration": 132,
+    "true_replay_complete": 0,
+    "sequence_pending": 132,
+    "uncertain_diagrams": 27,
+    "inferred_diagrams": 26,
+    "unknown_color_diagrams": 2,
+    "origin_uncertain_diagrams": 4,
+    "voice_generated_this_run": 0,
+    "video_generated_this_run": 0
+  },
+  "runtime_filters": {
+    "all": 132,
+    "uncalibrated": 132,
+    "uncertainty": 27,
+    "inference": 26,
+    "sequence_pending": 132
+  },
+  "test_provider_build": "f671f20f6f31c03f25b0f5bd73e0afe73036b6bd",
+  "links": {
+    "book": "http://127.0.0.1:18012/admin?book=13&page=53&figure=5635&filter=all",
+    "unknown_color": "http://127.0.0.1:18012/admin?book=13&page=39&figure=5624&filter=uncertainty",
+    "origin_uncertain": "http://127.0.0.1:18012/admin?book=13&page=53&figure=5635&filter=uncertainty",
+    "ambiguous_mark": "http://127.0.0.1:18012/admin?book=13&page=135&figure=5715&filter=uncertainty"
+  },
+  "export": {
+    "sgfs_parsed": 132,
+    "independent_static_roots": 132,
+    "index_entries": 132,
+    "skipped": 0,
+    "zip_sha256": "2a25713d38e037b5a8e6930a5f1df2c61607869124bf4fe55d04f7aa97e8fca9",
+    "bytes": 896762,
+    "single_figure_endpoint_http200_verified": true,
+    "single_figure_example": {
+      "page": 12,
+      "figure_id": 5603
+    },
+    "mapped_candidates": 132,
+    "mapped_diagrams_all_exported": true
+  },
+  "artifacts": {
+    "figure_map": "intro-fast-recognition-figure-map.csv",
+    "issues": "intro-fast-issues.json",
+    "zip": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/intro-fast/exports/intro-fast.zip",
+    "source_index": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/intro-fast/exports/index.json",
+    "recognition_results": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/intro-fast/results.json",
+    "audit": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/intro-fast/audit.json"
+  },
+  "notes": [
+    "Machine recognition and Astra/code review are not human content approval.",
+    "All132 are static; independent examples are not concatenated into one game.",
+    "Repeated diagram-local numbers within a shared printed board may disable number preview; no missing moves are invented.",
+    "Numbering check failure is not recognition failure; printed same-color exercise labels and capture-related gaps remain unchanged."
+  ],
+  "browser_acceptance": {
+    "existing_test_url": true,
+    "page_image_http200": true,
+    "full19x19_board_visible": true,
+    "uncertainty_cells_and_evidence_visible": true,
+    "edit_tools_and_cancel_available": true,
+    "page53_two_diagrams_next_switch": true,
+    "no_saved_test_edits_or_human_approval": true
+  },
+  "completed_at": "2026-10-18T01:01:13+08:00",
+  "playback": {
+    "exported_figures": 132,
+    "counts": {
+      "true_replay": 0,
+      "number_preview": 15,
+      "zero_step_static": 31,
+      "numbering_failed": 86
+    },
+    "numbering_failures": [
+      {
+        "figure_id": 5610,
+        "page": 21,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（0,3）、（9,16）"
+      },
+      {
+        "figure_id": 5611,
+        "page": 23,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（10,16）、（17,8）、（3,11）、（9,2）；编号 2 重复：（11,15）、（16,9）、（2,10）、（8,1）；编号 3 重复：（11,16）、（15,9）、（2,11）、（9,1）；编号 4 重复：（12,15）、（16,10）、（2,9）、（7,1）；编号 5 重复：（10,14）、（3,8）、（6,2）"
+      },
+      {
+        "figure_id": 5612,
+        "page": 24,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,15）、（15,4）、（2,13）、（5,1）；编号 2 重复：（14,4）、（15,14）、（5,2）；编号 3 重复：（15,13）、（16,3）、（4,3）；编号 4 重复：（14,14）、（15,5）、（6,1）；编号 5 重复：（14,13）、（15,2）；编号 6 重复：（13,14）、（16,4）"
+      },
+      {
+        "figure_id": 5613,
+        "page": 26,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,3）、（3,5）"
+      },
+      {
+        "figure_id": 5615,
+        "page": 28,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（15,3）、（3,3）；编号 2 重复：（16,15）、（3,9）"
+      },
+      {
+        "figure_id": 5616,
+        "page": 30,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,3）、（3,2）、（9,11）；编号 2 重复：（2,13）、（9,3）；编号 3 重复：（1,13）、（2,1）、（8,3）；编号 4 重复：（13,17）、（15,9）"
+      },
+      {
+        "figure_id": 5618,
+        "page": 32,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（15,1）、（17,15）"
+      },
+      {
+        "figure_id": 5625,
+        "page": 41,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（0,1）、（1,18）、（17,0）、（18,18）；缺少编号 2：1（0,1）与 3（0,18）之间"
+      },
+      {
+        "figure_id": 5627,
+        "page": 43,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（0,9）、（18,0）、（3,1）、（4,18）、（9,9）"
+      },
+      {
+        "figure_id": 5628,
+        "page": 45,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（1,15）、（15,17）、（3,0）、（9,9）；编号 2 重复：（0,15）、（3,1）；编号 3 重复：（1,14）、（15,18）、（2,0）；编号 4 重复：（1,16）、（4,0）；缺少编号 6：5（14,17）与 7（14,18）之间；编号 5（14,17）与 7（14,18）同为白棋，须黑白交替；缺少编号 8：7（14,18）与 9（16,18）之间；编号 7（14,18）与 9（16,18）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 5629,
+        "page": 46,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（0,17）、（9,9）；编号 3 重复：（1,18）、（8,9）"
+      },
+      {
+        "figure_id": 5630,
+        "page": 48,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（2,3）、（3,16）"
+      },
+      {
+        "figure_id": 5632,
+        "page": 50,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（15,17）、（17,3）、（2,16）、（4,2）；编号 2 重复：（1,16）、（16,17）、（4,1）；编号 3 重复：（15,18）、（2,17）、（3,2）；编号 4 重复：（16,18）、（3,1）"
+      },
+      {
+        "figure_id": 5633,
+        "page": 51,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（1,17）、（15,17）、（17,2）、（3,1）"
+      },
+      {
+        "figure_id": 5639,
+        "page": 56,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,15）、（14,5）；编号 2 重复：（0,15）、（15,4）、（5,4）；编号 3 重复：（4,13）、（4,2）"
+      },
+      {
+        "figure_id": 5640,
+        "page": 57,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,14）、（14,3）、（5,4）；编号 2 重复：（14,4）、（4,4）"
+      },
+      {
+        "figure_id": 5641,
+        "page": 58,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,4）、（15,14）、（3,5）、（4,14）；编号 2 重复：（14,4）、（15,13）"
+      },
+      {
+        "figure_id": 5643,
+        "page": 60,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（15,15）、（16,4）、（3,15）、（3,3）；编号 2 重复：（14,16）、（17,3）、（2,16）、（4,3）"
+      },
+      {
+        "figure_id": 5644,
+        "page": 61,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,15）、（4,16）"
+      },
+      {
+        "figure_id": 5645,
+        "page": 62,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,4）、（4,2）；编号 2 重复：（14,17）、（17,4）、（4,3）；编号 3 重复：（13,17）、（16,5）、（5,2）；编号 4 重复：（17,5）、（2,13）；编号 5 重复：（16,6）、（3,14）"
+      },
+      {
+        "figure_id": 5646,
+        "page": 63,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 3 重复：（13,3）、（14,13）；编号 4 重复：（13,14）、（5,13）、（5,5）；编号 5 重复：（15,13）、（3,14）、（5,6）；编号 6 重复：（3,5）、（4,13）"
+      },
+      {
+        "figure_id": 5647,
+        "page": 64,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,2）、（15,14）、（3,14）；编号 2 重复：（14,17）、（14,3）、（2,14）、（4,2）；编号 3 重复：（1,14）、（12,15）、（5,2）；编号 4 重复：（17,13）、（2,13）、（4,1）；编号 5 重复：（1,13）、（3,1）；编号 6 重复：（2,12）、（3,0）"
+      },
+      {
+        "figure_id": 5648,
+        "page": 65,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,16）、（16,4）、（2,14）、（5,2）；编号 2 重复：（2,13）、（6,2）；编号 3 重复：（1,14）、（5,1）；编号 4 重复：（1,13）、（6,1）"
+      },
+      {
+        "figure_id": 5649,
+        "page": 66,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（1,16）、（16,2）、（17,16）；编号 2 重复：（16,17）、（16,3）、（2,17）；编号 3 重复：（1,17）、（15,17）、（15,3）；编号 4 重复：（17,17）、（3,17）、（4,2）；编号 5 重复：（13,16）、（3,1）、（4,16）；编号 6 重复：（1,15）、（16,14）、（2,4）；编号 7 重复：（1,3）、（17,15）、（2,14）；编号 8 重复：（1,14）、（1,4）、（17,14）；编号 9 重复：（0,2）、（2,13）"
+      },
+      {
+        "figure_id": 5650,
+        "page": 67,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（17,16）、（2,14）、（4,2）；编号 2 重复：（15,16）、（16,1）、（2,15）、（5,2）；编号 3 重复：（17,14）、（3,15）、（3,2）；编号 4 重复：（16,4）、（5,3）；编号 5 重复：（17,3）、（2,5）"
+      },
+      {
+        "figure_id": 5651,
+        "page": 68,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,4）、（17,14）、（5,14）；编号 2 重复：（14,5）、（4,13）"
+      },
+      {
+        "figure_id": 5652,
+        "page": 70,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,3）、（15,12）、（3,12）、（4,5）；编号 2 重复：（14,13）、（4,13）；编号 3 重复：（15,13）、（3,13）"
+      },
+      {
+        "figure_id": 5653,
+        "page": 70,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,13）、（4,14）"
+      },
+      {
+        "figure_id": 5654,
+        "page": 71,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,13）、（14,5）、（4,13）、（5,4）；编号 2 重复：（13,14）、（13,4）、（4,5）、（5,14）；编号 3 重复：（12,14）、（12,4）、（6,14）；编号 4 重复：（13,3）、（5,13）；编号 5 重复：（13,2）、（5,12）"
+      },
+      {
+        "figure_id": 5655,
+        "page": 72,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,14）、（15,3）"
+      },
+      {
+        "figure_id": 5658,
+        "page": 75,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,15）、（3,14）、（4,3）；编号 2 重复：（15,15）、（3,15）、（3,2）；编号 3 重复：（15,14）、（2,15）、（3,3）；编号 4 重复：（15,16）、（2,2）、（4,15）；编号 5 重复：（13,15）、（2,16）、（5,2）；编号 6 重复：（1,3）、（16,16）；编号 7 重复：（1,4）、（17,14）；编号 8 重复：（1,2）、（17,16）"
+      },
+      {
+        "figure_id": 5659,
+        "page": 76,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,15）、（4,15）"
+      },
+      {
+        "figure_id": 5660,
+        "page": 77,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,14）、（4,4）、（6,14）；编号 2 重复：（14,4）、（5,4）"
+      },
+      {
+        "figure_id": 5662,
+        "page": 78,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（12,14）、（6,14）；编号 2 重复：（14,14）、（15,6）、（4,4）、（5,13）；编号 3 重复：（14,13）、（15,7）、（5,14）；编号 4 重复：（15,13）、（4,14）"
+      },
+      {
+        "figure_id": 5663,
+        "page": 79,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（10,5）、（4,6）、（5,14）"
+      },
+      {
+        "figure_id": 5664,
+        "page": 80,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,14）、（13,5）、（4,14）、（4,3）；编号 2 重复：（13,4）、（14,14）、（4,13）、（5,3）；编号 3 重复：（14,13）、（15,5）、（5,4）；编号 4 重复：（13,13）、（15,4）、（4,4）；编号 5 重复：（14,15）、（4,5）；编号 6 重复：（13,15）、（5,5）"
+      },
+      {
+        "figure_id": 5666,
+        "page": 82,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,14）、（4,15）"
+      },
+      {
+        "figure_id": 5668,
+        "page": 84,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,3）、（15,17）、（4,13）、（4,3）；编号 2 重复：（15,14）、（15,3）、（3,14）、（4,2）；编号 3 重复：（17,3）、（5,4）"
+      },
+      {
+        "figure_id": 5670,
+        "page": 86,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（1,12）、（13,8）、（8,2）、（9,15）；编号 2 重复：（0,14）、（10,16）、（16,9）、（9,3）；编号 3 重复：（2,10）、（6,1）"
+      },
+      {
+        "figure_id": 5671,
+        "page": 87,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,16）、（15,5）、（2,14）、（4,2）；编号 2 重复：（13,16）、（16,4）、（2,15）、（5,3）；编号 3 重复：（13,15）、（4,14）、（6,3）；编号 4 重复：（3,15）、（5,2）；编号 5 重复：（3,14）、（5,1）"
+      },
+      {
+        "figure_id": 5672,
+        "page": 88,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（15,14）、（17,5）、（4,14）、（4,4）；编号 2 重复：（14,14）、（16,6）、（2,6）、（4,15）；编号 3 重复：（15,13）、（17,3）、（3,4）、（6,16）；编号 4 重复：（12,2）、（14,17）、（5,15）"
+      },
+      {
+        "figure_id": 5673,
+        "page": 89,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,5）、（14,14）；编号 2 重复：（13,3）、（15,14）"
+      },
+      {
+        "figure_id": 5674,
+        "page": 91,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（15,3）棋子颜色未知；编号 1 重复：（15,3）、（3,15）、（3,3）；编号 2 重复：（16,3）、（2,3）、（3,14）；编号 3 重复：（3,16）、（4,3）；编号 4 重复：（2,2）、（4,16）"
+      },
+      {
+        "figure_id": 5675,
+        "page": 92,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,16）、（16,5）、（4,16）；编号 2 重复：（13,3）、（15,16）、（3,7）、（6,15）；编号 3 重复：（16,15）、（4,14）、（5,4）；编号 4 重复：（16,14）、（3,13）、（6,2）"
+      },
+      {
+        "figure_id": 5676,
+        "page": 93,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,9）、（4,10）"
+      },
+      {
+        "figure_id": 5677,
+        "page": 94,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,3）、（15,14）、（5,16）；编号 2 重复：（14,2）、（16,14）、（8,15）；编号 3 重复：（13,3）、（15,13）、（2,16）；编号 4 重复：（13,2）、（16,12）、（3,16）；编号 5 重复：（12,3）、（15,12）、（2,15）；编号 6 重复：（12,2）、（16,11）、（3,14）；编号 7 重复：（1,3）、（11,3）、（2,13）；编号 8 重复：（1,4）、（2,14）；编号 9 重复：（1,14）、（1,2）；编号 10 重复：（1,13）、（2,4）；编号 11 重复：（1,12）、（5,2）"
+      },
+      {
+        "figure_id": 5678,
+        "page": 95,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,2）、（16,15）、（2,5）、（3,16）；编号 2 重复：（15,15）、（2,16）、（5,2）；编号 3 重复：（1,3）、（16,14）；编号 4 重复：（15,14）、（2,2）；编号 5 重复：（17,13）、（2,8）"
+      },
+      {
+        "figure_id": 5679,
+        "page": 96,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,16）、（15,2）、（3,13）、（5,3）；编号 2 重复：（10,15）、（16,4）；编号 3 重复：（13,14）、（15,7）；编号 4 重复：（15,13）、（15,5）；编号 5 重复：（13,3）、（15,17）；编号 6 重复：（16,16）、（17,2）；编号 7 重复：（10,17）、（9,2）"
+      },
+      {
+        "figure_id": 5680,
+        "page": 97,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,16）、（16,4）、（2,14）、（5,3）；编号 2 重复：（15,2）、（16,15）、（3,16）；编号 3 重复：（14,3）、（15,14）、（4,14）；编号 4 重复：（14,2）、（15,15）、（5,15）；编号 5 重复：（13,3）、（14,15）"
+      },
+      {
+        "figure_id": 5681,
+        "page": 98,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（10,7）、（9,13）"
+      },
+      {
+        "figure_id": 5682,
+        "page": 99,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（11,6）、（13,14）、（2,14）、（3,2）；编号 2 重复：（10,6）、（14,15）、（2,15）、（3,3）；编号 3 重复：（1,13）、（13,15）、（4,3）；编号 4 重复：（13,16）、（3,1）；编号 5 重复：（12,16）、（5,2）；编号 6 重复：（13,17）、（4,1）；编号 7 重复：（15,14）、（5,3）"
+      },
+      {
+        "figure_id": 5683,
+        "page": 101,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（15,4）、（3,14）、（4,3）"
+      },
+      {
+        "figure_id": 5685,
+        "page": 103,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,14）、（14,4）、（3,14）、（4,3）；编号 2 重复：（16,16）、（5,15）、（5,4）"
+      },
+      {
+        "figure_id": 5686,
+        "page": 104,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,4）、（3,10）；编号 2 重复：（15,5）、（2,16）"
+      },
+      {
+        "figure_id": 5687,
+        "page": 105,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（15,6）、（3,11）、（5,3）；编号 2 重复：（2,15）、（4,3）；编号 3 重复：（1,14）、（6,4）"
+      },
+      {
+        "figure_id": 5688,
+        "page": 106,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,2）、（14,14）、（3,9）"
+      },
+      {
+        "figure_id": 5689,
+        "page": 107,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（14,3）、（15,14）、（3,8）；编号 2 重复：（16,15）、（3,7）；编号 3 重复：（15,15）、（4,8）；编号 4 重复：（16,16）、（2,9）；编号 5 重复：（16,13）、（3,10）"
+      },
+      {
+        "figure_id": 5690,
+        "page": 108,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,15）、（13,3）"
+      },
+      {
+        "figure_id": 5691,
+        "page": 109,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（15,5）、（5,15）；编号 2 重复：（15,6）、（6,15）；编号 3 重复：（14,5）、（5,14）；编号 4 重复：（16,4）、（4,16）；编号 5 重复：（16,3）、（3,16）"
+      },
+      {
+        "figure_id": 5692,
+        "page": 110,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（13,3）、（15,11）、（3,12）"
+      },
+      {
+        "figure_id": 5693,
+        "page": 111,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（17,16）、（6,18）；编号 2 重复：（18,13）、（5,18）；编号 3 重复：（16,14）、（5,17）"
+      },
+      {
+        "figure_id": 5694,
+        "page": 112,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（0,4）、（15,2）；编号 5 重复：（17,12）、（4,18）；编号 7 重复：（16,14）、（4,16）；编号 8 重复：（18,14）、（5,18）；编号 9 重复：（17,13）、（6,17）；编号 10 重复：（17,11）、（3,18）"
+      },
+      {
+        "figure_id": 5696,
+        "page": 114,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,17）、（17,2）、（3,4）、（5,14）；编号 2 重复：（17,0）、（18,17）、（2,4）、（4,15）；编号 3 重复：（17,17）、（18,2）、（5,5）；编号 4 重复：（16,18）、（18,1）、（4,4）；编号 5 重复：（18,18）、（4,5）"
+      },
+      {
+        "figure_id": 5697,
+        "page": 115,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（12,1）、（14,15）、（4,13）；编号 2 重复：（15,4）、（5,13）"
+      },
+      {
+        "figure_id": 5698,
+        "page": 116,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,14）、（17,2）；编号 2 重复：（13,17）、（14,2）"
+      },
+      {
+        "figure_id": 5699,
+        "page": 117,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（12,18）、（2,14）、（4,2）；编号 2 重复：（0,12）、（16,17）、（6,0）；编号 3 重复：（14,16）、（2,2）；编号 4 重复：（16,16）、（4,1）"
+      },
+      {
+        "figure_id": 5701,
+        "page": 120,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,16）、（4,0）；编号 2 重复：（0,2）、（16,14）"
+      },
+      {
+        "figure_id": 5703,
+        "page": 122,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（17,16）、（4,2）；编号 2 重复：（0,6）、（16,14）"
+      },
+      {
+        "figure_id": 5705,
+        "page": 125,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（0,9）、（2,0）、（2,18）"
+      },
+      {
+        "figure_id": 5707,
+        "page": 127,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（12,1）、（17,11）、（5,17）；编号 2 重复：（11,1）、（17,10）、（8,16）；编号 3 重复：（17,12）、（6,17）；编号 4 重复：（0,17）、（16,10）；编号 5 重复：（0,3）、（17,18）、（4,18）；编号 6 重复：（0,4）、（3,18）；编号 7 重复：（0,5）、（1,18）；编号 8 重复：（0,1）、（8,17）"
+      },
+      {
+        "figure_id": 5708,
+        "page": 129,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（0,16）、（1,0）、（13,18）；编号 2 重复：（0,17）、（0,2）、（17,18）；编号 3 重复：（0,18）、（5,0）；编号 4 重复：（0,1）、（0,15）；编号 5 重复：（0,13）、（4,0）"
+      },
+      {
+        "figure_id": 5709,
+        "page": 130,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（1,14）、（18,13）；编号 2 重复：（1,13）、（16,18）"
+      },
+      {
+        "figure_id": 5711,
+        "page": 131,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（0,1）、（14,17）、（17,5）、（6,18）；编号 2 重复：（1,0）、（13,17）、（17,4）、（2,18）；编号 3 重复：（0,6）、（14,18）、（18,6）；编号 4 重复：（0,3）、（13,4）"
+      },
+      {
+        "figure_id": 5712,
+        "page": 132,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,0）、（17,18）；编号 2 重复：（18,1）、（18,18）；编号 3 重复：（12,0）、（18,16）、（2,18）；编号 4 重复：（15,18）、（15,4）、（3,14）；编号 5 重复：（1,18）、（13,0）、（18,12）；编号 6 重复：（14,15）、（15,0）"
+      },
+      {
+        "figure_id": 5713,
+        "page": 133,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（18,0）、（18,15）；编号 2 重复：（0,2）、（15,0）、（18,16）；编号 3 重复：（0,1）、（18,18）；缺少编号 6：5（1,1）与 7（4,0）之间；编号 5（1,1）与 7（4,0）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 5715,
+        "page": 135,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,16）、（17,3）；编号 2 重复：（17,1）、（17,16）；编号 3 重复：（16,2）、（17,17）；编号 4 重复：（1,18）、（16,1）"
+      },
+      {
+        "figure_id": 5716,
+        "page": 136,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（17,16）、（18,1）、（2,6）；编号 2 重复：（16,1）、（17,15）、（3,6）；编号 3 重复：（18,16）、（3,7）；编号 4 重复：（18,15）、（4,6）；编号 5 重复：（16,15）、（2,5）；编号 6 重复：（18,17）、（4,3）；编号 7 重复：（2,17）、（4,2）；编号 8 重复：（2,18）、（5,3）；编号 9 重复：（3,15）、（6,2）"
+      },
+      {
+        "figure_id": 5719,
+        "page": 139,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（0,16）、（16,18）、（18,4）、（3,0）；编号 2 重复：（15,18）、（18,2）、（2,0）；编号 3 重复：（1,17）、（13,18）"
+      },
+      {
+        "figure_id": 5723,
+        "page": 145,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（2,16）、（2,2）；编号 2 重复：（3,2）、（4,16）；编号 3 重复：（2,14）、（2,3）"
+      },
+      {
+        "figure_id": 5726,
+        "page": 149,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（1,12）、（14,3）、（5,4）；编号 2 重复：（14,2）、（2,11）、（6,3）；编号 3 重复：（1,11）、（13,3）、（6,4）；编号 4 重复：（13,2）、（2,10）、（7,3）"
+      },
+      {
+        "figure_id": 5727,
+        "page": 150,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 5 重复：（16,9）、（2,5）"
+      },
+      {
+        "figure_id": 5728,
+        "page": 151,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（15,14）、（2,13）、（3,3）；编号 2 重复：（16,14）、（2,15）、（3,2）；编号 3 重复：（15,13）、（2,4）、（3,13）；编号 4 重复：（16,12）、（5,16）"
+      },
+      {
+        "figure_id": 5730,
+        "page": 153,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,9）、（2,10）、（8,16）、（9,2）"
+      },
+      {
+        "figure_id": 5731,
+        "page": 154,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（12,16）、（15,6）、（6,3）；编号 2 重复：（12,15）、（16,6）；编号 3 重复：（11,16）、（3,11）；编号 4 重复：（11,15）、（2,11）；编号 5 重复：（10,17）、（3,13）；编号 6 重复：（4,12）、（9,16）"
+      },
+      {
+        "figure_id": 5732,
+        "page": 156,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（12,16）、（15,6）、（2,7）"
+      },
+      {
+        "figure_id": 5734,
+        "page": 158,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1 重复：（16,11）、（2,11）；编号 2 重复：（15,11）、（3,11）；编号 3 重复：（15,10）、（3,10）；编号 4 重复：（16,10）、（2,10）；编号 5 重复：（15,12）、（3,12）；编号 6 重复：（14,11）、（4,11）；编号 7 重复：（16,12）、（2,12）"
+      }
+    ]
+  }
+}

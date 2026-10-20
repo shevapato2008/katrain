@@ -183,12 +183,16 @@ def approved_name_snapshot(engine) -> list[dict]:
 
 
 @contextmanager
-def _locked_write(engine):
+def _locked_write(engine, *, lock_timeout_ms=None):
     conn = engine.connect()
     try:
         if engine.dialect.name == "postgresql":
             conn = conn.execution_options(isolation_level="READ COMMITTED")
             conn.begin()
+            if lock_timeout_ms is not None:
+                _fail(type(lock_timeout_ms) is int and 0 < lock_timeout_ms <= 60000, "invalid lock timeout")
+                conn.execute(text("SELECT set_config('lock_timeout', :timeout, true)"),
+                             {"timeout": f"{lock_timeout_ms}ms"})
             conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (_ADVISORY_LOCK_KEY,))
             conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (720220261003,))
             conn.exec_driver_sql(
@@ -196,13 +200,16 @@ def _locked_write(engine):
                 "kifu_players, kifu_events, kifu_player_aliases, kifu_event_aliases, "
                 "kifu_raw_player_values, kifu_raw_event_values, "
                 "kifu_player_names, kifu_event_names, kifu_raw_player_names, kifu_raw_event_names, "
-                "kifu_name_research_evidence, kifu_name_source_registry, "
+                "kifu_name_research_evidence, kifu_name_source_registry, kifu_name_batches, kifu_name_changes, "
                 "kifu_album_event_selections, kifu_event_selection_batches IN SHARE ROW EXCLUSIVE MODE"
             )
         elif engine.dialect.name == "sqlite":
             # CLI engines do not share the application's connect hook. Undo relies
             # on FK rejection when a later edit still references batch evidence.
             conn.exec_driver_sql("PRAGMA foreign_keys=ON")
+            if lock_timeout_ms is not None:
+                _fail(type(lock_timeout_ms) is int and 0 < lock_timeout_ms <= 60000, "invalid lock timeout")
+                conn.exec_driver_sql(f"PRAGMA busy_timeout={lock_timeout_ms}")
             _fail(conn.exec_driver_sql("PRAGMA foreign_keys").scalar_one() == 1,
                   "SQLite foreign-key enforcement is required for name batch writes")
             conn.exec_driver_sql("BEGIN IMMEDIATE")
@@ -310,6 +317,10 @@ def _check_first_pass_correction(conn, candidate: dict, registry: dict | None,
         _check_generated_raw_correction(conn, candidate, marker, prior_proofs,
                                         owner_kind="raw_player", scope_refresh=True)
         return
+    if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-scope-refresh-v1":
+        _check_generated_raw_correction(conn, candidate, marker, prior_proofs,
+                                       owner_kind="raw_event", scope_refresh=True)
+        return
     if isinstance(marker, dict) and marker.get("version") == "generated-raw-player-semantic-correction-v1":
         _check_generated_raw_correction(conn, candidate, marker, prior_proofs, owner_kind="raw_player")
         return
@@ -395,7 +406,7 @@ def _check_generated_raw_correction(conn, candidate: dict, marker: dict,
     owner, lang = candidate["owner"], candidate["lang"]
     refresh = scope_refresh
     player_correction = owner_kind == "raw_player" and not refresh
-    label = ("generated raw-player scope refresh" if refresh else
+    label = (f"generated {owner_kind.replace('_', '-')} scope refresh" if refresh else
              "generated raw-player correction" if player_correction else "generated raw-event correction")
     extra_keys = {"source_meaning_sha256"} if refresh else set()
     _fail(set(marker) == {
@@ -426,7 +437,7 @@ def _check_generated_raw_correction(conn, candidate: dict, marker: dict,
           f"{label} old live name or revision differs")
     if refresh:
         _fail(candidate.get("display_name") == current["display_name"],
-              "generated raw-player scope refresh cannot change display")
+              f"{label} cannot change display")
     name = _image(conn, table, current["id"])
     _fail(canonical_sha256(name) == marker["name_preimage_sha256"],
           f"{label} name preimage changed")
@@ -549,10 +560,11 @@ def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: di
         if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-semantic-correction-v1":
             _fail(kind == "raw_event_literal" and research["generation"].get("method") == "translation",
                   "generated raw-event correction needs literal translation research")
-        if isinstance(marker, dict) and marker.get("version") == "generated-raw-player-scope-refresh-v1":
-            _fail(kind == "raw_player_literal"
+        if isinstance(marker, dict) and marker.get("version") in {
+                "generated-raw-player-scope-refresh-v1", "generated-raw-event-scope-refresh-v1"}:
+            _fail(kind == f"{owner['kind']}_literal"
                   and _raw_player_source_meaning_sha256(research) == marker.get("source_meaning_sha256"),
-                  "generated raw-player scope refresh source meaning changed")
+                  "generated raw scope refresh source meaning changed")
         if isinstance(marker, dict) and marker.get("version") == "generated-raw-player-semantic-correction-v1":
             _fail(kind == "raw_player_literal", "generated raw-player correction needs literal research")
         if kind == "catalog_canonical":

@@ -200,35 +200,57 @@ export function GeometryCalibrationScreen({
 
   useEffect(() => {
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
     if (!(status.last_valid || phase === 'ready' || phase === 'degraded')) { setLayout(null); return; }
-    GeometryAPI.layout()
-      .then((next) => { if (!cancelled) { setLayout(next as GeometryLayout); setLayoutError(null); } })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        setLayoutError(error instanceof Error ? error.message : '无法读取棋盘几何');
-      });
-    return () => { cancelled = true; };
-  }, [status.last_valid, phase, status.geometry_revision]);
+    const retry = () => {
+      if ((phase === 'ready' || phase === 'degraded') && cameraReady) {
+        retryTimer = setTimeout(loadLayout, 1000);
+      }
+    };
+    const loadLayout = () => {
+      void GeometryAPI.layout()
+        .then((next) => {
+          if (cancelled) return;
+          if (status.geometry_revision != null && next.revision !== status.geometry_revision) {
+            setLayoutError('棋盘几何版本未同步');
+            retry();
+            return;
+          }
+          setLayout(next);
+          setLayoutError(null);
+        })
+        .catch((error: unknown) => {
+          if (cancelled) return;
+          setLayoutError(error instanceof Error ? error.message : '无法读取棋盘几何');
+          retry();
+        });
+    };
+    loadLayout();
+    return () => { cancelled = true; if (retryTimer) clearTimeout(retryTimer); };
+  }, [status.last_valid, phase, status.geometry_revision, cameraReady]);
+
+  const validLayout = layout && (status.geometry_revision == null || layout.revision === status.geometry_revision)
+    ? layout : null;
 
   const rawModelForViewport = useCallback((viewport: OverlayViewport) => {
     if (active) {
-      const frame = rawFrame ?? layout?.frame;
+      const frame = rawFrame ?? validLayout?.frame;
       return frame ? buildAnchorGeometryModel(status.detected_anchors ?? [], frame, viewport) : null;
     }
-    return layout ? buildRawGeometryModel(layout, phase, viewport) : null;
-  }, [active, rawFrame, layout, phase, status.detected_anchors]);
+    return validLayout ? buildRawGeometryModel(validLayout, phase, viewport) : null;
+  }, [active, rawFrame, validLayout, phase, status.detected_anchors]);
 
   const warpedModelForViewport = useCallback((viewport: OverlayViewport) => (
-    layout ? buildWarpedGeometryModel(
-      layout.out_size, layout.stale ? 'degraded' : phase, viewport, layout.warped_margin_cells ?? 0,
+    validLayout ? buildWarpedGeometryModel(
+      validLayout.out_size, validLayout.stale ? 'degraded' : phase, viewport, validLayout.warped_margin_cells ?? 0,
     ) : null
-  ), [layout, phase]);
+  ), [validLayout, phase]);
 
   // ── 视图切换 ───────────────────────────────────────────────────────────────
   //
   // While calibrating, the previous geometry is invalid and warped video is
   // unavailable. Keep the raw live preview visible regardless of the last choice.
-  const view: 'raw' | 'warped' = active ? 'raw' : manualView ?? (layout && phase === 'ready' ? 'warped' : 'raw');
+  const view: 'raw' | 'warped' = active ? 'raw' : manualView ?? (validLayout && phase === 'ready' ? 'warped' : 'raw');
 
   // ── 动作 ───────────────────────────────────────────────────────────────────
   const start = async () => {
@@ -454,6 +476,7 @@ export function GeometryCalibrationScreen({
 
   const preview: ReactNode = view === 'raw' ? (
     <GeometryVideoPanel
+      key="raw"
       fill
       snapshot
       src={`/api/v1/geometry/snapshot?view=raw&scale=${RAW_STREAM_SCALE}`}
@@ -464,11 +487,12 @@ export function GeometryCalibrationScreen({
     />
   ) : (
     <GeometryVideoPanel
+      key={`warped-${validLayout?.revision ?? 'waiting'}`}
       fill
       snapshot
       /* ⚠️ `&& !active` 不是多余的:运行中 `layout` 往往非空(上一次的锁还在磁盘上),
          照播就是在放**一份正在被这次运行作废的**几何 —— 常驻分段方案里唯一会骗人的那一格。 */
-      src={layout && !active ? `/api/v1/geometry/snapshot?view=warped&revision=${layout.revision}&scale=${WARPED_STREAM_SCALE}` : undefined}
+      src={validLayout && !active ? `/api/v1/geometry/snapshot?view=warped&revision=${validLayout.revision}&scale=${WARPED_STREAM_SCALE}` : undefined}
       alt="俯视矫正画面"
       waitingText={active ? '标定进行中，俯视画面在完成后重新生成' : '完成 LED 标定后生成俯视画面'}
       overlay={<CameraGeometryOverlay modelForViewport={warpedModelForViewport} label="俯视画面棋盘几何叠加层" />}

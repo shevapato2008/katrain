@@ -17,6 +17,7 @@ from katrain.web.core import baipu_capture, capture_service
 from katrain.web.core.device_lease import DeviceBusy
 from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
 from katrain.web.api.v1.endpoints.vision import vision_status
+from katrain.vision import camera as camera_module
 
 from katrain.web.models import EndgameConflict, GameEnd
 
@@ -84,6 +85,9 @@ class _Led:
 
     def start(self):
         self.started = True
+
+    def is_board_connected(self):
+        return self.started
 
 
 class _LedBusy(_Led):
@@ -627,8 +631,9 @@ async def test_baipu_collect_startup_wiring(server_module, monkeypatch, tmp_path
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("has_generation", [True, False])
+@pytest.mark.parametrize("auto_exposure", ["off", "hardware"])
 async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
-    server_module, monkeypatch, tmp_path, has_generation
+    server_module, monkeypatch, tmp_path, has_generation, auto_exposure
 ):
     server = server_module
     _CameraUnavailable.instances.clear()
@@ -640,7 +645,8 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
         server.settings,
         "_vision_config",
         SimpleNamespace(
-            enabled=True, camera_device="/dev/video73", camera_width=1280, camera_height=720, backend="fake"
+            enabled=True, camera_device="/dev/video73", camera_width=1280, camera_height=720, backend="fake",
+            auto_exposure=auto_exposure,
         ),
         raising=False,
     )
@@ -697,7 +703,7 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
 
     assert FakeHardwareVisionStore.instances[0].load_calls == [("/dev/video73", 1280, 720)]
     config = _CameraUnavailable.instances[0].config
-    assert config.lock_exposure is has_generation
+    assert config.lock_exposure is (has_generation and auto_exposure != "hardware")
     assert config.exposure is None
 
     await _cancel_startup_tasks(app)
@@ -705,11 +711,11 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("has_generation", "controls_effective"),
-    [(True, True), (True, False), (False, None)],
+    ("has_generation", "controls_effective", "native_readback"),
+    [(True, True, None), (True, False, None), (False, None, None), (True, None, 3.0), (True, None, 1.0)],
 )
 async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
-    server_module, monkeypatch, tmp_path, has_generation, controls_effective
+    server_module, monkeypatch, tmp_path, has_generation, controls_effective, native_readback
 ):
     server = server_module
     _install_board_startup_fakes(monkeypatch)
@@ -725,6 +731,7 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
             camera_width=1280,
             camera_height=720,
             backend="fake",
+            auto_exposure="hardware" if native_readback is not None else "off",
         ),
         raising=False,
     )
@@ -752,12 +759,23 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
     class CameraHub:
         def __init__(self, config):
             self.config = config
-            self.controls_effective = controls_effective
+            self.camera = None
+            self._controls_effective = controls_effective
             self.control_calls = []
             type(self).instance = self
 
         def start(self, *, allow_unavailable=False):
-            pass
+            if native_readback is not None:
+                assert self.config.lock_exposure is False
+                self.camera = camera_module.CameraManager(
+                    device_id=self.config.device_id, warmup_seconds=0, lock_exposure=self.config.lock_exposure
+                )
+                monkeypatch.setattr(self.camera, "_reader_loop", lambda: None)
+                assert self.camera.open() is True
+
+        @property
+        def controls_effective(self):
+            return self.camera.controls_effective if self.camera is not None else self._controls_effective
 
         def request_controls(self, **controls):
             self.control_calls.append(controls)
@@ -810,6 +828,37 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
         ),
     )
     monkeypatch.setitem(sys.modules, "katrain.vision.camera", SimpleNamespace(CAMERA_AUTO_EXPOSURE_ON=3.0))
+    if native_readback is not None:
+        import cv2
+
+        class NativeCapture:
+            def __init__(self):
+                self.opened = True
+                self.auto_exposure = 1.0
+
+            def isOpened(self):
+                return self.opened
+
+            def set(self, prop, value):
+                if prop == cv2.CAP_PROP_AUTO_EXPOSURE:
+                    self.auto_exposure = value
+                return True
+
+            def get(self, prop):
+                if prop == cv2.CAP_PROP_AUTO_EXPOSURE:
+                    return native_readback
+                if prop == cv2.CAP_PROP_FRAME_WIDTH:
+                    return 1280
+                if prop == cv2.CAP_PROP_FRAME_HEIGHT:
+                    return 720
+                return 0.0
+
+            def release(self):
+                self.opened = False
+
+        native_capture = NativeCapture()
+        monkeypatch.setattr(camera_module.cv2, "VideoCapture", lambda _device: native_capture)
+        monkeypatch.setattr(camera_module, "_get_camera_name", lambda _device: None)
     monkeypatch.setitem(
         sys.modules,
         "katrain.web.core.physical_play",
@@ -830,7 +879,11 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
     await server._lifespan_board(app, server.logging.getLogger("test.vision-only-hardware-state"))
 
     try:
-        strategy_verified = has_generation and controls_effective is True
+        strategy_verified = has_generation and (
+            native_readback == 3.0 if native_readback is not None else controls_effective is True
+        )
+        if native_readback is not None:
+            assert native_capture.auto_exposure == 3.0
         assert app.state.geometry is (geometry if strategy_verified else None)
         assert VisionService.instances[0].geometry_calls == ([geometry] if strategy_verified else [])
         if has_generation and not strategy_verified:
@@ -847,6 +900,8 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
         assert VisionService.instances[0].config is attached_config
     finally:
         await _cancel_startup_tasks(app)
+        if CameraHub.instance.camera is not None:
+            CameraHub.instance.camera.close()
 
 
 @pytest.mark.asyncio

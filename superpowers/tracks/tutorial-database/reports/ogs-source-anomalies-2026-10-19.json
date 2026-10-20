@@ -1,0 +1,296 @@
+{
+  "unsupported": [],
+  "issues": [
+    {
+      "source_id": "ogs-learning:bp-ko:1",
+      "issue": "duplicate_same_color_setup_deduplicated"
+    },
+    {
+      "source_id": "ogs-learning:bp-ko:2",
+      "issue": "duplicate_same_color_setup_deduplicated"
+    },
+    {
+      "source_id": "ogs-learning:bp-ko:3",
+      "issue": "duplicate_same_color_setup_deduplicated"
+    },
+    {
+      "source_id": "ogs-learning:bp-ko:4",
+      "issue": "duplicate_same_color_setup_deduplicated"
+    },
+    {
+      "source_id": "ogs-learning:bp-ko:5",
+      "issue": "duplicate_same_color_setup_deduplicated"
+    },
+    {
+      "source_id": "ogs-learning:bp-ko:6",
+      "issue": "duplicate_same_color_setup_deduplicated"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:1",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:2",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:3",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:4",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:5",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:6",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:7",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:8",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:9",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:10",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:11",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl1-ko:12",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-1:8",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-1:9",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-1:10",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-1:11",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-1:12",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-1:13",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-1:14",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-1:15",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-1:16",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:13",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:14",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:15",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:16",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:17",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:18",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:19",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:20",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:21",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:22",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:23",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl2-haengma-5:24",
+      "issue": "zh_cn_initial_player_translation_mismatch"
+    },
+    {
+      "source_id": "ogs-learning:bl3-joseki-1:4",
+      "issue": "root_wrong_answer"
+    }
+  ],
+  "translation_counts": {
+    "en": {
+      "missing": 0,
+      "unchanged": 0
+    },
+    "be": {
+      "missing": 0,
+      "unchanged": 250
+    },
+    "ca": {
+      "missing": 0,
+      "unchanged": 1078
+    },
+    "cs": {
+      "missing": 0,
+      "unchanged": 1298
+    },
+    "da": {
+      "missing": 0,
+      "unchanged": 970
+    },
+    "de": {
+      "missing": 0,
+      "unchanged": 853
+    },
+    "el": {
+      "missing": 0,
+      "unchanged": 1224
+    },
+    "eo": {
+      "missing": 0,
+      "unchanged": 905
+    },
+    "es": {
+      "missing": 0,
+      "unchanged": 1093
+    },
+    "et": {
+      "missing": 0,
+      "unchanged": 1483
+    },
+    "eu": {
+      "missing": 0,
+      "unchanged": 891
+    },
+    "fi": {
+      "missing": 0,
+      "unchanged": 1670
+    },
+    "fr": {
+      "missing": 0,
+      "unchanged": 825
+    },
+    "he": {
+      "missing": 0,
+      "unchanged": 237
+    },
+    "hr": {
+      "missing": 0,
+      "unchanged": 968
+    },
+    "hu": {
+      "missing": 0,
+      "unchanged": 1423
+    },
+    "it": {
+      "missing": 0,
+      "unchanged": 997
+    },
+    "ja": {
+      "missing": 0,
+      "unchanged": 237
+    },
+    "ko": {
+      "missing": 0,
+      "unchanged": 487
+    },
+    "nl": {
+      "missing": 0,
+      "unchanged": 1276
+    },
+    "pl": {
+      "missing": 0,
+      "unchanged": 1314
+    },
+    "pt": {
+      "missing": 0,
+      "unchanged": 866
+    },
+    "ro": {
+      "missing": 0,
+      "unchanged": 1133
+    },
+    "ru": {
+      "missing": 0,
+      "unchanged": 254
+    },
+    "sr": {
+      "missing": 0,
+      "unchanged": 244
+    },
+    "sv": {
+      "missing": 0,
+      "unchanged": 1074
+    },
+    "th": {
+      "missing": 0,
+      "unchanged": 237
+    },
+    "tr": {
+      "missing": 0,
+      "unchanged": 1151
+    },
+    "uk": {
+      "missing": 0,
+      "unchanged": 355
+    },
+    "vi": {
+      "missing": 0,
+      "unchanged": 637
+    },
+    "zh-cn": {
+      "missing": 0,
+      "unchanged": 237
+    },
+    "zh-tw": {
+      "missing": 0,
+      "unchanged": 300
+    }
+  },
+  "translation_note": "Unchanged entries can be proper names, numbers, shared wording or untranslated English; this does not assert translation quality."
+}

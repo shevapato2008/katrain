@@ -1,0 +1,279 @@
+[
+  {
+    "recognition_id": "p029-f01",
+    "page": 29,
+    "source_pointer": "/chapters/1/sections/10/pages/1/elements/0",
+    "figure_id": 13146,
+    "candidate_id": 10222,
+    "inferences": [
+      {
+        "at": "1,6",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字较淡，据“白1冲下”及黑2、白3的局部顺序辨为1。",
+        "cell": "1,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p039-f03",
+    "page": 39,
+    "source_pointer": "/chapters/1/sections/15/pages/1/elements/2",
+    "figure_id": 13168,
+    "candidate_id": 10244,
+    "inferences": [
+      {
+        "at": "8,9",
+        "value": "10",
+        "basis": "combined",
+        "reason": "十位较淡；结合白1起手及可见7、8、9，末端黑子读作10。",
+        "cell": "8,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p061-f01",
+    "page": 61,
+    "source_pointer": "/chapters/1/sections/26/pages/1/elements/0",
+    "figure_id": 13210,
+    "candidate_id": 10286,
+    "inferences": [
+      {
+        "at": "1,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "标号淡失；说明指出白1尖，结合此处尖形及其余2至9的标号确定。",
+        "cell": "1,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p069-f02",
+    "page": 69,
+    "source_pointer": "/chapters/1/sections/30/pages/1/elements/1",
+    "figure_id": 13227,
+    "candidate_id": 10303,
+    "inferences": [
+      {
+        "at": "9,8",
+        "value": "6",
+        "basis": "combined",
+        "reason": "数字字形残损；正文“白5与黑6交换后”及相邻手顺支持判为6。",
+        "cell": "9,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p069-f03",
+    "page": 69,
+    "source_pointer": "/chapters/1/sections/30/pages/1/elements/2",
+    "figure_id": 13228,
+    "candidate_id": 10304,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "底部截断，单凭可见边界和星位不能唯一确定纵向位置；结合本页同题图取起始行9。",
+        "candidates": [
+          "0,9",
+          "0,3"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p095-f01",
+    "page": 95,
+    "source_pointer": "/chapters/1/sections/43/pages/1/elements/0",
+    "figure_id": 13278,
+    "candidate_id": 10354,
+    "inferences": [
+      {
+        "at": "3,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "底边白子数字较淡；结合原页竖画及正文“白1下立”判为1。",
+        "cell": "3,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p139-f03",
+    "page": 139,
+    "source_pointer": "/chapters/2/sections/12/pages/1/elements/2",
+    "figure_id": 13364,
+    "candidate_id": 10440,
+    "inferences": [
+      {
+        "at": "5,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "该子标号较淡；全页同图可见竖笔，结合正文“黑1、白2”和其余标号读为1。",
+        "cell": "5,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p155-f03",
+    "page": 155,
+    "source_pointer": "/chapters/2/sections/20/pages/1/elements/2",
+    "figure_id": 13396,
+    "candidate_id": 10472,
+    "inferences": [
+      {
+        "at": "2,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "底边黑子数字残淡，结合残留笔画及图注“黑1扳”判为1。",
+        "cell": "2,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p159-f01",
+    "page": 159,
+    "source_pointer": "/chapters/2/sections/22/pages/1/elements/0",
+    "figure_id": 13402,
+    "candidate_id": 10478,
+    "uncertainties": [
+      {
+        "at": "2,8",
+        "reason": "此处轮廓呈虚线；结合“黑5提子”，优先记为被提白子位置的空点圆圈。",
+        "candidates": [
+          "empty+circle",
+          "white"
+        ],
+        "cell": "2,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p165-f02",
+    "page": 165,
+    "source_pointer": "/chapters/2/sections/25/pages/1/elements/1",
+    "figure_id": 13415,
+    "candidate_id": 10491,
+    "inferences": [
+      {
+        "at": "3,8",
+        "value": "11",
+        "basis": "combined",
+        "reason": "黑子上的双竖残字形，结合正文“至黑11”及本图手顺，判为11。",
+        "cell": "3,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p165-f03",
+    "page": 165,
+    "source_pointer": "/chapters/2/sections/25/pages/1/elements/2",
+    "figure_id": 13416,
+    "candidate_id": 10492,
+    "inferences": [
+      {
+        "at": "11,8",
+        "value": "11",
+        "basis": "combined",
+        "reason": "数字残损，残留字形结合白10后、白12前的黑手顺序判为11。",
+        "cell": "11,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p169-f01",
+    "page": 169,
+    "source_pointer": "/chapters/2/sections/27/pages/1/elements/0",
+    "figure_id": 13422,
+    "candidate_id": 10498,
+    "inferences": [
+      {
+        "at": "0,5",
+        "value": "1",
+        "basis": "combined",
+        "reason": "边线黑子数字较淡，竖笔形态及正文“黑1先点”、白2黑3的次序确认其为1。",
+        "cell": "0,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p169-f02",
+    "page": 169,
+    "source_pointer": "/chapters/2/sections/27/pages/1/elements/1",
+    "figure_id": 13423,
+    "candidate_id": 10499,
+    "inferences": [
+      {
+        "at": "0,5",
+        "value": "1",
+        "basis": "combined",
+        "reason": "边线黑子数字较淡，残留竖笔、正文“黑1时”及本图后续编号共同确认其为1。",
+        "cell": "0,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p197-f01",
+    "page": 197,
+    "source_pointer": "/chapters/2/sections/41/pages/1/elements/0",
+    "figure_id": 13478,
+    "candidate_id": 10554,
+    "inferences": [
+      {
+        "at": "4,9",
+        "value": "11",
+        "basis": "combined",
+        "reason": "盘外回提注记结合次序：白10提去黑5、7，黑11回填黑7位。",
+        "cell": "4,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p203-f03",
+    "page": 203,
+    "source_pointer": "/chapters/2/sections/44/pages/1/elements/2",
+    "figure_id": 13492,
+    "candidate_id": 10568,
+    "inferences": [
+      {
+        "at": "4,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "黑子内编号竖笔较淡，结合题注“黑1点”辨为1。",
+        "cell": "4,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p217-f03",
+    "page": 217,
+    "source_pointer": "/chapters/2/sections/51/pages/1/elements/2",
+    "figure_id": 13520,
+    "candidate_id": 10596,
+    "inferences": [
+      {
+        "at": "8,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "黑子上的1残淡；结合图注“黑1尖”及相邻白2确定。",
+        "cell": "8,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p235-f03",
+    "page": 235,
+    "source_pointer": "/chapters/2/sections/60/pages/1/elements/2",
+    "figure_id": 13556,
+    "candidate_id": 10632,
+    "inferences": [
+      {
+        "at": "7,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "黑子内数字残痕结合图注“黑1尖”“白2挡后”，判为黑1。",
+        "cell": "7,17"
+      }
+    ]
+  }
+]

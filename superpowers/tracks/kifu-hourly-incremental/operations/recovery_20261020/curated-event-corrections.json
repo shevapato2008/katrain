@@ -1,0 +1,427 @@
+{
+  "schema_version": "kifu-curated-event-corrections-v1",
+  "status": "unsigned_candidates_for_actual_producer_and_independent_review",
+  "authored_at": "2026-10-20T05:03:45.624793Z",
+  "authored_by": {
+    "task": "/root/kifu_backfill_names_astra_review",
+    "model": "gpt-6-astra",
+    "reasoning_effort": "max"
+  },
+  "source_manifest": {
+    "path": "/tmp/kifu-hourly-incremental-20261019/hourly-first-failure-evidence/pending-recovery/91315699-ae8fd9d9f9f4a0bd.json",
+    "file_sha256": "70bd7d0936ae9bef18762f6d4fa8f1322aa93d10d3b0c3baea50e63de3de70a3",
+    "publication_key": "19x19-recovery-a5425ac6c5b3d96d9bc23d3b",
+    "games": 72,
+    "decisions": 18
+  },
+  "constraints": [
+    "These are unsigned text candidates, not native approval or paid-review records.",
+    "Keep all 72 game payloads, source bindings and original-language values unchanged.",
+    "Change only the 8 listed decisions; keep the remaining 10 original decisions exactly.",
+    "Changed decisions require actual new producer and independent review metadata and review_content_sha256 before publication.",
+    "Use a distinct publication key and immutable corrected manifest; retain all original packets and actual publish/verification/undo receipts.",
+    "These generated literal titles do not claim verified official full tournament names."
+  ],
+  "terminology_basis": {
+    "Kisei": "katrain/web/kifu/catalog_event_direct_cn.py CORE_CN: Kisei=棋圣战; Honinbo=本因坊战; Meijin=名人战",
+    "Lanke_and_Senko": "/tmp/kifu-hourly-incremental-20261019/translation-final-data-review.json approved_names5; reuse spelling only, no borrowed review signature",
+    "Lanke_ko": "docs/resource/kifu-event-high5e-five-language-pending-2026-10-05.json: event_id 97 names.ko and translation_notes[97-ko] use 란커배; reuse spelling only, preserve each original domestic/youth/world scope."
+  },
+  "corrections": [
+    {
+      "index": 1,
+      "kind": "raw_event",
+      "key": "第12届国手山脉杯世界赛8强赛",
+      "original_language": "cn",
+      "displays": {
+        "cn": "第12届国手山脉杯世界赛8强赛",
+        "en": "12th Guoshou Mountain Range Cup World Tournament Round of 8",
+        "jp": "第12回国手山脈杯世界戦8強戦",
+        "ko": "제12회 국수산맥배 세계전 8강전",
+        "tw": "第12屆國手山脈盃世界賽8強賽"
+      },
+      "methods": {
+        "cn": "retain_original",
+        "en": "translation",
+        "jp": "transliteration",
+        "ko": "transliteration",
+        "tw": "orthographic_conversion"
+      },
+      "sources": [],
+      "source_items": [
+        {
+          "sgf_sha256": "e3fa2301a51413980606ab4180e9213b2a7ab9085ffcfb14703b83f406cd0029",
+          "slot": "event",
+          "source_item_id": "91358273",
+          "source_key": "19x19"
+        },
+        {
+          "sgf_sha256": "e3c9368273d512913835992059823293578507543bc28ccd7e5705c7fe0ecacd",
+          "slot": "event",
+          "source_item_id": "91359228",
+          "source_key": "19x19"
+        },
+        {
+          "sgf_sha256": "00d8fbaa4684b20b888d181a9fb14a3592ffb823f0774c1bf58e048f27fcc982",
+          "slot": "event",
+          "source_item_id": "91359440",
+          "source_key": "19x19"
+        }
+      ],
+      "cn_conversion_note": "Traditional Chinese orthographic conversion: 简体「国」「手」「山」「脉」「杯」「世」「界」「赛」「强」→ 繁体「國」「手」「山」「脈」「盃」「世」「界」「賽」「強」; note that '盃' is a variant of '杯' used in TW, and '賽' is standard traditional form. Digits '12' and '8' preserved literally per digit_rule.",
+      "changed_fields": {
+        "displays.en": {
+          "old": "12th Guoshou Mountain Range Cup World Tournament Round of 16 (Top 8)",
+          "new": "12th Guoshou Mountain Range Cup World Tournament Round of 8"
+        }
+      },
+      "reason": "8强 means a round of 8; remove the contradictory Round of 16 while retaining explicit 12 and 8."
+    },
+    {
+      "index": 2,
+      "kind": "raw_event",
+      "key": "第51期日本棋圣战循环圈AB组加赛",
+      "original_language": "cn",
+      "displays": {
+        "cn": "第51期日本棋圣战循环圈AB组加赛",
+        "en": "51st Japanese Kisei League AB Group Playoff",
+        "jp": "第51期日本棋聖戦リーグAB組プレーオフ",
+        "ko": "제51기 일본 기성전 리그 AB조 플레이오프",
+        "tw": "第51期日本棋聖戰循環圈AB組加賽"
+      },
+      "methods": {
+        "cn": "retain_original",
+        "en": "translation",
+        "jp": "translation",
+        "ko": "translation",
+        "tw": "orthographic_conversion"
+      },
+      "sources": [],
+      "source_items": [
+        {
+          "sgf_sha256": "9687e9b50afb61da71de5d0a2c9c81d015ef8997db5c6053a38d449592842e90",
+          "slot": "event",
+          "source_item_id": "91365874",
+          "source_key": "19x19"
+        }
+      ],
+      "cn_conversion_note": "Traditional Chinese orthographic conversion: '棋圣' → '棋聖', '战' → '戰', '圈' → '圈' (unchanged), '组' → '組', '赛' → '賽'; all digit tokens ['51'] and structural markers (第、期、AB组、加赛) preserved exactly per required_cn_literal and digit_rule.",
+      "changed_fields": {
+        "displays.jp": {
+          "old": "第51期日本棋聖戦循環圈AB組加賽",
+          "new": "第51期日本棋聖戦リーグAB組プレーオフ"
+        },
+        "displays.ko": {
+          "old": "제51기 일본기성전 순환권 AB조 가시",
+          "new": "제51기 일본 기성전 리그 AB조 플레이오프"
+        },
+        "displays.en": {
+          "old": "51st Honinbo Tournament Meijin League AB Group Playoff",
+          "new": "51st Japanese Kisei League AB Group Playoff"
+        },
+        "methods.jp": {
+          "old": "orthographic_conversion",
+          "new": "translation"
+        }
+      },
+      "reason": "棋圣 is Kisei, not Honinbo or Meijin. Translate the league/playoff terms into Japanese and Korean instead of retaining unconverted Chinese words."
+    },
+    {
+      "index": 7,
+      "kind": "raw_event",
+      "key": "2026青白江城厢古城杯世界女子联赛巅峰决战季军战首尔-扇兴",
+      "original_language": "cn",
+      "displays": {
+        "cn": "2026青白江城厢古城杯世界女子联赛巅峰决战季军战首尔-扇兴",
+        "en": "2026 Qingbaijiang Chengxiang Ancient City Cup World Women's League Summit Final Third-Place Match Seoul–Senko",
+        "jp": "2026青白江城厢古城杯世界女子リーグ頂上決戦3位決定戦ソウル－扇興",
+        "ko": "2026청백강성향고성배 세계 여자 리그 정상 결전 3위 결정전 서울－센코",
+        "tw": "2026青白江城廂古城盃世界女子聯賽巔峰決戰季軍戰首爾－扇興"
+      },
+      "methods": {
+        "cn": "retain_original",
+        "en": "translation",
+        "jp": "transliteration",
+        "ko": "translation",
+        "tw": "orthographic_conversion"
+      },
+      "sources": [],
+      "source_items": [
+        {
+          "sgf_sha256": "66729683c245ae389264be35db82ef46a617e5e90b4250585edcb91a8f790187",
+          "slot": "event",
+          "source_item_id": "91188636",
+          "source_key": "19x19"
+        }
+      ],
+      "cn_conversion_note": "Traditional Chinese orthographic conversion: '厢' → '廂', '杯' → '盃', '联' → '聯', '赛' → '賽', '决' → '決', '战' → '戰', '尔' → '爾', '－' (fullwidth en dash) used per TW typographic convention; all digit tokens ['2026'] preserved identically.",
+      "changed_fields": {
+        "displays.ko": {
+          "old": "2026청백강성향고성배 세계 여자 리그 정상 결전 3위 결정전 서울－선흥",
+          "new": "2026청백강성향고성배 세계 여자 리그 정상 결전 3위 결정전 서울－센코"
+        },
+        "displays.en": {
+          "old": "2026 Qingshuijiang Chengxiang Ancient City Cup World Women's League Summit Final Third-Place Match Seoul–Senxing",
+          "new": "2026 Qingbaijiang Chengxiang Ancient City Cup World Women's League Summit Final Third-Place Match Seoul–Senko"
+        },
+        "methods.ko": {
+          "old": "transliteration",
+          "new": "translation"
+        }
+      },
+      "reason": "Correct 青白江 to Qingbaijiang and reuse the previously approved Senko/센코 rendering for 扇兴. No assertion of an official full tournament title."
+    },
+    {
+      "index": 8,
+      "kind": "raw_event",
+      "key": "第2届烂柯杯青少年公开赛总决赛季军战",
+      "original_language": "cn",
+      "displays": {
+        "cn": "第2届烂柯杯青少年公开赛总决赛季军战",
+        "en": "2nd Lanke Cup Youth Open Finals – Third-Place Match",
+        "jp": "第2回爛柯杯青少年オープン戦決勝大会3位決定戦",
+        "ko": "제2회 란커배 청소년 오픈전 결선 3위 결정전",
+        "tw": "第2屆爛柯杯青少年公開賽總決賽季軍戰"
+      },
+      "methods": {
+        "cn": "retain_original",
+        "en": "translation",
+        "jp": "translation",
+        "ko": "translation",
+        "tw": "orthographic_conversion"
+      },
+      "sources": [],
+      "source_items": [
+        {
+          "sgf_sha256": "ea413b6a8c094b55a7f1526b9ddd7a1f9fbb286d8ff1a0089e45dd9ef36940ce",
+          "slot": "event",
+          "source_item_id": "91175527",
+          "source_key": "19x19"
+        }
+      ],
+      "cn_conversion_note": "Traditional characters applied for tw: 届→屆, 烂→爛, 杯→杯, 青→青, 少→少, 年→年, 公→公, 开→開, 放→放, 赛→賽, 总→總, 决→決, 赛→賽, 季→季, 军→軍, 战→戰 — all other characters (including '第2') preserved identically per required_digit_tokens and cn_literal_rule.",
+      "changed_fields": {
+        "displays.jp": {
+          "old": "第2回爛柯杯青少年オープン戦決勝戦3位決定戦",
+          "new": "第2回爛柯杯青少年オープン戦決勝大会3位決定戦"
+        },
+        "displays.ko": {
+          "old": "제2회 난커배 청소년 오픈전 결승전 3위 결정전",
+          "new": "제2회 란커배 청소년 오픈전 결선 3위 결정전"
+        },
+        "displays.en": {
+          "old": "2nd Langke Cup Youth Open Final – Third-Place Match",
+          "new": "2nd Lanke Cup Youth Open Finals – Third-Place Match"
+        }
+      },
+      "reason": "Use established Lanke spelling and distinguish the finals tournament stage from a single championship final; preserve the third-place match. Reuse the existing repository Korean Lanke spelling 란커배; this does not map the event to another competition identity."
+    },
+    {
+      "index": 9,
+      "kind": "raw_event",
+      "key": "第2届烂柯杯中国青少年围棋公开赛总决赛冠军决赛",
+      "original_language": "cn",
+      "displays": {
+        "cn": "第2届烂柯杯中国青少年围棋公开赛总决赛冠军决赛",
+        "en": "2nd Lanke Cup China Youth Go Open Final – Champion Deciding Match",
+        "jp": "第2回爛柯杯中国青少年囲碁オープン選手権大会決勝戦優勝決定戦",
+        "ko": "제2회 란커배 중국 청소년 바둑 오픈전 결승전 우승 결정전",
+        "tw": "第2屆爛柯杯中國青少年圍棋公開賽總決賽冠軍決賽"
+      },
+      "methods": {
+        "cn": "retain_original",
+        "en": "translation",
+        "jp": "translation",
+        "ko": "translation",
+        "tw": "orthographic_conversion"
+      },
+      "sources": [],
+      "source_items": [
+        {
+          "sgf_sha256": "5df2542d9a79c5a8823d17b8714ff5939264f6752e17382565347ecc53a94db7",
+          "slot": "event",
+          "source_item_id": "91284547",
+          "source_key": "19x19"
+        }
+      ],
+      "cn_conversion_note": "Traditional characters applied: 届→屆, 烂→爛, 杯→杯, 国→國, 青→青, 少→少, 年→年, 围→圍, 棋→碁, 公→公, 开→開, 放→放, 赛→賽, 总→總, 决→決, 赛→賽, 冠→冠, 军→軍, 决→決, 赛→賽. All digit tokens (['2']) preserved exactly; '第2届' → '第2屆' maintains positional numeral integrity.",
+      "changed_fields": {
+        "displays.ko": {
+          "old": "제2회 난커배 중국 청소년 바둑 오픈전 결승전 우승 결정전",
+          "new": "제2회 란커배 중국 청소년 바둑 오픈전 결승전 우승 결정전"
+        },
+        "displays.en": {
+          "old": "2nd Langke Cup China Youth Go Open Final – Champion Deciding Match",
+          "new": "2nd Lanke Cup China Youth Go Open Final – Champion Deciding Match"
+        }
+      },
+      "reason": "Correct only Langke to the established Lanke spelling. Reuse the existing repository Korean Lanke spelling 란커배; this does not map the event to another competition identity."
+    },
+    {
+      "index": 11,
+      "kind": "raw_event",
+      "key": "第2届烂柯杯中国青少年公开赛总决赛4强",
+      "original_language": "cn",
+      "displays": {
+        "cn": "第2届烂柯杯中国青少年公开赛总决赛4强",
+        "en": "2nd Lanke Cup China Youth Open Finals — Round of 4",
+        "jp": "第2回爛柯杯中国青少年オープン選手権決勝大会4強戦",
+        "ko": "제2회 란커배 중국 청소년 오픈 챔피언십 결선 4강전",
+        "tw": "第2屆爛柯盃中國青少年公開賽總決賽4強"
+      },
+      "methods": {
+        "cn": "retain_original",
+        "en": "translation",
+        "jp": "translation",
+        "ko": "translation",
+        "tw": "orthographic_conversion"
+      },
+      "sources": [],
+      "source_items": [
+        {
+          "sgf_sha256": "e93a61c68a7f879699dd9eb93732bb19ead276268c6f4df45f00de8b4cad9e41",
+          "slot": "event",
+          "source_item_id": "91142912",
+          "source_key": "19x19"
+        }
+      ],
+      "cn_conversion_note": "Traditional characters applied for Taiwan: 届→屆, 杯→盃, 赛→賽, 决→決, 强→強; all digit tokens '2' and '4' preserved unchanged per rule.",
+      "changed_fields": {
+        "displays.jp": {
+          "old": "第2回爛柯杯中国青少年オープン選手権決勝戦4強",
+          "new": "第2回爛柯杯中国青少年オープン選手権決勝大会4強戦"
+        },
+        "displays.ko": {
+          "old": "제2회 난커배 중국 청소년 오픈 챔피언십 결승전 4강",
+          "new": "제2회 란커배 중국 청소년 오픈 챔피언십 결선 4강전"
+        },
+        "displays.en": {
+          "old": "2nd Langke Cup China Youth Open Championship Final Match — Final Four (Top 4)",
+          "new": "2nd Lanke Cup China Youth Open Finals — Round of 4"
+        },
+        "methods.jp": {
+          "old": "transliteration",
+          "new": "translation"
+        },
+        "methods.ko": {
+          "old": "transliteration",
+          "new": "translation"
+        }
+      },
+      "reason": "Use established Lanke spelling. 总决赛 is the finals stage here, and 4强 is round of 4, not a single final match. Reuse the existing repository Korean Lanke spelling 란커배; this does not map the event to another competition identity."
+    },
+    {
+      "index": 12,
+      "kind": "raw_event",
+      "key": "第4届衢州烂柯杯世界公开赛决赛3番棋2局1-0",
+      "original_language": "cn",
+      "displays": {
+        "cn": "第4届衢州烂柯杯世界公开赛决赛3番棋2局1-0",
+        "en": "4th Quzhou Lanke Cup World Open Final Best-of-3 Game 2 1-0",
+        "jp": "第4回衢州爛柯杯世界オープン戦決勝3番勝負第2局1-0",
+        "ko": "제4회 취저우 란커배 세계 오픈전 결승 3번기 2국 1-0",
+        "tw": "第4屆衢州爛柯盃世界公開賽決賽3番棋2局1-0"
+      },
+      "methods": {
+        "cn": "retain_original",
+        "en": "translation",
+        "jp": "transliteration",
+        "ko": "translation",
+        "tw": "orthographic_conversion"
+      },
+      "sources": [],
+      "source_items": [
+        {
+          "sgf_sha256": "b7186d55ccd189172a2fce6c79eace6df78607257081603b944303c88d815aa0",
+          "slot": "event",
+          "source_item_id": "91141085",
+          "source_key": "19x19"
+        }
+      ],
+      "cn_conversion_note": "Traditional Chinese orthographic conversion: 简体 '衢州烂柯杯' → 繁体 '衢州爛柯盃'; '公开赛' → '公開賽'; '决赛' → '決賽'; '番棋' retained as '番棋' (standard in TW Go terminology); digits and positional tokens ('第4届', '3番棋', '2局', '1-0') preserved unchanged per digit_rule.",
+      "changed_fields": {
+        "displays.ko": {
+          "old": "제4회 취저우 난커배 세계 오픈전 결승 3번기 2국 1-0",
+          "new": "제4회 취저우 란커배 세계 오픈전 결승 3번기 2국 1-0"
+        },
+        "displays.en": {
+          "old": "4th Quzhou Langke Cup World Open Final Best-of-3 Game 2 1-0",
+          "new": "4th Quzhou Lanke Cup World Open Final Best-of-3 Game 2 1-0"
+        },
+        "methods.ko": {
+          "old": "transliteration",
+          "new": "translation"
+        }
+      },
+      "reason": "Correct only Langke to Lanke; preserve 4th edition, best-of-3, game 2, and 1-0 score. Reuse the existing repository Korean Lanke spelling 란커배; this does not map the event to another competition identity."
+    },
+    {
+      "index": 13,
+      "kind": "raw_event",
+      "key": "第2届烂柯杯中国青少年公开赛总决赛8强",
+      "original_language": "cn",
+      "displays": {
+        "cn": "第2届烂柯杯中国青少年公开赛总决赛8强",
+        "en": "2nd Lanke Cup China Youth Open Finals — Round of 8",
+        "jp": "第2回爛柯杯中国青少年オープン選手権決勝大会8強戦",
+        "ko": "제2회 란커배 중국 청소년 오픈 챔피언십 결선 8강전",
+        "tw": "第2屆爛柯盃中國青少年公開賽總決賽8強"
+      },
+      "methods": {
+        "cn": "retain_original",
+        "en": "translation",
+        "jp": "translation",
+        "ko": "translation",
+        "tw": "orthographic_conversion"
+      },
+      "sources": [],
+      "source_items": [
+        {
+          "sgf_sha256": "e3c991abcff0953aca91bca63e01d0cd641d87e28fad72fff1ca6d6cf9687da4",
+          "slot": "event",
+          "source_item_id": "91124415",
+          "source_key": "19x19"
+        },
+        {
+          "sgf_sha256": "07f55d7a2f710333b746473fb2b07ff8f5f484e17aa412f0960dda2c78f60191",
+          "slot": "event",
+          "source_item_id": "91122867",
+          "source_key": "19x19"
+        }
+      ],
+      "cn_conversion_note": "Traditional characters applied: 届→屆, 烂→爛, 杯→盃, 赛→賽, 总→總, 决→決, 赛→賽, 强→強. All required digit tokens '2' and '8' preserved unchanged in position and form.",
+      "changed_fields": {
+        "displays.jp": {
+          "old": "第2回爛柯杯中国青少年オープン選手権決勝戦8強",
+          "new": "第2回爛柯杯中国青少年オープン選手権決勝大会8強戦"
+        },
+        "displays.ko": {
+          "old": "제2회 난커배 중국 청소년 오픈 챔피언십 결승전 8강",
+          "new": "제2회 란커배 중국 청소년 오픈 챔피언십 결선 8강전"
+        },
+        "displays.en": {
+          "old": "2nd Langke Cup China Youth Open Final 8",
+          "new": "2nd Lanke Cup China Youth Open Finals — Round of 8"
+        },
+        "methods.jp": {
+          "old": "transliteration",
+          "new": "translation"
+        },
+        "methods.ko": {
+          "old": "transliteration",
+          "new": "translation"
+        }
+      },
+      "reason": "Use established Lanke spelling and preserve the finals stage with an explicit round of 8. Reuse the existing repository Korean Lanke spelling 란커배; this does not map the event to another competition identity."
+    }
+  ],
+  "summary": {
+    "changed_decisions": 8,
+    "changed_display_fields": 19,
+    "changed_method_fields": 7,
+    "unchanged_decisions": 10,
+    "games_unchanged": 72
+  },
+  "updated_at": "2026-10-20T05:06:09.043427Z",
+  "previous_candidate_file_sha256": "412621693bfa1ea3d0415b0875cd076c4b7dbc8b09c059117522b3c4c0bfdac6"
+}

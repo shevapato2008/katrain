@@ -1,17 +1,22 @@
 import { useMemo, useEffect, memo, forwardRef } from 'react';
 import * as THREE from 'three';
 import type { Mesh } from 'three';
-import { STONE_RADIUS, STONE_HEIGHT } from './constants';
+import { STONE_RADIUS, STONE_HEIGHT, BOARD_SURFACE_Y } from './constants';
 
 interface StoneMeshProps {
   color: 'B' | 'W';
   position: [number, number, number];
   opacity?: number;
   scale?: number;
+  satinFinish?: boolean;
+  contactOpacity?: number;
+  spriteTexture?: THREE.Texture;
+  diameterRatio?: number;
 }
 
 // Shared geometry — all stones use the same sphere (1 geometry, not 361)
 const sharedGeometry = new THREE.SphereGeometry(STONE_RADIUS, 48, 32);
+const sharedSpriteGeometry = new THREE.PlaneGeometry(STONE_RADIUS * 2, STONE_RADIUS * 2);
 
 // Noop raycast — prevents stones from intercepting pointer events
 const noopRaycast = () => {};
@@ -61,8 +66,34 @@ function getShellTexture(): THREE.CanvasTexture {
   return cachedShellTexture;
 }
 
-const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, scale = 1 }, ref) => {
+/** Local contact shadow for the overhead still; shared by its stones only. */
+let contactTexture: THREE.CanvasTexture | null = null;
+function getContactTexture() {
+  if (contactTexture) return contactTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  const gradient = ctx.createRadialGradient(32, 32, 18, 32, 32, 32);
+  gradient.addColorStop(0, 'rgba(0,0,0,.32)');
+  gradient.addColorStop(.55, 'rgba(0,0,0,.16)');
+  gradient.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 64, 64);
+  contactTexture = new THREE.CanvasTexture(canvas);
+  return contactTexture;
+}
+
+const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, scale = 1, satinFinish = false, contactOpacity = 1, spriteTexture, diameterRatio = 1 }, ref) => {
   const material = useMemo(() => {
+    if (spriteTexture) return new THREE.MeshBasicMaterial({
+      map: spriteTexture, transparent: true, opacity, depthWrite: false, toneMapped: false, fog: false,
+    });
+    if (satinFinish) return new THREE.MeshPhysicalMaterial({
+      color: color === 'B' ? 0x111418 : 0xf5f2e9,
+      roughness: color === 'B' ? .29 : .34, metalness: 0,
+      clearcoat: .18, clearcoatRoughness: .35,
+      transparent: opacity < 1, opacity,
+    });
     if (color === 'B') {
       return new THREE.MeshStandardMaterial({
         color: 0x0a0a0a, roughness: 0.06, metalness: 0.15,
@@ -74,7 +105,7 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
         transparent: opacity < 1, opacity,
       });
     }
-  }, [color, opacity]);
+  }, [color, opacity, satinFinish, spriteTexture]);
 
   // Dispose material on change/unmount (but NOT the shared shell texture)
   useEffect(() => {
@@ -84,16 +115,23 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
   const scaleY = STONE_HEIGHT / STONE_RADIUS;
 
   return (
-    <mesh
-      ref={ref}
-      position={position}
-      scale={[scale, scale * scaleY, scale]}
-      geometry={sharedGeometry}
-      material={material}
-      castShadow
-      receiveShadow
-      raycast={noopRaycast}
-    />
+    <>
+      {satinFinish && <mesh position={[position[0] + .035, BOARD_SURFACE_Y + .009, position[2] + .035]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
+        <planeGeometry args={[1.06, 1.06]} />
+        <meshBasicMaterial map={getContactTexture()} opacity={contactOpacity} transparent depthWrite={false} />
+      </mesh>}
+      <mesh
+        ref={ref}
+        position={spriteTexture ? [position[0], position[1] + STONE_HEIGHT * scale, position[2]] : position}
+        rotation={spriteTexture ? [-Math.PI / 2, 0, 0] : undefined}
+        scale={spriteTexture ? [scale * diameterRatio, scale * diameterRatio, 1] : [scale, scale * scaleY, scale]}
+        geometry={spriteTexture ? sharedSpriteGeometry : sharedGeometry}
+        material={material}
+        castShadow={!spriteTexture}
+        receiveShadow={!spriteTexture}
+        raycast={noopRaycast}
+      />
+    </>
   );
 });
 

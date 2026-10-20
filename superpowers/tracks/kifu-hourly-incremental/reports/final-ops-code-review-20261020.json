@@ -1,0 +1,81 @@
+{
+  "actual_receipt_evidence": {
+    "PROD_HTTP": {
+      "archived_receipt_exact_match": true,
+      "file_sha256": "1acb97083d9e3ed679d2a2ad9e92beee1948bb086bfff4b6aba3fc479feefce2",
+      "path": "/tmp/kifu-hourly-incremental-20261019/PROD-e23-http-output.log"
+    },
+    "PROD_Web": {
+      "archived_receipt_exact_match": true,
+      "file_sha256": "65ddd9442ebca97dd0ac7b93130a121b72e40c82da88bd81ec433048dd55839e",
+      "path": "/tmp/kifu-hourly-incremental-20261019/deploy-e23-prepared/PROD-deployment-output.log"
+    },
+    "TEST_HTTP": {
+      "archived_receipt_exact_match": true,
+      "file_sha256": "aae38da13941b9c77bf42141f9f5fbfc613a5cd7257f9b496d075aa6b94eb4b3",
+      "path": "/tmp/kifu-hourly-incremental-20261019/TEST-e23-http-output.log"
+    },
+    "TEST_Web": {
+      "archived_receipt_exact_match": true,
+      "file_sha256": "980de24dfc7676defa4669e359e388cfa7ee49f6d502dca0b3a1cbbea7dcaae9",
+      "path": "/tmp/kifu-hourly-incremental-20261019/deploy-e23-prepared/TEST-deployment-output.log"
+    },
+    "TEST_cron": {
+      "archived_receipt_exact_match": true,
+      "file_sha256": "6aabf0f67fc2b922906184938a87863ed64068803d216f26d9b0b447ad595f76",
+      "path": "/tmp/kifu-hourly-incremental-20261019/deploy-cron-e23ac-output.log"
+    },
+    "identity_probe": {
+      "archived_receipt_exact_match": true,
+      "file_sha256": "25abe94a596133be20820828088e3cd4f2def08410ed2648e0031ebebd618e8c",
+      "path": "/tmp/kifu-hourly-incremental-20261019/e23-production-identity-probe-final-output.log"
+    },
+    "pause_restore": {
+      "archived_receipt_exact_match": true,
+      "file_sha256": "c3224d4127c91e333b7816881673aaaaf7ce40d26380c8a9751ad90fec43f23e",
+      "path": "/tmp/kifu-hourly-incremental-20261019/restore-hourly-e23ac-output.log"
+    }
+  },
+  "archive_path": "/Users/fan/Repositories/katrain-kiosk-go-kifu/.worktrees/kifu-hourly-incremental/superpowers/tracks/kifu-hourly-incremental/operations/release_e23_20261020",
+  "decision": "APPROVE",
+  "files_sha256": {
+    "README.md": "3f4695b146662a8908d4b7ef37a17db2dd894976e9b65c9b9c7febdf2c8d33a5",
+    "SHA256SUMS": "0564887d37aa853af0f6aade4138ec295e9fa1232dc29a80ba04457291f5b1c8",
+    "actual-deployment-receipts.json": "73a962e7cf7820459860e35f94ec86217cd5fc8a3a76f1a435a04c9b54f4f3e3",
+    "deploy-cron-test.py": "94f46a9e7cf60aaa8887b8152381779d6c4d74999f0bb6aa06a40499be7cda02",
+    "deploy-web-prod.py": "6445c2d2c06a45fd725f21444860473b3006d3d39aad64478d4c66ba8b768d2d",
+    "deploy-web-test.py": "3be141a107af2ae4e51d47d97773b24da2a3dd29b3316ea27a0aad93873d4b04",
+    "production-identity-probe.py": "3245b1cf95c10b54d8d77330ce1b9eccd17634e884348612ad2c9dd95ea11e3b",
+    "restore-hourly-after-complete.py": "39f165679a870951b477fbfdc963ce8440a232818e8a2b5870c5e7fe89f94c77"
+  },
+  "findings": [
+    "Web scripts pin old container/image/compose input hashes and candidate image/OCI/build identity; full effective configuration permits only Web image/build SHA changes. The command selects only katrain-web with no dependencies or builds. Postchecks require expected image, health, zero restarts and preserved non-Web container states.",
+    "Cron archive differs from the previously reviewed 486 variant only in release image/build pins and corresponding artifact filenames. Old container and this-session paused control are required; effective configuration changes only image/build SHA and preserves the existing KataGo endpoint.",
+    "Control restoration differs from the previously reviewed script only in the exact e23 build pin. It holds the existing session lock, validates the fixed corrected72 manifest and both complete native verification records, requires all 72 real target IDs/prod_synced statuses, and restores only this-session pause before inserting a real run_now command in the same transaction.",
+    "Identity probe uses the existing restricted SSH helper and hash-bound status-only read operation. No model or publication call is present. Its actual response reports 109 qualified instructions for 72 games.",
+    "All five archived Python files exactly match their local execution copies; SHA256SUMS and syntax checks pass. All seven consolidated receipt objects exactly match original execution log JSON objects.",
+    "README and receipts correctly distinguish representative HTTP checks from browser rendering/performance tests and do not assert that subsequent normal job 62158 has completed."
+  ],
+  "format": "kifu-e23-final-ops-review-v1",
+  "limits": [
+    "This review inspected local code and preserved execution evidence, not a new live service probe.",
+    "Normal scheduled-run completion remains outside this archive approval."
+  ],
+  "must_fix": [],
+  "release_commit": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+  "reviewed_at": "2026-10-20T06:40:56.598671+00:00",
+  "reviewer": {
+    "agent_id": "/root/kifu_backfill_names_astra_review",
+    "model": "gpt-6-astra",
+    "reasoning_effort": "max"
+  },
+  "scope": "Actual fixed, already-executed release_e23_20261020 operator archive only. No new runtime/product review or authorization to rerun these one-off scripts.",
+  "validation": {
+    "additional_tests_run": false,
+    "cloud_or_database_commands_run": false,
+    "execution_copies": "5/5 byte-identical",
+    "python_ast": "PASS, all five scripts",
+    "receipt_log_matches": "7/7 exact",
+    "sha256sums": "PASS"
+  }
+}

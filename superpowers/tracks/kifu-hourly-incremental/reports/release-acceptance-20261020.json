@@ -1,0 +1,973 @@
+{
+  "recorded_at": "2026-10-20T06:43:31.394782+00:00",
+  "code_publication": {
+    "feature": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+    "develop": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+    "parent_main": "0e0a53ef628846c737caa14840ab6747ba44e439"
+  },
+  "A": {
+    "inventory": 5536,
+    "verified_sources_each_environment": 5279,
+    "packages_each_environment": 55,
+    "inserted_albums_each_environment": 5276,
+    "reused_each_environment": 3,
+    "isolated": 257,
+    "ready_percent": 95.3577,
+    "first_pass_raw_display_keys": {
+      "raw_event": 1890,
+      "raw_player": 164
+    },
+    "isolation_report": "first-pass-isolations-20261020.json",
+    "final_http": {
+      "TEST": {
+        "status": "verified",
+        "http_scope": "finite_samples_only",
+        "original_packages_checked": 55,
+        "original_source_games": 5279,
+        "sample_games": 12,
+        "five_language_detail_checks": 60,
+        "covered_features": [
+          "action:inserted",
+          "action:reused",
+          "canonical_event",
+          "canonical_player",
+          "raw_event",
+          "raw_player"
+        ]
+      },
+      "PROD": {
+        "status": "verified",
+        "http_scope": "finite_samples_only",
+        "original_packages_checked": 55,
+        "original_source_games": 5279,
+        "sample_games": 12,
+        "five_language_detail_checks": 60,
+        "covered_features": [
+          "action:inserted",
+          "action:reused",
+          "canonical_event",
+          "canonical_player",
+          "raw_event",
+          "raw_player"
+        ]
+      }
+    }
+  },
+  "metrics_at_A_closepoint": {
+    "TEST": {
+      "point": "A completed, before newly enabled hourly publication",
+      "albums": 176549,
+      "public_complete_cards": 176290,
+      "fixedwide": 160261,
+      "fixedwide_percent": 90.7742,
+      "strictcomplete": 176290,
+      "strictcomplete_percent": 99.8533,
+      "measurement_basis": "fresh native snapshot plus already native-qualified inserted increments; actual binding columns checked for the wide delta; not a new full post-A scan",
+      "baseline": {
+        "captured_at": "2026-10-19T11:45:45.532143+00:00",
+        "read_only": true,
+        "source_rehashed": false,
+        "population": {
+          "albums": 171272,
+          "public_visible": 171013,
+          "duplicate": 9,
+          "list_hidden": 250
+        },
+        "metrics": {
+          "fixedwide": 154985,
+          "strictcomplete": 171013,
+          "public_complete": 171013,
+          "P5": 3838,
+          "E5": 84
+        },
+        "denominators": {
+          "fixedwide": 171272,
+          "strictcomplete": 171272,
+          "public_complete": 171013,
+          "P5": 3865,
+          "E5": 85
+        },
+        "measurement": {
+          "elapsed_seconds": 512.263,
+          "reader": "current native eligibility with snapshot-local scheduling/caches",
+          "historical_audit_totals_reused": false,
+          "sgf_scope_checks": "native current checks; full source inventory not rehashed"
+        }
+      },
+      "verified_increment": {
+        "environment": "TEST",
+        "verified_increment_rows": 5277,
+        "wide_eligible_increment": 5276,
+        "wide_excluded_album_ids": [
+          178437
+        ],
+        "catalog_total_at_read": 176549,
+        "eligibility_basis": "all selected increments already native-qualified; this read checks actual binding columns only"
+      }
+    },
+    "PROD": {
+      "point": "A completed, before newly enabled hourly publication",
+      "albums": 176549,
+      "public_complete_cards": 176290,
+      "fixedwide": 160775,
+      "fixedwide_percent": 91.0654,
+      "strictcomplete": 176290,
+      "strictcomplete_percent": 99.8533,
+      "measurement_basis": "fresh native snapshot plus already native-qualified inserted increments; actual binding columns checked for the wide delta; not a new full post-A scan",
+      "baseline": {
+        "snapshot_started_at": "2026-10-19T15:08:16.587053+00:00",
+        "captured_at": "2026-10-20T01:53:15.986930+00:00",
+        "read_only": true,
+        "source_rehashed": false,
+        "population": {
+          "albums": 171293,
+          "public_visible": 171034,
+          "duplicate": 9,
+          "list_hidden": 250
+        },
+        "metrics": {
+          "fixedwide": 155520,
+          "strictcomplete": 171034,
+          "public_complete": 171034,
+          "P5": 3663,
+          "E5": 84
+        },
+        "denominators": {
+          "fixedwide": 171293,
+          "strictcomplete": 171293,
+          "public_complete": 171034,
+          "P5": 3689,
+          "E5": 85
+        },
+        "measurement": {
+          "elapsed_seconds": 38699.819,
+          "reader": "native eligibility, 1000-album chunks in one repeatable-read snapshot",
+          "historical_audit_totals_reused": false,
+          "sgf_scope_checks": "native current checks; full source inventory not rehashed"
+        }
+      },
+      "verified_increment": {
+        "environment": "PROD",
+        "verified_increment_rows": 5256,
+        "wide_eligible_increment": 5255,
+        "wide_excluded_album_ids": [
+          178117
+        ],
+        "catalog_total_at_read": 176549,
+        "eligibility_basis": "all selected increments already native-qualified; this read checks actual binding columns only"
+      }
+    }
+  },
+  "deployed_runtime": {
+    "TEST_Web_image": "sha256:42ba8fe019fd9857a835db7ad1d135041a61522d1f60c293387f1c6e2f831d48",
+    "PROD_Web_image": "sha256:af3d02331409a724a2bd7901ac26504d8ea86f24c0572d91027d233397b476c5",
+    "TEST_cron_image": "sha256:95f4308b36b5844e91aec8ce14e3cbe8c3fa982dcc6bd00cd5efb34db410973e",
+    "Web_source": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+    "TEST_cron_source": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+    "deployment_receipts": "../operations/release_e23_20261020/actual-deployment-receipts.json",
+    "independent_final_ops_review": "final-ops-code-review-20261020.json"
+  },
+  "Web_acceptance": {
+    "TEST": {
+      "assets": [
+        {
+          "bytes": 14609,
+          "path": "/assets/index-C90zRD53.js",
+          "status": 200
+        },
+        {
+          "bytes": 12883,
+          "path": "/assets/index-DFEU3Joj.css",
+          "status": 200
+        }
+      ],
+      "build": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
+      "equivalent_searches": [
+        {
+          "ids": [
+            140859,
+            124442,
+            118394,
+            140858,
+            25055,
+            25048,
+            152161,
+            25047,
+            152117,
+            25046,
+            152160,
+            52081,
+            32136,
+            25043,
+            136907,
+            25045,
+            25042,
+            124247,
+            25041,
+            80785
+          ],
+          "query": "吴清源",
+          "total": 1231
+        },
+        {
+          "ids": [
+            140859,
+            124442,
+            118394,
+            140858,
+            25055,
+            25048,
+            152161,
+            25047,
+            152117,
+            25046,
+            152160,
+            52081,
+            32136,
+            25043,
+            136907,
+            25045,
+            25042,
+            124247,
+            25041,
+            80785
+          ],
+          "query": "Go Seigen",
+          "total": 1231
+        }
+      ],
+      "health": {
+        "engines": {
+          "cloud": "unconfigured",
+          "local": "reachable"
+        },
+        "status": "ok",
+        "version": "1.17.1"
+      },
+      "languages": [
+        "cn",
+        "tw",
+        "jp",
+        "ko",
+        "en",
+        "ru"
+      ],
+      "latest_album_id": 173066,
+      "list_seconds": 0.719,
+      "pages": [
+        {
+          "path": "/galaxy/kifu",
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "status": 200
+        },
+        {
+          "path": "/kiosk/kifu",
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "status": 200
+        }
+      ],
+      "public_total": 176290,
+      "russian_uses_english_names": true,
+      "scope": "finite_http_acceptance_not_browser_render",
+      "status": "verified"
+    },
+    "PROD": {
+      "assets": [
+        {
+          "bytes": 14609,
+          "path": "/assets/index-C90zRD53.js",
+          "status": 200
+        },
+        {
+          "bytes": 12883,
+          "path": "/assets/index-DFEU3Joj.css",
+          "status": 200
+        }
+      ],
+      "build": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
+      "equivalent_searches": [
+        {
+          "ids": [
+            140859,
+            124442,
+            118394,
+            140858,
+            25055,
+            25048,
+            152161,
+            25047,
+            152117,
+            25046,
+            152160,
+            52081,
+            32136,
+            25043,
+            136907,
+            25045,
+            25042,
+            124247,
+            25041,
+            80785
+          ],
+          "query": "吴清源",
+          "total": 1231
+        },
+        {
+          "ids": [
+            140859,
+            124442,
+            118394,
+            140858,
+            25055,
+            25048,
+            152161,
+            25047,
+            152117,
+            25046,
+            152160,
+            52081,
+            32136,
+            25043,
+            136907,
+            25045,
+            25042,
+            124247,
+            25041,
+            80785
+          ],
+          "query": "Go Seigen",
+          "total": 1231
+        }
+      ],
+      "health": {
+        "engines": {
+          "cloud": "unconfigured",
+          "local": "reachable"
+        },
+        "status": "ok",
+        "version": "1.17.1"
+      },
+      "languages": [
+        "cn",
+        "tw",
+        "jp",
+        "ko",
+        "en",
+        "ru"
+      ],
+      "latest_album_id": 173046,
+      "list_seconds": 0.825,
+      "pages": [
+        {
+          "path": "/galaxy/kifu",
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "status": 200
+        },
+        {
+          "path": "/kiosk/kifu",
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "status": 200
+        }
+      ],
+      "public_total": 176290,
+      "russian_uses_english_names": true,
+      "scope": "finite_http_acceptance_not_browser_render",
+      "status": "verified"
+    }
+  },
+  "public_http_acceptance": [
+    {
+      "url": "https://go.sailorvoyage.top/api/v1/health",
+      "status": 200,
+      "content_type": "application/json",
+      "bytes": 89
+    },
+    {
+      "url": "https://go.sailorvoyage.top/galaxy/kifu",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 4558
+    },
+    {
+      "url": "https://go.sailorvoyage.top/kiosk/kifu",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 4558
+    },
+    {
+      "url": "https://modelstella.com/api/v1/health",
+      "status": 200,
+      "content_type": "application/json",
+      "bytes": 89
+    },
+    {
+      "url": "https://modelstella.com/galaxy/kifu",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 4558
+    },
+    {
+      "url": "https://modelstella.com/kiosk/kifu",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 4558
+    }
+  ],
+  "headless_startup": {
+    "independent_review": "Astra max APPROVE",
+    "focused_tests": "2 passed (reviewer 1.22s)",
+    "old_image_isolated_initialization_exit": 0,
+    "d2_image_isolated_initialization_exit": 102,
+    "fixed_image_isolated_initialization_exit": 0,
+    "fixed_image_font_switch_null_engine_play_and_state": "passed",
+    "prod_temporarily_rolled_back_then_fixed_image_deployed": true
+  },
+  "B": {
+    "activated_at": "2026-10-20T03:08:59.501101+00:00",
+    "enabled": true,
+    "interval_seconds": 3600,
+    "daily_utc_token_cap": 100000,
+    "max_games_per_run": 100,
+    "max_new_names_per_run": 20,
+    "known_qualified_canonical_five_language_hits_llm_calls": 0,
+    "restart_policy": "unless-stopped",
+    "normal_analysis_gpu": "GPU1:8002",
+    "A_isolations_persisted": 257,
+    "prompt_only_records_restored_to_downloaded": 4,
+    "prior_real_test_to_prod_sample": "prod_synced; five languages, public list, idempotent replay and cron recreation passed",
+    "latest_observed_run": {
+      "id": 62158,
+      "job_name": "kifu_ingest",
+      "started_at": "2026-10-20 06:35:31.505807+00:00",
+      "finished_at": "2026-10-20 06:54:35.189622+00:00",
+      "status": "errors",
+      "duration_ms": 1143683,
+      "error_count": 16,
+      "error": "[katrain_cron.kifu_ingest] kifu preparation quarantined source 90872551",
+      "observed_at": "2026-10-20 06:55:09.063641+00:00",
+      "paid_tokens_observed_today": 94513,
+      "paid_calls_today": 104
+    },
+    "note": "Corrected0f64 durably prod_synced72 each and360 checks per cloud. e23 deployed on both Webs and TESTcron; actual109-instruction readonly restricted receiver probe passed with0modelcalls; own maintenance pause restored and command2 handled. Actual scheduler run62158 is running; terminal acceptance still pending. Historical failures/undo retained separately.",
+    "first_enabled_run": {
+      "id": 61788,
+      "started_at": "2026-10-20T03:09:07.181583+00:00",
+      "status": "failed",
+      "current_run_error_count": 12,
+      "paid_tokens_observed_today": 32986,
+      "phase": "retry_wait",
+      "frozen_games": 72,
+      "frozen_batch": "fa32f3c4-bb8b-431e-859f-aa51cfed8238",
+      "new_metadata_quarantines": 9,
+      "new_name_validation_quarantines": 2,
+      "paid_calls_today": 42,
+      "pending_discovered": 15,
+      "downloaded_this_run": 100,
+      "recovered_prior_downloads": 4,
+      "metadata_conflict_diagnosis": "6 color reversals, 2 different name characters, 1 malformed SGF property fragment; no harmless rank/space-only cases",
+      "diagnostic_report": "B-nine-player-conflicts-readonly.json",
+      "finished_at": "2026-10-20T03:35:25+00:00",
+      "error": "invalid research: incremental research differs from reviewed text or sources",
+      "new_published_games": 0,
+      "historical_record": true
+    },
+    "frozen_recovery": {
+      "old_key": "19x19-batch-dd279a0c3a6e99f61304827b",
+      "new_key": "19x19-recovery-a5425ac6c5b3d96d9bc23d3b",
+      "new_manifest_sha256": "ae8fd9d9f9f4a0bde3ea72e20b74c64b0b3e041848dbb5f50d73a3b7d935e019",
+      "games_unchanged": 72,
+      "decisions_unchanged": 17,
+      "decision_reproduced_and_reviewed": 17,
+      "key_reproduced": "姜勋",
+      "paid_calls_added": 2,
+      "tokens_added": 1296,
+      "old_file_unchanged": true,
+      "native_guards_unchanged": true,
+      "helper_independent_review": "GPT-6 Astra max APPROVE",
+      "helper_tests": "10 passed in16.79s",
+      "dry_run": "passed",
+      "apply": "switched",
+      "postcheck": "72names_ready; no invented publication receipts or IDs",
+      "pause_restored": true,
+      "run_now_command_id": 1,
+      "decision_kinds": {
+        "raw_event": 17,
+        "raw_player": 1
+      },
+      "historical_record": true
+    },
+    "semantic_recovery": {
+      "status": "prod_synced",
+      "curated_events": 8,
+      "curated_file_sha256": "31da8dd74851959cf838c35c7d8e5a21f9d5f46227622c89e1a1479e27668efb",
+      "old_native_test_batch": 880,
+      "actual_native_undo": {
+        "batch_id": 880,
+        "status": "undone",
+        "batch_ids": [
+          880,
+          881,
+          882
+        ],
+        "reverted": 461
+      },
+      "after_undo_counts": {
+        "total": 176549,
+        "public": 176290
+      },
+      "games_preserved": 72,
+      "other_decisions_preserved": 10,
+      "new_reviews": "actual Qwen producer and independent reviewer complete",
+      "new_publication": "TEST883/PROD876 applied72 each; TEST360 and PROD360 verified; batch and72 items durably prod_synced",
+      "actual_reviews": 8,
+      "new_publication_key": "19x19-event-recovery-870a06d9f6b3f234b354a5f4",
+      "new_manifest_sha256": "0f64c2b366a0d9ba59b452d4aac4148dc5609d19c57c6befa1deacde06459e67",
+      "test_native_batch_id": 883,
+      "test_detail_checks": 360,
+      "daily_actual_token_upper_bound": 69549,
+      "daily_actual_paid_calls": 79,
+      "daily_unsettled_reservations": 0,
+      "observed_at": "2026-10-20T06:29:05+00:00",
+      "prod_native_batch_id": 876,
+      "prod_detail_checks": 360,
+      "checks_per_environment": 360,
+      "items_prod_synced": 72,
+      "inserted_each_environment": 72,
+      "reused_each_environment": 0,
+      "prod_verification_status": "verified",
+      "prod_synced_confirmed": true,
+      "operator_session": {
+        "id": 67907,
+        "exit_code": 0,
+        "scope": "recovery operator session; not a CronRun ID"
+      },
+      "actual_summary": {
+        "status": "prod_synced",
+        "publication_key": "19x19-event-recovery-870a06d9f6b3f234b354a5f4",
+        "manifest_sha256": "0f64c2b366a0d9ba59b452d4aac4148dc5609d19c57c6befa1deacde06459e67",
+        "games": 72,
+        "checks_per_environment": 360
+      },
+      "private_operator_archive": {
+        "bytes": 737280,
+        "sha256": "96b6c8a2bc59cae29e3c8069793ffcd5221d2844c10fcfe1869a8ead1e1f9ad6",
+        "persisted_environment_stages": [
+          "TEST",
+          "PROD"
+        ],
+        "scope": "final operators, actual receipts/verifications and failed history; private archive, not public payload"
+      }
+    },
+    "maintenance_paused": false,
+    "delivery_complete": false,
+    "final_normal_run_pending": true,
+    "normal_schedule_status": "enabled;62158 ended with quarantines, partial crawl and budget deferral; durable-name-checkpoint fix pending release",
+    "maintenance_restore": {
+      "maintenance_pause_restored": true,
+      "command_id": 2,
+      "verified_games": 72,
+      "checks_per_environment": 360,
+      "no_publication_phase_modified": true
+    },
+    "production_identity_probe": {
+      "status": "passed",
+      "request_sha256": "db3053212d7dbdd2bd8285568ebd0fe1bf01e0f83bf8975d1b387f2d4b28d06a",
+      "games": 72,
+      "instructions": 109,
+      "results": {
+        "qualified": 109
+      },
+      "llm_calls": 0,
+      "scope": "actual restricted TEST-cron to PROD receiver readonly operation"
+    },
+    "historical_failed_run_61884": {
+      "id": 61884,
+      "started_at": "2026-10-20T04:01:31+00:00",
+      "status": "failed",
+      "current_run_error_count": 0,
+      "phase": "retry_wait; resume_phase=test_verified",
+      "frozen_games": 72,
+      "paid_tokens_observed_today": 34282,
+      "paid_calls_today": 44,
+      "observed_at": "2026-10-20T04:25:52+00:00",
+      "inserted_TEST": 72,
+      "reused_TEST": 0,
+      "finished_at": "2026-10-20T04:55:56.406838+00:00",
+      "error": "PROD receiver exited with status 2; original JSON guard error was discarded",
+      "inserted_TEST_current": 0,
+      "inserted_PROD": 0,
+      "test_original_publication_undone": true,
+      "historical_record": true,
+      "record_scope": "historical failed scheduled run; current corrected frozen recovery is semantic_recovery"
+    },
+    "name_checkpoint_fix": {
+      "status": "independent Astra max APPROVE; release/deployment pending",
+      "spent_tokens_in_62158": 24964,
+      "daily_actual_token_upper_bound": 94513,
+      "actual_decision_recovery": "not possible from usage/request IDs alone; no invented approvals",
+      "budget_increased": false,
+      "tests": "196 passed in20.93s; new checkpoint/resume/grouping plus existing CLI/cron/staging/catalog",
+      "calls_in_deferred_preparation": 25,
+      "code_review": "name-checkpoint-code-review-20261020.json"
+    }
+  },
+  "metrics_B72_progress": {
+    "TEST": {
+      "albums": 176621,
+      "public_complete_cards": 176362,
+      "fixedwide": 160333,
+      "fixedwide_percent": 90.778,
+      "strictcomplete": 176362,
+      "strictcomplete_percent": 99.8534,
+      "inserted_delta": 72,
+      "wide_delta": 72,
+      "strictcomplete_delta": 72,
+      "qualification": "native applied and TEST API verified; actual current new-ID bindings read",
+      "basis": "A-closepoint plus verified B72 increments; no new full scan"
+    },
+    "PROD": {
+      "status": "pending B72 publication; A-closepoint remains the last verified metric"
+    },
+    "point_status": "Historical temporary TEST-only publication, actually undone; not current metrics."
+  },
+  "current_metrics": {
+    "TEST": {
+      "point": "Corrected0f64 prod_synced on both; actual native72 inserts and360 API checks each environment",
+      "observed_at": "2026-10-20T06:29:05+00:00",
+      "albums": 176621,
+      "public_complete_cards": 176362,
+      "fixedwide": 160333,
+      "fixedwide_percent": 90.778,
+      "strictcomplete": 176362,
+      "strictcomplete_percent": 99.8534,
+      "measurement_basis": "A native closepoint plus72 actual native-qualified inserts; finite actual binding columns checked; not a fresh full post-B scan",
+      "baseline_reference": "metrics_at_A_closepoint.TEST",
+      "actual_B_increment": {
+        "inserted": 72,
+        "reused": 0,
+        "fixedwide": 72,
+        "strictcomplete": 72,
+        "albums": 72,
+        "public_complete_cards": 72
+      },
+      "canonical_five_language_entities": {
+        "P5": 3838,
+        "P5_denominator": 3865,
+        "P5_percent": 99.3014,
+        "E5": 84,
+        "E5_denominator": 85,
+        "E5_percent": 98.8235,
+        "snapshot_started_at": "2026-10-20T06:51:26.366708+00:00",
+        "scope": "canonical P5/E5 and SQL population counts only; no full-card qualification"
+      },
+      "public_visible_complete_percent": 100,
+      "excluded_population": {
+        "duplicate": 9,
+        "list_hidden": 250,
+        "duplicate_and_hidden": 0,
+        "excluded_from_public": 259
+      }
+    },
+    "PROD": {
+      "point": "Corrected0f64 prod_synced on both; actual native72 inserts and360 API checks each environment",
+      "observed_at": "2026-10-20T06:29:05+00:00",
+      "albums": 176621,
+      "public_complete_cards": 176362,
+      "fixedwide": 160847,
+      "fixedwide_percent": 91.069,
+      "strictcomplete": 176362,
+      "strictcomplete_percent": 99.8534,
+      "measurement_basis": "A native closepoint plus72 actual native-qualified inserts; finite actual binding columns checked; not a fresh full post-B scan",
+      "baseline_reference": "metrics_at_A_closepoint.PROD",
+      "actual_B_increment": {
+        "inserted": 72,
+        "reused": 0,
+        "fixedwide": 72,
+        "strictcomplete": 72,
+        "albums": 72,
+        "public_complete_cards": 72
+      },
+      "canonical_five_language_entities": {
+        "P5": 3663,
+        "P5_denominator": 3689,
+        "P5_percent": 99.2952,
+        "E5": 84,
+        "E5_denominator": 85,
+        "E5_percent": 98.8235,
+        "snapshot_started_at": "2026-10-20T06:51:26.393651+00:00",
+        "scope": "canonical P5/E5 and SQL population counts only; no full-card qualification"
+      },
+      "public_visible_complete_percent": 100,
+      "excluded_population": {
+        "duplicate": 9,
+        "list_hidden": 250,
+        "duplicate_and_hidden": 0,
+        "excluded_from_public": 259
+      }
+    }
+  },
+  "latest_candidate_release": {
+    "source": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+    "parent_main": "0e0a53ef628846c737caa14840ab6747ba44e439",
+    "candidate_images_ready": true,
+    "deployed": false,
+    "candidate_images": {
+      "TEST_Web": "sha256:42ba8fe019fd9857a835db7ad1d135041a61522d1f60c293387f1c6e2f831d48",
+      "PROD_Web": "sha256:af3d02331409a724a2bd7901ac26504d8ea86f24c0572d91027d233397b476c5",
+      "TEST_cron": "sha256:95f4308b36b5844e91aec8ce14e3cbe8c3fa982dcc6bd00cd5efb34db410973e"
+    },
+    "note": "Candidate identity is not deployed_runtime; final deployment and normal scheduled run remain pending.",
+    "status": "deployed"
+  },
+  "independent_deep_analysis_1000": {
+    "observed_at_utc_minute": "2026-10-20T06:19Z",
+    "completed": 400,
+    "synced_both": 400,
+    "failed_jobs": 0,
+    "target": 1000,
+    "scope": "independent deep-analysis task; not added to A/B ingestion counts"
+  },
+  "deployed_runtime_before_e23": {
+    "TEST_Web_image": "sha256:4dc8d19a7027c3774112d9eb60b1768721fce0f1e167b7473458d20e8dbfe97b",
+    "PROD_Web_image": "sha256:bbcdd5b1b90731d4781abfca13d0fbe6416b158d0a8f84cf6d39d205e95e7f0e",
+    "TEST_cron_image": "sha256:0d6e49501b86cbdcc5fd080d2208d645b13d86671ac73a5dd6f3dce037c6d1f0",
+    "Web_source": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
+    "TEST_cron_source": "b9d8bb90155c3ebfa2dae835f7f562c62db850a9"
+  },
+  "Web_e23_acceptance": {
+    "TEST": {
+      "status": "verified",
+      "scope": "representative HTTP pages/assets/list; not browser rendering or P95 benchmark",
+      "health": {
+        "status": "ok",
+        "version": "1.17.1",
+        "engines": {
+          "local": "reachable",
+          "cloud": "unconfigured"
+        }
+      },
+      "pages": [
+        {
+          "path": "/galaxy/kifu",
+          "status": 200,
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "seconds": 0.012
+        },
+        {
+          "path": "/kiosk/kifu",
+          "status": 200,
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "seconds": 0.002
+        }
+      ],
+      "assets": [
+        {
+          "path": "/assets/api-C-UlmUHc.js",
+          "status": 200,
+          "bytes": 11234
+        },
+        {
+          "path": "/assets/index-C90zRD53.js",
+          "status": 200,
+          "bytes": 14609
+        },
+        {
+          "path": "/assets/index-DFEU3Joj.css",
+          "status": 200,
+          "bytes": 12883
+        },
+        {
+          "path": "/assets/rolldown-runtime-QTnfLwEv.js",
+          "status": 200,
+          "bytes": 694
+        },
+        {
+          "path": "/assets/ui-core-KixCoRFD.js",
+          "status": 200,
+          "bytes": 631537
+        }
+      ],
+      "public_total": 176362,
+      "english_russian_same20_ids_and_names": true
+    },
+    "PROD": {
+      "status": "verified",
+      "scope": "representative HTTP pages/assets/list; not browser rendering or P95 benchmark",
+      "health": {
+        "status": "ok",
+        "version": "1.17.1",
+        "engines": {
+          "local": "reachable",
+          "cloud": "unconfigured"
+        }
+      },
+      "pages": [
+        {
+          "path": "/galaxy/kifu",
+          "status": 200,
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "seconds": 0.006
+        },
+        {
+          "path": "/kiosk/kifu",
+          "status": 200,
+          "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+          "seconds": 0.003
+        }
+      ],
+      "assets": [
+        {
+          "path": "/assets/api-C-UlmUHc.js",
+          "status": 200,
+          "bytes": 11234
+        },
+        {
+          "path": "/assets/index-C90zRD53.js",
+          "status": 200,
+          "bytes": 14609
+        },
+        {
+          "path": "/assets/index-DFEU3Joj.css",
+          "status": 200,
+          "bytes": 12883
+        },
+        {
+          "path": "/assets/rolldown-runtime-QTnfLwEv.js",
+          "status": 200,
+          "bytes": 694
+        },
+        {
+          "path": "/assets/ui-core-KixCoRFD.js",
+          "status": 200,
+          "bytes": 631537
+        }
+      ],
+      "public_total": 176362,
+      "english_russian_same20_ids_and_names": true
+    }
+  },
+  "canonical_metrics_e23": {
+    "TEST": {
+      "read_only": true,
+      "scope": "canonical P5/E5 and SQL population counts only; no full-card qualification",
+      "runtime_build_sha": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+      "metrics": {
+        "P5": 3838,
+        "E5": 84
+      },
+      "denominators": {
+        "P5": 3865,
+        "E5": 85
+      },
+      "percent": {
+        "P5": 99.3014,
+        "E5": 98.8235
+      },
+      "method": {
+        "qualifiers": [
+          "identity._approved_names",
+          "identity._qualified_name_rows"
+        ],
+        "owner_models": "name_batch._OWNER[player,event]",
+        "languages": [
+          "cn",
+          "en",
+          "jp",
+          "ko",
+          "tw"
+        ],
+        "historical_counts_reused": false,
+        "qualification_functions_patched": false,
+        "album_qualification": false,
+        "album_sgf_or_source_filesystem_read": false,
+        "reader_origin": "canonical loop from existing TMP/read-live-metrics.py; only player/event _OWNER entries",
+        "native_function_sha256": {
+          "_approved_names": "31bf09ef1e69ebf6fb62dfcbd5d1e0c70d49a5c913dd5abc6b9e1ec295a5a06a",
+          "_qualified_name_rows": "797f0ee154a882125a8fd7492d905db9f4575c9264628983878a2fb5e78afcbb"
+        }
+      },
+      "snapshot_started_at": "2026-10-20T06:51:26.366708+00:00",
+      "population": {
+        "albums": 176621,
+        "duplicate": 9,
+        "list_hidden": 250,
+        "duplicate_and_hidden": 0,
+        "excluded_from_public": 259,
+        "public_visible": 176362
+      },
+      "task_isolations": {
+        "quarantined_items": 268,
+        "A_report_items": 257,
+        "other_items": 11,
+        "A_report_sha256": "42f335c6a65b1ca8e87defe359a8a32927b3358033158eb3a39e127273e4bc88",
+        "scope": "local kifu_ingest_items state, not hidden catalog albums; TEST is B coordinator, PROD task rows are not mirrored"
+      },
+      "captured_at": "2026-10-20T06:52:22.876930+00:00",
+      "status": "ok",
+      "elapsed_seconds": 57.036,
+      "environment": "TEST",
+      "transport_wall_seconds": 57.878
+    },
+    "PROD": {
+      "read_only": true,
+      "scope": "canonical P5/E5 and SQL population counts only; no full-card qualification",
+      "runtime_build_sha": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+      "metrics": {
+        "P5": 3663,
+        "E5": 84
+      },
+      "denominators": {
+        "P5": 3689,
+        "E5": 85
+      },
+      "percent": {
+        "P5": 99.2952,
+        "E5": 98.8235
+      },
+      "method": {
+        "qualifiers": [
+          "identity._approved_names",
+          "identity._qualified_name_rows"
+        ],
+        "owner_models": "name_batch._OWNER[player,event]",
+        "languages": [
+          "cn",
+          "en",
+          "jp",
+          "ko",
+          "tw"
+        ],
+        "historical_counts_reused": false,
+        "qualification_functions_patched": false,
+        "album_qualification": false,
+        "album_sgf_or_source_filesystem_read": false,
+        "reader_origin": "canonical loop from existing TMP/read-live-metrics.py; only player/event _OWNER entries",
+        "native_function_sha256": {
+          "_approved_names": "31bf09ef1e69ebf6fb62dfcbd5d1e0c70d49a5c913dd5abc6b9e1ec295a5a06a",
+          "_qualified_name_rows": "797f0ee154a882125a8fd7492d905db9f4575c9264628983878a2fb5e78afcbb"
+        }
+      },
+      "snapshot_started_at": "2026-10-20T06:51:26.393651+00:00",
+      "population": {
+        "albums": 176621,
+        "duplicate": 9,
+        "list_hidden": 250,
+        "duplicate_and_hidden": 0,
+        "excluded_from_public": 259,
+        "public_visible": 176362
+      },
+      "task_isolations": {
+        "quarantined_items": 0,
+        "A_report_items": 0,
+        "other_items": 0,
+        "A_report_sha256": "42f335c6a65b1ca8e87defe359a8a32927b3358033158eb3a39e127273e4bc88",
+        "scope": "local kifu_ingest_items state, not hidden catalog albums; TEST is B coordinator, PROD task rows are not mirrored"
+      },
+      "captured_at": "2026-10-20T06:52:57.709128+00:00",
+      "status": "ok",
+      "elapsed_seconds": 92.087,
+      "environment": "PROD",
+      "transport_wall_seconds": 92.779
+    }
+  }
+}

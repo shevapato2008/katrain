@@ -1,0 +1,85 @@
+[
+  {
+    "recognition_id": "p193-f02",
+    "page": 193,
+    "source_pointer": "/chapters/4/sections/4/pages/6/elements/1",
+    "figure_id": 16647,
+    "candidate_id": 3633,
+    "inferences": [
+      {
+        "at": "7,2",
+        "value": "黑7粘于此",
+        "basis": "combined",
+        "reason": "黑5提掉此白子，白6后黑7在此粘；图下注明“❼粘”。",
+        "cell": "7,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p239-f02",
+    "page": 239,
+    "source_pointer": "/chapters/5/sections/4/pages/1/elements/2",
+    "figure_id": 16737,
+    "candidate_id": 3723,
+    "uncertainties": [
+      {
+        "at": "6,7",
+        "reason": "印刷为白△；正文涉及此处提劫及黑7粘，可能兼作被提子、回粘位置的示意，按所见保留白△。",
+        "candidates": [
+          "白△参照子",
+          "黑7粘的复用位置"
+        ],
+        "cell": "6,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p265-f01",
+    "page": 265,
+    "source_pointer": "/chapters/6/sections/7/pages/0/elements/0",
+    "figure_id": 16797,
+    "candidate_id": 3783,
+    "uncertainties": [
+      {
+        "at": "3,4",
+        "reason": "白子内有浅淡残痕，无法确认是否为有意标记。",
+        "candidates": [
+          "扫描杂点，无标记",
+          "不明标记"
+        ],
+        "cell": "3,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p285-f03",
+    "page": 285,
+    "source_pointer": "/chapters/7/sections/4/pages/1/elements/2",
+    "figure_id": 16847,
+    "candidate_id": 3833,
+    "inferences": [
+      {
+        "at": "7,11",
+        "value": "6",
+        "basis": "combined",
+        "reason": "字形破损近似5；结合黑5、黑7及本图黑先白偶数的顺序，判读为白6。",
+        "cell": "17,11"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p293-f01",
+    "page": 293,
+    "source_pointer": "/chapters/7/sections/9/pages/0/elements/2",
+    "figure_id": 16862,
+    "candidate_id": 3848,
+    "uncertainties": [
+      {
+        "at": "move_62",
+        "reason": "图注写“○62粘”，盘内未见62标号，无法由该注确定落点。",
+        "candidates": [],
+        "cell": null
+      }
+    ]
+  }
+]

@@ -1,5 +1,7 @@
 import logging
+import threading
 import time
+import uuid
 from threading import Event
 
 import cv2
@@ -47,6 +49,89 @@ def test_five_point_calibrator_only_flashes_five_positions():
     result = calibrator.calibrate()
     assert result.ok
     assert [coord for coord, _rgb in led.attempts] == list(FIVE_POINT_ANCHORS)
+
+
+def test_five_point_baseline_waits_for_shared_hub_preview_without_reflashing():
+    from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
+
+    preview_entered, preview_release, finished = Event(), Event(), Event()
+    led = FakeLed()
+    points = _synthetic_camera_points()
+    baseline = False
+    baseline_frames = []
+    built_groups = []
+    results = []
+    preview = None
+
+    class PreviewCamera(FakeCapture):
+        is_connected = True
+
+        def open(self):
+            return True
+
+        def close(self):
+            self.is_connected = False
+
+        def read_frame(self):
+            preview_entered.set()
+            assert preview_release.wait(2)
+            return self._frame()
+
+        def grab_fresh(self, after_ts=None, settle_ms=150.0, timeout=2.0):
+            return super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=PreviewCamera(led, points))
+    hub.start()
+    calibrator = FivePointLedGeometryCalibrator(led=led, capture=hub)
+    calibrator.anchor_roi = lambda row, col: (*points[(row, col)], 80)
+    build_lock = calibrator._build_lock
+
+    def before_capture(phase, _current, _total):
+        nonlocal baseline
+        baseline = phase == "building_baseline"
+
+    def guard(frame, dark):
+        nonlocal preview
+        if baseline:
+            assert dark
+            baseline_frames.append(frame)
+            if len(baseline_frames) == 3:
+                preview = threading.Thread(target=hub.read_frame)
+                preview.start()
+                assert preview_entered.wait(1)
+
+    def tracked_build(fit, frames, detected, attempts):
+        built_groups.append([id(frame) for frame in frames])
+        return build_lock(fit, frames, detected, attempts)
+
+    def calibrate():
+        try:
+            results.append(calibrator.calibrate())
+        finally:
+            finished.set()
+
+    calibrator.before_capture = before_capture
+    calibrator.frame_guard = guard
+    calibrator._build_lock = tracked_build
+    worker = threading.Thread(target=calibrate)
+    try:
+        worker.start()
+        assert preview_entered.wait(2), "calibration did not reach baseline sample three"
+        returned_while_preview_held = finished.wait(0.04)
+        preview_release.set()
+        assert finished.wait(5)
+        assert results[0].ok, results[0].reason
+        assert not returned_while_preview_held
+        assert len(baseline_frames) == 8
+        assert built_groups == [[id(frame) for frame in baseline_frames]]
+        assert [coord for coord, _rgb in led.attempts] == list(FIVE_POINT_ANCHORS)
+        assert led.current is None
+    finally:
+        preview_release.set()
+        worker.join(5)
+        if preview is not None:
+            preview.join(2)
+        hub.stop()
 
 
 @pytest.mark.parametrize("short_groups", [1, 3])

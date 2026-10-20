@@ -29,6 +29,9 @@ outdated_log.txt
 
 # too big
 models/
+# Versioned board-equipment models are reviewed source assets, not build output.
+!katrain/assets/board-equipment/go/stones/*/*/models/
+!katrain/assets/board-equipment/go/stones/*/*/models/*.glb
 # ...but DO track the deployed vision model blobs: the RK3562 .rknn + its .meta.json
 # are committed here and consumed on the SBC via the smartbox-software vendor/katrain
 # submodule (plan §14 E3 — atomic with the stone_detector/rknn_backend that reads them).
@@ -238,3 +241,6 @@ katrain/web/ui/test-results/
 # empty text extraction of a scanned PDF. The source PDF and useful OCR remain tracked.
 /tmp/pdfs/es-sol.pdf
 /tmp/pdfs/fr-belgo.txt
+
+# Standalone server tutorial recorder bundle
+katrain/web/tutorial-media-static/

@@ -1,0 +1,17 @@
+{
+  "reader_sha256": "48ba3fec285991116fdedeee329c2e029fe5fd965578c6af5a08b7a75e09fef8",
+  "existing_readers_inspected": [
+    "/tmp/kifu-hourly-incremental-20261019/read-live-metrics.py",
+    "/tmp/kifu-hourly-incremental-20261019/read-live-metrics-fast.py",
+    "/tmp/kifu-hourly-incremental-20261019/read-live-metrics-chunked.py"
+  ],
+  "scope": "unmodified native canonical player/event qualifiers only; no full-card/SGF population traversal",
+  "snapshot": "one REPEATABLE READ / READ ONLY transaction per environment",
+  "qualification_cache_or_monkeypatch": false,
+  "limits_seconds": {
+    "remote_alarm": 165,
+    "statement_timeout": 150,
+    "collector": 180
+  },
+  "writes": "none; Docker exec stdin with PYTHONDONTWRITEBYTECODE=1, no remote script file"
+}

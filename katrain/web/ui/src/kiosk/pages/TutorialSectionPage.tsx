@@ -7,6 +7,7 @@ import { findNumberedStone } from '../../components/tutorials/SGFBoard';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { BoardPayload, TutorialFigure, TutorialSectionDetail } from '../../types/tutorial';
 import TutorialVideoPlayer from '../../components/tutorials/TutorialVideoPlayer';
+import { selectTutorialVideoProfile, tutorialVideoCalibrationNote } from '../../components/tutorials/tutorialVideoProfile';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { GO_COLS, xyToCoord, type GoWindow } from '../shell/goBoard';
 import { KioskActions } from '../shell/KioskActions';
@@ -66,8 +67,7 @@ import { interpolate } from '../utils/interpolate';
  * 它把「有没有旁白」和「有没有视频」两根轴当成一根二值轴用(同一份列表里
  * 图4「有讲解」对 图6「本图暂无视频」)。
  *
- * **有视频时视频占左边那块 516 的盘位**,同一颗键切回棋图。量出来的理由:右栏 516 摊完
- * 之后折叠块只剩 ~120(两行),而 460 宽的 16:9 视频要 259 高。
+ * **设备档视频在点击后覆盖整个 1024×600 画布**，返回按钮切回棋图。
  * 有视频时**不另放旁白** —— `scripts/generate_video.py:667` 已经把同一条旁白混进视频了。
  */
 
@@ -79,7 +79,7 @@ function maxMoveOf(fig: TutorialFigure | null): number {
 
 type Teach = 'video' | 'audio' | 'text' | 'none';
 const teachOf = (f: TutorialFigure): Teach =>
-  (f.video_asset ? 'video' : f.audio_asset ? 'audio' : f.narration ? 'text' : 'none');
+  (selectTutorialVideoProfile(f, 'kiosk-7-v1') ? 'video' : f.audio_asset ? 'audio' : f.narration ? 'text' : 'none');
 
 /** `"3,15"` → `[3, 15]`。后端那三张表(labels / letters / shapes)的键都是这个形状。 */
 const parseKey = (k: string): [number, number] => {
@@ -134,6 +134,8 @@ const TutorialSectionPage = () => {
     [section],
   );
   const current: TutorialFigure | null = figures[index] ?? null;
+  const deviceVideo = selectTutorialVideoProfile(current, 'kiosk-7-v1');
+  const videoCalibrationNote = tutorialVideoCalibrationNote(deviceVideo);
   const maxStep = useMemo(() => maxMoveOf(current), [current]);
 
   const effStep = stepFor && current && stepFor.id === current.id ? stepFor.step : maxStep;
@@ -144,7 +146,7 @@ const TutorialSectionPage = () => {
     if (findNumberedStone(current.board_payload, step)) play('stone');
   }, [current, effStep, play]);
   const full = current != null && fullFor === current.id;
-  const onVideo = current != null && videoFor === current.id && Boolean(current.video_asset);
+  const onVideo = current != null && videoFor === current.id && Boolean(deviceVideo);
   const onAudio = current != null && audioFor === current.id;
 
   // 换图 / 离开时把音频停掉 —— 不停的话上一张图的旁白会一路念到下一张。
@@ -213,7 +215,7 @@ const TutorialSectionPage = () => {
   const teach: Teach = current ? teachOf(current) : 'none';
   const teachAction = () => {
     if (!current) return;
-    if (teach === 'video') { setVideoFor(onVideo ? null : current.id); return; }
+    if (teach === 'video') { audioEl.current?.pause(); setAudioFor(null); setVideoFor(onVideo ? null : current.id); return; }
     if (teach === 'audio') {
       if (onAudio) { audioEl.current?.pause(); setAudioFor(null); return; }
       setAudioFor(current.id);
@@ -222,7 +224,7 @@ const TutorialSectionPage = () => {
     }
   };
   const teachLabel = teach === 'video'
-    ? (onVideo ? t('tutorial:back_to_diagram', '回到棋图') : t('tutorial:watch_video', '看视频讲解'))
+    ? t('tutorial:watch_video', '看视频讲解')
     : teach === 'audio'
       ? (onAudio ? t('tutorial:stop_audio', '停下') : t('tutorial:play_audio', '播放语音讲解'))
       : teach === 'text'
@@ -282,16 +284,16 @@ const TutorialSectionPage = () => {
 
   return (
     <div className="kiosk-layout-a" data-testid="tutorial-section-page">
-      {onVideo && current.video_asset ? (
-        // 视频占的就是那块 516 —— 右栏摊完之后折叠块只剩两行,460 宽的 16:9 要 259 高。
-        <div className="figvideo" data-testid="tutorial-figure-video">
-          <TutorialVideoPlayer
-            fill
-            src={TutorialReadAPI.assetUrl(current.video_asset)}
-            poster={TutorialReadAPI.assetUrl(current.video_asset.replace(/\.mp4$/, '.jpg'))}
-          />
+      {onVideo && deviceVideo && (
+        <div role="dialog" aria-modal="true" aria-label="RK3562 · 7英寸视频" data-testid="tutorial-figure-video"
+          style={{ position: 'fixed', inset: 0, zIndex: 1500, background: '#000' }}>
+          <TutorialVideoPlayer key={deviceVideo.asset} fill src={TutorialReadAPI.assetUrl(deviceVideo.asset)} />
+          <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => setVideoFor(null)}
+            style={{ position: 'absolute', top: 12, left: 12, minWidth: 120, minHeight: 44 }}>
+            {t('tutorial:back_to_diagram', '回到棋图')}
+          </button>
         </div>
-      ) : (
+      )}
         <div
           className="kiosk-board figure-board"
           data-testid="tutorial-figure-board"
@@ -326,9 +328,8 @@ const TutorialSectionPage = () => {
             {board.colLabels.map((c) => <span key={`b${c}`}>{c}</span>)}
           </div>
         </div>
-      )}
 
-      <div className="kiosk-rail">
+      <div className="kiosk-rail" inert={onVideo}>
         <KioskPagebar
           testId="tutorial-section-pagebar"
           backLabel={t('tutorial:back_toc', '目录')}
@@ -368,7 +369,8 @@ const TutorialSectionPage = () => {
             {figures.map((f, i) => {
               const tag = tagOf(f);
               const moves = maxMoveOf(f);
-              const secs = f.video_duration_ms ? Math.round(f.video_duration_ms / 1000) : null;
+              const duration = selectTutorialVideoProfile(f, 'kiosk-7-v1')?.duration_ms;
+              const secs = duration != null ? Math.round(duration / 1000) : null;
               return (
                 <button
                   key={f.id}
@@ -425,6 +427,9 @@ const TutorialSectionPage = () => {
             `none` 那一档上面那段讲解块写的就是「书上没有配文字,也还没有录讲解」,
             再挂一行等于同一句话占两处(Fan 8-22:「不要写那么多解释文字」)。
             读屏那一侧不受影响 —— `reason` 照旧挂在按钮的 `title` 上。 */}
+        {!deviceVideo && <p className="kiosk-opthint">RK3562 · 7英寸视频尚未生成</p>}
+        {deviceVideo && <p className="kiosk-opthint">RK3562 · 7英寸</p>}
+        {videoCalibrationNote && <p className="kiosk-opthint">{videoCalibrationNote}</p>}
         {teach === 'text' && teachReason && <p className="kiosk-opthint">{teachReason}</p>}
 
         {/* 语音那一档:元素常挂着,`src` 跟着当前图走。 */}

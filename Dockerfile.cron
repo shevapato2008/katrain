@@ -2,12 +2,21 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends openssh-client \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements-cron.txt .
 RUN pip install --no-cache-dir -r requirements-cron.txt
 
 COPY katrain/cron/ katrain/cron/
+COPY katrain/kifu_ingest/ katrain/kifu_ingest/
+COPY katrain/core/__init__.py katrain/core/sgf_parser.py katrain/core/
+COPY katrain/web/__init__.py katrain/web/
+COPY katrain/web/core/config.py katrain/web/core/db.py katrain/web/core/models_db.py katrain/web/core/
+COPY katrain/web/kifu/ katrain/web/kifu/
 # Ensure katrain is a package (needs __init__.py at katrain level)
 RUN touch katrain/__init__.py
+ENV PYTHONDONTWRITEBYTECODE=1
 
 # Build identity for the admin config check (set by compose from `git rev-parse --short HEAD`).
 ARG KATRAIN_BUILD_SHA=unknown

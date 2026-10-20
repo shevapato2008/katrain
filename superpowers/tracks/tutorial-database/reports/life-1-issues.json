@@ -1,0 +1,210 @@
+[
+  {
+    "recognition_id": "p043-f01",
+    "page": 43,
+    "source_pointer": "/chapters/0/sections/17/pages/1/elements/0",
+    "figure_id": 11206,
+    "candidate_id": 2323,
+    "inferences": [
+      {
+        "at": "0,4",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字1较淡；正文“黑1尖”及清晰的白2、黑3支持此处为黑1。",
+        "cell": "0,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p073-f03",
+    "page": 73,
+    "source_pointer": "/chapters/0/sections/32/pages/1/elements/2",
+    "figure_id": 11268,
+    "candidate_id": 2385,
+    "inferences": [
+      {
+        "at": "1,8",
+        "value": "6",
+        "basis": "combined",
+        "reason": "字形残损；结合已见1至5及正文“以下至黑6”，判为6。",
+        "cell": "1,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p077-f03",
+    "page": 77,
+    "source_pointer": "/chapters/0/sections/34/pages/1/elements/2",
+    "figure_id": 11276,
+    "candidate_id": 2393,
+    "inferences": [
+      {
+        "at": "0,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "该黑子数字残淡；图注“黑1…白2下立后”与原页残留字形共同确认。",
+        "cell": "0,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p083-f01",
+    "page": 83,
+    "source_pointer": "/chapters/0/sections/37/pages/1/elements/0",
+    "figure_id": 11286,
+    "candidate_id": 2403,
+    "inferences": [
+      {
+        "at": "1,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "淡竖笔结合题注“黑1后退一步”及图中2、3标号，判为1。",
+        "cell": "1,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p083-f03",
+    "page": 83,
+    "source_pointer": "/chapters/0/sections/37/pages/1/elements/2",
+    "figure_id": 11288,
+    "candidate_id": 2405,
+    "inferences": [
+      {
+        "at": "0,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字笔画淡缺；正文明确黑1，结合白2、黑3、白4的标号及位置判为1。",
+        "cell": "0,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p093-f01",
+    "page": 93,
+    "source_pointer": "/chapters/0/sections/42/pages/1/elements/0",
+    "figure_id": 11306,
+    "candidate_id": 2423,
+    "inferences": [
+      {
+        "at": "1,7",
+        "value": "1",
+        "basis": "combined",
+        "reason": "子内数字极淡，结合正文黑1及后续白2、黑3的共活形确认。",
+        "cell": "1,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p149-f01",
+    "page": 149,
+    "source_pointer": "/chapters/1/sections/9/pages/1/elements/0",
+    "figure_id": 11414,
+    "candidate_id": 2531,
+    "inferences": [
+      {
+        "at": "1,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "目标图数字淡，原页同点可辨1，正文明确“黑1点极其严厉”。",
+        "cell": "1,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p161-f03",
+    "page": 161,
+    "source_pointer": "/chapters/1/sections/15/pages/1/elements/2",
+    "figure_id": 11440,
+    "candidate_id": 2557,
+    "inferences": [
+      {
+        "at": "1,8",
+        "value": "6",
+        "basis": "combined",
+        "reason": "数字略糊；图注“以下至白6”，结合字形及黑5后的轮次判为6。",
+        "cell": "1,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p169-f03",
+    "page": 169,
+    "source_pointer": "/chapters/1/sections/19/pages/1/elements/2",
+    "figure_id": 11456,
+    "candidate_id": 2573,
+    "inferences": [
+      {
+        "at": "0,5",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字残损；题注“黑1操之过急”，结合图中白2、黑3、白4确认。",
+        "cell": "0,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p181-f03",
+    "page": 181,
+    "source_pointer": "/chapters/1/sections/25/pages/1/elements/2",
+    "figure_id": 11480,
+    "candidate_id": 2597,
+    "inferences": [
+      {
+        "at": "1,7",
+        "value": "1",
+        "basis": "combined",
+        "reason": "黑子上的1较淡；结合图文“黑1”和清晰的白2、黑3、白4确认。",
+        "cell": "1,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p185-f01",
+    "page": 185,
+    "source_pointer": "/chapters/1/sections/27/pages/1/elements/0",
+    "figure_id": 11486,
+    "candidate_id": 2603,
+    "inferences": [
+      {
+        "at": "0,5",
+        "value": "1",
+        "basis": "combined",
+        "reason": "编号极淡；正文“黑1大飞”与左边此子的位置相符。",
+        "cell": "0,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p231-f01",
+    "page": 231,
+    "source_pointer": "/chapters/1/sections/50/pages/1/elements/0",
+    "figure_id": 11578,
+    "candidate_id": 2695,
+    "inferences": [
+      {
+        "at": "4,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "底边黑子上的数字竖笔较淡，结合正文“黑1点”辨为1。",
+        "cell": "4,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p249-f03",
+    "page": 249,
+    "source_pointer": "/chapters/1/sections/59/pages/1/elements/2",
+    "figure_id": 11616,
+    "candidate_id": 2733,
+    "inferences": [
+      {
+        "at": "4,8",
+        "value": "1",
+        "basis": "combined",
+        "reason": "黑子内编号残淡，结合正文“黑1打吃，白2提子”及图中白2确定。",
+        "cell": "4,17"
+      }
+    ]
+  }
+]

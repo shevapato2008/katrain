@@ -744,12 +744,16 @@ async def _lifespan_board(app: FastAPI, log):
             hardware_vision_state is not None
             and hardware_vision_state.profile.strategy == CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK
         )
+        runtime_hardware_ae = bool(
+            vision_config and vision_config.enabled and getattr(vision_config, "auto_exposure", None) == "hardware"
+        )
         if capture_config and capture_config.enabled:
             hub_config = CameraHubConfig(
                 device_id=capture_config.camera_device,
                 width=capture_config.width,
                 height=capture_config.height,
-                lock_exposure=(persisted_lock_exposure if hardware_vision_dir else capture_config.lock_exposure),
+                lock_exposure=(persisted_lock_exposure and not runtime_hardware_ae
+                               if hardware_vision_dir else capture_config.lock_exposure),
                 exposure=(None if hardware_vision_dir else capture_config.exposure),
                 lock_awb=capture_config.lock_awb,
             )
@@ -758,7 +762,7 @@ async def _lifespan_board(app: FastAPI, log):
                 device_id=vision_config.camera_device,
                 width=vision_config.camera_width,
                 height=vision_config.camera_height,
-                lock_exposure=persisted_lock_exposure,
+                lock_exposure=persisted_lock_exposure and not runtime_hardware_ae,
                 exposure=None,
                 lock_awb=False,
             )
@@ -949,6 +953,7 @@ async def _lifespan_board(app: FastAPI, log):
             on_suspend=suspend_vision,
             on_resume=resume_vision,
             drift_needed=lambda: _vision_needs_frames(app),
+            restore_auto_exposure_on_success=runtime_hardware_ae,
         )
     else:
         app.state.geometry_calibration = None
@@ -5534,10 +5539,10 @@ def run_web():
     )
     parser.add_argument(
         "--vision-auto-exposure",
-        choices=["software", "off"],
+        choices=["software", "hardware", "off"],
         default=None,
-        help="Software AE: drive board-region median brightness into the target band by "
-        "adjusting exposure at runtime (default: software; advisory-only on macOS).",
+        help="Runtime exposure control: native camera AE, software AE, or off "
+        "(default: software; software AE is advisory-only on macOS).",
     )
     parser.add_argument(
         "--vision-ae-target",

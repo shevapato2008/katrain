@@ -98,16 +98,33 @@ def discover_objects(payload, presentation_plan=None, source_identity=None):
             )
     # Initial-only teaching objects can be captured before the saved final diagram.
     # Their identity and lifetime belong to the initial rule position, not its replacement stone.
-    if validate_replay(payload)["status"] == "complete":
-        initial = payload["replay"]["initial"]
+    source_replay = (plan or {}).get("source_replay")
+    if source_replay or validate_replay(payload)["status"] == "complete":
+        recording = source_replay or payload["replay"]
+        initial = recording["initial"]
         initial_occupants = {tuple(point): color for color in ("B", "W") for point in initial["stones"].get(color, [])}
-        moved_points = {tuple(move["point"]) for move in payload["replay"]["moves"] if move.get("point") is not None}
+        moved_points = {tuple(move["point"]) for move in recording["moves"] if move.get("point") is not None}
         for field in ("labels", "letters", "shapes"):
             for key, value in sorted((initial.get(field) or {}).items()):
                 point = _point(key, size)
                 color = initial_occupants.get(tuple(point))
                 if not isinstance(value, str) or not value.strip():
                     raise ValueError("Initial annotation must have nonempty text")
+                if source_replay:
+                    matching = [
+                        obj
+                        for obj in objects
+                        if obj["kind"] == field
+                        and obj["point"] == point
+                        and obj["value"] == value
+                        and obj["stone_color"] == color
+                    ]
+                    if matching:
+                        if color is not None:
+                            # Keep the saved ID for source-plan bindings, but pin a marked
+                            # background stone to its initial rule lifetime, even on reuse.
+                            matching[0]["scope"] = "initial"
+                        continue
                 if tuple(point) not in moved_points and any(
                     obj["kind"] == field
                     and obj["point"] == point
@@ -211,6 +228,19 @@ def _source_recording_frames(payload, objects, source):
             raise ValueError(
                 "Source initial position must preserve saved background and cannot invent replacement stones"
             )
+    for obj in objects:
+        if obj["kind"] not in ("labels", "letters", "shapes") or not obj.get("stone_color"):
+            continue
+        if obj["point"] not in initial["stones"].get(obj["stone_color"], []):
+            continue
+        if any(
+            numbered_obj["point"] == obj["point"] and numbered_obj["stone_color"] == obj["stone_color"]
+            for numbered_obj in numbered
+        ):
+            continue
+        key = ",".join(map(str, obj["point"]))
+        if (initial.get(obj["kind"]) or {}).get(key) != obj["value"]:
+            raise ValueError("Source initial must declare the saved marked background identity: " + obj["id"])
     for field in ("labels", "letters", "shapes"):
         for key, value in (initial.get(field) or {}).items():
             if (payload.get(field) or {}).get(key) != value:

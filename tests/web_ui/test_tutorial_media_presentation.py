@@ -581,3 +581,80 @@ def test_historical_marked_stone_does_not_transfer_to_later_same_color_stone_at_
     result = build(value, text, presentation_plan=plan, source_identity=source)
     assert result["status"] == "pending"
     assert "lifetime" in result["reason"]
+
+
+@pytest.mark.parametrize("mention_before_capture", [True, False])
+def test_source_initial_marked_background_stone_keeps_initial_identity_across_same_color_reuse(mention_before_capture):
+    value, plan, source = historical_capture_source()
+    value["labels"].pop("0,0")  # This is a marked initial white stone, not white 1.
+    value["labels"]["8,8"] = "4"
+    value["shapes"] = {"0,0": "triangle"}
+    value["stones"]["B"].append([8, 8])
+    value["stones"]["W"].extend([[1, 1], [0, 2]])
+    local = plan["source_replay"]
+    local["initial"]["stones"]["W"] = [[0, 0], [1, 1], [0, 2]]
+    local["initial"]["shapes"] = {"0,0": "triangle"}
+    local["initial"]["to_play"] = "B"
+    local["moves"] = [
+        local["moves"][1],
+        {
+            "kind": "pass",
+            "color": "W",
+            "point": None,
+            "printed_number": "3",
+            "source_note": "Source explicitly passes.",
+        },
+        {"kind": "move", "color": "B", "point": [8, 8], "printed_number": "4"},
+        {
+            "kind": "move",
+            "color": "W",
+            "point": [0, 0],
+            "printed_number": "5",
+            "source_note": "Source returns after intervening steps.",
+        },
+    ]
+    references = [
+        ("白三角", "shapes:0,0"),
+        ("黑2", "labels:0,1"),
+        ("白3", "replay:2"),
+        ("黑4", "labels:8,8"),
+        ("白5", "replay:4"),
+    ]
+    if not mention_before_capture:
+        references.append(references.pop(0))
+    plan["bindings"] = []
+    text = ""
+    for reference, object_id in references:
+        start = len(text)
+        text += reference + "，"
+        plan["bindings"].append({"span": [start, len(text) - 1], "object_ids": [object_id]})
+    before = copy.deepcopy(value)
+    proof = build(value, text, presentation_plan=plan, source_identity=source)
+    assert value == before
+    if mention_before_capture:
+        assert proof["status"] == "complete", proof
+        assert proof["frames"][0]["payload"]["stones"]["W"] == [[0, 2], [1, 1]]
+        assert proof["frames"][0]["payload"]["shapes"] == {}
+        assert proof["frames"][1]["payload"]["shapes"] == {"0,0": "triangle"}
+        assert proof["frames"][2]["payload"]["shapes"] == {}
+        assert proof["frames"][-1]["payload"]["shapes"] == {}
+        assert [0, 0] in proof["frames"][-1]["payload"]["stones"]["W"]
+    else:
+        assert proof["status"] == "pending"
+        assert proof["frames"] == []
+        assert "lifetime" in proof["reason"]
+
+
+def test_source_initial_cannot_omit_saved_marked_background_identity_to_attach_it_later():
+    value, plan, source = historical_capture_source()
+    value["labels"].pop("0,0")
+    value["shapes"] = {"0,0": "triangle"}
+    local = plan["source_replay"]
+    local["initial"]["stones"]["W"] = [[0, 0]]
+    local["initial"]["to_play"] = "B"
+    local["moves"] = local["moves"][1:]
+    local["initial"].pop("shapes", None)
+    plan["bindings"] = [{"span": [0, 3], "object_ids": ["shapes:0,0"]}, {"span": [4, 6], "object_ids": ["labels:0,1"]}]
+    proof = build(value, "白三角，黑2。", presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "pending"
+    assert "initial" in proof["reason"].lower()

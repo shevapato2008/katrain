@@ -22,7 +22,7 @@
 .report-rail-v2 .report-analysis-rail__candidate-list { flex: 1; min-height: 0; height: auto; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: #769580 transparent; scrollbar-width: thin; }
 .report-rail-v2 .report-analysis-rail__candidate { height: 44px; min-height: 44px; padding: 0 8px; font-size: 22px; font-weight: 500; background: none; border: 0; border-bottom: 1px solid var(--hair); border-radius: 4px; color: var(--text); }
 .report-rail-v2 .report-analysis-rail__candidate:first-of-type { color: var(--text); }
-.report-rail-v2 .report-analysis-rail__candidate > span:first-child { display: flex; align-items: center; gap: 6px; justify-content: center; text-align: center; }
+.report-rail-v2 .report-analysis-rail__candidate > span:first-child { display: grid; grid-template-columns: 18px 52px minmax(0, 1fr); align-items: center; gap: 6px; padding-left: 24px; text-align: left; white-space: nowrap; }
 .report-rail-v2 .report-analysis-rail__candidate .kifu-record__stone { width: 18px; height: 18px; }
 .report-rail-v2 .report-analysis-rail__candidate small { font-size: 18px; color: #7ec994; }
 .report-rail-v2 .report-analysis-rail__candidate[data-actual], .report-rail-v2 .report-analysis-rail__candidate[aria-pressed="true"] { background: #233e2e; }

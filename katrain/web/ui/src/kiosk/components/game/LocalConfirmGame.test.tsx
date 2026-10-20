@@ -16,7 +16,7 @@ const game = {
 } as GameState;
 const props = () => ({ gameState: game, input: 'screen' as const, point: null, busy: false, failed: false,
   analysisToggles: { coords: true, numbers: false }, onToggle: vi.fn(), onSelect: vi.fn(), onConfirm: vi.fn(),
-  onPass: vi.fn(), onCount: vi.fn(), onResign: vi.fn(), onExit: vi.fn(), onPaintedNode: vi.fn(), onExpired: vi.fn() });
+  onPass: vi.fn(), onCount: vi.fn(), onResign: vi.fn(), onAbandon: vi.fn().mockResolvedValue(undefined), onExit: vi.fn(), onPaintedNode: vi.fn(), onExpired: vi.fn() });
 
 describe('local confirmation panels', () => {
   beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
@@ -124,6 +124,29 @@ describe('local confirmation panels', () => {
     fireEvent.click(screen.getByRole('button', { name: '确认白方认输' }));
     expect(p.onResign).toHaveBeenCalledWith('W');
   });
+  it('弃局需要确认，说明不留记录且不调用认输', async () => {
+    const p = props();
+    render(<LocalConfirmGame {...p} />);
+    const black = within(screen.getByRole('region', { name: '黑方玩家面板' }));
+    const abandon = black.getByRole('button', { name: '弃局' });
+    expect(abandon.querySelector('svg.lc-abandon-icon')).not.toBeNull();
+    fireEvent.click(abandon);
+    expect(screen.getByRole('dialog')).toHaveTextContent('弃局后不保留任何对局记录，也不会出现在复盘页面。');
+    expect(p.onAbandon).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '确认弃局' }));
+    await waitFor(() => expect(p.onAbandon).toHaveBeenCalledTimes(1));
+    expect(p.onResign).not.toHaveBeenCalled();
+  });
+  it('弃局失败保留弹窗并允许重试', async () => {
+    const p = props();
+    p.onAbandon.mockRejectedValueOnce(new Error('offline'));
+    render(<LocalConfirmGame {...p} />);
+    fireEvent.click(within(screen.getByRole('region', { name: '黑方玩家面板' })).getByRole('button', { name: '弃局' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认弃局' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('弃局未完成，请重试；当前对局仍然保留。');
+    fireEvent.click(screen.getByRole('button', { name: '确认弃局' }));
+    await waitFor(() => expect(p.onAbandon).toHaveBeenCalledTimes(2));
+  });
   it('shares visible display controls between both seats, including the waiting side', () => {
     const p = props();
     function DisplayControls() {
@@ -168,7 +191,7 @@ describe('local confirmation panels', () => {
     for (const side of ['黑', '白']) {
       const panel = within(screen.getByRole('region', { name: `${side}方玩家面板` }));
       const buttons = panel.getAllByRole('button');
-      expect(buttons).toHaveLength(6);
+      expect(buttons).toHaveLength(7);
       buttons.filter(button => !button.hasAttribute('aria-pressed')).forEach(button => expect(button).toBeDisabled());
       buttons.filter(button => button.hasAttribute('aria-pressed')).forEach(button => expect(button).toBeEnabled());
       expect(panel.getByText('已暂停')).toBeInTheDocument();

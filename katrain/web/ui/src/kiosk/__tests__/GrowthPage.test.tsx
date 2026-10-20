@@ -97,6 +97,10 @@ const renderGrowth = () => render(
   </MemoryRouter>,
 );
 
+const selectTab = async (name: '概览' | '能力诊断' | '对手') => {
+  await userEvent.click(screen.getByRole('tab', { name }));
+};
+
 const statValues = () =>
   Array.from(document.querySelectorAll('[data-testid="growth-stats"] .kiosk-stat__v'))
     .map((n) => n.textContent);
@@ -114,6 +118,21 @@ beforeEach(() => {
 });
 
 describe('屏 22 成长', () => {
+  it('三个标签每次只显示一个面板，键盘左右键可切换', async () => {
+    renderGrowth();
+    expect(screen.getByRole('tab', { name: '概览' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('growth-cal')).toBeInTheDocument();
+    expect(screen.queryByTestId('growth-diagnosis')).toBeNull();
+    await selectTab('能力诊断');
+    expect(screen.getByRole('tab', { name: '能力诊断' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('growth-diagnosis')).toBeInTheDocument();
+    expect(screen.queryByTestId('growth-cal')).toBeNull();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: '对手' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('growth-by-rung')).toBeInTheDocument();
+    expect(screen.queryByTestId('growth-diagnosis')).toBeNull();
+  });
+
   it('未定级时写「未定级」——**不写 20 级**(那是出厂值,不是实力)', async () => {
     renderGrowth();
     expect(screen.getByTestId('growth-rank-value')).toHaveTextContent('未定级');
@@ -294,6 +313,7 @@ describe('屏 22 成长', () => {
       ],
     });
     renderGrowth();
+    await selectTab('对手');
     const box = screen.getByTestId('growth-by-rung');
     await waitFor(() => expect(box.querySelectorAll('.grung')).toHaveLength(2));
     expect(box).toHaveTextContent('准1段');
@@ -303,8 +323,30 @@ describe('屏 22 成长', () => {
 
   it('一档都没打过时说「还没有战绩」', async () => {
     renderGrowth();
-    await waitFor(() => expect(statValues()[0]).toBe('12'));
-    expect(screen.getByTestId('growth-by-rung')).toHaveTextContent('还没有战绩');
+    await selectTab('对手');
+    expect(await screen.findByTestId('growth-by-rung')).toHaveTextContent('还没有战绩');
+  });
+
+  it('对手战绩来自本机缓存时标明口径与可能缺局', async () => {
+    mocks.summary = SUMMARY({
+      authority: 'local_cache',
+      by_opponent_rung: [{ rung: 18, rank_name: '3级', wins: 2, losses: 1 }],
+    });
+    renderGrowth();
+    await selectTab('对手');
+    expect(await screen.findByTestId('growth-opponents-local')).toHaveTextContent('本机记录');
+    expect(screen.getByTestId('growth-opponents-local')).toHaveTextContent('可能还有几局');
+    expect(screen.getByTestId('growth-by-rung')).toHaveTextContent('3级');
+  });
+
+  it('本机缓存里没有对手战绩时不声称用户从未打过', async () => {
+    mocks.summary = SUMMARY({ authority: 'local_cache', by_opponent_rung: [] });
+    renderGrowth();
+    await selectTab('对手');
+    const empty = await screen.findByTestId('growth-rung-local-empty');
+    expect(empty).toHaveTextContent('本机暂无战绩');
+    expect(empty).toHaveTextContent('云端可能还有');
+    expect(empty).not.toHaveTextContent('还没有战绩');
   });
 
   // ── 能力诊断(G1)──────────────────────────────────────────────────────
@@ -313,6 +355,7 @@ describe('屏 22 成长', () => {
 
   it('三段各一行,最弱那段有标记,样本量写出来', async () => {
     renderGrowth();
+    await selectTab('能力诊断');
     const rows = await screen.findAllByTestId('diag-row');
     expect(rows).toHaveLength(3);
     expect(rows.map((r) => r.getAttribute('data-phase'))).toEqual(['opening', 'midgame', 'endgame']);
@@ -332,6 +375,7 @@ describe('屏 22 成长', () => {
       { phase: 'endgame', graded: 100, bad: 10 },
     ] });
     renderGrowth();
+    await selectTab('能力诊断');
     await screen.findAllByTestId('diag-row');
     expect(screen.queryByTestId('diag-weakest')).toBeNull();
   });
@@ -339,6 +383,7 @@ describe('屏 22 成长', () => {
   it('样本不够时照显示,但多一句「结论会抖」', async () => {
     mocks.diagnosis = DIAGNOSIS({ reports: 1, graded_moves: 40, phases: [{ phase: 'opening', graded: 40, bad: 4 }] });
     renderGrowth();
+    await selectTab('能力诊断');
     expect(await screen.findByTestId('diag-thin')).toBeInTheDocument();
     expect(screen.getAllByTestId('diag-row')).toHaveLength(1);
   });
@@ -346,6 +391,7 @@ describe('屏 22 成长', () => {
   it('一份报告都没有时说「还没有复盘报告」并给出口,不说「样本 0 局」', async () => {
     mocks.diagnosis = DIAGNOSIS({ reports: 0, graded_moves: 0, phases: [] });
     renderGrowth();
+    await selectTab('能力诊断');
     expect(await screen.findByTestId('diag-empty')).toHaveTextContent('还没有复盘报告');
     expect(screen.queryByText(/样本 0 局/)).toBeNull();
     await userEvent.click(screen.getByTestId('diag-go-report'));
@@ -356,6 +402,7 @@ describe('屏 22 成长', () => {
   it('有报告但全都记不出执色时,说的是这件事,不是「还没有报告」', async () => {
     mocks.diagnosis = DIAGNOSIS({ reports: 0, skipped_without_color: 4, graded_moves: 0, phases: [] });
     renderGrowth();
+    await selectTab('能力诊断');
     const empty = await screen.findByTestId('diag-empty');
     expect(empty).not.toHaveTextContent('还没有复盘报告');
     expect(empty).toHaveTextContent('4');
@@ -367,6 +414,7 @@ describe('屏 22 成长', () => {
   it('盒上退回本机缓存且一份都没有时,不说「还没有复盘报告」', async () => {
     mocks.diagnosis = DIAGNOSIS({ reports: 0, graded_moves: 0, phases: [], authority: 'local_cache' });
     renderGrowth();
+    await selectTab('能力诊断');
     const empty = await screen.findByTestId('diag-offline');
     expect(empty).toHaveTextContent('云端');
     expect(screen.queryByText('还没有复盘报告')).toBeNull();
@@ -375,12 +423,14 @@ describe('屏 22 成长', () => {
   it('盒上退回本机缓存但有数时,照显示并说明是本机记录', async () => {
     mocks.diagnosis = DIAGNOSIS({ authority: 'local_cache' });
     renderGrowth();
+    await selectTab('能力诊断');
     expect(await screen.findByTestId('diag-sample')).toHaveTextContent('本机记录');
   });
 
   it('诊断请求失败时说「诊断没读到」,不退回空态', async () => {
     mocks.diagnosisError = new Error('boom');
     renderGrowth();
+    await selectTab('能力诊断');
     expect(await screen.findByTestId('diag-error')).toBeInTheDocument();
     expect(screen.queryByTestId('diag-empty')).toBeNull();
     expect(screen.queryByText(/样本 0 局/)).toBeNull();
@@ -388,16 +438,22 @@ describe('屏 22 成长', () => {
 
   it('「后端已有 · 界面未接」那个蓝标去掉了 —— 接上了就不是「未接」', async () => {
     renderGrowth();
+    await selectTab('能力诊断');
     await screen.findAllByTestId('diag-row');
     expect(screen.getByTestId('growth-diagnosis')).not.toHaveTextContent('界面未接');
   });
 
   // ── 近 30 天档位走势(G3,Fan 2026-09-21 裁定画档位)──────────────────────
   it('有走势数据时左栏画出折线,并标出最高档', async () => {
+    const day = (offset: number) => {
+      const date = new Date();
+      date.setDate(date.getDate() - offset);
+      return date.toISOString().slice(0, 10);
+    };
     mocks.summary = SUMMARY({ rung_trend: [
-      { date: '2026-09-01', rung: 10, rank_name: '3级' },
-      { date: '2026-09-05', rung: 12, rank_name: '1级' },
-      { date: '2026-09-08', rung: 11, rank_name: '2级' },
+      { date: day(10), rung: 10, rank_name: '3级' },
+      { date: day(5), rung: 12, rank_name: '1级' },
+      { date: day(1), rung: 11, rank_name: '2级' },
     ] });
     renderGrowth();
     expect(await screen.findByTestId('growth-trend')).toBeInTheDocument();
@@ -436,6 +492,21 @@ describe('屏 22 成长', () => {
     expect(cell.getAttribute('data-level')).toBe('3'); // 7 次 → 6–9 那一档
   });
 
+  it('日历固定 53×7 格，今天在最后一周的正确星期行，月份标记对齐周列', async () => {
+    renderGrowth();
+    await screen.findByTestId('growth-cal-days');
+    await waitFor(() => expect(document.querySelectorAll('.gcal__grid > i')).toHaveLength(53 * 7));
+    const cells = Array.from(document.querySelectorAll('.gcal__grid > i'));
+    const todayIndex = cells.findIndex((cell) => cell.getAttribute('data-date') === today());
+    const weekday = (new Date().getDay() + 6) % 7;
+    expect(todayIndex).toBe(52 * 7 + weekday);
+    expect(cells.slice(todayIndex + 1).every((cell) => cell.classList.contains('is-void'))).toBe(true);
+    expect(document.querySelectorAll('.gcal__months > [data-week]').length).toBeGreaterThanOrEqual(11);
+    for (const month of document.querySelectorAll<HTMLElement>('.gcal__months > [data-week]')) {
+      expect(month.style.gridColumn).toMatch(/^\d+ \/ \d+$/);
+    }
+  });
+
   it('日历没读到时照实说,不画一张全空的格子冒充「一天没练」', async () => {
     mocks.activityError = new Error('boom');
     renderGrowth();
@@ -448,5 +519,13 @@ describe('屏 22 成长', () => {
     mocks.activity = { window_days: 365, authority: 'local_cache', days: [{ date: today(), games: 1, solved: 0 }] };
     renderGrowth();
     expect(await screen.findByTestId('growth-cal')).toHaveTextContent('本机记录');
+  });
+
+  it('对手请求失败时说未读到，不当成没有战绩', async () => {
+    mocks.summaryError = new Error('boom');
+    renderGrowth();
+    await selectTab('对手');
+    expect(await screen.findByTestId('growth-rung-error')).toHaveTextContent('没读到');
+    expect(screen.queryByText('还没有战绩')).toBeNull();
   });
 });

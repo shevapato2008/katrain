@@ -14,13 +14,12 @@
 .kiosk {
   /* ---------- 字族(§9 分工规则) ----------
      栈的第一族只管拉丁与数字(带 latin unicode-range),中文码点在那儿匹配不到面,
-     自然落到第二族 SmartBox Kai(霞鹜文楷)。**顺序不可调**:把 Kai 提前会让它
+     自然落到第二族当前中文选项(默认霞鹜文楷)。**顺序不可调**:把中文族提前会让它
      连 ASCII 一起抢走。
-     后面的 Kaiti SC / Georgia 只在开发机(macOS)上存在,板子上一个都没有——
-     那是给开发机看的,不是兜底方案。 */
-  --font-serif: "SmartBox Serif", "SmartBox Kai", "Kaiti SC", Georgia, serif;
-  --font-sans: "SmartBox Sans", "SmartBox Kai", "Kaiti SC", system-ui, sans-serif;
-  --font-mono: "SmartBox IBM Plex Mono", "SmartBox Mono", "SmartBox Kai", ui-monospace, monospace;
+     选项字形缺字时回退到已捆绑的霞鹜文楷。 */
+  --font-serif: "SmartBox Serif", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", Georgia, serif;
+  --font-sans: "SmartBox Sans", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", system-ui, sans-serif;
+  --font-mono: "SmartBox IBM Plex Mono", "SmartBox Mono", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", ui-monospace, monospace;
 
   /* ---------- 画布 ---------- */
   --kiosk-w: 1024px;
@@ -1012,4 +1011,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .kiosk-dock__item { transition: none; }
+}
+
+/* The applicator records each text element's unscaled size once. Only glyph size
+   changes; fixed control and touch geometry remain at their designed pixels. */
+body[data-kiosk-font-size="medium"] .kiosk-viewport:not([data-kiosk-type-measuring]) [data-kiosk-base-size],
+body[data-kiosk-font-size="small"] .kiosk-viewport:not([data-kiosk-type-measuring]) [data-kiosk-base-size],
+body[data-kiosk-font-size="medium"] [data-kiosk-type-portal]:not([data-kiosk-type-measuring]) [data-kiosk-base-size],
+body[data-kiosk-font-size="small"] [data-kiosk-type-portal]:not([data-kiosk-type-measuring]) [data-kiosk-base-size] {
+  font-size: max(12px, calc(var(--kiosk-base-size) - var(--kiosk-size-step, 0px))) !important;
 }

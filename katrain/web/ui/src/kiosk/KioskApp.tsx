@@ -33,6 +33,8 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
+import { KioskTypographyProvider, useKioskTypography } from './typography/KioskTypographyContext';
+import { installKioskTextSizing } from './typography/applyTextSizing';
 import { accessAllowed, kioskAccessPolicy } from '../components/auth/accessPolicy';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -208,8 +210,17 @@ export const KioskRoutes = () => {
   );
 };
 
+function KioskTypographyGate({ children }: { children: React.ReactNode }) {
+  const { loading } = useKioskTypography();
+  useEffect(() => {
+    if (!loading) return installKioskTextSizing();
+  }, [loading]);
+  if (loading) return <div data-testid="kiosk-typography-loading" style={{ position: 'fixed', inset: 0, background: '#0f1416' }} />;
+  return children;
+}
+
 const KioskApp = () => {
-  const { setLanguage } = useSettings();
+  const { language, setLanguage } = useSettings();
   useEffect(() => {
     // The kiosk is a Chinese-market terminal: default to Simplified Chinese
     // unless the user has explicitly picked a language before (persisted in
@@ -226,21 +237,25 @@ const KioskApp = () => {
   }, []);
 
   return (
-    <ThemeProvider theme={kioskTheme}>
-      <CssBaseline />
-      <VisionProvider>
-        <GeometryProvider>
-          <TsumegoProgressProvider>
-            {/* 承重的视口盒子(画布的包含块、登录页的高度来源)—— 见 KioskViewport 头注。 */}
-            <KioskViewport>
-              <EngineReadinessProvider>
-                <KioskRoutes />
-              </EngineReadinessProvider>
-            </KioskViewport>
-          </TsumegoProgressProvider>
-        </GeometryProvider>
-      </VisionProvider>
-    </ThemeProvider>
+    <KioskTypographyProvider language={language}>
+      <ThemeProvider theme={kioskTheme}>
+        <CssBaseline />
+        <KioskTypographyGate>
+          <VisionProvider>
+            <GeometryProvider>
+              <TsumegoProgressProvider>
+                {/* 承重的视口盒子(画布的包含块、登录页的高度来源)—— 见 KioskViewport 头注。 */}
+                <KioskViewport>
+                  <EngineReadinessProvider>
+                    <KioskRoutes />
+                  </EngineReadinessProvider>
+                </KioskViewport>
+              </TsumegoProgressProvider>
+            </GeometryProvider>
+          </VisionProvider>
+        </KioskTypographyGate>
+      </ThemeProvider>
+    </KioskTypographyProvider>
   );
 };
 

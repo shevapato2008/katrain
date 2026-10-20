@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
@@ -100,4 +100,11 @@ test('四图:复盘 · 报告 ←→ sample-go/shots/20-report.png', async ({ pa
   await page.screenshot({ path: '/tmp/kiosk-20-reviewed.png' });
   await page.getByRole('button', { name: 'AI吻合度', exact: true }).click();
   await page.screenshot({ path: '/tmp/kiosk-20-last-tab.png' });
+  await page.getByRole('button', { name: '对局详情' }).click();
+  const recompute = page.getByRole('button', { name: '重算' });
+  await recompute.waitFor({ state: 'visible' });
+  const bounds = await recompute.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(KIOSK_VIEWPORT.height);
+  await page.screenshot({ path: '/tmp/kiosk-20-recompute-dialog.png' });
 });

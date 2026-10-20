@@ -59,6 +59,7 @@ export default function PvpSpectatorPage() {
   // Scope the rendered data as well as the request: an account/room change must not paint an old board for one frame.
   const scope = JSON.stringify([sessionId, user?.id, token, isAuthenticated]);
   const [retry, setRetry] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [view, setView] = useState<View>({ scope, phase: 'loading' });
   const viewRef = useRef(view);
   const soundFrontierRef = useRef<{ scope: string; snapshot: Snapshot } | null>(null);
@@ -158,10 +159,10 @@ export default function PvpSpectatorPage() {
     .map((stone) => formatGtpCoord(stone[1]![0], stone[1]![1], 19)) ?? [];
   const last = snapshot?.state.last_move;
   const spectatorCount = verifiedSpectatorCount(snapshot?.spectator_count);
-  return <div className="kiosk-layout-b golaxy-spectator" data-testid="pvp-spectator-page">
+  return <div className="kiosk-layout-b golaxy-spectator pvp-spectator" data-testid="pvp-spectator-page">
     <KioskPagebar backLabel="返回大厅" onBack={() => navigate(HOME)}
       title={<span className="golaxy-spectator__page-title">大厅对局观战</span>}
-      status={<><span className="golaxy-spectator__info">只读观战 · 19 路</span><span className={current.phase === 'ready' ? 'golaxy-spectator__sync' : 'golaxy-spectator__info'}>{syncLabel}</span></>} />
+      status={<span className={current.phase === 'ready' ? 'golaxy-spectator__sync' : 'golaxy-spectator__info'}>{syncLabel}</span>} />
     <div className="golaxy-spectator__layout">
       <div className="golaxy-spectator__board-shell">
         {snapshot ? <div className="golaxy-spectator__board" data-testid="spectator-board">
@@ -177,19 +178,38 @@ export default function PvpSpectatorPage() {
         <div className="golaxy-spectator__watch-head"><b>在线大厅</b><span>只读观战</span><span className="golaxy-spectator__sync">{phase}</span></div>
         <div className="golaxy-spectator__clocks">{(['b', 'w'] as const).map((color) => <div key={color}
           className={`golaxy-spectator__clock-card${playing && snapshot.state.player_to_move === color.toUpperCase() ? ' is-turn' : ''}`}>
+          <svg className="pvp-spectator__card-surface" viewBox="0 0 234 126" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id={`pvp-spectator-${color}-surface`} x2="0.8" y2="1">
+              <stop stopColor={playing && snapshot.state.player_to_move === color.toUpperCase() ? '#2b6244' : '#26362c'} />
+              <stop offset="1" stopColor={playing && snapshot.state.player_to_move === color.toUpperCase() ? '#1c432f' : '#15231b'} />
+            </linearGradient></defs>
+            <path d={color === 'b'
+              ? 'M14 1 H218 Q233 1 230 15 L214 111 Q211 125 197 125 H14 Q1 125 1 112 V14 Q1 1 14 1 Z'
+              : 'M36 1 H220 Q233 1 233 14 V112 Q233 125 220 125 H17 Q1 125 4 111 L20 15 Q22 1 36 1 Z'}
+              fill={`url(#pvp-spectator-${color}-surface)`}
+              stroke={playing && snapshot.state.player_to_move === color.toUpperCase() ? '#69c98a' : '#405948'} strokeWidth="1.5" />
+          </svg>
           <div className="golaxy-spectator__clock-name"><i className={`golaxy-spectator__stone${color === 'w' ? ' golaxy-spectator__stone--white' : ''}`} />
             <b>{snapshot?.[`player_${color}`] ?? '等待棋手信息'}</b><span>{color === 'b' ? '执黑' : '执白'}</span></div>
           <strong>{snapshot?.[`player_${color}_rank_label`] ?? (snapshot ? '尚未定级' : '—')}</strong>
           <small>{playing && snapshot.state.player_to_move === color.toUpperCase() ? '轮到落子' : '对局棋手'}</small>
         </div>)}</div>
-        <div className="golaxy-spectator__latest" aria-live="polite"><span className="golaxy-spectator__latest-dot">•</span><span>
+        <div className="golaxy-spectator__latest" aria-live="polite"><span>
           <b>{snapshot ? `第 ${snapshot.state.current_node_index} 手${last ? ` · 最新落子 ${formatGtpCoord(last[0], last[1], 19)}` : ''}` : '等待最新盘面'}</b>
           <small>{current.phase === 'ready' ? '实时盘面 · 每 2 秒同步' : snapshot ? '当前显示上次同步盘面' : '正在连接对局'}</small>
         </span></div>
-        <div className="golaxy-spectator__members"><p className="golaxy-spectator__note">{spectatorCount === undefined ? '观战人数未返回' : `${spectatorCount} 人观战`}</p><p className="golaxy-spectator__note">观看实时盘面，不参与对局。</p></div>
+        <div className="golaxy-spectator__members"><p className="golaxy-spectator__note">{spectatorCount === undefined ? '观战人数未返回' : `${spectatorCount} 人观战`}</p>
+          <button type="button" className="pvp-spectator__help" aria-label="观战说明" onClick={() => setHelpOpen(true)}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10h.01" /></svg></button>
+        </div>
         {current.error && <div role="alert" className="golaxy-spectator__note">{current.error}</div>}
         {current.phase === 'error' && <div className="golaxy-spectator__error-actions"><button type="button" onClick={() => setRetry((n) => n + 1)}>重试</button></div>}
       </aside>
     </div>
+    {helpOpen && <div className="pvp-spectator__dialog-backdrop" onClick={() => setHelpOpen(false)}>
+      <div className="pvp-spectator__dialog" role="dialog" aria-modal="true" aria-label="观战说明" onClick={(event) => event.stopPropagation()}>
+        <h2>观战说明</h2><p>观看实时盘面，不参与对局。此画面每 2 秒从大厅同步一次。</p>
+        <button type="button" onClick={() => setHelpOpen(false)}>知道了</button>
+      </div>
+    </div>}
   </div>;
 }

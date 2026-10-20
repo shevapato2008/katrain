@@ -68,8 +68,15 @@
 }
 .kiosk-screen[data-journey="ai-play"] .kiosk-status__cell {
   align-items: center;
-  padding: 4px;
+  padding: 2px 4px;
   white-space: nowrap;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-status__k,
+.kiosk-screen[data-journey="ai-play"] .kiosk-status__v {
+  line-height: 1.15;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-status__v {
+  margin-top: 1px;
 }
 .kiosk-screen[data-journey="ai-play"] .kiosk-console__help {
   position: absolute;
@@ -78,8 +85,11 @@
   right: 11px;
   width: 44px;
   height: 44px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 0;
   border: 1px solid #52785e;
   border-radius: 50%;
   background: #1f3427;
@@ -88,6 +98,7 @@
   cursor: pointer;
 }
 .kiosk-screen[data-journey="ai-play"] .kiosk-console__help svg {
+  display: block;
   width: 23px;
   height: 23px;
 }

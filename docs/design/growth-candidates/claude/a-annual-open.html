@@ -1,0 +1,822 @@
+<!doctype html><html lang="zh-CN"><head><base href="../../"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>成长概览 · Claude A · 全年舒展</title><link rel="stylesheet" href="../../katrain/web/ui/src/kiosk-shell/fonts.css"><style>
+:root{color:#e9f2e9;background:#08120e;font-family:"SmartBox Kai",serif}*{box-sizing:border-box}body{margin:0}.work-head{position:sticky;z-index:20;top:0;display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:10px 18px;background:#122019;border-bottom:1px solid #345244}.work-head h1{font-size:20px;margin:0}.work-head small{font:13px system-ui;color:#aac0af}.work-head a{color:#79d49c}.chooser{display:flex;gap:5px;overflow:auto;padding:10px 18px;border-bottom:1px solid #34483a;background:#0d1813;max-height:104px}.chooser button{flex:none;background:#1b2b22;color:#d7e7d9;border:1px solid #3e5646;border-radius:7px;padding:7px 10px;font:15px "SmartBox Kai",serif;cursor:pointer}.chooser button.on{background:#58b77e;color:#102017}.intro{padding:10px 18px;color:#c1d5c6;font-size:14px}.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px}.panel{min-width:0;background:#142019;border:1px solid #365346;border-radius:10px;overflow:hidden}.panel h2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0;padding:7px 10px;font-size:15px}.panel h2 small{font:12px system-ui;color:#9cb4a3}.stage-host{position:relative;aspect-ratio:1024/600;overflow:hidden;background:#0d1415}.stage{position:absolute;left:0;top:0;width:1024px;height:600px;transform-origin:top left;background:#0d1415;overflow:hidden}.stage>img{position:absolute;inset:0;width:1024px;height:600px}.rect{position:absolute;background:#0d1415}.proposal{position:absolute;font-family:"SmartBox Kai",serif;color:#edf2ec}.vbox{border:1px solid #30453a;border-radius:10px;background:#1b2824}.btn{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #3b5847;border-radius:9px;background:#203128;color:#e9f1e9;font:18px "SmartBox Kai",serif}.btn.green{background:#57b87e;border-color:#57b87e;color:#0e2015}.btn.outline{background:#14201a}.ic{width:19px;height:19px;display:inline-flex;flex:none}.ic svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.micro{color:#9caf9e;font-size:13px}.small{font-size:14px}.section-title{font-size:17px;color:#e5eee6;display:flex;align-items:center;gap:8px;margin:0 0 7px}.section-title:after{content:"";height:1px;background:#2d4135;flex:1}.info{width:27px;height:27px;border:1px solid #4b795a;border-radius:50%;color:#8bdfa7;background:#1c3024;display:inline-flex;align-items:center;justify-content:center;font:17px serif;cursor:pointer}.modal{position:fixed;z-index:60;inset:0;background:#000a;display:grid;place-items:center}.modal>div{max-width:430px;padding:20px;border:1px solid #6aa87d;border-radius:14px;background:#1c2d23;font-size:20px;line-height:1.55}.modal button{margin-top:20px;float:right;padding:8px 18px}.proposal-dock{position:absolute;left:0;top:518px;width:1024px;height:82px;background:#17231e;border-top:1px solid #31463a;display:grid;grid-template-columns:repeat(7,1fr);padding:7px 16px;gap:5px}.proposal-dock button{border:0;border-radius:10px;background:transparent;color:#a8bbb0;display:flex;align-items:center;justify-content:center;gap:6px;font:19px "SmartBox Kai",serif}.proposal-dock button.on{background:#59b781;color:#092316}.proposal-dock .ic{width:23px;height:23px}.proposal-dock button:not(.on) .ic{color:#9db8aa}.design-note{padding:10px 16px 18px;font-size:15px;line-height:1.6;color:#c5d9ca}.design-note b{color:#ecf5ec}.footer{padding:0 18px 30px;color:#839b8b;font:12px system-ui}.shell-mask{position:absolute;left:548px;top:70px;width:460px;height:516px;background:#0d1415}.setup-rail,.game-rail,.report-rail{position:absolute;left:548px;top:70px;width:460px;height:516px;overflow:hidden}.setup-rail .topline,.game-rail .topline{height:42px;display:flex;align-items:center;gap:10px;font-size:18px}.setup-rail .back,.game-rail .back{min-width:110px;height:38px;font-size:16px}.setup-rail .inner{height:466px;position:relative}.triple{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.control-box{height:57px;padding:5px 10px;border:1px solid #344b3e;border-radius:10px;background:#1b2924;display:flex;flex-direction:column;justify-content:center;min-width:0}.control-box.fixed{border-style:dashed}.control-box label{color:#abbcaf;font-size:14px}.control-box strong{font-size:19px;white-space:nowrap}.triple .control-box:last-child strong{font-size:16px}.control-box .arr{position:absolute;right:7px;bottom:13px;color:#98ba9f}.control-box.select{position:relative;padding-right:25px}.setup-rail .sec{margin-top:8px}.setup-rail .section-title{margin-bottom:5px}.setup-rail .komi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.setup-rail .komi-row .control-box{height:57px}.setup-rail .opponent-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.setup-rail .opponent-row .control-box{height:57px}.setup-rail .bottom-action{position:absolute;left:0;bottom:0;width:460px;height:49px;font-size:21px}.setup-rail .field{height:51px;padding:8px 12px;border:1px solid #375342;border-radius:9px;background:#1b2924;font-size:20px;display:flex;align-items:center}.setup-rail .field em{font-style:normal;color:#72c88d}.setup-rail .choice-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.setup-rail .choice-row .control-box{height:54px}.setup-rail .stake{display:grid;grid-template-columns:1fr 1fr;gap:8px}.setup-rail .stake .vbox{height:46px;padding:9px;font-size:18px;text-align:center}.setup-rail .stake em{color:#68c38a;font-style:normal}.setup-rail .space{height:3px}.setup-rail .footnote{font-size:13px;color:#aabdad;white-space:nowrap}.game-rail .players{display:grid;grid-template-columns:1fr 1fr;gap:8px;height:112px;margin-top:10px}.game-rail .player{padding:12px;display:flex;flex-direction:column;justify-content:space-between}.game-rail .player.on{border-color:#5cbb7d}.game-rail .player-top{display:flex;align-items:center;gap:9px;font-size:19px}.stone{width:26px;height:26px;border-radius:50%;background:linear-gradient(#fff,#c7c8c3);box-shadow:0 2px 4px #0008;flex:none}.stone.black{background:linear-gradient(#48494a,#020303)}.game-rail .player-bottom{font-size:22px;color:#ddeade;white-space:nowrap}.game-rail .chart{height:161px;margin-top:12px;padding:10px}.game-rail .chart-title{font-size:16px;display:flex;justify-content:space-between}.game-rail .chart-img{height:111px;margin-top:7px;border:1px solid #293d34;background:#102019;position:relative}.game-rail .chart-img:before{content:"";position:absolute;inset:52px 4px auto;border-top:1px dashed #47614e}.game-rail .switches{height:46px;display:flex;align-items:center;gap:16px;font-size:17px}.game-rail .switch{display:inline-block;width:34px;height:19px;border-radius:20px;background:#52675a;position:relative;vertical-align:middle;margin-right:5px}.game-rail .switch.on{background:#2c704b}.game-rail .switch:after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#e5f1e7}.game-rail .switch.on:after{left:17px;background:#62c687}.game-rail .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;position:absolute;bottom:0;width:460px}.game-rail .actions .btn{height:52px;font-size:16px;white-space:nowrap}.game-rail .actions .btn:nth-child(n+5){grid-column:span 1}.game-rail .actions .danger{color:#df7f71}.report-rail .report-head{height:104px;border:1px solid #34483b;border-radius:10px;padding:8px 10px;background:#192720}.report-rail .report-head .title{font-size:17px;display:flex;justify-content:space-between;align-items:center}.report-rail .report-head .title strong{font-weight:400}.report-rail .report-head .meta{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;margin-top:7px;font-size:16px}.report-rail .report-head .meta em{color:#6ec58e;font-style:normal}.report-rail .tabs{display:grid;grid-template-columns:repeat(6,1fr);height:45px;margin-top:8px;border:1px solid #354b3e;border-radius:9px 9px 0 0;background:#1b2924;overflow:hidden}.report-rail .tabs button{background:none;border:0;color:#afc1b2;font:15px "SmartBox Kai",serif;padding:0 2px}.report-rail .tabs button.on{color:#77cf96;border-bottom:3px solid #56b77d;background:#223a2c}.report-rail .analysis{height:250px;background:#16221d;border:1px solid #354b3e;border-top:0;border-radius:0 0 9px 9px;overflow:hidden;position:relative}.report-rail .analysis h3{font-size:16px;margin:8px 10px 6px}.report-rail .rec-row{height:40px;padding:7px 10px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;border-top:1px solid #304638;font-size:16px}.report-rail .rec-row strong{font-weight:500}.report-rail .chart-crop{position:absolute;inset:0;overflow:hidden}.report-rail .chart-crop img{position:absolute;width:1024px;height:600px;max-width:none;left:-548px;top:-227px}.report-rail .analysis .chart-overlay{position:absolute;left:0;right:0;top:0;height:12px;background:#16221d}.report-rail .report-actions{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;height:45px;margin-top:7px}.report-rail .report-actions .btn{font-size:13px;padding:0 1px;gap:3px;white-space:nowrap}.report-rail .report-actions .ic{width:15px;height:15px}.report-rail .playback{height:46px;margin-top:7px;display:flex;align-items:center;justify-content:space-around;font-size:20px}.report-rail .playback .bar{height:6px;border-radius:6px;background:#356f4c;flex:1;max-width:150px}.report-rail .playback .bar:after{content:"";float:right;width:16px;height:16px;margin-top:-5px;border-radius:50%;background:#6dcc92}.growth-rail{position:absolute;left:328px;top:70px;width:680px;height:434px;background:#0d1415}.growth-rail .tabs{height:45px;display:flex;gap:8px;margin-bottom:10px}.growth-rail .tabs button{height:43px;flex:1;border:1px solid #36523f;border-radius:8px;background:#1b2b22;color:#d6e6d8;font:18px "SmartBox Kai",serif}.growth-rail .tabs button.on{background:#284b35;border-color:#61ba81;color:#dbf8e4}.growth-rail .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.growth-rail .stat{height:78px;padding:10px 12px}.growth-rail .stat strong{display:block;font-size:29px;color:#67c78b;line-height:1.1}.growth-rail .stat span{font-size:15px;color:#a9bcac}.growth-rail .heat{height:142px;padding:12px;margin-top:10px}.growth-rail .heat strong{font-size:22px;color:#67c78b}.growth-rail .heat-grid{display:grid;grid-template-columns:repeat(52,1fr);gap:2px;margin-top:14px}.growth-rail .heat-grid span{height:8px;background:#21322b;border-radius:2px}.growth-rail .heat-grid span.hit{background:#5fb981}.growth-rail .heat-grid span.mid{background:#3e7754}.heat-actual{height:109px;width:680px;overflow:hidden;position:relative;margin-top:var(--hm,10px)}.heat-actual img{position:absolute;width:1024px;height:600px;max-width:none;left:-328px;top:-184px}.growth-rail .summary-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.growth-rail .summary-row .vbox{height:138px;padding:12px}.growth-rail .summary-row h3{font-size:18px;margin:0 0 9px}.growth-rail .summary-row p{font-size:16px;margin:6px 0}.growth-rail .ability{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.growth-rail .ability .vbox{height:125px;padding:12px}.growth-rail .ability h3{margin:0 0 6px;font-size:20px}.growth-rail .ability b{font-size:25px;color:#e4ab55}.growth-rail .ability .bar{height:7px;border-radius:5px;background:#35473b;margin-top:12px}.growth-rail .ability .bar:before{content:"";display:block;width:var(--w);height:100%;background:#dfaa55;border-radius:5px}.growth-rail .rank-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.growth-rail .rank-grid .vbox{height:72px;padding:9px 12px}.growth-rail .rank-grid b{display:block;font-size:21px}.growth-rail .rank-grid span{color:#acc4b2;font-size:16px}.growth-rail .explain{padding:14px;margin-top:10px;font-size:18px;line-height:1.5}.local-overlay{position:absolute;top:70px;width:224px;height:500px;padding:14px;background:#16211d;border:1px solid #3d5747;border-radius:13px}.local-overlay.left{left:16px}.local-overlay.right{left:784px}.local-overlay.on{border-color:#62c887}.local-overlay .row{display:flex;gap:10px;align-items:center;font-size:21px}.local-overlay .timing{margin-top:22px;border-top:1px solid #3a5141;padding-top:16px;font-size:16px}.local-overlay .clock{font-size:32px;margin:7px 0 30px}.local-overlay .turn{font-size:20px;margin-bottom:18px}.local-overlay .toggles{display:grid;grid-template-columns:1fr 1fr;gap:6px}.local-overlay .toggles .btn{height:45px;font-size:15px}.local-overlay .tiny-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px}.local-overlay .tiny-actions .btn{height:44px;font-size:14px}.local-overlay .confirm{width:100%;height:105px;margin-top:9px;font-size:23px}.muted-mask{position:absolute;background:#0d1415}.edit-badge{position:absolute;left:12px;bottom:12px;padding:4px 8px;border:1px solid #4c6c54;border-radius:6px;background:#142b1b;color:#99cdaa;font:13px "SmartBox Kai",serif}.not-real{width:1024px;height:600px;display:flex;align-items:center;justify-content:center;background:#0d1415;color:#c5b393;font-size:26px}.missing{color:#d2b68b}.floating-tabs{position:absolute;right:16px;top:70px;background:#17251d;border:1px solid #4a7856;border-radius:8px;padding:6px 10px;font-size:16px;color:#91d9a8}.foot-plan{margin-top:4px} @media(max-width:1100px){.compare{grid-template-columns:1fr}}
+</style><style id="fidelity-fixes">.btn:disabled{opacity:.38;cursor:default}.engine-plate{height:75px;display:flex;align-items:center;gap:13px;padding:10px 12px;font-size:18px}.engine-plate .engine-badge{font-size:28px;color:#63c88c}.engine-plate b{display:block;font-size:20px}.engine-plate small{display:block;color:#a8bfac;font-size:14px}.engine-plate strong{margin-left:auto;color:#6bc78c;font-size:17px}.setup-rail .komi-row .control-box{height:57px}.game-rail .chart-img{overflow:hidden}.game-rail .player-bottom{font-size:18px;white-space:normal}.game-rail .chart-img img{position:absolute;width:973px;height:570px;max-width:none;left:-520px;top:-285px}.report-rail .tabs{grid-template-columns:repeat(6,minmax(0,1fr)) 31px}.report-rail .tabs button{font-size:14px}.report-rail .tabs .tab-info{font-size:11px;margin-left:2px;color:#7ddd9d}.report-rail .tabs .expand{font-size:23px;color:#78d49a}.report-rail .rec-row{height:36px;font-size:15px}.report-rail .rec-row strong{display:flex;align-items:center;gap:6px}.report-rail .rec-row .stone{width:13px;height:13px}.growth-rail .stat span{font-size:14px}.modal>div:has(.expanded-report){max-width:840px;width:840px}.expanded-report{width:780px;height:420px;overflow:hidden;position:relative}.expanded-report img{position:absolute;max-width:none;width:1536px;height:900px;left:-822px;top:-273px}.modal-actions{display:flex;gap:10px;justify-content:flex-end}.modal-actions .btn{min-height:44px;padding:0 15px}
+.report-rail .analysis{padding:0}
+.report-filter{height:38px;display:flex;align-items:center;justify-content:space-between;gap:3px;padding:4px 7px;border-bottom:1px solid #344a3c}
+.report-filter button{flex:1;min-width:0;height:29px;border:1px solid #354b3e;border-radius:6px;background:#1c2b24;color:#c0d1c4;font:13px "SmartBox Kai",serif;white-space:nowrap}
+.report-filter button.on{background:#284d37;border-color:#5cbf81;color:#e8f4ea}
+.report-filter .filter-gap{width:5px;flex:none}
+.report-figure{height:210px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;color:#a6baab;font-size:17px}
+.report-figure svg{width:100%;height:100%;display:block}
+.report-figure .graphtext{fill:#a7b9ac;font-family:"SmartBox Kai",serif;font-size:12px}
+.report-figure .gridline{stroke:#34453c;stroke-width:1}
+.report-figure .greenline{fill:none;stroke:#5cbd80;stroke-width:2.5}
+.report-figure .orangeline{fill:none;stroke:#b9944b;stroke-width:2}
+.report-figure .bar-black{fill:#4b9d68}.report-figure .bar-white{fill:#e4e6e0}
+.report-metric{height:68px;display:grid;grid-template-columns:116px 1fr 70px;align-items:center;gap:5px;padding:0 12px;border-bottom:1px solid #2d4335;font-size:14px}
+.report-metric span{white-space:nowrap;line-height:1.65}.report-metric .pair{display:flex;flex-direction:column;gap:8px}.report-metric .meter{height:9px;background:#3d4b43;border-radius:6px;overflow:hidden}.report-metric .meter i{display:block;height:100%;background:#3eaa65;border-radius:6px}.report-metric .meter i.white{background:#7ac45d}
+.expanded-report{width:780px;height:420px;overflow:auto;background:#16221d;border:1px solid #3b5b46;border-radius:9px}.expanded-report .analysis{width:100%;height:100%;overflow:visible}.expanded-report .report-filter{height:55px}.expanded-report .report-filter button{height:42px;font-size:18px}.expanded-report .report-figure{height:360px}.expanded-report .report-metric{height:110px;font-size:19px}
+.report-figure.raster-graph{display:block}.raster-graph img{position:absolute;max-width:none}.raster-graph.trend{height:249px}.raster-graph.trend img{width:1024px;height:600px;left:-548px;top:-230px}.raster-graph.mistake img{width:1024px;height:525px;left:-602px;top:-206px}.raster-graph.mistake:before{content:"";position:absolute;left:0;top:0;width:20px;height:210px;background:#16221d;z-index:1}.expanded-report .expanded-inner{position:relative !important;left:0 !important;top:0 !important;width:460px !important;height:250px !important;overflow:visible !important;transform:scale(1.67);transform-origin:top left}.expanded-report .analysis{width:460px !important;height:250px !important;overflow:hidden !important}.expanded-report .report-filter{height:38px !important}.expanded-report .report-filter button{height:29px !important;font-size:13px !important;margin:0 !important;float:none !important}.expanded-report .report-figure{height:210px !important}.expanded-report .report-figure.trend{height:249px !important}.expanded-report .report-metric{height:68px !important;font-size:14px !important}.expanded-report .raster-graph.trend img{width:1024px !important;height:600px !important;left:-548px !important;top:-230px !important}.expanded-report .raster-graph.mistake img{width:1024px !important;height:525px !important;left:-602px !important;top:-206px !important}</style><style id="single-stage-layout">
+.work-head{min-height:62px;padding:10px 20px;gap:14px}.work-head h1{white-space:nowrap}.work-head .mix-controls{margin-left:auto;display:flex;align-items:center;gap:9px;white-space:nowrap;font:14px system-ui,-apple-system,"PingFang SC",sans-serif;color:#bed3c2}.mix-controls input{width:185px;accent-color:#56b87a;cursor:pointer}.mix-controls input:disabled{opacity:.45;cursor:default}.mix-controls output{min-width:42px;text-align:right;color:#7bd49c}
+.compare-layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 62px)}
+.compare-sidebar{position:sticky;top:62px;height:calc(100vh - 62px);border-right:1px solid #30443b;background:#111f18;display:flex;flex-direction:column;min-height:0}
+.sidebar-head{padding:16px 16px 12px;font:700 17px system-ui,-apple-system,"PingFang SC",sans-serif;border-bottom:1px solid #30443b}.sidebar-head small{display:block;margin-top:3px;color:#91ac99;font-size:12px;font-weight:400}
+.compare-sidebar .chooser{display:block;overflow-y:auto;overflow-x:hidden;max-height:none;min-height:0;flex:1;padding:8px 10px 20px;border:0;background:transparent;scrollbar-color:#567a62 #15251b}
+.chooser-group{margin:10px 6px 6px;color:#83af91;font:700 12px system-ui,-apple-system,"PingFang SC",sans-serif;letter-spacing:.08em}
+.compare-sidebar .chooser button{display:block;width:100%;min-height:38px;margin:2px 0;padding:8px 10px;text-align:left;white-space:normal;line-height:1.35;font:14px system-ui,-apple-system,"PingFang SC",sans-serif;color:#c6d7cb;background:transparent;border:1px solid transparent;border-radius:7px}.compare-sidebar .chooser button:hover{background:#1b2e22}.compare-sidebar .chooser button.on{background:#28523a;border-color:#5dbb7d;color:#f0f9f1}
+.compare-main{min-width:0;padding:16px 22px 28px}.compare-content{max-width:1026px;margin:0 auto}.compare-main .intro{padding:0 0 12px}.compare-main .panel{border-radius:12px}.compare-main .panel h2{margin:0;padding:10px 12px;font-size:16px}.compare-main .stage-host{aspect-ratio:1024/600}.compare-main .design-note{padding:14px 0 18px}.compare-main .footer{padding:0 0 18px}
+.proposal-overlay{position:absolute;inset:0;opacity:1}.stage-label{position:absolute;z-index:4;top:10px;padding:5px 9px;border:1px solid #426148;border-radius:6px;background:#0c1a13dd;color:#e6f4e9;font:12px system-ui,-apple-system,"PingFang SC",sans-serif;pointer-events:none}.stage-label.current{left:10px}.stage-label.proposed{right:10px}
+@media(max-width:900px){.compare-layout{grid-template-columns:215px minmax(0,1fr)}.work-head{flex-wrap:wrap}.mix-controls input{width:125px}.compare-sidebar{top:94px;height:calc(100vh - 94px)}}
+@media(max-width:620px){.compare-layout{display:block}.compare-sidebar{position:relative;top:auto;height:210px;border-right:0;border-bottom:1px solid #30443b}.compare-main{padding:14px}.work-head h1{white-space:normal}.work-head .mix-controls{margin-left:0}}
+</style><style>@font-face{font-family:"Kiosk Plex Mono";src:url("kiosk-depth-experiments/fonts/ibm-plex-mono.woff2") format("woff2");font-weight:400 700;font-display:swap}.kiosk-plex-num{display:inline;font-family:"Kiosk Plex Mono",monospace!important;font-variant-numeric:lining-nums tabular-nums;font-synthesis:none}#stage .proposal-overlay input[type=number]{font-family:"Kiosk Plex Mono",monospace}</style><link rel="stylesheet" href="kiosk-unified/core.css"><link rel="stylesheet" href="kiosk-unified/play.css"><link rel="stylesheet" href="kiosk-unified/setup.css"><link rel="stylesheet" href="kiosk-unified/game.css"><link rel="stylesheet" href="kiosk-unified/platform.css"><link rel="stylesheet" href="kiosk-unified/training.css"><link rel="stylesheet" href="kiosk-unified/library.css?v=20261019b"><link rel="stylesheet" href="kiosk-unified/report.css?v=20261019b"><link rel="stylesheet" href="kiosk-unified/growth.css"><link rel="stylesheet" href="kiosk-unified/settings.css"><link rel="stylesheet" href="kiosk-unified/tactile.css?v=20261019"></head><body><div class="work-head"><h1>智星盒 Kiosk · 统一可读性改版</h1><small>目标画布 1024 × 600 · 仅设计 HTML</small><a href="KIOSK-UNIFIED-REDESIGN-RULES-2026-10-14.md">改版规则</a><a href="kiosk-live-comparison-2026-10-14.html">查看旧稿对照</a><div class="mix-controls"><label for="mix">实机</label><input id="mix" type="range" min="0" max="100" value="100" aria-label="新版提案叠加透明度"><label for="mix">提案</label><output id="mix-value" for="mix">100%</output></div></div><div class="compare-layout"><aside class="compare-sidebar"><div class="sidebar-head">页面索引<small>选择页面，右侧叠加查看</small></div><nav class="chooser" id="chooser" aria-label="页面索引"></nav></aside><main class="compare-main"><div class="compare-content"><div class="intro" id="intro"></div><section class="panel"><h2>实机现状与新版提案叠加 <small id="stage-status">滑杆左端看实机，右端看提案</small></h2><div class="stage-host"><div class="stage" id="stage"></div></div></section><div class="design-note" id="note"></div><div class="footer">真实设备不可进入的流程仅展示状态，不设计虚构画面。截图中的账号、战绩、钟点是采集时数据。提案中的控件示意不写入设备或正式应用。</div></div></main></div><div id="modal-root"></div><script src="kiosk-unified/play.js"></script><script src="kiosk-unified/setup.js"></script><script src="kiosk-unified/game.js"></script><script src="kiosk-unified/platform.js"></script><script src="kiosk-unified/training.js"></script><script src="kiosk-unified/kifu-fixture.js?v=20261019"></script><script src="kiosk-unified/kifu-positions.js?v=20261019b"></script><script src="kiosk-unified/library.js?v=20261019b"></script><script src="kiosk-unified/review-fixture.js?v=20261019"></script><script src="kiosk-unified/report.js?v=20261019b"></script><script src="kiosk-unified/growth.js"></script><script src="kiosk-unified/settings.js"></script><script>
+const screens=[
+  {
+    "id": "play",
+    "group": "对弈",
+    "name": "01 对弈首页",
+    "note": "当前 PlayPage：继续上一局、四种对弈方式及跨平台入口",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/play-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/play-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "setup-free",
+    "group": "对弈",
+    "name": "02 自由对弈设置",
+    "note": "当前 AiSetupPage：保留盘 516 / 右栏 460；说明进入 ⓘ",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/setup-free-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/setup-free-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "setup-ranked",
+    "group": "对弈",
+    "name": "03 升降级设置",
+    "note": "当前 AiSetupPage 升降级分支；仅显示可设置项",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/setup-ranked-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/setup-ranked-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "setup-local",
+    "group": "对弈",
+    "name": "04 本地对局设置",
+    "note": "当前 PvpLocalSetupPage：同一块实体盘的双人设置",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/setup-local-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/setup-local-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "game",
+    "group": "对弈",
+    "name": "05 人机对局",
+    "note": "当前 GamePage：双方信息左右并排，操作键图文水平排列",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/game-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/game-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "game-ranked",
+    "group": "对弈",
+    "name": "05+ 升降级对局",
+    "note": "当前升降级局：不提供胜率、支招、图表或悔棋",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/game-ranked-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "game-local",
+    "group": "对弈",
+    "name": "05a 本地对局",
+    "note": "按当前 LocalConfirmGame：棋盘居中，黑白双方分别在两侧确认落子",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/game-local-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/game-local-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "game-local-timeout",
+    "group": "对弈",
+    "name": "05b 本地读秒",
+    "note": "超时终局按当前 GamePage 切换回右栏布局",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/game-local-timeout-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "game-local-count",
+    "group": "对弈",
+    "name": "05c 本地数子",
+    "note": "数子阶段按当前 GamePage 切换回右栏布局",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/game-local-count-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "game-local-dialogs",
+    "group": "对弈",
+    "name": "05d 本地确认弹窗",
+    "note": "确认文字提高到 19 px；保留取消与确认",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/game-local-dialogs-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/game-local-dialogs-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "lobby",
+    "group": "对弈",
+    "name": "06 在线大厅",
+    "note": "当前 LobbyPage：大厅名单和邀请入口",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/lobby-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/lobby-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "platform",
+    "group": "跨平台",
+    "name": "07 平台选择",
+    "note": "当前平台入口以 PlayPage 为准，单列此屏用于跨平台流程审核",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "platform-login",
+    "group": "跨平台",
+    "name": "07a 星阵登录",
+    "note": "当前 PlatformLoginPage：账号连接与扫码入口",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/platform-login-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-login-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "platform-login-sms",
+    "group": "跨平台",
+    "name": "07a+ 验证码登录",
+    "note": "当前 PlatformLoginPage 的手机验证码状态",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/platform-login-sms-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-login-sms-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "platform-login-pw",
+    "group": "跨平台",
+    "name": "07b 密码登录",
+    "note": "当前 PlatformLoginPage 的账号密码状态",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/platform-login-pw-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-login-pw-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "platform-match",
+    "group": "跨平台",
+    "name": "07c 快速匹配",
+    "note": "当前 GolaxyPregameSetupPage：用时可多选",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/platform-match-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-match-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "platform-matched",
+    "group": "跨平台",
+    "name": "07d 匹配成功",
+    "note": "匹配状态的字与主要操作保持清晰",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-matched-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "platform-invite",
+    "group": "跨平台",
+    "name": "07e 邀请对手",
+    "note": "邀请和等待状态",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-invite-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "platform-room",
+    "group": "跨平台",
+    "name": "07f 星阵房间",
+    "note": "当前星阵房间流程：创建、我的房间、加入",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/platform-room-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-room-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "platform-login-ogs",
+    "group": "跨平台",
+    "name": "08 OGS 登录",
+    "note": "当前 PlatformLoginPage 的 OGS 状态",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/platform-login-ogs-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-login-ogs-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "platform-lobby",
+    "group": "跨平台",
+    "name": "08a OGS 大厅",
+    "note": "当前 PlatformLobbyPage：开一局、公开挑战、找人下",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/platform-lobby-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-lobby-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "platform-challenge",
+    "group": "跨平台",
+    "name": "08b OGS 挑战",
+    "note": "当前公开挑战确认流程",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-challenge-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "platform-engine",
+    "group": "跨平台",
+    "name": "09 星阵人机设置",
+    "note": "当前 PlatformEngineSetupPage",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/platform-engine-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-engine-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "platform-game",
+    "group": "跨平台",
+    "name": "10 星阵人机对局",
+    "note": "当前 GamePage engineMode：星阵分析动作清晰分组",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-game-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "platform-pvp",
+    "group": "跨平台",
+    "name": "10a 平台棋友对局",
+    "note": "当前跨平台棋友对局",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/platform-pvp-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "golaxy-home",
+    "group": "跨平台",
+    "name": "补充 · 星阵首页",
+    "note": "当前 GolaxyHomePage，Claude 稿缺此独立页",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/golaxy-home-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/golaxy-home-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "golaxy-spectate",
+    "group": "跨平台",
+    "name": "补充 · 星阵观战",
+    "note": "当前 GolaxySpectatorPage，Claude 稿缺观战页",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/golaxy-spectate-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "pvp-spectate",
+    "group": "跨平台",
+    "name": "补充 · 本地观战",
+    "note": "当前 PvpSpectatorPage",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/pvp-spectate-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/pvp-spectate-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "training",
+    "group": "训练营",
+    "name": "11 训练营首页",
+    "note": "当前 TsumegoPage：难度选择及继续练习",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/training-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/training-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "categories",
+    "group": "训练营",
+    "name": "11a 题型",
+    "note": "当前 TsumegoCategoriesPage",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/categories-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/categories-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "units",
+    "group": "训练营",
+    "name": "12 单元",
+    "note": "当前 TsumegoUnitsPage",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/units-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/units-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "problems",
+    "group": "训练营",
+    "name": "13 题目列表",
+    "note": "当前 TsumegoUnitListPage，含错题入口",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/problems-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/problems-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "puzzle",
+    "group": "训练营",
+    "name": "14 做题",
+    "note": "当前 TsumegoProblemPage：题目状态与主要操作",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/puzzle-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/puzzle-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "kifu",
+    "group": "棋谱",
+    "name": "15 棋谱库",
+    "note": "当前 KifuPage：搜索、最近摆谱与赛事棋谱",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/kifu-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/kifu-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "kifu-detail",
+    "group": "棋谱",
+    "name": "16 棋谱详情",
+    "note": "棋谱详情路由未采集到独立画面：设备截图实际落到职业棋局报告",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/kifu-detail-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/kifu-detail-prior.png",
+    "status": "实机截图为职业报告；独立详情未采集"
+  },
+  {
+    "id": "baipu",
+    "group": "棋谱",
+    "name": "17 摆谱",
+    "note": "当前 BaipuSessionPage：实体摆谱主要状态",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/baipu-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/baipu-prior.png",
+    "status": "实机标定门槛；无法进入摆谱主界面"
+  },
+  {
+    "id": "baipu-restore",
+    "group": "棋谱",
+    "name": "17a 继续摆谱",
+    "note": "从上次位置继续",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/baipu-restore-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "baipu-try",
+    "group": "棋谱",
+    "name": "17b 试下",
+    "note": "摄像头暂停识别的明确状态",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/baipu-try-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "baipu-hint",
+    "group": "棋谱",
+    "name": "17c AI 支招",
+    "note": "提示内容保持大字",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/baipu-hint-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "baipu-manual",
+    "group": "棋谱",
+    "name": "17d 手动补录",
+    "note": "手动补录棋步",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/baipu-manual-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "kifu-report",
+    "group": "棋谱",
+    "name": "补充 · 职业棋局报告",
+    "note": "当前 KifuReportDetailPage，Claude 稿缺此页",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/kifu-detail-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/kifu-report-prior.png",
+    "status": "实机职业棋谱分析详情"
+  },
+  {
+    "id": "review",
+    "group": "复盘与研究",
+    "name": "19 我的对局",
+    "note": "当前 ReportsPage：选局与生成报告",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/review-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/review-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "report",
+    "group": "复盘与研究",
+    "name": "20 复盘报告",
+    "note": "当前 ReportDetailPage：报告、胜率与重点手",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/report-detail-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/report-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "research",
+    "group": "复盘与研究",
+    "name": "21 研究",
+    "note": "当前 ResearchPage：分析与候选手",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/research-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/research-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "report-error",
+    "group": "复盘与研究",
+    "name": "补充 · 报告读取失败",
+    "note": "当前实现的失败、重试与空状态",
+    "current": null,
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/report-error-prior.png",
+    "status": "设备当前不可进入／旧稿额外状态"
+  },
+  {
+    "id": "growth",
+    "group": "成长",
+    "name": "22 成长",
+    "note": "当前 GrowthPage：段位、战绩与升降规则",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/growth-device-now.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/growth-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "courses",
+    "group": "课程",
+    "name": "23 课程分类",
+    "note": "当前 TutorialCategoriesPage",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/courses-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/courses-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "books",
+    "group": "课程",
+    "name": "24 书目和章节",
+    "note": "当前 TutorialBooksPage：书目、章节树",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/books-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/books-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "section",
+    "group": "课程",
+    "name": "25 章节学习",
+    "note": "当前 TutorialSectionPage：棋图、讲解、视频",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/section-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/section-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "calib",
+    "group": "设置",
+    "name": "26 棋盘标定",
+    "note": "当前 VisionSetupPage",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/calib-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/calib-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "settings",
+    "group": "设置",
+    "name": "27 设置",
+    "note": "当前 SettingsPage：账户、棋盘、声音与语言",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/settings-1-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/settings-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "login",
+    "group": "设置",
+    "name": "补充 · 盒端登录",
+    "note": "当前 LoginPage，Claude 稿缺登录页",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/login-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/login-prior.png",
+    "status": "实机路由返回启动门户；非 Kiosk 标准页"
+  },
+  {
+    "id": "golaxy-room-setup",
+    "group": "跨平台",
+    "name": "补充 · 星阵开局",
+    "note": "当前 GolaxyPregameSetupPage 的房间分支",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/platform-room-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/golaxy-room-setup-prior.png",
+    "status": "实机房间创建状态"
+  },
+  {
+    "id": "golaxy-room-mine",
+    "group": "跨平台",
+    "name": "补充 · 我的房间",
+    "note": "当前 GolaxyPregameSetupPage 的我的房间状态",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/golaxy-room-mine-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/golaxy-room-mine-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "tsumego-wrong",
+    "group": "训练营",
+    "name": "补充 · 错题列表",
+    "note": "当前 TsumegoUnitListPage 的错题分支",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/tsumego-wrong-device.png",
+    "prior": "docs/design/kiosk-evidence-2026-10-14/prior/tsumego-wrong-prior.png",
+    "status": "实机截图"
+  },
+  {
+    "id": "report-recommend",
+    "group": "复盘与研究",
+    "name": "报告 · 推荐",
+    "note": "真实六标签之一",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/report-detail-recommend-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "report-trend",
+    "group": "复盘与研究",
+    "name": "报告 · 走势",
+    "note": "真实六标签之一",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/report-detail-trend-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "report-brilliant",
+    "group": "复盘与研究",
+    "name": "报告 · 妙手",
+    "note": "真实六标签之一",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/report-detail-brilliant-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "report-mistake",
+    "group": "复盘与研究",
+    "name": "报告 · 失误",
+    "note": "真实六标签之一",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/report-detail-mistake-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "report-perf",
+    "group": "复盘与研究",
+    "name": "报告 · 发挥水准",
+    "note": "真实六标签之一",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/report-detail-perf-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "report-match",
+    "group": "复盘与研究",
+    "name": "报告 · AI 吻合度",
+    "note": "真实六标签之一",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/report-detail-match-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "settings-board",
+    "group": "设置",
+    "name": "设置 · 实体棋盘",
+    "note": "真实设备标签",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/settings-2-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "settings-move",
+    "group": "设置",
+    "name": "设置 · 落子与提示",
+    "note": "真实设备标签",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/settings-3-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "settings-sound",
+    "group": "设置",
+    "name": "设置 · 声音",
+    "note": "真实设备标签",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/settings-4-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "settings-language",
+    "group": "设置",
+    "name": "设置 · 语言",
+    "note": "真实设备标签",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/settings-5-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "settings-about",
+    "group": "设置",
+    "name": "设置 · 关于",
+    "note": "真实设备标签",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/settings-6-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "golaxy-room-join",
+    "group": "跨平台",
+    "name": "星阵房间 · 加入",
+    "note": "真实设备标签",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/golaxy-room-join-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "books-chapter-open",
+    "group": "课程",
+    "name": "书目 · 章节展开",
+    "note": "真实设备展开状态",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/books-chapter-open-device.png",
+    "prior": null,
+    "status": "实机截图；旧稿缺失"
+  },
+  {
+    "id": "kifu-replay",
+    "group": "棋谱",
+    "name": "棋谱 · 回放",
+    "note": "设备当前停留在载入中",
+    "current": "docs/design/kiosk-evidence-2026-10-14/current/kifu-replay-device.png",
+    "prior": null,
+    "status": "实机载入中截图；尚未取得完成状态"
+  }
+];const root='../../';const real=screens.filter(s=>s.current);const byId=Object.fromEntries(screens.map(s=>[s.id,s]));let active='growth';if(!byId[active]||!byId[active].current)active='play';let growthTab='overview';const iconPaths={play:'<path d="M6 8h12a4 4 0 0 1 3.8 3l1.1 5a2 2 0 0 1-3.1 2L16 15H8l-3.8 3A2 2 0 0 1 1 16l1.1-5A4 4 0 0 1 6 8Z"/><path d="M7 10v5m-2.5-2.5h5M17 11h.01M19 13h.01"/>',training:'<path d="M8 3v5H5a3 3 0 1 0 0 6h3v7h8v-4h2a3 3 0 1 0 0-6h-2V3z"/>',kifu:'<path d="M4 3h7v18H4zM13 3h7v18h-7zM5 7h5m4 0h5M5 16h5m4 0h5"/>',review:'<rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M3 14h18M9 4v16m6-16v16"/>',growth:'<path d="m2 19 7-7 4 4 9-10M16 6h6v6"/>',courses:'<path d="M12 6c-3-3-6-3-10-2v15c4-1 7-1 10 2 3-3 6-3 10-2V4c-4-1-7-1-10 2ZM12 6v15"/>',settings:'<path d="M12 3v2m0 14v2M4.2 7l1.8 1M18 16l1.8 1M3 12h2m14 0h2M4.2 17l1.8-1M18 8l1.8-1M8 4.2 9 6m6 12 1 1.8M15 6l1-1.8M8 19.8 9 18"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="2"/>',back:'<path d="m15 4-8 8 8 8M7 12h15"/>',grid:'<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M3 15h18M9 3v18m6-18v18"/>',hint:'<path d="M9 18h6M10 21h4M8 16c-1-2-3-3-3-6a7 7 0 0 1 14 0c0 3-2 4-3 6z"/>',chart:'<path d="M3 18h18M4 14l5-5 4 3 6-7"/>',undo:'<path d="m9 8-5 4 5 4M4 12h10a6 6 0 1 1-6 6"/>',stop:'<path d="M12 22V4m0 2c3-4 5 2 9 0v9c-4 2-6-4-9 0"/>',numbers:'<path d="M3 5h2v6M2 11h4M10 5h5l-5 6h5M20 5h2v6m-2-3h2M2 17h20"/>',hand:'<path d="M8 13V5a2 2 0 0 1 4 0v6-3a2 2 0 0 1 4 0v4-2a2 2 0 0 1 4 0v7a5 5 0 0 1-5 5h-5a5 5 0 0 1-4-2l-4-5a2 2 0 0 1 3-3z"/>',physical:'<path d="M3 8h18v10H3zM7 18l-2 3m12-3 2 3M7 11h10M7 15h10M10 8v10m4-10v10"/><circle cx="19" cy="4" r="2"/>',board:'<path d="M3 5 9 3l6 3 6-2v15l-6 2-6-3-6 2V5ZM9 3v15M15 6v15"/>',count:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',camera:'<rect x="3" y="6" width="18" height="14" rx="2"/><path d="m8 6 1-2h6l1 2"/><circle cx="12" cy="13" r="3"/>',playbtn:'<path d="m8 5 11 7-11 7z"/>'};const I=n=>`<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${iconPaths[n]||iconPaths.board}</svg></span>`;
+const dock=s=>{let tab=s.group==='对弈'?'play':s.id==='review'?'review':s.id==='growth'?'growth':s.group==='训练营'?'training':s.group==='棋谱'?'kifu':s.group==='课程'?'courses':s.group==='设置'?'settings':'play';return `<div class="proposal-dock">${[['play','对弈'],['training','训练营'],['kifu','棋谱'],['review','复盘'],['growth','成长'],['courses','课程'],['settings','设置']].map(([id,t])=>`<button class="${tab===id?'on':''}" data-switch="${id}">${I(id)}${t}</button>`).join('')}</div>`};
+function help(text){return `<button class="info" data-help="${text}" aria-label="查看说明">i</button>`}function ctl(label,value,fixed=false){return `<div class="control-box ${fixed?'fixed':'select'}"><label>${label}</label><strong>${value}</strong>${fixed?'':'<span class="arr">⌄</span>'}</div>`}function sect(t,more=''){return `<div class="section-title">${t}${more?help(more):''}</div>`}
+function setup(kind){
+ const ranked=kind==='setup-ranked',local=kind==='setup-local';const title=ranked?'升降级对弈':local?'本地对局':'自由对弈';
+ let html=`<div class="shell-mask"></div><div class="proposal setup-rail"><div class="topline"><button class="btn back">${I('back')}返回对弈</button><strong>${title}</strong></div><div class="inner">`;
+ html+=`<div class="sec">${sect(ranked?'盒子定好的':'这一局棋',ranked?'路数、规则和让子由盒子定好。':'路数、规则和让子在开局前设置。')}<div class="triple">${ctl('路数','19 路',ranked)}${ctl('规则','中国规则',ranked)}${ctl('让子','分先',ranked)}</div><div class="komi-row">${ctl('贴目','黑贴 7.5 目',true)}${ranked?ctl('对手','2 级',true)+ctl('当前段位','2 级',true):local?'':`<div class="control-box select" style="grid-column:span 2"><label>对手</label><strong>6 级</strong><span class="arr">⌄</span></div>`}</div></div>`;
+ if(ranked)html+=`<div class="sec">${sect('怎么坐','实体盘和屏幕都可落子。')}<div class="triple">${ctl('落子','实体盘')}${ctl('我执','执黑')}${ctl('用时','60分+30秒×3')}</div></div><div class="sec">${sect('这一局赌多少','净胜分达到 +3 升一档，达到 −3 降一档。')}<div class="stake"><div class="vbox">赢 <em>+1 分</em></div><div class="vbox">输 <em>−1 分</em></div></div></div>`;
+ else if(local)html+=`<div class="sec">${sect('对局双方')}<div class="choice-row"><div class="field"><span class="stone black"></span>黑方</div><div class="field"><span class="stone"></span>白方</div></div></div><div class="sec">${sect('怎么坐','实体盘时双方在各自一侧确认；屏幕落子时直接点棋盘。')}<div class="triple">${ctl('落子','实体盘')}${ctl('用时','不限时')}${ctl('落子音','开')}</div></div>`;
+ else html+=`<div class="sec">${sect('怎么坐','实体盘和屏幕都可落子。')}<div class="triple">${ctl('落子','实体盘')}${ctl('我执','执黑')}${ctl('用时','不限时')}</div></div>`;
+ return html+`<button class="btn green bottom-action">${ranked?'开始计分局':'开始对局'}</button></div></div>`;
+}
+function engineSetup(){return `<div class="shell-mask"></div><div class="proposal setup-rail"><div class="topline"><button class="btn back">${I('back')}返回星阵</button><strong>星阵围棋 · 人机</strong></div><div class="inner"><div class="sec">${sect('这局棋')}<div class="triple">${ctl('路数','19 路',true)}${ctl('规则','中国规则',true)}${ctl('让子','分先')}</div><div class="komi-row">${ctl('贴目','黑贴 7.5 目',true)}</div></div><div class="sec">${sect('对手','39 档棋力来自星阵，开局前可选择。')}<div class="vbox engine-plate"><span class="engine-badge">星</span><span><b>星小蚊 · 18 级</b><small>星阵下发棋力</small></span><strong>1 / 39 档 ›</strong></div></div><div class="sec">${sect('怎么坐')}<div class="choice-row">${ctl('落子','屏幕')}${ctl('我执','猜先')}</div></div><button class="btn green bottom-action">开始对局</button></div></div>`}
+function game(){return `<div class="shell-mask"></div><div class="proposal game-rail"><div class="topline"><button class="btn back">${I('back')}退出对局</button><strong>自由对弈</strong></div><div class="players"><div class="vbox player"><div class="player-top"><span class="stone"></span><b>白方 · 6 级</b></div><div class="player-bottom">已落子 · 提子 0</div><div class="micro">不限时</div></div><div class="vbox player on"><div class="player-top"><span class="stone black"></span><b>黑 · fan（你）</b></div><div class="player-bottom">第 1 手 · 提子 0</div><div class="micro">不限时</div></div></div><div class="vbox chart"><div class="chart-title"><span>胜率 · KataGo</span><b style="color:#65c487">黑 47.5% · 黑 +0.2 目</b></div><div class="chart-img"><img src="${root+byId.game.current}" alt="实机胜率坐标与曲线"></div></div><div class="switches"><span><i class="switch on"></i>坐标</span><span><i class="switch"></i>手数</span><span class="micro" style="margin-left:auto">满 100 手可数子</span></div><div class="actions">${[['board','领地',false],['hint','AI 支招',true],['chart','图表',false],['grid','数子',true],['undo','悔棋',false],['hand','停一手',false],['stop','认输',false]].map(([i,t,disabled])=>`<button class="btn ${t==='认输'?'danger':''}" ${disabled?'disabled':''}>${I(i)}${t}</button>`).join('')}</div></div>`}
+function reportBody(tab){
+ const side=tab==='brilliant'||tab==='mistake';
+ const filter=`<div class="report-filter">${['全盘','布局','中盘','官子'].map((x,i)=>`<button class="${i===0?'on':''}">${x}</button>`).join('')}${side?`<span class="filter-gap"></span>${['双方','黑方','白方'].map((x,i)=>`<button class="${i===0?'on':''}">${x}</button>`).join('')}`:''}</div>`;
+ if(tab==='brilliant')return filter+`<div class="report-figure">暂无妙手</div>`;
+ if(tab==='match')return filter.replace('</div>','<span class="filter-gap"></span><button class="on">统计</button><button>分布</button></div>')+`<div>${[['走中 AI 一选','46%','26%',46,26],['走进 AI 前三','66%','42%',66,42],['不在 AI 前十选','14%','46%',14,46]].map(x=>`<div class="report-metric"><b>${x[0]}</b><div class="pair"><div class="meter"><i style="width:${x[3]}%"></i></div><div class="meter"><i class="white" style="width:${x[4]}%"></i></div></div><span>黑 ${x[1]}<br>白 ${x[2]}</span></div>`).join('')}</div>`;
+ if(tab==='trend')return `<div class="report-figure raster-graph trend"><img src="${root+byId['report-trend'].current}" alt="实机走势曲线：黑方胜率与领先目数"></div>`;
+ if(tab==='mistake')return filter+`<div class="report-figure raster-graph mistake"><img src="${root+byId['report-mistake'].current}" alt="实机失误分布：黑方在上，白方在下"></div>`;
+ return filter+`<div class="report-figure"><svg viewBox="0 0 440 210" role="img" aria-label="黑白双方七档发挥水准"><path class="gridline" d="M17 178H430M17 95H430"/><text class="graphtext" x="300" y="18">● 黑　○ 白</text>${[['妙手',0,0],['最佳',23,13],['很好',5,7],['尚可',8,5],['小亏',7,12],['失误',5,6],['恶手',2,7]].map((x,i)=>{let px=25+i*58;let bh=x[1]*5,wh=x[2]*5;return `<rect class="bar-black" x="${px}" y="${178-bh}" width="17" height="${bh}"/><rect class="bar-white" x="${px+19}" y="${178-wh}" width="17" height="${wh}"/><text class="graphtext" x="${px}" y="${169-bh}">${x[1]}</text><text class="graphtext" x="${px+19}" y="${169-wh}">${x[2]}</text><text class="graphtext" x="${px}" y="199">${x[0]}</text>`}).join('')}</svg></div>`;
+}
+function report(id){
+ const tab=id==='report'?'recommend':id.replace('report-','');const tabs=[['recommend','推荐'],['trend','走势'],['brilliant','妙手'],['mistake','失误'],['perf','发挥水准'],['match','AI 吻合度']];const current=byId['report-'+tab]?.current||byId.report.current;
+ let content='';if(tab==='recommend')content=`<h3>AI 推荐 · 黑方待落子 <span style="float:right;font-weight:400;color:#adc4b1">第 100 手后</span></h3><div class="rec-row" style="color:#9bb4a1"><span>着点</span><span>推荐度</span><span>目差</span><span>胜率</span></div>${[['R12','74%','+47.1','100.0%'],['R10','13%','+43.3','100.0%'],['N9','11%','+44.6','100.0%'],['S11','1%','+43.9','100.0%'],['R8','1%','+44.8','100.0%']].map(r=>`<div class="rec-row"><strong><span class="stone black"></span>${r[0]}</strong><span>${r[1]}</span><span>${r[2]}</span><span>${r[3]}</span></div>`).join('')}`;
+ else content=reportBody(tab);
+ const helpCopy={recommend:'推荐度是 AI 对候选着点的选择倾向，不是人类落子的概率。目差和胜率以待落子方为基准；正目差表示该方领先。点按候选可预览变化；缺少评估以 — 表示。',trend:'绿线为黑方胜率，橙线为黑方领先目数。横轴为手数；点击图表跳到对应局面。没有分析的局面不补值。',brilliant:'妙手需满足：走出 AI 深入计算后的首选；AI 初选概率低于 10%（官子低于 6%）；局面胜负尚未确定。初选概率不是胜率。图上黑方在上，白方在下；每方最多画 30 条。',mistake:'按每手目损分级显示失误。图上黑方在上，白方在下；横轴为手数。未评级表示上一手没分析或搜索量不足。每方最多画 30 条。',perf:'七档发挥水准从妙手到恶手，黑柱与白柱分别归一。未评级表示上一手没分析或搜索量不足。',match:'满格实色代表走中 AI 一选，半高浅色代表进入前三，底色代表其他。分母只统计能与 AI 比对的手数；一致率不能单独作为棋力或作弊的证据。'};
+ const details=`对局详情：黑方—；白方—；日期 2026-10-12；结果 B+49.3；规则 Chinese；贴目 7.5；已完成普通报告。每手算 500 次，用了 2分55秒。<div class='modal-actions'><button class='btn'>去研究</button><button class='btn'>重算</button></div>`;
+ return `<div class="shell-mask"></div><div class="proposal report-rail"><div class="report-head"><div class="title"><span>${I('back')} <strong>本地对局 · 未记名</strong></span>${help(details)}</div><div class="meta"><span>黑方胜 · <em>49.3 子</em></span><span style="text-align:right">中国规则 · 贴目 7.5</span><span>黑棋胜率 <em>100.0%</em></span><span style="text-align:right">黑领先 <em>46.1 目</em></span></div></div><div class="tabs">${tabs.map(([key,label])=>`<button class="${tab===key?'on':''}" data-switch="report-${key}">${label}${tab===key?`<span class="tab-info" data-help="${helpCopy[key]}" role="button">ⓘ</span>`:''}</button>`).join('')}<button class="expand" data-expand="true" aria-label="放大当前分析工作区">⛶</button></div><div class="analysis">${content}</div><div class="report-actions">${[['hand','试下'],['board','领地'],['hint','支招'],['physical','实体盘'],['numbers','手数'],['grid','坐标']].map(([i,t])=>`<button class="btn">${I(i)}${t}</button>`).join('')}</div><div class="vbox playback"><span>«</span><span>‹</span><button class="btn green" style="width:39px;height:39px;border-radius:50%;padding:0">${I('playbtn')}</button><span>›</span><span>»</span><i class="bar"></i><b style="font-size:17px">100/100 手</b></div></div>`}
+function heat(margin=10){return `<div class="heat-actual" style="--hm:${margin}px"><img src="${root+byId.growth.current}" alt="实机全年活跃热图"></div>`}
+function growth(){let content='';if(growthTab==='overview')content=`<div class="stats">${[['21','近 30 天对局'],['24%','30天胜率 · 4局未计'],['18','累计已解题'],['5','升降级局 · 累计']].map(x=>`<div class="vbox stat"><strong>${x[0]}</strong><span>${x[1]}</span></div>`).join('')}</div>${heat()}<div class="summary-row"><div class="vbox"><h3>能力诊断</h3><p>问题手 / 已评级手</p><p>布局　24 / 90　中盘　61 / 135</p><p>官子　30 / 53 · 最弱</p></div><div class="vbox"><h3>按对手强度</h3><p>3 级　1 胜 · 0 负</p><p>6 级　1 胜 · 0 负</p><p>其他段位见「对手」</p></div></div>`;
+else if(growthTab==='practice')content=`${heat(0)}<div class="section-title" style="margin-top:16px">能力诊断 ${help('只看跑过报告的最近 3 份对局：你下的 278 手。分数是问题手 / 已评级手。另有 2 份没记执色。')}</div><div class="ability">${[['布局','24 / 90','27%'],['中盘','61 / 135','45%'],['官子 · 最弱','30 / 53','57%']].map(x=>`<div class="vbox"><h3>${x[0]}</h3><b>${x[1]}</b><div class="micro">问题手</div><div class="bar" style="--w:${x[2]}"></div></div>`).join('')}</div>`;
+else content=`<div class="section-title">按对手强度 ${help('有 4 局没算进胜率：面对面的局，以及没记下你执黑还是执白的局。近 30 天定级后的升降级对局不足两天，走势暂不能连成线。')}</div><div class="rank-grid">${[['2段','0 胜 · 1 负'],['1级','0 胜 · 1 负'],['2级','0 胜 · 1 负'],['3级','1 胜 · 0 负'],['6级','1 胜 · 0 负']].map(x=>`<div class="vbox"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div>`;
+return `<div class="proposal growth-rail"><div class="tabs">${[['overview','概览'],['practice','练习与诊断'],['opponents','对手']].map(([id,t])=>`<button class="${growthTab===id?'on':''}" data-growth="${id}">${t}</button>`).join('')}</div>${content}</div>`}
+function local(){const side=(black,left)=>`<div class="proposal local-overlay ${left?'left on':'right'}"><div class="row"><span class="stone ${black?'black':''}"></span><b>${black?'黑方':'白方'}</b><span class="micro">${black?'走棋中':'等待中'}</span></div><div class="timing">剩余主时间</div><div class="clock">不限时</div><div class="turn">${black?'轮到你落子':'等待黑方'}</div><div class="toggles"><button class="btn">${I('grid')}坐标</button><button class="btn">${I('numbers')}手数</button></div><div class="tiny-actions"><button class="btn">停一手</button><button class="btn">数子</button><button class="btn" style="color:#dd8c7e">认输</button></div><button class="btn confirm" ${black?'':'disabled'}>${black?'✓ 确认落子':'等待黑方'}</button></div>`;return side(true,true)+side(false,false)}
+const l1=new Set(['play','training','kifu','review','growth','courses','settings','settings-board','settings-move','settings-sound','settings-language','settings-about']);
+const cleanup={play:[[328,107,480,16]],training:[[328,106,550,19]],kifu:[[328,104,570,18]],courses:[[328,105,600,20]],settings:[[328,94,640,20]],'setup-free':[]};function generic(s){let h='';if(l1.has(s.id)){for(const [x,y,w,z] of cleanup[s.id]||[])h+=`<div class="muted-mask" style="left:${x}px;top:${y}px;width:${w}px;height:${z}px"></div>`}return h}
+const captureTimes={play:'02:08','setup-free':'02:31','setup-ranked':'02:31','setup-local':'02:31',game:'04:36',lobby:'02:31','platform-login':'03:33','platform-login-sms':'03:33','platform-login-pw':'03:33','platform-match':'02:32','platform-room':'03:33','platform-login-ogs':'02:32','platform-lobby':'02:32','platform-engine':'02:32','golaxy-home':'02:31','pvp-spectate':'03:44',training:'02:08',categories:'03:07',units:'03:10',problems:'03:13',puzzle:'03:20',kifu:'03:50','kifu-detail':'03:54',baipu:'03:57','kifu-report':'03:54',review:'03:36',report:'01:56',research:'02:32',growth:'05:30',courses:'02:09',books:'02:57',section:'03:01',calib:'02:32',settings:'02:51','golaxy-room-setup':'03:33','golaxy-room-mine':'03:33','tsumego-wrong':'03:23','report-recommend':'02:15','report-trend':'02:15','report-brilliant':'02:16','report-mistake':'02:16','report-perf':'02:16','report-match':'02:16','settings-board':'02:51','settings-move':'02:51','settings-sound':'02:51','settings-language':'02:51','settings-about':'02:51','golaxy-room-join':'03:33','books-chapter-open':'03:00','kifu-replay':'06:36'};
+function commonTop(s){if(s.id==='login')return '';const local=s.id==='game-local'||s.id==='game-local-dialogs';const home=l1.has(s.id)?`<button class="u-shell-home" data-switch="login"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-7H9v7H3z"/></svg></span>主页</button>`:'';const right=local?`<span class="u-shell-local-title">本地对局</span><span class="u-shell-local-meta">第 0 手 · 19 路</span><button class="u-shell-local-action" data-audio="true" data-help="两人在同一块棋盘上下棋。先在棋盘选点，再由当前一方点击确认落子。确认时双方计时暂停；成功后对方开始计时，失败则仍由当前一方计时。读秒结束按规则判超时负。请听到确认音或看到对方卡片亮起后再落下一子。"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></svg></span>落子说明</button><button class="u-shell-local-action" data-switch="game-local-dialogs">${I('back')}退出对局</button>`:`${home}<span class="u-shell-avatar">F</span><span class="u-shell-user">fan</span><time class="u-shell-clock">${captureTimes[s.id]||"02:08"}</time>`;return `<div class="u-shell-top"><span class="u-shell-logo" aria-hidden="true"></span><strong class="u-shell-brand">智星盒</strong><span class="u-shell-en">StellaBox</span><span class="u-shell-separator"></span><span class="u-shell-product">围棋</span><span class="u-shell-spacer"></span>${right}</div>`}
+function commonDock(s){if(s.id==='login'||!l1.has(s.id))return '';const tab=s.group==='对弈'?'play':s.id==='review'?'review':s.id==='growth'?'growth':s.group==='训练营'?'training':s.group==='棋谱'?'kifu':s.group==='课程'?'courses':s.group==='设置'?'settings':'play';return `<div class="u-shell-dock">${[['play','对弈'],['training','训练营'],['kifu','棋谱'],['review','复盘'],['growth','成长'],['courses','课程'],['settings','设置']].map(([id,t])=>`<button class="${tab===id?'is-active':''}" data-switch="${id}">${I(id)}${t}</button>`).join('')}</div>`}
+function overlays(s){const custom=window.KioskDesignFamilies?.[s.id];let body;if(custom){body=custom(s,{I,root,byId})}else if(['setup-free','setup-ranked','setup-local'].includes(s.id))body=setup(s.id);else if(s.id==='platform-engine')body=engineSetup();else if(s.id==='game'||s.id==='game-ranked')body=game();else if(s.id==='game-local')body='';else if(s.id==='growth')body=growth();else if(s.id==='report'||s.id.startsWith('report-')&&['recommend','trend','brilliant','mistake','perf','match'].includes(s.id.slice(7)))body=report(s.id);else body=generic(s);return body+commonTop(s)+commonDock(s)}
+const notes={kifu:'棋谱列表每页 20 局，列表区域独立滚动。前两页使用已采集的真实记录；其余页仅展示分页入口，不虚构内容。','kifu-report':'已分析职业棋局沿用复盘报告的布局；棋手、赛事、棋谱和已采集的逐手分析数据来自同一真实职业棋局。',review:'历史对局使用采集到的真实个人 SGF 摘要；点击卡片显示终局。报告档位菜单展示每手 500／2000 次计算，设计预览不提交任务。','platform-engine':'按实机保留星阵 39 档对手、固定 19 路与中国规则、让子和猜先。设备显示星小蚊·18级，第 1 / 39 档。',growth:'左侧段位卡与外壳保持原样。右侧新增「概览 / 能力诊断 / 对手」三个标签：近一年热图、问题手、对手强度和未计入胜率的说明各有归属，信息不丢失。',report:'保留真实 516 棋盘与 460 右栏。六个分析标签改为单排横向滑动，当前标签自动保持可见；对应图表／表格、操作键和回放条继续沿用真实报告结构。',"setup-ranked":'设备当前配到第 19 档，对手是 2 级；提案按实机显示 2 级。贴目与路数值卡同尺寸；用时提案默认最大值「60分+30秒×3」。',"setup-free":'移走档位解释和不可更改等长段落；路数、规则、让子、贴目、对手、落子、执子、用时都保留。详细规则通过 ⓘ 查看。',"setup-local":'保留两位玩家输入及实体盘／屏幕落子设置；关于确认键和判定的长说明收到 ⓘ 中。',game:'保留真实棋盘、双方身份、胜率图、坐标／手数开关与七个动作。双方采用留有间隙、四角圆润的等宽梯形计时卡，轮到的一侧高亮、另一侧变暗；动作按钮统一图文水平排列。',"game-local":'以实机 LocalConfirmGame 为底保留居中棋盘；重绘两侧玩家卡与等宽操作。空盘时确认键仍不可用，说明弹窗保留计时与确认规则。'};
+function note(s){if(s.id==='calib')return '标定页实机采集时显示旧版 5 点／4 步；当前 GeometryCalibrationScreen.tsx 已升级为 13 点／5 步。提案按当前源码绘制，保留采集时设备未连接与按钮禁用的真实状态。';if(s.id==='play')return '保留实机棋盘预览及摄像头、标定、LED 的真实状态；人机、人人、跨平台和对局历史仍按实机顺序同屏排列，文字与按钮适度放大并增加软键按压质感。';if(s.id==='kifu-detail')return '以真实未分析职业棋谱的 185 手 SGF 展示逐手回放；规则、贴目和胜负据谱头标注。';if(notes[s.id])return notes[s.id];if(s.id.startsWith('report-')&&['recommend','trend','brilliant','mistake','perf','match'].includes(s.id.slice(7)))return notes.report;if(l1.has(s.id))return '以实机模块结构为基础，统一字号、同类按钮和图标；通过页内分组容纳原有信息。';if(s.id==='kifu-replay')return '实机回放页持续显示“正在读这一局”，本次未得到载入完成的状态；提案保持此状态，不虚构谱面。';if(s.id==='baipu')return '实机当前只到「需要标定」门槛，尚未取得摆谱主界面；不编造摆谱功能画面。';return '依据实机截图保留这一状态的内容、尺寸、图标与交互位置；当前没有足够理由改变基础布局。'}
+Object.assign(notes,{
+  training:'去掉训练营首页的实体盘预览；四组棋力使用立体卡片轮播，手指拖动时跟手移动、松手吸附。15 级饼图与比例来自已核实的题型数量；其余等级比例数据暂不可用。',
+  categories:'六种题型统一卡片尺寸，综合训练与专项题型同级展示。未采集的题量明确标记，不沿用其他等级的数据。',
+  units:'移除最近做过的题目横幅；单元与错题使用同组标签。错题簿继承当前棋力和题型，单元进度保留。',
+  problems:'题目列表按全部与只做错过的切换，卡片显示尝试次数和上次用时；尝试次数与登录账号关联，未采集的用时显示横线。',
+  puzzle:'试下与实体盘使用等大软键和不同图标；实体盘未连接时保留禁用状态。',
+  'tsumego-wrong':'错题簿仅显示当前棋力和题型中试过且尚未做对的题目；综合训练汇集当前棋力的所有题型。'
+});
+const chooser=document.getElementById('chooser');
+const groups=[...new Set(real.map(s=>s.group))];
+chooser.innerHTML=groups.map(group=>`<div class="chooser-group">${group}</div>${real.filter(s=>s.group===group).map(s=>`<button type="button" data-id="${s.id}" title="${s.name}">${s.name}</button>`).join('')}`).join('');
+// Numeric glyphs use IBM Plex Mono without changing the Chinese or branded typefaces.
+function applyPlexNumerals(root){
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  const nodes=[];
+  while(walker.nextNode()){
+    const node=walker.currentNode;
+    if(!/[0-9]/.test(node.nodeValue))continue;
+    const parent=node.parentElement;
+    if(!parent||parent.closest('.kiosk-plex-num,script,style,select,option,textarea,title')||parent.namespaceURI==='http://www.w3.org/2000/svg')continue;
+    nodes.push(node);
+  }
+  for(const node of nodes){
+    const fragment=document.createDocumentFragment();
+    for(const part of node.nodeValue.split(/([0-9]+)/)){
+      if(!part)continue;
+      if(/^[0-9]+$/.test(part)){
+        const span=document.createElement('kiosk-num');span.className='kiosk-plex-num';span.textContent=part;fragment.appendChild(span);
+      }else fragment.appendChild(document.createTextNode(part));
+    }
+    node.replaceWith(fragment);
+  }
+  root.querySelectorAll('svg text,svg tspan').forEach(el=>{
+    if(/[0-9]/.test(el.textContent))el.style.fontFamily='"Kiosk Plex Mono", monospace';
+  });
+}
+const numeralsObserver=new MutationObserver(()=>{
+  const proposal=document.getElementById('proposal-layer');
+  if(proposal)applyPlexNumerals(proposal);
+  applyPlexNumerals(document.getElementById('modal-root'));
+});
+numeralsObserver.observe(document.getElementById('stage'),{childList:true,subtree:true,characterData:true});
+numeralsObserver.observe(document.getElementById('modal-root'),{childList:true,subtree:true,characterData:true});
+const mix=document.getElementById('mix');
+function updateMix(){
+  const layer=document.getElementById('proposal-layer');
+  if(layer){layer.style.opacity=Number(mix.value)/100;layer.style.pointerEvents=Number(mix.value)>0?'auto':'none'}
+  const currentLabel=document.querySelector('#stage .stage-label.current');
+  const proposedLabel=document.querySelector('#stage .stage-label.proposed');
+  if(currentLabel)currentLabel.style.opacity=1-Number(mix.value)/100;
+  if(proposedLabel)proposedLabel.style.opacity=Number(mix.value)/100;
+  document.getElementById('mix-value').textContent=mix.disabled?'—':`${mix.value}%`;
+}
+function resize(){document.querySelectorAll('.stage-host').forEach(host=>host.querySelector('.stage').style.transform=`scale(${host.clientWidth/1024})`)}
+function render(){
+  const s=byId[active];
+  chooser.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.id===active));
+  const img=`<img src="${root+s.current}" alt="${s.name} RK3562 实拍">`;
+  const changed=overlays(s);
+  document.getElementById('stage').innerHTML=img+`<div class="proposal-overlay" id="proposal-layer">${changed}</div>`;
+  applyPlexNumerals(document.getElementById('proposal-layer'));
+  window.KioskTrainingInit?.();
+  window.KioskReportInit?.();
+  mix.disabled=!changed.trim();
+  document.getElementById('stage-status').textContent=mix.disabled?'本页提案保留实机原样':'滑杆左端看实机，右端看提案';
+  document.getElementById('intro').innerHTML=`<b>${s.name}</b>　${s.status}。左端为 RK3562 实拍，右端为同尺寸改版提案。`;
+  document.getElementById('note').innerHTML=`<b>本页设计判断：</b>${note(s)}`;
+  history.replaceState(null,'',location.pathname+'#'+active);
+  updateMix();resize();
+}
+chooser.onclick=e=>{const button=e.target.closest('button[data-id]');if(!button)return;active=button.dataset.id;growthTab='overview';render();button.scrollIntoView({block:'center'})};
+window.KioskTrainingRefresh=render;
+mix.oninput=updateMix;
+document.getElementById('stage').onclick=e=>{
+  const info=e.target.closest('[data-help]');
+  if(info){window.kioskLastHelpText=info.dataset.help;document.getElementById('modal-root').innerHTML=`<div class="modal"><div>${info.dataset.help}<br>${info.dataset.audio?'<button class="btn" data-read-help="true">播放说明</button>':''}<button class="btn" data-close-help="true">知道了</button></div></div>`;applyPlexNumerals(document.getElementById('modal-root'));return}
+  const closeExpand=e.target.closest('[data-close-expand]');
+  if(closeExpand){closeExpand.closest('.u-report-expanded-overlay')?.remove();return}
+  if(e.target.classList.contains('u-report-expanded-overlay')){e.target.remove();return}
+  const expand=e.target.closest('[data-expand]');
+  if(expand){
+    const work=document.querySelector('#stage .u-report-work');
+    if(!work)return;
+    const layer=document.createElement('div');
+    layer.className='u-report-expanded-overlay';
+    layer.innerHTML='<div class="u-report-expanded-head"><strong>分析工作区</strong><button type="button" data-close-expand="true">收起</button></div>';
+    layer.appendChild(work.cloneNode(true));
+    document.getElementById('proposal-layer').appendChild(layer);
+    return;
+  }
+  const tab=e.target.closest('[data-growth]');if(tab){growthTab=tab.dataset.growth;render();return}
+  const sw=e.target.closest('[data-switch]');if(sw){const id=sw.dataset.switch;if(byId[id]?.current){active=id;render();chooser.querySelector(`[data-id="${id}"]`)?.scrollIntoView({block:'center'})}return}
+};
+document.getElementById('modal-root').onclick=e=>{if(e.target.closest('[data-read-help]')){if('speechSynthesis' in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(window.kioskLastHelpText||''))}return}if(e.target.closest('[data-close-help]')||e.target.classList.contains('modal'))document.getElementById('modal-root').innerHTML=''};
+function tactileTarget(target){return target instanceof Element?target.closest('#stage .proposal-overlay button:not(:disabled), #modal-root .modal button:not(:disabled), #stage .proposal-overlay .u-play-tabs label, #stage .proposal-overlay .u-lib-tabs label, #stage .proposal-overlay .u-lib-view-toggle label, #stage .proposal-overlay .u-lib-section-view label, #stage .proposal-overlay .u-p-lobby-tabs label, #stage .proposal-overlay .u-p-filter label, #stage .proposal-overlay .u-p-segment label, #stage .proposal-overlay .u-p-ogs-filter label'):null}
+function releaseTactileTargets(){document.querySelectorAll('#stage .is-pressing, #modal-root .is-pressing').forEach(element=>setTimeout(()=>element.classList.remove('is-pressing'),150))}
+document.addEventListener('pointerdown',e=>{const target=tactileTarget(e.target);if(target)target.classList.add('is-pressing')});
+document.addEventListener('pointerup',releaseTactileTargets);
+document.addEventListener('pointercancel',releaseTactileTargets);
+document.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const target=tactileTarget(e.target);if(target)target.classList.add('is-pressing')}});
+document.addEventListener('keyup',e=>{if(e.key==='Enter'||e.key===' ')releaseTactileTargets()});
+window.addEventListener('blur',releaseTactileTargets);
+window.addEventListener('resize',resize);
+window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(byId[id]?.current){active=id;render();chooser.querySelector(`[data-id="${id}"]`)?.scrollIntoView({block:'center'})}});
+render();chooser.querySelector(`[data-id="${active}"]`)?.scrollIntoView({block:'center'});
+</script><script>
+
+const cells=[{"c":0,"r":0,"v":-1},{"c":0,"r":1,"v":-1},{"c":0,"r":2,"v":0},{"c":0,"r":3,"v":0},{"c":0,"r":4,"v":0},{"c":0,"r":5,"v":0},{"c":0,"r":6,"v":0},{"c":1,"r":0,"v":0},{"c":1,"r":1,"v":0},{"c":1,"r":2,"v":0},{"c":1,"r":3,"v":0},{"c":1,"r":4,"v":0},{"c":1,"r":5,"v":0},{"c":1,"r":6,"v":0},{"c":2,"r":0,"v":0},{"c":2,"r":1,"v":0},{"c":2,"r":2,"v":0},{"c":2,"r":3,"v":0},{"c":2,"r":4,"v":0},{"c":2,"r":5,"v":0},{"c":2,"r":6,"v":0},{"c":3,"r":0,"v":0},{"c":3,"r":1,"v":0},{"c":3,"r":2,"v":0},{"c":3,"r":3,"v":0},{"c":3,"r":4,"v":0},{"c":3,"r":5,"v":0},{"c":3,"r":6,"v":0},{"c":4,"r":0,"v":0},{"c":4,"r":1,"v":0},{"c":4,"r":2,"v":0},{"c":4,"r":3,"v":0},{"c":4,"r":4,"v":0},{"c":4,"r":5,"v":0},{"c":4,"r":6,"v":0},{"c":5,"r":0,"v":0},{"c":5,"r":1,"v":0},{"c":5,"r":2,"v":0},{"c":5,"r":3,"v":0},{"c":5,"r":4,"v":0},{"c":5,"r":5,"v":0},{"c":5,"r":6,"v":0},{"c":6,"r":0,"v":0},{"c":6,"r":1,"v":0},{"c":6,"r":2,"v":0},{"c":6,"r":3,"v":0},{"c":6,"r":4,"v":0},{"c":6,"r":5,"v":0},{"c":6,"r":6,"v":0},{"c":7,"r":0,"v":0},{"c":7,"r":1,"v":0},{"c":7,"r":2,"v":0},{"c":7,"r":3,"v":0},{"c":7,"r":4,"v":0},{"c":7,"r":5,"v":0},{"c":7,"r":6,"v":0},{"c":8,"r":0,"v":0},{"c":8,"r":1,"v":0},{"c":8,"r":2,"v":0},{"c":8,"r":3,"v":0},{"c":8,"r":4,"v":0},{"c":8,"r":5,"v":0},{"c":8,"r":6,"v":0},{"c":9,"r":0,"v":0},{"c":9,"r":1,"v":0},{"c":9,"r":2,"v":0},{"c":9,"r":3,"v":0},{"c":9,"r":4,"v":0},{"c":9,"r":5,"v":0},{"c":9,"r":6,"v":0},{"c":10,"r":0,"v":0},{"c":10,"r":1,"v":0},{"c":10,"r":2,"v":0},{"c":10,"r":3,"v":0},{"c":10,"r":4,"v":0},{"c":10,"r":5,"v":0},{"c":10,"r":6,"v":0},{"c":11,"r":0,"v":0},{"c":11,"r":1,"v":0},{"c":11,"r":2,"v":0},{"c":11,"r":3,"v":0},{"c":11,"r":4,"v":0},{"c":11,"r":5,"v":0},{"c":11,"r":6,"v":0},{"c":12,"r":0,"v":0},{"c":12,"r":1,"v":0},{"c":12,"r":2,"v":0},{"c":12,"r":3,"v":0},{"c":12,"r":4,"v":0},{"c":12,"r":5,"v":0},{"c":12,"r":6,"v":0},{"c":13,"r":0,"v":0},{"c":13,"r":1,"v":0},{"c":13,"r":2,"v":0},{"c":13,"r":3,"v":0},{"c":13,"r":4,"v":0},{"c":13,"r":5,"v":0},{"c":13,"r":6,"v":0},{"c":14,"r":0,"v":0},{"c":14,"r":1,"v":0},{"c":14,"r":2,"v":0},{"c":14,"r":3,"v":0},{"c":14,"r":4,"v":0},{"c":14,"r":5,"v":0},{"c":14,"r":6,"v":0},{"c":15,"r":0,"v":0},{"c":15,"r":1,"v":0},{"c":15,"r":2,"v":0},{"c":15,"r":3,"v":0},{"c":15,"r":4,"v":0},{"c":15,"r":5,"v":0},{"c":15,"r":6,"v":0},{"c":16,"r":0,"v":0},{"c":16,"r":1,"v":0},{"c":16,"r":2,"v":0},{"c":16,"r":3,"v":0},{"c":16,"r":4,"v":0},{"c":16,"r":5,"v":0},{"c":16,"r":6,"v":0},{"c":17,"r":0,"v":0},{"c":17,"r":1,"v":0},{"c":17,"r":2,"v":0},{"c":17,"r":3,"v":0},{"c":17,"r":4,"v":0},{"c":17,"r":5,"v":0},{"c":17,"r":6,"v":0},{"c":18,"r":0,"v":0},{"c":18,"r":1,"v":0},{"c":18,"r":2,"v":0},{"c":18,"r":3,"v":0},{"c":18,"r":4,"v":0},{"c":18,"r":5,"v":0},{"c":18,"r":6,"v":0},{"c":19,"r":0,"v":0},{"c":19,"r":1,"v":0},{"c":19,"r":2,"v":0},{"c":19,"r":3,"v":0},{"c":19,"r":4,"v":0},{"c":19,"r":5,"v":0},{"c":19,"r":6,"v":0},{"c":20,"r":0,"v":0},{"c":20,"r":1,"v":0},{"c":20,"r":2,"v":0},{"c":20,"r":3,"v":0},{"c":20,"r":4,"v":0},{"c":20,"r":5,"v":0},{"c":20,"r":6,"v":0},{"c":21,"r":0,"v":0},{"c":21,"r":1,"v":0},{"c":21,"r":2,"v":0},{"c":21,"r":3,"v":0},{"c":21,"r":4,"v":0},{"c":21,"r":5,"v":0},{"c":21,"r":6,"v":0},{"c":22,"r":0,"v":0},{"c":22,"r":1,"v":0},{"c":22,"r":2,"v":0},{"c":22,"r":3,"v":0},{"c":22,"r":4,"v":0},{"c":22,"r":5,"v":0},{"c":22,"r":6,"v":0},{"c":23,"r":0,"v":0},{"c":23,"r":1,"v":0},{"c":23,"r":2,"v":0},{"c":23,"r":3,"v":0},{"c":23,"r":4,"v":0},{"c":23,"r":5,"v":0},{"c":23,"r":6,"v":0},{"c":24,"r":0,"v":0},{"c":24,"r":1,"v":0},{"c":24,"r":2,"v":0},{"c":24,"r":3,"v":0},{"c":24,"r":4,"v":0},{"c":24,"r":5,"v":0},{"c":24,"r":6,"v":0},{"c":25,"r":0,"v":0},{"c":25,"r":1,"v":0},{"c":25,"r":2,"v":0},{"c":25,"r":3,"v":0},{"c":25,"r":4,"v":0},{"c":25,"r":5,"v":0},{"c":25,"r":6,"v":1},{"c":26,"r":0,"v":0},{"c":26,"r":1,"v":0},{"c":26,"r":2,"v":0},{"c":26,"r":3,"v":0},{"c":26,"r":4,"v":0},{"c":26,"r":5,"v":0},{"c":26,"r":6,"v":0},{"c":27,"r":0,"v":0},{"c":27,"r":1,"v":0},{"c":27,"r":2,"v":0},{"c":27,"r":3,"v":0},{"c":27,"r":4,"v":0},{"c":27,"r":5,"v":0},{"c":27,"r":6,"v":0},{"c":28,"r":0,"v":0},{"c":28,"r":1,"v":0},{"c":28,"r":2,"v":0},{"c":28,"r":3,"v":0},{"c":28,"r":4,"v":0},{"c":28,"r":5,"v":0},{"c":28,"r":6,"v":0},{"c":29,"r":0,"v":0},{"c":29,"r":1,"v":0},{"c":29,"r":2,"v":0},{"c":29,"r":3,"v":0},{"c":29,"r":4,"v":0},{"c":29,"r":5,"v":0},{"c":29,"r":6,"v":0},{"c":30,"r":0,"v":0},{"c":30,"r":1,"v":0},{"c":30,"r":2,"v":0},{"c":30,"r":3,"v":0},{"c":30,"r":4,"v":0},{"c":30,"r":5,"v":0},{"c":30,"r":6,"v":0},{"c":31,"r":0,"v":0},{"c":31,"r":1,"v":0},{"c":31,"r":2,"v":0},{"c":31,"r":3,"v":0},{"c":31,"r":4,"v":0},{"c":31,"r":5,"v":0},{"c":31,"r":6,"v":0},{"c":32,"r":0,"v":0},{"c":32,"r":1,"v":0},{"c":32,"r":2,"v":0},{"c":32,"r":3,"v":0},{"c":32,"r":4,"v":0},{"c":32,"r":5,"v":0},{"c":32,"r":6,"v":0},{"c":33,"r":0,"v":0},{"c":33,"r":1,"v":0},{"c":33,"r":2,"v":0},{"c":33,"r":3,"v":0},{"c":33,"r":4,"v":0},{"c":33,"r":5,"v":0},{"c":33,"r":6,"v":0},{"c":34,"r":0,"v":0},{"c":34,"r":1,"v":0},{"c":34,"r":2,"v":0},{"c":34,"r":3,"v":0},{"c":34,"r":4,"v":0},{"c":34,"r":5,"v":2},{"c":34,"r":6,"v":0},{"c":35,"r":0,"v":0},{"c":35,"r":1,"v":0},{"c":35,"r":2,"v":0},{"c":35,"r":3,"v":0},{"c":35,"r":4,"v":0},{"c":35,"r":5,"v":0},{"c":35,"r":6,"v":0},{"c":36,"r":0,"v":0},{"c":36,"r":1,"v":0},{"c":36,"r":2,"v":1},{"c":36,"r":3,"v":0},{"c":36,"r":4,"v":1},{"c":36,"r":5,"v":0},{"c":36,"r":6,"v":0},{"c":37,"r":0,"v":0},{"c":37,"r":1,"v":0},{"c":37,"r":2,"v":0},{"c":37,"r":3,"v":0},{"c":37,"r":4,"v":0},{"c":37,"r":5,"v":0},{"c":37,"r":6,"v":0},{"c":38,"r":0,"v":0},{"c":38,"r":1,"v":1},{"c":38,"r":2,"v":2},{"c":38,"r":3,"v":0},{"c":38,"r":4,"v":0},{"c":38,"r":5,"v":0},{"c":38,"r":6,"v":0},{"c":39,"r":0,"v":0},{"c":39,"r":1,"v":0},{"c":39,"r":2,"v":0},{"c":39,"r":3,"v":0},{"c":39,"r":4,"v":0},{"c":39,"r":5,"v":0},{"c":39,"r":6,"v":0},{"c":40,"r":0,"v":0},{"c":40,"r":1,"v":0},{"c":40,"r":2,"v":0},{"c":40,"r":3,"v":0},{"c":40,"r":4,"v":0},{"c":40,"r":5,"v":0},{"c":40,"r":6,"v":0},{"c":41,"r":0,"v":0},{"c":41,"r":1,"v":0},{"c":41,"r":2,"v":0},{"c":41,"r":3,"v":0},{"c":41,"r":4,"v":0},{"c":41,"r":5,"v":0},{"c":41,"r":6,"v":0},{"c":42,"r":0,"v":0},{"c":42,"r":1,"v":0},{"c":42,"r":2,"v":0},{"c":42,"r":3,"v":0},{"c":42,"r":4,"v":0},{"c":42,"r":5,"v":0},{"c":42,"r":6,"v":0},{"c":43,"r":0,"v":0},{"c":43,"r":1,"v":0},{"c":43,"r":2,"v":0},{"c":43,"r":3,"v":0},{"c":43,"r":4,"v":0},{"c":43,"r":5,"v":0},{"c":43,"r":6,"v":0},{"c":44,"r":0,"v":0},{"c":44,"r":1,"v":0},{"c":44,"r":2,"v":0},{"c":44,"r":3,"v":0},{"c":44,"r":4,"v":0},{"c":44,"r":5,"v":0},{"c":44,"r":6,"v":0},{"c":45,"r":0,"v":0},{"c":45,"r":1,"v":1},{"c":45,"r":2,"v":0},{"c":45,"r":3,"v":0},{"c":45,"r":4,"v":0},{"c":45,"r":5,"v":0},{"c":45,"r":6,"v":0},{"c":46,"r":0,"v":0},{"c":46,"r":1,"v":0},{"c":46,"r":2,"v":0},{"c":46,"r":3,"v":0},{"c":46,"r":4,"v":0},{"c":46,"r":5,"v":0},{"c":46,"r":6,"v":0},{"c":47,"r":0,"v":0},{"c":47,"r":1,"v":0},{"c":47,"r":2,"v":0},{"c":47,"r":3,"v":0},{"c":47,"r":4,"v":0},{"c":47,"r":5,"v":0},{"c":47,"r":6,"v":0},{"c":48,"r":0,"v":1},{"c":48,"r":1,"v":0},{"c":48,"r":2,"v":0},{"c":48,"r":3,"v":0},{"c":48,"r":4,"v":0},{"c":48,"r":5,"v":0},{"c":48,"r":6,"v":0},{"c":49,"r":0,"v":0},{"c":49,"r":1,"v":0},{"c":49,"r":2,"v":0},{"c":49,"r":3,"v":0},{"c":49,"r":4,"v":0},{"c":49,"r":5,"v":0},{"c":49,"r":6,"v":0},{"c":50,"r":0,"v":2},{"c":50,"r":1,"v":1},{"c":50,"r":2,"v":1},{"c":50,"r":3,"v":1},{"c":50,"r":4,"v":0},{"c":50,"r":5,"v":0},{"c":50,"r":6,"v":0},{"c":51,"r":0,"v":0},{"c":51,"r":1,"v":0},{"c":51,"r":2,"v":1},{"c":51,"r":3,"v":0},{"c":51,"r":4,"v":3},{"c":51,"r":5,"v":2},{"c":51,"r":6,"v":0},{"c":52,"r":0,"v":1},{"c":52,"r":1,"v":2},{"c":52,"r":2,"v":0},{"c":52,"r":3,"v":-1},{"c":52,"r":4,"v":-1},{"c":52,"r":5,"v":-1},{"c":52,"r":6,"v":-1}];
+const months=[['11月',2],['12月',7],['1月',11],['2月',15],['3月',19],['4月',24],['5月',28],['6月',33],['7月',37],['8月',41],['9月',46],['10月',50]];
+const kind="a";
+(()=>{
+ const d=document;
+ const style=d.createElement('style');style.textContent="\nhtml,body{margin:0!important;width:1024px!important;height:600px!important;overflow:hidden!important}.work-head,.compare-sidebar,.intro,.panel>h2,.design-note,.footer{display:none!important}.compare-layout,.compare-main,.compare-content,.panel,.stage-host{display:block!important;position:static!important;width:1024px!important;height:600px!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;overflow:hidden!important}.stage{position:fixed!important;left:0!important;top:0!important;transform:none!important}.stage-label{display:none!important}\n#stage .u-growth-calendar{height:221px;padding:9px 12px;background:#192720;border:1px solid #354d3f;overflow:hidden}\n#stage .candidate-head{height:40px;display:flex;align-items:center;gap:14px;color:#eef5eb;font-size:22px}\n#stage .candidate-head strong{font-weight:700}#stage .candidate-head .days{font-size:28px;color:#66c589;white-space:nowrap}#stage .candidate-head .u-growth-info{margin-left:auto}\n#stage .candidate-head .days b{font-weight:400}#stage .candidate-head .days em{font-size:18px;font-style:normal;margin-left:5px}\n#stage .candidate-months{position:relative;height:26px;margin-left:30px;color:#d4e2d1;font-size:18px;line-height:24px}\n#stage .candidate-months span{position:absolute;white-space:nowrap;transform:translateX(-3px)}\n#stage .candidate-chart{display:flex;gap:8px}\n#stage .candidate-week{flex:none;width:22px;height:110px;display:grid;grid-template-rows:repeat(7,1fr);font-size:18px;color:#c2d4c0}\n#stage .candidate-week span{display:flex;align-items:center;justify-content:center;line-height:18px}\n#stage .candidate-matrix{flex:1;height:110px;display:grid;grid-template-columns:repeat(53,1fr);grid-template-rows:repeat(7,1fr);gap:2px;grid-auto-flow:column;position:relative}\n#stage .candidate-cell{display:block;border-radius:2px;background:#253b30;box-shadow:inset 0 1px 0 #ffffff03}\n#stage .candidate-cell[data-v=\"-1\"]{visibility:hidden}#stage .candidate-cell[data-v=\"1\"]{background:#315d43}#stage .candidate-cell[data-v=\"2\"]{background:#4b9264}#stage .candidate-cell[data-v=\"3\"]{background:#66c589}\n#stage .candidate-legend{display:flex;align-items:center;justify-content:flex-end;gap:7px;height:25px;color:#c6d8c5;font-size:18px;white-space:nowrap}\n#stage .candidate-legend i{width:14px;height:14px;background:#253b30;border-radius:2px}\n#stage .candidate-legend i:nth-of-type(2){background:#315d43}#stage .candidate-legend i:nth-of-type(3){background:#408752}#stage .candidate-legend i:nth-of-type(4){background:#54ae6e}#stage .candidate-legend i:nth-of-type(5){background:#6ed18c}\n#stage .candidate-matrix,#stage .candidate-week{height:110px}#stage .candidate-months{height:25px}#stage .candidate-head{height:40px}#stage .candidate-legend{height:25px}";d.head.appendChild(style);
+ function update(){
+  const calendar=d.querySelector('.u-growth-calendar');if(!calendar||calendar.dataset.candidate)return;
+  calendar.dataset.candidate=kind;
+  const currentStyle=d.createElement('style');currentStyle.textContent='#stage .candidate-cell.is-current{outline:1px solid #d7e9da;outline-offset:-1px}';d.head.appendChild(currentStyle);
+  const info=calendar.querySelector('.u-growth-info').outerHTML;
+  const legend='<div class="candidate-legend" aria-label="练习次数由少到多"><span>少</span><i></i><i></i><i></i><i></i><i></i><span>多</span></div>';
+  const weekday=['一','二','三','四','五','六','日'];
+  calendar.innerHTML='<div class="candidate-head"><strong>近一年练棋</strong><span class="days"><b class="kiosk-plex-num">17</b><em>天</em></span>'+(kind==='b'?legend:'')+info+'</div><div class="candidate-months">'+months.map(([m,c])=>'<span style="left:'+c/53*100+'%">'+m+'</span>').join('')+'</div><div class="candidate-chart"><div class="candidate-week" aria-hidden="true">'+weekday.map((w,i)=>'<span>'+(kind==='b'||i%2===0?w:'')+'</span>').join('')+'</div><div class="candidate-matrix" role="img" aria-label="近一年每日练棋矩阵，17 天有练棋记录">'+cells.map(x=>'<i class="candidate-cell'+(x.c===52&&x.r===2?' is-current':'')+'" data-v="'+x.v+'"></i>').join('')+'</div></div>'+(kind==='b'?'':legend);
+ }
+ update();new MutationObserver(update).observe(d.getElementById('stage'),{childList:true});
+})();
+</script></body></html>

@@ -113,7 +113,7 @@ describe('PvpLocalSetupPage', () => {
     renderPage();
     const user = userEvent.setup();
     await pick(user, 'setup-handicap', '3');
-    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('不贴目 · 黑先摆 3 子');
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('不贴目');
 
     await user.click(screen.getByRole('button', { name: /开始对局/ }));
     await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());

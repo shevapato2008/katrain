@@ -292,6 +292,7 @@ describe('PlayPage', () => {
     expect(ogs).toHaveTextContent('点击登录');
     expect(fox).toHaveTextContent('接口还没通');
     expect(golaxy).toHaveTextContent('已连接');
+    expect(golaxy.querySelector('.dot')).toBeNull();
 
     fireEvent.click(ogs);
     fireEvent.click(fox);            // 禁用的,点了不该有任何去向

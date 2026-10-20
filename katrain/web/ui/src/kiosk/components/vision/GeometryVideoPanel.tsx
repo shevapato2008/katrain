@@ -1,4 +1,4 @@
-import { useState, type ReactNode, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
 import { Box, Button, Paper, Typography } from '@mui/material';
 import { Refresh, VideocamOff } from '@mui/icons-material';
 
@@ -13,6 +13,7 @@ interface GeometryVideoPanelProps {
   waitingText?: string;
   overlay?: ReactNode;
   onImageLoad?: (size: { width: number; height: number }) => void;
+  snapshot?: boolean;
 }
 
 const GeometryVideoPanel = ({
@@ -24,9 +25,64 @@ const GeometryVideoPanel = ({
   waitingText,
   overlay,
   onImageLoad,
+  snapshot = false,
 }: GeometryVideoPanelProps) => {
   const [streamError, setStreamError] = useState(false);
   const [streamKey, setStreamKey] = useState(0);
+  const [snapshotReady, setSnapshotReady] = useState(false);
+  const [snapshotError, setSnapshotError] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const onImageLoadRef = useRef(onImageLoad);
+  onImageLoadRef.current = onImageLoad;
+
+  useEffect(() => {
+    if (!snapshot || !src) return;
+    let live = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let request: AbortController | undefined;
+    let reportedSize = '';
+    setSnapshotReady(false);
+    setSnapshotError(false);
+
+    const pull = async () => {
+      const started = performance.now();
+      request = new AbortController();
+      const deadline = setTimeout(() => request?.abort(), 1500);
+      try {
+        const response = await fetch(src, { cache: 'no-store', signal: request.signal });
+        if (!response.ok) throw new Error(`snapshot ${response.status}`);
+        const bitmap = await createImageBitmap(await response.blob());
+        if (!live) { bitmap.close(); return; }
+        const canvas = canvasRef.current;
+        const context = canvas?.getContext('2d', { alpha: false });
+        if (!canvas || !context) throw new Error('canvas unavailable');
+        if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
+          canvas.width = bitmap.width;
+          canvas.height = bitmap.height;
+        }
+        context.drawImage(bitmap, 0, 0);
+        const size = `${bitmap.width}x${bitmap.height}`;
+        if (reportedSize !== size) {
+          reportedSize = size;
+          onImageLoadRef.current?.({ width: bitmap.width, height: bitmap.height });
+        }
+        bitmap.close();
+        setSnapshotReady(true);
+        setSnapshotError(false);
+      } catch {
+        if (live) setSnapshotError(true);
+      } finally {
+        clearTimeout(deadline);
+      }
+      if (live) timer = setTimeout(pull, Math.max(0, 200 - (performance.now() - started)));
+    };
+    void pull();
+    return () => {
+      live = false;
+      request?.abort();
+      if (timer) clearTimeout(timer);
+    };
+  }, [snapshot, src]);
 
   const handleLoad = (event: SyntheticEvent<HTMLImageElement>) => {
     setStreamError(false);
@@ -55,6 +111,26 @@ const GeometryVideoPanel = ({
       >
         {!src ? (
           <Typography color="text.secondary" sx={{ px: 2, textAlign: 'center' }}>{waitingText}</Typography>
+        ) : snapshot ? (
+          <>
+            <canvas
+              ref={canvasRef}
+              role="img"
+              aria-label={alt}
+              data-src={src}
+              style={{ width: '100%', height: '100%', display: snapshotReady ? 'block' : 'none', objectFit: 'contain' }}
+            />
+            {!snapshotReady && (
+              <Typography color="text.secondary" sx={{ position: 'absolute' }}>
+                {snapshotError ? '画面重连中…' : '画面连接中…'}
+              </Typography>
+            )}
+            {snapshotReady && snapshotError && (
+              <Typography color="warning.main" sx={{ position: 'absolute', bottom: 8, left: 12, bgcolor: 'rgba(0,0,0,.72)', px: 1 }}>
+                画面重连中…
+              </Typography>
+            )}
+          </>
         ) : streamError ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
             <VideocamOff color="error" sx={{ fontSize: 44 }} />
@@ -78,7 +154,7 @@ const GeometryVideoPanel = ({
             style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
           />
         )}
-        {src && !streamError && overlay}
+        {src && (snapshot ? snapshotReady : !streamError) && overlay}
       </Paper>
     </Box>
   );

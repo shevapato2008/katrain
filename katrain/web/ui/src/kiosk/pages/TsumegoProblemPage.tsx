@@ -1,5 +1,6 @@
 import './trainingReviewed.css';
 import { PhysicalBoardIcon } from '../shell/PhysicalBoardIcon';
+import { Icon } from '../shell/icons';
 import { Fragment, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { backToState, useBackTo } from '../hooks/useBackTo';
@@ -208,7 +209,6 @@ const TsumegoProblemPage = () => {
     () => (problemId ? sequence.indexOf(problemId) : -1),
     [sequence, problemId],
   );
-  const isFirst = currentIndex <= 0;
   const isLast = currentIndex >= 0 && currentIndex === sequence.length - 1;
   const prevId = currentIndex > 0 ? sequence[currentIndex - 1] : null;
   const nextId = currentIndex >= 0 && currentIndex < sequence.length - 1 ? sequence[currentIndex + 1] : null;
@@ -250,28 +250,13 @@ const TsumegoProblemPage = () => {
     [navigate, flushProgress, inWrongSet, inAllSet, mixedWrongSet],
   );
 
-  const goToUnits = useCallback(() => {
-    flushProgress();
-    if (problem) {
-      const category = inMixedJourney ? 'all' : problem.category;
-      navigate(`/kiosk/tsumego/${problem.level}/${category}${inWrongSet ? '/wrong' : ''}`);
-    } else {
-      backWithoutProblem();
-    }
-  }, [navigate, problem, flushProgress, inWrongSet, inMixedJourney, backWithoutProblem]);
-
   const handlePrev = useCallback(() => {
     if (prevId) navigateToProblem(prevId);
   }, [prevId, navigateToProblem]);
 
   const handleNext = useCallback(() => {
-    if (nextId) {
-      navigateToProblem(nextId);
-    } else {
-      // Last problem in category — "下一题" becomes "返回单元".
-      goToUnits();
-    }
-  }, [nextId, navigateToProblem, goToUnits]);
+    if (nextId) navigateToProblem(nextId);
+  }, [nextId, navigateToProblem]);
 
   // Auto-advance (4.2): default ON, ~1.5s after solving, unless last problem or disabled.
   // Guard against double-fire (SuccessOverlay's timer + any re-render). Reset per problem.
@@ -430,26 +415,21 @@ const TsumegoProblemPage = () => {
       icon: 'caret-left',
       label: t('tsumego:prev', '上一题'),
       onClick: handlePrev,
-      disabled: isFirst,
-      reason: sequence.length === 0
+      disabled: !prevId,
+      reason: currentIndex < 0
         ? t('tsumego:noSequence', '读不到这一类的题号，上/下一题暂时用不了')
         : t('tsumego:isFirst', '这是第一题'),
     },
-    isLast
-      ? {
-          key: 'next',
-          icon: 'squares-four',
-          label: inWrongSet ? t('tsumego:backToWrong', '返回错题') : t('tsumego:backToUnit', '返回单元'),
-          onClick: backToUnit,
-        }
-      : {
-          key: 'next',
-          icon: 'skip-forward',
-          label: t('tsumego:next', '下一题'),
-          onClick: handleNext,
-          disabled: !nextId,
-          reason: t('tsumego:noSequence', '读不到这一类的题号，上/下一题暂时用不了'),
-        },
+    {
+      key: 'next',
+      icon: 'skip-forward',
+      label: t('tsumego:next', '下一题'),
+      onClick: handleNext,
+      disabled: !nextId,
+      reason: isLast
+        ? t('tsumego:isLast', '这是最后一题')
+        : t('tsumego:noSequence', '读不到这一类的题号，上/下一题暂时用不了'),
+    },
   ];
 
   if (loading || error) {
@@ -681,8 +661,7 @@ const TsumegoProblemPage = () => {
           </div>
         </div>
 
-        {/* 两个开关 + 右端一句「为什么那个开关是灰的」。`role="switch"` 不是 `aria-pressed`:
-            后者是「这个按钮此刻被按住」,而这两个是**状态**。长相与对局屏那排逐字相同。 */}
+        {/* 模式状态仍用 switch 语义；触屏外观与下方做题操作键一致。 */}
         <div className="gtoggles gtoggles--switch" role="group" aria-label={t('tsumego:modes', '模式')}>
           <button
             type="button"
@@ -692,7 +671,7 @@ const TsumegoProblemPage = () => {
             disabled={physicalEnabled && physical.phase !== 'ready'}
             onClick={() => (isTryMode ? exitTryMode() : enterTryMode())}
           >
-            {t('Try', '试下')}
+            <Icon name="hand-pointing" />{t('Try', '试下')}
           </button>
           <button
             type="button"

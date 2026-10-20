@@ -39,7 +39,7 @@ const TsumegoUnitsPage = () => {
   const { level, category } = useParams<{ level: string; category: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { unitProgress, progress, serverLoadFailed } = useTsumegoProgress();
+  const { unitProgress, progress, serverLoadFailed, progressLoading } = useTsumegoProgress();
 
   const [problemIds, setProblemIds] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -167,9 +167,9 @@ const TsumegoUnitsPage = () => {
         {tab === 'wrong' ? <section className="kiosk-section training-wrong-book-entry">
           <KioskCard
             title="错题簿"
-            sub={wrongUnknown ? '做题记录没读到，进入后可重试' : `这一类现在有 ${wrongCount} 道错题`}
+            sub={progressLoading ? '正在读取做题记录…' : wrongUnknown ? '做题记录没读到，进入后可重试' : `这一类现在有 ${wrongCount} 道错题`}
             icon="arrow-clockwise"
-            disabled={wrongCount === 0 && !wrongUnknown}
+            disabled={!progressLoading && wrongCount === 0 && !wrongUnknown}
             onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}
           />
         </section> : <>

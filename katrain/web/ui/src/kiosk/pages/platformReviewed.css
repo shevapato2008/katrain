@@ -127,5 +127,7 @@
 [data-testid="platform-engine-setup-page"] .su-out__n { font-size:18px; }
 [data-testid="platform-engine-setup-page"] .su-hint { font-size:18px; line-height:1.35; }
 [data-testid="platform-engine-setup-page"] .kiosk-primary-action { font-size:22px; }
-.pvp-kiosk__tabs,.golaxy-home__tabs { height:48px; padding:1px; }
-.pvp-kiosk__tabs button,.golaxy-home__list-head .golaxy-home__tabs button { height:44px; }
+.pvp-kiosk__tabs,.golaxy-home__tabs { height:48px; gap:0; padding:0; }
+.pvp-kiosk__tabs button,.golaxy-home__list-head .golaxy-home__tabs button { height:46px; border-radius:0; }
+.pvp-kiosk__tabs button:first-child,.golaxy-home__list-head .golaxy-home__tabs button:first-child { border-radius:14px 0 0 14px; }
+.pvp-kiosk__tabs button:last-child,.golaxy-home__list-head .golaxy-home__tabs button:last-child { border-radius:0 14px 14px 0; }

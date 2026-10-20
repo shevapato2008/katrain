@@ -27,7 +27,8 @@
   flex-direction: column;
   gap: 2px;
   font-size: 22px;
-  line-height: 1.05;
+  line-height: 1.18;
+  overflow: visible;
 }
 .kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-pagebar__sub {
   margin: 0;
@@ -100,8 +101,14 @@
   font-weight: 500;
 }
 .kiosk-screen[data-journey="ai-play"] .ai-player-card .clock span { font-size: 14px; line-height: 1; }
-/* Keep the existing value/label fields while emphasizing the untimed label. */
-.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock--untimed { display: flex; flex-direction: column-reverse; }
+/* Keep both "不限时" labels level; only the player to move gets the move number at its right. */
+.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock--untimed {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
 .kiosk-screen[data-journey="ai-play"] .ai-player-card .clock--untimed b { font-size: 14px; }
 .kiosk-screen[data-journey="ai-play"] .ai-player-card .clock--untimed span { font-size: 28px; line-height: 1; }
 .kiosk-screen[data-journey="ai-play"] .ai-player-card__foot {

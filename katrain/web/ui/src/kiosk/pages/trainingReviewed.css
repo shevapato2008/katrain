@@ -1,6 +1,6 @@
 /* Training home: one tactile carousel card with its neighboring cards visible. */
-.u-train-carousel-home{position:relative;width:100%;height:434px;overflow:hidden;color:#edf5ec;font-family:"SmartBox Kai",serif}
-.u-train-carousel-home button{font-family:"SmartBox Kai",serif;cursor:pointer}
+.u-train-carousel-home{position:relative;width:100%;height:434px;overflow:hidden;color:#edf5ec;font-family:var(--font-serif)}
+.u-train-carousel-home button{font-family:var(--font-serif);cursor:pointer}
 .u-train-carousel-heading{height:72px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:0 8px}
 .u-train-carousel-heading>div:first-child{display:flex;flex-direction:column;gap:1px}
 .u-train-carousel-heading strong{font-size:27px;line-height:34px;font-weight:600}
@@ -66,7 +66,8 @@
 .u-train-carousel-groups button,.training-tabs button{display:flex;align-items:center;justify-content:center;line-height:1.2}
 
 
-/* Training secondary keys share the carousel's restrained bevel and press travel. */
+/* Training category cards and secondary keys share the carousel's restrained bevel and press travel. */
+.training-reviewed .tsumego-category-grid .kiosk-card:not(:disabled),
 .training-reviewed .training-wrong-book-entry .kiosk-card:not(:disabled),
 .training-reviewed .kiosk-pagebar__back:not(:disabled),
 .training-problem-reviewed .kiosk-pagebar__back:not(:disabled),
@@ -82,6 +83,7 @@
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
+.training-reviewed .tsumego-category-grid .kiosk-card:not(:disabled) .kiosk-card__tile,
 .training-reviewed .training-wrong-book-entry .kiosk-card:not(:disabled) .kiosk-card__tile {
   border-color: #52755d;
   border-radius: 12px;
@@ -89,6 +91,10 @@
   box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 0 #0b1d12, 0 2px 4px #0005;
   color: #81cf9b;
 }
+.training-reviewed .tsumego-category-grid .kiosk-card.is-current:not(:disabled) {
+  border-color: var(--accent);
+}
+.training-reviewed .tsumego-category-grid .kiosk-card:active:not(:disabled),
 .training-reviewed .training-wrong-book-entry .kiosk-card:active:not(:disabled),
 .training-reviewed .kiosk-pagebar__back:active:not(:disabled),
 .training-problem-reviewed .kiosk-pagebar__back:active:not(:disabled),
@@ -98,8 +104,66 @@
   box-shadow: inset 0 3px 6px #06120aaa, inset 0 1px 0 #ffffff14, 0 1px 2px #0005;
 }
 @media (prefers-reduced-motion: reduce) {
+  .training-reviewed .tsumego-category-grid .kiosk-card,
   .training-reviewed .training-wrong-book-entry .kiosk-card,
   .training-reviewed .kiosk-pagebar__back,
   .training-problem-reviewed .kiosk-pagebar__back,
   .training-problem-reviewed .kiosk-actions button { transition: none; }
+}
+
+/* The two problem modes occupy the same three-column rhythm as the action keys. */
+.training-problem-reviewed .gtoggles--switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  height: 48px;
+}
+.training-problem-reviewed .gtoggles--switch > button {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0 6px;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #486653;
+  border-radius: 17px;
+  background-color: var(--raise);
+  color: var(--text);
+  font-size: 22px;
+}
+.training-problem-reviewed .gtoggles--switch > button::before,
+.training-problem-reviewed .gtoggles--switch > button::after { display: none; }
+.training-problem-reviewed .gtoggles--switch > button .kiosk-icon,
+.training-problem-reviewed .gtoggles--switch > button svg {
+  width: 22px;
+  height: 22px;
+}
+.training-problem-reviewed .gtoggles--switch > button[aria-checked="true"] {
+  border-color: #75ca90;
+  background-color: #254c35;
+  color: #b3efc0;
+}
+.training-problem-reviewed .gtoggles--switch > button:disabled {
+  opacity: .42;
+  box-shadow: none;
+}
+.training-problem-reviewed .gtoggles--switch .ghint {
+  margin: 0;
+  justify-content: flex-start;
+  line-height: 1.15;
+}
+.training-problem-reviewed .gtoggles--switch > button:not(:disabled) {
+  background-image: radial-gradient(ellipse 90% 70% at 50% -8%, #ffffff24, transparent 75%),
+    linear-gradient(180deg, transparent 55%, #00000020);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 1px #0b1d1280,
+    0 3px 0 #0a1a10, 0 5px 8px #0006;
+  transition: translate 130ms ease, box-shadow 130ms ease;
+  touch-action: manipulation;
+}
+.training-problem-reviewed .gtoggles--switch > button:active:not(:disabled) {
+  translate: 0 3px;
+  box-shadow: inset 0 3px 6px #06120aaa, 0 1px 2px #0005;
+}
+@media (prefers-reduced-motion: reduce) {
+  .training-problem-reviewed .gtoggles--switch > button { transition: none; }
 }

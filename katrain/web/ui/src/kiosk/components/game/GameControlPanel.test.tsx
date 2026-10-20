@@ -146,7 +146,7 @@ describe('GameControlPanel', () => {
     }, { engineMode: true });
     expect(screen.queryByText('2:03')).toBeNull();
     expect(screen.queryByText('1:38')).toBeNull();
-    expect(screen.getByText('不限时')).toBeInTheDocument();
+    expect(screen.getAllByText('不限时')).toHaveLength(2);
   });
 
   test('OGS seats wait for remote clock and never show inherited local time', () => {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import '../../../kiosk-shell/engine-game-redesign.css';
 import { Icon } from '../../shell/icons';
 import { KioskFold } from '../../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../../shell/KioskActions';
@@ -639,7 +640,7 @@ const GameControlPanel = ({
             clock={ogsGame ? onlineClock('B') : clockFor('B')} lang={lang} t={t}
           />
         </>
-      ) : freeVsAi || rankedGame ? (
+      ) : freeVsAi || rankedGame || engineMode ? (
         <div className="ai-player-cards" role="group" aria-label={t('game:players', '对局双方')}>
           <SeatRow
             gameState={gameState} color="W" turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
@@ -738,11 +739,11 @@ const GameControlPanel = ({
           右端说明优先显示硬件故障，其次说明星阵数子的语义。 */}
       <div className="gtoggles gtoggles--switch" role="group" aria-label={t('game:display', '显示')}>
         <button type="button" role="switch" aria-checked={!!analysisToggles.coords} onClick={() => onToggleAnalysis('coords')}>
-          {(freeVsAi || rankedGame) && <Icon name="grid-nine" />}
+          {(freeVsAi || rankedGame || engineMode) && <Icon name="grid-nine" />}
           {t('Coordinates', '坐标')}
         </button>
         <button type="button" role="switch" aria-checked={!!analysisToggles.numbers} onClick={() => onToggleAnalysis('numbers')}>
-          {(freeVsAi || rankedGame) && <Icon name="list-numbers" />}
+          {(freeVsAi || rankedGame || engineMode) && <Icon name="list-numbers" />}
           {t('Move Numbers', '手数')}
         </button>
         {/* 右端说明按故障、实体盘摆子、星阵动作、游客限制、数子手数的顺序显示:

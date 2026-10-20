@@ -18,7 +18,6 @@ import {
 import { SetupPopoverHost } from '../components/setup/SetupPopoverHost';
 import { SetupSelect } from '../components/setup/SetupSelect';
 import { SetupDerived } from '../components/setup/SetupDerived';
-import { komiReadout } from '../components/setup/komiReadout';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import { readAudioPref, subscribeAudioPref, writeAudioPref } from '../../utils/audioPrefs';
 import { API } from '../../api';
@@ -171,6 +170,9 @@ const PvpLocalSetupPage = () => {
   const ruleLabels = RULE_LABEL(t);
   const handicapLabels = HANDICAP_LABEL(t);
   const terms = resolveGameTerms(rules, handicapKey, freeKomi);
+  const compactKomi = terms.komi === 0
+    ? t('setup:komi_none', '不贴目')
+    : `${terms.komi > 0 ? t('setup:komi_black_pays', '黑贴') : t('setup:komi_white_pays', '白贴')} ${interpolate(t('setup:komi_points', '{n} 目'), { n: Math.abs(terms.komi) })}`;
   const ruleDef = RULES.find((r) => r.key === rules) ?? RULES[0];
   const pickKomi = handicapKey === 'free';
   const freeKomiOptions = FREE_KOMI_VALUES.map((v) => ({
@@ -311,18 +313,20 @@ const PvpLocalSetupPage = () => {
                 onChange={(k) => setHandicapKey(k as HandicapKey)}
               />
             </div>
-            <SetupDerived
-              testId="setup-komi"
-              label={t('Komi', '贴目')}
-              note={pickKomi
-                ? t('setup:komi_pick', '点此改贴目')
-                : t('setup:komi_derived', '随规则和让子定')}
-              options={pickKomi ? freeKomiOptions : undefined}
-              value={String(freeKomi)}
-              onChange={pickKomi ? (k) => setFreeKomi(Number(k)) : undefined}
-            >
-              {komiReadout(t, rules, handicapKey, freeKomi)}
-            </SetupDerived>
+            <div className="su-row local-setup-terms-row">
+              <SetupDerived
+                testId="setup-komi"
+                label={t('Komi', '贴目')}
+                note={pickKomi
+                  ? t('setup:komi_pick', '点此改贴目')
+                  : t('setup:komi_derived', '随规则和让子定')}
+                options={pickKomi ? freeKomiOptions : undefined}
+                value={String(freeKomi)}
+                onChange={pickKomi ? (k) => setFreeKomi(Number(k)) : undefined}
+              >
+                {compactKomi}
+              </SetupDerived>
+            </div>
           </section>
 
           {/* ── 对局双方 ── 压成一行两格。它是两个同类输入,不是两条并列的内容。

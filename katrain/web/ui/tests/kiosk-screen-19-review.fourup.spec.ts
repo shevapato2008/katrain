@@ -17,8 +17,7 @@ test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,�
  *  ② 组标题右端多一个放大镜(搜索开关)。稿子这一屏没画搜索,但**稿子自己的 `.sbox` 注释
  *    把复盘列进了「有搜索的四屏」**,而现状这条搜索是通的 —— 也是漏画。
  *    收起态和稿子逐像素一样,展开才多出那条框。
- *  ③ 第三张卡在稿子上是 `is-soon`「接口还没有 · 即将上线」,实现里是**能用的** ——
- *    两条导入路(本地 SGF / 棋谱库)都在跑,挂「即将上线」等于把有的说成没有。
+ *  ③ 第三张卡打开可搜索的职业棋谱库;Kiosk 不提供本地 SGF 导入入口。
  *  ④ 三格的数字对不上稿子的 78% / 4 手 / 1 手:稿子那三个是示意值,实现是拿
  *    `report_task_moves` 真算的(算式见 `features/report/reportStats.ts`)。
  *    造的数据让**失误 4 手、妙手 1 手**落在稿子那两个数上,准确率随算式走。
@@ -211,7 +210,13 @@ test('approved personal history selection and tier menu', async ({ page }) => {
   await page.getByRole('button', { name: /导入棋谱复盘/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('textbox', { name: '搜索棋谱库' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '从本地导入 SGF' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '从本地导入 SGF' })).toHaveCount(0);
   await page.waitForTimeout(350);
-  await page.screenshot({ path: '/tmp/kiosk-19-library-import.png' });
+  await page.screenshot({ path: process.env.KATRAIN_IMPORT_PREVIEW ?? '/tmp/kiosk-19-library-import.png' });
+  await page.getByRole('textbox', { name: '搜索棋谱库' }).fill('职业赛');
+  await page.getByRole('button', { name: '搜索', exact: true }).click();
+  const album = page.getByRole('button', { name: /职业赛，黑方/ });
+  await expect(album).toHaveAttribute('aria-pressed', 'true');
+  await album.click();
+  await expect(page.getByRole('button', { name: '仅导入', exact: true })).toBeEnabled();
 });

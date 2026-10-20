@@ -1,0 +1,10 @@
+# Optional kiosk Chinese fonts
+
+- **楷体:** `cns-tw-kai-cjk.woff2` is a Chinese-only subset of `TW-Kai-98_1.ttf` from the [CNS11643 Full Repertoire official Kai archive](https://www.cns11643.gov.tw/opendata/Fonts_Kai.zip). Source attribution: Ministry of Digital Affairs, CNS11643 Chinese Standard Interchange Code Full Repertoire, https://www.cns11643.gov.tw. The [official authorization](https://www.cns11643.gov.tw/pageView.jsp?ID=59&la=1) permits modification, embedding, and redistribution with attribution (Open Government Data License v1.0 / OFL 1.1).
+- **隶书:** `AlimamaDaoLiTi-Regular.woff2` is the unchanged publisher file from https://fonts.alibabadesign.com/AlimamaDaoLiTi/AlimamaDaoLiTi-Regular/AlimamaDaoLiTi-Regular.woff2. Alibaba Design's [DaoLi license statement](https://www.yuque.com/alimama_ai-font/vfse9w/ynqpf9pt8wops4sl) permits embedding and prohibits conversion/splitting; the CSS `unicode-range` only controls routing and does not alter the font bytes. Attribution: Alimama / Alibaba Design, 阿里妈妈刀隶体.
+- **黑体:** `noto-sans-cjk-sc-cjk.woff2` is a Chinese-only subset of the repository's `katrain/fonts/NotoSansCJKsc-Regular.otf`, under its SIL Open Font License 1.1 in `katrain/fonts/OFL.txt`. Attribution: Google Noto Fonts / Adobe, Noto Sans CJK SC.
+- **文楷:** The existing `wenkai/` subsets and `wenkai/OFL-LXGWWenKai.txt` remain the default. Attribution: LXGW WenKai authors.
+
+Rebuild the optional assets and CSS declarations with `python scripts/build-kiosk-cjk-fonts.py /path/to/Fonts_Kai.zip /path/to/AlimamaDaoLiTi-Regular.woff2` from `katrain/web/ui`. Download the two publisher sources at the URLs above; the Alimama host requires `Referer: https://fonts.alibabadesign.com/` for direct download.
+
+The asset build requires Python `fonttools` with Brotli support. The bundled DaoLi file has SHA-256 `85a8afa1a7503418575793effe55bd13d99b3d0f5a82fdb7e83ec1c4910a2efb`, matching the publisher download byte for byte.

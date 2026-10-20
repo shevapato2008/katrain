@@ -35,9 +35,13 @@
 .lc-actions button,.lc-header button { border:1px solid #496451; color:var(--text); background:radial-gradient(ellipse 90% 75% at 50% -8%,#ffffff20,transparent 75%),linear-gradient(#263b30,#192a22); border-radius:16px; min-height:48px; box-shadow:inset 0 1px 0 #ffffff2c,0 3px 0 #12261a,0 5px 8px #0006; cursor:pointer; font:inherit; }
 .lc-actions button { min-width:0; padding:0 2px; display:flex; align-items:center; justify-content:center; gap:5px; font-size:18px; white-space:nowrap; }
 .lc-actions button svg { width:20px; height:20px; flex:none; fill:currentColor; }
+.lc-actions button .lc-abandon-icon { fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.lc-actions button .lc-abandon-icon__cross { stroke-width:2.5; }
 .lc-actions button:disabled { background:#18211f; color:#6e8378; border-color:#28372f; box-shadow:none; cursor:default; }
 .lc-actions .lc-resign:not(:disabled) { color:#e8a29c; background:radial-gradient(ellipse 90% 75% at 50% -8%,#ffffff12,transparent 75%),linear-gradient(#392d2b,#271d1c); border-color:#8b615b; }
+.lc-actions .lc-abandon:not(:disabled) { color:#e5bd84; background:radial-gradient(ellipse 90% 75% at 50% -8%,#ffffff15,transparent 75%),linear-gradient(#383124,#261f19); border-color:#8b7352; }
 .is-waiting .lc-resign:not(:disabled) { color:#c5a5a0; border-color:#51423e; }
+.is-waiting .lc-abandon:not(:disabled) { color:#c7ad89; border-color:#594d3d; }
 .lc-confirm { height:118px; flex:none; display:flex; align-items:center; justify-content:center; gap:10px; flex-direction:column; border:1px solid var(--accent); background:var(--accent); color:#101a14; border-radius:12px; padding:12px; touch-action:manipulation; cursor:pointer; font:inherit; }
 .lc-confirm-label { font-size:28px; font-weight:600; line-height:1.2; display:flex; align-items:center; justify-content:center; gap:10px; white-space:nowrap; }
 .lc-confirm.is-preparation .lc-confirm-label { font-size:22px; white-space:normal; text-align:center; }

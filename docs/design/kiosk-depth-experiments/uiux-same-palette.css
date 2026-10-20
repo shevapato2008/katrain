@@ -1,0 +1,96 @@
+/* UI/UX Pro Max: five tactile treatments on the existing Go palette.
+   The kiosk shell, top bar, board, transparent rail, typography and content
+   retain their original declarations. Only button material and press response
+   vary; the same functional colors flow through --surface and --edge. */
+#kiosk[data-theme^="u"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --surface: var(--card);
+  --edge: var(--line);
+  --press-distance: 3px;
+  position: relative;
+  border-color: var(--edge);
+  transform: translateY(0);
+  transition: transform 115ms ease-out, box-shadow 115ms ease-out,
+              background 115ms ease-out;
+  touch-action: manipulation;
+}
+
+#kiosk[data-theme^="u"] :is(.toggle-btn.on, .info-btn) {
+  --surface: var(--accent-dark);
+  --edge: var(--accent);
+}
+
+#kiosk[data-theme^="u"] .action-btn.danger {
+  --edge: #a25e55;
+}
+
+/* u1 — low-haze glass. The existing dark green surface remains visible. */
+#kiosk[data-theme="u1"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --press-distance: 2px;
+  background: linear-gradient(160deg, #ffffff16 0%, #ffffff04 40%, #0000000a 100%), var(--surface);
+  border-color: var(--edge);
+  box-shadow: inset 0 1px 0 #ffffff46, inset 1px 0 0 #ffffff13,
+              inset 0 -1px 0 #0005, 0 2px 0 #0b1c13,
+              0 5px 13px #0006;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* u2 — softly convex glaze, with a broad reflected highlight. */
+#kiosk[data-theme="u2"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --press-distance: 3px;
+  background: linear-gradient(180deg, #ffffff25 0%, #ffffff0d 22%, transparent 54%, #00000018 100%), var(--surface);
+  box-shadow: inset 0 1px 0 #ffffff48, inset 0 -2px 2px #0004,
+              0 3px 0 #0d2116, 0 7px 12px #0006;
+}
+
+/* u3 — a precise key cap with a short, well-defined travel. */
+#kiosk[data-theme="u3"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --press-distance: 4px;
+  background: linear-gradient(180deg, #ffffff11, transparent 32%, #0000001a), var(--surface);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 1px 0 0 #ffffff10,
+              inset -1px 0 0 #0005, 0 4px 0 #091b12,
+              0 5px 7px #0009;
+}
+
+/* u4 — a soft press pad, with broad low-contrast shadows. */
+#kiosk[data-theme="u4"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --press-distance: 3px;
+  background: radial-gradient(ellipse at 50% 0%, #ffffff17, transparent 70%), var(--surface);
+  box-shadow: inset 0 1px 2px #ffffff25, inset 0 -2px 4px #0004,
+              0 2px 0 #10251a, 0 7px 18px #0007;
+}
+
+/* u5 — a thin floating plate, with an illuminated rim and deep separation. */
+#kiosk[data-theme="u5"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --press-distance: 3px;
+  background: linear-gradient(145deg, #ffffff14, transparent 47%, #00000010), var(--surface);
+  box-shadow: inset 0 1px 0 #ffffff42, 0 0 0 1px #ffffff12,
+              0 2px 0 #0d2116, 0 8px 17px #0009;
+}
+
+/* The info button stays round, independent of the treatment. */
+#kiosk[data-theme^="u"] .info-btn { border-radius: 50%; }
+
+/* A press removes the outside lift and replaces it with an inset shadow. */
+#kiosk[data-theme^="u"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn):is(:active, .is-pressing):not(:disabled) {
+  background: linear-gradient(180deg, #0000001c, transparent 62%), var(--surface);
+  box-shadow: inset 0 3px 7px #0009, inset 0 1px 1px #0005,
+              0 1px 0 #0b1c13;
+  transform: translateY(var(--press-distance));
+}
+
+/* Disabled buttons remain recessed and never appear to rise or depress. */
+#kiosk[data-theme^="u"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn):disabled {
+  background: var(--surface);
+  box-shadow: inset 0 1px 3px #0007;
+  transform: none;
+  transition: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #kiosk[data-theme^="u"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+    transition: none;
+  }
+}

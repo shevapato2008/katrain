@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 import { kioskMeJson } from './helpers/kioskIdentity';
 
@@ -48,7 +48,31 @@ test('approved archive selection and final-board preview', async ({ page }) => {
   await page.goto('/kiosk/kifu');
   await page.waitForSelector('.kifu-record.is-selected');
   await page.waitForFunction(() => !(Array.from(document.querySelectorAll('button')).find(button => button.textContent === '查看棋谱') as HTMLButtonElement | undefined)?.disabled);
+  await page.evaluate(() => document.fonts.ready);
+  const tabGeometry = await page.locator('.archive-library-tabs').evaluate(group => {
+    const tabs = Array.from(group.children).map(tab => tab.getBoundingClientRect());
+    const outer = group.getBoundingClientRect();
+    return { gap: tabs[1].left - tabs[0].right, inset: tabs[0].left - outer.left,
+      endInset: outer.right - tabs[1].right, height: tabs[0].height };
+  });
+  expect(tabGeometry).toEqual({ gap: 0, inset: 1, endInset: 1, height: 48 });
+  await expect(page.locator('.archive-preview__actions .kiosk-btn').first()).toHaveCSS('justify-content', 'center');
+  await expect(page.locator('.archive-preview__actions .kiosk-btn').last()).toHaveCSS('justify-content', 'center');
+  for (const card of await page.locator('.kifu-record').all()) {
+    await expect(card).not.toHaveCSS('background-image', 'none');
+    await expect(card).not.toHaveCSS('box-shadow', 'none');
+  }
   await page.screenshot({ path: '/tmp/kiosk-15-reviewed.png' });
+  await page.screenshot({ path: '../../../docs/previews/reviewed-pre-growth-2026-10-19/15-archive-depth-proposal.png' });
   await page.waitForLoadState('networkidle');
-
+  await expect(page.getByRole('button', { name: '查看分析' })).toBeDisabled();
+  await page.getByRole('button', { name: '最近摆过', exact: true }).click();
+  await expect(page.getByRole('button', { name: '最近摆过', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('kifu-recent-empty')).toBeVisible();
+  await page.screenshot({ path: '../../../docs/previews/reviewed-pre-growth-2026-10-19/15-archive-recent-depth-proposal.png' });
+  await page.getByRole('button', { name: '名局棋谱', exact: true }).click();
+  await expect(page.getByRole('button', { name: '名局棋谱', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.kifu-record.is-selected')).toBeVisible();
+  await page.getByRole('button', { name: '查看棋谱', exact: true }).click();
+  await expect(page).toHaveURL(/\/kiosk\/kifu\/1\/replay$/);
 });

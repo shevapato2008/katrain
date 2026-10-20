@@ -3985,7 +3985,7 @@ msgid "login:box_gate_cta"
 msgstr "На головний екран StellaBox"
 
 msgid "vision:back_settings"
-msgstr "Налаштування"
+msgstr "Назад до налаштувань"
 
 msgid "vision:board_lost_hint"
 msgstr ""
@@ -3996,7 +3996,7 @@ msgid "vision:calibrate_title"
 msgstr "Калібрування дошки"
 
 msgid "vision:calibrate_sub"
-msgstr "Спершу звільніть дошку · 13 точок: 4 кути + 9 хоші"
+msgstr "Спершу звільніть дошку · 5 точок: 4 кути та центр"
 
 msgid "vision:cancel_calibration"
 msgstr "Скасувати калібрування"

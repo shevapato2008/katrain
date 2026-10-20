@@ -250,6 +250,104 @@ describe('屏 21 研究', () => {
       .toHaveTextContent('没有给出候选');
   });
 
+  it('换局面立即隐藏上一局面的推荐,等当前局面结果', async () => {
+    renderPage();
+    await rows();
+    vi.mocked(API.quickAnalyze).mockImplementation(() => new Promise(() => {}));
+    fireEvent.click(screen.getByRole('button', { name: '点 D4' }));
+    expect(screen.queryAllByTestId('ai-recommend-row')).toHaveLength(0);
+    expect(screen.getByTestId('research-ai-pending')).toBeInTheDocument();
+  });
+
+  it('换局面立即隐藏旧错误,晚到的旧响应也不覆盖当前局面', async () => {
+    vi.mocked(API.quickAnalyze).mockRejectedValueOnce(new Error('旧局面错误'));
+    renderPage();
+    await screen.findByText('旧局面错误', {}, { timeout: 2000 });
+    let resolveOld!: (value: ReturnType<typeof quick>) => void;
+    vi.mocked(API.quickAnalyze).mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }));
+    fireEvent.click(screen.getByRole('button', { name: '点 D4' }));
+    expect(screen.queryByTestId('research-ai-error')).toBeNull();
+    await waitFor(() => expect(resolveOld).toBeDefined());
+    vi.mocked(API.quickAnalyze).mockImplementation(() => new Promise(() => {}));
+    fireEvent.click(screen.getByRole('button', { name: '停一手' }));
+    resolveOld(quick());
+    await waitFor(() => expect(screen.getByTestId('research-ai-pending')).toBeInTheDocument());
+    expect(screen.queryAllByTestId('ai-recommend-row')).toHaveLength(0);
+  });
+
+  it('相同坐标换成另一颜色时不沿用推荐或领地,并提交真实颜色', async () => {
+    vi.mocked(API.quickAnalyze).mockResolvedValue({ turnInfos: [{ moveInfos: MOVE_INFOS, ownership: new Array(361).fill(0.5) }] });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '点 D4' }));
+    await rows();
+    fireEvent.click(screen.getByRole('button', { name: '领地' }));
+    expect(screen.getByTestId('research-board-svg')).toHaveAttribute('data-ownership', 'grid');
+    fireEvent.click(screen.getByRole('button', { name: '清空' }));
+    fireEvent.click(within(screen.getByTestId('research-clear-confirm')).getByRole('button', { name: '清空' }));
+    fireEvent.click(within(screen.getByTestId('research-tools')).getByRole('button', { name: '摆白' }));
+    vi.mocked(API.quickAnalyze).mockImplementation(() => new Promise(() => {}));
+    fireEvent.click(screen.getByRole('button', { name: '点 D4' }));
+    expect(screen.queryAllByTestId('ai-recommend-row')).toHaveLength(0);
+    expect(screen.getByTestId('research-board-svg')).toHaveAttribute('data-ownership', 'none');
+    await waitFor(() => expect(API.quickAnalyze).toHaveBeenLastCalledWith(expect.objectContaining({ moves: [['W', 'D4']], max_visits: 200 }), 'mock-token'), { timeout: 2000 });
+  });
+
+  it('扫完后本地翻手先于会话返回时隐藏旧节点推荐', async () => {
+    vi.mocked(KifuAPI.getAlbum).mockResolvedValue({ id: 9, sgf_content: '(;SZ[19];B[dd];W[pp])' } as any);
+    vi.mocked(API.analysisProgress).mockResolvedValue({ analyzed: 2, total: 2 });
+    mockGameState = buildGameState({ current_node_id: 2, current_node_index: 2,
+      history: [{ node_id: 0 }, { node_id: 1 }, { node_id: 2 }] as any,
+      analysis: { moves: [{ move: 'Q6', visits: 500, winrate: 0.7 }] } as any });
+    mockOnNavigate.mockImplementation(() => new Promise(() => {}));
+    renderPage('/kiosk/research?kifu_id=9&analyze=1');
+    await waitFor(() => expect(within(actions()).getByRole('button', { name: '重新分析' })).toBeInTheDocument(), { timeout: 4000 });
+    expect((await rows())[0]).toHaveTextContent('Q6');
+    fireEvent.click(screen.getByRole('button', { name: '上一手' }));
+    expect(mockOnNavigate).toHaveBeenCalledWith(1);
+    expect(screen.queryAllByTestId('ai-recommend-row')).toHaveLength(0);
+    expect(screen.getByTestId('research-ai-pending')).toBeInTheDocument();
+  });
+
+  it.each([
+    '(;SZ[19]HA[2]AB[dd][pp];W[qq])',
+    '(;SZ[19]AB[dd]AW[pp];W[qq])',
+  ])('扫描将根摆子映射到同一个会话根节点: %s', async (sgf) => {
+    vi.mocked(KifuAPI.getAlbum).mockResolvedValue({ id: 9, sgf_content: sgf } as any);
+    vi.mocked(API.analysisProgress).mockResolvedValue({ analyzed: 2, total: 2 });
+    const recommendation = { moves: [{ move: 'Q6', visits: 500, winrate: 0.7 }] } as any;
+    const history = [{ node_id: 10 }, { node_id: 11 }] as any;
+    mockGameState = buildGameState({ current_node_id: 11, current_node_index: 1, history, analysis: recommendation });
+    renderPage('/kiosk/research?kifu_id=9&analyze=1');
+    await waitFor(() => expect(within(actions()).getByRole('button', { name: '重新分析' })).toBeInTheDocument(), { timeout: 4000 });
+    expect((await rows())[0]).toHaveTextContent('Q6');
+    fireEvent.click(screen.getByRole('button', { name: '上一手' }));
+    expect(mockOnNavigate).toHaveBeenLastCalledWith(10);
+    expect(screen.queryAllByTestId('ai-recommend-row')).toHaveLength(0);
+    mockGameState = buildGameState({ current_node_id: 10, current_node_index: 0, history, analysis: recommendation });
+    fireEvent.click(screen.getByRole('button', { name: '领地' }));
+    expect((await rows())[0]).toHaveTextContent('Q6');
+    // A partially drawn setup has no matching SGF node and must not reuse root analysis.
+    mockOnNavigate.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: '上一手' }));
+    expect(mockOnNavigate).not.toHaveBeenCalled();
+    expect(screen.queryAllByTestId('ai-recommend-row')).toHaveLength(0);
+  });
+
+  it('从让子根局面开始扫描时 initialMove 使用会话下标零', async () => {
+    vi.mocked(KifuAPI.getAlbum).mockResolvedValue({ id: 9, sgf_content: '(;SZ[19]HA[2]AB[dd][pp];W[qq])' } as any);
+    vi.mocked(API.analysisProgress).mockResolvedValue({ analyzed: 2, total: 2 });
+    mockGameState = buildGameState({ history: [{ node_id: 0 }, { node_id: 1 }] as any,
+      analysis: { moves: [{ move: 'Q6', visits: 500, winrate: 0.7 }] } as any });
+    renderPage('/kiosk/research?kifu_id=9');
+    await waitFor(() => expect(screen.getByTestId('research-pagebar')).toHaveTextContent('第 1 手'));
+    fireEvent.click(screen.getByRole('button', { name: '上一手' }));
+    fireEvent.click(within(actions()).getByRole('button', { name: '全局分析' }));
+    fireEvent.click(screen.getByRole('button', { name: '开始算' }));
+    await waitFor(() => expect(mockCreateSession).toHaveBeenCalledWith(expect.stringContaining('AB[dd][pp]'), { skipAnalysis: true, initialMove: 0 }));
+    await waitFor(() => expect(within(actions()).getByRole('button', { name: '重新分析' })).toBeInTheDocument(), { timeout: 4000 });
+    expect((await rows())[0]).toHaveTextContent('Q6');
+  });
+
   // ── 全局分析 ───────────────────────────────────────────────────────────────
 
   /**

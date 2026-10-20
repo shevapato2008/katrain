@@ -226,7 +226,6 @@ const PlayPage = () => {
                 ariaLabel={[t(meta.label, meta.labelCn), sub].join('，')}
                 icon={FALLBACK_ICON}
                 mark={PLATFORM_MARKS[p.platform]}
-                dot={p.connected}
                 onClick={() => navigate(target)}
               />
             );

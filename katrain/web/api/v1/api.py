@@ -22,6 +22,7 @@ from katrain.web.api.v1.endpoints import (
     hint,
     ai_ladder,
     growth,
+    kiosk_preferences,
 )
 
 api_router = APIRouter()
@@ -47,3 +48,4 @@ api_router.include_router(geometry.router, prefix="/geometry", tags=["geometry"]
 api_router.include_router(hint.router, prefix="/hint", tags=["hint"])
 api_router.include_router(ai_ladder.router, prefix="/ai-ladder", tags=["ai-ladder"])
 api_router.include_router(growth.router, prefix="/growth", tags=["growth"])
+api_router.include_router(kiosk_preferences.router, prefix="/kiosk-preferences", tags=["kiosk-preferences"])

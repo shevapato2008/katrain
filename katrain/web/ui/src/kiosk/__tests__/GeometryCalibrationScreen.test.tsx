@@ -22,15 +22,20 @@ const startCalibration = vi.fn();
 const cancelCalibration = vi.fn();
 const confirmExisting = vi.fn();
 const relocate = vi.fn();
-const voice = vi.hoisted(() => ({ speak: vi.fn(), stop: vi.fn() }));
-vi.mock('../hooks/useVoice', () => ({ useVoice: () => voice }));
+const recheckLighting = vi.fn();
+const voiceSpeak = vi.fn();
+const voiceStop = vi.fn();
 let status: GeometryStatus;
 let loaded = true;
 
 vi.mock('../context/GeometryContext', () => ({
   useGeometry: () => ({
-    status, loaded, startCalibration, cancelCalibration, confirmExisting, relocate, refresh: vi.fn(),
+    status, loaded, startCalibration, cancelCalibration, confirmExisting, recheckLighting, relocate, refresh: vi.fn(),
   }),
+}));
+
+vi.mock('../hooks/useVoice', () => ({
+  useVoice: () => ({ speak: voiceSpeak, stop: voiceStop }),
 }));
 
 vi.mock('../../api/geometryApi', async (importOriginal) => {
@@ -50,17 +55,18 @@ vi.mock('../components/vision/CameraGeometryOverlay', () => ({
   },
 }));
 
-const screenTree = () => (
+const screenTree = (allowExistingReuse?: boolean) => (
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter>
       <GeometryCalibrationScreen
         backLabel="设置" onBack={vi.fn()}
-        title="棋盘标定" sub="先把棋盘清空 · 四角 + 九星共 13 个定位点"
+        title="棋盘标定" sub="先把棋盘清空 · 四角和天元共 5 个定位点"
+        allowExistingReuse={allowExistingReuse}
       />
     </MemoryRouter>
   </ThemeProvider>
 );
-const renderScreen = () => render(screenTree());
+const renderScreen = (allowExistingReuse?: boolean) => render(screenTree(allowExistingReuse));
 
 const steps = () => screen.getAllByTestId('calib-step');
 const acts = () => screen.getByTestId('calib-actions');
@@ -78,21 +84,32 @@ describe('屏 26 棋盘标定', () => {
     vi.mocked(GeometryAPI.layout).mockRejectedValue(new Error('geometry request failed 409'));
   });
 
-  // ── 五步:曝光是独立的真实阶段 ─────────────────────────────────────────────
+  // ── 四步:曝光是独立的真实阶段 ─────────────────────────────────────────────
 
   /**
-   * 曝光收敛和锁定由服务端独立发布；每个锚点的熄灯参考帧仍然不是独立阶段。
+   * 🔴 稿子原来画五步(2026-09-24 已照实现改成四步),第 2 步「采集熄灯参考帧」对应 `dark_reference` ——
+   * **全仓没有任何地方写入这个 phase**(只在两处「哪些算进行中」的常量集合里当摆设)。
+   * 那件事确实在做,但是**每个锚点各一次**,不是一个有头有尾的阶段。
+   * 画成一行只能在两种假话里挑一种,所以删掉、机制写进旁注。
    */
-  it('五步包含曝光收敛并锁定，没有独立的「采集熄灯参考帧」', () => {
+  it('四步包含曝光收敛并锁定，没有独立的「采集熄灯参考帧」', () => {
     renderScreen();
-    expect(steps()).toHaveLength(5);
+    expect(steps()).toHaveLength(4);
     expect(steps().map((s) => s.querySelector('.kiosk-row__t b')?.textContent)).toEqual([
-      '准备空盘标定', '曝光收敛并锁定', '定位棋盘四角', '定位九个星位', '生成空盘基线',
+      '等待棋盘稳定', '确认并锁定曝光', '定位棋盘', '生成空盘基线',
     ]);
     expect(screen.queryByText(/采集熄灯参考帧/)).toBeNull();
     // 旁注最多两行:「先熄灯再亮灯各拍一张」那句 Fan 2026-09-27 裁定删掉
     expect(screen.getByTestId('geometry-led-advisory').closest('p'))
       .not.toHaveTextContent('先熄灯拍一张');
+  });
+
+  it('标题旁说明按钮保留五点提示，关闭后返回标定屏', () => {
+    renderScreen();
+    fireEvent.click(screen.getByRole('button', { name: '标定说明' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('四角和天元共 5 个定位点');
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '知道了' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('没在跑的时候第 1 步是「进行中」—— 清空棋盘本来就是按下之前要做的', () => {
@@ -101,15 +118,18 @@ describe('屏 26 棋盘标定', () => {
     expect(steps()[1]).toHaveAttribute('data-state', 'todo');
   });
 
-  it('跑到星位时:前三步完成、第 4 步在跑,而且说得出正在点第几个', () => {
+  it('五点定位时:前两步完成、第 3 步在跑,只展示总进度', () => {
     status = {
-      ...status, phase: 'verifying',
-      progress: { current: 7, total: 13 },
-      detected_anchors: Array.from({ length: 7 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+      ...status, phase: 'flashing_corners',
+      progress: { current: 3, total: 5 },
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
     };
     renderScreen();
-    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'done', 'done', 'now', 'todo']);
-    expect(steps()[3]).toHaveTextContent('正在点第 4 个'); // 7 − 4 + 1
+    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'done', 'now', 'todo']);
+    expect(steps()[2]).toHaveTextContent('定位棋盘');
+    expect(steps()[2].querySelector('em')).toBeNull();
+    expect(screen.getByTestId('calib-cap')).toHaveTextContent('3 / 5');
+    expect(screen.getByTestId('calib-preview-state')).toHaveTextContent('正在标定');
   });
 
   /**
@@ -118,114 +138,44 @@ describe('屏 26 棋盘标定', () => {
   it('旧响应失败:由已定位的锚点数确定断点,之前的步骤保持「完成」', () => {
     status = {
       ...status, phase: 'failed', error: 'anchor_not_found:3,15',
-      detected_anchors: Array.from({ length: 6 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
     };
     renderScreen();
-    // 6 个 ⇒ 四角过了、断在星位那一步
-    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'done', 'done', 'bad', 'todo']);
+    // 3 个 ⇒ 曝光已锁、断在五点定位那一步
+    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'done', 'bad', 'todo']);
   });
 
-  it('曝光进行中只标第 2 步，并只允许取消，不编曝光百分比', () => {
-    status = { ...status, phase: 'converging_exposure', last_valid: true };
+  it('服务端 stopped_phase 比错误字串和已定位点数更权威', () => {
+    status = {
+      ...status, phase: 'failed', stopped_phase: 'converging_exposure',
+      error: 'anchor_not_found:9,9',
+      detected_anchors: Array.from({ length: 5 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+    };
     renderScreen();
-    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'now', 'todo', 'todo', 'todo']);
-    expect(screen.getByTestId('calib-cap')).toHaveTextContent('第 2 / 5 步');
-    expect(screen.getByTestId('calib-cap')).toHaveTextContent('共 13 个定位点');
-    expect(steps()[1]).not.toHaveTextContent('%');
-    const buttons = within(acts()).getAllByRole('button');
-    expect(buttons).toHaveLength(1);
-    expect(buttons[0]).toHaveTextContent('取消标定');
-    fireEvent.click(buttons[0]);
-    expect(cancelCalibration).toHaveBeenCalled();
-    expect(confirmExisting).not.toHaveBeenCalled();
-    expect(startCalibration).not.toHaveBeenCalled();
-  });
-
-  it.each(['failed', 'cancelled'] as const)('曝光阶段 %s 用 stopped_phase 保留真实断点', (phase) => {
-    status = { ...status, phase, stopped_phase: 'converging_exposure', error: 'camera disconnected' };
-    renderScreen();
-    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual([
-      'done', phase === 'failed' ? 'bad' : 'warn', 'todo', 'todo', 'todo',
-    ]);
+    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'bad', 'todo', 'todo']);
     expect(screen.getByTestId('calib-cap')).toHaveTextContent('停在第 2 步');
   });
 
-  it('stopped_phase 比曝光错误串和锚点计数更权威', () => {
+  it.each([2, 5])('等待重新稳定时保留 %i 个锚点所在的步骤', (count) => {
     status = {
-      ...status, phase: 'failed', stopped_phase: 'building_baseline',
-      error: 'manual exposure lock readback failed',
+      ...status, phase: 'waiting_stable',
+      detected_anchors: Array.from({ length: count }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
     };
     renderScreen();
-    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'done', 'done', 'done', 'bad']);
+    const currentStep = count === 5 ? 3 : 2;
+    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(
+      steps().map((_s, i) => i < currentStep ? 'done' : i === currentStep ? 'now' : 'todo'),
+    );
   });
 
-  it.each(['manual exposure lock readback failed', 'frame_overexposed', 'frame_underexposed'])(
-    '旧响应曝光错误 %s 回落第 2 步，不标四角失败', (error) => {
-      status = { ...status, phase: 'failed', error };
-      renderScreen();
-      expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'bad', 'todo', 'todo', 'todo']);
-    },
-  );
-
-  it('手动曝光锁定回读失败说未锁定，不声称光线过强', () => {
+  it.each(['failed', 'cancelled'] as const)('%s 后已有锚点的说明提示重新开始，不说继续标定', (phase) => {
     status = {
-      ...status, phase: 'failed', stopped_phase: 'converging_exposure',
-      error: 'manual exposure lock readback failed',
+      ...status, phase,
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
     };
     renderScreen();
-    const card = screen.getByTestId('geometry-diagnostic-card');
-    expect(card).toHaveTextContent('曝光没有锁定');
-    expect(card).not.toHaveTextContent('光线过强');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(voice.speak).not.toHaveBeenCalled();
-  });
-
-  it.each(['frame_overexposed', 'frame_underexposed'] as const)('可信曝光闸 %s 才弹窗和播语音，关闭停止语音', (reason) => {
-    status = { ...status, phase: 'failed', error: reason, metrics: {
-      exposure: { median: reason === 'frame_overexposed' ? 255 : 0, clip_frac: 0.8, shadow_frac: 0.1 },
-    } };
-    renderScreen();
-    expect(screen.getByRole('dialog')).toHaveTextContent(reason === 'frame_overexposed'
-      ? '画面过亮，暂时无法可靠识别' : '画面过暗，暂时无法可靠识别');
-    expect(screen.getByRole('dialog')).toHaveTextContent('请移开遮挡；仍有提示时，请换到光线均匀、合适的地方再试。');
-    expect(voice.speak).toHaveBeenCalledWith(reason === 'frame_overexposed' ? 'lighting_overexposed' : 'lighting_underexposed');
-    fireEvent.click(screen.getByRole('button', { name: '知道了' }));
-    expect(voice.stop).toHaveBeenCalledTimes(1);
-    expect(startCalibration).not.toHaveBeenCalled();
-  });
-
-  it('同一revision重复失败只保留诊断，revision或方向变化再次提示', async () => {
-    const exposure = { median: 255, clip_frac: 1, shadow_frac: 0, reason: 'frame_overexposed' as const, confirmed: true };
-    status = { ...status, phase: 'failed', geometry_revision: 4, error: 'manual exposure lock readback failed', metrics: { exposure } };
-    const view = renderScreen();
-    expect(voice.speak).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole('button', { name: '知道了' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    status = { ...status, phase: 'converging_exposure', error: null, metrics: {} };
-    view.rerender(screenTree());
-    status = { ...status, phase: 'failed', error: 'manual exposure lock readback failed', metrics: { exposure } };
-    view.rerender(screenTree());
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByTestId('geometry-diagnostic-card')).toHaveTextContent('曝光没有锁定');
-    expect(voice.speak).toHaveBeenCalledTimes(1);
-    status = { ...status, geometry_revision: 5 };
-    view.rerender(screenTree());
-    expect(voice.speak).toHaveBeenCalledTimes(2);
-    status = { ...status, metrics: { exposure: { ...exposure, reason: 'frame_underexposed', median: 0 } } };
-    view.rerender(screenTree());
-    expect(voice.speak).toHaveBeenLastCalledWith('lighting_underexposed');
-  });
-
-  it.each([
-    { error: 'frame_overexposed', exposure: undefined },
-    { error: 'exposure timeout', exposure: { median: 255, clip_frac: 1, shadow_frac: 0 } },
-    { error: 'manual exposure lock readback failed', exposure: { median: 255, clip_frac: 1, shadow_frac: 0, reason: 'frame_overexposed' as const, confirmed: false } },
-    { error: 'frame_overexposed', exposure: { median: NaN, clip_frac: 1, shadow_frac: 0 } },
-  ])('没有可信严重光照结论不弹窗: $error', ({ error, exposure }) => {
-    status = { ...status, phase: 'failed', error, metrics: { exposure } };
-    renderScreen();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(voice.speak).not.toHaveBeenCalled();
+    expect(screen.getByTestId('calib-cap')).toHaveTextContent('标定已停止，请重新开始');
+    expect(screen.getByTestId('calib-cap')).not.toHaveTextContent('继续标定');
   });
 
   // ── 诊断,不是「重试」 ─────────────────────────────────────────────────────
@@ -270,6 +220,7 @@ describe('屏 26 棋盘标定', () => {
     renderScreen();
     expect(cells()).toEqual(['摄像头—', '标定—', 'LED未确认']);
     expect(screen.queryByText('未连接')).toBeNull();
+    expect(within(acts()).getByRole('button', { name: '重新开始标定 · 正在读取设备状态' })).toBeDisabled();
   });
 
   it('读到了才说连没连上', () => {
@@ -290,7 +241,7 @@ describe('屏 26 棋盘标定', () => {
     status = { ...status, capabilities: { camera_ready: true, led_ready: null, geometry_ready: false } };
     renderScreen();
     expect(cells()).toContain('LED未确认');
-    expect(screen.getByRole('button', { name: /开始标定/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '重新开始标定 · LED 未确认' })).toBeDisabled();
   });
 
   // ── 标定质量:不许把「不知道」画成「满分」 ─────────────────────────────────
@@ -300,33 +251,33 @@ describe('屏 26 棋盘标定', () => {
    * **后端没给这个数的时候它编一个满分出来**(13/13、0.000 px 读起来就是「完美」)。
    * 规范 §14:值写「—」不写 0。
    */
-  it('后端整个没给 metrics:说「没拿到残差数据」,不编一个 13/13 出来', () => {
+  it('后端整个没给 metrics:不编一个 5/5 出来', () => {
     status = { ...status, phase: 'ready', session_calibrated: true, last_valid: true };
     renderScreen();
-    expect(steps()[4]).toHaveTextContent('没拿到这次的残差数据');
-    expect(steps()[4]).not.toHaveTextContent('13 / 13');
-    expect(steps()[4]).toHaveAttribute('data-state', 'plain'); // 中性,不是 done —— 不知道不是满分
+    expect(steps()[3].querySelector('em')).toBeNull();
+    expect(steps()[3]).not.toHaveTextContent('5 / 5');
+    expect(steps()[3]).toHaveAttribute('data-state', 'plain'); // 中性,不是 done —— 不知道不是满分
   });
 
-  it('给了 metrics 但字段是空的:逐项写「—」,一样不敢标绿', () => {
+  it('给了 metrics 但字段是空的:一样不敢标绿', () => {
     status = {
       ...status, phase: 'ready', session_calibrated: true, last_valid: true,
       metrics: {} as Record<string, never>,
     };
     renderScreen();
-    expect(steps()[4]).toHaveTextContent('— / 13 点 · RMS — px · 最大残差 — px');
-    expect(steps()[4]).toHaveAttribute('data-state', 'plain');
+    expect(steps()[3].querySelector('em')).toBeNull();
+    expect(steps()[3]).toHaveAttribute('data-state', 'plain');
   });
 
-  it('拿到真数就写真数;不足 13 点时 tag 转琥珀并把数写出来', () => {
+  it('不足 5 点时 tag 转琥珀并把数写出来', () => {
     status = {
       ...status, phase: 'ready', session_calibrated: true, last_valid: true,
-      metrics: { inlier_count: 9, rms_residual: 0.4213, max_residual: 0.9077 },
+      metrics: { inlier_count: 4, rms_residual: 0.4213, max_residual: 0.9077 },
     };
     renderScreen();
-    expect(steps()[4]).toHaveTextContent('9 / 13 点 · RMS 0.421 px · 最大残差 0.908 px');
-    expect(steps()[4]).toHaveAttribute('data-state', 'warn');
-    expect(within(steps()[4]).getByText('完成 · 9 / 13')).toBeInTheDocument();
+    expect(steps()[3].querySelector('em')).toBeNull();
+    expect(steps()[3]).toHaveAttribute('data-state', 'warn');
+    expect(within(steps()[3]).getByText('完成 · 4 / 5')).toBeInTheDocument();
   });
 
   // ── 两颗键 ─────────────────────────────────────────────────────────────────
@@ -342,6 +293,33 @@ describe('屏 26 棋盘标定', () => {
     renderScreen();
     fireEvent.click(within(acts()).getByRole('button', { name: '沿用上次标定' }));
     await waitFor(() => expect(confirmExisting).toHaveBeenCalled());
+  });
+
+  it('禁用沿用时隐藏沿用操作，仍可标定和返回', () => {
+    status = { ...status, last_valid: true };
+    renderScreen(false);
+
+    expect(cells()).toContain('标定未标定');
+    expect(cells()).not.toContain('标定待确认');
+    expect(screen.queryByRole('button', { name: '沿用上次标定' })).toBeNull();
+    expect(within(acts()).getByRole('button', { name: '重新开始标定' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /设置/ })).toBeEnabled();
+    expect(confirmExisting).not.toHaveBeenCalled();
+  });
+
+  it('禁用沿用且本次未标定时，不显示沿用提示或对齐外框', () => {
+    status = { ...status, phase: 'degraded', last_valid: true };
+    renderScreen(false);
+
+    expect(screen.queryByText(/「沿用上次标定」此刻按不了/)).toBeNull();
+    expect(within(acts()).queryByRole('button', { name: /对齐外框/ })).toBeNull();
+  });
+
+  it.each(['degraded', 'cancelled', 'failed'] as const)('禁用沿用但本次标定成功后 %s 仍可对齐外框', (phase) => {
+    status = { ...status, phase, last_valid: true, session_calibrated: true };
+    renderScreen(false);
+
+    expect(within(acts()).getByRole('button', { name: /对齐外框/ })).toBeEnabled();
   });
 
   it('取消之后「沿用上次标定」可以按', () => {
@@ -434,7 +412,7 @@ describe('屏 26 棋盘标定', () => {
   it('摄像头或 LED 掉线时按不了开始 —— 这条上一版就有,口径没变', () => {
     status = { ...status, capabilities: { camera_ready: false, led_ready: true, geometry_ready: false } };
     renderScreen();
-    expect(within(acts()).getByRole('button', { name: '重新开始标定' })).toBeDisabled();
+    expect(within(acts()).getByRole('button', { name: '重新开始标定 · 摄像头未连接' })).toBeDisabled();
   });
 
   /** 标定好了要按两次:第一次是「我真的要作废现在这份」。上一版就有这条。 */
@@ -457,13 +435,80 @@ describe('屏 26 棋盘标定', () => {
 
   it('画面底下那条两个数都算得出来,不估', () => {
     status = {
-      ...status, phase: 'verifying',
-      detected_anchors: Array.from({ length: 12 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+      ...status, phase: 'flashing_corners',
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
     };
     renderScreen();
     const cap = screen.getByTestId('calib-cap');
-    expect(cap).toHaveTextContent('四角已定位 · 九星 8 / 9');
-    expect(cap).toHaveTextContent('第 4 / 5 步');
+    expect(cap).toHaveTextContent('已完成 3 个点');
+    expect(cap).toHaveTextContent('3 / 5');
+  });
+
+  it('开始后等待移手，首灯前显示等待而非标定中', () => {
+    status = { ...status, phase: 'waiting_empty' };
+    renderScreen();
+    expect(screen.getByTestId('calib-preview-banner')).toHaveTextContent('请把手移开棋盘上方');
+    expect(steps()[0]).toHaveAttribute('data-state', 'now');
+    expect(within(acts()).getAllByRole('button')).toHaveLength(1);
+  });
+
+  it('点击开始即走围棋共用的语音播放器提示移手', async () => {
+    startCalibration.mockResolvedValue(undefined);
+    renderScreen();
+    fireEvent.click(within(acts()).getByRole('button', { name: '重新开始标定' }));
+    expect(voiceSpeak).toHaveBeenCalledWith('calibration_move_hand');
+  });
+
+  it('遮挡暂停保留已完成的点，动作区仍只有取消标定', () => {
+    status = {
+      ...status, phase: 'obstructed', pause_reason: 'board_occluded',
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+    };
+    renderScreen();
+    expect(screen.getByTestId('calib-preview-banner')).toHaveTextContent('检测到遮挡');
+    expect(screen.getByTestId('calib-cap')).toHaveTextContent('3 / 5');
+    expect(steps()[2]).toHaveTextContent('已暂停');
+    expect(within(acts()).getAllByRole('button')).toHaveLength(1);
+    expect(voiceSpeak).toHaveBeenCalledWith('calibration_obstructed');
+  });
+
+  it.each([
+    ['frame_overexposed', '画面过亮', '拉上窗帘'],
+    ['frame_underexposed', '画面过暗', '打开室内灯'],
+  ] as const)('光线暂停 %s 提示具体调整', (reason, title, guidance) => {
+    status = { ...status, phase: 'lighting_paused', pause_reason: reason };
+    renderScreen();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent(title);
+    expect(dialog).toHaveTextContent(guidance);
+    expect(within(dialog).getByRole('button', { name: '调整后重新检测' })).toBeInTheDocument();
+    expect(within(acts()).getAllByRole('button')).toHaveLength(1);
+    expect(voiceSpeak).toHaveBeenCalledWith(reason === 'frame_overexposed' ? 'calibration_too_bright' : 'calibration_too_dark');
+  });
+
+  it('曝光失败且有可靠的过曝诊断时显示光线弹窗并播报', () => {
+    status = {
+      ...status,
+      phase: 'failed',
+      error: 'manual exposure lock readback failed',
+      metrics: { exposure: { median: 247, clip_frac: 0.48, shadow_frac: 0.02, reason: 'frame_overexposed', confirmed: true } },
+    };
+    renderScreen();
+    expect(screen.getByRole('dialog')).toHaveTextContent('画面过亮');
+    expect(voiceSpeak).toHaveBeenCalledWith('lighting_overexposed');
+  });
+
+  it('点击光线重检走统一 Context 动作，重检中不能重复点', async () => {
+    recheckLighting.mockResolvedValue(undefined);
+    status = { ...status, phase: 'lighting_paused', pause_reason: 'frame_overexposed' };
+    const rendered = renderScreen();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '调整后重新检测' }));
+    await waitFor(() => expect(recheckLighting).toHaveBeenCalledTimes(1));
+    rendered.unmount();
+
+    status = { ...status, phase: 'lighting_rechecking' };
+    renderScreen();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '正在检测…' })).toBeDisabled();
   });
 
   // ── 没有摄像头的盒子 ───────────────────────────────────────────────────────
@@ -493,11 +538,13 @@ describe('屏 26 棋盘标定', () => {
     expect(screen.getByText('完成 LED 标定后生成俯视画面')).toBeInTheDocument();
   });
 
-  it('运行中切到俯视:说的是「完成后重新生成」,不播上一次那份正在被作废的几何', () => {
+  it('运行中始终显示实时原始画面，不展示已失效的俯视画面', () => {
     status = { ...status, phase: 'flashing_corners', last_valid: true };
-    renderScreen();
-    fireEvent.click(within(screen.getByTestId('calib-pagebar')).getAllByRole('radio')[1]);
-    expect(screen.getByText('标定进行中，俯视画面在完成后重新生成')).toBeInTheDocument();
+    const { container } = renderScreen();
+    expect(within(screen.getByTestId('calib-pagebar')).queryByRole('radio')).toBeNull();
+    expect(container.querySelector('canvas[aria-label="摄像头原始画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=raw&scale=3');
+    expect(screen.queryByText('标定进行中，俯视画面在完成后重新生成')).toBeNull();
   });
 
   // ── 俯视叠加层与 warped-stream 同一个 pad ─────────────────────────────────
@@ -509,6 +556,10 @@ describe('屏 26 棋盘标定', () => {
    * **夹具必须 ≠ 默认值 0**,否则丢参数与传参数算出同一个数,这条闸是瞎的。
    */
   it('俯视叠加层按 layout.warped_margin_cells 内缩:A19 落在 (53,53)、T1 落在 (1002,1002)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob() }));
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 528, height: 528, close: vi.fn() }));
+    const canvas = vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
     overlayBuilders.clear();
     status = { ...status, phase: 'ready', session_calibrated: true, last_valid: true };
     vi.mocked(GeometryAPI.layout).mockResolvedValue({
@@ -523,5 +574,7 @@ describe('屏 26 棋盘标定', () => {
     const at = (l: string) => { const c = model.corners.find((k) => k.label === l)!; return [c.x, c.y]; };
     expect(at('A19')).toEqual([53, 53]);
     expect(at('T1')).toEqual([1002, 1002]);
+    canvas.mockRestore();
+    vi.unstubAllGlobals();
   });
 });

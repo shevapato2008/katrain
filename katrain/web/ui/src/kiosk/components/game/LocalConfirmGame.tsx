@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import Board from '../../../components/Board';
@@ -26,6 +26,7 @@ interface Props {
   onPass: () => void;
   onCount: () => void;
   onResign: (color: 'B' | 'W') => void;
+  onAbandon: () => Promise<void>;
   onExit: () => void;
   onPaintedNode: (nodeId: number) => void;
   onExpired: () => void;
@@ -40,7 +41,7 @@ const clockText = (seconds: number) => {
 };
 
 export default function LocalConfirmGame({ gameState, input, point, busy, failed, analysisToggles,
-  onToggle, onSelect, onConfirm, onPass, onCount, onResign, onExit, onPaintedNode, onExpired, blocked = false, physicalPreparation, onRetryPreparation }: Props) {
+  onToggle, onSelect, onConfirm, onPass, onCount, onResign, onAbandon, onExit, onPaintedNode, onExpired, blocked = false, physicalPreparation, onRetryPreparation }: Props) {
   const { t } = useTranslation();
   const { speak, stop } = useVoice();
   const physicalNotReady = input === 'physical' && physicalPreparation !== undefined && physicalPreparation !== 'ready';
@@ -60,7 +61,10 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
   const lightingReason = input === 'physical' && (gameState.local_confirmation?.reason === 'frame_overexposed'
     || gameState.local_confirmation?.reason === 'frame_underexposed') ? gameState.local_confirmation.reason : null;
   const lightingWarning = useLightingWarning(lightingReason, `${gameState.game_id}:${gameState.current_node_id}`, { speak, stop });
-  const [dialog, setDialog] = useState<'guide' | 'pass' | 'B' | 'W' | null>(null);
+  const [dialog, setDialog] = useState<'guide' | 'pass' | 'B' | 'W' | 'abandon' | null>(null);
+  const [abandonError, setAbandonError] = useState(false);
+  const [abandoning, setAbandoning] = useState(false);
+  const abandonPending = useRef(false);
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
   useLayoutEffect(() => {
     // The parent shell mounts the slot in the same commit as this page.
@@ -70,7 +74,22 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
   const blackClock = useGoClock(gameState, 'B', busy ? undefined : onExpired);
   const whiteClock = useGoClock(gameState, 'W', busy ? undefined : onExpired);
   const [frozen, setFrozen] = useState<{ B: GoClockReading | null; W: GoClockReading | null } | null>(null);
-  const closeDialog = () => { setDialog(null); stop(); };
+  const closeDialog = () => { setDialog(null); setAbandonError(false); stop(); };
+  const confirmAbandon = async () => {
+    if (abandonPending.current) return;
+    abandonPending.current = true;
+    setAbandoning(true);
+    setAbandonError(false);
+    try {
+      await onAbandon();
+      closeDialog();
+    } catch {
+      setAbandonError(true);
+    } finally {
+      abandonPending.current = false;
+      setAbandoning(false);
+    }
+  };
   const beginConfirm = () => { setFrozen({ B: blackClock, W: whiteClock }); onConfirm(); };
   const activeColor = gameState.player_to_move === 'W' ? 'W' : 'B';
   const size = gameState.board_size[0];
@@ -145,6 +164,10 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
         <button type="button" disabled={!active || busy || !capable} onClick={() => setDialog('pass')}><Icon name="hand-pointing" />{t('game:pass', '停一手')}</button>
         <button type="button" title={!countAvailable ? t('game:local_count_threshold', '数子需满 {n} 手').replace('{n}', String(minMoves)) : undefined} disabled={!active || busy || blocked || !countAvailable} onClick={onCount}><Icon name="squares-four" />{t('game:count_stones', '数子')}</button>
         <button type="button" className="lc-resign" disabled={busy || blocked} onClick={() => setDialog(color)}><Icon name="flag" />{t('Resign', '认输')}</button>
+        <button type="button" className="lc-abandon" disabled={busy} onClick={() => setDialog('abandon')}>
+          <svg className="lc-abandon-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2" /><path d="M8 3.5v17M16 3.5v17M3.5 8h17M3.5 16h17" /><path className="lc-abandon-icon__cross" d="m9.5 9.5 5 5m0-5-5 5" /></svg>
+          {t('game:abandon_local', '弃局')}
+        </button>
       </div>
       </div>
       <button type="button" className={`lc-confirm${physicalNotReady ? " is-preparation" : ""}`} disabled={preparationFailed ? !active || busy || !onRetryPreparation : !active || busy || !capable || (input === 'screen' && !point)} onClick={preparationFailed ? onRetryPreparation : beginConfirm}>
@@ -175,17 +198,19 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
       </div>
       {seat('W')}
     </div>
-    <Dialog open={dialog !== null} onClose={busy ? undefined : closeDialog} className="kiosk-local-dialog">
-      <DialogTitle>{dialog === 'guide' ? t('game:local_guide', '落子说明') : dialog === 'pass' ? t('game:local_pass_confirm', '确认停一手？') : `${dialog === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方')}${t('game:local_resign_question', '认输？')}`}</DialogTitle>
+    <Dialog open={dialog !== null} onClose={busy || abandoning ? undefined : closeDialog} className="kiosk-local-dialog">
+      <DialogTitle>{dialog === 'guide' ? t('game:local_guide', '落子说明') : dialog === 'pass' ? t('game:local_pass_confirm', '确认停一手？') : dialog === 'abandon' ? t('game:local_abandon_confirm', '确认弃局？') : `${dialog === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方')}${t('game:local_resign_question', '认输？')}`}</DialogTitle>
       <DialogContent>
-        <p>{dialog === 'guide' ? guidance : dialog === 'pass' ? point ? t('game:local_pass_discard', '停一手会放弃当前预选位置。') : input === 'physical' ? t('game:local_pass_physical', '请确认实体盘没有尚未确认的落子。') : t('game:local_pass_body', '停一手后将轮到对方。') : t('game:resign_local_body', '对方记中盘胜，这局会存进历史对局。')}</p>
+        <p>{dialog === 'guide' ? guidance : dialog === 'pass' ? point ? t('game:local_pass_discard', '停一手会放弃当前预选位置。') : input === 'physical' ? t('game:local_pass_physical', '请确认实体盘没有尚未确认的落子。') : t('game:local_pass_body', '停一手后将轮到对方。') : dialog === 'abandon' ? t('game:local_abandon_body', '弃局后不保留任何对局记录，也不会出现在复盘页面。') : t('game:resign_local_body', '对方记中盘胜，这局会存进历史对局。')}</p>
+        {dialog === 'abandon' && abandonError && <p role="alert">{t('game:local_abandon_failed', '弃局未完成，请重试；当前对局仍然保留。')}</p>}
         {dialog === 'guide' && <>
           <p>{t('game:local_guide_clock', '确认时双方计时暂停，成功后对方计时；失败仍由本方计时。听到确认音、对方区域亮起后，再下下一手。')}</p>
         </>}
       </DialogContent>
       <DialogActions>
-        <Button onClick={closeDialog} disabled={busy}>{dialog === 'guide' ? t('game:local_got_it', '知道了') : t('Cancel', '取消')}</Button>
+        <Button onClick={closeDialog} disabled={busy || abandoning}>{dialog === 'guide' ? t('game:local_got_it', '知道了') : t('Cancel', '取消')}</Button>
         {dialog === 'guide' ? <Button disabled={physicalNotReady} onClick={() => speak(input === 'physical' ? 'local_confirm_physical' : 'local_confirm_screen')}>{t('game:local_play_guide', '播放说明')}</Button>
+          : dialog === 'abandon' ? <Button variant="contained" color="error" disabled={busy || abandoning} onClick={() => { void confirmAbandon(); }}>{abandoning ? t('game:local_abandoning', '正在弃局…') : t('game:local_abandon_accept', '确认弃局')}</Button>
           : <Button variant="contained" color={dialog === 'pass' ? 'primary' : 'error'} disabled={busy || blocked} onClick={() => {
             const action = dialog; closeDialog();
             if (action === 'pass') { setFrozen({ B: blackClock, W: whiteClock }); onPass(); }

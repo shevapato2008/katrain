@@ -85,7 +85,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { progress, serverLoadFailed, refresh } = useTsumegoProgress();
+  const { progress, serverLoadFailed, progressLoading, refresh } = useTsumegoProgress();
   const isWrongSet = set === 'wrong';
   const [wrongOnly, setWrongOnly] = useState(false);
 
@@ -198,6 +198,10 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
     />
   );
 
+  if ((isWrongSet || wrongOnly) && progressLoading) {
+    return <div className="kiosk-layout-b training-reviewed">{pagebar}<div role="status">正在读取做题记录…</div></div>;
+  }
+
   if (allIds === null || error || (listIds.length === 0 && !wrongOnly)) {
     return (
       <div className="kiosk-layout-b training-reviewed">
@@ -238,8 +242,6 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
             </div>
           ) : isWrongSet ? (
             // 这一类里没有「试过、还没做对」的题,而且做题记录读到了(或本来就只有本机那份)。
-            // 已知边角:初次读还在路上时这里会先说「没有」—— Provider 没有「在读」标志,读回来会自己重渲;
-            // 那一刻入口(屏 12 卡 / 屏 13 行)按「0 道、没失败」是灰的,只有深链会先看到这一句。
             <div className="empty" data-testid="problems-no-wrong">
               <h4>{t('tsumego:noWrong', '这一类现在没有做错过的题')}</h4>
               <button type="button" className="kiosk-btn kiosk-btn--pill pill" onClick={backToUnits}>
@@ -304,7 +306,8 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
     const selectedTries = previewId ? triesOf(previewId) : 0;
     const selectedState = previewId && progress[previewId]?.completed
       ? interpolate(t('tsumego:tries_n', '{n} 次'), { n: selectedTries })
-      : previewId === nowId ? t('Next up', '下一道') : t('Not attempted', '还没做过');
+      : selectedTries > 0 ? t('tsumego:wrongState', '做错过')
+        : previewId === nowId ? t('Next up', '下一道') : t('Not attempted', '还没做过');
 
     return (
       <div className="kiosk-layout-a tsumego-browser training-reviewed">
@@ -357,7 +360,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
               const isNow = !done && id === nowId;
               const tries = triesOf(id);
               const n = allIds.indexOf(id) + 1;
-              const state = done ? t('Solved', '做对了') : isNow ? t('Next up', '下一道') : t('Not attempted', '还没做过');
+              const state = done ? t('Solved', '做对了') : tries > 0 ? t('tsumego:wrongState', '做错过') : isNow ? t('Next up', '下一道') : t('Not attempted', '还没做过');
               return (
                 <button
                   type="button"
@@ -368,7 +371,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
                   aria-label={`${interpolate(t('tsumego:problem_no', '第 {n} 题'), { n })}，${state}${tries > 0 ? `，${interpolate(t('tsumego:tries_n', '{n} 次'), { n: tries })}` : ''}`}
                   onClick={() => { setPreviewError(null); setSelectedProblemId(id); }}
                 >
-                  <b>{n}</b><em>{triesOf(id)} 次</em><small>{progress[id]?.lastDuration == null ? '—' : `${Math.round(progress[id].lastDuration!)} 秒`}</small>
+                  <b>{n}</b><em>{triesOf(id) > 0 ? `${triesOf(id)} 次` : '—'}</em><small>{progress[id]?.lastDuration == null ? '—' : `${Math.round(progress[id].lastDuration!)} 秒`}</small>
                 </button>
               );
             })}
@@ -456,7 +459,9 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
               const triesText = interpolate(t('tsumego:tries_n', '{n} 次'), { n: tries });
               const state = done
                 ? t('Solved', '做对了')
-                : isNow
+                : tries > 0
+                  ? t('tsumego:wrongState', '做错过')
+                  : isNow
                   ? t('Next up', '下一道')
                   : isWrongSet
                     ? t('tsumego:wrongState', '做错过')
@@ -475,7 +480,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
                 >
                   <b>{n}</b>
                   {/* 试过就写试了几次;一次没试过的那一格,只有「下一道」那张有话可说。 */}
-                  <em>{triesOf(id)} 次</em><small>{progress[id]?.lastDuration == null ? '—' : `${Math.round(progress[id].lastDuration!)} 秒`}</small>
+                  <em>{triesOf(id) > 0 ? `${triesOf(id)} 次` : '—'}</em><small>{progress[id]?.lastDuration == null ? '—' : `${Math.round(progress[id].lastDuration!)} 秒`}</small>
                 </button>
               );
             })}

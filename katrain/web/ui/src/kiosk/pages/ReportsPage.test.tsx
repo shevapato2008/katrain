@@ -655,9 +655,7 @@ describe('屏 19 · 生成报告那一组', () => {
     expect(screen.getByRole('button', { name: '分析报告' })).toBeDisabled();
   });
 
-  // ⚠️ 稿子把第三张卡画成「接口还没有 · 即将上线」,那是稿子写错了:两条导入路都在跑。
-  // 这条断言把那个裁定钉住 —— 谁把它改回 `is-soon` 就红。
-  it('第三张卡是能用的,点开有本地 SGF 和棋谱库两条路', async () => {
+  it('导入卡片打开职业棋谱库,Kiosk 不提供本地 SGF 入口', async () => {
     renderPage();
     const card = await screen.findByRole('button', { name: /导入棋谱复盘/ });
     expect(card).not.toBeDisabled();
@@ -665,31 +663,29 @@ describe('屏 19 · 生成报告那一组', () => {
     fireEvent.click(card);
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '搜索棋谱库' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '从本地导入 SGF' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '从本地导入 SGF' })).not.toBeInTheDocument();
   });
 
-  it('本地导入可以只存不分析,也可以存完直接建报告', async () => {
+  it('职业棋谱可以只存不分析', async () => {
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('button', { name: '从本地导入 SGF' }));
-    fireEvent.change(await screen.findByLabelText('SGF 内容'), { target: { value: '(;SZ[19];B[aa])' } });
+    fireEvent.click(await screen.findByText('库赛事'));
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
     await waitFor(() => expect(mocks.create).toHaveBeenCalled());
     expect(mocks.createReport).not.toHaveBeenCalled();
   });
 
-  it('导入失败时错留在对话框里,输入不丢', async () => {
+  it('导入失败时错留在对话框里,职业棋谱选择保留', async () => {
     mocks.create.mockRejectedValueOnce(new Error('SGF 不合法'));
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('button', { name: '从本地导入 SGF' }));
-    const box = await screen.findByLabelText('SGF 内容');
-    fireEvent.change(box, { target: { value: '(;SZ[19];B[aa])' } });
+    const choice = await screen.findByRole('button', { name: /库赛事/ });
+    fireEvent.click(choice);
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
     // 没有 status 的错落 other ⇒ 只说「做什么没成」,不把 error.message 贴进对话框。
-    expect(await screen.findByText('导入 SGF 失败')).toBeInTheDocument();
+    expect(await screen.findByText('从棋谱库导入失败')).toBeInTheDocument();
     expect(screen.queryByText('SGF 不合法')).toBeNull();
-    expect(box).toHaveValue('(;SZ[19];B[aa])');
+    expect(choice).toHaveAttribute('aria-pressed', 'true');
   });
 
   // F1 回归钉子:`create` 成功之后 `createForGame` 再炸(典型是 402 积分不足),对局已经
@@ -701,13 +697,12 @@ describe('屏 19 · 生成报告那一组', () => {
     );
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('button', { name: '从本地导入 SGF' }));
-    fireEvent.change(await screen.findByLabelText('SGF 内容'), { target: { value: '(;SZ[19];B[aa])' } });
+    fireEvent.click(await screen.findByText('库赛事'));
     fireEvent.click(screen.getByRole('button', { name: '导入并生成普通报告' }));
     await waitFor(() => expect(mocks.createReport).toHaveBeenCalled());
     expect(mocks.create).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.queryByLabelText('SGF 内容')).toBeNull());
-    expect(screen.queryByText('导入 SGF 失败')).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.queryByText('从棋谱库导入失败')).toBeNull();
   });
 
   it('从棋谱库导入走的是同一条路 —— 把那一局复制进你自己的对局表', async () => {

@@ -90,13 +90,20 @@ body.skbd-padded .kifu-library .compact-pagination:focus-within {
 .archive-preview__board{width:272px;height:272px;flex:none;overflow:hidden;border-radius:10px}
 .archive-preview p{font-size:18px;line-height:24px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .archive-preview__actions{display:flex;gap:8px;margin-top:auto}
-.archive-preview__actions .kiosk-btn{flex:1;height:48px;font-size:22px;white-space:nowrap;padding:0 6px}
+.archive-preview__actions .kiosk-btn{flex:1;justify-content:center;text-align:center;height:48px;font-size:22px;white-space:nowrap;padding:0 6px}
 .archive-reviewed .kifu-library{grid-template-rows:38px 24px 44px minmax(0,1fr) 44px}
 .archive-reviewed .kifu-library .kiosk-greet{height:38px}
 .archive-reviewed .kifu-library .kiosk-greet b{font-size:22px}
 .archive-reviewed .kifu-library .kiosk-greet span{font-size:18px}
 .archive-reviewed .kifu-record{height:78px;min-height:78px;gap:6px}
 .archive-reviewed .kifu-record.is-selected{border-color:var(--accent);background:#284233}
+.archive-reviewed .kifu-library .kifu-record{
+  background-image:radial-gradient(ellipse 90% 70% at 50% -8%,#ffffff24,transparent 75%),linear-gradient(180deg,transparent 55%,#00000020);
+  box-shadow:inset 0 1px 0 #ffffff38,inset 0 -2px 1px #0b1d1280,0 3px 0 #0a1a10,0 5px 8px #0006;
+}
+.archive-reviewed .kifu-library .kifu-record:active{
+  box-shadow:inset 0 2px 5px #08160f,0 1px 0 #496650;
+}
 .archive-reviewed .kifu-library .kifu-record__event,.archive-reviewed .kifu-library .kifu-record__meta,.archive-reviewed .kifu-library .kifu-record__player small,.archive-reviewed .kifu-library .kifu-record__result{font-size:18px}
 .archive-reviewed .kifu-library .kifu-record__player{font-size:22px}
 .archive-reviewed .kifu-library .kiosk-btn{font-size:18px}
@@ -131,13 +138,16 @@ body.skbd-padded .kifu-library .compact-pagination:focus-within {
 .archive-reviewed .kifu-library{grid-template-rows:38px 44px 44px minmax(0,1fr) 44px}
 .archive-reviewed .archive-library-heading{flex-direction:row;align-items:center;justify-content:space-between}
 .archive-reviewed .archive-library-heading span{margin-left:auto}
-.archive-library-tabs{display:flex;gap:6px;padding:3px;border:1px solid #344b3e;border-radius:12px;background:#132119}
+.archive-library-tabs{display:flex;gap:0;padding:0;border:1px solid #385245;border-radius:15px;background:#10231a;box-shadow:inset 0 2px 5px #0008}
 .archive-reviewed .archive-library-tabs .kiosk-btn{height:36px;flex:1;font-size:22px;min-height:0}
-.archive-library-tabs .kiosk-btn[aria-pressed="true"]{background:linear-gradient(#3a5945,#25432f);border-color:#5f9370;box-shadow:inset 0 1px #78917f,0 2px 0 #0b1b11}
+.archive-reviewed .archive-library-tabs .kiosk-btn[aria-pressed="true"]{color:#edf7ed;background:#2a513a radial-gradient(ellipse at top,#ffffff24,transparent 75%);box-shadow:inset 0 1px 0 #ffffff38,inset 0 -2px 2px #0004,0 2px 3px #0006}
 .archive-reviewed .kifu-library__footer{justify-content:flex-end}
 
 .archive-reviewed .kifu-library{grid-template-rows:38px 50px 44px minmax(0,1fr) 44px}
-.archive-reviewed .archive-library-tabs .kiosk-btn{height:44px;min-height:44px}
+.archive-reviewed .archive-library-tabs .kiosk-btn{height:48px;min-height:44px;min-width:0;border:0;border-radius:0;background-color:transparent}
+.archive-reviewed .archive-library-tabs .kiosk-btn:first-child{border-radius:14px 0 0 14px}
+.archive-reviewed .archive-library-tabs .kiosk-btn:last-child{border-radius:0 14px 14px 0}
+.archive-reviewed .archive-library-tabs .kiosk-btn:active{box-shadow:inset 0 2px 5px #06120aaa}
 
 .kifu-replay-reviewed .kiosk-pagebar__iconbtn{width:44px;height:44px;min-width:44px}
 .kifu-replay-info{position:fixed;inset:0;z-index:1000;background:#000a;display:grid;place-items:center}

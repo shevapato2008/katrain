@@ -62,8 +62,8 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
         capabilities: { camera_ready: true, led_ready: true, geometry_ready: true } } });
     }
     // 平台状态也造:取图机器上一个平台都没登录,而稿子画的是「OGS 已连接」——
-    // 不造的话三张卡全是「点击登录」,`.dot`(那颗绿点)和「已连接 · 走大厅」这条分支
-    // 在图上一次都不出现,四图就核不到它们。造的是**输入**,标签带里写明了。
+    // 不造的话三张卡全是「点击登录」，「已连接 · 走大厅」这条分支
+    // 在图上一次都不出现。造的是**输入**，标签带里写明了。
     if (path === '/api/v1/platforms/status' || path.endsWith('/platforms')) {
       return route.fulfill({ json: { platforms: [
         { platform: 'ogs', connected: true, supports_live_play: true, supports_automatch: true,

@@ -10,6 +10,7 @@
 .local-setup-redesign .kiosk-pagebar__title {
   display: flex; flex-direction: column; gap: 2px; min-width: 0;
   font-size: 28px; font-weight: 600; line-height: 1.05; white-space: nowrap;
+  overflow: visible;
 }
 .local-setup-redesign .kiosk-pagebar__sub {
   margin: 0; font-size: 18px; font-weight: 400; font-style: normal; color: #a5c4ae;
@@ -86,7 +87,7 @@
 }
 
 .local-setup-redesign .su-row--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.local-setup-redesign .su-out { margin-top: 5px; }
+.local-setup-redesign .su-out { margin-top: 0; }
 .local-setup-redesign .su-cell--input { padding-right: 10px; border-color: #3a5848; border-radius: 10px; background: #1d2b25; box-shadow: none; }
 .local-setup-redesign .su-nameinput { width: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: #edf2ec; }
 .local-setup-redesign .su-nameinput::placeholder { color: #a7bdac; }

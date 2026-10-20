@@ -10,7 +10,7 @@ import {
   UserGamesAPI, type DataAuthority, type UserGameDetail, type UserGameSummary,
 } from '../../api/userGamesApi';
 import { useAuth } from '../../context/AuthContext';
-import { toLibraryUserGameParams, toLocalUserGameParams } from '../../features/report/reportModel';
+import { toLibraryUserGameParams } from '../../features/report/reportModel';
 import { summarizeReportMoves } from '../../features/report/reportStats';
 import { useReportTasks } from '../../features/report/useReportTasks';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -19,7 +19,6 @@ import { replayBaipuSteps, type BoardState } from '../../utils/baipuReplay';
 import { cacheBackedReadFailureKind, requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 import ReportImportMenu from '../components/report/ReportImportMenu';
 import ReportLibraryImportDialog from '../components/report/ReportLibraryImportDialog';
-import ReportLocalImportDialog, { type LocalImportPayload } from '../components/report/ReportLocalImportDialog';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
   failureLine, failureReason, historyCardTitle, historyResult, isPlaySource, outcomeLine, rowState, rowTitle, yourColor, type RowState,
@@ -117,11 +116,8 @@ export default function ReportsPage() {
   const [moves, setMoves] = useState<ReportTaskMove[] | null>(null);
   const movesRequestRef = useRef(0);
 
-  const [localImportOpen, setLocalImportOpen] = useState(false);
   const [libraryImportOpen, setLibraryImportOpen] = useState(false);
-  const [localImporting, setLocalImporting] = useState<ImportAction>(null);
   const [libraryImporting, setLibraryImporting] = useState<ImportAction>(null);
-  const [localImportError, setLocalImportError] = useState<string | null>(null);
   const [libraryImportError, setLibraryImportError] = useState<string | null>(null);
   const [reportMenuOpen, setReportMenuOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -304,40 +300,11 @@ export default function ReportsPage() {
     else await loadGames();
   }, [loadGames, page, query, setSearchParams]);
 
-  const handleLocalImport = useCallback(async (payload: LocalImportPayload, reportType?: ReportType) => {
-    if (!isAuthenticated) return;
-    setLocalImporting(reportType ?? 'save');
-    setLocalImportError(null);
-    // 一记住 `created` 就知道 `create` 那一步过没过 —— 过了之后再炸(多半是
-    // `createForGame` 的 402 积分不足),对局已经存上了,不是「导入失败」,再点一次会重复导入。
-    let created: UserGameDetail | null = null;
-    try {
-      created = await UserGamesAPI.create(token, toLocalUserGameParams(payload));
-      await focusImportedGame(created);
-      if (reportType) await createForGame(created, reportType);
-      setLocalImportOpen(false);
-      setLocalImportError(null);
-      await refreshTasks();
-    } catch (error) {
-      console.warn('[review] import-local', error);
-      if (created) {
-        // 导入本身成功了 —— 建报告那一步失败已经由 `useReportTasks.createReport` 落到
-        // 「生成报告」告警行(它在 rethrow 之前设了 error/errorKind),这里不重复说一遍。
-        setLocalImportOpen(false);
-        setLocalImportError(null);
-      } else {
-        setLocalImportError(failureLine(translationRef.current('report:import_failed', '导入 SGF 失败'), requestFailureKind(error), translationRef.current));
-      }
-    } finally {
-      setLocalImporting(null);
-    }
-  }, [createForGame, focusImportedGame, isAuthenticated, refreshTasks, token]);
-
   const handleLibraryImport = useCallback(async (album: KifuAlbumSummary, reportType?: ReportType) => {
     if (!isAuthenticated) return;
     setLibraryImporting(reportType ?? 'save');
     setLibraryImportError(null);
-    // 同上:`created` 记住的是「对局存上了没有」,不是「这一趟全走完了没有」。
+    // `created` 记住的是「对局存上了没有」;报告失败不能让用户重复导入已保存的对局。
     let created: UserGameDetail | null = null;
     try {
       const albumDetail = await KifuAPI.getAlbum(album.id);
@@ -595,20 +562,12 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <ReportLocalImportDialog
-        open={localImportOpen}
-        loading={localImporting !== null}
-        error={localImportError}
-        onClose={() => { setLocalImportError(null); setLocalImportOpen(false); }}
-        onSubmit={handleLocalImport}
-      />
       <ReportLibraryImportDialog
         open={libraryImportOpen}
         loading={libraryImporting !== null}
         error={libraryImportError}
         onClose={() => { setLibraryImportError(null); setLibraryImportOpen(false); }}
         onImport={handleLibraryImport}
-        onImportLocal={() => { setLibraryImportOpen(false); setLocalImportError(null); setLocalImportOpen(true); }}
       />
       {/* 删除确认框:标题 / 正文 / 危险键三条**与 galaxy 同一组 key**
           (`galaxy/pages/report/ReportsPage.tsx:599-611`)—— 同一个对话框、同一个动作,

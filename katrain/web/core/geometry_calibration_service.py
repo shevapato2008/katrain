@@ -143,6 +143,8 @@ class GeometryCalibrationService:
         self._thread = None
         self._geometry_revision = 0
         self._detected_anchors = []
+        self._stability_last_seq = -1
+        self._stability_last_ts = 0.0
         self._drift_monitor = None
         self._drift_stop = threading.Event()
         # 外框重定位(V1)。selector 懒建(_get_selector);_relocating 是「正在重定位」的互斥标志,
@@ -779,8 +781,34 @@ class GeometryCalibrationService:
                 # staging cleanup must not make callers infer the opposite state.
                 logger.warning("legacy geometry staging cleanup failed at %s: %s", staging_path, cleanup_exc)
 
+    def _grab_stability_frame(self, gate: CalibrationStabilityGate, *, after_ts: float, settle_ms: float):
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled before stability capture")
+        cutoff = max(after_ts, self._stability_last_ts)
+        frame, seq, ts = self.capture.grab_fresh(after_ts=cutoff, settle_ms=settle_ms)
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled during stability capture")
+        if (
+            frame is None
+            or not isinstance(seq, (int, np.integer))
+            or isinstance(seq, (bool, np.bool_))
+            or seq <= self._stability_last_seq
+            or not isinstance(ts, (int, float, np.integer, np.floating))
+            or not np.isfinite(ts)
+            or ts <= cutoff + settle_ms / 1000.0
+        ):
+            gate.reset()
+            raise RuntimeError("no_frames")
+        self._stability_last_seq, self._stability_last_ts = seq, ts
+        return frame
+
     def _wait_lighting(self, reason: str, gate: CalibrationStabilityGate) -> None:
-        self.led.clear(strict=True)
+        gate.reset()
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled before lighting recheck")
+        cleared = self.led.clear(strict=True)
+        if not cleared.get("ok"):
+            raise RuntimeError("led_clear_failed")
         while not self._cancel_event.is_set():
             with self._lock:
                 self._status["phase"] = "lighting_paused"
@@ -791,33 +819,40 @@ class GeometryCalibrationService:
             self._lighting_recheck.clear()
             self._converge_exposure(force_auto=True)
             gate.reset()
-            frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
-            if frame is None:
-                reason = "frame_underexposed"
-                continue
+            frame = self._grab_stability_frame(
+                gate, after_ts=max(time.monotonic(), cleared["shown_at"]), settle_ms=0.0,
+            )
             whole_ok, whole_reason, _ = check_frame_exposure(frame)
             if not whole_ok:
                 reason = whole_reason
                 continue
-            visible, grid_reason = gate.observe(frame)
+            _visible, grid_reason = gate.observe(frame)
             if grid_reason == "board_occluded":
+                gate.reset()
                 return  # regular stable wait explains the occlusion after recheck
             issue, _stats = check_grid_lighting(frame, gate.quad)
             reason = issue
             if reason is None:
+                gate.reset()  # exposure changes require a complete new stable sequence
                 return
+        raise CalibrationCancelled("calibration cancelled during lighting recheck")
 
-    def _wait_stable(self, gate: CalibrationStabilityGate, resume_phase: str, current: int) -> None:
-        self.led.clear(strict=True)
-        gate.reset()
+    def _wait_stable(
+        self, gate: CalibrationStabilityGate, resume_phase: str, current: int, *, reset: bool = True,
+    ) -> None:
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled before stability wait")
+        cleared = self.led.clear(strict=True)
+        if not cleared.get("ok"):
+            gate.reset()
+            raise RuntimeError("led_clear_failed")
+        if reset:
+            gate.reset()
         last_logged = 0.0
-        with self._lock:
-            self._status["phase"] = "waiting_stable"
-            self._status["pause_reason"] = "board_motion"
+        cutoff = max(time.monotonic(), cleared["shown_at"])
         while not self._cancel_event.is_set():
-            frame, _seq, _ts = self.capture.grab_fresh(settle_ms=120.0)
-            if frame is None:
-                continue
+            frame = self._grab_stability_frame(gate, after_ts=cutoff, settle_ms=120.0)
+            cutoff = self._stability_last_ts
             whole_ok, whole_reason, _ = check_frame_exposure(frame)
             if not whole_ok:
                 self._wait_lighting(whole_reason, gate)
@@ -842,22 +877,30 @@ class GeometryCalibrationService:
             self._progress(resume_phase, current, 5)
             logger.info("geometry stability ready phase=%s point=%d motion=%s",
                         resume_phase, current, gate.last_motion_ratios)
-            gate.capture_motion.reset()
             return
+        raise CalibrationCancelled("calibration cancelled during stability wait")
 
     def _guard_live_frame(self, gate: CalibrationStabilityGate, frame, dark: bool) -> None:
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled before capture guard")
         whole_ok, whole_reason, _ = check_frame_exposure(frame)
         if not whole_ok:
+            gate.reset()
             raise LightingInterrupted(whole_reason)
         reason = gate.capture_reason(frame)
         if reason is not None:
             logger.info("geometry capture interrupted phase=%s point=%d reason=%s dark=%s",
                         self._status["phase"], self._status["progress"]["current"], reason, dark)
+            gate.reset()
+            with self._lock:
+                self._status["phase"] = "obstructed" if reason == "board_occluded" else "waiting_stable"
+                self._status["pause_reason"] = reason
             raise CalibrationInterrupted(reason)
         # Assess lighting on dark frames. The LED is intentionally absent from this sample.
         if dark:
             issue, _stats = check_grid_lighting(frame, gate.quad)
             if issue is not None:
+                gate.reset()
                 raise LightingInterrupted(issue)
 
     def _run(self) -> None:
@@ -878,8 +921,9 @@ class GeometryCalibrationService:
             )
             if hasattr(calibrator, "configure_live"):
                 gate = CalibrationStabilityGate()
+                self._stability_last_seq, self._stability_last_ts = -1, 0.0
                 calibrator.configure_live(
-                    before_capture=lambda phase, current, _total: self._wait_stable(gate, phase, current),
+                    before_capture=lambda phase, current, _total: self._wait_stable(gate, phase, current, reset=False),
                     frame_guard=lambda frame, dark: self._guard_live_frame(gate, frame, dark),
                     anchor_roi=gate.anchor_roi,
                     on_lighting=lambda reason: self._wait_lighting(reason, gate),

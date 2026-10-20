@@ -93,6 +93,14 @@ class BaselineNotEmpty(RuntimeError):
     """A held-out empty-board frame disagrees with the baseline burst."""
 
 
+class _UntrustedFrame(RuntimeError):
+    """A five-point capture did not return a new, settled camera frame."""
+
+
+class _CalibrationCancelled(RuntimeError):
+    """Stop five-point capture without retrying the current sample."""
+
+
 @dataclass(frozen=True)
 class LedCentroidResult:
     ok: bool
@@ -512,10 +520,11 @@ class LedGeometryCalibrator:
                         "geometry anchor (%d,%d) %s@%d: reason=clear_failed", row, col, color_name, level,
                     )
                     break
-                dark, _seq, _ts = self.capture.grab_fresh(
+                dark, _seq, _ts = self._grab_fresh(
                     after_ts=cleared.get("shown_at"), settle_ms=self.settle_ms)
                 if dark is not None:
                     self._guard_frame(dark, dark=True)
+                self._check_cancel()
                 shown = self.led.set_rgb_points(
                     [{"row": row, "col": col, "rgb": self._rgb_for(channel, level)}], strict=True)
                 if not shown.get("ok"):
@@ -525,11 +534,12 @@ class LedGeometryCalibrator:
                         "geometry anchor (%d,%d) %s@%d: reason=show_failed", row, col, color_name, level,
                     )
                     break
-                lit, _seq, lit_ts = self.capture.grab_fresh(
+                lit, _seq, lit_ts = self._grab_fresh(
                     after_ts=shown.get("shown_at"), settle_ms=self.settle_ms)
                 if lit is not None:
                     self._guard_frame(lit, dark=False)
                 lit = self._hold_min(lit, lit_ts)
+                self._check_cancel()
                 if dark is None or lit is None:
                     attempts.append({"row": row, "col": col, "color": color_name,
                                      "level": level, "reason": "no_frame"})
@@ -539,6 +549,7 @@ class LedGeometryCalibrator:
                     break
                 last_capture = (dark, lit, channel, color_name, level)
                 result = detect_led_centroid(dark, lit, channel=channel, roi=roi)
+                self._check_cancel()
                 attempts.append({
                     "row": row, "col": col, "color": color_name, "level": level,
                     "ok": result.ok, "peak": result.peak, "area": result.area,
@@ -551,6 +562,7 @@ class LedGeometryCalibrator:
                 )
                 if result.ok:
                     point = (float(result.centroid[0]), float(result.centroid[1]))
+                    self._check_cancel()
                     self.anchor_observer(row, col, point, color_name)
                     return result.centroid
                 if result.reason != "low_signal":
@@ -583,18 +595,28 @@ class LedGeometryCalibrator:
     def _guard_frame(self, frame: np.ndarray, *, dark: bool) -> None:
         """The legacy thirteen-point path has no live guard."""
 
+    def _check_cancel(self) -> None:
+        """The legacy path retains its existing cancellation boundaries."""
+
+    def _grab_fresh(self, *, after_ts=None, settle_ms=150.0):
+        return self.capture.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+
     def _hold_min(self, lit, lit_ts):
         """灯亮着的时候再连拍 HOLD_EXTRA_FRAMES 帧,逐像素取最小 —— 只有每一帧都亮的地方留下来。"""
         if lit is None:
             return None
         frames, ts = [lit], lit_ts
         for _ in range(getattr(self, "hold_extra_frames", HOLD_EXTRA_FRAMES)):
-            frame, _seq, ts = self.capture.grab_fresh(after_ts=ts, settle_ms=HOLD_STEP_MS)
+            frame, _seq, ts = self._grab_fresh(after_ts=ts, settle_ms=HOLD_STEP_MS)
             if frame is None:
                 break
             self._guard_frame(frame, dark=False)
+            self._check_cancel()
             frames.append(frame)
-        return np.minimum.reduce(frames)
+        self._check_cancel()
+        held = np.minimum.reduce(frames)
+        self._check_cancel()
+        return held
 
     def _build_lock(self, fit, frames, detected, attempts):
         M = np.asarray(fit.M, np.float64)
@@ -675,10 +697,34 @@ class FivePointLedGeometryCalibrator(LedGeometryCalibrator):
     def _guard_frame(self, frame: np.ndarray, *, dark: bool) -> None:
         self.frame_guard(frame, dark)
 
+    def _check_cancel(self) -> None:
+        if self.cancel_event.is_set():
+            raise _CalibrationCancelled()
+
+    def _grab_fresh(self, *, after_ts=None, settle_ms=150.0):
+        self._check_cancel()
+        cutoff = max(time.monotonic() if after_ts is None else after_ts, self._last_frame_ts)
+        frame, seq, ts = self.capture.grab_fresh(after_ts=cutoff, settle_ms=settle_ms)
+        self._check_cancel()
+        if (
+            frame is None
+            or not isinstance(seq, (int, np.integer))
+            or seq <= self._last_frame_seq
+            or not isinstance(ts, (int, float, np.integer, np.floating))
+            or not np.isfinite(ts)
+            or ts <= cutoff + settle_ms / 1000.0
+        ):
+            raise _UntrustedFrame()
+        self._last_frame_seq, self._last_frame_ts = seq, ts
+        self._frame_shape = frame.shape[:2]
+        return frame, seq, ts
+
     def calibrate(self) -> CalibrationResult:
         detected = []
         attempts = []
         total = len(self.anchors)
+        self._last_frame_seq, self._last_frame_ts = -1, float("-inf")
+        self._frame_shape = None
         try:
             for index, (row, col) in enumerate(self.anchors):
                 phase = "flashing_corners" if index < 4 else "verifying"
@@ -706,16 +752,18 @@ class FivePointLedGeometryCalibrator(LedGeometryCalibrator):
                                                      attempts=tuple(attempts))
                         logger.info("geometry anchor (%d,%d) unresolved; retrying the unconfirmed point", row, col)
                         continue
+                    self._check_cancel()
                     detected.append(((row, col), point))
                     break
                 if self.cancel_event.is_set():
                     return CalibrationResult(ok=False, reason="cancelled", attempts=tuple(attempts))
 
             # The center was never included in the fit; it validates the four corners.
-            frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
-            if frame is None:
+            self._check_cancel()
+            if self._frame_shape is None:
                 return CalibrationResult(ok=False, reason="no_frames", attempts=tuple(attempts))
-            fit = fit_five_point_geometry(detected, frame_shape=frame.shape[:2], out_size=self.out_size)
+            fit = fit_five_point_geometry(detected, frame_shape=self._frame_shape, out_size=self.out_size)
+            self._check_cancel()
             if not fit.ok:
                 return CalibrationResult(ok=False, reason=fit.reason, fit=fit, attempts=tuple(attempts))
 
@@ -729,25 +777,35 @@ class FivePointLedGeometryCalibrator(LedGeometryCalibrator):
                     if not cleared.get("ok"):
                         return CalibrationResult(ok=False, reason="led_clear_failed", fit=fit,
                                                  attempts=tuple(attempts))
-                    # CameraHub can miss one sample when another reader briefly
-                    # holds its lifecycle lock. Retry the whole empty-board set.
+                    # Check every sample before asking the camera for another;
+                    # interruptions discard this whole set but retain the five anchors.
                     frames = []
                     for burst_attempt in range(3):
-                        frames = self.capture.grab_burst(n=8)
-                        if len(frames) == 8 or self.cancel_event.is_set():
+                        frames = []
+                        try:
+                            for _ in range(8):
+                                self._check_cancel()
+                                frame, _seq, _ts = self._grab_fresh(
+                                    after_ts=cleared.get("shown_at"), settle_ms=100.0)
+                                self._guard_frame(frame, dark=True)
+                                self._check_cancel()
+                                frames.append(frame)
+                        except _UntrustedFrame:
+                            logger.warning("geometry baseline set %d/3 returned %d/8 trusted frames",
+                                           burst_attempt + 1, len(frames))
+                            continue
+                        if len(frames) == 8:
                             break
-                        logger.warning("geometry baseline burst %d/3 returned %d/8 frames",
-                                       burst_attempt + 1, len(frames))
-                    if self.cancel_event.is_set():
-                        break
+                    self._check_cancel()
                     if len(frames) != 8:
                         return CalibrationResult(ok=False, reason="baseline_frames_missing", fit=fit,
                                                  attempts=tuple(attempts))
-                    for baseline_frame in frames:
-                        self._guard_frame(baseline_frame, dark=True)
+                    self._check_cancel()
                     lock = self._build_lock(fit, frames, detected, attempts)
+                    self._check_cancel()
                     return CalibrationResult(ok=True, lock=lock, fit=fit, attempts=tuple(attempts))
                 except BaselineNotEmpty as exc:
+                    self._check_cancel()
                     baseline_failures += 1
                     if baseline_failures >= 3:
                         raise
@@ -758,6 +816,10 @@ class FivePointLedGeometryCalibrator(LedGeometryCalibrator):
                 except CalibrationInterrupted:
                     continue
             return CalibrationResult(ok=False, reason="cancelled", attempts=tuple(attempts))
+        except _CalibrationCancelled:
+            return CalibrationResult(ok=False, reason="cancelled", attempts=tuple(attempts))
+        except _UntrustedFrame:
+            return CalibrationResult(ok=False, reason="no_frames", attempts=tuple(attempts))
         finally:
             try:
                 self.led.clear(strict=True)

@@ -658,3 +658,122 @@ def test_source_initial_cannot_omit_saved_marked_background_identity_to_attach_i
     proof = build(value, "白三角，黑2。", presentation_plan=plan, source_identity=source)
     assert proof["status"] == "pending"
     assert "initial" in proof["reason"].lower()
+
+
+def test_symbol_background_reveal_lands_without_claiming_an_ordered_move():
+    value = diagram()
+    value["labels"] = {}
+    value["shapes"] = {"1,1": "triangle"}
+    proof = build(value, "黑三角。")
+    assert proof["status"] == "complete", proof
+    frame = proof["frames"][1]
+    assert frame["currentMove"] is None and frame["last"] is None
+    assert frame["appeared_stones"] == [{"color": "B", "point": [1, 1]}]
+    from katrain.web.tutorials.media_render import _stone_click_times, PLACEMENT_DURATION_MS
+
+    assert _stone_click_times(proof["frames"], proof, 10000) == [proof["events"][0]["at_ms"] + PLACEMENT_DURATION_MS]
+
+
+def test_source_bound_numeric_choice_reveal_has_no_last_move_ring():
+    value = diagram()
+    value["labels"] = {"0,1": "1", "2,1": "1"}
+    source = {"source_pointer": "/choices/0", "image_sha256": "a" * 64}
+    plan = {
+        "schema_version": 1,
+        "annotation_object_ids": ["labels:0,1", "labels:2,1"],
+        "bindings": [{"span": [0, 3], "object_ids": ["labels:0,1"]}, {"span": [4, 7], "object_ids": ["labels:2,1"]}],
+    }
+    proof = build(value, "左侧1，右侧1。", presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "complete", proof
+    assert all(frame["currentMove"] is None and frame["last"] is None for frame in proof["frames"])
+    assert all(frame["appeared_stones"] for frame in proof["frames"][1:])
+    numbered = build(diagram(), "白1，黑2，白3，黑4，白5。")
+    assert numbered["frames"][1]["currentMove"] == {"kind": "move", "color": "W", "point": [0, 1]}
+    assert numbered["frames"][1]["last"] == [0, 1]
+
+
+def source_unnumbered_A_capture():
+    initial = {"B": [[4, 15], [3, 16], [5, 16]], "W": [[2, 13], [3, 15], [2, 16], [7, 16]]}
+    value = {
+        "schema_version": 2,
+        "size": 19,
+        "unknown_stones": [],
+        "stones": {"B": [*initial["B"], [4, 17]], "W": [*initial["W"], [3, 17]]},
+        "labels": {"3,17": "1", "4,17": "2"},
+        "letters": {"4,16": "A"},
+        "shapes": {"3,16": "triangle"},
+        "replay": {"status": "needs_calibration"},
+    }
+    source = {"source_pointer": "/chapters/1/intro/0/elements/1", "image_sha256": "a" * 64}
+    references = [
+        ("黑三角", "shapes:3,16"),
+        ("白1", "labels:3,17"),
+        ("A", "letters:4,16"),
+        ("黑2", "labels:4,17"),
+        ("白棋在A落子", "replay:3"),
+    ]
+    text, bindings = "", []
+    for reference, object_id in references:
+        start = len(text)
+        text += reference + "，"
+        bindings.append({"span": [start, len(text) - 1], "object_ids": [object_id]})
+    plan = {
+        "schema_version": 1,
+        "bindings": bindings,
+        "source_replay": {
+            **source,
+            "evidence_description": "Source says W1 atari, B2 ko instead of A, then white A captures black triangle.",
+            "initial": {
+                "stones": initial,
+                "to_play": "W",
+                "unknown_stones": [],
+                "known_region": {"col": 0, "row": 0, "cols": 19, "rows": 19},
+                "shapes": value["shapes"],
+            },
+            "moves": [
+                {"kind": "move", "color": "W", "point": [3, 17], "printed_number": "1"},
+                {"kind": "move", "color": "B", "point": [4, 17], "printed_number": "2"},
+                {
+                    "kind": "move",
+                    "color": "W",
+                    "point": [4, 16],
+                    "source_note": "原文白棋在A提去三角黑子；此动作没有印刷编号，不补造白3。",
+                },
+            ],
+        },
+    }
+    return value, text, plan, source
+
+
+def test_source_unnumbered_A_action_uses_explicit_step_and_real_rules_without_inventing_printed_number():
+    value, text, plan, source = source_unnumbered_A_capture()
+    before = copy.deepcopy(value)
+    proof = build(value, text, presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "complete", proof
+    assert proof["mode"] == "source_replay"
+    assert value == before
+    triangle = proof["frames"][1]
+    assert triangle["currentMove"] is None and triangle["last"] is None
+    assert triangle["appeared_stones"] == [{"color": "B", "point": [3, 16]}]
+    assert [3, 16] in proof["frames"][2]["payload"]["stones"]["B"]  # Correct atari target exists before W1.
+    letter = proof["frames"][3]
+    assert letter["currentMove"] is None and letter["last"] is None
+    final = proof["frames"][-1]
+    assert final["currentMove"]["kind"] == "move" and final["currentMove"]["printed_number"] is None
+    assert final["last"] == [4, 16] and final["captured"] == [[3, 16]]
+    assert [4, 16] in final["payload"]["stones"]["W"] and [3, 16] not in final["payload"]["stones"]["B"]
+    assert final["payload"]["shapes"] == {}
+    assert final["payload"]["labels"] == value["labels"]
+    assert final["payload"]["letters"] == {"4,16": "A"}
+    action = next(obj for obj in proof["objects"] if obj["id"] == "replay:3")
+    assert action["number"] is None and action["value"] is None and action["replay_step"] == 3
+
+
+def test_source_unnumbered_action_requires_source_note_and_explicit_spoken_binding():
+    value, text, plan, source = source_unnumbered_A_capture()
+    no_note = copy.deepcopy(plan)
+    no_note["source_replay"]["moves"][-1].pop("source_note")
+    assert build(value, text, presentation_plan=no_note, source_identity=source)["status"] == "pending"
+    no_span = copy.deepcopy(plan)
+    no_span["bindings"] = no_span["bindings"][:-1]
+    assert build(value, text, presentation_plan=no_span, source_identity=source)["status"] == "pending"

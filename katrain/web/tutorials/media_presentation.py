@@ -27,6 +27,7 @@ class PresentationArrow(BaseModel):
 
 
 class SourceReplayMove(ReplayMove):
+    printed_number: str | None = None
     source_note: str | None = Field(default=None, min_length=1, max_length=4000)
 
 
@@ -194,11 +195,12 @@ def _source_recording_frames(payload, objects, source):
         for obj in objects
         if obj["kind"] == "labels" and obj.get("role") != "annotation" and any(c.isdigit() for c in obj["value"])
     ]
-    numbers = [_number(move.get("printed_number")) for move in moves]
-    if any(number is None or number < 1 for number in numbers) or numbers != list(
-        range(numbers[0], numbers[0] + len(numbers))
+    numbers = [_number(move["printed_number"]) for move in moves if move.get("printed_number") is not None]
+    if numbers and (
+        any(number is None or number < 1 for number in numbers)
+        or numbers != list(range(numbers[0], numbers[0] + len(numbers)))
     ):
-        raise ValueError("Source recording actions require unique contiguous positive printed numbers")
+        raise ValueError("Source recording printed numbers must be unique, positive and contiguous")
     for obj in numbered:
         if not re.fullmatch(r"[0-9]+", obj["value"]) or not obj["stone_color"]:
             raise ValueError("Saved historical number must identify a known occupied point")
@@ -545,7 +547,15 @@ def _frames(payload, objects, events, real_frames):
         ):
             move = copy.deepcopy(real_frames[current_rule_step]["currentMove"])
             captured = copy.deepcopy(real_frames[current_rule_step]["captured"])
-        elif len(appeared) == 1:
+        elif (
+            not real_frames
+            and len(appeared) == 1
+            and event
+            and any(
+                by_id[object_id].get("number") is not None and by_id[object_id].get("role") != "annotation"
+                for object_id in event["object_ids"]
+            )
+        ):
             move = {"kind": "move", **appeared[0]}
         frames.append(
             {

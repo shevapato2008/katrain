@@ -180,6 +180,92 @@ def test_sync_uses_fixed_ssh_command_and_stdin(monkeypatch):
     assert json.loads(captured["input"])["manifest"] == manifest
 
 
+@pytest.mark.parametrize(
+    "returncode,stdout,expected",
+    [
+        (
+            2,
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": "invalid research: incremental research differs from reviewed text or sources",
+                }
+            ),
+            "receiver exited with status 2: invalid research: incremental research differs from reviewed text or sources",
+        ),
+        (
+            2,
+            json.dumps({"status": "error", "error": "reviewed text conflicts with an existing qualified name"}),
+            "receiver exited with status 2: reviewed text conflicts with an existing qualified name",
+        ),
+        (
+            2,
+            json.dumps(
+                {"status": "error", "error": "first-pass normalized name collision: jp:" + "private-name" * 1000}
+            ),
+            "receiver exited with status 2: first-pass normalized name collision: jp (name omitted)",
+        ),
+        (
+            2,
+            json.dumps({"status": "error", "error": "postgresql://user:password@db/kifu"}),
+            "receiver exited with status 2",
+        ),
+        (
+            2,
+            json.dumps({"status": "error", "error": "invalid research: token=private-key"}),
+            "receiver exited with status 2",
+        ),
+        (2, json.dumps({"status": "error", "error": "unrecognized rejection"}), "receiver exited with status 2"),
+        (2, "Traceback: postgresql://user:password@db/kifu", "receiver exited with status 2"),
+        (2, json.dumps({"status": "error", "error": {"key": "private-key"}}), "receiver exited with status 2"),
+        (2, json.dumps(["private-key"]), "receiver exited with status 2"),
+        (
+            255,
+            json.dumps({"status": "error", "error": "reviewed text conflicts with an existing qualified name"}),
+            "receiver exited with status 255",
+        ),
+    ],
+    ids=[
+        "research",
+        "qualified-name",
+        "bounded-collision",
+        "dsn",
+        "unknown-research",
+        "unknown",
+        "traceback",
+        "non-string",
+        "non-object",
+        "ssh-error",
+    ],
+)
+def test_sync_reports_only_safe_native_receiver_errors(monkeypatch, returncode, stdout, expected):
+    from katrain.kifu_ingest.sync import send_verified_manifest
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    manifest = {"games": [{"source_key": "19x19", "source_item_id": "1"}]}
+    digest = canonical_sha256(manifest)
+    monkeypatch.setattr(
+        "subprocess.run",
+        lambda *a, **k: SimpleNamespace(returncode=returncode, stdout=stdout, stderr="PRIVATE KEY: ssh-secret"),
+    )
+    with pytest.raises(RuntimeError) as caught:
+        send_verified_manifest(
+            manifest,
+            digest,
+            {
+                "status": "verified",
+                "manifest_sha256": digest,
+                "games": 1,
+                "checks": [{"album_id": 7, "lang": lang} for lang in ("cn", "tw", "jp", "ko", "en")],
+            },
+            host="prod.example",
+            key_path="/run/secrets/key",
+            known_hosts="/run/secrets/hosts",
+        )
+    assert str(caught.value) == expected
+    assert len(str(caught.value)) <= 384
+
+
 def test_receiver_timeout_uses_remaining_round_budget(monkeypatch):
     from katrain.cron.jobs import kifu_ingest
 

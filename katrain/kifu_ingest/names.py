@@ -333,6 +333,25 @@ class QwenNameService:
             digits = re.findall(r"\d+", key)
             if any(not all(d in value for d in digits) for value in displays.values()):
                 raise NameRejected("event year or round number lost")
+            english = displays["en"]
+            # Finite known mistranslations only; do not infer a catalog identity
+            # from these terms or turn the event parser into a full glossary.
+            if re.search(r"日本棋[圣聖][战戰戦]", key) and (
+                not re.search(r"\bKisei\b", english, re.I)
+                or "本因坊" not in key
+                and re.search(r"\bHoninbo\b", english, re.I)
+                or "名人" not in key
+                and re.search(r"\bMeijin\b", english, re.I)
+            ):
+                raise NameRejected("English Japanese Kisei title was substituted")
+            if re.findall(r"(?<!\d)(\d+)\s*[强強]", key) == ["8"] and re.search(
+                r"\bRound\s+(?:of\s+)?16\b", english, re.I
+            ):
+                raise NameRejected("English 8-player stage contradicts Round of 16")
+            if "青白江" in key and re.search(r"\bQingshuijiang\b", english, re.I):
+                raise NameRejected("English Qingbaijiang place name was misspelled")
+            if re.search(r"[烂爛]柯[杯盃]", key) and re.search(r"\bLangke\b", english, re.I):
+                raise NameRejected("English Lanke cup name was misspelled")
         return candidate
 
     async def translate_and_review(
@@ -413,6 +432,14 @@ class QwenNameService:
                     "Before returning JSON, check all five displays for every token. "
                     "Keep the cn original unchanged unless an orthographic conversion is explained."
                 )
+                prompt["english_event_rules"] = [
+                    "For Japanese Kisei (日本棋圣战/日本棋聖戦), use Kisei. Honinbo means 本因坊 and Meijin means "
+                    "名人; do not insert either unless the original explicitly names it.",
+                    "If the only numbered knockout stage is 8强/8強, it is an 8-player stage: "
+                    "Quarterfinal or Round of 8, never Round of 16, even with a Top 8 suffix.",
+                    "青白江 is Qingbaijiang, never Qingshuijiang.",
+                    "烂柯杯/爛柯盃 uses Lanke, never Langke. Preserve the original domestic/world/team scope.",
+                ]
             repair_reason = None
             for repair in range(2):
                 try:

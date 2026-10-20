@@ -15,6 +15,45 @@ from katrain.web.kifu.name_candidates import canonical_sha256
 
 
 LANGUAGES = ("cn", "tw", "jp", "ko", "en")
+_SAFE_RECEIVER_ERRORS = frozenset(
+    {
+        "invalid research: incremental research differs from reviewed text or sources",
+        "invalid research: retained original differs from output",
+        "invalid research: incremental renewal must preserve a pinned prior display",
+        "invalid research: raw player needs readable literal and signed finite scope",
+        "reviewed text conflicts with an existing qualified name",
+        "raw-player scope renewal needs qualified native prior proof",
+        "decision cannot replace an unqualified evidence-backed name",
+        "incoming name decisions have conflicting displays",
+        "first pass cannot replace verified or evidence-backed name",
+        "generated raw-player scope refresh original source meaning differs",
+        "generated raw scope refresh source meaning changed",
+        "publication key already names a different manifest",
+    }
+)
+
+
+def _safe_receiver_error(stdout):
+    """Return known native guard text only; never forward arbitrary remote output."""
+    if not isinstance(stdout, str) or len(stdout) > 65536:
+        return None
+    try:
+        response = json.loads(stdout)
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(response, dict) or response.get("status") != "error":
+        return None
+    error = response.get("error")
+    if not isinstance(error, str):
+        return None
+    if error in _SAFE_RECEIVER_ERRORS:
+        return error
+    collision = re.match(r"(first-pass|cross-bundle) normalized name collision: (cn|tw|jp|ko|en):", error)
+    if collision:
+        # Names and all other dynamic suffixes remain private, even if an
+        # unexpected remote exception appends credentials or a traceback.
+        return f"{collision[1]} normalized name collision: {collision[2]} (name omitted)"
+    return None
 
 
 def validate_test_verification(manifest, digest, verification):
@@ -80,7 +119,9 @@ def send_verified_manifest(manifest, manifest_sha256, test_verification, *, host
     )
     process = subprocess.run(command, input=payload, text=True, capture_output=True, timeout=timeout, check=False)
     if process.returncode:
-        raise RuntimeError(f"receiver exited with status {process.returncode}")
+        reason = _safe_receiver_error(process.stdout) if process.returncode == 2 else None
+        message = f"receiver exited with status {process.returncode}"
+        raise RuntimeError((f"{message}: {reason}" if reason else message)[:384])
     try:
         response = json.loads(process.stdout)
     except (ValueError, TypeError) as exc:

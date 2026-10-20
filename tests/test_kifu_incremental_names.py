@@ -249,6 +249,94 @@ def test_event_producer_prompt_lists_exact_digit_tokens_for_every_language():
     assert "required_digit_tokens literally" in body["messages"][0]["content"]
 
 
+@pytest.mark.parametrize(
+    "key,wrong_english,correct_english,reason",
+    [
+        (
+            "第51期日本棋圣战循环圈AB组加赛",
+            "51st Honinbo Tournament Meijin League AB Group Playoff",
+            "51st Japanese Kisei League AB Group Playoff",
+            "Japanese Kisei",
+        ),
+        (
+            "第51期日本棋圣战循环圈AB组加赛",
+            "51st Kisei Honinbo League AB Group Playoff",
+            "51st Japanese Kisei League AB Group Playoff",
+            "Japanese Kisei",
+        ),
+        (
+            "第51期日本棋圣战循环圈AB组加赛",
+            "51st Kisei Meijin League AB Group Playoff",
+            "51st Japanese Kisei League AB Group Playoff",
+            "Japanese Kisei",
+        ),
+        (
+            "第12届国手山脉杯世界赛8强赛",
+            "12th Guoshou Mountain Range Cup World Tournament Round of 16 (Top 8)",
+            "12th Guoshou Mountain Range Cup World Tournament Quarterfinal (Top 8)",
+            "8-player stage",
+        ),
+        (
+            "2026青白江城厢古城杯世界女子联赛巅峰决战季军战首尔-扇兴",
+            "2026 Qingshuijiang Chengxiang Ancient Town Cup Women's League Third-Place Match Seoul-Senko",
+            "2026 Qingbaijiang Chengxiang Ancient Town Cup Women's League Third-Place Match Seoul-Senko",
+            "Qingbaijiang",
+        ),
+        (
+            "第11届衢州烂柯杯中国冠军战8强赛",
+            "11th Quzhou Langke Cup Chinese Championship Quarterfinal (Top 8)",
+            "11th Quzhou Lanke Cup Chinese Championship Quarterfinal (Top 8)",
+            "Lanke",
+        ),
+    ],
+    ids=["wrong-title", "added-honinbo", "added-meijin", "wrong-round", "wrong-place", "wrong-lanke"],
+)
+def test_known_event_english_mistranslation_repairs_before_reviewer(key, wrong_english, correct_english, reason):
+    candidate = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, "en": correct_english},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    wrong = {**candidate, "displays": {**candidate["displays"], "en": wrong_english}}
+    with pytest.raises(NameRejected, match=reason):
+        QwenNameService._candidate(wrong, "raw_event", key, [])
+    service, client, calls = mock_service([wrong, candidate, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_event", key, [{**ITEM, "slot": "event"}])
+
+    decision = run(check())
+    prompts = [json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls]
+    assert len(calls) == 3
+    assert reason in prompts[1]["repair_reason"]
+    assert "candidate" not in prompts[1]
+    assert prompts[2]["candidate"] == candidate
+    assert decision["displays"]["en"] == correct_english
+    assert all(reason in " ".join(prompt["english_event_rules"]) for prompt in prompts)
+
+
+@pytest.mark.parametrize(
+    "key,english",
+    [
+        ("第51期中国棋圣战", "51st Chinese Qisheng Tournament"),
+        ("第51期日本本因坊战", "51st Japanese Honinbo Tournament"),
+        ("第51期日本棋圣战与名人战交流赛", "51st Japanese Kisei and Meijin Exhibition"),
+        ("第12届国手山脉杯世界赛16强赛", "12th World Tournament Round of 16"),
+        ("第12届国手山脉杯世界赛16强至8强", "12th World Tournament Round of 16 to Top 8"),
+    ],
+)
+def test_known_event_english_rules_keep_other_titles_and_multiple_stages_for_review(key, english):
+    candidate = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, "en": english},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    assert QwenNameService._candidate(candidate, "raw_event", key, []) == candidate
+
+
 def test_token_budget_stops_before_another_paid_request():
     service, client, calls = mock_service([CANDIDATE, {"decision": "approve"}], max_total_tokens=1200)
 

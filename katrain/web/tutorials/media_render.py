@@ -91,7 +91,7 @@ def _validate_inputs(narration, board_payload, frames, speech_timing, step_cues,
     if not isinstance(board_payload.get("stones"), dict):
         raise ValueError("A saved static board is required")
     status = step_cues.get("status")
-    if step_cues.get("mode") in ("presentation", "replay", "static"):
+    if step_cues.get("mode") in ("presentation", "replay", "source_replay", "static"):
         from katrain.web.tutorials.media_timing import build_step_cues
 
         proof = build_step_cues(

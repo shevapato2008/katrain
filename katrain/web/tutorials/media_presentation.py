@@ -7,7 +7,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from katrain.web.tutorials.replay import replay_frames, validate_replay
+from katrain.web.tutorials.replay import replay_frames, validate_replay, recording_source_frames
+from katrain.web.tutorials.workbench_models import ReplayInitial, ReplayMove
 
 
 class PresentationBinding(BaseModel):
@@ -25,12 +26,27 @@ class PresentationArrow(BaseModel):
     image_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
+class SourceReplayMove(ReplayMove):
+    source_note: str | None = Field(default=None, min_length=1, max_length=4000)
+
+
+class SourceReplay(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    schema_version: Literal[1] = 1
+    initial: ReplayInitial
+    moves: list[SourceReplayMove] = Field(min_length=1, max_length=512)
+    source_pointer: str = Field(min_length=1, max_length=2048)
+    image_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    evidence_description: str = Field(min_length=1, max_length=8000)
+
+
 class PresentationPlan(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     schema_version: Literal[1]
     bindings: list[PresentationBinding] = Field(max_length=512)
     arrows: list[PresentationArrow] = Field(default_factory=list, max_length=128)
     annotation_object_ids: list[str] = Field(default_factory=list, max_length=512)
+    source_replay: SourceReplay | None = None
 
 
 SHAPE_WORDS = {
@@ -133,6 +149,12 @@ def discover_objects(payload, presentation_plan=None, source_identity=None):
         if arrow["from"] == arrow["to"]:
             raise ValueError("Supplemental arrow must have different endpoints")
         objects.append({"id": arrow["id"], "kind": "arrow", "arrow": arrow, "stone_color": None, "point": None})
+    source_replay = (plan or {}).get("source_replay")
+    if source_replay and (
+        not source_identity
+        or any(source_replay[k] != source_identity.get(k) for k in ("source_pointer", "image_sha256"))
+    ):
+        raise ValueError("Local recording sequence does not match the server-owned figure source identity")
     if len({obj["id"] for obj in objects}) != len(objects):
         raise ValueError("Presentation object IDs must be unique")
     return objects, plan
@@ -143,13 +165,88 @@ def _number(value):
     return int(match[1]) if match else None
 
 
-def _prepare_objects(payload, objects):
+def _source_recording_frames(payload, objects, source):
+    """Validate source/printed actions before invoking the unchanged shared Go rules."""
+    from katrain.web.tutorials.models import StrictBoardPayload
+
+    moves, initial = source["moves"], source["initial"]
+    if initial.get("unknown_stones") or not initial.get("known_region") or initial.get("to_play") not in ("B", "W"):
+        raise ValueError("Source recording requires a known local initial position and explicit turn/extent")
+    numbered = [
+        obj
+        for obj in objects
+        if obj["kind"] == "labels" and obj.get("role") != "annotation" and any(c.isdigit() for c in obj["value"])
+    ]
+    numbers = [_number(move.get("printed_number")) for move in moves]
+    if any(number is None or number < 1 for number in numbers) or numbers != list(
+        range(numbers[0], numbers[0] + len(numbers))
+    ):
+        raise ValueError("Source recording actions require unique contiguous positive printed numbers")
+    for obj in numbered:
+        if not re.fullmatch(r"[0-9]+", obj["value"]) or not obj["stone_color"]:
+            raise ValueError("Saved historical number must identify a known occupied point")
+        matches = [
+            move
+            for move in moves
+            if move.get("printed_number") == obj["value"]
+            and move.get("point") == obj["point"]
+            and move["color"] == obj["stone_color"]
+        ]
+        if len(matches) != 1:
+            raise ValueError("Source action does not match a saved historical number, color and coordinate")
+    for move in moves:
+        printed = any(
+            move.get("printed_number") == obj["value"]
+            and move.get("point") == obj["point"]
+            and move["color"] == obj["stone_color"]
+            for obj in numbered
+        )
+        if not printed and not (move.get("source_note") or "").strip():
+            raise ValueError("Every source action absent from saved numbered stones requires an explicit source_note")
+    for color in ("B", "W"):
+        saved = {tuple(p) for p in payload["stones"].get(color, [])}
+        setup = {tuple(p) for p in initial["stones"].get(color, [])}
+        actions = {tuple(move["point"]) for move in moves if move["color"] == color and move.get("point") is not None}
+        if not setup <= saved or not (saved - actions) <= setup:
+            raise ValueError(
+                "Source initial position must preserve saved background and cannot invent replacement stones"
+            )
+    for field in ("labels", "letters", "shapes"):
+        for key, value in (initial.get(field) or {}).items():
+            if (payload.get(field) or {}).get(key) != value:
+                raise ValueError("Source initial annotations must match saved annotation identities")
+    # Strict schema/coordinate validation uses a calibration draft so it cannot
+    # accidentally assert that the book's historical chart is the rule final board.
+    adapter = {
+        "schema_version": 2,
+        "size": payload["size"],
+        "stones": copy.deepcopy(payload["stones"]),
+        "unknown_stones": [],
+        "source_region": {**initial["known_region"], "confirmed": True},
+        "viewport": copy.deepcopy(payload.get("viewport")),
+        "replay": {
+            "status": "needs_calibration",
+            "initial": initial,
+            "moves": [{key: value for key, value in move.items() if key != "source_note"} for move in moves],
+            "evidence": {
+                "kind": "source",
+                "source_pointer": source["source_pointer"],
+                "description": source["evidence_description"],
+            },
+        },
+    }
+    adapter = StrictBoardPayload.model_validate(adapter).model_dump()
+    adapter["replay"]["status"] = "complete"  # In-memory source adapter; never saved or returned as board authority.
+    return recording_source_frames(adapter)
+
+
+def _prepare_objects(payload, objects, source_replay=None):
     """Keep complete real replay as authoritative; otherwise validate printed sequence."""
     if payload.get("unknown_stones"):
         raise ValueError("Unknown stones require calibration before recording")
-    if validate_replay(payload)["status"] == "complete":
-        frames = replay_frames(payload)
-        moves = payload["replay"]["moves"]
+    if source_replay or validate_replay(payload)["status"] == "complete":
+        frames = _source_recording_frames(payload, objects, source_replay) if source_replay else replay_frames(payload)
+        moves = source_replay["moves"] if source_replay else payload["replay"]["moves"]
         ordered = []
         for step, move in enumerate(moves, 1):
             matching = [
@@ -177,7 +274,7 @@ def _prepare_objects(payload, objects):
                 objects.append(obj)
             obj.update(replay_step=step, number=_number(move.get("printed_number")))
             ordered.append(obj)
-        return "replay", ordered, frames
+        return ("source_replay" if source_replay else "replay"), ordered, frames
     numbered = []
     for obj in objects:
         if (
@@ -311,8 +408,17 @@ def _validate_order(ordered, objects, events):
                 and not obj.get("replay_step")
                 and obj.get("scope") != "initial"
                 and obj["point"] == numbered["point"]
-                and obj.get("stone_color")
+                and obj.get("stone_color") == numbered.get("stone_color")
             ):
+                owners = [
+                    candidate
+                    for candidate in ordered
+                    if candidate["kind"] == "labels"
+                    and candidate["point"] == obj["point"]
+                    and candidate["stone_color"] == obj["stone_color"]
+                ]
+                if owners and owners[0]["id"] != numbered["id"]:
+                    continue
                 if by_id[obj["id"]]["at_ms"] < by_id[numbered["id"]]["at_ms"]:
                     raise ValueError("Annotation would reveal a numbered stone before its numbered/replay cue")
 
@@ -320,6 +426,11 @@ def _validate_order(ordered, objects, events):
 def _frames(payload, objects, events, real_frames):
     by_id = {obj["id"]: obj for obj in objects}
     visible = set()
+    stone_labels = {
+        (tuple(obj["point"]), obj["stone_color"]): obj
+        for obj in objects
+        if obj["kind"] == "labels" and obj.get("replay_step") and obj["point"] is not None
+    }
     all_marked = {
         (obj["stone_color"], tuple(obj["point"]))
         for obj in objects
@@ -366,6 +477,10 @@ def _frames(payload, objects, events, real_frames):
             key = ",".join(map(str, obj["point"]))
             if obj["stone_color"] and obj["point"] not in base["stones"][obj["stone_color"]]:
                 continue
+            if real_frames and obj["kind"] in ("letters", "shapes") and obj.get("scope") != "initial":
+                owner = stone_labels.get((tuple(obj["point"]), obj["stone_color"]))
+                if owner and (real_frames[current_rule_step]["payload"].get("labels") or {}).get(key) != owner["value"]:
+                    continue  # A source marker belongs to this printed stone, not a later replacement.
             if real_frames and (obj.get("scope") == "initial" or obj.get("replay_step")):
                 rule_mapping = real_frames[current_rule_step]["payload"].get(field) or {}
                 if rule_mapping.get(key) != obj["value"]:
@@ -439,7 +554,7 @@ def build_presentation(payload, narration, timing, presentation_plan=None, sourc
     try:
         objects, plan = discover_objects(payload, presentation_plan, source_identity)
         result["presentation_plan"] = plan
-        mode, ordered, real_frames = _prepare_objects(payload, objects)
+        mode, ordered, real_frames = _prepare_objects(payload, objects, (plan or {}).get("source_replay"))
         result.update(mode=mode, objects=objects)
         events = _events(objects, plan, narration, timing)
         _validate_order(ordered, objects, events)

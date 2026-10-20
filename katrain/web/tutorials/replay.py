@@ -73,7 +73,12 @@ def _uncertain_move(board, point, color, size, region, unknown):
 
 
 def validate_replay(payload: dict, *, _frames=None) -> dict:
-    """Return computed playability and issues, including for an incomplete draft."""
+    """Return saved-replay playability, including exact static-final agreement."""
+    return _validate_rule_sequence(payload, _frames=_frames)
+
+
+def _validate_rule_sequence(payload: dict, *, _frames=None, historical_chart=False) -> dict:
+    """Shared rule execution; only the recording entry accepts a historical printed chart."""
     issues = []
     replay = payload.get("replay")
     result = lambda: {"status": "needs_calibration" if issues else "complete", "issues": issues}
@@ -212,7 +217,7 @@ def validate_replay(payload: dict, *, _frames=None) -> dict:
         snapshot(index, item, captured)
     else:
         final = _board(payload["stones"])
-        if source:
+        if source and not historical_chart:
             for row in range(source["row"], source["row"] + source["rows"]):
                 for col in range(source["col"], source["col"] + source["cols"]):
                     point = (col, row)
@@ -230,6 +235,20 @@ def replay_frames(payload: dict) -> list[dict]:
     result = validate_replay(payload, _frames=frames)
     if result["status"] != "complete":
         raise ValueError("; ".join(result["issues"]))
+    return frames
+
+
+def recording_source_frames(payload: dict) -> list[dict]:
+    """Execute a source-bound local recording adapter without claiming saved replay validity.
+
+    The media caller validates immutable chart/step/source correspondence first. The
+    adapter exists only in memory: the printed chart can retain captured historical
+    stones while these frames retain the rule engine's real final position.
+    """
+    frames = []
+    proof = _validate_rule_sequence(payload, _frames=frames, historical_chart=True)
+    if proof["status"] != "complete":
+        raise ValueError("; ".join(proof["issues"]))
     return frames
 
 

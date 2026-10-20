@@ -379,3 +379,205 @@ def test_initial_annotation_mentioned_after_capture_or_replacement_is_rejected()
     assert result["status"] == "pending"
     assert result["frames"] == []
     assert "lifetime" in result["reason"]
+
+
+def historical_capture_source():
+    value = captured_number_board()
+    value["stones"]["W"] = [[0, 0]]
+    value["labels"]["0,0"] = "1"  # The book retains the captured historical white stone.
+    source = {"source_pointer": "/local/0", "image_sha256": "a" * 64}
+    replay = copy.deepcopy(value["replay"])
+    value["replay"] = {"status": "needs_calibration", "initial": None, "moves": []}
+    plan = {
+        "schema_version": 1,
+        "bindings": [{"span": [0, 2], "object_ids": ["labels:0,0"]}, {"span": [3, 5], "object_ids": ["labels:0,1"]}],
+        "source_replay": {
+            "schema_version": 1,
+            "initial": replay["initial"],
+            "moves": replay["moves"],
+            **source,
+            "evidence_description": "Source numbered local construction; black 2 captures white 1.",
+        },
+    }
+    return value, plan, source
+
+
+def test_source_bound_local_sequence_captures_historical_printed_stone_without_mutating_saved_replay():
+    from katrain.web.tutorials.replay import validate_replay
+
+    value, plan, source = historical_capture_source()
+    before = copy.deepcopy(value)
+    proof = build(value, "白1，黑2。", presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "complete", proof
+    assert proof["mode"] == "source_replay"
+    assert proof["frames"][1]["payload"]["labels"] == {"0,0": "1"}
+    assert proof["frames"][-1]["captured"] == [[0, 0]]
+    assert proof["frames"][-1]["payload"]["stones"]["W"] == []
+    assert proof["frames"][-1]["payload"]["labels"] == {"0,1": "2"}
+    assert value == before and validate_replay(value)["status"] == "needs_calibration"
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "no_source",
+        "foreign_source",
+        "missing_background",
+        "invented_initial",
+        "wrong_saved_number",
+        "unknown",
+        "outside_known_region",
+    ],
+)
+def test_source_local_sequence_rejects_unbound_or_replaced_source_data(change):
+    value, plan, source = historical_capture_source()
+    if change == "no_source":
+        source = None
+    elif change == "foreign_source":
+        source["image_sha256"] = "b" * 64
+    elif change == "missing_background":
+        plan["source_replay"]["initial"]["stones"]["B"] = []
+    elif change == "invented_initial":
+        plan["source_replay"]["initial"]["stones"]["B"].append([8, 8])
+    elif change == "wrong_saved_number":
+        plan["source_replay"]["moves"][0]["printed_number"] = "9"
+    elif change == "unknown":
+        plan["source_replay"]["initial"]["unknown_stones"] = [{"point": [8, 8], "color": None}]
+    elif change == "outside_known_region":
+        plan["source_replay"]["initial"]["known_region"] = {"col": 1, "row": 0, "cols": 8, "rows": 9}
+    proof = build(value, "白1，黑2。", presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "pending"
+    assert proof["frames"] == []
+
+
+def test_source_noted_missing_number_reuses_captured_point_and_preserves_historical_chart():
+    # Source-supported local sequence: black 9 captures white 4; black 11 fills that point after white 10.
+    points = [
+        [2, 15],
+        [4, 16],
+        [6, 16],
+        [2, 16],
+        [1, 16],
+        [3, 15],
+        [2, 17],
+        [2, 14],
+        [3, 16],
+        [1, 15],
+        [2, 16],
+        [4, 14],
+        [4, 17],
+        [2, 10],
+    ]
+    moves = [
+        {"kind": "move", "color": "B" if i % 2 == 0 else "W", "point": p, "printed_number": str(i + 1)}
+        for i, p in enumerate(points)
+    ]
+    moves[10]["source_note"] = "黑十一粘劫：在已被黑9提去的白4[2,16]处连接。"
+    saved = [(i + 1, m) for i, m in enumerate(moves) if i != 10]
+    value = {
+        "schema_version": 2,
+        "size": 19,
+        "unknown_stones": [],
+        "stones": {c: [m["point"] for _, m in saved if m["color"] == c] for c in ("B", "W")},
+        "labels": {",".join(map(str, m["point"])): str(n) for n, m in saved},
+        "replay": {"status": "needs_calibration"},
+    }
+    source = {"source_pointer": "/figures/7", "image_sha256": "a" * 64}
+    text = "，".join(("黑" if m["color"] == "B" else "白") + m["printed_number"] for m in moves) + "。"
+    spans = []
+    cursor = 0
+    for n, m in enumerate(moves, 1):
+        end = cursor + 1 + len(m["printed_number"])
+        object_id = "replay:11" if n == 11 else "labels:" + ",".join(map(str, m["point"]))
+        spans.append({"span": [cursor, end], "object_ids": [object_id]})
+        cursor = end + 1
+    plan = {
+        "schema_version": 1,
+        "bindings": spans,
+        "source_replay": {
+            "schema_version": 1,
+            "initial": {
+                "stones": {"B": [], "W": []},
+                "to_play": "B",
+                "unknown_stones": [],
+                "known_region": {"col": 0, "row": 9, "cols": 8, "rows": 10},
+            },
+            "moves": moves,
+            **source,
+            "evidence_description": "Original local numbered construction and 黑十一粘劫 source note.",
+        },
+    }
+    before = copy.deepcopy(value)
+    speech = timing(text)
+    speech["duration_ms"] = 20000
+    proof = build_step_cues(value, text, speech, presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "complete", proof
+    assert proof["frames"][9]["captured"] == [[2, 16]]
+    assert [2, 16] not in proof["frames"][9]["payload"]["stones"]["W"]
+    assert proof["frames"][11]["payload"]["labels"]["2,16"] == "11"
+    assert [2, 16] in proof["frames"][11]["payload"]["stones"]["B"]
+    assert value == before
+    value["shapes"] = {"2,16": "triangle"}
+    plan["bindings"][3]["object_ids"].append("shapes:2,16")
+    marked = build_step_cues(value, text, speech, presentation_plan=plan, source_identity=source)
+    assert marked["status"] == "complete", marked
+    assert marked["frames"][4]["payload"]["shapes"] == {"2,16": "triangle"}
+    assert marked["frames"][9]["payload"]["shapes"] == {}
+    del plan["source_replay"]["moves"][10]["source_note"]
+    assert build_step_cues(value, text, speech, presentation_plan=plan, source_identity=source)["status"] == "pending"
+
+
+def test_source_recording_renderer_accepts_recomputed_rule_frames_and_rejects_restored_historical_stone(tmp_path):
+    from katrain.web.tutorials.media_render import _validate_inputs
+
+    value, plan, source = historical_capture_source()
+    text = "白1，黑2。"
+    speech = timing(text)
+    proof = build_step_cues(value, text, speech, presentation_plan=plan, source_identity=source)
+    audio = tmp_path / "audio.mp3"
+    audio.write_bytes(b"audio")
+    assert _validate_inputs(text, value, proof["frames"], speech, proof, audio, "2d") == speech["duration_ms"]
+    forged = copy.deepcopy(proof["frames"])
+    forged[-1]["payload"]["stones"]["W"] = [[0, 0]]
+    with pytest.raises(ValueError, match="proof|snapshot"):
+        _validate_inputs(text, value, forged, speech, proof, audio, "2d")
+
+
+def test_historical_marked_stone_does_not_transfer_to_later_same_color_stone_at_same_point():
+    value, plan, source = historical_capture_source()
+    for color, points in {"W": [[1, 1], [0, 2]], "B": [[8, 8]]}.items():
+        value["stones"][color].extend(points)
+    value["labels"]["8,8"] = "4"
+    value["shapes"] = {"0,0": "triangle"}
+    plan["source_replay"]["initial"]["stones"]["W"] = [[1, 1], [0, 2]]
+    plan["source_replay"]["moves"].extend(
+        [
+            {
+                "kind": "pass",
+                "color": "W",
+                "point": None,
+                "printed_number": "3",
+                "source_note": "Source explicitly passes.",
+            },
+            {"kind": "move", "color": "B", "point": [8, 8], "printed_number": "4"},
+            {
+                "kind": "move",
+                "color": "W",
+                "point": [0, 0],
+                "printed_number": "5",
+                "source_note": "Source returns to white 1 after intervening steps.",
+            },
+        ]
+    )
+    text = "白1，黑2，白3，黑4，白5，白三角。"
+    plan["bindings"] = [
+        {"span": [0, 2], "object_ids": ["labels:0,0"]},
+        {"span": [3, 5], "object_ids": ["labels:0,1"]},
+        {"span": [6, 8], "object_ids": ["replay:3"]},
+        {"span": [9, 11], "object_ids": ["labels:8,8"]},
+        {"span": [12, 14], "object_ids": ["replay:5"]},
+        {"span": [15, 18], "object_ids": ["shapes:0,0"]},
+    ]
+    result = build(value, text, presentation_plan=plan, source_identity=source)
+    assert result["status"] == "pending"
+    assert "lifetime" in result["reason"]

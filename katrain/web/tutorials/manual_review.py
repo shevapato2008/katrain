@@ -97,26 +97,58 @@ def video_artifact(figure, mode, output_profile=None):
 
 def presentation_source_identity(figure, plan, *, db=None):
     """Read current server provenance at both generation and manual approval boundaries."""
-    if not plan or not (plan.get("arrows") or plan.get("annotation_object_ids")):
+    if not plan or not (plan.get("arrows") or plan.get("annotation_object_ids") or plan.get("source_replay")):
         return None
-    from katrain.web.tutorials.source_models import TutorialSourceFigure, TutorialSourcePage
+    from katrain.web.tutorials.source_models import TutorialSourceBook, TutorialSourceFigure, TutorialSourcePage
+    from katrain.web.tutorials.recognition_models import TutorialRecognitionCandidate
+    from katrain.web.core.models_db import TutorialSection, TutorialChapter
 
     db = db if db is not None else object_session(figure)
     if db is None:
         raise ValueError("Current source identity requires an attached database session")
-    rows = db.execute(
-        select(TutorialSourceFigure, TutorialSourcePage)
-        .join(
-            TutorialSourcePage,
-            (TutorialSourcePage.source_book_id == TutorialSourceFigure.source_book_id)
-            & (TutorialSourcePage.page == TutorialSourceFigure.page),
+    book_id = db.scalar(
+        select(TutorialChapter.book_id)
+        .join(TutorialSection, TutorialSection.chapter_id == TutorialChapter.id)
+        .where(TutorialSection.id == figure.section_id)
+    )
+    if book_id is None:
+        raise ValueError("Current figure book is missing; source identity cannot be verified")
+    sources = list(db.scalars(select(TutorialSourceFigure).where(TutorialSourceFigure.figure_id == figure.id)))
+    candidate_id = (figure.recognition_debug or {}).get("applied_candidate_id")
+    if candidate_id is not None:
+        candidate = db.get(TutorialRecognitionCandidate, candidate_id)
+        source = (
+            db.get(TutorialSourceFigure, candidate.source_figure_id)
+            if candidate and candidate.source_figure_id
+            else None
         )
-        .where(
-            TutorialSourceFigure.figure_id == figure.id,
-            TutorialSourceFigure.page == figure.page,
-            TutorialSourcePage.page_image_path == figure.page_image_path,
+        if (
+            not candidate
+            or not source
+            or candidate.figure_id != figure.id
+            or candidate.source_book_id != source.source_book_id
+            or candidate.page != source.page
+            or candidate.source_pointer != source.source_pointer
+        ):
+            raise ValueError("Applied candidate source identity conflicts with the current figure")
+        sources.append(source)
+    rows = []
+    for source in sources:
+        source_book = db.get(TutorialSourceBook, source.source_book_id)
+        page = db.scalar(
+            select(TutorialSourcePage).where(
+                TutorialSourcePage.source_book_id == source.source_book_id, TutorialSourcePage.page == source.page
+            )
         )
-    ).all()
+        if (
+            not source_book
+            or source_book.book_id != book_id
+            or source.page != figure.page
+            or not page
+            or page.page_image_path != figure.page_image_path
+        ):
+            raise ValueError("Registered source book/page/image conflicts with the current figure")
+        rows.append((source, page))
     identities = {(source.source_pointer, page.image_sha256) for source, page in rows}
     if len(identities) != 1:
         raise ValueError(

@@ -1089,3 +1089,153 @@ def test_approval_revalidates_registered_source_after_video_publication(media):
     )
     assert response.status_code == 422, response.text
     assert "source" in response.json()["detail"].lower()
+
+
+def test_source_recording_api_reuses_audio_and_publishes_distinct_rule_mode_with_saved_board_intact(media):
+    from test_tutorial_media_presentation import historical_capture_source
+    from katrain.web.tutorials.source_models import TutorialSourceBook, TutorialSourceFigure, TutorialSourcePage
+    from katrain.web.tutorials.manual_review import make_review, board_content_sha256, video_problem
+
+    value, plan, source = historical_capture_source()
+    client, factory, worker, *_ = media
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        figure.board_payload = value
+        figure.narration = "白1，黑2。"
+        figure.page_image_path = "tutorial_assets/test/source.png"
+        figure.board_review = make_review({"username": "reviewer"}, board_content_sha256(figure))
+        approval = copy.deepcopy(figure.board_review)
+        db.add(
+            TutorialSourceBook(
+                id=1,
+                source_namespace="test",
+                catalog_id="test",
+                book_id=1,
+                source_json_sha256="b" * 64,
+                assets_manifest_sha256="c" * 64,
+                source_metadata={},
+                matching_evidence={},
+            )
+        )
+        db.flush()
+        db.add(
+            TutorialSourceFigure(
+                source_book_id=1,
+                source_figure_id="one",
+                source_pointer=source["source_pointer"],
+                page=1,
+                figure_id=1,
+                source_metadata={},
+            )
+        )
+        db.add(
+            TutorialSourcePage(
+                source_book_id=1,
+                page=1,
+                page_image_path=figure.page_image_path,
+                image_sha256=source["image_sha256"],
+                text_fragments=[],
+                page_context_text="",
+            )
+        )
+        db.commit()
+    for kind in ("audio", "video"):
+        response = client.post(
+            "/api/admin/tutorials/figures/1/media-tasks",
+            json={"kind": kind, "expected_updated_at": current_version(factory), "presentation_plan": plan},
+        )
+        assert response.status_code == 202, response.text
+        task_id = response.json()["task"]["id"]
+        worker.run_next()
+        with factory() as db:
+            task = db.get(models_db.TutorialMediaTask, task_id)
+            assert task.status == "succeeded", task.error
+            figure = db.get(models_db.TutorialFigure, 1)
+            assert figure.board_payload == value and figure.board_review == approval
+            assert task.result["step_cues"]["mode"] == "source_replay"
+            if kind == "video":
+                assert task.result["generated_audio"] is False
+                assert task.result["video"]["playback_mode"] == "source_replay"
+                assert task.result["step_cues"]["frames"][-1]["captured"] == [[0, 0]]
+                assert video_problem(figure, "2d", GALAXY) is None
+
+
+@pytest.mark.parametrize("invalid", [None, "no_applied", "pointer", "page", "foreign_book"])
+def test_source_identity_accepts_only_current_applied_candidate_graph_for_extra_figures(media, invalid):
+    from katrain.web.tutorials.source_models import TutorialSourceBook, TutorialSourceFigure, TutorialSourcePage
+    from katrain.web.tutorials.recognition_models import TutorialRecognitionCandidate
+    from katrain.web.tutorials.manual_review import presentation_source_identity
+
+    client, factory, *_ = media
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        figure.page_image_path = "tutorial_assets/test/source.png"
+        if invalid == "foreign_book":
+            db.add(
+                models_db.TutorialBook(
+                    id=2, category="布局", subcategory="test", title="foreign", slug="foreign", asset_dir="other"
+                )
+            )
+            db.flush()
+        db.add(
+            TutorialSourceBook(
+                id=1,
+                source_namespace="test",
+                catalog_id="test",
+                book_id=2 if invalid == "foreign_book" else 1,
+                source_json_sha256="b" * 64,
+                assets_manifest_sha256="c" * 64,
+                source_metadata={},
+                matching_evidence={},
+            )
+        )
+        db.flush()
+        db.add(
+            TutorialSourceFigure(
+                id=1,
+                source_book_id=1,
+                source_figure_id="primary",
+                source_pointer="/primary",
+                page=1,
+                figure_id=None,
+                source_metadata={},
+            )
+        )
+        db.add(
+            TutorialSourcePage(
+                source_book_id=1,
+                page=1,
+                page_image_path=figure.page_image_path,
+                image_sha256="a" * 64,
+                text_fragments=[],
+                page_context_text="",
+            )
+        )
+        db.flush()
+        db.add(
+            TutorialRecognitionCandidate(
+                id=1,
+                source_book_id=1,
+                dataset="test",
+                recognition_id="extra-1",
+                figure_id=1,
+                source_figure_id=1,
+                source_pointer="/foreign" if invalid == "pointer" else "/primary",
+                page=2 if invalid == "page" else 1,
+                source_content_sha256="e" * 64,
+                raw_result={},
+                board_payload=figure.board_payload,
+            )
+        )
+        if invalid != "no_applied":
+            figure.recognition_debug = {**(figure.recognition_debug or {}), "applied_candidate_id": 1}
+        db.commit()
+        plan = {"source_replay": {"source_pointer": "/primary", "image_sha256": "a" * 64}}
+        if invalid:
+            with pytest.raises(ValueError):
+                presentation_source_identity(figure, plan, db=db)
+        else:
+            assert presentation_source_identity(figure, plan, db=db) == {
+                "source_pointer": "/primary",
+                "image_sha256": "a" * 64,
+            }

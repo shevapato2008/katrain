@@ -355,6 +355,7 @@ def _frames(payload, objects, events, real_frames):
         arrows = [by_id[key]["arrow"] for key in sorted(visible) if by_id[key]["kind"] == "arrow"]
         if arrows or any(obj["kind"] == "arrow" for obj in objects):
             base["presentation_arrows"] = arrows
+        shown_now = set()
         for object_id in sorted(visible):
             obj = by_id[object_id]
             kind = obj["kind"]
@@ -370,6 +371,15 @@ def _frames(payload, objects, events, real_frames):
                 if rule_mapping.get(key) != obj["value"]:
                     continue  # The source annotation was captured, replaced, or has not been placed.
             base[field][key] = obj["value"]
+            shown_now.add(object_id)
+        if event:
+            for object_id in event["object_ids"]:
+                obj = by_id[object_id]
+                needs_marker = obj["kind"] in ("labels", "letters", "shapes") or (
+                    obj["kind"] == "replay" and obj.get("number") is not None and obj["point"] is not None
+                )
+                if needs_marker and object_id not in shown_now:
+                    raise ValueError("Presentation cue is outside the source annotation's valid lifetime: " + object_id)
         appeared = (
             [
                 {"color": color, "point": point}

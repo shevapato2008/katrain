@@ -367,3 +367,15 @@ def test_chinese_alias_boundaries_do_not_match_prefix_of_another_number():
     for number, text in [(1, "黑十一"), (2, "黑二十三"), (11, "黑一百一十一"), (1, "黑一2")]:
         assert _matches({"number": number, "stone_color": "B"}, text) == []
     assert build(diagram(), "白一到白五。")["status"] == "pending"
+
+
+def test_initial_annotation_mentioned_after_capture_or_replacement_is_rejected():
+    value = captured_number_board()
+    value["replay"]["initial"]["stones"]["W"] = [[0, 0]]
+    value["replay"]["initial"]["shapes"] = {"0,0": "triangle"}
+    value["replay"]["initial"]["to_play"] = "B"
+    value["replay"]["moves"] = value["replay"]["moves"][1:]
+    result = build(value, "黑2，白三角。")
+    assert result["status"] == "pending"
+    assert result["frames"] == []
+    assert "lifetime" in result["reason"]

@@ -9,7 +9,7 @@
 **Tech Stack:** 现有 Python 3.11、HTTPX、SQLAlchemy、PostgreSQL、APScheduler、SGF parser、catalog 五语解析器、Docker；使用已获用户授权的 Qwen Plus API，专用持久账本每日最多 100,000 token。
 
 **PRD:** [prd.md](./prd.md)
-**日期/状态：** 2026-10-20 执行快照。合格A的两库回填及Web发布已完成；hourly已启用，但首轮61788于11:35失败，72盘发布包停在名称依据一致性校验，正在修复并核对实际回执，尚未计作本轮两库同步完成。下方带时间的执行记录保留为历史，不能作为最新总数。用户指定本目录覆盖 writing-plans 默认存放位置。
+**日期/状态：** 2026-10-20 执行快照。合格A的两库回填及Web发布已完成；hourly已启用，首轮61788于11:35失败后已定位并修复复用译名元信息约束。原包保留、单条真实重审及原子恢复完成；运行61884正在发布修正后的72盘，仍按实际回执计数。下方带时间的执行记录保留为历史，不能作为最新总数。用户指定本目录覆盖 writing-plans 默认存放位置。
 
 ### 当前状态快照
 
@@ -20,9 +20,9 @@
 | A first pass | 原始 5,536 盘中 5,279 盘形成审核绑定就绪包，257 盘隔离 | 就绪数不是入库数；隔离盘不公开 |
 | A TEST | 2026-10-20 10:20 已验证全部55包、5,279条来源：5,276新增、3精确复用；最终12盘/60次五语详情及公开卡片抽检通过；总176,549、公开176,290 | TEST wide160,261/176,549=90.77%；strict公开完整卡片176,290/176,549=99.85% |
 | A PROD | 全部55包、5,279来源已验证，亦为5,276新增、3精确复用；最终12盘/60次五语详情及公开卡片抽检通过；总176,549、公开176,290 | strict99.85%；fresh原生快照及已验证增量对账所得wide160,775/176,549=91.07%，详情见release-acceptance-20261020.json |
-| B 真实小样 | A以外另1盘两端prod_synced；TEST173066/PROD173046；五语、列表、幂等重放及cron重启恢复通过；257条A隔离已真实记入TEST任务表、无虚假发布字段/Stage/目录变更；4条旧prompt失败已恢复downloaded | 首轮61788失败，冻结72盘进入retry_wait，错误为incremental research differs from reviewed text or sources；新9条metadata/SGF棋手不一致及2条名称方法/数字失败独立隔离 |
-| 代码与部署 | feature/develop已发布914527449，父main2b6d62d9；两端Web及TESTcron均914；无显示构造、JP/CN字体、NullEngine开局落子实际镜像验收通过；两站HTML/资源、五语、俄语英语回退、中英同人搜索及公网6端点200 | PROD曾回滚的启动回归已修复并通过独立Astra审核，最终不是b894；详见验收报告 |
-| 持续调度 | 2026-10-20 11:08启用，Qwen Plus每UTC日100,000 token、3,600秒、每轮最多100盘/20新名称；unless-stopped、持久目录和显式Compose override生效，正常分析固定GPU1:8002 | 首轮42次付费调用、32,986 tokens已结算；正在修复冻结包发布校验，旧单盘闭环不冒充本轮成功 |
+| B 真实小样 | A以外另1盘两端prod_synced；TEST173066/PROD173046；五语、列表、幂等重放及cron重启恢复通过；257条A隔离已真实记入TEST任务表、无虚假发布字段/Stage/目录变更；4条旧prompt失败已恢复downloaded | 首轮61788失败后已保留原包、真实重审决策17、原子切换72项到新包；61884正在原生发布校验。9条metadata/SGF不一致及2条名称失败独立隔离 |
+| 代码与部署 | feature/develop已发布823ef149f，父main1bb48f15；两端Web914、TESTcron的两文件生成约束修复为b9d8bb901；无显示构造、JP/CN字体、NullEngine开局落子实际镜像验收通过；两站HTML/资源、五语、俄语英语回退、中英同人搜索及公网6端点200 | PROD曾回滚的启动回归已修复并通过独立Astra审核，最终不是b894；详见验收报告 |
+| 持续调度 | 2026-10-20 11:08启用，Qwen Plus每UTC日100,000 token、3,600秒、每轮最多100盘/20新名称；unless-stopped、持久目录和显式Compose override生效，正常分析固定GPU1:8002 | 真实单条修正另2次调用、1,296 token，当日累计44次/34,282 token；已恢复原暂停设置并运行61884，未冒称72盘已同步 |
 
 临时 A ops 两路只读校验试验已收敛，不宣称加速。后续 A 采用已独立审核的全量原生事务检查、全量提交后 DB 对账和代表 HTTP 样本，实际口径见文末；B 产品代码保持逐盘 HTTP 验证。最终 Web 替换前保存最新 `/tmp/kifu-backfill` 与四份实际 ops/helper，不把临时工具烘入产品镜像。
 
@@ -48,7 +48,7 @@ A 如有新增代码或正式同步需求，仍须完成相应审核与安全发
 - [x] **A1 · 整理：** 固定 5,536 盘来源清单与原始哈希；解析 SGF，拆分姓名/当时段位，处理 EV/GN 选择和格式异常；按无歧义证据关联/归并棋手、赛事类型和届次，轮次单独保存。输出解析成功、修正、重复、冲突和待处理数量。
 - [x] **A2 · 五语：** 对清洗后的独立棋手及赛事核心/原文标题建立缺口清单，先复用旧库合格 `cn/tw/jp/ko/en` 词典与已有模板；并行处理缺口，保存维基/棋院链接或如实标记直接翻译、转写方法。已完成合格 5,279 盘的五语绑定，另 257 盘明确隔离，未将其冒充已译完成。
 - [x] **A3 · 审核与生成包：** 新名称一次独立审核并检查身份、五语完整性、数字/年份/轮次；按各棋局绑定名称和证据生成固定发布包。校验全部条目都有可解释状态；未完整条目不公开，不伪报整批完成。
-- [x] **A4 · 入库：** 合格5,279条来源在两库均55包verified，5,276新增/3复用；257条隔离明确保留原因。最终有限HTTP抽检通过；原始5,536清单和范围未变化。双口径分别列出，PROD fresh wide扫描未完不伪报。
+- [x] **A4 · 入库：** 合格5,279条来源在两库均55包verified，5,276新增/3复用；257条隔离明确保留原因。最终有限HTTP抽检通过；原始5,536清单和范围未变化。双口径分别列出；PROD长扫描已完成，并按实际新增ID及绑定核对增量，详见验收报告。
 
 - [x] 用户已明确授权开始实施，并更正确认 5,536 盘未整理、未翻译。A 由当前会话先整理和补齐名称；B 的模型提供方、预算与自动同步策略单独确定，未经确认不擅自购买或切换付费服务。
 - [x] 独立 GPT-6 Astra、`max` effort 已完成两轮 PRD/计划审核，修改后通过；结论见本文末尾。本次事实更正不追加第三轮计划审核。
@@ -426,3 +426,11 @@ PROD：同上；本批新增/复用及两库差异
 - 实际TEST d2 Web的Galaxy/Kiosk HTML及入口JS/CSS返回200；cn/tw/jp/ko/en详情齐全，ru名称等于en；吴清源与Go Seigen均1231盘且首屏ID相同。该检查不是浏览器渲染或20次P95基准。
 - PROD d2镜像真实启动反复Exit102后立即仅回滚Web至原b894，health正常、restart_count0，A数据保留；未重建PG/GPU/PROD cron。隔离镜像复现无网络/凭据/业务挂载：b894没有Kivy/KivyMD、构造成功；d2含Kivy2.3.1/KivyMD0.104.1，构造触发X server错误并以102退出。b894..d2的该源码块本身未变，不能误称names.py新增GUI导入。
 - 最小修复删除WebKaTrain构造时无后续消费者的MDApp.gui注册，保留Lang/Theme直接字体路径，不捕获SystemExit掩盖问题；新子进程回归禁止GUI/socket/DB并真实构造、切JP/CN字体、NullEngine开局、落子及读取状态。旧版Exit102，修后2 passed；独立Astra max复跑2 passed/1.22s、diff-check通过并APPROVE。后续仅按已发布commit做COPY-only镜像overlay及实际无显示构造验收，不重装依赖/重建未改前端。
+
+## Current recovery status: 2026-10-20 13:20 CST (in progress)
+
+The prior enabled run61884 failed after actual TEST880 publication and 360 detail checks. PROD receiver returned exit2, with no native receipt for that digest. The old receiver discarded its specific JSON guard error; no unsupported cause is claimed.
+
+Independent semantic review identified 8 event decisions to correct. Only future kifu_ingest scheduling is paused. Native TEST undo succeeded for batches880/881/882 (461 reverted after-images), restoring176549 total /176290 public. Original publish, verification and undo receipts and all72 SGFs remain intact. The temporary72 increment is excluded from current coverage. Current two metrics are the A closepoint table above.
+
+Changed8 decisions require real new producer and exact independent review; the other10 decisions remain unchanged. A distinct immutable package and native TEST then PROD verification are still pending. Code389b56702 and parentmain b27724c5 are published; its cron image is built, not yet selected. Safe diagnostic and narrow known-event guards passed103 focused tests and independent Astra review. Native identity/source/collision guards remain in place.

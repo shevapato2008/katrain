@@ -1,9 +1,9 @@
 {
-  "recorded_at": "2026-10-20T03:16:53.383656+00:00",
+  "recorded_at": "2026-10-20T05:18:02.280760+00:00",
   "code_publication": {
-    "feature": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
-    "develop": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
-    "parent_main": "2b6d62d9e5327fd1d6bc99a21f23c79ada15961b"
+    "feature": "389b56702b86063e073af13ed53b7035356dc14c",
+    "develop": "389b56702b86063e073af13ed53b7035356dc14c",
+    "parent_main": "b27724c5be8df62bdddec6724aa752eba66c9d6c"
   },
   "A": {
     "inventory": 5536,
@@ -159,10 +159,11 @@
     }
   },
   "deployed_runtime": {
-    "source": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
     "TEST_Web_image": "sha256:4dc8d19a7027c3774112d9eb60b1768721fce0f1e167b7473458d20e8dbfe97b",
     "PROD_Web_image": "sha256:bbcdd5b1b90731d4781abfca13d0fbe6416b158d0a8f84cf6d39d205e95e7f0e",
-    "TEST_cron_image": "sha256:136846c59bf00f4118064141ae60cddfe9f07896adc6f2ff04d1170152fc96ed"
+    "TEST_cron_image": "sha256:0d6e49501b86cbdcc5fd080d2208d645b13d86671ac73a5dd6f3dce037c6d1f0",
+    "Web_source": "9145274496ace58dfb8dbd0ce9bb9c50a80bdfc3",
+    "TEST_cron_source": "b9d8bb90155c3ebfa2dae835f7f562c62db850a9"
   },
   "Web_acceptance": {
     "TEST": {
@@ -433,12 +434,31 @@
     "prompt_only_records_restored_to_downloaded": 4,
     "prior_real_test_to_prod_sample": "prod_synced; five languages, public list, idempotent replay and cron recreation passed",
     "latest_observed_run": {
+      "id": 61884,
+      "started_at": "2026-10-20T04:01:31+00:00",
+      "status": "failed",
+      "current_run_error_count": 0,
+      "phase": "retry_wait; resume_phase=test_verified",
+      "frozen_games": 72,
+      "paid_tokens_observed_today": 34282,
+      "paid_calls_today": 44,
+      "observed_at": "2026-10-20T04:25:52+00:00",
+      "inserted_TEST": 72,
+      "reused_TEST": 0,
+      "finished_at": "2026-10-20T04:55:56.406838+00:00",
+      "error": "PROD receiver exited with status 2; original JSON guard error was discarded",
+      "inserted_TEST_current": 0,
+      "inserted_PROD": 0,
+      "test_original_publication_undone": true
+    },
+    "note": "Only future kifu_ingest runs paused during bounded recovery. Normal cron and GPU jobs continue. Native TEST880 actually undone; original receipt and 360-check verification remain in history. Old PROD package has no applied receipt.",
+    "first_enabled_run": {
       "id": 61788,
       "started_at": "2026-10-20T03:09:07.181583+00:00",
-      "status": "running",
-      "current_run_error_count": 0,
+      "status": "failed",
+      "current_run_error_count": 12,
       "paid_tokens_observed_today": 32986,
-      "phase": "names_ready",
+      "phase": "retry_wait",
       "frozen_games": 72,
       "frozen_batch": "fa32f3c4-bb8b-431e-859f-aa51cfed8238",
       "new_metadata_quarantines": 9,
@@ -448,8 +468,182 @@
       "downloaded_this_run": 100,
       "recovered_prior_downloads": 4,
       "metadata_conflict_diagnosis": "6 color reversals, 2 different name characters, 1 malformed SGF property fragment; no harmless rank/space-only cases",
-      "diagnostic_report": "B-nine-player-conflicts-readonly.json"
+      "diagnostic_report": "B-nine-player-conflicts-readonly.json",
+      "finished_at": "2026-10-20T03:35:25+00:00",
+      "error": "invalid research: incremental research differs from reviewed text or sources",
+      "new_published_games": 0
     },
-    "note": "First enabled iteration is still being observed; this record does not claim its publication is complete."
+    "frozen_recovery": {
+      "old_key": "19x19-batch-dd279a0c3a6e99f61304827b",
+      "new_key": "19x19-recovery-a5425ac6c5b3d96d9bc23d3b",
+      "new_manifest_sha256": "ae8fd9d9f9f4a0bde3ea72e20b74c64b0b3e041848dbb5f50d73a3b7d935e019",
+      "games_unchanged": 72,
+      "decisions_unchanged": 17,
+      "decision_reproduced_and_reviewed": 17,
+      "key_reproduced": "姜勋",
+      "paid_calls_added": 2,
+      "tokens_added": 1296,
+      "old_file_unchanged": true,
+      "native_guards_unchanged": true,
+      "helper_independent_review": "GPT-6 Astra max APPROVE",
+      "helper_tests": "10 passed in16.79s",
+      "dry_run": "passed",
+      "apply": "switched",
+      "postcheck": "72names_ready; no invented publication receipts or IDs",
+      "pause_restored": true,
+      "run_now_command_id": 1,
+      "decision_kinds": {
+        "raw_event": 17,
+        "raw_player": 1
+      }
+    },
+    "semantic_recovery": {
+      "status": "in_progress",
+      "curated_events": 8,
+      "curated_file_sha256": "31da8dd74851959cf838c35c7d8e5a21f9d5f46227622c89e1a1479e27668efb",
+      "old_native_test_batch": 880,
+      "actual_native_undo": {
+        "batch_id": 880,
+        "status": "undone",
+        "batch_ids": [
+          880,
+          881,
+          882
+        ],
+        "reverted": 461
+      },
+      "after_undo_counts": {
+        "total": 176549,
+        "public": 176290
+      },
+      "games_preserved": 72,
+      "other_decisions_preserved": 10,
+      "new_reviews": "pending",
+      "new_publication": "not_yet"
+    }
+  },
+  "metrics_B72_progress": {
+    "TEST": {
+      "albums": 176621,
+      "public_complete_cards": 176362,
+      "fixedwide": 160333,
+      "fixedwide_percent": 90.778,
+      "strictcomplete": 176362,
+      "strictcomplete_percent": 99.8534,
+      "inserted_delta": 72,
+      "wide_delta": 72,
+      "strictcomplete_delta": 72,
+      "qualification": "native applied and TEST API verified; actual current new-ID bindings read",
+      "basis": "A-closepoint plus verified B72 increments; no new full scan"
+    },
+    "PROD": {
+      "status": "pending B72 publication; A-closepoint remains the last verified metric"
+    },
+    "point_status": "Historical temporary TEST-only publication, actually undone; not current metrics."
+  },
+  "current_metrics": {
+    "TEST": {
+      "point": "A completed, before newly enabled hourly publication",
+      "albums": 176549,
+      "public_complete_cards": 176290,
+      "fixedwide": 160261,
+      "fixedwide_percent": 90.7742,
+      "strictcomplete": 176290,
+      "strictcomplete_percent": 99.8533,
+      "measurement_basis": "fresh native snapshot plus already native-qualified inserted increments; actual binding columns checked for the wide delta; not a new full post-A scan",
+      "baseline": {
+        "captured_at": "2026-10-19T11:45:45.532143+00:00",
+        "read_only": true,
+        "source_rehashed": false,
+        "population": {
+          "albums": 171272,
+          "public_visible": 171013,
+          "duplicate": 9,
+          "list_hidden": 250
+        },
+        "metrics": {
+          "fixedwide": 154985,
+          "strictcomplete": 171013,
+          "public_complete": 171013,
+          "P5": 3838,
+          "E5": 84
+        },
+        "denominators": {
+          "fixedwide": 171272,
+          "strictcomplete": 171272,
+          "public_complete": 171013,
+          "P5": 3865,
+          "E5": 85
+        },
+        "measurement": {
+          "elapsed_seconds": 512.263,
+          "reader": "current native eligibility with snapshot-local scheduling/caches",
+          "historical_audit_totals_reused": false,
+          "sgf_scope_checks": "native current checks; full source inventory not rehashed"
+        }
+      },
+      "verified_increment": {
+        "environment": "TEST",
+        "verified_increment_rows": 5277,
+        "wide_eligible_increment": 5276,
+        "wide_excluded_album_ids": [
+          178437
+        ],
+        "catalog_total_at_read": 176549,
+        "eligibility_basis": "all selected increments already native-qualified; this read checks actual binding columns only"
+      }
+    },
+    "PROD": {
+      "point": "A completed, before newly enabled hourly publication",
+      "albums": 176549,
+      "public_complete_cards": 176290,
+      "fixedwide": 160775,
+      "fixedwide_percent": 91.0654,
+      "strictcomplete": 176290,
+      "strictcomplete_percent": 99.8533,
+      "measurement_basis": "fresh native snapshot plus already native-qualified inserted increments; actual binding columns checked for the wide delta; not a new full post-A scan",
+      "baseline": {
+        "snapshot_started_at": "2026-10-19T15:08:16.587053+00:00",
+        "captured_at": "2026-10-20T01:53:15.986930+00:00",
+        "read_only": true,
+        "source_rehashed": false,
+        "population": {
+          "albums": 171293,
+          "public_visible": 171034,
+          "duplicate": 9,
+          "list_hidden": 250
+        },
+        "metrics": {
+          "fixedwide": 155520,
+          "strictcomplete": 171034,
+          "public_complete": 171034,
+          "P5": 3663,
+          "E5": 84
+        },
+        "denominators": {
+          "fixedwide": 171293,
+          "strictcomplete": 171293,
+          "public_complete": 171034,
+          "P5": 3689,
+          "E5": 85
+        },
+        "measurement": {
+          "elapsed_seconds": 38699.819,
+          "reader": "native eligibility, 1000-album chunks in one repeatable-read snapshot",
+          "historical_audit_totals_reused": false,
+          "sgf_scope_checks": "native current checks; full source inventory not rehashed"
+        }
+      },
+      "verified_increment": {
+        "environment": "PROD",
+        "verified_increment_rows": 5256,
+        "wide_eligible_increment": 5255,
+        "wide_excluded_album_ids": [
+          178117
+        ],
+        "catalog_total_at_read": 176549,
+        "eligibility_basis": "all selected increments already native-qualified; this read checks actual binding columns only"
+      }
+    }
   }
 }

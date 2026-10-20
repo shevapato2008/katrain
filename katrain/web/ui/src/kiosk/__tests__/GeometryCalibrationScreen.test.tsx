@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
-import type { GeometryStatus } from '../../api/geometryApi';
+import type { GeometryLayout, GeometryStatus } from '../../api/geometryApi';
 import { GeometryAPI } from '../../api/geometryApi';
 import { kioskTheme } from '../theme';
 import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationScreen';
@@ -76,6 +76,8 @@ const cells = () => Array.from(document.querySelectorAll('.kiosk-status__cell'))
 describe('屏 26 棋盘标定', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(GeometryAPI.layout).mockReset();
+    overlayBuilders.clear();
     loaded = true;
     status = {
       phase: 'required', session_calibrated: false, last_valid: false,
@@ -503,6 +505,94 @@ describe('屏 26 棋盘标定', () => {
     expect(container.querySelector('canvas[aria-label="摄像头原始画面"]'))
       .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=raw&scale=3');
     expect(screen.queryByText('标定进行中，俯视画面在完成后重新生成')).toBeNull();
+  });
+
+  it('新几何布局暂时读取失败时保留原始预览，重试成功后只使用新版本俯视画面', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob() }));
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 528, height: 528, close: vi.fn() }));
+    const canvas = vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
+    const layout = (revision: number) => ({
+      revision, phase: 'ready' as const, stale: false,
+      frame: { width: 1920, height: 1080 }, out_size: 950,
+      corners: [], points: [] as [number, number][][],
+    });
+    status = { ...status, phase: 'ready', last_valid: true, geometry_revision: 1 };
+    vi.mocked(GeometryAPI.layout)
+      .mockResolvedValueOnce(layout(1))
+      .mockRejectedValueOnce(new Error('geometry request failed 503'))
+      .mockResolvedValueOnce(layout(2));
+    const { container, rerender } = renderScreen();
+    await waitFor(() => expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=warped&revision=1&scale=2'));
+    await waitFor(() => expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveStyle({ display: 'block' }));
+    const oldWarpedCanvas = container.querySelector('canvas[aria-label="俯视矫正画面"]');
+
+    status = { ...status, geometry_revision: 2 };
+    rerender(screenTree());
+    const rawCanvas = container.querySelector('canvas[aria-label="摄像头原始画面"]');
+    expect(rawCanvas).not.toBe(oldWarpedCanvas);
+    expect(oldWarpedCanvas?.isConnected).toBe(false);
+    expect(rawCanvas)
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=raw&scale=3');
+    expect(container.querySelector('canvas[aria-label="俯视矫正画面"]')).toBeNull();
+    await waitFor(() => expect(overlayBuilders.get('原始画面棋盘几何叠加层')).toBeDefined());
+    expect(overlayBuilders.get('原始画面棋盘几何叠加层')!({ width: 1920, height: 1080 })).toBeNull();
+    await waitFor(() => expect(GeometryAPI.layout).toHaveBeenCalledTimes(2));
+    expect(container.querySelector('canvas[aria-label="摄像头原始画面"]')).toBeInTheDocument();
+
+    await waitFor(() => expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=warped&revision=2&scale=2'),
+    { timeout: 2500 });
+    expect(GeometryAPI.layout).toHaveBeenCalledTimes(3);
+    canvas.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('布局响应版本落后时重试，手动选俯视仍等待当前版本', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('snapshot unavailable')));
+    const layout = (revision: number) => ({
+      revision, phase: 'ready' as const, stale: false,
+      frame: { width: 1920, height: 1080 }, out_size: 950,
+      corners: [], points: [] as [number, number][][],
+    });
+    status = { ...status, phase: 'ready', last_valid: true, geometry_revision: 2 };
+    vi.mocked(GeometryAPI.layout).mockResolvedValueOnce(layout(1)).mockResolvedValueOnce(layout(2));
+    const { container } = renderScreen();
+    fireEvent.click(within(screen.getByTestId('calib-pagebar')).getByRole('radio', { name: '俯视矫正' }));
+    await act(async () => { await Promise.resolve(); });
+    expect(container.querySelector('canvas[aria-label="俯视矫正画面"]')).toBeNull();
+    expect(screen.getByText('完成 LED 标定后生成俯视画面')).toBeInTheDocument();
+
+    await waitFor(() => expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=warped&revision=2&scale=2'),
+    { timeout: 2500 });
+    expect(GeometryAPI.layout).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+  });
+
+  it('状态换版本后忽略上一轮迟到的布局响应', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('snapshot unavailable')));
+    const layout = (revision: number): GeometryLayout => ({
+      revision, phase: 'ready', stale: false,
+      frame: { width: 1920, height: 1080 }, out_size: 950,
+      corners: [], points: [],
+    });
+    let resolveOld!: (value: GeometryLayout) => void;
+    const oldRequest = new Promise<GeometryLayout>((resolve) => { resolveOld = resolve; });
+    status = { ...status, phase: 'ready', last_valid: true, geometry_revision: 1 };
+    vi.mocked(GeometryAPI.layout).mockReturnValueOnce(oldRequest).mockResolvedValueOnce(layout(2));
+    const { container, rerender } = renderScreen();
+
+    status = { ...status, geometry_revision: 2 };
+    rerender(screenTree());
+    await waitFor(() => expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=warped&revision=2&scale=2'));
+    await act(async () => { resolveOld(layout(1)); });
+    expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=warped&revision=2&scale=2');
+    vi.unstubAllGlobals();
   });
 
   // ── 俯视叠加层与 warped-stream 同一个 pad ─────────────────────────────────

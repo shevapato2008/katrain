@@ -212,13 +212,7 @@ class WebKaTrain(KaTrainBase):
         # Apply engine profile overrides based on KATRAIN_MODE
         self._apply_engine_profile()
 
-        try:
-            from kivymd.app import MDApp
-
-            MDApp.gui = self
-        except Exception:
-            pass
-
+        # Keep construction headless: importing KivyMD's MDApp creates a desktop window.
         self.engine = None
         self.update_state_callback: Optional[Callable] = None
         # N22:AI 后台线程写出新的终局事实(AI 跟停 / AI 认输)时调一次,参数是那个 `GameEnd`;SessionManager 装上。

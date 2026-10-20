@@ -42,17 +42,23 @@ description: Use when generating or reviewing Go tutorial lecture videos, synchr
 
 讲稿重复回顾早先编号时，不再落一次或倒退。讲稿倒序、缺少中间步骤锚点，或只有“白1到白5”这样的范围引用时，先补充有来源依据的逐步讲解并重新生成音频，再建立 cue；不能按视频总时长平均分配、凭文字长度估时，或在没讲到时机械连播。已合格的音频仅在讲稿、音频哈希与所有必需锚点仍匹配时复用。
 
-## 4. 当前执行入口与实现缺口
+## 4. 当前执行入口与展示契约
 
 以当前工作树和部署版本为准。`scripts/generate_voice.py`、`scripts/generate_video.py` 的旧批量生成／固定路径回填已停用；不要恢复它们或直接 SQL 写媒体字段绕过鉴权、版本检查及人工审核。
 
 通过已鉴权的管理后台教程 API 使用以下契约，BASE 从当前环境确认：
 
 - `PUT BASE/figures/{id}/narration`：`{ "expected_updated_at": "当前版本", "narration": "最终讲稿" }`
-- `POST BASE/figures/{id}/media-tasks`：先提交 `kind: "audio"`；成功后读取当前图版本，再提交 `kind: "video", render_mode: "2d", output_profile: "galaxy-4k-v1"`，然后 `"kiosk-7-v1"`。每次写入都带该图最新匹配的 `expected_updated_at`。
+- `POST BASE/figures/{id}/media-tasks`：先完成有效的 `kind: "audio"`；已有合格音频可复用。读取当前图版本，再提交 `kind: "video", render_mode: "2d", output_profile: "galaxy-4k-v1"`，然后 `"kiosk-7-v1"`。每次写入都带该图最新匹配的 `expected_updated_at`。
 - `GET BASE/media-tasks/{task_id}` 查询真实状态；202／queued 不代表生成完成。
 
 **先检查实际实现是否支持选定演示方式。** 若 `build_step_cues` 在 `validate_replay != complete` 时直接返回 pending，或渲染器只会显示最终静态图，说明编号及标注语音触发能力尚未接通。应报告并先修复该缺口，不能修改验收标准、伪造 replay 完整状态，或继续铺量静态视频。
+
+新版 `presentation_plan` 为录制输入：`schema_version: 1`，`bindings` 把最终讲稿字符区间 `[start,end)` 绑定到保存棋图的对象 ID（`labels:x,y`、`letters:x,y`、`shapes:x,y`）；`arrows` 须有当前服务端来源指针及图片 SHA。缺省仅自动匹配可靠的唯一引用；多对象同标记须明确绑定。中文“黑十一”和阿拉伯数字“黑11”均可使用真实语音锚点，不为数字写法重复合成合格音频。
+
+印刷图保留被提的历史编号子，或有同点再落、粘劫注记时，使用来源绑定的 `source_replay` 录制局部手顺：声明初始局面、已知范围、每步动作及来源；未直接印在棋子上的额外动作须附明确 `source_note`。服务端验证规则、提子和来源，原始保存棋图及其 `replay` 不变。不得仅凭缺号补棋；有证据的真实末局面可以不同于保留历史编号的纸书图。初始标记必须在其棋子被提之前讲到，不能将旧标记转移给后来同点重落的棋子。
+
+完整录制证明返回 `mode: presentation|replay|source_replay|static`、`objects/events/cues/frames` 及依赖哈希。前端消费这些经过验证的可见帧；pending 必须阻断。两档使用同一个当前展示身份；改变计划后，旧档位文件保留但须重新生成，不能把不同计划的两档同时算作当前成品。
 
 复用已成功且依赖一致的任务／不可变资源。409 停止该图写入并核对版本；写请求结果不明时先只读核对是否已提交，不盲重试。用户暂停后不提交新写入或新任务，保留断点及已有回执；不擅自取消远端任务。
 

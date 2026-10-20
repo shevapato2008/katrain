@@ -31,12 +31,17 @@ from katrain.kifu_ingest.catalog import (
     qualified_raw_event_templates,
 )
 from katrain.kifu_ingest.exclusions import historical_excluded_ids, known_source_ids
-from katrain.kifu_ingest.orchestration import _validated, derive_staged_record, prepare_staged_games
+from katrain.kifu_ingest.orchestration import (
+    _validated,
+    derive_staged_record,
+    isolate_unportable_identities,
+    prepare_staged_games,
+)
 from katrain.kifu_ingest.names import NameRejected, NameServiceError, NeedsCredentials, QwenNameService
 from katrain.kifu_ingest.source_19x19 import Source19x19
 from katrain.kifu_ingest.staging import Stage, discover_and_download
 from katrain.kifu_ingest.state import StateStore, batches, items
-from katrain.kifu_ingest.sync import send_verified_manifest, verify_album_api
+from katrain.kifu_ingest.sync import check_production_identities, send_verified_manifest, verify_album_api
 from katrain.web.kifu.name_candidates import canonical_sha256
 
 
@@ -289,6 +294,20 @@ def select_review_items(records, resolved, *, reusable_events, max_new_names, is
     return chosen, deferred
 
 
+async def select_portable_review_items(
+    records, resolved, *, check_identities, reusable_events, max_new_names, isolated=None
+):
+    isolated = isolated if isolated is not None else []
+    excluded = await isolate_unportable_identities([game for _, game in records], resolved, check_identities, isolated)
+    return select_review_items(
+        [(item, game) for item, game in records if game["source_item_id"] not in excluded],
+        resolved,
+        reusable_events=reusable_events,
+        max_new_names=max_new_names,
+        isolated=isolated,
+    )
+
+
 def register_frozen_batch(store, key, digest):
     """A schema-validated, reviewed package may enter the publication queue."""
     row = store.register_batch(key, digest)
@@ -491,6 +510,15 @@ class KifuIngestJob(BaseJob):
                     timeout=_receiver_timeout(deadline),
                 )
 
+            def check_identities(request):
+                return check_production_identities(
+                    request,
+                    host=config.KIFU_INGEST_SSH_HOST,
+                    key_path=config.KIFU_INGEST_SSH_KEY,
+                    known_hosts=config.KIFU_INGEST_KNOWN_HOSTS,
+                    timeout=_receiver_timeout(deadline),
+                )
+
             package_dir = stage_root / "packages"
             if package_dir.is_symlink():
                 raise ValueError("package directory symlink is unsafe")
@@ -609,9 +637,10 @@ class KifuIngestJob(BaseJob):
                 )
                 event_templates = await asyncio.to_thread(qualified_raw_event_templates, engine, raw_values=events)
                 ambiguous_items = []
-                candidates, deferred = select_review_items(
+                candidates, deferred = await select_portable_review_items(
                     records,
                     resolved,
+                    check_identities=check_identities,
                     reusable_events=set(event_templates["templates"]),
                     max_new_names=config.KIFU_INGEST_MAX_NEW_NAMES,
                     isolated=ambiguous_items,
@@ -629,7 +658,14 @@ class KifuIngestJob(BaseJob):
                 isolated = []
                 try:
                     manifest = await asyncio.wait_for(
-                        prepare_staged_games(group, engine=engine, client=client, names=names, isolated=isolated),
+                        prepare_staged_games(
+                            group,
+                            engine=engine,
+                            client=client,
+                            names=names,
+                            isolated=isolated,
+                            check_identities=check_identities,
+                        ),
                         timeout=max(1, deadline - time.monotonic() - 350),
                     )
                 except NeedsCredentials:

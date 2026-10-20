@@ -599,6 +599,117 @@ def test_read_only_helpers_offer_qualified_target_provenance_without_fabricating
     assert state(engine) == before
 
 
+def test_target_identity_check_uses_native_aliases_conflicts_and_qualification_read_only(engine):
+    api = publisher()
+    with engine.begin() as conn:
+        conn.execute(
+            KifuPlayerAlias.__table__.insert().values(
+                player_id=17, alias="Portable Black", normalized_alias="portable black"
+            )
+        )
+        for owner_id in (17, 18):
+            conn.execute(
+                KifuPlayerAlias.__table__.insert().values(
+                    player_id=owner_id, alias="Ambiguous", normalized_alias="ambiguous"
+                )
+            )
+    request = {
+        "operation": "check-identities",
+        "game_count": 2,
+        "instructions": [
+            {"kind": "player", "raw": "Black Alias", "canonical_name": "Portable Black", "name_decision": False},
+            {"kind": "player", "raw": "White", "canonical_name": "Portable Black", "name_decision": False},
+            {"kind": "player", "raw": "Black Alias", "canonical_name": "黑棋", "name_decision": False},
+            {"kind": "player", "raw": "Ambiguous", "canonical_name": "Portable Black", "name_decision": False},
+            {"kind": "player", "raw": "Black", "canonical_name": "Portable Black", "name_decision": True},
+            {"kind": "player", "raw": "Black", "canonical_name": "Black", "name_decision": True},
+        ],
+    }
+    before = state(engine)
+    assert api.check_identity_instructions(engine, request) == {
+        "status": "checked",
+        "request_sha256": canonical_sha256(request),
+        "results": ["qualified", "conflict", "unresolved", "ambiguous", "canonical_decision_key_mismatch", "qualified"],
+    }
+    assert state(engine) == before
+    with engine.begin() as conn:
+        conn.execute(
+            KifuPlayerName.__table__.delete().where(KifuPlayerName.player_id == 17, KifuPlayerName.lang == "ko")
+        )
+    request["instructions"] = [request["instructions"][index] for index in (0, 4, 5)]
+    before = state(engine)
+    assert api.check_identity_instructions(engine, request)["results"] == [
+        "missing_qualified_five_languages",
+        "canonical_decision_key_mismatch",
+        "missing_qualified_five_languages",
+    ]
+    assert state(engine) == before
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "bool_count",
+        "too_many_games",
+        "too_many_instructions",
+        "duplicate",
+        "unknown_field",
+        "id_field",
+        "bad_kind",
+        "nonstring_kind",
+        "nonstring",
+        "nonboolean_decision",
+        "long_text",
+    ],
+)
+def test_target_identity_check_rejects_unbounded_or_nonlogical_schema_before_database(fault):
+    api = publisher()
+    request = {
+        "operation": "check-identities",
+        "game_count": 1,
+        "instructions": [{"kind": "player", "raw": "Black", "canonical_name": "Black", "name_decision": False}],
+    }
+    if fault == "bool_count":
+        request["game_count"] = True
+    elif fault == "too_many_games":
+        request["game_count"] = 101
+    elif fault == "too_many_instructions":
+        request["game_count"] = 100
+        request["instructions"] = [
+            {"kind": "player", "raw": str(i), "canonical_name": "Black", "name_decision": False} for i in range(301)
+        ]
+    elif fault == "duplicate":
+        request["instructions"] *= 2
+    elif fault == "unknown_field":
+        request["sql"] = "SELECT secret"
+    elif fault == "id_field":
+        request["instructions"][0]["id"] = 17
+    elif fault == "bad_kind":
+        request["instructions"][0]["kind"] = "raw_player"
+    elif fault == "nonstring_kind":
+        request["instructions"][0]["kind"] = ["player"]
+    elif fault == "nonstring":
+        request["instructions"][0]["raw"] = 17
+    elif fault == "nonboolean_decision":
+        request["instructions"][0]["name_decision"] = 1
+    else:
+        request["instructions"][0]["canonical_name"] = "x" * 513
+    with pytest.raises(ValueError, match="identity check"):
+        api.check_identity_instructions(object(), request)
+
+
+def test_identity_check_accepts_exact_finite_schema_bounds():
+    request = {
+        "operation": "check-identities",
+        "game_count": 100,
+        "instructions": [
+            {"kind": "event", "raw": str(i) + "x" * 509, "canonical_name": "y" * 512, "name_decision": False}
+            for i in range(300)
+        ],
+    }
+    assert publisher().validate_identity_check_request(request) == request
+
+
 def test_scope_renewal_preserves_complete_existing_generation_meaning(engine):
     api = publisher()
     value = manifest(black="New Player")

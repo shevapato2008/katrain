@@ -1,0 +1,34 @@
+{
+  "reviewed_at": "2026-10-20T06:14:33.228251+00:00",
+  "reviewer": {
+    "agent": "/root/kifu_backfill_names_astra_review",
+    "model": "gpt-6-astra",
+    "effort": "max"
+  },
+  "decision": "APPROVE",
+  "reviewed_diff_sha256": "7f1e679b26b0c92e837bc5f597baf43d437b4195febf0ffd221ac7bcfe976e74",
+  "scope": [
+    "katrain/cron/jobs/kifu_ingest.py",
+    "katrain/kifu_ingest/catalog.py",
+    "katrain/kifu_ingest/orchestration.py",
+    "katrain/kifu_ingest/sync.py",
+    "tests/cron/test_kifu_ingest.py",
+    "tests/test_kifu_incremental_cli.py",
+    "tests/web_ui/test_kifu_incremental_catalog.py"
+  ],
+  "source_sha256": {
+    "katrain/cron/jobs/kifu_ingest.py": "b36407bef9613674cf53b9d48f846ebdeaabf280ff5c05beeb268f082c393680",
+    "katrain/kifu_ingest/catalog.py": "07b41bac096b3f46a832ab01e968b3aaccccbac8e879bdb94bf0b8c623872fdc",
+    "katrain/kifu_ingest/orchestration.py": "6e96c0e0ab720c34c96500b97897325da0358ca0415fb6bf6b0904b53042aa36",
+    "katrain/kifu_ingest/sync.py": "ed706eb2d145bffead7a18203842a4f0bb7f4c51b3b6ca26ea9c7ef4e6a88fca",
+    "tests/cron/test_kifu_ingest.py": "4479ebf0d9998db8de71e2ba9f94eec4ccba8f53dd93333d9c2f73fa84ba3ee3",
+    "tests/test_kifu_incremental_cli.py": "d3d0c6b0df2bf2286f0604a9b7d264758e6c27e5e36fe0f6beb5b87132cb2517",
+    "tests/web_ui/test_kifu_incremental_catalog.py": "4591f4297ab55a65b1244aaadc40aee30ce6866c93de891e7489243e7df699ee"
+  },
+  "tests": {
+    "focused": "187 passed in17.06s",
+    "final_delta": "13 passed",
+    "independent": "AST and diff check; full suite not repeated"
+  },
+  "deployment_order": "PROD receiver read operation before enabling updated TEST cron; preserve current native publisher until complete"
+}

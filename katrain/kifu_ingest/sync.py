@@ -10,6 +10,7 @@ import re
 import subprocess
 
 from katrain.core.sgf_parser import SGF
+from katrain.kifu_ingest.catalog import validate_identity_check_request, validate_identity_check_response
 from katrain.kifu_ingest.exclusions import assert_source_allowed
 from katrain.web.kifu.name_candidates import canonical_sha256
 
@@ -83,18 +84,12 @@ def validate_test_verification(manifest, digest, verification):
         raise ValueError("test five-language verification is incomplete")
 
 
-def send_verified_manifest(manifest, manifest_sha256, test_verification, *, host, key_path, known_hosts, timeout=180):
-    """Send a tested logical package to a forced, restricted receiver command."""
-    validate_test_verification(manifest, manifest_sha256, test_verification)
-    if canonical_sha256(manifest) != manifest_sha256:
-        raise ValueError("manifest hash mismatch")
-    for game in manifest["games"]:
-        assert_source_allowed(game["source_key"], game["source_item_id"])
+def _receiver_command(host, key_path, known_hosts):
     if not host or not re.fullmatch(r"[A-Za-z0-9_.@-]+", host):
         raise ValueError("invalid SSH host")
     if not Path(key_path).is_absolute() or not Path(known_hosts).is_absolute():
         raise ValueError("SSH key and known_hosts paths must be absolute")
-    command = [
+    return [
         "ssh",
         "-o",
         "BatchMode=yes",
@@ -112,6 +107,39 @@ def send_verified_manifest(manifest, manifest_sha256, test_verification, *, host
         host,
         "kifu-incremental-receive",
     ]
+
+
+class IdentityCheckUnavailable(RuntimeError):
+    """Defer preparation rather than selecting TEST-only canonical identities."""
+
+
+def check_production_identities(request, *, host, key_path, known_hosts, timeout=180):
+    validate_identity_check_request(request)
+    try:
+        process = subprocess.run(
+            _receiver_command(host, key_path, known_hosts),
+            input=json.dumps(request, ensure_ascii=False, separators=(",", ":")),
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+            check=False,
+        )
+        if process.returncode or len(process.stdout) > 65536:
+            raise ValueError("identity check transport failed")
+        response = json.loads(process.stdout)
+        return validate_identity_check_response(request, response)
+    except (OSError, subprocess.SubprocessError, ValueError, TypeError):
+        raise IdentityCheckUnavailable("production identity check unavailable") from None
+
+
+def send_verified_manifest(manifest, manifest_sha256, test_verification, *, host, key_path, known_hosts, timeout=180):
+    """Send a tested logical package to a forced, restricted receiver command."""
+    validate_test_verification(manifest, manifest_sha256, test_verification)
+    if canonical_sha256(manifest) != manifest_sha256:
+        raise ValueError("manifest hash mismatch")
+    for game in manifest["games"]:
+        assert_source_allowed(game["source_key"], game["source_item_id"])
+    command = _receiver_command(host, key_path, known_hosts)
     payload = json.dumps(
         {"manifest": manifest, "manifest_sha256": manifest_sha256, "test_verification": test_verification},
         ensure_ascii=False,

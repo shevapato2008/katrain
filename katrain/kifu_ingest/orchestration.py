@@ -6,6 +6,7 @@ import argparse
 import asyncio
 from dataclasses import asdict
 from hashlib import sha256
+import inspect
 import json
 import os
 from pathlib import Path
@@ -17,17 +18,20 @@ from katrain.core.sgf_parser import SGF
 from katrain.kifu_ingest.catalog import (
     FORMAT,
     _validate_manifest,
+    check_identity_instructions,
     lookup_qualified_identities,
     publish_manifest,
     qualified_raw_event_templates,
     qualified_raw_player_templates,
+    validate_identity_check_request,
+    validate_identity_check_response,
 )
 from katrain.kifu_ingest.exclusions import assert_source_allowed, historical_excluded_ids
 from katrain.kifu_ingest.inventory import scan_inventory
 from katrain.kifu_ingest.names import NameRejected, NeedsCredentials, wiki_sources
 from katrain.kifu_ingest.preparation import derive_metadata
 from katrain.kifu_ingest.state import StateStore
-from katrain.kifu_ingest.sync import validate_test_verification
+from katrain.kifu_ingest.sync import IdentityCheckUnavailable, validate_test_verification
 from katrain.web.kifu.name_candidates import canonical_sha256
 
 
@@ -103,7 +107,55 @@ async def derive_staged_record(item):
     }
 
 
-async def prepare_staged_games(items, *, engine, client, names, isolated=None):
+async def isolate_unportable_identities(games, resolved, check_identities, isolated):
+    """Check exact canonical instructions before selecting or paying for names."""
+    instructions, members, needs_qualification = [], [], []
+    positions = {}
+    for game in games:
+        for slot in ("black", "white", "event"):
+            kind = "event" if slot == "event" else "player"
+            raw = game["metadata"]["event" if slot == "event" else f"player_{slot}"]
+            match = resolved[kind].get(raw, {})
+            if match.get("status") not in {"qualified", "missing_qualified_five_languages"}:
+                continue
+            key = kind, raw, match["canonical_name"]
+            if key not in positions:
+                positions[key] = len(instructions)
+                instructions.append(
+                    {
+                        **dict(zip(("kind", "raw", "canonical_name"), key)),
+                        "name_decision": match["status"] != "qualified",
+                    }
+                )
+                members.append(set())
+                needs_qualification.append(match["status"] == "qualified")
+            members[positions[key]].add(game["source_item_id"])
+    if not instructions:
+        return set()
+    request = {"operation": "check-identities", "game_count": len(games), "instructions": instructions}
+    validate_identity_check_request(request)
+    if check_identities is None:
+        raise IdentityCheckUnavailable("production identity check unavailable")
+    try:
+        response = (
+            await check_identities(request)
+            if inspect.iscoroutinefunction(check_identities)
+            else await asyncio.to_thread(check_identities, request)
+        )
+        validate_identity_check_response(request, response)
+    except (OSError, ValueError, TypeError):
+        raise IdentityCheckUnavailable("production identity check unavailable") from None
+    excluded = set()
+    for index, status in enumerate(response["results"]):
+        if status == "qualified" or status == "missing_qualified_five_languages" and not needs_qualification[index]:
+            continue
+        for source_id in sorted(members[index] - excluded):
+            isolated.append((source_id, f"production {instructions[index]['kind']} identity {status}"))
+            excluded.add(source_id)
+    return excluded
+
+
+async def prepare_staged_games(items, *, engine, client, names, isolated=None, check_identities=None):
     """Freeze at most 100 staged games; review each distinct missing name once."""
     if not items or len(items) > 100:
         raise ValueError("staged batch must contain 1 to 100 games")
@@ -116,10 +168,12 @@ async def prepare_staged_games(items, *, engine, client, names, isolated=None):
         player_values=players,
         event_values=events,
     )
-    pending = {}
-    excluded = set()
     isolated = isolated if isolated is not None else []
+    excluded = await isolate_unportable_identities(games, resolved, check_identities, isolated)
+    pending = {}
     for game in games:
+        if game["source_item_id"] in excluded:
+            continue
         game_pending = {}
         ambiguous = None
         for slot in ("black", "white", "event"):
@@ -252,8 +306,10 @@ async def prepare_staged_games(items, *, engine, client, names, isolated=None):
     return manifest
 
 
-async def prepare_staged_game(item, *, engine, client, names):
-    return await prepare_staged_games([item], engine=engine, client=client, names=names)
+async def prepare_staged_game(item, *, engine, client, names, check_identities=None):
+    return await prepare_staged_games(
+        [item], engine=engine, client=client, names=names, check_identities=check_identities
+    )
 
 
 def main(argv=None):
@@ -312,6 +368,17 @@ def main(argv=None):
                 _output({"status": "applied", "manifest_sha256": digest, "receipt": receipt})
         elif args.command == "receive":
             payload = _receive_payload()
+            if payload.get("operation") == "check-identities":
+                try:
+                    validate_identity_check_request(payload)
+                    result = check_identity_instructions(_engine(), payload)
+                except Exception:
+                    _output({"status": "error", "error": "identity check unavailable"})
+                    return 2
+                _output(result)
+                return 0
+            if "operation" in payload:
+                raise ValueError("receiver operation invalid")
             manifest = payload.get("manifest")
             expected = payload.get("manifest_sha256")
             digest = _validated(manifest, expected)

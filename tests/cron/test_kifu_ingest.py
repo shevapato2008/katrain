@@ -115,6 +115,76 @@ def test_review_batch_isolates_ambiguous_identity_before_name_budget():
     assert isolated == [("1", "ambiguous player identity requires review")]
 
 
+@pytest.mark.asyncio
+async def test_initial_review_selection_checks_production_before_spending_name_budget():
+    from katrain.cron.jobs.kifu_ingest import select_portable_review_items
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    records = [
+        (
+            {"external_id": "1"},
+            {
+                "source_item_id": "1",
+                "metadata": {"player_black": "TEST Only", "player_white": "Shared", "event": "Match"},
+            },
+        ),
+        (
+            {"external_id": "2"},
+            {"source_item_id": "2", "metadata": {"player_black": "Alice", "player_white": "White", "event": "Match"}},
+        ),
+    ]
+    resolved = {
+        "player": {
+            "TEST Only": {"status": "qualified", "canonical_name": "TEST Only"},
+            "Shared": {"status": "unresolved"},
+            "Alice": {"status": "unresolved"},
+            "White": {"status": "qualified", "canonical_name": "White"},
+        },
+        "event": {"Match": {"status": "qualified", "canonical_name": "Match"}},
+    }
+
+    def check(request):
+        return {
+            "status": "checked",
+            "request_sha256": canonical_sha256(request),
+            "results": [
+                "unresolved" if r["canonical_name"] == "TEST Only" else "qualified" for r in request["instructions"]
+            ],
+        }
+
+    isolated = []
+    chosen, deferred = await select_portable_review_items(
+        records, resolved, check_identities=check, reusable_events=set(), max_new_names=1, isolated=isolated
+    )
+    assert [r["external_id"] for r in chosen] == ["2"] and deferred == []
+    assert isolated == [("1", "production player identity unresolved")]
+
+
+@pytest.mark.asyncio
+async def test_initial_remote_unavailability_defers_before_name_selection(monkeypatch):
+    from katrain.cron.jobs import kifu_ingest as job
+    from katrain.kifu_ingest.sync import IdentityCheckUnavailable
+
+    records = [
+        (
+            {"external_id": "1"},
+            {"source_item_id": "1", "metadata": {"player_black": "Black", "player_white": "White", "event": "Match"}},
+        )
+    ]
+    resolved = {"player": {"Black": {"status": "qualified", "canonical_name": "Black"}}, "event": {}}
+    monkeypatch.setattr(job, "select_review_items", lambda *a, **k: pytest.fail("unavailable target reached selection"))
+
+    def check(request):
+        raise IdentityCheckUnavailable("production identity check unavailable")
+
+    isolated = []
+    with pytest.raises(IdentityCheckUnavailable):
+        await job.select_portable_review_items(
+            records, resolved, check_identities=check, reusable_events=set(), max_new_names=1, isolated=isolated
+        )
+    assert isolated == []
+
+
 def test_sync_refuses_unverified_package(monkeypatch):
     from katrain.kifu_ingest.sync import send_verified_manifest
 
@@ -178,6 +248,74 @@ def test_sync_uses_fixed_ssh_command_and_stdin(monkeypatch):
         "kifu-incremental-receive",
     ]
     assert json.loads(captured["input"])["manifest"] == manifest
+
+
+def test_identity_precheck_uses_same_forced_receiver_and_bound_read_only_payload(monkeypatch):
+    from katrain.kifu_ingest.sync import check_production_identities
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    request = {
+        "operation": "check-identities",
+        "game_count": 1,
+        "instructions": [
+            {"kind": "player", "raw": "沼馆沙辉哉", "canonical_name": "沼馆沙辉哉", "name_decision": False}
+        ],
+    }
+    captured = {}
+
+    def run(args, **kwargs):
+        captured.update(args=args, **kwargs)
+        assert json.loads(kwargs["input"]) == request
+        return SimpleNamespace(
+            returncode=0,
+            stderr="private ssh text",
+            stdout=json.dumps(
+                {"status": "checked", "request_sha256": canonical_sha256(request), "results": ["qualified"]}
+            ),
+        )
+
+    monkeypatch.setattr("subprocess.run", run)
+    result = check_production_identities(request, host="prod.example", key_path="/key", known_hosts="/hosts", timeout=9)
+    assert result["results"] == ["qualified"]
+    assert captured["args"][-2:] == ["prod.example", "kifu-incremental-receive"]
+    assert "StrictHostKeyChecking=yes" in captured["args"]
+    assert "UserKnownHostsFile=/hosts" in captured["args"]
+    assert captured["timeout"] == 9
+
+
+@pytest.mark.parametrize("fault", ["exit", "transport", "json", "hash", "extra", "status", "length"])
+def test_identity_precheck_unavailability_is_controlled_and_never_returns_test_fallback(monkeypatch, fault):
+    from katrain.kifu_ingest.sync import check_production_identities, IdentityCheckUnavailable
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    request = {
+        "operation": "check-identities",
+        "game_count": 1,
+        "instructions": [{"kind": "player", "raw": "Black", "canonical_name": "Black", "name_decision": False}],
+    }
+
+    def run(*a, **k):
+        if fault == "transport":
+            raise OSError("ssh private-key token=secret")
+        response = {"status": "checked", "request_sha256": canonical_sha256(request), "results": ["qualified"]}
+        if fault == "hash":
+            response["request_sha256"] = "0" * 64
+        elif fault == "extra":
+            response["id"] = 17
+        elif fault == "status":
+            response["results"] = ["guessed_same_display"]
+        elif fault == "length":
+            response["results"] = []
+        return SimpleNamespace(
+            returncode=2 if fault == "exit" else 0,
+            stdout="invalid secret" if fault == "json" else json.dumps(response),
+            stderr="postgresql://private:secret@db",
+        )
+
+    monkeypatch.setattr("subprocess.run", run)
+    with pytest.raises(IdentityCheckUnavailable) as caught:
+        check_production_identities(request, host="prod", key_path="/key", known_hosts="/hosts")
+    assert str(caught.value) == "production identity check unavailable"
 
 
 @pytest.mark.parametrize(

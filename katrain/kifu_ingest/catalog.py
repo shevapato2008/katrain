@@ -563,6 +563,114 @@ def lookup_qualified_identities(engine, *, player_values=(), event_values=()):
     return result
 
 
+IDENTITY_CHECK_STATUSES = frozenset(
+    {
+        "qualified",
+        "missing_qualified_five_languages",
+        "unresolved",
+        "ambiguous",
+        "conflict",
+        "canonical_decision_key_mismatch",
+    }
+)
+
+
+def validate_identity_check_request(request):
+    _require(
+        isinstance(request, dict)
+        and set(request) == {"operation", "game_count", "instructions"}
+        and request["operation"] == "check-identities"
+        and type(request["game_count"]) is int
+        and 1 <= request["game_count"] <= 100
+        and isinstance(request["instructions"], list)
+        and len(request["instructions"]) <= min(300, 3 * request["game_count"]),
+        "identity check request invalid",
+    )
+    seen = set()
+    for row in request["instructions"]:
+        _require(
+            isinstance(row, dict)
+            and set(row) == {"kind", "raw", "canonical_name", "name_decision"}
+            and isinstance(row["kind"], str)
+            and row["kind"] in {"player", "event"}
+            and type(row["name_decision"]) is bool
+            and all(
+                isinstance(row[field], str) and row[field].strip() and len(row[field]) <= 512
+                for field in ("raw", "canonical_name")
+            ),
+            "identity check instruction invalid",
+        )
+        key = row["kind"], row["raw"], row["canonical_name"]
+        _require(key not in seen, "identity check instructions must be unique")
+        seen.add(key)
+    return request
+
+
+def validate_identity_check_response(request, response):
+    validate_identity_check_request(request)
+    _require(
+        isinstance(response, dict)
+        and set(response) == {"status", "request_sha256", "results"}
+        and response["status"] == "checked"
+        and response["request_sha256"] == canonical_sha256(request)
+        and isinstance(response["results"], list)
+        and len(response["results"]) == len(request["instructions"])
+        and all(isinstance(value, str) and value in IDENTITY_CHECK_STATUSES for value in response["results"]),
+        "identity check response invalid",
+    )
+    return response
+
+
+def check_identity_instructions(engine, request):
+    """Resolve bounded logical instructions on this target; expose no local IDs."""
+    validate_identity_check_request(request)
+    results, resolved = [], {"player": {}, "event": {}}
+    with engine.connect() as conn, conn.begin():
+        if conn.dialect.name == "postgresql":
+            conn.execute(text("SET TRANSACTION READ ONLY"))
+        indexes = _identity_indexes(conn)
+        for index, row in enumerate(request["instructions"]):
+            try:
+                owner_id = _resolve_identity(
+                    row["kind"], row["raw"], {"canonical_name": row["canonical_name"]}, indexes
+                )
+            except PublicationError as exc:
+                message = str(exc)
+                results.append(
+                    "unresolved"
+                    if message.startswith("unknown ")
+                    else "ambiguous" if message.startswith("ambiguous ") else "conflict"
+                )
+            else:
+                resolved[row["kind"]][index] = owner_id
+                results.append("missing_qualified_five_languages")
+        for kind, owners in resolved.items():
+            if not owners:
+                continue
+            owner_model, name_model, owner_column = name_batch._OWNER[kind]
+            canonical = dict(
+                conn.execute(
+                    select(owner_model.id, owner_model.canonical_name).where(owner_model.id.in_(set(owners.values())))
+                ).all()
+            )
+            languages = {}
+            with Session(bind=conn) as db:
+                for name, _evidence in _qualified_name_rows(
+                    db, _approved_names(db, name_model, owner_column, set(owners.values())), name_model, owner_column
+                ):
+                    if name.lang in LANGUAGES:
+                        languages.setdefault(getattr(name, owner_column), set()).add(name.lang)
+            for index, owner_id in owners.items():
+                row = request["instructions"][index]
+                # Game instructions accept aliases; native canonical name
+                # decisions additionally bind by the exact canonical key.
+                if row["name_decision"] and canonical[owner_id] != row["canonical_name"]:
+                    results[index] = "canonical_decision_key_mismatch"
+                elif languages.get(owner_id) == set(LANGUAGES):
+                    results[index] = "qualified"
+    return {"status": "checked", "request_sha256": canonical_sha256(request), "results": results}
+
+
 def _scope_refresh_marker(conn, kind, prior):
     name, evidence = prior["name"], prior["evidence"]
     payload = evidence["research_payload"]

@@ -35,6 +35,79 @@ def _manifest():
     }
 
 
+def _qualified_target(request):
+    return {
+        "status": "checked",
+        "request_sha256": canonical_sha256(request),
+        "results": ["qualified"] * len(request["instructions"]),
+    }
+
+
+def test_receive_identity_check_is_read_only_and_publish_envelope_still_works(monkeypatch, capsys):
+    from io import StringIO
+    from katrain.kifu_ingest import orchestration
+
+    request = {
+        "operation": "check-identities",
+        "game_count": 1,
+        "instructions": [{"kind": "player", "raw": "Raw", "canonical_name": "Portable", "name_decision": False}],
+    }
+    engine = object()
+    monkeypatch.setattr(orchestration, "_engine", lambda: engine)
+    calls = []
+
+    def check(db, value):
+        assert db is engine and value == request
+        calls.append("read")
+        return _qualified_target(value)
+
+    monkeypatch.setattr(orchestration, "check_identity_instructions", check)
+    monkeypatch.setattr(orchestration, "publish_manifest", lambda *a, **k: pytest.fail("read operation published"))
+    monkeypatch.setattr(orchestration.sys, "stdin", StringIO(json.dumps(request)))
+    assert orchestration.main(["receive"]) == 0
+    assert json.loads(capsys.readouterr().out) == _qualified_target(request)
+    assert calls == ["read"]
+    manifest = _manifest()
+    digest = canonical_sha256(manifest)
+    payload = {
+        "manifest": manifest,
+        "manifest_sha256": digest,
+        "test_verification": {
+            "status": "verified",
+            "manifest_sha256": digest,
+            "games": 1,
+            "checks": [{"album_id": 7, "lang": lang} for lang in ("cn", "tw", "jp", "ko", "en")],
+        },
+    }
+    monkeypatch.setattr(orchestration.sys, "stdin", StringIO(json.dumps(payload)))
+    monkeypatch.setattr(
+        orchestration, "publish_manifest", lambda db, value, **kw: calls.append("publish") or {"games": []}
+    )
+    assert orchestration.main(["receive"]) == 0
+    assert json.loads(capsys.readouterr().out) == {
+        "status": "applied",
+        "manifest_sha256": digest,
+        "receipt": {"games": []},
+    }
+    assert calls == ["read", "publish"]
+
+
+def test_receive_bad_identity_schema_never_opens_database(monkeypatch, capsys):
+    from io import StringIO
+    from katrain.kifu_ingest import orchestration
+
+    monkeypatch.setattr(orchestration, "_engine", lambda: pytest.fail("invalid readonly request opened database"))
+    monkeypatch.setattr(
+        orchestration.sys,
+        "stdin",
+        StringIO(
+            json.dumps({"operation": "check-identities", "game_count": True, "instructions": [], "path": "/private"})
+        ),
+    )
+    assert orchestration.main(["receive"]) == 2
+    assert json.loads(capsys.readouterr().out) == {"status": "error", "error": "identity check unavailable"}
+
+
 def test_run_once_dry_run_validates_without_engine_or_publisher(tmp_path, monkeypatch, capsys):
     from katrain.kifu_ingest import orchestration
 
@@ -184,6 +257,7 @@ async def test_staged_game_with_qualified_names_prepares_without_paid_api(tmp_pa
         engine=object(),
         client=None,
         names=None,
+        check_identities=_qualified_target,
     )
     assert manifest["games"][0]["identities"] == {
         "black": {"canonical_name": "Black"},
@@ -221,6 +295,7 @@ async def test_staged_game_needing_a_name_exits_before_network_when_key_missing(
             engine=object(),
             client=object(),
             names=Names(),
+            check_identities=_qualified_target,
         )
 
 
@@ -251,6 +326,7 @@ async def test_staged_game_reuses_qualified_literal_event_without_model(tmp_path
         engine=object(),
         client=None,
         names=None,
+        check_identities=_qualified_target,
     )
     assert manifest["decisions"] == []
     assert manifest["games"][0]["identities"]["event"] is None
@@ -278,6 +354,128 @@ def _reviewed_name_decision(kind, key, members):
         "content_sha256": review_content_sha256(decision),
     }
     return decision
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("initial_check_passed", [False, True])
+@pytest.mark.parametrize(
+    "local_status,target_status",
+    [
+        ("qualified", "unresolved"),
+        ("qualified", "missing_qualified_five_languages"),
+        ("missing_qualified_five_languages", "conflict"),
+        ("missing_qualified_five_languages", "canonical_decision_key_mismatch"),
+    ],
+)
+async def test_target_identity_failure_isolates_only_linked_games_before_any_model(
+    tmp_path, monkeypatch, local_status, target_status, initial_check_passed
+):
+    from katrain.kifu_ingest import orchestration
+
+    items = []
+    for source_id, black, white in (("42", "Bad", "Shared"), ("43", "Shared", "White")):
+        sgf = f"(;PB[{black}]PW[{white}]EV[NewMatch];B[aa])"
+        path = tmp_path / f"{source_id}.sgf"
+        path.write_text(sgf)
+        items.append(
+            {"external_id": source_id, "raw_sgf_path": str(path), "raw_sha256": sha256(sgf.encode()).hexdigest()}
+        )
+    resolved = {
+        "player": {
+            "Bad": {"status": local_status, "canonical_name": "TEST Only"},
+            "Shared": {"status": "unresolved"},
+            "White": {"status": "qualified", "canonical_name": "White"},
+        },
+        "event": {"NewMatch": {"status": "unresolved"}},
+    }
+    monkeypatch.setattr(orchestration, "lookup_qualified_identities", lambda *a, **k: resolved)
+    monkeypatch.setattr(orchestration, "qualified_raw_player_templates", lambda *a, **k: {"templates": {}})
+    monkeypatch.setattr(orchestration, "qualified_raw_event_templates", lambda *a, **k: {"templates": {}})
+    checked = []
+
+    def target(request):
+        checked.append(request)
+        assert all(
+            row["name_decision"] == (row["canonical_name"] != "White" and local_status != "qualified")
+            for row in request["instructions"]
+        )
+        return {
+            **_qualified_target(request),
+            "results": [
+                target_status if r["canonical_name"] == "TEST Only" else "qualified" for r in request["instructions"]
+            ],
+        }
+
+    if initial_check_passed:
+        from copy import deepcopy
+        from katrain.cron.jobs.kifu_ingest import select_portable_review_items
+
+        initial = deepcopy(resolved)
+        initial["player"]["Bad"]["canonical_name"] = "Earlier Portable Name"
+        records = [(item, await orchestration.derive_staged_record(item)) for item in items]
+        chosen, deferred = await select_portable_review_items(
+            records, initial, check_identities=target, reusable_events=set(), max_new_names=3
+        )
+        assert chosen == items and deferred == []
+
+    async def wiki(*args):
+        assert checked
+        return {"status": "unavailable", "sources": []}
+
+    monkeypatch.setattr(orchestration, "wiki_sources", wiki)
+
+    class Names:
+        key = "test-only"
+        calls = []
+
+        async def translate_and_review(self, kind, key, members, **kwargs):
+            assert checked and all(m["source_item_id"] == "43" for m in members)
+            self.calls.append((kind, key))
+            return _reviewed_name_decision(kind, key, members)
+
+    isolated, names = [], Names()
+    result = await orchestration.prepare_staged_games(
+        items, engine=object(), client=object(), names=names, isolated=isolated, check_identities=target
+    )
+    assert [g["source_item_id"] for g in result["games"]] == ["43"]
+    assert len(isolated) == 1 and isolated[0][0] == "42" and target_status in isolated[0][1]
+    assert set(names.calls) == {("raw_player", "Shared"), ("raw_event", "NewMatch")}
+    assert all(m["source_item_id"] == "43" for d in result["decisions"] for m in d["source_items"])
+    assert len(checked) == (2 if initial_check_passed else 1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("check_missing", [False, True])
+async def test_target_identity_unavailable_defers_without_model_or_quarantine(tmp_path, monkeypatch, check_missing):
+    from katrain.kifu_ingest import orchestration
+    from katrain.kifu_ingest.sync import IdentityCheckUnavailable
+
+    sgf = "(;PB[Black]PW[White]EV[Match];B[aa])"
+    path = tmp_path / "42.sgf"
+    path.write_text(sgf)
+    monkeypatch.setattr(
+        orchestration,
+        "lookup_qualified_identities",
+        lambda *a, **k: {"player": {"Black": {"status": "qualified", "canonical_name": "Black"}}, "event": {}},
+    )
+    monkeypatch.setattr(
+        orchestration, "wiki_sources", lambda *a: pytest.fail("unavailable target reached paid preparation")
+    )
+
+    def unavailable(request):
+        raise IdentityCheckUnavailable("production identity check unavailable")
+
+    isolated = []
+    with pytest.raises(IdentityCheckUnavailable):
+        await orchestration.prepare_staged_games(
+            [{"external_id": "42", "raw_sgf_path": str(path), "raw_sha256": sha256(sgf.encode()).hexdigest()}],
+            engine=object(),
+            client=object(),
+            names=None,
+            isolated=isolated,
+            check_identities=None if check_missing else unavailable,
+        )
+    assert isolated == []
 
 
 @pytest.mark.asyncio
@@ -345,13 +543,23 @@ async def test_staged_game_preserves_qualified_raw_player_template_meaning(tmp_p
     if fault:
         with pytest.raises(NameRejected, match="all staged games require isolated name review"):
             await orchestration.prepare_staged_games(
-                [item], engine=object(), client=object(), names=Names(), isolated=isolated
+                [item],
+                engine=object(),
+                client=object(),
+                names=Names(),
+                isolated=isolated,
+                check_identities=_qualified_target,
             )
         assert len(isolated) == 1 and isolated[0][0] == "42"
         assert "qualified reusable" in isolated[0][1]
     else:
         result = await orchestration.prepare_staged_games(
-            [item], engine=object(), client=object(), names=Names(), isolated=isolated
+            [item],
+            engine=object(),
+            client=object(),
+            names=Names(),
+            isolated=isolated,
+            check_identities=_qualified_target,
         )
         assert result["decisions"][0]["methods"] == template["methods"]
         assert result["decisions"][0]["original_language"] == "und"
@@ -427,7 +635,7 @@ async def test_staged_batch_isolates_frozen_raw_profile_before_any_model_call(
     names = Names()
     isolated = []
     manifest = await orchestration.prepare_staged_games(
-        items, engine=object(), client=object(), names=names, isolated=isolated
+        items, engine=object(), client=object(), names=names, isolated=isolated, check_identities=_qualified_target
     )
 
     assert [game["source_item_id"] for game in manifest["games"]] == ["43"]
@@ -498,6 +706,7 @@ async def test_staged_batch_with_only_frozen_raw_profiles_rejects_without_model_
             client=object(),
             names=Names() if names_enabled else None,
             isolated=isolated,
+            check_identities=_qualified_target,
         )
     assert isolated == [
         (source_id, f"{frozen_kind} 'Frozen': no_native_generated_scope_refresh") for source_id in ("42", "43")
@@ -505,7 +714,8 @@ async def test_staged_batch_with_only_frozen_raw_profiles_rejects_without_model_
 
 
 @pytest.mark.asyncio
-async def test_staged_game_reviews_only_missing_raw_name_with_finite_scope(tmp_path, monkeypatch):
+@pytest.mark.parametrize("canonical_missing", [False, True])
+async def test_staged_game_reviews_only_missing_name_with_finite_scope(tmp_path, monkeypatch, canonical_missing):
     from katrain.kifu_ingest import orchestration
     from katrain.kifu_ingest.catalog import review_content_sha256
 
@@ -516,7 +726,14 @@ async def test_staged_game_reviews_only_missing_raw_name_with_finite_scope(tmp_p
         orchestration,
         "lookup_qualified_identities",
         lambda *a, **k: {
-            "player": {"Black": {"status": "unresolved"}, "White": {"status": "qualified", "canonical_name": "White"}},
+            "player": {
+                "Black": (
+                    {"status": "missing_qualified_five_languages", "canonical_name": "Black"}
+                    if canonical_missing
+                    else {"status": "unresolved"}
+                ),
+                "White": {"status": "qualified", "canonical_name": "White"},
+            },
             "event": {"Match": {"status": "qualified", "canonical_name": "Match"}},
         },
     )
@@ -531,7 +748,7 @@ async def test_staged_game_reviews_only_missing_raw_name_with_finite_scope(tmp_p
         key = "test-only"
 
         async def translate_and_review(self, kind, key, members, *, sources, context):
-            assert (kind, key, sources, context) == ("raw_player", "Black", [], None)
+            assert (kind, key, sources, context) == ("player" if canonical_missing else "raw_player", "Black", [], None)
             decision = {
                 "kind": kind,
                 "key": key,
@@ -552,14 +769,24 @@ async def test_staged_game_reviews_only_missing_raw_name_with_finite_scope(tmp_p
             }
             return decision
 
+    def target(request):
+        return {
+            **_qualified_target(request),
+            "results": [
+                "missing_qualified_five_languages" if r["canonical_name"] == "Black" else "qualified"
+                for r in request["instructions"]
+            ],
+        }
+
     manifest = await orchestration.prepare_staged_game(
         {"external_id": "42", "raw_sgf_path": str(path), "raw_sha256": sha256(sgf.encode()).hexdigest()},
         engine=object(),
         client=object(),
         names=Names(),
+        check_identities=target,
     )
-    assert manifest["games"][0]["identities"]["black"] is None
-    assert [d["kind"] for d in manifest["decisions"]] == ["raw_player"]
+    assert manifest["games"][0]["identities"]["black"] == ({"canonical_name": "Black"} if canonical_missing else None)
+    assert [d["kind"] for d in manifest["decisions"]] == ["player" if canonical_missing else "raw_player"]
     assert manifest["decisions"][0]["source_items"][0]["slot"] == "black"
 
 
@@ -620,7 +847,9 @@ async def test_staged_batch_reviews_shared_raw_player_once_for_all_members(tmp_p
             return decision
 
     names = Names()
-    manifest = await orchestration.prepare_staged_games(items, engine=object(), client=object(), names=names)
+    manifest = await orchestration.prepare_staged_games(
+        items, engine=object(), client=object(), names=names, check_identities=_qualified_target
+    )
     assert names.calls == 1
     assert len(manifest["games"]) == 2
     assert len(manifest["decisions"]) == 1
@@ -699,6 +928,7 @@ async def test_rejected_name_isolates_only_linked_games_and_rereviews_narrowed_s
         client=object(),
         names=names,
         isolated=isolated,
+        check_identities=_qualified_target,
     )
     assert [game["source_item_id"] for game in manifest["games"]] == ["41", "43"]
     assert isolated == [("42", "bad name")]

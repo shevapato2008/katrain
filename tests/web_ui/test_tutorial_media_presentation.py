@@ -337,3 +337,33 @@ def test_initial_only_marker_is_discovered_hidden_then_revealed_without_changing
     assert result["frames"][-1]["payload"]["shapes"] == {}
     assert result["frames"][-1]["captured"] == [[0, 0]]
     assert value == before
+
+
+@pytest.mark.parametrize("text", ["白一，黑二，白三，黑四，白五。", "白1，黑二，白3，黑四，白五。"])
+def test_chinese_printed_number_aliases_reuse_exact_speech_end_boundaries(text):
+    result = build(diagram(), text)
+    assert result["status"] == "complete", result
+    assert [event["at_ms"] for event in result["events"]] == [450, 1050, 1650, 2250, 2850]
+    assert result["frames"][-1]["payload"]["labels"] == diagram()["labels"]
+
+
+def test_two_digit_chinese_aliases_and_explicit_spans_do_not_require_new_audio():
+    value = diagram()
+    value["labels"] = {key: str(int(label) + 20) for key, label in value["labels"].items()}
+    text = "白二十一，黑二十二，白二十三，黑二十四，白二十五。"
+    plan = {
+        "schema_version": 1,
+        "bindings": [{"span": [i * 5, i * 5 + 4], "object_ids": [f"labels:{i},1"]} for i in range(5)],
+    }
+    proof = build(value, text, presentation_plan=plan)
+    assert proof["status"] == "complete", proof
+    assert [event["at_ms"] for event in proof["events"]] == [850, 1850, 2850, 3850, 4850]
+
+
+def test_chinese_alias_boundaries_do_not_match_prefix_of_another_number():
+    from katrain.web.tutorials.media_presentation import _matches
+
+    assert [match.group() for match in _matches({"number": 11, "stone_color": "B"}, "黑十一。")] == ["黑十一"]
+    for number, text in [(1, "黑十一"), (2, "黑二十三"), (11, "黑一百一十一"), (1, "黑一2")]:
+        assert _matches({"number": number, "stone_color": "B"}, text) == []
+    assert build(diagram(), "白一到白五。")["status"] == "pending"

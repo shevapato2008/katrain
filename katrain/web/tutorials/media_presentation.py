@@ -205,7 +205,15 @@ def _matches(obj, text):
     number = obj.get("number")
     if number is not None:
         color = "黑|B" if obj["stone_color"] == "B" else "白|W"
-        return list(re.finditer(rf"(?:{color})\s*{number}(?![0-9])", text, re.I))
+        aliases = [str(number)]
+        if 1 <= number <= 99:
+            digits = "零一二三四五六七八九"
+            tens, units = divmod(number, 10)
+            aliases.append(
+                (digits[tens] if tens > 1 else "") + "十" + (digits[units] if units else "") if tens else digits[units]
+            )
+        token = "|".join(aliases)
+        return list(re.finditer(rf"(?:{color})\s*(?:{token})(?![0-9零〇一二两三四五六七八九十百千万])", text, re.I))
     if obj["kind"] == "replay":
         return []  # Unnumbered moves/passes need an explicit human binding.
     words = SHAPE_WORDS.get(obj.get("value"), [obj.get("value")]) if obj["kind"] == "shapes" else [obj.get("value")]

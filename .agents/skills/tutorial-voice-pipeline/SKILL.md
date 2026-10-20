@@ -1,264 +1,41 @@
 ---
 name: tutorial-voice-pipeline
-description: >
-  Tutorial voice narration pipeline for Go textbook digitization. Use when generating
-  narration text and TTS audio for tutorial figures: running generate_voice.py,
-  managing narration rewriting via Codex API, configuring TTS backends (edge-tts /
-  CosyVoice), debugging audio output, or editing narration in the web UI.
-  Triggers on: voice generation, narration, TTS, audio, 语音讲解, 旁白, edge-tts,
-  CosyVoice, generate_voice.
+description: Use when preparing Go tutorial narration, generating TTS audio with word timestamps, editing saved lecture text, or troubleshooting audio and narration-to-move alignment. 适用于教程语音讲解、旁白和落子语音时间锚点。
 ---
 
-# Tutorial Voice Pipeline
+# 教程语音与落子讲解
 
-Convert Go textbook prose into tutorial narration text and synthesized speech audio.
-The pipeline rewrites `book_text` via Codex CLI (Max subscription, no API cost) or
-Anthropic API into natural tutorial narration, then generates MP3 audio via edge-tts
-(or CosyVoice), saving both to the database. Supports parallel processing.
+将原书文字、原图及已核对电子棋图整理为讲稿，再生成真实语音及同一次合成的词级时间戳，交给 tutorial-video-pipeline。**先音频，后视频；有可靠落子编号时，讲稿和音频必须支持依次展示这些棋子；符号／字母等教学对象也必须有语音触发锚点。**
 
-## Architecture
+## 1. 输入与讲稿
 
-```
-Book Import (import_book.py)
-  └─ book_text (OCR from textbook)
-       │
-       ├─ [Step 1] Codex CLI rewrite → narration (default, uses Max subscription)
-       │     CLI: Codex -p --model sonnet
-       │     Fallback: Anthropic API (--rewriter api)
-       │     Prompt: rephrase for tutorial tone, keep all Go concepts
-       │
-       ├─ [Step 2] TTS synthesis → MP3 audio file
-       │     Backend: edge-tts (default) or CosyVoice (optional)
-       │     Voice: zh-CN-XiaoxiaoNeural (default)
-       │
-       └─ [Step 3] Save to DB → narration + audio_asset columns
-             API: PUT /figures/{id}/narration
-```
+- 核对目标环境、来源页、当前图版本及静态棋图人工确认。用户明确授权代登记时保留确认来源；机器审核不代替人工确认。
+- `book_text` 为空不等于无来源：按 figure／来源映射使用原页、`page_context_text` 及来源文字，不能混入邻图结论。图文冲突、颜色／编号／点位不明时定位报告；按任务约定跳过或校准，不猜补。
+- 根据原书准确改写观察、原因和结论；保留必要条件、否定、提子／粘劫／同点注记。不凭静态图编造未记录的变化、提子过程或题目答案。
+- **已有可靠编号：**先说明背景和轮谁下，再按原书顺序讲出每步的颜色与编号，例如白1、黑2、白3、黑4、白5；任意起始编号／白先均可。不要求整盘棋历史，也不因真实 replay 待校准而省掉这些步骤。
+- 编号的颜色和坐标来自已核对棋图；描述棋理须有来源依据。讲到每个新落子时给出明确语音锚点，不能只说“1到5”而省掉中间步骤。后文回顾先前编号须与新落子叙述区别，不能让时间线倒退或重复落子。
+- 逐一覆盖需展示的符号／字母标注棋子、独立符号／字母、选点、箭头等，给出有来源的准确指代；多个同符号对象用颜色、位置或明确集合区分。它们在首次明确提及的真实语音片段结束后才出现，不能漏讲后默认开场显示。
+- 只有无编号、无符号／字母教学标注的静态背景子可在开场显示；没有有序步骤但有符号／字母的图仍需要标注触发时间。问题序号、备选点标签不自动成为真实手顺，但作为教学标注也应在提及后显现；不能靠改写讲稿猜出缺号。
+- 每幅视频可独立播放；比较其他图时交代有明确来源的关键棋形／处理，不能只报图号。字幕使用完整短句；颜色＋编号、否定及条件与结论不能被分屏拆成误导句。当前字幕器建议每完整句不超过25字符，但仍须核对实际分组。
 
-## Pipeline Execution Order
+## 2. 保存讲稿并生成音频
 
-This skill is part of a 3-skill tutorial digitization pipeline. **Check prerequisites before running.**
+当前入口是已鉴权的管理后台教程 API。BASE 按当前环境核对，不使用公开客户端写接口或直接 SQL：
 
-| Order | Skill | Script | Prerequisite Check |
-|-------|-------|--------|--------------------|
-| 0 (first) | `tutorial-book-import` | `import_book.py` | book.json + pages exist in book-dir |
-| 1 (after 0) | `tutorial-recognition-pipeline` | `recognize_boards_v2.py` | Figures exist in DB with `page_image_path` and `bbox` |
-| 2 (after 0) | **`tutorial-voice-pipeline`** | `generate_voice.py` | Figures exist in DB with `book_text` |
+1. `PUT BASE/figures/{id}/narration`，请求仅含最终 `narration` 与匹配当前版本的 `expected_updated_at`；保留用户手改稿，不用批处理强制覆盖。
+2. 用保存返回的当前版本提交 `POST BASE/figures/{id}/media-tasks`，`kind: "audio"` 并带 `expected_updated_at`；语音默认由当前服务配置选择（现有默认 `zh-CN-XiaoxiaoNeural`）。
+3. `GET BASE/media-tasks/{task_id}` 等待真实 succeeded；202／queued 不算完成。失败不能用静音 MP3、原文兜底文件或仅有路径冒充成功。
+4. 保存并核对真实音频、时长、音频 SHA、讲稿 SHA、voice 及该次合成的 WordBoundary。时间戳文字与最终讲稿一致，音频非空、非静音、可解码，听音核对时如实记录结果。
+5. 把编号子、带符号／字母的棋子及独立标注的对象映射和真实语音片段结束时点交给视频流程；编号子需顺序正确，其余标注按明确引用触发。缺锚点、指代不清或顺序不符时先修稿／重新合成，不平均分配时间，不提前显示，也不静态降级交付。
 
-Steps 1 and 2 are independent — can run in any order or in parallel. Both require step 0.
+修改讲稿会使旧音频／视频依赖失效。两份视频应复用同一合格音频与时间戳，不分别合成不同长度的音轨。已有音频只有在讲稿／音频哈希、voice 和所需逐步锚点都一致时才能复用。
 
-**Before running this skill, verify:**
-- Section has figures in the database with `book_text` populated.
-- If prerequisites are not met, inform the user to run `tutorial-book-import` (`scripts/import_book.py`) first.
+409 停止该图写入并核对版本；结果不明的写请求先只读确认是否已提交。用户暂停后不提交该批次讲稿／棋图／审核等业务写入，也不创建新任务；保留任务回执与恢复点，只读核对。
 
-## Key Files
+## 3. 当前实现与交付
 
-| Component | Path |
-|-----------|------|
-| Pipeline script | `scripts/generate_voice.py` |
-| Narration rewriter (lib) | `scripts/lib/narration_rewriter.py` |
-| Audio generator (lib) | `scripts/lib/audio_gen.py` |
-| DB models | `katrain/web/core/models_db.py` (TutorialFigure) |
-| DB queries | `katrain/web/tutorials/db_queries.py` (`update_figure_narration`) |
-| API schemas | `katrain/web/tutorials/models.py` (`NarrationUpdate`) |
-| API endpoints | `katrain/web/api/v1/endpoints/tutorials.py` |
-| Audio player UI | `katrain/web/ui/src/galaxy/components/tutorials/AudioPlayer.tsx` |
-| Figure page UI | `katrain/web/ui/src/galaxy/pages/tutorials/TutorialFigurePage.tsx` |
-| Audio output dir | `data/tutorial_assets/{book_slug}/audio/` |
+`scripts/generate_voice.py` 的旧批量生成已停用；不要照旧 `--force` 或直接数据库写入流程绕过当前鉴权、版本和人工审核。音频成功也不表示落子时间线成功：服务若因 `replay` 待校准未产生编号 cue，需按视频 skill 补齐编号同步能力，不能说音频失败或降低视频验收标准。
 
-## Running the Pipeline
+交付：来源／图版本、最终讲稿、真实音频与时间戳／哈希、逐步编号及符号／字母等对象映射、成功／失败及待校准状态。独立 Astra Max 是机器审核；不代填视频人工审核。批量范围、每页审核、并发与汇报频率按用户当前任务执行，不把单图音频成功算作整页音视频完成。
 
-```bash
-# Generate narration + audio (default: Codex CLI + edge-tts, 5 parallel tasks)
-python scripts/generate_voice.py --section-id <ID>
-
-# Higher parallelism
-python scripts/generate_voice.py --section-id <ID> --concurrency 8
-
-# Dry run (preview what would be generated, no DB writes or API calls)
-python scripts/generate_voice.py --section-id <ID> --dry-run
-
-# Force re-generate (overwrite existing narration + audio)
-python scripts/generate_voice.py --section-id <ID> --force
-
-# Use Anthropic API instead of Codex CLI (costs money)
-python scripts/generate_voice.py --section-id <ID> --rewriter api
-
-# Use CosyVoice backend instead of edge-tts
-python scripts/generate_voice.py --section-id <ID> --tts cosyvoice --cosyvoice-url http://localhost:50000
-
-# Use a different edge-tts voice
-python scripts/generate_voice.py --section-id <ID> --voice zh-CN-YunxiNeural
-```
-
-### CLI Options
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--section-id` | (required) | Section ID to process |
-| `--force` | `false` | Re-generate even if narration/audio already exists |
-| `--dry-run` | `false` | Preview without writing to DB or generating audio |
-| `--rewriter` | `cli` | Narration rewriter: `cli` (Codex CLI, Max subscription, free) or `api` (Anthropic API, billed) |
-| `--model` | `sonnet` | Model for Codex CLI rewriter |
-| `--concurrency` | `5` | Max parallel narration+TTS tasks |
-| `--tts` | `edge-tts` | TTS backend: `edge-tts` or `cosyvoice` |
-| `--cosyvoice-url` | `http://localhost:50000` | CosyVoice HTTP API base URL |
-| `--voice` | `zh-CN-XiaoxiaoNeural` | edge-tts voice name |
-
-### Processing Logic
-
-Figures within a section are processed **in parallel** (up to `--concurrency` limit):
-
-1. **Skip** if `book_text` is empty (no source text to narrate)
-2. **Skip** if `narration` AND `audio_asset` both exist (unless `--force`)
-3. **Step 1**: Rewrite `book_text` → `narration` via Codex CLI or API (or reuse existing narration if only audio is missing)
-4. **Step 2**: Generate TTS audio → `data/tutorial_assets/{book_slug}/audio/fig_{figure_id}.mp3`
-5. **Step 3**: Save all results to database in a single commit
-
-On narration failure, falls back to using `book_text` verbatim. On audio failure, `audio_asset` is set to `None`.
-
-## Narration Rewriting
-
-### Rewriter: Codex CLI (default)
-
-- **Command**: `Codex -p --model sonnet` (subprocess)
-- **Auth**: Uses Max subscription (no API cost)
-- **Parallelism**: Multiple `Codex` CLI processes via `asyncio.Semaphore`
-
-### Rewriter: Anthropic API (fallback)
-
-- **Model**: `Codex-sonnet-4-20250514`
-- **Auth**: `ANTHROPIC_API_KEY` environment variable (billed separately)
-- **Max tokens**: 1024
-
-### Prompt
-
-```
-You are helping create Go (围棋) tutorial narration for learners.
-
-Rewrite the following Chinese Go book text. Requirements:
-- Keep ALL concepts, technical terms, and strategic content intact
-- Rephrase sentence structure and word choice so it doesn't feel like a direct copy
-- Maintain the same level of detail and meaning
-- Write in natural, clear Mandarin Chinese suitable for a digital tutorial
-- Use a warm, conversational tone as if explaining to a student
-- Output ONLY the rewritten Chinese text — no translation, no explanation, no quotes
-
-Original text:
-{text}
-```
-
-### Library Module
-
-`scripts/lib/narration_rewriter.py` provides a reusable `rewrite_narration()` function with the same prompt (uses Anthropic API with `Codex-opus-4-6`). The main script has its own `rewrite_narration_cli()` (Codex CLI, default) and `rewrite_narration_api()` (Anthropic API, fallback) and does **not** import from the lib module. The higher-level script `scripts/generate_tutorial_v003.py` imports from the lib module.
-
-## TTS Backends
-
-### edge-tts (Default)
-
-Free Microsoft Edge TTS service via the `edge-tts` Python package. No API key required.
-
-- **Package**: `edge-tts` (in project dependencies)
-- **Default voice**: `zh-CN-XiaoxiaoNeural` (female Mandarin Chinese)
-- **Output**: MP3 file
-- **Latency**: ~1-3 seconds per figure
-
-Other available Chinese voices: `zh-CN-YunxiNeural` (male), `zh-CN-XiaoyiNeural`, `zh-CN-YunjianNeural`.
-
-### CosyVoice (Optional)
-
-Self-hosted TTS via CosyVoice HTTP API. Requires running a CosyVoice server.
-
-- **API**: `POST {base_url}/tts` with JSON body `{"text": "...", "speaker": "中文女"}`
-- **Default URL**: `http://localhost:50000`
-- **Timeout**: 60 seconds
-- **Output**: MP3 file
-
-### Library Fallback
-
-The lib module (`scripts/lib/audio_gen.py`) writes a minimal silent MP3 stub when TTS fails, ensuring a file always exists. The main script (`generate_voice.py`) instead sets `audio_asset` to `None` on failure — no stub file is written.
-
-## Data Model
-
-### TutorialFigure Columns (voice-related)
-
-| Column | Type | Source | Description |
-|--------|------|--------|-------------|
-| `book_text` | `Text` | `import_book.py` | Original OCR text from book (input) |
-| `page_context_text` | `Text` | `import_book.py` | Surrounding page context (not used by voice pipeline) |
-| `narration` | `Text` | `generate_voice.py` | Rewritten narration text (output) |
-| `audio_asset` | `String(512)` | `generate_voice.py` | Relative path to MP3 file (output) |
-
-### Audio Asset Path Convention
-
-```
-# File on disk:
-data/tutorial_assets/{book_slug}/audio/fig_{figure_id}.mp3
-
-# Stored in DB (audio_asset column):
-tutorial_assets/{book_slug}/audio/fig_{figure_id}.mp3
-
-# Served via API:
-GET /api/v1/tutorials/assets/tutorial_assets/{book_slug}/audio/fig_{figure_id}.mp3
-
-# Frontend URL construction:
-TutorialAPI.assetUrl(figure.audio_asset)
-```
-
-## API Endpoints
-
-### Update Narration
-
-```
-PUT /api/v1/tutorials/figures/{figure_id}/narration
-```
-
-**Request body** (`NarrationUpdate`):
-```json
-{
-  "narration": "改写后的讲解文本...",
-  "audio_asset": "tutorial_assets/some-book/audio/fig_42.mp3"
-}
-```
-
-`audio_asset` is optional — if omitted, only narration text is updated.
-
-**Response**: Full `TutorialFigureOut` object.
-
-### Serve Audio Asset
-
-```
-GET /api/v1/tutorials/assets/{asset_path}
-```
-
-Serves static files from `data/` directory. Path traversal is rejected by `_safe_asset_path()`.
-
-## Frontend Display
-
-Column 3 ("语音讲解") in `TutorialFigurePage.tsx`:
-- If `narration` exists: shows narration text + `<AudioPlayer>` component with play/pause
-- If `narration` is empty: shows italic placeholder "暂无讲解文本。运行 generate_voice.py 生成。"
-
-`AudioPlayer.tsx` is an HTML5 audio player with play/pause toggle, error state indicator, and `onEnded` callback.
-
-## Prerequisites
-
-1. **Book must be imported** — run `scripts/import_book.py` first so `book_text` is populated
-2. **`ANTHROPIC_API_KEY`** — must be set for Codex API narration rewriting
-3. **`edge-tts` package** — installed via `uv sync` (in project dependencies)
-4. **CosyVoice server** (optional) — only needed if using `--tts cosyvoice`
-
-## Finding Section IDs
-
-```python
-from katrain.web.core.db import SessionLocal
-from katrain.web.core.models_db import TutorialSection, TutorialFigure
-
-db = SessionLocal()
-for s in db.query(TutorialSection).all():
-    figs = db.query(TutorialFigure).filter_by(section_id=s.id).all()
-    has_narration = [f for f in figs if f.narration]
-    has_audio = [f for f in figs if f.audio_asset]
-    print(f"Section {s.id}: {s.title} — {len(figs)} figs "
-          f"({len(has_narration)} narrated, {len(has_audio)} with audio)")
-```
+代码入口：`katrain/web/admin/routers/tutorials.py`、`tutorial_media.py`；`katrain/web/tutorials/media_tasks.py`、`media_timing.py`；视频交接使用 tutorial-video-pipeline。

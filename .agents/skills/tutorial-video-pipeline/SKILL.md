@@ -1,318 +1,85 @@
 ---
 name: tutorial-video-pipeline
-description: Use when generating tutorial lecture videos from figure data, creating section-level concatenated videos, or troubleshooting video generation. Triggers on video generation, 生成视频, generate_video, tutorial video, section video, 视频讲解.
+description: Use when generating or reviewing Go tutorial lecture videos, synchronizing numbered stones with narration, producing Galaxy 4K and kiosk 7-inch versions, or troubleshooting tutorial video timing. 适用于教程视频讲解、按编号落子和音画同步。
 ---
 
-# Tutorial Video Pipeline
-
-Generate Go tutorial lecture videos by composing 3D board animation, synchronized subtitles, and voice narration into MP4 files.
-
-## Execution Workflow
-
-When the user asks to generate videos for a section (e.g., "为 Section 1 生成视频"), follow this exact sequence:
-
-### Step 1: Verify prerequisites
-
-```bash
-# Check web server is running
-curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/health
-```
-
-If not 200, start it:
-```bash
-python -m katrain --ui web --port 8001 &
-sleep 20  # Wait for build + startup
-```
-
-Also verify figures have narration:
-```python
-python3 -c "
-import sys; sys.path.insert(0, '.')
-from katrain.web.core.db import SessionLocal
-from katrain.web.core.models_db import TutorialFigure
-db = SessionLocal()
-figs = db.query(TutorialFigure).filter_by(section_id=SECTION_ID).all()
-ready = sum(1 for f in figs if f.narration and f.audio_asset)
-print(f'{ready}/{len(figs)} figures ready')
-db.close()
-"
-```
-
-If not all ready, run `tutorial-voice-pipeline` first.
-
-### Step 2: Generate all figure videos (with concurrency)
-
-Choose concurrency based on machine:
-- Macbook: `--concurrency 2`
-- Server (192 cores): `--concurrency 6`
-
-**Concurrency sweet spot (server):** The bottleneck is NOT CPU/memory but **NVIDIA EGL driver-level mutex on `glReadPixels`** (used by `page.screenshot()`). Each Chromium headless browser uses `--use-gl=egl` for WebGL rendering. When many browsers call ReadPixels concurrently, the NVIDIA driver serializes them, causing per-frame slowdown. Empirical results on the 192-core / 2×RTX 3090 server:
-
-| Total concurrent browsers | Result |
-|--------------------------|--------|
-| 6 (1 section × 6) | 100% success, ~2 min/figure |
-| 9-12 (2-3 sections × 6) | 100% success, ~5-10 min/figure |
-| ~20-30 | Works but slower per figure |
-| 60+ (10 sections × 6) | **Chromium CDP crashes**: `Page.captureScreenshot: Unable to capture screenshot` — ~35% failure rate |
-
-**Recommended strategy for batch processing:**
-- Run **3 sections in parallel**, each with `--concurrency 6` (max ~18 browsers)
-- This gives 100% success rate with reasonable throughput
-- Do NOT launch all sections at once — Chromium's CDP protocol layer crashes with 60+ concurrent screenshot requests regardless of CPU/memory availability
-
-```bash
-PYTHONUNBUFFERED=1 python scripts/generate_video.py \
-  --section-id SECTION_ID \
-  --concurrency N \
-  --force \
-  > /tmp/video_section_SECTION_ID.log 2>&1
-```
-
-**Monitor progress** by tailing the log:
-```bash
-tail -f /tmp/video_section_SECTION_ID.log
-```
-
-**Verify completion**: check all figure videos exist:
-```bash
-ls -la data/tutorial_assets/*/video/fig_*.mp4 | wc -l
-```
-
-### Step 3: Generate section video
-
-After ALL figure videos are complete:
-
-```bash
-python scripts/generate_video.py --section-video SECTION_ID --force
-```
-
-This creates: `data/tutorial_assets/{slug}/video/section_{SECTION_ID}.mp4`
-
-Structure: Section title card (3s) → 图1 title (2s) → 图1 video → 图2 title (2s) → 图2 video → ...
-
-### Step 4: Verify video files and DB records
-
-```bash
-# Check output files
-ls -lh data/tutorial_assets/*/video/section_SECTION_ID.mp4
-
-# Check duration
-ffprobe -v quiet -show_entries format=duration \
-  -of default=noprint_wrappers=1:nokey=1 \
-  data/tutorial_assets/*/video/section_SECTION_ID.mp4
-```
-
-Verify DB records were written (step 2 auto-writes these):
-```bash
-python3 -c "
-import sys; sys.path.insert(0, '.')
-from katrain.web.core.db import SessionLocal
-from katrain.web.core.models_db import TutorialFigure
-db = SessionLocal()
-figs = db.query(TutorialFigure).filter_by(section_id=SECTION_ID).all()
-for f in figs:
-    status = 'OK' if f.video_asset else 'MISSING'
-    print(f'  fig {f.id}: {status}  asset={f.video_asset}  size={f.video_size_bytes}  duration_ms={f.video_duration_ms}')
-db.close()
-"
-```
-
-### Processing multiple sections
-
-**Batch strategy (server):** Run 3 sections at a time with concurrency 6, then generate section videos for completed batches while the next batch runs:
-
-```bash
-# Process in batches of 3 sections (max ~18 concurrent browsers)
-SECTIONS=(1 2 3 4 5 6 7 8 9)
-BATCH_SIZE=3
-CONCURRENCY=6
-
-for ((i=0; i<${#SECTIONS[@]}; i+=BATCH_SIZE)); do
-  batch=("${SECTIONS[@]:i:BATCH_SIZE}")
-  echo "=== Batch: ${batch[*]} ==="
-  
-  # Launch figure videos in parallel
-  for sid in "${batch[@]}"; do
-    PYTHONUNBUFFERED=1 python scripts/generate_video.py \
-      --section-id $sid --concurrency $CONCURRENCY --force \
-      > /tmp/video_section_${sid}.log 2>&1 &
-  done
-  wait
-  
-  # Generate section videos (ffmpeg only, very fast)
-  for sid in "${batch[@]}"; do
-    python scripts/generate_video.py --section-video $sid --force &
-  done
-  wait
-done
-```
-
-**Macbook:** Process sections sequentially (each section = steps 2-3):
-
-```bash
-for sid in 1 2 3; do
-  echo "=== Section $sid ==="
-  python scripts/generate_video.py --section-id $sid --concurrency 2 --force
-  python scripts/generate_video.py --section-video $sid --force
-done
-```
-
-## DB Metadata Management
-
-### Auto-write on generation
-
-`generate_video.py` automatically writes video metadata to the DB after each figure video is generated. No manual step needed — step 2 handles this:
-
-| DB Field | Value | When Written |
-|----------|-------|-------------|
-| `video_asset` | `tutorial_assets/{slug}/video/fig_{id}.mp4` | After compose (step 2 with `--force`) |
-| `video_duration_ms` | Timeline total duration | After compose (step 2 with `--force`) |
-| `video_size_bytes` | Output file size | After compose (step 2 with `--force`) |
-
-When running **without** `--force` on an existing video, the script auto-backfills `video_asset` and `video_size_bytes` if they are NULL (but skips `video_duration_ms` since it requires regeneration).
-
-### Production DB migration (first-time setup)
-
-When deploying the video fields to a production PostgreSQL database for the first time, the columns must be added **before** restarting the app (SQLAlchemy will crash on SELECT if columns are missing):
-
-```bash
-# Run migration on production DB
-docker exec -i katrain-postgres psql -U katrain_user -d katrain_db \
-  -f - < scripts/migrate_video_fields.sql
-
-# Verify columns
-docker exec katrain-postgres psql -U katrain_user -d katrain_db \
-  -c "\d tutorial_figures" | grep video
-```
-
-Migration script: `scripts/migrate_video_fields.sql` (uses `IF NOT EXISTS`, safe to re-run).
-
-### Backfill existing videos to DB
-
-For videos already on disk but missing DB records (e.g., after first migration), run inside the Docker container:
-
-```bash
-docker exec katrain-web python -c "
-from katrain.web.core.db import SessionLocal
-from katrain.web.core.models_db import TutorialFigure
-from pathlib import Path
-
-db = SessionLocal()
-REPO = Path('/app')
-
-figures = db.query(TutorialFigure).filter(
-    TutorialFigure.audio_asset.isnot(None),
-    TutorialFigure.video_asset.is_(None)
-).all()
-
-updated = 0
-for fig in figures:
-    parts = fig.audio_asset.split('/')
-    if len(parts) < 2:
-        continue
-    book_slug = parts[1]
-    video_path = REPO / 'data' / 'tutorial_assets' / book_slug / 'video' / f'fig_{fig.id}.mp4'
-    if video_path.exists():
-        fig.video_asset = f'tutorial_assets/{book_slug}/video/fig_{fig.id}.mp4'
-        fig.video_size_bytes = video_path.stat().st_size
-        updated += 1
-
-db.commit()
-db.close()
-print(f'Backfilled {updated} figures')
-"
-```
-
-Alternatively, run **without** `--force` on a section to trigger per-figure backfill:
-```bash
-python scripts/generate_video.py --section-id SECTION_ID
-```
-
-## CLI Parameters
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--figure-id ID` | — | Process single figure |
-| `--section-id ID` | — | Process all figures in section |
-| `--section-video ID` | — | Concatenate figure videos into section video |
-| `--port PORT` | 8001 | Web UI server port |
-| `--polar-angle F` | 0.15 | Camera tilt (0.05=bird's eye, 0.38=flat side view) |
-| `--voice NAME` | zh-CN-XiaoxiaoNeural | edge-tts voice |
-| `--force` | false | Regenerate even if video exists |
-| `--dry-run` | false | Preview timeline JSON only |
-| `--concurrency N` | 1 | Parallel figure processing (for --section-id) |
-
-## Pipeline Execution Order
-
-This skill is step 3 in the tutorial digitization pipeline:
-
-| Order | Skill | Script | Prerequisite |
-|-------|-------|--------|-------------|
-| 0 | `tutorial-book-import` | `import_book.py` | book.json + pages |
-| 1 | `tutorial-recognition-pipeline` | `recognize_boards_v2.py` | Figures with page_image_path |
-| 2 | `tutorial-voice-pipeline` | `generate_voice.py` | Figures with book_text |
-| **3** | **`tutorial-video-pipeline`** | **`generate_video.py`** | **Figures with narration + audio_asset** |
-
-## Architecture
-
-```
-Per-figure pipeline:
-  1. Load figure from DB (board_payload, narration, audio_asset)
-  2. Generate audio with word-level timestamps (edge-tts SubMaker, boundary=WordBoundary)
-  3. Parse move references from narration (regex: 黑1, 白2位, 第N手)
-  4. Build timeline JSON (moves + subtitles split at Chinese punctuation)
-  5. Capture frames via Playwright (deterministic __setFrame API, 5fps)
-  6. Mix audio: narration + stone sounds (ffmpeg adelay + amix)
-  7. Compose: raw frames + mixed audio → fig_{id}.mp4
-  8. Poster thumbnail: ffmpeg extracts frame at ~5s → fig_{id}.jpg
-  9. Write DB: video_asset, video_duration_ms, video_size_bytes → TutorialFigure
-
-Section video pipeline:
-  1. Section title card "N. 标题" (Pillow + ffmpeg, 3s)
-  2. For each figure: title card "图N (i/total)" (2s) + figure video
-  3. Normalize all segments (uniform 2560x1440, 5fps, H.264, AAC)
-  4. ffmpeg concat → section_{id}.mp4
-  5. Poster thumbnail: ffmpeg extracts frame at 5s → section_{id}.jpg
-```
-
-## Output Files
-
-- Per-figure: `data/tutorial_assets/{book_slug}/video/fig_{figure_id}.mp4`
-- Per-figure poster: `data/tutorial_assets/{book_slug}/video/fig_{figure_id}.jpg`
-- Per-section: `data/tutorial_assets/{book_slug}/video/section_{section_id}.mp4`
-- Per-section poster: `data/tutorial_assets/{book_slug}/video/section_{section_id}.jpg`
-- Resolution: 2560x1440 (2K), H.264, 5fps, AAC audio
-- Poster: JPG, ~150-200KB, single frame extracted at ~5s
-- Served via existing `/api/v1/tutorials/assets/` endpoint
-
-## Frontend Integration
-
-- **TutorialFigurePage**: video player below narration (column 3), auto-hides if no video. Uses `<video poster=...>` with JPG derived from `video_asset` by convention (`.mp4` → `.jpg`).
-- **TutorialBookDetailPage**: play icon left of section title (driven by `has_video` field from sections API), opens fullscreen dialog with poster.
-- Poster convention: no DB field needed — frontend replaces `.mp4` with `.jpg` in the asset URL.
-
-### Backfill poster thumbnails for existing videos
-
-If videos were generated before poster support was added:
-
-```bash
-cd data/tutorial_assets/{book_slug}/video
-for mp4 in fig_*.mp4 section_*.mp4; do
-  jpg="${mp4%.mp4}.jpg"
-  [ -f "$jpg" ] || ffmpeg -y -ss 5 -i "$mp4" -vframes 1 -q:v 2 "$jpg" 2>/dev/null
-done
-```
-
-## Common Issues
-
-| Issue | Fix |
-|-------|-----|
-| Board not rendering | Increase warmup (default 5s) or check `--use-gl=egl` flag |
-| Camera angle wrong | StaticCamera is used for recording; adjust `--polar-angle` |
-| Stones not appearing | Ensure 300ms+ wait after `__setFrame()` for React re-render |
-| ffmpeg drawtext missing | Uses Pillow for title cards (no drawtext dependency) |
-| Audio out of sync | Audio is regenerated with timing each run; don't skip step 2 |
-| Generation too slow | Increase `--concurrency`; use server with more CPU cores |
-| `Unable to capture screenshot` | Too many concurrent browsers (>20). Reduce to 3 sections × concurrency 6. This is a Chromium CDP protocol crash, not a resource issue |
-| `GPU stall due to ReadPixels` | Normal warning with EGL + multiple browsers. Not a problem if per-frame timeouts are large enough (60s/120s). The NVIDIA driver serializes ReadPixels across WebGL contexts |
-| High concurrency all timeout | Per-frame timeouts too tight. Current defaults: evaluate=60s, screenshot=120s, page.goto=120s, figure-level=3600s |
+# 教程视频：先音频，再按讲解顺序落子
+
+使用已有电子棋图、真实语音时间戳和棋盘渲染器录制视频，不使用生成视频模型。默认制作 2D 棋盘的 Galaxy 4K 与 kiosk 7 英寸两份成片。
+
+**核心要求：原图已有可靠落子编号时，应随音频依次显示对应棋子。不需要知道整盘棋从第一手如何下到这里；`replay` 待校准不等于不能按编号演示。不能把有编号的视频静态降级后算作完成。**
+
+## 1. 开场局面与语音触发规则
+
+- 开场只显示无编号、无符号／字母标注的静态背景棋子，以及棋盘底板（网格、星位、坐标轴）。
+- 带编号、三角、圆圈、方块、叉号、字母等教学标注的棋子先隐藏，语音首次明确提及该对象后，棋子和相应标注一起出现；无编号但带符号的棋子也不能提前显示。
+- 独立符号、字母、选点标记、箭头等先隐藏，在语音明确提及后显示在来源确认的位置；不能因此凭空增加实体棋子或播放落子声。它们不必属于黑白交替的落子序列。
+- 以指代该对象的真实语音片段结束时点触发（不是仅字幕出现或语音尚未说到时）。重复提及已显示对象不重放落子。相同符号有多个对象时，以颜色、位置或明确集合映射；“两颗黑三角子”可同时显示明确对应的两颗，不能显示未提及的其他三角子。
+- 每个需展示的教学对象都应有明确讲稿引用及音频 cue。漏讲、指代含糊或映射不可靠时先补稿／校准，不提前展示，也不把遗漏当完成。
+- 此规则控制展示层，不改原始棋图、标注及真实规则局面／手顺证据；“没有编号”不代表整图都能开场显示。
+
+## 2. 先选择正确的演示方式
+
+| 棋图证据 | 视频行为 | 不能推断的内容 |
+| --- | --- | --- |
+| 来源确认的初始局面及真实有序落子 | 按真实手顺播放，依据规则处理有证据的提子、停着和同点再落 | 不补造缺失手顺；也不要求整盘历史 |
+| 仅保存的静态图，但印刷编号对应的棋子可靠且顺序明确 | 保留无编号且无教学标注的背景子；编号子按1→2→3→4→5推进，其他标注按语音触发 | 不伪造未记录的提子，不把编号演示写成真实 `replay.status=complete` |
+| 无落子顺序，但有符号／字母等教学对象 | 背景局面开场显示，带标注棋子及独立标注在语音提及后出现 | 标注不自动成为真实落子，不要求黑白交替 |
+| 既无有序步骤，也无待触发的教学标注 | 可以用静态棋图讲解数气、棋形等概念 | 不把“无编号”与“编号不清／时间线没生成”混同 |
+
+编号演示前核对：编号唯一、正整数、连续（可从任意编号开始）、颜色与坐标准确、黑白交替（可白先）。问题序号、选点标签或同色备选点不能自动当成落子顺序；原书明确的特殊记法另据来源解释。缺号、重号、颜色／点位不确定或提子注记影响演示时，定位并报告，进入校准；不能在无编号背景子上猜补缺失编号。
+
+后台“编号预览通过”证明可使用这些棋子及顺序；它不自动证明音画同步已经做好。同步资格还需真实音频、逐步及标注 cue 和实际成片验证，**不能据此反向禁止编号演示**。以上分类是内容语义，不能向现有 API 发送未支持的模式字段来假装已实现。
+
+## 3. 固定生产顺序
+
+1. 核对目标环境、当前保存的棋图及人工确认版本；按任务范围跳过识别疑点。机器审核不能代替人工确认，用户已授权代登记时保留原授权来源。
+2. 按 tutorial-voice-pipeline 准备准确讲稿，保存最终文字。
+3. **先生成并验证真实音频**，保存同一次 TTS 的 WordBoundary、时长、音频 SHA 和讲稿 SHA。音频失败、空白或没有可信时间戳时不能进入视频。
+4. 从该音频及最终讲稿建立落子与标注显现时间线，以“对象类型＋颜色／标识＋坐标”绑定每个对象。编号按原书顺序推进；符号／字母等按明确语音引用触发，均遵守第1节的开场与提及后显现规则。真实手顺模式仍从来源初始规则局面执行实际落子／提子，不能因显示层暂时隐藏标注对象而改变规则计算。
+5. 用同一份音频与落子／标注时间线渲染两个输出档位；落子轻柔、不弹跳，落子声轻于讲解。字幕、棋子编号与自然贝壳纹理在实际输出尺寸下清楚。正式视频不带调试／待校准徽标、原书范围框或灰色遮挡。
+6. 验证真实文件、音频依赖及每步前后画面；按用户要求进行独立审核，全部满足后才算本图／本页完成。
+
+讲稿重复回顾早先编号时，不再落一次或倒退。讲稿倒序、缺少中间步骤锚点，或只有“白1到白5”这样的范围引用时，先补充有来源依据的逐步讲解并重新生成音频，再建立 cue；不能按视频总时长平均分配、凭文字长度估时，或在没讲到时机械连播。已合格的音频仅在讲稿、音频哈希与所有必需锚点仍匹配时复用。
+
+## 4. 当前执行入口与实现缺口
+
+以当前工作树和部署版本为准。`scripts/generate_voice.py`、`scripts/generate_video.py` 的旧批量生成／固定路径回填已停用；不要恢复它们或直接 SQL 写媒体字段绕过鉴权、版本检查及人工审核。
+
+通过已鉴权的管理后台教程 API 使用以下契约，BASE 从当前环境确认：
+
+- `PUT BASE/figures/{id}/narration`：`{ "expected_updated_at": "当前版本", "narration": "最终讲稿" }`
+- `POST BASE/figures/{id}/media-tasks`：先提交 `kind: "audio"`；成功后读取当前图版本，再提交 `kind: "video", render_mode: "2d", output_profile: "galaxy-4k-v1"`，然后 `"kiosk-7-v1"`。每次写入都带该图最新匹配的 `expected_updated_at`。
+- `GET BASE/media-tasks/{task_id}` 查询真实状态；202／queued 不代表生成完成。
+
+**先检查实际实现是否支持选定演示方式。** 若 `build_step_cues` 在 `validate_replay != complete` 时直接返回 pending，或渲染器只会显示最终静态图，说明编号及标注语音触发能力尚未接通。应报告并先修复该缺口，不能修改验收标准、伪造 replay 完整状态，或继续铺量静态视频。
+
+复用已成功且依赖一致的任务／不可变资源。409 停止该图写入并核对版本；写请求结果不明时先只读核对是否已提交，不盲重试。用户暂停后不提交新写入或新任务，保留断点及已有回执；不擅自取消远端任务。
+
+## 5. 两份 2D 成片
+
+| 用途 | output_profile | 规格与版式 |
+| --- | --- | --- |
+| Galaxy 全屏 | `galaxy-4k-v1` | 原生 3840×2160、30fps；放大仍能看清棋子纹理、光泽及编号，不能低清放大冒充 4K |
+| RK3562／7 英寸 kiosk | `kiosk-7-v1` | 1024×600、30fps；左棋盘、右字幕，实际小屏尺寸可读 |
+
+两版依赖的源音频 SHA、讲稿版本及落子／标注 cue 一致，只改变布局与输出尺寸。现有实现支持哪些参数以 `media_profiles.py` 和后台 schema 为准；不传 profile 会落入旧档位，不能作为上述任一版本交付。
+
+## 6. 完成与审核标准
+
+- 对于 1～5 的例子：音频已有对应逐步讲解；画面由背景局面依次增加 1、2、3、4、5，点位、颜色、先后与语音对应，末帧与保存的静态图一致。不是从开始就显示五颗子，也不是只显示编号高亮。
+- 开场核对所有带编号／符号／字母的棋子和独立教学标注均未提前出现；逐个核对其语音提及后才显示，带标注棋子与标注一起显现，独立字母／符号不增加棋子。无编号但有符号的图也必须检查这些事件。
+- 有序演示的逐步 cue 与真实音频绑定，单调递增；不能仅检查 MP4 存在、时长或分辨率。编号显隐模式核对每步前后原尺寸画面，确认已显示的编号子保留、后续编号子未提前出现；真实手顺模式按规则核对有来源的提子／停着，被提的编号子也应移除。既无动作顺序又无待触发标注的静态概念图不要求事件 cue。
+- 两版均核对实际播放、字幕内容／分组、数字完整性、条件／否定语义及低音量落子声。没有实际听音或没有实体设备播放时如实说明，不能声称已听／已上机。
+- 审核者必须拿用户要求、原图、棋子映射、真实音频／时间戳及实际成片审核；不得预设“无完整 replay 就接受静态”。编号图未按序落子、符号／字母等提前出现或漏掉、应有 cue 却 pending／未绑定音频，均不得以静态版判通过。
+- 失败保留旧媒体和拒绝原因，只重做受影响部分后重新审核；用户要求逐页独立 Astra Max 时，本页所有图和两档成片通过后才进入下一页。
+- 机器审核、视频生成成功、视频人工审核分别记录。机器通过不能代填 `video_2d_review`；识别／机器审核通过也不能算用户视频需求已满足。
+
+## 当前代码入口
+
+- 后台鉴权／版本化任务：`katrain/web/admin/routers/tutorial_media.py`、`tutorials.py`
+- 语音、队列、媒体落库：`katrain/web/tutorials/media_tasks.py`
+- 音频与落子时间：`katrain/web/tutorials/media_timing.py`
+- 规则手顺：`katrain/web/tutorials/replay.py`；编号显隐规则可复用现有后台编号预览实现，不修改真实手顺证据
+- 录制与混音：`katrain/web/tutorials/media_render.py`、`media_render_runner.py`
+- 时间线与输出档位：`katrain/web/ui/src/pages/tutorialMediaTimeline.ts`、`katrain/web/tutorials/media_profiles.py`

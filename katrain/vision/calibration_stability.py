@@ -142,7 +142,12 @@ class CalibrationStabilityGate:
             self.stable_frames = 0
             return False, "board_motion"
         self.stable_frames += 1
-        return self.stable_frames >= self.required_frames, None
+        ready = self.stable_frames >= self.required_frames
+        if ready:
+            # Capture starts by comparing against this release frame, including
+            # the very first dark/lit sample. Reuse its small image and grid ROI.
+            self.capture_motion.is_stable_with_regions(small, mask)
+        return ready, None
 
     def capture_reason(self, frame: np.ndarray) -> str | None:
         quad = find_visible_grid(frame, self.quad)

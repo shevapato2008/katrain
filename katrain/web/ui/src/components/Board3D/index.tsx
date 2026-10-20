@@ -5,7 +5,7 @@ import { ACESFilmicToneMapping, PCFShadowMap, PCFSoftShadowMap } from 'three';
 import Lights from './Lights';
 import BoardMesh from './BoardMesh';
 import CameraController from './CameraController';
-import StoneGroup from './StoneGroup';
+import StoneGroup, { type RecordingStonePlacement } from './StoneGroup';
 import type { RecordingStoneSprites } from './tutorialStoneTextures';
 import RaycastClick from './RaycastClick';
 import GhostStone from './GhostStone';
@@ -62,7 +62,7 @@ interface Board3DProps extends BoardProps {
   recordingStoneSprites?: RecordingStoneSprites;
   recordingVisualSeed?: string;
   /** Deterministic tutorial pose; point uses GameState coordinates. */
-  recordingPlacement?: { point: [number, number]; lift: number; scale: number } | null;
+  recordingPlacement?: RecordingStonePlacement | RecordingStonePlacement[] | null;
   disableControls?: boolean;
   /** Lock polar angle for non-interactive mode (fraction of π, e.g., 0.33) */
   fixedPolarAngle?: number;

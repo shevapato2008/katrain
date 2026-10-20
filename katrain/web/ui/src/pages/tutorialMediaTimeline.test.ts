@@ -1,52 +1,75 @@
 import { describe, expect, it } from 'vitest';
-import { frameAtTime, placementAtTime, subtitleAtTime, knownRegion, type RecordingData } from './tutorialMediaTimeline';
+import { frameAtTime, placementsAtTime, subtitleAtTime, knownRegion, type RecordingData, type ReplayFrame } from './tutorialMediaTimeline';
 
+const frames: ReplayFrame[] = [
+  { step: 0, payload: { size: 9, stones: { B: [[8, 8]], W: [] } }, last: null, appeared_stones: [] },
+  { step: 1, payload: { size: 9, stones: { B: [[8, 8], [2, 0]], W: [[3, 0]] }, labels: { '2,0': '1', '3,0': '2' } },
+    last: null, currentMove: null, appeared_stones: [{ color: 'B', point: [2, 0] }, { color: 'W', point: [3, 0] }] },
+  { step: 2, payload: { size: 9, stones: { B: [[8, 8], [2, 0]], W: [[3, 0]] }, labels: { '2,0': '1', '3,0': '2' }, letters: { '2,0': 'A' }, shapes: { '2,0': 'triangle' } },
+    last: null, currentMove: null, appeared_stones: [] },
+  { step: 3, payload: { size: 9, stones: { B: [[8, 8]], W: [[2, 0]] } }, last: [2, 0], captured: [[3, 0], [2, 0]],
+    currentMove: { kind: 'move', color: 'W', point: [2, 0] }, appeared_stones: [{ color: 'W', point: [2, 0] }], nextColor: null },
+  { step: 4, payload: { size: 9, stones: { B: [[8, 8]], W: [[2, 0]] } }, last: null,
+    currentMove: { kind: 'pass', color: 'B' }, appeared_stones: [] },
+];
 const data: RecordingData = {
-  narration: '白棋被提。之后复用原位。',
-  render_mode: '2d',
-  board_payload: { size: 9, stones: { B: [[1, 0]], W: [[2, 0]] }, source_region: { col: 1, row: 0, cols: 8, rows: 9, confirmed: true } },
-  frames: [
-    { step: 0, payload: { size: 9, stones: { B: [], W: [[1, 0]] } }, last: null },
-    { step: 1, payload: { size: 9, stones: { B: [[2, 0]], W: [] } }, last: [2, 0] },
-    { step: 2, payload: { size: 9, stones: { B: [[2, 0]], W: [[1, 0]] } }, last: [1, 0] },
-  ],
-  speech_timing: { schema_version: 1, duration_ms: 3000, audio_sha256: 'audio', narration_sha256: 'text', voice: 'voice', boundaries: [
+  narration: '白棋被提。之后复用原位。', render_mode: '2d',
+  board_payload: { size: 9, stones: { B: [[8, 8], [2, 0]], W: [[3, 0]] }, labels: { '2,0': '1', '3,0': '2' },
+    source_region: { col: 1, row: 0, cols: 8, rows: 9, confirmed: true } },
+  frames,
+  speech_timing: { schema_version: 1, duration_ms: 3000, audio_sha256: 'audio', boundaries: [
     { text: '白棋被提。', start_ms: 100, duration_ms: 800 },
     { text: '之后复用原位。', start_ms: 1200, duration_ms: 1200 },
   ] },
-  step_cues: { schema_version: 1, audio_sha256: 'audio', replay_sha256: 'replay', status: 'complete', cues: [{ step: 1, at_ms: 1000 }, { step: 2, at_ms: 2000 }] },
+  step_cues: { schema_version: 1, mode: 'presentation', audio_sha256: 'audio', status: 'complete', frames,
+    objects: [], events: [], cues: [
+      { step: 0, at_ms: 0, source: 'initial' }, { step: 1, at_ms: 1000, source: 'speech_end' },
+      { step: 2, at_ms: 1400, source: 'speech_end' }, { step: 3, at_ms: 2000, source: 'speech_end' },
+      { step: 4, at_ms: 2500, source: 'speech_end' },
+    ] },
 };
 
 describe('tutorial recorder time axis', () => {
-  it('places only the authoritative current move with a deterministic gentle 360ms settle', () => {
-    const animated: RecordingData = { ...data, frames: data.frames.map(frame => ({ ...frame,
-      currentMove: frame.last ? { kind: 'move', color: frame.step === 1 ? 'B' : 'W', point: frame.last } : null,
-    })) };
-    expect(placementAtTime(animated, 999)).toBeNull();
-    expect(placementAtTime(animated, 1000)).toEqual({ point: [2, 0], lift: .25, scale: .96 });
-    const middle = placementAtTime(animated, 1180)!;
-    expect(middle.lift).toBeCloseTo(.0625);
-    expect(middle.scale).toBeCloseTo(.99);
-    expect(placementAtTime(animated, 1360)).toBeNull();
-    // Seek backward and repeat an occupied point only at its new authoritative cue.
-    expect(placementAtTime(animated, 2000)).toEqual({ point: [1, 0], lift: .25, scale: .96 });
-    expect(placementAtTime(animated, 1180)).toEqual(middle);
-    expect(placementAtTime(animated, 0)).toBeNull();
-    expect(placementAtTime({ ...animated, step_cues: { ...animated.step_cues, status: 'pending' } }, 1000)).toBeNull();
-    expect(placementAtTime({ ...animated, frames: animated.frames.map(frame => frame.step === 1
-      ? { ...frame, currentMove: { kind: 'pass', color: 'B' } } : frame) }, 1000)).toBeNull();
-    expect(placementAtTime(data, 1000)).toBeNull(); // Never infer a move from last/stone-count alone.
+  it('reveals complete presentation snapshots only at the spoken reference end, without requiring rules history', () => {
+    expect(data.board_payload.replay).toBeUndefined();
+    expect(frameAtTime(data, 999)).toBe(frames[0]);
+    expect(frameAtTime(data, 1000)).toBe(frames[1]);
+    expect(frameAtTime(data, 1399).payload.letters).toBeUndefined();
+    expect(frameAtTime(data, 1400)).toBe(frames[2]);
+    expect(frameAtTime(data, 2100).payload.stones).toEqual({ B: [[8, 8]], W: [[2, 0]] });
+    expect(frameAtTime(data, 0)).toBe(frames[0]);
+    expect(frameAtTime(data, 2500).currentMove?.kind).toBe('pass');
   });
-  it('selects whole capture/reuse snapshots and rewinds without accumulating stones', () => {
-    expect(frameAtTime(data, 2100)).toBe(data.frames[2]);
-    expect(frameAtTime(data, 1100).payload.stones.W).toEqual([]);
-    expect(frameAtTime(data, 0)).toBe(data.frames[0]);
-    expect(frameAtTime(data, 2100).payload.stones.W).toEqual([[1, 0]]);
+  it('settles every appeared stone gently for 360ms and never repeats a landing for independent annotations', () => {
+    expect(placementsAtTime(data, 999)).toEqual([]);
+    expect(placementsAtTime(data, 1000)).toEqual([
+      { point: [2, 0], lift: .25, scale: .96 }, { point: [3, 0], lift: .25, scale: .96 },
+    ]);
+    const middle = placementsAtTime(data, 1180);
+    expect(middle[0].lift).toBeCloseTo(.0625);
+    expect(middle[1].scale).toBeCloseTo(.99);
+    expect(placementsAtTime(data, 1360)).toEqual([]);
+    expect(placementsAtTime(data, 1400)).toEqual([]);
+    expect(placementsAtTime(data, 2000)).toEqual([{ point: [2, 0], lift: .25, scale: .96 }]);
+    expect(placementsAtTime(data, 1180)).toEqual(middle);
+    expect(placementsAtTime(data, 0)).toEqual([]);
+    expect(placementsAtTime(data, 2500)).toEqual([]);
   });
-  it('uses the saved static board for every time while cues are pending', () => {
-    const pending = { ...data, step_cues: { ...data.step_cues, status: 'pending' as const, cues: [] } };
-    expect(frameAtTime(pending, 0).payload).toBe(data.board_payload);
-    expect(frameAtTime(pending, 2500).payload).toBe(data.board_payload);
+  it('blocks pending proof instead of exposing the fully annotated saved diagram', () => {
+    const pending: RecordingData = { ...data, step_cues: { ...data.step_cues, status: 'pending', reason: 'Missing spoken A', frames: [], cues: [] }, frames: [] };
+    expect(() => frameAtTime(pending, 0)).toThrow(/Missing spoken A/);
+    expect(() => frameAtTime(pending, 2500)).toThrow(/pending/i);
+    expect(() => placementsAtTime(pending, 1000)).toThrow(/pending/i);
+  });
+  it('requires the same validated frames in the recording snapshot and presentation proof', () => {
+    expect(() => frameAtTime({ ...data, frames: [frames[0]] }, 1000)).toThrow(/frames.*match/i);
+    const sameFrames = structuredClone(frames);
+    expect(frameAtTime({ ...data, frames: sameFrames }, 1000)).toBe(frames[1]);
+    expect(() => frameAtTime({ ...data, step_cues: { ...data.step_cues, mode: undefined } } as unknown as RecordingData, 0)).toThrow(/mode/i);
+  });
+  it('keeps static complete snapshots while requiring an explicit validated mode', () => {
+    const staticData: RecordingData = { ...data, frames: [frames[0]], step_cues: { ...data.step_cues, mode: 'static', frames: [frames[0]], cues: [{ step: 0, at_ms: 0, source: 'initial' }] } };
+    expect(frameAtTime(staticData, 2500)).toBe(frames[0]);
   });
   it('uses actual boundary starts for subtitles, including on backward seeks', () => {
     expect(subtitleAtTime(data.narration, data.speech_timing, 0)).toBe('');
@@ -68,8 +91,13 @@ describe('tutorial recorder time axis', () => {
     expect(subtitleAtTime(narration, timing, 1700)).toBe('下一句 保留 空格，白5！');
     expect(timing.boundaries).toEqual(originalBoundaries);
   });
-  it('only treats confirmed source extent as known in static mode', () => {
-    expect(knownRegion({ ...data, step_cues: { ...data.step_cues, status: 'pending' } })).toEqual({ col: 1, row: 0, cols: 8, rows: 9 });
-    expect(knownRegion({ ...data, board_payload: { ...data.board_payload, source_region: null } })).toBeNull();
+  it('uses known region evidence from the explicit recording mode', () => {
+    const replayRegion = { col: 0, row: 0, cols: 5, rows: 6 };
+    const sourceRegion = { col: 4, row: 2, cols: 4, rows: 5 };
+    const payload = { ...data.board_payload, replay: { initial: { known_region: replayRegion } } };
+    expect(knownRegion({ ...data, board_payload: payload })).toEqual({ col: 1, row: 0, cols: 8, rows: 9 });
+    expect(knownRegion({ ...data, board_payload: payload, step_cues: { ...data.step_cues, mode: 'replay' } })).toEqual(replayRegion);
+    expect(knownRegion({ ...data, board_payload: payload, step_cues: { ...data.step_cues, mode: 'source_replay', presentation_plan: { source_replay: { initial: { known_region: sourceRegion } } } } })).toEqual(sourceRegion);
+    expect(knownRegion({ ...data, board_payload: { ...payload, source_region: { ...data.board_payload.source_region!, confirmed: false } } })).toBeNull();
   });
 });

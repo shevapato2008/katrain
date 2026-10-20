@@ -7,6 +7,8 @@ import type { GameState } from '../../api';
 import type { RecordingStoneSprites } from './tutorialStoneTextures';
 import { stoneVariant, TUTORIAL_STONE_DIAMETER_RATIO } from '../tutorials/tutorialStoneSprites';
 
+export interface RecordingStonePlacement { point: [number, number]; lift: number; scale: number }
+
 interface StoneGroupProps {
   gameState: GameState;
   enableDropEffect?: boolean;
@@ -14,7 +16,7 @@ interface StoneGroupProps {
   recordingStoneSprites?: RecordingStoneSprites;
   recordingVisualSeed?: string;
   /** Explicit deterministic pose from the recorder, in GameState coordinates. */
-  recordingPlacement?: { point: [number, number]; lift: number; scale: number } | null;
+  recordingPlacement?: RecordingStonePlacement | RecordingStonePlacement[] | null;
 }
 
 interface DropAnim {
@@ -29,6 +31,7 @@ interface DropAnim {
 
 const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false, recordingStoneSprites, recordingVisualSeed = 'tutorial', recordingPlacement }: StoneGroupProps) => {
   const boardSize = gameState.board_size[0];
+  const recordingPlacements = Array.isArray(recordingPlacement) ? recordingPlacement : recordingPlacement ? [recordingPlacement] : [];
   const prevNodeIndexRef = useRef(gameState.current_node_index);
   const prevLastMoveRef = useRef<[number, number] | null>(gameState.last_move);
   const animRef = useRef<DropAnim | null>(null);
@@ -137,7 +140,7 @@ const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false, 
         }
 
         const basePos = gridToWorld(x, y, boardSize);
-        const placement = recordingPlacement?.point[0] === x && recordingPlacement.point[1] === y ? recordingPlacement : null;
+        const placement = recordingPlacements.find(pose => pose.point[0] === x && pose.point[1] === y);
         if (placement) basePos[1] += placement.lift;
         // GameState Y is bottom-up; static diagrams use top-left full-board coordinates.
         const spriteTexture = recordingStoneSprites ? player === 'B' ? recordingStoneSprites.B

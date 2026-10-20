@@ -5,6 +5,7 @@ export interface Region { col: number; row: number; cols: number; rows: number }
 export interface RecorderPayload extends SGFPayload {
   unknown_stones?: { point: Point; color: null; evidence?: string }[];
   source_region?: (Region & { confirmed: boolean }) | null;
+  presentation_arrows?: { id: string; from: Point; to: Point; source_pointer: string; image_sha256: string }[];
   replay?: { initial?: { known_region?: Region | null } | null } | null;
 }
 export interface ReplayFrame {
@@ -13,7 +14,8 @@ export interface ReplayFrame {
   last: Point | null;
   captured?: Point[];
   currentMove?: { kind: string; color: string; point?: Point | null } | null;
-  nextColor?: string;
+  nextColor?: string | null;
+  appeared_stones: { color: 'B' | 'W'; point: Point }[];
 }
 export interface SpeechTiming {
   schema_version: 1;
@@ -27,9 +29,15 @@ export interface StepCues {
   schema_version: 1;
   audio_sha256: string;
   replay_sha256?: string;
+  mode: 'presentation' | 'replay' | 'source_replay' | 'static';
+  frames: ReplayFrame[];
+  objects: { id: string; kind: 'labels' | 'letters' | 'shapes' | 'arrow' | 'replay'; point: Point | null;
+    stone_color: 'B' | 'W' | null; value?: string; number?: number; replay_step?: number; role?: string }[];
+  events: { step: number; at_ms: number; object_ids: string[]; span: [number, number] }[];
+  presentation_plan?: { source_replay?: { initial: { known_region?: Region | null } } | null } | null;
   status: 'complete' | 'pending';
   reason?: string;
-  cues: { step: number; at_ms: number }[];
+  cues: { step: number; at_ms: number; source: 'initial' | 'speech_end' }[];
 }
 export interface RecordingData {
   output_profile?: 'galaxy-4k-v1' | 'kiosk-7-v1';
@@ -44,41 +52,44 @@ export interface RecordingData {
 }
 
 export function frameAtTime(data: RecordingData, timeMs: number): ReplayFrame {
-  if (data.step_cues.status !== 'complete') {
-    return { step: -1, payload: data.board_payload, last: null };
+  const proof = data.step_cues;
+  if (proof.status !== 'complete') {
+    throw new Error(`Recording presentation is pending: ${proof.reason ?? 'spoken reference cues require calibration'}`);
+  }
+  if (!['presentation', 'replay', 'source_replay', 'static'].includes(proof.mode)) {
+    throw new Error('Missing validated recording presentation mode');
+  }
+  if (!proof.frames?.length || (proof.frames !== data.frames && JSON.stringify(proof.frames) !== JSON.stringify(data.frames))) {
+    throw new Error('Recording frames do not match the validated presentation frames');
   }
   let step = 0;
-  for (const cue of data.step_cues.cues) {
+  for (const cue of proof.cues) {
     if (cue.at_ms > timeMs) break;
     step = cue.step;
   }
-  const frame = data.frames.find(item => item.step === step);
-  if (!frame) throw new Error(`Missing validated replay frame ${step}`);
+  const frame = proof.frames.find(item => item.step === step);
+  if (!frame) throw new Error(`Missing validated presentation frame ${step}`);
   return frame;
 }
 
 export interface RecordingPlacement { point: Point; lift: number; scale: number }
 
-/** Pure recording pose: seeking to a timestamp always produces the same placement. */
-export function placementAtTime(data: RecordingData, timeMs: number): RecordingPlacement | null {
-  if (data.step_cues.status !== 'complete') return null;
+/** Pure recording poses: seeking to a timestamp always produces the same placements. */
+export function placementsAtTime(data: RecordingData, timeMs: number): RecordingPlacement[] {
+  const frame = frameAtTime(data, timeMs);
   let active: StepCues['cues'][number] | null = null;
   for (const cue of data.step_cues.cues) {
     if (cue.at_ms > timeMs) break;
     active = cue;
   }
-  if (!active || timeMs - active.at_ms >= 360) return null;
-  const frame = frameAtTime(data, timeMs);
-  const move = frame.currentMove;
-  if (move?.kind !== 'move' || !move.point || (move.color !== 'B' && move.color !== 'W')) return null;
-  const point = move.point;
-  if (!frame.payload.stones[move.color].some(stone => stone[0] === point[0] && stone[1] === point[1])) return null;
+  if (!active || active.source !== 'speech_end' || timeMs - active.at_ms >= 360) return [];
   const remaining = (1 - (timeMs - active.at_ms) / 360) ** 2;
-  return { point, lift: .25 * remaining, scale: 1 - .04 * remaining };
+  return frame.appeared_stones.map(({ point }) => ({ point, lift: .25 * remaining, scale: 1 - .04 * remaining }));
 }
 
 export function knownRegion(data: RecordingData): Region | null {
-  if (data.step_cues.status === 'complete') return data.board_payload.replay?.initial?.known_region ?? null;
+  if (data.step_cues.mode === 'replay') return data.board_payload.replay?.initial?.known_region ?? null;
+  if (data.step_cues.mode === 'source_replay') return data.step_cues.presentation_plan?.source_replay?.initial.known_region ?? null;
   const region = data.board_payload.source_region;
   return region?.confirmed ? { col: region.col, row: region.row, cols: region.cols, rows: region.rows } : null;
 }

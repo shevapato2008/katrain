@@ -7,7 +7,7 @@ import Board3D from '../components/Board3D';
 import { loadRecordingStoneSprites, type RecordingStoneSprites } from '../components/Board3D/tutorialStoneTextures';
 import { gridToSurface, gridToWorld, STONE_HEIGHT, STONE_RADIUS } from '../components/Board3D/constants';
 import { TUTORIAL_STONE_DIAMETER_RATIO } from '../components/tutorials/tutorialStoneSprites';
-import { frameAtTime, placementAtTime, subtitleAtTime, type Point, type RecordingData, type RecordingPlacement, type ReplayFrame } from './tutorialMediaTimeline';
+import { frameAtTime, placementsAtTime, subtitleAtTime, type Point, type RecordingData, type RecordingPlacement, type ReplayFrame } from './tutorialMediaTimeline';
 
 declare global {
   interface Window {
@@ -38,8 +38,8 @@ function asGameState(frame: ReplayFrame): GameState {
   };
 }
 
-function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones = false, placement }: { frame: ReplayFrame; state: RootState; surfaceMarkers?: boolean; spriteStones?: boolean; placement: RecordingPlacement | null }) {
-  const { size, stones, labels = {}, letters = {}, shapes = {}, unknown_stones = [] } = frame.payload;
+function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones = false, placements }: { frame: ReplayFrame; state: RootState; surfaceMarkers?: boolean; spriteStones?: boolean; placements: RecordingPlacement[] }) {
+  const { size, stones, labels = {}, letters = {}, shapes = {}, unknown_stones = [], presentation_arrows = [] } = frame.payload;
   const width = state.gl.domElement.clientWidth;
   const height = state.gl.domElement.clientHeight;
   const project = (col: number, row: number, onStone = false, extraHeight = 0) => {
@@ -48,15 +48,16 @@ function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones 
     const vector = new Vector3(...position).project(state.camera);
     return { x: (vector.x + 1) * width / 2, y: (1 - vector.y) * height / 2 };
   };
-  const isPlacing = (col: number, row: number) => placement?.point[0] === col && placement.point[1] === row;
+  const placementAt = (col: number, row: number) => placements.find(pose => pose.point[0] === col && pose.point[1] === row);
   const black = new Set(stones.B.map(point => point.join(',')));
   const radius = (col: number, row: number) => Math.abs(project(col + STONE_RADIUS, row, true).x - project(col, row, true).x)
-    * (isPlacing(col, row) ? placement!.scale : 1)
+    * (placementAt(col, row)?.scale ?? 1)
     * (spriteStones && black.has(`${col},${row}`) ? TUTORIAL_STONE_DIAMETER_RATIO.B : 1);
   // Project the local X/Z tangent basis, so glyphs and rings follow the board/stone
   // top instead of facing the screen. Orthographic recording makes this affine exact.
   const marker = (col: number, row: number, onStone: boolean) => {
-    const extraHeight = onStone && isPlacing(col, row) ? placement!.lift + STONE_HEIGHT * (placement!.scale - 1) : 0;
+    const placement = onStone ? placementAt(col, row) : undefined;
+    const extraHeight = placement ? placement.lift + STONE_HEIGHT * (placement.scale - 1) : 0;
     const center = project(col, row, onStone, extraHeight);
     if (!surfaceMarkers) return { ...center, transform: undefined };
     const along = project(col + 1, row, onStone, extraHeight);
@@ -66,8 +67,20 @@ function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones 
   };
   const occupied = new Set([...stones.B, ...stones.W].map(point => point.join(',')));
   const unknown = new Set(unknown_stones.map(stone => stone.point.join(',')));
+  const lastKey = frame.last?.join(',');
+  const crowdedLast = lastKey && ((labels[lastKey] && letters[lastKey]) || (shapes[lastKey] && (labels[lastKey] || letters[lastKey])));
   const markerColor = (key: string) => black.has(key) ? '#fff' : '#171717';
   return <svg className="tm-overlay" viewBox={`0 0 ${width} ${height}`} aria-label="棋图标记">
+    {presentation_arrows.length > 0 && <defs><marker id="tm-presentation-arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0,0L6,3L0,6Z" fill="#9a3127" />
+    </marker></defs>}
+    {presentation_arrows.map(arrow => {
+      const from = project(...arrow.from);
+      const to = project(...arrow.to);
+      return <path key={arrow.id} data-presentation-arrow={arrow.id} data-source-pointer={arrow.source_pointer}
+        d={`M${from.x} ${from.y}L${to.x} ${to.y}`} fill="none" stroke="#9a3127"
+        strokeWidth={radius(...arrow.from) * .12} strokeLinecap="round" markerEnd="url(#tm-presentation-arrowhead)" />;
+    })}
     {unknown_stones.map(stone => {
       const [col, row] = stone.point;
       const { x, y, transform } = marker(col, row, true);
@@ -77,32 +90,37 @@ function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones 
       return <g key={`unknown-${key}`} transform={transform} data-testid="tutorial-unknown-stone"><circle cx={x} cy={y} r={r} fill="#999c9e" stroke="#4f5357" strokeWidth={1.5 * strokeScale} strokeDasharray={`${3 * strokeScale} ${2 * strokeScale}`} />
         {!labels[key] && !letters[key] && !shapes[key] && <text x={x} y={y} dominantBaseline="central" textAnchor="middle" fontSize={r * 1.3} fill="#222">?</text>}</g>;
     })}
-    {Object.entries({ ...labels, ...letters }).map(([key, text]) => {
+    {(['labels', 'letters'] as const).flatMap(kind => Object.entries(kind === 'labels' ? labels : letters).map(([key, text]) => {
       const [col, row] = key.split(',').map(Number);
       const onStone = occupied.has(key) || unknown.has(key);
-      const { x, y, transform } = marker(col, row, onStone);
+      const { x: centerX, y: centerY, transform } = marker(col, row, onStone);
       const r = radius(col, row);
-      return <g key={`text-${key}`} transform={transform} data-annotation-point={key}>
-        {!onStone && <rect x={x - r * .75} y={y - r * .75} width={r * 1.5} height={r * 1.5} rx="2" fill="#c9a061" />}
-        <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill={markerColor(key)} fontWeight="600" fontSize={r * (text.length > 1 ? .95 : 1.3)}
+      const paired = Boolean(labels[key] && letters[key]);
+      const x = centerX + (paired ? (kind === 'labels' ? -.38 : .38) * r : 0);
+      const y = centerY + (shapes[key] ? .16 * r : 0);
+      return <g key={`${kind}-${key}`} transform={transform} data-annotation-kind={kind} data-annotation-point={key}>
+        {!onStone && (kind === 'labels' || !labels[key]) && <rect x={centerX - r * (paired ? 1 : .75)} y={y - r * .75} width={r * (paired ? 2 : 1.5)} height={r * 1.5} rx="2" fill="#c9a061" />}
+        <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill={markerColor(key)} fontWeight="600" fontSize={r * (paired ? .85 : text.length > 1 ? .95 : 1.3)}
           fontFamily="Arial, sans-serif"
           stroke={onStone ? black.has(key) ? '#15181c' : '#fffdf6' : undefined}
           strokeWidth={onStone ? .8 * (spriteStones ? r / 16 : 1) : undefined} paintOrder="stroke fill">{text}</text>
       </g>;
-    })}
+    }))}
     {Object.entries(shapes).map(([key, shape]) => {
       const [col, row] = key.split(',').map(Number);
-      const { x, y, transform } = marker(col, row, occupied.has(key) || unknown.has(key));
+      const { x, y: centerY, transform } = marker(col, row, occupied.has(key) || unknown.has(key));
       const stoneRadius = radius(col, row);
-      const r = stoneRadius * .6;
-      return <g key={`shape-${key}`} transform={transform} data-annotation-point={key} fill="none" stroke={markerColor(key)} strokeWidth={2 * (spriteStones ? stoneRadius / 16 : 1)}>
+      const besideText = Boolean(labels[key] || letters[key]);
+      const y = centerY - (besideText ? .67 * stoneRadius : 0);
+      const r = stoneRadius * (besideText ? .25 : .6);
+      return <g key={`shape-${key}`} transform={transform} data-annotation-kind="shapes" data-annotation-point={key} fill="none" stroke={markerColor(key)} strokeWidth={(besideText ? 1.3 : 2) * (spriteStones ? stoneRadius / 16 : 1)}>
         {shape === 'triangle' && <polygon points={`${x},${y-r} ${x-r*.866},${y+r*.5} ${x+r*.866},${y+r*.5}`} />}
         {shape === 'circle' && <circle cx={x} cy={y} r={r} />}
         {shape === 'square' && <rect x={x-r} y={y-r} width={r*2} height={r*2} />}
         {shape === 'cross' && <path d={`M${x-r},${y-r}L${x+r},${y+r}M${x-r},${y+r}L${x+r},${y-r}`} />}
       </g>;
     })}
-    {frame.last && occupied.has(frame.last.join(',')) && (() => {
+    {frame.last && !crowdedLast && occupied.has(frame.last.join(',')) && (() => {
       const [col, row] = frame.last;
       const { x, y, transform } = marker(col, row, true);
       const r = radius(col, row);
@@ -135,7 +153,7 @@ export default function TutorialMediaRecorder() {
     let lastPaintedKey: string | null = null;
     window.__tutorialSetFrame = async (time: number) => {
       const frame = frameAtTime(data, time);
-      const key = JSON.stringify([frame.step, subtitleAtTime(data.narration, data.speech_timing, time), placementAtTime(data, time)]);
+      const key = JSON.stringify([frame.step, subtitleAtTime(data.narration, data.speech_timing, time), placementsAtTime(data, time)]);
       if (key === lastPaintedKey) return key;
       flushSync(() => setTimeMs(time));
       await document.fonts.ready;
@@ -151,8 +169,8 @@ export default function TutorialMediaRecorder() {
   if (spriteError) throw spriteError;
   if (!data) return <div>缺少录制快照</div>;
   const frame = frameAtTime(data, timeMs);
-  const placement = placementAtTime(data, timeMs);
-  const recordingPlacement = placement ? { ...placement, point: [placement.point[0], frame.payload.size - 1 - placement.point[1]] as Point } : null;
+  const placements = placementsAtTime(data, timeMs);
+  const recordingPlacement = placements.map(pose => ({ ...pose, point: [pose.point[0], frame.payload.size - 1 - pose.point[1]] as Point }));
   const distance = (frame.payload.size + .6) / (2 * Math.tan(Math.PI / 9)) * 1.12;
   const angle = 35 * Math.PI / 180;
   const cameraPosition: [number, number, number] = [0, 1.2 + distance * Math.cos(angle), distance * Math.sin(angle)];
@@ -167,7 +185,7 @@ export default function TutorialMediaRecorder() {
         recordingAppearance={overhead ? 'overhead' : 'solid-wood'} recordingPlacement={recordingPlacement}
         recordingStoneSprites={overhead ? stoneSprites ?? undefined : undefined} recordingVisualSeed={overhead ? data.visual_seed ?? 'tutorial' : undefined}
         frameloop="demand" onCanvasReady={onCanvasReady} />
-      {canvasState && <ProjectionOverlay frame={frame} state={canvasState} surfaceMarkers={solidWood} spriteStones={overhead} placement={placement} />}
+      {canvasState && <ProjectionOverlay frame={frame} state={canvasState} surfaceMarkers={solidWood} spriteStones={overhead} placements={placements} />}
     </div></div>
     <div className="tm-caption"><span>{subtitleAtTime(data.narration, data.speech_timing, timeMs)}</span></div>
   </main>;

@@ -5,6 +5,30 @@ from hashlib import sha256
 from types import SimpleNamespace
 
 import pytest
+
+
+def test_fully_reusable_games_are_prepared_before_paid_names():
+    from katrain.cron.jobs.kifu_ingest import group_staged_items, select_review_items
+
+    records = [
+        ({"external_id": source_id}, {"metadata": {"player_black": "Black", "player_white": "White", "event": event}})
+        for source_id, event in [("1", "Known"), ("2", "New")]
+    ]
+    resolved = {
+        "player": {name: {"status": "qualified", "canonical_name": name} for name in ("Black", "White")},
+        "event": {"Known": {"status": "qualified", "canonical_name": "Known"}},
+    }
+    free = set()
+    selected, deferred = select_review_items(
+        records, resolved, reusable_events=set(), max_new_names=20, review_free_ids=free
+    )
+    assert not deferred and free == {"1"}
+    assert group_staged_items(selected, review_enabled=True, review_free_ids=free) == [
+        [{"external_id": "1"}],
+        [{"external_id": "2"}],
+    ]
+
+
 from sqlalchemy import create_engine, update
 
 

@@ -23,12 +23,13 @@ from katrain.kifu_ingest.catalog import (
     publish_manifest,
     qualified_raw_event_templates,
     qualified_raw_player_templates,
+    validate_decision,
     validate_identity_check_request,
     validate_identity_check_response,
 )
 from katrain.kifu_ingest.exclusions import assert_source_allowed, historical_excluded_ids
 from katrain.kifu_ingest.inventory import scan_inventory
-from katrain.kifu_ingest.names import NameRejected, NeedsCredentials, wiki_sources
+from katrain.kifu_ingest.names import NameRejected, NeedsCredentials, QwenNameService, wiki_sources
 from katrain.kifu_ingest.preparation import derive_metadata
 from katrain.kifu_ingest.state import StateStore
 from katrain.kifu_ingest.sync import IdentityCheckUnavailable, validate_test_verification
@@ -155,7 +156,9 @@ async def isolate_unportable_identities(games, resolved, check_identities, isola
     return excluded
 
 
-async def prepare_staged_games(items, *, engine, client, names, isolated=None, check_identities=None):
+async def prepare_staged_games(
+    items, *, engine, client, names, isolated=None, check_identities=None, decision_store=None
+):
     """Freeze at most 100 staged games; review each distinct missing name once."""
     if not items or len(items) > 100:
         raise ValueError("staged batch must contain 1 to 100 games")
@@ -233,16 +236,47 @@ async def prepare_staged_games(items, *, engine, client, names, isolated=None, c
         pending[name_key] = [member for member in pending[name_key] if member["source_item_id"] not in excluded]
         if not pending[name_key]:
             del pending[name_key]
-    if pending and (names is None or not getattr(names, "key", None)):
-        raise NeedsCredentials("needs_credentials: five-language name review is not enabled")
+    requests = {}
     for (kind, key), members in pending.items():
         members = [member for member in members if member["source_item_id"] not in excluded]
         if not members:
             continue
+        template = templates["templates"].get(key) if kind == "raw_player" else None
+        context = (
+            {f"verified_reuse_{field}": template[field] for field in ("displays", "original_language", "methods")}
+            if template
+            else None
+        )
+        request = {
+            "kind": kind,
+            "key": key,
+            "source_items": members,
+            "context": context,
+            "template_sources": template["sources"] if template else [],
+        }
+        requests[kind, key] = request
+        decision = (
+            await asyncio.to_thread(decision_store.load_name_decision, request) if decision_store is not None else None
+        )
+        if decision is not None:
+            # Preserve the original evidence snapshot and both real request IDs.
+            # A cache hit still passes today's text rules and fresh native gates.
+            candidate = {field: decision[field] for field in ("displays", "methods", "original_language")}
+            candidate["source_urls"] = [source["url"] for source in decision["sources"]]
+            if "cn_conversion_note" in decision:
+                candidate["cn_conversion_note"] = decision["cn_conversion_note"]
+            try:
+                validate_decision(decision)
+                QwenNameService._candidate(candidate, kind, key, decision["sources"], context=context)
+            except (ValueError, NameRejected) as exc:
+                raise ValueError("approved name checkpoint fails current validation") from exc
+            decisions.append(decision)
+            continue
+        if names is None or not getattr(names, "key", None):
+            raise NeedsCredentials("needs_credentials: five-language name review is not enabled")
         evidence = []
         if kind in {"player", "raw_player"}:
             evidence = (await wiki_sources(key, client))["sources"]
-        template = templates["templates"].get(key) if kind == "raw_player" else None
         if template:
             evidence.extend(template["sources"])
         try:
@@ -251,19 +285,15 @@ async def prepare_staged_games(items, *, engine, client, names, isolated=None, c
                 key,
                 members,
                 sources=evidence,
-                context=(
-                    {
-                        f"verified_reuse_{field}": template[field]
-                        for field in ("displays", "original_language", "methods")
-                    }
-                    if template
-                    else None
-                ),
+                context=context,
             )
             if template and any(
                 decision[field] != template[field] for field in ("displays", "original_language", "methods")
             ):
                 raise NameRejected("reviewed raw player meaning differs from qualified reusable text")
+            if decision_store is not None:
+                validate_decision(decision)
+                await asyncio.to_thread(decision_store.save_name_decision, request, decision)
             decisions.append(decision)
         except NameRejected as exc:
             for source_id in {member["source_item_id"] for member in members}:
@@ -281,6 +311,10 @@ async def prepare_staged_games(items, *, engine, client, names, isolated=None, c
         if len(members) != len(decision["source_items"]):
             try:
                 decisions[index] = await names.review_existing_decision(decision, members)
+                if decision_store is not None:
+                    request = {**requests[decision["kind"], decision["key"]], "source_items": members}
+                    validate_decision(decisions[index])
+                    await asyncio.to_thread(decision_store.save_name_decision, request, decisions[index])
             except NameRejected as exc:
                 for source_id in {member["source_item_id"] for member in members}:
                     excluded.add(source_id)

@@ -1,0 +1,61 @@
+{
+  "read_only": true,
+  "scope": "canonical P5/E5 and SQL population counts only; no full-card qualification",
+  "runtime_build_sha": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+  "metrics": {
+    "P5": 3838,
+    "E5": 84
+  },
+  "denominators": {
+    "P5": 3865,
+    "E5": 85
+  },
+  "percent": {
+    "P5": 99.3014,
+    "E5": 98.8235
+  },
+  "method": {
+    "qualifiers": [
+      "identity._approved_names",
+      "identity._qualified_name_rows"
+    ],
+    "owner_models": "name_batch._OWNER[player,event]",
+    "languages": [
+      "cn",
+      "en",
+      "jp",
+      "ko",
+      "tw"
+    ],
+    "historical_counts_reused": false,
+    "qualification_functions_patched": false,
+    "album_qualification": false,
+    "album_sgf_or_source_filesystem_read": false,
+    "reader_origin": "canonical loop from existing TMP/read-live-metrics.py; only player/event _OWNER entries",
+    "native_function_sha256": {
+      "_approved_names": "31bf09ef1e69ebf6fb62dfcbd5d1e0c70d49a5c913dd5abc6b9e1ec295a5a06a",
+      "_qualified_name_rows": "797f0ee154a882125a8fd7492d905db9f4575c9264628983878a2fb5e78afcbb"
+    }
+  },
+  "snapshot_started_at": "2026-10-20T06:51:26.366708+00:00",
+  "population": {
+    "albums": 176621,
+    "duplicate": 9,
+    "list_hidden": 250,
+    "duplicate_and_hidden": 0,
+    "excluded_from_public": 259,
+    "public_visible": 176362
+  },
+  "task_isolations": {
+    "quarantined_items": 268,
+    "A_report_items": 257,
+    "other_items": 11,
+    "A_report_sha256": "42f335c6a65b1ca8e87defe359a8a32927b3358033158eb3a39e127273e4bc88",
+    "scope": "local kifu_ingest_items state, not hidden catalog albums; TEST is B coordinator, PROD task rows are not mirrored"
+  },
+  "captured_at": "2026-10-20T06:52:22.876930+00:00",
+  "status": "ok",
+  "elapsed_seconds": 57.036,
+  "environment": "TEST",
+  "transport_wall_seconds": 57.878
+}

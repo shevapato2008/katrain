@@ -9,30 +9,42 @@
 **Tech Stack:** 现有 Python 3.11、HTTPX、SQLAlchemy、PostgreSQL、APScheduler、SGF parser、catalog 五语解析器、Docker；使用已获用户授权的 Qwen Plus API，专用持久账本每日最多 100,000 token。
 
 **PRD:** [prd.md](./prd.md)
-**日期/状态：** 2026-10-20 执行快照。合格A的两库回填及Web发布已完成；hourly已启用，首轮61788于11:35失败后已定位并修复复用译名元信息约束。原包保留、单条真实重审及原子恢复完成；运行61884正在发布修正后的72盘，仍按实际回执计数。下方带时间的执行记录保留为历史，不能作为最新总数。用户指定本目录覆盖 writing-plans 默认存放位置。
+**日期/状态：** 2026-10-20 14:44 CST执行快照。A两库55包/5,279来源已完成；B修正72盘两端360项验证及StateStore `prod_synced` 已完成。e23已部署两端Web和TEST cron，已恢复本会话维护暂停；实际调度运行62158进行中，待结束验收。带时间的原执行记录均保留为历史。用户指定本目录覆盖 writing-plans 默认存放位置。
 
 ### 当前状态快照
 
-**2026-10-20 追加的实际缺陷修复：** 新包 TEST883 已提交并通过360项五语检查；PROD实际拒绝 `unknown player identity: 沼馆沙辉哉`。有限核对109个canonical棋手，仅此1个在PROD无对应canonical/alias。B准备阶段漏掉了A已使用的双环境身份可移植性检查。修复不放宽原生身份解析：在既有受限SSH接收协议增加有界只读身份检查，使用目标端同一 `_resolve_identity` 及原生五语资格判断；在付费前筛掉不能在目标安全解析的关联棋局并同步缩小待译范围，远端检查失败则暂缓整轮，不回退到TEST单库结果。禁止根据相同显示名推断同人、传数据库ID、提供任意SQL/路径或开放管理命令。此为已批准Task3身份可移植性与Task4C接收边界的缺陷修复，不增加第三轮全计划审核；实现与聚焦用例仍须独立Astra代码审核。当前单包继续依据正式实际回执恢复，身份有限修正须有明确同人证据及独立决策。
-
-以下数量来自已验证回执；A已经结束，B在途包不计作验证完成。
-
 | 项目 | 已确认状态 | 尚未完成 |
 | --- | --- | --- |
-| A first pass | 原始 5,536 盘中 5,279 盘形成审核绑定就绪包，257 盘隔离 | 就绪数不是入库数；隔离盘不公开 |
-| A TEST | 2026-10-20 10:20 已验证全部55包、5,279条来源：5,276新增、3精确复用；最终12盘/60次五语详情及公开卡片抽检通过；总176,549、公开176,290 | TEST wide160,261/176,549=90.77%；strict公开完整卡片176,290/176,549=99.85% |
-| A PROD | 全部55包、5,279来源已验证，亦为5,276新增、3精确复用；最终12盘/60次五语详情及公开卡片抽检通过；总176,549、公开176,290 | strict99.85%；fresh原生快照及已验证增量对账所得wide160,775/176,549=91.07%，详情见release-acceptance-20261020.json |
-| B 真实小样 | A以外另1盘两端prod_synced；TEST173066/PROD173046；五语、列表、幂等重放及cron重启恢复通过；257条A隔离已真实记入TEST任务表、无虚假发布字段/Stage/目录变更；4条旧prompt失败已恢复downloaded | 首轮61788失败后已保留原包、真实重审决策17、原子切换72项到新包；61884正在原生发布校验。9条metadata/SGF不一致及2条名称失败独立隔离 |
-| 代码与部署 | feature/develop已发布823ef149f，父main1bb48f15；两端Web914、TESTcron的两文件生成约束修复为b9d8bb901；无显示构造、JP/CN字体、NullEngine开局落子实际镜像验收通过；两站HTML/资源、五语、俄语英语回退、中英同人搜索及公网6端点200 | PROD曾回滚的启动回归已修复并通过独立Astra审核，最终不是b894；详见验收报告 |
-| 持续调度 | 2026-10-20 11:08启用，Qwen Plus每UTC日100,000 token、3,600秒、每轮最多100盘/20新名称；unless-stopped、持久目录和显式Compose override生效，正常分析固定GPU1:8002 | 真实单条修正另2次调用、1,296 token，当日累计44次/34,282 token；已恢复原暂停设置并运行61884，未冒称72盘已同步 |
+| A整理与两库回填 | 原始5,536条＝5,279接受＋257隔离；合格来源随后在TEST/PROD各55包verified，每库5,276新增、3复用；最终各12盘/60次五语详情及公开卡片抽检通过 | 257隔离不公开；未将first-pass候选直接冒称入库 |
+| B小样与隔离恢复 | 先前额外单盘两端prod_synced、幂等及cron重建恢复通过；257条A隔离已记TEST任务表、无虚假发布字段；4条旧prompt失败仅恢复downloaded | B新增9条metadata/SGF冲突及2条名称失败独立隔离，不放宽原生身份比较 |
+| B修正72盘 | canonical SHA `0f64c2b366a0d9ba59b452d4aac4148dc5609d19c57c6befa1deacde06459e67`；TEST883/PROD876实际各72新增、0复用，两端各360项五语详情及公开列表通过；批次/72条目prod_synced，恢复会话67907退出0 | 本包闭环不代替最终部署后的一次正常调度验收 |
+| 代码与部署 | feature/develop及两端Web、TEST cron实际运行源码均为 `e23ac4105ad6ec770c4ebedf03e389b20768ee6c`，父main `0e0a53ef628846c737caa14840ab6747ba44e439`；构建和上线健康、实际HTTP验收通过 | 发布脚本独立Astra APPROVE；有限HTTP检查不冒称浏览器视觉或P95 |
+| 调度边界 | 批准Qwen Plus每UTC日100,000 token、3,600秒、最多100盘/20新名称；unless-stopped、持久挂载及Compose输入已核对，正常分析固定GPU1:8002 | 维护暂停已恢复、命令2实际handled，调度运行62158进行中；结束状态仍待验收 |
+| 独立1,000盘分析 | UTC2026-10-20 06:19实际400完成、400双库同步、0失败 | 不混入A/B计数 |
 
-临时 A ops 两路只读校验试验已收敛，不宣称加速。后续 A 采用已独立审核的全量原生事务检查、全量提交后 DB 对账和代表 HTTP 样本，实际口径见文末；B 产品代码保持逐盘 HTTP 验证。最终 Web 替换前保存最新 `/tmp/kifu-backfill` 与四份实际 ops/helper，不把临时工具烘入产品镜像。
+**当前双口径：** TEST总176,621、公开176,362，fixedwide160,333/176,621＝90.7780%，strictcomplete176,362/176,621＝99.8534%；PROD总176,621、公开176,362，fixedwide160,847/176,621＝91.0690%，strictcomplete176,362/176,621＝99.8534%。口径为A原生基线加本次实际72新增及有限绑定核对，不是fresh全库重扫；先前B单盘已含基线，旧TEST880已undo不重复计入。A完成时的历史基线保留在验收JSON。
 
-当前快照不表示已做完 20 次前后性能基准、全量 manifest 重放或浏览器视觉验收；相关未执行项继续保留在下方。
+**恢复与缺陷边界：** 仅8条赛事决策重新实际producer/reviewer签署，另10条及72SGF保持；原TEST880/881/882已按真实undo461改动补偿且回执保留。PROD曾因“沼馆沙辉哉”不可解析拒绝；依据官方棋手页、2014名人赛对局及实际旧SGF同人锚点，独立Astra批准仅向既有PROD5364登记这一别名，owner/authoritative_pages/五语名称证据均不修改。未来双环境身份可移植性预检已审代码随e23发布，已上线且实际109条受限只读身份指令全部qualified、0模型调用；原生身份、资格、冲突和来源guards不放宽。
+
+**持久交接：** 最终operator、真实回执/验证和失败历史已私有归档到两主机任务Stage，737,280字节，SHA256 `96b6c8a2bc59cae29e3c8069793ffcd5221d2844c10fcfe1869a8ead1e1f9ad6`。临时A helper不烘入产品镜像；A并发试验不宣称加速。
+
+当前未声明20次性能基准、全量manifest重放或浏览器视觉验收；原未执行项仍保留。
 
 ---
 
 ## 0. 执行边界与审查方式
+
+### 2026-10-20 新观察：额度延期不能丢失完整审核成果
+
+实际正常调度62158于14:54:35结束：源站下载21条；在本轮名称准备中增加25次真实调用、24,964 token，当日达到94,513 token后下一次保守预留被10万硬上限拒绝，未生成新包。完整审核结果此前仅存在RAM，晚一步的预算异常会使整批重做。费用日志只有请求ID和usage，不能据此伪造恢复旧翻译或签名。
+
+独立Astra决定采用现有Stage内的逐条完整决策检查点；这是已批准断点续跑要求的实际缺陷修复，不追加第三轮完整计划审核或提高预算。
+
+- [x] 先以失败用例复现“成功审核后下一条额度不足，重跑丢失前一条”。
+- [x] 每条实际审核及模板校验成功后，立即私有原子保存整份决策、原真实producer/reviewer、证据与精确有限请求；文件及目录fsync，不推进发布阶段。
+- [x] 重跑仅命中相同kind/key、SGF成员、模板约束及来源快照；重新验证哈希、当前候选规则和原生双库身份，不刷新Wiki时间戳破坏命中。范围改变必须真实重审，成功缩小范围也立即落盘。
+- [x] 在任何付费审核前分开完全复用的棋局，先走正常发布流程；不裁剪已有签名，避免其他棋局的额度延期阻挡零调用棋局。
+- [ ] 独立Astra审核本次最小补丁，通过后按既定Git集成流程发布及部署，再观察真实调度；每日100,000 token、原生发布guards和旧回执保持。
 
 ### 两项交付的执行顺序
 
@@ -240,6 +252,9 @@ git diff --check
 
 ### Task 8：集成、发布与小时任务启用
 
+- [x] e23实际部署至两端Web/TEST cron，上线核对及109条只读身份检查通过；仅恢复本会话维护暂停，实际run_now命令2已handled。
+- [ ] 验收新版正常调度运行62158的结束结果；修正72盘已prod_synced不代替此门槛。
+
 - [x] 代码已按流程合入并推送feature/develop至e694，父仓库子模块指针已更新推送；后续仅文档整理尚未提交，未覆盖无关工作区修改。
 - [x] 两库003显式迁移、b894 Web兼容部署及健康/API基础验证完成；TEST cron已部署e694，GPU1路由与原任务保持，镜像/配置/重启回执已保存。
 - [x] 两机最终Web更新为914；先保存两端55份receipt/55份verified、缓存及四份实际helper，再选择性更新Web。PROD d2启动回归已先回滚再修复，最终914实际无显示构造与Web/API验收通过，PG/GPU/PROD cron保持原容器。
@@ -429,7 +444,7 @@ PROD：同上；本批新增/复用及两库差异
 - PROD d2镜像真实启动反复Exit102后立即仅回滚Web至原b894，health正常、restart_count0，A数据保留；未重建PG/GPU/PROD cron。隔离镜像复现无网络/凭据/业务挂载：b894没有Kivy/KivyMD、构造成功；d2含Kivy2.3.1/KivyMD0.104.1，构造触发X server错误并以102退出。b894..d2的该源码块本身未变，不能误称names.py新增GUI导入。
 - 最小修复删除WebKaTrain构造时无后续消费者的MDApp.gui注册，保留Lang/Theme直接字体路径，不捕获SystemExit掩盖问题；新子进程回归禁止GUI/socket/DB并真实构造、切JP/CN字体、NullEngine开局、落子及读取状态。旧版Exit102，修后2 passed；独立Astra max复跑2 passed/1.22s、diff-check通过并APPROVE。后续仅按已发布commit做COPY-only镜像overlay及实际无显示构造验收，不重装依赖/重建未改前端。
 
-## Current recovery status: 2026-10-20 13:20 CST (in progress)
+## Historical recovery checkpoint: 2026-10-20 13:20 CST (then in progress)
 
 The prior enabled run61884 failed after actual TEST880 publication and 360 detail checks. PROD receiver returned exit2, with no native receipt for that digest. The old receiver discarded its specific JSON guard error; no unsupported cause is claimed.
 

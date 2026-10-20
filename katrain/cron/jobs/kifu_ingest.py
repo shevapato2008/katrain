@@ -258,13 +258,19 @@ async def process_package_queue(store, manifests, process, *, now=None, timeout_
     return failures
 
 
-def group_staged_items(items, *, review_enabled):
+def group_staged_items(items, *, review_enabled, review_free_ids=None):
     if not review_enabled:
         return [[item] for item in items]
+    if review_free_ids is not None:
+        # Fully reusable games can publish even while another game's translation
+        # is waiting for tomorrow's budget. No reviewed scope is cropped here.
+        ready = [item for item in items if item["external_id"] in review_free_ids]
+        paid = [item for item in items if item["external_id"] not in review_free_ids]
+        return [group for subset in (ready, paid) for group in group_staged_items(subset, review_enabled=True)]
     return [items[start : start + 100] for start in range(0, len(items), 100)]
 
 
-def select_review_items(records, resolved, *, reusable_events, max_new_names, isolated=None):
+def select_review_items(records, resolved, *, reusable_events, max_new_names, isolated=None, review_free_ids=None):
     """Choose a finite batch before any paid request; leave overflow staged."""
     chosen, deferred, names = [], [], set()
     isolated = isolated if isolated is not None else []
@@ -291,11 +297,13 @@ def select_review_items(records, resolved, *, reusable_events, max_new_names, is
         else:
             chosen.append(item)
             names.update(required)
+            if not required and review_free_ids is not None:
+                review_free_ids.add(item["external_id"])
     return chosen, deferred
 
 
 async def select_portable_review_items(
-    records, resolved, *, check_identities, reusable_events, max_new_names, isolated=None
+    records, resolved, *, check_identities, reusable_events, max_new_names, isolated=None, review_free_ids=None
 ):
     isolated = isolated if isolated is not None else []
     excluded = await isolate_unportable_identities([game for _, game in records], resolved, check_identities, isolated)
@@ -305,6 +313,7 @@ async def select_portable_review_items(
         reusable_events=reusable_events,
         max_new_names=max_new_names,
         isolated=isolated,
+        review_free_ids=review_free_ids,
     )
 
 
@@ -629,6 +638,7 @@ class KifuIngestJob(BaseJob):
                     continue
                 records.append((item, game))
 
+            review_free_ids = set()
             if names.key and records:
                 players = {game["metadata"][f"player_{slot}"] for _, game in records for slot in ("black", "white")}
                 events = {game["metadata"]["event"] for _, game in records}
@@ -644,6 +654,7 @@ class KifuIngestJob(BaseJob):
                     reusable_events=set(event_templates["templates"]),
                     max_new_names=config.KIFU_INGEST_MAX_NEW_NAMES,
                     isolated=ambiguous_items,
+                    review_free_ids=review_free_ids,
                 )
                 for source_id, reason in ambiguous_items:
                     await asyncio.to_thread(quarantine_staged_item, stage, store, source_id, reason)
@@ -652,7 +663,9 @@ class KifuIngestJob(BaseJob):
             else:
                 candidates = [item for item, _ in records]
 
-            for group in group_staged_items(candidates, review_enabled=bool(names.key)):
+            for group in group_staged_items(
+                candidates, review_enabled=bool(names.key), review_free_ids=review_free_ids
+            ):
                 if time.monotonic() + 350 >= deadline:
                     break
                 isolated = []
@@ -665,6 +678,7 @@ class KifuIngestJob(BaseJob):
                             names=names,
                             isolated=isolated,
                             check_identities=check_identities,
+                            decision_store=stage,
                         ),
                         timeout=max(1, deadline - time.monotonic() - 350),
                     )

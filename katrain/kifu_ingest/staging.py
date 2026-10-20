@@ -1,9 +1,11 @@
 """Crash-safe, database-free staging for incremental kifu collection."""
 
+import errno
 import hashlib
 import json
 import os
 import re
+import stat
 import tempfile
 import time
 from pathlib import Path
@@ -78,6 +80,117 @@ class Stage:
 
     def items(self):
         return list(self.manifest["items"].values())
+
+    def _name_decision_path(self, request):
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        if (
+            not isinstance(request, dict)
+            or set(request) != {"kind", "key", "source_items", "context", "template_sources"}
+            or not isinstance(request["source_items"], list)
+            or not request["source_items"]
+        ):
+            raise ValueError("name decision checkpoint request invalid")
+        try:
+            digest = canonical_sha256(request)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("name decision checkpoint request must be JSON") from exc
+        directory = self.root / "name-decisions"
+        if directory.is_symlink() or directory.exists() and not directory.is_dir():
+            raise ValueError("name decision checkpoint directory unsafe")
+        path = directory / f"{digest}.json"
+        if path.is_symlink():
+            raise ValueError("name decision checkpoint symlink unsafe")
+        return path, digest
+
+    @staticmethod
+    def _validate_name_decision(request, decision):
+        from katrain.kifu_ingest.catalog import validate_decision
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        try:
+            validate_decision(decision)
+            if (
+                decision["kind"] != request["kind"]
+                or decision["key"] != request["key"]
+                or sorted(decision["source_items"], key=canonical_sha256)
+                != sorted(request["source_items"], key=canonical_sha256)
+            ):
+                raise ValueError("name decision differs from exact checkpoint request")
+            return canonical_sha256(decision)
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("name decision checkpoint review or binding invalid") from exc
+
+    def load_name_decision(self, request):
+        """Load a complete reviewed decision only for this exact finite request."""
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        path, digest = self._name_decision_path(request)
+        if not path.exists():
+            return None
+        if not path.is_file():
+            raise ValueError("name decision checkpoint must be a regular file")
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        except FileNotFoundError:
+            return None
+        except OSError as exc:
+            if exc.errno == errno.ELOOP:
+                raise ValueError("name decision checkpoint symlink unsafe") from exc
+            raise
+        with os.fdopen(fd, "rb") as handle:
+            info = os.fstat(handle.fileno())
+            if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= 1024 * 1024:
+                raise ValueError("name decision checkpoint exceeds size limit or is not a file")
+            raw = handle.read(info.st_size)
+            if len(raw) != info.st_size or os.fstat(handle.fileno()).st_size != info.st_size:
+                raise ValueError("name decision checkpoint changed during read")
+        try:
+            record = json.loads(raw)
+            if (
+                not isinstance(record, dict)
+                or set(record) != {"version", "request_sha256", "request", "decision", "decision_content_sha256"}
+                or type(record["version"]) is not int
+                or record["version"] != 1
+                or record["request_sha256"] != digest
+                or record["request"] != request
+                or canonical_sha256(record["request"]) != digest
+                or record["decision_content_sha256"] != self._validate_name_decision(request, record["decision"])
+            ):
+                raise ValueError("name decision checkpoint content mismatch")
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("name decision checkpoint invalid") from exc
+        return record["decision"]
+
+    def save_name_decision(self, request, decision):
+        """Atomically retain the actual review and all its signed finite members."""
+        path, digest = self._name_decision_path(request)
+        decision_digest = self._validate_name_decision(request, decision)
+        payload = json.dumps(
+            {
+                "version": 1,
+                "request_sha256": digest,
+                "request": request,
+                "decision": decision,
+                "decision_content_sha256": decision_digest,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            allow_nan=False,
+        ).encode("utf-8")
+        if len(payload) > 1024 * 1024:
+            raise ValueError("name decision checkpoint exceeds size limit")
+        new_directory = not path.parent.exists()
+        path.parent.mkdir(mode=0o700, exist_ok=True)
+        os.chmod(path.parent, 0o700)
+        self._atomic(path, payload)
+        # _atomic fsyncs the file. Also persist its rename and the lazy directory.
+        for directory in (path.parent, self.root) if new_directory else (path.parent,):
+            fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(fd)
+            finally:
+                os.close(fd)
 
     def remember(self, metadata):
         if not isinstance(metadata, dict):

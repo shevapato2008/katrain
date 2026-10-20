@@ -30,6 +30,7 @@ from katrain.web.tutorials.manual_review import (
 )
 from katrain.web.tutorials.models import TutorialFigureAdminOut as TutorialFigureOut
 from katrain.web.tutorials.replay import replay_draft, replay_draft_warnings
+from katrain.web.tutorials.media_presentation import PresentationPlan
 
 router = APIRouter(dependencies=[Depends(get_current_admin)])
 
@@ -38,6 +39,7 @@ class MediaTaskWrite(VersionedWrite):
     kind: Literal["audio", "video"]
     render_mode: Literal["2d", "3d"] = "2d"
     output_profile: OutputProfile | None = None
+    presentation_plan: PresentationPlan | None = None
 
     @model_validator(mode="after")
     def profile_applies_to_2d_video(self):

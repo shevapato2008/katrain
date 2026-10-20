@@ -32,7 +32,6 @@ from katrain.web.tutorials.media_timing import (
     synthesize_audio,
 )
 from katrain.web.tutorials.manual_review import board_approval, board_authority, media_dependencies
-from katrain.web.tutorials.replay import replay_frames, validate_replay
 from katrain.web.tutorials.services import _get_book_slug
 
 logger = logging.getLogger(__name__)
@@ -55,13 +54,74 @@ def invalidate_media(debug, *, narration=False):
     return result
 
 
-def content_inputs(figure, kind, voice=VOICE, output_profile=None):
+def _source_identity(db, figure, plan):
+    if not plan or not (plan.get("arrows") or plan.get("annotation_object_ids")):
+        return None
+    from katrain.web.tutorials.source_models import TutorialSourceFigure, TutorialSourcePage
+
+    rows = db.execute(
+        select(TutorialSourceFigure, TutorialSourcePage)
+        .join(
+            TutorialSourcePage,
+            (TutorialSourcePage.source_book_id == TutorialSourceFigure.source_book_id)
+            & (TutorialSourcePage.page == TutorialSourceFigure.page),
+        )
+        .where(
+            TutorialSourceFigure.figure_id == figure.id,
+            TutorialSourceFigure.page == figure.page,
+            TutorialSourcePage.page_image_path == figure.page_image_path,
+        )
+    ).all()
+    identities = {(source.source_pointer, page.image_sha256) for source, page in rows}
+    if len(identities) != 1:
+        raise ValueError(
+            "Source-backed presentation requires one registered source figure and matching source page image"
+        )
+    pointer, checksum = identities.pop()
+    return {"source_pointer": pointer, "image_sha256": checksum}
+
+
+def content_inputs(figure, kind, voice=VOICE, output_profile=None, *, presentation_plan=None, source_identity=None):
     if kind == "video":
         inputs = media_dependencies(figure, voice=voice)
+        proof = build_step_cues(
+            figure.board_payload or {},
+            figure.narration,
+            inputs.get("speech_timing") or {},
+            presentation_plan=presentation_plan,
+            source_identity=source_identity,
+        )
+        inputs["presentation"] = {
+            key: proof[key] for key in ("presentation_plan", "source_identity", "presentation_sha256")
+        }
         if output_profile is not None:
             inputs.update(output_profile=output_profile, renderer_recipe=render_profile(output_profile).renderer_recipe)
         return inputs
-    return {"narration": figure.narration, "voice": voice, **board_authority(figure)}
+    inputs = {"narration": figure.narration, "voice": voice, **board_authority(figure)}
+    if presentation_plan is not None:
+        inputs["presentation_plan"] = presentation_plan
+        inputs["source_identity"] = source_identity
+    return inputs
+
+
+def _snapshot_plan(snapshot):
+    return (snapshot.get("presentation") or snapshot).get("presentation_plan")
+
+
+def _current_inputs(db, figure, task):
+    plan = _snapshot_plan(task.snapshot)
+    try:
+        source = _source_identity(db, figure, plan)
+    except ValueError:
+        return {"stale_presentation_source": True}
+    return content_inputs(
+        figure,
+        task.kind,
+        task.snapshot["voice"],
+        task.snapshot.get("output_profile"),
+        presentation_plan=plan,
+        source_identity=source,
+    )
 
 
 def task_output(task):
@@ -118,7 +178,19 @@ class MediaWorker:
             approval = board_approval(figure)
             if not approval["approved"]:
                 raise HTTPException(status_code=422, detail=approval["reason"])
-            inputs = content_inputs(figure, body.kind, output_profile=output_profile)
+            plan = body.presentation_plan.model_dump(by_alias=True) if body.presentation_plan is not None else None
+            if plan is None and body.kind == "video":
+                plan = (media_metadata(figure).get("step_cues") or {}).get("presentation_plan")
+            try:
+                source = _source_identity(db, figure, plan)
+                from katrain.web.tutorials.media_presentation import discover_objects
+
+                discover_objects(figure.board_payload or {}, plan, source)
+            except ValueError as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+            inputs = content_inputs(
+                figure, body.kind, output_profile=output_profile, presentation_plan=plan, source_identity=source
+            )
             input_digest = digest(inputs)
             existing = db.scalar(
                 select(TutorialMediaTask)
@@ -262,10 +334,7 @@ class MediaWorker:
             if (
                 figure is None
                 or not board_approval(figure)["approved"]
-                or digest(
-                    content_inputs(figure, task.kind, task.snapshot["voice"], task.snapshot.get("output_profile"))
-                )
-                != task.input_digest
+                or digest(_current_inputs(db, figure, task)) != task.input_digest
             ):
                 task.status, task.stage = "stale", "stale"
                 task.error = "Static diagram approval or saved media inputs changed before generation"
@@ -400,7 +469,13 @@ class MediaWorker:
             and timing.get("narration_sha256") == narration_hash(narration)
             and timing.get("voice") == snapshot["voice"]
             and timing.get("audio_sha256") == audio.get("sha256")
+            and audio.get("narration_sha256") == timing.get("narration_sha256")
+            and audio.get("voice") == timing.get("voice")
+            and audio.get("duration_ms") == timing.get("duration_ms")
+            and timing.get("schema_version") == 1
         )
+        if kind == "video" and not valid_audio:
+            raise RuntimeError("Video requires valid previously completed audio; generate audio first")
         generated_audio = not valid_audio
         if valid_audio:
             self._stage(task_id, "loading_audio")
@@ -431,7 +506,14 @@ class MediaWorker:
             }
         align_boundaries(narration, timing["boundaries"])
         payload = snapshot.get("board_payload") or {}
-        cues = build_step_cues(payload, narration, timing)
+        presentation = snapshot.get("presentation") or snapshot
+        cues = build_step_cues(
+            payload,
+            narration,
+            timing,
+            presentation_plan=presentation.get("presentation_plan"),
+            source_identity=presentation.get("source_identity"),
+        )
         result = {
             "audio": audio,
             "speech_timing": timing,
@@ -440,7 +522,9 @@ class MediaWorker:
         }
         if kind == "video":
             self._stage(task_id, "aligning_replay")
-            frames = replay_frames(payload) if validate_replay(payload)["status"] == "complete" else []
+            if cues["status"] != "complete":
+                raise RuntimeError("Recording presentation needs calibration: " + cues["reason"])
+            frames = cues["frames"]
             self._stage(task_id, "rendering_video")
             video_path = directory / "video.mp4"
             self._render_video(
@@ -487,13 +571,23 @@ class MediaWorker:
                             "audio_asset": audio["asset"],
                             "audio": audio,
                             "speech_timing": timing,
+                            "presentation": {
+                                key: cues[key]
+                                for key in ("presentation_plan", "source_identity", "presentation_sha256")
+                            },
                         }
                     ),
                     "duration_ms": probe_duration(video_path),
                     "size_bytes": video_path.stat().st_size,
                     "audio_sha256": timing["audio_sha256"],
                     "replay_sha256": cues["replay_sha256"],
-                    "playback_mode": "replay" if cues["status"] == "complete" else "static",
+                    "playback_mode": cues["mode"],
+                    "presentation_sha256": cues["presentation_sha256"],
+                    "presentation_plan": cues["presentation_plan"],
+                    "source_identity": cues["source_identity"],
+                    "presentation_objects": cues["objects"],
+                    "presentation_events": cues["events"],
+                    "presentation_asset": prefix + "/step_cues.json",
                     "timing_status": cues["status"],
                     "timing_reason": cues["reason"],
                 },
@@ -524,10 +618,7 @@ class MediaWorker:
             if (
                 figure is None
                 or not board_approval(figure)["approved"]
-                or digest(
-                    content_inputs(figure, task.kind, task.snapshot["voice"], task.snapshot.get("output_profile"))
-                )
-                != task.input_digest
+                or digest(_current_inputs(db, figure, task)) != task.input_digest
             ):
                 task.status, task.stage, task.error = "stale", "stale", "Saved media inputs changed during generation"
                 task.result = result

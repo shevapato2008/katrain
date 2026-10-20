@@ -75,6 +75,7 @@ def test_timing_cues_resolve_color_printed_numbers_and_grouped_refs():
     text = "黑41，白42，再看黑43。"
     timing = {
         "audio_sha256": "a",
+        "narration_sha256": __import__("hashlib").sha256(text.encode()).hexdigest(),
         "duration_ms": 4000,
         "boundaries": [
             {"text": part, "start_ms": i * 300, "duration_ms": 200}
@@ -83,7 +84,7 @@ def test_timing_cues_resolve_color_printed_numbers_and_grouped_refs():
     }
     cues = build_step_cues(value, text, timing)
     assert cues["status"] == "complete"
-    assert [(x["step"], x["at_ms"]) for x in cues["cues"]] == [(0, 0), (1, 0), (2, 900), (3, 2100)]
+    assert [(x["step"], x["at_ms"]) for x in cues["cues"]] == [(0, 0), (1, 500), (2, 1400), (3, 2600)]
     assert cues["replay_sha256"] == digest(value["replay"])
     value["replay"]["moves"][0]["printed_number"] = "2"
     value["replay"]["moves"][2]["printed_number"] = "4"
@@ -177,7 +178,7 @@ def media(tmp_path, monkeypatch):
 
     async def speech(text, voice, path):
         path.write_bytes(b"generated audio")
-        return [{"text": text, "start_ms": 0, "duration_ms": 3000}]
+        return [{"text": char, "start_ms": i * 100, "duration_ms": 80} for i, char in enumerate(text)]
 
     monkeypatch.setattr(media_tasks, "synthesize_audio", speech)
     monkeypatch.setattr(media_tasks, "probe_duration", lambda path: 4000)
@@ -256,7 +257,7 @@ def test_generation_stale_content_or_upload_failure_never_binds(media, monkeypat
             db.get(models_db.TutorialFigure, 1).narration = "new exact narration"
             db.commit()
         path.write_bytes(b"generated audio")
-        return [{"text": text, "start_ms": 0, "duration_ms": 3000}]
+        return [{"text": char, "start_ms": i * 100, "duration_ms": 80} for i, char in enumerate(text)]
 
     monkeypatch.setattr(media_tasks, "synthesize_audio", changed)
     worker.run_next()
@@ -433,7 +434,7 @@ def test_2d_video_reuses_same_audio_and_keeps_historical_3d(media, monkeypatch):
     from katrain.web.tutorials import media_tasks
 
     client, factory, worker, storage, app = media
-    narration = "黑2、4，白3。"
+    narration = "黑41，白42，再看黑43。"
     with factory() as db:
         db.get(models_db.TutorialFigure, 1).narration = narration
         db.commit()
@@ -533,7 +534,7 @@ def test_board_edit_during_audio_prevents_publication(media, monkeypatch):
             figure.board_payload = value
             db.commit()
         path.write_bytes(b"audio")
-        return [{"text": text, "start_ms": 0, "duration_ms": 3000}]
+        return [{"text": char, "start_ms": i * 100, "duration_ms": 80} for i, char in enumerate(text)]
 
     monkeypatch.setattr(media_tasks, "synthesize_audio", speech)
     task = enqueue(client).json()["task"]
@@ -719,6 +720,9 @@ def test_both_profiles_publish_independently_and_preserve_legacy(media):
             assert (artifact["width"], artifact["height"], artifact["fps"]) == (*dimensions, 30)
             assert task.result["video"] == artifact
             assert artifact["renderer_recipe"]
+            assert artifact["presentation_objects"] == task.result["step_cues"]["objects"]
+            assert artifact["presentation_events"] == task.result["step_cues"]["events"]
+            assert artifact["presentation_asset"] == task.result["step_cues"]["asset"]
 
 
 def test_old_snapshot_remains_legacy_and_renders_original_dimensions(media, monkeypatch):
@@ -733,6 +737,7 @@ def test_old_snapshot_remains_legacy_and_renders_original_dimensions(media, monk
         kwargs["output_path"].write_bytes(b"legacy video")
 
     monkeypatch.setattr(worker, "_render_video", render)
+    prepare_audio(media)
     with factory() as db:
         figure = db.get(models_db.TutorialFigure, 1)
         inputs = content_inputs(figure, "video")
@@ -833,3 +838,124 @@ def test_publish_merges_sibling_change_made_during_render(media, monkeypatch):
         figure = db.get(models_db.TutorialFigure, 1)
         assert figure.recognition_debug["workbench_media"]["videos"]["2d"]["profiles"][KIOSK] == sibling
         assert figure.video_2d_review["profiles"] == {KIOSK: review, GALAXY: None}
+
+
+def test_presentation_plan_is_typed_snapshotted_and_video_proof_is_profile_local(media):
+    from katrain.web.tutorials.manual_review import video_problem, video_artifact
+
+    client, factory, worker, *_ = media
+    prepare_audio(media)
+    plan = {
+        "schema_version": 1,
+        "bindings": [
+            {"span": [0, 3], "object_ids": ["labels:1,2"]},
+            {"span": [4, 7], "object_ids": ["replay:2"]},
+            {"span": [10, 13], "object_ids": ["labels:1,1"]},
+        ],
+    }
+    response = client.post(
+        "/api/admin/tutorials/figures/1/media-tasks",
+        json={
+            "kind": "video",
+            "output_profile": GALAXY,
+            "expected_updated_at": current_version(factory),
+            "presentation_plan": plan,
+        },
+    )
+    assert response.status_code == 202, response.text
+    task_id = response.json()["task"]["id"]
+    with factory() as db:
+        task = db.get(models_db.TutorialMediaTask, task_id)
+        assert task.snapshot["presentation"]["presentation_plan"]["bindings"] == plan["bindings"]
+    worker.run_next()
+    assert enqueue_profile(media, KIOSK).status_code == 202
+    worker.run_next()
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        assert video_problem(figure, "2d", GALAXY) is None
+        assert video_problem(figure, "2d", KIOSK) is None
+        debug = copy.deepcopy(figure.recognition_debug)
+        debug["workbench_media"]["videos"]["2d"]["profiles"][GALAXY]["presentation_sha256"] = "0" * 64
+        figure.recognition_debug = debug
+        db.commit()
+        assert "presentation" in video_problem(figure, "2d", GALAXY)
+        assert video_problem(figure, "2d", KIOSK) is None
+    bad = {**plan, "bindings": [{"span": [0, 3], "object_ids": ["labels:1,2"], "at_ms": 20}]}
+    response = client.post(
+        "/api/admin/tutorials/figures/1/media-tasks",
+        json={
+            "kind": "audio",
+            "expected_updated_at": current_version(factory),
+            "presentation_plan": bad,
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_source_arrows_require_registered_current_figure_identity(media):
+    from katrain.web.tutorials.source_models import TutorialSourceBook, TutorialSourceFigure, TutorialSourcePage
+
+    client, factory, worker, *_ = media
+    source = {"source_pointer": "/chapters/0/figures/0", "image_sha256": "a" * 64}
+    plan = {
+        "schema_version": 1,
+        "arrows": [{"id": "arrow:direction", "from": [0, 0], "to": [2, 2], **source}],
+        "bindings": [],
+    }
+    body = {"kind": "audio", "expected_updated_at": current_version(factory), "presentation_plan": plan}
+    assert client.post("/api/admin/tutorials/figures/1/media-tasks", json=body).status_code == 422
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        figure.page_image_path = "tutorial_assets/test/page1.png"
+        from katrain.web.tutorials.manual_review import make_review, board_content_sha256
+
+        figure.board_review = make_review({"username": "reviewer"}, board_content_sha256(figure))
+        db.add(
+            TutorialSourceBook(
+                id=1,
+                source_namespace="test",
+                catalog_id="test",
+                book_id=1,
+                source_json_sha256="b" * 64,
+                assets_manifest_sha256="c" * 64,
+                source_metadata={},
+                matching_evidence={},
+            )
+        )
+        db.flush()
+        db.add(
+            TutorialSourceFigure(
+                source_book_id=1,
+                source_figure_id="test-1",
+                source_pointer=source["source_pointer"],
+                page=1,
+                figure_id=1,
+                source_metadata={},
+            )
+        )
+        db.add(
+            TutorialSourcePage(
+                source_book_id=1,
+                page=1,
+                page_image_path=figure.page_image_path,
+                image_sha256=source["image_sha256"],
+                text_fragments=[],
+                page_context_text="",
+            )
+        )
+        db.commit()
+    body["expected_updated_at"] = current_version(factory)
+    accepted = client.post("/api/admin/tutorials/figures/1/media-tasks", json=body)
+    assert accepted.status_code == 202, accepted.text
+    task_id = accepted.json()["task"]["id"]
+    with factory() as db:
+        assert db.get(models_db.TutorialMediaTask, task_id).snapshot["source_identity"] == source
+        page = db.query(TutorialSourcePage).one()
+        page.image_sha256 = "d" * 64
+        db.commit()
+    worker.run_next()
+    with factory() as db:
+        assert db.get(models_db.TutorialMediaTask, task_id).status == "stale"
+    plan["arrows"][0]["image_sha256"] = "e" * 64
+    body["expected_updated_at"] = current_version(factory)
+    assert client.post("/api/admin/tutorials/figures/1/media-tasks", json=body).status_code == 422

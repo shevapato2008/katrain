@@ -100,7 +100,28 @@ def video_problem(figure, mode, output_profile=None):
     video = video_artifact(figure, mode, output_profile)
     if not isinstance(video, dict) or not video.get("asset") or not video.get("sha256"):
         return "Generate a current immutable video with a file digest before manual approval"
-    if video.get("dependencies_sha256") != digest(media_dependencies(figure)):
+    dependencies = media_dependencies(figure)
+    if video.get("presentation_sha256"):
+        from katrain.web.tutorials.media_timing import build_step_cues
+
+        proof = build_step_cues(
+            figure.board_payload or {},
+            figure.narration,
+            dependencies.get("speech_timing") or {},
+            presentation_plan=video.get("presentation_plan"),
+            source_identity=video.get("source_identity"),
+        )
+        if (
+            proof["status"] != "complete"
+            or proof["presentation_sha256"] != video["presentation_sha256"]
+            or video.get("presentation_objects") != proof["objects"]
+            or video.get("presentation_events") != proof["events"]
+        ):
+            return "Video presentation cues changed; generate this profile again before manual approval"
+        dependencies["presentation"] = {
+            key: proof[key] for key in ("presentation_plan", "source_identity", "presentation_sha256")
+        }
+    if video.get("dependencies_sha256") != digest(dependencies):
         return "Video dependencies changed; generate this mode again before manual approval"
     if mode == "2d" and output_profile is None and figure.video_asset != video["asset"]:
         galaxy = video_artifact(figure, mode, GALAXY)

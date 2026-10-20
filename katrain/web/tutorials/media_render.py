@@ -91,6 +91,22 @@ def _validate_inputs(narration, board_payload, frames, speech_timing, step_cues,
     if not isinstance(board_payload.get("stones"), dict):
         raise ValueError("A saved static board is required")
     status = step_cues.get("status")
+    if step_cues.get("mode") in ("presentation", "replay", "static"):
+        from katrain.web.tutorials.media_timing import build_step_cues
+
+        proof = build_step_cues(
+            board_payload,
+            narration,
+            speech_timing,
+            presentation_plan=step_cues.get("presentation_plan"),
+            source_identity=step_cues.get("source_identity"),
+        )
+        if proof["status"] != "complete":
+            raise ValueError("Recording presentation cues need calibration: " + proof["reason"])
+        supplied = {key: value for key, value in step_cues.items() if key != "asset"}
+        if supplied != proof or frames != proof["frames"]:
+            raise ValueError("Recording presentation proof or snapshots do not match saved inputs")
+        return duration
     if status == "complete":
         if len(frames) < 2 or [frame.get("step") for frame in frames] != list(range(len(frames))):
             raise ValueError("Complete replay requires every validated frame, including initial state")
@@ -134,7 +150,11 @@ def _stone_click_times(frames, step_cues, duration_ms):
         cue["at_ms"] + PLACEMENT_DURATION_MS
         for cue in step_cues.get("cues", [])
         if cue["step"] > 0
-        and (by_step.get(cue["step"], {}).get("currentMove") or {}).get("kind") == "move"
+        and (
+            bool(by_step.get(cue["step"], {}).get("appeared_stones"))
+            if "appeared_stones" in by_step.get(cue["step"], {})
+            else (by_step.get(cue["step"], {}).get("currentMove") or {}).get("kind") == "move"
+        )
         and cue["at_ms"] + PLACEMENT_DURATION_MS < duration_ms
     ]
 
@@ -303,8 +323,8 @@ def render_video(
 ) -> None:
     """Render snapshots at saved audio cues and atomically write a checked MP4.
 
-    Pending cues always render the saved final static diagram with an explicit
-    calibration label. Failures propagate to the job runner with their stage.
+    Versioned presentation proofs must be complete and match the saved inputs.
+    Failures propagate to the job runner with their stage.
     """
     profile = render_profile(output_profile)
     if output_profile is not None and render_mode != "2d":

@@ -1,4 +1,6 @@
 import threading
+import time
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -15,6 +17,7 @@ class FakeCamera:
         self.close_calls = 0
         self.is_connected = False
         self.frame = np.zeros((4, 6, 3), np.uint8)
+        self.fresh_timeouts = []
 
     def open(self):
         self.open_calls += 1
@@ -28,7 +31,8 @@ class FakeCamera:
     def read_frame(self):
         return self.frame.copy()
 
-    def grab_fresh(self, after_ts=None, settle_ms=150.0):
+    def grab_fresh(self, after_ts=None, settle_ms=150.0, timeout=2.0):
+        self.fresh_timeouts.append(timeout)
         return self.frame.copy(), 7, 123.0
 
 
@@ -49,6 +53,138 @@ def test_camera_hub_owns_one_camera_lifecycle():
     hub.stop()
     hub.stop()
     assert camera.close_calls == 1
+
+
+@pytest.mark.parametrize("timeout", [None, 0.5])
+def test_grab_fresh_waits_for_preview_and_only_spends_remaining_timeout(timeout):
+    preview_entered, preview_release, captured = threading.Event(), threading.Event(), threading.Event()
+    requested = threading.Event()
+
+    class PreviewCamera(FakeCamera):
+        def read_frame(self):
+            preview_entered.set()
+            assert preview_release.wait(2)
+            return super().read_frame()
+
+    camera = PreviewCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    preview = threading.Thread(target=hub.read_frame)
+    results = []
+    elapsed = []
+
+    def capture():
+        started = time.monotonic()
+        requested.set()
+        results.append(hub.grab_fresh(after_ts=100.0, settle_ms=10, timeout=timeout))
+        elapsed.append(time.monotonic() - started)
+        captured.set()
+
+    fresh = threading.Thread(target=capture)
+    try:
+        preview.start()
+        assert preview_entered.wait(1)
+        fresh.start()
+        assert requested.wait(1)
+        assert not captured.wait(0.04), "fresh capture returned while preview still owned the camera"
+        preview_release.set()
+        assert captured.wait(1)
+        assert results[0][1:] == (7, 123.0)
+        assert results[0][0].shape == camera.frame.shape
+        budget = 2.0 if timeout is None else timeout
+        assert 0 < camera.fresh_timeouts[0] <= budget - 0.03
+        assert camera.fresh_timeouts[0] == pytest.approx(budget - elapsed[0], abs=0.02)
+    finally:
+        preview_release.set()
+        preview.join(2)
+        if fresh.ident is not None:
+            fresh.join(2)
+        hub.stop()
+
+
+def test_grab_fresh_times_out_waiting_for_lifecycle_lock():
+    camera = FakeCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    try:
+        with hub._lifecycle_lock:
+            started = time.monotonic()
+            result = hub.grab_fresh(timeout=0.04)
+            elapsed = time.monotonic() - started
+        assert result == (None, 0, 0.0)
+        assert 0.03 <= elapsed < 0.3
+        assert camera.fresh_timeouts == []
+    finally:
+        hub.stop()
+
+
+def test_grab_fresh_does_not_call_camera_after_budget_is_exhausted(monkeypatch):
+    from katrain.web.core import camera_hub
+
+    camera = FakeCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    clock = iter([10.0, 10.1])
+    monkeypatch.setattr(camera_hub, "time", SimpleNamespace(monotonic=lambda: next(clock)))
+    try:
+        frame, seq, ts = hub.grab_fresh(timeout=0.05)
+        assert frame is None
+        assert (seq, ts) == (0, 0.0)
+        assert camera.fresh_timeouts == []
+        assert hub._lifecycle_lock.acquire(blocking=False), "exhausted capture retained lifecycle lock"
+        hub._lifecycle_lock.release()
+    finally:
+        hub.stop()
+
+
+def test_grab_fresh_waiting_for_stop_does_not_read_closed_camera():
+    close_entered, close_release, captured = threading.Event(), threading.Event(), threading.Event()
+
+    class ClosingCamera(FakeCamera):
+        def close(self):
+            close_entered.set()
+            assert close_release.wait(2)
+            super().close()
+
+    camera = ClosingCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    closer = threading.Thread(target=hub.stop)
+    results = []
+
+    def capture():
+        results.append(hub.grab_fresh(timeout=0.5))
+        captured.set()
+
+    fresh = threading.Thread(target=capture)
+    try:
+        closer.start()
+        assert close_entered.wait(1)
+        fresh.start()
+        assert not captured.wait(0.03), "capture bypassed the active lifecycle operation"
+        close_release.set()
+        assert captured.wait(1)
+        assert results == [(None, 0, 0.0)]
+        assert camera.fresh_timeouts == []
+    finally:
+        close_release.set()
+        closer.join(2)
+        if fresh.ident is not None:
+            fresh.join(2)
+        hub.stop()
+
+
+def test_preview_reads_stay_nonblocking_while_lifecycle_lock_is_held():
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=FakeCamera())
+    hub.start()
+    try:
+        with hub._lifecycle_lock:
+            started = time.monotonic()
+            assert hub.read_frame() is None
+            assert hub.read_frame_identified() == (None, 0, 0.0)
+            assert time.monotonic() - started < 0.1
+    finally:
+        hub.stop()
 
 
 class RecoveringCamera(FakeCamera):

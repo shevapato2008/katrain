@@ -1,0 +1,6320 @@
+{
+  "catalog_id": "intro-up",
+  "title": "曹薰铉和李昌镐围棋教室：入门篇·上卷",
+  "priority_tier": "核心教材",
+  "dataset": "curriculum-intro-up-gpt61sol-v1",
+  "book_id": 11,
+  "source_book_id": 1,
+  "summary": {
+    "pdf_pages": 314,
+    "pages_detected": 314,
+    "pages_recognized_validated": 314,
+    "figures": 549,
+    "completed": 549,
+    "failed_pages": 0,
+    "pending_pages": 0,
+    "baseline_references": 549,
+    "uncertain_figures": 1,
+    "inferred_figures": 1,
+    "coverage_missing": 0
+  },
+  "source_files": {
+    "/Users/fan/Repositories/go-topic-collections/curriculum/01_入门_规则与第一盘棋/曹薰铉和李昌镐围棋教室_入门篇_上_2000/曹薰铉和李昌镐围棋教室_入门篇_上_2000.pdf": "40ca3512f04f6aac6d77041907ef677b07157ca590a14f9959a663cd03f9e4a6",
+    "/Users/fan/Repositories/go-topic-collections/curriculum/01_入门_规则与第一盘棋/曹薰铉和李昌镐围棋教室_入门篇_上_2000/output/book.json": "20d7cc5210b15fbdf74914c793f439da466789c7c7ffb73e7d9b9b49481492e4"
+  },
+  "coverage": {
+    "baseline_references": 549,
+    "covered_references": 549,
+    "references": [
+      {
+        "page": 10,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/0/sections/2/pages/0/elements/3",
+        "figure_ids": [
+          "p010-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 11,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/0/sections/2/pages/1/elements/2",
+        "figure_ids": [
+          "p011-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 12,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/1/intro/0/elements/0",
+        "figure_ids": [
+          "p012-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 13,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/1/intro/1/elements/0",
+        "figure_ids": [
+          "p013-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 14,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/1/intro/2/elements/0",
+        "figure_ids": [
+          "p014-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 15,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/1/intro/3/elements/1",
+        "figure_ids": [
+          "p015-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 15,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/1/intro/3/elements/2",
+        "figure_ids": [
+          "p015-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 16,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/1/intro/4/elements/1",
+        "figure_ids": [
+          "p016-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 16,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/1/intro/4/elements/2",
+        "figure_ids": [
+          "p016-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 17,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/1/intro/5/elements/1",
+        "figure_ids": [
+          "p017-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 17,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/1/intro/5/elements/2",
+        "figure_ids": [
+          "p017-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 18,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/1/intro/6/elements/1",
+        "figure_ids": [
+          "p018-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 18,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/1/intro/6/elements/2",
+        "figure_ids": [
+          "p018-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 19,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/1/intro/7/elements/1",
+        "figure_ids": [
+          "p019-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 19,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/1/intro/7/elements/2",
+        "figure_ids": [
+          "p019-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 20,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/1/intro/8/elements/1",
+        "figure_ids": [
+          "p020-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 20,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/1/intro/8/elements/2",
+        "figure_ids": [
+          "p020-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 21,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/1/intro/9/elements/1",
+        "figure_ids": [
+          "p021-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 21,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/1/intro/9/elements/2",
+        "figure_ids": [
+          "p021-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 22,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/1/intro/10/elements/1",
+        "figure_ids": [
+          "p022-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 22,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/1/intro/10/elements/2",
+        "figure_ids": [
+          "p022-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 23,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/1/intro/11/elements/1",
+        "figure_ids": [
+          "p023-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 23,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/1/intro/11/elements/2",
+        "figure_ids": [
+          "p023-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 24,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/1/intro/12/elements/1",
+        "figure_ids": [
+          "p024-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 24,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/1/intro/12/elements/2",
+        "figure_ids": [
+          "p024-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 25,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/1/intro/13/elements/1",
+        "figure_ids": [
+          "p025-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 25,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/1/intro/13/elements/2",
+        "figure_ids": [
+          "p025-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 26,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/1/intro/14/elements/1",
+        "figure_ids": [
+          "p026-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 26,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/1/intro/14/elements/2",
+        "figure_ids": [
+          "p026-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 27,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/1/intro/15/elements/1",
+        "figure_ids": [
+          "p027-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 27,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/1/intro/15/elements/2",
+        "figure_ids": [
+          "p027-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 28,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/1/intro/16/elements/1",
+        "figure_ids": [
+          "p028-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 28,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/1/intro/16/elements/2",
+        "figure_ids": [
+          "p028-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 29,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/2/intro/0/elements/0",
+        "figure_ids": [
+          "p029-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 30,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/2/intro/1/elements/0",
+        "figure_ids": [
+          "p030-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 31,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/2/intro/2/elements/0",
+        "figure_ids": [
+          "p031-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 32,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/2/intro/3/elements/1",
+        "figure_ids": [
+          "p032-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 32,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/2/intro/3/elements/2",
+        "figure_ids": [
+          "p032-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 33,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/2/intro/4/elements/1",
+        "figure_ids": [
+          "p033-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 33,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/2/intro/4/elements/2",
+        "figure_ids": [
+          "p033-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 34,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/2/intro/5/elements/1",
+        "figure_ids": [
+          "p034-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 34,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/2/intro/5/elements/2",
+        "figure_ids": [
+          "p034-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 35,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/2/intro/6/elements/1",
+        "figure_ids": [
+          "p035-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 35,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/2/intro/6/elements/2",
+        "figure_ids": [
+          "p035-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 36,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/2/intro/7/elements/1",
+        "figure_ids": [
+          "p036-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 36,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/2/intro/7/elements/2",
+        "figure_ids": [
+          "p036-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 37,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/2/intro/8/elements/1",
+        "figure_ids": [
+          "p037-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 37,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/2/intro/8/elements/2",
+        "figure_ids": [
+          "p037-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 38,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/2/intro/9/elements/1",
+        "figure_ids": [
+          "p038-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 38,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/2/intro/9/elements/2",
+        "figure_ids": [
+          "p038-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 39,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/2/intro/10/elements/1",
+        "figure_ids": [
+          "p039-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 39,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/2/intro/10/elements/2",
+        "figure_ids": [
+          "p039-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 40,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/2/intro/11/elements/1",
+        "figure_ids": [
+          "p040-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 40,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/2/intro/11/elements/2",
+        "figure_ids": [
+          "p040-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 41,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/2/intro/12/elements/1",
+        "figure_ids": [
+          "p041-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 41,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/2/intro/12/elements/2",
+        "figure_ids": [
+          "p041-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 42,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/2/intro/13/elements/1",
+        "figure_ids": [
+          "p042-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 42,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/2/intro/13/elements/2",
+        "figure_ids": [
+          "p042-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 43,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/2/intro/14/elements/1",
+        "figure_ids": [
+          "p043-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 43,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/2/intro/14/elements/2",
+        "figure_ids": [
+          "p043-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 44,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/2/intro/15/elements/1",
+        "figure_ids": [
+          "p044-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 44,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/2/intro/15/elements/2",
+        "figure_ids": [
+          "p044-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 45,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/2/intro/16/elements/1",
+        "figure_ids": [
+          "p045-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 45,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/2/intro/16/elements/2",
+        "figure_ids": [
+          "p045-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 46,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/3/intro/0/elements/1",
+        "figure_ids": [
+          "p046-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 47,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/3/intro/1/elements/1",
+        "figure_ids": [
+          "p047-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 48,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/3/intro/2/elements/1",
+        "figure_ids": [
+          "p048-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 49,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/3/intro/3/elements/1",
+        "figure_ids": [
+          "p049-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 49,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/3/intro/3/elements/2",
+        "figure_ids": [
+          "p049-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 50,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/3/intro/4/elements/1",
+        "figure_ids": [
+          "p050-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 50,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/3/intro/4/elements/2",
+        "figure_ids": [
+          "p050-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 51,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/3/intro/5/elements/1",
+        "figure_ids": [
+          "p051-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 51,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/3/intro/5/elements/2",
+        "figure_ids": [
+          "p051-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 52,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/3/intro/6/elements/1",
+        "figure_ids": [
+          "p052-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 52,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/3/intro/6/elements/2",
+        "figure_ids": [
+          "p052-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 53,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/3/intro/7/elements/1",
+        "figure_ids": [
+          "p053-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 53,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/3/intro/7/elements/2",
+        "figure_ids": [
+          "p053-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 54,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/3/intro/8/elements/1",
+        "figure_ids": [
+          "p054-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 54,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/3/intro/8/elements/2",
+        "figure_ids": [
+          "p054-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 55,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/3/intro/9/elements/1",
+        "figure_ids": [
+          "p055-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 55,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/3/intro/9/elements/2",
+        "figure_ids": [
+          "p055-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 56,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/3/intro/10/elements/1",
+        "figure_ids": [
+          "p056-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 56,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/3/intro/10/elements/2",
+        "figure_ids": [
+          "p056-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 57,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/3/intro/11/elements/1",
+        "figure_ids": [
+          "p057-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 57,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/3/intro/11/elements/2",
+        "figure_ids": [
+          "p057-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 58,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/3/intro/12/elements/1",
+        "figure_ids": [
+          "p058-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 58,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/3/intro/12/elements/2",
+        "figure_ids": [
+          "p058-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 59,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/3/intro/13/elements/1",
+        "figure_ids": [
+          "p059-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 59,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/3/intro/13/elements/2",
+        "figure_ids": [
+          "p059-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 60,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/3/intro/14/elements/1",
+        "figure_ids": [
+          "p060-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 60,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/3/intro/14/elements/2",
+        "figure_ids": [
+          "p060-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 61,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/3/intro/15/elements/1",
+        "figure_ids": [
+          "p061-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 61,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/3/intro/15/elements/2",
+        "figure_ids": [
+          "p061-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 62,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/3/intro/16/elements/1",
+        "figure_ids": [
+          "p062-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 62,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/3/intro/16/elements/2",
+        "figure_ids": [
+          "p062-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 63,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/4/intro/0/elements/1",
+        "figure_ids": [
+          "p063-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 64,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/4/intro/1/elements/0",
+        "figure_ids": [
+          "p064-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 65,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/4/intro/2/elements/0",
+        "figure_ids": [
+          "p065-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 66,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/4/intro/3/elements/1",
+        "figure_ids": [
+          "p066-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 66,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/4/intro/3/elements/2",
+        "figure_ids": [
+          "p066-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 67,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/4/intro/4/elements/1",
+        "figure_ids": [
+          "p067-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 67,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/4/intro/4/elements/2",
+        "figure_ids": [
+          "p067-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 68,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/4/intro/5/elements/1",
+        "figure_ids": [
+          "p068-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 68,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/4/intro/5/elements/2",
+        "figure_ids": [
+          "p068-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 69,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/4/intro/6/elements/1",
+        "figure_ids": [
+          "p069-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 69,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/4/intro/6/elements/2",
+        "figure_ids": [
+          "p069-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 70,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/4/intro/7/elements/1",
+        "figure_ids": [
+          "p070-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 70,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/4/intro/7/elements/2",
+        "figure_ids": [
+          "p070-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 71,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/4/intro/8/elements/1",
+        "figure_ids": [
+          "p071-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 71,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/4/intro/8/elements/2",
+        "figure_ids": [
+          "p071-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 72,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/4/intro/9/elements/1",
+        "figure_ids": [
+          "p072-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 72,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/4/intro/9/elements/2",
+        "figure_ids": [
+          "p072-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 73,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/4/intro/10/elements/1",
+        "figure_ids": [
+          "p073-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 73,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/4/intro/10/elements/2",
+        "figure_ids": [
+          "p073-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 74,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/4/intro/11/elements/1",
+        "figure_ids": [
+          "p074-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 74,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/4/intro/11/elements/2",
+        "figure_ids": [
+          "p074-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 75,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/4/intro/12/elements/1",
+        "figure_ids": [
+          "p075-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 75,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/4/intro/12/elements/2",
+        "figure_ids": [
+          "p075-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 76,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/4/intro/13/elements/1",
+        "figure_ids": [
+          "p076-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 76,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/4/intro/13/elements/2",
+        "figure_ids": [
+          "p076-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 77,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/4/intro/14/elements/1",
+        "figure_ids": [
+          "p077-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 77,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/4/intro/14/elements/2",
+        "figure_ids": [
+          "p077-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 78,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/4/intro/15/elements/1",
+        "figure_ids": [
+          "p078-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 78,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/4/intro/15/elements/2",
+        "figure_ids": [
+          "p078-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 79,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/4/intro/16/elements/1",
+        "figure_ids": [
+          "p079-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 79,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/4/intro/16/elements/2",
+        "figure_ids": [
+          "p079-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 80,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/5/intro/0/elements/1",
+        "figure_ids": [
+          "p080-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 81,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/5/intro/1/elements/1",
+        "figure_ids": [
+          "p081-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 82,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/5/intro/2/elements/1",
+        "figure_ids": [
+          "p082-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 83,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/5/intro/3/elements/1",
+        "figure_ids": [
+          "p083-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 83,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/5/intro/3/elements/2",
+        "figure_ids": [
+          "p083-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 84,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/5/intro/4/elements/1",
+        "figure_ids": [
+          "p084-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 84,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/5/intro/4/elements/2",
+        "figure_ids": [
+          "p084-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 85,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/5/intro/5/elements/1",
+        "figure_ids": [
+          "p085-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 85,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/5/intro/5/elements/2",
+        "figure_ids": [
+          "p085-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 86,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/5/intro/6/elements/1",
+        "figure_ids": [
+          "p086-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 86,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/5/intro/6/elements/2",
+        "figure_ids": [
+          "p086-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 87,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/5/intro/7/elements/1",
+        "figure_ids": [
+          "p087-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 87,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/5/intro/7/elements/2",
+        "figure_ids": [
+          "p087-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 88,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/5/intro/8/elements/1",
+        "figure_ids": [
+          "p088-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 88,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/5/intro/8/elements/2",
+        "figure_ids": [
+          "p088-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 89,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/5/intro/9/elements/1",
+        "figure_ids": [
+          "p089-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 89,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/5/intro/9/elements/2",
+        "figure_ids": [
+          "p089-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 90,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/5/intro/10/elements/1",
+        "figure_ids": [
+          "p090-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 90,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/5/intro/10/elements/2",
+        "figure_ids": [
+          "p090-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 91,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/5/intro/11/elements/1",
+        "figure_ids": [
+          "p091-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 91,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/5/intro/11/elements/2",
+        "figure_ids": [
+          "p091-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 92,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/5/intro/12/elements/1",
+        "figure_ids": [
+          "p092-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 92,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/5/intro/12/elements/2",
+        "figure_ids": [
+          "p092-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 93,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/5/intro/13/elements/1",
+        "figure_ids": [
+          "p093-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 93,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/5/intro/13/elements/2",
+        "figure_ids": [
+          "p093-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 94,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/5/intro/14/elements/1",
+        "figure_ids": [
+          "p094-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 94,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/5/intro/14/elements/2",
+        "figure_ids": [
+          "p094-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 95,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/5/intro/15/elements/1",
+        "figure_ids": [
+          "p095-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 95,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/5/intro/15/elements/2",
+        "figure_ids": [
+          "p095-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 96,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/5/intro/16/elements/1",
+        "figure_ids": [
+          "p096-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 96,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/5/intro/16/elements/2",
+        "figure_ids": [
+          "p096-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 97,
+        "ref_index": 1,
+        "label": "㉙",
+        "source_pointer": "/chapters/5/intro/17/elements/1",
+        "figure_ids": [
+          "p097-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 97,
+        "ref_index": 2,
+        "label": "㉚",
+        "source_pointer": "/chapters/5/intro/17/elements/2",
+        "figure_ids": [
+          "p097-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 98,
+        "ref_index": 1,
+        "label": "㉛",
+        "source_pointer": "/chapters/5/intro/18/elements/1",
+        "figure_ids": [
+          "p098-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 98,
+        "ref_index": 2,
+        "label": "㉜",
+        "source_pointer": "/chapters/5/intro/18/elements/2",
+        "figure_ids": [
+          "p098-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 99,
+        "ref_index": 1,
+        "label": "㉝",
+        "source_pointer": "/chapters/5/intro/19/elements/1",
+        "figure_ids": [
+          "p099-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 99,
+        "ref_index": 2,
+        "label": "㉞",
+        "source_pointer": "/chapters/5/intro/19/elements/2",
+        "figure_ids": [
+          "p099-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 100,
+        "ref_index": 1,
+        "label": "㉟",
+        "source_pointer": "/chapters/5/intro/20/elements/1",
+        "figure_ids": [
+          "p100-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 100,
+        "ref_index": 2,
+        "label": "㊱",
+        "source_pointer": "/chapters/5/intro/20/elements/2",
+        "figure_ids": [
+          "p100-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 101,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/6/intro/0/elements/1",
+        "figure_ids": [
+          "p101-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 102,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/6/intro/1/elements/1",
+        "figure_ids": [
+          "p102-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 103,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/6/intro/2/elements/0",
+        "figure_ids": [
+          "p103-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 104,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/6/intro/3/elements/1",
+        "figure_ids": [
+          "p104-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 104,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/6/intro/3/elements/2",
+        "figure_ids": [
+          "p104-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 105,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/6/intro/4/elements/1",
+        "figure_ids": [
+          "p105-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 105,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/6/intro/4/elements/2",
+        "figure_ids": [
+          "p105-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 106,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/6/intro/5/elements/1",
+        "figure_ids": [
+          "p106-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 106,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/6/intro/5/elements/2",
+        "figure_ids": [
+          "p106-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 107,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/6/intro/6/elements/1",
+        "figure_ids": [
+          "p107-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 107,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/6/intro/6/elements/2",
+        "figure_ids": [
+          "p107-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 108,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/6/intro/7/elements/1",
+        "figure_ids": [
+          "p108-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 108,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/6/intro/7/elements/2",
+        "figure_ids": [
+          "p108-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 109,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/7/intro/0/elements/0",
+        "figure_ids": [
+          "p109-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 110,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/7/intro/1/elements/0",
+        "figure_ids": [
+          "p110-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 111,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/7/intro/2/elements/0",
+        "figure_ids": [
+          "p111-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 112,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/7/intro/3/elements/1",
+        "figure_ids": [
+          "p112-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 112,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/7/intro/3/elements/2",
+        "figure_ids": [
+          "p112-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 113,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/7/intro/4/elements/1",
+        "figure_ids": [
+          "p113-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 113,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/7/intro/4/elements/2",
+        "figure_ids": [
+          "p113-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 114,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/7/intro/5/elements/1",
+        "figure_ids": [
+          "p114-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 114,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/7/intro/5/elements/2",
+        "figure_ids": [
+          "p114-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 115,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/7/intro/6/elements/1",
+        "figure_ids": [
+          "p115-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 115,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/7/intro/6/elements/2",
+        "figure_ids": [
+          "p115-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 116,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/7/intro/7/elements/1",
+        "figure_ids": [
+          "p116-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 116,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/7/intro/7/elements/2",
+        "figure_ids": [
+          "p116-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 117,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/7/intro/8/elements/1",
+        "figure_ids": [
+          "p117-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 117,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/7/intro/8/elements/2",
+        "figure_ids": [
+          "p117-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 118,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/7/intro/9/elements/1",
+        "figure_ids": [
+          "p118-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 118,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/7/intro/9/elements/2",
+        "figure_ids": [
+          "p118-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 119,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/7/intro/10/elements/1",
+        "figure_ids": [
+          "p119-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 119,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/7/intro/10/elements/2",
+        "figure_ids": [
+          "p119-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 120,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/7/intro/11/elements/1",
+        "figure_ids": [
+          "p120-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 120,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/7/intro/11/elements/2",
+        "figure_ids": [
+          "p120-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 121,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/7/intro/12/elements/1",
+        "figure_ids": [
+          "p121-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 121,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/7/intro/12/elements/2",
+        "figure_ids": [
+          "p121-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 122,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/7/intro/13/elements/1",
+        "figure_ids": [
+          "p122-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 122,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/7/intro/13/elements/2",
+        "figure_ids": [
+          "p122-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 123,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/7/intro/14/elements/1",
+        "figure_ids": [
+          "p123-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 123,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/7/intro/14/elements/2",
+        "figure_ids": [
+          "p123-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 124,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/7/intro/15/elements/1",
+        "figure_ids": [
+          "p124-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 124,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/7/intro/15/elements/2",
+        "figure_ids": [
+          "p124-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 125,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/7/intro/16/elements/1",
+        "figure_ids": [
+          "p125-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 125,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/7/intro/16/elements/2",
+        "figure_ids": [
+          "p125-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 126,
+        "ref_index": 1,
+        "label": "㉙",
+        "source_pointer": "/chapters/7/intro/17/elements/1",
+        "figure_ids": [
+          "p126-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 126,
+        "ref_index": 2,
+        "label": "㉚",
+        "source_pointer": "/chapters/7/intro/17/elements/2",
+        "figure_ids": [
+          "p126-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 127,
+        "ref_index": 1,
+        "label": "㉛",
+        "source_pointer": "/chapters/7/intro/18/elements/1",
+        "figure_ids": [
+          "p127-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 127,
+        "ref_index": 2,
+        "label": "㉜",
+        "source_pointer": "/chapters/7/intro/18/elements/2",
+        "figure_ids": [
+          "p127-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 128,
+        "ref_index": 1,
+        "label": "㉝",
+        "source_pointer": "/chapters/7/intro/19/elements/1",
+        "figure_ids": [
+          "p128-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 128,
+        "ref_index": 2,
+        "label": "㉞",
+        "source_pointer": "/chapters/7/intro/19/elements/2",
+        "figure_ids": [
+          "p128-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 129,
+        "ref_index": 1,
+        "label": "㉟",
+        "source_pointer": "/chapters/7/intro/20/elements/1",
+        "figure_ids": [
+          "p129-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 129,
+        "ref_index": 2,
+        "label": "㊱",
+        "source_pointer": "/chapters/7/intro/20/elements/2",
+        "figure_ids": [
+          "p129-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 130,
+        "ref_index": 1,
+        "label": "㊲",
+        "source_pointer": "/chapters/7/intro/21/elements/1",
+        "figure_ids": [
+          "p130-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 130,
+        "ref_index": 2,
+        "label": "㊳",
+        "source_pointer": "/chapters/7/intro/21/elements/2",
+        "figure_ids": [
+          "p130-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 131,
+        "ref_index": 1,
+        "label": "㊴",
+        "source_pointer": "/chapters/7/intro/22/elements/1",
+        "figure_ids": [
+          "p131-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 131,
+        "ref_index": 2,
+        "label": "㊵",
+        "source_pointer": "/chapters/7/intro/22/elements/2",
+        "figure_ids": [
+          "p131-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 132,
+        "ref_index": 1,
+        "label": "㊶",
+        "source_pointer": "/chapters/7/intro/23/elements/1",
+        "figure_ids": [
+          "p132-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 132,
+        "ref_index": 2,
+        "label": "㊷",
+        "source_pointer": "/chapters/7/intro/23/elements/2",
+        "figure_ids": [
+          "p132-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 133,
+        "ref_index": 1,
+        "label": "㊸",
+        "source_pointer": "/chapters/7/intro/24/elements/1",
+        "figure_ids": [
+          "p133-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 133,
+        "ref_index": 2,
+        "label": "㊹",
+        "source_pointer": "/chapters/7/intro/24/elements/2",
+        "figure_ids": [
+          "p133-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 134,
+        "ref_index": 1,
+        "label": "㊺",
+        "source_pointer": "/chapters/7/intro/25/elements/1",
+        "figure_ids": [
+          "p134-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 134,
+        "ref_index": 2,
+        "label": "㊻",
+        "source_pointer": "/chapters/7/intro/25/elements/2",
+        "figure_ids": [
+          "p134-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 135,
+        "ref_index": 1,
+        "label": "㊼",
+        "source_pointer": "/chapters/7/intro/26/elements/1",
+        "figure_ids": [
+          "p135-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 135,
+        "ref_index": 2,
+        "label": "㊽",
+        "source_pointer": "/chapters/7/intro/26/elements/2",
+        "figure_ids": [
+          "p135-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 136,
+        "ref_index": 1,
+        "label": "㊾",
+        "source_pointer": "/chapters/7/intro/27/elements/1",
+        "figure_ids": [
+          "p136-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 136,
+        "ref_index": 2,
+        "label": "㊿",
+        "source_pointer": "/chapters/7/intro/27/elements/2",
+        "figure_ids": [
+          "p136-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 137,
+        "ref_index": 1,
+        "label": "51",
+        "source_pointer": "/chapters/7/intro/28/elements/1",
+        "figure_ids": [
+          "p137-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 137,
+        "ref_index": 2,
+        "label": "52",
+        "source_pointer": "/chapters/7/intro/28/elements/2",
+        "figure_ids": [
+          "p137-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 138,
+        "ref_index": 1,
+        "label": "53",
+        "source_pointer": "/chapters/7/intro/29/elements/1",
+        "figure_ids": [
+          "p138-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 138,
+        "ref_index": 2,
+        "label": "54",
+        "source_pointer": "/chapters/7/intro/29/elements/2",
+        "figure_ids": [
+          "p138-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 139,
+        "ref_index": 1,
+        "label": "55",
+        "source_pointer": "/chapters/7/intro/30/elements/1",
+        "figure_ids": [
+          "p139-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 139,
+        "ref_index": 2,
+        "label": "56",
+        "source_pointer": "/chapters/7/intro/30/elements/2",
+        "figure_ids": [
+          "p139-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 140,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/8/intro/0/elements/1",
+        "figure_ids": [
+          "p140-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 141,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/8/intro/1/elements/0",
+        "figure_ids": [
+          "p141-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 142,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/8/intro/2/elements/0",
+        "figure_ids": [
+          "p142-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 143,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/8/intro/3/elements/1",
+        "figure_ids": [
+          "p143-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 143,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/8/intro/3/elements/2",
+        "figure_ids": [
+          "p143-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 144,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/8/intro/4/elements/1",
+        "figure_ids": [
+          "p144-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 144,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/8/intro/4/elements/2",
+        "figure_ids": [
+          "p144-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 145,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/8/intro/5/elements/1",
+        "figure_ids": [
+          "p145-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 145,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/8/intro/5/elements/2",
+        "figure_ids": [
+          "p145-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 146,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/8/intro/6/elements/1",
+        "figure_ids": [
+          "p146-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 146,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/8/intro/6/elements/2",
+        "figure_ids": [
+          "p146-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 147,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/8/intro/7/elements/1",
+        "figure_ids": [
+          "p147-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 147,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/8/intro/7/elements/2",
+        "figure_ids": [
+          "p147-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 148,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/8/intro/8/elements/1",
+        "figure_ids": [
+          "p148-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 148,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/8/intro/8/elements/2",
+        "figure_ids": [
+          "p148-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 149,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/8/intro/9/elements/1",
+        "figure_ids": [
+          "p149-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 149,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/8/intro/9/elements/2",
+        "figure_ids": [
+          "p149-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 150,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/8/intro/10/elements/1",
+        "figure_ids": [
+          "p150-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 150,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/8/intro/10/elements/2",
+        "figure_ids": [
+          "p150-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 151,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/8/intro/11/elements/1",
+        "figure_ids": [
+          "p151-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 151,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/8/intro/11/elements/2",
+        "figure_ids": [
+          "p151-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 152,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/8/intro/12/elements/1",
+        "figure_ids": [
+          "p152-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 152,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/8/intro/12/elements/2",
+        "figure_ids": [
+          "p152-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 153,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/8/intro/13/elements/1",
+        "figure_ids": [
+          "p153-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 153,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/8/intro/13/elements/2",
+        "figure_ids": [
+          "p153-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 154,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/8/intro/14/elements/1",
+        "figure_ids": [
+          "p154-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 154,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/8/intro/14/elements/2",
+        "figure_ids": [
+          "p154-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 155,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/8/intro/15/elements/1",
+        "figure_ids": [
+          "p155-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 155,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/8/intro/15/elements/2",
+        "figure_ids": [
+          "p155-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 156,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/8/intro/16/elements/1",
+        "figure_ids": [
+          "p156-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 156,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/8/intro/16/elements/2",
+        "figure_ids": [
+          "p156-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 157,
+        "ref_index": 1,
+        "label": "㉙",
+        "source_pointer": "/chapters/8/intro/17/elements/1",
+        "figure_ids": [
+          "p157-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 157,
+        "ref_index": 2,
+        "label": "㉚",
+        "source_pointer": "/chapters/8/intro/17/elements/2",
+        "figure_ids": [
+          "p157-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 158,
+        "ref_index": 1,
+        "label": "㉛",
+        "source_pointer": "/chapters/8/intro/18/elements/1",
+        "figure_ids": [
+          "p158-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 158,
+        "ref_index": 2,
+        "label": "㉜",
+        "source_pointer": "/chapters/8/intro/18/elements/2",
+        "figure_ids": [
+          "p158-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 159,
+        "ref_index": 1,
+        "label": "㉝",
+        "source_pointer": "/chapters/8/intro/19/elements/1",
+        "figure_ids": [
+          "p159-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 159,
+        "ref_index": 2,
+        "label": "㉞",
+        "source_pointer": "/chapters/8/intro/19/elements/2",
+        "figure_ids": [
+          "p159-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 160,
+        "ref_index": 1,
+        "label": "㉟",
+        "source_pointer": "/chapters/8/intro/20/elements/1",
+        "figure_ids": [
+          "p160-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 160,
+        "ref_index": 2,
+        "label": "㊱",
+        "source_pointer": "/chapters/8/intro/20/elements/2",
+        "figure_ids": [
+          "p160-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 161,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/9/intro/0/elements/1",
+        "figure_ids": [
+          "p161-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 162,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/9/intro/1/elements/0",
+        "figure_ids": [
+          "p162-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 163,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/9/intro/2/elements/1",
+        "figure_ids": [
+          "p163-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 164,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/9/intro/3/elements/1",
+        "figure_ids": [
+          "p164-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 164,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/9/intro/3/elements/2",
+        "figure_ids": [
+          "p164-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 165,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/9/intro/4/elements/1",
+        "figure_ids": [
+          "p165-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 165,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/9/intro/4/elements/2",
+        "figure_ids": [
+          "p165-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 166,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/9/intro/5/elements/1",
+        "figure_ids": [
+          "p166-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 166,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/9/intro/5/elements/2",
+        "figure_ids": [
+          "p166-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 167,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/9/intro/6/elements/1",
+        "figure_ids": [
+          "p167-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 167,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/9/intro/6/elements/2",
+        "figure_ids": [
+          "p167-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 168,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/9/intro/7/elements/1",
+        "figure_ids": [
+          "p168-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 168,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/9/intro/7/elements/2",
+        "figure_ids": [
+          "p168-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 169,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/9/intro/8/elements/1",
+        "figure_ids": [
+          "p169-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 169,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/9/intro/8/elements/2",
+        "figure_ids": [
+          "p169-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 170,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/9/intro/9/elements/1",
+        "figure_ids": [
+          "p170-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 170,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/9/intro/9/elements/2",
+        "figure_ids": [
+          "p170-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 171,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/9/intro/10/elements/1",
+        "figure_ids": [
+          "p171-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 171,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/9/intro/10/elements/2",
+        "figure_ids": [
+          "p171-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 172,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/9/intro/11/elements/1",
+        "figure_ids": [
+          "p172-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 172,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/9/intro/11/elements/2",
+        "figure_ids": [
+          "p172-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 173,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/9/intro/12/elements/1",
+        "figure_ids": [
+          "p173-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 173,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/9/intro/12/elements/2",
+        "figure_ids": [
+          "p173-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 174,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/9/intro/13/elements/1",
+        "figure_ids": [
+          "p174-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 174,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/9/intro/13/elements/2",
+        "figure_ids": [
+          "p174-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 175,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/9/intro/14/elements/1",
+        "figure_ids": [
+          "p175-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 175,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/9/intro/14/elements/2",
+        "figure_ids": [
+          "p175-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 176,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/9/intro/15/elements/1",
+        "figure_ids": [
+          "p176-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 176,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/9/intro/15/elements/2",
+        "figure_ids": [
+          "p176-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 177,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/9/intro/16/elements/1",
+        "figure_ids": [
+          "p177-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 177,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/9/intro/16/elements/2",
+        "figure_ids": [
+          "p177-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 178,
+        "ref_index": 1,
+        "label": "㉙",
+        "source_pointer": "/chapters/9/intro/17/elements/1",
+        "figure_ids": [
+          "p178-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 178,
+        "ref_index": 2,
+        "label": "㉚",
+        "source_pointer": "/chapters/9/intro/17/elements/2",
+        "figure_ids": [
+          "p178-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 179,
+        "ref_index": 1,
+        "label": "㉛",
+        "source_pointer": "/chapters/9/intro/18/elements/1",
+        "figure_ids": [
+          "p179-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 179,
+        "ref_index": 2,
+        "label": "㉜",
+        "source_pointer": "/chapters/9/intro/18/elements/2",
+        "figure_ids": [
+          "p179-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 180,
+        "ref_index": 1,
+        "label": "㉝",
+        "source_pointer": "/chapters/9/intro/19/elements/1",
+        "figure_ids": [
+          "p180-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 180,
+        "ref_index": 2,
+        "label": "㉞",
+        "source_pointer": "/chapters/9/intro/19/elements/2",
+        "figure_ids": [
+          "p180-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 181,
+        "ref_index": 1,
+        "label": "㉟",
+        "source_pointer": "/chapters/9/intro/20/elements/1",
+        "figure_ids": [
+          "p181-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 181,
+        "ref_index": 2,
+        "label": "㊱",
+        "source_pointer": "/chapters/9/intro/20/elements/2",
+        "figure_ids": [
+          "p181-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 182,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/10/intro/0/elements/1",
+        "figure_ids": [
+          "p182-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 183,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/10/intro/1/elements/1",
+        "figure_ids": [
+          "p183-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 184,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/10/intro/2/elements/1",
+        "figure_ids": [
+          "p184-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 185,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/10/intro/3/elements/1",
+        "figure_ids": [
+          "p185-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 185,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/10/intro/3/elements/2",
+        "figure_ids": [
+          "p185-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 186,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/10/intro/4/elements/1",
+        "figure_ids": [
+          "p186-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 186,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/10/intro/4/elements/2",
+        "figure_ids": [
+          "p186-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 187,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/10/intro/5/elements/1",
+        "figure_ids": [
+          "p187-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 187,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/10/intro/5/elements/2",
+        "figure_ids": [
+          "p187-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 188,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/10/intro/6/elements/1",
+        "figure_ids": [
+          "p188-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 188,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/10/intro/6/elements/2",
+        "figure_ids": [
+          "p188-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 189,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/10/intro/7/elements/1",
+        "figure_ids": [
+          "p189-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 189,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/10/intro/7/elements/2",
+        "figure_ids": [
+          "p189-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 190,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/10/intro/8/elements/1",
+        "figure_ids": [
+          "p190-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 190,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/10/intro/8/elements/2",
+        "figure_ids": [
+          "p190-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 191,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/10/intro/9/elements/1",
+        "figure_ids": [
+          "p191-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 191,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/10/intro/9/elements/2",
+        "figure_ids": [
+          "p191-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 192,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/10/intro/10/elements/1",
+        "figure_ids": [
+          "p192-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 192,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/10/intro/10/elements/2",
+        "figure_ids": [
+          "p192-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 193,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/10/intro/11/elements/1",
+        "figure_ids": [
+          "p193-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 193,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/10/intro/11/elements/2",
+        "figure_ids": [
+          "p193-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 194,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/10/intro/12/elements/1",
+        "figure_ids": [
+          "p194-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 194,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/10/intro/12/elements/2",
+        "figure_ids": [
+          "p194-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 195,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/10/intro/13/elements/1",
+        "figure_ids": [
+          "p195-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 195,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/10/intro/13/elements/2",
+        "figure_ids": [
+          "p195-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 196,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/10/intro/14/elements/1",
+        "figure_ids": [
+          "p196-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 196,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/10/intro/14/elements/2",
+        "figure_ids": [
+          "p196-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 197,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/10/intro/15/elements/1",
+        "figure_ids": [
+          "p197-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 197,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/10/intro/15/elements/2",
+        "figure_ids": [
+          "p197-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 198,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/10/intro/16/elements/1",
+        "figure_ids": [
+          "p198-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 198,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/10/intro/16/elements/2",
+        "figure_ids": [
+          "p198-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 199,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/11/intro/0/elements/0",
+        "figure_ids": [
+          "p199-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 199,
+        "ref_index": 2,
+        "label": "",
+        "source_pointer": "/chapters/11/intro/0/elements/1",
+        "figure_ids": [
+          "p199-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 200,
+        "ref_index": 1,
+        "label": "❶",
+        "source_pointer": "/chapters/11/intro/1/elements/2",
+        "figure_ids": [
+          "p200-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 200,
+        "ref_index": 2,
+        "label": "❷",
+        "source_pointer": "/chapters/11/intro/1/elements/3",
+        "figure_ids": [
+          "p200-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 201,
+        "ref_index": 1,
+        "label": "❸",
+        "source_pointer": "/chapters/11/intro/2/elements/2",
+        "figure_ids": [
+          "p201-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 201,
+        "ref_index": 2,
+        "label": "❹",
+        "source_pointer": "/chapters/11/intro/2/elements/3",
+        "figure_ids": [
+          "p201-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 202,
+        "ref_index": 1,
+        "label": "❺",
+        "source_pointer": "/chapters/11/intro/3/elements/2",
+        "figure_ids": [
+          "p202-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 202,
+        "ref_index": 2,
+        "label": "❻",
+        "source_pointer": "/chapters/11/intro/3/elements/3",
+        "figure_ids": [
+          "p202-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 203,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/11/intro/4/elements/2",
+        "figure_ids": [
+          "p203-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 203,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/11/intro/4/elements/3",
+        "figure_ids": [
+          "p203-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 204,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/11/intro/5/elements/2",
+        "figure_ids": [
+          "p204-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 204,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/11/intro/5/elements/3",
+        "figure_ids": [
+          "p204-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 205,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/11/intro/6/elements/2",
+        "figure_ids": [
+          "p205-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 205,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/11/intro/6/elements/3",
+        "figure_ids": [
+          "p205-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 206,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/11/intro/7/elements/2",
+        "figure_ids": [
+          "p206-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 206,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/11/intro/7/elements/3",
+        "figure_ids": [
+          "p206-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 207,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/11/intro/8/elements/2",
+        "figure_ids": [
+          "p207-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 207,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/11/intro/8/elements/3",
+        "figure_ids": [
+          "p207-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 208,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/11/intro/9/elements/2",
+        "figure_ids": [
+          "p208-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 208,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/11/intro/9/elements/3",
+        "figure_ids": [
+          "p208-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 209,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/11/intro/10/elements/2",
+        "figure_ids": [
+          "p209-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 209,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/11/intro/10/elements/3",
+        "figure_ids": [
+          "p209-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 210,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/11/intro/11/elements/2",
+        "figure_ids": [
+          "p210-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 210,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/11/intro/11/elements/3",
+        "figure_ids": [
+          "p210-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 211,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/12/intro/0/elements/1",
+        "figure_ids": [
+          "p211-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 212,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/12/intro/1/elements/1",
+        "figure_ids": [
+          "p212-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 213,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/12/intro/2/elements/0",
+        "figure_ids": [
+          "p213-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 214,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/12/intro/3/elements/1",
+        "figure_ids": [
+          "p214-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 214,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/12/intro/3/elements/2",
+        "figure_ids": [
+          "p214-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 215,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/12/intro/4/elements/1",
+        "figure_ids": [
+          "p215-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 215,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/12/intro/4/elements/2",
+        "figure_ids": [
+          "p215-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 216,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/12/intro/5/elements/1",
+        "figure_ids": [
+          "p216-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 216,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/12/intro/5/elements/2",
+        "figure_ids": [
+          "p216-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 217,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/12/intro/6/elements/1",
+        "figure_ids": [
+          "p217-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 217,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/12/intro/6/elements/2",
+        "figure_ids": [
+          "p217-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 218,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/12/intro/7/elements/1",
+        "figure_ids": [
+          "p218-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 218,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/12/intro/7/elements/2",
+        "figure_ids": [
+          "p218-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 219,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/12/intro/8/elements/1",
+        "figure_ids": [
+          "p219-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 219,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/12/intro/8/elements/2",
+        "figure_ids": [
+          "p219-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 220,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/12/intro/9/elements/1",
+        "figure_ids": [
+          "p220-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 220,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/12/intro/9/elements/2",
+        "figure_ids": [
+          "p220-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 221,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/12/intro/10/elements/1",
+        "figure_ids": [
+          "p221-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 221,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/12/intro/10/elements/2",
+        "figure_ids": [
+          "p221-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 222,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/12/intro/11/elements/2",
+        "figure_ids": [
+          "p222-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 222,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/12/intro/11/elements/3",
+        "figure_ids": [
+          "p222-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 223,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/12/intro/12/elements/2",
+        "figure_ids": [
+          "p223-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 223,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/12/intro/12/elements/3",
+        "figure_ids": [
+          "p223-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 224,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/12/intro/13/elements/2",
+        "figure_ids": [
+          "p224-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 224,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/12/intro/13/elements/3",
+        "figure_ids": [
+          "p224-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 225,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/12/intro/14/elements/2",
+        "figure_ids": [
+          "p225-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 225,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/12/intro/14/elements/3",
+        "figure_ids": [
+          "p225-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 226,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/12/intro/15/elements/2",
+        "figure_ids": [
+          "p226-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 226,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/12/intro/15/elements/3",
+        "figure_ids": [
+          "p226-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 227,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/12/intro/16/elements/2",
+        "figure_ids": [
+          "p227-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 227,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/12/intro/16/elements/3",
+        "figure_ids": [
+          "p227-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 228,
+        "ref_index": 1,
+        "label": "㉙",
+        "source_pointer": "/chapters/12/intro/17/elements/2",
+        "figure_ids": [
+          "p228-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 228,
+        "ref_index": 2,
+        "label": "㉚",
+        "source_pointer": "/chapters/12/intro/17/elements/3",
+        "figure_ids": [
+          "p228-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 229,
+        "ref_index": 1,
+        "label": "㉛",
+        "source_pointer": "/chapters/12/intro/18/elements/2",
+        "figure_ids": [
+          "p229-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 229,
+        "ref_index": 2,
+        "label": "㉜",
+        "source_pointer": "/chapters/12/intro/18/elements/3",
+        "figure_ids": [
+          "p229-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 230,
+        "ref_index": 1,
+        "label": "㉝",
+        "source_pointer": "/chapters/12/intro/19/elements/2",
+        "figure_ids": [
+          "p230-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 230,
+        "ref_index": 2,
+        "label": "㉞",
+        "source_pointer": "/chapters/12/intro/19/elements/3",
+        "figure_ids": [
+          "p230-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 231,
+        "ref_index": 1,
+        "label": "㉟",
+        "source_pointer": "/chapters/12/intro/20/elements/2",
+        "figure_ids": [
+          "p231-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 231,
+        "ref_index": 2,
+        "label": "㊱",
+        "source_pointer": "/chapters/12/intro/20/elements/3",
+        "figure_ids": [
+          "p231-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 232,
+        "ref_index": 1,
+        "label": "㊲",
+        "source_pointer": "/chapters/12/intro/21/elements/2",
+        "figure_ids": [
+          "p232-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 232,
+        "ref_index": 2,
+        "label": "㊳",
+        "source_pointer": "/chapters/12/intro/21/elements/3",
+        "figure_ids": [
+          "p232-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 233,
+        "ref_index": 1,
+        "label": "㊴",
+        "source_pointer": "/chapters/12/intro/22/elements/2",
+        "figure_ids": [
+          "p233-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 233,
+        "ref_index": 2,
+        "label": "㊵",
+        "source_pointer": "/chapters/12/intro/22/elements/3",
+        "figure_ids": [
+          "p233-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 234,
+        "ref_index": 1,
+        "label": "㊶",
+        "source_pointer": "/chapters/12/intro/23/elements/2",
+        "figure_ids": [
+          "p234-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 234,
+        "ref_index": 2,
+        "label": "㊷",
+        "source_pointer": "/chapters/12/intro/23/elements/3",
+        "figure_ids": [
+          "p234-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 235,
+        "ref_index": 1,
+        "label": "㊸",
+        "source_pointer": "/chapters/12/intro/24/elements/2",
+        "figure_ids": [
+          "p235-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 235,
+        "ref_index": 2,
+        "label": "㊹",
+        "source_pointer": "/chapters/12/intro/24/elements/3",
+        "figure_ids": [
+          "p235-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 236,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/13/intro/0/elements/1",
+        "figure_ids": [
+          "p236-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 237,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/13/intro/1/elements/0",
+        "figure_ids": [
+          "p237-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 238,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/13/intro/2/elements/0",
+        "figure_ids": [
+          "p238-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 239,
+        "ref_index": 1,
+        "label": "①",
+        "source_pointer": "/chapters/13/intro/3/elements/2",
+        "figure_ids": [
+          "p239-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 239,
+        "ref_index": 2,
+        "label": "②",
+        "source_pointer": "/chapters/13/intro/3/elements/3",
+        "figure_ids": [
+          "p239-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 240,
+        "ref_index": 1,
+        "label": "③",
+        "source_pointer": "/chapters/13/intro/4/elements/2",
+        "figure_ids": [
+          "p240-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 240,
+        "ref_index": 2,
+        "label": "④",
+        "source_pointer": "/chapters/13/intro/4/elements/3",
+        "figure_ids": [
+          "p240-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 241,
+        "ref_index": 1,
+        "label": "⑤",
+        "source_pointer": "/chapters/13/intro/5/elements/2",
+        "figure_ids": [
+          "p241-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 241,
+        "ref_index": 2,
+        "label": "⑥",
+        "source_pointer": "/chapters/13/intro/5/elements/3",
+        "figure_ids": [
+          "p241-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 242,
+        "ref_index": 1,
+        "label": "⑦",
+        "source_pointer": "/chapters/13/intro/6/elements/2",
+        "figure_ids": [
+          "p242-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 242,
+        "ref_index": 2,
+        "label": "⑧",
+        "source_pointer": "/chapters/13/intro/6/elements/3",
+        "figure_ids": [
+          "p242-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 243,
+        "ref_index": 1,
+        "label": "⑨",
+        "source_pointer": "/chapters/13/intro/7/elements/2",
+        "figure_ids": [
+          "p243-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 243,
+        "ref_index": 2,
+        "label": "⑩",
+        "source_pointer": "/chapters/13/intro/7/elements/3",
+        "figure_ids": [
+          "p243-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 244,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/13/intro/8/elements/2",
+        "figure_ids": [
+          "p244-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 244,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/13/intro/8/elements/3",
+        "figure_ids": [
+          "p244-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 245,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/13/intro/9/elements/2",
+        "figure_ids": [
+          "p245-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 245,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/13/intro/9/elements/3",
+        "figure_ids": [
+          "p245-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 246,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/13/intro/10/elements/2",
+        "figure_ids": [
+          "p246-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 246,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/13/intro/10/elements/3",
+        "figure_ids": [
+          "p246-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 247,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/13/intro/11/elements/2",
+        "figure_ids": [
+          "p247-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 247,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/13/intro/11/elements/3",
+        "figure_ids": [
+          "p247-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 248,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/13/intro/12/elements/2",
+        "figure_ids": [
+          "p248-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 248,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/13/intro/12/elements/3",
+        "figure_ids": [
+          "p248-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 249,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/13/intro/13/elements/2",
+        "figure_ids": [
+          "p249-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 249,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/13/intro/13/elements/3",
+        "figure_ids": [
+          "p249-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 250,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/13/intro/14/elements/2",
+        "figure_ids": [
+          "p250-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 250,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/13/intro/14/elements/3",
+        "figure_ids": [
+          "p250-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 251,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/13/intro/15/elements/2",
+        "figure_ids": [
+          "p251-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 251,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/13/intro/15/elements/3",
+        "figure_ids": [
+          "p251-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 252,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/13/intro/16/elements/2",
+        "figure_ids": [
+          "p252-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 252,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/13/intro/16/elements/3",
+        "figure_ids": [
+          "p252-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 253,
+        "ref_index": 1,
+        "label": "㉙",
+        "source_pointer": "/chapters/13/intro/17/elements/2",
+        "figure_ids": [
+          "p253-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 253,
+        "ref_index": 2,
+        "label": "㉚",
+        "source_pointer": "/chapters/13/intro/17/elements/3",
+        "figure_ids": [
+          "p253-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 254,
+        "ref_index": 1,
+        "label": "㉛",
+        "source_pointer": "/chapters/13/intro/18/elements/2",
+        "figure_ids": [
+          "p254-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 254,
+        "ref_index": 2,
+        "label": "㉜",
+        "source_pointer": "/chapters/13/intro/18/elements/3",
+        "figure_ids": [
+          "p254-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 255,
+        "ref_index": 1,
+        "label": "㉝",
+        "source_pointer": "/chapters/13/intro/19/elements/2",
+        "figure_ids": [
+          "p255-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 255,
+        "ref_index": 2,
+        "label": "㉞",
+        "source_pointer": "/chapters/13/intro/19/elements/3",
+        "figure_ids": [
+          "p255-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 256,
+        "ref_index": 1,
+        "label": "㉟",
+        "source_pointer": "/chapters/13/intro/20/elements/2",
+        "figure_ids": [
+          "p256-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 256,
+        "ref_index": 2,
+        "label": "㊱",
+        "source_pointer": "/chapters/13/intro/20/elements/3",
+        "figure_ids": [
+          "p256-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 257,
+        "ref_index": 1,
+        "label": "㊲",
+        "source_pointer": "/chapters/13/intro/21/elements/2",
+        "figure_ids": [
+          "p257-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 257,
+        "ref_index": 2,
+        "label": "㊳",
+        "source_pointer": "/chapters/13/intro/21/elements/3",
+        "figure_ids": [
+          "p257-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 258,
+        "ref_index": 1,
+        "label": "㊴",
+        "source_pointer": "/chapters/13/intro/22/elements/2",
+        "figure_ids": [
+          "p258-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 258,
+        "ref_index": 2,
+        "label": "㊵",
+        "source_pointer": "/chapters/13/intro/22/elements/3",
+        "figure_ids": [
+          "p258-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 259,
+        "ref_index": 1,
+        "label": "㊶",
+        "source_pointer": "/chapters/13/intro/23/elements/2",
+        "figure_ids": [
+          "p259-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 259,
+        "ref_index": 2,
+        "label": "㊷",
+        "source_pointer": "/chapters/13/intro/23/elements/3",
+        "figure_ids": [
+          "p259-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 260,
+        "ref_index": 1,
+        "label": "㊸",
+        "source_pointer": "/chapters/13/intro/24/elements/2",
+        "figure_ids": [
+          "p260-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 260,
+        "ref_index": 2,
+        "label": "㊹",
+        "source_pointer": "/chapters/13/intro/24/elements/3",
+        "figure_ids": [
+          "p260-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 261,
+        "ref_index": 1,
+        "label": "㊺",
+        "source_pointer": "/chapters/13/intro/25/elements/2",
+        "figure_ids": [
+          "p261-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 261,
+        "ref_index": 2,
+        "label": "㊻",
+        "source_pointer": "/chapters/13/intro/25/elements/3",
+        "figure_ids": [
+          "p261-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 262,
+        "ref_index": 1,
+        "label": "㊼",
+        "source_pointer": "/chapters/13/intro/26/elements/2",
+        "figure_ids": [
+          "p262-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 262,
+        "ref_index": 2,
+        "label": "㊽",
+        "source_pointer": "/chapters/13/intro/26/elements/3",
+        "figure_ids": [
+          "p262-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 263,
+        "ref_index": 1,
+        "label": "㊾",
+        "source_pointer": "/chapters/13/intro/27/elements/2",
+        "figure_ids": [
+          "p263-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 263,
+        "ref_index": 2,
+        "label": "㊿",
+        "source_pointer": "/chapters/13/intro/27/elements/3",
+        "figure_ids": [
+          "p263-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 264,
+        "ref_index": 1,
+        "label": "51",
+        "source_pointer": "/chapters/13/intro/28/elements/2",
+        "figure_ids": [
+          "p264-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 264,
+        "ref_index": 2,
+        "label": "52",
+        "source_pointer": "/chapters/13/intro/28/elements/3",
+        "figure_ids": [
+          "p264-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 265,
+        "ref_index": 1,
+        "label": "53",
+        "source_pointer": "/chapters/13/intro/29/elements/2",
+        "figure_ids": [
+          "p265-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 265,
+        "ref_index": 2,
+        "label": "54",
+        "source_pointer": "/chapters/13/intro/29/elements/3",
+        "figure_ids": [
+          "p265-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 266,
+        "ref_index": 1,
+        "label": "55",
+        "source_pointer": "/chapters/13/intro/30/elements/2",
+        "figure_ids": [
+          "p266-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 266,
+        "ref_index": 2,
+        "label": "56",
+        "source_pointer": "/chapters/13/intro/30/elements/3",
+        "figure_ids": [
+          "p266-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 267,
+        "ref_index": 1,
+        "label": "57",
+        "source_pointer": "/chapters/13/intro/31/elements/2",
+        "figure_ids": [
+          "p267-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 267,
+        "ref_index": 2,
+        "label": "58",
+        "source_pointer": "/chapters/13/intro/31/elements/3",
+        "figure_ids": [
+          "p267-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 268,
+        "ref_index": 1,
+        "label": "59",
+        "source_pointer": "/chapters/13/intro/32/elements/2",
+        "figure_ids": [
+          "p268-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 268,
+        "ref_index": 2,
+        "label": "60",
+        "source_pointer": "/chapters/13/intro/32/elements/3",
+        "figure_ids": [
+          "p268-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 269,
+        "ref_index": 1,
+        "label": "61",
+        "source_pointer": "/chapters/13/intro/33/elements/2",
+        "figure_ids": [
+          "p269-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 269,
+        "ref_index": 2,
+        "label": "62",
+        "source_pointer": "/chapters/13/intro/33/elements/3",
+        "figure_ids": [
+          "p269-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 270,
+        "ref_index": 1,
+        "label": "63",
+        "source_pointer": "/chapters/13/intro/34/elements/2",
+        "figure_ids": [
+          "p270-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 270,
+        "ref_index": 2,
+        "label": "64",
+        "source_pointer": "/chapters/13/intro/34/elements/3",
+        "figure_ids": [
+          "p270-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 271,
+        "ref_index": 1,
+        "label": "65",
+        "source_pointer": "/chapters/13/intro/35/elements/2",
+        "figure_ids": [
+          "p271-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 271,
+        "ref_index": 2,
+        "label": "66",
+        "source_pointer": "/chapters/13/intro/35/elements/3",
+        "figure_ids": [
+          "p271-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 272,
+        "ref_index": 1,
+        "label": "67",
+        "source_pointer": "/chapters/13/intro/36/elements/2",
+        "figure_ids": [
+          "p272-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 272,
+        "ref_index": 2,
+        "label": "68",
+        "source_pointer": "/chapters/13/intro/36/elements/3",
+        "figure_ids": [
+          "p272-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 273,
+        "ref_index": 1,
+        "label": "69",
+        "source_pointer": "/chapters/13/intro/37/elements/2",
+        "figure_ids": [
+          "p273-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 273,
+        "ref_index": 2,
+        "label": "70",
+        "source_pointer": "/chapters/13/intro/37/elements/3",
+        "figure_ids": [
+          "p273-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 274,
+        "ref_index": 1,
+        "label": "71",
+        "source_pointer": "/chapters/13/intro/38/elements/2",
+        "figure_ids": [
+          "p274-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 274,
+        "ref_index": 2,
+        "label": "72",
+        "source_pointer": "/chapters/13/intro/38/elements/3",
+        "figure_ids": [
+          "p274-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 275,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/13/intro/39/elements/2",
+        "figure_ids": [
+          "p275-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 276,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/14/intro/0/elements/1",
+        "figure_ids": [
+          "p276-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 277,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/14/intro/1/elements/1",
+        "figure_ids": [
+          "p277-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 278,
+        "ref_index": 1,
+        "label": "❶",
+        "source_pointer": "/chapters/14/intro/2/elements/1",
+        "figure_ids": [
+          "p278-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 278,
+        "ref_index": 2,
+        "label": "❷",
+        "source_pointer": "/chapters/14/intro/2/elements/2",
+        "figure_ids": [
+          "p278-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 279,
+        "ref_index": 1,
+        "label": "❸",
+        "source_pointer": "/chapters/14/intro/3/elements/1",
+        "figure_ids": [
+          "p279-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 279,
+        "ref_index": 2,
+        "label": "❹",
+        "source_pointer": "/chapters/14/intro/3/elements/2",
+        "figure_ids": [
+          "p279-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 280,
+        "ref_index": 1,
+        "label": "❺",
+        "source_pointer": "/chapters/14/intro/4/elements/1",
+        "figure_ids": [
+          "p280-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 280,
+        "ref_index": 2,
+        "label": "❻",
+        "source_pointer": "/chapters/14/intro/4/elements/2",
+        "figure_ids": [
+          "p280-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 281,
+        "ref_index": 1,
+        "label": "❼",
+        "source_pointer": "/chapters/14/intro/5/elements/1",
+        "figure_ids": [
+          "p281-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 281,
+        "ref_index": 2,
+        "label": "❽",
+        "source_pointer": "/chapters/14/intro/5/elements/2",
+        "figure_ids": [
+          "p281-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 282,
+        "ref_index": 1,
+        "label": "❾",
+        "source_pointer": "/chapters/14/intro/6/elements/1",
+        "figure_ids": [
+          "p282-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 282,
+        "ref_index": 2,
+        "label": "❿",
+        "source_pointer": "/chapters/14/intro/6/elements/2",
+        "figure_ids": [
+          "p282-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 283,
+        "ref_index": 1,
+        "label": "⑪",
+        "source_pointer": "/chapters/14/intro/7/elements/1",
+        "figure_ids": [
+          "p283-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 283,
+        "ref_index": 2,
+        "label": "⑫",
+        "source_pointer": "/chapters/14/intro/7/elements/2",
+        "figure_ids": [
+          "p283-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 284,
+        "ref_index": 1,
+        "label": "⑬",
+        "source_pointer": "/chapters/14/intro/8/elements/1",
+        "figure_ids": [
+          "p284-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 284,
+        "ref_index": 2,
+        "label": "⑭",
+        "source_pointer": "/chapters/14/intro/8/elements/2",
+        "figure_ids": [
+          "p284-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 285,
+        "ref_index": 1,
+        "label": "⑮",
+        "source_pointer": "/chapters/14/intro/9/elements/1",
+        "figure_ids": [
+          "p285-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 285,
+        "ref_index": 2,
+        "label": "⑯",
+        "source_pointer": "/chapters/14/intro/9/elements/2",
+        "figure_ids": [
+          "p285-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 286,
+        "ref_index": 1,
+        "label": "⑰",
+        "source_pointer": "/chapters/14/intro/10/elements/1",
+        "figure_ids": [
+          "p286-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 286,
+        "ref_index": 2,
+        "label": "⑱",
+        "source_pointer": "/chapters/14/intro/10/elements/2",
+        "figure_ids": [
+          "p286-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 287,
+        "ref_index": 1,
+        "label": "⑲",
+        "source_pointer": "/chapters/14/intro/11/elements/1",
+        "figure_ids": [
+          "p287-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 287,
+        "ref_index": 2,
+        "label": "⑳",
+        "source_pointer": "/chapters/14/intro/11/elements/2",
+        "figure_ids": [
+          "p287-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 288,
+        "ref_index": 1,
+        "label": "㉑",
+        "source_pointer": "/chapters/14/intro/12/elements/1",
+        "figure_ids": [
+          "p288-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 288,
+        "ref_index": 2,
+        "label": "㉒",
+        "source_pointer": "/chapters/14/intro/12/elements/2",
+        "figure_ids": [
+          "p288-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 289,
+        "ref_index": 1,
+        "label": "㉓",
+        "source_pointer": "/chapters/14/intro/13/elements/1",
+        "figure_ids": [
+          "p289-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 289,
+        "ref_index": 2,
+        "label": "㉔",
+        "source_pointer": "/chapters/14/intro/13/elements/2",
+        "figure_ids": [
+          "p289-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 290,
+        "ref_index": 1,
+        "label": "㉕",
+        "source_pointer": "/chapters/14/intro/14/elements/1",
+        "figure_ids": [
+          "p290-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 290,
+        "ref_index": 2,
+        "label": "㉖",
+        "source_pointer": "/chapters/14/intro/14/elements/2",
+        "figure_ids": [
+          "p290-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 291,
+        "ref_index": 1,
+        "label": "㉗",
+        "source_pointer": "/chapters/14/intro/15/elements/1",
+        "figure_ids": [
+          "p291-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 291,
+        "ref_index": 2,
+        "label": "㉘",
+        "source_pointer": "/chapters/14/intro/15/elements/2",
+        "figure_ids": [
+          "p291-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 292,
+        "ref_index": 1,
+        "label": "㉙",
+        "source_pointer": "/chapters/14/intro/16/elements/1",
+        "figure_ids": [
+          "p292-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 292,
+        "ref_index": 2,
+        "label": "㉚",
+        "source_pointer": "/chapters/14/intro/16/elements/2",
+        "figure_ids": [
+          "p292-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 293,
+        "ref_index": 1,
+        "label": "㉛",
+        "source_pointer": "/chapters/14/intro/17/elements/1",
+        "figure_ids": [
+          "p293-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 293,
+        "ref_index": 2,
+        "label": "㉜",
+        "source_pointer": "/chapters/14/intro/17/elements/2",
+        "figure_ids": [
+          "p293-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 294,
+        "ref_index": 1,
+        "label": "㉝",
+        "source_pointer": "/chapters/14/intro/18/elements/1",
+        "figure_ids": [
+          "p294-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 294,
+        "ref_index": 2,
+        "label": "㉞",
+        "source_pointer": "/chapters/14/intro/18/elements/2",
+        "figure_ids": [
+          "p294-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 295,
+        "ref_index": 1,
+        "label": "㉟",
+        "source_pointer": "/chapters/14/intro/19/elements/1",
+        "figure_ids": [
+          "p295-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 295,
+        "ref_index": 2,
+        "label": "㊱",
+        "source_pointer": "/chapters/14/intro/19/elements/2",
+        "figure_ids": [
+          "p295-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 296,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/0/elements/1",
+        "figure_ids": [
+          "p296-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 297,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/1/elements/1",
+        "figure_ids": [
+          "p297-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 298,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/2/elements/1",
+        "figure_ids": [
+          "p298-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 299,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/3/elements/1",
+        "figure_ids": [
+          "p299-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 300,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/4/elements/1",
+        "figure_ids": [
+          "p300-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 301,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/5/elements/1",
+        "figure_ids": [
+          "p301-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 302,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/6/elements/1",
+        "figure_ids": [
+          "p302-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 303,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/7/elements/1",
+        "figure_ids": [
+          "p303-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 304,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/8/elements/1",
+        "figure_ids": [
+          "p304-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 305,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/9/elements/1",
+        "figure_ids": [
+          "p305-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 306,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/10/elements/1",
+        "figure_ids": [
+          "p306-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 307,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/11/elements/1",
+        "figure_ids": [
+          "p307-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 308,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/12/elements/1",
+        "figure_ids": [
+          "p308-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 309,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/13/elements/1",
+        "figure_ids": [
+          "p309-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 310,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/14/elements/1",
+        "figure_ids": [
+          "p310-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 311,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/15/elements/1",
+        "figure_ids": [
+          "p311-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 312,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/16/elements/1",
+        "figure_ids": [
+          "p312-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 313,
+        "ref_index": 1,
+        "label": "",
+        "source_pointer": "/chapters/15/intro/17/elements/1",
+        "figure_ids": [
+          "p313-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      }
+    ],
+    "missing": [],
+    "extras": [],
+    "splits": []
+  },
+  "test_import": {
+    "statuses": {
+      "applied": 549
+    },
+    "rerun_statuses": {
+      "existing": 549
+    },
+    "full_rerun_snapshot_unchanged": true,
+    "unrelated_original_fields_unchanged": true
+  },
+  "review": {
+    "machine_recognition_completed": 549,
+    "human_approvals_granted_this_run": 0,
+    "uncalibrated_current_records": 549,
+    "true_replay_complete": 0,
+    "sequence_pending_current_records": 549,
+    "uncertain_current_records": 1,
+    "inferred_current_records": 1,
+    "voice_generated_this_run": 0,
+    "video_generated_this_run": 0
+  },
+  "runtime_filters": {
+    "all": 549,
+    "uncalibrated": 549,
+    "uncertainty": 1,
+    "inference": 1,
+    "sequence_pending": 549
+  },
+  "export": {
+    "sgfs_parsed": 549,
+    "index_entries": 549,
+    "skipped": 0,
+    "mapped_candidates": 549,
+    "mapped_diagrams_all_exported": true,
+    "zip_sha256": "5c6025722155caa541912514f7cb9f75b9a5a402e3ca006c4024934d79111501",
+    "bytes": 2577192,
+    "single_figure_endpoint_http200_verified": true,
+    "single_figure_example": {
+      "page": 10,
+      "figure_id": 4275
+    }
+  },
+  "browser_acceptance": {
+    "existing_test_url": true,
+    "page_image_http200": true,
+    "full19x19_board_visible": true,
+    "uncertainty_cells_and_evidence_visible": true,
+    "edit_tools_and_cancel_available": true,
+    "page217_two_diagrams_previous_switch": true,
+    "no_saved_test_edits_or_human_approval": true,
+    "viewport": [
+      1920,
+      1080
+    ],
+    "read_screenshot": "/Users/fan/Repositories/katrain-admin-console/output/playwright/intro-up-p217-read.png",
+    "example_page": 217,
+    "example_figure_id": 4655,
+    "previous_figure_id": 4654,
+    "source_pages_in_admin": 310,
+    "actual_pdf_pages": 314,
+    "source_pages_note": "Four cover/blank PDF pages without registered original PNG are retained in the recognition coverage-only ledger; all 314 PDF pages were detected and validated.",
+    "number_preview_controls": {
+      "book_id": 11,
+      "page": 102,
+      "figure_id": 4441,
+      "steps": [
+        0,
+        1,
+        0,
+        4
+      ],
+      "initial_next_previous_last_verified": true,
+      "number_preview_only_not_real_replay": true,
+      "no_db_changes": true
+    }
+  },
+  "test_provider_build": "f671f20f6f31c03f25b0f5bd73e0afe73036b6bd",
+  "links": {
+    "book": "http://127.0.0.1:18012/admin?book=11&page=10&figure=4275&filter=all",
+    "uncertainty": "http://127.0.0.1:18012/admin?book=11&page=217&figure=4655&filter=uncertainty",
+    "inference": "http://127.0.0.1:18012/admin?book=11&page=162&figure=4552&filter=inference"
+  },
+  "artifacts": {
+    "figure_map": "intro-up-recognition-figure-map.csv",
+    "issues": "intro-up-issues.json",
+    "zip": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/intro-up/exports/intro-up.zip",
+    "source_index": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/intro-up/exports/index.json",
+    "recognition_results": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/intro-up/results.json",
+    "audit": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/intro-up/audit.json"
+  },
+  "notes": [
+    "Machine validation and Astra engineering review do not grant human content approval.",
+    "Independent diagrams are exported separately; incomplete sequences remain static and await calibration.",
+    "Numbering check failure is not recognition failure; printed same-color exercise labels and capture-related gaps remain unchanged."
+  ],
+  "completed_at": "2026-10-18T01:46:51.141252+08:00",
+  "playback": {
+    "exported_figures": 549,
+    "counts": {
+      "true_replay": 0,
+      "number_preview": 105,
+      "zero_step_static": 430,
+      "numbering_failed": 14
+    },
+    "numbering_failures": [
+      {
+        "figure_id": 4325,
+        "page": 39,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（0,17）与 2（1,17）同为黑棋，须黑白交替；编号 2（1,17）与 3（1,18）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4326,
+        "page": 39,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（0,16）与 2（1,16）同为黑棋，须黑白交替；编号 2（1,16）与 3（1,17）同为黑棋，须黑白交替；编号 3（1,17）与 4（1,18）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4327,
+        "page": 40,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（0,16）与 2（1,16）同为黑棋，须黑白交替；编号 2（1,16）与 3（1,17）同为黑棋，须黑白交替；编号 3（1,17）与 4（1,18）同为黑棋，须黑白交替；编号 4（1,18）与 5（2,17）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4328,
+        "page": 40,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（0,15）与 2（1,15）同为黑棋，须黑白交替；编号 2（1,15）与 3（1,16）同为黑棋，须黑白交替；编号 3（1,16）与 4（1,17）同为黑棋，须黑白交替；编号 4（1,17）与 5（1,18）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4329,
+        "page": 41,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（4,18）与 2（5,17）同为黑棋，须黑白交替；编号 2（5,17）与 3（6,17）同为黑棋，须黑白交替；编号 3（6,17）与 4（6,18）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4330,
+        "page": 41,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（4,18）与 2（4,17）同为黑棋，须黑白交替；编号 2（4,17）与 3（5,17）同为黑棋，须黑白交替；编号 3（5,17）与 4（6,17）同为黑棋，须黑白交替；编号 4（6,17）与 5（7,17）同为黑棋，须黑白交替；编号 5（7,17）与 6（7,18）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4331,
+        "page": 42,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（3,18）与 2（3,17）同为黑棋，须黑白交替；编号 2（3,17）与 3（4,17）同为黑棋，须黑白交替；编号 3（4,17）与 4（5,16）同为黑棋，须黑白交替；编号 4（5,16）与 5（6,16）同为黑棋，须黑白交替；编号 5（6,16）与 6（6,17）同为黑棋，须黑白交替；编号 6（6,17）与 7（7,18）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4332,
+        "page": 42,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（3,18）与 2（4,17）同为黑棋，须黑白交替；编号 2（4,17）与 3（5,17）同为黑棋，须黑白交替；编号 3（5,17）与 4（6,16）同为黑棋，须黑白交替；编号 4（6,16）与 5（7,16）同为黑棋，须黑白交替；编号 5（7,16）与 6（7,17）同为黑棋，须黑白交替；编号 6（7,17）与 7（7,18）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4333,
+        "page": 43,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（2,15）与 2（3,14）同为黑棋，须黑白交替；编号 2（3,14）与 3（4,14）同为黑棋，须黑白交替；编号 3（4,14）与 4（4,15）同为黑棋，须黑白交替；编号 4（4,15）与 5（3,16）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4334,
+        "page": 43,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（3,15）与 2（3,14）同为黑棋，须黑白交替；编号 2（3,14）与 3（4,13）同为黑棋，须黑白交替；编号 3（4,13）与 4（5,13）同为黑棋，须黑白交替；编号 4（5,13）与 5（5,14）同为黑棋，须黑白交替；编号 5（5,14）与 6（5,15）同为黑棋，须黑白交替；编号 6（5,15）与 7（4,16）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4335,
+        "page": 44,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（3,15）与 2（3,14）同为黑棋，须黑白交替；编号 2（3,14）与 3（3,13）同为黑棋，须黑白交替；编号 3（3,13）与 4（4,12）同为黑棋，须黑白交替；编号 4（4,12）与 5（5,12）同为黑棋，须黑白交替；编号 5（5,12）与 6（5,13）同为黑棋，须黑白交替；编号 6（5,13）与 7（5,14）同为黑棋，须黑白交替；编号 7（5,14）与 8（5,15）同为黑棋，须黑白交替；编号 8（5,15）与 9（4,16）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4336,
+        "page": 44,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（4,13）与 2（5,14）同为黑棋，须黑白交替；编号 2（5,14）与 3（5,15）同为黑棋，须黑白交替；编号 3（5,15）与 4（5,16）同为黑棋，须黑白交替；编号 4（5,16）与 5（4,16）同为黑棋，须黑白交替；编号 5（4,16）与 6（3,16）同为黑棋，须黑白交替；编号 6（3,16）与 7（2,16）同为黑棋，须黑白交替；编号 7（2,16）与 8（2,15）同为黑棋，须黑白交替；编号 8（2,15）与 9（3,14）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4337,
+        "page": 45,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（3,13）与 2（4,14）同为黑棋，须黑白交替；编号 2（4,14）与 3（5,15）同为黑棋，须黑白交替；编号 3（5,15）与 4（4,16）同为黑棋，须黑白交替；编号 4（4,16）与 5（3,17）同为黑棋，须黑白交替；编号 5（3,17）与 6（2,17）同为黑棋，须黑白交替；编号 6（2,17）与 7（2,16）同为黑棋，须黑白交替；编号 7（2,16）与 8（2,15）同为黑棋，须黑白交替；编号 8（2,15）与 9（2,14）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 4338,
+        "page": 45,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 1（3,13）与 2（4,13）同为黑棋，须黑白交替；编号 2（4,13）与 3（5,14）同为黑棋，须黑白交替；编号 3（5,14）与 4（5,15）同为黑棋，须黑白交替；编号 4（5,15）与 5（5,16）同为黑棋，须黑白交替；编号 5（5,16）与 6（4,16）同为黑棋，须黑白交替；编号 6（4,16）与 7（3,16）同为黑棋，须黑白交替；编号 7（3,16）与 8（2,15）同为黑棋，须黑白交替；编号 8（2,15）与 9（2,14）同为黑棋，须黑白交替"
+      }
+    ]
+  }
+}

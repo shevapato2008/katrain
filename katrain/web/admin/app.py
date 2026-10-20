@@ -13,7 +13,12 @@ from fastapi.staticfiles import StaticFiles
 from katrain.web.admin.routers.auth import router as auth_router
 from katrain.web.admin.routers.cron import router as cron_router
 from katrain.web.admin.routers.kifu import router as kifu_router
+from katrain.web.admin.routers.tutorial_media import router as tutorial_media_router
+from katrain.web.tutorials.media_tasks import MediaWorker
 from katrain.web.admin.routers.tutorials import get_admin_db, router as tutorial_write_router
+from katrain.web.admin.routers.tutorial_sources import router as tutorial_source_router
+from katrain.web.admin.routers.tutorial_ogs import router as tutorial_ogs_router
+from katrain.web.admin.routers.tutorial_workbench import router as tutorial_workbench_router
 from katrain.web.admin.routers.users import router as users_router
 from katrain.web.admin.routers.config_health import router as config_health_router
 from katrain.web.admin.routers.errors import router as errors_router
@@ -69,6 +74,7 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
     async def lifespan(app):
         from katrain.web.core import error_collector, health_report
 
+        media_worker.start()
         collector = error_collector.ErrorCollector("admin", error_collector.factory_for(session_factory)).start()
         report_task = asyncio.create_task(
             health_report.report_forever(
@@ -80,12 +86,15 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
         finally:
             report_task.cancel()
             await asyncio.to_thread(collector.stop)
+            await asyncio.to_thread(media_worker.close)
             vision_runtime.shutdown()
             vision_training.close()
 
+    media_worker = MediaWorker(session_factory)
     app = FastAPI(title="katrain-admin", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     app.state.admin_config = config
     app.state.session_factory = session_factory
+    app.state.media_worker = media_worker
     app.state.vision_runtime = vision_runtime
     app.state.vision_training = vision_training
     grafana = load_grafana()
@@ -130,6 +139,10 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
     app.include_router(pvp_lobby_router, prefix="/api/admin", tags=["admin-pvp-lobby"])
     app.include_router(vision_training_router, prefix="/api/admin/vision-training", tags=["admin-vision-training"])
     app.include_router(tutorial_write_router, prefix="/api/admin/tutorials", tags=["admin-tutorials"])
+    app.include_router(tutorial_media_router, prefix="/api/admin/tutorials", tags=["admin-tutorial-media"])
+    app.include_router(tutorial_workbench_router, prefix="/api/admin/tutorials", tags=["admin-tutorial-workbench"])
+    app.include_router(tutorial_source_router, prefix="/api/admin/tutorials", tags=["admin-tutorial-sources"])
+    app.include_router(tutorial_ogs_router, prefix="/api/admin/tutorials", tags=["admin-tutorial-ogs"])
     app.include_router(tutorial_read_router, prefix="/api/v1/tutorials", tags=["tutorial-reads"])
     app.dependency_overrides[get_db] = get_admin_db
 

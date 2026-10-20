@@ -1,0 +1,80 @@
+[
+  {
+    "recognition_id": "p080-f04",
+    "page": 80,
+    "figure_id": 7168,
+    "candidate_id": 3307,
+    "source_pointer": "/chapters/2/intro/3/elements/3",
+    "source_type": "engineering_source_quality_review",
+    "uncertainties": [
+      {
+        "cell": "16,4",
+        "reason": "工程复核：原扫描8呈黑底白字，与原转录黑8一致；编号交替提示本应为白8，可能是源书颜色误印。保留原印刷静态，不据奇偶改色。缺失11另由图注“11接”解释。",
+        "candidates": [
+          "原印刷黑8／源书颜色误印",
+          "白8为行棋意图，须人工对照"
+        ],
+        "kind": "color_uncertainty"
+      }
+    ],
+    "engineering_provenance": {
+      "kind": "engineering_source_quality_review",
+      "version": "shape-source-quality-v1",
+      "reviewer": "gpt-6-astra / max",
+      "decision_path": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/shape-numbering-source-decision.md",
+      "decision_sha256": "6f38716453f95d594c8349fe32f195d658c52bfafc47ac708517c41e94256c4f",
+      "original_dataset": "curriculum-shape-gpt61sol-v1",
+      "original_candidate_id": 2991,
+      "original_raw_sha256": "f1cf9fffcaa5f4255ec013c98f9e66f1e555f1171516ebceeba1a83690db84be",
+      "original_results_sha256": "a0c14ad5c9afff42de3b280becce71274bfc1c2a0974765346d7c5c1e3e294c1",
+      "original_model_confidence": 1,
+      "full_page_sha256": "266386af906399b93ee9d816fe5abb633a33447fe5c0c2b8ed84c20bd865cd7c",
+      "crop_sha256": "57fef3fd3f9a7e02c020700346611a40249b26edad31c03ac1ccc66bd24e534c",
+      "coordinate_space": "full_board_zero_based",
+      "static_payload_unchanged": true,
+      "human_approval": false
+    },
+    "current_static_diagram_unchanged": true,
+    "human_approved": false,
+    "link": "http://127.0.0.1:18012/admin?book=15&page=80&figure=7168&filter=uncertainty"
+  },
+  {
+    "recognition_id": "p083-f03",
+    "page": 83,
+    "figure_id": 7179,
+    "candidate_id": 3308,
+    "source_pointer": "/chapters/2/intro/6/elements/2",
+    "source_type": "engineering_source_quality_review",
+    "uncertainties": [
+      {
+        "cell": "14,2",
+        "reason": "工程复核：原扫描5更像黑字白底且有印刷／扫描缺损；正文“黑3、5渡”支持行棋意图为黑，但不能证明印刷为黑。保留原转录白5，颜色与原文冲突待人工核对。",
+        "candidates": [
+          "印刷白5／正文冲突",
+          "黑5为行棋意图，须人工对照"
+        ],
+        "kind": "color_uncertainty"
+      }
+    ],
+    "engineering_provenance": {
+      "kind": "engineering_source_quality_review",
+      "version": "shape-source-quality-v1",
+      "reviewer": "gpt-6-astra / max",
+      "decision_path": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/shape-numbering-source-decision.md",
+      "decision_sha256": "6f38716453f95d594c8349fe32f195d658c52bfafc47ac708517c41e94256c4f",
+      "original_dataset": "curriculum-shape-gpt61sol-v1",
+      "original_candidate_id": 3002,
+      "original_raw_sha256": "99cfe6006662d24e051c728e7c1319e0ac3fe647730146e6b93dffaec702c684",
+      "original_results_sha256": "a0c14ad5c9afff42de3b280becce71274bfc1c2a0974765346d7c5c1e3e294c1",
+      "original_model_confidence": 1,
+      "full_page_sha256": "d2a49234c324b9a9d839d797a66b46104698aa4c39be11e2c44027e635314c50",
+      "crop_sha256": "d18b5b878181e428c892bf3e86043cf433e9219655882a02148674b3ba200f90",
+      "coordinate_space": "full_board_zero_based",
+      "static_payload_unchanged": true,
+      "human_approval": false
+    },
+    "current_static_diagram_unchanged": true,
+    "human_approved": false,
+    "link": "http://127.0.0.1:18012/admin?book=15&page=83&figure=7179&filter=uncertainty"
+  }
+]

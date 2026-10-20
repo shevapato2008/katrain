@@ -141,10 +141,11 @@ export interface GeometryCalibrationScreenProps {
   sub: string;
   /** guard 那一路:除了几何,还要求识别模型就绪。 */
   requireRecognition?: boolean;
+  allowExistingReuse?: boolean;
 }
 
 export function GeometryCalibrationScreen({
-  backLabel, onBack, title, sub, requireRecognition = false,
+  backLabel, onBack, title, sub, requireRecognition = false, allowExistingReuse = true,
 }: GeometryCalibrationScreenProps) {
   const { status, loaded, startCalibration, confirmExisting, cancelCalibration, recheckLighting, relocate } = useGeometry();
   const { t } = useTranslation();
@@ -382,7 +383,7 @@ export function GeometryCalibrationScreen({
     if (active) return { label: '标定', value: '标定中', tone: 'warn' };
     if (failed) return { label: '标定', value: '失败', tone: 'bad' };
     if (cancelled) return { label: '标定', value: '已取消', tone: 'warn' };
-    if (status.last_valid) return { label: '标定', value: '待确认', tone: 'warn' };
+    if (allowExistingReuse && status.last_valid) return { label: '标定', value: '待确认', tone: 'warn' };
     return { label: '标定', value: '未标定' };
   };
   const cells: StatusCell[] = loaded ? [
@@ -572,7 +573,7 @@ export function GeometryCalibrationScreen({
               )}
               {/* 旁注最多两行(稿子 §5)。原先还有「每个定位点先熄灯再亮灯各拍一张」和「LED 那格只说串口通了」两句,
                   Fan 2026-09-27 裁定删掉,别再加回来。 */}
-              {reuseBlockedWhy && status.last_valid && (
+              {allowExistingReuse && reuseBlockedWhy && status.last_valid && (
                 <><br />「沿用上次标定」此刻按不了：{reuseBlockedWhy}。</>
               )}
               {requireRecognition && phase === 'ready' && !status.capabilities.recognition_ready && (
@@ -610,7 +611,8 @@ export function GeometryCalibrationScreen({
                 {/* 盘被碰动之后的出口。**不亮灯、不要求空盘** —— 五点流程要清盘,
                     而这颗键存在的理由正是盘上有子(对局进行到一半)。
                     只在真的需要时出现:ready 态不给「修」的键。 */}
-                {(phase === 'degraded' || phase === 'cancelled' || failed) && status.last_valid && (
+                {(phase === 'degraded' || phase === 'cancelled' || failed)
+                  && status.last_valid && (allowExistingReuse || status.session_calibrated) && (
                   <button
                     type="button"
                     className="kiosk-btn kiosk-btn--secondary"
@@ -626,7 +628,7 @@ export function GeometryCalibrationScreen({
                 {/* `last_valid` 为假 = **从来没成功标定过** ⇒ 这颗键不渲染,主行动满宽。
                     「没有上一次可沿用」屏上已经有三处在说(状态格「未标定」、步骤未开始、
                     主键满宽),再摆一颗永远按不亮、还要配一行解释的键是往加的方向走。 */}
-                {status.last_valid && (
+                {allowExistingReuse && status.last_valid && (
                   <button
                     type="button"
                     className="kiosk-btn kiosk-btn--secondary"

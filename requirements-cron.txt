@@ -4,3 +4,5 @@ httpx
 apscheduler>=3.10,<4
 beautifulsoup4
 lxml
+chardet
+pydantic>=2,<3

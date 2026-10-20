@@ -1,0 +1,6221 @@
+{
+  "catalog_id": "sakata-1",
+  "title": "坂田荣男围棋全集：第1卷·围棋攻击法",
+  "priority_tier": "核心教材",
+  "dataset": "curriculum-sakata-1-gpt61sol-v1",
+  "book_id": 34,
+  "source_book_id": 29,
+  "summary": {
+    "pdf_pages": 276,
+    "pages_detected": 276,
+    "pages_recognized_validated": 276,
+    "figures": 529,
+    "completed": 529,
+    "failed_pages": 0,
+    "pending_pages": 0,
+    "baseline_references": 529,
+    "uncertain_figures": 14,
+    "inferred_figures": 111,
+    "coverage_missing": 0
+  },
+  "source_files": {
+    "/Users/fan/Repositories/go-topic-collections/curriculum/07_中盘攻击/坂田荣男围棋全集_01围棋攻击法_坂田荣男_2005/01 围棋攻击法.pdf": "e104eb1d78d8d66dc6c93197066e158c9a588405f29d10590b5d7c31ae683ed9",
+    "/Users/fan/Repositories/go-topic-collections/curriculum/07_中盘攻击/坂田荣男围棋全集_01围棋攻击法_坂田荣男_2005/output/book.json": "c4eed0d52629a307f3f5c7f15b01efe84243b29f95619964d9320711b94f7b9d"
+  },
+  "coverage": {
+    "baseline_references": 529,
+    "covered_references": 529,
+    "references": [
+      {
+        "page": 7,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/intro/0/elements/2",
+        "figure_ids": [
+          "p007-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 7,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/intro/0/elements/3",
+        "figure_ids": [
+          "p007-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 8,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/intro/1/elements/0",
+        "figure_ids": [
+          "p008-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 8,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/intro/1/elements/1",
+        "figure_ids": [
+          "p008-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 9,
+        "ref_index": 1,
+        "label": "第1型",
+        "source_pointer": "/chapters/2/sections/0/pages/0/elements/2",
+        "figure_ids": [
+          "p009-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 10,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/sections/0/pages/1/elements/1",
+        "figure_ids": [
+          "p010-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 10,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/2/sections/0/pages/1/elements/2",
+        "figure_ids": [
+          "p010-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 10,
+        "ref_index": 3,
+        "label": "参考图2",
+        "source_pointer": "/chapters/2/sections/0/pages/1/elements/3",
+        "figure_ids": [
+          "p010-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 11,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/sections/0/pages/2/elements/0",
+        "figure_ids": [
+          "p011-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 11,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/2/sections/0/pages/2/elements/1",
+        "figure_ids": [
+          "p011-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 11,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/2/sections/0/pages/2/elements/2",
+        "figure_ids": [
+          "p011-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 12,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/2/sections/0/pages/3/elements/0",
+        "figure_ids": [
+          "p012-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 12,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/2/sections/0/pages/3/elements/1",
+        "figure_ids": [
+          "p012-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 12,
+        "ref_index": 3,
+        "label": "参考图6",
+        "source_pointer": "/chapters/2/sections/0/pages/3/elements/3",
+        "figure_ids": [
+          "p012-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 13,
+        "ref_index": 1,
+        "label": "第4图",
+        "source_pointer": "/chapters/2/sections/0/pages/4/elements/0",
+        "figure_ids": [
+          "p013-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 13,
+        "ref_index": 2,
+        "label": "参考图7",
+        "source_pointer": "/chapters/2/sections/0/pages/4/elements/1",
+        "figure_ids": [
+          "p013-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 14,
+        "ref_index": 1,
+        "label": "第5图",
+        "source_pointer": "/chapters/2/sections/0/pages/5/elements/1",
+        "figure_ids": [
+          "p014-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 15,
+        "ref_index": 1,
+        "label": "第2型",
+        "source_pointer": "/chapters/2/sections/1/pages/0/elements/2",
+        "figure_ids": [
+          "p015-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 16,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/sections/1/pages/1/elements/3",
+        "figure_ids": [
+          "p016-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 16,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/2/sections/1/pages/1/elements/1",
+        "figure_ids": [
+          "p016-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 16,
+        "ref_index": 3,
+        "label": "参考图2",
+        "source_pointer": "/chapters/2/sections/1/pages/1/elements/2",
+        "figure_ids": [
+          "p016-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 17,
+        "ref_index": 1,
+        "label": "参考图3",
+        "source_pointer": "/chapters/2/sections/1/pages/2/elements/0",
+        "figure_ids": [
+          "p017-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 17,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/2/sections/1/pages/2/elements/2",
+        "figure_ids": [
+          "p017-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 17,
+        "ref_index": 3,
+        "label": "参考图5",
+        "source_pointer": "/chapters/2/sections/1/pages/2/elements/3",
+        "figure_ids": [
+          "p017-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 17,
+        "ref_index": 4,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/sections/1/pages/2/elements/1",
+        "figure_ids": [
+          "p017-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 18,
+        "ref_index": 1,
+        "label": "参考图6",
+        "source_pointer": "/chapters/2/sections/1/pages/3/elements/0",
+        "figure_ids": [
+          "p018-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 18,
+        "ref_index": 2,
+        "label": "第3图",
+        "source_pointer": "/chapters/2/sections/1/pages/3/elements/1",
+        "figure_ids": [
+          "p018-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 19,
+        "ref_index": 1,
+        "label": "第3型",
+        "source_pointer": "/chapters/2/sections/2/pages/0/elements/2",
+        "figure_ids": [
+          "p019-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 20,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/sections/2/pages/1/elements/1",
+        "figure_ids": [
+          "p020-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 20,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/2/sections/2/pages/1/elements/2",
+        "figure_ids": [
+          "p020-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 21,
+        "ref_index": 1,
+        "label": "第4型",
+        "source_pointer": "/chapters/2/sections/3/pages/0/elements/2",
+        "figure_ids": [
+          "p021-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 22,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/sections/3/pages/1/elements/1",
+        "figure_ids": [
+          "p022-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 22,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/2/sections/3/pages/1/elements/2",
+        "figure_ids": [
+          "p022-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 23,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/sections/3/pages/2/elements/0",
+        "figure_ids": [
+          "p023-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 23,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/2/sections/3/pages/2/elements/1",
+        "figure_ids": [
+          "p023-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 23,
+        "ref_index": 3,
+        "label": "参考图3",
+        "source_pointer": "/chapters/2/sections/3/pages/2/elements/2",
+        "figure_ids": [
+          "p023-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 24,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/2/sections/3/pages/3/elements/0",
+        "figure_ids": [
+          "p024-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 24,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/2/sections/3/pages/3/elements/1",
+        "figure_ids": [
+          "p024-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 24,
+        "ref_index": 3,
+        "label": "参考图5",
+        "source_pointer": "/chapters/2/sections/3/pages/3/elements/2",
+        "figure_ids": [
+          "p024-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 25,
+        "ref_index": 1,
+        "label": "第5型",
+        "source_pointer": "/chapters/2/sections/4/pages/0/elements/2",
+        "figure_ids": [
+          "p025-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 26,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/2/sections/4/pages/1/elements/2",
+        "figure_ids": [
+          "p026-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 26,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/sections/4/pages/1/elements/1",
+        "figure_ids": [
+          "p026-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 27,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/2/sections/4/pages/2/elements/0",
+        "figure_ids": [
+          "p027-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 27,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/2/sections/4/pages/2/elements/1",
+        "figure_ids": [
+          "p027-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 27,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/2/sections/4/pages/2/elements/2",
+        "figure_ids": [
+          "p027-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 28,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/sections/4/pages/3/elements/0",
+        "figure_ids": [
+          "p028-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 28,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/2/sections/4/pages/3/elements/1",
+        "figure_ids": [
+          "p028-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 29,
+        "ref_index": 1,
+        "label": "第6型",
+        "source_pointer": "/chapters/2/sections/5/pages/0/elements/2",
+        "figure_ids": [
+          "p029-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 30,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/sections/5/pages/1/elements/1",
+        "figure_ids": [
+          "p030-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 30,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/2/sections/5/pages/1/elements/3",
+        "figure_ids": [
+          "p030-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 30,
+        "ref_index": 3,
+        "label": "参考图1",
+        "source_pointer": "/chapters/2/sections/5/pages/1/elements/2",
+        "figure_ids": [
+          "p030-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 31,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/sections/5/pages/2/elements/0",
+        "figure_ids": [
+          "p031-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 31,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/2/sections/5/pages/2/elements/2",
+        "figure_ids": [
+          "p031-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 31,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/2/sections/5/pages/2/elements/3",
+        "figure_ids": [
+          "p031-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 31,
+        "ref_index": 4,
+        "label": "第3图",
+        "source_pointer": "/chapters/2/sections/5/pages/2/elements/1",
+        "figure_ids": [
+          "p031-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 32,
+        "ref_index": 1,
+        "label": "第4图",
+        "source_pointer": "/chapters/2/sections/5/pages/3/elements/0",
+        "figure_ids": [
+          "p032-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 32,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/2/sections/5/pages/3/elements/1",
+        "figure_ids": [
+          "p032-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 32,
+        "ref_index": 3,
+        "label": "参考图6",
+        "source_pointer": "/chapters/2/sections/5/pages/3/elements/2",
+        "figure_ids": [
+          "p032-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 33,
+        "ref_index": 1,
+        "label": "第5图",
+        "source_pointer": "/chapters/2/sections/5/pages/4/elements/0",
+        "figure_ids": [
+          "p033-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 33,
+        "ref_index": 2,
+        "label": "第6图",
+        "source_pointer": "/chapters/2/sections/5/pages/4/elements/1",
+        "figure_ids": [
+          "p033-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 34,
+        "ref_index": 1,
+        "label": "第7图",
+        "source_pointer": "/chapters/2/sections/5/pages/5/elements/0",
+        "figure_ids": [
+          "p034-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 34,
+        "ref_index": 2,
+        "label": "参考图7",
+        "source_pointer": "/chapters/2/sections/5/pages/5/elements/1",
+        "figure_ids": [
+          "p034-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 35,
+        "ref_index": 1,
+        "label": "第7型",
+        "source_pointer": "/chapters/2/sections/6/pages/0/elements/2",
+        "figure_ids": [
+          "p035-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 36,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/sections/6/pages/1/elements/1",
+        "figure_ids": [
+          "p036-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 36,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/2/sections/6/pages/1/elements/2",
+        "figure_ids": [
+          "p036-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 36,
+        "ref_index": 3,
+        "label": "参考图2",
+        "source_pointer": "/chapters/2/sections/6/pages/1/elements/3",
+        "figure_ids": [
+          "p036-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 37,
+        "ref_index": 1,
+        "label": "参考图3",
+        "source_pointer": "/chapters/2/sections/6/pages/2/elements/0",
+        "figure_ids": [
+          "p037-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 37,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/2/sections/6/pages/2/elements/1",
+        "figure_ids": [
+          "p037-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 37,
+        "ref_index": 3,
+        "label": "参考图5",
+        "source_pointer": "/chapters/2/sections/6/pages/2/elements/2",
+        "figure_ids": [
+          "p037-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 37,
+        "ref_index": 4,
+        "label": "参考图6",
+        "source_pointer": "/chapters/2/sections/6/pages/2/elements/3",
+        "figure_ids": [
+          "p037-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 38,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/sections/6/pages/3/elements/0",
+        "figure_ids": [
+          "p038-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 38,
+        "ref_index": 2,
+        "label": "参考图7",
+        "source_pointer": "/chapters/2/sections/6/pages/3/elements/1",
+        "figure_ids": [
+          "p038-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 38,
+        "ref_index": 3,
+        "label": "参考图8",
+        "source_pointer": "/chapters/2/sections/6/pages/3/elements/2",
+        "figure_ids": [
+          "p038-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 39,
+        "ref_index": 1,
+        "label": "第8型",
+        "source_pointer": "/chapters/2/sections/7/pages/0/elements/2",
+        "figure_ids": [
+          "p039-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 40,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/sections/7/pages/1/elements/1",
+        "figure_ids": [
+          "p040-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 40,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/2/sections/7/pages/1/elements/2",
+        "figure_ids": [
+          "p040-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 40,
+        "ref_index": 3,
+        "label": "参考图2",
+        "source_pointer": "/chapters/2/sections/7/pages/1/elements/3",
+        "figure_ids": [
+          "p040-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 41,
+        "ref_index": 1,
+        "label": "参考图3",
+        "source_pointer": "/chapters/2/sections/7/pages/2/elements/0",
+        "figure_ids": [
+          "p041-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 41,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/2/sections/7/pages/2/elements/1",
+        "figure_ids": [
+          "p041-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 41,
+        "ref_index": 3,
+        "label": "参考图5",
+        "source_pointer": "/chapters/2/sections/7/pages/2/elements/2",
+        "figure_ids": [
+          "p041-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 41,
+        "ref_index": 4,
+        "label": "参考图6",
+        "source_pointer": "/chapters/2/sections/7/pages/2/elements/3",
+        "figure_ids": [
+          "p041-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 41,
+        "ref_index": 5,
+        "label": "参考图7",
+        "source_pointer": "/chapters/2/sections/7/pages/2/elements/4",
+        "figure_ids": [
+          "p041-f05"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 42,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/sections/7/pages/3/elements/0",
+        "figure_ids": [
+          "p042-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 42,
+        "ref_index": 2,
+        "label": "参考图8",
+        "source_pointer": "/chapters/2/sections/7/pages/3/elements/1",
+        "figure_ids": [
+          "p042-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 43,
+        "ref_index": 1,
+        "label": "参考图9",
+        "source_pointer": "/chapters/2/sections/7/pages/4/elements/0",
+        "figure_ids": [
+          "p043-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 43,
+        "ref_index": 2,
+        "label": "参考图10",
+        "source_pointer": "/chapters/2/sections/7/pages/4/elements/1",
+        "figure_ids": [
+          "p043-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 43,
+        "ref_index": 3,
+        "label": "参考图11",
+        "source_pointer": "/chapters/2/sections/7/pages/4/elements/2",
+        "figure_ids": [
+          "p043-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 44,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/2/sections/7/pages/5/elements/0",
+        "figure_ids": [
+          "p044-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 44,
+        "ref_index": 2,
+        "label": "参考图12",
+        "source_pointer": "/chapters/2/sections/7/pages/5/elements/1",
+        "figure_ids": [
+          "p044-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 45,
+        "ref_index": 1,
+        "label": "第9型",
+        "source_pointer": "/chapters/2/sections/8/pages/0/elements/2",
+        "figure_ids": [
+          "p045-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 46,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/sections/8/pages/1/elements/1",
+        "figure_ids": [
+          "p046-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 46,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/2/sections/8/pages/1/elements/2",
+        "figure_ids": [
+          "p046-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 47,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/2/sections/8/pages/2/elements/0",
+        "figure_ids": [
+          "p047-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 47,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/2/sections/8/pages/2/elements/1",
+        "figure_ids": [
+          "p047-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 47,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/2/sections/8/pages/2/elements/2",
+        "figure_ids": [
+          "p047-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 48,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/sections/8/pages/3/elements/0",
+        "figure_ids": [
+          "p048-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 48,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/2/sections/8/pages/3/elements/1",
+        "figure_ids": [
+          "p048-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 49,
+        "ref_index": 1,
+        "label": "第10型",
+        "source_pointer": "/chapters/2/sections/9/pages/0/elements/2",
+        "figure_ids": [
+          "p049-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 60,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/2/sections/9/pages/1/elements/2",
+        "figure_ids": [
+          "p060-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 60,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/2/sections/9/pages/1/elements/1",
+        "figure_ids": [
+          "p060-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 61,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/2/sections/9/pages/2/elements/0",
+        "figure_ids": [
+          "p061-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 61,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/2/sections/9/pages/2/elements/1",
+        "figure_ids": [
+          "p061-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 61,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/2/sections/9/pages/2/elements/3",
+        "figure_ids": [
+          "p061-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 61,
+        "ref_index": 4,
+        "label": "参考图5",
+        "source_pointer": "/chapters/2/sections/9/pages/2/elements/4",
+        "figure_ids": [
+          "p061-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 62,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/2/sections/9/pages/3/elements/0",
+        "figure_ids": [
+          "p062-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 62,
+        "ref_index": 2,
+        "label": "参考图6",
+        "source_pointer": "/chapters/2/sections/9/pages/3/elements/1",
+        "figure_ids": [
+          "p062-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 63,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/intro/0/elements/1",
+        "figure_ids": [
+          "p063-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 63,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/intro/0/elements/2",
+        "figure_ids": [
+          "p063-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 64,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/3/intro/1/elements/0",
+        "figure_ids": [
+          "p064-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 64,
+        "ref_index": 2,
+        "label": "第4图",
+        "source_pointer": "/chapters/3/intro/1/elements/1",
+        "figure_ids": [
+          "p064-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 64,
+        "ref_index": 3,
+        "label": "第5图",
+        "source_pointer": "/chapters/3/intro/1/elements/2",
+        "figure_ids": [
+          "p064-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 64,
+        "ref_index": 4,
+        "label": "第6图",
+        "source_pointer": "/chapters/3/intro/1/elements/3",
+        "figure_ids": [
+          "p064-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 65,
+        "ref_index": 1,
+        "label": "第1型",
+        "source_pointer": "/chapters/3/sections/0/pages/0/elements/1",
+        "figure_ids": [
+          "p065-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 66,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/0/pages/1/elements/1",
+        "figure_ids": [
+          "p066-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 66,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/0/pages/1/elements/2",
+        "figure_ids": [
+          "p066-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 67,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/0/pages/2/elements/0",
+        "figure_ids": [
+          "p067-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 67,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/0/pages/2/elements/1",
+        "figure_ids": [
+          "p067-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 67,
+        "ref_index": 3,
+        "label": "参考图3",
+        "source_pointer": "/chapters/3/sections/0/pages/2/elements/2",
+        "figure_ids": [
+          "p067-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 67,
+        "ref_index": 4,
+        "label": "参考图4",
+        "source_pointer": "/chapters/3/sections/0/pages/2/elements/3",
+        "figure_ids": [
+          "p067-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 68,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/3/sections/0/pages/3/elements/0",
+        "figure_ids": [
+          "p068-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 68,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/3/sections/0/pages/3/elements/1",
+        "figure_ids": [
+          "p068-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 69,
+        "ref_index": 1,
+        "label": "第2型",
+        "source_pointer": "/chapters/3/sections/1/pages/0/elements/1",
+        "figure_ids": [
+          "p069-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 70,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/1/pages/1/elements/1",
+        "figure_ids": [
+          "p070-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 70,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/1/pages/1/elements/2",
+        "figure_ids": [
+          "p070-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 71,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/1/pages/2/elements/0",
+        "figure_ids": [
+          "p071-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 71,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/1/pages/2/elements/1",
+        "figure_ids": [
+          "p071-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 73,
+        "ref_index": 1,
+        "label": "第3型",
+        "source_pointer": "/chapters/3/sections/2/pages/0/elements/1",
+        "figure_ids": [
+          "p073-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 74,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/2/pages/1/elements/2",
+        "figure_ids": [
+          "p074-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 74,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/2/pages/1/elements/1",
+        "figure_ids": [
+          "p074-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 75,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/2/pages/2/elements/1",
+        "figure_ids": [
+          "p075-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 75,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/3/sections/2/pages/2/elements/2",
+        "figure_ids": [
+          "p075-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 76,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/2/pages/3/elements/0",
+        "figure_ids": [
+          "p076-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 76,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/3/sections/2/pages/3/elements/1",
+        "figure_ids": [
+          "p076-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 76,
+        "ref_index": 3,
+        "label": "参考图5",
+        "source_pointer": "/chapters/3/sections/2/pages/3/elements/2",
+        "figure_ids": [
+          "p076-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 77,
+        "ref_index": 1,
+        "label": "第4型",
+        "source_pointer": "/chapters/3/sections/3/pages/0/elements/1",
+        "figure_ids": [
+          "p077-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 78,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/3/pages/1/elements/1",
+        "figure_ids": [
+          "p078-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 78,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/3/pages/1/elements/2",
+        "figure_ids": [
+          "p078-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 78,
+        "ref_index": 3,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/3/pages/1/elements/3",
+        "figure_ids": [
+          "p078-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 78,
+        "ref_index": 4,
+        "label": "参考图3",
+        "source_pointer": "/chapters/3/sections/3/pages/1/elements/4",
+        "figure_ids": [
+          "p078-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 78,
+        "ref_index": 5,
+        "label": "参考图4",
+        "source_pointer": "/chapters/3/sections/3/pages/1/elements/5",
+        "figure_ids": [
+          "p078-f05"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 79,
+        "ref_index": 1,
+        "label": "第5型",
+        "source_pointer": "/chapters/3/sections/4/pages/0/elements/1",
+        "figure_ids": [
+          "p079-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 80,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/4/pages/1/elements/1",
+        "figure_ids": [
+          "p080-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 80,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/4/pages/1/elements/2",
+        "figure_ids": [
+          "p080-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 81,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/4/pages/2/elements/0",
+        "figure_ids": [
+          "p081-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 81,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/3/sections/4/pages/2/elements/1",
+        "figure_ids": [
+          "p081-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 82,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/4/pages/3/elements/0",
+        "figure_ids": [
+          "p082-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 82,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/3/sections/4/pages/3/elements/1",
+        "figure_ids": [
+          "p082-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 82,
+        "ref_index": 3,
+        "label": "参考图5",
+        "source_pointer": "/chapters/3/sections/4/pages/3/elements/2",
+        "figure_ids": [
+          "p082-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 83,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/3/sections/4/pages/4/elements/0",
+        "figure_ids": [
+          "p083-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 83,
+        "ref_index": 2,
+        "label": "参考图6",
+        "source_pointer": "/chapters/3/sections/4/pages/4/elements/1",
+        "figure_ids": [
+          "p083-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 83,
+        "ref_index": 3,
+        "label": "参考图7",
+        "source_pointer": "/chapters/3/sections/4/pages/4/elements/2",
+        "figure_ids": [
+          "p083-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 83,
+        "ref_index": 4,
+        "label": "参考图8",
+        "source_pointer": "/chapters/3/sections/4/pages/4/elements/3",
+        "figure_ids": [
+          "p083-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 83,
+        "ref_index": 5,
+        "label": "参考图9",
+        "source_pointer": "/chapters/3/sections/4/pages/4/elements/4",
+        "figure_ids": [
+          "p083-f05"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 84,
+        "ref_index": 1,
+        "label": "第4图",
+        "source_pointer": "/chapters/3/sections/4/pages/5/elements/0",
+        "figure_ids": [
+          "p084-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 84,
+        "ref_index": 2,
+        "label": "参考图10",
+        "source_pointer": "/chapters/3/sections/4/pages/5/elements/1",
+        "figure_ids": [
+          "p084-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 84,
+        "ref_index": 3,
+        "label": "参考图11",
+        "source_pointer": "/chapters/3/sections/4/pages/5/elements/2",
+        "figure_ids": [
+          "p084-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 84,
+        "ref_index": 4,
+        "label": "参考图12",
+        "source_pointer": "/chapters/3/sections/4/pages/5/elements/3",
+        "figure_ids": [
+          "p084-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 85,
+        "ref_index": 1,
+        "label": "第5图",
+        "source_pointer": "/chapters/3/sections/4/pages/6/elements/0",
+        "figure_ids": [
+          "p085-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 85,
+        "ref_index": 2,
+        "label": "参考图13",
+        "source_pointer": "/chapters/3/sections/4/pages/6/elements/1",
+        "figure_ids": [
+          "p085-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 85,
+        "ref_index": 3,
+        "label": "参考图14",
+        "source_pointer": "/chapters/3/sections/4/pages/6/elements/2",
+        "figure_ids": [
+          "p085-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 86,
+        "ref_index": 1,
+        "label": "第6图",
+        "source_pointer": "/chapters/3/sections/4/pages/7/elements/0",
+        "figure_ids": [
+          "p086-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 86,
+        "ref_index": 2,
+        "label": "第7图",
+        "source_pointer": "/chapters/3/sections/4/pages/7/elements/1",
+        "figure_ids": [
+          "p086-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 87,
+        "ref_index": 1,
+        "label": "第6型",
+        "source_pointer": "/chapters/3/sections/5/pages/0/elements/1",
+        "figure_ids": [
+          "p087-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 88,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/5/pages/1/elements/1",
+        "figure_ids": [
+          "p088-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 88,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/5/pages/1/elements/2",
+        "figure_ids": [
+          "p088-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 88,
+        "ref_index": 3,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/5/pages/1/elements/3",
+        "figure_ids": [
+          "p088-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 89,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/5/pages/2/elements/0",
+        "figure_ids": [
+          "p089-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 89,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/3/sections/5/pages/2/elements/1",
+        "figure_ids": [
+          "p089-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 89,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/3/sections/5/pages/2/elements/2",
+        "figure_ids": [
+          "p089-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 89,
+        "ref_index": 4,
+        "label": "参考图5",
+        "source_pointer": "/chapters/3/sections/5/pages/2/elements/3",
+        "figure_ids": [
+          "p089-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 90,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/3/sections/5/pages/3/elements/0",
+        "figure_ids": [
+          "p090-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 90,
+        "ref_index": 2,
+        "label": "参考图6",
+        "source_pointer": "/chapters/3/sections/5/pages/3/elements/1",
+        "figure_ids": [
+          "p090-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 90,
+        "ref_index": 3,
+        "label": "第4图",
+        "source_pointer": "/chapters/3/sections/5/pages/3/elements/2",
+        "figure_ids": [
+          "p090-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 91,
+        "ref_index": 1,
+        "label": "第7型",
+        "source_pointer": "/chapters/3/sections/6/pages/0/elements/1",
+        "figure_ids": [
+          "p091-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 92,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/6/pages/1/elements/1",
+        "figure_ids": [
+          "p092-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 92,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/6/pages/1/elements/3",
+        "figure_ids": [
+          "p092-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 93,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/6/pages/2/elements/0",
+        "figure_ids": [
+          "p093-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 93,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/3/sections/6/pages/2/elements/1",
+        "figure_ids": [
+          "p093-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 93,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/3/sections/6/pages/2/elements/3",
+        "figure_ids": [
+          "p093-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 94,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/6/pages/3/elements/1",
+        "figure_ids": [
+          "p094-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 95,
+        "ref_index": 1,
+        "label": "第8型",
+        "source_pointer": "/chapters/3/sections/7/pages/0/elements/1",
+        "figure_ids": [
+          "p095-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 96,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/7/pages/1/elements/1",
+        "figure_ids": [
+          "p096-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 96,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/7/pages/1/elements/2",
+        "figure_ids": [
+          "p096-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 96,
+        "ref_index": 3,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/7/pages/1/elements/4",
+        "figure_ids": [
+          "p096-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 97,
+        "ref_index": 1,
+        "label": "参考图3",
+        "source_pointer": "/chapters/3/sections/7/pages/2/elements/0",
+        "figure_ids": [
+          "p097-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 97,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/3/sections/7/pages/2/elements/2",
+        "figure_ids": [
+          "p097-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 97,
+        "ref_index": 3,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/7/pages/2/elements/4",
+        "figure_ids": [
+          "p097-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 98,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/3/sections/7/pages/3/elements/1",
+        "figure_ids": [
+          "p098-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 99,
+        "ref_index": 1,
+        "label": "第9型",
+        "source_pointer": "/chapters/3/sections/8/pages/0/elements/1",
+        "figure_ids": [
+          "p099-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 100,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/8/pages/1/elements/1",
+        "figure_ids": [
+          "p100-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 100,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/8/pages/1/elements/4",
+        "figure_ids": [
+          "p100-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 100,
+        "ref_index": 3,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/8/pages/1/elements/2",
+        "figure_ids": [
+          "p100-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 101,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/8/pages/2/elements/0",
+        "figure_ids": [
+          "p101-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 101,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/3/sections/8/pages/2/elements/2",
+        "figure_ids": [
+          "p101-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 101,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/3/sections/8/pages/2/elements/3",
+        "figure_ids": [
+          "p101-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 102,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/3/sections/8/pages/3/elements/1",
+        "figure_ids": [
+          "p102-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 103,
+        "ref_index": 1,
+        "label": "第10型",
+        "source_pointer": "/chapters/3/sections/9/pages/0/elements/1",
+        "figure_ids": [
+          "p103-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 104,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/9/pages/1/elements/1",
+        "figure_ids": [
+          "p104-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 104,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/9/pages/1/elements/2",
+        "figure_ids": [
+          "p104-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 104,
+        "ref_index": 3,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/9/pages/1/elements/4",
+        "figure_ids": [
+          "p104-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 105,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/9/pages/2/elements/1",
+        "figure_ids": [
+          "p105-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 105,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/3/sections/9/pages/2/elements/0",
+        "figure_ids": [
+          "p105-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 105,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/3/sections/9/pages/2/elements/3",
+        "figure_ids": [
+          "p105-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 105,
+        "ref_index": 4,
+        "label": "参考图5",
+        "source_pointer": "/chapters/3/sections/9/pages/2/elements/4",
+        "figure_ids": [
+          "p105-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 106,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/3/sections/9/pages/3/elements/0",
+        "figure_ids": [
+          "p106-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 106,
+        "ref_index": 2,
+        "label": "参考图6",
+        "source_pointer": "/chapters/3/sections/9/pages/3/elements/1",
+        "figure_ids": [
+          "p106-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 106,
+        "ref_index": 3,
+        "label": "参考图7",
+        "source_pointer": "/chapters/3/sections/9/pages/3/elements/2",
+        "figure_ids": [
+          "p106-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 107,
+        "ref_index": 1,
+        "label": "第11型",
+        "source_pointer": "/chapters/3/sections/10/pages/0/elements/1",
+        "figure_ids": [
+          "p107-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 108,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/10/pages/1/elements/1",
+        "figure_ids": [
+          "p108-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 108,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/10/pages/1/elements/2",
+        "figure_ids": [
+          "p108-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 109,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/10/pages/2/elements/1",
+        "figure_ids": [
+          "p109-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 110,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/3/sections/10/pages/3/elements/0",
+        "figure_ids": [
+          "p110-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 110,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/10/pages/3/elements/1",
+        "figure_ids": [
+          "p110-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 111,
+        "ref_index": 1,
+        "label": "第12型",
+        "source_pointer": "/chapters/3/sections/11/pages/0/elements/1",
+        "figure_ids": [
+          "p111-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 112,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/3/sections/11/pages/1/elements/1",
+        "figure_ids": [
+          "p112-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 112,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/3/sections/11/pages/1/elements/3",
+        "figure_ids": [
+          "p112-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 113,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/3/sections/11/pages/2/elements/0",
+        "figure_ids": [
+          "p113-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 113,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/3/sections/11/pages/2/elements/2",
+        "figure_ids": [
+          "p113-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 115,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/4/intro/0/elements/1",
+        "figure_ids": [
+          "p115-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 116,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/4/intro/1/elements/1",
+        "figure_ids": [
+          "p116-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 117,
+        "ref_index": 1,
+        "label": "第1型",
+        "source_pointer": "/chapters/4/sections/0/pages/0/elements/1",
+        "figure_ids": [
+          "p117-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 118,
+        "ref_index": 1,
+        "label": "参考图1（1）",
+        "source_pointer": "/chapters/4/sections/0/pages/1/elements/1",
+        "figure_ids": [
+          "p118-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 118,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/4/sections/0/pages/1/elements/2",
+        "figure_ids": [
+          "p118-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 119,
+        "ref_index": 1,
+        "label": "参考图3",
+        "source_pointer": "/chapters/4/sections/0/pages/2/elements/0",
+        "figure_ids": [
+          "p119-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 119,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/4/sections/0/pages/2/elements/2",
+        "figure_ids": [
+          "p119-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 120,
+        "ref_index": 1,
+        "label": "参考图4",
+        "source_pointer": "/chapters/4/sections/0/pages/3/elements/0",
+        "figure_ids": [
+          "p120-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 120,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/4/sections/0/pages/3/elements/2",
+        "figure_ids": [
+          "p120-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 121,
+        "ref_index": 1,
+        "label": "第2型",
+        "source_pointer": "/chapters/4/sections/1/pages/0/elements/1",
+        "figure_ids": [
+          "p121-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 122,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/4/sections/1/pages/1/elements/1",
+        "figure_ids": [
+          "p122-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 122,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/4/sections/1/pages/1/elements/2",
+        "figure_ids": [
+          "p122-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 123,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/4/sections/1/pages/2/elements/0",
+        "figure_ids": [
+          "p123-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 123,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/4/sections/1/pages/2/elements/1",
+        "figure_ids": [
+          "p123-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 124,
+        "ref_index": 1,
+        "label": "参考图3",
+        "source_pointer": "/chapters/4/sections/1/pages/3/elements/2",
+        "figure_ids": [
+          "p124-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 124,
+        "ref_index": 2,
+        "label": "第3图",
+        "source_pointer": "/chapters/4/sections/1/pages/3/elements/0",
+        "figure_ids": [
+          "p124-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 125,
+        "ref_index": 1,
+        "label": "参考图4",
+        "source_pointer": "/chapters/4/sections/1/pages/4/elements/0",
+        "figure_ids": [
+          "p125-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 125,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/4/sections/1/pages/4/elements/1",
+        "figure_ids": [
+          "p125-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 126,
+        "ref_index": 1,
+        "label": "参考图6",
+        "source_pointer": "/chapters/4/sections/1/pages/5/elements/1",
+        "figure_ids": [
+          "p126-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 126,
+        "ref_index": 2,
+        "label": "第4图",
+        "source_pointer": "/chapters/4/sections/1/pages/5/elements/0",
+        "figure_ids": [
+          "p126-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 127,
+        "ref_index": 1,
+        "label": "问题图",
+        "source_pointer": "/chapters/4/sections/2/pages/0/elements/3",
+        "figure_ids": [
+          "p127-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 128,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/4/sections/2/pages/1/elements/1",
+        "figure_ids": [
+          "p128-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 128,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/4/sections/2/pages/1/elements/2",
+        "figure_ids": [
+          "p128-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 129,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/4/sections/2/pages/2/elements/0",
+        "figure_ids": [
+          "p129-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 129,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/4/sections/2/pages/2/elements/1",
+        "figure_ids": [
+          "p129-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 129,
+        "ref_index": 3,
+        "label": "参考图2",
+        "source_pointer": "/chapters/4/sections/2/pages/2/elements/2",
+        "figure_ids": [
+          "p129-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 129,
+        "ref_index": 4,
+        "label": "参考图3",
+        "source_pointer": "/chapters/4/sections/2/pages/2/elements/3",
+        "figure_ids": [
+          "p129-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 130,
+        "ref_index": 1,
+        "label": "第4图",
+        "source_pointer": "/chapters/4/sections/2/pages/3/elements/0",
+        "figure_ids": [
+          "p130-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 130,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/4/sections/2/pages/3/elements/1",
+        "figure_ids": [
+          "p130-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 131,
+        "ref_index": 1,
+        "label": "问题图",
+        "source_pointer": "/chapters/4/sections/3/pages/0/elements/4",
+        "figure_ids": [
+          "p131-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 132,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/4/sections/3/pages/1/elements/1",
+        "figure_ids": [
+          "p132-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 132,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/4/sections/3/pages/1/elements/2",
+        "figure_ids": [
+          "p132-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 133,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/4/sections/3/pages/2/elements/0",
+        "figure_ids": [
+          "p133-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 133,
+        "ref_index": 2,
+        "label": "第3图",
+        "source_pointer": "/chapters/4/sections/3/pages/2/elements/1",
+        "figure_ids": [
+          "p133-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 134,
+        "ref_index": 1,
+        "label": "第4图",
+        "source_pointer": "/chapters/4/sections/3/pages/3/elements/0",
+        "figure_ids": [
+          "p134-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 134,
+        "ref_index": 2,
+        "label": "第5图",
+        "source_pointer": "/chapters/4/sections/3/pages/3/elements/1",
+        "figure_ids": [
+          "p134-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 135,
+        "ref_index": 1,
+        "label": "问题图",
+        "source_pointer": "/chapters/4/sections/4/pages/0/elements/4",
+        "figure_ids": [
+          "p135-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 136,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/4/sections/4/pages/1/elements/1",
+        "figure_ids": [
+          "p136-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 136,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/4/sections/4/pages/1/elements/2",
+        "figure_ids": [
+          "p136-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 137,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/4/sections/4/pages/2/elements/0",
+        "figure_ids": [
+          "p137-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 137,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/4/sections/4/pages/2/elements/1",
+        "figure_ids": [
+          "p137-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 138,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/4/sections/4/pages/3/elements/0",
+        "figure_ids": [
+          "p138-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 138,
+        "ref_index": 2,
+        "label": "第3图",
+        "source_pointer": "/chapters/4/sections/4/pages/3/elements/1",
+        "figure_ids": [
+          "p138-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 139,
+        "ref_index": 1,
+        "label": "问题图",
+        "source_pointer": "/chapters/4/sections/5/pages/0/elements/3",
+        "figure_ids": [
+          "p139-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 140,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/4/sections/5/pages/1/elements/1",
+        "figure_ids": [
+          "p140-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 140,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/4/sections/5/pages/1/elements/2",
+        "figure_ids": [
+          "p140-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 140,
+        "ref_index": 3,
+        "label": "参考图3",
+        "source_pointer": "/chapters/4/sections/5/pages/1/elements/3",
+        "figure_ids": [
+          "p140-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 141,
+        "ref_index": 1,
+        "label": "参考图4",
+        "source_pointer": "/chapters/4/sections/5/pages/2/elements/1",
+        "figure_ids": [
+          "p141-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 141,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/4/sections/5/pages/2/elements/0",
+        "figure_ids": [
+          "p141-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 142,
+        "ref_index": 1,
+        "label": "参考图5",
+        "source_pointer": "/chapters/4/sections/5/pages/3/elements/0",
+        "figure_ids": [
+          "p142-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 142,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/4/sections/5/pages/3/elements/1",
+        "figure_ids": [
+          "p142-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 143,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/4/sections/5/pages/4/elements/0",
+        "figure_ids": [
+          "p143-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 143,
+        "ref_index": 2,
+        "label": "参考图6",
+        "source_pointer": "/chapters/4/sections/5/pages/4/elements/1",
+        "figure_ids": [
+          "p143-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 145,
+        "ref_index": 1,
+        "label": "问题图",
+        "source_pointer": "/chapters/4/sections/6/pages/0/elements/4",
+        "figure_ids": [
+          "p145-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 146,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/4/sections/6/pages/1/elements/2",
+        "figure_ids": [
+          "p146-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 147,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/4/sections/6/pages/2/elements/0",
+        "figure_ids": [
+          "p147-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 147,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/4/sections/6/pages/2/elements/1",
+        "figure_ids": [
+          "p147-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 147,
+        "ref_index": 3,
+        "label": "参考图3",
+        "source_pointer": "/chapters/4/sections/6/pages/2/elements/3",
+        "figure_ids": [
+          "p147-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 148,
+        "ref_index": 1,
+        "label": "参考图4",
+        "source_pointer": "/chapters/4/sections/6/pages/3/elements/0",
+        "figure_ids": [
+          "p148-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 148,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/4/sections/6/pages/3/elements/1",
+        "figure_ids": [
+          "p148-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 149,
+        "ref_index": 1,
+        "label": "问题图",
+        "source_pointer": "/chapters/4/sections/7/pages/0/elements/4",
+        "figure_ids": [
+          "p149-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 150,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/4/sections/7/pages/1/elements/1",
+        "figure_ids": [
+          "p150-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 150,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/4/sections/7/pages/1/elements/2",
+        "figure_ids": [
+          "p150-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 151,
+        "ref_index": 1,
+        "label": "参考图3",
+        "source_pointer": "/chapters/4/sections/7/pages/2/elements/0",
+        "figure_ids": [
+          "p151-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 151,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/4/sections/7/pages/2/elements/1",
+        "figure_ids": [
+          "p151-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 152,
+        "ref_index": 1,
+        "label": "参考图5",
+        "source_pointer": "/chapters/4/sections/7/pages/3/elements/1",
+        "figure_ids": [
+          "p152-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 152,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/4/sections/7/pages/3/elements/0",
+        "figure_ids": [
+          "p152-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 153,
+        "ref_index": 1,
+        "label": "参考图6",
+        "source_pointer": "/chapters/4/sections/7/pages/4/elements/1",
+        "figure_ids": [
+          "p153-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 153,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/4/sections/7/pages/4/elements/2",
+        "figure_ids": [
+          "p153-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 155,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/intro/0/elements/1",
+        "figure_ids": [
+          "p155-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 155,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/intro/0/elements/2",
+        "figure_ids": [
+          "p155-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 156,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/intro/1/elements/1",
+        "figure_ids": [
+          "p156-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 157,
+        "ref_index": 1,
+        "label": "第1型",
+        "source_pointer": "/chapters/5/sections/0/pages/0/elements/1",
+        "figure_ids": [
+          "p157-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 158,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/sections/0/pages/1/elements/1",
+        "figure_ids": [
+          "p158-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 158,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/5/sections/0/pages/1/elements/3",
+        "figure_ids": [
+          "p158-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 159,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/sections/0/pages/2/elements/0",
+        "figure_ids": [
+          "p159-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 159,
+        "ref_index": 2,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/sections/0/pages/2/elements/1",
+        "figure_ids": [
+          "p159-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 160,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/5/sections/0/pages/3/elements/0",
+        "figure_ids": [
+          "p160-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 160,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/5/sections/0/pages/3/elements/1",
+        "figure_ids": [
+          "p160-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 161,
+        "ref_index": 1,
+        "label": "第2型",
+        "source_pointer": "/chapters/5/sections/1/pages/0/elements/1",
+        "figure_ids": [
+          "p161-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 162,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/sections/1/pages/1/elements/1",
+        "figure_ids": [
+          "p162-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 162,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/5/sections/1/pages/1/elements/2",
+        "figure_ids": [
+          "p162-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 163,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/5/sections/1/pages/2/elements/0",
+        "figure_ids": [
+          "p163-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 163,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/5/sections/1/pages/2/elements/1",
+        "figure_ids": [
+          "p163-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 163,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/5/sections/1/pages/2/elements/2",
+        "figure_ids": [
+          "p163-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 164,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/sections/1/pages/3/elements/0",
+        "figure_ids": [
+          "p164-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 164,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/5/sections/1/pages/3/elements/1",
+        "figure_ids": [
+          "p164-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 164,
+        "ref_index": 3,
+        "label": "参考图6",
+        "source_pointer": "/chapters/5/sections/1/pages/3/elements/2",
+        "figure_ids": [
+          "p164-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 165,
+        "ref_index": 1,
+        "label": "参考图7",
+        "source_pointer": "/chapters/5/sections/1/pages/4/elements/0",
+        "figure_ids": [
+          "p165-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 165,
+        "ref_index": 2,
+        "label": "参考图8",
+        "source_pointer": "/chapters/5/sections/1/pages/4/elements/1",
+        "figure_ids": [
+          "p165-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 165,
+        "ref_index": 3,
+        "label": "参考图9",
+        "source_pointer": "/chapters/5/sections/1/pages/4/elements/2",
+        "figure_ids": [
+          "p165-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 166,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/sections/1/pages/5/elements/0",
+        "figure_ids": [
+          "p166-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 166,
+        "ref_index": 2,
+        "label": "第4图",
+        "source_pointer": "/chapters/5/sections/1/pages/5/elements/1",
+        "figure_ids": [
+          "p166-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 167,
+        "ref_index": 1,
+        "label": "第3型",
+        "source_pointer": "/chapters/5/sections/2/pages/0/elements/1",
+        "figure_ids": [
+          "p167-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 168,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/sections/2/pages/1/elements/1",
+        "figure_ids": [
+          "p168-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 168,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/5/sections/2/pages/1/elements/2",
+        "figure_ids": [
+          "p168-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 169,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/5/sections/2/pages/2/elements/0",
+        "figure_ids": [
+          "p169-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 169,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/5/sections/2/pages/2/elements/1",
+        "figure_ids": [
+          "p169-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 170,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/sections/2/pages/3/elements/0",
+        "figure_ids": [
+          "p170-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 170,
+        "ref_index": 2,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/sections/2/pages/3/elements/1",
+        "figure_ids": [
+          "p170-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 171,
+        "ref_index": 1,
+        "label": "参考图4",
+        "source_pointer": "/chapters/5/sections/2/pages/4/elements/0",
+        "figure_ids": [
+          "p171-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 171,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/5/sections/2/pages/4/elements/1",
+        "figure_ids": [
+          "p171-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 173,
+        "ref_index": 1,
+        "label": "第4型",
+        "source_pointer": "/chapters/5/sections/3/pages/0/elements/1",
+        "figure_ids": [
+          "p173-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 174,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/5/sections/3/pages/1/elements/1",
+        "figure_ids": [
+          "p174-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 174,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/sections/3/pages/1/elements/2",
+        "figure_ids": [
+          "p174-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 175,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/5/sections/3/pages/2/elements/0",
+        "figure_ids": [
+          "p175-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 175,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/5/sections/3/pages/2/elements/1",
+        "figure_ids": [
+          "p175-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 175,
+        "ref_index": 3,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/sections/3/pages/2/elements/2",
+        "figure_ids": [
+          "p175-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 176,
+        "ref_index": 1,
+        "label": "参考图4",
+        "source_pointer": "/chapters/5/sections/3/pages/3/elements/0",
+        "figure_ids": [
+          "p176-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 176,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/5/sections/3/pages/3/elements/1",
+        "figure_ids": [
+          "p176-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 176,
+        "ref_index": 3,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/sections/3/pages/3/elements/2",
+        "figure_ids": [
+          "p176-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 177,
+        "ref_index": 1,
+        "label": "参考图6",
+        "source_pointer": "/chapters/5/sections/3/pages/4/elements/0",
+        "figure_ids": [
+          "p177-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 177,
+        "ref_index": 2,
+        "label": "参考图7",
+        "source_pointer": "/chapters/5/sections/3/pages/4/elements/1",
+        "figure_ids": [
+          "p177-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 178,
+        "ref_index": 1,
+        "label": "第4图",
+        "source_pointer": "/chapters/5/sections/3/pages/5/elements/0",
+        "figure_ids": [
+          "p178-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 178,
+        "ref_index": 2,
+        "label": "第5图",
+        "source_pointer": "/chapters/5/sections/3/pages/5/elements/1",
+        "figure_ids": [
+          "p178-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 179,
+        "ref_index": 1,
+        "label": "第5型",
+        "source_pointer": "/chapters/5/sections/4/pages/0/elements/1",
+        "figure_ids": [
+          "p179-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 180,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/5/sections/4/pages/1/elements/1",
+        "figure_ids": [
+          "p180-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 180,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/5/sections/4/pages/1/elements/2",
+        "figure_ids": [
+          "p180-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 181,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/sections/4/pages/2/elements/0",
+        "figure_ids": [
+          "p181-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 181,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/sections/4/pages/2/elements/1",
+        "figure_ids": [
+          "p181-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 182,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/sections/4/pages/3/elements/0",
+        "figure_ids": [
+          "p182-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 182,
+        "ref_index": 2,
+        "label": "第4图",
+        "source_pointer": "/chapters/5/sections/4/pages/3/elements/1",
+        "figure_ids": [
+          "p182-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 183,
+        "ref_index": 1,
+        "label": "第6型",
+        "source_pointer": "/chapters/5/sections/5/pages/0/elements/1",
+        "figure_ids": [
+          "p183-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 184,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/5/sections/5/pages/1/elements/1",
+        "figure_ids": [
+          "p184-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 184,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/5/sections/5/pages/1/elements/2",
+        "figure_ids": [
+          "p184-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 185,
+        "ref_index": 1,
+        "label": "参考图3",
+        "source_pointer": "/chapters/5/sections/5/pages/2/elements/0",
+        "figure_ids": [
+          "p185-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 185,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/sections/5/pages/2/elements/1",
+        "figure_ids": [
+          "p185-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 186,
+        "ref_index": 1,
+        "label": "参考图4",
+        "source_pointer": "/chapters/5/sections/5/pages/3/elements/0",
+        "figure_ids": [
+          "p186-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 186,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/sections/5/pages/3/elements/1",
+        "figure_ids": [
+          "p186-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 187,
+        "ref_index": 1,
+        "label": "参考图5",
+        "source_pointer": "/chapters/5/sections/5/pages/4/elements/0",
+        "figure_ids": [
+          "p187-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 187,
+        "ref_index": 2,
+        "label": "参考图6",
+        "source_pointer": "/chapters/5/sections/5/pages/4/elements/1",
+        "figure_ids": [
+          "p187-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 188,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/sections/5/pages/5/elements/0",
+        "figure_ids": [
+          "p188-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 188,
+        "ref_index": 2,
+        "label": "参考图7",
+        "source_pointer": "/chapters/5/sections/5/pages/5/elements/1",
+        "figure_ids": [
+          "p188-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 189,
+        "ref_index": 1,
+        "label": "第7型",
+        "source_pointer": "/chapters/5/sections/6/pages/0/elements/2",
+        "figure_ids": [
+          "p189-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 190,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/5/sections/6/pages/1/elements/1",
+        "figure_ids": [
+          "p190-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 190,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/sections/6/pages/1/elements/2",
+        "figure_ids": [
+          "p190-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 191,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/sections/6/pages/2/elements/0",
+        "figure_ids": [
+          "p191-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 191,
+        "ref_index": 2,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/sections/6/pages/2/elements/1",
+        "figure_ids": [
+          "p191-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 192,
+        "ref_index": 1,
+        "label": "第4图",
+        "source_pointer": "/chapters/5/sections/6/pages/3/elements/0",
+        "figure_ids": [
+          "p192-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 192,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/5/sections/6/pages/3/elements/1",
+        "figure_ids": [
+          "p192-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 193,
+        "ref_index": 1,
+        "label": "第8型",
+        "source_pointer": "/chapters/5/sections/7/pages/0/elements/2",
+        "figure_ids": [
+          "p193-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 194,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/5/sections/7/pages/1/elements/1",
+        "figure_ids": [
+          "p194-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 194,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/5/sections/7/pages/1/elements/2",
+        "figure_ids": [
+          "p194-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 195,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/sections/7/pages/2/elements/0",
+        "figure_ids": [
+          "p195-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 195,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/5/sections/7/pages/2/elements/1",
+        "figure_ids": [
+          "p195-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 196,
+        "ref_index": 1,
+        "label": "参考图4",
+        "source_pointer": "/chapters/5/sections/7/pages/3/elements/0",
+        "figure_ids": [
+          "p196-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 196,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/5/sections/7/pages/3/elements/1",
+        "figure_ids": [
+          "p196-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 197,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/sections/7/pages/4/elements/0",
+        "figure_ids": [
+          "p197-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 197,
+        "ref_index": 2,
+        "label": "参考图6",
+        "source_pointer": "/chapters/5/sections/7/pages/4/elements/1",
+        "figure_ids": [
+          "p197-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 198,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/sections/7/pages/5/elements/0",
+        "figure_ids": [
+          "p198-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 198,
+        "ref_index": 2,
+        "label": "第4图",
+        "source_pointer": "/chapters/5/sections/7/pages/5/elements/1",
+        "figure_ids": [
+          "p198-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 199,
+        "ref_index": 1,
+        "label": "第9型",
+        "source_pointer": "/chapters/5/sections/8/pages/0/elements/2",
+        "figure_ids": [
+          "p199-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 200,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/5/sections/8/pages/1/elements/1",
+        "figure_ids": [
+          "p200-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 200,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/5/sections/8/pages/1/elements/2",
+        "figure_ids": [
+          "p200-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 201,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/sections/8/pages/2/elements/0",
+        "figure_ids": [
+          "p201-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 201,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/sections/8/pages/2/elements/1",
+        "figure_ids": [
+          "p201-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 202,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/sections/8/pages/3/elements/0",
+        "figure_ids": [
+          "p202-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 202,
+        "ref_index": 2,
+        "label": "第4图",
+        "source_pointer": "/chapters/5/sections/8/pages/3/elements/1",
+        "figure_ids": [
+          "p202-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 203,
+        "ref_index": 1,
+        "label": "第10型",
+        "source_pointer": "/chapters/5/sections/9/pages/0/elements/2",
+        "figure_ids": [
+          "p203-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 204,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/5/sections/9/pages/1/elements/1",
+        "figure_ids": [
+          "p204-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 204,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/5/sections/9/pages/1/elements/2",
+        "figure_ids": [
+          "p204-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 205,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/5/sections/9/pages/2/elements/0",
+        "figure_ids": [
+          "p205-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 205,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/5/sections/9/pages/2/elements/1",
+        "figure_ids": [
+          "p205-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 205,
+        "ref_index": 3,
+        "label": "参考图4",
+        "source_pointer": "/chapters/5/sections/9/pages/2/elements/2",
+        "figure_ids": [
+          "p205-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 206,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/5/sections/9/pages/3/elements/0",
+        "figure_ids": [
+          "p206-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 206,
+        "ref_index": 2,
+        "label": "参考图5",
+        "source_pointer": "/chapters/5/sections/9/pages/3/elements/1",
+        "figure_ids": [
+          "p206-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 207,
+        "ref_index": 1,
+        "label": "参考图6",
+        "source_pointer": "/chapters/5/sections/9/pages/4/elements/0",
+        "figure_ids": [
+          "p207-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 207,
+        "ref_index": 2,
+        "label": "参考图7",
+        "source_pointer": "/chapters/5/sections/9/pages/4/elements/1",
+        "figure_ids": [
+          "p207-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 207,
+        "ref_index": 3,
+        "label": "第3图",
+        "source_pointer": "/chapters/5/sections/9/pages/4/elements/2",
+        "figure_ids": [
+          "p207-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 208,
+        "ref_index": 1,
+        "label": "第4图",
+        "source_pointer": "/chapters/5/sections/9/pages/5/elements/0",
+        "figure_ids": [
+          "p208-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 211,
+        "ref_index": 1,
+        "label": "第1型",
+        "source_pointer": "/chapters/6/sections/0/pages/0/elements/2",
+        "figure_ids": [
+          "p211-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 212,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/6/sections/0/pages/1/elements/1",
+        "figure_ids": [
+          "p212-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 212,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/6/sections/0/pages/1/elements/2",
+        "figure_ids": [
+          "p212-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 213,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/6/sections/0/pages/2/elements/0",
+        "figure_ids": [
+          "p213-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 213,
+        "ref_index": 2,
+        "label": "第3图",
+        "source_pointer": "/chapters/6/sections/0/pages/2/elements/1",
+        "figure_ids": [
+          "p213-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 214,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/6/sections/0/pages/3/elements/0",
+        "figure_ids": [
+          "p214-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 214,
+        "ref_index": 2,
+        "label": "参考图3",
+        "source_pointer": "/chapters/6/sections/0/pages/3/elements/1",
+        "figure_ids": [
+          "p214-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 215,
+        "ref_index": 1,
+        "label": "第2型",
+        "source_pointer": "/chapters/6/sections/1/pages/0/elements/1",
+        "figure_ids": [
+          "p215-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 216,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/6/sections/1/pages/1/elements/1",
+        "figure_ids": [
+          "p216-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 216,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/6/sections/1/pages/1/elements/2",
+        "figure_ids": [
+          "p216-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 217,
+        "ref_index": 1,
+        "label": "参考图3",
+        "source_pointer": "/chapters/6/sections/1/pages/2/elements/0",
+        "figure_ids": [
+          "p217-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 217,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/6/sections/1/pages/2/elements/2",
+        "figure_ids": [
+          "p217-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 218,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/6/sections/1/pages/3/elements/0",
+        "figure_ids": [
+          "p218-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 218,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/6/sections/1/pages/3/elements/1",
+        "figure_ids": [
+          "p218-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 219,
+        "ref_index": 1,
+        "label": "参考图5",
+        "source_pointer": "/chapters/6/sections/1/pages/4/elements/0",
+        "figure_ids": [
+          "p219-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 219,
+        "ref_index": 2,
+        "label": "第3图",
+        "source_pointer": "/chapters/6/sections/1/pages/4/elements/1",
+        "figure_ids": [
+          "p219-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 220,
+        "ref_index": 1,
+        "label": "参考图6",
+        "source_pointer": "/chapters/6/sections/1/pages/5/elements/0",
+        "figure_ids": [
+          "p220-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 220,
+        "ref_index": 2,
+        "label": "第4图",
+        "source_pointer": "/chapters/6/sections/1/pages/5/elements/1",
+        "figure_ids": [
+          "p220-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 221,
+        "ref_index": 1,
+        "label": "第3型",
+        "source_pointer": "/chapters/6/sections/2/pages/0/elements/1",
+        "figure_ids": [
+          "p221-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 222,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/6/sections/2/pages/1/elements/1",
+        "figure_ids": [
+          "p222-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 222,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/6/sections/2/pages/1/elements/2",
+        "figure_ids": [
+          "p222-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 223,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/6/sections/2/pages/2/elements/0",
+        "figure_ids": [
+          "p223-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 223,
+        "ref_index": 2,
+        "label": "参考图1",
+        "source_pointer": "/chapters/6/sections/2/pages/2/elements/1",
+        "figure_ids": [
+          "p223-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 223,
+        "ref_index": 3,
+        "label": "参考图2",
+        "source_pointer": "/chapters/6/sections/2/pages/2/elements/2",
+        "figure_ids": [
+          "p223-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 224,
+        "ref_index": 1,
+        "label": "参考图3",
+        "source_pointer": "/chapters/6/sections/2/pages/3/elements/0",
+        "figure_ids": [
+          "p224-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 224,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/6/sections/2/pages/3/elements/1",
+        "figure_ids": [
+          "p224-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 225,
+        "ref_index": 1,
+        "label": "第4型",
+        "source_pointer": "/chapters/6/sections/3/pages/0/elements/1",
+        "figure_ids": [
+          "p225-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 226,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/6/sections/3/pages/1/elements/1",
+        "figure_ids": [
+          "p226-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 226,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/6/sections/3/pages/1/elements/2",
+        "figure_ids": [
+          "p226-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 227,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/6/sections/3/pages/2/elements/0",
+        "figure_ids": [
+          "p227-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 227,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/6/sections/3/pages/2/elements/1",
+        "figure_ids": [
+          "p227-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 227,
+        "ref_index": 3,
+        "label": "参考图3",
+        "source_pointer": "/chapters/6/sections/3/pages/2/elements/3",
+        "figure_ids": [
+          "p227-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 228,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/6/sections/3/pages/3/elements/0",
+        "figure_ids": [
+          "p228-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 228,
+        "ref_index": 2,
+        "label": "参考图4",
+        "source_pointer": "/chapters/6/sections/3/pages/3/elements/1",
+        "figure_ids": [
+          "p228-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 228,
+        "ref_index": 3,
+        "label": "参考图5",
+        "source_pointer": "/chapters/6/sections/3/pages/3/elements/2",
+        "figure_ids": [
+          "p228-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 229,
+        "ref_index": 1,
+        "label": "第4图",
+        "source_pointer": "/chapters/6/sections/3/pages/4/elements/1",
+        "figure_ids": [
+          "p229-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 229,
+        "ref_index": 2,
+        "label": "参考图6",
+        "source_pointer": "/chapters/6/sections/3/pages/4/elements/2",
+        "figure_ids": [
+          "p229-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 229,
+        "ref_index": 3,
+        "label": "参考图7",
+        "source_pointer": "/chapters/6/sections/3/pages/4/elements/3",
+        "figure_ids": [
+          "p229-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 230,
+        "ref_index": 1,
+        "label": "参考图8",
+        "source_pointer": "/chapters/6/sections/3/pages/5/elements/0",
+        "figure_ids": [
+          "p230-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 230,
+        "ref_index": 2,
+        "label": "第5图",
+        "source_pointer": "/chapters/6/sections/3/pages/5/elements/1",
+        "figure_ids": [
+          "p230-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 231,
+        "ref_index": 1,
+        "label": "第5型",
+        "source_pointer": "/chapters/6/sections/4/pages/0/elements/1",
+        "figure_ids": [
+          "p231-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 232,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/6/sections/4/pages/1/elements/1",
+        "figure_ids": [
+          "p232-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 232,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/6/sections/4/pages/1/elements/2",
+        "figure_ids": [
+          "p232-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 233,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/6/sections/4/pages/2/elements/0",
+        "figure_ids": [
+          "p233-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 233,
+        "ref_index": 2,
+        "label": "第4图",
+        "source_pointer": "/chapters/6/sections/4/pages/2/elements/1",
+        "figure_ids": [
+          "p233-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 234,
+        "ref_index": 1,
+        "label": "第5图",
+        "source_pointer": "/chapters/6/sections/4/pages/3/elements/0",
+        "figure_ids": [
+          "p234-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 234,
+        "ref_index": 2,
+        "label": "第6图",
+        "source_pointer": "/chapters/6/sections/4/pages/3/elements/1",
+        "figure_ids": [
+          "p234-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 235,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/6/sections/4/pages/4/elements/0",
+        "figure_ids": [
+          "p235-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 235,
+        "ref_index": 2,
+        "label": "第7图",
+        "source_pointer": "/chapters/6/sections/4/pages/4/elements/1",
+        "figure_ids": [
+          "p235-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 236,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/6/sections/4/pages/5/elements/0",
+        "figure_ids": [
+          "p236-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 236,
+        "ref_index": 2,
+        "label": "第8图",
+        "source_pointer": "/chapters/6/sections/4/pages/5/elements/1",
+        "figure_ids": [
+          "p236-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 237,
+        "ref_index": 1,
+        "label": "第6型",
+        "source_pointer": "/chapters/6/sections/5/pages/0/elements/1",
+        "figure_ids": [
+          "p237-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 238,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/6/sections/5/pages/1/elements/1",
+        "figure_ids": [
+          "p238-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 238,
+        "ref_index": 2,
+        "label": "参考图2",
+        "source_pointer": "/chapters/6/sections/5/pages/1/elements/2",
+        "figure_ids": [
+          "p238-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 238,
+        "ref_index": 3,
+        "label": "参考图3",
+        "source_pointer": "/chapters/6/sections/5/pages/1/elements/3",
+        "figure_ids": [
+          "p238-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 239,
+        "ref_index": 1,
+        "label": "参考图4",
+        "source_pointer": "/chapters/6/sections/5/pages/2/elements/0",
+        "figure_ids": [
+          "p239-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 239,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/6/sections/5/pages/2/elements/2",
+        "figure_ids": [
+          "p239-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 241,
+        "ref_index": 1,
+        "label": "第7型",
+        "source_pointer": "/chapters/6/sections/6/pages/0/elements/1",
+        "figure_ids": [
+          "p241-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 242,
+        "ref_index": 1,
+        "label": "参考图1",
+        "source_pointer": "/chapters/6/sections/6/pages/1/elements/1",
+        "figure_ids": [
+          "p242-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 242,
+        "ref_index": 2,
+        "label": "第1图",
+        "source_pointer": "/chapters/6/sections/6/pages/1/elements/2",
+        "figure_ids": [
+          "p242-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 243,
+        "ref_index": 1,
+        "label": "参考图2",
+        "source_pointer": "/chapters/6/sections/6/pages/2/elements/0",
+        "figure_ids": [
+          "p243-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 243,
+        "ref_index": 2,
+        "label": "第2图",
+        "source_pointer": "/chapters/6/sections/6/pages/2/elements/1",
+        "figure_ids": [
+          "p243-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 244,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/6/sections/6/pages/3/elements/0",
+        "figure_ids": [
+          "p244-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 244,
+        "ref_index": 2,
+        "label": "第4图",
+        "source_pointer": "/chapters/6/sections/6/pages/3/elements/1",
+        "figure_ids": [
+          "p244-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 245,
+        "ref_index": 1,
+        "label": "第1题",
+        "source_pointer": "/chapters/7/sections/0/pages/0/elements/0",
+        "figure_ids": [
+          "p245-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 246,
+        "ref_index": 1,
+        "label": "失败图1",
+        "source_pointer": "/chapters/7/sections/0/pages/1/elements/1",
+        "figure_ids": [
+          "p246-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 246,
+        "ref_index": 2,
+        "label": "失败图2",
+        "source_pointer": "/chapters/7/sections/0/pages/1/elements/2",
+        "figure_ids": [
+          "p246-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 246,
+        "ref_index": 3,
+        "label": "失败图3",
+        "source_pointer": "/chapters/7/sections/0/pages/1/elements/3",
+        "figure_ids": [
+          "p246-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 246,
+        "ref_index": 4,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/0/pages/1/elements/4",
+        "figure_ids": [
+          "p246-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 247,
+        "ref_index": 1,
+        "label": "第2题",
+        "source_pointer": "/chapters/7/sections/1/pages/0/elements/1",
+        "figure_ids": [
+          "p247-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 247,
+        "ref_index": 2,
+        "label": "第3题",
+        "source_pointer": "/chapters/7/sections/2/pages/0/elements/1",
+        "figure_ids": [
+          "p247-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 248,
+        "ref_index": 1,
+        "label": "失败图",
+        "source_pointer": "/chapters/7/sections/1/pages/1/elements/1",
+        "figure_ids": [
+          "p248-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 248,
+        "ref_index": 2,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/1/pages/1/elements/2",
+        "figure_ids": [
+          "p248-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 248,
+        "ref_index": 3,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/2/pages/1/elements/1",
+        "figure_ids": [
+          "p248-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 248,
+        "ref_index": 4,
+        "label": "失败图",
+        "source_pointer": "/chapters/7/sections/2/pages/1/elements/2",
+        "figure_ids": [
+          "p248-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 249,
+        "ref_index": 1,
+        "label": "第4题",
+        "source_pointer": "/chapters/7/sections/3/pages/0/elements/1",
+        "figure_ids": [
+          "p249-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 250,
+        "ref_index": 1,
+        "label": "失败图",
+        "source_pointer": "/chapters/7/sections/3/pages/1/elements/1",
+        "figure_ids": [
+          "p250-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 250,
+        "ref_index": 2,
+        "label": "正解图1",
+        "source_pointer": "/chapters/7/sections/3/pages/1/elements/2",
+        "figure_ids": [
+          "p250-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 250,
+        "ref_index": 3,
+        "label": "正解图2",
+        "source_pointer": "/chapters/7/sections/3/pages/1/elements/3",
+        "figure_ids": [
+          "p250-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 250,
+        "ref_index": 4,
+        "label": "正解图3",
+        "source_pointer": "/chapters/7/sections/3/pages/1/elements/4",
+        "figure_ids": [
+          "p250-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 251,
+        "ref_index": 1,
+        "label": "第5题",
+        "source_pointer": "/chapters/7/sections/4/pages/0/elements/1",
+        "figure_ids": [
+          "p251-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 251,
+        "ref_index": 2,
+        "label": "第6题",
+        "source_pointer": "/chapters/7/sections/5/pages/0/elements/1",
+        "figure_ids": [
+          "p251-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 252,
+        "ref_index": 1,
+        "label": "失败图",
+        "source_pointer": "/chapters/7/sections/4/pages/1/elements/1",
+        "figure_ids": [
+          "p252-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 252,
+        "ref_index": 2,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/4/pages/1/elements/2",
+        "figure_ids": [
+          "p252-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 252,
+        "ref_index": 3,
+        "label": "失败图",
+        "source_pointer": "/chapters/7/sections/5/pages/1/elements/1",
+        "figure_ids": [
+          "p252-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 252,
+        "ref_index": 4,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/5/pages/1/elements/2",
+        "figure_ids": [
+          "p252-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 253,
+        "ref_index": 1,
+        "label": "第7题",
+        "source_pointer": "/chapters/7/sections/6/pages/0/elements/1",
+        "figure_ids": [
+          "p253-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 254,
+        "ref_index": 1,
+        "label": "失败图1",
+        "source_pointer": "/chapters/7/sections/6/pages/1/elements/1",
+        "figure_ids": [
+          "p254-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 254,
+        "ref_index": 2,
+        "label": "失败图2",
+        "source_pointer": "/chapters/7/sections/6/pages/1/elements/2",
+        "figure_ids": [
+          "p254-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 254,
+        "ref_index": 3,
+        "label": "失败图3",
+        "source_pointer": "/chapters/7/sections/6/pages/1/elements/3",
+        "figure_ids": [
+          "p254-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 254,
+        "ref_index": 4,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/6/pages/1/elements/4",
+        "figure_ids": [
+          "p254-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 255,
+        "ref_index": 1,
+        "label": "第8题",
+        "source_pointer": "/chapters/7/sections/7/pages/0/elements/1",
+        "figure_ids": [
+          "p255-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 255,
+        "ref_index": 2,
+        "label": "第9题",
+        "source_pointer": "/chapters/7/sections/8/pages/0/elements/1",
+        "figure_ids": [
+          "p255-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 256,
+        "ref_index": 1,
+        "label": "失败图",
+        "source_pointer": "/chapters/7/sections/7/pages/1/elements/1",
+        "figure_ids": [
+          "p256-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 256,
+        "ref_index": 2,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/7/pages/1/elements/2",
+        "figure_ids": [
+          "p256-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 256,
+        "ref_index": 3,
+        "label": "失败图",
+        "source_pointer": "/chapters/7/sections/8/pages/1/elements/1",
+        "figure_ids": [
+          "p256-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 256,
+        "ref_index": 4,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/8/pages/1/elements/2",
+        "figure_ids": [
+          "p256-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 257,
+        "ref_index": 1,
+        "label": "第10题",
+        "source_pointer": "/chapters/7/sections/9/pages/0/elements/1",
+        "figure_ids": [
+          "p257-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 258,
+        "ref_index": 1,
+        "label": "失败图1",
+        "source_pointer": "/chapters/7/sections/9/pages/1/elements/1",
+        "figure_ids": [
+          "p258-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 258,
+        "ref_index": 2,
+        "label": "失败图2",
+        "source_pointer": "/chapters/7/sections/9/pages/1/elements/2",
+        "figure_ids": [
+          "p258-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 258,
+        "ref_index": 3,
+        "label": "正解图1",
+        "source_pointer": "/chapters/7/sections/9/pages/1/elements/3",
+        "figure_ids": [
+          "p258-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 258,
+        "ref_index": 4,
+        "label": "正解图2",
+        "source_pointer": "/chapters/7/sections/9/pages/1/elements/4",
+        "figure_ids": [
+          "p258-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 259,
+        "ref_index": 1,
+        "label": "第11题",
+        "source_pointer": "/chapters/7/sections/10/pages/0/elements/1",
+        "figure_ids": [
+          "p259-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 259,
+        "ref_index": 2,
+        "label": "第12题",
+        "source_pointer": "/chapters/7/sections/11/pages/0/elements/1",
+        "figure_ids": [
+          "p259-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 260,
+        "ref_index": 1,
+        "label": "失败图",
+        "source_pointer": "/chapters/7/sections/10/pages/1/elements/1",
+        "figure_ids": [
+          "p260-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 260,
+        "ref_index": 2,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/10/pages/1/elements/2",
+        "figure_ids": [
+          "p260-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 260,
+        "ref_index": 3,
+        "label": "失败图",
+        "source_pointer": "/chapters/7/sections/11/pages/1/elements/1",
+        "figure_ids": [
+          "p260-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 260,
+        "ref_index": 4,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/11/pages/1/elements/2",
+        "figure_ids": [
+          "p260-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 261,
+        "ref_index": 1,
+        "label": "第13题",
+        "source_pointer": "/chapters/7/sections/12/pages/0/elements/1",
+        "figure_ids": [
+          "p261-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 262,
+        "ref_index": 1,
+        "label": "失败图1",
+        "source_pointer": "/chapters/7/sections/12/pages/1/elements/1",
+        "figure_ids": [
+          "p262-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 262,
+        "ref_index": 2,
+        "label": "失败图2",
+        "source_pointer": "/chapters/7/sections/12/pages/1/elements/2",
+        "figure_ids": [
+          "p262-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 262,
+        "ref_index": 3,
+        "label": "失败图3",
+        "source_pointer": "/chapters/7/sections/12/pages/1/elements/3",
+        "figure_ids": [
+          "p262-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 262,
+        "ref_index": 4,
+        "label": "正解图",
+        "source_pointer": "/chapters/7/sections/12/pages/1/elements/4",
+        "figure_ids": [
+          "p262-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 263,
+        "ref_index": 1,
+        "label": "第14题",
+        "source_pointer": "/chapters/7/sections/13/pages/0/elements/1",
+        "figure_ids": [
+          "p263-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 264,
+        "ref_index": 1,
+        "label": "失败图",
+        "source_pointer": "/chapters/7/sections/13/pages/1/elements/1",
+        "figure_ids": [
+          "p264-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 264,
+        "ref_index": 2,
+        "label": "正解图1",
+        "source_pointer": "/chapters/7/sections/13/pages/1/elements/2",
+        "figure_ids": [
+          "p264-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 264,
+        "ref_index": 3,
+        "label": "正解图2",
+        "source_pointer": "/chapters/7/sections/13/pages/1/elements/3",
+        "figure_ids": [
+          "p264-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 264,
+        "ref_index": 4,
+        "label": "正解图3",
+        "source_pointer": "/chapters/7/sections/13/pages/1/elements/4",
+        "figure_ids": [
+          "p264-f04"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 266,
+        "ref_index": 1,
+        "label": "第1图",
+        "source_pointer": "/chapters/8/sections/0/pages/0/elements/1",
+        "figure_ids": [
+          "p266-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 266,
+        "ref_index": 2,
+        "label": "第1谱(1—21)",
+        "source_pointer": "/chapters/8/sections/0/pages/0/elements/2",
+        "figure_ids": [
+          "p266-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 267,
+        "ref_index": 1,
+        "label": "第2图",
+        "source_pointer": "/chapters/8/sections/1/pages/0/elements/1",
+        "figure_ids": [
+          "p267-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 267,
+        "ref_index": 2,
+        "label": "第2谱(22—50)",
+        "source_pointer": "/chapters/8/sections/1/pages/0/elements/2",
+        "figure_ids": [
+          "p267-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 268,
+        "ref_index": 1,
+        "label": "第3图",
+        "source_pointer": "/chapters/8/sections/2/pages/0/elements/1",
+        "figure_ids": [
+          "p268-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 268,
+        "ref_index": 2,
+        "label": "第3谱(51—56)",
+        "source_pointer": "/chapters/8/sections/2/pages/0/elements/2",
+        "figure_ids": [
+          "p268-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 269,
+        "ref_index": 1,
+        "label": "第4图",
+        "source_pointer": "/chapters/8/sections/3/pages/0/elements/1",
+        "figure_ids": [
+          "p269-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 269,
+        "ref_index": 2,
+        "label": "第4谱(57—66)",
+        "source_pointer": "/chapters/8/sections/3/pages/0/elements/2",
+        "figure_ids": [
+          "p269-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 270,
+        "ref_index": 1,
+        "label": "第5图",
+        "source_pointer": "/chapters/8/sections/4/pages/0/elements/1",
+        "figure_ids": [
+          "p270-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 270,
+        "ref_index": 2,
+        "label": "第5谱(67—75)",
+        "source_pointer": "/chapters/8/sections/4/pages/0/elements/2",
+        "figure_ids": [
+          "p270-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 271,
+        "ref_index": 1,
+        "label": "第6图",
+        "source_pointer": "/chapters/8/sections/5/pages/0/elements/1",
+        "figure_ids": [
+          "p271-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 271,
+        "ref_index": 2,
+        "label": "第6谱(76—78)",
+        "source_pointer": "/chapters/8/sections/5/pages/0/elements/2",
+        "figure_ids": [
+          "p271-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 272,
+        "ref_index": 1,
+        "label": "第7图",
+        "source_pointer": "/chapters/8/sections/5/pages/1/elements/0",
+        "figure_ids": [
+          "p272-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 272,
+        "ref_index": 2,
+        "label": "第8图",
+        "source_pointer": "/chapters/8/sections/5/pages/1/elements/2",
+        "figure_ids": [
+          "p272-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 272,
+        "ref_index": 3,
+        "label": "第9图",
+        "source_pointer": "/chapters/8/sections/5/pages/1/elements/3",
+        "figure_ids": [
+          "p272-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 273,
+        "ref_index": 1,
+        "label": "第10图",
+        "source_pointer": "/chapters/8/sections/6/pages/0/elements/1",
+        "figure_ids": [
+          "p273-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 273,
+        "ref_index": 2,
+        "label": "第7谱(79—100)",
+        "source_pointer": "/chapters/8/sections/6/pages/0/elements/2",
+        "figure_ids": [
+          "p273-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 274,
+        "ref_index": 1,
+        "label": "第8谱(101—118)",
+        "source_pointer": "/chapters/8/sections/7/pages/0/elements/1",
+        "figure_ids": [
+          "p274-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 275,
+        "ref_index": 1,
+        "label": "第11图",
+        "source_pointer": "/chapters/8/sections/8/pages/0/elements/1",
+        "figure_ids": [
+          "p275-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 275,
+        "ref_index": 2,
+        "label": "第9谱(119—130)",
+        "source_pointer": "/chapters/8/sections/8/pages/0/elements/2",
+        "figure_ids": [
+          "p275-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 276,
+        "ref_index": 1,
+        "label": "第12图",
+        "source_pointer": "/chapters/8/sections/9/pages/0/elements/1",
+        "figure_ids": [
+          "p276-f01"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 276,
+        "ref_index": 2,
+        "label": "第13图",
+        "source_pointer": "/chapters/8/sections/9/pages/0/elements/2",
+        "figure_ids": [
+          "p276-f02"
+        ],
+        "status": "covered",
+        "reason": ""
+      },
+      {
+        "page": 276,
+        "ref_index": 3,
+        "label": "第10谱(131—148)",
+        "source_pointer": "/chapters/8/sections/9/pages/0/elements/3",
+        "figure_ids": [
+          "p276-f03"
+        ],
+        "status": "covered",
+        "reason": ""
+      }
+    ],
+    "missing": [],
+    "extras": [],
+    "splits": []
+  },
+  "test_import": {
+    "statuses": {
+      "applied": 529
+    },
+    "rerun_statuses": {
+      "existing": 529
+    },
+    "full_rerun_snapshot_unchanged": true,
+    "unrelated_original_fields_unchanged": true
+  },
+  "review": {
+    "machine_recognition_completed": 529,
+    "human_approvals_granted_this_run": 0,
+    "uncalibrated_current_records": 529,
+    "true_replay_complete_in_new_recognition_results": 0,
+    "current_exported_diagram_playback": {
+      "true_replay": 0,
+      "number_preview": 476,
+      "zero_step_static": 33,
+      "numbering_failed": 20
+    },
+    "sequence_pending_current_records": 529,
+    "uncertain_current_records": 14,
+    "inferred_current_records": 111,
+    "voice_generated_this_run": 0,
+    "video_generated_this_run": 0
+  },
+  "runtime_filters": {
+    "all": 529,
+    "uncalibrated": 529,
+    "uncertainty": 14,
+    "inference": 111,
+    "sequence_pending": 529
+  },
+  "export": {
+    "sgfs_parsed": 529,
+    "index_entries": 529,
+    "skipped": 0,
+    "mapped_candidates": 529,
+    "mapped_diagrams_all_exported": true,
+    "zip_sha256": "f63b3302daf6d46c0febe6befae6d93a134ce69303b7f4c30a36dc0158cbf734",
+    "bytes": 3382153,
+    "single_figure_endpoint_http200_verified": true,
+    "single_figure_example": {
+      "page": 7,
+      "figure_id": 15794
+    }
+  },
+  "browser_acceptance": {
+    "existing_test_url": "http://127.0.0.1:18012/admin?book=34&page=233&figure=16226&filter=all",
+    "full19x19_board_visible": true,
+    "edit_tools_and_cancel_available": true,
+    "no_saved_test_edits_or_human_approval": true,
+    "normal_book_dropdown_entry": {
+      "book_id": 34,
+      "first_page": 1,
+      "cover_image_loaded": true,
+      "source_page_not_found": false
+    },
+    "multiple_figures": {
+      "page": 233,
+      "from_figure_id": 16225,
+      "to_figure_id": 16226,
+      "action": "next figure"
+    },
+    "source_image": {
+      "url": "https://go.sailorvoyage.top/media/tutorial_assets/catalog/sakata-1/fa3f224e3cc3afa8b2cb1222368970cfd20945530c1a2fbdb8bebb4eaedf94cd/page_233.png",
+      "status": 200,
+      "content_type": "image/png",
+      "bytes": 229098,
+      "authorization_header_used": false
+    },
+    "visible_attention_examples": [
+      {
+        "page": 233,
+        "figure_id": 16226,
+        "cell": [
+          3,
+          0
+        ],
+        "type": "marking uncertainty",
+        "candidates": [
+          "triangle",
+          "残缺数字6"
+        ]
+      },
+      {
+        "page": 233,
+        "figure_id": 16226,
+        "cell": [
+          4,
+          3
+        ],
+        "type": "suspected false positive",
+        "candidates": [
+          "white",
+          "empty"
+        ]
+      },
+      {
+        "page": 40,
+        "figure_id": 15870,
+        "cell": [
+          7,
+          4
+        ],
+        "type": "unknown color",
+        "candidates": [
+          "black",
+          "white"
+        ],
+        "number_preview_disabled_with_explanation": true
+      }
+    ],
+    "editor": {
+      "figure_id": 16226,
+      "opened_clean_draft": true,
+      "static_initial_sequence_tools_visible": true,
+      "cancel_clicked": true,
+      "saved": false
+    },
+    "screenshot": "output/playwright/sakata-1-p233-attention.png",
+    "checked_at": "2026-10-18T12:58:33.822660+08:00"
+  },
+  "playback": {
+    "exported_figures": 529,
+    "counts": {
+      "true_replay": 0,
+      "number_preview": 476,
+      "zero_step_static": 33,
+      "numbering_failed": 20
+    },
+    "numbering_failures": [
+      {
+        "figure_id": 15870,
+        "page": 40,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：编号 9（7,4）棋子颜色未知"
+      },
+      {
+        "figure_id": 15922,
+        "page": 74,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 7：6（15,10）与 8（10,13）之间；编号 6（15,10）与 8（10,13）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 15923,
+        "page": 75,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 6：5（15,10）与 7（10,13）之间；编号 5（15,10）与 7（10,13）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 15936,
+        "page": 80,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 7：6（12,1）与 8（11,3）之间；编号 6（12,1）与 8（11,3）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 15988,
+        "page": 101,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 7：6（5,9）与 8（4,13）之间；编号 6（5,9）与 8（4,13）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 16143,
+        "page": 188,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 7：6（8,17）与 8（6,15）之间；编号 6（8,17）与 8（6,15）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 16202,
+        "page": 222,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（6,2）与 5（6,5）之间；编号 3（6,2）与 5（6,5）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 16206,
+        "page": 224,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 8：7（9,5）与 9（7,7）之间；编号 7（9,5）与 9（7,7）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 16207,
+        "page": 224,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 5：4（4,4）与 6（6,7）之间；编号 4（4,4）与 6（6,7）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 16224,
+        "page": 232,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（8,0）与 5（7,13）之间；编号 3（8,0）与 5（7,13）同为白棋，须黑白交替；缺少编号 7：6（5,13）与 8（10,7）之间；编号 6（5,13）与 8（10,7）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 16225,
+        "page": 233,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 5：4（6,5）与 6（12,9）之间；编号 4（6,5）与 6（12,9）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 16226,
+        "page": 233,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 6：5（10,2）与 7（5,7）之间；编号 5（10,2）与 7（5,7）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 16250,
+        "page": 246,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 6：5（0,2）与 7（1,1）之间；编号 5（0,2）与 7（1,1）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 16259,
+        "page": 250,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 6：5（8,1）与 7（9,0）之间；编号 5（8,1）与 7（9,0）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 16277,
+        "page": 256,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 7：6（15,18）与 8（18,17）之间；编号 6（15,18）与 8（18,17）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 16275,
+        "page": 256,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 8：7（0,5）与 9（5,0）之间；编号 7（0,5）与 9（5,0）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 16298,
+        "page": 264,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 4：3（3,3）与 5（9,1）之间；编号 3（3,3）与 5（9,1）同为黑棋，须黑白交替"
+      },
+      {
+        "figure_id": 16303,
+        "page": 267,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 35：34（17,12）与 36（10,14）之间；编号 34（17,12）与 36（10,14）同为白棋，须黑白交替；缺少编号 43：42（10,13）与 44（16,10）之间；编号 42（10,13）与 44（16,10）同为白棋，须黑白交替；缺少编号 45：44（16,10）与 46（18,15）之间；编号 44（16,10）与 46（18,15）同为白棋，须黑白交替；缺少编号 47：46（18,15）与 48（18,14）之间；编号 46（18,15）与 48（18,14）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 16307,
+        "page": 269,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 59：58（12,8）与 60（10,10）之间；编号 58（12,8）与 60（10,10）同为白棋，须黑白交替"
+      },
+      {
+        "figure_id": 16316,
+        "page": 273,
+        "version_kind": "current",
+        "replay_status": "needs_calibration",
+        "mode": "numbering_failed",
+        "total_steps": 0,
+        "numbering_valid": false,
+        "message": "编号校验未通过：缺少编号 81–87：80（3,16）与 88（1,13）之间；编号 80（3,16）与 88（1,13）同为白棋，须黑白交替；缺少编号 89–93：88（1,13）与 94（2,9）之间；编号 88（1,13）与 94（2,9）同为白棋，须黑白交替；缺少编号 95–97：94（2,9）与 98（8,17）之间；编号 94（2,9）与 98（8,17）同为白棋，须黑白交替；缺少编号 99：98（8,17）与 100（10,3）之间；编号 98（8,17）与 100（10,3）同为白棋，须黑白交替"
+      }
+    ]
+  },
+  "test_provider_build": "f671f20f6f31c03f25b0f5bd73e0afe73036b6bd",
+  "links": {
+    "book": "http://127.0.0.1:18012/admin?book=34&page=7&figure=15794&filter=all",
+    "uncertainty": "http://127.0.0.1:18012/admin?book=34&page=40&figure=15870&filter=uncertainty",
+    "inference": "http://127.0.0.1:18012/admin?book=34&page=11&figure=15802&filter=inference",
+    "unknown_color": "http://127.0.0.1:18012/admin?book=34&page=40&figure=15870&filter=uncertainty",
+    "origin_uncertain": "http://127.0.0.1:18012/admin?book=34&page=83&figure=15945&filter=uncertainty"
+  },
+  "artifacts": {
+    "figure_map": "sakata-1-recognition-figure-map.csv",
+    "issues": "sakata-1-issues.json",
+    "zip": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/sakata-1/exports/sakata-1.zip",
+    "source_index": "/Users/fan/.local/share/smartbox-admin/curriculum-recognition-20261017/sakata-1/exports/index.json",
+    "recognition_results": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/sakata-1/results.json",
+    "audit": "/Users/fan/Repositories/go-topic-collections/curriculum/recognition-comparison/curriculum-gpt61sol-v1/sakata-1/audit.json"
+  },
+  "notes": [
+    "Machine validation and Astra engineering review do not grant human content approval.",
+    "Independent diagrams are exported separately; incomplete sequences remain static and await calibration.",
+    "PDF71 printed 参考图1 / canonical prose 参考图2 is a source caption conflict; approved four-field source binding preserved original payload/raw.",
+    "PDF223 repeated printed 参考图1 corresponds to distinct canonical references 1/2/3; actual original recognition bindings already correct.",
+    "PDF247/251/255/259 each share one physical full-board grid for two independent logical tasks; relevant distant stones retained and no second coordinate offset.",
+    "Seven unknown-color points remain explicit: one on PDF40 and six on PDF273."
+  ],
+  "completed_at": "2026-10-18T12:58:33.892931+08:00",
+  "export_payload_equality": {
+    "figures_compared": 529,
+    "export_json_exact_db_payload": true,
+    "all_sgf_setup_stones_exact_db": true,
+    "unknown_color_points_retained_in_json": 7,
+    "zip_sha256": "f63b3302daf6d46c0febe6befae6d93a134ce69303b7f4c30a36dc0158cbf734"
+  },
+  "coverage_notes": "sakata-1-coverage-notes.md"
+}

@@ -154,7 +154,49 @@ def validate_research(record):
             raise ValueError("raw title slots must be sorted exact current occurrences")
     elif "raw_scope" in record:
         raise ValueError("entity name cannot claim raw scope")
+    if "incremental_binding" in record:
+        _validate_incremental_binding(record)
     return record
+
+
+def _validate_incremental_binding(record):
+    """Keep external text approval distinct from deterministic target-ID binding."""
+    from katrain.kifu_ingest.catalog import BINDING_VERSION, validate_decision
+    from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS
+
+    binding = record["incremental_binding"]
+    if not (isinstance(binding, dict) and binding.get("version") == BINDING_VERSION
+            and _HASH.fullmatch(str(binding.get("manifest_sha256", "")))):
+        raise ValueError("incremental binding version or manifest hash invalid")
+    if binding.get("mode") == "qualified_scope_renewal":
+        prior = binding.get("prior_candidate")
+        if not (binding.get("binding_actor") == "kifu-deterministic-scope-binding-v1"
+                and _HASH.fullmatch(str(binding.get("prior_evidence_sha256", "")))
+                and _HASH.fullmatch(str(binding.get("prior_research_sha256", "")))
+                and isinstance(prior, dict) and prior.get("owner") == record["owner"]
+                and prior.get("lang") == record["lang"] and prior.get("display_name") == record["candidate_name"]):
+            raise ValueError("incremental renewal must preserve a pinned prior display")
+        return
+    if binding.get("mode") != "reviewed_text" or binding.get("binding_actor") != "kifu-deterministic-id-binding-v1":
+        raise ValueError("incremental binding mode invalid")
+    decision = validate_decision(binding.get("decision"))
+    lang = record["lang"]
+    if not (decision["kind"] == record["owner"]["kind"] and decision["key"] == record["original_name"]
+            and decision["displays"][lang] == record["candidate_name"]
+            and decision["original_language"] == record["original_language"]
+            and decision["methods"][lang] == record["generation"]["method"]
+            and decision["sources"] == record.get("sources")
+            and decision["producer"]["id"] == record["producer_id"]
+            and decision["producer"]["model"] == record["producer_model"]):
+        raise ValueError("incremental research differs from reviewed text or sources")
+    members = binding.get("bound_members")
+    if not (isinstance(members, list) and len(members) == len(decision["source_items"])
+            and all(isinstance(row, dict) and set(row) == {"album_id", "slot", "context"}
+                    and type(row["album_id"]) is int and row["album_id"] > 0
+                    and row["slot"] in {"black", "white", "event"}
+                    and isinstance(row["context"], dict) and set(row["context"]) == set(CONTEXT_FIELDS)
+                    for row in members)):
+        raise ValueError("incremental binding needs exact local source members")
 
 
 def raw_scope_rows(conn, raw):
@@ -389,6 +431,21 @@ def validate_candidate(row, research, shared_displays=()):
                 "owner", "lang", "display_name", "research_sha256", "reviewer_id",
                 "reviewer_model", "reviewed_at"))):
         raise ValueError("first pass needs exact independent display/source approval")
+    binding = research.get("incremental_binding")
+    if isinstance(binding, dict):
+        if binding.get("mode") == "reviewed_text":
+            approved = binding["decision"]["review"]
+            if (row["reviewer_id"] != approved["id"] or row["reviewer_model"] != approved["model"]
+                    or row["reviewed_at"] != approved["at"]):
+                raise ValueError("incremental candidate differs from actual text reviewer")
+        else:
+            from katrain.web.kifu.name_candidates import canonical_sha256
+            marker = row.get("first_pass_correction", {})
+            if (marker.get("prior_evidence_sha256") != binding.get("prior_evidence_sha256")
+                    or marker.get("prior_candidate_sha256") != canonical_sha256(binding.get("prior_candidate"))
+                    or row.get("producer_model") != "deterministic-code"
+                    or row.get("reviewer_model") != "deterministic-code"):
+                raise ValueError("incremental renewal differs from deterministic prior proof")
     return row
 
 

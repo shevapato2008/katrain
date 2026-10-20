@@ -1,0 +1,295 @@
+[
+  {
+    "recognition_id": "p017-f02",
+    "page": 17,
+    "source_pointer": "/chapters/1/sections/0/pages/3/elements/2",
+    "figure_id": 15469,
+    "candidate_id": 1931,
+    "uncertainties": [
+      {
+        "at": "右下角破损区",
+        "reason": "扫描污损遮蔽部分交点；仅记录可辨认棋子，无法排除另有被遮蔽棋子。",
+        "candidates": [
+          "无其他棋子",
+          "另有被遮蔽棋子"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p033-f01",
+    "page": 33,
+    "source_pointer": "/chapters/1/sections/3/pages/5/elements/1",
+    "figure_id": 15489,
+    "candidate_id": 1951,
+    "uncertainties": [
+      {
+        "at": "14,2",
+        "reason": "此处上下的竖排印迹模糊，无法辨认文字；未见明确棋子轮廓。",
+        "candidates": [
+          "竖排注记",
+          "透印或污损"
+        ],
+        "cell": "14,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p034-f01",
+    "page": 34,
+    "source_pointer": "/chapters/1/sections/3/pages/6/elements/0",
+    "figure_id": 15492,
+    "candidate_id": 1954,
+    "inferences": [
+      {
+        "at": "2,1",
+        "value": "9",
+        "basis": "combined",
+        "reason": "字迹较淡，残形似9；正文“黑1至白14”及局部其余编号支持黑9。",
+        "cell": "2,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p047-f03",
+    "page": 47,
+    "source_pointer": "/chapters/2/sections/1/pages/1/elements/3",
+    "figure_id": 15521,
+    "candidate_id": 1981,
+    "uncertainties": [
+      {
+        "at": "1,10;7,10",
+        "reason": "下方两星点印在局部第10行，与标准星位间隔不符；保留实际网格。",
+        "candidates": [],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p055-f01",
+    "page": 55,
+    "source_pointer": "/chapters/2/sections/1/pages/9/elements/1",
+    "figure_id": 15535,
+    "candidate_id": 1995,
+    "inferences": [
+      {
+        "at": "16,8",
+        "value": "6",
+        "basis": "combined",
+        "reason": "数字上部污损；结合残存字形、正文“黑应以黑6”及白5、白7间的次序辨认为6。",
+        "cell": "16,8"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p070-f01",
+    "page": 70,
+    "source_pointer": "/chapters/2/sections/2/pages/2/elements/0",
+    "figure_id": 15561,
+    "candidate_id": 2021,
+    "uncertainties": [
+      {
+        "at": "5,13",
+        "reason": "黑3右侧有不规则墨迹，无棋子圆形轮廓；疑为印刷污损，未计入标记。",
+        "candidates": [
+          "印刷污损",
+          "cross"
+        ],
+        "cell": "14,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p111-f01",
+    "page": 111,
+    "source_pointer": "/chapters/3/sections/2/pages/5/elements/1",
+    "figure_id": 15637,
+    "candidate_id": 2097,
+    "inferences": [
+      {
+        "at": "7,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "目标数字淡损，全页图及正文“黑1的拆”共同确认。",
+        "cell": "16,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p116-f01",
+    "page": 116,
+    "source_pointer": "/chapters/3/sections/2/pages/10/elements/0",
+    "figure_id": 15648,
+    "candidate_id": 2108,
+    "inferences": [
+      {
+        "at": "7,10",
+        "value": "1",
+        "basis": "combined",
+        "reason": "目标图数字残缺；全页19图可辨为1，正文亦明确“黑1拆到这里”。",
+        "cell": "16,10"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p118-f01",
+    "page": 118,
+    "source_pointer": "/chapters/3/sections/2/pages/12/elements/0",
+    "figure_id": 15652,
+    "candidate_id": 2112,
+    "inferences": [
+      {
+        "at": "5,6",
+        "value": "3",
+        "basis": "combined",
+        "reason": "该白子数字污损；正文“至白9”，结合可见白1、黑2及黑4至白9的连续编号，推定为白3。",
+        "cell": "13,6"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p133-f01",
+    "page": 133,
+    "source_pointer": "/chapters/3/sections/3/pages/7/elements/1",
+    "figure_id": 15680,
+    "candidate_id": 2140,
+    "inferences": [
+      {
+        "at": "7,7",
+        "value": "1",
+        "basis": "text",
+        "reason": "目标图数字残缺；正文“15图，黑１逼”及原页同点标号确认是１。",
+        "cell": "16,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p156-f02",
+    "page": 156,
+    "source_pointer": "/chapters/3/sections/4/pages/4/elements/1",
+    "figure_id": 15721,
+    "candidate_id": 2181,
+    "inferences": [
+      {
+        "at": "6,9",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字形较淡；正文“白4则黑5小尖”及其与右下黑子的斜邻关系支持5。",
+        "cell": "15,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p157-f01",
+    "page": 157,
+    "source_pointer": "/chapters/3/sections/4/pages/5/elements/1",
+    "figure_id": 15722,
+    "candidate_id": 2182,
+    "inferences": [
+      {
+        "at": "14,9",
+        "value": "1",
+        "basis": "combined",
+        "reason": "黑子上淡竖笔与1相符；正文明确“在1位跳起”，对应右侧黑子向中腹跳出的此子。",
+        "cell": "14,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p165-f02",
+    "page": 165,
+    "source_pointer": "/chapters/3/sections/4/pages/13/elements/2",
+    "figure_id": 15736,
+    "candidate_id": 2196,
+    "uncertainties": [
+      {
+        "at": "12,13",
+        "reason": "白子内有贯穿棋盘的纵向污损，无法确认是否另有编号。",
+        "candidates": [
+          "无编号",
+          "编号不可读"
+        ],
+        "cell": "12,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p185-f02",
+    "page": 185,
+    "source_pointer": "/chapters/4/sections/1/pages/5/elements/2",
+    "figure_id": 15771,
+    "candidate_id": 2231,
+    "inferences": [
+      {
+        "at": "1,16",
+        "value": "40",
+        "basis": "combined",
+        "reason": "数字破损；结合残存字形、正文“黑40切断”及此处切断形状判读。",
+        "cell": "1,16"
+      },
+      {
+        "at": "1,17",
+        "value": "42",
+        "basis": "combined",
+        "reason": "末位较模糊；结合残存字形及左下40—46手顺判读。",
+        "cell": "1,17"
+      },
+      {
+        "at": "2,17",
+        "value": "44",
+        "basis": "combined",
+        "reason": "数字有缺损；结合可辨字形及相邻42、白43后的手顺判读。",
+        "cell": "2,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p188-f02",
+    "page": 188,
+    "source_pointer": "/chapters/4/sections/2/pages/2/elements/1",
+    "figure_id": 15777,
+    "candidate_id": 2237,
+    "inferences": [
+      {
+        "at": "12,13",
+        "value": "19",
+        "basis": "combined",
+        "reason": "末位可辨为9，图注限定本谱为10—19，读作19。",
+        "cell": "12,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p193-f02",
+    "page": 193,
+    "source_pointer": "/chapters/4/sections/3/pages/1/elements/2",
+    "figure_id": 15787,
+    "candidate_id": 2247,
+    "inferences": [
+      {
+        "at": "16,14",
+        "value": "19",
+        "basis": "combined",
+        "reason": "该黑子号字严重褪色；结合本谱11—20范围及邻近16、17、18、20的连续着手，推定为19。",
+        "cell": "16,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p196-f01",
+    "page": 196,
+    "source_pointer": "/chapters/4/sections/3/pages/4/elements/0",
+    "figure_id": 15792,
+    "candidate_id": 2252,
+    "inferences": [
+      {
+        "at": "4,10",
+        "value": "1",
+        "basis": "text",
+        "reason": "数字残损，正文“图5，黑1镇”确认此子标为1。",
+        "cell": "12,10"
+      }
+    ]
+  }
+]

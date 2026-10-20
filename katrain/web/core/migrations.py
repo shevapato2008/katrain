@@ -59,7 +59,7 @@ KIFU_CATALOG_TABLES = {
     "kifu_analysis_jobs",
     "kifu_analysis_moves",
 }
-PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | QUOTA_TABLES | KIFU_CATALOG_TABLES | {AI_LADDER_LEGACY_TABLE}
+PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | QUOTA_TABLES | KIFU_CATALOG_TABLES | {AI_LADDER_LEGACY_TABLE, "tutorial_media_tasks", "tutorial_figures"}
 
 KIFU_ALBUM_FKS = {
     "black_player_id": "kifu_players",
@@ -1112,6 +1112,9 @@ def add_missing_columns(engine) -> None:
             existing_cols = {c["name"] for c in inspector.get_columns(table.name)}
             for col in table.columns:
                 if col.name in existing_cols:
+                    continue
+                if table.name == "tutorial_figures" and col.name in {"board_review", "video_2d_review", "video_3d_review"}:
+                    # Server-owned review schema is installed only by migrate_tutorial_reviews.py.
                     continue
                 if table.name == "kifu_albums" and (col.name in KIFU_ALBUM_FKS or col.name == "event_edition_id"):
                     raise RuntimeError("Run migrate_kifu_catalog_schema before adding kifu album columns")

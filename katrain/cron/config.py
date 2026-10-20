@@ -142,5 +142,21 @@ DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
 LLM_MODEL = os.getenv("CRON_LLM_MODEL", "qwen-plus")
 LLM_CONCURRENCY = int(os.getenv("CRON_LLM_CONCURRENCY", "3"))
 
+# Incremental Kifu ingest. Disabled until migration, receiver and credentials are installed.
+KIFU_INGEST_ENABLED = os.getenv("CRON_KIFU_INGEST_ENABLED", "false").lower() == "true"
+KIFU_INGEST_INTERVAL = int(os.getenv("CRON_KIFU_INGEST_INTERVAL", "3600"))
+KIFU_INGEST_STAGING_DIR = os.getenv("CRON_KIFU_INGEST_STAGING_DIR", "/app/data/kifu_ingest")
+KIFU_INGEST_SOURCE_SECONDS = int(os.getenv("CRON_KIFU_INGEST_SOURCE_SECONDS", "1800"))
+KIFU_INGEST_TOTAL_SECONDS = int(os.getenv("CRON_KIFU_INGEST_TOTAL_SECONDS", "3300"))
+KIFU_INGEST_MAX_GAMES = min(100, int(os.getenv("CRON_KIFU_INGEST_MAX_GAMES", "100")))
+KIFU_INGEST_MAX_NEW_NAMES = max(0, min(20, int(os.getenv("CRON_KIFU_INGEST_MAX_NEW_NAMES", "20"))))
+KIFU_INGEST_LLM_ENABLED = os.getenv("CRON_KIFU_INGEST_LLM_ENABLED", "false").lower() == "true"
+KIFU_INGEST_MAX_TOKENS = max(0, int(os.getenv("CRON_KIFU_INGEST_MAX_TOKENS", "0")))
+KIFU_INGEST_TEST_API_URL = os.getenv("CRON_KIFU_INGEST_TEST_API_URL", "http://host.docker.internal:8001")
+KIFU_INGEST_PROD_API_URL = os.getenv("CRON_KIFU_INGEST_PROD_API_URL", "")
+KIFU_INGEST_SSH_HOST = os.getenv("CRON_KIFU_INGEST_SSH_HOST", "")
+KIFU_INGEST_SSH_KEY = os.getenv("CRON_KIFU_INGEST_SSH_KEY", "/run/secrets/kifu_ingest_key")
+KIFU_INGEST_KNOWN_HOSTS = os.getenv("CRON_KIFU_INGEST_KNOWN_HOSTS", "/run/secrets/kifu_ingest_known_hosts")
+
 # Logging
 LOG_LEVEL = os.getenv("CRON_LOG_LEVEL", "INFO")

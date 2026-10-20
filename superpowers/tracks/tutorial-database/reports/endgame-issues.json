@@ -1,0 +1,4705 @@
+[
+  {
+    "recognition_id": "p013-f01",
+    "page": 13,
+    "source_pointer": "/chapters/1/intro/3/elements/1",
+    "figure_id": 29696,
+    "candidate_id": 8561,
+    "inferences": [
+      {
+        "at": "5,3",
+        "value": "1",
+        "basis": "combined",
+        "reason": "中央上方黑子内数字残缺，结合图注“黑1几目”辨为1。",
+        "cell": "14,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p014-f01",
+    "page": 14,
+    "source_pointer": "/chapters/1/intro/4/elements/0",
+    "figure_id": 29698,
+    "candidate_id": 8563,
+    "inferences": [
+      {
+        "at": "5,3",
+        "value": "1",
+        "basis": "combined",
+        "reason": "该黑子内有残淡数字笔画，正文明确称“黑1”，据此辨为1。",
+        "cell": "14,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p014-f03",
+    "page": 14,
+    "source_pointer": "/chapters/1/intro/4/elements/2",
+    "figure_id": 29700,
+    "candidate_id": 8565,
+    "inferences": [
+      {
+        "at": "6,0",
+        "value": "3",
+        "basis": "combined",
+        "reason": "字形较淡；正文明确“黑1、3一路扳粘”，与此处黑棋接粘位置吻合。",
+        "cell": "15,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p014-f04",
+    "page": 14,
+    "source_pointer": "/chapters/1/intro/4/elements/3",
+    "figure_id": 29701,
+    "candidate_id": 8566,
+    "inferences": [
+      {
+        "at": "7,0",
+        "value": "2",
+        "basis": "combined",
+        "reason": "黑子内数字较淡；正文说明白1、3扳粘，此处为其间黑2应手，残留字形相符。",
+        "cell": "16,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p017-f02",
+    "page": 17,
+    "source_pointer": "/chapters/1/intro/7/elements/2",
+    "figure_id": 29712,
+    "candidate_id": 8577,
+    "inferences": [
+      {
+        "at": "6,18",
+        "value": "7",
+        "basis": "combined",
+        "reason": "数字残损；正文“由黑7提后得4目”与底边提二子的棋形及残笔相符。",
+        "cell": "15,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p021-f02",
+    "page": 21,
+    "source_pointer": "/chapters/1/intro/11/elements/1",
+    "figure_id": 29722,
+    "candidate_id": 8587,
+    "inferences": [
+      {
+        "at": "5,1",
+        "value": "6",
+        "basis": "combined",
+        "reason": "数字残淡；结合字形及正文“白1”“黑2至6”，此处为黑6粘。",
+        "cell": "12,1"
+      },
+      {
+        "at": "6,1",
+        "value": "2",
+        "basis": "combined",
+        "reason": "数字残淡；结合字形及白1、白3之间的黑棋应手，判为黑2。",
+        "cell": "13,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p021-f03",
+    "page": 21,
+    "source_pointer": "/chapters/1/intro/11/elements/2",
+    "figure_id": 29723,
+    "candidate_id": 8588,
+    "inferences": [
+      {
+        "at": "7,0",
+        "value": "3",
+        "basis": "combined",
+        "reason": "字迹较淡；正文“黑1、3扳粘”及顶边1、2的次序支持此处为3。",
+        "cell": "14,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p022-f01",
+    "page": 22,
+    "source_pointer": "/chapters/1/intro/12/elements/1",
+    "figure_id": 29724,
+    "candidate_id": 8589,
+    "inferences": [
+      {
+        "at": "13,13",
+        "value": "3",
+        "basis": "combined",
+        "reason": "黑子数字残淡；正文“黑1至7”及白2、4之间连续向左推进的次序支持3。",
+        "cell": "13,13"
+      },
+      {
+        "at": "12,13",
+        "value": "5",
+        "basis": "combined",
+        "reason": "黑子数字残淡；位于白4、6对应的连续推进处，结合正文“黑1至7”判为5。",
+        "cell": "12,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p023-f02",
+    "page": 23,
+    "source_pointer": "/chapters/1/intro/13/elements/2",
+    "figure_id": 29726,
+    "candidate_id": 8591,
+    "inferences": [
+      {
+        "at": "6,0",
+        "value": "3",
+        "basis": "combined",
+        "reason": "黑子数字较淡；正文“3、5扳粘”及白2、白4的位置共同支持此处为黑3。",
+        "cell": "15,0"
+      },
+      {
+        "at": "7,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "黑子数字较淡；正文“3、5扳粘”与上沿黑3、白4的局部次序支持此处为黑5。",
+        "cell": "16,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p024-f01",
+    "page": 24,
+    "source_pointer": "/chapters/1/intro/14/elements/0",
+    "figure_id": 29728,
+    "candidate_id": 8593,
+    "inferences": [
+      {
+        "at": "15,18",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字迹较淡；正文明确“黑1立、3、5扳粘”，此点为黑3后的粘，残字亦符合5。",
+        "cell": "15,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p025-f02",
+    "page": 25,
+    "source_pointer": "/chapters/1/intro/15/elements/2",
+    "figure_id": 29731,
+    "candidate_id": 8595,
+    "inferences": [
+      {
+        "at": "4,3",
+        "value": "7",
+        "basis": "combined",
+        "reason": "字迹较淡；正文“仍得7位提”与原图a位及所见字形相符。",
+        "cell": "13,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p031-f02",
+    "page": 31,
+    "source_pointer": "/chapters/1/intro/21/elements/1",
+    "figure_id": 29740,
+    "candidate_id": 8605,
+    "uncertainties": [
+      {
+        "at": "3,4",
+        "reason": "空点旁小字形似小写a，印刷模糊。",
+        "candidates": [
+          "letter_a",
+          "印刷污点"
+        ],
+        "cell": "3,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p032-f01",
+    "page": 32,
+    "source_pointer": "/chapters/1/intro/22/elements/4",
+    "figure_id": 29741,
+    "candidate_id": 8606,
+    "inferences": [
+      {
+        "at": "9,14",
+        "value": "6",
+        "basis": "combined",
+        "reason": "残字形似6，且为白5之后、白7之前的黑方应手。",
+        "cell": "9,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p033-f02",
+    "page": 33,
+    "source_pointer": "/chapters/1/intro/23/elements/1",
+    "figure_id": 29743,
+    "candidate_id": 8608,
+    "inferences": [
+      {
+        "at": "1,2",
+        "value": "3",
+        "basis": "combined",
+        "reason": "淡字形结合黑1至5的说明及黑扳、白4挡、黑粘次序判作3。",
+        "cell": "1,2"
+      },
+      {
+        "at": "2,4",
+        "value": "5",
+        "basis": "combined",
+        "reason": "淡字形结合黑1至5落后手的说明，判为最后连接的黑5。",
+        "cell": "2,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p035-f02",
+    "page": 35,
+    "source_pointer": "/chapters/1/intro/25/elements/2",
+    "figure_id": 29746,
+    "candidate_id": 8611,
+    "inferences": [
+      {
+        "at": "6,12",
+        "value": "16",
+        "basis": "sequence",
+        "reason": "末位字形略破损，结合全页字形及黑15后的白棋顺序判为16。",
+        "cell": "6,12"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p037-f02",
+    "page": 37,
+    "source_pointer": "/chapters/2/sections/0/pages/0/elements/2",
+    "figure_id": 29748,
+    "candidate_id": 8613,
+    "inferences": [
+      {
+        "at": "7,1",
+        "value": "1",
+        "basis": "combined",
+        "reason": "编号极淡；正文“黑1飞、白2靠”及主题图同位黑1共同确定。",
+        "cell": "16,1"
+      },
+      {
+        "at": "7,2",
+        "value": "3",
+        "basis": "combined",
+        "reason": "残存浅色字形结合正文“黑3、白4”及相邻白4确定。",
+        "cell": "16,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p039-f02",
+    "page": 39,
+    "source_pointer": "/chapters/2/sections/1/pages/0/elements/2",
+    "figure_id": 29754,
+    "candidate_id": 8619,
+    "inferences": [
+      {
+        "at": "6,1",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字残损；正文提及“黑1、3”，结合可辨的白2、黑3、白4确认。",
+        "cell": "14,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p039-f04",
+    "page": 39,
+    "source_pointer": "/chapters/2/sections/1/pages/0/elements/4",
+    "figure_id": 29756,
+    "candidate_id": 8621,
+    "inferences": [
+      {
+        "at": "9,3",
+        "value": "2",
+        "basis": "combined",
+        "reason": "黑子上数字残损；结合正文“从白1至黑8”及右侧连续手顺，判为黑2。",
+        "cell": "16,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p040-f03",
+    "page": 40,
+    "source_pointer": "/chapters/2/sections/2/pages/0/elements/3",
+    "figure_id": 29759,
+    "candidate_id": 8624,
+    "uncertainties": [
+      {
+        "at": "9,3",
+        "reason": "右边线上方字母疑为小写d，扫描字形与a相近。",
+        "candidates": [
+          "letter_d",
+          "letter_a"
+        ],
+        "cell": "18,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p041-f03",
+    "page": 41,
+    "source_pointer": "/chapters/2/sections/3/pages/0/elements/1",
+    "figure_id": 29762,
+    "candidate_id": 8628,
+    "inferences": [
+      {
+        "at": "9,3",
+        "value": "3",
+        "basis": "combined",
+        "reason": "数字极淡；据“黑1尖至5粘”及相邻白2、白4、黑5的位置，判为黑3。",
+        "cell": "18,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p043-f04",
+    "page": 43,
+    "source_pointer": "/chapters/2/sections/5/pages/0/elements/3",
+    "figure_id": 29772,
+    "candidate_id": 8637,
+    "inferences": [
+      {
+        "at": "7,1",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字形较淡，结合可辨轮廓及黑1、白2、黑3、白4的连续手顺判为5。",
+        "cell": "16,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p048-f02",
+    "page": 48,
+    "source_pointer": "/chapters/2/sections/10/pages/0/elements/0",
+    "figure_id": 29789,
+    "candidate_id": 8655,
+    "inferences": [
+      {
+        "at": "8,2",
+        "value": "5",
+        "basis": "combined",
+        "reason": "数字残损；结合黑1起手、邻近清晰的2至8及正文“白2至8”，判为黑5。",
+        "cell": "17,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p049-f03",
+    "page": 49,
+    "source_pointer": "/chapters/2/sections/11/pages/0/elements/3",
+    "figure_id": 29795,
+    "candidate_id": 8660,
+    "inferences": [
+      {
+        "at": "5,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字形残损，结合黑1、3及后续白6、黑7、白8的编号判断为5。",
+        "cell": "13,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p050-f03",
+    "page": 50,
+    "source_pointer": "/chapters/2/sections/11/pages/1/elements/2",
+    "figure_id": 29798,
+    "candidate_id": 8663,
+    "inferences": [
+      {
+        "at": "7,1",
+        "value": "1",
+        "basis": "combined",
+        "reason": "目标图数字极淡；结合整页可辨的1及正文“对黑1立，白2如挡”确认。",
+        "cell": "15,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p054-f04",
+    "page": 54,
+    "source_pointer": "/chapters/2/sections/15/pages/0/elements/3",
+    "figure_id": 29814,
+    "candidate_id": 8679,
+    "uncertainties": [
+      {
+        "at": "8,2",
+        "reason": "黑子内数字印迹难辨。",
+        "candidates": [
+          "1",
+          "3",
+          "5"
+        ],
+        "cell": "17,2"
+      },
+      {
+        "at": "9,2",
+        "reason": "黑子内数字印迹难辨。",
+        "candidates": [
+          "1",
+          "3",
+          "5"
+        ],
+        "cell": "18,2"
+      },
+      {
+        "at": "9,3",
+        "reason": "黑子内数字印迹难辨。",
+        "candidates": [
+          "1",
+          "3",
+          "5"
+        ],
+        "cell": "18,3"
+      },
+      {
+        "at": "8,4",
+        "reason": "数字上下环粘连，无法确定。",
+        "candidates": [
+          "6",
+          "8"
+        ],
+        "cell": "17,4"
+      },
+      {
+        "at": "9,4",
+        "reason": "数字笔画粘连，无法确定。",
+        "candidates": [
+          "4",
+          "6",
+          "8"
+        ],
+        "cell": "18,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p058-f04",
+    "page": 58,
+    "source_pointer": "/chapters/2/sections/19/pages/0/elements/4",
+    "figure_id": 29830,
+    "candidate_id": 8695,
+    "inferences": [
+      {
+        "at": "5,0",
+        "value": "3",
+        "basis": "combined",
+        "reason": "字迹较淡；结合黑1、白2及顶边扳粘次序判为黑3。",
+        "cell": "14,0"
+      },
+      {
+        "at": "6,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字迹较淡；结合白4、白6及黑顶边连接次序判为黑5。",
+        "cell": "15,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p063-f04",
+    "page": 63,
+    "source_pointer": "/chapters/2/sections/23/pages/0/elements/3",
+    "figure_id": 29849,
+    "candidate_id": 8714,
+    "inferences": [
+      {
+        "at": "7,1",
+        "value": "2",
+        "basis": "combined",
+        "reason": "数字残笔较淡；正文明确白1、白3、白5，结合右上扳粘次序判为黑2。",
+        "cell": "16,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p065-f02",
+    "page": 65,
+    "source_pointer": "/chapters/2/sections/25/pages/0/elements/0",
+    "figure_id": 29854,
+    "candidate_id": 8720,
+    "inferences": [
+      {
+        "at": "3,0",
+        "value": "3",
+        "basis": "combined",
+        "reason": "字迹较淡；结合黑1、白2及“至白6双方必然”，一路扳为黑3。",
+        "cell": "12,0"
+      },
+      {
+        "at": "5,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字迹较淡；结合白4、白6及“一路扳粘”，此处粘为黑5。",
+        "cell": "14,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p065-f03",
+    "page": 65,
+    "source_pointer": "/chapters/2/sections/25/pages/0/elements/1",
+    "figure_id": 29855,
+    "candidate_id": 8721,
+    "inferences": [
+      {
+        "at": "8,1",
+        "value": "4",
+        "basis": "combined",
+        "reason": "残损数字结合正文“黑4亦属必然”确认为4。",
+        "cell": "17,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p065-f04",
+    "page": 65,
+    "source_pointer": "/chapters/2/sections/25/pages/0/elements/3",
+    "figure_id": 29857,
+    "candidate_id": 8722,
+    "inferences": [
+      {
+        "at": "8,2",
+        "value": "4",
+        "basis": "combined",
+        "reason": "残损数字结合正文“视以后白3、黑4”确认为4。",
+        "cell": "17,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p066-f02",
+    "page": 66,
+    "source_pointer": "/chapters/2/sections/26/pages/0/elements/1",
+    "figure_id": 29858,
+    "candidate_id": 8724,
+    "inferences": [
+      {
+        "at": "6,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字迹较淡；结合残存字形、正文“黑1至白6”及局部手顺，判为黑5。",
+        "cell": "15,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p066-f03",
+    "page": 66,
+    "source_pointer": "/chapters/2/sections/26/pages/0/elements/3",
+    "figure_id": 29860,
+    "candidate_id": 8725,
+    "inferences": [
+      {
+        "at": "8,0",
+        "value": "2",
+        "basis": "combined",
+        "reason": "数字较淡；正文“现暂视黑2立”与顶边黑子上的残留字形相符。",
+        "cell": "17,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p067-f02",
+    "page": 67,
+    "source_pointer": "/chapters/2/sections/27/pages/0/elements/0",
+    "figure_id": 29862,
+    "candidate_id": 8728,
+    "inferences": [
+      {
+        "at": "4,0",
+        "value": "1",
+        "basis": "combined",
+        "reason": "淡字结合正文“黑1以下”及一路扳粘次序，辨为黑1扳。",
+        "cell": "13,0"
+      },
+      {
+        "at": "5,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "淡字结合黑3、白4及白6的局部次序，辨为黑5粘接。",
+        "cell": "14,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p067-f03",
+    "page": 67,
+    "source_pointer": "/chapters/2/sections/27/pages/0/elements/2",
+    "figure_id": 29864,
+    "candidate_id": 8729,
+    "inferences": [
+      {
+        "at": "8,1",
+        "value": "2",
+        "basis": "combined",
+        "reason": "淡字形似2；正文明确白1、3、5，与图中黑4及此处黑2的连续次序吻合。",
+        "cell": "17,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p068-f04",
+    "page": 68,
+    "source_pointer": "/chapters/2/sections/28/pages/0/elements/4",
+    "figure_id": 29869,
+    "candidate_id": 8734,
+    "uncertainties": [
+      {
+        "at": "6,9",
+        "reason": "星位呈微小空心菱形，较可能为印刷缺损；尺寸远小于棋子。",
+        "candidates": [
+          "星位印刷缺损",
+          "square"
+        ],
+        "cell": "15,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p079-f02",
+    "page": 79,
+    "source_pointer": "/chapters/3/sections/2/pages/0/elements/1",
+    "figure_id": 29905,
+    "candidate_id": 8770,
+    "inferences": [
+      {
+        "at": "7,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字迹较淡；正文“黑5扳”与右上扳的位置及手顺相符。",
+        "cell": "15,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p079-f03",
+    "page": 79,
+    "source_pointer": "/chapters/3/sections/2/pages/0/elements/2",
+    "figure_id": 29906,
+    "candidate_id": 8771,
+    "inferences": [
+      {
+        "at": "5,0",
+        "value": "1",
+        "basis": "combined",
+        "reason": "淡号结合正文“黑1点”及白2粘的位置判为1。",
+        "cell": "13,0"
+      },
+      {
+        "at": "6,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "淡号判为5；位于黑1与右侧黑3之间，符合白4、白6之前的连接手顺。",
+        "cell": "14,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p081-f02",
+    "page": 81,
+    "source_pointer": "/chapters/3/sections/4/pages/0/elements/1",
+    "figure_id": 29913,
+    "candidate_id": 8778,
+    "inferences": [
+      {
+        "at": "2,0",
+        "value": "3",
+        "basis": "combined",
+        "reason": "数字模糊；正文“黑1、3扳粘先手”结合黑1、白2位置及新增黑子，确定此处为黑3。",
+        "cell": "11,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p081-f03",
+    "page": 81,
+    "source_pointer": "/chapters/3/sections/4/pages/0/elements/2",
+    "figure_id": 29914,
+    "candidate_id": 8779,
+    "inferences": [
+      {
+        "at": "9,4",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字极淡；正文称黑先手角上扳、白2接，对应此处黑1。",
+        "cell": "18,4"
+      },
+      {
+        "at": "3,0",
+        "value": "3",
+        "basis": "combined",
+        "reason": "数字残缺；正文“黑3、5扳粘”，此处为白4旁的扳点。",
+        "cell": "12,0"
+      },
+      {
+        "at": "2,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "数字难辨；黑3扳、白4应后，此处黑5粘，随后白6补。",
+        "cell": "11,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p081-f04",
+    "page": 81,
+    "source_pointer": "/chapters/3/sections/4/pages/0/elements/3",
+    "figure_id": 29915,
+    "candidate_id": 8780,
+    "inferences": [
+      {
+        "at": "9,4",
+        "value": "1",
+        "basis": "combined",
+        "reason": "黑子内数字淡损；正文“黑1扳”，对应右边此扳点。",
+        "cell": "18,4"
+      },
+      {
+        "at": "9,3",
+        "value": "3",
+        "basis": "combined",
+        "reason": "黑子内数字淡损；正文“黑3位先手打”，对应白4外侧此打吃点。",
+        "cell": "18,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p084-f01",
+    "page": 84,
+    "source_pointer": "/chapters/3/sections/7/pages/0/elements/2",
+    "figure_id": 29925,
+    "candidate_id": 8789,
+    "inferences": [
+      {
+        "at": "7,6",
+        "value": "1",
+        "basis": "combined",
+        "reason": "子上数字残缺；正文“黑1问应手”及白2、黑3次序支持此处为1。",
+        "cell": "16,6"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p085-f02",
+    "page": 85,
+    "source_pointer": "/chapters/3/sections/8/pages/0/elements/0",
+    "figure_id": 29928,
+    "candidate_id": 8794,
+    "uncertainties": [
+      {
+        "at": "0,3",
+        "reason": "白子左下有不规则黑痕，无法确认为标记。",
+        "candidates": [
+          "印刷杂点",
+          "不明标记"
+        ],
+        "cell": "9,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p088-f03",
+    "page": 88,
+    "source_pointer": "/chapters/3/sections/11/pages/0/elements/2",
+    "figure_id": 29942,
+    "candidate_id": 8807,
+    "inferences": [
+      {
+        "at": "6,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "数字残损；结合可辨字形、黑1与黑3及正文“至白6”，判为黑5。",
+        "cell": "15,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p090-f03",
+    "page": 90,
+    "source_pointer": "/chapters/3/sections/13/pages/0/elements/2",
+    "figure_id": 29950,
+    "candidate_id": 8815,
+    "uncertainties": [
+      {
+        "at": "6,0",
+        "reason": "黑子清楚，但未辨出编号；按上边扳粘次序可能为5，不补写。",
+        "candidates": [
+          "无编号",
+          "5"
+        ],
+        "cell": "15,0"
+      },
+      {
+        "at": "7,0",
+        "reason": "黑子清楚，但未辨出编号；按上边扳粘次序可能为3，不补写。",
+        "candidates": [
+          "无编号",
+          "3"
+        ],
+        "cell": "16,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p091-f02",
+    "page": 91,
+    "source_pointer": "/chapters/3/sections/14/pages/0/elements/1",
+    "figure_id": 29953,
+    "candidate_id": 8818,
+    "inferences": [
+      {
+        "at": "5,0",
+        "value": "9",
+        "basis": "combined",
+        "reason": "数字较淡；结合顶边黑7、白8及正文“至白10”，辨为黑9。",
+        "cell": "14,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p096-f03",
+    "page": 96,
+    "source_pointer": "/chapters/3/sections/19/pages/0/elements/2",
+    "figure_id": 29974,
+    "candidate_id": 8839,
+    "inferences": [
+      {
+        "at": "8,6",
+        "value": "9",
+        "basis": "combined",
+        "reason": "数字印迹残损；正文明确“黑9长后”，与图中黑5、7及白8的续着相符。",
+        "cell": "17,6"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p109-f04",
+    "page": 109,
+    "source_pointer": "/chapters/3/sections/32/pages/0/elements/3",
+    "figure_id": 30027,
+    "candidate_id": 8892,
+    "uncertainties": [
+      {
+        "at": "7,4",
+        "reason": "黑子内浅色笔画残缺，疑为编号5，亦可能是印刷噪点，无法可靠读定。",
+        "candidates": [
+          "5",
+          "无编号"
+        ],
+        "cell": "16,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p112-f03",
+    "page": 112,
+    "source_pointer": "/chapters/3/sections/35/pages/0/elements/2",
+    "figure_id": 30038,
+    "candidate_id": 8903,
+    "inferences": [
+      {
+        "at": "7,0",
+        "value": "9",
+        "basis": "combined",
+        "reason": "字迹较淡；正文“黑9倒扑吃白”及白6、黑7、白8的续手支持读作9。",
+        "cell": "16,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p113-f01",
+    "page": 113,
+    "source_pointer": "/chapters/3/sections/36/pages/0/elements/1",
+    "figure_id": 30041,
+    "candidate_id": 8905,
+    "uncertainties": [
+      {
+        "at": "4,2",
+        "reason": "圈线断裂，暂按白子辨认；空点的可能性不能完全排除。",
+        "candidates": [
+          "white",
+          "empty"
+        ],
+        "cell": "13,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p113-f03",
+    "page": 113,
+    "source_pointer": "/chapters/3/sections/36/pages/0/elements/2",
+    "figure_id": 30042,
+    "candidate_id": 8907,
+    "inferences": [
+      {
+        "at": "7,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "数字较淡，结合残留笔画及黑3、白4、白6、黑7的手顺辨为5。",
+        "cell": "16,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p114-f03",
+    "page": 114,
+    "source_pointer": "/chapters/3/sections/37/pages/0/elements/2",
+    "figure_id": 30046,
+    "candidate_id": 8911,
+    "inferences": [
+      {
+        "at": "6,1",
+        "value": "5",
+        "basis": "combined",
+        "reason": "数字较淡；正文“黑3扳、5立至白6”及相邻着手次序支持黑5。",
+        "cell": "15,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p120-f02",
+    "page": 120,
+    "source_pointer": "/chapters/3/sections/43/pages/0/elements/1",
+    "figure_id": 30069,
+    "candidate_id": 8934,
+    "inferences": [
+      {
+        "at": "7,3",
+        "value": "5",
+        "basis": "combined",
+        "reason": "图外注“❺取る”；白2提去此处原黑子，黑5在此回提8,3白子。",
+        "cell": "16,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p121-f02",
+    "page": 121,
+    "source_pointer": "/chapters/3/sections/44/pages/0/elements/1",
+    "figure_id": 30073,
+    "candidate_id": 8938,
+    "inferences": [
+      {
+        "at": "8,0",
+        "value": "1",
+        "basis": "combined",
+        "reason": "字迹残缺；正文“黑1点”“白2顶”“白6提”与此处黑子及提子关系吻合。",
+        "cell": "17,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p123-f04",
+    "page": 123,
+    "source_pointer": "/chapters/3/sections/46/pages/0/elements/3",
+    "figure_id": 30083,
+    "candidate_id": 8948,
+    "uncertainties": [
+      {
+        "at": "move_9",
+        "reason": "右侧盘外注“❾置く”未明确标示落点。",
+        "candidates": [],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p134-f03",
+    "page": 134,
+    "source_pointer": "/chapters/3/sections/57/pages/0/elements/1",
+    "figure_id": 30124,
+    "candidate_id": 8990,
+    "inferences": [
+      {
+        "at": "9,6",
+        "value": "3",
+        "basis": "combined",
+        "reason": "数字残淡；正文黑3、5及白6提子，结合黑9取劫注记，确认此处原标3。",
+        "cell": "18,6"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p137-f03",
+    "page": 137,
+    "source_pointer": "/chapters/3/sections/60/pages/0/elements/2",
+    "figure_id": 30136,
+    "candidate_id": 9001,
+    "inferences": [
+      {
+        "at": "8,7",
+        "value": "3",
+        "basis": "combined",
+        "reason": "数字残淡；结合字形、正文“黑3亦接”及黑1、白2、白4的局部次序判读。",
+        "cell": "17,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p143-f04",
+    "page": 143,
+    "source_pointer": "/chapters/3/sections/66/pages/0/elements/3",
+    "figure_id": 30161,
+    "candidate_id": 9026,
+    "inferences": [
+      {
+        "at": "5,0",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字迹残淡；正文“黑1、3后，黑5成绝对先手”结合图中其余手数及落点，确定为5。",
+        "cell": "14,0"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p144-f03",
+    "page": 144,
+    "source_pointer": "/chapters/3/sections/67/pages/0/elements/2",
+    "figure_id": 30164,
+    "candidate_id": 9029,
+    "inferences": [
+      {
+        "at": "9,6",
+        "value": "5",
+        "basis": "combined",
+        "reason": "字形较淡，正文“黑5挡后”及黑3、白4的顺序共同确认。",
+        "cell": "18,6"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p144-f04",
+    "page": 144,
+    "source_pointer": "/chapters/3/sections/67/pages/0/elements/3",
+    "figure_id": 30165,
+    "candidate_id": 9030,
+    "inferences": [
+      {
+        "at": "6,3",
+        "value": "9",
+        "basis": "combined",
+        "reason": "数字较淡，正文明确“黑7、9”，结合上方7及白8、10确认。",
+        "cell": "15,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p149-f02",
+    "page": 149,
+    "source_pointer": "/chapters/4/sections/0/pages/1/elements/1",
+    "figure_id": 30172,
+    "candidate_id": 9037,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图为四边封闭的11×11网格，无星位；与题设19×19不一致，无法唯一定位，暂取左上原点。",
+        "candidates": [
+          "0,0",
+          "19×19内其他偏移"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p149-f03",
+    "page": 149,
+    "source_pointer": "/chapters/4/sections/0/pages/1/elements/2",
+    "figure_id": 30173,
+    "candidate_id": 9038,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图为四边封闭的11×11网格，无星位；与题设19×19不一致，无法唯一定位，暂取左上原点。",
+        "candidates": [
+          "0,0",
+          "19×19内其他偏移"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p150-f01",
+    "page": 150,
+    "source_pointer": "/chapters/4/sections/0/pages/2/elements/0",
+    "figure_id": 30174,
+    "candidate_id": 9039,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11线，题注亦为“11路盤のテスト”；与19路前提不符，无法确定19路原点，暂记(0,0)。",
+        "candidates": [
+          "独立11路整盘",
+          "19路坐标原点暂取(0,0)"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p150-f02",
+    "page": 150,
+    "source_pointer": "/chapters/4/sections/0/pages/2/elements/1",
+    "figure_id": 30175,
+    "candidate_id": 9040,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11线；同页题注说明为11路盘，与19路前提不符，无法确定19路原点，暂记(0,0)。",
+        "candidates": [
+          "独立11路整盘",
+          "19路坐标原点暂取(0,0)"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p150-f03",
+    "page": 150,
+    "source_pointer": "/chapters/4/sections/0/pages/2/elements/2",
+    "figure_id": 30176,
+    "candidate_id": 9041,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图四边完整，共11列11行，为11路棋盘；与指定19路前提不符，暂以左上角为原点，无法确定其在19路盘上的区域位置。自",
+        "candidates": [],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p151-f01",
+    "page": 151,
+    "source_pointer": "/chapters/4/sections/0/pages/3/elements/0",
+    "figure_id": 30177,
+    "candidate_id": 9042,
+    "inferences": [
+      {
+        "at": "0,7",
+        "value": "4",
+        "basis": "combined",
+        "reason": "字形残损；正文明确黑4、白5、黑6，与此处黑子及相邻白5相符。",
+        "cell": "0,7"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见横纵各11线，四边均有封闭边线；无法与题设19路棋盘唯一对应。暂以左上原点记录。",
+        "candidates": [
+          "0,0",
+          "无法唯一定位"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p151-f02",
+    "page": 151,
+    "source_pointer": "/chapters/4/sections/0/pages/3/elements/1",
+    "figure_id": 30178,
+    "candidate_id": 9043,
+    "inferences": [
+      {
+        "at": "3,10",
+        "value": "20",
+        "basis": "combined",
+        "reason": "残字近似20；邻接黑19、黑21，按黑1起手应为白20。",
+        "cell": "3,10"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见横纵各11线，四边均有封闭边线；无法与题设19路棋盘唯一对应。暂以左上原点记录。",
+        "candidates": [
+          "0,0",
+          "无法唯一定位"
+        ],
+        "cell": null
+      },
+      {
+        "at": "2,0",
+        "reason": "黑子上数字破损。",
+        "candidates": [
+          "9",
+          "13"
+        ],
+        "cell": "2,0"
+      },
+      {
+        "at": "3,0",
+        "reason": "黑子上数字破损。",
+        "candidates": [
+          "11",
+          "15"
+        ],
+        "cell": "3,0"
+      },
+      {
+        "at": "2,1",
+        "reason": "黑子上数字密集模糊，正文黑11碰不足以唯一确定落点。",
+        "candidates": [
+          "11",
+          "13"
+        ],
+        "cell": "2,1"
+      },
+      {
+        "at": "4,5",
+        "reason": "数字与圆圈严重粘连，颜色和末位均难确定。",
+        "candidates": [
+          "白22",
+          "黑23"
+        ],
+        "cell": "4,5"
+      },
+      {
+        "at": "10,6",
+        "reason": "黑子数字残损。",
+        "candidates": [
+          "1",
+          "5"
+        ],
+        "cell": "10,6"
+      },
+      {
+        "at": "0,7",
+        "reason": "黑子两位数字的末位不清。",
+        "candidates": [
+          "15",
+          "17"
+        ],
+        "cell": "0,7"
+      },
+      {
+        "at": "6,10",
+        "reason": "底边数字及圈线粘连，颜色不能可靠判定；若判黑，与上方白子气数也存在疑点。",
+        "candidates": [
+          "白24",
+          "黑17",
+          "黑9"
+        ],
+        "cell": "6,10"
+      }
+    ],
+    "origin_uncertain": true,
+    "unknown_stones": [
+      {
+        "point": [
+          4,
+          5
+        ],
+        "color": null
+      },
+      {
+        "point": [
+          6,
+          10
+        ],
+        "color": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p151-f03",
+    "page": 151,
+    "source_pointer": "/chapters/4/sections/0/pages/3/elements/2",
+    "figure_id": 30179,
+    "candidate_id": 9044,
+    "inferences": [
+      {
+        "at": "10,5",
+        "value": "3",
+        "basis": "combined",
+        "reason": "残字结合正文“黑3爬”及右边白2、白4的位置，判为3。",
+        "cell": "10,5"
+      },
+      {
+        "at": "10,6",
+        "value": "5",
+        "basis": "sequence",
+        "reason": "数字残淡；右边黑3下接此子，结合白4、白6及字形判为5。",
+        "cell": "10,6"
+      },
+      {
+        "at": "10,7",
+        "value": "9",
+        "basis": "sequence",
+        "reason": "右边黑子数字残笔结合随后白10的局部收官顺序，判为9。",
+        "cell": "10,7"
+      },
+      {
+        "at": "6,10",
+        "value": "17",
+        "basis": "sequence",
+        "reason": "底边双位数字残淡，结合字形及白16后的收官顺序判为17。",
+        "cell": "6,10"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "实际四边完整，共11×11线；原书为11路盘，与题设19路不一致，无法唯一确定19路原点，暂记(0,0)。",
+        "candidates": [
+          "完整11路棋盘，无对应的19路区域原点"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p152-f01",
+    "page": 152,
+    "source_pointer": "/chapters/4/sections/1/pages/0/elements/0",
+    "figure_id": 30180,
+    "candidate_id": 9045,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四条实际边线围成11×11交点；页眉亦注明11路盘，与题设19路不一致，原点暂记(0,0)。",
+        "candidates": [
+          "完整11路棋盘，无对应的19路区域原点"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p153-f01",
+    "page": 153,
+    "source_pointer": "/chapters/4/sections/1/pages/1/elements/0",
+    "figure_id": 30181,
+    "candidate_id": 9046,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "共11列、11行；依下方一路官子及左侧贴边棋形暂按左下局部定位，外框与裁切边界难完全区分，星位不够清晰。",
+        "candidates": [
+          "origin_col=0,origin_row=8",
+          "origin_col=8,origin_row=8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p153-f02",
+    "page": 153,
+    "source_pointer": "/chapters/4/sections/1/pages/1/elements/1",
+    "figure_id": 30182,
+    "candidate_id": 9047,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "共11列、11行；与1图同一区域，暂按左下局部定位，外框与裁切边界难完全区分，星位不够清晰。",
+        "candidates": [
+          "origin_col=0,origin_row=8",
+          "origin_col=8,origin_row=8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p153-f03",
+    "page": 153,
+    "source_pointer": "/chapters/4/sections/1/pages/1/elements/2",
+    "figure_id": 30183,
+    "candidate_id": 9048,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见网格为四边封闭的11×11盘，与19路前提不符；无法唯一确定其在19路盘的位置，原点暂记0,0。",
+        "candidates": [
+          "独立11路棋盘",
+          "19路棋盘中的位置未定区域"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p154-f01",
+    "page": 154,
+    "source_pointer": "/chapters/4/sections/1/pages/2/elements/0",
+    "figure_id": 30184,
+    "candidate_id": 9049,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见网格为四边封闭的11×11盘，页眉亦标示11路盘；无法唯一映射至19路盘，原点暂记0,0。",
+        "candidates": [
+          "独立11路棋盘",
+          "19路棋盘中的位置未定区域"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p154-f02",
+    "page": 154,
+    "source_pointer": "/chapters/4/sections/1/pages/2/elements/1",
+    "figure_id": 30185,
+    "candidate_id": 9050,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边封闭，共11列11行；原页题头为11路盘测试，与19路前提冲突。暂按左上原点记录，无法确定其在19路盘中的位置。",
+        "candidates": [
+          "完整11路盘",
+          "19路盘局部，原点未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p154-f03",
+    "page": 154,
+    "source_pointer": "/chapters/4/sections/1/pages/2/elements/2",
+    "figure_id": 30186,
+    "candidate_id": 9051,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边封闭，共11列11行；原页题头为11路盘测试，与19路前提冲突。暂按左上原点记录，无法确定其在19路盘中的位置。",
+        "candidates": [
+          "完整11路盘",
+          "19路盘局部，原点未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p155-f01",
+    "page": 155,
+    "source_pointer": "/chapters/4/sections/1/pages/3/elements/0",
+    "figure_id": 30187,
+    "candidate_id": 9052,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见网格为11×11，四周呈闭合边框，未见可定位星位；无法确定与19路全盘的对应，原点暂定。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p155-f02",
+    "page": 155,
+    "source_pointer": "/chapters/4/sections/1/pages/3/elements/1",
+    "figure_id": 30188,
+    "candidate_id": 9053,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见网格为11×11，四周呈闭合边框，未见可定位星位；无法确定与19路全盘的对应，原点暂定。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p155-f03",
+    "page": 155,
+    "source_pointer": "/chapters/4/sections/1/pages/3/elements/2",
+    "figure_id": 30189,
+    "candidate_id": 9054,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见四边完整的11路棋盘，无法唯一对应19路棋盘位置；原点暂置左上。",
+        "candidates": [
+          "0,0（暂定）",
+          "19路绝对位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p156-f01",
+    "page": 156,
+    "source_pointer": "/chapters/4/sections/2/pages/0/elements/0",
+    "figure_id": 30190,
+    "candidate_id": 9055,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11路；页眉明确为11路盘，无法唯一映射19路绝对位置，原点暂置左上。",
+        "candidates": [
+          "0,0（暂定）",
+          "19路绝对位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p157-f01",
+    "page": 157,
+    "source_pointer": "/chapters/4/sections/2/pages/1/elements/0",
+    "figure_id": 30191,
+    "candidate_id": 9056,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11交叉点，无明确星位可定位；暂按十九路棋盘右下区域放置。",
+        "candidates": [
+          "origin=8,8",
+          "区域位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p157-f02",
+    "page": 157,
+    "source_pointer": "/chapters/4/sections/2/pages/1/elements/1",
+    "figure_id": 30192,
+    "candidate_id": 9057,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11交叉点，无明确星位可定位；暂按十九路棋盘右下区域放置。",
+        "candidates": [
+          "origin=8,8",
+          "区域位置未定"
+        ],
+        "cell": null
+      },
+      {
+        "at": "6,5",
+        "reason": "黑子内浅色斜痕疑为印刷破损，无法确认为三角标记。",
+        "candidates": [
+          "印刷破损",
+          "triangle"
+        ],
+        "cell": "6,5"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p157-f03",
+    "page": 157,
+    "source_pointer": "/chapters/4/sections/2/pages/1/elements/2",
+    "figure_id": 30193,
+    "candidate_id": 9058,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图中四边完整，共11×11路；原页注明11路盘，与题设19路不符。暂以(0,0)嵌入，19路原点无法确定。",
+        "candidates": [
+          "origin_col=0,origin_row=0",
+          "无法唯一映射到19路盘"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p158-f01",
+    "page": 158,
+    "source_pointer": "/chapters/4/sections/2/pages/2/elements/1",
+    "figure_id": 30194,
+    "candidate_id": 9059,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原页标题为11路盘，目标四边完整，共11×11路，与题设19路不符。暂以(0,0)嵌入，19路原点无法确定。",
+        "candidates": [
+          "origin_col=0,origin_row=0",
+          "无法唯一映射到19路盘"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p158-f02",
+    "page": 158,
+    "source_pointer": "/chapters/4/sections/2/pages/2/elements/2",
+    "figure_id": 30195,
+    "candidate_id": 9060,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，各11线；页题注明11路盘。无法唯一对应题设19路坐标，暂置左上原点。",
+        "candidates": [
+          "0,0（暂置）",
+          "原图为独立11路全盘"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p158-f03",
+    "page": 158,
+    "source_pointer": "/chapters/4/sections/2/pages/2/elements/3",
+    "figure_id": 30196,
+    "candidate_id": 9061,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，各11线；页题注明11路盘。无法唯一对应题设19路坐标，暂置左上原点。",
+        "candidates": [
+          "0,0（暂置）",
+          "原图为独立11路全盘"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p159-f01",
+    "page": 159,
+    "source_pointer": "/chapters/4/sections/2/pages/3/elements/0",
+    "figure_id": 30197,
+    "candidate_id": 9062,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11列11行，四边均闭合且无星位，疑为11路示意盘；无法按19路前提确定位置，原点暂记0,0。",
+        "candidates": [
+          "11路完整示意盘",
+          "19路局部，原点未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p159-f02",
+    "page": 159,
+    "source_pointer": "/chapters/4/sections/2/pages/3/elements/1",
+    "figure_id": 30198,
+    "candidate_id": 9063,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11列11行，四边均闭合且无星位，疑为11路示意盘；无法按19路前提确定位置，原点暂记0,0。",
+        "candidates": [
+          "11路完整示意盘",
+          "19路局部，原点未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p159-f03",
+    "page": 159,
+    "source_pointer": "/chapters/4/sections/2/pages/3/elements/2",
+    "figure_id": 30199,
+    "candidate_id": 9064,
+    "inferences": [
+      {
+        "at": "7,4",
+        "value": "5",
+        "basis": "combined",
+        "reason": "残字结合右上黑1、白2、黑3、白4及白6的局部次序判为5。",
+        "cell": "7,4"
+      },
+      {
+        "at": "3,10",
+        "value": "7",
+        "basis": "combined",
+        "reason": "残字结合左下白8、黑9及后续10至12的编号次序判为7。",
+        "cell": "3,10"
+      },
+      {
+        "at": "3,9",
+        "value": "9",
+        "basis": "combined",
+        "reason": "淡字轮廓与9相符，且位于白8、白10之间的黑方着手。",
+        "cell": "3,9"
+      },
+      {
+        "at": "2,10",
+        "value": "11",
+        "basis": "combined",
+        "reason": "残留双竖笔结合邻近白10、白12判为11。",
+        "cell": "2,10"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图四边封闭，共11×11交点，为11路整盘，与题设19路不一致；无法确定其在19路中的区域位置，暂置原点(0,0)。残损数字的推定见inferences。",
+        "candidates": [],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p160-f01",
+    "page": 160,
+    "source_pointer": "/chapters/4/sections/3/pages/0/elements/1",
+    "figure_id": 30200,
+    "candidate_id": 9065,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图四边封闭，共11×11交点，原页亦注明“11路盤のテスト”；与题设19路不一致，无法唯一定位到19路区域，暂置原点(0,0)。",
+        "candidates": [],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p161-f01",
+    "page": 161,
+    "source_pointer": "/chapters/4/sections/3/pages/1/elements/0",
+    "figure_id": 30201,
+    "candidate_id": 9066,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11交点，四周均画边线，无可靠星位；无法唯一映射至题设19路棋盘，暂以上左角定位。",
+        "candidates": [
+          "origin_col=0,origin_row=0",
+          "原图为11路整盘"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p161-f02",
+    "page": 161,
+    "source_pointer": "/chapters/4/sections/3/pages/1/elements/1",
+    "figure_id": 30202,
+    "candidate_id": 9067,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11交点，四周均画边线，无可靠星位；无法唯一映射至题设19路棋盘，暂以上左角定位。",
+        "candidates": [
+          "origin_col=0,origin_row=0",
+          "原图为11路整盘"
+        ],
+        "cell": null
+      },
+      {
+        "at": "8,0",
+        "reason": "上边线处有似∧的两笔残迹，不能确认属于标记，暂不录入marks。",
+        "candidates": [
+          "边线或扫描残痕",
+          "残缺三角标记"
+        ],
+        "cell": "8,0"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p161-f03",
+    "page": 161,
+    "source_pointer": "/chapters/4/sections/3/pages/1/elements/2",
+    "figure_id": 30203,
+    "candidate_id": 9068,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图中为四边闭合的11×11棋盘，与题设19路不一致；暂按左上对齐，无法同时对应19路四边。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p162-f01",
+    "page": 162,
+    "source_pointer": "/chapters/4/sections/4/pages/0/elements/1",
+    "figure_id": 30204,
+    "candidate_id": 9069,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页眉明确为“11路盤のテスト”，图中四边闭合，共11×11路；与题设19路不一致，暂按左上对齐。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p163-f01",
+    "page": 163,
+    "source_pointer": "/chapters/4/sections/4/pages/1/elements/0",
+    "figure_id": 30205,
+    "candidate_id": 9070,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "按右下角局部图推定；无可用星位，顶部、左侧截取边的判断依赖构图。",
+        "candidates": [
+          "origin_col=8,origin_row=8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p163-f02",
+    "page": 163,
+    "source_pointer": "/chapters/4/sections/4/pages/1/elements/1",
+    "figure_id": 30206,
+    "candidate_id": 9071,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "按右下角局部图推定；无可用星位，顶部、左侧截取边的判断依赖构图。",
+        "candidates": [
+          "origin_col=8,origin_row=8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p163-f03",
+    "page": 163,
+    "source_pointer": "/chapters/4/sections/4/pages/1/elements/2",
+    "figure_id": 30207,
+    "candidate_id": 9072,
+    "inferences": [
+      {
+        "at": "10,6",
+        "value": "5",
+        "basis": "combined",
+        "reason": "残字形似5；结合本图黑1、3及白2、4、6的顺序，判为黑5。",
+        "cell": "10,6"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11线；相邻页页眉注明“11路盤のテスト”，与19路前提冲突。暂以左上角为原点，无法唯一映射到19路盘。",
+        "candidates": [
+          "11路整盘，原点0,0",
+          "19路局部区域，原点不明"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p164-f01",
+    "page": 164,
+    "source_pointer": "/chapters/4/sections/4/pages/2/elements/1",
+    "figure_id": 30208,
+    "candidate_id": 9073,
+    "inferences": [
+      {
+        "at": "0,7",
+        "value": "4",
+        "basis": "combined",
+        "reason": "左边黑子数字残缺；正文“至黑4定型后”，结合底边清楚的白1、黑2、白3，判为黑4。",
+        "cell": "0,7"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11线；本页页眉注明“11路盤のテスト”，与19路前提冲突。暂以左上角为原点，无法唯一映射到19路盘。",
+        "candidates": [
+          "11路整盘，原点0,0",
+          "19路局部区域，原点不明"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p164-f02",
+    "page": 164,
+    "source_pointer": "/chapters/4/sections/4/pages/2/elements/2",
+    "figure_id": 30209,
+    "candidate_id": 9074,
+    "inferences": [
+      {
+        "at": "0,4",
+        "value": "5",
+        "basis": "combined",
+        "reason": "数字残损；正文“黑３、５”及邻近黑3、白4的扳粘手顺支持为5。",
+        "cell": "0,4"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图中四边完整，共11×11线，页题亦注明11路盘；与题设19路不一致，无法唯一定位，暂取原点(0,0)。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p164-f03",
+    "page": 164,
+    "source_pointer": "/chapters/4/sections/4/pages/2/elements/3",
+    "figure_id": 30210,
+    "candidate_id": 9075,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图中四边完整，共11×11线，页题亦注明11路盘；与题设19路不一致，无法唯一定位，暂取原点(0,0)。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p165-f01",
+    "page": 165,
+    "source_pointer": "/chapters/4/sections/4/pages/3/elements/0",
+    "figure_id": 30211,
+    "candidate_id": 9076,
+    "inferences": [
+      {
+        "at": "8,0",
+        "value": "19",
+        "basis": "combined",
+        "reason": "黑子编号残淡，字形结合黑1至21的正文及盘下20、21续接注记，判为19。",
+        "cell": "8,0"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "印刷棋盘四边完整，各有11条线且无星位，与给定19×19整盘不相容；原点暂记0,0，无法唯一定位。",
+        "candidates": [
+          "独立11×11小棋盘",
+          "19×19中的区域，原点未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p165-f02",
+    "page": 165,
+    "source_pointer": "/chapters/4/sections/4/pages/3/elements/1",
+    "figure_id": 30212,
+    "candidate_id": 9077,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "印刷棋盘四边完整，各有11条线且无星位，与给定19×19整盘不相容；原点暂记0,0，无法唯一定位。",
+        "candidates": [
+          "独立11×11小棋盘",
+          "19×19中的区域，原点未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p165-f03",
+    "page": 165,
+    "source_pointer": "/chapters/4/sections/4/pages/3/elements/2",
+    "figure_id": 30213,
+    "candidate_id": 9078,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图中四边完整，实际为11路棋盘，无法唯一定位于19路；原点0,0仅作暂定。",
+        "candidates": [
+          "独立11路棋盘，无19路原点",
+          "0,0（暂定）"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p166-f01",
+    "page": 166,
+    "source_pointer": "/chapters/4/sections/5/pages/0/elements/1",
+    "figure_id": 30214,
+    "candidate_id": 9079,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页眉明确为“11路盤のテスト”，图中四边完整；无法唯一定位于19路，原点0,0仅作暂定。",
+        "candidates": [
+          "独立11路棋盘，无19路原点",
+          "0,0（暂定）"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p167-f01",
+    "page": 167,
+    "source_pointer": "/chapters/4/sections/5/pages/1/elements/0",
+    "figure_id": 30215,
+    "candidate_id": 9080,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11列11行，未见明确星位；图框不足以唯一确定在19路棋盘上的位置，按左上角局部暂定原点。",
+        "candidates": [
+          "0,0",
+          "其他局部起点"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p167-f02",
+    "page": 167,
+    "source_pointer": "/chapters/4/sections/5/pages/1/elements/1",
+    "figure_id": 30216,
+    "candidate_id": 9081,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11列11行，未见明确星位；图框不足以唯一确定在19路棋盘上的位置，按左上角局部暂定原点。",
+        "candidates": [
+          "0,0",
+          "其他局部起点"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p167-f03",
+    "page": 167,
+    "source_pointer": "/chapters/4/sections/5/pages/1/elements/2",
+    "figure_id": 30217,
+    "candidate_id": 9082,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原书为11路盘，图中四边完整；无法唯一映射到题设19路盘，暂以上左角对齐。",
+        "candidates": [
+          "origin=0,0（暂定）",
+          "完整11路盘，无唯一19路原点"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p168-f01",
+    "page": 168,
+    "source_pointer": "/chapters/4/sections/5/pages/2/elements/1",
+    "figure_id": 30218,
+    "candidate_id": 9083,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页眉明确写“11路盤のテスト”，且图中四边完整；无法唯一映射到题设19路盘，暂以上左角对齐。",
+        "candidates": [
+          "origin=0,0（暂定）",
+          "完整11路盘，无唯一19路原点"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p168-f02",
+    "page": 168,
+    "source_pointer": "/chapters/4/sections/5/pages/2/elements/2",
+    "figure_id": 30219,
+    "candidate_id": 9084,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，实际为11×11路盘，页眉亦写“11路盤”；与给定19路前提不符，暂以左上角为原点。",
+        "candidates": [
+          "独立11路棋盘，原点0,0",
+          "19路棋盘中的位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p168-f03",
+    "page": 168,
+    "source_pointer": "/chapters/4/sections/5/pages/2/elements/3",
+    "figure_id": 30220,
+    "candidate_id": 9085,
+    "inferences": [
+      {
+        "at": "9,0",
+        "value": "2",
+        "basis": "combined",
+        "reason": "黑子残字形似2，正文明确“黑２后手６目”，与图中白1、白3相符。",
+        "cell": "9,0"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，实际为11×11路盘，页眉亦写“11路盤”；与给定19路前提不符，暂以左上角为原点。",
+        "candidates": [
+          "独立11路棋盘，原点0,0",
+          "19路棋盘中的位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p169-f01",
+    "page": 169,
+    "source_pointer": "/chapters/4/sections/5/pages/3/elements/0",
+    "figure_id": 30221,
+    "candidate_id": 9086,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图为四边封闭的11×11棋盘，与题设19×19不一致，无法唯一确定全盘原点；暂取左上对齐。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p169-f02",
+    "page": 169,
+    "source_pointer": "/chapters/4/sections/5/pages/3/elements/1",
+    "figure_id": 30222,
+    "candidate_id": 9087,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图为四边封闭的11×11棋盘，与题设19×19不一致，无法唯一确定全盘原点；暂取左上对齐。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      },
+      {
+        "at": "10,0",
+        "reason": "右上角有明显墨污，未见完整棋子轮廓，暂按空点处理。",
+        "candidates": [
+          "empty",
+          "black"
+        ],
+        "cell": "10,0"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p169-f03",
+    "page": 169,
+    "source_pointer": "/chapters/4/sections/5/pages/3/elements/2",
+    "figure_id": 30223,
+    "candidate_id": 9088,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，实际为11路整盘；无法唯一映射到题设19路盘，暂以左上为原点。",
+        "candidates": [
+          "origin=0,0（暂定）",
+          "19路盘内位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p170-f01",
+    "page": 170,
+    "source_pointer": "/chapters/4/sections/6/pages/0/elements/1",
+    "figure_id": 30224,
+    "candidate_id": 9089,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页眉注明11路盘，图中四边完整；无法唯一映射到题设19路盘，暂以左上为原点。",
+        "candidates": [
+          "origin=0,0（暂定）",
+          "19路盘内位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p171-f01",
+    "page": 171,
+    "source_pointer": "/chapters/4/sections/6/pages/1/elements/0",
+    "figure_id": 30225,
+    "candidate_id": 9090,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图示11×11网格四边封闭，无星位，不能唯一确定其在19×19棋盘中的位置；依左下官子语境暂取左下区域。",
+        "candidates": [
+          "origin_col=0,origin_row=8",
+          "origin_col=0,origin_row=0",
+          "origin_col=8,origin_row=8",
+          "origin_col=8,origin_row=0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p171-f02",
+    "page": 171,
+    "source_pointer": "/chapters/4/sections/6/pages/1/elements/1",
+    "figure_id": 30226,
+    "candidate_id": 9091,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图示11×11网格四边封闭，无星位，不能唯一确定其在19×19棋盘中的位置；依左下官子语境暂取左下区域。",
+        "candidates": [
+          "origin_col=0,origin_row=8",
+          "origin_col=0,origin_row=0",
+          "origin_col=8,origin_row=8",
+          "origin_col=8,origin_row=0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p171-f03",
+    "page": 171,
+    "source_pointer": "/chapters/4/sections/6/pages/1/elements/2",
+    "figure_id": 30227,
+    "candidate_id": 9092,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图中为四边封闭的11×11网格，与指定19路棋盘不一致；无星位可定位，暂用原点(0,0)。19路框架内横纵原点均可能为0至8。",
+        "candidates": [
+          "0,0",
+          "0,8",
+          "8,0",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p172-f01",
+    "page": 172,
+    "source_pointer": "/chapters/4/sections/6/pages/2/elements/1",
+    "figure_id": 30228,
+    "candidate_id": 9093,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11封闭网格，原页页眉亦写“11路盤のテスト”，与指定19路棋盘冲突。暂用原点(0,0)；19路框架内横纵原点均可能为0至8。",
+        "candidates": [
+          "0,0",
+          "0,8",
+          "8,0",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p172-f02",
+    "page": 172,
+    "source_pointer": "/chapters/4/sections/6/pages/2/elements/2",
+    "figure_id": 30229,
+    "candidate_id": 9094,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边均完整，共11×11线；页眉明确为11路盘。与指定19路整盘不一致，无法确定一致的19路原点；暂按左上边缘设为0,0。",
+        "candidates": [
+          "0,0",
+          "原图为独立11路整盘"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p172-f03",
+    "page": 172,
+    "source_pointer": "/chapters/4/sections/6/pages/2/elements/3",
+    "figure_id": 30230,
+    "candidate_id": 9095,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边均完整，共11×11线；页眉明确为11路盘。与指定19路整盘不一致，无法确定一致的19路原点；暂按左上边缘设为0,0。",
+        "candidates": [
+          "0,0",
+          "原图为独立11路整盘"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p173-f01",
+    "page": 173,
+    "source_pointer": "/chapters/4/sections/6/pages/3/elements/0",
+    "figure_id": 30231,
+    "candidate_id": 9096,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图四边封闭，横纵各11线，与题设19路不符；无星位可定位，暂取左上原点。",
+        "candidates": [
+          "origin=(0,0)",
+          "19路棋盘内其他偏移"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p173-f02",
+    "page": 173,
+    "source_pointer": "/chapters/4/sections/6/pages/3/elements/1",
+    "figure_id": 30232,
+    "candidate_id": 9097,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图四边封闭，横纵各11线，与题设19路不符；无星位可定位，暂取左上原点。",
+        "candidates": [
+          "origin=(0,0)",
+          "19路棋盘内其他偏移"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p173-f03",
+    "page": 173,
+    "source_pointer": "/chapters/4/sections/6/pages/3/elements/2",
+    "figure_id": 30233,
+    "candidate_id": 9098,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整可见，实际为11路盘，无法与题设19路盘的四边同时对应；原点暂置左上。",
+        "candidates": [
+          "独立11路盘",
+          "19路坐标中暂取原点0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p174-f01",
+    "page": 174,
+    "source_pointer": "/chapters/4/sections/7/pages/0/elements/1",
+    "figure_id": 30234,
+    "candidate_id": 9099,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页眉注明11路盘，图中四边完整可见；无法唯一对应题设19路坐标，原点暂置左上。",
+        "candidates": [
+          "独立11路盘",
+          "19路坐标中暂取原点0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p175-f01",
+    "page": 175,
+    "source_pointer": "/chapters/4/sections/7/pages/1/elements/0",
+    "figure_id": 30235,
+    "candidate_id": 9100,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见四边闭合的11×11示意棋盘，与指定19路棋盘不一致；暂依据右上角着手定位于右上区域，原点无法唯一确定。",
+        "candidates": [
+          "8,0",
+          "0,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p175-f02",
+    "page": 175,
+    "source_pointer": "/chapters/4/sections/7/pages/1/elements/1",
+    "figure_id": 30236,
+    "candidate_id": 9101,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见四边闭合的11×11示意棋盘，与指定19路棋盘不一致；暂依据右上角着手定位于右上区域，原点无法唯一确定。",
+        "candidates": [
+          "8,0",
+          "0,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p175-f03",
+    "page": 175,
+    "source_pointer": "/chapters/4/sections/7/pages/1/elements/2",
+    "figure_id": 30237,
+    "candidate_id": 9102,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11网格且四边完整，后页页眉标“11路盤のテスト”，与指定19路全盘不符；暂登记原点(0,0)，19路位置无法确定。",
+        "candidates": [
+          "原书11路全盘，原点0,0",
+          "按19路解释，区域原点未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p176-f01",
+    "page": 176,
+    "source_pointer": "/chapters/4/sections/7/pages/2/elements/1",
+    "figure_id": 30238,
+    "candidate_id": 9103,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11网格且四边完整，页眉标“11路盤のテスト”，与指定19路全盘不符；暂登记原点(0,0)，19路位置无法确定。",
+        "candidates": [
+          "原书11路全盘，原点0,0",
+          "按19路解释，区域原点未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p176-f02",
+    "page": 176,
+    "source_pointer": "/chapters/4/sections/7/pages/2/elements/2",
+    "figure_id": 30239,
+    "candidate_id": 9104,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11线；原页标题亦注明11路盘，与题设19路盘冲突。暂用原点(0,0)，无法唯一定位于19路盘。",
+        "candidates": [
+          "独立11路盘",
+          "19路盘内原点未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p176-f03",
+    "page": 176,
+    "source_pointer": "/chapters/4/sections/7/pages/2/elements/3",
+    "figure_id": 30240,
+    "candidate_id": 9105,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11线；原页标题亦注明11路盘，与题设19路盘冲突。暂用原点(0,0)，无法唯一定位于19路盘。",
+        "candidates": [
+          "独立11路盘",
+          "19路盘内原点未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p177-f01",
+    "page": 177,
+    "source_pointer": "/chapters/4/sections/7/pages/3/elements/0",
+    "figure_id": 30241,
+    "candidate_id": 9106,
+    "inferences": [
+      {
+        "at": "1,3",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字残损；正文“黑1夹时”及图中2至9的局部次序支持此处为黑1。",
+        "cell": "1,3"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "实际可见11列、11行且四边封闭，与指定19×19全盘不符；暂按左上角对齐，原点无法唯一确定。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p177-f02",
+    "page": 177,
+    "source_pointer": "/chapters/4/sections/7/pages/3/elements/1",
+    "figure_id": 30242,
+    "candidate_id": 9107,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "实际可见11列、11行且四边封闭，与指定19×19全盘不符；暂按左上角对齐，原点无法唯一确定。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p177-f03",
+    "page": 177,
+    "source_pointer": "/chapters/4/sections/7/pages/3/elements/2",
+    "figure_id": 30243,
+    "candidate_id": 9108,
+    "inferences": [
+      {
+        "at": "4,10",
+        "value": "5",
+        "basis": "combined",
+        "reason": "底边字形残缺；结合可见5形、相邻黑7及黑9，正文强调黑5关键，判为5。",
+        "cell": "4,10"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边均有边框，实际为11×11交点；无法与19×19棋盘唯一对应，暂取左上原点。",
+        "candidates": [
+          "独立11×11棋盘",
+          "19×19棋盘中位置未定的11×11区域"
+        ],
+        "cell": null
+      },
+      {
+        "at": "3,10",
+        "reason": "黑子内有模糊白色小环，不能确定是否为印刷标记。",
+        "candidates": [
+          "印刷噪点",
+          "字母a",
+          "残缺数字6"
+        ],
+        "cell": "3,10"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p178-f01",
+    "page": 178,
+    "source_pointer": "/chapters/4/sections/8/pages/0/elements/0",
+    "figure_id": 30244,
+    "candidate_id": 9109,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边均有边框，实际为11×11交点；无法与19×19棋盘唯一对应，暂取左上原点。",
+        "candidates": [
+          "独立11×11棋盘",
+          "19×19棋盘中位置未定的11×11区域"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p179-f01",
+    "page": 179,
+    "source_pointer": "/chapters/4/sections/8/pages/1/elements/0",
+    "figure_id": 30245,
+    "candidate_id": 9110,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "无可辨星位或明确截断标记，暂按右、下为实边的右下角局部定位；全盘位置未完全确定。",
+        "candidates": [
+          "origin_col=8,origin_row=8",
+          "其他局部位置"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p179-f02",
+    "page": 179,
+    "source_pointer": "/chapters/4/sections/8/pages/1/elements/1",
+    "figure_id": 30246,
+    "candidate_id": 9111,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "与1图为同一局部，无可辨星位或明确截断标记；暂按右下角定位，全盘位置未完全确定。",
+        "candidates": [
+          "origin_col=8,origin_row=8",
+          "其他局部位置"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p179-f03",
+    "page": 179,
+    "source_pointer": "/chapters/4/sections/8/pages/1/elements/2",
+    "figure_id": 30247,
+    "candidate_id": 9112,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11；相邻页题头注明11路盘测试，与题设19路不符。无法确定19路原点，暂取(0,0)。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p180-f01",
+    "page": 180,
+    "source_pointer": "/chapters/4/sections/8/pages/2/elements/0",
+    "figure_id": 30248,
+    "candidate_id": 9113,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11；本页题头注明11路盘测试，与题设19路不符。无法确定19路原点，暂取(0,0)。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p180-f02",
+    "page": 180,
+    "source_pointer": "/chapters/4/sections/8/pages/2/elements/1",
+    "figure_id": 30249,
+    "candidate_id": 9114,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原页题为“11路盤のテスト”，目标四边完整，实际为11×11棋盘；无法与题设19×19四边同时对应，原点暂记(0,0)。",
+        "candidates": [
+          "独立11×11棋盘，原点(0,0)",
+          "19×19中的区域，位置无法确定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p180-f03",
+    "page": 180,
+    "source_pointer": "/chapters/4/sections/8/pages/2/elements/2",
+    "figure_id": 30250,
+    "candidate_id": 9115,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原页题为“11路盤のテスト”，目标为四边完整的11×11棋盘；与题设19×19不一致，原点暂记(0,0)。",
+        "candidates": [
+          "独立11×11棋盘，原点(0,0)",
+          "19×19中的区域，位置无法确定"
+        ],
+        "cell": null
+      },
+      {
+        "at": "10,5",
+        "reason": "黑子内有白色残笔，无法确认是缺墨还是残损标签。",
+        "candidates": [
+          "无标签，黑子缺墨",
+          "残损标签，内容不明"
+        ],
+        "cell": "10,5"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p181-f01",
+    "page": 181,
+    "source_pointer": "/chapters/4/sections/8/pages/3/elements/0",
+    "figure_id": 30251,
+    "candidate_id": 9116,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图为四边闭合的11×11棋盘，无定位星位，与题设19路不符；暂置左上原点，无法唯一定位。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p181-f02",
+    "page": 181,
+    "source_pointer": "/chapters/4/sections/8/pages/3/elements/1",
+    "figure_id": 30252,
+    "candidate_id": 9117,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图为四边闭合的11×11棋盘，无定位星位，与题设19路不符；暂置左上原点，无法唯一定位。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p181-f03",
+    "page": 181,
+    "source_pointer": "/chapters/4/sections/8/pages/3/elements/2",
+    "figure_id": 30253,
+    "candidate_id": 9118,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边封闭，共11×11线，属于11路整盘；按题设19路定位缺乏依据，暂置左上。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p182-f01",
+    "page": 182,
+    "source_pointer": "/chapters/4/sections/9/pages/0/elements/0",
+    "figure_id": 30254,
+    "candidate_id": 9119,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边封闭，共11×11线，页眉明确为11路盘；按题设19路定位缺乏依据，暂置左上。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p183-f01",
+    "page": 183,
+    "source_pointer": "/chapters/4/sections/9/pages/1/elements/0",
+    "figure_id": 30255,
+    "candidate_id": 9120,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图为四边闭合的11路小盘，无可确认星位，不能唯一定位到19路棋盘；暂按右下角放置。",
+        "candidates": [
+          "origin=8,8",
+          "origin=0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p183-f02",
+    "page": 183,
+    "source_pointer": "/chapters/4/sections/9/pages/1/elements/1",
+    "figure_id": 30256,
+    "candidate_id": 9121,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图为四边闭合的11路小盘，无可确认星位，不能唯一定位到19路棋盘；暂按右下角放置。",
+        "candidates": [
+          "origin=8,8",
+          "origin=0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p183-f03",
+    "page": 183,
+    "source_pointer": "/chapters/4/sections/9/pages/1/elements/2",
+    "figure_id": 30257,
+    "candidate_id": 9122,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11路；来源为11路盘测试，无法唯一映射至题设19路盘，暂按左上角对齐。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p184-f01",
+    "page": 184,
+    "source_pointer": "/chapters/4/sections/9/pages/2/elements/0",
+    "figure_id": 30258,
+    "candidate_id": 9123,
+    "inferences": [
+      {
+        "at": "3,1",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字被纵向白缝遮损；正文“黑1、3”及相邻白2、黑3的位置确定此处为黑1。",
+        "cell": "3,1"
+      },
+      {
+        "at": "3,0",
+        "value": "6",
+        "basis": "combined",
+        "reason": "白子轮廓残存，数字被白缝遮损；正文“白6先行提劫”，此点正可提掉黑1。",
+        "cell": "3,0"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11路；页题明确为11路盘测试，无法唯一映射至19路盘，暂按左上角对齐。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      },
+      {
+        "at": "3,1",
+        "cell": "3,1",
+        "reason": "扫描白缝遮损编号字形；黑1为原模型依据正文与相邻编号提出的未验证候选，现有原页无法唯一辨认，未登记为有效静态编号。",
+        "candidates": [
+          "1（原模型上下文候选，未验证）",
+          "编号不可辨"
+        ]
+      },
+      {
+        "at": "3,0",
+        "cell": "3,0",
+        "reason": "扫描白缝遮损编号字形；白6为原模型依据正文与提子关系提出的未验证候选，现有原页无法唯一辨认，未登记为有效静态编号。",
+        "candidates": [
+          "6（原模型上下文候选，未验证）",
+          "编号不可辨"
+        ]
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p184-f02",
+    "page": 184,
+    "source_pointer": "/chapters/4/sections/9/pages/2/elements/1",
+    "figure_id": 30259,
+    "candidate_id": 9124,
+    "inferences": [
+      {
+        "at": "6,4",
+        "value": "1",
+        "basis": "combined",
+        "reason": "字形残损；图注“黑1断最大”及6图同点黑3的次序共同支持。",
+        "cell": "6,4"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页眉注明11路棋盘，目标四边完整，实为11×11；与19×19前提不符，原点暂记(0,0)。",
+        "candidates": [
+          "0,0（暂定）"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p184-f03",
+    "page": 184,
+    "source_pointer": "/chapters/4/sections/9/pages/2/elements/2",
+    "figure_id": 30260,
+    "candidate_id": 9125,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页眉注明11路棋盘，目标四边完整，实为11×11；与19×19前提不符，原点暂记(0,0)。",
+        "candidates": [
+          "0,0（暂定）"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p185-f01",
+    "page": 185,
+    "source_pointer": "/chapters/4/sections/9/pages/3/elements/0",
+    "figure_id": 30261,
+    "candidate_id": 9126,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见网格为11×11，四边封闭且无可辨星位，无法唯一对应19路棋盘；暂按左上原点记录。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p185-f02",
+    "page": 185,
+    "source_pointer": "/chapters/4/sections/9/pages/3/elements/1",
+    "figure_id": 30262,
+    "candidate_id": 9127,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见网格为11×11，四边封闭且无可辨星位，无法唯一对应19路棋盘；暂按左上原点记录。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p185-f03",
+    "page": 185,
+    "source_pointer": "/chapters/4/sections/9/pages/3/elements/2",
+    "figure_id": 30263,
+    "candidate_id": 9128,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，实际为11路棋盘，无法同时满足19路棋盘的四边定位；暂以左上角为原点。",
+        "candidates": [
+          "完整11路棋盘，原点0,0",
+          "强制按19路局部解释时原点不确定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p186-f01",
+    "page": 186,
+    "source_pointer": "/chapters/4/sections/10/pages/0/elements/0",
+    "figure_id": 30264,
+    "candidate_id": 9129,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，全页题头明确注明11路盘；与19路前提冲突，暂以左上角为原点。",
+        "candidates": [
+          "完整11路棋盘，原点0,0",
+          "强制按19路局部解释时原点不确定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p187-f01",
+    "page": 187,
+    "source_pointer": "/chapters/4/sections/10/pages/1/elements/0",
+    "figure_id": 30265,
+    "candidate_id": 9130,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "无坐标或清晰星位；据左下角官子形状暂取此原点，上、右边线视为截线。",
+        "candidates": [
+          "0,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p187-f02",
+    "page": 187,
+    "source_pointer": "/chapters/4/sections/10/pages/1/elements/1",
+    "figure_id": 30266,
+    "candidate_id": 9131,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "无坐标或清晰星位；据左下角官子形状暂取此原点，上、右边线视为截线。",
+        "candidates": [
+          "0,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p187-f03",
+    "page": 187,
+    "source_pointer": "/chapters/4/sections/10/pages/1/elements/2",
+    "figure_id": 30267,
+    "candidate_id": 9132,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "目标为四边封闭的11×11网格；原页另有“11路盤のテスト”字样，与题设19×19不一致。无法唯一定位，暂置原点(0,0)。",
+        "candidates": [
+          "独立11×11棋盘",
+          "19×19棋盘中的位置未定区域"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p188-f01",
+    "page": 188,
+    "source_pointer": "/chapters/4/sections/10/pages/2/elements/0",
+    "figure_id": 30268,
+    "candidate_id": 9133,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原页标注“11路盤のテスト”，目标四边封闭且横纵各11线；与题设19×19不一致，暂置原点(0,0)，实际映射未定。",
+        "candidates": [
+          "独立11×11棋盘",
+          "19×19棋盘中的位置未定区域"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p188-f02",
+    "page": 188,
+    "source_pointer": "/chapters/4/sections/10/pages/2/elements/1",
+    "figure_id": 30269,
+    "candidate_id": 9134,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边均可见，实为11×11整盘，页眉亦称“11路盤”。与题设19路不符，无法确定19路原点，暂取0,0。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p188-f03",
+    "page": 188,
+    "source_pointer": "/chapters/4/sections/10/pages/2/elements/2",
+    "figure_id": 30270,
+    "candidate_id": 9135,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边均可见，实为11×11整盘，页眉亦称“11路盤”。与题设19路不符，无法确定19路原点，暂取0,0。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p189-f01",
+    "page": 189,
+    "source_pointer": "/chapters/4/sections/10/pages/3/elements/0",
+    "figure_id": 30271,
+    "candidate_id": 9136,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11交点，四边均有边线且无星位，疑为独立11路棋盘；无法唯一映射题设19路，原点暂填(0,0)。",
+        "candidates": [
+          "独立11路棋盘",
+          "19路棋盘内原点未定的11×11区域"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p189-f02",
+    "page": 189,
+    "source_pointer": "/chapters/4/sections/10/pages/3/elements/1",
+    "figure_id": 30272,
+    "candidate_id": 9137,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11交点，四边均有边线且无星位，疑为独立11路棋盘；无法唯一映射题设19路，原点暂填(0,0)。",
+        "candidates": [
+          "独立11路棋盘",
+          "19路棋盘内原点未定的11×11区域"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p189-f03",
+    "page": 189,
+    "source_pointer": "/chapters/4/sections/10/pages/3/elements/2",
+    "figure_id": 30273,
+    "candidate_id": 9138,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，实际为11×11棋盘，无法唯一映射到题设19路棋盘；原点暂记0,0。",
+        "candidates": [
+          "0,0",
+          "其他19路嵌入位置"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p190-f01",
+    "page": 190,
+    "source_pointer": "/chapters/4/sections/11/pages/0/elements/0",
+    "figure_id": 30274,
+    "candidate_id": 9139,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11交点，原页亦标明11路盘；无法唯一映射到题设19路棋盘，原点暂记0,0。",
+        "candidates": [
+          "0,0",
+          "其他19路嵌入位置"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p191-f01",
+    "page": 191,
+    "source_pointer": "/chapters/4/sections/11/pages/1/elements/0",
+    "figure_id": 30275,
+    "candidate_id": 9140,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图示11×11，四周均有边线且无星位，无法唯一对应19×19棋盘；暂取左上原点。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p191-f02",
+    "page": 191,
+    "source_pointer": "/chapters/4/sections/11/pages/1/elements/1",
+    "figure_id": 30276,
+    "candidate_id": 9141,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图示11×11，四周均有边线且无星位，无法唯一对应19×19棋盘；暂取左上原点。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p191-f03",
+    "page": 191,
+    "source_pointer": "/chapters/4/sections/11/pages/1/elements/2",
+    "figure_id": 30277,
+    "candidate_id": 9142,
+    "inferences": [
+      {
+        "at": "1,3",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字褪色；残留竖笔、正文“黑1嵌”及白2黑3白4的局部次序共同支持。",
+        "cell": "1,3"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图中四边完整，共11×11路；相邻页标题亦为“11路盤のテスト”，与题设19路不符。暂置原点，无法唯一确定在19路盘上的位置。",
+        "candidates": [
+          "origin=0,0",
+          "origin=8,0",
+          "origin=0,8",
+          "origin=8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p192-f01",
+    "page": 192,
+    "source_pointer": "/chapters/4/sections/11/pages/2/elements/0",
+    "figure_id": 30278,
+    "candidate_id": 9143,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11路，页眉注明“11路盤のテスト”；与题设19路不符。暂置原点，无法唯一确定在19路盘上的位置。",
+        "candidates": [
+          "origin=0,0",
+          "origin=8,0",
+          "origin=0,8",
+          "origin=8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p192-f02",
+    "page": 192,
+    "source_pointer": "/chapters/4/sections/11/pages/2/elements/1",
+    "figure_id": 30279,
+    "candidate_id": 9144,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原页标题为“11路盤のテスト”，四边完整，实际为11路盘，无法唯一映射到19路盘；依据正文“转至右下”暂按右下对齐。",
+        "candidates": [
+          "origin=8,8",
+          "origin=0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p192-f03",
+    "page": 192,
+    "source_pointer": "/chapters/4/sections/11/pages/2/elements/2",
+    "figure_id": 30280,
+    "candidate_id": 9145,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原页标题为“11路盤のテスト”，四边完整，实际为11路盘，无法唯一映射到19路盘；承接前图右下收官，暂按右下对齐。",
+        "candidates": [
+          "origin=8,8",
+          "origin=0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p193-f01",
+    "page": 193,
+    "source_pointer": "/chapters/4/sections/11/pages/3/elements/0",
+    "figure_id": 30281,
+    "candidate_id": 9146,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11交点，四侧均有框线，无可辨星位，无法唯一定位于19路棋盘；暂置左上。",
+        "candidates": [
+          "origin=0,0",
+          "origin=8,0",
+          "origin=0,8",
+          "origin=8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p193-f02",
+    "page": 193,
+    "source_pointer": "/chapters/4/sections/11/pages/3/elements/1",
+    "figure_id": 30282,
+    "candidate_id": 9147,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11交点，四侧均有框线，无可辨星位，无法唯一定位于19路棋盘；暂置左上。",
+        "candidates": [
+          "origin=0,0",
+          "origin=8,0",
+          "origin=0,8",
+          "origin=8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p193-f03",
+    "page": 193,
+    "source_pointer": "/chapters/4/sections/11/pages/3/elements/2",
+    "figure_id": 30283,
+    "candidate_id": 9148,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整可见，实际为11×11盘，与19路前提不相容；暂以左上角原点记录。",
+        "candidates": [
+          "0,0",
+          "无法按19路唯一定位"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p194-f01",
+    "page": 194,
+    "source_pointer": "/chapters/4/sections/12/pages/0/elements/0",
+    "figure_id": 30284,
+    "candidate_id": 9149,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整可见，共11×11路，页眉亦注明11路盘；与19路前提不相容，暂以左上角原点记录。",
+        "candidates": [
+          "0,0",
+          "无法按19路唯一定位"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p195-f01",
+    "page": 195,
+    "source_pointer": "/chapters/4/sections/12/pages/1/elements/0",
+    "figure_id": 30285,
+    "candidate_id": 9150,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图为四边封闭的11×11示意盘，无星位，无法与19×19棋盘四边同时对应；暂取左上原点。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p195-f02",
+    "page": 195,
+    "source_pointer": "/chapters/4/sections/12/pages/1/elements/1",
+    "figure_id": 30286,
+    "candidate_id": 9151,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "原图为四边封闭的11×11示意盘，无星位，无法与19×19棋盘四边同时对应；暂取左上原点。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p195-f03",
+    "page": 195,
+    "source_pointer": "/chapters/4/sections/12/pages/1/elements/2",
+    "figure_id": 30287,
+    "candidate_id": 9152,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11线；上下文为11路盘题，无法唯一映射到题设19路盘，原点暂记0,0。",
+        "candidates": [
+          "0,0（暂定）",
+          "19路位置无法确定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p196-f01",
+    "page": 196,
+    "source_pointer": "/chapters/4/sections/13/pages/0/elements/0",
+    "figure_id": 30288,
+    "candidate_id": 9153,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11线；页眉明确为11路盘测试，无法唯一映射到题设19路盘，原点暂记0,0。",
+        "candidates": [
+          "0,0（暂定）",
+          "19路位置无法确定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p197-f01",
+    "page": 197,
+    "source_pointer": "/chapters/4/sections/13/pages/1/elements/0",
+    "figure_id": 30289,
+    "candidate_id": 9154,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见网格为11×11，四边封闭且无星位，不能唯一对应19路棋盘；暂按左上对齐。",
+        "candidates": [
+          "origin_col=0,origin_row=0",
+          "缩略示意棋盘，绝对位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p197-f02",
+    "page": 197,
+    "source_pointer": "/chapters/4/sections/13/pages/1/elements/1",
+    "figure_id": 30290,
+    "candidate_id": 9155,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见网格为11×11，四边封闭且无星位，不能唯一对应19路棋盘；暂按左上对齐。",
+        "candidates": [
+          "origin_col=0,origin_row=0",
+          "缩略示意棋盘，绝对位置未定"
+        ],
+        "cell": null
+      },
+      {
+        "at": "7,6",
+        "reason": "黑子内有白色短划，疑似数字1，也可能只是印刷缺损。",
+        "candidates": [
+          "1",
+          "无数字，印刷缺损"
+        ],
+        "cell": "7,6"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p197-f03",
+    "page": 197,
+    "source_pointer": "/chapters/4/sections/13/pages/1/elements/2",
+    "figure_id": 30291,
+    "candidate_id": 9156,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边闭合，网格为11×11；结合次页“11路盤のテスト”，应为独立十一路棋盘，无法唯一定位到19×19。暂取原点(0,0)。",
+        "candidates": [
+          "独立11×11棋盘",
+          "19×19区域，原点暂定0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p198-f01",
+    "page": 198,
+    "source_pointer": "/chapters/4/sections/13/pages/2/elements/1",
+    "figure_id": 30292,
+    "candidate_id": 9157,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边闭合，网格为11×11；本页题头明确写“11路盤のテスト”，无法唯一定位到19×19。暂取原点(0,0)。",
+        "candidates": [
+          "独立11×11棋盘",
+          "19×19区域，原点暂定0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p198-f02",
+    "page": 198,
+    "source_pointer": "/chapters/4/sections/13/pages/2/elements/2",
+    "figure_id": 30293,
+    "candidate_id": 9158,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "题头为“11路盤のテスト”，图中四边封闭，实际为完整11路盘；无法唯一定位到题设19路盘，暂置左上。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p198-f03",
+    "page": 198,
+    "source_pointer": "/chapters/4/sections/13/pages/2/elements/3",
+    "figure_id": 30294,
+    "candidate_id": 9159,
+    "inferences": [
+      {
+        "at": "9,2",
+        "value": "11",
+        "basis": "combined",
+        "reason": "黑子数字残缺；结合右邻白10及盘下注白12提劫，判为黑11。",
+        "cell": "9,2"
+      },
+      {
+        "at": "10,8",
+        "value": "19",
+        "basis": "combined",
+        "reason": "残字与19相符；正文明确列黑19为劫材，图中另有白20应手。",
+        "cell": "10,8"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "题头为“11路盤のテスト”，图中四边封闭，实际为完整11路盘；无法唯一定位到题设19路盘，暂置左上。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      },
+      {
+        "at": "10,9",
+        "reason": "黑子内有微小白痕，似印刷缺损，未确认独立标记。",
+        "candidates": [
+          "无标记（印刷缺损）",
+          "不明标记"
+        ],
+        "cell": "10,9"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p199-f01",
+    "page": 199,
+    "source_pointer": "/chapters/4/sections/13/pages/3/elements/0",
+    "figure_id": 30295,
+    "candidate_id": 9160,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图中为四边闭合的11路棋盘，无法与指定19路棋盘的四边同时对应；暂以左上角定位。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p199-f02",
+    "page": 199,
+    "source_pointer": "/chapters/4/sections/13/pages/3/elements/1",
+    "figure_id": 30296,
+    "candidate_id": 9161,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图中为四边闭合的11路棋盘，无法与指定19路棋盘的四边同时对应；暂以左上角定位。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p199-f03",
+    "page": 199,
+    "source_pointer": "/chapters/4/sections/13/pages/3/elements/2",
+    "figure_id": 30297,
+    "candidate_id": 9162,
+    "inferences": [
+      {
+        "at": "3,0",
+        "value": "9",
+        "basis": "combined",
+        "reason": "字形较淡；结合邻近黑7、白8、白10及正文黑先连续编号，判为黑9。",
+        "cell": "3,0"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，实际为11×11整盘，无法唯一定位到19路盘；暂记原点(0,0)。",
+        "candidates": [
+          "独立11路盘，19路原点不适用"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p200-f01",
+    "page": 200,
+    "source_pointer": "/chapters/4/sections/14/pages/0/elements/1",
+    "figure_id": 30298,
+    "candidate_id": 9163,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整且页题注明11路盘，与19路前提不符；暂记原点(0,0)。",
+        "candidates": [
+          "独立11路盘，19路原点不适用"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p201-f01",
+    "page": 201,
+    "source_pointer": "/chapters/4/sections/14/pages/1/elements/0",
+    "figure_id": 30299,
+    "candidate_id": 9164,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图示四边闭合的11×11棋盘，无星位，不能唯一对应19×19全盘；暂取左上原点。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p201-f02",
+    "page": 201,
+    "source_pointer": "/chapters/4/sections/14/pages/1/elements/1",
+    "figure_id": 30300,
+    "candidate_id": 9165,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图示四边闭合的11×11棋盘，无星位，不能唯一对应19×19全盘；暂取左上原点。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p201-f03",
+    "page": 201,
+    "source_pointer": "/chapters/4/sections/14/pages/1/elements/2",
+    "figure_id": 30301,
+    "candidate_id": 9166,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图示四边完整的11路盘，无法唯一映射到题设19路盘；原点暂记为(0,0)。",
+        "candidates": [
+          "0,0",
+          "0,8",
+          "8,0",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p202-f01",
+    "page": 202,
+    "source_pointer": "/chapters/4/sections/15/pages/0/elements/1",
+    "figure_id": 30302,
+    "candidate_id": 9167,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页眉注明11路盘，图示四边完整；无法唯一映射到题设19路盘，原点暂记为(0,0)。",
+        "candidates": [
+          "0,0",
+          "0,8",
+          "8,0",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p203-f01",
+    "page": 203,
+    "source_pointer": "/chapters/4/sections/15/pages/1/elements/0",
+    "figure_id": 30303,
+    "candidate_id": 9168,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "按左下角局部取原点；无清晰星位，左右哪侧为实际棋盘边仍欠确定。",
+        "candidates": [
+          "origin_col=0,origin_row=8",
+          "origin_col=8,origin_row=8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p203-f02",
+    "page": 203,
+    "source_pointer": "/chapters/4/sections/15/pages/1/elements/1",
+    "figure_id": 30304,
+    "candidate_id": 9169,
+    "inferences": [
+      {
+        "at": "6,10",
+        "value": "1",
+        "basis": "combined",
+        "reason": "数字较淡；正文“黑1托”及相邻白2、黑3的局部次序支持读作1。",
+        "cell": "6,10"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "按左下角局部取原点；无清晰星位，左右哪侧为实际棋盘边仍欠确定。",
+        "candidates": [
+          "origin_col=0,origin_row=8",
+          "origin_col=8,origin_row=8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p203-f03",
+    "page": 203,
+    "source_pointer": "/chapters/4/sections/15/pages/1/elements/2",
+    "figure_id": 30305,
+    "candidate_id": 9170,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图示四边封闭，呈完整11路盘，与指定19路盘不一致；无法唯一确定19路原点，暂记(0,0)。",
+        "candidates": [],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p204-f01",
+    "page": 204,
+    "source_pointer": "/chapters/4/sections/15/pages/2/elements/1",
+    "figure_id": 30306,
+    "candidate_id": 9171,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边封闭且页题明确为“11路盤のテスト”，与指定19路盘不一致；19路原点无法唯一确定，暂记(0,0)。",
+        "candidates": [],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p204-f02",
+    "page": 204,
+    "source_pointer": "/chapters/4/sections/15/pages/2/elements/2",
+    "figure_id": 30307,
+    "candidate_id": 9172,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11路；页题亦为“11路盤のテスト”。与19路设定不符，暂记原点(0,0)，无法唯一确定其在19路盘上的位置。",
+        "candidates": [
+          "完整11路棋盘",
+          "19路坐标中暂置原点(0,0)"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p204-f03",
+    "page": 204,
+    "source_pointer": "/chapters/4/sections/15/pages/2/elements/3",
+    "figure_id": 30308,
+    "candidate_id": 9173,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，共11×11路；页题亦为“11路盤のテスト”。与19路设定不符，暂记原点(0,0)，无法唯一确定其在19路盘上的位置。",
+        "candidates": [
+          "完整11路棋盘",
+          "19路坐标中暂置原点(0,0)"
+        ],
+        "cell": null
+      },
+      {
+        "at": "7,7",
+        "reason": "黑子内有残缺浅痕，无法确认是否为印刷破损或符号。",
+        "candidates": [
+          "无标记（印刷破损）",
+          "不可辨符号"
+        ],
+        "cell": "7,7"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p205-f01",
+    "page": 205,
+    "source_pointer": "/chapters/4/sections/15/pages/3/elements/0",
+    "figure_id": 30309,
+    "candidate_id": 9174,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "完整四边围成11×11路，原文亦称十一路盘，与题设19路不符；原点暂记(0,0)，无法确定其在19路盘上的位置。",
+        "candidates": [
+          "独立11路棋盘",
+          "19路中的未定位置"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p205-f02",
+    "page": 205,
+    "source_pointer": "/chapters/4/sections/15/pages/3/elements/1",
+    "figure_id": 30310,
+    "candidate_id": 9175,
+    "inferences": [
+      {
+        "at": "0,2",
+        "value": "11",
+        "basis": "combined",
+        "reason": "字迹较淡；结合黑9、白10、白12的局部次序，判为黑11。",
+        "cell": "0,2"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "完整四边围成11×11路，原文亦称十一路盘，与题设19路不符；原点暂记(0,0)，无法确定其在19路盘上的位置。",
+        "candidates": [
+          "独立11路棋盘",
+          "19路中的未定位置"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p205-f03",
+    "page": 205,
+    "source_pointer": "/chapters/4/sections/15/pages/3/elements/2",
+    "figure_id": 30311,
+    "candidate_id": 9176,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，正文明确为十一路盘；无法唯一对应19路盘位置，暂以左上角为原点。",
+        "candidates": [
+          "origin=0,0",
+          "19路盘内位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p206-f01",
+    "page": 206,
+    "source_pointer": "/chapters/4/sections/16/pages/0/elements/1",
+    "figure_id": 30312,
+    "candidate_id": 9177,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，页眉注明十一路盘测试；无法唯一对应19路盘位置，暂以左上角为原点。",
+        "candidates": [
+          "origin=0,0",
+          "19路盘内位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p207-f01",
+    "page": 207,
+    "source_pointer": "/chapters/4/sections/16/pages/1/elements/0",
+    "figure_id": 30313,
+    "candidate_id": 9178,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "无可核对星位，截框与实际边线不能完全区分；按棋形暂定为十九路棋盘左上角局部。",
+        "candidates": [
+          "0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p207-f02",
+    "page": 207,
+    "source_pointer": "/chapters/4/sections/16/pages/1/elements/1",
+    "figure_id": 30314,
+    "candidate_id": 9179,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "无可核对星位，截框与实际边线不能完全区分；按棋形暂定为十九路棋盘左上角局部。",
+        "candidates": [
+          "0,0"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p207-f03",
+    "page": 207,
+    "source_pointer": "/chapters/4/sections/16/pages/1/elements/2",
+    "figure_id": 30315,
+    "candidate_id": 9180,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "图示四边及11×11格线完整；相邻页页眉注明“11路盤のテスト”，与题设19路不一致。暂记原点(0,0)，无法确定其在19路盘上的位置。",
+        "candidates": [
+          "0,0",
+          "0,8",
+          "8,0",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p208-f01",
+    "page": 208,
+    "source_pointer": "/chapters/4/sections/16/pages/2/elements/1",
+    "figure_id": 30316,
+    "candidate_id": 9181,
+    "inferences": [
+      {
+        "at": "4,10",
+        "value": "1",
+        "basis": "combined",
+        "reason": "残字呈细竖笔；正文“黑1提”及下边白8、黑9、白10、黑11的续着支持判为1。",
+        "cell": "4,10"
+      },
+      {
+        "at": "3,10",
+        "value": "9",
+        "basis": "combined",
+        "reason": "数字褪色，结合残笔及相邻白8、白10、黑11的续着判为9。",
+        "cell": "3,10"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边及11×11格线完整，页眉明确写“11路盤のテスト”；与题设19路不一致。暂记原点(0,0)，19路盘位置无法确定。",
+        "candidates": [
+          "0,0",
+          "0,8",
+          "8,0",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p208-f02",
+    "page": 208,
+    "source_pointer": "/chapters/4/sections/16/pages/2/elements/2",
+    "figure_id": 30317,
+    "candidate_id": 9182,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页题为“11路盤のテスト”，四边完整，实为11路盘；无法唯一嵌入19路盘，暂置原点(0,0)。",
+        "candidates": [
+          "origin=0,0",
+          "独立11路棋盘"
+        ],
+        "cell": null
+      },
+      {
+        "at": "5,8",
+        "reason": "白子内有少量残墨，无法确认是否为标号。",
+        "candidates": [
+          "无编号（印刷残墨）",
+          "不可辨编号"
+        ],
+        "cell": "5,8"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p208-f03",
+    "page": 208,
+    "source_pointer": "/chapters/4/sections/16/pages/2/elements/3",
+    "figure_id": 30318,
+    "candidate_id": 9183,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页题为“11路盤のテスト”，四边完整，实为11路盘；无法唯一嵌入19路盘，暂置原点(0,0)。",
+        "candidates": [
+          "origin=0,0",
+          "独立11路棋盘"
+        ],
+        "cell": null
+      },
+      {
+        "at": "4,9",
+        "reason": "白子左上有残墨，不能确定为编号；正文提及白14，但不足以定位。",
+        "candidates": [
+          "无编号（印刷残墨）",
+          "14"
+        ],
+        "cell": "4,9"
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p209-f01",
+    "page": 209,
+    "source_pointer": "/chapters/4/sections/16/pages/3/elements/0",
+    "figure_id": 30319,
+    "candidate_id": 9184,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11且四边封闭，无星位，与19路整盘设定不一致；暂按左上角登记，无法唯一定位。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p209-f02",
+    "page": 209,
+    "source_pointer": "/chapters/4/sections/16/pages/3/elements/1",
+    "figure_id": 30320,
+    "candidate_id": 9185,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11且四边封闭，无星位，与19路整盘设定不一致；暂按左上角登记，无法唯一定位。",
+        "candidates": [
+          "0,0",
+          "8,0",
+          "0,8",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p209-f03",
+    "page": 209,
+    "source_pointer": "/chapters/4/sections/16/pages/3/elements/2",
+    "figure_id": 30321,
+    "candidate_id": 9186,
+    "inferences": [
+      {
+        "at": "5,10",
+        "value": "15",
+        "basis": "combined",
+        "reason": "末位字形较淡，结合底边16、17、18及中央19，读作15。",
+        "cell": "5,10"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边完整，可见棋盘为11路；无法唯一映射至题设19路盘，原点暂取0,0。",
+        "candidates": [
+          "0,0（可见棋盘左上）",
+          "19路盘内位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p210-f01",
+    "page": 210,
+    "source_pointer": "/chapters/4/sections/17/pages/0/elements/1",
+    "figure_id": 30322,
+    "candidate_id": 9187,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "页眉明确为11路盘，图中四边完整且为11×11；无法唯一映射至题设19路盘，原点暂取0,0。",
+        "candidates": [
+          "0,0（可见棋盘左上）",
+          "19路盘内位置未定"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p211-f01",
+    "page": 211,
+    "source_pointer": "/chapters/4/sections/17/pages/1/elements/0",
+    "figure_id": 30323,
+    "candidate_id": 9188,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "未见可核验星位；依据右、下边界及上下文推定为右下角局部，原点未能唯一核实。",
+        "candidates": [
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p211-f02",
+    "page": 211,
+    "source_pointer": "/chapters/4/sections/17/pages/1/elements/1",
+    "figure_id": 30324,
+    "candidate_id": 9189,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "未见可核验星位；依据右、下边界及上下文推定为右下角局部，原点未能唯一核实。",
+        "candidates": [
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p211-f03",
+    "page": 211,
+    "source_pointer": "/chapters/4/sections/17/pages/1/elements/2",
+    "figure_id": 30325,
+    "candidate_id": 9190,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见完整11×11网格，四边均封闭；上下文亦出现“11路盤”。与指定19路全盘不一致，暂以上左原点登记，实际定位无法唯一确定。",
+        "candidates": [
+          "0,0",
+          "0,8",
+          "8,0",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p212-f01",
+    "page": 212,
+    "source_pointer": "/chapters/4/sections/17/pages/2/elements/1",
+    "figure_id": 30326,
+    "candidate_id": 9191,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见完整11×11网格，四边均封闭；本页标题为“11路盤のテスト”。与指定19路全盘不一致，暂以上左原点登记，实际定位无法唯一确定。",
+        "candidates": [
+          "0,0",
+          "0,8",
+          "8,0",
+          "8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p212-f02",
+    "page": 212,
+    "source_pointer": "/chapters/4/sections/17/pages/2/elements/2",
+    "figure_id": 30327,
+    "candidate_id": 9192,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边均可见，实数为11×11，原页亦题“11路盤”。无法唯一映射至指定19路棋盘，暂取左上原点。",
+        "candidates": [
+          "origin_col=0,origin_row=0",
+          "原图为完整11路棋盘，无唯一19路对应位置"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p212-f03",
+    "page": 212,
+    "source_pointer": "/chapters/4/sections/17/pages/2/elements/3",
+    "figure_id": 30328,
+    "candidate_id": 9193,
+    "inferences": [
+      {
+        "at": "2,0",
+        "value": "9",
+        "basis": "combined",
+        "reason": "残淡字形可辨为9，与正文“至白10”及黑方奇数手顺序相符。",
+        "cell": "2,0"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边均可见，实数为11×11，原页亦题“11路盤”。无法唯一映射至指定19路棋盘，暂取左上原点。",
+        "candidates": [
+          "origin_col=0,origin_row=0",
+          "原图为完整11路棋盘，无唯一19路对应位置"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p213-f01",
+    "page": 213,
+    "source_pointer": "/chapters/4/sections/17/pages/3/elements/0",
+    "figure_id": 30329,
+    "candidate_id": 9194,
+    "inferences": [
+      {
+        "at": "0,4",
+        "value": "5",
+        "basis": "combined",
+        "reason": "残字近似5；黑1、3及白6、黑7的局部编号顺序佐证。",
+        "cell": "0,4"
+      },
+      {
+        "at": "0,5",
+        "value": "7",
+        "basis": "combined",
+        "reason": "残字近似7；正文说明黑先至白8，此处与白6、8相邻的编号顺序相符。",
+        "cell": "0,5"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可辨范围为11列11行，呈小棋盘边框，无法唯一对应19×19位置；暂以上左对齐。",
+        "candidates": [
+          "origin=0,0",
+          "origin=0,8",
+          "origin=8,0",
+          "origin=8,8"
+        ],
+        "cell": null
+      },
+      {
+        "at": "0,0–6,0",
+        "reason": "上缘受条码及裁切遮挡，这些交点的占用状态无法确认；未补棋子。",
+        "candidates": [
+          "empty",
+          "black",
+          "white"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p213-f02",
+    "page": 213,
+    "source_pointer": "/chapters/4/sections/17/pages/3/elements/1",
+    "figure_id": 30330,
+    "candidate_id": 9195,
+    "inferences": [
+      {
+        "at": "1,10",
+        "value": "5",
+        "basis": "combined",
+        "reason": "黑子内残字近似5；正文“黑5先扑再7位”，并有邻近白6及黑7佐证。",
+        "cell": "1,10"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "四边围成11×11小棋盘，无法唯一对应19×19位置；暂以上左对齐。",
+        "candidates": [
+          "origin=0,0",
+          "origin=0,8",
+          "origin=8,0",
+          "origin=8,8"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  },
+  {
+    "recognition_id": "p213-f03",
+    "page": 213,
+    "source_pointer": "/chapters/4/sections/17/pages/3/elements/2",
+    "figure_id": 30331,
+    "candidate_id": 9196,
+    "inferences": [
+      {
+        "at": "5,10",
+        "value": "20",
+        "basis": "combined",
+        "reason": "末位字形近0，结合后续21至25的编号读作20。",
+        "cell": "5,10"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见11×11封口网格，无可定位星位；映射到19路棋盘的位置不唯一，暂按左下区域。",
+        "candidates": [
+          "0,8",
+          "0,0",
+          "8,8",
+          "8,0"
+        ],
+        "cell": null
+      },
+      {
+        "at": "footnote",
+        "reason": "图下注前两项为黑9、黑19接；末项白圈号疑24，字形较糊，解析文本另作22或25。未据此补落点。",
+        "candidates": [
+          "24つぐ",
+          "22つぐ"
+        ],
+        "cell": null
+      }
+    ],
+    "origin_uncertain": true
+  }
+]

@@ -1,0 +1,186 @@
+{
+  "PROD_Web": {
+    "host": "PROD",
+    "final": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+    "web": {
+      "id": "d238d975c3554422499982f1cdbb475a5d5a1836a98a4310396181d2f9390e1f",
+      "image": "sha256:af3d02331409a724a2bd7901ac26504d8ea86f24c0572d91027d233397b476c5",
+      "started_at": "2026-10-20T06:32:40.082926413Z",
+      "restart_count": 0
+    },
+    "health": "PASS",
+    "non_web_containers_preserved": 19,
+    "critical_non_web_containers_preserved": [
+      "katrain-ucloud-katrain-cron-1",
+      "katrain-ucloud-postgres-1",
+      "katrain-ucloud-katago-cron-1",
+      "katrain-ucloud-katago-web-1"
+    ],
+    "backup": "/home/ubuntu/kifu-hourly-incremental-20261019/web-final.pre-e23.PROD.override.yml",
+    "full_effective_config_identity_only": true
+  },
+  "TEST_Web": {
+    "host": "TEST",
+    "final": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+    "web": {
+      "id": "d47a9975c74a02bdda83da775d28f349f36178a56953eba11d009293b6b68185",
+      "image": "sha256:42ba8fe019fd9857a835db7ad1d135041a61522d1f60c293387f1c6e2f831d48",
+      "started_at": "2026-10-20T06:33:09.868286205Z",
+      "restart_count": 0
+    },
+    "health": "PASS",
+    "non_web_containers_preserved": 76,
+    "critical_non_web_containers_preserved": [
+      "katrain-cron",
+      "katrain-postgres",
+      "katago-gpu1",
+      "katago-gpu0",
+      "kifu1000-supervisor-20261018",
+      "kifu1000-engine-gpu0-20261018"
+    ],
+    "backup": "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.pre-e23.TEST.override.yml",
+    "full_effective_config_identity_only": true
+  },
+  "TEST_cron": {
+    "cron_id": "0008046aed66fdb5949e8836b6d1f860eab60384817117476b4ba9f798a2f175",
+    "image": "sha256:95f4308b36b5844e91aec8ce14e3cbe8c3fa982dcc6bd00cd5efb34db410973e",
+    "build_sha": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+    "other_containers_unchanged": [
+      "katrain-web",
+      "katrain-postgres",
+      "katago-gpu1",
+      "kifu1000-supervisor-20261018"
+    ],
+    "job_pause_preserved": true,
+    "restart_count": 0,
+    "started_at": "2026-10-20T06:33:34.056257306Z"
+  },
+  "pause_restore": {
+    "maintenance_pause_restored": true,
+    "command_id": 2,
+    "verified_games": 72,
+    "checks_per_environment": 360,
+    "no_publication_phase_modified": true
+  },
+  "identity_probe": {
+    "status": "passed",
+    "request_sha256": "db3053212d7dbdd2bd8285568ebd0fe1bf01e0f83bf8975d1b387f2d4b28d06a",
+    "games": 72,
+    "instructions": 109,
+    "results": {
+      "qualified": 109
+    },
+    "llm_calls": 0,
+    "scope": "actual restricted TEST-cron to PROD receiver readonly operation"
+  },
+  "TEST_HTTP": {
+    "status": "verified",
+    "scope": "representative HTTP pages/assets/list; not browser rendering or P95 benchmark",
+    "health": {
+      "status": "ok",
+      "version": "1.17.1",
+      "engines": {
+        "local": "reachable",
+        "cloud": "unconfigured"
+      }
+    },
+    "pages": [
+      {
+        "path": "/galaxy/kifu",
+        "status": 200,
+        "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+        "seconds": 0.012
+      },
+      {
+        "path": "/kiosk/kifu",
+        "status": 200,
+        "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+        "seconds": 0.002
+      }
+    ],
+    "assets": [
+      {
+        "path": "/assets/api-C-UlmUHc.js",
+        "status": 200,
+        "bytes": 11234
+      },
+      {
+        "path": "/assets/index-C90zRD53.js",
+        "status": 200,
+        "bytes": 14609
+      },
+      {
+        "path": "/assets/index-DFEU3Joj.css",
+        "status": 200,
+        "bytes": 12883
+      },
+      {
+        "path": "/assets/rolldown-runtime-QTnfLwEv.js",
+        "status": 200,
+        "bytes": 694
+      },
+      {
+        "path": "/assets/ui-core-KixCoRFD.js",
+        "status": 200,
+        "bytes": 631537
+      }
+    ],
+    "public_total": 176362,
+    "english_russian_same20_ids_and_names": true
+  },
+  "PROD_HTTP": {
+    "status": "verified",
+    "scope": "representative HTTP pages/assets/list; not browser rendering or P95 benchmark",
+    "health": {
+      "status": "ok",
+      "version": "1.17.1",
+      "engines": {
+        "local": "reachable",
+        "cloud": "unconfigured"
+      }
+    },
+    "pages": [
+      {
+        "path": "/galaxy/kifu",
+        "status": 200,
+        "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+        "seconds": 0.006
+      },
+      {
+        "path": "/kiosk/kifu",
+        "status": 200,
+        "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+        "seconds": 0.003
+      }
+    ],
+    "assets": [
+      {
+        "path": "/assets/api-C-UlmUHc.js",
+        "status": 200,
+        "bytes": 11234
+      },
+      {
+        "path": "/assets/index-C90zRD53.js",
+        "status": 200,
+        "bytes": 14609
+      },
+      {
+        "path": "/assets/index-DFEU3Joj.css",
+        "status": 200,
+        "bytes": 12883
+      },
+      {
+        "path": "/assets/rolldown-runtime-QTnfLwEv.js",
+        "status": 200,
+        "bytes": 694
+      },
+      {
+        "path": "/assets/ui-core-KixCoRFD.js",
+        "status": 200,
+        "bytes": 631537
+      }
+    ],
+    "public_total": 176362,
+    "english_russian_same20_ids_and_names": true
+  }
+}

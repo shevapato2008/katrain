@@ -1,0 +1,1332 @@
+{
+  "source_copy": "/Users/fan/Repositories/go-topic-collections/docs/go-curriculum.html",
+  "order_policy": "模块顺序 → 模块内策划分组顺序 → 组内书序；按真实书源去重；补充专题最后",
+  "model": "gpt-6.1-sol / high",
+  "request_limit": 6,
+  "report_every_pdf_pages": 10,
+  "books": [
+    {
+      "catalog_id": "intro-up",
+      "title": "曹薰铉和李昌镐围棋教室：入门篇·上卷",
+      "roles": [
+        "入门、规则与第一盘棋 · 主教材"
+      ],
+      "book_id": 11,
+      "recognition": "已识别 · 314/314页 · 549图",
+      "validation_import": "已入TEST·549图；复跑0新增；SGF549份已验证",
+      "human_review": "待人工审核·549图（含疑点1图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:49+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "intro-down",
+      "title": "曹薰铉和李昌镐围棋教室：入门篇·下卷",
+      "roles": [
+        "入门、规则与第一盘棋 · 主教材",
+        "对杀与局部计算 · 基础"
+      ],
+      "book_id": 12,
+      "recognition": "已识别 · 313/313页 · 779图",
+      "validation_import": "已入TEST·779图；复跑0新增；SGF779份已验证",
+      "human_review": "待人工审核·779图（含疑点1图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "intro-fast",
+      "title": "围棋入门速成",
+      "roles": [
+        "入门、规则与第一盘棋 · 补充"
+      ],
+      "book_id": 13,
+      "recognition": "已识别 · 160/160页 · 132图",
+      "validation_import": "已入TEST·132图；复跑0新增；SGF132份已验证",
+      "human_review": "待人工审核·132图（含疑点27图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "模块内补充",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "shape",
+      "title": "围棋的筋和形",
+      "roles": [
+        "棋形与手筋 · 主教材"
+      ],
+      "book_id": 15,
+      "recognition": "已识别 · 190/190页 · 561图",
+      "validation_import": "已入TEST·561图；复跑0新增；SGF561份已验证",
+      "human_review": "待人工审核·561图（模型疑点30图＋来源冲突2图；含推断35图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "life-1",
+      "title": "李昌镐精讲围棋死活：第1卷",
+      "roles": [
+        "死活 · 主线选题"
+      ],
+      "book_id": 23,
+      "recognition": "已识别 · 255/255页 · 492图",
+      "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
+      "human_review": "待人工审核·492图（含推断13图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "opening",
+      "title": "布局基础",
+      "roles": [
+        "布局基础与方向 · 主教材"
+      ],
+      "book_id": 33,
+      "recognition": "已识别 · 197/197页 · 325图",
+      "validation_import": "已入TEST·325图；复跑0新增；SGF325份已验证",
+      "human_review": "待人工审核·325实体棋图；另2条跨页文字记录",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "source_exception_note": "PDF46两条非实体跨页文字引用已通过独立Astra工程复核；原ID15517/15518空记录保留；待整书覆盖对账",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "joseki",
+      "title": "吴清源围棋全集：第二卷·定式要领",
+      "roles": [
+        "定式理解与选择 · 主教材"
+      ],
+      "book_id": 46,
+      "recognition": "候选已交付 · 471图；注记未决2图",
+      "validation_import": "全书候选已入TEST·471图；注记归属未关闭2图；复跑0新增；SGF471份",
+      "human_review": "待人工审核·471图（含疑点25图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "sakata-1",
+      "title": "坂田荣男围棋全集：第1卷·围棋攻击法",
+      "roles": [
+        "中盘攻击 · 主教材"
+      ],
+      "book_id": 34,
+      "recognition": "已识别 · 276/276页 · 529图",
+      "validation_import": "已入TEST·529图；复跑0新增；SGF529份已验证",
+      "human_review": "待人工审核·529图（含疑点14图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "sakata-2",
+      "title": "坂田荣男围棋全集：第2卷·围棋治孤法",
+      "roles": [
+        "防守、治孤与腾挪 · 主教材"
+      ],
+      "book_id": 35,
+      "recognition": "已识别 · 293/293页 · 540图",
+      "validation_import": "已入TEST·540图；复跑0新增；SGF540份已验证",
+      "human_review": "待人工审核·540图（含疑点3图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "invasion",
+      "title": "打入后的攻防",
+      "roles": [
+        "打入、侵消与破空 · 主教材"
+      ],
+      "book_id": 51,
+      "recognition": "已识别 · 223/223页 · 802图",
+      "validation_import": "已入TEST·802图；复跑0新增；SGF802份已验证",
+      "human_review": "待人工审核·802图（含疑点34图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "moyo",
+      "title": "武宫流大模样作战法",
+      "roles": [
+        "厚势、模样与全局平衡 · 专题"
+      ],
+      "book_id": 54,
+      "recognition": "已识别 · 298/298页 · 502图",
+      "validation_import": "已入TEST·502图；复跑0新增；SGF502份已验证",
+      "human_review": "待人工审核·502图（含疑点12图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "sakata-5",
+      "title": "坂田荣男围棋全集：第5卷·围棋弃子法",
+      "roles": [
+        "弃子、转换与取舍 · 主教材"
+      ],
+      "book_id": 38,
+      "recognition": "已识别 · 266/266页 · 565图",
+      "validation_import": "已入TEST·565图；复跑0新增；SGF565份已验证",
+      "human_review": "待人工审核·565图（含疑点10图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "ko",
+      "title": "劫争制胜之道",
+      "roles": [
+        "劫争 · 主教材"
+      ],
+      "book_id": 57,
+      "recognition": "已识别 · 255/255页 · 614图",
+      "validation_import": "已入TEST·614图；复跑0新增；SGF614份已验证",
+      "human_review": "待人工审核·614图（含疑点53图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "simple-judgement",
+      "title": "简明形势判断",
+      "roles": [
+        "形势判断与胜负策略 · 主教材"
+      ],
+      "book_id": 60,
+      "recognition": "已识别 · 225/225页 · 533图",
+      "validation_import": "已入TEST·533图；复跑0新增；SGF533份已验证",
+      "human_review": "待人工审核·533图（含疑点11图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "endgame",
+      "title": "实用官子技巧",
+      "roles": [
+        "官子 · 主教材"
+      ],
+      "book_id": 62,
+      "recognition": "已识别 · 214/214页 · 638图",
+      "validation_import": "已入TEST·638图；复跑0新增；SGF638份已验证",
+      "human_review": "待人工审核·638图（含疑点171图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "go-games",
+      "title": "吴清源自选百局",
+      "roles": [
+        "打谱、实战分析与复盘 · 主线选局"
+      ],
+      "book_id": 63,
+      "recognition": "已识别 · 512/512页 · 744图",
+      "validation_import": "已入TEST·744图；复跑0新增；SGF744份已验证",
+      "human_review": "待人工审核·744图（含疑点7图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "life-2",
+      "title": "李昌镐精讲围棋死活：第2卷",
+      "roles": [
+        "死活 · 主线选题"
+      ],
+      "book_id": 24,
+      "recognition": "已识别 · 255/255页 · 492图",
+      "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
+      "human_review": "待人工审核·492图（含疑点1图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "lin-games",
+      "title": "名局细解",
+      "roles": [
+        "打谱、实战分析与复盘 · 主线选局"
+      ],
+      "book_id": 64,
+      "recognition": "已识别 · 197/197页 · 580图",
+      "validation_import": "已入TEST·580图；复跑0新增；SGF580份已验证",
+      "human_review": "待人工审核·580图（含疑点257图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "life-3",
+      "title": "李昌镐精讲围棋死活：第3卷",
+      "roles": [
+        "死活 · 主线选题"
+      ],
+      "book_id": 25,
+      "recognition": "已识别 · 255/255页 · 492图",
+      "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
+      "human_review": "待人工审核·492图（含疑点9图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "lin-games-1",
+      "title": "林海峰名局细解：第1册",
+      "roles": [
+        "打谱、实战分析与复盘 · 主线选局"
+      ],
+      "book_id": 65,
+      "recognition": "已识别 · 107/107页 · 250图",
+      "validation_import": "已入TEST·250图；复跑0新增；SGF250份已验证",
+      "human_review": "待人工审核·250图（含疑点2图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "life-4",
+      "title": "李昌镐精讲围棋死活：第4卷",
+      "roles": [
+        "死活 · 主线选题"
+      ],
+      "book_id": 26,
+      "recognition": "已识别 · 256/256页 · 492图",
+      "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
+      "human_review": "待人工审核·492图（含疑点1图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "lin-games-2",
+      "title": "林海峰名局细解：第2册",
+      "roles": [
+        "打谱、实战分析与复盘 · 主线选局"
+      ],
+      "book_id": 66,
+      "recognition": "已识别 · 125/125页 · 294图",
+      "validation_import": "已入TEST·294图；复跑0新增；SGF294份已验证",
+      "human_review": "待人工审核·294图（含疑点0图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "life-5",
+      "title": "李昌镐精讲围棋死活：第5卷",
+      "roles": [
+        "死活 · 主线选题"
+      ],
+      "book_id": 27,
+      "recognition": "已识别 · 255/255页 · 492图",
+      "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
+      "human_review": "待人工审核·492图（含疑点2图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "life-6",
+      "title": "李昌镐精讲围棋死活：第6卷",
+      "roles": [
+        "死活 · 主线选题"
+      ],
+      "book_id": 28,
+      "recognition": "已识别 · 256/256页 · 492图",
+      "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
+      "human_review": "待人工审核·492图（含疑点2图）",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-19T10:41:50+08:00",
+      "priority_tier": "核心教材",
+      "validation_import_manually_set": true
+    },
+    {
+      "catalog_id": "tesuji-1",
+      "title": "李昌镐精讲围棋手筋：第1卷",
+      "roles": [
+        "棋形与手筋 · 练习"
+      ],
+      "book_id": 17,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "capturing-race",
+      "title": "只此一手：第四册·对杀专题",
+      "roles": [
+        "对杀与局部计算 · 专项"
+      ],
+      "book_id": 31,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "cho-opening-1",
+      "title": "曹薰铉布局技巧：上册",
+      "roles": [
+        "布局基础与方向 · 练习"
+      ],
+      "book_id": 1,
+      "recognition": "已有前50页 / 80图结果，待核验复用",
+      "validation_import": "待核验既有结果 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": "2026-10-17",
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "lee-endgame-1",
+      "title": "李昌镐官子技巧：第1卷",
+      "roles": [
+        "官子 · 分层练习"
+      ],
+      "book_id": 5,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "tesuji-2",
+      "title": "李昌镐精讲围棋手筋：第2卷",
+      "roles": [
+        "棋形与手筋 · 练习"
+      ],
+      "book_id": 18,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "cho-opening-2",
+      "title": "曹薰铉布局技巧：中册",
+      "roles": [
+        "布局基础与方向 · 练习"
+      ],
+      "book_id": 3,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "lee-endgame-2",
+      "title": "李昌镐官子技巧：第2卷",
+      "roles": [
+        "官子 · 分层练习"
+      ],
+      "book_id": 6,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "tesuji-3",
+      "title": "李昌镐精讲围棋手筋：第3卷",
+      "roles": [
+        "棋形与手筋 · 练习"
+      ],
+      "book_id": 19,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "cho-opening-3",
+      "title": "曹薰铉布局技巧：下册",
+      "roles": [
+        "布局基础与方向 · 练习"
+      ],
+      "book_id": 8,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "lee-endgame-3",
+      "title": "李昌镐官子技巧：第3卷",
+      "roles": [
+        "官子 · 分层练习"
+      ],
+      "book_id": 7,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "tesuji-4",
+      "title": "李昌镐精讲围棋手筋：第4卷",
+      "roles": [
+        "棋形与手筋 · 练习"
+      ],
+      "book_id": 20,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "cho-opening-4",
+      "title": "曹薰铉布局技巧：第4卷",
+      "roles": [
+        "布局基础与方向 · 练习"
+      ],
+      "book_id": 9,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "tesuji-5",
+      "title": "李昌镐精讲围棋手筋：第5卷",
+      "roles": [
+        "棋形与手筋 · 练习"
+      ],
+      "book_id": 21,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "cho-opening-5",
+      "title": "曹薰铉布局技巧：第5卷",
+      "roles": [
+        "布局基础与方向 · 练习"
+      ],
+      "book_id": 10,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "tesuji-6",
+      "title": "李昌镐精讲围棋手筋：第6卷",
+      "roles": [
+        "棋形与手筋 · 练习"
+      ],
+      "book_id": 22,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "bad-shape",
+      "title": "围棋俗筋剖析",
+      "roles": [
+        "棋形与手筋 · 纠错"
+      ],
+      "book_id": 16,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "练习/专项/纠错"
+    },
+    {
+      "catalog_id": "cho-life",
+      "title": "赵治勋围棋死活精解：令人回味无穷的180道进阶问题",
+      "roles": [
+        "死活 · 提高"
+      ],
+      "book_id": 29,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "提高/棋风比较"
+    },
+    {
+      "catalog_id": "read-three",
+      "title": "围棋中级丛书：下一步看三步",
+      "roles": [
+        "对杀与局部计算 · 提高"
+      ],
+      "book_id": 32,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "提高/棋风比较"
+    },
+    {
+      "catalog_id": "sakata-7",
+      "title": "坂田荣男围棋全集：第7卷·围棋定形法",
+      "roles": [
+        "防守、治孤与腾挪 · 提高"
+      ],
+      "book_id": 40,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "提高/棋风比较"
+    },
+    {
+      "catalog_id": "ishida-judgement",
+      "title": "围棋形势判断基础",
+      "roles": [
+        "形势判断与胜负策略 · 提高"
+      ],
+      "book_id": 4,
+      "recognition": "已识别 · 195/195页 · 468图",
+      "validation_import": "已入TEST · 468图；人工成果保留",
+      "human_review": "少量已审核；其余待逐图核对",
+      "voice": "样例2图已生成；全书未批量",
+      "video": "样例2图×4K/RK两档；全书未批量",
+      "updated_at": "2026-10-17",
+      "priority_tier": "提高/棋风比较"
+    },
+    {
+      "catalog_id": "sakata-10",
+      "title": "坂田荣男围棋全集：第10卷·胜负师：怒涛时代",
+      "roles": [
+        "打谱、实战分析与复盘 · 棋风比较"
+      ],
+      "book_id": 43,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "提高/棋风比较"
+    },
+    {
+      "catalog_id": "hashimoto-life",
+      "title": "死活妙手179",
+      "roles": [
+        "死活 · 提高"
+      ],
+      "book_id": 30,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "提高/棋风比较"
+    },
+    {
+      "catalog_id": "sakata-11",
+      "title": "坂田荣男围棋全集：第11卷·胜负师：称霸棋坛",
+      "roles": [
+        "打谱、实战分析与复盘 · 棋风比较"
+      ],
+      "book_id": 44,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "提高/棋风比较"
+    },
+    {
+      "catalog_id": "sakata-12",
+      "title": "坂田荣男围棋全集：第12卷·胜负师：光荣轨迹",
+      "roles": [
+        "打谱、实战分析与复盘 · 棋风比较"
+      ],
+      "book_id": 45,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "提高/棋风比较"
+    },
+    {
+      "catalog_id": "sakata-3",
+      "title": "坂田荣男围棋全集：第3卷·围棋布局法",
+      "roles": [
+        "布局基础与方向 · 补充"
+      ],
+      "book_id": 36,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "joseki-conception",
+      "title": "围棋定式的构思",
+      "roles": [
+        "定式理解与选择 · 补充"
+      ],
+      "book_id": 47,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "cho-attack",
+      "title": "曹薰铉中盘战略：第二卷·攻击篇",
+      "roles": [
+        "中盘攻击 · 补充"
+      ],
+      "book_id": 48,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "unbeaten",
+      "title": "不败的战术",
+      "roles": [
+        "防守、治孤与腾挪 · 补充"
+      ],
+      "book_id": 50,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "go-invasion",
+      "title": "吴清源围棋全集：第三卷·序盘战术和打入要点",
+      "roles": [
+        "打入、侵消与破空 · 补充"
+      ],
+      "book_id": 52,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "takemiya-judgement",
+      "title": "武宫正树的围棋形势判断：围棋大局观是这样练成的",
+      "roles": [
+        "厚势、模样与全局平衡 · 补充"
+      ],
+      "book_id": 55,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "sakata-4",
+      "title": "坂田荣男围棋全集：第4卷·围棋作战法",
+      "roles": [
+        "弃子、转换与取舍 · 补充"
+      ],
+      "book_id": 37,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "ko-principles",
+      "title": "围棋的劫争",
+      "roles": [
+        "劫争 · 补充"
+      ],
+      "book_id": 58,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "hashimoto-judgement",
+      "title": "局势判断与应手",
+      "roles": [
+        "形势判断与胜负策略 · 补充"
+      ],
+      "book_id": 61,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "sakata-6",
+      "title": "坂田荣男围棋全集：第6卷·围棋计算法",
+      "roles": [
+        "官子 · 补充"
+      ],
+      "book_id": 39,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "basic-technique",
+      "title": "围棋基本技术",
+      "roles": [
+        "入门、规则与第一盘棋 · 补充"
+      ],
+      "book_id": 14,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "sakata-8",
+      "title": "坂田荣男围棋全集：第8卷·围棋序盘法",
+      "roles": [
+        "定式理解与选择 · 补充"
+      ],
+      "book_id": 41,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "kato-attack",
+      "title": "围棋进攻的基本方法",
+      "roles": [
+        "中盘攻击 · 补充"
+      ],
+      "book_id": 49,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "cho-invasion",
+      "title": "曹薰铉中盘战略：第一卷·打入篇",
+      "roles": [
+        "打入、侵消与破空 · 补充"
+      ],
+      "book_id": 53,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "balance",
+      "title": "秀行的世界：考虑平衡",
+      "roles": [
+        "厚势、模样与全局平衡 · 补充"
+      ],
+      "book_id": 56,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "sakata-9",
+      "title": "坂田荣男围棋全集：第9卷·围棋中盘法",
+      "roles": [
+        "弃子、转换与取舍 · 补充"
+      ],
+      "book_id": 42,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "ko-training",
+      "title": "打劫使您的棋力变强",
+      "roles": [
+        "劫争 · 补充"
+      ],
+      "book_id": 59,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "模块内补充"
+    },
+    {
+      "catalog_id": "handicap",
+      "title": "围棋让子谱",
+      "roles": [
+        "让子棋与教学对局 · 补充专题"
+      ],
+      "book_id": 67,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "handicap-guide",
+      "title": "围棋中级丛书：让子棋指南",
+      "roles": [
+        "让子棋与教学对局 · 补充专题"
+      ],
+      "book_id": 68,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "handicap-win",
+      "title": "让子棋制胜之策",
+      "roles": [
+        "让子棋与教学对局 · 补充专题"
+      ],
+      "book_id": 69,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "test-初级",
+      "title": "曹薰铉棋力自测：初级·下册",
+      "roles": [
+        "分级练习与阶段测评 · 补充专题"
+      ],
+      "book_id": 70,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "test-中级",
+      "title": "曹薰铉棋力自测：中级·下册",
+      "roles": [
+        "分级练习与阶段测评 · 补充专题"
+      ],
+      "book_id": 71,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "test-高级",
+      "title": "曹薰铉棋力自测：高级·下册",
+      "roles": [
+        "分级练习与阶段测评 · 补充专题"
+      ],
+      "book_id": 72,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "test-dan",
+      "title": "你有几段水平？——围棋段位自我测定",
+      "roles": [
+        "分级练习与阶段测评 · 补充专题"
+      ],
+      "book_id": 73,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "danghu",
+      "title": "当湖十局细解",
+      "roles": [
+        "古谱与围棋文化 · 补充专题"
+      ],
+      "book_id": 74,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "nie-life",
+      "title": "我的围棋之路",
+      "roles": [
+        "古谱与围棋文化 · 补充专题"
+      ],
+      "book_id": 75,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "go-memoir",
+      "title": "吴清源回忆录",
+      "roles": [
+        "古谱与围棋文化 · 补充专题"
+      ],
+      "book_id": 76,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "guanzi",
+      "title": "官子谱",
+      "roles": [
+        "进阶死活与综合技巧 · 补充专题"
+      ],
+      "book_id": 77,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "techniques",
+      "title": "围棋技巧大全",
+      "roles": [
+        "进阶死活与综合技巧 · 补充专题"
+      ],
+      "book_id": 78,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    },
+    {
+      "catalog_id": "fayang",
+      "title": "〈围棋发阳论〉新解——世界围棋最高死活题集鉴赏",
+      "roles": [
+        "进阶死活与综合技巧 · 补充专题"
+      ],
+      "book_id": 79,
+      "recognition": "待识别",
+      "validation_import": "待机器验证 / 本轮未入库",
+      "human_review": "本轮未审核",
+      "voice": "本轮未开始（历史待核对）",
+      "video": "本轮未开始（历史待核对）",
+      "updated_at": null,
+      "priority_tier": "独立补充专题"
+    }
+  ],
+  "execution_policy": "Core books first; per-tier module round-robin, one book per module per round; keep started books; canonical source dedup; independent supplements last",
+  "priority_tiers": {
+    "核心教材": [
+      "intro-up",
+      "shape",
+      "life-1",
+      "intro-down",
+      "opening",
+      "joseki",
+      "sakata-1",
+      "sakata-2",
+      "invasion",
+      "moyo",
+      "sakata-5",
+      "ko",
+      "simple-judgement",
+      "endgame",
+      "go-games",
+      "life-2",
+      "lin-games",
+      "life-3",
+      "lin-games-1",
+      "life-4",
+      "lin-games-2",
+      "life-5",
+      "life-6"
+    ],
+    "练习/专项/纠错": [
+      "tesuji-1",
+      "capturing-race",
+      "cho-opening-1",
+      "lee-endgame-1",
+      "tesuji-2",
+      "cho-opening-2",
+      "lee-endgame-2",
+      "tesuji-3",
+      "cho-opening-3",
+      "lee-endgame-3",
+      "tesuji-4",
+      "cho-opening-4",
+      "tesuji-5",
+      "cho-opening-5",
+      "tesuji-6",
+      "bad-shape"
+    ],
+    "提高/棋风比较": [
+      "cho-life",
+      "read-three",
+      "sakata-7",
+      "ishida-judgement",
+      "sakata-10",
+      "hashimoto-life",
+      "sakata-11",
+      "sakata-12"
+    ],
+    "模块内补充": [
+      "intro-fast",
+      "sakata-3",
+      "joseki-conception",
+      "cho-attack",
+      "unbeaten",
+      "go-invasion",
+      "takemiya-judgement",
+      "sakata-4",
+      "ko-principles",
+      "hashimoto-judgement",
+      "sakata-6",
+      "basic-technique",
+      "sakata-8",
+      "kato-attack",
+      "cho-invasion",
+      "balance",
+      "sakata-9",
+      "ko-training"
+    ],
+    "独立补充专题": [
+      "handicap",
+      "handicap-guide",
+      "handicap-win",
+      "test-初级",
+      "test-中级",
+      "test-高级",
+      "test-dan",
+      "danghu",
+      "nie-life",
+      "go-memoir",
+      "guanzi",
+      "techniques",
+      "fayang"
+    ]
+  },
+  "started_exceptions": [
+    "intro-up",
+    "intro-down",
+    "intro-fast"
+  ],
+  "current_scope": {
+    "catalog_ids": [
+      "intro-up",
+      "shape",
+      "life-1",
+      "intro-down",
+      "opening",
+      "joseki",
+      "sakata-1",
+      "sakata-2",
+      "invasion",
+      "moyo",
+      "sakata-5",
+      "ko",
+      "simple-judgement",
+      "endgame",
+      "go-games",
+      "life-2",
+      "lin-games",
+      "life-3",
+      "lin-games-1",
+      "life-4",
+      "lin-games-2",
+      "life-5",
+      "life-6"
+    ],
+    "books": 23,
+    "pdf_pages": 5827,
+    "definition": "recognition + strict validation + TEST incremental import and admin/SGF verification; not human approval or media",
+    "started_exception": "intro-fast"
+  }
+}

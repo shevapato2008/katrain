@@ -176,7 +176,7 @@ class CameraManager:
         self._pending_controls_generation = 0
         self._controls_generation = 0
         self._controls_lock = threading.Lock()
-        self._controls_effective: bool | None = None  # None = never attempted
+        self._controls_effective: bool | None = None  # None = no verified control result yet
         self._initial_exposure: float | None = None  # readback at open()
         self._current_auto_exposure: float | None = None
         self._current_exposure: float | None = None
@@ -326,6 +326,12 @@ class CameraManager:
                     and not self._pending_controls
                 ):
                     self._controls_effective = replay_ok
+                elif not self._lock_exposure and open_generation == self._controls_generation and not self._pending_controls:
+                    self._controls_effective = bool(
+                        auto_write_ok
+                        and current_auto_exposure is not None
+                        and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_ON, current_auto_exposure)
+                    )
 
             # Drain frames to let auto-focus and auto-exposure settle
             if self._warmup_seconds > 0:

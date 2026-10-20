@@ -1,0 +1,2076 @@
+[
+  {
+    "recognition_id": "p029-f02",
+    "page": 29,
+    "source_pointer": "/chapters/0/sections/1/pages/15/elements/0",
+    "figure_id": 22082,
+    "candidate_id": 4405,
+    "inferences": [
+      {
+        "at": "17,5",
+        "value": "13",
+        "basis": "sequence",
+        "reason": "下部笔画粘连；结合可辨横画及黑11、15、17的手顺，判为13。",
+        "cell": "17,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p033-f02",
+    "page": 33,
+    "source_pointer": "/chapters/0/sections/1/pages/19/elements/1",
+    "figure_id": 22086,
+    "candidate_id": 4413,
+    "inferences": [
+      {
+        "at": "15,7",
+        "value": "13",
+        "basis": "combined",
+        "reason": "字迹较淡，结合可见“十三”残笔及正文“黑十三不可省，否则白从甲位逼”确认。",
+        "cell": "15,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p036-f03",
+    "page": 36,
+    "source_pointer": "/chapters/0/sections/1/pages/22/elements/0",
+    "figure_id": 41905,
+    "candidate_id": 4418,
+    "inferences": [
+      {
+        "at": "2,9",
+        "value": "22",
+        "basis": "combined",
+        "reason": "淡字呈上下叠写“二二”，结合相邻黑二一及白棋偶数手序判读。",
+        "cell": "2,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p038-f02",
+    "page": 38,
+    "source_pointer": "/chapters/0/sections/1/pages/24/elements/1",
+    "figure_id": 22091,
+    "candidate_id": 4423,
+    "inferences": [
+      {
+        "at": "5,2",
+        "value": "9",
+        "basis": "combined",
+        "reason": "字形残缺；正文明确指出参考图“黑以七、九对付白六”，结合黑七位置及残留字形判为九。",
+        "cell": "16,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p039-f02",
+    "page": 39,
+    "source_pointer": "/chapters/0/sections/1/pages/25/elements/1",
+    "figure_id": 22092,
+    "candidate_id": 4424,
+    "inferences": [
+      {
+        "at": "12,3",
+        "value": "15",
+        "basis": "combined",
+        "reason": "下半字五较淡，结合右上黑13、白14后的退接次序辨为15。",
+        "cell": "12,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p039-f03",
+    "page": 39,
+    "source_pointer": "/chapters/0/sections/1/pages/25/elements/1",
+    "figure_id": 41908,
+    "candidate_id": 4425,
+    "inferences": [
+      {
+        "at": "1,13",
+        "value": "30",
+        "basis": "combined",
+        "reason": "三字可辨，下部淡；结合白28及旁注白32粘劫辨为30。",
+        "cell": "1,13"
+      },
+      {
+        "at": "0,14",
+        "value": "31",
+        "basis": "combined",
+        "reason": "残笔呈三、一，结合白30及续白32的次序辨为31。",
+        "cell": "0,14"
+      },
+      {
+        "at": "0,15",
+        "value": "21",
+        "basis": "sequence",
+        "reason": "上部二较淡，下部一可见，与白20、白22间的黑着相合。",
+        "cell": "0,15"
+      },
+      {
+        "at": "0,16",
+        "value": "19",
+        "basis": "combined",
+        "reason": "十九残笔结合白18、白20之间的局部次序辨读。",
+        "cell": "0,16"
+      },
+      {
+        "at": "1,17",
+        "value": "23",
+        "basis": "sequence",
+        "reason": "下部三可辨，结合白22、白24之间的黑着辨为23。",
+        "cell": "1,17"
+      },
+      {
+        "at": "0,18",
+        "value": "29",
+        "basis": "combined",
+        "reason": "底边字迹极淡，结合黑27、白28后的提子次序及白30辨为29。",
+        "cell": "0,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p041-f01",
+    "page": 41,
+    "source_pointer": "/chapters/0/sections/1/pages/27/elements/0",
+    "figure_id": 22093,
+    "candidate_id": 4426,
+    "inferences": [
+      {
+        "at": "14,5",
+        "value": "21",
+        "basis": "combined",
+        "reason": "叠写残字对应二一，结合黑奇白偶及邻近编号判读。",
+        "cell": "14,5"
+      },
+      {
+        "at": "13,5",
+        "value": "22",
+        "basis": "combined",
+        "reason": "叠写横画对应二二，结合黑21、23与白至26的变化判读。",
+        "cell": "13,5"
+      },
+      {
+        "at": "13,4",
+        "value": "23",
+        "basis": "combined",
+        "reason": "残字上二下三，结合白22及后续粘劫注判读。",
+        "cell": "13,4"
+      },
+      {
+        "at": "15,6",
+        "value": "24",
+        "basis": "combined",
+        "reason": "叠写残字下部呈四，结合白22、26及黑25旁注判读。",
+        "cell": "15,6"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p045-f01",
+    "page": 45,
+    "source_pointer": "/chapters/0/sections/1/pages/31/elements/0",
+    "figure_id": 22097,
+    "candidate_id": 4437,
+    "inferences": [
+      {
+        "at": "15,5",
+        "value": "13",
+        "basis": "combined",
+        "reason": "残留十及下部横画，结合相邻白十二、十四与正文黑十五的次序判为十三。",
+        "cell": "15,5"
+      },
+      {
+        "at": "16,5",
+        "value": "11",
+        "basis": "combined",
+        "reason": "十下横画较淡，结合白十断及右侧白十二的局部次序判为十一。",
+        "cell": "16,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p053-f01",
+    "page": 53,
+    "source_pointer": "/chapters/0/sections/2/pages/4/elements/0",
+    "figure_id": 22104,
+    "candidate_id": 4450,
+    "inferences": [
+      {
+        "at": "12,3",
+        "value": "21",
+        "basis": "combined",
+        "reason": "残缺字形为“二一”，正文明确提及“黑二一是妙手”。",
+        "cell": "12,3"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "中腹（第9、10列之间，第7行附近；零基）",
+        "reason": "两段墨迹位于交点之间，无法确认是否为文字标记，未强行附着交点。",
+        "candidates": [
+          "印刷污迹或透印",
+          "不可辨文字标记"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p058-f02",
+    "page": 58,
+    "source_pointer": "/chapters/0/sections/2/pages/9/elements/0",
+    "figure_id": 41926,
+    "candidate_id": 4460,
+    "inferences": [
+      {
+        "at": "3,14",
+        "value": "13",
+        "basis": "combined",
+        "reason": "下部“三”较淡；正文“黑九、十一连扳”对应4,14与5,15，此子为十三。",
+        "cell": "3,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p059-f01",
+    "page": 59,
+    "source_pointer": "/chapters/0/sections/2/pages/10/elements/0",
+    "figure_id": 22110,
+    "candidate_id": 4461,
+    "inferences": [
+      {
+        "at": "14,4",
+        "value": "13",
+        "basis": "combined",
+        "reason": "“十三”下部残损；结合邻近十二、十四及交替次序辨为十三。",
+        "cell": "14,4"
+      },
+      {
+        "at": "16,8",
+        "value": "15",
+        "basis": "combined",
+        "reason": "字迹严重褪损，残存“十五”笔画；正文明确“至黑十五时”，与本图其余手数相符。",
+        "cell": "16,8"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p063-f01",
+    "page": 63,
+    "source_pointer": "/chapters/0/sections/2/pages/14/elements/0",
+    "figure_id": 22114,
+    "candidate_id": 4468,
+    "inferences": [
+      {
+        "at": "16,3",
+        "value": "1",
+        "basis": "combined",
+        "reason": "石心横画残损；结合右上白二、黑三的局部编号，读作黑一。",
+        "cell": "16,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p063-f02",
+    "page": 63,
+    "source_pointer": "/chapters/0/sections/2/pages/14/elements/0",
+    "figure_id": 41930,
+    "candidate_id": 4469,
+    "inferences": [
+      {
+        "at": "2,9",
+        "value": "15",
+        "basis": "combined",
+        "reason": "字形残损；目标说明明确提及黑十五，且与白十四后的次序吻合。",
+        "cell": "2,9"
+      },
+      {
+        "at": "2,9",
+        "value": "15",
+        "basis": "sequence",
+        "reason": "‘十五’残笔较淡，结合左下白十四及其余编号读作十五。",
+        "cell": "2,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p068-f02",
+    "page": 68,
+    "source_pointer": "/chapters/0/sections/2/pages/19/elements/1",
+    "figure_id": 41936,
+    "candidate_id": 4481,
+    "inferences": [
+      {
+        "at": "7,16",
+        "value": "21",
+        "basis": "combined",
+        "reason": "竖排“二一”近似“三”；正文“至黑二一”及十九、二十的局部次序确认。",
+        "cell": "7,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p072-f02",
+    "page": 72,
+    "source_pointer": "/chapters/0/sections/2/pages/23/elements/0",
+    "figure_id": 41939,
+    "candidate_id": 4488,
+    "inferences": [
+      {
+        "at": "3,9",
+        "value": "16",
+        "basis": "combined",
+        "reason": "叠写字形较密；正文“白十六转到这里拆二”与此子距白四三路的位置相符。",
+        "cell": "3,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p076-f01",
+    "page": 76,
+    "source_pointer": "/chapters/0/sections/2/pages/27/elements/1",
+    "figure_id": 22129,
+    "candidate_id": 4496,
+    "uncertainties": [
+      {
+        "at": "6,0",
+        "reason": "顶边交点右侧有卜状字迹，无法确定具体字形或是否为印刷污迹。",
+        "candidates": [
+          "letter_卜",
+          "letter_ト",
+          "印刷污迹"
+        ],
+        "cell": "15,0"
+      },
+      {
+        "at": "7,3",
+        "reason": "黑子内有残缺白痕，无法确认是标记、旧编号还是扫描缺损。",
+        "candidates": [
+          "无标记",
+          "letter_イ",
+          "1"
+        ],
+        "cell": "16,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p085-f01",
+    "page": 85,
+    "source_pointer": "/chapters/0/sections/3/pages/5/elements/0",
+    "figure_id": 22137,
+    "candidate_id": 4511,
+    "inferences": [
+      {
+        "at": "13,2",
+        "value": "21",
+        "basis": "combined",
+        "reason": "残字近“二一”，正文明确说“至二一止”。",
+        "cell": "13,2"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "16,8",
+        "reason": "白子内字形近“三”，但上部短横使其也可能是叠排的“二二”；无法可靠确定。",
+        "candidates": [
+          "3",
+          "22"
+        ],
+        "cell": "16,8"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p091-f01",
+    "page": 91,
+    "source_pointer": "/chapters/0/sections/3/pages/11/elements/0",
+    "figure_id": 22142,
+    "candidate_id": 4521,
+    "inferences": [
+      {
+        "at": "10,2",
+        "value": "21",
+        "basis": "combined",
+        "reason": "紧排横画辨作二一；结合正文白二二、黑二三及局部编号顺序确认。",
+        "cell": "10,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p091-f02",
+    "page": 91,
+    "source_pointer": "/chapters/0/sections/3/pages/11/elements/0",
+    "figure_id": 41955,
+    "candidate_id": 4522,
+    "inferences": [
+      {
+        "at": "5,14",
+        "value": "12",
+        "basis": "combined",
+        "reason": "字样褪色，可辨上十下二；侧注黑十一提、黑十三粘与白十二相符。",
+        "cell": "5,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p092-f01",
+    "page": 92,
+    "source_pointer": "/chapters/0/sections/3/pages/12/elements/0",
+    "figure_id": 22143,
+    "candidate_id": 4523,
+    "inferences": [
+      {
+        "at": "10,2",
+        "value": "21",
+        "basis": "combined",
+        "reason": "三横字形结合正文“继续至黑二一”及局部编号，判为上下排列的二一。",
+        "cell": "10,2"
+      },
+      {
+        "at": "15,9",
+        "value": "19",
+        "basis": "combined",
+        "reason": "下部九字残损；结合十字、白十八之后的次序及正文“十九位攻”判读。",
+        "cell": "15,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p094-f01",
+    "page": 94,
+    "source_pointer": "/chapters/0/sections/3/pages/14/elements/0",
+    "figure_id": 22145,
+    "candidate_id": 4527,
+    "inferences": [
+      {
+        "at": "16,10",
+        "value": "22",
+        "basis": "combined",
+        "reason": "远端白子叠写数字较挤，正文明确“白也占得了二二位”。",
+        "cell": "16,10"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p095-f02",
+    "page": 95,
+    "source_pointer": "/chapters/0/sections/3/pages/15/elements/1",
+    "figure_id": 41959,
+    "candidate_id": 4530,
+    "inferences": [
+      {
+        "at": "8,16",
+        "value": "21",
+        "basis": "combined",
+        "reason": "合文数码较淡，结合黑19、白20及正文“黑二一之后”辨为21。",
+        "cell": "8,16"
+      },
+      {
+        "at": "2,8",
+        "value": "22",
+        "basis": "combined",
+        "reason": "远处白子合文数码结合正文“白占据二二位要点”，辨为22。",
+        "cell": "2,8"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p103-f02",
+    "page": 103,
+    "source_pointer": "/chapters/0/sections/3/pages/23/elements/0",
+    "figure_id": 41967,
+    "candidate_id": 4544,
+    "inferences": [
+      {
+        "at": "1,13",
+        "value": "19",
+        "basis": "combined",
+        "reason": "十九字形残损；正文点名黑十九，与十八、二十的局部次序吻合。",
+        "cell": "1,13"
+      },
+      {
+        "at": "1,15",
+        "value": "23",
+        "basis": "combined",
+        "reason": "残字近二三；正文“单在二三位粘”与此处连接两侧黑子的形状吻合。",
+        "cell": "1,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p104-f01",
+    "page": 104,
+    "source_pointer": "/chapters/0/sections/3/pages/24/elements/0",
+    "figure_id": 22153,
+    "candidate_id": 4545,
+    "inferences": [
+      {
+        "at": "13,2",
+        "value": "18",
+        "basis": "combined",
+        "reason": "合写残字辨为十八；正文“至十八止”及同图其余偶数号支持此读法。",
+        "cell": "13,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p106-f01",
+    "page": 106,
+    "source_pointer": "/chapters/0/sections/3/pages/26/elements/1",
+    "figure_id": 22155,
+    "candidate_id": 4549,
+    "inferences": [
+      {
+        "at": "12,2",
+        "value": "21",
+        "basis": "combined",
+        "reason": "紧排横画读作“二一”，结合黑19、白20后的局部连接手顺核对。",
+        "cell": "12,2"
+      },
+      {
+        "at": "17,3",
+        "value": "23",
+        "basis": "combined",
+        "reason": "字形为紧排“二三”，结合邻近白22及正文至黑25的手顺核对。",
+        "cell": "17,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p112-f01",
+    "page": 112,
+    "source_pointer": "/chapters/0/sections/3/pages/32/elements/0",
+    "figure_id": 22160,
+    "candidate_id": 4559,
+    "inferences": [
+      {
+        "at": "16,1",
+        "value": "22",
+        "basis": "combined",
+        "reason": "淡横画按上下叠写的二二辨读；与本组黑先、白方偶数及末段编号相符。",
+        "cell": "16,1"
+      },
+      {
+        "at": "9,3",
+        "value": "23",
+        "basis": "combined",
+        "reason": "密集横画辨作二三；结合正文黑二一及本组后续编号确认。",
+        "cell": "9,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p113-f01",
+    "page": 113,
+    "source_pointer": "/chapters/0/sections/3/pages/33/elements/0",
+    "figure_id": 22161,
+    "candidate_id": 4561,
+    "uncertainties": [
+      {
+        "at": "grid",
+        "reason": "第18条横线仅余局部残段，下缘被扫描横带截断；不补不可见的第19行。",
+        "candidates": [
+          "19列18行，末行残缺"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p113-f02",
+    "page": 113,
+    "source_pointer": "/chapters/0/sections/3/pages/33/elements/0",
+    "figure_id": 41976,
+    "candidate_id": 4562,
+    "uncertainties": [
+      {
+        "at": "grid",
+        "reason": "第18条横线仅余局部残段，下缘被扫描横带截断；不补不可见的第19行。",
+        "candidates": [
+          "19列18行，末行残缺"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p115-f02",
+    "page": 115,
+    "source_pointer": "/chapters/0/sections/3/pages/35/elements/0",
+    "figure_id": 41977,
+    "candidate_id": 4565,
+    "inferences": [
+      {
+        "at": "10,15",
+        "value": "22",
+        "basis": "combined",
+        "reason": "白子内叠排横画较密，结合二二字形及本组手顺判为22。",
+        "cell": "10,15"
+      },
+      {
+        "at": "4,12",
+        "value": "28",
+        "basis": "combined",
+        "reason": "叠排字形下部为八，正文明确本组变化至白二八。",
+        "cell": "4,12"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p121-f01",
+    "page": 121,
+    "source_pointer": "/chapters/0/sections/4/pages/3/elements/0",
+    "figure_id": 22168,
+    "candidate_id": 4574,
+    "inferences": [
+      {
+        "at": "16,8",
+        "value": "13",
+        "basis": "combined",
+        "reason": "字形为淡印“十三”，正文“黑即在十三位围”及局部编号顺序支持。",
+        "cell": "16,8"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p123-f01",
+    "page": 123,
+    "source_pointer": "/chapters/0/sections/4/pages/5/elements/1",
+    "figure_id": 22170,
+    "candidate_id": 4578,
+    "inferences": [
+      {
+        "at": "15,2",
+        "value": "13",
+        "basis": "combined",
+        "reason": "下部字迹较糊，结合可见“十”及同组十一、十四的次序辨为十三。",
+        "cell": "15,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p127-f02",
+    "page": 127,
+    "source_pointer": "/chapters/0/sections/5/pages/2/elements/1",
+    "figure_id": 41987,
+    "candidate_id": 4586,
+    "inferences": [
+      {
+        "at": "4,13",
+        "value": "16",
+        "basis": "combined",
+        "reason": "淡字形为‘十六’，结合邻近十四、十五、十七及正文‘至十八止’确认。",
+        "cell": "4,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p129-f01",
+    "page": 129,
+    "source_pointer": "/chapters/0/sections/5/pages/4/elements/0",
+    "figure_id": 22175,
+    "candidate_id": 4587,
+    "inferences": [
+      {
+        "at": "6,5",
+        "value": "4",
+        "basis": "combined",
+        "reason": "残字轮廓近‘四’，与白一、黑二、白三、白五、黑六的局部编号相符。",
+        "cell": "16,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p131-f01",
+    "page": 131,
+    "source_pointer": "/chapters/0/sections/5/pages/6/elements/0",
+    "figure_id": 22178,
+    "candidate_id": 4592,
+    "inferences": [
+      {
+        "at": "17,5",
+        "value": "13",
+        "basis": "combined",
+        "reason": "“十”可辨，下部“三”残淡；同组其余奇数及正文“至黑十五止”支持十三。",
+        "cell": "17,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p132-f02",
+    "page": 132,
+    "source_pointer": "/chapters/0/sections/5/pages/7/elements/1",
+    "figure_id": 41991,
+    "candidate_id": 4595,
+    "inferences": [
+      {
+        "at": "2,15",
+        "value": "1",
+        "basis": "sequence",
+        "reason": "底部残存一横，结合本组重新起号的四、五、六及其余残字，判作一。",
+        "cell": "2,15"
+      },
+      {
+        "at": "7,15",
+        "value": "3",
+        "basis": "sequence",
+        "reason": "残存上部横画，结合清楚的白四、黑五、白六及局部编号，判作三。",
+        "cell": "7,15"
+      },
+      {
+        "at": "9,15",
+        "value": "7",
+        "basis": "sequence",
+        "reason": "残存横画与竖弯笔形，结合本组至白六的编号，判作七。",
+        "cell": "9,15"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "2,15",
+        "reason": "字形下部遭扫描横纹截断，编号含推断。",
+        "candidates": [
+          "1",
+          "?"
+        ],
+        "cell": "2,15"
+      },
+      {
+        "at": "7,15",
+        "reason": "字形下部遭扫描横纹截断，编号含推断。",
+        "candidates": [
+          "3",
+          "?"
+        ],
+        "cell": "7,15"
+      },
+      {
+        "at": "9,15",
+        "reason": "字形下部遭扫描横纹截断，编号含推断。",
+        "candidates": [
+          "7",
+          "?"
+        ],
+        "cell": "9,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p136-f01",
+    "page": 136,
+    "source_pointer": "/chapters/0/sections/5/pages/11/elements/1",
+    "figure_id": 22183,
+    "candidate_id": 4602,
+    "inferences": [
+      {
+        "at": "16,9",
+        "value": "11",
+        "basis": "combined",
+        "reason": "下部笔画破损；结合上部“十”、正文“至黑十一止”及黑九白十续序，判为十一。",
+        "cell": "16,9"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p139-f01",
+    "page": 139,
+    "source_pointer": "/chapters/0/sections/5/pages/14/elements/0",
+    "figure_id": 22185,
+    "candidate_id": 4606,
+    "inferences": [
+      {
+        "at": "16,7",
+        "value": "18",
+        "basis": "combined",
+        "reason": "上十下八的叠排残笔，结合白方偶数手序判为十八。",
+        "cell": "16,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p139-f02",
+    "page": 139,
+    "source_pointer": "/chapters/0/sections/5/pages/14/elements/0",
+    "figure_id": 41997,
+    "candidate_id": 4607,
+    "inferences": [
+      {
+        "at": "2,11",
+        "value": "18",
+        "basis": "combined",
+        "reason": "上十下八的叠排残笔，结合白方偶数手序判为十八。",
+        "cell": "2,11"
+      },
+      {
+        "at": "3,12",
+        "value": "21",
+        "basis": "combined",
+        "reason": "叠排二一近似三；正文明确称“黑一旦在二一位长后”，与此处伸长位置吻合。",
+        "cell": "3,12"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p140-f02",
+    "page": 140,
+    "source_pointer": "/chapters/0/sections/5/pages/15/elements/0",
+    "figure_id": 41998,
+    "candidate_id": 4609,
+    "inferences": [
+      {
+        "at": "2,15",
+        "value": "1",
+        "basis": "combined",
+        "reason": "一的横画破损；结合本组独立编号、黑3至11及正文“至黑十一止”，判为1。",
+        "cell": "2,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p141-f01",
+    "page": 141,
+    "source_pointer": "/chapters/0/sections/5/pages/16/elements/0",
+    "figure_id": 22187,
+    "candidate_id": 4610,
+    "inferences": [
+      {
+        "at": "17,3",
+        "value": "14",
+        "basis": "combined",
+        "reason": "叠写数字下部“四”模糊；字形与黑十三、白十六、黑十七的局部应接支持十四。",
+        "cell": "17,3"
+      },
+      {
+        "at": "10,2",
+        "value": "18",
+        "basis": "combined",
+        "reason": "叠写数字下部近“八”；结合邻近黑十五、黑十九及正文“至黑十九止”判为十八。",
+        "cell": "10,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p143-f02",
+    "page": 143,
+    "source_pointer": "/chapters/0/sections/5/pages/18/elements/1",
+    "figure_id": 42001,
+    "candidate_id": 4615,
+    "inferences": [
+      {
+        "at": "2,16",
+        "value": "21",
+        "basis": "combined",
+        "reason": "叠写数码略糊，结合“二一”残形及白20、白22的续着编号确认。",
+        "cell": "2,16"
+      },
+      {
+        "at": "7,17",
+        "value": "22",
+        "basis": "combined",
+        "reason": "叠写“二二”较密，正文“至白二二止”及末着位置共同确认。",
+        "cell": "7,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p161-f01",
+    "page": 161,
+    "source_pointer": "/chapters/1/sections/0/pages/2/elements/1",
+    "figure_id": 22202,
+    "candidate_id": 4639,
+    "inferences": [
+      {
+        "at": "16,1",
+        "value": "7",
+        "basis": "combined",
+        "reason": "残字符合“七”，与邻近白6、白8的应接次序相符。",
+        "cell": "16,1"
+      },
+      {
+        "at": "17,1",
+        "value": "18",
+        "basis": "combined",
+        "reason": "残字符合“十八”；正文明确“以下至十八止”，其余白方偶数均已定位。",
+        "cell": "17,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p161-f02",
+    "page": 161,
+    "source_pointer": "/chapters/1/sections/0/pages/2/elements/1",
+    "figure_id": 42013,
+    "candidate_id": 4640,
+    "inferences": [
+      {
+        "at": "1,17",
+        "value": "18",
+        "basis": "combined",
+        "reason": "残字符合“十八”，与黑17后的白方收束及前图相同变化相符。",
+        "cell": "1,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p164-f02",
+    "page": 164,
+    "source_pointer": "/chapters/1/sections/1/pages/1/elements/1",
+    "figure_id": 42015,
+    "candidate_id": 4645,
+    "inferences": [
+      {
+        "at": "1,14",
+        "value": "23",
+        "basis": "combined",
+        "reason": "字迹较淡；正文明确至二三止，并称此点可打吃白三子，与局面吻合。",
+        "cell": "1,14"
+      },
+      {
+        "at": "2,17",
+        "value": "22",
+        "basis": "sequence",
+        "reason": "双层数字横画较粘连，结合黑21、黑23及本组连续编号辨为22。",
+        "cell": "2,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p167-f01",
+    "page": 167,
+    "source_pointer": "/chapters/1/sections/1/pages/4/elements/1",
+    "figure_id": 22207,
+    "candidate_id": 4648,
+    "inferences": [
+      {
+        "at": "11,4",
+        "value": "14",
+        "basis": "combined",
+        "reason": "残字可辨十及下部四；结合正文“至白十四止”及其余已见编号，判为14。",
+        "cell": "11,4"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "可见第16条横线局部残损，以下棋盘被扫描缺损截断；不补出不可见横线或棋子。",
+        "candidates": [
+          "19列、16条可见横线，原点0,0"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p167-f02",
+    "page": 167,
+    "source_pointer": "/chapters/1/sections/1/pages/4/elements/1",
+    "figure_id": 42017,
+    "candidate_id": 4649,
+    "uncertainties": [
+      {
+        "at": "1,15",
+        "reason": "白子内编号被扫描损坏截断，疑为八。",
+        "candidates": [
+          "8"
+        ],
+        "cell": "1,15"
+      },
+      {
+        "at": "5,15",
+        "reason": "黑子内仅存残缺字迹，疑为九。",
+        "candidates": [
+          "9"
+        ],
+        "cell": "5,15"
+      },
+      {
+        "at": "2,15;3,15;4,15",
+        "reason": "仅存棋子上部，编号不可见，未补编号。",
+        "candidates": [],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p170-f01",
+    "page": 170,
+    "source_pointer": "/chapters/1/sections/1/pages/7/elements/1",
+    "figure_id": 22210,
+    "candidate_id": 4654,
+    "inferences": [
+      {
+        "at": "14,2",
+        "value": "3",
+        "basis": "combined",
+        "reason": "三字笔画残损；残留横画及同图一、二、四、五的局部编号支持黑三。",
+        "cell": "14,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p171-f02",
+    "page": 171,
+    "source_pointer": "/chapters/1/sections/1/pages/8/elements/0",
+    "figure_id": 42020,
+    "candidate_id": 4656,
+    "inferences": [
+      {
+        "at": "8,16",
+        "value": "14",
+        "basis": "combined",
+        "reason": "残损字形符合「十四」，结合本图黑十五、白十六的后续编号判读。",
+        "cell": "8,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p172-f01",
+    "page": 172,
+    "source_pointer": "/chapters/1/sections/1/pages/9/elements/1",
+    "figure_id": 22213,
+    "candidate_id": 4658,
+    "inferences": [
+      {
+        "at": "12,1",
+        "value": "22",
+        "basis": "combined",
+        "reason": "叠写横画较密，结合二二字形、白子及黑二一后的局部次序判读。",
+        "cell": "12,1"
+      },
+      {
+        "at": "12,2",
+        "value": "24",
+        "basis": "combined",
+        "reason": "结合叠写二四字形及正文所述前图二四位断打判读。",
+        "cell": "12,2"
+      },
+      {
+        "at": "15,5",
+        "value": "26",
+        "basis": "combined",
+        "reason": "结合叠写二六字形，以及黑二五、黑二七之间的白棋次序判读。",
+        "cell": "15,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p172-f02",
+    "page": 172,
+    "source_pointer": "/chapters/1/sections/1/pages/9/elements/1",
+    "figure_id": 42021,
+    "candidate_id": 4659,
+    "inferences": [
+      {
+        "at": "3,13",
+        "value": "24",
+        "basis": "combined",
+        "reason": "合写数字较挤；正文明确白二四吃三子、黑二五粘，与该处及相邻黑25吻合。",
+        "cell": "3,13"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p173-f01",
+    "page": 173,
+    "source_pointer": "/chapters/1/sections/1/pages/10/elements/1",
+    "figure_id": 22214,
+    "candidate_id": 4660,
+    "inferences": [
+      {
+        "at": "13,2",
+        "value": "18",
+        "basis": "combined",
+        "reason": "合写十八下部拥挤；白为偶数手，与图中黑17、黑19及正文至十九的次序吻合。",
+        "cell": "13,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p179-f01",
+    "page": 179,
+    "source_pointer": "/chapters/1/sections/1/pages/16/elements/0",
+    "figure_id": 22219,
+    "candidate_id": 4670,
+    "uncertainties": [
+      {
+        "at": "11,1",
+        "reason": "复合数字笔画粘连，末位四、六难辨。",
+        "candidates": [
+          "34",
+          "36"
+        ],
+        "cell": "11,1"
+      },
+      {
+        "at": "12,1",
+        "reason": "复合数字末位三、五不清。",
+        "candidates": [
+          "33",
+          "35"
+        ],
+        "cell": "12,1"
+      },
+      {
+        "at": "12,2",
+        "reason": "复合数字末位二、四不清。",
+        "candidates": [
+          "32",
+          "34"
+        ],
+        "cell": "12,2"
+      },
+      {
+        "at": "17,6",
+        "reason": "十位横画与扫描噪点混合。",
+        "candidates": [
+          "23",
+          "33"
+        ],
+        "cell": "17,6"
+      },
+      {
+        "at": "16,7",
+        "reason": "十位二、三的横画难辨。",
+        "candidates": [
+          "22",
+          "32"
+        ],
+        "cell": "16,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p182-f01",
+    "page": 182,
+    "source_pointer": "/chapters/1/sections/1/pages/19/elements/1",
+    "figure_id": 22222,
+    "candidate_id": 4675,
+    "uncertainties": [
+      {
+        "at": "5,7",
+        "reason": "空点左上有斜钩状墨迹，疑为扫描杂迹或非标准批注；未作标记编码。[ownership_unresolved]",
+        "candidates": [
+          "扫描杂迹",
+          "p182-f01批注",
+          "p182-f02批注"
+        ],
+        "cell": "5,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p182-f02",
+    "page": 182,
+    "source_pointer": "/chapters/1/sections/1/pages/19/elements/1",
+    "figure_id": 42029,
+    "candidate_id": 4676,
+    "uncertainties": [
+      {
+        "at": "5,7",
+        "reason": "空点左上有斜钩状墨迹，疑为扫描杂迹或非标准批注；未作标记编码。[ownership_unresolved]",
+        "candidates": [
+          "扫描杂迹",
+          "p182-f01批注",
+          "p182-f02批注"
+        ],
+        "cell": "5,7"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p185-f01",
+    "page": 185,
+    "source_pointer": "/chapters/1/sections/1/pages/22/elements/1",
+    "figure_id": 22225,
+    "candidate_id": 4680,
+    "inferences": [
+      {
+        "at": "10,2",
+        "value": "22",
+        "basis": "combined",
+        "reason": "圈内叠排笔画较模糊；正文“至本图二二止”与白方末着位置共同支持22。",
+        "cell": "10,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p187-f01",
+    "page": 187,
+    "source_pointer": "/chapters/1/sections/1/pages/24/elements/1",
+    "figure_id": 22227,
+    "candidate_id": 4684,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "下部扫描严重毁损，仅能可靠计数顶部连续可见的19列、10行；无法确认下方是否还有本图棋子或标记。",
+        "candidates": [
+          "下方无其他本图对象",
+          "下方存在不可辨认的本图对象"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p189-f01",
+    "page": 189,
+    "source_pointer": "/chapters/1/sections/1/pages/26/elements/1",
+    "figure_id": 22229,
+    "candidate_id": 4687,
+    "uncertainties": [
+      {
+        "at": "12,3",
+        "reason": "十以下字形糊连，十四与十六难分；与17,4处应分别对应14、16。",
+        "candidates": [
+          "14",
+          "16"
+        ],
+        "cell": "12,3"
+      },
+      {
+        "at": "17,4",
+        "reason": "十以下字形不清，十四与十六难分；与12,3处应分别对应14、16。",
+        "candidates": [
+          "14",
+          "16"
+        ],
+        "cell": "17,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p194-f02",
+    "page": 194,
+    "source_pointer": "/chapters/1/sections/1/pages/31/elements/1",
+    "figure_id": 42036,
+    "candidate_id": 4696,
+    "inferences": [
+      {
+        "at": "5,12",
+        "value": "11",
+        "basis": "combined",
+        "reason": "“十一”下部笔画褪色；结合黑九、白十、白十二及正文“至十三止”判读。",
+        "cell": "5,12"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p201-f01",
+    "page": 201,
+    "source_pointer": "/chapters/1/sections/2/pages/4/elements/0",
+    "figure_id": 22241,
+    "candidate_id": 4706,
+    "uncertainties": [
+      {
+        "at": "grid",
+        "reason": "底部扫描严重损坏；按最下方阶梯状横线残段计为第13行，但该行不可完整辨认。",
+        "candidates": [
+          "19列13行（末行残缺）",
+          "19列12行（底部残段为扫描伪影）"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p203-f01",
+    "page": 203,
+    "source_pointer": "/chapters/1/sections/2/pages/6/elements/1",
+    "figure_id": 22243,
+    "candidate_id": 4709,
+    "inferences": [
+      {
+        "at": "14,6",
+        "value": "9",
+        "basis": "combined",
+        "reason": "残字与“九”相符，正文明确“至黑九止”，位置接在黑七下方。",
+        "cell": "14,6"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p205-f01",
+    "page": 205,
+    "source_pointer": "/chapters/1/sections/2/pages/8/elements/1",
+    "figure_id": 22245,
+    "candidate_id": 4712,
+    "inferences": [
+      {
+        "at": "12,3",
+        "value": "11",
+        "basis": "combined",
+        "reason": "淡字为十一；正文以第七一图黑十一直接长作对照，支持此处为原图黑11。",
+        "cell": "12,3"
+      },
+      {
+        "at": "12,4",
+        "value": "13",
+        "basis": "combined",
+        "reason": "残字可辨十、三，与黑11、白12后的局部延长次序相符。",
+        "cell": "12,4"
+      },
+      {
+        "at": "17,2",
+        "value": "15",
+        "basis": "combined",
+        "reason": "淡字可辨十五，与角部白16、黑17、白18的编号衔接。",
+        "cell": "17,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p207-f02",
+    "page": 207,
+    "source_pointer": "/chapters/1/sections/2/pages/10/elements/1",
+    "figure_id": 42045,
+    "candidate_id": 4717,
+    "inferences": [
+      {
+        "at": "1,14",
+        "value": "26",
+        "basis": "combined",
+        "reason": "字形为紧排的二六；正文“黑十一可在二六位尖”与此点相对黑一的尖位一致。",
+        "cell": "1,14"
+      },
+      {
+        "at": "4,16",
+        "value": "22",
+        "basis": "combined",
+        "reason": "紧排二二字形较糊；正文“白二二不得不接”及相邻白棋连接位置共同支持。",
+        "cell": "4,16"
+      },
+      {
+        "at": "6,14",
+        "value": "27",
+        "basis": "combined",
+        "reason": "紧排二七字形结合正文“至黑二七止”及外侧封锁棋形判读。",
+        "cell": "6,14"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p211-f01",
+    "page": 211,
+    "source_pointer": "/chapters/1/sections/2/pages/14/elements/0",
+    "figure_id": 22250,
+    "candidate_id": 4723,
+    "inferences": [
+      {
+        "at": "15,3",
+        "value": "25",
+        "basis": "combined",
+        "reason": "字迹较淡；结合二五字形及正文“黑走二五先手得利”辨认。",
+        "cell": "15,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p211-f02",
+    "page": 211,
+    "source_pointer": "/chapters/1/sections/2/pages/14/elements/0",
+    "figure_id": 42049,
+    "candidate_id": 4724,
+    "inferences": [
+      {
+        "at": "9,15",
+        "value": "11",
+        "basis": "combined",
+        "reason": "十字淡损；此着提白二，随后白十二、侧注“黑十三粘”，可辨为十一。",
+        "cell": "9,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p212-f01",
+    "page": 212,
+    "source_pointer": "/chapters/1/sections/2/pages/15/elements/1",
+    "figure_id": 22251,
+    "candidate_id": 4725,
+    "inferences": [
+      {
+        "at": "13,4",
+        "value": "3",
+        "basis": "combined",
+        "reason": "三字较淡；结合黑一、白二、白四及正文“黑五退、白六虎”确认。",
+        "cell": "13,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p216-f01",
+    "page": 216,
+    "source_pointer": "/chapters/1/sections/2/pages/19/elements/1",
+    "figure_id": 22255,
+    "candidate_id": 4730,
+    "inferences": [
+      {
+        "at": "16,0",
+        "value": "21",
+        "basis": "combined",
+        "reason": "淡字辨作二一，结合白二十至黑二五的次序确认。",
+        "cell": "16,0"
+      },
+      {
+        "at": "17,4",
+        "value": "23",
+        "basis": "combined",
+        "reason": "淡字辨作二三，与正文“黑二三如改在二四位接”及局部次序相符。",
+        "cell": "17,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p217-f01",
+    "page": 217,
+    "source_pointer": "/chapters/1/sections/2/pages/20/elements/1",
+    "figure_id": 22256,
+    "candidate_id": 4732,
+    "inferences": [
+      {
+        "at": "15,5",
+        "value": "13",
+        "basis": "combined",
+        "reason": "本图从白16变招；前图黑13长与黑7相连的配置及底缘残留字形相合。",
+        "cell": "15,5"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "14,5",
+        "reason": "白子及数字下半部被扫描损坏遮蔽，仅见上部“二”形；较可能为20。",
+        "candidates": [
+          "20",
+          "22"
+        ],
+        "cell": "14,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p223-f01",
+    "page": 223,
+    "source_pointer": "/chapters/1/sections/3/pages/4/elements/1",
+    "figure_id": 22261,
+    "candidate_id": 4739,
+    "inferences": [
+      {
+        "at": "10,2",
+        "value": "18",
+        "basis": "combined",
+        "reason": "远处白子字形较模糊；结合右上组编号及正文“至白十八止”判读为十八。",
+        "cell": "10,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p224-f01",
+    "page": 224,
+    "source_pointer": "/chapters/1/sections/3/pages/5/elements/1",
+    "figure_id": 22262,
+    "candidate_id": 4741,
+    "inferences": [
+      {
+        "at": "13,3",
+        "value": "3",
+        "basis": "combined",
+        "reason": "“三”字横画残损，结合本图局部手顺及“黑十一长”的说明辨作3。",
+        "cell": "13,3"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p224-f02",
+    "page": 224,
+    "source_pointer": "/chapters/1/sections/3/pages/5/elements/1",
+    "figure_id": 42055,
+    "candidate_id": 4742,
+    "uncertainties": [
+      {
+        "at": "region",
+        "reason": "仅见19列17行；下方两行及底边未显示，不补入未显示内容。",
+        "candidates": [],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p225-f02",
+    "page": 225,
+    "source_pointer": "/chapters/1/sections/3/pages/6/elements/1",
+    "figure_id": 42056,
+    "candidate_id": 4744,
+    "inferences": [
+      {
+        "at": "1,17",
+        "value": "23",
+        "basis": "combined",
+        "reason": "二三残字较淡；与相邻白二二、白二四的续着次序相符。",
+        "cell": "1,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p226-f01",
+    "page": 226,
+    "source_pointer": "/chapters/1/sections/3/pages/7/elements/1",
+    "figure_id": 22264,
+    "candidate_id": 4745,
+    "inferences": [
+      {
+        "at": "10,8",
+        "value": "31",
+        "basis": "combined",
+        "reason": "三一笔画较淡；正文明确本图至黑三一止，与该子残字及续着次序相符。",
+        "cell": "10,8"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p228-f01",
+    "page": 228,
+    "source_pointer": "/chapters/1/sections/3/pages/9/elements/0",
+    "figure_id": 22265,
+    "candidate_id": 4746,
+    "inferences": [
+      {
+        "at": "10,1",
+        "value": "21",
+        "basis": "combined",
+        "reason": "残字为二一；与正文十九、二一连扳及白二二切断相符。",
+        "cell": "10,1"
+      },
+      {
+        "at": "10,2",
+        "value": "22",
+        "basis": "combined",
+        "reason": "残字为二二；正文明确提及白二二、二四的应法。",
+        "cell": "10,2"
+      },
+      {
+        "at": "10,3",
+        "value": "23",
+        "basis": "sequence",
+        "reason": "残字为二三，与附近二一、二二、二四的应接吻合。",
+        "cell": "10,3"
+      },
+      {
+        "at": "9,1",
+        "value": "24",
+        "basis": "combined",
+        "reason": "残字为二四；与正文白二二、二四及左侧应接吻合。",
+        "cell": "9,1"
+      },
+      {
+        "at": "17,6",
+        "value": "26",
+        "basis": "sequence",
+        "reason": "残字为二六，承接右侧黑二五、黑二七的局部序列。",
+        "cell": "17,6"
+      },
+      {
+        "at": "9,2",
+        "value": "28",
+        "basis": "sequence",
+        "reason": "残字为二八，与相邻白二二、二四及黑二九的接续吻合。",
+        "cell": "9,2"
+      },
+      {
+        "at": "16,1",
+        "value": "30",
+        "basis": "sequence",
+        "reason": "残字为三十，与右邻黑三一、左邻白三二连续。",
+        "cell": "16,1"
+      },
+      {
+        "at": "17,1",
+        "value": "31",
+        "basis": "sequence",
+        "reason": "残字为三一，与白三十、三二的上边应接吻合。",
+        "cell": "17,1"
+      },
+      {
+        "at": "15,1",
+        "value": "32",
+        "basis": "sequence",
+        "reason": "残字为三二，接黑三一后连通上边白棋。",
+        "cell": "15,1"
+      },
+      {
+        "at": "14,6",
+        "value": "33",
+        "basis": "combined",
+        "reason": "残字为三三；此着紧白四等四子，与正文黑三三后白可在甲接吻合。",
+        "cell": "14,6"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p228-f02",
+    "page": 228,
+    "source_pointer": "/chapters/1/sections/3/pages/9/elements/0",
+    "figure_id": 42057,
+    "candidate_id": 4747,
+    "inferences": [
+      {
+        "at": "1,14",
+        "value": "31",
+        "basis": "sequence",
+        "reason": "残字为三一，与上方黑二九、白三十及白三二的序列相符。",
+        "cell": "1,14"
+      },
+      {
+        "at": "1,18",
+        "value": "33",
+        "basis": "combined",
+        "reason": "字迹浅，残存三三横画；与图中三二、三四至三六及正文终至三六相符。",
+        "cell": "1,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p229-f01",
+    "page": 229,
+    "source_pointer": "/chapters/1/sections/3/pages/10/elements/1",
+    "figure_id": 22266,
+    "candidate_id": 4748,
+    "inferences": [
+      {
+        "at": "15,0",
+        "value": "44",
+        "basis": "combined",
+        "reason": "叠字磨损；正文“四四的凶着”及上边劫形支持四四。",
+        "cell": "15,0"
+      },
+      {
+        "at": "13,4",
+        "value": "34",
+        "basis": "combined",
+        "reason": "叠字较糊；字形及正文“白三四虽苦”所指受夹断点相符。",
+        "cell": "13,4"
+      },
+      {
+        "at": "12,6",
+        "value": "53",
+        "basis": "combined",
+        "reason": "末字较淡；整页正文为“以下至黑五三止”，与黑方奇数着相符。",
+        "cell": "12,6"
+      }
+    ],
+    "uncertainties": [
+      {
+        "at": "ko_note",
+        "reason": "末条提劫旁注辨读有疑，所给转录作“白二四”；按36、39之后的劫争次序可能为白42。",
+        "candidates": [
+          "白24提劫",
+          "白42提劫"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p230-f02",
+    "page": 230,
+    "source_pointer": "/chapters/1/sections/3/pages/11/elements/1",
+    "figure_id": 42058,
+    "candidate_id": 4750,
+    "inferences": [
+      {
+        "at": "2,17",
+        "value": "28",
+        "basis": "combined",
+        "reason": "字形较糊，结合残存笔画及黑二七、二九之间的白棋次序判为二八。",
+        "cell": "2,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p237-f01",
+    "page": 237,
+    "source_pointer": "/chapters/1/sections/3/pages/18/elements/1",
+    "figure_id": 22274,
+    "candidate_id": 4762,
+    "inferences": [
+      {
+        "at": "15,2",
+        "value": "3",
+        "basis": "combined",
+        "reason": "字迹残缺；正文“在三位飞应”对应此子与黑一的飞形，且衔接白四、黑五。",
+        "cell": "15,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p245-f02",
+    "page": 245,
+    "source_pointer": "/chapters/1/sections/3/pages/26/elements/0",
+    "figure_id": 42069,
+    "candidate_id": 4775,
+    "uncertainties": [
+      {
+        "at": "6,15",
+        "reason": "数字下部受扫描损坏影响，横画难以分清，不以颜色交替强定号码。",
+        "candidates": [
+          "11",
+          "12"
+        ],
+        "cell": "6,15"
+      },
+      {
+        "at": "region",
+        "reason": "第一三一图仅上部可见；第16条横线以下损坏，无法恢复后续棋盘及棋子。",
+        "candidates": [
+          "仅保留可见19列、16行"
+        ],
+        "cell": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p251-f01",
+    "page": 251,
+    "source_pointer": "/chapters/1/sections/4/pages/2/elements/1",
+    "figure_id": 22287,
+    "candidate_id": 4784,
+    "inferences": [
+      {
+        "at": "14,5",
+        "value": "13",
+        "basis": "combined",
+        "reason": "字迹较淡，可辨“十三”，正文“至黑十三止”佐证。",
+        "cell": "14,5"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p255-f01",
+    "page": 255,
+    "source_pointer": "/chapters/1/sections/4/pages/6/elements/0",
+    "figure_id": 22291,
+    "candidate_id": 4791,
+    "inferences": [
+      {
+        "at": "11,4",
+        "value": "30",
+        "basis": "combined",
+        "reason": "上部三横较淡，下部十可辨，结合相邻29、31的次序判为30。",
+        "cell": "11,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p257-f01",
+    "page": 257,
+    "source_pointer": "/chapters/1/sections/4/pages/8/elements/0",
+    "figure_id": 22293,
+    "candidate_id": 4794,
+    "inferences": [
+      {
+        "at": "14,4",
+        "value": "14",
+        "basis": "combined",
+        "reason": "字形粘连；正文指白十四扳出，与黑十三后的局部手顺相符。",
+        "cell": "14,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p258-f01",
+    "page": 258,
+    "source_pointer": "/chapters/1/sections/4/pages/9/elements/1",
+    "figure_id": 22295,
+    "candidate_id": 4796,
+    "uncertainties": [
+      {
+        "at": "18,0",
+        "reason": "数字残损，疑为二九，保留七的可能。",
+        "candidates": [
+          "29",
+          "7"
+        ],
+        "cell": "18,0"
+      },
+      {
+        "at": "15,3",
+        "reason": "白子轮廓可辨，数字被墨污遮盖。",
+        "candidates": [
+          "4",
+          "14",
+          "36"
+        ],
+        "cell": "15,3"
+      },
+      {
+        "at": "16,3",
+        "reason": "棋子位置可辨，墨污使底色及数字不可读。",
+        "candidates": [
+          "black",
+          "white"
+        ],
+        "cell": "16,3"
+      },
+      {
+        "at": "17,3",
+        "reason": "棋子轮廓受墨污覆盖，底色及数字不可读。",
+        "candidates": [
+          "black",
+          "white"
+        ],
+        "cell": "17,3"
+      },
+      {
+        "at": "14,4",
+        "reason": "白子数字下部残损，十四与三六难以区分。",
+        "candidates": [
+          "14",
+          "36"
+        ],
+        "cell": "14,4"
+      },
+      {
+        "at": "15,4",
+        "reason": "黑子可辨，数字仅剩局部白笔画。",
+        "candidates": [
+          "1",
+          "5",
+          "7",
+          "41"
+        ],
+        "cell": "15,4"
+      },
+      {
+        "at": "16,4",
+        "reason": "白子下缘可辨，数字被墨污遮盖。",
+        "candidates": [
+          "4",
+          "14",
+          "36"
+        ],
+        "cell": "16,4"
+      },
+      {
+        "at": "17,4",
+        "reason": "圆形下缘可辨，墨污使底色及数字不可读。",
+        "candidates": [
+          "black",
+          "white"
+        ],
+        "cell": "17,4"
+      }
+    ],
+    "unknown_stones": [
+      {
+        "point": [
+          16,
+          3
+        ],
+        "color": null
+      },
+      {
+        "point": [
+          17,
+          3
+        ],
+        "color": null
+      },
+      {
+        "point": [
+          17,
+          4
+        ],
+        "color": null
+      }
+    ]
+  },
+  {
+    "recognition_id": "p260-f01",
+    "page": 260,
+    "source_pointer": "/chapters/1/sections/4/pages/11/elements/1",
+    "figure_id": 22297,
+    "candidate_id": 4799,
+    "inferences": [
+      {
+        "at": "8,1",
+        "value": "40",
+        "basis": "combined",
+        "reason": "字形拥挤；结合黑三九、四一的次序及上边白五子弃子说明，判为白四十。",
+        "cell": "15,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p264-f01",
+    "page": 264,
+    "source_pointer": "/chapters/1/sections/4/pages/15/elements/1",
+    "figure_id": 22302,
+    "candidate_id": 4806,
+    "inferences": [
+      {
+        "at": "13,4",
+        "value": "28",
+        "basis": "sequence",
+        "reason": "数字较糊，结合字形及白26、黑27、黑29的局部次序判读为28。",
+        "cell": "13,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p271-f01",
+    "page": 271,
+    "source_pointer": "/chapters/1/sections/4/pages/22/elements/0",
+    "figure_id": 22308,
+    "candidate_id": 4817,
+    "inferences": [
+      {
+        "at": "14,2",
+        "value": "7",
+        "basis": "combined",
+        "reason": "字迹残缺；结合白六、白八及黑九的局部次序，辨为七。",
+        "cell": "14,2"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p271-f02",
+    "page": 271,
+    "source_pointer": "/chapters/1/sections/4/pages/22/elements/0",
+    "figure_id": 42085,
+    "candidate_id": 4818,
+    "inferences": [
+      {
+        "at": "3,16",
+        "value": "3",
+        "basis": "combined",
+        "reason": "三字印迹残缺；正文“对付黑三，白四立即挖”及局部编号支持辨为三。",
+        "cell": "3,16"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p272-f01",
+    "page": 272,
+    "source_pointer": "/chapters/1/sections/4/pages/23/elements/0",
+    "figure_id": 22309,
+    "candidate_id": 4819,
+    "inferences": [
+      {
+        "at": "14,1",
+        "value": "12",
+        "basis": "combined",
+        "reason": "合读略糊的“十二”字形，并以黑十一、十三的局部手序核对。",
+        "cell": "14,1"
+      },
+      {
+        "at": "17,1",
+        "value": "14",
+        "basis": "combined",
+        "reason": "合读略糊的“十四”字形，并以黑十三、十五及白棋偶数手序核对。",
+        "cell": "17,1"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p276-f01",
+    "page": 276,
+    "source_pointer": "/chapters/1/sections/5/pages/3/elements/1",
+    "figure_id": 22313,
+    "candidate_id": 4826,
+    "inferences": [
+      {
+        "at": "12,4",
+        "value": "24",
+        "basis": "combined",
+        "reason": "“二四”下部较糊，结合黑23、黑25及局部次序判为24。",
+        "cell": "12,4"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p276-f02",
+    "page": 276,
+    "source_pointer": "/chapters/1/sections/5/pages/3/elements/1",
+    "figure_id": 42089,
+    "candidate_id": 4827,
+    "inferences": [
+      {
+        "at": "1,14",
+        "value": "21",
+        "basis": "sequence",
+        "reason": "淡字结合邻近白20、白22及黑方续号辨为二一。",
+        "cell": "1,14"
+      },
+      {
+        "at": "4,17",
+        "value": "23",
+        "basis": "combined",
+        "reason": "字迹破损，结合白22之后及黑25之前的局部次序辨为二三。",
+        "cell": "4,17"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p277-f02",
+    "page": 277,
+    "source_pointer": "/chapters/1/sections/5/pages/4/elements/1",
+    "figure_id": 42090,
+    "candidate_id": 4829,
+    "inferences": [
+      {
+        "at": "1,13",
+        "value": "30",
+        "basis": "combined",
+        "reason": "叠写字形辨作“三十”，与邻近黑29应劫次序相合。",
+        "cell": "1,13"
+      },
+      {
+        "at": "0,14",
+        "value": "33",
+        "basis": "sequence",
+        "reason": "重叠横画较糊，结合白32、白34之间的黑方棋号辨为33。",
+        "cell": "0,14"
+      },
+      {
+        "at": "3,18",
+        "value": "37",
+        "basis": "combined",
+        "reason": "下字呈“七”，结合白36、白38的局部次序辨为37。",
+        "cell": "3,18"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p279-f02",
+    "page": 279,
+    "source_pointer": "/chapters/1/sections/5/pages/6/elements/0",
+    "figure_id": 42091,
+    "candidate_id": 4831,
+    "inferences": [
+      {
+        "at": "1,15",
+        "value": "22",
+        "basis": "combined",
+        "reason": "残损字形结合黑二一、黑二三之间的白着次序，判为二二。",
+        "cell": "1,15"
+      }
+    ]
+  },
+  {
+    "recognition_id": "p280-f01",
+    "page": 280,
+    "source_pointer": "/chapters/1/sections/5/pages/7/elements/0",
+    "figure_id": 22316,
+    "candidate_id": 4832,
+    "inferences": [
+      {
+        "at": "17,3",
+        "value": "13",
+        "basis": "combined",
+        "reason": "下部数字残损；正文“黑十三提”与此处封住白四最后一气相符。",
+        "cell": "17,3"
+      }
+    ]
+  }
+]

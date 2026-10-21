@@ -129,7 +129,7 @@ export function subtitleAtTime(narration: string, timing: SpeechTiming, timeMs: 
     const segment = narration.slice(from, to);
     if (!text) start = boundary.start_ms;
     text += segment;
-    if (/[。！？.!?；;][^\p{L}\p{N}]*$/u.test(segment) || text.length >= 30) {
+    if (/[。！？.!?；;][^\p{L}\p{N}]*$/u.test(segment)) {
       groups.push({ text, start });
       text = '';
     }

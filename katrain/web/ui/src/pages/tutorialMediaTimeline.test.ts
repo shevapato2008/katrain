@@ -141,6 +141,29 @@ describe('tutorial recorder time axis', () => {
     expect(subtitleAtTime(narration, timing, 1700)).toBe('下一句 保留 空格，白5！');
     expect(timing.boundaries).toEqual(originalBoundaries);
   });
+  it.each([
+    '它的威力在于，接下来黑棋在a位和b位必能占到其中一处，白棋无法同时守住这两个要点。',
+    '因此，黑1这一点夺去了白棋的眼位，使白棋失去眼形，形成难以下好的局面。',
+    '看这幅图，要把白二冲和白四双倒扑联系起来理解，不能因为黑三挡住了眼前的冲击，就判断黑棋已经安全。',
+    '空点上的一、二、三，表示另外三种挂角选择：一位是一间高挂，二位是二间高挂，这两种走法往往依个人的布局策略选择；',
+    '这个形状也可以从另一种次序来理解：假如白棋面对一间夹先脱先，后来黑棋在图中七位靠，白棋在六位长，就会形成与图中黑五、白四相同的图形，原书对此注明可参看第五十四图。',
+  ])('keeps a complete source sentence or semicolon clause regardless of length: %s', sentence => {
+    const narration = sentence + '下一句。';
+    const boundaries = [...narration].filter(character => /[\p{L}\p{N}]/u.test(character))
+      .map((text, index) => ({ text, start_ms: 100 + index * 100, duration_ms: 80 }));
+    const timing = { ...data.speech_timing, boundaries };
+    const originalBoundaries = structuredClone(boundaries);
+    const sentenceCharacters = [...sentence].filter(character => /[\p{L}\p{N}]/u.test(character)).length;
+    const followingStart = boundaries[sentenceCharacters].start_ms;
+    expect(subtitleAtTime(narration, timing, 99)).toBe('');
+    for (const boundary of boundaries.slice(0, sentenceCharacters)) {
+      expect(subtitleAtTime(narration, timing, boundary.start_ms)).toBe(sentence);
+    }
+    expect(subtitleAtTime(narration, timing, followingStart - 1)).toBe(sentence);
+    expect(subtitleAtTime(narration, timing, followingStart)).toBe('下一句。');
+    expect(subtitleAtTime(narration, timing, 100)).toBe(sentence);
+    expect(timing.boundaries).toEqual(originalBoundaries);
+  });
   it('uses known region evidence from the explicit recording mode', () => {
     const replayRegion = { col: 0, row: 0, cols: 5, rows: 6 };
     const sourceRegion = { col: 4, row: 2, cols: 4, rows: 5 };

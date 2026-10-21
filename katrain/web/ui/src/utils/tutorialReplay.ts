@@ -2,6 +2,16 @@
 export type Point = [number, number];
 export type StoneColor = 'B' | 'W';
 
+/** Source-bound static teaching marks, independent of stones and replay evidence. */
+export interface TeachingAnnotations {
+  schema_version: 1;
+  source_pointer: string;
+  image_sha256: string;
+  region_dividers?: { columns: number[]; rows: number[] };
+  arrows?: { id: string; from: Point; to: Point }[];
+  callouts?: { id: string; anchor: Point; side: 'top' | 'right'; text: string }[];
+}
+
 export interface SourceRegion {
   col: number;
   row: number;
@@ -23,6 +33,7 @@ interface DiagramPayload {
   letters?: Record<string, string>;
   shapes?: Record<string, string>;
   highlights?: Point[];
+  teaching_annotations?: TeachingAnnotations;
   viewport?: { col: number; row: number; size?: number; cols?: number; rows?: number } | null;
 }
 
@@ -110,6 +121,7 @@ function copyPayload(payload: DiagramPayload, unknown: UnknownStone[] = []): Rep
     highlights: payload.highlights?.map(copyPoint),
     viewport: payload.viewport ? { ...payload.viewport } : payload.viewport,
     unknown_stones: unknown.map(stone => ({ ...stone, point: copyPoint(stone.point) })),
+    ...(payload.teaching_annotations ? { teaching_annotations: structuredClone(payload.teaching_annotations) } : {}),
   };
 }
 
@@ -283,7 +295,8 @@ export function buildTutorialReplay(diagram: TutorialDiagram): ReplayResult {
     for (const [key, color] of board) stones[color].push(fromKey(key));
     return {
       step,
-      payload: copyPayload({ size: diagram.size, stones, labels, letters, shapes, viewport: diagram.viewport }, initial.unknown_stones),
+      payload: copyPayload({ size: diagram.size, stones, labels, letters, shapes, viewport: diagram.viewport,
+        teaching_annotations: diagram.teaching_annotations }, initial.unknown_stones),
       captured: captured.map(copyPoint),
       last: move?.kind === 'move' && move.point ? copyPoint(move.point) : null,
       currentMove: move ? { ...move, point: move.point ? copyPoint(move.point) : null } : null,

@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from katrain.web.tutorials.media_profiles import public_video_fields
 from katrain.web.tutorials.workbench_models import Int, Point, Replay, SourceRegion, UnknownStone, Viewport
+from katrain.web.tutorials.teaching_annotations import TeachingAnnotations
 
 
 class TutorialCategoryOut(BaseModel):
@@ -132,6 +133,7 @@ class StrictBoardPayload(BaseModel):
     letters: Optional[Dict[str, str]] = None
     shapes: Optional[Dict[str, str]] = None
     highlights: Optional[List[List[int]]] = None
+    teaching_annotations: TeachingAnnotations | None = None
     # Legacy viewports are computed; explicit v2 viewports round-trip unchanged.
 
     @field_validator("size")
@@ -144,6 +146,8 @@ class StrictBoardPayload(BaseModel):
     @model_validator(mode="after")
     def validate_coordinates(self) -> "StrictBoardPayload":
         max_coord = self.size - 1
+        if self.teaching_annotations:
+            self.teaching_annotations.validate_for_size(self.size)
         # Validate stones keys
         invalid_keys = set(self.stones.keys()) - {"B", "W"}
         if invalid_keys:

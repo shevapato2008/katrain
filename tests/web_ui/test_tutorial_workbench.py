@@ -191,6 +191,86 @@ def save(client, value=None, version=None):
     )
 
 
+def teaching_annotations():
+    return {
+        "schema_version": 1,
+        "source_pointer": "/pages/92/figures/3",
+        "image_sha256": "c" * 64,
+        "region_dividers": {"columns": [2.5, 5.5], "rows": [2.5, 5.5]},
+        "arrows": [{"id": "liberty", "from": [0, 1], "to": [0, 2.6]}],
+        "callouts": [{"id": "route", "anchor": [0, 0], "side": "top", "text": "一路线"}],
+    }
+
+
+def test_teaching_annotations_roundtrip_without_changing_stones_or_replay():
+    value = diagram()
+    value["teaching_annotations"] = teaching_annotations()
+    assert StrictBoardPayload.model_validate(value).model_dump(exclude_unset=True) == value
+
+
+@pytest.mark.parametrize(
+    "change", ["outside_arrow", "infinite", "divider_edge", "duplicate_id", "callout_not_edge", "unknown_field"]
+)
+def test_invalid_teaching_annotations_are_rejected(change):
+    value = diagram()
+    annotation = teaching_annotations()
+    value["teaching_annotations"] = annotation
+    if change == "outside_arrow":
+        annotation["arrows"][0]["to"] = [9, 1]
+    elif change == "infinite":
+        annotation["arrows"][0]["to"] = [float("inf"), 1]
+    elif change == "divider_edge":
+        annotation["region_dividers"]["columns"] = [0]
+    elif change == "duplicate_id":
+        annotation["callouts"][0]["id"] = "liberty"
+    elif change == "callout_not_edge":
+        annotation["callouts"][0]["anchor"] = [3, 3]
+    else:
+        annotation["arrows"][0]["moves"] = []
+    with pytest.raises(ValidationError):
+        StrictBoardPayload.model_validate(value)
+
+
+def test_teaching_annotation_calibration_is_source_bound_and_durable(workbench):
+    client, Session, _ = workbench
+    with Session() as db:
+        db.get(models_db.TutorialFigure, 1).page_image_path = "tutorial_assets/test/pages/92.png"
+        db.commit()
+    original_response = save(client, version=client.get("/api/admin/tutorials/figures/1").json()["updated_at"])
+    assert original_response.status_code == 200, original_response.text
+    original = original_response.json()
+    approved = client.put(
+        "/api/admin/tutorials/figures/1/verify-board", json={"expected_updated_at": original["updated_at"]}
+    ).json()
+    changed = diagram()
+    changed["teaching_annotations"] = teaching_annotations()
+    response = save(client, changed, approved["updated_at"])
+    assert response.status_code == 200, response.text
+    saved = response.json()
+    assert saved["board_payload"] == changed and saved["board_review"] is None
+    assert client.get("/api/admin/tutorials/figures/1").json()["board_payload"] == changed
+    assert save(client, changed, approved["updated_at"]).status_code == 409
+    history = client.get("/api/admin/tutorials/figures/1/history").json()["history"]
+    assert any(row["board_payload"] == changed for row in history)
+
+
+@pytest.mark.parametrize("field,value", [("source_pointer", "/other/figure"), ("image_sha256", "d" * 64)])
+def test_teaching_annotation_foreign_source_does_not_write(workbench, field, value):
+    client, Session, _ = workbench
+    with Session() as db:
+        db.get(models_db.TutorialFigure, 1).page_image_path = "tutorial_assets/test/pages/92.png"
+        db.commit()
+    original_response = save(client, version=client.get("/api/admin/tutorials/figures/1").json()["updated_at"])
+    assert original_response.status_code == 200, original_response.text
+    original = original_response.json()
+    changed = diagram()
+    changed["teaching_annotations"] = teaching_annotations()
+    changed["teaching_annotations"][field] = value
+    response = save(client, changed, original["updated_at"])
+    assert response.status_code == 422
+    assert client.get("/api/admin/tutorials/figures/1").json()["board_payload"] == original["board_payload"]
+
+
 def test_calibration_cas_history_reviews_and_narration_media(workbench):
     client, Session, _ = workbench
     first = save(client)

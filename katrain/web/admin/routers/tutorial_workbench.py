@@ -35,6 +35,7 @@ from katrain.web.core.models_db import (
 )
 from katrain.web.tutorials.models import StrictBoardPayload, TutorialFigureAdminOut as TutorialFigureOut
 from katrain.web.tutorials.manual_review import (
+    _registered_source_identity,
     board_approval,
     board_content_sha256,
     board_problem,
@@ -98,6 +99,13 @@ def _save_payload(
     payload = copy.deepcopy(payload)
     payload.setdefault("size", 19)
     original = copy.deepcopy(figure.board_payload)
+    if annotations := payload.get("teaching_annotations"):
+        try:
+            identity, _ = _registered_source_identity(figure, db)
+            if any(annotations[key] != identity[key] for key in ("source_pointer", "image_sha256")):
+                raise ValueError("Teaching annotations do not match this figure's registered source")
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
     preserve_original = (
         original is not None
         and original != payload

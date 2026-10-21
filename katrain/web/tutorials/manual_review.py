@@ -98,16 +98,57 @@ def video_artifact(figure, mode, output_profile=None):
 def presentation_source_identity(figure, plan, *, db=None):
     """Read current server provenance at both generation and manual approval boundaries."""
     if not plan or not (
-        plan.get("arrows") or plan.get("annotation_object_ids") or plan.get("source_replay") or plan.get("callouts")
+        plan.get("arrows")
+        or plan.get("annotation_object_ids")
+        or plan.get("source_replay")
+        or plan.get("callouts")
+        or plan.get("forbidden_ko")
     ):
         return None
+    db = db if db is not None else object_session(figure)
+    if db is None:
+        raise ValueError("Current source identity requires an attached database session")
+    identity, book_id = _registered_source_identity(figure, db)
+    ko = plan.get("forbidden_ko")
+    if ko:
+        from katrain.web.core.models_db import TutorialFigure
+
+        reference = db.get(TutorialFigure, ko.get("initial_figure_id"))
+        if not reference or reference.id == figure.id or reference.page >= figure.page:
+            raise ValueError("Forbidden ko requires a referenced figure on an earlier page of the same book")
+        reference_source, reference_book_id = _registered_source_identity(reference, db)
+        if reference_book_id != book_id:
+            raise ValueError("Forbidden ko referenced figure must belong to the same book")
+        approval = board_approval(reference)
+        if not approval["approved"]:
+            raise ValueError("Referenced initial diagram: " + approval["reason"])
+        if ko.get("initial_board_sha256") != digest(reference.board_payload) or ko.get(
+            "initial_board_review_sha256"
+        ) != digest(reference.board_review):
+            raise ValueError("Referenced initial board/review changed from the explicitly requested version")
+        identity.update(
+            figure_id=figure.id,
+            book_id=book_id,
+            reference={
+                **reference_source,
+                "figure_id": reference.id,
+                "book_id": reference_book_id,
+                "page": reference.page,
+                "page_image_path": reference.page_image_path,
+                "bbox": copy.deepcopy(reference.bbox),
+                "board_payload": copy.deepcopy(reference.board_payload),
+                "board_review": copy.deepcopy(reference.board_review),
+            },
+        )
+    return identity
+
+
+def _registered_source_identity(figure, db):
+    """Resolve one current direct/applied source graph without trusting client provenance."""
     from katrain.web.tutorials.source_models import TutorialSourceBook, TutorialSourceFigure, TutorialSourcePage
     from katrain.web.tutorials.recognition_models import TutorialRecognitionCandidate
     from katrain.web.core.models_db import TutorialSection, TutorialChapter
 
-    db = db if db is not None else object_session(figure)
-    if db is None:
-        raise ValueError("Current source identity requires an attached database session")
     book_id = db.scalar(
         select(TutorialChapter.book_id)
         .join(TutorialSection, TutorialSection.chapter_id == TutorialChapter.id)
@@ -157,7 +198,7 @@ def presentation_source_identity(figure, plan, *, db=None):
             "Source-backed presentation requires one registered source figure and matching source page image"
         )
     pointer, checksum = identities.pop()
-    return {"source_pointer": pointer, "image_sha256": checksum}
+    return {"source_pointer": pointer, "image_sha256": checksum}, book_id
 
 
 def video_problem(figure, mode, output_profile=None, *, db=None):

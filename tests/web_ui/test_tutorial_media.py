@@ -1281,3 +1281,208 @@ def test_source_identity_accepts_only_current_applied_candidate_graph_for_extra_
                 "source_pointer": "/primary",
                 "image_sha256": "a" * 64,
             }
+
+
+@pytest.fixture
+def forbidden_ko_media(media, monkeypatch):
+    from test_tutorial_media_presentation import forbidden_ko_fixture
+    from katrain.web.tutorials.manual_review import make_review, board_content_sha256
+    from katrain.web.tutorials.source_models import TutorialSourceBook, TutorialSourceFigure, TutorialSourcePage
+    from katrain.web.tutorials import media_tasks
+
+    client, factory, worker, storage, app = media
+    value, text, plan, source, _ = forbidden_ko_fixture()
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        figure.page = 11
+        figure.board_payload = value
+        figure.narration = text
+        figure.page_image_path = "p11.png"
+        figure.board_review = make_review({"username": "fixture-reviewer"}, board_content_sha256(figure))
+        reference = models_db.TutorialFigure(
+            id=4825,
+            section_id=1,
+            page=10,
+            figure_label="prior",
+            order=2,
+            board_payload=source["reference"]["board_payload"],
+            page_image_path="p10.png",
+        )
+        db.add(reference)
+        db.flush()
+        reference.board_review = make_review({"username": "fixture-reviewer"}, board_content_sha256(reference))
+        plan["forbidden_ko"]["initial_board_review_sha256"] = media_tasks.digest(reference.board_review)
+        db.add(
+            TutorialSourceBook(
+                id=1,
+                source_namespace="ko",
+                catalog_id="ko",
+                book_id=1,
+                source_json_sha256="c" * 64,
+                assets_manifest_sha256="d" * 64,
+                source_metadata={},
+                matching_evidence={},
+            )
+        )
+        db.flush()
+        for identity, page, pointer, sha in [(1, 11, "/p11", "b" * 64), (4825, 10, "/p10", "a" * 64)]:
+            db.add(
+                TutorialSourceFigure(
+                    source_book_id=1,
+                    source_figure_id=str(identity),
+                    source_pointer=pointer,
+                    page=page,
+                    figure_id=identity,
+                    source_metadata={},
+                )
+            )
+            db.add(
+                TutorialSourcePage(
+                    source_book_id=1,
+                    page=page,
+                    page_image_path=f"p{page}.png",
+                    image_sha256=sha,
+                    text_fragments=[],
+                    page_context_text="",
+                )
+            )
+        db.commit()
+    monkeypatch.setattr(media_tasks, "probe_duration", lambda path: 50000)
+    return media, plan
+
+
+def test_forbidden_ko_api_snapshots_both_sources_and_rechecks_reference_at_approval(forbidden_ko_media):
+    from katrain.web.tutorials.manual_review import video_problem, presentation_source_identity
+    from katrain.web.tutorials.source_models import TutorialSourcePage
+
+    media, plan = forbidden_ko_media
+    client, factory, worker, *_ = media
+    for kind in ("audio", "video"):
+        response = client.post(
+            "/api/admin/tutorials/figures/1/media-tasks",
+            json={
+                "kind": kind,
+                "output_profile": GALAXY if kind == "video" else None,
+                "expected_updated_at": current_version(factory),
+                "presentation_plan": plan,
+            },
+        )
+        assert response.status_code == 202, response.text
+        task_id = response.json()["task"]["id"]
+        worker.run_next()
+        with factory() as db:
+            task = db.get(models_db.TutorialMediaTask, task_id)
+            figure = db.get(models_db.TutorialFigure, 1)
+            assert task.status == "succeeded", task.error
+            snapshot = (task.snapshot.get("presentation") or task.snapshot)["source_identity"]
+            assert snapshot == presentation_source_identity(figure, plan, db=db)
+            assert snapshot["reference"]["board_payload"] == db.get(models_db.TutorialFigure, 4825).board_payload
+            assert task.result["step_cues"]["mode"] == "forbidden_ko"
+            if kind == "video":
+                assert not task.result["generated_audio"] and video_problem(figure, "2d", GALAXY, db=db) is None
+                page = db.query(TutorialSourcePage).filter_by(page=10).one()
+                page.image_sha256 = "e" * 64
+                db.commit()
+                assert video_problem(figure, "2d", GALAXY, db=db)
+
+
+@pytest.mark.parametrize("change", ["board", "review", "source"])
+def test_forbidden_ko_reference_change_stales_queued_audio_without_publication(forbidden_ko_media, change):
+    from katrain.web.tutorials.source_models import TutorialSourcePage
+
+    media, plan = forbidden_ko_media
+    client, factory, worker, *_ = media
+    response = client.post(
+        "/api/admin/tutorials/figures/1/media-tasks",
+        json={"kind": "audio", "expected_updated_at": current_version(factory), "presentation_plan": plan},
+    )
+    assert response.status_code == 202, response.text
+    task_id = response.json()["task"]["id"]
+    with factory() as db:
+        ref = db.get(models_db.TutorialFigure, 4825)
+        if change == "board":
+            ref.board_payload = {**ref.board_payload, "labels": {"4,16": "2"}}
+        elif change == "review":
+            ref.board_review = None
+        if change == "source":
+            db.query(TutorialSourcePage).filter_by(page=10).one().image_sha256 = "f" * 64
+        db.commit()
+    worker.run_next()
+    with factory() as db:
+        assert db.get(models_db.TutorialMediaTask, task_id).status == "stale"
+        assert db.get(models_db.TutorialFigure, 1).audio_asset is None
+
+
+@pytest.mark.parametrize(
+    "invalid", ["foreign_book", "unapproved", "missing", "requested_board_hash", "requested_review_hash"]
+)
+def test_forbidden_ko_rejects_unowned_or_unapproved_reference_before_queue(forbidden_ko_media, invalid):
+    media, plan = forbidden_ko_media
+    client, factory, *_ = media
+    with factory() as db:
+        ref = db.get(models_db.TutorialFigure, 4825)
+        if invalid == "unapproved":
+            ref.board_review = None
+        elif invalid == "missing":
+            plan["forbidden_ko"]["initial_figure_id"] = 999
+        elif invalid == "requested_board_hash":
+            plan["forbidden_ko"]["initial_board_sha256"] = "f" * 64
+        elif invalid == "requested_review_hash":
+            plan["forbidden_ko"]["initial_board_review_sha256"] = "f" * 64
+        else:
+            db.add(
+                models_db.TutorialBook(
+                    id=2, category="布局", subcategory="test", title="foreign", slug="foreign", asset_dir="other"
+                )
+            )
+            db.flush()
+            db.add(models_db.TutorialChapter(id=2, book_id=2, chapter_number="1", title="f", order=2))
+            db.flush()
+            db.add(models_db.TutorialSection(id=2, chapter_id=2, section_number="1", title="f", order=2))
+            db.flush()
+            ref.section_id = 2
+        db.commit()
+    response = client.post(
+        "/api/admin/tutorials/figures/1/media-tasks",
+        json={"kind": "audio", "expected_updated_at": current_version(factory), "presentation_plan": plan},
+    )
+    assert response.status_code == 422, response.text
+
+
+def test_forbidden_ko_reference_change_during_render_rejects_publication(forbidden_ko_media, monkeypatch):
+    media, plan = forbidden_ko_media
+    client, factory, worker, *_ = media
+    audio = client.post(
+        "/api/admin/tutorials/figures/1/media-tasks",
+        json={"kind": "audio", "expected_updated_at": current_version(factory), "presentation_plan": plan},
+    )
+    assert audio.status_code == 202
+    worker.run_next()
+    response = client.post(
+        "/api/admin/tutorials/figures/1/media-tasks",
+        json={
+            "kind": "video",
+            "output_profile": GALAXY,
+            "expected_updated_at": current_version(factory),
+            "presentation_plan": plan,
+        },
+    )
+    assert response.status_code == 202, response.text
+
+    def render(**spec):
+        spec["output_path"].write_bytes(b"video")
+        with factory() as db:
+            reference = db.get(models_db.TutorialFigure, 4825)
+            # Replay is not part of static approval, but the complete referenced
+            # board snapshot must still stay immutable while the recording runs.
+            reference.board_payload = {
+                **reference.board_payload,
+                "replay": {"status": "needs_calibration", "initial": None, "moves": []},
+            }
+            db.commit()
+
+    monkeypatch.setattr(worker, "_render_video", render)
+    worker.run_next()
+    with factory() as db:
+        assert db.get(models_db.TutorialMediaTask, response.json()["task"]["id"]).status == "stale"
+        assert db.get(models_db.TutorialFigure, 1).video_asset is None

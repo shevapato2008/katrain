@@ -5,7 +5,7 @@ import hashlib
 
 import pytest
 
-from katrain.web.tutorials.media_timing import build_step_cues, narration_hash
+from katrain.web.tutorials.media_timing import build_step_cues, narration_hash, digest
 
 
 def diagram():
@@ -1010,3 +1010,197 @@ def test_existing_margin_callout_proof_hash_is_unchanged_by_board_text_support()
         build(value, text, presentation_plan=plan, source_identity=source)["presentation_sha256"]
         == "cd4f7078ffc159aa15a19adc3dd5e4218cd461e0cbf7e126f1e8e2ac360f546d"
     )
+
+
+def forbidden_ko_fixture():
+    value = {
+        "schema_version": 2,
+        "size": 19,
+        "unknown_stones": [],
+        "stones": {"B": [[4, 15], [3, 16], [5, 16], [4, 17]], "W": [[2, 13], [3, 15], [2, 16], [7, 16], [3, 17]]},
+        "labels": {"3,16": "1"},
+        "letters": {},
+        "shapes": {},
+        "replay": {"status": "needs_calibration"},
+    }
+    prior = copy.deepcopy(value)
+    prior["stones"]["B"].remove([3, 16])
+    prior["stones"]["W"].append([4, 16])
+    prior.update(labels={"4,16": "1"}, shapes={"4,15": "triangle", "5,16": "triangle", "4,17": "triangle"})
+    source = {
+        "source_pointer": "/p11",
+        "image_sha256": "b" * 64,
+        "figure_id": 4826,
+        "book_id": 1,
+        "reference": {
+            "figure_id": 4825,
+            "book_id": 1,
+            "page": 10,
+            "source_pointer": "/p10",
+            "image_sha256": "a" * 64,
+            "board_payload": prior,
+            "board_review": {"content_sha256": "c" * 64},
+            "page_image_path": "p10.png",
+            "bbox": None,
+        },
+    }
+    text = "先看白一。下面演示的是规则禁止的假设变化，实际对局中不能这样走。假设黑一立即反提。这一步违反打劫规则。"
+    declaration = "下面演示的是规则禁止的假设变化，实际对局中不能这样走"
+    white, prohibition, black = text.index("白一"), text.index(declaration), text.index("假设黑一立即反提")
+    plan = {
+        "schema_version": 1,
+        "bindings": [
+            {"span": [white, white + 2], "object_ids": ["reference:4825:labels:4,16"]},
+            {"span": [black, black + 8], "object_ids": ["labels:3,16"]},
+        ],
+        "forbidden_ko": {
+            "schema_version": 1,
+            "initial_figure_id": 4825,
+            "initial_object_id": "labels:4,16",
+            "result_object_id": "labels:3,16",
+            "source_pointer": "/p11",
+            "image_sha256": "b" * 64,
+            "initial_source_pointer": "/p10",
+            "initial_image_sha256": "a" * 64,
+            "initial_board_sha256": digest(prior),
+            "initial_board_review_sha256": digest(source["reference"]["board_review"]),
+            "prohibition_span": [prohibition, prohibition + len(declaration)],
+        },
+    }
+    speech = timing(text)
+    speech["duration_ms"] = len(text) * 200 + 1000
+    return value, text, plan, source, speech
+
+
+def test_forbidden_ko_reveals_source_initial_silently_then_captures_without_claiming_legal_replay():
+    from katrain.web.tutorials.media_render import _stone_click_times, PLACEMENT_DURATION_MS
+    from katrain.web.tutorials.replay import validate_replay
+
+    value, text, plan, source, speech = forbidden_ko_fixture()
+    original = copy.deepcopy((value, source))
+    proof = build_step_cues(value, text, speech, presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "complete", proof
+    assert proof["mode"] == "forbidden_ko"
+    initial, revealed, captured = proof["frames"]
+    assert [3, 16] not in initial["payload"]["stones"]["B"] and [4, 16] not in initial["payload"]["stones"]["W"]
+    assert initial["payload"]["labels"] == {} and all(not f["payload"]["shapes"] for f in proof["frames"])
+    assert revealed["payload"]["labels"] == {"4,16": "1"} and [4, 16] in revealed["payload"]["stones"]["W"]
+    assert revealed["appeared_stones"] == [] and revealed["currentMove"] is None and revealed["last"] is None
+    assert revealed["presentation_action"]["kind"] == "initial_reveal"
+    assert captured["payload"]["stones"] == value["stones"] and captured["payload"]["labels"] == value["labels"]
+    assert captured["captured"] == [[4, 16]] and captured["appeared_stones"] == [{"color": "B", "point": [3, 16]}]
+    assert captured["currentMove"]["kind"] == "forbidden_ko_capture"
+    assert [e["kind"] for e in proof["events"]] == ["initial_reveal", "forbidden_ko_capture"]
+    assert proof["prohibition"]["at_ms"] < proof["events"][1]["at_ms"]
+    assert _stone_click_times(proof["frames"], proof, speech["duration_ms"]) == [
+        proof["events"][1]["at_ms"] + PLACEMENT_DURATION_MS
+    ]
+    assert (value, source) == original and validate_replay(value)["status"] == "needs_calibration"
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    [
+        "missing_source",
+        "foreign_book",
+        "wrong_figure",
+        "wrong_sha",
+        "wrong_label",
+        "extra_stone",
+        "not_ko",
+        "missing_prohibition",
+        "extra_capture",
+        "request_board_hash",
+        "request_review_hash",
+        "early_capture",
+        "missing_binding",
+        "stale_audio",
+    ],
+)
+def test_forbidden_ko_is_bounded_to_exact_sources_single_ko_and_prior_spoken_prohibition(invalid):
+    value, text, plan, source, speech = forbidden_ko_fixture()
+    if invalid == "missing_source":
+        source = None
+    elif invalid == "foreign_book":
+        source["reference"]["book_id"] = 2
+    elif invalid == "wrong_figure":
+        source["reference"]["figure_id"] = 44
+    elif invalid == "wrong_sha":
+        plan["forbidden_ko"]["initial_image_sha256"] = "d" * 64
+    elif invalid == "wrong_label":
+        source["reference"]["board_payload"]["labels"]["4,16"] = "2"
+    elif invalid == "extra_stone":
+        source["reference"]["board_payload"]["stones"]["B"].append([0, 0])
+    elif invalid == "not_ko":
+        value["stones"]["W"].remove([3, 15])
+        source["reference"]["board_payload"]["stones"]["W"].remove([3, 15])
+        plan["forbidden_ko"]["initial_board_sha256"] = digest(source["reference"]["board_payload"])
+    elif invalid == "extra_capture":
+        for board in (value, source["reference"]["board_payload"]):
+            board["stones"]["B"].extend([[3, 14], [2, 15]])
+        plan["forbidden_ko"]["initial_board_sha256"] = digest(source["reference"]["board_payload"])
+    elif invalid == "request_board_hash":
+        plan["forbidden_ko"]["initial_board_sha256"] = "f" * 64
+    elif invalid == "request_review_hash":
+        plan["forbidden_ko"]["initial_board_review_sha256"] = "f" * 64
+    elif invalid == "missing_prohibition":
+        plan["forbidden_ko"]["prohibition_span"] = [0, 2]
+    elif invalid == "early_capture":
+        plan["bindings"][1]["span"] = [0, 4]
+    elif invalid == "missing_binding":
+        plan["bindings"].pop(0)
+    elif invalid == "stale_audio":
+        speech["narration_sha256"] = "x"
+    if invalid in ("wrong_label", "extra_stone"):
+        plan["forbidden_ko"]["initial_board_sha256"] = digest(source["reference"]["board_payload"])
+    proof = build_step_cues(value, text, speech, presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "pending" and proof["frames"] == [], proof
+
+
+def test_absent_forbidden_ko_keeps_existing_proof_and_nested_schema_bytes_identical():
+    from katrain.web.admin.routers.tutorial_media import MediaTaskWrite
+
+    value, text, plan, source = margin_callout_fixture()
+    baseline = build(value, text, presentation_plan=plan, source_identity=source)
+    for candidate in (plan, {**plan, "forbidden_ko": None}):
+        parsed = MediaTaskWrite.model_validate(
+            {"kind": "audio", "expected_updated_at": None, "presentation_plan": candidate}
+        ).model_dump(mode="json")
+        assert "forbidden_ko" not in parsed["presentation_plan"]
+        assert build(value, text, presentation_plan=candidate, source_identity=source) == baseline
+
+
+def test_forbidden_ko_does_not_interpolate_a_prohibition_and_action_in_one_word_boundary():
+    value, text, plan, source, speech = forbidden_ko_fixture()
+    split = plan["forbidden_ko"]["prohibition_span"][0]
+    action_end = plan["bindings"][1]["span"][1]
+    speech["boundaries"] = [
+        {"text": text[:split], "start_ms": 100, "duration_ms": 800},
+        {"text": text[split:action_end], "start_ms": 1000, "duration_ms": 1000},
+        {"text": text[action_end:], "start_ms": 2100, "duration_ms": 1000},
+    ]
+    proof = build_step_cues(value, text, speech, presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "pending" and "finish before" in proof["reason"]
+
+
+def test_reference_initial_stone_cannot_be_imported_by_normal_source_replay():
+    value, text, _, source, speech = forbidden_ko_fixture()
+    prior = source["reference"]["board_payload"]
+    plan = {
+        "schema_version": 1,
+        "bindings": [{"span": [0, 4], "object_ids": ["labels:3,16"]}],
+        "source_replay": {
+            "schema_version": 1,
+            "initial": {
+                "stones": prior["stones"],
+                "unknown_stones": [],
+                "known_region": {"col": 0, "row": 0, "cols": 19, "rows": 19},
+                "to_play": "B",
+            },
+            "moves": [{"kind": "move", "color": "B", "point": [3, 16], "printed_number": "1"}],
+            "source_pointer": "/p11",
+            "image_sha256": "b" * 64,
+            "evidence_description": "Cannot import external initial ownership.",
+        },
+    }
+    assert build_step_cues(value, text, speech, presentation_plan=plan, source_identity=source)["status"] == "pending"

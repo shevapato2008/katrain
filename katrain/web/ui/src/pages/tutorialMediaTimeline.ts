@@ -21,6 +21,7 @@ export interface ReplayFrame {
   currentMove?: { kind: string; color: string; point?: Point | null } | null;
   nextColor?: string | null;
   appeared_stones: { color: 'B' | 'W'; point: Point }[];
+  presentation_action?: { kind: 'initial_reveal' | 'forbidden_ko_capture'; object_ids: string[] } | null;
 }
 export interface SpeechTiming {
   schema_version: 1;
@@ -34,11 +35,11 @@ export interface StepCues {
   schema_version: 1;
   audio_sha256: string;
   replay_sha256?: string;
-  mode: 'presentation' | 'replay' | 'source_replay' | 'static';
+  mode: 'presentation' | 'replay' | 'source_replay' | 'forbidden_ko' | 'static';
   frames: ReplayFrame[];
   objects: { id: string; kind: 'labels' | 'letters' | 'shapes' | 'arrow' | 'callout' | 'replay'; point: Point | null;
     stone_color: 'B' | 'W' | null; value?: string | null; number?: number | null; callout?: PresentationCallout; replay_step?: number; role?: string }[];
-  events: { step: number; at_ms: number; object_ids: string[]; span: [number, number] }[];
+  events: { step: number; at_ms: number; object_ids: string[]; span: [number, number]; kind?: 'initial_reveal' | 'forbidden_ko_capture' }[];
   presentation_plan?: { callouts?: PresentationCallout[]; source_replay?: { initial: { known_region?: Region | null } } | null } | null;
   status: 'complete' | 'pending';
   reason?: string;
@@ -61,7 +62,7 @@ export function frameAtTime(data: RecordingData, timeMs: number): ReplayFrame {
   if (proof.status !== 'complete') {
     throw new Error(`Recording presentation is pending: ${proof.reason ?? 'spoken reference cues require calibration'}`);
   }
-  if (!['presentation', 'replay', 'source_replay', 'static'].includes(proof.mode)) {
+  if (!['presentation', 'replay', 'source_replay', 'forbidden_ko', 'static'].includes(proof.mode)) {
     throw new Error('Missing validated recording presentation mode');
   }
   if (!proof.frames?.length || (proof.frames !== data.frames && JSON.stringify(proof.frames) !== JSON.stringify(data.frames))) {

@@ -173,4 +173,23 @@ describe('tutorial recorder time axis', () => {
     expect(knownRegion({ ...data, board_payload: payload, step_cues: { ...data.step_cues, mode: 'source_replay', presentation_plan: { source_replay: { initial: { known_region: sourceRegion } } } } })).toEqual(sourceRegion);
     expect(knownRegion({ ...data, board_payload: { ...payload, source_region: { ...data.board_payload.source_region!, confirmed: false } } })).toBeNull();
   });
+  it('keeps forbidden-ko initial reveals silent and settles only the hypothetical capture', () => {
+    const koFrames: ReplayFrame[] = [
+      { step: 0, payload: { size: 9, stones: { B: [], W: [] } }, last: null, currentMove: null, appeared_stones: [] },
+      { step: 1, payload: { size: 9, stones: { B: [], W: [[4, 4]] }, labels: { '4,4': '1' } }, last: null, currentMove: null,
+        appeared_stones: [], presentation_action: { kind: 'initial_reveal', object_ids: ['reference:2:labels:4,4'] } },
+      { step: 2, payload: { size: 9, stones: { B: [[3, 4]], W: [] }, labels: { '3,4': '1' } }, last: [3, 4],
+        currentMove: { kind: 'forbidden_ko_capture', color: 'B', point: [3, 4] }, captured: [[4, 4]],
+        appeared_stones: [{ color: 'B', point: [3, 4] }], presentation_action: { kind: 'forbidden_ko_capture', object_ids: ['labels:3,4'] } },
+    ];
+    const koData: RecordingData = { ...data, frames: koFrames, step_cues: { ...data.step_cues, mode: 'forbidden_ko', frames: koFrames,
+      cues: [{ step: 0, at_ms: 0, source: 'initial' }, { step: 1, at_ms: 1000, source: 'speech_end' }, { step: 2, at_ms: 2000, source: 'speech_end' }] } };
+    expect(frameAtTime(koData, 1000)).toBe(koFrames[1]);
+    expect(placementsAtTime(koData, 1000)).toEqual([]);
+    expect(frameAtTime(koData, 1999).payload.stones.W).toEqual([[4, 4]]);
+    expect(frameAtTime(koData, 2000).captured).toEqual([[4, 4]]);
+    expect(placementsAtTime(koData, 2000)).toEqual([{ point: [3, 4], lift: .25, scale: .96 }]);
+    expect(frameAtTime(koData, 1000)).toBe(koFrames[1]);
+    expect(placementsAtTime(koData, 1000)).toEqual([]);
+  });
 });

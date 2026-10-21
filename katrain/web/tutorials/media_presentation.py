@@ -51,6 +51,23 @@ class PresentationCallout(BaseModel):
     image_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
+class ForbiddenKo(BaseModel):
+    """One source-backed forbidden recapture illustration, never a legal replay."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    schema_version: Literal[1] = 1
+    initial_figure_id: int = Field(gt=0)
+    initial_object_id: str = Field(pattern=r"^labels:\d+,\d+$")
+    result_object_id: str = Field(pattern=r"^labels:\d+,\d+$")
+    source_pointer: str = Field(min_length=1, max_length=2048)
+    image_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    initial_source_pointer: str = Field(min_length=1, max_length=2048)
+    initial_image_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    initial_board_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    initial_board_review_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    prohibition_span: list[int] = Field(min_length=2, max_length=2)
+
+
 class PresentationPlan(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     schema_version: Literal[1]
@@ -59,12 +76,15 @@ class PresentationPlan(BaseModel):
     annotation_object_ids: list[str] = Field(default_factory=list, max_length=512)
     source_replay: SourceReplay | None = None
     callouts: list[PresentationCallout] = Field(default_factory=list, max_length=16)
+    forbidden_ko: ForbiddenKo | None = None
 
     @model_serializer(mode="wrap")
     def serialize_plan(self, handler):
         value = handler(self)
         if not self.callouts:
             value.pop("callouts", None)  # Preserve every existing plan/task/profile proof byte-for-byte.
+        if self.forbidden_ko is None:
+            value.pop("forbidden_ko", None)
         return value
 
 
@@ -216,9 +236,92 @@ def discover_objects(payload, presentation_plan=None, source_identity=None):
         or any(source_replay[k] != source_identity.get(k) for k in ("source_pointer", "image_sha256"))
     ):
         raise ValueError("Local recording sequence does not match the server-owned figure source identity")
+    if (plan or {}).get("forbidden_ko"):
+        objects = _forbidden_ko_objects(payload, objects, plan, source_identity)
     if len({obj["id"] for obj in objects}) != len(objects):
         raise ValueError("Presentation object IDs must be unique")
     return objects, plan
+
+
+def _forbidden_ko_objects(payload, objects, plan, source):
+    """Check only the bounded, two-source single-stone ko shape; do not waive replay rules."""
+    from katrain.web.tutorials.models import StrictBoardPayload
+    from katrain.web.tutorials.replay import _board, _neighbors, _group
+    from katrain.web.tutorials.media_timing import digest
+
+    ko = plan["forbidden_ko"]
+    reference = (source or {}).get("reference") or {}
+    if (
+        not source
+        or not source.get("figure_id")
+        or source.get("figure_id") == ko["initial_figure_id"]
+        or reference.get("figure_id") != ko["initial_figure_id"]
+        or not source.get("book_id")
+        or reference.get("book_id") != source["book_id"]
+        or any(ko[key] != source.get(key) for key in ("source_pointer", "image_sha256"))
+        or ko["initial_source_pointer"] != reference.get("source_pointer")
+        or ko["initial_image_sha256"] != reference.get("image_sha256")
+        or ko["initial_board_sha256"] != digest(reference.get("board_payload"))
+        or ko["initial_board_review_sha256"] != digest(reference.get("board_review"))
+    ):
+        raise ValueError("Forbidden ko requires current and referenced server-owned sources in the same book")
+    if any(plan.get(key) for key in ("source_replay", "annotation_object_ids", "arrows", "callouts")):
+        raise ValueError("Forbidden ko supports only its two explicit source marker objects")
+    prior = reference.get("board_payload") or {}
+    for board in (payload, prior):
+        StrictBoardPayload.model_validate({key: value for key, value in board.items() if key != "replay"})
+        if board.get("unknown_stones") or board.get("size") != payload["size"]:
+            raise ValueError("Forbidden ko needs two known boards of the same size")
+    if len(objects) != 1 or objects[0]["id"] != ko["result_object_id"] or objects[0].get("value") != "1":
+        raise ValueError("Forbidden ko result must be the current diagram's sole numbered 1 stone")
+    result = objects[0]
+    initial_point = _point(ko["initial_object_id"].removeprefix("labels:"), payload["size"])
+    initial_color = "W" if result["stone_color"] == "B" else "B"
+    if (
+        result["stone_color"] not in ("B", "W")
+        or (prior.get("labels") or {}).get(",".join(map(str, initial_point))) != "1"
+        or any((prior.get(field) or {}).get(",".join(map(str, initial_point))) for field in ("letters", "shapes"))
+        or initial_point not in prior["stones"].get(initial_color, [])
+    ):
+        raise ValueError("Referenced initial object must be the opposite-color saved numbered 1 stone")
+    before, after = _board(prior["stones"]), _board(payload["stones"])
+    old, new = tuple(initial_point), tuple(result["point"])
+    if (
+        old == new
+        or new in before
+        or old in after
+        or {p: c for p, c in before.items() if p != old} != {p: c for p, c in after.items() if p != new}
+    ):
+        raise ValueError("Forbidden ko sources must differ by exactly one captured and one added stone")
+    # Both stones must be isolated, in mutual single-stone atari. Every other
+    # neighbor is an explicit opposite-color source stone, so no unseen empties are assumed.
+    for board, point, liberty, color in ((before, old, new, initial_color), (after, new, old, result["stone_color"])):
+        neighbors = _neighbors(point, payload["size"])
+        if [p for p in neighbors if p not in board] != [liberty] or any(board.get(p) == color for p in neighbors):
+            raise ValueError("Forbidden ko source pair is not an exact single-stone ko capture")
+    candidate, captured = {**before, new: result["stone_color"]}, set()
+    for point in _neighbors(new, payload["size"]):
+        if before.get(point) != initial_color:
+            continue
+        group = _group(before, point, payload["size"])
+        if not {
+            neighbor for stone in group for neighbor in _neighbors(stone, payload["size"]) if neighbor not in candidate
+        }:
+            captured.update(group)
+    if captured != {old}:
+        raise ValueError("Forbidden ko action must capture exactly the referenced single stone")
+    return [
+        {**result, "number": 1},
+        {
+            "id": f"reference:{ko['initial_figure_id']}:{ko['initial_object_id']}",
+            "kind": "labels",
+            "point": initial_point,
+            "stone_color": initial_color,
+            "value": "1",
+            "number": 1,
+            "scope": "reference",
+        },
+    ]
 
 
 def _number(value):
@@ -630,6 +733,82 @@ def _frames(payload, objects, events, real_frames):
     return frames
 
 
+def _forbidden_ko_presentation(payload, objects, plan, narration, timing):
+    """Display a forbidden source example with explicit initial/hypothetical actions."""
+    ko = plan["forbidden_ko"]
+    initial = next(obj for obj in objects if obj.get("scope") == "reference")
+    result = next(obj for obj in objects if obj["id"] == ko["result_object_id"])
+    events = _events(objects, plan, narration, timing)
+    if len(events) != 2 or [event["object_ids"] for event in events] != [[initial["id"]], [result["id"]]]:
+        raise ValueError("Forbidden ko requires separate initial reveal and subsequent hypothetical capture")
+    first = _matches(initial, narration)[0]
+    if not events[0]["span"][0] <= first.start() < first.end() <= events[0]["span"][1]:
+        raise ValueError("Referenced initial stone must reveal at its first explicit spoken reference")
+    if any(char.isalnum() for char in narration[first.end() : events[0]["span"][1]]):
+        raise ValueError("Referenced initial reveal must end at its first spoken object reference")
+    start, end = events[1]["span"]
+    phrase = narration[start:end]
+    color = "黑" if result["stone_color"] == "B" else "白"
+    if not re.fullmatch(rf"假设{color}(?:1|一)立即反提", phrase) or narration.find(phrase) != start:
+        raise ValueError("Forbidden ko action needs its first complete explicit hypothetical recapture phrase")
+    pstart, pend = ko["prohibition_span"]
+    declaration = "下面演示的是规则禁止的假设变化，实际对局中不能这样走"
+    if (
+        narration[pstart:pend] != declaration
+        or not 0 <= pstart < pend <= len(narration)
+        or (pstart and narration[pstart - 1] not in "。！？.!?；;\n")
+        or (pend < len(narration) and narration[pend] not in "。！.!；;\n")
+    ):
+        raise ValueError("Forbidden ko requires the complete prior explicit prohibition declaration")
+    prohibition = _events(
+        [{"id": "prohibition"}],
+        {"bindings": [{"span": [pstart, pend], "object_ids": ["prohibition"]}]},
+        narration,
+        timing,
+    )[0]
+    if not (
+        events[0]["span"][1] <= pstart < pend <= start
+        and events[0]["at_ms"] < prohibition["at_ms"] < events[1]["at_ms"]
+    ):
+        raise ValueError("Initial reveal and spoken prohibition must finish before the forbidden ko action")
+    frames = []
+    for step in range(3):
+        base = copy.deepcopy(payload)
+        if step < 2:
+            base["stones"][result["stone_color"]].remove(result["point"])
+            base["labels"] = {}
+        if step == 1:
+            base["stones"][initial["stone_color"]].append(initial["point"])
+            base["labels"][",".join(map(str, initial["point"]))] = initial["value"]
+        action = (
+            None
+            if not step
+            else {
+                "kind": "initial_reveal" if step == 1 else "forbidden_ko_capture",
+                "object_ids": events[step - 1]["object_ids"],
+            }
+        )
+        frames.append(
+            {
+                "step": step,
+                "payload": base,
+                "captured": [initial["point"]] if step == 2 else [],
+                "last": result["point"] if step == 2 else None,
+                "currentMove": (
+                    {"kind": "forbidden_ko_capture", "color": result["stone_color"], "point": result["point"]}
+                    if step == 2
+                    else None
+                ),
+                "nextColor": None,
+                "appeared_stones": [{"color": result["stone_color"], "point": result["point"]}] if step == 2 else [],
+                "presentation_action": action,
+            }
+        )
+        if step:
+            events[step - 1]["kind"] = action["kind"]
+    return events, frames, {"span": [pstart, pend], "at_ms": prohibition["at_ms"]}
+
+
 def build_presentation(payload, narration, timing, presentation_plan=None, source_identity=None):
     """Build a fail-closed, hash-bound recording proof, including exact visible snapshots."""
     from katrain.web.tutorials.media_timing import digest, narration_hash
@@ -653,11 +832,15 @@ def build_presentation(payload, narration, timing, presentation_plan=None, sourc
     try:
         objects, plan = discover_objects(payload, presentation_plan, source_identity)
         result["presentation_plan"] = plan
-        mode, ordered, real_frames = _prepare_objects(payload, objects, (plan or {}).get("source_replay"))
-        result.update(mode=mode, objects=objects)
-        events = _events(objects, plan, narration, timing)
-        _validate_order(ordered, objects, events)
-        frames = _frames(payload, objects, events, real_frames)
+        if (plan or {}).get("forbidden_ko"):
+            events, frames, prohibition = _forbidden_ko_presentation(payload, objects, plan, narration, timing)
+            result.update(mode="forbidden_ko", objects=objects, prohibition=prohibition)
+        else:
+            mode, ordered, real_frames = _prepare_objects(payload, objects, (plan or {}).get("source_replay"))
+            result.update(mode=mode, objects=objects)
+            events = _events(objects, plan, narration, timing)
+            _validate_order(ordered, objects, events)
+            frames = _frames(payload, objects, events, real_frames)
         result.update(
             status="complete",
             events=events,

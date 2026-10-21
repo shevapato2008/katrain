@@ -369,6 +369,65 @@ def test_chinese_alias_boundaries_do_not_match_prefix_of_another_number():
     assert build(diagram(), "白一到白五。")["status"] == "pending"
 
 
+@pytest.mark.parametrize("explicit", [False, True])
+def test_first_descriptive_number_and_color_reference_uses_original_speech_end(explicit):
+    text = "请看左下角，标着数字一的是黑子。黑一。"
+    value = diagram()
+    value.update(stones={"B": [[3, 1]], "W": []}, labels={"3,1": "1"})
+    words = ["请", "看", "左下角", "标", "着", "数字", "一", "的", "是", "黑子", "黑", "一"]
+    starts = [100, 300, 538, 1488, 1688, 1800, 2150, 2312, 2412, 2550, 3625, 3875]
+    durations = [200, 212, 712, 200, 100, 350, 162, 100, 125, 500, 250, 125]
+    speech = timing(text)
+    speech["boundaries"] = [
+        {"text": word, "start_ms": start, "duration_ms": duration}
+        for word, start, duration in zip(words, starts, durations)
+    ]
+    plan = {"schema_version": 1, "bindings": [{"span": [6, 15], "object_ids": ["labels:3,1"]}]}
+    original = copy.deepcopy(value)
+    result = build_step_cues(value, text, speech, presentation_plan=plan if explicit else None)
+    assert result["status"] == "complete", result
+    assert [(event["span"], event["at_ms"]) for event in result["events"]] == [([6, 15], 3050)]
+    assert result["frames"][0]["payload"]["stones"]["B"] == []
+    assert result["frames"][1]["payload"]["labels"] == {"3,1": "1"}
+    assert value == original
+
+
+@pytest.mark.parametrize("number,token,color", [(1, "1", "B"), (11, "十一", "B"), (23, "二十三", "W")])
+def test_literal_descriptive_reference_accepts_exact_arabic_and_chinese_numbers(number, token, color):
+    from katrain.web.tutorials.media_presentation import _matches
+
+    phrase = f"标着数字{token}的是{'黑' if color == 'B' else '白'}子"
+    assert [match.group() for match in _matches({"number": number, "stone_color": color}, phrase + "。")] == [phrase]
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "标着数字一的是白子。",
+        "标着数字十一的是黑子。",
+        "标着数字11的是黑子。",
+        "数字一旁边的是黑子。",
+        "不是标着数字一的是黑子。",
+        "可能标着数字一的是黑子。",
+        "标着数字一的是黑子吗？",
+        "标着数字一的是黑子或白子。",
+        "标着数字一的是黑子，还是白子。",
+    ],
+)
+def test_descriptive_reference_does_not_guess_color_number_negation_or_alternatives(phrase):
+    from katrain.web.tutorials.media_presentation import _matches
+
+    assert _matches({"number": 1, "stone_color": "B"}, phrase) == []
+    value = diagram()
+    value.update(stones={"B": [[3, 1]], "W": []}, labels={"3,1": "1"})
+    plan = {"schema_version": 1, "bindings": [{"span": [0, len(phrase)], "object_ids": ["labels:3,1"]}]}
+    assert build(value, phrase, presentation_plan=plan)["status"] == "pending"
+    if "标着" in phrase:
+        start = phrase.index("标着")
+        plan["bindings"][0]["span"] = [start, start + len("标着数字一的是黑子")]
+        assert build(value, phrase, presentation_plan=plan)["status"] == "pending"
+
+
 def test_initial_annotation_mentioned_after_capture_or_replacement_is_rejected():
     value = captured_number_board()
     value["replay"]["initial"]["stones"]["W"] = [[0, 0]]

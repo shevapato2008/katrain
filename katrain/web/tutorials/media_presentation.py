@@ -373,7 +373,7 @@ def _prepare_objects(payload, objects, source_replay=None):
 
 
 def _matches(obj, text):
-    """Only explicit color+number or actual saved annotation tokens qualify automatically."""
+    """Only explicit number/color declarations or saved annotation tokens qualify automatically."""
     number = obj.get("number")
     if number is not None:
         color = "黑|B" if obj["stone_color"] == "B" else "白|W"
@@ -385,7 +385,12 @@ def _matches(obj, text):
                 (digits[tens] if tens > 1 else "") + "十" + (digits[units] if units else "") if tens else digits[units]
             )
         token = "|".join(aliases)
-        return list(re.finditer(rf"(?:{color})\s*(?:{token})(?![0-9零〇一二两三四五六七八九十百千万])", text, re.I))
+        forward = rf"(?:{color})\s*(?:{token})(?![0-9零〇一二两三四五六七八九十百千万])"
+        # Accept this source-used literal declaration only as a complete clause, avoiding
+        # qualified guesses, negation, questions and alternative colors around the phrase.
+        stone = "黑" if obj["stone_color"] == "B" else "白"
+        reverse = rf"(?<![^，,。.;；!！:：])标着数字(?:{token})的是{stone}子(?=$|[。.;；!！])"
+        return list(re.finditer(rf"{forward}|{reverse}", text, re.I))
     if obj["kind"] == "replay":
         return []  # Unnumbered moves/passes need an explicit human binding.
     words = SHAPE_WORDS.get(obj.get("value"), [obj.get("value")]) if obj["kind"] == "shapes" else [obj.get("value")]
@@ -447,7 +452,9 @@ def _events(objects, plan, narration, timing):
         # Numeric references must name their exact color+number even in manual plans.
         for object_id in ids:
             obj = by_id[object_id]
-            if obj.get("number") is not None and not _matches(obj, narration[start:end]):
+            if obj.get("number") is not None and not any(
+                start <= match.start() and match.end() <= end for match in _matches(obj, narration)
+            ):
                 raise ValueError("Numbered binding must explicitly mention its saved color and printed number")
         spoken_positions = [i for i in range(start, end) if narration[i].isalnum()]
         covered = [boundary for boundary in boundaries if boundary[0] <= spoken_positions[-1] < boundary[1]]

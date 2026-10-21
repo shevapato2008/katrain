@@ -2,7 +2,7 @@
 
 from typing import Annotated, Literal
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import Field, model_serializer, model_validator
 
 from katrain.web.tutorials.workbench_models import Int, Point, StrictValue
 
@@ -17,11 +17,17 @@ class RegionDividers(StrictValue):
 
 
 class TeachingArrow(StrictValue):
-    model_config = ConfigDict(extra="forbid", serialize_by_alias=True)
-
     id: ObjectId
     from_: DrawingPoint = Field(alias="from")
     to: DrawingPoint
+
+    @model_serializer(mode="wrap")
+    def serialize_arrow(self, handler):
+        # The TEST provider uses Pydantic 2.6; serialize_by_alias config is newer.
+        value = handler(self)
+        if "from_" in value:
+            value["from"] = value.pop("from_")
+        return value
 
 
 class TeachingCallout(StrictValue):

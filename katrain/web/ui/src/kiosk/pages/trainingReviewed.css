@@ -29,7 +29,7 @@
 .u-train-carousel-card.is-unknown .u-train-carousel-pie:before{inset:18px;background:#1a3023;box-shadow:none}
 .u-train-carousel-card.is-unknown .u-train-carousel-pie strong{font-size:24px}
 .u-train-carousel-card.is-unknown .u-train-carousel-pie span{font-size:14px}
-.u-train-carousel-legend{flex:1;display:grid;gap:4px;align-content:center}
+.u-train-carousel-legend{flex:1;display:grid;gap:4px;align-content:center;touch-action:pan-y}
 .u-train-carousel-legend>div{display:grid;grid-template-columns:10px 1fr 68px 56px;align-items:center;gap:6px;font-size:17px;white-space:nowrap}
 .u-train-carousel-legend i{height:10px;width:10px;border-radius:3px;background:var(--u-train-swatch)}
 .u-train-carousel-legend b{font-size:16px;font-weight:500;text-align:right}.u-train-carousel-legend small{font-size:15px;color:#b8cebd;text-align:right}

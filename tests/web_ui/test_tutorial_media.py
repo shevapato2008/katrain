@@ -1310,7 +1310,9 @@ def forbidden_ko_media(media, monkeypatch):
         )
         db.add(reference)
         db.flush()
-        reference.board_review = make_review({"username": "fixture-reviewer"}, board_content_sha256(reference))
+        reference.board_review = make_review(
+            {"username": "fixture-reviewer"}, board_content_sha256(reference), confirmation_note="private authorization"
+        )
         plan["forbidden_ko"]["initial_board_review_sha256"] = media_tasks.digest(reference.board_review)
         db.add(
             TutorialSourceBook(
@@ -1356,7 +1358,7 @@ def test_forbidden_ko_api_snapshots_both_sources_and_rechecks_reference_at_appro
     from katrain.web.tutorials.source_models import TutorialSourcePage
 
     media, plan = forbidden_ko_media
-    client, factory, worker, *_ = media
+    client, factory, worker, storage, *_ = media
     for kind in ("audio", "video"):
         response = client.post(
             "/api/admin/tutorials/figures/1/media-tasks",
@@ -1377,6 +1379,20 @@ def test_forbidden_ko_api_snapshots_both_sources_and_rechecks_reference_at_appro
             snapshot = (task.snapshot.get("presentation") or task.snapshot)["source_identity"]
             assert snapshot == presentation_source_identity(figure, plan, db=db)
             assert snapshot["reference"]["board_payload"] == db.get(models_db.TutorialFigure, 4825).board_payload
+            import json
+
+            uploaded = storage.read(task.result["step_cues"]["asset"]).decode()
+            assert json.loads(uploaded) == task.result["step_cues"]
+            metadata = json.dumps({"snapshot": task.snapshot, "result": task.result, "media": figure.recognition_debug})
+            for private in (
+                "reviewed_by",
+                "reviewed_at",
+                "confirmation_note",
+                "fixture-reviewer",
+                "private authorization",
+            ):
+                assert private not in uploaded and private not in metadata
+            assert snapshot["reference"]["board_review_sha256"] == plan["forbidden_ko"]["initial_board_review_sha256"]
             assert task.result["step_cues"]["mode"] == "forbidden_ko"
             if kind == "video":
                 assert not task.result["generated_audio"] and video_problem(figure, "2d", GALAXY, db=db) is None

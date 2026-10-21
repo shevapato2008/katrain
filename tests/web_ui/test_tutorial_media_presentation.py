@@ -1039,7 +1039,7 @@ def forbidden_ko_fixture():
             "source_pointer": "/p10",
             "image_sha256": "a" * 64,
             "board_payload": prior,
-            "board_review": {"content_sha256": "c" * 64},
+            "board_review_sha256": digest({"content_sha256": "c" * 64}),
             "page_image_path": "p10.png",
             "bbox": None,
         },
@@ -1063,7 +1063,7 @@ def forbidden_ko_fixture():
             "initial_source_pointer": "/p10",
             "initial_image_sha256": "a" * 64,
             "initial_board_sha256": digest(prior),
-            "initial_board_review_sha256": digest(source["reference"]["board_review"]),
+            "initial_board_review_sha256": source["reference"]["board_review_sha256"],
             "prohibition_span": [prohibition, prohibition + len(declaration)],
         },
     }

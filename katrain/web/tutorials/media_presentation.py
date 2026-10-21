@@ -262,7 +262,7 @@ def _forbidden_ko_objects(payload, objects, plan, source):
         or ko["initial_source_pointer"] != reference.get("source_pointer")
         or ko["initial_image_sha256"] != reference.get("image_sha256")
         or ko["initial_board_sha256"] != digest(reference.get("board_payload"))
-        or ko["initial_board_review_sha256"] != digest(reference.get("board_review"))
+        or ko["initial_board_review_sha256"] != reference.get("board_review_sha256")
     ):
         raise ValueError("Forbidden ko requires current and referenced server-owned sources in the same book")
     if any(plan.get(key) for key in ("source_replay", "annotation_object_ids", "arrows", "callouts")):

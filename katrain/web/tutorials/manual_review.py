@@ -137,7 +137,7 @@ def presentation_source_identity(figure, plan, *, db=None):
                 "page_image_path": reference.page_image_path,
                 "bbox": copy.deepcopy(reference.bbox),
                 "board_payload": copy.deepcopy(reference.board_payload),
-                "board_review": copy.deepcopy(reference.board_review),
+                "board_review_sha256": digest(reference.board_review),
             },
         )
     return identity

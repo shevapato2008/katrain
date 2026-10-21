@@ -379,6 +379,9 @@ class MediaWorker:
         process.wait(timeout=3)
 
     def _render_video(self, **spec):
+        from katrain.web.tutorials.media_render import render_timeout_seconds
+
+        timeout_seconds = render_timeout_seconds(spec.get("output_profile")) + 20
         directory = spec["output_path"].parent
         spec_path = directory / "render-spec.json"
         spec_path.write_text(
@@ -410,13 +413,13 @@ class MediaWorker:
             )
             with self.render_lock:
                 self.active_render = process
-            deadline = time.monotonic() + 620
+            deadline = time.monotonic() + timeout_seconds
             try:
                 while process.poll() is None:
                     if self.stop_event.wait(0.05):
                         raise RuntimeError("Admin process shut down during rendering; retry explicitly")
                     if time.monotonic() >= deadline:
-                        raise TimeoutError("Tutorial render process exceeded 620 seconds")
+                        raise TimeoutError(f"Tutorial render process exceeded {timeout_seconds} seconds")
                 if self.stop_event.is_set():
                     raise RuntimeError("Admin process shut down during rendering; retry explicitly")
                 if process.returncode:

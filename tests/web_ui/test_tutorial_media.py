@@ -642,6 +642,30 @@ time.sleep(60)
         assert result.status == "failed" and result.stage == "rendering_video"
 
 
+@pytest.mark.parametrize("profile,budget", [("galaxy-4k-v1", 1800), ("kiosk-7-v1", 600), (None, 600)])
+def test_parent_render_deadline_matches_profile_budget_plus_twenty(tmp_path, monkeypatch, profile, budget):
+    import threading
+    from types import SimpleNamespace
+    from katrain.web.tutorials import media_tasks
+
+    worker = object.__new__(media_tasks.MediaWorker)
+    worker.render_lock = threading.Lock()
+    worker.active_render = None
+    waits, terminated = [], []
+    worker.stop_event = SimpleNamespace(wait=lambda seconds: waits.append(seconds) or False)
+    process = SimpleNamespace(poll=lambda: None)
+    monkeypatch.setattr(media_tasks.subprocess, "Popen", lambda *args, **kwargs: process)
+    # 4K must survive the old outer cutoff, then expire at its own bounded deadline.
+    clock = iter([100, 721, 100 + budget + 20] if budget == 1800 else [100, 100 + budget + 20])
+    monkeypatch.setattr(media_tasks, "time", SimpleNamespace(monotonic=lambda: next(clock)))
+    monkeypatch.setattr(worker, "_terminate_render", terminated.append)
+    with pytest.raises(TimeoutError, match=f"{budget + 20} seconds"):
+        worker._render_video(output_path=tmp_path / "video.mp4", output_profile=profile)
+    assert len(waits) == (2 if budget == 1800 else 1)
+    assert terminated == [process]
+    assert worker.active_render is None
+
+
 GALAXY = "galaxy-4k-v1"
 KIOSK = "kiosk-7-v1"
 

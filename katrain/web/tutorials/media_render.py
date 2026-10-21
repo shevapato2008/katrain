@@ -18,7 +18,7 @@ import time
 import wave
 from urllib.parse import unquote, urlsplit
 
-from katrain.web.tutorials.media_profiles import OutputProfile, render_profile
+from katrain.web.tutorials.media_profiles import GALAXY, OutputProfile, render_profile
 
 WIDTH, HEIGHT, FPS = 1280, 800, 15
 # Match the recorder's deterministic placement transition; sound lands on contact.
@@ -29,6 +29,12 @@ MAX_DURATION_MS = 15 * 60 * 1000
 RENDER_TIMEOUT_SECONDS = 600
 BUNDLE_ROOT = Path(__file__).resolve().parents[1] / "tutorial-media-static"
 RENDER_ORIGIN = "http://tutorial-render.invalid"
+
+
+def render_timeout_seconds(output_profile: OutputProfile | None = None) -> int:
+    """Bound native 4K work separately while retaining the existing smaller-output budget."""
+    render_profile(output_profile)
+    return 1800 if output_profile == GALAXY else RENDER_TIMEOUT_SECONDS
 
 
 def _run(command, *, timeout):
@@ -235,7 +241,9 @@ def _capture_frames(data, directory, *, deadline):
     def remaining_ms():
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            raise TimeoutError("Tutorial browser render exceeded 600 seconds")
+            raise TimeoutError(
+                f"Tutorial browser render exceeded {render_timeout_seconds(data.get('output_profile'))} seconds"
+            )
         return min(30_000, max(1, int(remaining * 1000)))
 
     with sync_playwright() as playwright:
@@ -337,7 +345,7 @@ def render_video(
     actual_duration = float(audio["format"]["duration"]) * 1000
     if abs(actual_duration - duration) > 250:
         raise ValueError("Saved speech duration disagrees with the actual audio artifact")
-    deadline = time.monotonic() + RENDER_TIMEOUT_SECONDS
+    deadline = time.monotonic() + render_timeout_seconds(output_profile)
     data = {
         "narration": narration,
         "board_payload": board_payload,

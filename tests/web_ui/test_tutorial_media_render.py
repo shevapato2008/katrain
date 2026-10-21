@@ -281,10 +281,20 @@ def test_audio_mix_filter_supports_old_ffmpeg_without_latency_option():
     assert "apad=pad_len=119" in graph and "atrim=start_sample=119" in graph
 
 
+@pytest.mark.parametrize("profile,budget", [("galaxy-4k-v1", 1800), ("kiosk-7-v1", 600), (None, 600)])
+def test_profile_render_budget_is_bounded_and_rejects_unknown_profiles(profile, budget):
+    from katrain.web.tutorials.media_render import render_timeout_seconds
+
+    assert render_timeout_seconds(profile) == budget
+    with pytest.raises(ValueError, match="profile"):
+        render_timeout_seconds("unknown")
+
+
 @pytest.mark.parametrize(
     "profile,width,height,crf", [("galaxy-4k-v1", 3840, 2160, 16), ("kiosk-7-v1", 1024, 600, 18), (None, 1280, 800, 20)]
 )
 def test_renderer_uses_profile_encoding_and_checks_native_output(tmp_path, monkeypatch, profile, width, height, crf):
+    from types import SimpleNamespace
     from katrain.web.tutorials import media_render
 
     audio, output = tmp_path / "audio.mp3", tmp_path / "video.mp4"
@@ -292,9 +302,11 @@ def test_renderer_uses_profile_encoding_and_checks_native_output(tmp_path, monke
     calls, captures = [], []
     fps = 15 if profile is None else 30
     monkeypatch.setattr(media_render, "_validate_inputs", lambda *args: 1000)
+    monkeypatch.setattr(media_render, "time", SimpleNamespace(monotonic=lambda: 100))
 
     def capture(data, directory, **kwargs):
         captures.append(data)
+        assert kwargs["deadline"] == 100 + (1800 if profile == "galaxy-4k-v1" else 600)
 
     def run(command, **kwargs):
         calls.append(command)

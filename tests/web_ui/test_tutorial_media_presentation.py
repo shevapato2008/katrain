@@ -428,6 +428,20 @@ def test_descriptive_reference_does_not_guess_color_number_negation_or_alternati
         assert build(value, phrase, presentation_plan=plan)["status"] == "pending"
 
 
+@pytest.mark.parametrize("prefix", ["可能，", "假设：", "不一定，", "可能，请看左下角，"])
+@pytest.mark.parametrize("explicit", [False, True])
+def test_reverse_reference_keeps_qualifiers_across_commas_and_colons(prefix, explicit):
+    phrase = "标着数字一的是黑子"
+    text = prefix + phrase + "。"
+    value = diagram()
+    value.update(stones={"B": [[3, 1]], "W": []}, labels={"3,1": "1"})
+    plan = {
+        "schema_version": 1,
+        "bindings": [{"span": [len(prefix), len(prefix) + len(phrase)], "object_ids": ["labels:3,1"]}],
+    }
+    assert build(value, text, presentation_plan=plan if explicit else None)["status"] == "pending"
+
+
 def test_initial_annotation_mentioned_after_capture_or_replacement_is_rejected():
     value = captured_number_board()
     value["replay"]["initial"]["stones"]["W"] = [[0, 0]]

@@ -386,11 +386,16 @@ def _matches(obj, text):
             )
         token = "|".join(aliases)
         forward = rf"(?:{color})\s*(?:{token})(?![0-9零〇一二两三四五六七八九十百千万])"
-        # Accept this source-used literal declaration only as a complete clause, avoiding
-        # qualified guesses, negation, questions and alternative colors around the phrase.
+        # Accept this source-used literal declaration only with no sentence prefix or
+        # its known neutral introduction. Commas/colons must not erase a qualifier.
         stone = "黑" if obj["stone_color"] == "B" else "白"
-        reverse = rf"(?<![^，,。.;；!！:：])标着数字(?:{token})的是{stone}子(?=$|[。.;；!！])"
-        return list(re.finditer(rf"{forward}|{reverse}", text, re.I))
+        reverse = rf"标着数字(?:{token})的是{stone}子(?=$|[。.;；!！])"
+        return [
+            match
+            for match in re.finditer(rf"{forward}|(?P<declaration>{reverse})", text, re.I)
+            if match.group("declaration") is None
+            or re.split(r"[。.!！?？;；\n]", text[: match.start()])[-1].strip() in ("", "请看左下角，")
+        ]
     if obj["kind"] == "replay":
         return []  # Unnumbered moves/passes need an explicit human binding.
     words = SHAPE_WORDS.get(obj.get("value"), [obj.get("value")]) if obj["kind"] == "shapes" else [obj.get("value")]

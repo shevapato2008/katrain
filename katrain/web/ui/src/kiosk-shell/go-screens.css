@@ -1363,8 +1363,14 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 .settings-page .kiosk-type-fonts { gap: 8px; }
 .settings-page .kiosk-type-choice {
   min-height: 74px; padding: 8px 9px; font-size: 22px;
-  text-align: left; background: linear-gradient(180deg, #2b4233, #1a3023);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font-weight: 400; font-synthesis: none;
+  background: linear-gradient(180deg, #2b4233, #1a3023);
 }
+.settings-page .kiosk-type-choice[data-font="wenkai"] { font-family: "SmartBox Kai", serif; }
+.settings-page .kiosk-type-choice[data-font="kaiti"] { font-family: "SmartBox CNS Kai", "SmartBox Kai", serif; }
+.settings-page .kiosk-type-choice[data-font="lishu"] { font-family: "SmartBox DaoLi", "SmartBox Kai", serif; }
+.settings-page .kiosk-type-choice[data-font="heiti"] { font-family: "SmartBox Noto Sans CJK", "SmartBox Kai", sans-serif; }
 .settings-page .kiosk-type-sizes { height: 52px; padding: 3px; gap: 4px; }
 .settings-page .kiosk-type-sizes .kiosk-seg__btn { height: 44px; min-height: 44px; font-size: 22px; }
 .settings-page .kiosk-type-save { font-size: 18px; }

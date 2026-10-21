@@ -369,7 +369,7 @@ const SettingsPage = () => {
             {([
               ['wenkai', '霞鹜楷体'], ['kaiti', '楷体'], ['lishu', '隶书'], ['heiti', '黑体'],
             ] as const).map(([id, label]) => (
-              <button key={id} type="button" className="kiosk-type-choice"
+              <button key={id} type="button" className="kiosk-type-choice" data-font={id}
                 aria-pressed={typography.font === id} onClick={() => setTypography({ font: id })}>
                 {label}
               </button>

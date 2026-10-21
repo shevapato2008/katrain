@@ -274,7 +274,13 @@
 
 /* BEGIN generated optional kiosk CJK faces */
 /* CNS11643 Full Repertoire TW-Kai; attribution and license: fonts/CJK-FONT-SOURCES.md */
-@font-face{font-family:"SmartBox CNS Kai";src:url("./fonts/cns-tw-kai-cjk.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+2E80-2FFF,U+3000-303F,U+31C0-31EF,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+FE10-FE1F,U+FE30-FE4F,U+FF01-FF0F,U+FF1A-FF20,U+FF3B-FF40,U+FF5B-FF60,U+20000-2FA1F}
+/* Keep each face small enough for the RK3562 Chromium 120 font decoder. */
+@font-face{font-family:"SmartBox CNS Kai";src:url("./fonts/cns-tw-kai-symbols.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+2E80-2FFF,U+3000-303F,U+31C0-31EF,U+F900-FAFF,U+FE10-FE1F,U+FE30-FE4F,U+FF01-FF0F,U+FF1A-FF20,U+FF3B-FF40,U+FF5B-FF60}
+@font-face{font-family:"SmartBox CNS Kai";src:url("./fonts/cns-tw-kai-4e00-5fff.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+4E00-5FFF}
+@font-face{font-family:"SmartBox CNS Kai";src:url("./fonts/cns-tw-kai-6000-71ff.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+6000-71FF}
+@font-face{font-family:"SmartBox CNS Kai";src:url("./fonts/cns-tw-kai-7200-83ff.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+7200-83FF}
+@font-face{font-family:"SmartBox CNS Kai";src:url("./fonts/cns-tw-kai-8400-95ff.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+8400-95FF}
+@font-face{font-family:"SmartBox CNS Kai";src:url("./fonts/cns-tw-kai-9600-9fff.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+9600-9FFF}
 /* Alibaba Design Alimama DaoLi original WOFF2, copied unchanged. */
 @font-face{font-family:"SmartBox DaoLi";src:url("./fonts/AlimamaDaoLiTi-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+2E80-2FFF,U+3000-303F,U+31C0-31EF,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+FE10-FE1F,U+FE30-FE4F,U+FF01-FF0F,U+FF1A-FF20,U+FF3B-FF40,U+FF5B-FF60,U+20000-2FA1F}
 /* Noto Sans CJK SC (SIL OFL 1.1), from repository source. */

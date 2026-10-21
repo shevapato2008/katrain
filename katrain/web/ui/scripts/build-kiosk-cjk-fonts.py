@@ -29,11 +29,19 @@ UNICODES = (
     "U+FF01-FF0F,U+FF1A-FF20,U+FF3B-FF40,U+FF5B-FF60,"
     "U+20000-2FA1F"
 )
+CNS_SHARDS = (
+    ("symbols", "U+2E80-2FFF,U+3000-303F,U+31C0-31EF,U+F900-FAFF,U+FE10-FE1F,U+FE30-FE4F,U+FF01-FF0F,U+FF1A-FF20,U+FF3B-FF40,U+FF5B-FF60"),
+    ("4e00-5fff", "U+4E00-5FFF"),
+    ("6000-71ff", "U+6000-71FF"),
+    ("7200-83ff", "U+7200-83FF"),
+    ("8400-95ff", "U+8400-95FF"),
+    ("9600-9fff", "U+9600-9FFF"),
+)
 
 
-def subset(source: Path, target: Path) -> None:
+def subset(source: Path, target: Path, unicodes: str = UNICODES) -> None:
     subprocess.run(
-        ["pyftsubset", str(source), f"--output-file={target}", "--flavor=woff2", f"--unicodes={UNICODES}"],
+        ["pyftsubset", str(source), f"--output-file={target}", "--flavor=woff2", f"--unicodes={unicodes}"],
         check=True,
     )
 
@@ -52,14 +60,20 @@ def main() -> None:
                 raise RuntimeError(f"Expected one official TW-Kai-98_1.ttf; found {matches}")
             cns_source = Path(temp) / "TW-Kai-98_1.ttf"
             cns_source.write_bytes(archive.read(matches[0]))
-            subset(cns_source, ASSETS / "cns-tw-kai-cjk.woff2")
+            for name, unicodes in CNS_SHARDS:
+                subset(cns_source, ASSETS / f"cns-tw-kai-{name}.woff2", unicodes)
 
     subset(REPO / "katrain/fonts/NotoSansCJKsc-Regular.otf", ASSETS / "noto-sans-cjk-sc-cjk.woff2")
     shutil.copyfile(args.daoli_woff2, ASSETS / "AlimamaDaoLiTi-Regular.woff2")
 
+    cns_faces = "\n".join(
+        f'@font-face{{font-family:"SmartBox CNS Kai";src:url("./fonts/cns-tw-kai-{name}.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:{unicodes}}}'
+        for name, unicodes in CNS_SHARDS
+    )
     block = f'''{START}
 /* CNS11643 Full Repertoire TW-Kai; attribution and license: fonts/CJK-FONT-SOURCES.md */
-@font-face{{font-family:"SmartBox CNS Kai";src:url("./fonts/cns-tw-kai-cjk.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:{UNICODES}}}
+/* Keep each face small enough for the RK3562 Chromium 120 font decoder. */
+{cns_faces}
 /* Alibaba Design Alimama DaoLi original WOFF2, copied unchanged. */
 @font-face{{font-family:"SmartBox DaoLi";src:url("./fonts/AlimamaDaoLiTi-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:{UNICODES}}}
 /* Noto Sans CJK SC (SIL OFL 1.1), from repository source. */

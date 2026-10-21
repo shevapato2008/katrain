@@ -81,13 +81,16 @@ function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones 
         d={`M${from.x} ${from.y}L${to.x} ${to.y}`} fill="none" stroke="#9a3127"
         strokeWidth={radius(...arrow.from) * .12} strokeLinecap="round" markerEnd="url(#tm-presentation-arrowhead)" />;
     })}
-    {presentation_callouts.length > 0 && <defs><marker id="tm-callout-arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+    {presentation_callouts.some(callout => callout.side !== 'board') && <defs><marker id="tm-callout-arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
       <path d="M0,0L6,3L0,6Z" fill="#f4f1e9" />
     </marker></defs>}
     {presentation_callouts.map(callout => {
       const anchor = project(...callout.anchor);
       const next = project(callout.anchor[0] + 1, callout.anchor[1]);
       const unit = Math.hypot(next.x - anchor.x, next.y - anchor.y);
+      if (callout.side === 'board') return <g key={callout.id} data-presentation-callout={callout.id} data-callout-side={callout.side} data-source-pointer={callout.source_pointer}>
+        <text x={anchor.x} y={anchor.y} textAnchor="middle" dominantBaseline="central" fill="#171717" fontSize={.9 * unit} fontWeight="600">{callout.text}</text>
+      </g>;
       const top = callout.side === 'top';
       const from = { x: anchor.x + (top ? 0 : .35 * unit), y: anchor.y - (top ? .35 * unit : 0) };
       const to = { x: anchor.x + (top ? 0 : 1.15 * unit), y: anchor.y - (top ? 1.15 * unit : 0) };
@@ -195,8 +198,8 @@ export default function TutorialMediaRecorder() {
   const angle = 35 * Math.PI / 180;
   const cameraPosition: [number, number, number] = [0, 1.2 + distance * Math.cos(angle), distance * Math.sin(angle)];
   const outputProfile = data.output_profile === 'galaxy-4k-v1' || data.output_profile === 'kiosk-7-v1' ? data.output_profile : undefined;
-  const hasCallouts = Boolean(data.step_cues.presentation_plan?.callouts?.length);
-  const orthographicSpan = frame.payload.size + (hasCallouts ? 9 : overhead ? .6 : 2.6);
+  const hasMarginCallouts = data.step_cues.presentation_plan?.callouts?.some(callout => callout.side !== 'board');
+  const orthographicSpan = frame.payload.size + (hasMarginCallouts ? 9 : overhead ? .6 : 2.6);
   const gameState = asGameState(frame);
   gameState.last_move = null; // The SVG ring stays clear of material highlights.
   return <main className="tm-recorder" data-output-profile={outputProfile} data-step={frame.step} data-render-mode={data.render_mode} data-board-appearance={solidWood ? 'solid-wood' : 'overhead'}>

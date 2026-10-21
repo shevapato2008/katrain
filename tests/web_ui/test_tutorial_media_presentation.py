@@ -891,3 +891,49 @@ def test_absent_or_empty_callouts_leave_existing_nested_plan_and_proof_bytes_sta
         proof = build(diagram(), "白1，黑2，白3，黑4，白5。", presentation_plan=candidate)
         assert proof["presentation_sha256"] == "01ffb03202fa6e59123a644453a46fe20f90e7b2f6297c75d2a39e284f54a1ef"
         assert all("presentation_callouts" not in frame["payload"] for frame in proof["frames"])
+
+
+def test_source_board_region_labels_reveal_nine_text_objects_without_action_or_margin_semantics():
+    from katrain.web.tutorials.media_render import _stone_click_times
+
+    value, _, _, source = margin_callout_fixture()
+    groups = [
+        ("隅", [[2, 2], [16, 2], [2, 16], [16, 16]], [0, 2]),
+        ("边", [[9, 2], [2, 9], [16, 9], [9, 16]], [3, 4]),
+        ("中央", [[9, 9]], [5, 7]),
+    ]
+    callouts, bindings = [], []
+    for group, (word, anchors, span) in enumerate(groups):
+        ids = []
+        for index, anchor in enumerate(anchors):
+            identity = f"callout:region-{group}-{index}"
+            ids.append(identity)
+            callouts.append({"id": identity, "anchor": anchor, "side": "board", "text": word, **source})
+        bindings.append({"span": span, "object_ids": ids})
+    plan = {"schema_version": 1, "bindings": bindings, "callouts": callouts}
+    original = copy.deepcopy(value)
+    proof = build(value, "角部，边，中腹。", presentation_plan=plan, source_identity=source)
+    assert proof["status"] == "complete", proof
+    assert [len(frame["payload"]["presentation_callouts"]) for frame in proof["frames"]] == [0, 4, 8, 9]
+    assert all(
+        obj["kind"] == "callout" and obj["stone_color"] is None and obj["point"] is None for obj in proof["objects"]
+    )
+    assert all(
+        frame["payload"]["stones"] == {"B": [], "W": []}
+        and not frame["appeared_stones"]
+        and frame["currentMove"] is None
+        and frame["last"] is None
+        for frame in proof["frames"]
+    )
+    assert _stone_click_times(proof["frames"], proof, 10000) == [] and value == original
+    assert build(value, "角部，边，中腹。", presentation_plan=plan)["status"] == "pending"
+    plan["callouts"][0]["anchor"] = [19, 2]
+    assert build(value, "角部，边，中腹。", presentation_plan=plan, source_identity=source)["status"] == "pending"
+
+
+def test_existing_margin_callout_proof_hash_is_unchanged_by_board_text_support():
+    value, text, plan, source = margin_callout_fixture()
+    assert (
+        build(value, text, presentation_plan=plan, source_identity=source)["presentation_sha256"]
+        == "cd4f7078ffc159aa15a19adc3dd5e4218cd461e0cbf7e126f1e8e2ac360f546d"
+    )

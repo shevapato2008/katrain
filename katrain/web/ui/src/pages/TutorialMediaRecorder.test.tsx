@@ -248,3 +248,37 @@ it.each([{ profile: 'galaxy-4k-v1', width: 1880 }, { profile: 'kiosk-7-v1', widt
     expect(document.querySelector('[data-presentation-callout]')).toBeNull();
     expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0].orthographicSpan).toBe(28);
   });
+
+it.each(['galaxy-4k-v1', 'kiosk-7-v1'] as const)('reveals board region words without arrows, drops or extra margins in %s', async profile => {
+  const data = recordingData({ output_profile: profile });
+  const source = { source_pointer: '/regions/0', image_sha256: 'a'.repeat(64) };
+  const positions: [number, number][] = [[2,2],[16,2],[2,16],[16,16],[9,2],[2,9],[16,9],[9,16],[9,9]];
+  const callouts = positions.map((anchor, index) => ({ id: `callout:region-${index}`, anchor, side: 'board' as const,
+    text: index < 4 ? '隅' : index < 8 ? '边' : '中央', ...source }));
+  const frames: ReplayFrame[] = [0,4,8,9].map((count, step) => ({ step,
+    payload: { size: 19, stones: { B: [], W: [] }, presentation_callouts: callouts.slice(0,count) },
+    last: null, currentMove: null, appeared_stones: [] }));
+  window.__TUTORIAL_MEDIA_DATA = { ...data, frames, board_payload: frames[0].payload,
+    step_cues: { ...data.step_cues, frames, mode: 'presentation', presentation_plan: { callouts },
+      cues: frames.map(frame => ({ step: frame.step, at_ms: frame.step * 500, source: frame.step ? 'speech_end' as const : 'initial' as const })) } };
+  render(<TutorialMediaRecorder />);
+  attachCanvas();
+  await act(async () => resolveSprites(sprites));
+  expect(document.querySelectorAll('[data-presentation-callout]')).toHaveLength(0);
+  for (let step=1; step<=3; step++) {
+    await act(async () => { await window.__tutorialSetFrame!(step * 500); });
+    expect(document.querySelectorAll('[data-presentation-callout]')).toHaveLength([0,4,8,9][step]);
+    expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0].orthographicSpan).toBe(19.6);
+    expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0].recordingPlacement).toEqual([]);
+    expect(document.querySelector('[data-presentation-callout] path')).toBeNull();
+    expect(document.querySelector('#tm-callout-arrowhead')).toBeNull();
+    expect(screen.queryByTestId('tutorial-last-move')).not.toBeInTheDocument();
+  }
+  const center = document.querySelector('[data-presentation-callout="callout:region-8"] text')!;
+  expect(center).toHaveTextContent('中央');
+  expect(center).toHaveAttribute('fill','#171717');
+  expect(center).toHaveAttribute('text-anchor','middle');
+  await act(async () => { await window.__tutorialSetFrame!(0); });
+  expect(document.querySelectorAll('[data-presentation-callout]')).toHaveLength(0);
+  expect(vi.mocked(Board3D).mock.calls.at(-1)?.[0].orthographicSpan).toBe(19.6);
+});

@@ -3,7 +3,7 @@ import type { SGFPayload } from '../components/tutorials/SGFBoard';
 export type Point = [number, number];
 export interface Region { col: number; row: number; cols: number; rows: number }
 export interface PresentationCallout {
-  id: string; anchor: Point; side: 'top' | 'right'; text: string;
+  id: string; anchor: Point; side: 'top' | 'right' | 'board'; text: string;
   source_pointer: string; image_sha256: string;
 }
 export interface RecorderPayload extends SGFPayload {

@@ -45,7 +45,7 @@ class PresentationCallout(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     id: str = Field(pattern=r"^callout:[A-Za-z0-9_-]+$", max_length=100)
     anchor: list[int] = Field(min_length=2, max_length=2)
-    side: Literal["top", "right"]
+    side: Literal["top", "right", "board"]
     text: str = Field(min_length=1, max_length=4)
     source_pointer: str = Field(min_length=1, max_length=2048)
     image_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")

@@ -253,13 +253,55 @@ async def test_deadline_cancels_slow_transport_and_does_not_retry():
 @pytest.mark.asyncio
 async def test_per_attempt_timeout_is_a_wall_cap_without_caller_deadline():
     api = AlbumAPI()
+    cancelled = []
+
+    async def fault(request):
+        try:
+            await asyncio.sleep(0.2)
+        except asyncio.CancelledError:
+            cancelled.append(True)
+            raise
+
+    api.fault = fault
+    with pytest.raises(TimeoutError, match="wall-clock timeout"):
+        await api.verify(timeout=0.025, sleep=Clock().sleep)
+    assert len(api.calls) == 2
+    assert cancelled == [True, True]
+
+
+@pytest.mark.asyncio
+async def test_per_attempt_wall_timeout_recovers_once_with_remaining_overall_deadline():
+    api = AlbumAPI()
+    cancelled = []
+
+    async def fault(request):
+        if len(api.calls) == 1:
+            try:
+                await asyncio.sleep(0.2)
+            except asyncio.CancelledError:
+                cancelled.append(True)
+                raise
+
+    api.fault = fault
+    result = await api.verify(timeout=0.025, deadline=asyncio.get_running_loop().time() + 1, sleep=Clock().sleep)
+    assert result["status"] == "verified"
+    assert len(result["checks"]) == 5
+    assert len(api.calls) == 7
+    assert cancelled == [True]
+
+
+@pytest.mark.asyncio
+async def test_deadline_exhausted_during_timeout_retry_delay_does_not_make_another_request():
+    from katrain.kifu_ingest.verification import VerificationDeadlineExceeded
+
+    api = AlbumAPI()
 
     async def fault(request):
         await asyncio.sleep(0.2)
 
     api.fault = fault
-    with pytest.raises(TimeoutError):
-        await api.verify(timeout=0.025)
+    with pytest.raises(VerificationDeadlineExceeded):
+        await api.verify(timeout=0.025, deadline=asyncio.get_running_loop().time() + 0.04)
     assert len(api.calls) == 1
 
 

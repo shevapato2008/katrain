@@ -66,14 +66,17 @@ class VerificationGET:
             timeout = min(self.timeout, self.remaining())
             try:
                 response = await asyncio.wait_for(self.client.get(url, params=params, timeout=timeout), timeout=timeout)
-            except _TRANSIENT:
+            except _TRANSIENT + (TimeoutError,) as exc:
                 remaining = self.remaining()
                 if attempt:
+                    if isinstance(exc, TimeoutError):
+                        raise TimeoutError("album API request wall-clock timeout") from exc
                     raise
-                await asyncio.wait_for(self.sleep(min(0.25, remaining)), timeout=remaining)
-            except TimeoutError as exc:
-                self.remaining()
-                raise TimeoutError("album API request wall-clock timeout") from exc
+                try:
+                    await asyncio.wait_for(self.sleep(min(0.25, remaining)), timeout=remaining)
+                except TimeoutError:
+                    self.remaining()
+                    raise
             else:
                 self.remaining()
                 return response

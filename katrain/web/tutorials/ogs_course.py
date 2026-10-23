@@ -53,6 +53,52 @@ def course_index(db, book, course):
     }
 
 
+def public_course_index(db, book, course, language):
+    """Expose the selected locale and navigation facts without translation maps."""
+    index = course_index(db, book, course)
+    lessons = course.catalog["lessons"]
+
+    def translated(item, key):
+        return item.get("translations", {}).get(language, {}).get(
+            key, item.get("translations", {}).get("en", {}).get(key, item.get(key, ""))
+        )
+
+    return {
+        "book_id": index["book_id"],
+        "title": index["title"],
+        "source": {key: index["source"][key] for key in ("repository", "commit", "locale_version", "license")},
+        "languages": index["languages"],
+        "chapters": [
+            {
+                "id": chapter["id"],
+                "number": chapter["number"],
+                "title": translated(chapter, "title"),
+                "lesson_count": sum(lesson["chapter_id"] == chapter["id"] for lesson in lessons),
+                "step_count": sum(
+                    lesson["step_count"] for lesson in lessons if lesson["chapter_id"] == chapter["id"]
+                ),
+            }
+            for chapter in index["chapters"]
+        ],
+        "lessons": [
+            {
+                "id": lesson["id"],
+                "chapter_id": lesson["chapter_id"],
+                "order": lesson["order"],
+                "course_code": lesson["course_code"],
+                "route": lesson["route"],
+                "title": translated(lesson, "title"),
+                "subtext": translated(lesson, "subtext"),
+                "step_count": lesson["step_count"],
+                "first_page": lesson["first_page"],
+            }
+            for lesson in lessons
+        ],
+        "counts": index["counts"],
+        "license_notice": index["license_notice"],
+    }
+
+
 def step_output(book_id, step, language):
     payload = copy.deepcopy(step.payload)
     translations = payload.pop("translations")
@@ -70,6 +116,31 @@ def step_output(book_id, step, language):
         "screenshot": screenshot,
         "screenshot_status": "ready" if screenshot else "pending",
     }
+
+
+def public_step_output(book_id, step, language):
+    """Keep provenance evidence in admin/export while retaining playable data."""
+    output = step_output(book_id, step, language)
+    keys = (
+        "book_id",
+        "figure_id",
+        "source_id",
+        "source_url",
+        "lesson_id",
+        "step",
+        "page",
+        "size",
+        "initial_player",
+        "stones",
+        "letters",
+        "shapes",
+        "viewport",
+        "exercise",
+        "locale",
+        "screenshot",
+        "screenshot_status",
+    )
+    return {key: output[key] for key in keys}
 
 
 def step_sgf(step, source):

@@ -79,6 +79,9 @@ const PlatformEngineSetupPage = lazy(() => import('./pages/PlatformEngineSetupPa
 const TutorialCategoriesPage = lazy(() => import('./pages/TutorialCategoriesPage'));
 const TutorialBooksPage = lazy(() => import('./pages/TutorialBooksPage'));
 const TutorialSectionPage = lazy(() => import('./pages/TutorialSectionPage'));
+const OgsCourseHomePage = lazy(() => import('./pages/OgsCourseHomePage'));
+const OgsCourseChapterPage = lazy(() => import('./pages/OgsCourseChapterPage'));
+const OgsCourseExercisePage = lazy(() => import('./pages/OgsCourseExercisePage'));
 
 const LegacyPlatformLobbyRedirect = () => {
   const { search } = useLocation();
@@ -192,10 +195,11 @@ export const KioskRoutes = () => {
           {/* 成长(屏 22)。**Dock 第五项**,一级页 ⇒ 路径必须与 `DOCK_TABS` 里那条**全等**
               (`dockLevelOf` 是全等比较,差一个尾斜杠就掉成 L2、中间区从 434 变 516)。 */}
           <Route path="growth" element={<GrowthPage />} />
-          {/* 课程(只读镜像)。`tutorial/book/:bookId` 2026-08-24 连同 `TutorialBookDetailPage`
-              一起删了 —— 选书和目录合成了 `tutorial/:category?book=<id>` 一屏。
-              没留重定向:kiosk 是全屏 chromium,没有地址栏也没有书签。 */}
-          <Route path="tutorial" element={<TutorialCategoriesPage />} />
+          {/* OGS 互动课是课程入口；原有只读教材保留在 /library 与分类深链。 */}
+          <Route path="tutorial" element={<OgsCourseHomePage />} />
+          <Route path="tutorial/chapter/:chapterId" element={<OgsCourseChapterPage />} />
+          <Route path="tutorial/lesson/:lessonId" element={<OgsCourseExercisePage />} />
+          <Route path="tutorial/library" element={<TutorialCategoriesPage />} />
           <Route path="tutorial/:category" element={<TutorialBooksPage />} />
           <Route path="tutorial/section/:sectionId" element={<TutorialSectionPage />} />
           <Route path="vision/setup" element={<VisionSetupPage />} />

@@ -293,11 +293,11 @@ describe('屏 25 课程 · 小节讲解', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tutorial/%E5%85%A5%E9%97%A8?book=7&ch=71');
   });
 
-  it('没有 state(深链)时「← 目录」退回课程首页 —— 不猜一个分类', async () => {
+  it('没有 state(深链)时「← 目录」退回其他教材目录 —— 不猜一个分类', async () => {
     renderPage();
     await ready();
     await userEvent.click(screen.getByRole('button', { name: /目录/ }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tutorial');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tutorial/library');
   });
 
   it('读不到这一节:说出来 + 重试,重试真的再请求一次', async () => {

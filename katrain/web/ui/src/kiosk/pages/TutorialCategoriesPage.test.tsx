@@ -32,7 +32,7 @@ const cat = (over: Partial<TutorialCategory>): TutorialCategory => ({
 
 const renderPage = () => render(
   <ThemeProvider theme={kioskTheme}>
-    <MemoryRouter initialEntries={['/kiosk/tutorial']}><TutorialCategoriesPage /></MemoryRouter>
+    <MemoryRouter initialEntries={['/kiosk/tutorial/library']}><TutorialCategoriesPage /></MemoryRouter>
   </ThemeProvider>,
 );
 
@@ -69,6 +69,7 @@ describe('屏 23 · 三种「没有」各有各的说法', () => {
     getCategories.mockReturnValue(new Promise(() => {}));
     renderPage();
     expect(screen.getByTestId('tutorial-loading')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /课程/ })).toBeInTheDocument();
     expect(screen.queryByTestId('tutorial-empty')).toBeNull();
   });
 
@@ -76,6 +77,7 @@ describe('屏 23 · 三种「没有」各有各的说法', () => {
     getCategories.mockRejectedValueOnce(new Error('云端连不上'));
     renderPage();
     expect(await screen.findByTestId('tutorial-error')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /课程/ })).toBeInTheDocument();
     expect(screen.getByText('云端连不上')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitFor(() => expect(getCategories).toHaveBeenCalledTimes(2));
@@ -88,6 +90,7 @@ describe('屏 23 · 三种「没有」各有各的说法', () => {
     getCategories.mockResolvedValue(EMPTY_LIBRARY);
     renderPage();
     expect(await screen.findByTestId('tutorial-empty')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /课程/ })).toBeInTheDocument();
     expect(screen.queryByTestId('tutorial-categories')).toBeNull();
     // 不写「同步」:盒子上 tutorials 是实时代理,全仓没有同步机制 ——
     // 说「还没同步下来」会让人以为等一会儿就有。
@@ -107,6 +110,7 @@ describe('屏 23 · 分类', () => {
     getCategories.mockResolvedValue([cat({ title: '云端新分类', summary: '接口说了算', book_count: 9 })]);
     renderPage();
     const cards = await screen.findByTestId('tutorial-categories');
+    expect(screen.getByRole('button', { name: /课程/ })).toBeInTheDocument();
     expect(cards.textContent).toContain('云端新分类');
     expect(cards.textContent).toContain('接口说了算');
     expect(cards.textContent).toContain('9 本');

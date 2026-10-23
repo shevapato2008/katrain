@@ -1213,6 +1213,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if getattr(session, "game_type", None) == "pvp_lobby":
             raise HTTPException(status_code=403, detail="Central PvP room controls this game")
 
+    @app.post("/api/pvp/territory")
+    async def lobby_territory(body: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.pvp_territory import analyze_lobby_territory, forward_lobby_territory
+
+        session = _get_session_or_404(manager, body.session_id)
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            guard_session_reader(session, current_user, "lobby territory")
+            return await forward_lobby_territory(app, session, current_user)
+        return await analyze_lobby_territory(app, session, current_user)
+
     @app.get("/health")
     async def health(request: Request):
         # Unversioned alias for /api/v1/health, kept because things outside this repo probe

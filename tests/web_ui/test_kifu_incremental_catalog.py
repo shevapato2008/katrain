@@ -296,14 +296,22 @@ def test_scope_or_new_title_cannot_launder_an_unqualified_existing_display_colli
     raw = "Spring Cup" if new_title else "Summer Cup"
     display = "春季杯" if new_title else "夏季杯"
     with engine.begin() as conn:
-        conn.execute(KifuRawEventValue.__table__.insert().values(
-            id=8, raw_value="Unreviewed Other Cup", category="readable_unlinked", review_status="pending"
-        ))
-        conn.execute(KifuRawEventName.__table__.insert().values(
-            raw_event_id=8, lang="jp", display_name=display, status="verified",
-            decision_kind="generated", generation_rule_version=VERSION,
-            evidence_id=conn.scalar(select(KifuRawEventName.evidence_id).where(KifuRawEventName.lang == "jp"))
-        ))
+        conn.execute(
+            KifuRawEventValue.__table__.insert().values(
+                id=8, raw_value="Unreviewed Other Cup", category="readable_unlinked", review_status="pending"
+            )
+        )
+        conn.execute(
+            KifuRawEventName.__table__.insert().values(
+                raw_event_id=8,
+                lang="jp",
+                display_name=display,
+                status="verified",
+                decision_kind="generated",
+                generation_rule_version=VERSION,
+                evidence_id=conn.scalar(select(KifuRawEventName.evidence_id).where(KifuRawEventName.lang == "jp")),
+            )
+        )
     value = manifest("127", event=raw)
     if new_title:
         value["decisions"] = [decision(value, "raw_event", raw)]
@@ -317,8 +325,14 @@ def test_scope_or_new_title_cannot_launder_an_unqualified_existing_display_colli
 def test_two_new_candidates_need_explicit_shared_display_before_any_proof_is_written(engine):
     records = [{"owner": {"kind": "raw_event", "id": owner_id}} for owner_id in (8, 9)]
     candidates = [
-        {"owner": {"kind": "raw_event", "id": owner_id}, "lang": "jp", "display_name": "同名大会",
-         "decision_kind": "generated", "generation_rule_version": VERSION, "research_sha256": canonical_sha256(record)}
+        {
+            "owner": {"kind": "raw_event", "id": owner_id},
+            "lang": "jp",
+            "display_name": "同名大会",
+            "decision_kind": "generated",
+            "generation_rule_version": VERSION,
+            "research_sha256": canonical_sha256(record),
+        }
         for owner_id, record in zip((8, 9), records)
     ]
     before = state(engine)
@@ -402,6 +416,92 @@ def test_idempotent_replay_returns_identical_receipt_without_any_write(engine):
     before = state(engine)
     assert publish(engine, value) == first
     assert state(engine) == before
+
+
+def test_native_receipt_replay_does_not_warm_entire_catalog(engine, monkeypatch):
+    value = manifest()
+    first = publish(engine, value)
+    before = state(engine)
+    monkeypatch.setattr(publisher(), "warm_sgf_cache", lambda *a, **k: pytest.fail("replay warmed all SGFs"))
+    assert publish(engine, value) == first
+    assert state(engine) == before
+
+
+@pytest.mark.parametrize("busy", [False, True])
+def test_publication_guard_is_session_wide_and_releases_after_error(busy):
+    api = publisher()
+    assert hasattr(api, "_publication_guard"), "publication must guard warm-up and transaction together"
+    calls = []
+
+    class Connection:
+        def scalar(self, sql, parameters):
+            calls.append(str(sql))
+            return not busy
+
+        def commit(self):
+            calls.append("commit")
+
+        def invalidate(self):
+            calls.append("invalidate")
+
+        def close(self):
+            calls.append("close")
+
+    class Database:
+        dialect = type("Dialect", (), {"name": "postgresql"})()
+
+        def connect(self):
+            return Connection()
+
+    if busy:
+        with pytest.raises(api.PublicationError, match="another incremental publisher"):
+            with api._publication_guard(Database()):
+                pytest.fail("busy publisher entered warm-up")
+        assert not any("pg_advisory_unlock" in call for call in calls)
+    else:
+        with pytest.raises(RuntimeError, match="writer failed"):
+            with api._publication_guard(Database()):
+                calls.append("warm-and-write")
+                raise RuntimeError("writer failed")
+        assert calls.index("warm-and-write") < next(i for i, call in enumerate(calls) if "pg_advisory_unlock" in call)
+    assert "pg_try_advisory_lock" in calls[0]
+    assert calls[-1] == "close"
+
+
+@pytest.mark.parametrize("failure", ["acquire", "release"])
+def test_publication_guard_invalidates_unknown_lock_state(failure):
+    api = publisher()
+    calls = []
+
+    class Connection:
+        def scalar(self, sql, parameters):
+            operation = "release" if "pg_advisory_unlock" in str(sql) else "acquire"
+            calls.append(operation)
+            if operation == failure:
+                raise OSError("connection lost after server may have acquired the lock")
+            return True
+
+        def commit(self):
+            pass
+
+        def invalidate(self):
+            calls.append("invalidate")
+
+        def close(self):
+            calls.append("close")
+
+    class Database:
+        dialect = type("Dialect", (), {"name": "postgresql"})()
+
+        def connect(self):
+            return Connection()
+
+    with pytest.raises(OSError):
+        with api._publication_guard(Database()):
+            calls.append("write")
+    assert calls[-2:] == ["invalidate", "close"]
+    if failure == "acquire":
+        assert "write" not in calls
 
 
 def test_replay_rejects_a_changed_published_sgf(engine):

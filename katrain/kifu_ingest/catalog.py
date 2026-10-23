@@ -8,6 +8,7 @@ transaction and which finite IDs/scopes were bound by deterministic code.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime, timezone
 from hashlib import sha256
@@ -59,6 +60,7 @@ FORMAT = "kifu-incremental-manifest-v1"
 BINDING_VERSION = "kifu-incremental-binding-v1"
 LANGUAGES = ("cn", "tw", "jp", "ko", "en")
 _STATEMENT_TIMEOUT_MS = 15 * 60 * 1000
+_PUBLICATION_LOCK_KEY = 0x4B49465550554231
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _ALBUM_METADATA = frozenset(
     {
@@ -1299,6 +1301,44 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
         raise PublicationError("later dependent row changed publication; compensation refused") from exc
 
 
+@contextmanager
+def _publication_guard(engine):
+    """Hold a receiver-wide session lock, including pre-transaction SGF work.
+
+    If a transport disappears the remote process keeps this lock until it
+    finishes. A retry fails closed before starting another warm-up or writer.
+    Existing name/table transaction locks still protect all catalog mutations.
+    """
+    if engine.dialect.name != "postgresql":
+        yield
+        return
+    connection = engine.connect()
+    acquired = False
+    try:
+        try:
+            acquired = bool(connection.scalar(text("SELECT pg_try_advisory_lock(:key)"), {"key": _PUBLICATION_LOCK_KEY}))
+        except BaseException:
+            # The server may have acquired the session lock before a lost reply.
+            connection.invalidate()
+            raise
+        connection.commit()
+        _require(acquired, "another incremental publisher is still running; retry after it finishes")
+        yield
+    finally:
+        try:
+            if acquired:
+                unlocked = connection.scalar(text("SELECT pg_advisory_unlock(:key)"), {"key": _PUBLICATION_LOCK_KEY})
+                connection.commit()
+                if not unlocked:
+                    connection.invalidate()
+        except BaseException:
+            # Never return a potentially session-locked connection to the pool.
+            connection.invalidate()
+            raise
+        finally:
+            connection.close()
+
+
 def publish_manifest(engine, manifest, *, expected_manifest_sha256, lock_timeout_ms=15000, sgf_cache=None):
     """Publish all games or roll back all rows, evidence, scopes and receipt.
 
@@ -1319,9 +1359,18 @@ def publish_manifest(engine, manifest, *, expected_manifest_sha256, lock_timeout
     if their current proof cannot cover a new card the whole publication fails.
     """
     prepared = _validate_manifest(manifest, expected_manifest_sha256)
+    with _publication_guard(engine):
+        return _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock_timeout_ms, sgf_cache)
+
+
+def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock_timeout_ms, sgf_cache):
     manifest_hash = expected_manifest_sha256
     sgf_cache = {} if sgf_cache is None else sgf_cache
-    if not sgf_cache:
+    # This is only an optimization. The applied receipt, source bytes, names,
+    # membership and public coverage are all revalidated under the write lock.
+    with engine.connect() as connection:
+        previous_id = connection.scalar(select(KifuNameBatch.id).where(KifuNameBatch.bundle_sha256 == manifest_hash))
+    if not sgf_cache and previous_id is None:
         warm_sgf_cache(engine, sgf_cache)
     try:
         with name_batch._locked_write(engine, lock_timeout_ms=lock_timeout_ms) as conn:

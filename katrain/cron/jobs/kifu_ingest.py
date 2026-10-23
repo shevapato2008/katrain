@@ -599,7 +599,10 @@ class KifuIngestJob(BaseJob):
                     host=config.KIFU_INGEST_SSH_HOST,
                     key_path=config.KIFU_INGEST_SSH_KEY,
                     known_hosts=config.KIFU_INGEST_KNOWN_HOSTS,
-                    timeout=_receiver_timeout(deadline),
+                    # Killing SSH cannot cancel a remote Docker writer. Keep
+                    # both local writer locks until its native receipt returns;
+                    # TOTAL_SECONDS remains a cooperative admission budget.
+                    timeout=None,
                 )
 
             def check_identities(request):

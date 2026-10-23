@@ -302,6 +302,27 @@ async def test_publication_overrun_finishes_writer_and_stops_next_package(hourly
     assert not [e for e in h.events if e[0] == "sync"]
 
 
+@pytest.mark.asyncio
+async def test_remote_publication_keeps_writer_until_native_receipt_after_budget(hourly, monkeypatch):
+    h = hourly
+    h.pages = [source_metadata("20"), source_metadata("21")]
+    ticks = [1000.0]
+    monkeypatch.setattr(job.time, "monotonic", lambda: ticks[0])
+    calls = []
+
+    def slow_remote(manifest, *args, **kwargs):
+        calls.append(manifest["publication_key"])
+        assert kwargs["timeout"] is None, "SSH timeout cannot cancel a remote Docker writer"
+        ticks[0] = 5000.0
+        return {"receipt": h.receipt(manifest)}
+
+    monkeypatch.setattr(job, "send_verified_manifest", slow_remote)
+    await job.KifuIngestJob()._run_locked()
+    assert calls == ["new-20"]
+    assert batch(h, "new-20")["status"] == "prod_published"
+    assert batch(h, "new-20")["prod_receipt"] == h.receipt({"games": [{"source_item_id": "20"}]})
+
+
 def test_config_clamps_existing_oversized_source_and_new_budgets(monkeypatch):
     import importlib
     from katrain.cron import config

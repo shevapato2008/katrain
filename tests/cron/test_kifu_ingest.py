@@ -253,6 +253,7 @@ def test_sync_uses_fixed_ssh_command_and_stdin(monkeypatch):
         known_hosts="/run/secrets/hosts",
     )
     assert result["status"] == "applied"
+    assert captured["timeout"] is None
     assert captured["args"] == [
         "ssh",
         "-o",

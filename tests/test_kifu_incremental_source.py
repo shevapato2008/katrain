@@ -237,3 +237,15 @@ def test_global_spacing_applies_between_list_and_sgf():
 
     run(check())
     assert requests_at == [0, 2, 7]
+
+
+def test_list_response_cannot_exceed_requested_twenty_rows():
+    async def check():
+        async with httpx.AsyncClient(
+            transport=httpx.MockTransport(lambda _: response(data={"gameMetaList": [{"id": i} for i in range(21)]}))
+        ) as client:
+            source = Source19x19(client, list_interval=(0, 0))
+            with pytest.raises(SourceError, match="20"):
+                await source.fetch_page(0)
+
+    run(check())

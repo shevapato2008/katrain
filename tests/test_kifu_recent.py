@@ -166,7 +166,8 @@ def test_same_id_change_retains_original_success_and_both_evidence(tmp_path, cha
     stage._persist()
     new_meta = meta(1, gamename="Corrected") if change == "metadata" else original_meta
     new_sgf = "(;GM[1]SZ[19];W[bb])" if change == "sgf" else SGF
-    result = run(Source({0: [new_meta]}, sgfs={"1": new_sgf}), stage, published_ids={"1"})
+    source = Source({0: [new_meta]}, sgfs={"1": new_sgf})
+    result = run(source, stage, published_ids={"1"})
     item = stage.manifest["items"]["1"]
     assert result["changed_ids"] == result["quarantined_ids"] == ["1"]
     assert item["status"] == "success" and item["metadata"] == original_meta
@@ -174,8 +175,13 @@ def test_same_id_change_retains_original_success_and_both_evidence(tmp_path, cha
     evidence = json.loads((stage.root / item["recent"]["change_evidence"]).read_text())
     assert evidence["before"]["metadata"] == original_meta
     assert evidence["after"]["metadata"] == new_meta
-    assert evidence["after"]["raw_sha256"] == hashlib.sha256(new_sgf.encode()).hexdigest()
-    assert (stage.root / evidence["after"]["raw_sgf_path"]).read_text() == new_sgf
+    if change == "sgf":
+        assert evidence["after"]["raw_sha256"] == hashlib.sha256(new_sgf.encode()).hexdigest()
+        assert (stage.root / evidence["after"]["raw_sgf_path"]).read_text() == new_sgf
+    else:
+        assert evidence["after"]["raw_sha256"] is None
+        assert evidence["after"]["raw_sgf_path"] is None
+        assert not any(phase == "sgf" for phase, _ in source.calls)
     again = Source({0: [new_meta]})
     run(again, stage, published_ids={"1"})
     assert not any(c[0] == "sgf" for c in again.calls)
@@ -323,3 +329,52 @@ def test_terminal_candidate_is_reported_even_when_new_candidate_exhausts_budget(
     run(Source({0: [meta(1)]}, failures={"1": SourceError("missing", retryable=False)}), stage)
     result = run(Source({0: [meta(2), meta(1)]}), stage, max_downloads=0)
     assert result["quarantined_ids"] == ["1"]
+
+
+@pytest.mark.parametrize("budget,sgf_error", [(100, SourceError("temporary")), (0, None)])
+def test_metadata_change_is_saved_before_sgf_failure_or_budget_deferral(tmp_path, budget, sgf_error):
+    stage = Stage(tmp_path.resolve())
+    original = meta(1)
+    stage.remember(original)
+    raw_path = stage.save_sgf("1", SGF)
+    stage.manifest["items"]["1"]["status"] = "success"
+    stage._persist()
+    updated = meta(1, gamename="Corrected")
+    source = Source({0: [updated]}, failures={"1": sgf_error} if sgf_error else {})
+    result = run(source, stage, published_ids={"1"}, max_downloads=budget)
+    saved = Stage(stage.root).manifest["items"]["1"]
+    assert result["candidate_ids"] == ["1"]
+    assert result["changed_ids"] == result["quarantined_ids"] == ["1"]
+    assert not any(phase == "sgf" for phase, _ in source.calls)
+    assert saved["status"] == "success" and saved["metadata"] == original
+    assert raw_path.read_text() == SGF
+    assert saved["recent"]["seen_metadata"] == updated
+    evidence = json.loads((stage.root / saved["recent"]["change_evidence"]).read_text())
+    assert evidence["before"]["metadata"] == original
+    assert evidence["before"]["raw_sha256"] == hashlib.sha256(SGF.encode()).hexdigest()
+    assert evidence["after"]["metadata"] == updated
+    assert evidence["after"]["raw_sha256"] is None
+    assert evidence["after"]["raw_sgf_path"] is None
+    assert evidence["after"]["raw_status"] == "not_fetched"
+
+
+def test_new_and_unchanged_metadata_is_durable_before_sgf_request(tmp_path):
+    stage = Stage(tmp_path.resolve())
+    run(Source({0: [meta(1)]}), stage)
+    changed_counters = meta(1, analyzeCount=100)
+    new_metadata = meta(2)
+
+    class AssertDurable(Source):
+        async def fetch_sgf(self, external_id):
+            saved = Stage(stage.root).manifest["items"]
+            assert saved["1"]["recent"]["seen_metadata"] == changed_counters
+            assert saved["2"]["recent"]["seen_metadata"] == new_metadata
+            assert saved["1"]["metadata"] == meta(1)
+            return await super().fetch_sgf(external_id)
+
+    run(AssertDurable({0: [changed_counters, new_metadata]}), stage)
+    deferred = run(Source({0: [meta(3)]}), stage, max_downloads=0)
+    assert deferred["candidate_ids"] == ["3", "1", "2"]
+    saved = Stage(stage.root).manifest["items"]["3"]
+    assert saved["recent"]["seen_metadata"] == meta(3)
+    assert saved["recent"]["seen_metadata_sha256"] == recent.metadata_sha256(meta(3))

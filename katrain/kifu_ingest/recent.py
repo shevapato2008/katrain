@@ -104,8 +104,10 @@ def _quarantine_change(stage, item, before, metadata, raw, digest, observed_at):
     """One bounded variant per ID until an operator explicitly restores it."""
     directory = stage._directory("source-changes")
     external_id = item["external_id"]
-    raw_path = directory / f"{external_id}-{digest}.sgf"
-    stage._atomic(raw_path, raw.encode("utf-8"))
+    raw_path = None
+    if raw is not None:
+        raw_path = directory / f"{external_id}-{digest}.sgf"
+        stage._atomic(raw_path, raw.encode("utf-8"))
     record_path = directory / f"{external_id}-{uuid4().hex}.json"
     record = {
         "external_id": external_id,
@@ -115,7 +117,8 @@ def _quarantine_change(stage, item, before, metadata, raw, digest, observed_at):
             "metadata": metadata,
             "metadata_sha256": metadata_sha256(metadata),
             "raw_sha256": digest,
-            "raw_sgf_path": str(raw_path.relative_to(stage.root)),
+            "raw_sgf_path": str(raw_path.relative_to(stage.root)) if raw_path is not None else None,
+            "raw_status": "fetched" if raw is not None else "not_fetched",
         },
     }
     stage._atomic(record_path, json.dumps(record, ensure_ascii=False, sort_keys=True).encode("utf-8"))
@@ -124,6 +127,17 @@ def _quarantine_change(stage, item, before, metadata, raw, digest, observed_at):
     )
     # A published item's successful status and originals must survive isolation.
     stage._persist()
+
+
+def _before_observation(item):
+    observation = item["recent"]
+    metadata = observation.get("metadata", item["metadata"])
+    return {
+        "metadata": metadata,
+        "metadata_sha256": observation.get("metadata_sha256") or metadata_sha256(metadata),
+        "raw_sha256": observation.get("raw_sha256") or item.get("raw_sha256"),
+        "raw_sgf_path": item.get("raw_sgf_path"),
+    }
 
 
 async def discover_recent(
@@ -273,6 +287,7 @@ async def discover_recent(
             "head": head,
             "rolling": stage.manifest.get("rolling", {}),
             "deferred_until": stage.manifest.get("source_next_retry_at"),
+            "candidate_ids": list(candidates),
             "eligible_ids": eligible,
             "changed_ids": changed,
             "quarantined_ids": sorted(
@@ -373,8 +388,21 @@ async def discover_recent(
             item["recent"].update(
                 terminal=True, classification=item["recent"].get("classification", "preparation_quarantine")
             )
-        # Preserve the original metadata even before freezing; observation is separate.
-        item["recent"]["last_seen_at"] = wall_clock()
+        # Metadata observation is durable before SGF attempts or their budgets.
+        # Keep its stable baseline separate from this round's full source values.
+        observation = item["recent"]
+        before = _before_observation(item)
+        observation.setdefault("metadata", before["metadata"])
+        observation.setdefault("metadata_sha256", before["metadata_sha256"])
+        observation.update(
+            seen_metadata=metadata, seen_metadata_sha256=metadata_sha256(metadata), last_seen_at=wall_clock()
+        )
+        if not observation.get("terminal") and before["metadata_sha256"] != observation["seen_metadata_sha256"]:
+            # Metadata alone proves a source revision. Never spend a request or
+            # bypass Retry-After to obtain optional SGF evidence for it.
+            _quarantine_change(stage, item, before, metadata, None, None, wall_clock())
+            changed.append(external_id)
+            quarantined.append(external_id)
     stage._persist()
 
     def priority(external_id):
@@ -444,21 +472,9 @@ async def discover_recent(
         stamp = wall_clock()
         observation["last_checked_at"] = stamp
         stage.manifest["recent_last_observed_at"] = stamp
-        before_metadata = observation.get("metadata", item["metadata"])
-        before_meta_hash = observation.get("metadata_sha256")
-        before_raw_hash = observation.get("raw_sha256") or item.get("raw_sha256")
-        if before_meta_hash is None and item.get("raw_sha256"):
-            before_meta_hash = metadata_sha256(item["metadata"])
+        before = _before_observation(item)
         new_meta_hash = metadata_sha256(metadata)
-        if (before_meta_hash is not None and before_meta_hash != new_meta_hash) or (
-            before_raw_hash is not None and before_raw_hash != digest
-        ):
-            before = {
-                "metadata": before_metadata,
-                "metadata_sha256": before_meta_hash,
-                "raw_sha256": before_raw_hash,
-                "raw_sgf_path": item.get("raw_sgf_path"),
-            }
+        if before["raw_sha256"] is not None and before["raw_sha256"] != digest:
             _quarantine_change(stage, item, before, metadata, raw, digest, stamp)
             changed.append(external_id)
             quarantined.append(external_id)

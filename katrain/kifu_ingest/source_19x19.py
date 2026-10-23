@@ -150,6 +150,8 @@ class Source19x19:
         if not isinstance(data, dict) or not isinstance(data.get("gameMetaList"), list):
             raise SourceError("missing gameMetaList")
         games = data["gameMetaList"]
+        if len(games) > 20:
+            raise SourceError("gameMetaList exceeds requested 20 rows")
         if any(not isinstance(item, dict) or not re.fullmatch(r"[0-9]+", str(item.get("id", ""))) for item in games):
             raise SourceError("invalid game metadata")
         return games

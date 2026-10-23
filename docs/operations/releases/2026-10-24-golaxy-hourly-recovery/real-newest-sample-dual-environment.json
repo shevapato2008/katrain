@@ -1,0 +1,66 @@
+{
+  "date_played": "2026-10-23",
+  "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+  "publication_key": "19x19-batch-62854d648ca7b10ad8f3290d",
+  "source_id": "91574352",
+  "targets": {
+    "PROD": {
+      "album": {
+        "date_played": "2026-10-23",
+        "date_sort": "2026-10-23",
+        "duplicate_of_id": null,
+        "id": 178724,
+        "list_hidden_reason": null,
+        "source_path": "data/kifu-album/19x19/91574352.sgf"
+      },
+      "native_manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+      "native_receipt_sha256": "3610cf1dffdbaf1992a3d109cd489e70b8ddec6989c9bd4326a0ae2e060754eb",
+      "native_status": "applied",
+      "public_api": {
+        "date_played": "2026-10-23",
+        "detail_status": 200,
+        "display_fields": {
+          "display_event": "第74期王座战挑战赛5番棋1局",
+          "display_player_black": "福岡航太朗",
+          "display_player_white": "一力辽"
+        },
+        "elapsed_seconds": 4.749,
+        "list_status": 200,
+        "sgf_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73"
+      },
+      "source_album_count": 1,
+      "source_links": [
+        "data/kifu-album/19x19/91574352.sgf"
+      ]
+    },
+    "TEST": {
+      "album": {
+        "date_played": "2026-10-23",
+        "date_sort": "2026-10-23",
+        "duplicate_of_id": null,
+        "id": 179060,
+        "list_hidden_reason": null,
+        "source_path": "data/kifu-album/19x19/91574352.sgf"
+      },
+      "native_manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+      "native_receipt_sha256": "1a51a7f6fcf8a41af328276fa34dfcd17565ace6244cd5a4c8dd526757ba908f",
+      "native_status": "applied",
+      "public_api": {
+        "date_played": "2026-10-23",
+        "detail_status": 200,
+        "display_fields": {
+          "display_event": "第74期王座战挑战赛5番棋1局",
+          "display_player_black": "福岡航太朗",
+          "display_player_white": "一力辽"
+        },
+        "elapsed_seconds": 2.227,
+        "list_status": 200,
+        "sgf_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73"
+      },
+      "source_album_count": 1,
+      "source_links": [
+        "data/kifu-album/19x19/91574352.sgf"
+      ]
+    }
+  }
+}

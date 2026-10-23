@@ -1,0 +1,77 @@
+{
+  "bound_at": "2026-10-23T18:30:30.491719+00:00",
+  "capture_sha256": "e6b93951c767114e9bc49bdf10fce2382277ada4526c4123696a9b66dc8b5c51",
+  "captured_at": "2026-10-23T18:30:25.056316+00:00",
+  "cell_count": 5,
+  "cells": [
+    {
+      "evidence_sha256": "9ed9649be4d939a0dc1bbb7e548776ad4332fb55c6a693f67f8910429246ffb3",
+      "lang": "jp",
+      "name_sha256": "d7b758d6fe2c80b5021990823735ced0b953a07afce817c7872e01826da323f7",
+      "new": "第74期王座戦挑戦手合5番勝負第1局",
+      "old": "第74期王座戦挑戦者決定戦5番勝負第1局",
+      "owner": {
+        "id": 102404,
+        "kind": "raw_event"
+      },
+      "prior_batch_id": 905,
+      "raw": "第74期王座战挑战赛5番棋1局"
+    },
+    {
+      "evidence_sha256": "cd86023cf45d4a21c84c69e38fc0545488fa08e61e69dc2dbdec2067c4917535",
+      "lang": "ko",
+      "name_sha256": "1b1b4154f4bf62be8401b85a1b99e153b562ba383046aeb2a9bb815354ee3234",
+      "new": "제74기 왕좌전 도전5번기 제1국",
+      "old": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+      "owner": {
+        "id": 102404,
+        "kind": "raw_event"
+      },
+      "prior_batch_id": 905,
+      "raw": "第74期王座战挑战赛5番棋1局"
+    },
+    {
+      "evidence_sha256": "8239f10b22df3cfcda10789364955f85487be6b3e0f627e95cf1a6881fc056ce",
+      "lang": "ko",
+      "name_sha256": "72c222816dcda686984efd4eb6c976577306f966e8dfea86369bc24ecb7c4d90",
+      "new": "제12회 국수산맥배 세계전 결승 신진서 VS 리웨이칭",
+      "old": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+      "owner": {
+        "id": 102409,
+        "kind": "raw_event"
+      },
+      "prior_batch_id": 905,
+      "raw": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清"
+    },
+    {
+      "evidence_sha256": "a9928a03bff821489b98c28a3b18b8fef5cf30a0fe97057bda14c7025027f85a",
+      "lang": "ko",
+      "name_sha256": "1d0f66ba3b6cbdd85037e1d59dc5bacc6f73dad8665c260fa99176411b7bd89c",
+      "new": "제9회 오청원배 세계 여자 오픈전 국제 예선 결승",
+      "old": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+      "owner": {
+        "id": 102408,
+        "kind": "raw_event"
+      },
+      "prior_batch_id": 905,
+      "raw": "第9届吴清源杯世界女子公开赛国际预选决赛"
+    },
+    {
+      "evidence_sha256": "708e54d6a586f1bb2d040491b387a231e239d6888e65e95bf93f9b8c213436b2",
+      "lang": "ko",
+      "name_sha256": "0a9b572834daa874a0bf52587cf00050a9cc10bce94f2bb66191d5716cabaf0c",
+      "new": "제9회 오청원배 세계 여자 바둑 오픈 예선 2라운드",
+      "old": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+      "owner": {
+        "id": 102410,
+        "kind": "raw_event"
+      },
+      "prior_batch_id": 905,
+      "raw": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮"
+    }
+  ],
+  "game_count": 6,
+  "inventory_sha256": "cef1baefc98daf0de349e7f7d044f1c99a43bdfbded6103965d2b46753d64987",
+  "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6",
+  "target": "PROD"
+}

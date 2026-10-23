@@ -1,0 +1,467 @@
+{
+  "album_links": [],
+  "bundle_format": 2,
+  "candidates": [
+    {
+      "collision_basis": {
+        "kind": "literal_title_translation",
+        "provenance": "signed_raw_event_literal",
+        "source_text": "第74期王座战挑战赛5番棋1局"
+      },
+      "collision_decision": "shared_display",
+      "decision_kind": "generated",
+      "display_name": "第74期王座戦挑戦手合5番勝負第1局",
+      "first_pass_correction": {
+        "lang": "jp",
+        "name_preimage_sha256": "800e29fdc830e1d843ea421f065044a9323162999b68225792bf260c959bd58e",
+        "owner": {
+          "id": 102540,
+          "kind": "raw_event"
+        },
+        "prior_batch_id": 912,
+        "prior_bundle_sha256": "5114407c70b2ac8597f217de12a29a006ed2d4cd7d99ed0576b75d132d9f657f",
+        "prior_candidate_sha256": "caea08aad66b587f5dd6f9da158959d8b655a85b158893baf151e1b71baa6404",
+        "prior_evidence_sha256": "d09cb4563e9c191087431446c072c6204d68de035467cd4b76a7d4ff6079ce04",
+        "prior_name_revision": 1,
+        "raw_value": "第74期王座战挑战赛5番棋1局",
+        "version": "generated-raw-event-semantic-correction-v1"
+      },
+      "generated_review": {
+        "decision": "approve_generated_first_pass",
+        "display_name": "第74期王座戦挑戦手合5番勝負第1局",
+        "lang": "jp",
+        "owner": {
+          "id": 102540,
+          "kind": "raw_event"
+        },
+        "research_sha256": "a7d500d9f78710f175919a51fcdcce1919d572a0166763f41f51252501920847",
+        "reviewed_at": "2026-10-23T18:31:16+00:00",
+        "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+        "reviewer_model": "gpt-6-astra"
+      },
+      "generation_rule_version": "user_authorized_first_pass_v1",
+      "lang": "jp",
+      "name_preimage_sha256": "800e29fdc830e1d843ea421f065044a9323162999b68225792bf260c959bd58e",
+      "owner": {
+        "id": 102540,
+        "kind": "raw_event"
+      },
+      "preimage_binding": {
+        "actor_id": "codex-golaxy-correction-producer-20261024",
+        "actor_model": "codex-agent-session",
+        "bound_at": "2026-10-23T18:23:38.484381+00:00",
+        "capture_sha256": "38dbe1ad396c002fd01f37e26339804d12eebde9c0d51494701253bdb6ae79a7",
+        "captured_at": "2026-10-23T18:23:35.627481+00:00",
+        "name_preimage_sha256": "800e29fdc830e1d843ea421f065044a9323162999b68225792bf260c959bd58e",
+        "source_candidate_sha256": "3cc3c316a9d848bd4057a32a6f9f196eca8f43d6e41b3ef08db0969d33fec7fd"
+      },
+      "produced_at": "2026-10-23T18:23:35.627481+00:00",
+      "producer_id": "codex-golaxy-correction-producer-20261024",
+      "producer_model": "codex-agent-session",
+      "raw_value": "第74期王座战挑战赛5番棋1局",
+      "research_sha256": "a7d500d9f78710f175919a51fcdcce1919d572a0166763f41f51252501920847",
+      "review_conclusion": "approved_first_pass_display_and_source",
+      "review_status": "approved",
+      "reviewed_at": "2026-10-23T18:31:16+00:00",
+      "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+      "reviewer_model": "gpt-6-astra"
+    },
+    {
+      "collision_basis": {
+        "kind": "literal_title_translation",
+        "provenance": "signed_raw_event_literal",
+        "source_text": "第74期王座战挑战赛5番棋1局"
+      },
+      "collision_decision": "shared_display",
+      "decision_kind": "generated",
+      "display_name": "제74기 왕좌전 도전5번기 제1국",
+      "first_pass_correction": {
+        "lang": "ko",
+        "name_preimage_sha256": "abaaf22363df311c6f4062baafa9a800198b8c1c30da79789ba69135860ae48a",
+        "owner": {
+          "id": 102540,
+          "kind": "raw_event"
+        },
+        "prior_batch_id": 912,
+        "prior_bundle_sha256": "5114407c70b2ac8597f217de12a29a006ed2d4cd7d99ed0576b75d132d9f657f",
+        "prior_candidate_sha256": "74a229f36a03f287847ebffd1791711bded5e1994ca0db74f29f773355e56594",
+        "prior_evidence_sha256": "3b082a5d019e78b30a8f41f31ceebc42338e1779a1d0805aa649476f3567e191",
+        "prior_name_revision": 1,
+        "raw_value": "第74期王座战挑战赛5番棋1局",
+        "version": "generated-raw-event-semantic-correction-v1"
+      },
+      "generated_review": {
+        "decision": "approve_generated_first_pass",
+        "display_name": "제74기 왕좌전 도전5번기 제1국",
+        "lang": "ko",
+        "owner": {
+          "id": 102540,
+          "kind": "raw_event"
+        },
+        "research_sha256": "6a3198eea0b1b02db75535598d554d12fd6da4f2e4b4c2a6367464eb5a70eae7",
+        "reviewed_at": "2026-10-23T18:31:16+00:00",
+        "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+        "reviewer_model": "gpt-6-astra"
+      },
+      "generation_rule_version": "user_authorized_first_pass_v1",
+      "lang": "ko",
+      "name_preimage_sha256": "abaaf22363df311c6f4062baafa9a800198b8c1c30da79789ba69135860ae48a",
+      "owner": {
+        "id": 102540,
+        "kind": "raw_event"
+      },
+      "preimage_binding": {
+        "actor_id": "codex-golaxy-correction-producer-20261024",
+        "actor_model": "codex-agent-session",
+        "bound_at": "2026-10-23T18:23:38.484381+00:00",
+        "capture_sha256": "38dbe1ad396c002fd01f37e26339804d12eebde9c0d51494701253bdb6ae79a7",
+        "captured_at": "2026-10-23T18:23:35.627481+00:00",
+        "name_preimage_sha256": "abaaf22363df311c6f4062baafa9a800198b8c1c30da79789ba69135860ae48a",
+        "source_candidate_sha256": "c3e56cab57146c8bd9ea0519e2dc8b28040427b1b77f9ad387cca292c471e1b6"
+      },
+      "produced_at": "2026-10-23T18:23:35.627481+00:00",
+      "producer_id": "codex-golaxy-correction-producer-20261024",
+      "producer_model": "codex-agent-session",
+      "raw_value": "第74期王座战挑战赛5番棋1局",
+      "research_sha256": "6a3198eea0b1b02db75535598d554d12fd6da4f2e4b4c2a6367464eb5a70eae7",
+      "review_conclusion": "approved_first_pass_display_and_source",
+      "review_status": "approved",
+      "reviewed_at": "2026-10-23T18:31:16+00:00",
+      "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+      "reviewer_model": "gpt-6-astra"
+    },
+    {
+      "collision_basis": {
+        "kind": "literal_title_translation",
+        "provenance": "signed_raw_event_literal",
+        "source_text": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清"
+      },
+      "collision_decision": "shared_display",
+      "decision_kind": "generated",
+      "display_name": "제12회 국수산맥배 세계전 결승 신진서 VS 리웨이칭",
+      "first_pass_correction": {
+        "lang": "ko",
+        "name_preimage_sha256": "2f4da911d5c4eea94c57b663b70e0c22b2ebcdc24c8b2f70852e3be21e5ae9bd",
+        "owner": {
+          "id": 102545,
+          "kind": "raw_event"
+        },
+        "prior_batch_id": 912,
+        "prior_bundle_sha256": "5114407c70b2ac8597f217de12a29a006ed2d4cd7d99ed0576b75d132d9f657f",
+        "prior_candidate_sha256": "df3bed19ea4933abc654aaa0a9f54fbb1e2f9fa59a345f2bd2ecd4f4e962c0e6",
+        "prior_evidence_sha256": "535b44660644127212ab21f29e5188cdaf19cebfb1c3791ee7d44c6fd24644c2",
+        "prior_name_revision": 1,
+        "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+        "version": "generated-raw-event-semantic-correction-v1"
+      },
+      "generated_review": {
+        "decision": "approve_generated_first_pass",
+        "display_name": "제12회 국수산맥배 세계전 결승 신진서 VS 리웨이칭",
+        "lang": "ko",
+        "owner": {
+          "id": 102545,
+          "kind": "raw_event"
+        },
+        "research_sha256": "00e9f7aece6ca3c69038c06609122060c44bb5a4b21bba7b2380849660a1838f",
+        "reviewed_at": "2026-10-23T18:31:16+00:00",
+        "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+        "reviewer_model": "gpt-6-astra"
+      },
+      "generation_rule_version": "user_authorized_first_pass_v1",
+      "lang": "ko",
+      "name_preimage_sha256": "2f4da911d5c4eea94c57b663b70e0c22b2ebcdc24c8b2f70852e3be21e5ae9bd",
+      "owner": {
+        "id": 102545,
+        "kind": "raw_event"
+      },
+      "preimage_binding": {
+        "actor_id": "codex-golaxy-correction-producer-20261024",
+        "actor_model": "codex-agent-session",
+        "bound_at": "2026-10-23T18:23:38.484381+00:00",
+        "capture_sha256": "38dbe1ad396c002fd01f37e26339804d12eebde9c0d51494701253bdb6ae79a7",
+        "captured_at": "2026-10-23T18:23:35.627481+00:00",
+        "name_preimage_sha256": "2f4da911d5c4eea94c57b663b70e0c22b2ebcdc24c8b2f70852e3be21e5ae9bd",
+        "source_candidate_sha256": "a12a6c4e95c5e5cf83169fb38a16d15bed6fbd2e1c223e7685bcbef785410273"
+      },
+      "produced_at": "2026-10-23T18:23:35.627481+00:00",
+      "producer_id": "codex-golaxy-correction-producer-20261024",
+      "producer_model": "codex-agent-session",
+      "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+      "research_sha256": "00e9f7aece6ca3c69038c06609122060c44bb5a4b21bba7b2380849660a1838f",
+      "review_conclusion": "approved_first_pass_display_and_source",
+      "review_status": "approved",
+      "reviewed_at": "2026-10-23T18:31:16+00:00",
+      "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+      "reviewer_model": "gpt-6-astra"
+    },
+    {
+      "collision_basis": {
+        "kind": "literal_title_translation",
+        "provenance": "signed_raw_event_literal",
+        "source_text": "第9届吴清源杯世界女子公开赛国际预选决赛"
+      },
+      "collision_decision": "shared_display",
+      "decision_kind": "generated",
+      "display_name": "제9회 오청원배 세계 여자 오픈전 국제 예선 결승",
+      "first_pass_correction": {
+        "lang": "ko",
+        "name_preimage_sha256": "628614471efc83aa73ebc16b4feb3178d0132b520eef2b7deeacb9ff85b2c360",
+        "owner": {
+          "id": 102544,
+          "kind": "raw_event"
+        },
+        "prior_batch_id": 912,
+        "prior_bundle_sha256": "5114407c70b2ac8597f217de12a29a006ed2d4cd7d99ed0576b75d132d9f657f",
+        "prior_candidate_sha256": "ac0a09fa689899a7e887850a50889697b3b2ebb8c5f9c94ab249bed44ca6d4d5",
+        "prior_evidence_sha256": "89a53243bf289a83cdc7e3cdaa267254e977999c2f1b4f8bb9161dbf7b646874",
+        "prior_name_revision": 1,
+        "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "version": "generated-raw-event-semantic-correction-v1"
+      },
+      "generated_review": {
+        "decision": "approve_generated_first_pass",
+        "display_name": "제9회 오청원배 세계 여자 오픈전 국제 예선 결승",
+        "lang": "ko",
+        "owner": {
+          "id": 102544,
+          "kind": "raw_event"
+        },
+        "research_sha256": "8001118588c18594dc4bff013fd5c981e37e944e710ab5ad0fa4141d96a4aa02",
+        "reviewed_at": "2026-10-23T18:31:16+00:00",
+        "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+        "reviewer_model": "gpt-6-astra"
+      },
+      "generation_rule_version": "user_authorized_first_pass_v1",
+      "lang": "ko",
+      "name_preimage_sha256": "628614471efc83aa73ebc16b4feb3178d0132b520eef2b7deeacb9ff85b2c360",
+      "owner": {
+        "id": 102544,
+        "kind": "raw_event"
+      },
+      "preimage_binding": {
+        "actor_id": "codex-golaxy-correction-producer-20261024",
+        "actor_model": "codex-agent-session",
+        "bound_at": "2026-10-23T18:23:38.484381+00:00",
+        "capture_sha256": "38dbe1ad396c002fd01f37e26339804d12eebde9c0d51494701253bdb6ae79a7",
+        "captured_at": "2026-10-23T18:23:35.627481+00:00",
+        "name_preimage_sha256": "628614471efc83aa73ebc16b4feb3178d0132b520eef2b7deeacb9ff85b2c360",
+        "source_candidate_sha256": "4674c5ff185b3acf51a02d1812c198df2034302cb797fb6e01841d25f0272796"
+      },
+      "produced_at": "2026-10-23T18:23:35.627481+00:00",
+      "producer_id": "codex-golaxy-correction-producer-20261024",
+      "producer_model": "codex-agent-session",
+      "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+      "research_sha256": "8001118588c18594dc4bff013fd5c981e37e944e710ab5ad0fa4141d96a4aa02",
+      "review_conclusion": "approved_first_pass_display_and_source",
+      "review_status": "approved",
+      "reviewed_at": "2026-10-23T18:31:16+00:00",
+      "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+      "reviewer_model": "gpt-6-astra"
+    },
+    {
+      "collision_basis": {
+        "kind": "literal_title_translation",
+        "provenance": "signed_raw_event_literal",
+        "source_text": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮"
+      },
+      "collision_decision": "shared_display",
+      "decision_kind": "generated",
+      "display_name": "제9회 오청원배 세계 여자 바둑 오픈 예선 2라운드",
+      "first_pass_correction": {
+        "lang": "ko",
+        "name_preimage_sha256": "13253f733208674612161e1f577553f6c954b5667382ffb591928ef7f9687e8c",
+        "owner": {
+          "id": 102546,
+          "kind": "raw_event"
+        },
+        "prior_batch_id": 912,
+        "prior_bundle_sha256": "5114407c70b2ac8597f217de12a29a006ed2d4cd7d99ed0576b75d132d9f657f",
+        "prior_candidate_sha256": "af44c9a9adfdb8e419eb6dd3c148177177d7140791d624570509c703934360ea",
+        "prior_evidence_sha256": "af08e730a24c3c1de643c3eee5b6c4766256f3c8a068441b12a453823d801aba",
+        "prior_name_revision": 1,
+        "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+        "version": "generated-raw-event-semantic-correction-v1"
+      },
+      "generated_review": {
+        "decision": "approve_generated_first_pass",
+        "display_name": "제9회 오청원배 세계 여자 바둑 오픈 예선 2라운드",
+        "lang": "ko",
+        "owner": {
+          "id": 102546,
+          "kind": "raw_event"
+        },
+        "research_sha256": "e690779e0687d23ded5d89dbd34c4d97964a005785cd124a08007855956d0595",
+        "reviewed_at": "2026-10-23T18:31:16+00:00",
+        "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+        "reviewer_model": "gpt-6-astra"
+      },
+      "generation_rule_version": "user_authorized_first_pass_v1",
+      "lang": "ko",
+      "name_preimage_sha256": "13253f733208674612161e1f577553f6c954b5667382ffb591928ef7f9687e8c",
+      "owner": {
+        "id": 102546,
+        "kind": "raw_event"
+      },
+      "preimage_binding": {
+        "actor_id": "codex-golaxy-correction-producer-20261024",
+        "actor_model": "codex-agent-session",
+        "bound_at": "2026-10-23T18:23:38.484381+00:00",
+        "capture_sha256": "38dbe1ad396c002fd01f37e26339804d12eebde9c0d51494701253bdb6ae79a7",
+        "captured_at": "2026-10-23T18:23:35.627481+00:00",
+        "name_preimage_sha256": "13253f733208674612161e1f577553f6c954b5667382ffb591928ef7f9687e8c",
+        "source_candidate_sha256": "1d43a57a9095ed6d9e86850fc1320853a572b094476b6b4f335160f0586e952e"
+      },
+      "produced_at": "2026-10-23T18:23:35.627481+00:00",
+      "producer_id": "codex-golaxy-correction-producer-20261024",
+      "producer_model": "codex-agent-session",
+      "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+      "research_sha256": "e690779e0687d23ded5d89dbd34c4d97964a005785cd124a08007855956d0595",
+      "review_conclusion": "approved_first_pass_display_and_source",
+      "review_status": "approved",
+      "reviewed_at": "2026-10-23T18:31:16+00:00",
+      "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+      "reviewer_model": "gpt-6-astra"
+    }
+  ],
+  "catalog_sha256": "2a8f86f2bc292a56c4b0ff1f99f116d051a3850834fbba655cf221f4ded297ef",
+  "inventory_format": 2,
+  "inventory_sha256": "79f606b3feea85817c56e27147014cf0cbc71633d549e6dab99b40dc64f7bf19",
+  "link_set_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "member_set_sha256": "f4c8d56c227e9092a14b7d38b0b00bb72c8cefc37ee2929592fbb5473aa74d46",
+  "members": [
+    {
+      "lang": "jp",
+      "owner": {
+        "id": 102540,
+        "kind": "raw_event"
+      },
+      "raw_value": "第74期王座战挑战赛5番棋1局"
+    },
+    {
+      "lang": "ko",
+      "owner": {
+        "id": 102540,
+        "kind": "raw_event"
+      },
+      "raw_value": "第74期王座战挑战赛5番棋1局"
+    },
+    {
+      "lang": "ko",
+      "owner": {
+        "id": 102545,
+        "kind": "raw_event"
+      },
+      "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清"
+    },
+    {
+      "lang": "ko",
+      "owner": {
+        "id": 102544,
+        "kind": "raw_event"
+      },
+      "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛"
+    },
+    {
+      "lang": "ko",
+      "owner": {
+        "id": 102546,
+        "kind": "raw_event"
+      },
+      "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮"
+    }
+  ],
+  "owner_set_sha256": "93a2f07402432fbc3d9a21643b38f1659cb0bfeda6aa9263f69256ec3c3ce732",
+  "owners": [
+    {
+      "occurrence_album_ids": [
+        179067
+      ],
+      "occurrence_sha256": "75560bd8f275482a8b85b6860c0d8c6941dd1c5269d845d507992b1e0041de70",
+      "owner": {
+        "id": 102545,
+        "kind": "raw_event"
+      },
+      "preimage": {
+        "category": "unclassified_pending",
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "id": 102545,
+        "parsed_data": null,
+        "parser_version": null,
+        "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+        "review_metadata": null,
+        "review_status": "pending"
+      }
+    },
+    {
+      "occurrence_album_ids": [
+        179060
+      ],
+      "occurrence_sha256": "d1366311f0c6c34c993559c913917d668535413332bbe0fd96146fcf83d80741",
+      "owner": {
+        "id": 102540,
+        "kind": "raw_event"
+      },
+      "preimage": {
+        "category": "unclassified_pending",
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "id": 102540,
+        "parsed_data": null,
+        "parser_version": null,
+        "raw_value": "第74期王座战挑战赛5番棋1局",
+        "review_metadata": null,
+        "review_status": "pending"
+      }
+    },
+    {
+      "occurrence_album_ids": [
+        179064,
+        179065,
+        179066
+      ],
+      "occurrence_sha256": "122d5061f533da2839f50c8542af67a20b97a9e3224d2169546867f44e67a642",
+      "owner": {
+        "id": 102544,
+        "kind": "raw_event"
+      },
+      "preimage": {
+        "category": "unclassified_pending",
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "id": 102544,
+        "parsed_data": null,
+        "parser_version": null,
+        "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "review_metadata": null,
+        "review_status": "pending"
+      }
+    },
+    {
+      "occurrence_album_ids": [
+        179068
+      ],
+      "occurrence_sha256": "aa49de660689f7d6d989d95a051b8808e62a8d5dbc41c29bdd7aea66ef5215de",
+      "owner": {
+        "id": 102546,
+        "kind": "raw_event"
+      },
+      "preimage": {
+        "category": "unclassified_pending",
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "id": 102546,
+        "parsed_data": null,
+        "parser_version": null,
+        "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+        "review_metadata": null,
+        "review_status": "pending"
+      }
+    }
+  ],
+  "registry_sha256": "984f917629be12be98e440dd3efddef5b4e381f057cfd970e66f4e1cab97892b",
+  "registry_version": "2026-10-09.1",
+  "rule_version": "bounded-golaxy-event-semantic-correction-v1",
+  "semantic_correction": {
+    "approval_sha256": "3f924650266f6dea8975242a1b45a6fb14af6a84687aada24a610ae92ea6c7e4",
+    "capture_sha256": "38dbe1ad396c002fd01f37e26339804d12eebde9c0d51494701253bdb6ae79a7",
+    "original_manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+    "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6"
+  }
+}

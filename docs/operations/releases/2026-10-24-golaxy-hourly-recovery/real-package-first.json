@@ -1,0 +1,630 @@
+{
+  "captured_at": "2026-10-23T17:22:37.364777+00:00",
+  "games": [
+    {
+      "date_played": "2026-10-22",
+      "raw_sha256": "0b815c13fee8a9b5f811ceb171c5c6746ff4007b977763f34c55fc2607197515",
+      "sgf_sha256": "0b815c13fee8a9b5f811ceb171c5c6746ff4007b977763f34c55fc2607197515",
+      "source_id": "91506543"
+    },
+    {
+      "date_played": "2026-10-22",
+      "raw_sha256": "4a282bdaa90ae6b4932665f9bcb86715dde30aa965176ade4bffe1208a28686b",
+      "sgf_sha256": "4a282bdaa90ae6b4932665f9bcb86715dde30aa965176ade4bffe1208a28686b",
+      "source_id": "91511871"
+    },
+    {
+      "date_played": "2026-10-22",
+      "raw_sha256": "86ac7c31aab8a07e8b9dbb3c8dd66dda8834c1139d74e44b240c868e7b03f8f7",
+      "sgf_sha256": "86ac7c31aab8a07e8b9dbb3c8dd66dda8834c1139d74e44b240c868e7b03f8f7",
+      "source_id": "91511495"
+    },
+    {
+      "date_played": "2026-10-20",
+      "raw_sha256": "cd0296cda9b6ae7590731536408d606afd7675d9a413b794f4b11ab8373db0bd",
+      "sgf_sha256": "cd0296cda9b6ae7590731536408d606afd7675d9a413b794f4b11ab8373db0bd",
+      "source_id": "91496855"
+    },
+    {
+      "date_played": "2026-10-20",
+      "raw_sha256": "141a735d9c804a6b4e3a1877b88b8e294c616c45a421feaf6aac18fdfd697d33",
+      "sgf_sha256": "141a735d9c804a6b4e3a1877b88b8e294c616c45a421feaf6aac18fdfd697d33",
+      "source_id": "91496856"
+    },
+    {
+      "date_played": "2026-10-20",
+      "raw_sha256": "cbb3bdeb47f9ce3728b4fd4b1fac89eb8a2149526a6a412b78a23e67dceb8f25",
+      "sgf_sha256": "cbb3bdeb47f9ce3728b4fd4b1fac89eb8a2149526a6a412b78a23e67dceb8f25",
+      "source_id": "91496857"
+    },
+    {
+      "date_played": "2026-10-20",
+      "raw_sha256": "24f5417ec224e04adee62c7930d7890569864c738999cff6dad1c7fcc2c2bc25",
+      "sgf_sha256": "24f5417ec224e04adee62c7930d7890569864c738999cff6dad1c7fcc2c2bc25",
+      "source_id": "91496858"
+    },
+    {
+      "date_played": "2026-10-19",
+      "raw_sha256": "7ab23858ceae06ff4d96e4d0ea1b1b0fbd603ad6a4dd04791a9bcc216aa6167d",
+      "sgf_sha256": "7ab23858ceae06ff4d96e4d0ea1b1b0fbd603ad6a4dd04791a9bcc216aa6167d",
+      "source_id": "91464603"
+    },
+    {
+      "date_played": "2026-10-19",
+      "raw_sha256": "e0f2a86728c01c6ce14c60a5a08d0f18baa793111a9bde67f470032d408136f6",
+      "sgf_sha256": "e0f2a86728c01c6ce14c60a5a08d0f18baa793111a9bde67f470032d408136f6",
+      "source_id": "91496861"
+    },
+    {
+      "date_played": "2026-10-19",
+      "raw_sha256": "15ae62016faf7e6efbb90232577b4146ab7b16373ab9b6bbd8d91ec6174a9886",
+      "sgf_sha256": "15ae62016faf7e6efbb90232577b4146ab7b16373ab9b6bbd8d91ec6174a9886",
+      "source_id": "91496862"
+    }
+  ],
+  "manifest_canonical_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+  "manifest_file_sha256": "52e8753d9475dfb45ffe4e160c3f22ef3e3d6f6d9211e57f72048e628dbcec8d",
+  "name_decisions": 0,
+  "prod_receipt": {
+    "batch_id": 902,
+    "games": [
+      {
+        "action": "inserted",
+        "album_id": 178714,
+        "source_item_id": "91506543",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178715,
+        "source_item_id": "91511871",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178716,
+        "source_item_id": "91511495",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178717,
+        "source_item_id": "91496855",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178718,
+        "source_item_id": "91496856",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178719,
+        "source_item_id": "91496857",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178720,
+        "source_item_id": "91496858",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178721,
+        "source_item_id": "91464603",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178722,
+        "source_item_id": "91496861",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178723,
+        "source_item_id": "91496862",
+        "source_key": "19x19"
+      }
+    ],
+    "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+    "name_batch_id": 903,
+    "reviewed_name_batch_id": null,
+    "status": "applied"
+  },
+  "prod_verification": {
+    "checks": [
+      {
+        "album_id": 178714,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178714,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178714,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178714,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178714,
+        "lang": "en"
+      },
+      {
+        "album_id": 178715,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178715,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178715,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178715,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178715,
+        "lang": "en"
+      },
+      {
+        "album_id": 178716,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178716,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178716,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178716,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178716,
+        "lang": "en"
+      },
+      {
+        "album_id": 178717,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178717,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178717,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178717,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178717,
+        "lang": "en"
+      },
+      {
+        "album_id": 178718,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178718,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178718,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178718,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178718,
+        "lang": "en"
+      },
+      {
+        "album_id": 178719,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178719,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178719,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178719,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178719,
+        "lang": "en"
+      },
+      {
+        "album_id": 178720,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178720,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178720,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178720,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178720,
+        "lang": "en"
+      },
+      {
+        "album_id": 178721,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178721,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178721,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178721,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178721,
+        "lang": "en"
+      },
+      {
+        "album_id": 178722,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178722,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178722,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178722,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178722,
+        "lang": "en"
+      },
+      {
+        "album_id": 178723,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178723,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178723,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178723,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178723,
+        "lang": "en"
+      }
+    ],
+    "games": 10,
+    "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+    "status": "verified"
+  },
+  "publication_key": "19x19-batch-fc134b52cd61f94092118e61",
+  "remote_manifest_path": "/app/data/kifu_ingest/packages/91506543-72e6ee0fe9b6ec9d.json",
+  "source_develop_sha": "ef96a50a7e69e93e57e890cca837c9298f45f329",
+  "state": {
+    "created_at": "2026-10-23 16:38:48.624608+00:00",
+    "error": null,
+    "resume_phase": null,
+    "status": "prod_synced",
+    "updated_at": "2026-10-23 17:18:51.209045+00:00"
+  },
+  "test_receipt": {
+    "batch_id": 909,
+    "games": [
+      {
+        "action": "inserted",
+        "album_id": 179050,
+        "source_item_id": "91506543",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179051,
+        "source_item_id": "91511871",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179052,
+        "source_item_id": "91511495",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179053,
+        "source_item_id": "91496855",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179054,
+        "source_item_id": "91496856",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179055,
+        "source_item_id": "91496857",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179056,
+        "source_item_id": "91496858",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179057,
+        "source_item_id": "91464603",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179058,
+        "source_item_id": "91496861",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179059,
+        "source_item_id": "91496862",
+        "source_key": "19x19"
+      }
+    ],
+    "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+    "name_batch_id": 910,
+    "reviewed_name_batch_id": null,
+    "status": "applied"
+  },
+  "test_verification": {
+    "checks": [
+      {
+        "album_id": 179050,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179050,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179050,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179050,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179050,
+        "lang": "en"
+      },
+      {
+        "album_id": 179051,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179051,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179051,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179051,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179051,
+        "lang": "en"
+      },
+      {
+        "album_id": 179052,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179052,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179052,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179052,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179052,
+        "lang": "en"
+      },
+      {
+        "album_id": 179053,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179053,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179053,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179053,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179053,
+        "lang": "en"
+      },
+      {
+        "album_id": 179054,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179054,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179054,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179054,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179054,
+        "lang": "en"
+      },
+      {
+        "album_id": 179055,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179055,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179055,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179055,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179055,
+        "lang": "en"
+      },
+      {
+        "album_id": 179056,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179056,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179056,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179056,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179056,
+        "lang": "en"
+      },
+      {
+        "album_id": 179057,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179057,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179057,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179057,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179057,
+        "lang": "en"
+      },
+      {
+        "album_id": 179058,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179058,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179058,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179058,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179058,
+        "lang": "en"
+      },
+      {
+        "album_id": 179059,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179059,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179059,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179059,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179059,
+        "lang": "en"
+      }
+    ],
+    "games": 10,
+    "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+    "status": "verified"
+  }
+}

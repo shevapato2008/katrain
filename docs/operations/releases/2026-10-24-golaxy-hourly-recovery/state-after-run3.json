@@ -1,0 +1,491 @@
+{
+  "batches": {
+    "19x19-batch-2565d295b7498111a097ea40": {
+      "attempts": 78,
+      "created_at": "2026-10-20 11:45:51.133716+00:00",
+      "error": null,
+      "manifest_sha256": "d42944b656b95b55f8c10aebecef82a882aaac6b4ce0aec69e251c3415962875",
+      "prod_receipt": {
+        "checks": 0,
+        "games": 44,
+        "sha256": "30559abf5fbed4b4edd8019c7e121f82293c08b38db5379afb6dfa83616b6724",
+        "status": "applied"
+      },
+      "prod_verification": {
+        "checks": 220,
+        "games": 44,
+        "sha256": "71f8de48bd203c9d8ca1e80a58904dd6ca23b38bf5b1f8203e143ebf98064a9e",
+        "status": "verified"
+      },
+      "resume_phase": null,
+      "status": "prod_synced",
+      "test_receipt": {
+        "checks": 0,
+        "games": 44,
+        "sha256": "758a5e9b9a03cb0db96268efb6968c69c05c61bb1fb1fd1f1037a6b093225290",
+        "status": "applied"
+      },
+      "test_verification": {
+        "checks": 220,
+        "games": 44,
+        "sha256": "e33c3115916bb6a777dc8692e3e0da611a3c4f75c9a49d463ea73894b821ec47",
+        "status": "verified"
+      },
+      "updated_at": "2026-10-23 17:58:11.293748+00:00"
+    },
+    "19x19-batch-31fe3d7bf66a3f1cb6f7c193": {
+      "attempts": 64,
+      "created_at": "2026-10-21 00:55:12.556666+00:00",
+      "error": null,
+      "manifest_sha256": "13a663101de18f61bc03a5ef89007b8e753a94f78652d7717d0eb42fd351363f",
+      "prod_receipt": {
+        "checks": 0,
+        "games": 32,
+        "sha256": "6bc6de19cf6f4d639e3dbab87e13a331e45a35645731ffd012c1d358c7620c66",
+        "status": "applied"
+      },
+      "prod_verification": {
+        "checks": 160,
+        "games": 32,
+        "sha256": "2938f08e53b2add13b99e74e29a8cc8ab178e0143d77e418517b0c09ef355a70",
+        "status": "verified"
+      },
+      "resume_phase": null,
+      "status": "prod_synced",
+      "test_receipt": {
+        "checks": 0,
+        "games": 32,
+        "sha256": "a5b948416e4df836390fc6e2a0408075b9c480dd8a05865f6e82132e3278cd94",
+        "status": "applied"
+      },
+      "test_verification": {
+        "checks": 160,
+        "games": 32,
+        "sha256": "14e727227d6ce94ae4b1fdc4e2a9010d35e452e9cb13badbf66ae33a85bdaca5",
+        "status": "verified"
+      },
+      "updated_at": "2026-10-23 17:49:24.912930+00:00"
+    },
+    "19x19-batch-62854d648ca7b10ad8f3290d": {
+      "attempts": 1,
+      "created_at": "2026-10-23 17:20:07.263087+00:00",
+      "error": null,
+      "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+      "prod_receipt": {
+        "checks": 0,
+        "games": 10,
+        "sha256": "3610cf1dffdbaf1992a3d109cd489e70b8ddec6989c9bd4326a0ae2e060754eb",
+        "status": "applied"
+      },
+      "prod_verification": {
+        "checks": 50,
+        "games": 10,
+        "sha256": "95ce009e27edcdb48384dfb86a768cd0a6e6a75463a149d2507d641f360c572a",
+        "status": "verified"
+      },
+      "resume_phase": null,
+      "status": "prod_synced",
+      "test_receipt": {
+        "checks": 0,
+        "games": 10,
+        "sha256": "1a51a7f6fcf8a41af328276fa34dfcd17565ace6244cd5a4c8dd526757ba908f",
+        "status": "applied"
+      },
+      "test_verification": {
+        "checks": 50,
+        "games": 10,
+        "sha256": "55ea94614428b46470b7120cc910cd854f9d6fc21a0e3ebb422e4b2123e2aafc",
+        "status": "verified"
+      },
+      "updated_at": "2026-10-23 17:55:09.276603+00:00"
+    },
+    "19x19-batch-bd5fdf7640ad9a37de370794": {
+      "attempts": 76,
+      "created_at": "2026-10-20 13:06:23.714777+00:00",
+      "error": null,
+      "manifest_sha256": "bd374a966a2e4d6599787d57820512f9b94adbe5b2c308d0b15aa9ada46b9799",
+      "prod_receipt": {
+        "checks": 0,
+        "games": 2,
+        "sha256": "012f0241c299ce24a6b3c4cc8468422dcd922397f91e389d1ce3f9511b1f6d6e",
+        "status": "applied"
+      },
+      "prod_verification": {
+        "checks": 10,
+        "games": 2,
+        "sha256": "3cdd2fb80b864c537be8f41a2065235cac881b5af51b34617e123dc5150f43b2",
+        "status": "verified"
+      },
+      "resume_phase": null,
+      "status": "prod_synced",
+      "test_receipt": {
+        "checks": 0,
+        "games": 2,
+        "sha256": "14e4c07939bdfd56b6f0f8300278d346dbc73b1ce553b549365e5b5367d9a08c",
+        "status": "applied"
+      },
+      "test_verification": {
+        "checks": 10,
+        "games": 2,
+        "sha256": "b74b273f76b436fef6154208def1e8f94d6407632ccba29896b05327cd0dce1f",
+        "status": "verified"
+      },
+      "updated_at": "2026-10-23 17:45:33.774347+00:00"
+    },
+    "19x19-batch-fc134b52cd61f94092118e61": {
+      "attempts": 0,
+      "created_at": "2026-10-23 16:38:48.624608+00:00",
+      "error": null,
+      "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+      "prod_receipt": {
+        "checks": 0,
+        "games": 10,
+        "sha256": "d46bf98430bc21b793ab83c40e46ff272843ae5d327b5145ac7a9f0025731699",
+        "status": "applied"
+      },
+      "prod_verification": {
+        "checks": 50,
+        "games": 10,
+        "sha256": "74579e18b23c5fd9666b6bee351b481a570fd36e27ac380f0637d338bafef161",
+        "status": "verified"
+      },
+      "resume_phase": null,
+      "status": "prod_synced",
+      "test_receipt": {
+        "checks": 0,
+        "games": 10,
+        "sha256": "3b49b6deefa3a49de3cba92bd3d4d157513fb28f64fd48d17e0392bee2cdc7a5",
+        "status": "applied"
+      },
+      "test_verification": {
+        "checks": 50,
+        "games": 10,
+        "sha256": "62ed370045f568bda17a15aa4e2c211bb6de800190d5395a2f30532ac4a31554",
+        "status": "verified"
+      },
+      "updated_at": "2026-10-23 17:18:51.209045+00:00"
+    }
+  },
+  "catalog": {
+    "latest_normalized_date_sort": "2026-10-23",
+    "public": 176593,
+    "total": 176852
+  },
+  "checkpoints": [
+    {
+      "binding": {
+        "algorithm": "album-api-five-languages-public-card-v1",
+        "languages": [
+          "cn",
+          "tw",
+          "jp",
+          "ko",
+          "en"
+        ],
+        "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+        "receipt_sha256": "3b49b6deefa3a49de3cba92bd3d4d157513fb28f64fd48d17e0392bee2cdc7a5",
+        "target": "http://host.docker.internal:8001"
+      },
+      "completed_albums": 10,
+      "filename": "3882c2d271d137c6d18a837b143e31724a3aabfbdf5355f77c2edc5c690fa840.json",
+      "sha256": "2d65ba044dc43815ca565349a64c12a7d69090341da0889f6b791c7697b81765"
+    },
+    {
+      "binding": {
+        "algorithm": "album-api-five-languages-public-card-v1",
+        "languages": [
+          "cn",
+          "tw",
+          "jp",
+          "ko",
+          "en"
+        ],
+        "manifest_sha256": "13a663101de18f61bc03a5ef89007b8e753a94f78652d7717d0eb42fd351363f",
+        "receipt_sha256": "6bc6de19cf6f4d639e3dbab87e13a331e45a35645731ffd012c1d358c7620c66",
+        "target": "https://modelstella.com"
+      },
+      "completed_albums": 32,
+      "filename": "42a9086f9b22aa94b7377e2afb8ffc9f176ee5d9fac2634bddd6c2bec443f20e.json",
+      "sha256": "22123eb73060e19362a42d45c143cf24eaf826c8c3c5a1c6bfcb19968a83c774"
+    },
+    {
+      "binding": {
+        "algorithm": "album-api-five-languages-public-card-v1",
+        "languages": [
+          "cn",
+          "tw",
+          "jp",
+          "ko",
+          "en"
+        ],
+        "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+        "receipt_sha256": "d46bf98430bc21b793ab83c40e46ff272843ae5d327b5145ac7a9f0025731699",
+        "target": "https://modelstella.com"
+      },
+      "completed_albums": 10,
+      "filename": "89c799768aeb7205252114fac7f556c669f76076c9d49a3dc64794347f4b03ee.json",
+      "sha256": "ac7ba4c27dcda774757e372710e6f4c4fb398d7915ac2227fdc4ed5fe8d0170c"
+    },
+    {
+      "binding": {
+        "algorithm": "album-api-five-languages-public-card-v1",
+        "languages": [
+          "cn",
+          "tw",
+          "jp",
+          "ko",
+          "en"
+        ],
+        "manifest_sha256": "d42944b656b95b55f8c10aebecef82a882aaac6b4ce0aec69e251c3415962875",
+        "receipt_sha256": "30559abf5fbed4b4edd8019c7e121f82293c08b38db5379afb6dfa83616b6724",
+        "target": "https://modelstella.com"
+      },
+      "completed_albums": 44,
+      "filename": "e1ba403d27c5935e368e721faae6f5e1e3f31183d416e9870b8a734f422a30b0.json",
+      "sha256": "a1848c6a8bb75a32aec0a4c1548a451964041f9620cf604e48f70c2e05547652"
+    },
+    {
+      "binding": {
+        "algorithm": "album-api-five-languages-public-card-v1",
+        "languages": [
+          "cn",
+          "tw",
+          "jp",
+          "ko",
+          "en"
+        ],
+        "manifest_sha256": "bd374a966a2e4d6599787d57820512f9b94adbe5b2c308d0b15aa9ada46b9799",
+        "receipt_sha256": "012f0241c299ce24a6b3c4cc8468422dcd922397f91e389d1ce3f9511b1f6d6e",
+        "target": "https://modelstella.com"
+      },
+      "completed_albums": 2,
+      "filename": "e5ad5e185c6130429f6232dc57203d8011246a3c56b00bc0167e38ccc8ebaeb7.json",
+      "sha256": "a40fd1cad48082911adda7bcf17743aba3df91cb2c014d9ca5a2ddc24e472e2a"
+    }
+  ],
+  "control": null,
+  "ledger": {
+    "qwen-usage-20261019.json": {
+      "call_entries": 10,
+      "entry_count": 30,
+      "sha256": "5531017987098f1ab50fe855613ea048bea07f8e10ea3138c9796a477a741a7b",
+      "spent_upper_tokens": 6324
+    },
+    "qwen-usage-20261020.json": {
+      "call_entries": 104,
+      "entry_count": 312,
+      "sha256": "1a9ec9c784c0c3b2c9acdea949933599b13b828b34f1e06760c17080cc545405",
+      "spent_upper_tokens": 94513
+    },
+    "qwen-usage-20261021.json": {
+      "call_entries": 99,
+      "entry_count": 298,
+      "sha256": "4d15642de191b4e36571829e83a9e629e07e7300f6b1b5b5c4a81bb8cf64eb0b",
+      "spent_upper_tokens": 94238
+    },
+    "qwen-usage-20261022.json": {
+      "call_entries": 69,
+      "entry_count": 207,
+      "sha256": "1f3602ba5db69df1ad6c713cd631c1f7991b8c9fcebf726dea86180cecee0d18",
+      "spent_upper_tokens": 59616
+    },
+    "qwen-usage-20261023.json": {
+      "call_entries": 19,
+      "entry_count": 57,
+      "sha256": "409f9e1dc58b1046658958cfd7fed88416c5cdcf1dd0c21363355417db119370",
+      "spent_upper_tokens": 16477
+    }
+  },
+  "recorded_at": "2026-10-23T19:01:15.643957+00:00",
+  "runs": [
+    {
+      "duration_ms": 3300224,
+      "error": "RuntimeError: kifu round failed: 0 source request(s), 1 package(s); downloaded items were retained and processed",
+      "error_count": 4,
+      "finished_at": "2026-10-23 17:29:39.369052+00:00",
+      "id": 70886,
+      "job_name": "kifu_ingest",
+      "started_at": "2026-10-23 16:34:39.144416+00:00",
+      "status": "failed"
+    },
+    {
+      "duration_ms": 0,
+      "error": null,
+      "error_count": 0,
+      "finished_at": "2026-10-23 17:34:39.140808+00:00",
+      "id": 70994,
+      "job_name": "kifu_ingest",
+      "started_at": "2026-10-23 17:34:39.140808+00:00",
+      "status": "paused"
+    },
+    {
+      "duration_ms": 0,
+      "error": null,
+      "error_count": 0,
+      "finished_at": "2026-10-23 17:41:57.006080+00:00",
+      "id": 71013,
+      "job_name": "kifu_ingest",
+      "started_at": "2026-10-23 17:41:57.006080+00:00",
+      "status": "paused"
+    },
+    {
+      "duration_ms": 444285,
+      "error": null,
+      "error_count": 0,
+      "finished_at": "2026-10-23 17:58:11.717574+00:00",
+      "id": 71027,
+      "job_name": "kifu_ingest",
+      "started_at": "2026-10-23 17:50:47.431808+00:00",
+      "status": "success"
+    },
+    {
+      "duration_ms": 0,
+      "error": null,
+      "error_count": 0,
+      "finished_at": "2026-10-23 18:32:28.530027+00:00",
+      "id": 71108,
+      "job_name": "kifu_ingest",
+      "started_at": "2026-10-23 18:32:28.530027+00:00",
+      "status": "paused"
+    },
+    {
+      "duration_ms": 221734,
+      "error": null,
+      "error_count": 0,
+      "finished_at": "2026-10-23 18:58:31.247487+00:00",
+      "id": 71146,
+      "job_name": "kifu_ingest",
+      "started_at": "2026-10-23 18:54:49.513019+00:00",
+      "status": "success"
+    }
+  ],
+  "stage": {
+    "legacy": {
+      "7923089": {
+        "attempts": 64,
+        "last_error": "source business error: 7004",
+        "next_retry_at": null,
+        "recent": {
+          "classification": "legacy_shared_7004",
+          "error_code": 7004,
+          "terminal": true
+        },
+        "status": "failed"
+      },
+      "7926016": {
+        "attempts": 64,
+        "last_error": "source business error: 7004",
+        "next_retry_at": null,
+        "recent": {
+          "classification": "legacy_shared_7004",
+          "error_code": 7004,
+          "terminal": true
+        },
+        "status": "failed"
+      },
+      "7928067": {
+        "attempts": 64,
+        "last_error": "source business error: 7004",
+        "next_retry_at": null,
+        "recent": {
+          "classification": "legacy_shared_7004",
+          "error_code": 7004,
+          "terminal": true
+        },
+        "status": "failed"
+      },
+      "7928304": {
+        "attempts": 64,
+        "last_error": "source business error: 7004",
+        "next_retry_at": null,
+        "recent": {
+          "classification": "legacy_shared_7004",
+          "error_code": 7004,
+          "terminal": true
+        },
+        "status": "failed"
+      },
+      "7929649": {
+        "attempts": 64,
+        "last_error": "source business error: 7004",
+        "next_retry_at": null,
+        "recent": {
+          "classification": "legacy_shared_7004",
+          "error_code": 7004,
+          "terminal": true
+        },
+        "status": "failed"
+      },
+      "7929673": {
+        "attempts": 1,
+        "last_error": "source business error: 7004",
+        "next_retry_at": null,
+        "recent": {
+          "classification": "legacy_shared_7004",
+          "error_code": 7004,
+          "terminal": true
+        },
+        "status": "failed"
+      },
+      "7929683": {
+        "attempts": 1,
+        "last_error": "source business error: 7004",
+        "next_retry_at": null,
+        "recent": {
+          "classification": "legacy_shared_7004",
+          "error_code": 7004,
+          "terminal": true
+        },
+        "status": "failed"
+      }
+    },
+    "recent_head": {
+      "complete": true,
+      "completed_at": 1792781721.7845573,
+      "coverage": {
+        "boundary_in_window": false,
+        "excluded": 0,
+        "head_page_cap": true,
+        "head_pages": 5,
+        "head_unique_ids": 100,
+        "last_observed_at": 1792781910.7212625,
+        "oldest_recheck_age_seconds": null,
+        "out_of_window": 36,
+        "publication_authority_complete": true,
+        "recheck_deferred": 0,
+        "recheck_selected": 0,
+        "sgf_attempt_cap": false,
+        "sgf_attempts": 54,
+        "source_budget_exhausted": false,
+        "source_http_attempts": 59,
+        "terminal_count": 17,
+        "time_budget_exhausted": false,
+        "unknown_match_time": 0
+      },
+      "games": 20,
+      "last_page": 4,
+      "started_at": 1792781693.1299076,
+      "window_end": "2026-10-24T02:54:53.128441+08:00",
+      "window_start": "2026-10-17T02:54:53.128441+08:00"
+    },
+    "rolling_cursor": 1786
+  },
+  "status": {
+    "consecutive_failures": 0,
+    "enabled": true,
+    "heartbeat_at": "2026-10-23 19:00:53.376505+00:00",
+    "interval_seconds": 3600,
+    "job_name": "kifu_ingest",
+    "kind": "interval",
+    "last_duration_ms": 221734,
+    "last_error": "RuntimeError: kifu round failed: 0 source request(s), 1 package(s); downloaded items were retained and processed",
+    "last_finished_at": "2026-10-23 18:58:31.247487+00:00",
+    "last_started_at": "2026-10-23 18:54:49.513019+00:00",
+    "last_status": "success",
+    "last_success_at": "2026-10-23 18:58:31.247487+00:00",
+    "loop_iteration_at": null,
+    "loop_stats": null,
+    "process_started_at": "2026-10-23 18:32:21.925135+00:00",
+    "updated_at": "2026-10-23 19:00:53.376505+00:00"
+  }
+}

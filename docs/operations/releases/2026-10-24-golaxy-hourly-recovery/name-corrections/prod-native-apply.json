@@ -1,0 +1,21 @@
+{
+  "affected_albums": [
+    178724,
+    178728,
+    178729,
+    178730,
+    178731,
+    178732
+  ],
+  "batch_id": 906,
+  "bundle_sha256": "31d63f958bfbdb428f0b97d3c1e481c3d9d7cf5aa7e1c36af21f64d37ba21dc1",
+  "change_count": 10,
+  "resolved_refs": {
+    "raw_event:102404": 102404,
+    "raw_event:102408": 102408,
+    "raw_event:102409": 102409,
+    "raw_event:102410": 102410
+  },
+  "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6",
+  "status": "applied"
+}

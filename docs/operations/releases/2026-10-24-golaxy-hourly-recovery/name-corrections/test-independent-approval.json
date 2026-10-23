@@ -1,0 +1,8 @@
+{
+  "capture_sha256": "38dbe1ad396c002fd01f37e26339804d12eebde9c0d51494701253bdb6ae79a7",
+  "decision": "approved",
+  "model": "gpt-6-astra",
+  "reviewed_at": "2026-10-23T18:31:16+00:00",
+  "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+  "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6"
+}

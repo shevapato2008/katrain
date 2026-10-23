@@ -1,0 +1,130 @@
+{
+  "actual_source_hashes": {
+    "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+    "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+    "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+    "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+    "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+    "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+    "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+    "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+    "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+    "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+    "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a"
+  },
+  "after": {
+    "build_sha": "4bf9a699a35ecdf025f5ec2f414425e3f2a13693",
+    "exit_code": 0,
+    "id": "db7120a4fa3376a409e93009c767abf25ecc81797f174b5ba6723cd8e11ab4e5",
+    "image_id": "sha256:9c414726fa56da734e7f47f6fb409d6373e747a9198c4c80bb31fc4606bccb98",
+    "image_tag": "katrain-golaxy:4bf9a699a-cron",
+    "running": true,
+    "started_at": "2026-10-23T18:32:20.87269849Z"
+  },
+  "before": {
+    "build_sha": "662b6a25048ee2bb3752bdbf54fb3a927ab68084",
+    "exit_code": 0,
+    "id": "4c9d47228e110bd240fb719a9306eaa5611b136550501fccf4aaa794a23be1a6",
+    "image_id": "sha256:85de7b1dbf11b03b9616697e9548a7679586bbb256efc12c951f178ac8ce9951",
+    "image_tag": "katrain-golaxy:662b6a250-cron",
+    "running": true,
+    "started_at": "2026-10-23T17:41:49.261523441Z"
+  },
+  "candidate_source_hashes": {
+    "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+    "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+    "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+    "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+    "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+    "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+    "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+    "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+    "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+    "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+    "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a"
+  },
+  "host": "home-ubuntu",
+  "image_id": "sha256:9c414726fa56da734e7f47f6fb409d6373e747a9198c4c80bb31fc4606bccb98",
+  "image_tag": "katrain-golaxy:4bf9a699a-cron",
+  "old_cron_stopped_safely": {
+    "build_sha": "662b6a25048ee2bb3752bdbf54fb3a927ab68084",
+    "exit_code": 0,
+    "id": "4c9d47228e110bd240fb719a9306eaa5611b136550501fccf4aaa794a23be1a6",
+    "image_id": "sha256:85de7b1dbf11b03b9616697e9548a7679586bbb256efc12c951f178ac8ce9951",
+    "image_tag": "katrain-golaxy:662b6a250-cron",
+    "running": false,
+    "started_at": "2026-10-23T17:41:49.261523441Z"
+  },
+  "original_compose_files": [
+    "/home/fan/Repositories/katrain/docker-compose.yml",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/cron-kifu.override.yml",
+    "/mnt/disk1/fan/golaxy-hourly-repair-ef96a50a7-20261024/cron-release.override.json",
+    "/mnt/disk1/fan/golaxy-receiver-662b6a250-20261024/cron-second.override.json"
+  ],
+  "original_compose_sha256": {
+    "/home/fan/Repositories/katrain/docker-compose.yml": "949736c147112e8b39ad725ae966b313a4e6420eb17ed183e6054c2529494a10",
+    "/mnt/disk1/fan/golaxy-hourly-repair-ef96a50a7-20261024/cron-release.override.json": "c26ac33363afefc9349086162ebd1296e6935ef035bdfa536502cc7977104599",
+    "/mnt/disk1/fan/golaxy-receiver-662b6a250-20261024/cron-second.override.json": "0ad866fda4d6b5ee74185df1bca41657a3eb11d561bb22b416b35014266ac624",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/cron-kifu.override.yml": "70ccb2e3c8572b0f06feb2f0175c11c5fb22505de50ae248df5dc802744b043c"
+  },
+  "override": "/mnt/disk1/fan/golaxy-name-quality-4bf9a699a-20261024/cron-name-quality.override.json",
+  "phase": "deployed_paused_verified",
+  "recorded_at": "2026-10-23T18:32:22.683401+00:00",
+  "resolved_config_preserved_except_image_buildsha": true,
+  "rollback_command": [
+    "docker",
+    "compose",
+    "--project-name",
+    "katrain",
+    "--project-directory",
+    "/home/fan/Repositories/katrain",
+    "--env-file",
+    "/home/fan/Repositories/katrain/.env",
+    "-f",
+    "/home/fan/Repositories/katrain/docker-compose.yml",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/cron-kifu.override.yml",
+    "-f",
+    "/mnt/disk1/fan/golaxy-hourly-repair-ef96a50a7-20261024/cron-release.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-receiver-662b6a250-20261024/cron-second.override.json",
+    "up",
+    "-d",
+    "--no-deps",
+    "--no-build",
+    "--pull",
+    "never",
+    "--force-recreate",
+    "katrain-cron"
+  ],
+  "runtime_settings_preserved_except_buildsha": true,
+  "scheduler_gate_after": {
+    "last_finished_at": "2026-10-23 17:58:11.717574+00:00",
+    "last_started_at": "2026-10-23 17:50:47.431808+00:00",
+    "paused": true,
+    "source_lock": false
+  },
+  "scope": "one-file name-quality guard overlay on 662b cron; no queue or migration changes",
+  "settings_sha256_after": "aee45eea0dd1b51b1cc24ab5dd5145858ad86cd1ad9e13ba7c147ce5c37b13d1",
+  "settings_sha256_before": "aee45eea0dd1b51b1cc24ab5dd5145858ad86cd1ad9e13ba7c147ce5c37b13d1",
+  "source_develop_sha": "4bf9a699a35ecdf025f5ec2f414425e3f2a13693",
+  "source_files_sha256": {
+    "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+    "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+    "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+    "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+    "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+    "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+    "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+    "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+    "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+    "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+    "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a"
+  },
+  "writer_gate": {
+    "last_finished_at": "2026-10-23 17:58:11.717574+00:00",
+    "last_started_at": "2026-10-23 17:50:47.431808+00:00",
+    "paused": true,
+    "source_lock": false
+  }
+}

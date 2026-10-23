@@ -1,0 +1,13 @@
+{
+  "PROD": {
+    "reentry_after_release": "ok",
+    "second_guard_rejected": "another incremental publisher is still running; retry after it finishes"
+  },
+  "TEST": {
+    "reentry_after_release": "ok",
+    "second_guard_rejected": "another incremental publisher is still running; retry after it finishes"
+  },
+  "checked_at": "2026-10-23T17:46:06.860788+00:00",
+  "method": "Nested _publication_guard with two independent checked-out PostgreSQL connections; no publish_manifest/data/model call",
+  "source_revision": "662b6a25048ee2bb3752bdbf54fb3a927ab68084"
+}

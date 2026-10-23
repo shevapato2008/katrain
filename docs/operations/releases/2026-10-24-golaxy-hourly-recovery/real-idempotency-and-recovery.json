@@ -1,0 +1,76 @@
+{
+  "all_five_batches_prod_synced": true,
+  "catalog_after": {
+    "latest_normalized_date_sort": "2026-10-23",
+    "public": 176593,
+    "total": 176852
+  },
+  "catalog_before": {
+    "latest_normalized_date_sort": "2026-10-23",
+    "public": 176593,
+    "total": 176852
+  },
+  "coverage": {
+    "boundary_in_window": false,
+    "excluded": 0,
+    "head_page_cap": true,
+    "head_pages": 5,
+    "head_unique_ids": 100,
+    "last_observed_at": 1792778068.7562659,
+    "oldest_recheck_age_seconds": null,
+    "out_of_window": 36,
+    "publication_authority_complete": true,
+    "recheck_deferred": 0,
+    "recheck_selected": 0,
+    "sgf_attempt_cap": false,
+    "sgf_attempts": 54,
+    "source_budget_exhausted": false,
+    "source_http_attempts": 59,
+    "terminal_count": 17,
+    "time_budget_exhausted": false,
+    "unknown_match_time": 0
+  },
+  "head_pages_requested": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "ledger_after": {
+    "call_entries": 19,
+    "entry_count": 57,
+    "sha256": "409f9e1dc58b1046658958cfd7fed88416c5cdcf1dd0c21363355417db119370",
+    "spent_upper_tokens": 16477
+  },
+  "ledger_before": {
+    "call_entries": 19,
+    "entry_count": 57,
+    "sha256": "409f9e1dc58b1046658958cfd7fed88416c5cdcf1dd0c21363355417db119370",
+    "spent_upper_tokens": 16477
+  },
+  "ledger_hash_format": "canonical JSON SHA-256, not original file-byte SHA-256",
+  "ledger_raw_before_hash_captured": false,
+  "ledger_raw_file_sha256_after_run2": "f1298062bb1d4c9393abc8fe5b58611601db060ca00c15b406659ac2688e6cb9",
+  "legacy_seven_attempts_unchanged": true,
+  "legacy_seven_http_requests": 0,
+  "old78_native_receipts_unchanged": true,
+  "rolling_cursor": 1786,
+  "run": {
+    "duration_ms": 444285,
+    "error": null,
+    "error_count": 0,
+    "finished_at": "2026-10-23 17:58:11.717574+00:00",
+    "id": 71027,
+    "job_name": "kifu_ingest",
+    "started_at": "2026-10-23 17:50:47.431808+00:00",
+    "status": "success"
+  },
+  "scheduler": {
+    "consecutive_failures": 0,
+    "enabled": true,
+    "interval_seconds": 3600,
+    "next_scheduled_at_utc": "2026-10-23T18:50:47+00:00",
+    "paused_control": null
+  }
+}

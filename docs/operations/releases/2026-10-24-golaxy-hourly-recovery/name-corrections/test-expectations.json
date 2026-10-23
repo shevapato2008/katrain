@@ -1,0 +1,1133 @@
+{
+  "correction_bundle_sha256": "d05f9ebc2b2e348eb98a824bb3938c3f70f862f089b87f9b31d86bbfc7796c4c",
+  "correction_native_batch_id": 913,
+  "correction_spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6",
+  "decisions": [
+    {
+      "displays": {
+        "cn": "第74期王座战挑战赛5番棋1局",
+        "en": "74th Oza Title Match, Best-of-5 Game 1",
+        "jp": "第74期王座戦挑戦手合5番勝負第1局",
+        "ko": "제74기 왕좌전 도전5번기 제1국",
+        "tw": "第74期王座戰挑戰賽5番棋1局"
+      },
+      "key": "第74期王座战挑战赛5番棋1局",
+      "kind": "raw_event"
+    },
+    {
+      "displays": {
+        "cn": "第31届韩国女子国手战半决赛",
+        "en": "31st Korean Women's Guksu Tournament Semifinals",
+        "jp": "第31回韓国女子国手戦準決勝",
+        "ko": "제31회 한국 여자 국수전 준결승",
+        "tw": "第31屆韓國女子國手戰準決賽"
+      },
+      "key": "第31届韩国女子国手战半决赛",
+      "kind": "raw_event"
+    },
+    {
+      "displays": {
+        "cn": "首届玄乐杯决赛5番棋1局",
+        "en": "1st Xuanle Cup Final Best-of-5 Game 1",
+        "jp": "第1回玄楽杯決勝5番勝負第1局",
+        "ko": "제1회 현악배 결승 5번기 1국",
+        "tw": "首屆玄樂盃決賽5番棋1局"
+      },
+      "key": "首届玄乐杯决赛5番棋1局",
+      "kind": "raw_event"
+    },
+    {
+      "displays": {
+        "cn": "75期王座战预选a组",
+        "en": "75th Oza Tournament Preliminary Round Group A",
+        "jp": "75期王座戦予選A組",
+        "ko": "75기 왕좌전 예선 A조",
+        "tw": "75期王座戰預選A組"
+      },
+      "key": "75期王座战预选a组",
+      "kind": "raw_event"
+    },
+    {
+      "displays": {
+        "cn": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "en": "9th Wu Qingyuan Cup World Women's Open International Qualification Final",
+        "jp": "第9回呉清源杯世界女子オープン戦国際予選決勝",
+        "ko": "제9회 오청원배 세계 여자 오픈전 국제 예선 결승",
+        "tw": "第9屆吳清源盃世界女子公開賽國際預選決賽"
+      },
+      "key": "第9届吴清源杯世界女子公开赛国际预选决赛",
+      "kind": "raw_event"
+    },
+    {
+      "displays": {
+        "cn": "李书英",
+        "en": "Lee Seo-young",
+        "jp": "李書英",
+        "ko": "이서영",
+        "tw": "李書英"
+      },
+      "key": "李书英",
+      "kind": "raw_player"
+    },
+    {
+      "displays": {
+        "cn": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+        "en": "12th Guoshou Mountain Range Cup World Final Shin Jinseo vs. Li Weiqing",
+        "jp": "第12回国手山脈杯世界戦決勝 申真谞 VS 李維清",
+        "ko": "제12회 국수산맥배 세계전 결승 신진서 VS 리웨이칭",
+        "tw": "第12屆國手山脈盃世界賽決賽 申真谞 VS 李維清"
+      },
+      "key": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+      "kind": "raw_event"
+    },
+    {
+      "displays": {
+        "cn": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+        "en": "2nd Round of the Preliminary Tournament of the 9th Wu Qingyuan Cup World Women's Go Open",
+        "jp": "第9回呉清源杯世界女子囲碁オープン予選第2ラウンド",
+        "ko": "제9회 오청원배 세계 여자 바둑 오픈 예선 2라운드",
+        "tw": "第9屆吳清源盃世界女子圍棋公開賽預選賽第2輪"
+      },
+      "key": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+      "kind": "raw_event"
+    },
+    {
+      "displays": {
+        "cn": "第12届国手山脉杯世界围棋最强战16强战",
+        "en": "12th Guoshou Mountain Range Cup World Go Strongest Tournament Round of 16",
+        "jp": "第12回国手山脈杯世界囲碁最強戦16強戦",
+        "ko": "제12회 국수산맥배 세계 바둑 최강전 16강전",
+        "tw": "第12屆國手山脈盃世界圍棋最強戰16強戰"
+      },
+      "key": "第12届国手山脉杯世界围棋最强战16强战",
+      "kind": "raw_event"
+    }
+  ],
+  "format": "kifu-post-name-correction-api-expectations-v1",
+  "games": [
+    {
+      "identities": {
+        "black": {
+          "canonical_name": "福冈航太朗"
+        },
+        "event": null,
+        "white": {
+          "canonical_name": "一力辽"
+        }
+      },
+      "metadata": {
+        "board_size": 19,
+        "date_played": "2026-10-23",
+        "date_sort": "2026-10-23",
+        "event": "第74期王座战挑战赛5番棋1局",
+        "handicap": 0,
+        "komi": 6.5,
+        "move_count": 207,
+        "player_black": "福冈航太朗",
+        "player_white": "一力辽",
+        "result": "B+R",
+        "rules": "japanese",
+        "search_text": "福冈航太朗 一力辽 第74期王座战挑战赛5番棋1局 b+r 2026-10-23"
+      },
+      "origin_path": "data/kifu-album/19x19/91574352.sgf",
+      "raw_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73",
+      "sgf_content": "(;CA[utf8]AP[golaxy]SZ[19]PB[福冈航太朗]PW[一力辽]RE[B+R]KM[6.5];B[qd];W[cp];B[pq];W[cc];B[oc];W[po];B[qo];W[qn];B[qp];W[pn];B[nq];W[pj];B[eq];W[dq];B[ep];W[cn];B[qh];W[ip];B[fm];W[en];B[do];W[dn];B[dr];W[cr];B[co];W[bo];B[bq];W[bp];B[cq];W[dp];B[br];W[er];B[cs];W[fr];B[gq];W[fq];B[ce];W[dh];B[dg];W[eh];B[ch];W[ci];B[eg];W[fh];B[bi];W[bh];B[cg];W[bj];B[ec];W[fg];B[ff];W[eb];B[fb];W[db];B[gf];W[fc];B[di];W[cj];B[gi];W[fd];B[ej];W[nd];B[nc];W[ld];B[gg];W[mc];B[hd];W[hb];B[ql];W[rj];B[ol];W[mo];B[nk];W[pp];B[qq];W[mq];B[np];W[mp];B[no];W[nn];B[mn];W[nm];B[ln];W[or];B[nr];W[mr];B[oq];W[ml];B[kp];W[kq];B[fp];W[gp];B[hp];W[go];B[iq];W[jp];B[ho];W[fo];B[jn];W[kn];B[ko];W[km];B[lr];W[lo];B[lq];W[ms];B[lp];W[lm];B[oi];W[qf];B[od];W[oj];B[nj];W[ph];B[om];W[on];B[qi];W[pi];B[qj];W[qk];B[rk];W[pk];B[rl];W[qg];B[ri];W[qc];B[rc];W[pl];B[ne];W[pe];B[re];W[ng];B[li];W[lg];B[ji];W[jg];B[kk];W[jm];B[io];W[rh];B[sj];W[rn];B[rg];W[rf];B[sh];W[sq];B[sr];W[pm];B[ns];W[mm];B[ic];W[gr];B[ir];W[ib];B[bg];W[ai];B[kc];W[nb];B[ob];W[mb];B[md];W[me];B[mf];W[nd];B[nf];W[pd];B[pc];W[mg];B[lf];W[kf];B[le];W[md];B[oe];W[kd];B[ke];W[jd];B[je];W[id];B[og];W[oh];B[nh];W[pg];B[of];W[ii];B[jj];W[ih];B[ni];W[in];B[jo];W[rr];B[sp];W[hj];B[hk];W[ok];B[nl];W[gj];B[gk];W[il];B[ik];W[hn];B[hm];W[fj];B[im];W[gn];B[lk];W[ss];B[ro])",
+      "sgf_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73",
+      "source_item_id": "91574352",
+      "source_key": "19x19",
+      "source_metadata": {
+        "analyzePo": 5000,
+        "analyzeShare": 1,
+        "analyzeStatus": 2,
+        "analyzeTime": {
+          "date": {
+            "day": 23,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 17,
+            "minute": 2,
+            "nano": 0,
+            "second": 10
+          }
+        },
+        "blackLevel": 3002,
+        "blackUserCode": "66516751",
+        "boardSize": 19,
+        "countdownNum": 0,
+        "countdownTime": 0,
+        "createTime": {
+          "date": {
+            "day": 23,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 17,
+            "minute": 2,
+            "nano": 0,
+            "second": 10
+          }
+        },
+        "deleteFlag": false,
+        "explainStatus": 0,
+        "favourite": false,
+        "gameResult": "B+R",
+        "gameRound": 0,
+        "gameType": "2",
+        "gamename": "第74期王座战挑战赛5番棋1局",
+        "gameroomId": 10249606,
+        "guess": 0,
+        "handicap": 0,
+        "id": 91574352,
+        "komi": 6.5,
+        "mainTime": 0,
+        "moveNum": 207,
+        "pb": "福冈航太朗",
+        "playTime": {
+          "date": {
+            "day": 23,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 9,
+            "minute": 1,
+            "nano": 0,
+            "second": 0
+          }
+        },
+        "predictStatus": 1,
+        "pw": "一力辽",
+        "rule": "japanese",
+        "startMoveNum": 0,
+        "stone": 0,
+        "userCode": "62626262",
+        "username": "",
+        "visibleFlag": true,
+        "whiteLevel": 3002,
+        "whiteUserCode": "63696859"
+      }
+    },
+    {
+      "identities": {
+        "black": {
+          "canonical_name": "仲邑菫"
+        },
+        "event": null,
+        "white": {
+          "canonical_name": "金恩持"
+        }
+      },
+      "metadata": {
+        "board_size": 19,
+        "date_played": "2026-10-22",
+        "date_sort": "2026-10-22",
+        "event": "第31届韩国女子国手战半决赛",
+        "handicap": 0,
+        "komi": 6.5,
+        "move_count": 186,
+        "player_black": "仲邑菫",
+        "player_white": "金恩持",
+        "result": "W+R",
+        "rules": "japanese",
+        "search_text": "仲邑菫 金恩持 第31届韩国女子国手战半决赛 w+r 2026-10-22"
+      },
+      "origin_path": "data/kifu-album/19x19/91511889.sgf",
+      "raw_sha256": "e5d4513807806a7e19ef61aee7a1f54e58d323a041a25c75e97fd71654cbf22b",
+      "sgf_content": "(;CA[utf8]AP[golaxy]SZ[19]PB[仲邑菫]PW[金恩持]RE[W+R]KM[6.5];B[pd];W[dd];B[pp];W[dp];B[fq];W[cn];B[qm];W[qc];B[qd];W[pc];B[nc];W[oc];B[od];W[nb];B[mc];W[mb];B[lc];W[nq];B[lq];W[jq];B[ko];W[hq];B[oq];W[np];B[kq];W[jp];B[mo];W[on];B[po];W[ol];B[ll];W[pk];B[fo];W[in];B[dm];W[dn];B[dr];W[em];B[cq];W[ph];B[cf];W[ch];B[rk];W[or];B[pr];W[op];B[pq];W[nn];B[jm];W[im];B[jl];W[mj];B[ki];W[mh];B[ef];W[fc];B[cj];W[fr];B[gr];W[gq];B[er];W[fp];B[fs];W[ep];B[el];W[fm];B[bd];W[di];B[ej];W[ei];B[fj];W[dj];B[cc];W[ck];B[qj];W[pj];B[rc];W[rb];B[qb];W[qa];B[sb];W[ra];B[hc];W[dc];B[fe];W[gd];B[hf];W[cd];B[bb];W[cb];B[bc];W[eb];B[cg];W[he];B[if];W[jc];B[lb];W[jd];B[re];W[pb];B[ie];W[id];B[fi];W[il];B[ml];W[kn];B[ln];W[kp];B[lp];W[jo];B[qi];W[pi];B[qh];W[ij];B[jk];W[hi];B[li];W[mi];B[lg];W[dl];B[nk];W[km];B[kl];W[mn];B[lm];W[lo];B[ia];W[ib];B[ko];W[lh];B[kh];W[lo];B[ja];W[hb];B[ko];W[pm];B[ql];W[lo];B[oa];W[ob];B[ko];W[pn];B[qn];W[lo];B[oo];W[no];B[ko];W[nl];B[jn];W[mk];B[eh];W[bp];B[bq];W[dh];B[ge];W[hd];B[ek];W[fh];B[gh];W[eg];B[dk];W[bg];B[cl];W[bk];B[bf];W[gi];B[fg];W[eh];B[bl];W[bj];B[ak];W[bi];B[ag];W[bh];B[gk];W[hk];B[gm];W[fl];B[gl];W[gn];B[fn];W[go];B[hh];W[ah];B[ii];W[hj])",
+      "sgf_sha256": "e5d4513807806a7e19ef61aee7a1f54e58d323a041a25c75e97fd71654cbf22b",
+      "source_item_id": "91511889",
+      "source_key": "19x19",
+      "source_metadata": {
+        "analyzePo": 5000,
+        "analyzeShare": 1,
+        "analyzeStatus": 2,
+        "analyzeTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 14,
+            "minute": 31,
+            "nano": 0,
+            "second": 35
+          }
+        },
+        "blackLevel": 3002,
+        "boardSize": 19,
+        "countdownNum": 0,
+        "countdownTime": 0,
+        "createTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 14,
+            "minute": 31,
+            "nano": 0,
+            "second": 35
+          }
+        },
+        "deleteFlag": false,
+        "explainStatus": 0,
+        "favourite": false,
+        "gameResult": "W+R",
+        "gameRound": 0,
+        "gameType": "2",
+        "gamename": "第31届韩国女子国手战半决赛",
+        "gameroomId": 10243123,
+        "guess": 0,
+        "handicap": 0,
+        "id": 91511889,
+        "komi": 6.5,
+        "mainTime": 0,
+        "moveNum": 186,
+        "pb": "仲邑菫",
+        "playTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 12,
+            "minute": 2,
+            "nano": 0,
+            "second": 0
+          }
+        },
+        "predictStatus": 1,
+        "pw": "金恩持",
+        "rule": "japanese",
+        "startMoveNum": 0,
+        "stone": 0,
+        "userCode": "62626262",
+        "username": "",
+        "visibleFlag": true,
+        "whiteLevel": 3002
+      }
+    },
+    {
+      "identities": {
+        "black": {
+          "canonical_name": "许皓鋐"
+        },
+        "event": null,
+        "white": {
+          "canonical_name": "赖均辅"
+        }
+      },
+      "metadata": {
+        "board_size": 19,
+        "date_played": "2026-10-22",
+        "date_sort": "2026-10-22",
+        "event": "首届玄乐杯决赛5番棋1局",
+        "handicap": 0,
+        "komi": 6.5,
+        "move_count": 183,
+        "player_black": "许皓鋐",
+        "player_white": "赖均辅",
+        "result": "B+R",
+        "rules": "japanese",
+        "search_text": "许皓鋐 赖均辅 首届玄乐杯决赛5番棋1局 b+r 2026-10-22"
+      },
+      "origin_path": "data/kifu-album/19x19/91519065.sgf",
+      "raw_sha256": "fca9eafa3e04d8e03882e50b06c8434fef6678aba7976fd96f7c74c54a865e49",
+      "sgf_content": "(;CA[utf8]AP[golaxy]SZ[19]PB[许皓鋐]PW[赖均辅]RE[B+R]KM[6.5];B[pd];W[dd];B[dp];W[pp];B[qq];W[qp];B[pq];W[nq];B[oq];W[op];B[nr];W[qc];B[qd];W[pc];B[od];W[nb];B[cf];W[qi];B[rc];W[rb];B[ob];W[rd];B[oc];W[jc];B[re];W[sc];B[qa];W[ce];B[df];W[fd];B[cj];W[ra];B[fq];W[mq];B[mr];W[lq];B[ld];W[lc];B[kd];W[kc];B[gd];W[fe];B[gc];W[ie];B[db];W[dc];B[ge];W[gf];B[hf];W[he];B[ff];W[gg];B[fc];W[cb];B[ed];W[ee];B[de];W[ec];B[ef];W[ed];B[eb];W[be];B[hb];W[jd];B[bb];W[bc];B[ca];W[cc];B[bf];W[ba];B[aa];W[da];B[ea];W[ac];B[jb];W[qf];B[pf];W[pg];B[og];W[of];B[nf];W[pe];B[oe];W[ig];B[pf];W[ga];B[ic];W[of];B[qe];W[pf];B[oh];W[pj];B[mg];W[bo];B[bp];W[hd];B[kb];W[lb];B[ka];W[ck];B[co];W[dj];B[ci];W[dl];B[gh];W[hh];B[fg];W[hg];B[gi];W[gk];B[hi];W[lf];B[md];W[kh];B[oj];W[ok];B[nj];W[ol];B[ek];W[el];B[ej];W[bn];B[cn];W[cm];B[bl];W[bk];B[bm];W[di];B[ei];W[dk];B[dh];W[fk];B[bh];W[lg];B[li];W[ki];B[lj];W[kj];B[ll];W[ph];B[mf];W[rp];B[gm];W[fm];B[gn];W[ik];B[jq];W[lr];B[rq];W[ms];B[or];W[sq];B[sr];W[sp];B[rr];W[gq];B[gp];W[hq];B[hp];W[fr];B[ir];W[cq];B[dq];W[bq];B[cp];W[ap];B[br];W[cr];B[dr];W[bs];B[an];W[ar];B[ij];W[hl];B[jk];W[jl];B[kk];W[km];B[ke];W[ib];B[hc];W[fb];B[jf])",
+      "sgf_sha256": "fca9eafa3e04d8e03882e50b06c8434fef6678aba7976fd96f7c74c54a865e49",
+      "source_item_id": "91519065",
+      "source_key": "19x19",
+      "source_metadata": {
+        "analyzePo": 5000,
+        "analyzeShare": 1,
+        "analyzeStatus": 2,
+        "analyzeTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 16,
+            "minute": 37,
+            "nano": 0,
+            "second": 9
+          }
+        },
+        "blackLevel": 3002,
+        "blackUserCode": "61183970",
+        "boardSize": 19,
+        "countdownNum": 0,
+        "countdownTime": 0,
+        "createTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 16,
+            "minute": 37,
+            "nano": 0,
+            "second": 9
+          }
+        },
+        "deleteFlag": false,
+        "explainStatus": 0,
+        "favourite": false,
+        "gameResult": "B+R",
+        "gameRound": 0,
+        "gameType": "2",
+        "gamename": "首届玄乐杯决赛5番棋1局",
+        "gameroomId": 10242949,
+        "guess": 0,
+        "handicap": 0,
+        "id": 91519065,
+        "komi": 6.5,
+        "mainTime": 0,
+        "moveNum": 183,
+        "pb": "许皓鋐",
+        "playTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 11,
+            "minute": 5,
+            "nano": 0,
+            "second": 0
+          }
+        },
+        "predictStatus": 1,
+        "pw": "赖均辅",
+        "rule": "japanese",
+        "startMoveNum": 0,
+        "stone": 0,
+        "userCode": "62626262",
+        "username": "",
+        "visibleFlag": true,
+        "whiteLevel": 3002,
+        "whiteUserCode": "68525608"
+      }
+    },
+    {
+      "identities": {
+        "black": {
+          "canonical_name": "鸟井裕太"
+        },
+        "event": null,
+        "white": {
+          "canonical_name": "山田规三生"
+        }
+      },
+      "metadata": {
+        "board_size": 19,
+        "date_played": "2026-10-22",
+        "date_sort": "2026-10-22",
+        "event": "75期王座战预选a组",
+        "handicap": 0,
+        "komi": 6.5,
+        "move_count": 259,
+        "player_black": "鸟井裕太",
+        "player_white": "山田规三生",
+        "result": "W+R",
+        "rules": "japanese",
+        "search_text": "鸟井裕太 山田规三生 75期王座战预选a组 w+r 2026-10-22"
+      },
+      "origin_path": "data/kifu-album/19x19/91511645.sgf",
+      "raw_sha256": "e65536dbc4f659156266a32d8a86da6c7672212547319bc2aa1c2f1a2bc54b0b",
+      "sgf_content": "(;CA[utf8]AP[golaxy]SZ[19]PB[鸟井裕太]PW[山田规三生]RE[W+R]KM[6.5];B[qd];W[dc];B[dq];W[pq];B[ce];W[ed];B[po];W[oc];B[oq];W[pe];B[qe];W[pf];B[qg];W[qp];B[pr];W[op];B[pp];W[qq];B[nr];W[nq];B[or];W[qo];B[np];W[co];B[dl];W[ep];B[dp];W[do];B[eo];W[dm];B[fo];W[em];B[cl];W[el];B[cm];W[dk];B[ck];W[cn];B[dj];W[ek];B[ci];W[fq];B[gq];W[gr];B[gp];W[eq];B[dr];W[hr];B[bp];W[cp];B[cq];W[bo];B[er];W[fr];B[bq];W[ho];B[gn];W[gk];B[hn];W[io];B[in];W[jo];B[pn];W[rm];B[iq];W[hq];B[jq];W[go];B[fn];W[fp];B[jn];W[kp];B[kq];W[lq];B[lr];W[fi];B[eh];W[jd];B[hc];W[hd];B[gd];W[he];B[jc];W[kc];B[ib];W[kb];B[ge];W[df];B[hf];W[je];B[fh];W[gh];B[gg];W[hh];B[de];W[ee];B[ef];W[ff];B[eg];W[gf];B[fe];W[gc];B[fg];W[fc];B[hj];W[gj];B[jf];W[jh];B[jj];W[kn];B[km];W[ln];B[hk];W[lm];B[kl];W[bm];B[bl];W[kf];B[if];W[ii];B[kg];W[ij];B[ik];W[kj];B[jk];W[kh];B[ke];W[kd];B[lf];W[lh];B[lj];W[bd];B[lp];W[mj];B[lk];W[mk];B[ji];W[hi];B[ll];W[ml];B[be];W[qb];B[rh];W[hl];B[il];W[gl];B[ki];W[rc];B[mi];W[ap];B[br];W[am];B[rk];W[qr];B[qc];W[pc];B[rd];W[rb];B[ld];W[me];B[le];W[mc];B[bc];W[bb];B[cc];W[cb];B[cd];W[qi];B[ri];W[qj];B[rj];W[bj];B[cj];W[al];B[ak];W[nn];B[pl];W[ni];B[md];W[nd];B[ne];W[pd];B[qf];W[ab];B[ir];W[bk];B[bi];W[aj];B[ai];W[ak];B[nh];W[oi];B[rl];W[qm];B[ok];W[mh];B[sm];W[rn];B[qs];W[rs];B[ps];W[sr];B[li];W[ng];B[nf];W[mg];B[mf];W[oo];B[mo];W[no];B[mp];W[nm];B[om];W[oj];B[ej];W[pk];B[ql];W[fj];B[ph];W[oh];B[sc];W[sb];B[sd];W[sn];B[sl];W[ac];B[ad];W[ei];B[di];W[nk];B[ol];W[lc];B[en];W[dn];B[aq];W[ao];B[fm];W[fl];B[ie];W[id];B[jp];W[ko];B[mn];W[mm];B[hm];W[ig];B[oe];W[od];B[qn];W[is];B[js];W[hs];B[fs];W[pg];B[qh];W[of];B[hg];W[jg];B[lg])",
+      "sgf_sha256": "e65536dbc4f659156266a32d8a86da6c7672212547319bc2aa1c2f1a2bc54b0b",
+      "source_item_id": "91511645",
+      "source_key": "19x19",
+      "source_metadata": {
+        "analyzePo": 5000,
+        "analyzeShare": 1,
+        "analyzeStatus": 2,
+        "analyzeTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 14,
+            "minute": 26,
+            "nano": 0,
+            "second": 33
+          }
+        },
+        "blackLevel": 3002,
+        "blackUserCode": "60096726",
+        "boardSize": 19,
+        "countdownNum": 0,
+        "countdownTime": 0,
+        "createTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 14,
+            "minute": 26,
+            "nano": 0,
+            "second": 33
+          }
+        },
+        "deleteFlag": false,
+        "explainStatus": 0,
+        "favourite": false,
+        "gameResult": "W+R",
+        "gameRound": 0,
+        "gameType": "2",
+        "gamename": "75期王座战预选a组",
+        "gameroomId": 10242355,
+        "guess": 0,
+        "handicap": 0,
+        "id": 91511645,
+        "komi": 6.5,
+        "mainTime": 0,
+        "moveNum": 259,
+        "pb": "鸟井裕太",
+        "playTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 9,
+            "minute": 25,
+            "nano": 0,
+            "second": 0
+          }
+        },
+        "predictStatus": 1,
+        "pw": "山田规三生",
+        "rule": "japanese",
+        "startMoveNum": 0,
+        "stone": 0,
+        "userCode": "62626262",
+        "username": "",
+        "visibleFlag": true,
+        "whiteLevel": 3002,
+        "whiteUserCode": "67807876"
+      }
+    },
+    {
+      "identities": {
+        "black": {
+          "canonical_name": "陈一鸣"
+        },
+        "event": null,
+        "white": {
+          "canonical_name": "罗楚玥"
+        }
+      },
+      "metadata": {
+        "board_size": 19,
+        "date_played": "2026-10-21",
+        "date_sort": "2026-10-21",
+        "event": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "handicap": 0,
+        "komi": 7.5,
+        "move_count": 213,
+        "player_black": "陈一鸣",
+        "player_white": "罗楚玥",
+        "result": "B+R",
+        "rules": "chinese",
+        "search_text": "陈一鸣 罗楚玥 第9届吴清源杯世界女子公开赛国际预选决赛 b+r 2026-10-21"
+      },
+      "origin_path": "data/kifu-album/19x19/91468818.sgf",
+      "raw_sha256": "c181e6eb194774f691cb0c0c046a8e93415f269b55941c46a8ea5b546148df35",
+      "sgf_content": "(;CA[utf8]AP[golaxy]SZ[19]PB[陈一鸣]PW[罗楚玥]RE[B+R]KM[7.5];B[pd];W[dd];B[pp];W[dq];B[co];W[ep];B[cf];W[fc];B[cd];W[cc];B[bc];W[ce];B[bd];W[de];B[be];W[df];B[cg];W[nq];B[lq];W[jq];B[np];W[qq];B[qp];W[pq];B[op];W[nr];B[pj];W[mp];B[jp];W[mo];B[kq];W[mq];B[iq];W[pl];B[nn];W[nl];B[mn];W[rl];B[qi];W[mk];B[ln];W[nc];B[oc];W[nd];B[pf];W[kd];B[je];W[jd];B[he];W[qc];B[nb];W[qe];B[pe];W[rf];B[qd];W[rd];B[qb];W[rb];B[pb];W[qf];B[mc];W[id];B[qg];W[rg];B[rh];W[pg];B[qh];W[ra];B[kk];W[lj];B[og];W[kj];B[dm];W[cp];B[bo];W[eh];B[fq];W[fp];B[er];W[fm];B[ik];W[jk];B[jl];W[jj];B[hm];W[hi];B[gc];W[gd];B[hd];W[hc];B[gb];W[hb];B[dc];W[ec];B[cb];W[dk];B[el];W[hn];B[di];W[ei];B[fl];W[gm];B[hl];W[dh];B[do];W[hq];B[hr];W[hp];B[gq];W[bp];B[cr];W[dr];B[ds];W[br];B[bs];W[cq];B[ar];W[cs];B[rq];W[rr];B[cr];W[jn];B[bq];W[km];B[ll];W[lm];B[mm];W[ml];B[gn];W[in];B[dj];W[ko];B[qm];W[ql];B[om];W[ol];B[qr];W[pr];B[sr];W[rs];B[ro];W[ch];B[ej];W[fj];B[gj];W[fi];B[bi];W[bh];B[fk];W[fn];B[lg];W[hj];B[gk];W[bj];B[ck];W[kf];B[kg];W[jg];B[gg];W[jf];B[gi];W[gh];B[hh];W[fh];B[jh];W[ji];B[fd];W[ga];B[ge];W[fb];B[ih];W[kh];B[lh];W[ki];B[ff];W[ee];B[kl];W[ci];B[lo];W[go];B[ip];W[gr];B[gp];W[ho];B[fr];W[ir];B[jr];W[lp];B[kp];W[hs];B[lr];W[ap];B[aq];W[ks];B[js];W[ls];B[mr];W[cl];B[bk];W[bl];B[cj];W[ao];B[aj];W[dl];B[ek];W[em];B[dg];W[eg];B[bg];W[ag];B[bf];W[ef];B[ed])",
+      "sgf_sha256": "c181e6eb194774f691cb0c0c046a8e93415f269b55941c46a8ea5b546148df35",
+      "source_item_id": "91468818",
+      "source_key": "19x19",
+      "source_metadata": {
+        "analyzePo": 5000,
+        "analyzeShare": 1,
+        "analyzeStatus": 2,
+        "analyzeTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 17,
+            "minute": 16,
+            "nano": 0,
+            "second": 38
+          }
+        },
+        "blackLevel": 3002,
+        "blackUserCode": "62210053",
+        "boardSize": 19,
+        "countdownNum": 0,
+        "countdownTime": 0,
+        "createTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 17,
+            "minute": 16,
+            "nano": 0,
+            "second": 38
+          }
+        },
+        "deleteFlag": false,
+        "explainStatus": 0,
+        "favourite": false,
+        "gameResult": "B+R",
+        "gameRound": 0,
+        "gameType": "2",
+        "gamename": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "gameroomId": 10236046,
+        "guess": 0,
+        "handicap": 0,
+        "id": 91468818,
+        "komi": 7.5,
+        "mainTime": 0,
+        "moveNum": 213,
+        "pb": "陈一鸣",
+        "playTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 12,
+            "minute": 31,
+            "nano": 0,
+            "second": 0
+          }
+        },
+        "predictStatus": 1,
+        "pw": "罗楚玥",
+        "rule": "chinese",
+        "startMoveNum": 0,
+        "stone": 0,
+        "userCode": "62626262",
+        "username": "",
+        "visibleFlag": true,
+        "whiteLevel": 3002,
+        "whiteUserCode": "61598876"
+      }
+    },
+    {
+      "identities": {
+        "black": {
+          "canonical_name": "王晨星"
+        },
+        "event": null,
+        "white": null
+      },
+      "metadata": {
+        "board_size": 19,
+        "date_played": "2026-10-21",
+        "date_sort": "2026-10-21",
+        "event": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "handicap": 0,
+        "komi": 7.5,
+        "move_count": 162,
+        "player_black": "王晨星",
+        "player_white": "李书英",
+        "result": "W+R",
+        "rules": "chinese",
+        "search_text": "王晨星 李书英 第9届吴清源杯世界女子公开赛国际预选决赛 w+r 2026-10-21"
+      },
+      "origin_path": "data/kifu-album/19x19/91464854.sgf",
+      "raw_sha256": "6b192cc00e152117064350ba19f6018282eb527b30fc5f48c5332b95378294a7",
+      "sgf_content": "(;CA[utf8]AP[golaxy]SZ[19]PB[王晨星]PW[李书英]RE[W+R]KM[7.5];B[pd];W[dd];B[pq];W[dp];B[pk];W[nc];B[pf];W[jd];B[fq];W[jp];B[lp];W[dn];B[cc];W[dc];B[cd];W[ce];B[be];W[cf];B[bf];W[cg];B[bg];W[ch];B[eo];W[do];B[hp];W[eq];B[er];W[dr];B[in];W[po];B[np];W[qq];B[qr];W[qp];B[qn];W[pn];B[qm];W[nn];B[ln];W[nl];B[nj];W[lk];B[rr];W[og];B[nd];W[pg];B[pi];W[qf];B[qe];W[of];B[pe];W[qh];B[qi];W[re];B[rd];W[rg];B[mc];W[ri];B[rj];W[rk];B[si];W[sh];B[rh];W[oq];B[op];W[ri];B[pp];W[sj];B[pm];W[oc];B[od];W[mb];B[lb];W[lc];B[md];W[nb];B[kb];W[kc];B[jb];W[qc];B[pc];W[pb];B[rb];W[qb];B[oa];W[rc];B[sc];W[ra];B[sb];W[ob];B[qd];W[me];B[ld];W[le];B[kd];W[jc];B[ke];W[ib];B[ic];W[hc];B[id];W[je];B[jf];W[ie];B[hd];W[he];B[gd];W[hb];B[ge];W[hf];B[kg];W[hh];B[gb];W[la];B[mh];W[ji];B[ee];W[de];B[fh];W[db];B[gc];W[ka];B[cb];W[ei];B[fi];W[ff];B[ki];W[kj];B[jj];W[ii];B[lj];W[kk];B[ij];W[li];B[kh];W[mj];B[mi];W[jl];B[hj];W[nk];B[oj];W[jn];B[im];W[jm];B[io];W[lm];B[jo];W[om];B[mm];W[mn];B[ll];W[lo];B[km];W[ko];B[ml];W[lq];B[mp];W[kp];B[ep];W[dq];B[iq];W[mr])",
+      "sgf_sha256": "6b192cc00e152117064350ba19f6018282eb527b30fc5f48c5332b95378294a7",
+      "source_item_id": "91464854",
+      "source_key": "19x19",
+      "source_metadata": {
+        "analyzePo": 5000,
+        "analyzeShare": 1,
+        "analyzeStatus": 2,
+        "analyzeTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 16,
+            "minute": 8,
+            "nano": 0,
+            "second": 47
+          }
+        },
+        "blackLevel": 3002,
+        "blackUserCode": "66510567",
+        "boardSize": 19,
+        "countdownNum": 0,
+        "countdownTime": 0,
+        "createTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 16,
+            "minute": 8,
+            "nano": 0,
+            "second": 47
+          }
+        },
+        "deleteFlag": false,
+        "explainStatus": 0,
+        "favourite": false,
+        "gameResult": "W+R",
+        "gameRound": 0,
+        "gameType": "2",
+        "gamename": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "gameroomId": 10236044,
+        "guess": 0,
+        "handicap": 0,
+        "id": 91464854,
+        "komi": 7.5,
+        "mainTime": 0,
+        "moveNum": 162,
+        "pb": "王晨星",
+        "playTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 12,
+            "minute": 30,
+            "nano": 0,
+            "second": 0
+          }
+        },
+        "predictStatus": 1,
+        "pw": "李书英",
+        "rule": "chinese",
+        "startMoveNum": 0,
+        "stone": 0,
+        "userCode": "62626262",
+        "username": "",
+        "visibleFlag": true,
+        "whiteLevel": 3002,
+        "whiteUserCode": "63256799"
+      }
+    },
+    {
+      "identities": {
+        "black": {
+          "canonical_name": "杨子萱"
+        },
+        "event": null,
+        "white": {
+          "canonical_name": "方若曦"
+        }
+      },
+      "metadata": {
+        "board_size": 19,
+        "date_played": "2026-10-21",
+        "date_sort": "2026-10-21",
+        "event": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "handicap": 0,
+        "komi": 7.5,
+        "move_count": 154,
+        "player_black": "杨子萱",
+        "player_white": "方若曦",
+        "result": "W+R",
+        "rules": "chinese",
+        "search_text": "杨子萱 方若曦 第9届吴清源杯世界女子公开赛国际预选决赛 w+r 2026-10-21"
+      },
+      "origin_path": "data/kifu-album/19x19/91467988.sgf",
+      "raw_sha256": "72ef4fcaf1e96922262d7f24feed011d8ac9a47894f67c28899368fe47ea59e4",
+      "sgf_content": "(;CA[utf8]AP[golaxy]SZ[19]PB[杨子萱]PW[方若曦]RE[W+R]KM[7.5];B[qd];W[dd];B[pq];W[cp];B[eq];W[oc];B[cc];W[cd];B[dc];W[fc];B[ec];W[ed];B[fb];W[pe];B[pc];W[pb];B[od];W[pd];B[qc];W[nb];B[nc];W[ob];B[qe];W[nd];B[do];W[co];B[dn];W[cm];B[gc];W[fd];B[bd];W[be];B[bc];W[cf];B[el];W[qo];B[qg];W[pf];B[lp];W[jq];B[qp];W[po];B[np];W[lr];B[mq];W[gq];B[pl];W[fo];B[gr];W[hr];B[gp];W[fp];B[dp];W[cq];B[hq];W[fq];B[fr];W[dm];B[ir];W[em];B[ho];W[gl];B[il];W[rl];B[ql];W[qi];B[rk];W[pg];B[qf];W[ph];B[gi];W[rb];B[qb];W[qa];B[rh];W[ri];B[rc];W[rm];B[nm];W[ro];B[rp];W[nk];B[nl];W[ok];B[mk];W[ik];B[hk];W[hl];B[im];W[ij];B[gk];W[fl];B[ii];W[ji];B[ih];W[hj];B[gj];W[kk];B[gf];W[he];B[ei];W[mj];B[lk];W[lj];B[kl];W[fg];B[hi];W[ci];B[cj];W[bi];B[je];W[hc];B[gb];W[if];B[jh];W[jf];B[ff];W[eg];B[kf];W[kj];B[kh];W[ke];B[lf];W[kd];B[mh];W[ni];B[fk];W[go];B[hp];W[ej];B[ne];W[oe];B[md];W[nf];B[od];W[mf];B[gg];W[fh];B[kc];W[jc];B[gd];W[ge];B[jd];W[lc];B[kb];W[ld];B[ic];W[jb];B[dg];W[ef];B[cn];W[bn];B[ib];W[gh])",
+      "sgf_sha256": "72ef4fcaf1e96922262d7f24feed011d8ac9a47894f67c28899368fe47ea59e4",
+      "source_item_id": "91467988",
+      "source_key": "19x19",
+      "source_metadata": {
+        "analyzePo": 5000,
+        "analyzeShare": 1,
+        "analyzeStatus": 2,
+        "analyzeTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 17,
+            "minute": 2,
+            "nano": 0,
+            "second": 58
+          }
+        },
+        "blackLevel": 3002,
+        "blackUserCode": "68287838",
+        "boardSize": 19,
+        "countdownNum": 0,
+        "countdownTime": 0,
+        "createTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 17,
+            "minute": 2,
+            "nano": 0,
+            "second": 58
+          }
+        },
+        "deleteFlag": false,
+        "explainStatus": 0,
+        "favourite": false,
+        "gameResult": "W+R",
+        "gameRound": 0,
+        "gameType": "2",
+        "gamename": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "gameroomId": 10236043,
+        "guess": 0,
+        "handicap": 0,
+        "id": 91467988,
+        "komi": 7.5,
+        "mainTime": 0,
+        "moveNum": 154,
+        "pb": "杨子萱",
+        "playTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 12,
+            "minute": 29,
+            "nano": 0,
+            "second": 0
+          }
+        },
+        "predictStatus": 1,
+        "pw": "方若曦",
+        "rule": "chinese",
+        "startMoveNum": 0,
+        "stone": 0,
+        "userCode": "62626262",
+        "username": "",
+        "visibleFlag": true,
+        "whiteLevel": 3002,
+        "whiteUserCode": "67002971"
+      }
+    },
+    {
+      "identities": {
+        "black": {
+          "canonical_name": "申真谞"
+        },
+        "event": null,
+        "white": {
+          "canonical_name": "李维清"
+        }
+      },
+      "metadata": {
+        "board_size": 19,
+        "date_played": "2026-10-21",
+        "date_sort": "2026-10-21",
+        "event": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+        "handicap": 0,
+        "komi": 6.5,
+        "move_count": 205,
+        "player_black": "申真谞",
+        "player_white": "李维清",
+        "result": "B+R",
+        "rules": "japanese",
+        "search_text": "申真谞 李维清 第12届国手山脉杯世界赛决赛 申真谞 vs 李维清 b+r 2026-10-21"
+      },
+      "origin_path": "data/kifu-album/19x19/91449763.sgf",
+      "raw_sha256": "f595ce880b4ae29aea06e669c60d26c8c4b13d279c65b6aac8759a74e93ba109",
+      "sgf_content": "(;CA[utf8]AP[golaxy]SZ[19]PB[申真谞]PW[李维清]RE[B+R]KM[6.5];B[pd];W[dp];B[pq];W[dc];B[cq];W[cp];B[dq];W[fq];B[fr];W[gr];B[eq];W[fp];B[ep];W[eo];B[do];W[bo];B[dn];W[en];B[em];W[fm];B[cm];W[bq];B[er];W[el];B[dm];W[ck];B[gq];W[fl];B[bn];W[gp];B[hq];W[hp];B[dk];W[dj];B[dl];W[ej];B[cj];W[bj];B[ci];W[bl];B[bm];W[ch];B[bi];W[dh];B[bh];W[bg];B[cl];W[hr];B[iq];W[ir];B[co];W[jq];B[jd];W[qo];B[qg];W[ph];B[pj];W[nk];B[mk];W[mj];B[nl];W[ml];B[lk];W[ok];B[lj];W[mi];B[li];W[mh];B[lh];W[qh];B[mg];W[ng];B[nm];W[mn];B[pl];W[ne];B[nh];W[oh];B[nf];W[ni];B[of];W[ol];B[om];W[pm];B[pn];W[qm];B[qn];W[rm];B[po];W[rn];B[qp];W[on];B[mm];W[lm];B[ll];W[nn];B[ml];W[ro];B[rp];W[pc];B[qc];W[mf];B[lg];W[pe];B[pf];W[qd];B[od];W[qb];B[rc];W[oc];B[oe];W[rb];B[ri];W[qj];B[rd];W[mc];B[rh];W[op];B[pp];W[km];B[qi];W[qk];B[fc];W[bp];B[br];W[or];B[oq];W[nq];B[np];W[mq];B[oo];W[kc];B[jc];W[kd];B[je];W[fd];B[gd];W[ec];B[fe];W[ed];B[gc];W[cf];B[mp];W[lp];B[lo];W[kp];B[pi];W[pk];B[ln];W[bk];B[al];W[jl];B[ik];W[jk];B[ij];W[il];B[pr];W[di];B[ak];W[eb];B[jb];W[cr];B[cs];W[fb];B[ma];W[lb];B[la];W[nd];B[gb];W[nr];B[oa];W[pa];B[gh];W[fg];B[gg];W[ah];B[aj];W[hi];B[ff];W[ii];B[jj];W[ig];B[eg];W[ji];B[kj];W[gj];B[if];W[hg];B[hf];W[sb];B[hl];W[hm];B[de];W[ee];B[df];W[ce];B[dg];W[cg];B[cd];W[dd];B[cc];W[cb];B[bb];W[ba];B[bd])",
+      "sgf_sha256": "f595ce880b4ae29aea06e669c60d26c8c4b13d279c65b6aac8759a74e93ba109",
+      "source_item_id": "91449763",
+      "source_key": "19x19",
+      "source_metadata": {
+        "analyzePo": 10000,
+        "analyzeShare": 1,
+        "analyzeStatus": 2,
+        "analyzeTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 10,
+            "minute": 44,
+            "nano": 0,
+            "second": 6
+          }
+        },
+        "blackLevel": 3002,
+        "blackUserCode": "66161029",
+        "boardSize": 19,
+        "countdownNum": 0,
+        "countdownTime": 0,
+        "createTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 10,
+            "minute": 44,
+            "nano": 0,
+            "second": 6
+          }
+        },
+        "deleteFlag": false,
+        "explainStatus": 1,
+        "favourite": false,
+        "gameResult": "B+R",
+        "gameRound": 0,
+        "gameType": "2",
+        "gamename": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+        "gameroomId": 10234815,
+        "guess": 0,
+        "handicap": 0,
+        "id": 91449763,
+        "komi": 6.5,
+        "mainTime": 0,
+        "moveNum": 205,
+        "pb": "申真谞",
+        "playTime": {
+          "date": {
+            "day": 21,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 9,
+            "minute": 0,
+            "nano": 0,
+            "second": 0
+          }
+        },
+        "predictStatus": 1,
+        "pw": "李维清",
+        "rule": "japanese",
+        "startMoveNum": 0,
+        "stone": 0,
+        "userCode": "62626262",
+        "username": "",
+        "visibleFlag": true,
+        "whiteLevel": 3002,
+        "whiteUserCode": "67929297"
+      }
+    },
+    {
+      "identities": {
+        "black": {
+          "canonical_name": "谢依旻"
+        },
+        "event": null,
+        "white": {
+          "canonical_name": "张子涵"
+        }
+      },
+      "metadata": {
+        "black_rank": "七段",
+        "board_size": 19,
+        "date_played": "2026-10-19",
+        "date_sort": "2026-10-19",
+        "event": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+        "handicap": 0,
+        "komi": 7.5,
+        "move_count": 221,
+        "player_black": "谢依旻",
+        "player_white": "张子涵",
+        "result": "B+R",
+        "rules": "chinese",
+        "search_text": "谢依旻 张子涵 七段 四段 第9届吴清源杯世界女子围棋公开赛预选赛第2轮 b+r 2026-10-19",
+        "white_rank": "四段"
+      },
+      "origin_path": "data/kifu-album/19x19/91496863.sgf",
+      "raw_sha256": "0a6051fdb332017de50bea49fbfa5fdd71c22d3d96b7a10a282910b7cba9b16f",
+      "sgf_content": "(;CA[utf8]FF[4]AP[golaxy]SZ[19]RU[chinese]KM[7.5]HA[0]RE[B+R]PB[谢依旻]PW[张子涵]BR[七段]WR[四段]PL[B]GN[第9届吴清源杯世界女子围棋公开赛预选赛第2轮];B[qd];W[dc];B[dq];W[pp];B[cn];W[oc];B[pf];W[lc];B[de];W[ce];B[cf];W[cd];B[df];W[fd];B[qn];W[dj];B[nq];W[pn];B[pm];W[on];B[qq];W[qo];B[qm];W[pq];B[pr];W[rn];B[rr];W[rm];B[qk];W[pk];B[pj];W[ql];B[pl];W[ok];B[rl];W[om];B[pi];W[ol];B[ql];W[ff];B[dh];W[cl];B[fh];W[fj];B[hh];W[ch];B[dd];W[cc];B[ci];W[di];B[bh];W[eh];B[cg];W[eg];B[cj];W[dk];B[kd];W[qc];B[rc];W[of];B[og];W[ng];B[pc];W[od];B[oh];W[kc];B[id];W[if];B[jc];W[qb];B[pd];W[pb];B[hf];W[pe];B[qe];W[oe];B[qf];W[hg];B[ig];W[jf];B[gg];W[he];B[ie];W[ge];B[ld];W[lf];B[mf];W[me];B[mc];W[mb];B[md];W[nb];B[jb];W[kb];B[ka];W[lb];B[gc];W[fc];B[fb];W[eb];B[gb];W[je];B[jd];W[jg];B[lg];W[le];B[jh];W[mg];B[fa];W[ii];B[kg];W[nf];B[ji];W[co];B[do];W[cp];B[dp];W[bn];B[lp];W[ij];B[jj];W[jk];B[ik];W[kk];B[hk];W[hj];B[ll];W[gk];B[lk];W[kj];B[lj];W[ki];B[no];W[ni];B[nj];W[oj];B[oi];W[mm];B[lm];W[ln];B[kn];W[qj];B[rj];W[mj];B[mi];W[nk];B[nh];W[li];B[mh];W[ko];B[lo];W[mn];B[jm];W[jn];B[km];W[il];B[oo];W[po];B[jo];W[rp];B[rq];W[np];B[mo];W[or];B[oq];W[ps];B[qr];W[mq];B[nr];W[op];B[lq];W[ns];B[os];W[qi];B[qh];W[or];B[mr];W[lr];B[os];W[bf];B[bg];W[or];B[mp];W[ms];B[os];W[nn];B[sm];W[or];B[mq];W[kp];B[kq];W[jp];B[in];W[ho];B[hn];W[go];B[gn];W[fn];B[fm];W[ri];B[rh];W[jq];B[kr];W[jr];B[ls];W[fo];B[hl];W[gl];B[hm];W[ih];B[jl];W[lh];B[io];W[hq];B[fq];W[cq];B[gq];W[ip];B[em];W[gm];B[hr])",
+      "sgf_sha256": "0a6051fdb332017de50bea49fbfa5fdd71c22d3d96b7a10a282910b7cba9b16f",
+      "source_item_id": "91496863",
+      "source_key": "19x19",
+      "source_metadata": {
+        "analyzePo": 0,
+        "analyzeShare": 0,
+        "analyzeStatus": 0,
+        "blackDevice": 0,
+        "blackLevel": 3002,
+        "blackUserCode": "63971367",
+        "boardSize": 19,
+        "createTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 8,
+            "minute": 0,
+            "nano": 0,
+            "second": 18
+          }
+        },
+        "deleteFlag": false,
+        "explainStatus": 0,
+        "favourite": false,
+        "gameResult": "B+R",
+        "gameType": "2",
+        "gamename": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+        "guess": 0,
+        "handicap": 0,
+        "id": 91496863,
+        "komi": 7.5,
+        "moveNum": 221,
+        "pb": "谢依旻",
+        "pbLevel": "七段",
+        "playTime": {
+          "date": {
+            "day": 19,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 0,
+            "minute": 0,
+            "nano": 0,
+            "second": 0
+          }
+        },
+        "predictStatus": 0,
+        "pw": "张子涵",
+        "pwLevel": "四段",
+        "rule": "chinese",
+        "startMoveNum": 0,
+        "stone": 0,
+        "userCode": "62626262",
+        "username": "",
+        "visibleFlag": true,
+        "whiteDevice": 0,
+        "whiteLevel": 3002,
+        "whiteUserCode": "61122073"
+      }
+    },
+    {
+      "identities": {
+        "black": {
+          "canonical_name": "许家元"
+        },
+        "event": null,
+        "white": {
+          "canonical_name": "姜东润"
+        }
+      },
+      "metadata": {
+        "black_rank": "九段",
+        "board_size": 19,
+        "date_played": "2026-10-19",
+        "date_sort": "2026-10-19",
+        "event": "第12届国手山脉杯世界围棋最强战16强战",
+        "handicap": 0,
+        "komi": 6.5,
+        "move_count": 193,
+        "player_black": "许家元",
+        "player_white": "姜东润",
+        "result": "B+R",
+        "rules": "japanese",
+        "search_text": "许家元 姜东润 九段 九段 第12届国手山脉杯世界围棋最强战16强战 b+r 2026-10-19",
+        "white_rank": "九段"
+      },
+      "origin_path": "data/kifu-album/19x19/91496878.sgf",
+      "raw_sha256": "ed44e2a3f7d2cdd444f1161c490371e984092a506cd588b0b1e86caa40fd4336",
+      "sgf_content": "(;CA[utf8]FF[4]AP[golaxy]SZ[19]RU[japanese]KM[6.5]HA[0]RE[B+R]PB[许家元]PW[姜东润]BR[九段]WR[九段]PL[B]GN[第12届国手山脉杯世界围棋最强战16强战];B[pd];W[dd];B[qp];W[dq];B[op];W[cn];B[nc];W[np];B[nq];W[mq];B[mp];W[no];B[mo];W[oq];B[nr];W[nn];B[or];W[pq];B[pp];W[mr];B[pr];W[mn];B[ko];W[jq];B[ln];W[ip];B[ll];W[qj];B[pk];W[pj];B[ok];W[rl];B[qg];W[pm];B[om];W[pn];B[rn];W[jn];B[oj];W[ph];B[pg];W[oi];B[qk];W[rk];B[ri];W[rj];B[qi];W[ro];B[qo];W[pi];B[mm];W[og];B[of];W[nf];B[ng];W[nh];B[oh];W[qh];B[dp];W[cq];B[og];W[rg];B[rf];W[rh];B[fp];W[en];B[eq];W[eo];B[ep];W[cp];B[do];W[dn];B[co];W[bo];B[bn];W[bm];B[hq];W[hp];B[er];W[cr];B[ir];W[gq];B[gr];W[iq];B[hr];W[gp];B[jr];W[kr];B[fo];W[km];B[on];W[fn];B[go];W[gn];B[ho];W[hn];B[io];W[jo];B[kp];W[kq];B[fq];W[df];B[be];W[bf];B[nm];W[jp];B[fc];W[ce];B[hd];W[hf];B[gh];W[id];B[he];W[ie];B[gf];W[hc];B[fe];W[lc];B[if];W[hg];B[gc];W[hb];B[jf];W[eb];B[ec];W[db];B[ii];W[re];B[kd];W[jc];B[sf];W[qd];B[qe];W[pe];B[qf];W[od];B[pc];W[oc];B[pb];W[ob];B[nd];W[pa];B[rc];W[nb];B[oe];W[mc];B[eh];W[dh];B[di];W[ei];B[ej];W[fi];B[fj];W[fg];B[eg];W[gi];B[fh];W[hj];B[dg];W[ch];B[cg];W[bg];B[dj];W[ci];B[hk];W[ij];B[ik];W[in];B[dr];W[jj];B[jk];W[hh];B[kj];W[jg];B[hi];W[kf];B[je];W[lf];B[jh];W[ih];B[gj];W[kh];B[kc];W[kb];B[jb];W[lb];B[gb];W[ja];B[ji];W[ig];B[gg];W[kg];B[ha])",
+      "sgf_sha256": "ed44e2a3f7d2cdd444f1161c490371e984092a506cd588b0b1e86caa40fd4336",
+      "source_item_id": "91496878",
+      "source_key": "19x19",
+      "source_metadata": {
+        "analyzePo": 0,
+        "analyzeShare": 0,
+        "analyzeStatus": 0,
+        "blackDevice": 0,
+        "blackLevel": 3002,
+        "blackUserCode": "69057562",
+        "boardSize": 19,
+        "createTime": {
+          "date": {
+            "day": 22,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 8,
+            "minute": 1,
+            "nano": 0,
+            "second": 24
+          }
+        },
+        "deleteFlag": false,
+        "explainStatus": 0,
+        "favourite": false,
+        "gameResult": "B+R",
+        "gameType": "2",
+        "gamename": "第12届国手山脉杯世界围棋最强战16强战",
+        "guess": 0,
+        "handicap": 0,
+        "id": 91496878,
+        "komi": 6.5,
+        "moveNum": 193,
+        "pb": "许家元",
+        "pbLevel": "九段",
+        "playTime": {
+          "date": {
+            "day": 19,
+            "month": 10,
+            "year": 2026
+          },
+          "time": {
+            "hour": 0,
+            "minute": 0,
+            "nano": 0,
+            "second": 0
+          }
+        },
+        "predictStatus": 0,
+        "pw": "姜东润",
+        "pwLevel": "九段",
+        "rule": "japanese",
+        "startMoveNum": 0,
+        "stone": 0,
+        "userCode": "62626262",
+        "username": "",
+        "visibleFlag": true,
+        "whiteDevice": 0,
+        "whiteLevel": 3002,
+        "whiteUserCode": "67526623"
+      }
+    }
+  ],
+  "original_manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+  "purpose": "API expectations only; not a publication manifest or new approval of the historic Qwen decision"
+}

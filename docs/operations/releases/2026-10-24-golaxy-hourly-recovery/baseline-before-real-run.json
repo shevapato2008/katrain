@@ -1,0 +1,137 @@
+{
+  "build_sha": "ef96a50a7e69e93e57e890cca837c9298f45f329",
+  "captured_at": "2026-10-23T16:34:34.746199+00:00",
+  "catalog": {
+    "latest_date": "2026-10-20",
+    "public": 176573,
+    "total": 176832
+  },
+  "item_statuses": {
+    "discovered": 7,
+    "prod_published": 78,
+    "prod_synced": 206,
+    "quarantined": 317
+  },
+  "legacy_items": {
+    "7923089": {
+      "attempts": 64,
+      "last_error": "source business error: 7004",
+      "next_retry_at": null,
+      "recent": {
+        "classification": "legacy_shared_7004",
+        "error_code": 7004,
+        "terminal": true
+      },
+      "status": "failed"
+    },
+    "7926016": {
+      "attempts": 64,
+      "last_error": "source business error: 7004",
+      "next_retry_at": null,
+      "recent": {
+        "classification": "legacy_shared_7004",
+        "error_code": 7004,
+        "terminal": true
+      },
+      "status": "failed"
+    },
+    "7928067": {
+      "attempts": 64,
+      "last_error": "source business error: 7004",
+      "next_retry_at": null,
+      "recent": {
+        "classification": "legacy_shared_7004",
+        "error_code": 7004,
+        "terminal": true
+      },
+      "status": "failed"
+    },
+    "7928304": {
+      "attempts": 64,
+      "last_error": "source business error: 7004",
+      "next_retry_at": null,
+      "recent": {
+        "classification": "legacy_shared_7004",
+        "error_code": 7004,
+        "terminal": true
+      },
+      "status": "failed"
+    },
+    "7929649": {
+      "attempts": 64,
+      "last_error": "source business error: 7004",
+      "next_retry_at": null,
+      "recent": {
+        "classification": "legacy_shared_7004",
+        "error_code": 7004,
+        "terminal": true
+      },
+      "status": "failed"
+    },
+    "7929673": {
+      "attempts": 1,
+      "last_error": "source business error: 7004",
+      "next_retry_at": null,
+      "recent": {
+        "classification": "legacy_shared_7004",
+        "error_code": 7004,
+        "terminal": true
+      },
+      "status": "failed"
+    },
+    "7929683": {
+      "attempts": 1,
+      "last_error": "source business error: 7004",
+      "next_retry_at": null,
+      "recent": {
+        "classification": "legacy_shared_7004",
+        "error_code": 7004,
+        "terminal": true
+      },
+      "status": "failed"
+    }
+  },
+  "model_ledger": {
+    "call_count": 0,
+    "exists": false,
+    "spent_upper_bound_tokens": 0,
+    "utc_day": "20261023"
+  },
+  "old_published_packages": [
+    {
+      "games": 2,
+      "manifest_sha256": "bd374a966a2e4d6599787d57820512f9b94adbe5b2c308d0b15aa9ada46b9799",
+      "prod_receipt_sha256": "d7fff9794a18dd3db940bd836443de9efc2e383b87bac851c9fb987a5285612a",
+      "publication_key": "19x19-batch-bd5fdf7640ad9a37de370794",
+      "resume_phase": "prod_published",
+      "status": "retry_wait",
+      "test_receipt_sha256": "38a888669d72b3a602bd3d8c6b2a107e266bf4b07ed3174a62a28fbfe3db12bc"
+    },
+    {
+      "games": 32,
+      "manifest_sha256": "13a663101de18f61bc03a5ef89007b8e753a94f78652d7717d0eb42fd351363f",
+      "prod_receipt_sha256": "8fe6b1554afee22ba690c10666e927a8f77c918ae5ff3d7759879f05043649c2",
+      "publication_key": "19x19-batch-31fe3d7bf66a3f1cb6f7c193",
+      "resume_phase": "prod_published",
+      "status": "retry_wait",
+      "test_receipt_sha256": "389ce470fa799863301796fd6bb17de7d06381ba84bde2ef90205c24b197f718"
+    },
+    {
+      "games": 44,
+      "manifest_sha256": "d42944b656b95b55f8c10aebecef82a882aaac6b4ce0aec69e251c3415962875",
+      "prod_receipt_sha256": "a65726daafa54aa79abb5058c57307e56972431d7e23a033908dd2fc5c97904a",
+      "publication_key": "19x19-batch-2565d295b7498111a097ea40",
+      "resume_phase": "prod_published",
+      "status": "retry_wait",
+      "test_receipt_sha256": "ddcb4afaa7efd1ed7c1f743eb8c28851eaadaa30e25ae8dbb22da941db871cc1"
+    }
+  ],
+  "run1_command_id": 4,
+  "scheduler_control_restored_to_original_absent": true,
+  "stage": {
+    "checkpoint_files": 0,
+    "item_count": 351,
+    "manifest_sha256": "147536f1a7892dbf06001701f2b51a6603399356bb456e0105093fe256410a6d",
+    "rolling_cursor": 1786
+  }
+}

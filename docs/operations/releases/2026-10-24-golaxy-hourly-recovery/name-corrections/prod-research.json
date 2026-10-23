@@ -1,0 +1,314 @@
+[
+  {
+    "candidate_name": "第74期王座戦挑戦手合5番勝負第1局",
+    "generation": {
+      "method": "translation"
+    },
+    "lang": "jp",
+    "original_language": "jp",
+    "original_name": "第74期王座战挑战赛5番棋1局",
+    "owner": {
+      "id": 102404,
+      "kind": "raw_event"
+    },
+    "producer_id": "codex-golaxy-correction-producer-20261024",
+    "producer_model": "codex-agent-session",
+    "raw_scope": {
+      "raw_value": "第74期王座战挑战赛5番棋1局",
+      "slots": [
+        {
+          "album_id": 178724,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第74期王座战挑战赛5番棋1局",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91574352.sgf"
+        }
+      ]
+    },
+    "registry_sha256": "984f917629be12be98e440dd3efddef5b4e381f057cfd970e66f4e1cab97892b",
+    "registry_version": "2026-10-09.1",
+    "review_status": "pending",
+    "scope_status": "generated_first_pass",
+    "semantic_correction_basis": {
+      "note": "Generated translation independently reviewed against official stage/person terminology; not a claim of verified Korean primary text.",
+      "official_references": [
+        "https://www.nihonkiin.or.jp/match_news/match_info/74_1.html",
+        "https://www.nihonkiin.or.jp/match_news/match_result/74_17.html",
+        "https://www.baduk.or.kr/record/schedule_in.asp",
+        "https://www.baduk.or.kr/record/diary_in.asp?foreignKey=10001366"
+      ],
+      "review_record_sha256": "be4d422aa6304a198c370cd3703ae5b9113d132775771313aa10a561b612a68a",
+      "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6"
+    },
+    "source_basis": "user_authorized_first_pass_v1",
+    "source_input": {
+      "kind": "raw_event_literal",
+      "owner": {
+        "id": 102404,
+        "kind": "raw_event"
+      },
+      "owner_preimage_sha256": "7f3e3f5e7251629eeb3a1dc73aac76bfcedd9994463ca0472afd1a36bf51b466",
+      "text": "第74期王座战挑战赛5番棋1局"
+    },
+    "sources": [],
+    "verification_level": "generated_first_pass"
+  },
+  {
+    "candidate_name": "제74기 왕좌전 도전5번기 제1국",
+    "generation": {
+      "method": "translation"
+    },
+    "lang": "ko",
+    "original_language": "jp",
+    "original_name": "第74期王座战挑战赛5番棋1局",
+    "owner": {
+      "id": 102404,
+      "kind": "raw_event"
+    },
+    "producer_id": "codex-golaxy-correction-producer-20261024",
+    "producer_model": "codex-agent-session",
+    "raw_scope": {
+      "raw_value": "第74期王座战挑战赛5番棋1局",
+      "slots": [
+        {
+          "album_id": 178724,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第74期王座战挑战赛5番棋1局",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91574352.sgf"
+        }
+      ]
+    },
+    "registry_sha256": "984f917629be12be98e440dd3efddef5b4e381f057cfd970e66f4e1cab97892b",
+    "registry_version": "2026-10-09.1",
+    "review_status": "pending",
+    "scope_status": "generated_first_pass",
+    "semantic_correction_basis": {
+      "note": "Generated translation independently reviewed against official stage/person terminology; not a claim of verified Korean primary text.",
+      "official_references": [
+        "https://www.nihonkiin.or.jp/match_news/match_info/74_1.html",
+        "https://www.nihonkiin.or.jp/match_news/match_result/74_17.html",
+        "https://www.baduk.or.kr/record/schedule_in.asp",
+        "https://www.baduk.or.kr/record/diary_in.asp?foreignKey=10001366"
+      ],
+      "review_record_sha256": "be4d422aa6304a198c370cd3703ae5b9113d132775771313aa10a561b612a68a",
+      "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6"
+    },
+    "source_basis": "user_authorized_first_pass_v1",
+    "source_input": {
+      "kind": "raw_event_literal",
+      "owner": {
+        "id": 102404,
+        "kind": "raw_event"
+      },
+      "owner_preimage_sha256": "7f3e3f5e7251629eeb3a1dc73aac76bfcedd9994463ca0472afd1a36bf51b466",
+      "text": "第74期王座战挑战赛5番棋1局"
+    },
+    "sources": [],
+    "verification_level": "generated_first_pass"
+  },
+  {
+    "candidate_name": "제12회 국수산맥배 세계전 결승 신진서 VS 리웨이칭",
+    "generation": {
+      "method": "translation"
+    },
+    "lang": "ko",
+    "original_language": "cn",
+    "original_name": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+    "owner": {
+      "id": 102409,
+      "kind": "raw_event"
+    },
+    "producer_id": "codex-golaxy-correction-producer-20261024",
+    "producer_model": "codex-agent-session",
+    "raw_scope": {
+      "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+      "slots": [
+        {
+          "album_id": 178731,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91449763.sgf"
+        }
+      ]
+    },
+    "registry_sha256": "984f917629be12be98e440dd3efddef5b4e381f057cfd970e66f4e1cab97892b",
+    "registry_version": "2026-10-09.1",
+    "review_status": "pending",
+    "scope_status": "generated_first_pass",
+    "semantic_correction_basis": {
+      "note": "Generated translation independently reviewed against official stage/person terminology; not a claim of verified Korean primary text.",
+      "official_references": [
+        "https://www.nihonkiin.or.jp/match_news/match_info/74_1.html",
+        "https://www.nihonkiin.or.jp/match_news/match_result/74_17.html",
+        "https://www.baduk.or.kr/record/schedule_in.asp",
+        "https://www.baduk.or.kr/record/diary_in.asp?foreignKey=10001366"
+      ],
+      "review_record_sha256": "be4d422aa6304a198c370cd3703ae5b9113d132775771313aa10a561b612a68a",
+      "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6"
+    },
+    "source_basis": "user_authorized_first_pass_v1",
+    "source_input": {
+      "kind": "raw_event_literal",
+      "owner": {
+        "id": 102409,
+        "kind": "raw_event"
+      },
+      "owner_preimage_sha256": "6c96bb019e6820a95185cccddc95b4825ef2c07719a457b9b299839d539608d5",
+      "text": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清"
+    },
+    "sources": [],
+    "verification_level": "generated_first_pass"
+  },
+  {
+    "candidate_name": "제9회 오청원배 세계 여자 오픈전 국제 예선 결승",
+    "generation": {
+      "method": "translation"
+    },
+    "lang": "ko",
+    "original_language": "cn",
+    "original_name": "第9届吴清源杯世界女子公开赛国际预选决赛",
+    "owner": {
+      "id": 102408,
+      "kind": "raw_event"
+    },
+    "producer_id": "codex-golaxy-correction-producer-20261024",
+    "producer_model": "codex-agent-session",
+    "raw_scope": {
+      "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+      "slots": [
+        {
+          "album_id": 178728,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91468818.sgf"
+        },
+        {
+          "album_id": 178729,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91464854.sgf"
+        },
+        {
+          "album_id": 178730,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91467988.sgf"
+        }
+      ]
+    },
+    "registry_sha256": "984f917629be12be98e440dd3efddef5b4e381f057cfd970e66f4e1cab97892b",
+    "registry_version": "2026-10-09.1",
+    "review_status": "pending",
+    "scope_status": "generated_first_pass",
+    "semantic_correction_basis": {
+      "note": "Generated translation independently reviewed against official stage/person terminology; not a claim of verified Korean primary text.",
+      "official_references": [
+        "https://www.nihonkiin.or.jp/match_news/match_info/74_1.html",
+        "https://www.nihonkiin.or.jp/match_news/match_result/74_17.html",
+        "https://www.baduk.or.kr/record/schedule_in.asp",
+        "https://www.baduk.or.kr/record/diary_in.asp?foreignKey=10001366"
+      ],
+      "review_record_sha256": "be4d422aa6304a198c370cd3703ae5b9113d132775771313aa10a561b612a68a",
+      "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6"
+    },
+    "source_basis": "user_authorized_first_pass_v1",
+    "source_input": {
+      "kind": "raw_event_literal",
+      "owner": {
+        "id": 102408,
+        "kind": "raw_event"
+      },
+      "owner_preimage_sha256": "b750ed1ad616ba165175b95c32471837edaa3cad7d2177194cb83203c17fc77a",
+      "text": "第9届吴清源杯世界女子公开赛国际预选决赛"
+    },
+    "sources": [],
+    "verification_level": "generated_first_pass"
+  },
+  {
+    "candidate_name": "제9회 오청원배 세계 여자 바둑 오픈 예선 2라운드",
+    "generation": {
+      "method": "translation"
+    },
+    "lang": "ko",
+    "original_language": "cn",
+    "original_name": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+    "owner": {
+      "id": 102410,
+      "kind": "raw_event"
+    },
+    "producer_id": "codex-golaxy-correction-producer-20261024",
+    "producer_model": "codex-agent-session",
+    "raw_scope": {
+      "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+      "slots": [
+        {
+          "album_id": 178732,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91496863.sgf"
+        }
+      ]
+    },
+    "registry_sha256": "984f917629be12be98e440dd3efddef5b4e381f057cfd970e66f4e1cab97892b",
+    "registry_version": "2026-10-09.1",
+    "review_status": "pending",
+    "scope_status": "generated_first_pass",
+    "semantic_correction_basis": {
+      "note": "Generated translation independently reviewed against official stage/person terminology; not a claim of verified Korean primary text.",
+      "official_references": [
+        "https://www.nihonkiin.or.jp/match_news/match_info/74_1.html",
+        "https://www.nihonkiin.or.jp/match_news/match_result/74_17.html",
+        "https://www.baduk.or.kr/record/schedule_in.asp",
+        "https://www.baduk.or.kr/record/diary_in.asp?foreignKey=10001366"
+      ],
+      "review_record_sha256": "be4d422aa6304a198c370cd3703ae5b9113d132775771313aa10a561b612a68a",
+      "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6"
+    },
+    "source_basis": "user_authorized_first_pass_v1",
+    "source_input": {
+      "kind": "raw_event_literal",
+      "owner": {
+        "id": 102410,
+        "kind": "raw_event"
+      },
+      "owner_preimage_sha256": "8ef702ea5284d6420567a8e161f8680d874223f9b251b8bef5479f0184d43f97",
+      "text": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮"
+    },
+    "sources": [],
+    "verification_level": "generated_first_pass"
+  }
+]

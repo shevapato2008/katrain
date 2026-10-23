@@ -1,0 +1,67 @@
+{
+  "after": {
+    "19x19-batch-2565d295b7498111a097ea40": {
+      "attempts": 78,
+      "error": "prod_published: VerificationDeadlineExceeded: album API verification deadline exhausted",
+      "prod_receipt_sha256": "30559abf5fbed4b4edd8019c7e121f82293c08b38db5379afb6dfa83616b6724",
+      "resume_phase": "prod_published",
+      "status": "retry_wait",
+      "test_receipt_sha256": "758a5e9b9a03cb0db96268efb6968c69c05c61bb1fb1fd1f1037a6b093225290",
+      "verification_checks": 0
+    },
+    "19x19-batch-31fe3d7bf66a3f1cb6f7c193": {
+      "attempts": 64,
+      "error": null,
+      "prod_receipt_sha256": "6bc6de19cf6f4d639e3dbab87e13a331e45a35645731ffd012c1d358c7620c66",
+      "resume_phase": null,
+      "status": "prod_synced",
+      "test_receipt_sha256": "a5b948416e4df836390fc6e2a0408075b9c480dd8a05865f6e82132e3278cd94",
+      "verification_checks": 160
+    },
+    "19x19-batch-bd5fdf7640ad9a37de370794": {
+      "attempts": 76,
+      "error": null,
+      "prod_receipt_sha256": "012f0241c299ce24a6b3c4cc8468422dcd922397f91e389d1ce3f9511b1f6d6e",
+      "resume_phase": null,
+      "status": "prod_synced",
+      "test_receipt_sha256": "14e4c07939bdfd56b6f0f8300278d346dbc73b1ce553b549365e5b5367d9a08c",
+      "verification_checks": 10
+    }
+  },
+  "before": {
+    "19x19-batch-2565d295b7498111a097ea40": {
+      "attempts": 77,
+      "error": "package phase exceeded 2964.800997590646s",
+      "prod_receipt_sha256": "30559abf5fbed4b4edd8019c7e121f82293c08b38db5379afb6dfa83616b6724",
+      "resume_phase": "prod_published",
+      "status": "retry_wait",
+      "test_receipt_sha256": "758a5e9b9a03cb0db96268efb6968c69c05c61bb1fb1fd1f1037a6b093225290",
+      "verification_checks": 0
+    },
+    "19x19-batch-31fe3d7bf66a3f1cb6f7c193": {
+      "attempts": 64,
+      "error": "package phase exceeded 3299.979968359694s",
+      "prod_receipt_sha256": "6bc6de19cf6f4d639e3dbab87e13a331e45a35645731ffd012c1d358c7620c66",
+      "resume_phase": "prod_published",
+      "status": "retry_wait",
+      "test_receipt_sha256": "a5b948416e4df836390fc6e2a0408075b9c480dd8a05865f6e82132e3278cd94",
+      "verification_checks": 0
+    },
+    "19x19-batch-bd5fdf7640ad9a37de370794": {
+      "attempts": 76,
+      "error": "package phase exceeded 2419.6450214898214s",
+      "prod_receipt_sha256": "012f0241c299ce24a6b3c4cc8468422dcd922397f91e389d1ce3f9511b1f6d6e",
+      "resume_phase": "prod_published",
+      "status": "retry_wait",
+      "test_receipt_sha256": "14e4c07939bdfd56b6f0f8300278d346dbc73b1ce553b549365e5b5367d9a08c",
+      "verification_checks": 0
+    }
+  },
+  "failures": 1,
+  "finished_at": "2026-10-23T17:50:04.770370+00:00",
+  "model_calls": 0,
+  "operation": "existing-PROD-receipts verification only",
+  "publication_calls": 0,
+  "seconds": 300,
+  "started_at": "2026-10-23T17:45:04.045699+00:00"
+}

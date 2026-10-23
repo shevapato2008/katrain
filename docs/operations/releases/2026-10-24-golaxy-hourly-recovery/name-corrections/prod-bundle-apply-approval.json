@@ -1,0 +1,10 @@
+{
+  "bundle_sha256": "31d63f958bfbdb428f0b97d3c1e481c3d9d7cf5aa7e1c36af21f64d37ba21dc1",
+  "decision": "approved",
+  "model": "gpt-6-astra",
+  "reviewed_at": "2026-10-23T18:47:53+00:00",
+  "reviewer_id": "/root/golaxy_hourly_kifu_sync_fix/astra_deployed_flow_review",
+  "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6",
+  "target": "PROD",
+  "test_verification_canonical_sha256": "a9d022d0c8c570e4d281ff7ed762c41515ee60e06d985a5b66dde8a204fa60fa"
+}

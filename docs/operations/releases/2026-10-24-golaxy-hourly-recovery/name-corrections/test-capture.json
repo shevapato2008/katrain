@@ -1,0 +1,2407 @@
+{
+  "bound_at": "2026-10-23T18:23:38.484381+00:00",
+  "captured_at": "2026-10-23T18:23:35.627481+00:00",
+  "catalog_sha256": "2a8f86f2bc292a56c4b0ff1f99f116d051a3850834fbba655cf221f4ded297ef",
+  "cells": [
+    {
+      "evidence": {
+        "candidate_name": "第74期王座戦挑戦者決定戦5番勝負第1局",
+        "decision_kind": "generated",
+        "event_id": null,
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "id": 299042,
+        "lang": "jp",
+        "player_id": null,
+        "produced_at": "2026-10-23T17:19:02.253856+00:00",
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_event_id": 102540,
+        "raw_player_id": null,
+        "research_payload": {
+          "candidate": {
+            "collision_basis": {
+              "kind": "literal_title_translation",
+              "provenance": "signed_raw_event_literal",
+              "source_text": "第74期王座战挑战赛5番棋1局"
+            },
+            "collision_decision": "shared_display",
+            "decision_kind": "generated",
+            "display_name": "第74期王座戦挑戦者決定戦5番勝負第1局",
+            "generated_review": {
+              "decision": "approve_generated_first_pass",
+              "display_name": "第74期王座戦挑戦者決定戦5番勝負第1局",
+              "lang": "jp",
+              "owner": {
+                "id": 102540,
+                "kind": "raw_event"
+              },
+              "research_sha256": "e6a6677d252f56540ab077f248ff75c27a7cd02d8d6a8d863df3f9786b5ccf68",
+              "reviewed_at": "2026-10-23T17:19:02.768980+00:00",
+              "reviewer_id": "qwen-reviewer",
+              "reviewer_model": "qwen-plus"
+            },
+            "generation_rule_version": "user_authorized_first_pass_v1",
+            "lang": "jp",
+            "name_preimage_sha256": null,
+            "owner": {
+              "id": 102540,
+              "kind": "raw_event"
+            },
+            "produced_at": "2026-10-23T17:19:02.253856+00:00",
+            "producer_id": "qwen-producer",
+            "producer_model": "qwen-plus",
+            "raw_value": "第74期王座战挑战赛5番棋1局",
+            "research_sha256": "e6a6677d252f56540ab077f248ff75c27a7cd02d8d6a8d863df3f9786b5ccf68",
+            "review_conclusion": "approved_first_pass_display_and_source",
+            "review_status": "approved",
+            "reviewed_at": "2026-10-23T17:19:02.768980+00:00",
+            "reviewer_id": "qwen-reviewer",
+            "reviewer_model": "qwen-plus"
+          },
+          "first_pass": {
+            "batch_id": 912,
+            "candidate_sha256": "caea08aad66b587f5dd6f9da158959d8b655a85b158893baf151e1b71baa6404",
+            "raw_scope_sha256": "3ac50c7a0ea09da7217efe8e580ef77e5a20d72e5d7e8324f2c4d82978d09bd7",
+            "research_sha256": "e6a6677d252f56540ab077f248ff75c27a7cd02d8d6a8d863df3f9786b5ccf68",
+            "verification_level": "generated_first_pass"
+          },
+          "research": {
+            "candidate_name": "第74期王座戦挑戦者決定戦5番勝負第1局",
+            "generation": {
+              "method": "translation"
+            },
+            "incremental_binding": {
+              "binding_actor": "kifu-deterministic-id-binding-v1",
+              "bound_members": [
+                {
+                  "album_id": 179060,
+                  "context": {
+                    "black_player_id": 10,
+                    "black_rank": null,
+                    "date_played": "2026-10-23",
+                    "duplicate_of_id": null,
+                    "event": "第74期王座战挑战赛5番棋1局",
+                    "event_id": null,
+                    "player_black": "福冈航太朗",
+                    "player_white": "一力辽",
+                    "round_name": null,
+                    "white_player_id": 42,
+                    "white_rank": null
+                  },
+                  "slot": "event"
+                }
+              ],
+              "decision": {
+                "cn_conversion_note": "Traditional characters converted to simplified: 戰→战, 挑→挑 (no change), 決→决, 勝→胜, 負→负, 第→第 (unchanged), 局→局 (unchanged). '王座战' is the standard simplified form for 王座戦; '挑战赛' reflects common Chinese Go terminology for 挑戦者決定戦 (challenger decision match), not literal 'challenge match'. Digits '74', '5', '1' preserved exactly per rule.",
+                "displays": {
+                  "cn": "第74期王座战挑战赛5番棋1局",
+                  "en": "74th Oza Title Match, Best-of-5 Game 1",
+                  "jp": "第74期王座戦挑戦者決定戦5番勝負第1局",
+                  "ko": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+                  "tw": "第74期王座戰挑戰賽5番棋1局"
+                },
+                "key": "第74期王座战挑战赛5番棋1局",
+                "kind": "raw_event",
+                "methods": {
+                  "cn": "retain_original",
+                  "en": "translation",
+                  "jp": "translation",
+                  "ko": "translation",
+                  "tw": "orthographic_conversion"
+                },
+                "original_language": "jp",
+                "producer": {
+                  "at": "2026-10-23T17:19:02.253856+00:00",
+                  "id": "qwen-producer",
+                  "max_output_tokens": 1024,
+                  "model": "qwen-plus",
+                  "request_attempts": 1,
+                  "request_id": "chatcmpl-72037529-a3e8-92f9-806b-af358b4ce5e1",
+                  "usage": {
+                    "completion_tokens": 312,
+                    "prompt_tokens": 662,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    },
+                    "total_tokens": 974
+                  }
+                },
+                "review": {
+                  "at": "2026-10-23T17:19:02.768980+00:00",
+                  "content_sha256": "a5af36834a16d0026371302d714f7f432461ecbffaf5e1681fc02ec222d88181",
+                  "decision": "approve",
+                  "id": "qwen-reviewer",
+                  "max_output_tokens": 1024,
+                  "model": "qwen-plus",
+                  "request_attempts": 1,
+                  "request_id": "chatcmpl-74ec8c2c-126c-9fb9-8720-1a49441408d5",
+                  "usage": {
+                    "completion_tokens": 5,
+                    "prompt_tokens": 922,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    },
+                    "total_tokens": 927
+                  }
+                },
+                "source_items": [
+                  {
+                    "sgf_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73",
+                    "slot": "event",
+                    "source_item_id": "91574352",
+                    "source_key": "19x19"
+                  }
+                ],
+                "sources": []
+              },
+              "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+              "mode": "reviewed_text",
+              "version": "kifu-incremental-binding-v1"
+            },
+            "lang": "jp",
+            "original_language": "jp",
+            "original_name": "第74期王座战挑战赛5番棋1局",
+            "owner": {
+              "id": 102540,
+              "kind": "raw_event"
+            },
+            "producer_id": "qwen-producer",
+            "producer_model": "qwen-plus",
+            "raw_scope": {
+              "raw_value": "第74期王座战挑战赛5番棋1局",
+              "slots": [
+                {
+                  "album_id": 179060,
+                  "approved": true,
+                  "duplicate_of_id": null,
+                  "event_edition_id": null,
+                  "event_id": null,
+                  "list_hidden_reason": null,
+                  "raw_value": "第74期王座战挑战赛5番棋1局",
+                  "slot": "event",
+                  "source_path": "data/kifu-album/19x19/91574352.sgf"
+                }
+              ]
+            },
+            "registry_sha256": "b117720a535e33bc98f39ed0b6c8f9e67968f2fda845390f072bd021e89472e6",
+            "registry_version": "kifu-incremental-binding-v1",
+            "review_status": "pending",
+            "scope_status": "generated_first_pass",
+            "source_basis": "user_authorized_first_pass_v1",
+            "source_input": {
+              "kind": "raw_event_literal",
+              "owner": {
+                "id": 102540,
+                "kind": "raw_event"
+              },
+              "owner_preimage_sha256": "904d649c0382bb7038abd20492fb1febbba896bb183956f017de04799ba2a226",
+              "text": "第74期王座战挑战赛5番棋1局"
+            },
+            "sources": [],
+            "verification_level": "generated_first_pass"
+          }
+        },
+        "review_status": "approved",
+        "reviewed_at": "2026-10-23T17:19:02.768980+00:00",
+        "reviewer_id": "qwen-reviewer",
+        "reviewer_model": "qwen-plus",
+        "revision": 1,
+        "source_registry_id": 386
+      },
+      "name": {
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "decision_kind": "generated",
+        "display_name": "第74期王座戦挑戦者決定戦5番勝負第1局",
+        "evidence_id": 299042,
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "id": 259807,
+        "lang": "jp",
+        "raw_event_id": 102540,
+        "revision": 1,
+        "status": "verified"
+      },
+      "owner": {
+        "id": 102540,
+        "kind": "raw_event"
+      },
+      "prior_batch_id": 912,
+      "prior_bundle_sha256": "5114407c70b2ac8597f217de12a29a006ed2d4cd7d99ed0576b75d132d9f657f",
+      "prior_candidate": {
+        "collision_basis": {
+          "kind": "literal_title_translation",
+          "provenance": "signed_raw_event_literal",
+          "source_text": "第74期王座战挑战赛5番棋1局"
+        },
+        "collision_decision": "shared_display",
+        "decision_kind": "generated",
+        "display_name": "第74期王座戦挑戦者決定戦5番勝負第1局",
+        "generated_review": {
+          "decision": "approve_generated_first_pass",
+          "display_name": "第74期王座戦挑戦者決定戦5番勝負第1局",
+          "lang": "jp",
+          "owner": {
+            "id": 102540,
+            "kind": "raw_event"
+          },
+          "research_sha256": "e6a6677d252f56540ab077f248ff75c27a7cd02d8d6a8d863df3f9786b5ccf68",
+          "reviewed_at": "2026-10-23T17:19:02.768980+00:00",
+          "reviewer_id": "qwen-reviewer",
+          "reviewer_model": "qwen-plus"
+        },
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "lang": "jp",
+        "name_preimage_sha256": null,
+        "owner": {
+          "id": 102540,
+          "kind": "raw_event"
+        },
+        "produced_at": "2026-10-23T17:19:02.253856+00:00",
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_value": "第74期王座战挑战赛5番棋1局",
+        "research_sha256": "e6a6677d252f56540ab077f248ff75c27a7cd02d8d6a8d863df3f9786b5ccf68",
+        "review_conclusion": "approved_first_pass_display_and_source",
+        "review_status": "approved",
+        "reviewed_at": "2026-10-23T17:19:02.768980+00:00",
+        "reviewer_id": "qwen-reviewer",
+        "reviewer_model": "qwen-plus"
+      },
+      "prior_research": {
+        "candidate_name": "第74期王座戦挑戦者決定戦5番勝負第1局",
+        "generation": {
+          "method": "translation"
+        },
+        "incremental_binding": {
+          "binding_actor": "kifu-deterministic-id-binding-v1",
+          "bound_members": [
+            {
+              "album_id": 179060,
+              "context": {
+                "black_player_id": 10,
+                "black_rank": null,
+                "date_played": "2026-10-23",
+                "duplicate_of_id": null,
+                "event": "第74期王座战挑战赛5番棋1局",
+                "event_id": null,
+                "player_black": "福冈航太朗",
+                "player_white": "一力辽",
+                "round_name": null,
+                "white_player_id": 42,
+                "white_rank": null
+              },
+              "slot": "event"
+            }
+          ],
+          "decision": {
+            "cn_conversion_note": "Traditional characters converted to simplified: 戰→战, 挑→挑 (no change), 決→决, 勝→胜, 負→负, 第→第 (unchanged), 局→局 (unchanged). '王座战' is the standard simplified form for 王座戦; '挑战赛' reflects common Chinese Go terminology for 挑戦者決定戦 (challenger decision match), not literal 'challenge match'. Digits '74', '5', '1' preserved exactly per rule.",
+            "displays": {
+              "cn": "第74期王座战挑战赛5番棋1局",
+              "en": "74th Oza Title Match, Best-of-5 Game 1",
+              "jp": "第74期王座戦挑戦者決定戦5番勝負第1局",
+              "ko": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+              "tw": "第74期王座戰挑戰賽5番棋1局"
+            },
+            "key": "第74期王座战挑战赛5番棋1局",
+            "kind": "raw_event",
+            "methods": {
+              "cn": "retain_original",
+              "en": "translation",
+              "jp": "translation",
+              "ko": "translation",
+              "tw": "orthographic_conversion"
+            },
+            "original_language": "jp",
+            "producer": {
+              "at": "2026-10-23T17:19:02.253856+00:00",
+              "id": "qwen-producer",
+              "max_output_tokens": 1024,
+              "model": "qwen-plus",
+              "request_attempts": 1,
+              "request_id": "chatcmpl-72037529-a3e8-92f9-806b-af358b4ce5e1",
+              "usage": {
+                "completion_tokens": 312,
+                "prompt_tokens": 662,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "total_tokens": 974
+              }
+            },
+            "review": {
+              "at": "2026-10-23T17:19:02.768980+00:00",
+              "content_sha256": "a5af36834a16d0026371302d714f7f432461ecbffaf5e1681fc02ec222d88181",
+              "decision": "approve",
+              "id": "qwen-reviewer",
+              "max_output_tokens": 1024,
+              "model": "qwen-plus",
+              "request_attempts": 1,
+              "request_id": "chatcmpl-74ec8c2c-126c-9fb9-8720-1a49441408d5",
+              "usage": {
+                "completion_tokens": 5,
+                "prompt_tokens": 922,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "total_tokens": 927
+              }
+            },
+            "source_items": [
+              {
+                "sgf_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73",
+                "slot": "event",
+                "source_item_id": "91574352",
+                "source_key": "19x19"
+              }
+            ],
+            "sources": []
+          },
+          "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+          "mode": "reviewed_text",
+          "version": "kifu-incremental-binding-v1"
+        },
+        "lang": "jp",
+        "original_language": "jp",
+        "original_name": "第74期王座战挑战赛5番棋1局",
+        "owner": {
+          "id": 102540,
+          "kind": "raw_event"
+        },
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_scope": {
+          "raw_value": "第74期王座战挑战赛5番棋1局",
+          "slots": [
+            {
+              "album_id": 179060,
+              "approved": true,
+              "duplicate_of_id": null,
+              "event_edition_id": null,
+              "event_id": null,
+              "list_hidden_reason": null,
+              "raw_value": "第74期王座战挑战赛5番棋1局",
+              "slot": "event",
+              "source_path": "data/kifu-album/19x19/91574352.sgf"
+            }
+          ]
+        },
+        "registry_sha256": "b117720a535e33bc98f39ed0b6c8f9e67968f2fda845390f072bd021e89472e6",
+        "registry_version": "kifu-incremental-binding-v1",
+        "review_status": "pending",
+        "scope_status": "generated_first_pass",
+        "source_basis": "user_authorized_first_pass_v1",
+        "source_input": {
+          "kind": "raw_event_literal",
+          "owner": {
+            "id": 102540,
+            "kind": "raw_event"
+          },
+          "owner_preimage_sha256": "904d649c0382bb7038abd20492fb1febbba896bb183956f017de04799ba2a226",
+          "text": "第74期王座战挑战赛5番棋1局"
+        },
+        "sources": [],
+        "verification_level": "generated_first_pass"
+      },
+      "spec": {
+        "lang": "jp",
+        "new": "第74期王座戦挑戦手合5番勝負第1局",
+        "old": "第74期王座戦挑戦者決定戦5番勝負第1局",
+        "raw": "第74期王座战挑战赛5番棋1局",
+        "sources": [
+          "91574352"
+        ]
+      }
+    },
+    {
+      "evidence": {
+        "candidate_name": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+        "decision_kind": "generated",
+        "event_id": null,
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "id": 299043,
+        "lang": "ko",
+        "player_id": null,
+        "produced_at": "2026-10-23T17:19:02.253856+00:00",
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_event_id": 102540,
+        "raw_player_id": null,
+        "research_payload": {
+          "candidate": {
+            "collision_basis": {
+              "kind": "literal_title_translation",
+              "provenance": "signed_raw_event_literal",
+              "source_text": "第74期王座战挑战赛5番棋1局"
+            },
+            "collision_decision": "shared_display",
+            "decision_kind": "generated",
+            "display_name": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+            "generated_review": {
+              "decision": "approve_generated_first_pass",
+              "display_name": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+              "lang": "ko",
+              "owner": {
+                "id": 102540,
+                "kind": "raw_event"
+              },
+              "research_sha256": "123106adb65402abc29b08186dfce34c2a9f653ed3462d19c2af828b0c95bd7d",
+              "reviewed_at": "2026-10-23T17:19:02.768980+00:00",
+              "reviewer_id": "qwen-reviewer",
+              "reviewer_model": "qwen-plus"
+            },
+            "generation_rule_version": "user_authorized_first_pass_v1",
+            "lang": "ko",
+            "name_preimage_sha256": null,
+            "owner": {
+              "id": 102540,
+              "kind": "raw_event"
+            },
+            "produced_at": "2026-10-23T17:19:02.253856+00:00",
+            "producer_id": "qwen-producer",
+            "producer_model": "qwen-plus",
+            "raw_value": "第74期王座战挑战赛5番棋1局",
+            "research_sha256": "123106adb65402abc29b08186dfce34c2a9f653ed3462d19c2af828b0c95bd7d",
+            "review_conclusion": "approved_first_pass_display_and_source",
+            "review_status": "approved",
+            "reviewed_at": "2026-10-23T17:19:02.768980+00:00",
+            "reviewer_id": "qwen-reviewer",
+            "reviewer_model": "qwen-plus"
+          },
+          "first_pass": {
+            "batch_id": 912,
+            "candidate_sha256": "74a229f36a03f287847ebffd1791711bded5e1994ca0db74f29f773355e56594",
+            "raw_scope_sha256": "3ac50c7a0ea09da7217efe8e580ef77e5a20d72e5d7e8324f2c4d82978d09bd7",
+            "research_sha256": "123106adb65402abc29b08186dfce34c2a9f653ed3462d19c2af828b0c95bd7d",
+            "verification_level": "generated_first_pass"
+          },
+          "research": {
+            "candidate_name": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+            "generation": {
+              "method": "translation"
+            },
+            "incremental_binding": {
+              "binding_actor": "kifu-deterministic-id-binding-v1",
+              "bound_members": [
+                {
+                  "album_id": 179060,
+                  "context": {
+                    "black_player_id": 10,
+                    "black_rank": null,
+                    "date_played": "2026-10-23",
+                    "duplicate_of_id": null,
+                    "event": "第74期王座战挑战赛5番棋1局",
+                    "event_id": null,
+                    "player_black": "福冈航太朗",
+                    "player_white": "一力辽",
+                    "round_name": null,
+                    "white_player_id": 42,
+                    "white_rank": null
+                  },
+                  "slot": "event"
+                }
+              ],
+              "decision": {
+                "cn_conversion_note": "Traditional characters converted to simplified: 戰→战, 挑→挑 (no change), 決→决, 勝→胜, 負→负, 第→第 (unchanged), 局→局 (unchanged). '王座战' is the standard simplified form for 王座戦; '挑战赛' reflects common Chinese Go terminology for 挑戦者決定戦 (challenger decision match), not literal 'challenge match'. Digits '74', '5', '1' preserved exactly per rule.",
+                "displays": {
+                  "cn": "第74期王座战挑战赛5番棋1局",
+                  "en": "74th Oza Title Match, Best-of-5 Game 1",
+                  "jp": "第74期王座戦挑戦者決定戦5番勝負第1局",
+                  "ko": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+                  "tw": "第74期王座戰挑戰賽5番棋1局"
+                },
+                "key": "第74期王座战挑战赛5番棋1局",
+                "kind": "raw_event",
+                "methods": {
+                  "cn": "retain_original",
+                  "en": "translation",
+                  "jp": "translation",
+                  "ko": "translation",
+                  "tw": "orthographic_conversion"
+                },
+                "original_language": "jp",
+                "producer": {
+                  "at": "2026-10-23T17:19:02.253856+00:00",
+                  "id": "qwen-producer",
+                  "max_output_tokens": 1024,
+                  "model": "qwen-plus",
+                  "request_attempts": 1,
+                  "request_id": "chatcmpl-72037529-a3e8-92f9-806b-af358b4ce5e1",
+                  "usage": {
+                    "completion_tokens": 312,
+                    "prompt_tokens": 662,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    },
+                    "total_tokens": 974
+                  }
+                },
+                "review": {
+                  "at": "2026-10-23T17:19:02.768980+00:00",
+                  "content_sha256": "a5af36834a16d0026371302d714f7f432461ecbffaf5e1681fc02ec222d88181",
+                  "decision": "approve",
+                  "id": "qwen-reviewer",
+                  "max_output_tokens": 1024,
+                  "model": "qwen-plus",
+                  "request_attempts": 1,
+                  "request_id": "chatcmpl-74ec8c2c-126c-9fb9-8720-1a49441408d5",
+                  "usage": {
+                    "completion_tokens": 5,
+                    "prompt_tokens": 922,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    },
+                    "total_tokens": 927
+                  }
+                },
+                "source_items": [
+                  {
+                    "sgf_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73",
+                    "slot": "event",
+                    "source_item_id": "91574352",
+                    "source_key": "19x19"
+                  }
+                ],
+                "sources": []
+              },
+              "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+              "mode": "reviewed_text",
+              "version": "kifu-incremental-binding-v1"
+            },
+            "lang": "ko",
+            "original_language": "jp",
+            "original_name": "第74期王座战挑战赛5番棋1局",
+            "owner": {
+              "id": 102540,
+              "kind": "raw_event"
+            },
+            "producer_id": "qwen-producer",
+            "producer_model": "qwen-plus",
+            "raw_scope": {
+              "raw_value": "第74期王座战挑战赛5番棋1局",
+              "slots": [
+                {
+                  "album_id": 179060,
+                  "approved": true,
+                  "duplicate_of_id": null,
+                  "event_edition_id": null,
+                  "event_id": null,
+                  "list_hidden_reason": null,
+                  "raw_value": "第74期王座战挑战赛5番棋1局",
+                  "slot": "event",
+                  "source_path": "data/kifu-album/19x19/91574352.sgf"
+                }
+              ]
+            },
+            "registry_sha256": "b117720a535e33bc98f39ed0b6c8f9e67968f2fda845390f072bd021e89472e6",
+            "registry_version": "kifu-incremental-binding-v1",
+            "review_status": "pending",
+            "scope_status": "generated_first_pass",
+            "source_basis": "user_authorized_first_pass_v1",
+            "source_input": {
+              "kind": "raw_event_literal",
+              "owner": {
+                "id": 102540,
+                "kind": "raw_event"
+              },
+              "owner_preimage_sha256": "904d649c0382bb7038abd20492fb1febbba896bb183956f017de04799ba2a226",
+              "text": "第74期王座战挑战赛5番棋1局"
+            },
+            "sources": [],
+            "verification_level": "generated_first_pass"
+          }
+        },
+        "review_status": "approved",
+        "reviewed_at": "2026-10-23T17:19:02.768980+00:00",
+        "reviewer_id": "qwen-reviewer",
+        "reviewer_model": "qwen-plus",
+        "revision": 1,
+        "source_registry_id": 386
+      },
+      "name": {
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "decision_kind": "generated",
+        "display_name": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+        "evidence_id": 299043,
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "id": 259808,
+        "lang": "ko",
+        "raw_event_id": 102540,
+        "revision": 1,
+        "status": "verified"
+      },
+      "owner": {
+        "id": 102540,
+        "kind": "raw_event"
+      },
+      "prior_batch_id": 912,
+      "prior_bundle_sha256": "5114407c70b2ac8597f217de12a29a006ed2d4cd7d99ed0576b75d132d9f657f",
+      "prior_candidate": {
+        "collision_basis": {
+          "kind": "literal_title_translation",
+          "provenance": "signed_raw_event_literal",
+          "source_text": "第74期王座战挑战赛5番棋1局"
+        },
+        "collision_decision": "shared_display",
+        "decision_kind": "generated",
+        "display_name": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+        "generated_review": {
+          "decision": "approve_generated_first_pass",
+          "display_name": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+          "lang": "ko",
+          "owner": {
+            "id": 102540,
+            "kind": "raw_event"
+          },
+          "research_sha256": "123106adb65402abc29b08186dfce34c2a9f653ed3462d19c2af828b0c95bd7d",
+          "reviewed_at": "2026-10-23T17:19:02.768980+00:00",
+          "reviewer_id": "qwen-reviewer",
+          "reviewer_model": "qwen-plus"
+        },
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "lang": "ko",
+        "name_preimage_sha256": null,
+        "owner": {
+          "id": 102540,
+          "kind": "raw_event"
+        },
+        "produced_at": "2026-10-23T17:19:02.253856+00:00",
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_value": "第74期王座战挑战赛5番棋1局",
+        "research_sha256": "123106adb65402abc29b08186dfce34c2a9f653ed3462d19c2af828b0c95bd7d",
+        "review_conclusion": "approved_first_pass_display_and_source",
+        "review_status": "approved",
+        "reviewed_at": "2026-10-23T17:19:02.768980+00:00",
+        "reviewer_id": "qwen-reviewer",
+        "reviewer_model": "qwen-plus"
+      },
+      "prior_research": {
+        "candidate_name": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+        "generation": {
+          "method": "translation"
+        },
+        "incremental_binding": {
+          "binding_actor": "kifu-deterministic-id-binding-v1",
+          "bound_members": [
+            {
+              "album_id": 179060,
+              "context": {
+                "black_player_id": 10,
+                "black_rank": null,
+                "date_played": "2026-10-23",
+                "duplicate_of_id": null,
+                "event": "第74期王座战挑战赛5番棋1局",
+                "event_id": null,
+                "player_black": "福冈航太朗",
+                "player_white": "一力辽",
+                "round_name": null,
+                "white_player_id": 42,
+                "white_rank": null
+              },
+              "slot": "event"
+            }
+          ],
+          "decision": {
+            "cn_conversion_note": "Traditional characters converted to simplified: 戰→战, 挑→挑 (no change), 決→决, 勝→胜, 負→负, 第→第 (unchanged), 局→局 (unchanged). '王座战' is the standard simplified form for 王座戦; '挑战赛' reflects common Chinese Go terminology for 挑戦者決定戦 (challenger decision match), not literal 'challenge match'. Digits '74', '5', '1' preserved exactly per rule.",
+            "displays": {
+              "cn": "第74期王座战挑战赛5番棋1局",
+              "en": "74th Oza Title Match, Best-of-5 Game 1",
+              "jp": "第74期王座戦挑戦者決定戦5番勝負第1局",
+              "ko": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+              "tw": "第74期王座戰挑戰賽5番棋1局"
+            },
+            "key": "第74期王座战挑战赛5番棋1局",
+            "kind": "raw_event",
+            "methods": {
+              "cn": "retain_original",
+              "en": "translation",
+              "jp": "translation",
+              "ko": "translation",
+              "tw": "orthographic_conversion"
+            },
+            "original_language": "jp",
+            "producer": {
+              "at": "2026-10-23T17:19:02.253856+00:00",
+              "id": "qwen-producer",
+              "max_output_tokens": 1024,
+              "model": "qwen-plus",
+              "request_attempts": 1,
+              "request_id": "chatcmpl-72037529-a3e8-92f9-806b-af358b4ce5e1",
+              "usage": {
+                "completion_tokens": 312,
+                "prompt_tokens": 662,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "total_tokens": 974
+              }
+            },
+            "review": {
+              "at": "2026-10-23T17:19:02.768980+00:00",
+              "content_sha256": "a5af36834a16d0026371302d714f7f432461ecbffaf5e1681fc02ec222d88181",
+              "decision": "approve",
+              "id": "qwen-reviewer",
+              "max_output_tokens": 1024,
+              "model": "qwen-plus",
+              "request_attempts": 1,
+              "request_id": "chatcmpl-74ec8c2c-126c-9fb9-8720-1a49441408d5",
+              "usage": {
+                "completion_tokens": 5,
+                "prompt_tokens": 922,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "total_tokens": 927
+              }
+            },
+            "source_items": [
+              {
+                "sgf_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73",
+                "slot": "event",
+                "source_item_id": "91574352",
+                "source_key": "19x19"
+              }
+            ],
+            "sources": []
+          },
+          "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+          "mode": "reviewed_text",
+          "version": "kifu-incremental-binding-v1"
+        },
+        "lang": "ko",
+        "original_language": "jp",
+        "original_name": "第74期王座战挑战赛5番棋1局",
+        "owner": {
+          "id": 102540,
+          "kind": "raw_event"
+        },
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_scope": {
+          "raw_value": "第74期王座战挑战赛5番棋1局",
+          "slots": [
+            {
+              "album_id": 179060,
+              "approved": true,
+              "duplicate_of_id": null,
+              "event_edition_id": null,
+              "event_id": null,
+              "list_hidden_reason": null,
+              "raw_value": "第74期王座战挑战赛5番棋1局",
+              "slot": "event",
+              "source_path": "data/kifu-album/19x19/91574352.sgf"
+            }
+          ]
+        },
+        "registry_sha256": "b117720a535e33bc98f39ed0b6c8f9e67968f2fda845390f072bd021e89472e6",
+        "registry_version": "kifu-incremental-binding-v1",
+        "review_status": "pending",
+        "scope_status": "generated_first_pass",
+        "source_basis": "user_authorized_first_pass_v1",
+        "source_input": {
+          "kind": "raw_event_literal",
+          "owner": {
+            "id": 102540,
+            "kind": "raw_event"
+          },
+          "owner_preimage_sha256": "904d649c0382bb7038abd20492fb1febbba896bb183956f017de04799ba2a226",
+          "text": "第74期王座战挑战赛5番棋1局"
+        },
+        "sources": [],
+        "verification_level": "generated_first_pass"
+      },
+      "spec": {
+        "lang": "ko",
+        "new": "제74기 왕좌전 도전5번기 제1국",
+        "old": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+        "raw": "第74期王座战挑战赛5番棋1局",
+        "sources": [
+          "91574352"
+        ]
+      }
+    },
+    {
+      "evidence": {
+        "candidate_name": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+        "decision_kind": "generated",
+        "event_id": null,
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "id": 299073,
+        "lang": "ko",
+        "player_id": null,
+        "produced_at": "2026-10-23T17:19:51.847859+00:00",
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_event_id": 102545,
+        "raw_player_id": null,
+        "research_payload": {
+          "candidate": {
+            "collision_basis": {
+              "kind": "literal_title_translation",
+              "provenance": "signed_raw_event_literal",
+              "source_text": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清"
+            },
+            "collision_decision": "shared_display",
+            "decision_kind": "generated",
+            "display_name": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+            "generated_review": {
+              "decision": "approve_generated_first_pass",
+              "display_name": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+              "lang": "ko",
+              "owner": {
+                "id": 102545,
+                "kind": "raw_event"
+              },
+              "research_sha256": "3d27b1a699478005cc5e1c7cf928008ecbec257a260564fc6935cbcde92d6061",
+              "reviewed_at": "2026-10-23T17:19:52.249989+00:00",
+              "reviewer_id": "qwen-reviewer",
+              "reviewer_model": "qwen-plus"
+            },
+            "generation_rule_version": "user_authorized_first_pass_v1",
+            "lang": "ko",
+            "name_preimage_sha256": null,
+            "owner": {
+              "id": 102545,
+              "kind": "raw_event"
+            },
+            "produced_at": "2026-10-23T17:19:51.847859+00:00",
+            "producer_id": "qwen-producer",
+            "producer_model": "qwen-plus",
+            "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+            "research_sha256": "3d27b1a699478005cc5e1c7cf928008ecbec257a260564fc6935cbcde92d6061",
+            "review_conclusion": "approved_first_pass_display_and_source",
+            "review_status": "approved",
+            "reviewed_at": "2026-10-23T17:19:52.249989+00:00",
+            "reviewer_id": "qwen-reviewer",
+            "reviewer_model": "qwen-plus"
+          },
+          "first_pass": {
+            "batch_id": 912,
+            "candidate_sha256": "df3bed19ea4933abc654aaa0a9f54fbb1e2f9fa59a345f2bd2ecd4f4e962c0e6",
+            "raw_scope_sha256": "1f472042b38d580e311b1b883bcc54b858fc49f6102faf03f12405d39ef782d5",
+            "research_sha256": "3d27b1a699478005cc5e1c7cf928008ecbec257a260564fc6935cbcde92d6061",
+            "verification_level": "generated_first_pass"
+          },
+          "research": {
+            "candidate_name": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+            "generation": {
+              "method": "transliteration"
+            },
+            "incremental_binding": {
+              "binding_actor": "kifu-deterministic-id-binding-v1",
+              "bound_members": [
+                {
+                  "album_id": 179067,
+                  "context": {
+                    "black_player_id": 70,
+                    "black_rank": null,
+                    "date_played": "2026-10-21",
+                    "duplicate_of_id": null,
+                    "event": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+                    "event_id": null,
+                    "player_black": "申真谞",
+                    "player_white": "李维清",
+                    "round_name": null,
+                    "white_player_id": 383,
+                    "white_rank": null
+                  },
+                  "slot": "event"
+                }
+              ],
+              "decision": {
+                "cn_conversion_note": "Traditional characters applied for Taiwan: 國手 (vs. 国手), 山脈 (vs. 山脉), 盃 (vs. 杯), 決賽 (vs. 决赛), 維 (vs. 维), 清 (vs. 清 remains same but in traditional context). All digit tokens ['12'] preserved exactly; '第12届' → '第12屆', no numeric change.",
+                "displays": {
+                  "cn": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+                  "en": "12th Guoshou Mountain Range Cup World Final Shin Jinseo vs. Li Weiqing",
+                  "jp": "第12回国手山脈杯世界戦決勝 申真谞 VS 李維清",
+                  "ko": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+                  "tw": "第12屆國手山脈盃世界賽決賽 申真谞 VS 李維清"
+                },
+                "key": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+                "kind": "raw_event",
+                "methods": {
+                  "cn": "retain_original",
+                  "en": "translation",
+                  "jp": "orthographic_conversion",
+                  "ko": "transliteration",
+                  "tw": "orthographic_conversion"
+                },
+                "original_language": "cn",
+                "producer": {
+                  "at": "2026-10-23T17:19:51.847859+00:00",
+                  "id": "qwen-producer",
+                  "max_output_tokens": 1024,
+                  "model": "qwen-plus",
+                  "request_attempts": 1,
+                  "request_id": "chatcmpl-474239ce-5ba5-9521-9519-485cc2f3f069",
+                  "usage": {
+                    "completion_tokens": 311,
+                    "prompt_tokens": 662,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    },
+                    "total_tokens": 973
+                  }
+                },
+                "review": {
+                  "at": "2026-10-23T17:19:52.249989+00:00",
+                  "content_sha256": "77b5a96bb8939c6e07e94329a8135e8d65df42ad8503832021f95c1f5595ec76",
+                  "decision": "approve",
+                  "id": "qwen-reviewer",
+                  "max_output_tokens": 1024,
+                  "model": "qwen-plus",
+                  "request_attempts": 1,
+                  "request_id": "chatcmpl-cef28641-b2e0-942a-b58e-4469fb482d8d",
+                  "usage": {
+                    "completion_tokens": 5,
+                    "prompt_tokens": 919,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    },
+                    "total_tokens": 924
+                  }
+                },
+                "source_items": [
+                  {
+                    "sgf_sha256": "f595ce880b4ae29aea06e669c60d26c8c4b13d279c65b6aac8759a74e93ba109",
+                    "slot": "event",
+                    "source_item_id": "91449763",
+                    "source_key": "19x19"
+                  }
+                ],
+                "sources": []
+              },
+              "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+              "mode": "reviewed_text",
+              "version": "kifu-incremental-binding-v1"
+            },
+            "lang": "ko",
+            "original_language": "cn",
+            "original_name": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+            "owner": {
+              "id": 102545,
+              "kind": "raw_event"
+            },
+            "producer_id": "qwen-producer",
+            "producer_model": "qwen-plus",
+            "raw_scope": {
+              "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+              "slots": [
+                {
+                  "album_id": 179067,
+                  "approved": true,
+                  "duplicate_of_id": null,
+                  "event_edition_id": null,
+                  "event_id": null,
+                  "list_hidden_reason": null,
+                  "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+                  "slot": "event",
+                  "source_path": "data/kifu-album/19x19/91449763.sgf"
+                }
+              ]
+            },
+            "registry_sha256": "b117720a535e33bc98f39ed0b6c8f9e67968f2fda845390f072bd021e89472e6",
+            "registry_version": "kifu-incremental-binding-v1",
+            "review_status": "pending",
+            "scope_status": "generated_first_pass",
+            "source_basis": "user_authorized_first_pass_v1",
+            "source_input": {
+              "kind": "raw_event_literal",
+              "owner": {
+                "id": 102545,
+                "kind": "raw_event"
+              },
+              "owner_preimage_sha256": "437c8c0e97e280f497f34c4b0b6cfbb3b9b478bba8dc0f4ef2ee05fba1660ac5",
+              "text": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清"
+            },
+            "sources": [],
+            "verification_level": "generated_first_pass"
+          }
+        },
+        "review_status": "approved",
+        "reviewed_at": "2026-10-23T17:19:52.249989+00:00",
+        "reviewer_id": "qwen-reviewer",
+        "reviewer_model": "qwen-plus",
+        "revision": 1,
+        "source_registry_id": 386
+      },
+      "name": {
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "decision_kind": "generated",
+        "display_name": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+        "evidence_id": 299073,
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "id": 259833,
+        "lang": "ko",
+        "raw_event_id": 102545,
+        "revision": 1,
+        "status": "verified"
+      },
+      "owner": {
+        "id": 102545,
+        "kind": "raw_event"
+      },
+      "prior_batch_id": 912,
+      "prior_bundle_sha256": "5114407c70b2ac8597f217de12a29a006ed2d4cd7d99ed0576b75d132d9f657f",
+      "prior_candidate": {
+        "collision_basis": {
+          "kind": "literal_title_translation",
+          "provenance": "signed_raw_event_literal",
+          "source_text": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清"
+        },
+        "collision_decision": "shared_display",
+        "decision_kind": "generated",
+        "display_name": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+        "generated_review": {
+          "decision": "approve_generated_first_pass",
+          "display_name": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+          "lang": "ko",
+          "owner": {
+            "id": 102545,
+            "kind": "raw_event"
+          },
+          "research_sha256": "3d27b1a699478005cc5e1c7cf928008ecbec257a260564fc6935cbcde92d6061",
+          "reviewed_at": "2026-10-23T17:19:52.249989+00:00",
+          "reviewer_id": "qwen-reviewer",
+          "reviewer_model": "qwen-plus"
+        },
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "lang": "ko",
+        "name_preimage_sha256": null,
+        "owner": {
+          "id": 102545,
+          "kind": "raw_event"
+        },
+        "produced_at": "2026-10-23T17:19:51.847859+00:00",
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+        "research_sha256": "3d27b1a699478005cc5e1c7cf928008ecbec257a260564fc6935cbcde92d6061",
+        "review_conclusion": "approved_first_pass_display_and_source",
+        "review_status": "approved",
+        "reviewed_at": "2026-10-23T17:19:52.249989+00:00",
+        "reviewer_id": "qwen-reviewer",
+        "reviewer_model": "qwen-plus"
+      },
+      "prior_research": {
+        "candidate_name": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+        "generation": {
+          "method": "transliteration"
+        },
+        "incremental_binding": {
+          "binding_actor": "kifu-deterministic-id-binding-v1",
+          "bound_members": [
+            {
+              "album_id": 179067,
+              "context": {
+                "black_player_id": 70,
+                "black_rank": null,
+                "date_played": "2026-10-21",
+                "duplicate_of_id": null,
+                "event": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+                "event_id": null,
+                "player_black": "申真谞",
+                "player_white": "李维清",
+                "round_name": null,
+                "white_player_id": 383,
+                "white_rank": null
+              },
+              "slot": "event"
+            }
+          ],
+          "decision": {
+            "cn_conversion_note": "Traditional characters applied for Taiwan: 國手 (vs. 国手), 山脈 (vs. 山脉), 盃 (vs. 杯), 決賽 (vs. 决赛), 維 (vs. 维), 清 (vs. 清 remains same but in traditional context). All digit tokens ['12'] preserved exactly; '第12届' → '第12屆', no numeric change.",
+            "displays": {
+              "cn": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+              "en": "12th Guoshou Mountain Range Cup World Final Shin Jinseo vs. Li Weiqing",
+              "jp": "第12回国手山脈杯世界戦決勝 申真谞 VS 李維清",
+              "ko": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+              "tw": "第12屆國手山脈盃世界賽決賽 申真谞 VS 李維清"
+            },
+            "key": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+            "kind": "raw_event",
+            "methods": {
+              "cn": "retain_original",
+              "en": "translation",
+              "jp": "orthographic_conversion",
+              "ko": "transliteration",
+              "tw": "orthographic_conversion"
+            },
+            "original_language": "cn",
+            "producer": {
+              "at": "2026-10-23T17:19:51.847859+00:00",
+              "id": "qwen-producer",
+              "max_output_tokens": 1024,
+              "model": "qwen-plus",
+              "request_attempts": 1,
+              "request_id": "chatcmpl-474239ce-5ba5-9521-9519-485cc2f3f069",
+              "usage": {
+                "completion_tokens": 311,
+                "prompt_tokens": 662,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "total_tokens": 973
+              }
+            },
+            "review": {
+              "at": "2026-10-23T17:19:52.249989+00:00",
+              "content_sha256": "77b5a96bb8939c6e07e94329a8135e8d65df42ad8503832021f95c1f5595ec76",
+              "decision": "approve",
+              "id": "qwen-reviewer",
+              "max_output_tokens": 1024,
+              "model": "qwen-plus",
+              "request_attempts": 1,
+              "request_id": "chatcmpl-cef28641-b2e0-942a-b58e-4469fb482d8d",
+              "usage": {
+                "completion_tokens": 5,
+                "prompt_tokens": 919,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "total_tokens": 924
+              }
+            },
+            "source_items": [
+              {
+                "sgf_sha256": "f595ce880b4ae29aea06e669c60d26c8c4b13d279c65b6aac8759a74e93ba109",
+                "slot": "event",
+                "source_item_id": "91449763",
+                "source_key": "19x19"
+              }
+            ],
+            "sources": []
+          },
+          "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+          "mode": "reviewed_text",
+          "version": "kifu-incremental-binding-v1"
+        },
+        "lang": "ko",
+        "original_language": "cn",
+        "original_name": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+        "owner": {
+          "id": 102545,
+          "kind": "raw_event"
+        },
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_scope": {
+          "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+          "slots": [
+            {
+              "album_id": 179067,
+              "approved": true,
+              "duplicate_of_id": null,
+              "event_edition_id": null,
+              "event_id": null,
+              "list_hidden_reason": null,
+              "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+              "slot": "event",
+              "source_path": "data/kifu-album/19x19/91449763.sgf"
+            }
+          ]
+        },
+        "registry_sha256": "b117720a535e33bc98f39ed0b6c8f9e67968f2fda845390f072bd021e89472e6",
+        "registry_version": "kifu-incremental-binding-v1",
+        "review_status": "pending",
+        "scope_status": "generated_first_pass",
+        "source_basis": "user_authorized_first_pass_v1",
+        "source_input": {
+          "kind": "raw_event_literal",
+          "owner": {
+            "id": 102545,
+            "kind": "raw_event"
+          },
+          "owner_preimage_sha256": "437c8c0e97e280f497f34c4b0b6cfbb3b9b478bba8dc0f4ef2ee05fba1660ac5",
+          "text": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清"
+        },
+        "sources": [],
+        "verification_level": "generated_first_pass"
+      },
+      "spec": {
+        "lang": "ko",
+        "new": "제12회 국수산맥배 세계전 결승 신진서 VS 리웨이칭",
+        "old": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+        "raw": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+        "sources": [
+          "91449763"
+        ]
+      }
+    },
+    {
+      "evidence": {
+        "candidate_name": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+        "decision_kind": "generated",
+        "event_id": null,
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "id": 299063,
+        "lang": "ko",
+        "player_id": null,
+        "produced_at": "2026-10-23T17:19:26.420669+00:00",
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_event_id": 102544,
+        "raw_player_id": null,
+        "research_payload": {
+          "candidate": {
+            "collision_basis": {
+              "kind": "literal_title_translation",
+              "provenance": "signed_raw_event_literal",
+              "source_text": "第9届吴清源杯世界女子公开赛国际预选决赛"
+            },
+            "collision_decision": "shared_display",
+            "decision_kind": "generated",
+            "display_name": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+            "generated_review": {
+              "decision": "approve_generated_first_pass",
+              "display_name": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+              "lang": "ko",
+              "owner": {
+                "id": 102544,
+                "kind": "raw_event"
+              },
+              "research_sha256": "ec94dde7d6b0468137ef6bd3a34fa009b6b8ceea321078737f779daeddb0a5c4",
+              "reviewed_at": "2026-10-23T17:19:26.833727+00:00",
+              "reviewer_id": "qwen-reviewer",
+              "reviewer_model": "qwen-plus"
+            },
+            "generation_rule_version": "user_authorized_first_pass_v1",
+            "lang": "ko",
+            "name_preimage_sha256": null,
+            "owner": {
+              "id": 102544,
+              "kind": "raw_event"
+            },
+            "produced_at": "2026-10-23T17:19:26.420669+00:00",
+            "producer_id": "qwen-producer",
+            "producer_model": "qwen-plus",
+            "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+            "research_sha256": "ec94dde7d6b0468137ef6bd3a34fa009b6b8ceea321078737f779daeddb0a5c4",
+            "review_conclusion": "approved_first_pass_display_and_source",
+            "review_status": "approved",
+            "reviewed_at": "2026-10-23T17:19:26.833727+00:00",
+            "reviewer_id": "qwen-reviewer",
+            "reviewer_model": "qwen-plus"
+          },
+          "first_pass": {
+            "batch_id": 912,
+            "candidate_sha256": "ac0a09fa689899a7e887850a50889697b3b2ebb8c5f9c94ab249bed44ca6d4d5",
+            "raw_scope_sha256": "ea52f473ba1c7d78dc97edf8a41b72ca916aa0294722f72e039d156d7e3ca3aa",
+            "research_sha256": "ec94dde7d6b0468137ef6bd3a34fa009b6b8ceea321078737f779daeddb0a5c4",
+            "verification_level": "generated_first_pass"
+          },
+          "research": {
+            "candidate_name": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+            "generation": {
+              "method": "transliteration"
+            },
+            "incremental_binding": {
+              "binding_actor": "kifu-deterministic-id-binding-v1",
+              "bound_members": [
+                {
+                  "album_id": 179064,
+                  "context": {
+                    "black_player_id": 570,
+                    "black_rank": null,
+                    "date_played": "2026-10-21",
+                    "duplicate_of_id": null,
+                    "event": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                    "event_id": null,
+                    "player_black": "陈一鸣",
+                    "player_white": "罗楚玥",
+                    "round_name": null,
+                    "white_player_id": 184,
+                    "white_rank": null
+                  },
+                  "slot": "event"
+                },
+                {
+                  "album_id": 179065,
+                  "context": {
+                    "black_player_id": 576,
+                    "black_rank": null,
+                    "date_played": "2026-10-21",
+                    "duplicate_of_id": null,
+                    "event": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                    "event_id": null,
+                    "player_black": "王晨星",
+                    "player_white": "李书英",
+                    "round_name": null,
+                    "white_player_id": null,
+                    "white_rank": null
+                  },
+                  "slot": "event"
+                },
+                {
+                  "album_id": 179066,
+                  "context": {
+                    "black_player_id": 198,
+                    "black_rank": null,
+                    "date_played": "2026-10-21",
+                    "duplicate_of_id": null,
+                    "event": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                    "event_id": null,
+                    "player_black": "杨子萱",
+                    "player_white": "方若曦",
+                    "round_name": null,
+                    "white_player_id": 211,
+                    "white_rank": null
+                  },
+                  "slot": "event"
+                }
+              ],
+              "decision": {
+                "cn_conversion_note": "Traditional characters applied for tw: 吴→吳, 源→源 (unchanged), 杯→盃, 赛→賽, 开→開, 放→放, 国→國, 际→際, 预→預, 选→選, 决→決, 赛→賽 — all standard orthographic conversions per Taiwan usage; '第9届' and '决赛' preserved literally including digit '9'.",
+                "displays": {
+                  "cn": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                  "en": "9th Wu Qingyuan Cup World Women's Open International Qualification Final",
+                  "jp": "第9回呉清源杯世界女子オープン戦国際予選決勝",
+                  "ko": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+                  "tw": "第9屆吳清源盃世界女子公開賽國際預選決賽"
+                },
+                "key": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                "kind": "raw_event",
+                "methods": {
+                  "cn": "retain_original",
+                  "en": "translation",
+                  "jp": "transliteration",
+                  "ko": "transliteration",
+                  "tw": "orthographic_conversion"
+                },
+                "original_language": "cn",
+                "producer": {
+                  "at": "2026-10-23T17:19:26.420669+00:00",
+                  "id": "qwen-producer",
+                  "max_output_tokens": 1024,
+                  "model": "qwen-plus",
+                  "request_attempts": 1,
+                  "request_id": "chatcmpl-f0cf494a-9560-98f6-b5eb-cad569d3237f",
+                  "usage": {
+                    "completion_tokens": 293,
+                    "prompt_tokens": 648,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    },
+                    "total_tokens": 941
+                  }
+                },
+                "review": {
+                  "at": "2026-10-23T17:19:26.833727+00:00",
+                  "content_sha256": "6c7d9621bb9449d443747f229a8b4ef852152c0cd888c10dc26335f53b9ec4dc",
+                  "decision": "approve",
+                  "id": "qwen-reviewer",
+                  "max_output_tokens": 1024,
+                  "model": "qwen-plus",
+                  "request_attempts": 1,
+                  "request_id": "chatcmpl-c29aae3e-03e0-9bc8-939f-daba09c5c3f1",
+                  "usage": {
+                    "completion_tokens": 5,
+                    "prompt_tokens": 889,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    },
+                    "total_tokens": 894
+                  }
+                },
+                "source_items": [
+                  {
+                    "sgf_sha256": "c181e6eb194774f691cb0c0c046a8e93415f269b55941c46a8ea5b546148df35",
+                    "slot": "event",
+                    "source_item_id": "91468818",
+                    "source_key": "19x19"
+                  },
+                  {
+                    "sgf_sha256": "6b192cc00e152117064350ba19f6018282eb527b30fc5f48c5332b95378294a7",
+                    "slot": "event",
+                    "source_item_id": "91464854",
+                    "source_key": "19x19"
+                  },
+                  {
+                    "sgf_sha256": "72ef4fcaf1e96922262d7f24feed011d8ac9a47894f67c28899368fe47ea59e4",
+                    "slot": "event",
+                    "source_item_id": "91467988",
+                    "source_key": "19x19"
+                  }
+                ],
+                "sources": []
+              },
+              "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+              "mode": "reviewed_text",
+              "version": "kifu-incremental-binding-v1"
+            },
+            "lang": "ko",
+            "original_language": "cn",
+            "original_name": "第9届吴清源杯世界女子公开赛国际预选决赛",
+            "owner": {
+              "id": 102544,
+              "kind": "raw_event"
+            },
+            "producer_id": "qwen-producer",
+            "producer_model": "qwen-plus",
+            "raw_scope": {
+              "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+              "slots": [
+                {
+                  "album_id": 179064,
+                  "approved": true,
+                  "duplicate_of_id": null,
+                  "event_edition_id": null,
+                  "event_id": null,
+                  "list_hidden_reason": null,
+                  "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                  "slot": "event",
+                  "source_path": "data/kifu-album/19x19/91468818.sgf"
+                },
+                {
+                  "album_id": 179065,
+                  "approved": true,
+                  "duplicate_of_id": null,
+                  "event_edition_id": null,
+                  "event_id": null,
+                  "list_hidden_reason": null,
+                  "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                  "slot": "event",
+                  "source_path": "data/kifu-album/19x19/91464854.sgf"
+                },
+                {
+                  "album_id": 179066,
+                  "approved": true,
+                  "duplicate_of_id": null,
+                  "event_edition_id": null,
+                  "event_id": null,
+                  "list_hidden_reason": null,
+                  "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                  "slot": "event",
+                  "source_path": "data/kifu-album/19x19/91467988.sgf"
+                }
+              ]
+            },
+            "registry_sha256": "b117720a535e33bc98f39ed0b6c8f9e67968f2fda845390f072bd021e89472e6",
+            "registry_version": "kifu-incremental-binding-v1",
+            "review_status": "pending",
+            "scope_status": "generated_first_pass",
+            "source_basis": "user_authorized_first_pass_v1",
+            "source_input": {
+              "kind": "raw_event_literal",
+              "owner": {
+                "id": 102544,
+                "kind": "raw_event"
+              },
+              "owner_preimage_sha256": "e90082b4b878e6af6deee006c597bd2ff568102ffe131034a03b2d6251347b1b",
+              "text": "第9届吴清源杯世界女子公开赛国际预选决赛"
+            },
+            "sources": [],
+            "verification_level": "generated_first_pass"
+          }
+        },
+        "review_status": "approved",
+        "reviewed_at": "2026-10-23T17:19:26.833727+00:00",
+        "reviewer_id": "qwen-reviewer",
+        "reviewer_model": "qwen-plus",
+        "revision": 1,
+        "source_registry_id": 386
+      },
+      "name": {
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "decision_kind": "generated",
+        "display_name": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+        "evidence_id": 299063,
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "id": 259828,
+        "lang": "ko",
+        "raw_event_id": 102544,
+        "revision": 1,
+        "status": "verified"
+      },
+      "owner": {
+        "id": 102544,
+        "kind": "raw_event"
+      },
+      "prior_batch_id": 912,
+      "prior_bundle_sha256": "5114407c70b2ac8597f217de12a29a006ed2d4cd7d99ed0576b75d132d9f657f",
+      "prior_candidate": {
+        "collision_basis": {
+          "kind": "literal_title_translation",
+          "provenance": "signed_raw_event_literal",
+          "source_text": "第9届吴清源杯世界女子公开赛国际预选决赛"
+        },
+        "collision_decision": "shared_display",
+        "decision_kind": "generated",
+        "display_name": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+        "generated_review": {
+          "decision": "approve_generated_first_pass",
+          "display_name": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+          "lang": "ko",
+          "owner": {
+            "id": 102544,
+            "kind": "raw_event"
+          },
+          "research_sha256": "ec94dde7d6b0468137ef6bd3a34fa009b6b8ceea321078737f779daeddb0a5c4",
+          "reviewed_at": "2026-10-23T17:19:26.833727+00:00",
+          "reviewer_id": "qwen-reviewer",
+          "reviewer_model": "qwen-plus"
+        },
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "lang": "ko",
+        "name_preimage_sha256": null,
+        "owner": {
+          "id": 102544,
+          "kind": "raw_event"
+        },
+        "produced_at": "2026-10-23T17:19:26.420669+00:00",
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "research_sha256": "ec94dde7d6b0468137ef6bd3a34fa009b6b8ceea321078737f779daeddb0a5c4",
+        "review_conclusion": "approved_first_pass_display_and_source",
+        "review_status": "approved",
+        "reviewed_at": "2026-10-23T17:19:26.833727+00:00",
+        "reviewer_id": "qwen-reviewer",
+        "reviewer_model": "qwen-plus"
+      },
+      "prior_research": {
+        "candidate_name": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+        "generation": {
+          "method": "transliteration"
+        },
+        "incremental_binding": {
+          "binding_actor": "kifu-deterministic-id-binding-v1",
+          "bound_members": [
+            {
+              "album_id": 179064,
+              "context": {
+                "black_player_id": 570,
+                "black_rank": null,
+                "date_played": "2026-10-21",
+                "duplicate_of_id": null,
+                "event": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                "event_id": null,
+                "player_black": "陈一鸣",
+                "player_white": "罗楚玥",
+                "round_name": null,
+                "white_player_id": 184,
+                "white_rank": null
+              },
+              "slot": "event"
+            },
+            {
+              "album_id": 179065,
+              "context": {
+                "black_player_id": 576,
+                "black_rank": null,
+                "date_played": "2026-10-21",
+                "duplicate_of_id": null,
+                "event": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                "event_id": null,
+                "player_black": "王晨星",
+                "player_white": "李书英",
+                "round_name": null,
+                "white_player_id": null,
+                "white_rank": null
+              },
+              "slot": "event"
+            },
+            {
+              "album_id": 179066,
+              "context": {
+                "black_player_id": 198,
+                "black_rank": null,
+                "date_played": "2026-10-21",
+                "duplicate_of_id": null,
+                "event": "第9届吴清源杯世界女子公开赛国际预选决赛",
+                "event_id": null,
+                "player_black": "杨子萱",
+                "player_white": "方若曦",
+                "round_name": null,
+                "white_player_id": 211,
+                "white_rank": null
+              },
+              "slot": "event"
+            }
+          ],
+          "decision": {
+            "cn_conversion_note": "Traditional characters applied for tw: 吴→吳, 源→源 (unchanged), 杯→盃, 赛→賽, 开→開, 放→放, 国→國, 际→際, 预→預, 选→選, 决→決, 赛→賽 — all standard orthographic conversions per Taiwan usage; '第9届' and '决赛' preserved literally including digit '9'.",
+            "displays": {
+              "cn": "第9届吴清源杯世界女子公开赛国际预选决赛",
+              "en": "9th Wu Qingyuan Cup World Women's Open International Qualification Final",
+              "jp": "第9回呉清源杯世界女子オープン戦国際予選決勝",
+              "ko": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+              "tw": "第9屆吳清源盃世界女子公開賽國際預選決賽"
+            },
+            "key": "第9届吴清源杯世界女子公开赛国际预选决赛",
+            "kind": "raw_event",
+            "methods": {
+              "cn": "retain_original",
+              "en": "translation",
+              "jp": "transliteration",
+              "ko": "transliteration",
+              "tw": "orthographic_conversion"
+            },
+            "original_language": "cn",
+            "producer": {
+              "at": "2026-10-23T17:19:26.420669+00:00",
+              "id": "qwen-producer",
+              "max_output_tokens": 1024,
+              "model": "qwen-plus",
+              "request_attempts": 1,
+              "request_id": "chatcmpl-f0cf494a-9560-98f6-b5eb-cad569d3237f",
+              "usage": {
+                "completion_tokens": 293,
+                "prompt_tokens": 648,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "total_tokens": 941
+              }
+            },
+            "review": {
+              "at": "2026-10-23T17:19:26.833727+00:00",
+              "content_sha256": "6c7d9621bb9449d443747f229a8b4ef852152c0cd888c10dc26335f53b9ec4dc",
+              "decision": "approve",
+              "id": "qwen-reviewer",
+              "max_output_tokens": 1024,
+              "model": "qwen-plus",
+              "request_attempts": 1,
+              "request_id": "chatcmpl-c29aae3e-03e0-9bc8-939f-daba09c5c3f1",
+              "usage": {
+                "completion_tokens": 5,
+                "prompt_tokens": 889,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "total_tokens": 894
+              }
+            },
+            "source_items": [
+              {
+                "sgf_sha256": "c181e6eb194774f691cb0c0c046a8e93415f269b55941c46a8ea5b546148df35",
+                "slot": "event",
+                "source_item_id": "91468818",
+                "source_key": "19x19"
+              },
+              {
+                "sgf_sha256": "6b192cc00e152117064350ba19f6018282eb527b30fc5f48c5332b95378294a7",
+                "slot": "event",
+                "source_item_id": "91464854",
+                "source_key": "19x19"
+              },
+              {
+                "sgf_sha256": "72ef4fcaf1e96922262d7f24feed011d8ac9a47894f67c28899368fe47ea59e4",
+                "slot": "event",
+                "source_item_id": "91467988",
+                "source_key": "19x19"
+              }
+            ],
+            "sources": []
+          },
+          "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+          "mode": "reviewed_text",
+          "version": "kifu-incremental-binding-v1"
+        },
+        "lang": "ko",
+        "original_language": "cn",
+        "original_name": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "owner": {
+          "id": 102544,
+          "kind": "raw_event"
+        },
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_scope": {
+          "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+          "slots": [
+            {
+              "album_id": 179064,
+              "approved": true,
+              "duplicate_of_id": null,
+              "event_edition_id": null,
+              "event_id": null,
+              "list_hidden_reason": null,
+              "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+              "slot": "event",
+              "source_path": "data/kifu-album/19x19/91468818.sgf"
+            },
+            {
+              "album_id": 179065,
+              "approved": true,
+              "duplicate_of_id": null,
+              "event_edition_id": null,
+              "event_id": null,
+              "list_hidden_reason": null,
+              "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+              "slot": "event",
+              "source_path": "data/kifu-album/19x19/91464854.sgf"
+            },
+            {
+              "album_id": 179066,
+              "approved": true,
+              "duplicate_of_id": null,
+              "event_edition_id": null,
+              "event_id": null,
+              "list_hidden_reason": null,
+              "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+              "slot": "event",
+              "source_path": "data/kifu-album/19x19/91467988.sgf"
+            }
+          ]
+        },
+        "registry_sha256": "b117720a535e33bc98f39ed0b6c8f9e67968f2fda845390f072bd021e89472e6",
+        "registry_version": "kifu-incremental-binding-v1",
+        "review_status": "pending",
+        "scope_status": "generated_first_pass",
+        "source_basis": "user_authorized_first_pass_v1",
+        "source_input": {
+          "kind": "raw_event_literal",
+          "owner": {
+            "id": 102544,
+            "kind": "raw_event"
+          },
+          "owner_preimage_sha256": "e90082b4b878e6af6deee006c597bd2ff568102ffe131034a03b2d6251347b1b",
+          "text": "第9届吴清源杯世界女子公开赛国际预选决赛"
+        },
+        "sources": [],
+        "verification_level": "generated_first_pass"
+      },
+      "spec": {
+        "lang": "ko",
+        "new": "제9회 오청원배 세계 여자 오픈전 국제 예선 결승",
+        "old": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+        "raw": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "sources": [
+          "91468818",
+          "91464854",
+          "91467988"
+        ]
+      }
+    },
+    {
+      "evidence": {
+        "candidate_name": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+        "decision_kind": "generated",
+        "event_id": null,
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "id": 299078,
+        "lang": "ko",
+        "player_id": null,
+        "produced_at": "2026-10-23T17:19:59.810538+00:00",
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_event_id": 102546,
+        "raw_player_id": null,
+        "research_payload": {
+          "candidate": {
+            "collision_basis": {
+              "kind": "literal_title_translation",
+              "provenance": "signed_raw_event_literal",
+              "source_text": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮"
+            },
+            "collision_decision": "shared_display",
+            "decision_kind": "generated",
+            "display_name": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+            "generated_review": {
+              "decision": "approve_generated_first_pass",
+              "display_name": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+              "lang": "ko",
+              "owner": {
+                "id": 102546,
+                "kind": "raw_event"
+              },
+              "research_sha256": "e73740bfa411b73830d735d68f9ca3c36cbb188a43d7efba8ec60513e2e9d732",
+              "reviewed_at": "2026-10-23T17:20:00.315707+00:00",
+              "reviewer_id": "qwen-reviewer",
+              "reviewer_model": "qwen-plus"
+            },
+            "generation_rule_version": "user_authorized_first_pass_v1",
+            "lang": "ko",
+            "name_preimage_sha256": null,
+            "owner": {
+              "id": 102546,
+              "kind": "raw_event"
+            },
+            "produced_at": "2026-10-23T17:19:59.810538+00:00",
+            "producer_id": "qwen-producer",
+            "producer_model": "qwen-plus",
+            "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+            "research_sha256": "e73740bfa411b73830d735d68f9ca3c36cbb188a43d7efba8ec60513e2e9d732",
+            "review_conclusion": "approved_first_pass_display_and_source",
+            "review_status": "approved",
+            "reviewed_at": "2026-10-23T17:20:00.315707+00:00",
+            "reviewer_id": "qwen-reviewer",
+            "reviewer_model": "qwen-plus"
+          },
+          "first_pass": {
+            "batch_id": 912,
+            "candidate_sha256": "af44c9a9adfdb8e419eb6dd3c148177177d7140791d624570509c703934360ea",
+            "raw_scope_sha256": "f37f35769aeb7667170debab2ad00eb80db1b8020a283d306e1ab010242994e7",
+            "research_sha256": "e73740bfa411b73830d735d68f9ca3c36cbb188a43d7efba8ec60513e2e9d732",
+            "verification_level": "generated_first_pass"
+          },
+          "research": {
+            "candidate_name": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+            "generation": {
+              "method": "transliteration"
+            },
+            "incremental_binding": {
+              "binding_actor": "kifu-deterministic-id-binding-v1",
+              "bound_members": [
+                {
+                  "album_id": 179068,
+                  "context": {
+                    "black_player_id": 156,
+                    "black_rank": "七段",
+                    "date_played": "2026-10-19",
+                    "duplicate_of_id": null,
+                    "event": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+                    "event_id": null,
+                    "player_black": "谢依旻",
+                    "player_white": "张子涵",
+                    "round_name": null,
+                    "white_player_id": 390,
+                    "white_rank": "四段"
+                  },
+                  "slot": "event"
+                }
+              ],
+              "decision": {
+                "cn_conversion_note": "Traditional characters applied: 吴→吳, 源→源 (unchanged), 杯→盃, 围→圍, 棋→碁, 公→公 (unchanged), 开→開, 放→放 (unchanged), 赛→賽, 预→預, 选→選, 第→第 (unchanged), 2→2 (unchanged), 轮→輪. All required digit tokens ['9', '2'] preserved exactly in position and form.",
+                "displays": {
+                  "cn": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+                  "en": "2nd Round of the Preliminary Tournament of the 9th Wu Qingyuan Cup World Women's Go Open",
+                  "jp": "第9回呉清源杯世界女子囲碁オープン予選第2ラウンド",
+                  "ko": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+                  "tw": "第9屆吳清源盃世界女子圍棋公開賽預選賽第2輪"
+                },
+                "key": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+                "kind": "raw_event",
+                "methods": {
+                  "cn": "retain_original",
+                  "en": "translation",
+                  "jp": "transliteration",
+                  "ko": "transliteration",
+                  "tw": "orthographic_conversion"
+                },
+                "original_language": "cn",
+                "producer": {
+                  "at": "2026-10-23T17:19:59.810538+00:00",
+                  "id": "qwen-producer",
+                  "max_output_tokens": 1024,
+                  "model": "qwen-plus",
+                  "request_attempts": 1,
+                  "request_id": "chatcmpl-5d7c0bf9-3c40-931e-a4ca-b3fdae853080",
+                  "usage": {
+                    "completion_tokens": 325,
+                    "prompt_tokens": 660,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    },
+                    "total_tokens": 985
+                  }
+                },
+                "review": {
+                  "at": "2026-10-23T17:20:00.315707+00:00",
+                  "content_sha256": "d7b036474259c0dbf6077c3515979dde43bbd9f0950cffe2bd989a3ae0a82caa",
+                  "decision": "approve",
+                  "id": "qwen-reviewer",
+                  "max_output_tokens": 1024,
+                  "model": "qwen-plus",
+                  "request_attempts": 1,
+                  "request_id": "chatcmpl-81f19fc7-451b-965a-a96c-4e1e77325662",
+                  "usage": {
+                    "completion_tokens": 5,
+                    "prompt_tokens": 933,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    },
+                    "total_tokens": 938
+                  }
+                },
+                "source_items": [
+                  {
+                    "sgf_sha256": "0a6051fdb332017de50bea49fbfa5fdd71c22d3d96b7a10a282910b7cba9b16f",
+                    "slot": "event",
+                    "source_item_id": "91496863",
+                    "source_key": "19x19"
+                  }
+                ],
+                "sources": []
+              },
+              "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+              "mode": "reviewed_text",
+              "version": "kifu-incremental-binding-v1"
+            },
+            "lang": "ko",
+            "original_language": "cn",
+            "original_name": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+            "owner": {
+              "id": 102546,
+              "kind": "raw_event"
+            },
+            "producer_id": "qwen-producer",
+            "producer_model": "qwen-plus",
+            "raw_scope": {
+              "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+              "slots": [
+                {
+                  "album_id": 179068,
+                  "approved": true,
+                  "duplicate_of_id": null,
+                  "event_edition_id": null,
+                  "event_id": null,
+                  "list_hidden_reason": null,
+                  "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+                  "slot": "event",
+                  "source_path": "data/kifu-album/19x19/91496863.sgf"
+                }
+              ]
+            },
+            "registry_sha256": "b117720a535e33bc98f39ed0b6c8f9e67968f2fda845390f072bd021e89472e6",
+            "registry_version": "kifu-incremental-binding-v1",
+            "review_status": "pending",
+            "scope_status": "generated_first_pass",
+            "source_basis": "user_authorized_first_pass_v1",
+            "source_input": {
+              "kind": "raw_event_literal",
+              "owner": {
+                "id": 102546,
+                "kind": "raw_event"
+              },
+              "owner_preimage_sha256": "0fbe5c40d25dc2d836eb331ac9040810883188055ae837931f717237a2bb2bea",
+              "text": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮"
+            },
+            "sources": [],
+            "verification_level": "generated_first_pass"
+          }
+        },
+        "review_status": "approved",
+        "reviewed_at": "2026-10-23T17:20:00.315707+00:00",
+        "reviewer_id": "qwen-reviewer",
+        "reviewer_model": "qwen-plus",
+        "revision": 1,
+        "source_registry_id": 386
+      },
+      "name": {
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "decision_kind": "generated",
+        "display_name": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+        "evidence_id": 299078,
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "id": 259838,
+        "lang": "ko",
+        "raw_event_id": 102546,
+        "revision": 1,
+        "status": "verified"
+      },
+      "owner": {
+        "id": 102546,
+        "kind": "raw_event"
+      },
+      "prior_batch_id": 912,
+      "prior_bundle_sha256": "5114407c70b2ac8597f217de12a29a006ed2d4cd7d99ed0576b75d132d9f657f",
+      "prior_candidate": {
+        "collision_basis": {
+          "kind": "literal_title_translation",
+          "provenance": "signed_raw_event_literal",
+          "source_text": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮"
+        },
+        "collision_decision": "shared_display",
+        "decision_kind": "generated",
+        "display_name": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+        "generated_review": {
+          "decision": "approve_generated_first_pass",
+          "display_name": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+          "lang": "ko",
+          "owner": {
+            "id": 102546,
+            "kind": "raw_event"
+          },
+          "research_sha256": "e73740bfa411b73830d735d68f9ca3c36cbb188a43d7efba8ec60513e2e9d732",
+          "reviewed_at": "2026-10-23T17:20:00.315707+00:00",
+          "reviewer_id": "qwen-reviewer",
+          "reviewer_model": "qwen-plus"
+        },
+        "generation_rule_version": "user_authorized_first_pass_v1",
+        "lang": "ko",
+        "name_preimage_sha256": null,
+        "owner": {
+          "id": 102546,
+          "kind": "raw_event"
+        },
+        "produced_at": "2026-10-23T17:19:59.810538+00:00",
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+        "research_sha256": "e73740bfa411b73830d735d68f9ca3c36cbb188a43d7efba8ec60513e2e9d732",
+        "review_conclusion": "approved_first_pass_display_and_source",
+        "review_status": "approved",
+        "reviewed_at": "2026-10-23T17:20:00.315707+00:00",
+        "reviewer_id": "qwen-reviewer",
+        "reviewer_model": "qwen-plus"
+      },
+      "prior_research": {
+        "candidate_name": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+        "generation": {
+          "method": "transliteration"
+        },
+        "incremental_binding": {
+          "binding_actor": "kifu-deterministic-id-binding-v1",
+          "bound_members": [
+            {
+              "album_id": 179068,
+              "context": {
+                "black_player_id": 156,
+                "black_rank": "七段",
+                "date_played": "2026-10-19",
+                "duplicate_of_id": null,
+                "event": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+                "event_id": null,
+                "player_black": "谢依旻",
+                "player_white": "张子涵",
+                "round_name": null,
+                "white_player_id": 390,
+                "white_rank": "四段"
+              },
+              "slot": "event"
+            }
+          ],
+          "decision": {
+            "cn_conversion_note": "Traditional characters applied: 吴→吳, 源→源 (unchanged), 杯→盃, 围→圍, 棋→碁, 公→公 (unchanged), 开→開, 放→放 (unchanged), 赛→賽, 预→預, 选→選, 第→第 (unchanged), 2→2 (unchanged), 轮→輪. All required digit tokens ['9', '2'] preserved exactly in position and form.",
+            "displays": {
+              "cn": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+              "en": "2nd Round of the Preliminary Tournament of the 9th Wu Qingyuan Cup World Women's Go Open",
+              "jp": "第9回呉清源杯世界女子囲碁オープン予選第2ラウンド",
+              "ko": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+              "tw": "第9屆吳清源盃世界女子圍棋公開賽預選賽第2輪"
+            },
+            "key": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+            "kind": "raw_event",
+            "methods": {
+              "cn": "retain_original",
+              "en": "translation",
+              "jp": "transliteration",
+              "ko": "transliteration",
+              "tw": "orthographic_conversion"
+            },
+            "original_language": "cn",
+            "producer": {
+              "at": "2026-10-23T17:19:59.810538+00:00",
+              "id": "qwen-producer",
+              "max_output_tokens": 1024,
+              "model": "qwen-plus",
+              "request_attempts": 1,
+              "request_id": "chatcmpl-5d7c0bf9-3c40-931e-a4ca-b3fdae853080",
+              "usage": {
+                "completion_tokens": 325,
+                "prompt_tokens": 660,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "total_tokens": 985
+              }
+            },
+            "review": {
+              "at": "2026-10-23T17:20:00.315707+00:00",
+              "content_sha256": "d7b036474259c0dbf6077c3515979dde43bbd9f0950cffe2bd989a3ae0a82caa",
+              "decision": "approve",
+              "id": "qwen-reviewer",
+              "max_output_tokens": 1024,
+              "model": "qwen-plus",
+              "request_attempts": 1,
+              "request_id": "chatcmpl-81f19fc7-451b-965a-a96c-4e1e77325662",
+              "usage": {
+                "completion_tokens": 5,
+                "prompt_tokens": 933,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "total_tokens": 938
+              }
+            },
+            "source_items": [
+              {
+                "sgf_sha256": "0a6051fdb332017de50bea49fbfa5fdd71c22d3d96b7a10a282910b7cba9b16f",
+                "slot": "event",
+                "source_item_id": "91496863",
+                "source_key": "19x19"
+              }
+            ],
+            "sources": []
+          },
+          "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+          "mode": "reviewed_text",
+          "version": "kifu-incremental-binding-v1"
+        },
+        "lang": "ko",
+        "original_language": "cn",
+        "original_name": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+        "owner": {
+          "id": 102546,
+          "kind": "raw_event"
+        },
+        "producer_id": "qwen-producer",
+        "producer_model": "qwen-plus",
+        "raw_scope": {
+          "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+          "slots": [
+            {
+              "album_id": 179068,
+              "approved": true,
+              "duplicate_of_id": null,
+              "event_edition_id": null,
+              "event_id": null,
+              "list_hidden_reason": null,
+              "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+              "slot": "event",
+              "source_path": "data/kifu-album/19x19/91496863.sgf"
+            }
+          ]
+        },
+        "registry_sha256": "b117720a535e33bc98f39ed0b6c8f9e67968f2fda845390f072bd021e89472e6",
+        "registry_version": "kifu-incremental-binding-v1",
+        "review_status": "pending",
+        "scope_status": "generated_first_pass",
+        "source_basis": "user_authorized_first_pass_v1",
+        "source_input": {
+          "kind": "raw_event_literal",
+          "owner": {
+            "id": 102546,
+            "kind": "raw_event"
+          },
+          "owner_preimage_sha256": "0fbe5c40d25dc2d836eb331ac9040810883188055ae837931f717237a2bb2bea",
+          "text": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮"
+        },
+        "sources": [],
+        "verification_level": "generated_first_pass"
+      },
+      "spec": {
+        "lang": "ko",
+        "new": "제9회 오청원배 세계 여자 바둑 오픈 예선 2라운드",
+        "old": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+        "raw": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+        "sources": [
+          "91496863"
+        ]
+      }
+    }
+  ],
+  "inventory_sha256": "79f606b3feea85817c56e27147014cf0cbc71633d549e6dab99b40dc64f7bf19",
+  "owners": [
+    {
+      "occurrence_album_ids": [
+        179067
+      ],
+      "occurrence_sha256": "75560bd8f275482a8b85b6860c0d8c6941dd1c5269d845d507992b1e0041de70",
+      "owner": {
+        "id": 102545,
+        "kind": "raw_event"
+      },
+      "preimage": {
+        "category": "unclassified_pending",
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "id": 102545,
+        "parsed_data": null,
+        "parser_version": null,
+        "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+        "review_metadata": null,
+        "review_status": "pending"
+      },
+      "raw_scope": [
+        {
+          "album_id": 179067,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91449763.sgf"
+        }
+      ]
+    },
+    {
+      "occurrence_album_ids": [
+        179060
+      ],
+      "occurrence_sha256": "d1366311f0c6c34c993559c913917d668535413332bbe0fd96146fcf83d80741",
+      "owner": {
+        "id": 102540,
+        "kind": "raw_event"
+      },
+      "preimage": {
+        "category": "unclassified_pending",
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "id": 102540,
+        "parsed_data": null,
+        "parser_version": null,
+        "raw_value": "第74期王座战挑战赛5番棋1局",
+        "review_metadata": null,
+        "review_status": "pending"
+      },
+      "raw_scope": [
+        {
+          "album_id": 179060,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第74期王座战挑战赛5番棋1局",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91574352.sgf"
+        }
+      ]
+    },
+    {
+      "occurrence_album_ids": [
+        179064,
+        179065,
+        179066
+      ],
+      "occurrence_sha256": "122d5061f533da2839f50c8542af67a20b97a9e3224d2169546867f44e67a642",
+      "owner": {
+        "id": 102544,
+        "kind": "raw_event"
+      },
+      "preimage": {
+        "category": "unclassified_pending",
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "id": 102544,
+        "parsed_data": null,
+        "parser_version": null,
+        "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "review_metadata": null,
+        "review_status": "pending"
+      },
+      "raw_scope": [
+        {
+          "album_id": 179064,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91468818.sgf"
+        },
+        {
+          "album_id": 179065,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91464854.sgf"
+        },
+        {
+          "album_id": 179066,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第9届吴清源杯世界女子公开赛国际预选决赛",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91467988.sgf"
+        }
+      ]
+    },
+    {
+      "occurrence_album_ids": [
+        179068
+      ],
+      "occurrence_sha256": "aa49de660689f7d6d989d95a051b8808e62a8d5dbc41c29bdd7aea66ef5215de",
+      "owner": {
+        "id": 102546,
+        "kind": "raw_event"
+      },
+      "preimage": {
+        "category": "unclassified_pending",
+        "created_at": "2026-10-23T17:20:07.524003+00:00",
+        "id": 102546,
+        "parsed_data": null,
+        "parser_version": null,
+        "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+        "review_metadata": null,
+        "review_status": "pending"
+      },
+      "raw_scope": [
+        {
+          "album_id": 179068,
+          "approved": true,
+          "duplicate_of_id": null,
+          "event_edition_id": null,
+          "event_id": null,
+          "list_hidden_reason": null,
+          "raw_value": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+          "slot": "event",
+          "source_path": "data/kifu-album/19x19/91496863.sgf"
+        }
+      ]
+    }
+  ],
+  "registry_sha256": "984f917629be12be98e440dd3efddef5b4e381f057cfd970e66f4e1cab97892b",
+  "spec": {
+    "cells": [
+      {
+        "lang": "jp",
+        "new": "第74期王座戦挑戦手合5番勝負第1局",
+        "old": "第74期王座戦挑戦者決定戦5番勝負第1局",
+        "raw": "第74期王座战挑战赛5番棋1局",
+        "sources": [
+          "91574352"
+        ]
+      },
+      {
+        "lang": "ko",
+        "new": "제74기 왕좌전 도전5번기 제1국",
+        "old": "제74기 왕좌전 도전자 결정전 5선승부 1국",
+        "raw": "第74期王座战挑战赛5番棋1局",
+        "sources": [
+          "91574352"
+        ]
+      },
+      {
+        "lang": "ko",
+        "new": "제12회 국수산맥배 세계전 결승 신진서 VS 리웨이칭",
+        "old": "제12회 국수산맥배 세계전 결승 신진서 VS 이유청",
+        "raw": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+        "sources": [
+          "91449763"
+        ]
+      },
+      {
+        "lang": "ko",
+        "new": "제9회 오청원배 세계 여자 오픈전 국제 예선 결승",
+        "old": "제9회 우청원배 세계 여자 오픈전 국제 예선 결승",
+        "raw": "第9届吴清源杯世界女子公开赛国际预选决赛",
+        "sources": [
+          "91468818",
+          "91464854",
+          "91467988"
+        ]
+      },
+      {
+        "lang": "ko",
+        "new": "제9회 오청원배 세계 여자 바둑 오픈 예선 2라운드",
+        "old": "제9회 우청원배 세계 여자 바둑 오픈 예선 2라운드",
+        "raw": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+        "sources": [
+          "91496863"
+        ]
+      }
+    ],
+    "official_references": [
+      "https://www.nihonkiin.or.jp/match_news/match_info/74_1.html",
+      "https://www.nihonkiin.or.jp/match_news/match_result/74_17.html",
+      "https://www.baduk.or.kr/record/schedule_in.asp",
+      "https://www.baduk.or.kr/record/diary_in.asp?foreignKey=10001366"
+    ],
+    "original_manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+    "semantic_review": "astra_deployed_flow_review independently approved these exact five texts; native preimage/bundle approval is separate",
+    "version": "bounded-golaxy-event-semantic-correction-20261024-v1"
+  },
+  "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6",
+  "target": "TEST"
+}

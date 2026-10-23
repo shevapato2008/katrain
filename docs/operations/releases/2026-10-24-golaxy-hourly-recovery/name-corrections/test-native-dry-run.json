@@ -1,0 +1,23 @@
+{
+  "affected_albums": [
+    179060,
+    179064,
+    179065,
+    179066,
+    179067,
+    179068
+  ],
+  "approved": 5,
+  "bundle_sha256": "d05f9ebc2b2e348eb98a824bb3938c3f70f862f089b87f9b31d86bbfc7796c4c",
+  "candidate_count": 5,
+  "errors": [],
+  "estimated_undo_rows": 10,
+  "inventory_sha256": "79f606b3feea85817c56e27147014cf0cbc71633d549e6dab99b40dc64f7bf19",
+  "member_count": 5,
+  "missing": 0,
+  "pending": 0,
+  "ready": true,
+  "rejected": 0,
+  "write_errors": [],
+  "write_ready": true
+}

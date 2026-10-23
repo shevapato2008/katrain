@@ -1,0 +1,66 @@
+{
+  "date_played": "2026-10-22",
+  "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+  "publication_key": "19x19-batch-fc134b52cd61f94092118e61",
+  "source_id": "91506543",
+  "targets": {
+    "PROD": {
+      "album": {
+        "date_played": "2026-10-22",
+        "date_sort": "2026-10-22",
+        "duplicate_of_id": null,
+        "id": 178714,
+        "list_hidden_reason": null,
+        "source_path": "data/kifu-album/19x19/91506543.sgf"
+      },
+      "native_manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+      "native_receipt_sha256": "d46bf98430bc21b793ab83c40e46ff272843ae5d327b5145ac7a9f0025731699",
+      "native_status": "applied",
+      "public_api": {
+        "date_played": "2026-10-22",
+        "detail_status": 200,
+        "display_fields": {
+          "display_event": "52期碁圣战预选a组",
+          "display_player_black": "小林觉",
+          "display_player_white": "藤泽里菜"
+        },
+        "elapsed_seconds": 4.066,
+        "list_status": 200,
+        "sgf_sha256": "0b815c13fee8a9b5f811ceb171c5c6746ff4007b977763f34c55fc2607197515"
+      },
+      "source_album_count": 1,
+      "source_links": [
+        "data/kifu-album/19x19/91506543.sgf"
+      ]
+    },
+    "TEST": {
+      "album": {
+        "date_played": "2026-10-22",
+        "date_sort": "2026-10-22",
+        "duplicate_of_id": null,
+        "id": 179050,
+        "list_hidden_reason": null,
+        "source_path": "data/kifu-album/19x19/91506543.sgf"
+      },
+      "native_manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+      "native_receipt_sha256": "3b49b6deefa3a49de3cba92bd3d4d157513fb28f64fd48d17e0392bee2cdc7a5",
+      "native_status": "applied",
+      "public_api": {
+        "date_played": "2026-10-22",
+        "detail_status": 200,
+        "display_fields": {
+          "display_event": "52期碁圣战预选a组",
+          "display_player_black": "小林觉",
+          "display_player_white": "藤泽里菜"
+        },
+        "elapsed_seconds": 2.636,
+        "list_status": 200,
+        "sgf_sha256": "0b815c13fee8a9b5f811ceb171c5c6746ff4007b977763f34c55fc2607197515"
+      },
+      "source_album_count": 1,
+      "source_links": [
+        "data/kifu-album/19x19/91506543.sgf"
+      ]
+    }
+  }
+}

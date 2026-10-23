@@ -1,0 +1,244 @@
+{
+  "database": {
+    "PROD": {
+      "latest_normalized_date": "2026-10-23",
+      "native_batches": [
+        {
+          "applied_at": "2026-10-20 12:34:24.023333+00:00",
+          "game_count": 44,
+          "id": 885,
+          "manifest_sha256": "d42944b656b95b55f8c10aebecef82a882aaac6b4ce0aec69e251c3415962875",
+          "publication_key": "19x19-batch-2565d295b7498111a097ea40",
+          "receipt_sha256": "30559abf5fbed4b4edd8019c7e121f82293c08b38db5379afb6dfa83616b6724",
+          "status": "applied"
+        },
+        {
+          "applied_at": "2026-10-20 13:38:38.143934+00:00",
+          "game_count": 2,
+          "id": 887,
+          "manifest_sha256": "bd374a966a2e4d6599787d57820512f9b94adbe5b2c308d0b15aa9ada46b9799",
+          "publication_key": "19x19-batch-bd5fdf7640ad9a37de370794",
+          "receipt_sha256": "012f0241c299ce24a6b3c4cc8468422dcd922397f91e389d1ce3f9511b1f6d6e",
+          "status": "applied"
+        },
+        {
+          "applied_at": "2026-10-21 02:57:39.813490+00:00",
+          "game_count": 32,
+          "id": 891,
+          "manifest_sha256": "13a663101de18f61bc03a5ef89007b8e753a94f78652d7717d0eb42fd351363f",
+          "publication_key": "19x19-batch-31fe3d7bf66a3f1cb6f7c193",
+          "receipt_sha256": "6bc6de19cf6f4d639e3dbab87e13a331e45a35645731ffd012c1d358c7620c66",
+          "status": "applied"
+        },
+        {
+          "applied_at": "2026-10-23 17:17:55.716653+00:00",
+          "game_count": 10,
+          "id": 902,
+          "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+          "publication_key": "19x19-batch-fc134b52cd61f94092118e61",
+          "receipt_sha256": "d46bf98430bc21b793ab83c40e46ff272843ae5d327b5145ac7a9f0025731699",
+          "status": "applied"
+        },
+        {
+          "applied_at": "2026-10-23 17:40:02.312647+00:00",
+          "game_count": 10,
+          "id": 904,
+          "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+          "publication_key": "19x19-batch-62854d648ca7b10ad8f3290d",
+          "receipt_sha256": "3610cf1dffdbaf1992a3d109cd489e70b8ddec6989c9bd4326a0ae2e060754eb",
+          "status": "applied"
+        }
+      ],
+      "public": 176593,
+      "source_id_album_counts": {
+        "91465392": 0,
+        "91496859": 0,
+        "91506543": 1,
+        "91571067": 0,
+        "91574352": 1
+      },
+      "total": 176852
+    },
+    "TEST": {
+      "latest_normalized_date": "2026-10-23",
+      "native_batches": [
+        {
+          "applied_at": "2026-10-20 12:03:30.499523+00:00",
+          "game_count": 44,
+          "id": 892,
+          "manifest_sha256": "d42944b656b95b55f8c10aebecef82a882aaac6b4ce0aec69e251c3415962875",
+          "publication_key": "19x19-batch-2565d295b7498111a097ea40",
+          "receipt_sha256": "758a5e9b9a03cb0db96268efb6968c69c05c61bb1fb1fd1f1037a6b093225290",
+          "status": "applied"
+        },
+        {
+          "applied_at": "2026-10-20 13:19:52.153162+00:00",
+          "game_count": 2,
+          "id": 894,
+          "manifest_sha256": "bd374a966a2e4d6599787d57820512f9b94adbe5b2c308d0b15aa9ada46b9799",
+          "publication_key": "19x19-batch-bd5fdf7640ad9a37de370794",
+          "receipt_sha256": "14e4c07939bdfd56b6f0f8300278d346dbc73b1ce553b549365e5b5367d9a08c",
+          "status": "applied"
+        },
+        {
+          "applied_at": "2026-10-21 01:14:56.504923+00:00",
+          "game_count": 32,
+          "id": 896,
+          "manifest_sha256": "13a663101de18f61bc03a5ef89007b8e753a94f78652d7717d0eb42fd351363f",
+          "publication_key": "19x19-batch-31fe3d7bf66a3f1cb6f7c193",
+          "receipt_sha256": "a5b948416e4df836390fc6e2a0408075b9c480dd8a05865f6e82132e3278cd94",
+          "status": "applied"
+        },
+        {
+          "applied_at": "2026-10-23 16:54:37.876477+00:00",
+          "game_count": 10,
+          "id": 909,
+          "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+          "publication_key": "19x19-batch-fc134b52cd61f94092118e61",
+          "receipt_sha256": "3b49b6deefa3a49de3cba92bd3d4d157513fb28f64fd48d17e0392bee2cdc7a5",
+          "status": "applied"
+        },
+        {
+          "applied_at": "2026-10-23 17:21:07.104496+00:00",
+          "game_count": 10,
+          "id": 911,
+          "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+          "publication_key": "19x19-batch-62854d648ca7b10ad8f3290d",
+          "receipt_sha256": "1a51a7f6fcf8a41af328276fa34dfcd17565ace6244cd5a4c8dd526757ba908f",
+          "status": "applied"
+        }
+      ],
+      "public": 176593,
+      "source_id_album_counts": {
+        "91465392": 0,
+        "91496859": 0,
+        "91506543": 1,
+        "91571067": 0,
+        "91574352": 1
+      },
+      "total": 176852
+    }
+  },
+  "expected_source_hashes": {
+    "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+    "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+    "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+    "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+    "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+    "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+    "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+    "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+    "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+    "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+    "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a"
+  },
+  "http": {
+    "PROD": [
+      {
+        "path": "/api/v1/health",
+        "sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f",
+        "status": 200
+      },
+      {
+        "path": "/galaxy/play",
+        "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+        "status": 200
+      },
+      {
+        "path": "/kiosk/play/pvp/lobby",
+        "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+        "status": 200
+      }
+    ],
+    "TEST": [
+      {
+        "path": "/api/v1/health",
+        "sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f",
+        "status": 200
+      },
+      {
+        "path": "/galaxy/play",
+        "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+        "status": 200
+      },
+      {
+        "path": "/kiosk/play/pvp/lobby",
+        "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+        "status": 200
+      }
+    ]
+  },
+  "overlay_revision": "4bf9a699a35ecdf025f5ec2f414425e3f2a13693",
+  "prod_cron": {
+    "build_sha": "56f53fa4d29ee041faa39f00d5b27a12613ee0e5",
+    "enabled_env_flag_present": false,
+    "has_ingest_config": false,
+    "kifu_ingest_job_module_present": false
+  },
+  "recorded_at": "2026-10-23T19:01:15.062267+00:00",
+  "services": {
+    "katrain-cron": {
+      "build_sha": "4bf9a699a35ecdf025f5ec2f414425e3f2a13693",
+      "host": "home-ubuntu",
+      "image_id": "sha256:9c414726fa56da734e7f47f6fb409d6373e747a9198c4c80bb31fc4606bccb98",
+      "image_tag": "katrain-golaxy:4bf9a699a-cron",
+      "running": true,
+      "source_hashes": {
+        "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+        "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+        "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+        "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+        "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+        "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+        "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+        "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+        "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+        "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+        "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a"
+      },
+      "started_at": "2026-10-23T18:32:20.87269849Z"
+    },
+    "katrain-ucloud-katrain-web-1": {
+      "build_sha": "4bf9a699a35ecdf025f5ec2f414425e3f2a13693",
+      "host": "ucloud-v100",
+      "image_id": "sha256:6ced68bdd5db0fde24838f384c450bcd7e329b681eaa40788578bc0a0c4042d2",
+      "image_tag": "katrain-golaxy:4bf9a699a-name-guard-overlay",
+      "running": true,
+      "source_hashes": {
+        "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+        "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+        "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+        "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+        "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+        "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+        "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+        "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+        "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+        "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+        "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a"
+      },
+      "started_at": "2026-10-23T18:29:04.0885886Z"
+    },
+    "katrain-web": {
+      "build_sha": "4bf9a699a35ecdf025f5ec2f414425e3f2a13693",
+      "host": "home-ubuntu",
+      "image_id": "sha256:2eaccedb9fe74f51810b9e77e2367bf2cd40b0181b19719c9b33c568fde735d8",
+      "image_tag": "katrain-golaxy:4bf9a699a-name-guard-overlay",
+      "running": true,
+      "source_hashes": {
+        "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+        "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+        "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+        "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+        "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+        "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+        "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+        "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+        "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+        "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+        "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a"
+      },
+      "started_at": "2026-10-23T18:29:35.43122185Z"
+    }
+  }
+}

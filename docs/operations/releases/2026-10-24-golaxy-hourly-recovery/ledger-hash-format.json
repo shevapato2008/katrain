@@ -1,0 +1,7 @@
+{
+  "canonical_json_sha256_before_and_after_run2": "409f9e1dc58b1046658958cfd7fed88416c5cdcf1dd0c21363355417db119370",
+  "captured_at": "2026-10-23T18:07:08.105111+00:00",
+  "file": "/app/data/kifu_ingest/qwen-usage-20261023.json",
+  "note": "ledger[*].sha256 fields in state snapshots are canonical JSON SHA-256. Raw file-byte hash before run2 was not captured; no claim is made that raw before/after bytes were compared.",
+  "raw_file_sha256_after_run2": "f1298062bb1d4c9393abc8fe5b58611601db060ca00c15b406659ac2688e6cb9"
+}

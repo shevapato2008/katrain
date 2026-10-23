@@ -1,5 +1,7 @@
 # 星阵小时棋谱同步修复与恢复说明
 
+> 这是 10 月 23 日本地交付时点的说明。10 月 24 日获准后的双云部署、真实 20 盘新谱、旧 78 盘续验、重复轮次与后续独立流程审核见[发布恢复记录](releases/2026-10-24-golaxy-hourly-recovery/README.md)。下文的“未部署”描述保留原时点含义。
+
 本轮为本地代码修复和独立审核。**没有推送、合并、部署、改生产队列、补跑真实导入或调用付费模型。** 生产 cron 在部署后才会使用新逻辑，不能把本地测试当作线上已恢复。
 
 最终代码 `22fff109ea98f495c36cd527c0a28e941b5cb0c9` 已获另一位独立 Astra Max **Approved／无必须修复项**；聚焦回归 **295 passed**。参见 [整体审核](../superpowers/reviews/2026-10-23-golaxy-hourly-final-astra-review.md) 与 [本地验证记录](../superpowers/reviews/2026-10-23-golaxy-hourly-local-verification.md)。

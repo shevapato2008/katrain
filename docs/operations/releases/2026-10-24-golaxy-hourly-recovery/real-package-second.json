@@ -1,0 +1,678 @@
+{
+  "captured_at": "2026-10-23T17:55:44.615751+00:00",
+  "games": [
+    {
+      "date_played": "2026-10-23",
+      "raw_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73",
+      "sgf_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73",
+      "source_id": "91574352"
+    },
+    {
+      "date_played": "2026-10-22",
+      "raw_sha256": "e5d4513807806a7e19ef61aee7a1f54e58d323a041a25c75e97fd71654cbf22b",
+      "sgf_sha256": "e5d4513807806a7e19ef61aee7a1f54e58d323a041a25c75e97fd71654cbf22b",
+      "source_id": "91511889"
+    },
+    {
+      "date_played": "2026-10-22",
+      "raw_sha256": "fca9eafa3e04d8e03882e50b06c8434fef6678aba7976fd96f7c74c54a865e49",
+      "sgf_sha256": "fca9eafa3e04d8e03882e50b06c8434fef6678aba7976fd96f7c74c54a865e49",
+      "source_id": "91519065"
+    },
+    {
+      "date_played": "2026-10-22",
+      "raw_sha256": "e65536dbc4f659156266a32d8a86da6c7672212547319bc2aa1c2f1a2bc54b0b",
+      "sgf_sha256": "e65536dbc4f659156266a32d8a86da6c7672212547319bc2aa1c2f1a2bc54b0b",
+      "source_id": "91511645"
+    },
+    {
+      "date_played": "2026-10-21",
+      "raw_sha256": "c181e6eb194774f691cb0c0c046a8e93415f269b55941c46a8ea5b546148df35",
+      "sgf_sha256": "c181e6eb194774f691cb0c0c046a8e93415f269b55941c46a8ea5b546148df35",
+      "source_id": "91468818"
+    },
+    {
+      "date_played": "2026-10-21",
+      "raw_sha256": "6b192cc00e152117064350ba19f6018282eb527b30fc5f48c5332b95378294a7",
+      "sgf_sha256": "6b192cc00e152117064350ba19f6018282eb527b30fc5f48c5332b95378294a7",
+      "source_id": "91464854"
+    },
+    {
+      "date_played": "2026-10-21",
+      "raw_sha256": "72ef4fcaf1e96922262d7f24feed011d8ac9a47894f67c28899368fe47ea59e4",
+      "sgf_sha256": "72ef4fcaf1e96922262d7f24feed011d8ac9a47894f67c28899368fe47ea59e4",
+      "source_id": "91467988"
+    },
+    {
+      "date_played": "2026-10-21",
+      "raw_sha256": "f595ce880b4ae29aea06e669c60d26c8c4b13d279c65b6aac8759a74e93ba109",
+      "sgf_sha256": "f595ce880b4ae29aea06e669c60d26c8c4b13d279c65b6aac8759a74e93ba109",
+      "source_id": "91449763"
+    },
+    {
+      "date_played": "2026-10-19",
+      "raw_sha256": "0a6051fdb332017de50bea49fbfa5fdd71c22d3d96b7a10a282910b7cba9b16f",
+      "sgf_sha256": "0a6051fdb332017de50bea49fbfa5fdd71c22d3d96b7a10a282910b7cba9b16f",
+      "source_id": "91496863"
+    },
+    {
+      "date_played": "2026-10-19",
+      "raw_sha256": "ed44e2a3f7d2cdd444f1161c490371e984092a506cd588b0b1e86caa40fd4336",
+      "sgf_sha256": "ed44e2a3f7d2cdd444f1161c490371e984092a506cd588b0b1e86caa40fd4336",
+      "source_id": "91496878"
+    }
+  ],
+  "manifest_canonical_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+  "manifest_file_sha256": "fba32415e9a648cec428b86d29ecbc701a4f39d5abb2de4515c753f44a5598f6",
+  "name_decisions": [
+    {
+      "decision_sha256": "f43afbdd5b93fabd01bb067c1726fcd633fd707f7b8c4a502631af73ec71201c",
+      "key": "第74期王座战挑战赛5番棋1局",
+      "kind": "raw_event"
+    },
+    {
+      "decision_sha256": "5813d81bbcabdaff1aca032893729fe433886cfd58dc8cecd9e4f06015316b38",
+      "key": "第31届韩国女子国手战半决赛",
+      "kind": "raw_event"
+    },
+    {
+      "decision_sha256": "fe16f92bea2eb0c2a086004988185db3e6aee27b4a50ef8a4d9d36cab02eb60b",
+      "key": "首届玄乐杯决赛5番棋1局",
+      "kind": "raw_event"
+    },
+    {
+      "decision_sha256": "540cd9ed92a33601a491c4136621413ae0a27787956ad4b59ebbde58eb1621f8",
+      "key": "75期王座战预选a组",
+      "kind": "raw_event"
+    },
+    {
+      "decision_sha256": "8f9bf919308a00d19f62dbdd683fa0bf0e88d5ca160c432a5e4df6c59a7cebb6",
+      "key": "第9届吴清源杯世界女子公开赛国际预选决赛",
+      "kind": "raw_event"
+    },
+    {
+      "decision_sha256": "0cb6d8850c05c1cf32d8d63554d2ace0363dc233d517cb3f3b8c548844c66f92",
+      "key": "李书英",
+      "kind": "raw_player"
+    },
+    {
+      "decision_sha256": "f536e1461ffe69c8a6576cdf4f600ae9f9f1286989320fd32af138e56d44e560",
+      "key": "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+      "kind": "raw_event"
+    },
+    {
+      "decision_sha256": "09c4329469fde9946c863f508b041d4c3c29646114b594e2980706b67b7212d1",
+      "key": "第9届吴清源杯世界女子围棋公开赛预选赛第2轮",
+      "kind": "raw_event"
+    },
+    {
+      "decision_sha256": "69f64d1a2c211548a29d467dd526924baededf4bd085bb7508ace750f6d76694",
+      "key": "第12届国手山脉杯世界围棋最强战16强战",
+      "kind": "raw_event"
+    }
+  ],
+  "preparation_runtime_source_sha": "ef96a50a7e69e93e57e890cca837c9298f45f329",
+  "prod_receipt": {
+    "batch_id": 904,
+    "games": [
+      {
+        "action": "inserted",
+        "album_id": 178724,
+        "source_item_id": "91574352",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178725,
+        "source_item_id": "91511889",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178726,
+        "source_item_id": "91519065",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178727,
+        "source_item_id": "91511645",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178728,
+        "source_item_id": "91468818",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178729,
+        "source_item_id": "91464854",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178730,
+        "source_item_id": "91467988",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178731,
+        "source_item_id": "91449763",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178732,
+        "source_item_id": "91496863",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 178733,
+        "source_item_id": "91496878",
+        "source_key": "19x19"
+      }
+    ],
+    "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+    "name_batch_id": null,
+    "reviewed_name_batch_id": 905,
+    "status": "applied"
+  },
+  "prod_verification": {
+    "checks": [
+      {
+        "album_id": 178724,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178724,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178724,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178724,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178724,
+        "lang": "en"
+      },
+      {
+        "album_id": 178725,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178725,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178725,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178725,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178725,
+        "lang": "en"
+      },
+      {
+        "album_id": 178726,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178726,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178726,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178726,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178726,
+        "lang": "en"
+      },
+      {
+        "album_id": 178727,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178727,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178727,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178727,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178727,
+        "lang": "en"
+      },
+      {
+        "album_id": 178728,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178728,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178728,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178728,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178728,
+        "lang": "en"
+      },
+      {
+        "album_id": 178729,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178729,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178729,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178729,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178729,
+        "lang": "en"
+      },
+      {
+        "album_id": 178730,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178730,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178730,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178730,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178730,
+        "lang": "en"
+      },
+      {
+        "album_id": 178731,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178731,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178731,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178731,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178731,
+        "lang": "en"
+      },
+      {
+        "album_id": 178732,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178732,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178732,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178732,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178732,
+        "lang": "en"
+      },
+      {
+        "album_id": 178733,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178733,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178733,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178733,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178733,
+        "lang": "en"
+      }
+    ],
+    "games": 10,
+    "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+    "status": "verified"
+  },
+  "publication_key": "19x19-batch-62854d648ca7b10ad8f3290d",
+  "recovery_runtime_source_sha": "662b6a25048ee2bb3752bdbf54fb3a927ab68084",
+  "remote_manifest_path": "/app/data/kifu_ingest/packages/91574352-57a579a34b83134e.json",
+  "state": {
+    "attempts": 1,
+    "created_at": "2026-10-23 17:20:07.263087+00:00",
+    "error": null,
+    "resume_phase": null,
+    "status": "prod_synced",
+    "updated_at": "2026-10-23 17:55:09.276603+00:00"
+  },
+  "test_receipt": {
+    "batch_id": 911,
+    "games": [
+      {
+        "action": "inserted",
+        "album_id": 179060,
+        "source_item_id": "91574352",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179061,
+        "source_item_id": "91511889",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179062,
+        "source_item_id": "91519065",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179063,
+        "source_item_id": "91511645",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179064,
+        "source_item_id": "91468818",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179065,
+        "source_item_id": "91464854",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179066,
+        "source_item_id": "91467988",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179067,
+        "source_item_id": "91449763",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179068,
+        "source_item_id": "91496863",
+        "source_key": "19x19"
+      },
+      {
+        "action": "inserted",
+        "album_id": 179069,
+        "source_item_id": "91496878",
+        "source_key": "19x19"
+      }
+    ],
+    "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+    "name_batch_id": null,
+    "reviewed_name_batch_id": 912,
+    "status": "applied"
+  },
+  "test_verification": {
+    "checks": [
+      {
+        "album_id": 179060,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179060,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179060,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179060,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179060,
+        "lang": "en"
+      },
+      {
+        "album_id": 179061,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179061,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179061,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179061,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179061,
+        "lang": "en"
+      },
+      {
+        "album_id": 179062,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179062,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179062,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179062,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179062,
+        "lang": "en"
+      },
+      {
+        "album_id": 179063,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179063,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179063,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179063,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179063,
+        "lang": "en"
+      },
+      {
+        "album_id": 179064,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179064,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179064,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179064,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179064,
+        "lang": "en"
+      },
+      {
+        "album_id": 179065,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179065,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179065,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179065,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179065,
+        "lang": "en"
+      },
+      {
+        "album_id": 179066,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179066,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179066,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179066,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179066,
+        "lang": "en"
+      },
+      {
+        "album_id": 179067,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179067,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179067,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179067,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179067,
+        "lang": "en"
+      },
+      {
+        "album_id": 179068,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179068,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179068,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179068,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179068,
+        "lang": "en"
+      },
+      {
+        "album_id": 179069,
+        "lang": "cn"
+      },
+      {
+        "album_id": 179069,
+        "lang": "tw"
+      },
+      {
+        "album_id": 179069,
+        "lang": "jp"
+      },
+      {
+        "album_id": 179069,
+        "lang": "ko"
+      },
+      {
+        "album_id": 179069,
+        "lang": "en"
+      }
+    ],
+    "games": 10,
+    "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+    "status": "verified"
+  }
+}

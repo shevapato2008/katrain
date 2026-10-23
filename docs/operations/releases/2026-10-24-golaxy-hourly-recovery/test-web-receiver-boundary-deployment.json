@@ -1,0 +1,1641 @@
+{
+  "actual_files": {
+    "receiver_entrypoint_sha256": "704c4f6fc5a63b939c964cf4f218caf28722ccb7d799216e06ebe2b2d8794b15",
+    "receiver_import": "ok",
+    "sha256": {
+      "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+      "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+      "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+      "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+      "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+      "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+      "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+      "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+      "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+      "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a",
+      "katrain/web/core/pvp_territory.py": "8bdc390ac039b23b4b09f325e4ade41e1595f2d1dfd65ebc598d69a257b5ba52",
+      "katrain/web/server.py": "d7525ae106b1fc1347565231902fe4340b28572065135a5fbfd8a06575c2315a",
+      "katrain/web/static-kiosk-2d/index.html": "791edadb726aa6dd2c7dc019ead60acc1de15b056e51a721aa3f485c28bd9c1f",
+      "katrain/web/static/index.html": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5"
+    },
+    "source_compile_and_imports": "ok",
+    "static_trees": {
+      "katrain/web/static": {
+        "file_count": 470,
+        "tree_sha256": "6a06e8bd37f874ede6085c7478420710501e25d948ab61544c113dfb9dbc5dd3"
+      },
+      "katrain/web/static-kiosk-2d": {
+        "file_count": 323,
+        "tree_sha256": "de92b8a3d6a6910eb0b75b80b3e9c3c0a363cea00fc64a07546725b5ef3d9b56"
+      }
+    }
+  },
+  "after": {
+    "build_sha": "662b6a25048ee2bb3752bdbf54fb3a927ab68084",
+    "health_status": null,
+    "id": "04e2f223f66fa967a16f6842584af7a5ce2fa0bf2d4f92457039322b465c25a5",
+    "image_id": "sha256:21276479b57a0cf242ec07f349ee03c70d92e411e029a950590497c2b1425719",
+    "image_tag": "katrain-golaxy:662b6a250-publication-guard-overlay",
+    "name": "/katrain-web",
+    "running": true,
+    "started_at": "2026-10-23T17:44:48.148066875Z"
+  },
+  "base_image_id": "sha256:6f3926b276fa63303105eb98f5af71b3d7652b010a03bf4d5f576fc22abd3de2",
+  "baseline_files": {
+    "sha256": {
+      "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+      "katrain/cron/jobs/kifu_ingest.py": "6932356adc511ae95b6f5f2e1cf305d54d2bae9b5c1a51f136c1c2b124c62416",
+      "katrain/kifu_ingest/catalog.py": "07b41bac096b3f46a832ab01e968b3aaccccbac8e879bdb94bf0b8c623872fdc",
+      "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+      "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+      "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+      "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+      "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+      "katrain/kifu_ingest/sync.py": "a37df16f359e1b7bafd1098e3d2113cc9a408ef6bc7666213f8f5f346ce259b2",
+      "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a",
+      "katrain/web/core/pvp_territory.py": "8bdc390ac039b23b4b09f325e4ade41e1595f2d1dfd65ebc598d69a257b5ba52",
+      "katrain/web/server.py": "d7525ae106b1fc1347565231902fe4340b28572065135a5fbfd8a06575c2315a",
+      "katrain/web/static-kiosk-2d/index.html": "791edadb726aa6dd2c7dc019ead60acc1de15b056e51a721aa3f485c28bd9c1f",
+      "katrain/web/static/index.html": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5"
+    },
+    "static_trees": {
+      "katrain/web/static": {
+        "file_count": 470,
+        "tree_sha256": "6a06e8bd37f874ede6085c7478420710501e25d948ab61544c113dfb9dbc5dd3"
+      },
+      "katrain/web/static-kiosk-2d": {
+        "file_count": 323,
+        "tree_sha256": "de92b8a3d6a6910eb0b75b80b3e9c3c0a363cea00fc64a07546725b5ef3d9b56"
+      }
+    }
+  },
+  "before": {
+    "build_sha": "ef96a50a7e69e93e57e890cca837c9298f45f329",
+    "health_status": null,
+    "id": "396830aa52dfcc08e1bc96777118933f121206d88b1d9be1af6c07d68c4030f8",
+    "image_id": "sha256:6f3926b276fa63303105eb98f5af71b3d7652b010a03bf4d5f576fc22abd3de2",
+    "image_tag": "katrain-golaxy:ef96a50a7-python-overlay",
+    "name": "/katrain-web",
+    "running": true,
+    "started_at": "2026-10-23T16:23:05.488133551Z"
+  },
+  "candidate_checks": {
+    "receiver_entrypoint_sha256": "704c4f6fc5a63b939c964cf4f218caf28722ccb7d799216e06ebe2b2d8794b15",
+    "receiver_import": "ok",
+    "sha256": {
+      "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+      "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+      "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+      "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+      "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+      "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+      "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+      "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+      "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+      "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a",
+      "katrain/web/core/pvp_territory.py": "8bdc390ac039b23b4b09f325e4ade41e1595f2d1dfd65ebc598d69a257b5ba52",
+      "katrain/web/server.py": "d7525ae106b1fc1347565231902fe4340b28572065135a5fbfd8a06575c2315a",
+      "katrain/web/static-kiosk-2d/index.html": "791edadb726aa6dd2c7dc019ead60acc1de15b056e51a721aa3f485c28bd9c1f",
+      "katrain/web/static/index.html": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5"
+    },
+    "source_compile_and_imports": "ok",
+    "static_trees": {
+      "katrain/web/static": {
+        "file_count": 470,
+        "tree_sha256": "6a06e8bd37f874ede6085c7478420710501e25d948ab61544c113dfb9dbc5dd3"
+      },
+      "katrain/web/static-kiosk-2d": {
+        "file_count": 323,
+        "tree_sha256": "de92b8a3d6a6910eb0b75b80b3e9c3c0a363cea00fc64a07546725b5ef3d9b56"
+      }
+    }
+  },
+  "candidate_network": "none",
+  "compose_project": "katrain",
+  "compose_service": "katrain-web",
+  "deploy_command": [
+    "docker",
+    "compose",
+    "--project-name",
+    "katrain",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml",
+    "-f",
+    "/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+    "up",
+    "-d",
+    "--no-deps",
+    "--no-build",
+    "--pull",
+    "never",
+    "--force-recreate",
+    "katrain-web"
+  ],
+  "deployed_at": "2026-10-23T17:44:57.657840+00:00",
+  "excluded_published_ogs_files": [
+    "katrain/web/api/v1/endpoints/board.py",
+    "katrain/web/api/v1/endpoints/tutorials.py",
+    "katrain/web/core/remote_client.py",
+    "katrain/web/tutorials/ogs_course.py",
+    "katrain/web/ui/src/api/__tests__/tutorialReadonly.guard.test.ts",
+    "katrain/web/ui/src/api/tutorialApi.ts",
+    "katrain/web/ui/src/kiosk/KioskApp.tsx",
+    "katrain/web/ui/src/kiosk/components/layout/KioskLayout.test.tsx",
+    "katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx",
+    "katrain/web/ui/src/kiosk/pages/OgsCourseChapterPage.tsx",
+    "katrain/web/ui/src/kiosk/pages/OgsCourseExercisePage.tsx",
+    "katrain/web/ui/src/kiosk/pages/OgsCourseHomePage.tsx",
+    "katrain/web/ui/src/kiosk/pages/OgsCoursePages.test.tsx",
+    "katrain/web/ui/src/kiosk/pages/TutorialBooksPage.test.tsx",
+    "katrain/web/ui/src/kiosk/pages/TutorialBooksPage.tsx",
+    "katrain/web/ui/src/kiosk/pages/TutorialCategoriesPage.test.tsx",
+    "katrain/web/ui/src/kiosk/pages/TutorialCategoriesPage.tsx",
+    "katrain/web/ui/src/kiosk/pages/TutorialSectionPage.test.tsx",
+    "katrain/web/ui/src/kiosk/pages/TutorialSectionPage.tsx",
+    "katrain/web/ui/src/kiosk/tutorial/OgsCourseBoard.test.tsx",
+    "katrain/web/ui/src/kiosk/tutorial/OgsCourseBoard.tsx",
+    "katrain/web/ui/src/kiosk/tutorial/ogs-course.css",
+    "katrain/web/ui/src/kiosk/tutorial/ogsExercise.test.ts",
+    "katrain/web/ui/src/kiosk/tutorial/ogsExercise.ts",
+    "katrain/web/ui/src/kiosk/tutorial/useOgsPhysicalBoard.ts",
+    "katrain/web/ui/src/types/ogsCourse.ts",
+    "katrain/web/ui/tests/tutorial-kiosk.spec.ts"
+  ],
+  "game_created": false,
+  "host": "home-ubuntu",
+  "http_checks": [
+    {
+      "bytes": 89,
+      "content_type": "application/json",
+      "health": {
+        "engines": {
+          "cloud": "unconfigured",
+          "local": "reachable"
+        },
+        "status": "ok",
+        "version": "1.17.1"
+      },
+      "sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f",
+      "status": 200,
+      "url": "http://127.0.0.1:8001/api/v1/health"
+    },
+    {
+      "bytes": 89,
+      "content_type": "application/json",
+      "health": {
+        "engines": {
+          "cloud": "unconfigured",
+          "local": "reachable"
+        },
+        "status": "ok",
+        "version": "1.17.1"
+      },
+      "sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f",
+      "status": 200,
+      "url": "https://go.sailorvoyage.top/api/v1/health"
+    },
+    {
+      "bytes": 4558,
+      "content_type": "text/html; charset=utf-8",
+      "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+      "status": 200,
+      "url": "https://go.sailorvoyage.top/galaxy/play"
+    },
+    {
+      "bytes": 4558,
+      "content_type": "text/html; charset=utf-8",
+      "sha256": "c9b96a5386d784b85e7cdba18d6955a920cfa89d3d9feab1e48267d1341860e5",
+      "status": 200,
+      "url": "https://go.sailorvoyage.top/kiosk/play/pvp/lobby"
+    }
+  ],
+  "inherited_previous_source_files": [
+    "katrain/cron/config.py",
+    "katrain/kifu_ingest/exclusions.py",
+    "katrain/kifu_ingest/maintenance.py",
+    "katrain/kifu_ingest/recent.py",
+    "katrain/kifu_ingest/source_19x19.py",
+    "katrain/kifu_ingest/staging.py",
+    "katrain/kifu_ingest/verification.py"
+  ],
+  "lifespan_started": false,
+  "model_called": false,
+  "new_image_id": "sha256:21276479b57a0cf242ec07f349ee03c70d92e411e029a950590497c2b1425719",
+  "new_image_tag": "katrain-golaxy:662b6a250-publication-guard-overlay",
+  "new_override_file": "/mnt/disk1/fan/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+  "original_compose_file_sha256": {
+    "/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json": "451e37fcbe6ca77e7940dd00f108e5723301e6851c851b6857d8bf224b4017f3",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json": "8a08521fd3119d3013471ca9f5ed08ac20ce72355bd13385767433a605e71154",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json": "c41f3fed3c3103b456e23905492233ba84fe6070dfdf06ea8bb584bb2c67125c",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml": "41976977cb2a876bf798cfdc7aaf130fd73fb25d0d78b409ec55ed9a7e7bffd5",
+    "/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json": "7f3d53bdd81eb4bb5047374a28a0608d81d3ff143b6f933bdbe0ee78e3470cd9"
+  },
+  "original_compose_files": [
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml",
+    "/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+    "/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json"
+  ],
+  "original_compose_files_unchanged": true,
+  "other_container_comparison_exclusions": [
+    "/katrain-cron"
+  ],
+  "other_containers_after": {
+    "/intelligent_leavitt": {
+      "id": "7cf0f79379d14a93fcfaa509601b48d4d746c9cb8a3212aaba96f04350131544",
+      "running": false,
+      "started_at": "2026-09-30T18:52:08.473540344Z"
+    },
+    "/katago-calib": {
+      "id": "615ee63dceea20ffbb885ef89e23d51972a348051c120cf5dca16eb0cd91506b",
+      "running": true,
+      "started_at": "2026-08-13T04:45:16.933340189Z"
+    },
+    "/katago-gpu0": {
+      "id": "2f589d0d1f82c6728a228bc9a77ce48bfcd73b617168b431b75efaf0df3734a8",
+      "running": true,
+      "started_at": "2026-08-25T09:19:40.53463688Z"
+    },
+    "/katago-gpu1": {
+      "id": "b75a25eef03d61f641d676ff4ac886792c24594f0a4aa43620db6db8a7a3687c",
+      "running": true,
+      "started_at": "2026-10-02T08:43:48.752509172Z"
+    },
+    "/katago-verified-kifu-gpu0-20261007": {
+      "id": "6204f9209f025dd784187c4744a083ab645cc914c6b579d7db99172eb36cff42",
+      "running": false,
+      "started_at": "2026-10-07T07:03:24.415582206Z"
+    },
+    "/katrain-admin": {
+      "id": "b887a3623b088a984520ccc86f5b8a5c9cdbf6ec63f236e74c059b12ee2cf93e",
+      "running": true,
+      "started_at": "2026-10-21T05:34:35.586927099Z"
+    },
+    "/katrain-kifu-42d-test": {
+      "id": "b0bfacccd7d0bb94874475bd2fc7c5732caf74f7ffb73e2728b4faf0e70dd0df",
+      "running": true,
+      "started_at": "2026-10-01T09:46:32.361532651Z"
+    },
+    "/katrain-minio": {
+      "id": "5a1b5d8b022b2afbf6ad0aab4d661032b1f6940cfa0ab770423826225d246ab8",
+      "running": true,
+      "started_at": "2026-08-11T04:40:20.021709016Z"
+    },
+    "/katrain-minio-setup": {
+      "id": "c894a276ed34cdcdfb295e90329f00ecd4fbdade8542b0ad8997ee0c4d96e41d",
+      "running": false,
+      "started_at": "2026-06-27T17:38:49.470738345Z"
+    },
+    "/katrain-postgres": {
+      "id": "b32fad7f168eebf03ef9650f094449964fe924541cae4f6b979d5f4ccbb5bf35",
+      "running": true,
+      "started_at": "2026-08-11T04:40:20.031540875Z"
+    },
+    "/kifu-active-engine-proxy-20261018": {
+      "id": "7382b33454a001455ba2e79fc77c413b81cee604abbc80059e8db357f5652d96",
+      "running": false,
+      "started_at": "2026-10-18T08:19:44.576330279Z"
+    },
+    "/kifu-batch50-gpu0-20261006": {
+      "id": "536952402d8ac537f9d1455b51d7bf9684a7e5629469c4b08d4356a800e44ad3",
+      "running": false,
+      "started_at": "2026-10-05T17:22:51.812367006Z"
+    },
+    "/kifu-batch50-gpu1-20261006": {
+      "id": "6a8ccf7c50c1f5ba9b6f7d1b007416bc38175258f078998da9ce5a5a6d856385",
+      "running": false,
+      "started_at": "2026-10-05T17:22:52.180487222Z"
+    },
+    "/kifu-default-gpu0-20261007": {
+      "id": "1bddf8e45baad57ae52dff22d6b242eaca09656e19a23e40e60f323298f5b786",
+      "running": false,
+      "started_at": "2026-10-07T07:04:57.57311033Z"
+    },
+    "/kifu-default-gpu1-20261007": {
+      "id": "9b60e4c48b7b55d5480ca0061af0bd6abcb217e1768a14dc860e8645d302aae6",
+      "running": false,
+      "started_at": "2026-10-07T07:04:57.955102094Z"
+    },
+    "/kifu-five-test-final-rehearsal-20261003": {
+      "id": "749f37a3acf5c39c16572a0ebb49c8ce976b46c3a2a29376981a8fb20c9473aa",
+      "running": false,
+      "started_at": "2026-10-03T04:47:17.762590926Z"
+    },
+    "/kifu-five-test-final-rehearsal-v2-20261003": {
+      "id": "e76252760a6660c88abd0342a92ac1f87a92b592f6fbab8caa5c32adbed94ae0",
+      "running": false,
+      "started_at": "2026-10-03T04:49:27.126704156Z"
+    },
+    "/kifu-five-test-final-resume-20261003": {
+      "id": "3cc418c92fb3030827ae7ddfd2bc1a4d2265451bf220a464d682f65e977fda0d",
+      "running": false,
+      "started_at": "2026-10-03T04:55:29.70388387Z"
+    },
+    "/kifu-five-test-rebind-capture-20261003": {
+      "id": "9068f3abfc28428a268bd73ac4ba58794788f977f3334194d311ff03cbc1f8ab",
+      "running": false,
+      "started_at": "2026-10-03T04:10:04.844675537Z"
+    },
+    "/kifu-five-test-rebind-db-20261003": {
+      "id": "89b811a6a2801ccba3233429d5d228e947cc0deac4560e99329d01b6cde61b4c",
+      "running": false,
+      "started_at": "2026-10-03T04:55:28.722212856Z"
+    },
+    "/kifu-verified-gpu0-20261007": {
+      "id": "1f59f01c393e227bf1f5eb99c5ca6a57bb064c9a81a62b062c2166e734c827b1",
+      "running": false,
+      "started_at": "2026-10-06T18:20:35.978745042Z"
+    },
+    "/kifu-verified-gpu1-20261007": {
+      "id": "e446409c1f804bb4c12a27b75d5da88707db184412273b502cbc07cb3bb224c8",
+      "running": false,
+      "started_at": "2026-10-06T18:20:36.344294168Z"
+    },
+    "/kifu1000-c001-gpu0-20261018": {
+      "id": "4fd4faf6bd0ddb6f178cae4f835916356b303c395e788ccb83b358f583b1484d",
+      "running": false,
+      "started_at": "2026-10-18T07:44:55.090274145Z"
+    },
+    "/kifu1000-c001-gpu1-20261018": {
+      "id": "a72c86f2f77410f701bdada284ea36931877058fd588e144ed9cf4c5441d4fe2",
+      "running": false,
+      "started_at": "2026-10-18T08:58:28.227824786Z"
+    },
+    "/kifu1000-c002-gpu0-20261018": {
+      "id": "4e24293956d57fd56a6d46920b6c753b289eae988e564084696e77c2c8f4de15",
+      "running": false,
+      "started_at": "2026-10-18T10:01:25.384475907Z"
+    },
+    "/kifu1000-c002-gpu1-20261018": {
+      "id": "911c2e21e1eae0411caefa36d2efad011ef700db64512552c5e09eff34203af8",
+      "running": false,
+      "started_at": "2026-10-18T11:19:00.199701829Z"
+    },
+    "/kifu1000-c003-gpu0-20261018": {
+      "id": "4499c415d234ba09c004ac4d496b07f93da814f870f29af00e7e551bf8bf38b6",
+      "running": false,
+      "started_at": "2026-10-18T12:30:28.464071049Z"
+    },
+    "/kifu1000-c003-gpu1-20261018": {
+      "id": "3eaab7bd14feb1b3145d02d83146cac26273f73a4417e4f7c7ff55f3038c1d3e",
+      "running": false,
+      "started_at": "2026-10-18T13:45:00.720031713Z"
+    },
+    "/kifu1000-c004-gpu0-20261018": {
+      "id": "80c968fc627489c07e8929065753cd38beb4dfd179ef80239538fed25c0181b9",
+      "running": false,
+      "started_at": "2026-10-18T14:51:47.921900056Z"
+    },
+    "/kifu1000-c004-gpu1-20261018": {
+      "id": "05540344eae6700d12b1e1119e4cf34503bf34ae472231ebe575d0f2482eeab0",
+      "running": false,
+      "started_at": "2026-10-18T15:56:03.39682172Z"
+    },
+    "/kifu1000-c005-gpu0-20261018": {
+      "id": "678fe7e1d913375e13d8ed76b2b0af51be3250fdfe1aaa4b9f51df5a293dbcc6",
+      "running": false,
+      "started_at": "2026-10-18T16:56:00.023113792Z"
+    },
+    "/kifu1000-c005-gpu1-20261018": {
+      "id": "0a9b0139160d1c6fccc089252bf7344b450a3a653bff593930d9472dcde1a868",
+      "running": false,
+      "started_at": "2026-10-18T18:08:01.325788819Z"
+    },
+    "/kifu1000-c006-gpu0-20261018": {
+      "id": "e75309e6da71cdfa8c774adc0903e8f516862bd48542a8381b94b1d7afc19370",
+      "running": false,
+      "started_at": "2026-10-18T19:14:23.59140127Z"
+    },
+    "/kifu1000-c006-gpu1-20261018": {
+      "id": "1fc19c89a0ea4605f1384830480b2c817aad06009e04a65e4642639a4be592ac",
+      "running": false,
+      "started_at": "2026-10-18T20:25:54.922985481Z"
+    },
+    "/kifu1000-c007-gpu0-20261018": {
+      "id": "440e3d1122dbdb7849b722a42df0a3a2755c115cc5434ab301028eb944a681d1",
+      "running": false,
+      "started_at": "2026-10-18T21:33:54.964161413Z"
+    },
+    "/kifu1000-c007-gpu1-20261018": {
+      "id": "141318b333ab69347fa290b4ae0267003baa8e5a14646cf38496787663479ba7",
+      "running": false,
+      "started_at": "2026-10-18T22:46:11.73430987Z"
+    },
+    "/kifu1000-c008-gpu0-20261018": {
+      "id": "b867a146e1fce788d8bbfeb143775dcd8aa453a11804caaa624ca1f96c876096",
+      "running": false,
+      "started_at": "2026-10-18T23:52:30.655070567Z"
+    },
+    "/kifu1000-c008-gpu1-20261018": {
+      "id": "cfb2d39ecec540728cd6bd180517ebb1e2f68a0fa23280fa53651792bd1a83fd",
+      "running": false,
+      "started_at": "2026-10-19T00:59:01.354829395Z"
+    },
+    "/kifu1000-c009-gpu0-20261018": {
+      "id": "4dd5a46bcf85c19227815b894e85b5bdd138c0211824f29ab5a2ff0e1e2ace8f",
+      "running": false,
+      "started_at": "2026-10-19T02:04:34.706147139Z"
+    },
+    "/kifu1000-c009-gpu1-20261018": {
+      "id": "f53ca9787578250c6f8890fbfd06db0710c6ed03fc81ce0a73f0b8458cae48a2",
+      "running": false,
+      "started_at": "2026-10-19T03:21:51.746256137Z"
+    },
+    "/kifu1000-c010-gpu0-20261018": {
+      "id": "b715ad3ca142b0662bb333e5bb3c734b45bc74b8c8429158be3478ae9a08b5b4",
+      "running": false,
+      "started_at": "2026-10-19T04:28:38.300021396Z"
+    },
+    "/kifu1000-c010-gpu1-20261018": {
+      "id": "81e21b480ed561b4373af690f08c84bd5629fd39678efb49cf2d8943b43ae122",
+      "running": false,
+      "started_at": "2026-10-19T05:49:11.294513617Z"
+    },
+    "/kifu1000-c011-gpu0-20261018": {
+      "id": "563ec58ddad8ab930de5992fd34edfee412f398180cc207ca151aedfd5c602e6",
+      "running": false,
+      "started_at": "2026-10-19T06:54:43.515895186Z"
+    },
+    "/kifu1000-c011-gpu1-20261018": {
+      "id": "30b40d89395e9b2371d79cf89c060df1211517d6c105e9efe1d2aa3a9b2bcc03",
+      "running": false,
+      "started_at": "2026-10-19T08:07:59.920100494Z"
+    },
+    "/kifu1000-c012-gpu0-20261018": {
+      "id": "7dd852256b0635188aeab1e0855f2e10f84eff96020d71ab6af120c2a36b0244",
+      "running": false,
+      "started_at": "2026-10-19T09:14:11.116692365Z"
+    },
+    "/kifu1000-c012-gpu1-20261018": {
+      "id": "01a5a64069d236a9c6f5bfc93777c1356a4309dba63f51f87ee4f9282d675712",
+      "running": false,
+      "started_at": "2026-10-19T10:33:28.96773276Z"
+    },
+    "/kifu1000-c013-gpu0-20261018": {
+      "id": "101477b7c21a0e78bd79832132ea020e035cebec6ae33966f40be70951406423",
+      "running": false,
+      "started_at": "2026-10-19T11:42:52.176298347Z"
+    },
+    "/kifu1000-c013-gpu1-20261018": {
+      "id": "b519cb854083e87b59737c842db57d9336dfe07cb0d4759a108e6bd7424b818f",
+      "running": false,
+      "started_at": "2026-10-19T12:59:09.110367884Z"
+    },
+    "/kifu1000-c014-gpu0-20261018": {
+      "id": "539935af1bc2398cead7b94a1378e05f73af51d9f66dc34287d564544f6eeafa",
+      "running": false,
+      "started_at": "2026-10-19T14:01:41.052497184Z"
+    },
+    "/kifu1000-c014-gpu1-20261018": {
+      "id": "9ba39f0ea5da9e98c1b350ccc415439fd37f26fac18d070f10b765fc3cccfeda",
+      "running": false,
+      "started_at": "2026-10-19T15:02:24.824984991Z"
+    },
+    "/kifu1000-c015-gpu0-20261018": {
+      "id": "43364c861d61e457a2cbc0b4999c9de6914ab2da723467951abd20c1c9a8a751",
+      "running": false,
+      "started_at": "2026-10-19T16:02:36.456260602Z"
+    },
+    "/kifu1000-c015-gpu1-20261018": {
+      "id": "934f011a86fd3b0bffa582ff02113dabbce959beeecfdfce3452c9384fc8b0c6",
+      "running": false,
+      "started_at": "2026-10-19T17:18:53.414621982Z"
+    },
+    "/kifu1000-c016-gpu0-20261018": {
+      "id": "8950af798a238dee26dba1b9abce95cda32f0d2c1190c112af0e373751ed5650",
+      "running": false,
+      "started_at": "2026-10-19T18:26:13.808511254Z"
+    },
+    "/kifu1000-c016-gpu1-20261018": {
+      "id": "0c3f9ff010c79311ca5b3d014aaefc0e89409fc3fdd77d30bc7d336de0ffb0b9",
+      "running": false,
+      "started_at": "2026-10-19T19:34:14.158981115Z"
+    },
+    "/kifu1000-c017-gpu0-20261018": {
+      "id": "d2bd61590b8a21b858c02fcbfdc326588563f69533b68e0b35e36ac21ca21b7a",
+      "running": false,
+      "started_at": "2026-10-19T20:43:22.521853945Z"
+    },
+    "/kifu1000-c017-gpu1-20261018": {
+      "id": "58e4a13ba86f0d16984ed79274e11dfebbeb2c8e65cc67e952d1854c48a6ec53",
+      "running": false,
+      "started_at": "2026-10-19T22:02:25.214609713Z"
+    },
+    "/kifu1000-c018-gpu0-20261018": {
+      "id": "06a700e689d5ef17a01d5a5bb84163e3debc6eab6053855d5d67855e716c06cd",
+      "running": false,
+      "started_at": "2026-10-19T23:15:25.56843649Z"
+    },
+    "/kifu1000-c018-gpu1-20261018": {
+      "id": "aec04326293376e4f24ccbf8da0d2c5ac9e69ae05b4a4d13a9e16f6c8a7a4e21",
+      "running": false,
+      "started_at": "2026-10-20T00:33:13.304818014Z"
+    },
+    "/kifu1000-c019-gpu0-20261018": {
+      "id": "ff20397e07932a422314cd6ebc2ed47cf70b56302d5c2329af66c3885ee296a9",
+      "running": false,
+      "started_at": "2026-10-20T01:41:50.073475006Z"
+    },
+    "/kifu1000-c019-gpu1-20261018": {
+      "id": "e13d2c994b84891f695dfd70fed59dedad4f4bda66a954b2d20a0afa1c07e472",
+      "running": false,
+      "started_at": "2026-10-20T02:49:50.825552492Z"
+    },
+    "/kifu1000-c020-gpu0-20261018": {
+      "id": "f3083aa9b047ead33ba40284b86c53c94c90bc6653e0c919d41208257405d263",
+      "running": false,
+      "started_at": "2026-10-20T04:00:22.459379168Z"
+    },
+    "/kifu1000-c020-gpu1-20261018": {
+      "id": "50ef173f5ddc5e1eb671333f3ae90f342b21cd8781a9c374316cd6724d8db52a",
+      "running": false,
+      "started_at": "2026-10-20T05:14:54.063439685Z"
+    },
+    "/kifu1000-c021-gpu0-20261018": {
+      "id": "a7a75514efc0187ecb16b996d440f0a23a40e8fac3f03b1c77fd6063b8c0f9c7",
+      "running": false,
+      "started_at": "2026-10-20T06:18:12.406844866Z"
+    },
+    "/kifu1000-c021-gpu1-20261018": {
+      "id": "50c7d1213afba1d242217eda5b57ae9202932ddf7c99968d9f97253590fd2c6e",
+      "running": false,
+      "started_at": "2026-10-20T07:36:59.914516779Z"
+    },
+    "/kifu1000-c022-gpu0-20261018": {
+      "id": "ca879c78f4514a1f63458ff28c506ea93f7e4fb7d54e4c23a7c90f5af391ae7c",
+      "running": false,
+      "started_at": "2026-10-20T08:43:52.093391143Z"
+    },
+    "/kifu1000-c022-gpu1-20261018": {
+      "id": "6bde2f8aa70134f29acb943338a70d9a0237701457ad0a502bcbb5794b0b039a",
+      "running": false,
+      "started_at": "2026-10-20T09:55:08.334944771Z"
+    },
+    "/kifu1000-c023-gpu0-20261018": {
+      "id": "5e9970daee75e79dfe10b0867dab1329602c8987e23511da86053fff62431a69",
+      "running": false,
+      "started_at": "2026-10-20T10:55:23.277518856Z"
+    },
+    "/kifu1000-c023-gpu1-20261018": {
+      "id": "168b974d2fe9023970e9ca4ebf44bbf46135bb953321c45d856ae11f1fd93270",
+      "running": false,
+      "started_at": "2026-10-20T12:09:55.030385392Z"
+    },
+    "/kifu1000-c024-gpu0-20261018": {
+      "id": "87c0fdc6a2cea80f4bd990058788515ad801913db041fd5fd43aeab521436e59",
+      "running": false,
+      "started_at": "2026-10-20T13:15:59.374743858Z"
+    },
+    "/kifu1000-c024-gpu1-20261018": {
+      "id": "37879825146dc12bb005456353f95a3c13a71b7f29cc51ed438b0b9f51399fad",
+      "running": false,
+      "started_at": "2026-10-20T14:18:28.910624973Z"
+    },
+    "/kifu1000-c025-gpu0-20261018": {
+      "id": "a8145a525b0184a8ae6adff69bf690e54d5651f2e3e3be1560dbfd20006a9338",
+      "running": false,
+      "started_at": "2026-10-20T15:16:43.57671791Z"
+    },
+    "/kifu1000-c025-gpu1-20261018": {
+      "id": "55abe703f3593cf95afc472a746ce10f0adab8e2df0780c4c290e1ef80391293",
+      "running": false,
+      "started_at": "2026-10-20T16:25:44.048293407Z"
+    },
+    "/kifu1000-c026-gpu0-20261018": {
+      "id": "e30469eb2548cd65c7bfcb2df17a84c56f9e2a335b000b1330030bd86c517784",
+      "running": false,
+      "started_at": "2026-10-20T17:26:27.794576495Z"
+    },
+    "/kifu1000-c026-gpu1-20261018": {
+      "id": "cb8acd8c2b8c81d255a30ae684767c80d4fca72c6b8fe206730b4b1e60162d83",
+      "running": false,
+      "started_at": "2026-10-20T18:28:12.664166552Z"
+    },
+    "/kifu1000-c027-gpu0-20261018": {
+      "id": "4e87f74d10802ffd73f0f3a0dca2ed57fa788fc7c12e272c4c9caa32832e7111",
+      "running": false,
+      "started_at": "2026-10-20T19:24:41.990324294Z"
+    },
+    "/kifu1000-c027-gpu1-20261018": {
+      "id": "f9bfa2c7b08434e4dab97818e4d98b947847744a2cfb1d64ebb7bf5224dcdd5b",
+      "running": false,
+      "started_at": "2026-10-20T20:39:14.277414405Z"
+    },
+    "/kifu1000-c028-gpu0-20261018": {
+      "id": "2d1e61c5ba0d22fb3a69dc3ee07b0303cf67b44a572158aa4f32e362d90e8612",
+      "running": false,
+      "started_at": "2026-10-20T21:45:34.004936207Z"
+    },
+    "/kifu1000-c028-gpu1-20261018": {
+      "id": "1099074c7d92bd23b52cc74ae075431c9a0bc0f1d8bda2d8336d5c8dafce5c4c",
+      "running": false,
+      "started_at": "2026-10-20T22:56:50.625027438Z"
+    },
+    "/kifu1000-c029-gpu0-20261018": {
+      "id": "e572cdd259e88b7ec94416c5160688ab088561b7879656fe1cdd72357a50ca41",
+      "running": false,
+      "started_at": "2026-10-21T00:00:55.529781548Z"
+    },
+    "/kifu1000-c029-gpu1-20261018": {
+      "id": "90a2db6c73484c45a2d49a966e28758cf74304b58e34d257102b3fc6b317cc9f",
+      "running": false,
+      "started_at": "2026-10-21T01:16:27.524256284Z"
+    },
+    "/kifu1000-c030-gpu0-20261018": {
+      "id": "3b590d674934af68fe48d78f308486e78e5702d56740df702e368cbe8f07595b",
+      "running": false,
+      "started_at": "2026-10-21T02:25:34.331456785Z"
+    },
+    "/kifu1000-c030-gpu1-20261018": {
+      "id": "20354fa60dcc8dd2b6ccd192ff7d912d3ce846c2057e4467344b6d2048076224",
+      "running": false,
+      "started_at": "2026-10-21T03:33:19.593297624Z"
+    },
+    "/kifu1000-c031-gpu0-20261018": {
+      "id": "afd229fb9bbc3ccc183b2ef00582f262939ca03996cce45d2d4faf2d9069e413",
+      "running": false,
+      "started_at": "2026-10-21T04:40:38.697827597Z"
+    },
+    "/kifu1000-c031-gpu1-20261018": {
+      "id": "b2b5885d3e3f4cc4c9543534bf982e1ab21b03865ba81a6bcae674c749d266fa",
+      "running": false,
+      "started_at": "2026-10-21T05:52:55.099140683Z"
+    },
+    "/kifu1000-c032-gpu0-20261018": {
+      "id": "9231cd53663146f849eea631e5d920afea72be411cc9a502482574f29a92ce71",
+      "running": false,
+      "started_at": "2026-10-21T07:00:29.267688288Z"
+    },
+    "/kifu1000-c032-gpu1-20261018": {
+      "id": "167411c170c99234bd4429b4e80d8d968286e5d662b066c058334acf8f1f7583",
+      "running": false,
+      "started_at": "2026-10-21T08:15:31.547817694Z"
+    },
+    "/kifu1000-c033-gpu0-20261018": {
+      "id": "6638b889b9ef5c7b36e5e82fce4b343c33027fde1fa9b657a46fde477acf17ae",
+      "running": false,
+      "started_at": "2026-10-21T09:19:39.740909253Z"
+    },
+    "/kifu1000-c033-gpu1-20261018": {
+      "id": "bd319f5a0340b4901a1883dce7563570e9649964644bad5cd610dff2ba34da3c",
+      "running": false,
+      "started_at": "2026-10-21T10:30:10.707220028Z"
+    },
+    "/kifu1000-c034-gpu0-20261018": {
+      "id": "585d422a79248d174baf9615ffe0c558fca977780d50dbe5c8dc31126f3d230f",
+      "running": false,
+      "started_at": "2026-10-21T11:39:29.628142322Z"
+    },
+    "/kifu1000-c034-gpu1-20261018": {
+      "id": "4440c718c1b8ddfb4c69b39423e4cb05d156c027b9b5df3b66e8b6eefcc56707",
+      "running": false,
+      "started_at": "2026-10-21T12:53:01.605313578Z"
+    },
+    "/kifu1000-c035-gpu0-20261018": {
+      "id": "37f72b18d954f8932bac0d9c3005a7a610ec3d5a433804261a17d6d5b0337ded",
+      "running": false,
+      "started_at": "2026-10-21T14:02:56.718511714Z"
+    },
+    "/kifu1000-c035-gpu1-20261018": {
+      "id": "db5fed71288349271faee7c0cc9dc34792fe272de533028b841dfd8b3461e3df",
+      "running": false,
+      "started_at": "2026-10-21T15:10:42.886815974Z"
+    },
+    "/kifu1000-c036-gpu0-20261018": {
+      "id": "6b280a201f8a2b90d6cb99a11b2fa013fd0cbce069845f80eed69fde1e75cc3b",
+      "running": false,
+      "started_at": "2026-10-21T16:16:07.911948205Z"
+    },
+    "/kifu1000-c036-gpu1-20261018": {
+      "id": "ed8e7dd49aa6574b06e77570ccd2c309710ad8d74808982b25103dd5d5e0a46d",
+      "running": false,
+      "started_at": "2026-10-21T17:31:24.98129955Z"
+    },
+    "/kifu1000-c037-gpu0-20261018": {
+      "id": "6dbe9aa1014d281489313e5b602ea47e1eb8cafd0155445712a7998cf96592a1",
+      "running": false,
+      "started_at": "2026-10-21T18:40:01.453487064Z"
+    },
+    "/kifu1000-c037-gpu1-20261018": {
+      "id": "cafeec0ebef42fc780052fd661687798ea129999871140640b6cdbf9fb789ee3",
+      "running": false,
+      "started_at": "2026-10-21T19:59:19.152210754Z"
+    },
+    "/kifu1000-c038-gpu0-20261018": {
+      "id": "1eb91613a699b7cc924f428ce111573244becc83b867c04ba9e952696ae7528e",
+      "running": false,
+      "started_at": "2026-10-21T21:13:24.070058507Z"
+    },
+    "/kifu1000-c038-gpu1-20261018": {
+      "id": "621a32433769bcb9c82fde3b9521e87b8c4af59ab6eb03e8432c51f6f9d6c086",
+      "running": false,
+      "started_at": "2026-10-21T22:24:40.059410152Z"
+    },
+    "/kifu1000-c039-gpu0-20261018": {
+      "id": "d501f174a6acaff58b439fef69dc17a07bf73afafde8e9e1d16f762797c67d3c",
+      "running": false,
+      "started_at": "2026-10-21T23:23:54.17841957Z"
+    },
+    "/kifu1000-c039-gpu1-20261018": {
+      "id": "1592f381d23613dd46da11d79c89be4a501eefdd0aaebf567f573b45cb1b963b",
+      "running": false,
+      "started_at": "2026-10-22T00:33:55.287871409Z"
+    },
+    "/kifu1000-c040-gpu0-20261018": {
+      "id": "8689c230c1e1230c1dc82ee829b77f7c7fd759a6d56f93db46a40e87572054e0",
+      "running": false,
+      "started_at": "2026-10-22T01:37:44.159152102Z"
+    },
+    "/kifu1000-c040-gpu1-20261018": {
+      "id": "73176e02ca5f817b0630bac7a10a977c3150bfc411a0e9da2182cfff9f4d11e0",
+      "running": false,
+      "started_at": "2026-10-22T02:46:59.959772516Z"
+    },
+    "/kifu1000-c041-gpu0-20261018": {
+      "id": "7ab304bf53dd923c44a507b040c1aa8f719929b25f79a649bf4c4c19eea28b18",
+      "running": false,
+      "started_at": "2026-10-22T03:52:06.166292033Z"
+    },
+    "/kifu1000-c041-gpu1-20261018": {
+      "id": "f45119cc162203d956c7aaeb870428b9929b14e990f45a57f0144a04357c41e5",
+      "running": false,
+      "started_at": "2026-10-22T05:09:38.653747298Z"
+    },
+    "/kifu1000-c042-gpu0-20261018": {
+      "id": "5e820172df9c1529112e11b123c67f3598f24bc82b5929f1549297e6b3cc51c7",
+      "running": false,
+      "started_at": "2026-10-22T06:22:48.158010976Z"
+    },
+    "/kifu1000-c042-gpu1-20261018": {
+      "id": "9aa4129f5cb4d32edb9fc808b22208b4f0ca179ebe1ba6862bd9f8c050d7aac7",
+      "running": false,
+      "started_at": "2026-10-22T07:38:50.253368275Z"
+    },
+    "/kifu1000-c043-gpu0-20261018": {
+      "id": "c14b7f9d58ece7f1a907eca373e095ded767674c3ee8bf681d5c737a967ee151",
+      "running": false,
+      "started_at": "2026-10-22T08:38:26.557982606Z"
+    },
+    "/kifu1000-c043-gpu1-20261018": {
+      "id": "18adbb3e6e0fd1c24c419363b61d0e5fa4bf1148de165418002cb530e772b9a6",
+      "running": false,
+      "started_at": "2026-10-22T09:40:41.109608394Z"
+    },
+    "/kifu1000-c044-gpu0-20261018": {
+      "id": "098bdae47e0ed3d6fddb17e056dbbc120ef11ddc9a5d692e0ed727a0a5ab5c89",
+      "running": false,
+      "started_at": "2026-10-22T10:41:12.96939234Z"
+    },
+    "/kifu1000-c044-gpu1-20261018": {
+      "id": "b5a233fb9ea85ceab43bd4095c53d5d99276052f74af08bd66b13d9fdad6e764",
+      "running": false,
+      "started_at": "2026-10-22T11:49:43.594782545Z"
+    },
+    "/kifu1000-c045-gpu0-20261018": {
+      "id": "c2e9710d5c9a75176a735c8eb46e0dcc08690db2d380b33298cde28477027c91",
+      "running": false,
+      "started_at": "2026-10-22T12:52:42.745970164Z"
+    },
+    "/kifu1000-c045-gpu1-20261018": {
+      "id": "b40290714a3a7f5f59f5bbe23671d0aacefeebfdad00922b915a925d37317a99",
+      "running": false,
+      "started_at": "2026-10-22T14:01:28.274731541Z"
+    },
+    "/kifu1000-c046-gpu0-20261018": {
+      "id": "54f3208ef490afdb50809ba548a6906a8a3ab42af94370d3c87c4228084bfbc2",
+      "running": false,
+      "started_at": "2026-10-22T15:05:11.863666684Z"
+    },
+    "/kifu1000-c046-gpu1-20261018": {
+      "id": "263883529d7fec019126afb5e22dc1aaf3abd431ee1135d7368d6f2d24ca2293",
+      "running": false,
+      "started_at": "2026-10-22T16:15:43.217135926Z"
+    },
+    "/kifu1000-c047-gpu0-20261018": {
+      "id": "4bd92c75b80aff50c20003f9b23c23dfeffe6e15505d6e7acb9d5380e081a986",
+      "running": false,
+      "started_at": "2026-10-22T17:19:36.167443327Z"
+    },
+    "/kifu1000-c047-gpu1-20261018": {
+      "id": "fb3256dbcb47f4bb5960c7b9f82be82cd9b489135e3f8ecb89b035227b6f79bd",
+      "running": false,
+      "started_at": "2026-10-22T18:21:05.531260892Z"
+    },
+    "/kifu1000-c048-gpu0-20261018": {
+      "id": "54105424a24165d90e0a3d89f2ac1eb69740819eb4a7fc6b200b9f55547a9ae2",
+      "running": false,
+      "started_at": "2026-10-22T19:20:02.66756544Z"
+    },
+    "/kifu1000-c048-gpu1-20261018": {
+      "id": "bdf570b8f2097626d76247d2ff68b3436c204986f175e208042adcdca0079dc1",
+      "running": false,
+      "started_at": "2026-10-22T20:35:49.856535901Z"
+    },
+    "/kifu1000-c049-gpu0-20261018": {
+      "id": "0106eebd97d1d2931ca2a219ec6d9af388b905efe1c87cf6cea4acb45505277f",
+      "running": false,
+      "started_at": "2026-10-22T21:46:27.64497523Z"
+    },
+    "/kifu1000-c049-gpu1-20261018": {
+      "id": "8bdd20acaf912eaa8ad126723064f72469c378bfca19065e588b7830bf454dc8",
+      "running": false,
+      "started_at": "2026-10-22T22:55:43.876642386Z"
+    },
+    "/kifu1000-c050-gpu0-20261018": {
+      "id": "4471a2518a0b6421379bedd8b1ba6a9d772c8b3473d59b0b1780af7e9e579868",
+      "running": false,
+      "started_at": "2026-10-23T00:01:22.264497795Z"
+    },
+    "/kifu1000-c050-gpu1-20261018": {
+      "id": "5fd04886a993d7df6cc974590e392eb8ca5179783dac87e58864cd65e50da0ff",
+      "running": false,
+      "started_at": "2026-10-23T01:00:20.957627326Z"
+    },
+    "/kifu1000-engine-gpu0-20261018": {
+      "id": "a92efaca010d4b0e46e32fb9d9790fc11bde6deafd38cacf90dbf131e5533970",
+      "running": false,
+      "started_at": "2026-10-18T07:40:52.781384459Z"
+    },
+    "/kifu1000-supervisor-20261018": {
+      "id": "fa5cabac0fc5d5f1ea2e3e3adbd09449bde7c7c1cab3bc8fb820efb567960902",
+      "running": false,
+      "started_at": "2026-10-18T07:45:39.751227404Z"
+    },
+    "/kifu200-c001-gpu0-20261018": {
+      "id": "c35e65c44d7060a7498b3d4b1ac1b870a08e1ff55f7c656df41a601031d893c7",
+      "running": false,
+      "started_at": "2026-10-17T17:13:06.854937887Z"
+    },
+    "/kifu200-c001-gpu1-20261018": {
+      "id": "9f2ca52ba16891f3ee2486f1b065e702b2da3e84014898be54e21199fc7a7ba5",
+      "running": false,
+      "started_at": "2026-10-17T17:13:07.23434281Z"
+    },
+    "/kifu200-c002-gpu0-20261018": {
+      "id": "57883f7ab3e7c2f51ead9201e7521c3d43f09d7f1fc39bb0e907b1b37a0c25d5",
+      "running": false,
+      "started_at": "2026-10-17T20:22:48.415508997Z"
+    },
+    "/kifu200-c002-gpu1-20261018": {
+      "id": "fd4c0115afa67c0a39987218eaf34e4504430808425141b76bb975257204ab69",
+      "running": false,
+      "started_at": "2026-10-17T19:48:57.840748258Z"
+    },
+    "/kifu200-c003-gpu0-20261018": {
+      "id": "2ddd290e9a5bad55ca0bdadbfa48ad0f7fbe7aadd10b848e77610dcdb24ccec8",
+      "running": false,
+      "started_at": "2026-10-17T23:29:13.341247938Z"
+    },
+    "/kifu200-c003-gpu1-20261018": {
+      "id": "7c9b42e070e5b1b9cea2f03eb8dab7ee66e5aeee8ee4be8bac9a21e718faea65",
+      "running": false,
+      "started_at": "2026-10-17T22:28:48.96261303Z"
+    },
+    "/kifu200-engine-gpu0-20261018": {
+      "id": "336b415f8bdb06015ee9744a91785b0ab03ff6993a395f42dd1557ac61387d97",
+      "running": false,
+      "started_at": "2026-10-17T17:11:21.811159984Z"
+    },
+    "/platform-postgres": {
+      "id": "f3f7edfb9d47b068bbe431ca0432976dbdbda6b81177ec5ac480fd963f2aa3f0",
+      "running": true,
+      "started_at": "2026-08-11T04:40:20.030122445Z"
+    },
+    "/smartbox-admin-admin-console-1": {
+      "id": "7978a87a938519a3c74b3e3859d9db0ce14bfb74d1bdc8a2d1e25a6ca24b64c0",
+      "running": true,
+      "started_at": "2026-10-21T05:34:43.933551148Z"
+    },
+    "/smartbox-platform": {
+      "id": "31577ccb6c4ac13a5396b09250b84cb1a403ea693ad12d704d1982318c7be0dc",
+      "running": true,
+      "started_at": "2026-10-11T23:07:16.982045274Z"
+    }
+  },
+  "other_containers_before": {
+    "/intelligent_leavitt": {
+      "id": "7cf0f79379d14a93fcfaa509601b48d4d746c9cb8a3212aaba96f04350131544",
+      "running": false,
+      "started_at": "2026-09-30T18:52:08.473540344Z"
+    },
+    "/katago-calib": {
+      "id": "615ee63dceea20ffbb885ef89e23d51972a348051c120cf5dca16eb0cd91506b",
+      "running": true,
+      "started_at": "2026-08-13T04:45:16.933340189Z"
+    },
+    "/katago-gpu0": {
+      "id": "2f589d0d1f82c6728a228bc9a77ce48bfcd73b617168b431b75efaf0df3734a8",
+      "running": true,
+      "started_at": "2026-08-25T09:19:40.53463688Z"
+    },
+    "/katago-gpu1": {
+      "id": "b75a25eef03d61f641d676ff4ac886792c24594f0a4aa43620db6db8a7a3687c",
+      "running": true,
+      "started_at": "2026-10-02T08:43:48.752509172Z"
+    },
+    "/katago-verified-kifu-gpu0-20261007": {
+      "id": "6204f9209f025dd784187c4744a083ab645cc914c6b579d7db99172eb36cff42",
+      "running": false,
+      "started_at": "2026-10-07T07:03:24.415582206Z"
+    },
+    "/katrain-admin": {
+      "id": "b887a3623b088a984520ccc86f5b8a5c9cdbf6ec63f236e74c059b12ee2cf93e",
+      "running": true,
+      "started_at": "2026-10-21T05:34:35.586927099Z"
+    },
+    "/katrain-kifu-42d-test": {
+      "id": "b0bfacccd7d0bb94874475bd2fc7c5732caf74f7ffb73e2728b4faf0e70dd0df",
+      "running": true,
+      "started_at": "2026-10-01T09:46:32.361532651Z"
+    },
+    "/katrain-minio": {
+      "id": "5a1b5d8b022b2afbf6ad0aab4d661032b1f6940cfa0ab770423826225d246ab8",
+      "running": true,
+      "started_at": "2026-08-11T04:40:20.021709016Z"
+    },
+    "/katrain-minio-setup": {
+      "id": "c894a276ed34cdcdfb295e90329f00ecd4fbdade8542b0ad8997ee0c4d96e41d",
+      "running": false,
+      "started_at": "2026-06-27T17:38:49.470738345Z"
+    },
+    "/katrain-postgres": {
+      "id": "b32fad7f168eebf03ef9650f094449964fe924541cae4f6b979d5f4ccbb5bf35",
+      "running": true,
+      "started_at": "2026-08-11T04:40:20.031540875Z"
+    },
+    "/kifu-active-engine-proxy-20261018": {
+      "id": "7382b33454a001455ba2e79fc77c413b81cee604abbc80059e8db357f5652d96",
+      "running": false,
+      "started_at": "2026-10-18T08:19:44.576330279Z"
+    },
+    "/kifu-batch50-gpu0-20261006": {
+      "id": "536952402d8ac537f9d1455b51d7bf9684a7e5629469c4b08d4356a800e44ad3",
+      "running": false,
+      "started_at": "2026-10-05T17:22:51.812367006Z"
+    },
+    "/kifu-batch50-gpu1-20261006": {
+      "id": "6a8ccf7c50c1f5ba9b6f7d1b007416bc38175258f078998da9ce5a5a6d856385",
+      "running": false,
+      "started_at": "2026-10-05T17:22:52.180487222Z"
+    },
+    "/kifu-default-gpu0-20261007": {
+      "id": "1bddf8e45baad57ae52dff22d6b242eaca09656e19a23e40e60f323298f5b786",
+      "running": false,
+      "started_at": "2026-10-07T07:04:57.57311033Z"
+    },
+    "/kifu-default-gpu1-20261007": {
+      "id": "9b60e4c48b7b55d5480ca0061af0bd6abcb217e1768a14dc860e8645d302aae6",
+      "running": false,
+      "started_at": "2026-10-07T07:04:57.955102094Z"
+    },
+    "/kifu-five-test-final-rehearsal-20261003": {
+      "id": "749f37a3acf5c39c16572a0ebb49c8ce976b46c3a2a29376981a8fb20c9473aa",
+      "running": false,
+      "started_at": "2026-10-03T04:47:17.762590926Z"
+    },
+    "/kifu-five-test-final-rehearsal-v2-20261003": {
+      "id": "e76252760a6660c88abd0342a92ac1f87a92b592f6fbab8caa5c32adbed94ae0",
+      "running": false,
+      "started_at": "2026-10-03T04:49:27.126704156Z"
+    },
+    "/kifu-five-test-final-resume-20261003": {
+      "id": "3cc418c92fb3030827ae7ddfd2bc1a4d2265451bf220a464d682f65e977fda0d",
+      "running": false,
+      "started_at": "2026-10-03T04:55:29.70388387Z"
+    },
+    "/kifu-five-test-rebind-capture-20261003": {
+      "id": "9068f3abfc28428a268bd73ac4ba58794788f977f3334194d311ff03cbc1f8ab",
+      "running": false,
+      "started_at": "2026-10-03T04:10:04.844675537Z"
+    },
+    "/kifu-five-test-rebind-db-20261003": {
+      "id": "89b811a6a2801ccba3233429d5d228e947cc0deac4560e99329d01b6cde61b4c",
+      "running": false,
+      "started_at": "2026-10-03T04:55:28.722212856Z"
+    },
+    "/kifu-verified-gpu0-20261007": {
+      "id": "1f59f01c393e227bf1f5eb99c5ca6a57bb064c9a81a62b062c2166e734c827b1",
+      "running": false,
+      "started_at": "2026-10-06T18:20:35.978745042Z"
+    },
+    "/kifu-verified-gpu1-20261007": {
+      "id": "e446409c1f804bb4c12a27b75d5da88707db184412273b502cbc07cb3bb224c8",
+      "running": false,
+      "started_at": "2026-10-06T18:20:36.344294168Z"
+    },
+    "/kifu1000-c001-gpu0-20261018": {
+      "id": "4fd4faf6bd0ddb6f178cae4f835916356b303c395e788ccb83b358f583b1484d",
+      "running": false,
+      "started_at": "2026-10-18T07:44:55.090274145Z"
+    },
+    "/kifu1000-c001-gpu1-20261018": {
+      "id": "a72c86f2f77410f701bdada284ea36931877058fd588e144ed9cf4c5441d4fe2",
+      "running": false,
+      "started_at": "2026-10-18T08:58:28.227824786Z"
+    },
+    "/kifu1000-c002-gpu0-20261018": {
+      "id": "4e24293956d57fd56a6d46920b6c753b289eae988e564084696e77c2c8f4de15",
+      "running": false,
+      "started_at": "2026-10-18T10:01:25.384475907Z"
+    },
+    "/kifu1000-c002-gpu1-20261018": {
+      "id": "911c2e21e1eae0411caefa36d2efad011ef700db64512552c5e09eff34203af8",
+      "running": false,
+      "started_at": "2026-10-18T11:19:00.199701829Z"
+    },
+    "/kifu1000-c003-gpu0-20261018": {
+      "id": "4499c415d234ba09c004ac4d496b07f93da814f870f29af00e7e551bf8bf38b6",
+      "running": false,
+      "started_at": "2026-10-18T12:30:28.464071049Z"
+    },
+    "/kifu1000-c003-gpu1-20261018": {
+      "id": "3eaab7bd14feb1b3145d02d83146cac26273f73a4417e4f7c7ff55f3038c1d3e",
+      "running": false,
+      "started_at": "2026-10-18T13:45:00.720031713Z"
+    },
+    "/kifu1000-c004-gpu0-20261018": {
+      "id": "80c968fc627489c07e8929065753cd38beb4dfd179ef80239538fed25c0181b9",
+      "running": false,
+      "started_at": "2026-10-18T14:51:47.921900056Z"
+    },
+    "/kifu1000-c004-gpu1-20261018": {
+      "id": "05540344eae6700d12b1e1119e4cf34503bf34ae472231ebe575d0f2482eeab0",
+      "running": false,
+      "started_at": "2026-10-18T15:56:03.39682172Z"
+    },
+    "/kifu1000-c005-gpu0-20261018": {
+      "id": "678fe7e1d913375e13d8ed76b2b0af51be3250fdfe1aaa4b9f51df5a293dbcc6",
+      "running": false,
+      "started_at": "2026-10-18T16:56:00.023113792Z"
+    },
+    "/kifu1000-c005-gpu1-20261018": {
+      "id": "0a9b0139160d1c6fccc089252bf7344b450a3a653bff593930d9472dcde1a868",
+      "running": false,
+      "started_at": "2026-10-18T18:08:01.325788819Z"
+    },
+    "/kifu1000-c006-gpu0-20261018": {
+      "id": "e75309e6da71cdfa8c774adc0903e8f516862bd48542a8381b94b1d7afc19370",
+      "running": false,
+      "started_at": "2026-10-18T19:14:23.59140127Z"
+    },
+    "/kifu1000-c006-gpu1-20261018": {
+      "id": "1fc19c89a0ea4605f1384830480b2c817aad06009e04a65e4642639a4be592ac",
+      "running": false,
+      "started_at": "2026-10-18T20:25:54.922985481Z"
+    },
+    "/kifu1000-c007-gpu0-20261018": {
+      "id": "440e3d1122dbdb7849b722a42df0a3a2755c115cc5434ab301028eb944a681d1",
+      "running": false,
+      "started_at": "2026-10-18T21:33:54.964161413Z"
+    },
+    "/kifu1000-c007-gpu1-20261018": {
+      "id": "141318b333ab69347fa290b4ae0267003baa8e5a14646cf38496787663479ba7",
+      "running": false,
+      "started_at": "2026-10-18T22:46:11.73430987Z"
+    },
+    "/kifu1000-c008-gpu0-20261018": {
+      "id": "b867a146e1fce788d8bbfeb143775dcd8aa453a11804caaa624ca1f96c876096",
+      "running": false,
+      "started_at": "2026-10-18T23:52:30.655070567Z"
+    },
+    "/kifu1000-c008-gpu1-20261018": {
+      "id": "cfb2d39ecec540728cd6bd180517ebb1e2f68a0fa23280fa53651792bd1a83fd",
+      "running": false,
+      "started_at": "2026-10-19T00:59:01.354829395Z"
+    },
+    "/kifu1000-c009-gpu0-20261018": {
+      "id": "4dd5a46bcf85c19227815b894e85b5bdd138c0211824f29ab5a2ff0e1e2ace8f",
+      "running": false,
+      "started_at": "2026-10-19T02:04:34.706147139Z"
+    },
+    "/kifu1000-c009-gpu1-20261018": {
+      "id": "f53ca9787578250c6f8890fbfd06db0710c6ed03fc81ce0a73f0b8458cae48a2",
+      "running": false,
+      "started_at": "2026-10-19T03:21:51.746256137Z"
+    },
+    "/kifu1000-c010-gpu0-20261018": {
+      "id": "b715ad3ca142b0662bb333e5bb3c734b45bc74b8c8429158be3478ae9a08b5b4",
+      "running": false,
+      "started_at": "2026-10-19T04:28:38.300021396Z"
+    },
+    "/kifu1000-c010-gpu1-20261018": {
+      "id": "81e21b480ed561b4373af690f08c84bd5629fd39678efb49cf2d8943b43ae122",
+      "running": false,
+      "started_at": "2026-10-19T05:49:11.294513617Z"
+    },
+    "/kifu1000-c011-gpu0-20261018": {
+      "id": "563ec58ddad8ab930de5992fd34edfee412f398180cc207ca151aedfd5c602e6",
+      "running": false,
+      "started_at": "2026-10-19T06:54:43.515895186Z"
+    },
+    "/kifu1000-c011-gpu1-20261018": {
+      "id": "30b40d89395e9b2371d79cf89c060df1211517d6c105e9efe1d2aa3a9b2bcc03",
+      "running": false,
+      "started_at": "2026-10-19T08:07:59.920100494Z"
+    },
+    "/kifu1000-c012-gpu0-20261018": {
+      "id": "7dd852256b0635188aeab1e0855f2e10f84eff96020d71ab6af120c2a36b0244",
+      "running": false,
+      "started_at": "2026-10-19T09:14:11.116692365Z"
+    },
+    "/kifu1000-c012-gpu1-20261018": {
+      "id": "01a5a64069d236a9c6f5bfc93777c1356a4309dba63f51f87ee4f9282d675712",
+      "running": false,
+      "started_at": "2026-10-19T10:33:28.96773276Z"
+    },
+    "/kifu1000-c013-gpu0-20261018": {
+      "id": "101477b7c21a0e78bd79832132ea020e035cebec6ae33966f40be70951406423",
+      "running": false,
+      "started_at": "2026-10-19T11:42:52.176298347Z"
+    },
+    "/kifu1000-c013-gpu1-20261018": {
+      "id": "b519cb854083e87b59737c842db57d9336dfe07cb0d4759a108e6bd7424b818f",
+      "running": false,
+      "started_at": "2026-10-19T12:59:09.110367884Z"
+    },
+    "/kifu1000-c014-gpu0-20261018": {
+      "id": "539935af1bc2398cead7b94a1378e05f73af51d9f66dc34287d564544f6eeafa",
+      "running": false,
+      "started_at": "2026-10-19T14:01:41.052497184Z"
+    },
+    "/kifu1000-c014-gpu1-20261018": {
+      "id": "9ba39f0ea5da9e98c1b350ccc415439fd37f26fac18d070f10b765fc3cccfeda",
+      "running": false,
+      "started_at": "2026-10-19T15:02:24.824984991Z"
+    },
+    "/kifu1000-c015-gpu0-20261018": {
+      "id": "43364c861d61e457a2cbc0b4999c9de6914ab2da723467951abd20c1c9a8a751",
+      "running": false,
+      "started_at": "2026-10-19T16:02:36.456260602Z"
+    },
+    "/kifu1000-c015-gpu1-20261018": {
+      "id": "934f011a86fd3b0bffa582ff02113dabbce959beeecfdfce3452c9384fc8b0c6",
+      "running": false,
+      "started_at": "2026-10-19T17:18:53.414621982Z"
+    },
+    "/kifu1000-c016-gpu0-20261018": {
+      "id": "8950af798a238dee26dba1b9abce95cda32f0d2c1190c112af0e373751ed5650",
+      "running": false,
+      "started_at": "2026-10-19T18:26:13.808511254Z"
+    },
+    "/kifu1000-c016-gpu1-20261018": {
+      "id": "0c3f9ff010c79311ca5b3d014aaefc0e89409fc3fdd77d30bc7d336de0ffb0b9",
+      "running": false,
+      "started_at": "2026-10-19T19:34:14.158981115Z"
+    },
+    "/kifu1000-c017-gpu0-20261018": {
+      "id": "d2bd61590b8a21b858c02fcbfdc326588563f69533b68e0b35e36ac21ca21b7a",
+      "running": false,
+      "started_at": "2026-10-19T20:43:22.521853945Z"
+    },
+    "/kifu1000-c017-gpu1-20261018": {
+      "id": "58e4a13ba86f0d16984ed79274e11dfebbeb2c8e65cc67e952d1854c48a6ec53",
+      "running": false,
+      "started_at": "2026-10-19T22:02:25.214609713Z"
+    },
+    "/kifu1000-c018-gpu0-20261018": {
+      "id": "06a700e689d5ef17a01d5a5bb84163e3debc6eab6053855d5d67855e716c06cd",
+      "running": false,
+      "started_at": "2026-10-19T23:15:25.56843649Z"
+    },
+    "/kifu1000-c018-gpu1-20261018": {
+      "id": "aec04326293376e4f24ccbf8da0d2c5ac9e69ae05b4a4d13a9e16f6c8a7a4e21",
+      "running": false,
+      "started_at": "2026-10-20T00:33:13.304818014Z"
+    },
+    "/kifu1000-c019-gpu0-20261018": {
+      "id": "ff20397e07932a422314cd6ebc2ed47cf70b56302d5c2329af66c3885ee296a9",
+      "running": false,
+      "started_at": "2026-10-20T01:41:50.073475006Z"
+    },
+    "/kifu1000-c019-gpu1-20261018": {
+      "id": "e13d2c994b84891f695dfd70fed59dedad4f4bda66a954b2d20a0afa1c07e472",
+      "running": false,
+      "started_at": "2026-10-20T02:49:50.825552492Z"
+    },
+    "/kifu1000-c020-gpu0-20261018": {
+      "id": "f3083aa9b047ead33ba40284b86c53c94c90bc6653e0c919d41208257405d263",
+      "running": false,
+      "started_at": "2026-10-20T04:00:22.459379168Z"
+    },
+    "/kifu1000-c020-gpu1-20261018": {
+      "id": "50ef173f5ddc5e1eb671333f3ae90f342b21cd8781a9c374316cd6724d8db52a",
+      "running": false,
+      "started_at": "2026-10-20T05:14:54.063439685Z"
+    },
+    "/kifu1000-c021-gpu0-20261018": {
+      "id": "a7a75514efc0187ecb16b996d440f0a23a40e8fac3f03b1c77fd6063b8c0f9c7",
+      "running": false,
+      "started_at": "2026-10-20T06:18:12.406844866Z"
+    },
+    "/kifu1000-c021-gpu1-20261018": {
+      "id": "50c7d1213afba1d242217eda5b57ae9202932ddf7c99968d9f97253590fd2c6e",
+      "running": false,
+      "started_at": "2026-10-20T07:36:59.914516779Z"
+    },
+    "/kifu1000-c022-gpu0-20261018": {
+      "id": "ca879c78f4514a1f63458ff28c506ea93f7e4fb7d54e4c23a7c90f5af391ae7c",
+      "running": false,
+      "started_at": "2026-10-20T08:43:52.093391143Z"
+    },
+    "/kifu1000-c022-gpu1-20261018": {
+      "id": "6bde2f8aa70134f29acb943338a70d9a0237701457ad0a502bcbb5794b0b039a",
+      "running": false,
+      "started_at": "2026-10-20T09:55:08.334944771Z"
+    },
+    "/kifu1000-c023-gpu0-20261018": {
+      "id": "5e9970daee75e79dfe10b0867dab1329602c8987e23511da86053fff62431a69",
+      "running": false,
+      "started_at": "2026-10-20T10:55:23.277518856Z"
+    },
+    "/kifu1000-c023-gpu1-20261018": {
+      "id": "168b974d2fe9023970e9ca4ebf44bbf46135bb953321c45d856ae11f1fd93270",
+      "running": false,
+      "started_at": "2026-10-20T12:09:55.030385392Z"
+    },
+    "/kifu1000-c024-gpu0-20261018": {
+      "id": "87c0fdc6a2cea80f4bd990058788515ad801913db041fd5fd43aeab521436e59",
+      "running": false,
+      "started_at": "2026-10-20T13:15:59.374743858Z"
+    },
+    "/kifu1000-c024-gpu1-20261018": {
+      "id": "37879825146dc12bb005456353f95a3c13a71b7f29cc51ed438b0b9f51399fad",
+      "running": false,
+      "started_at": "2026-10-20T14:18:28.910624973Z"
+    },
+    "/kifu1000-c025-gpu0-20261018": {
+      "id": "a8145a525b0184a8ae6adff69bf690e54d5651f2e3e3be1560dbfd20006a9338",
+      "running": false,
+      "started_at": "2026-10-20T15:16:43.57671791Z"
+    },
+    "/kifu1000-c025-gpu1-20261018": {
+      "id": "55abe703f3593cf95afc472a746ce10f0adab8e2df0780c4c290e1ef80391293",
+      "running": false,
+      "started_at": "2026-10-20T16:25:44.048293407Z"
+    },
+    "/kifu1000-c026-gpu0-20261018": {
+      "id": "e30469eb2548cd65c7bfcb2df17a84c56f9e2a335b000b1330030bd86c517784",
+      "running": false,
+      "started_at": "2026-10-20T17:26:27.794576495Z"
+    },
+    "/kifu1000-c026-gpu1-20261018": {
+      "id": "cb8acd8c2b8c81d255a30ae684767c80d4fca72c6b8fe206730b4b1e60162d83",
+      "running": false,
+      "started_at": "2026-10-20T18:28:12.664166552Z"
+    },
+    "/kifu1000-c027-gpu0-20261018": {
+      "id": "4e87f74d10802ffd73f0f3a0dca2ed57fa788fc7c12e272c4c9caa32832e7111",
+      "running": false,
+      "started_at": "2026-10-20T19:24:41.990324294Z"
+    },
+    "/kifu1000-c027-gpu1-20261018": {
+      "id": "f9bfa2c7b08434e4dab97818e4d98b947847744a2cfb1d64ebb7bf5224dcdd5b",
+      "running": false,
+      "started_at": "2026-10-20T20:39:14.277414405Z"
+    },
+    "/kifu1000-c028-gpu0-20261018": {
+      "id": "2d1e61c5ba0d22fb3a69dc3ee07b0303cf67b44a572158aa4f32e362d90e8612",
+      "running": false,
+      "started_at": "2026-10-20T21:45:34.004936207Z"
+    },
+    "/kifu1000-c028-gpu1-20261018": {
+      "id": "1099074c7d92bd23b52cc74ae075431c9a0bc0f1d8bda2d8336d5c8dafce5c4c",
+      "running": false,
+      "started_at": "2026-10-20T22:56:50.625027438Z"
+    },
+    "/kifu1000-c029-gpu0-20261018": {
+      "id": "e572cdd259e88b7ec94416c5160688ab088561b7879656fe1cdd72357a50ca41",
+      "running": false,
+      "started_at": "2026-10-21T00:00:55.529781548Z"
+    },
+    "/kifu1000-c029-gpu1-20261018": {
+      "id": "90a2db6c73484c45a2d49a966e28758cf74304b58e34d257102b3fc6b317cc9f",
+      "running": false,
+      "started_at": "2026-10-21T01:16:27.524256284Z"
+    },
+    "/kifu1000-c030-gpu0-20261018": {
+      "id": "3b590d674934af68fe48d78f308486e78e5702d56740df702e368cbe8f07595b",
+      "running": false,
+      "started_at": "2026-10-21T02:25:34.331456785Z"
+    },
+    "/kifu1000-c030-gpu1-20261018": {
+      "id": "20354fa60dcc8dd2b6ccd192ff7d912d3ce846c2057e4467344b6d2048076224",
+      "running": false,
+      "started_at": "2026-10-21T03:33:19.593297624Z"
+    },
+    "/kifu1000-c031-gpu0-20261018": {
+      "id": "afd229fb9bbc3ccc183b2ef00582f262939ca03996cce45d2d4faf2d9069e413",
+      "running": false,
+      "started_at": "2026-10-21T04:40:38.697827597Z"
+    },
+    "/kifu1000-c031-gpu1-20261018": {
+      "id": "b2b5885d3e3f4cc4c9543534bf982e1ab21b03865ba81a6bcae674c749d266fa",
+      "running": false,
+      "started_at": "2026-10-21T05:52:55.099140683Z"
+    },
+    "/kifu1000-c032-gpu0-20261018": {
+      "id": "9231cd53663146f849eea631e5d920afea72be411cc9a502482574f29a92ce71",
+      "running": false,
+      "started_at": "2026-10-21T07:00:29.267688288Z"
+    },
+    "/kifu1000-c032-gpu1-20261018": {
+      "id": "167411c170c99234bd4429b4e80d8d968286e5d662b066c058334acf8f1f7583",
+      "running": false,
+      "started_at": "2026-10-21T08:15:31.547817694Z"
+    },
+    "/kifu1000-c033-gpu0-20261018": {
+      "id": "6638b889b9ef5c7b36e5e82fce4b343c33027fde1fa9b657a46fde477acf17ae",
+      "running": false,
+      "started_at": "2026-10-21T09:19:39.740909253Z"
+    },
+    "/kifu1000-c033-gpu1-20261018": {
+      "id": "bd319f5a0340b4901a1883dce7563570e9649964644bad5cd610dff2ba34da3c",
+      "running": false,
+      "started_at": "2026-10-21T10:30:10.707220028Z"
+    },
+    "/kifu1000-c034-gpu0-20261018": {
+      "id": "585d422a79248d174baf9615ffe0c558fca977780d50dbe5c8dc31126f3d230f",
+      "running": false,
+      "started_at": "2026-10-21T11:39:29.628142322Z"
+    },
+    "/kifu1000-c034-gpu1-20261018": {
+      "id": "4440c718c1b8ddfb4c69b39423e4cb05d156c027b9b5df3b66e8b6eefcc56707",
+      "running": false,
+      "started_at": "2026-10-21T12:53:01.605313578Z"
+    },
+    "/kifu1000-c035-gpu0-20261018": {
+      "id": "37f72b18d954f8932bac0d9c3005a7a610ec3d5a433804261a17d6d5b0337ded",
+      "running": false,
+      "started_at": "2026-10-21T14:02:56.718511714Z"
+    },
+    "/kifu1000-c035-gpu1-20261018": {
+      "id": "db5fed71288349271faee7c0cc9dc34792fe272de533028b841dfd8b3461e3df",
+      "running": false,
+      "started_at": "2026-10-21T15:10:42.886815974Z"
+    },
+    "/kifu1000-c036-gpu0-20261018": {
+      "id": "6b280a201f8a2b90d6cb99a11b2fa013fd0cbce069845f80eed69fde1e75cc3b",
+      "running": false,
+      "started_at": "2026-10-21T16:16:07.911948205Z"
+    },
+    "/kifu1000-c036-gpu1-20261018": {
+      "id": "ed8e7dd49aa6574b06e77570ccd2c309710ad8d74808982b25103dd5d5e0a46d",
+      "running": false,
+      "started_at": "2026-10-21T17:31:24.98129955Z"
+    },
+    "/kifu1000-c037-gpu0-20261018": {
+      "id": "6dbe9aa1014d281489313e5b602ea47e1eb8cafd0155445712a7998cf96592a1",
+      "running": false,
+      "started_at": "2026-10-21T18:40:01.453487064Z"
+    },
+    "/kifu1000-c037-gpu1-20261018": {
+      "id": "cafeec0ebef42fc780052fd661687798ea129999871140640b6cdbf9fb789ee3",
+      "running": false,
+      "started_at": "2026-10-21T19:59:19.152210754Z"
+    },
+    "/kifu1000-c038-gpu0-20261018": {
+      "id": "1eb91613a699b7cc924f428ce111573244becc83b867c04ba9e952696ae7528e",
+      "running": false,
+      "started_at": "2026-10-21T21:13:24.070058507Z"
+    },
+    "/kifu1000-c038-gpu1-20261018": {
+      "id": "621a32433769bcb9c82fde3b9521e87b8c4af59ab6eb03e8432c51f6f9d6c086",
+      "running": false,
+      "started_at": "2026-10-21T22:24:40.059410152Z"
+    },
+    "/kifu1000-c039-gpu0-20261018": {
+      "id": "d501f174a6acaff58b439fef69dc17a07bf73afafde8e9e1d16f762797c67d3c",
+      "running": false,
+      "started_at": "2026-10-21T23:23:54.17841957Z"
+    },
+    "/kifu1000-c039-gpu1-20261018": {
+      "id": "1592f381d23613dd46da11d79c89be4a501eefdd0aaebf567f573b45cb1b963b",
+      "running": false,
+      "started_at": "2026-10-22T00:33:55.287871409Z"
+    },
+    "/kifu1000-c040-gpu0-20261018": {
+      "id": "8689c230c1e1230c1dc82ee829b77f7c7fd759a6d56f93db46a40e87572054e0",
+      "running": false,
+      "started_at": "2026-10-22T01:37:44.159152102Z"
+    },
+    "/kifu1000-c040-gpu1-20261018": {
+      "id": "73176e02ca5f817b0630bac7a10a977c3150bfc411a0e9da2182cfff9f4d11e0",
+      "running": false,
+      "started_at": "2026-10-22T02:46:59.959772516Z"
+    },
+    "/kifu1000-c041-gpu0-20261018": {
+      "id": "7ab304bf53dd923c44a507b040c1aa8f719929b25f79a649bf4c4c19eea28b18",
+      "running": false,
+      "started_at": "2026-10-22T03:52:06.166292033Z"
+    },
+    "/kifu1000-c041-gpu1-20261018": {
+      "id": "f45119cc162203d956c7aaeb870428b9929b14e990f45a57f0144a04357c41e5",
+      "running": false,
+      "started_at": "2026-10-22T05:09:38.653747298Z"
+    },
+    "/kifu1000-c042-gpu0-20261018": {
+      "id": "5e820172df9c1529112e11b123c67f3598f24bc82b5929f1549297e6b3cc51c7",
+      "running": false,
+      "started_at": "2026-10-22T06:22:48.158010976Z"
+    },
+    "/kifu1000-c042-gpu1-20261018": {
+      "id": "9aa4129f5cb4d32edb9fc808b22208b4f0ca179ebe1ba6862bd9f8c050d7aac7",
+      "running": false,
+      "started_at": "2026-10-22T07:38:50.253368275Z"
+    },
+    "/kifu1000-c043-gpu0-20261018": {
+      "id": "c14b7f9d58ece7f1a907eca373e095ded767674c3ee8bf681d5c737a967ee151",
+      "running": false,
+      "started_at": "2026-10-22T08:38:26.557982606Z"
+    },
+    "/kifu1000-c043-gpu1-20261018": {
+      "id": "18adbb3e6e0fd1c24c419363b61d0e5fa4bf1148de165418002cb530e772b9a6",
+      "running": false,
+      "started_at": "2026-10-22T09:40:41.109608394Z"
+    },
+    "/kifu1000-c044-gpu0-20261018": {
+      "id": "098bdae47e0ed3d6fddb17e056dbbc120ef11ddc9a5d692e0ed727a0a5ab5c89",
+      "running": false,
+      "started_at": "2026-10-22T10:41:12.96939234Z"
+    },
+    "/kifu1000-c044-gpu1-20261018": {
+      "id": "b5a233fb9ea85ceab43bd4095c53d5d99276052f74af08bd66b13d9fdad6e764",
+      "running": false,
+      "started_at": "2026-10-22T11:49:43.594782545Z"
+    },
+    "/kifu1000-c045-gpu0-20261018": {
+      "id": "c2e9710d5c9a75176a735c8eb46e0dcc08690db2d380b33298cde28477027c91",
+      "running": false,
+      "started_at": "2026-10-22T12:52:42.745970164Z"
+    },
+    "/kifu1000-c045-gpu1-20261018": {
+      "id": "b40290714a3a7f5f59f5bbe23671d0aacefeebfdad00922b915a925d37317a99",
+      "running": false,
+      "started_at": "2026-10-22T14:01:28.274731541Z"
+    },
+    "/kifu1000-c046-gpu0-20261018": {
+      "id": "54f3208ef490afdb50809ba548a6906a8a3ab42af94370d3c87c4228084bfbc2",
+      "running": false,
+      "started_at": "2026-10-22T15:05:11.863666684Z"
+    },
+    "/kifu1000-c046-gpu1-20261018": {
+      "id": "263883529d7fec019126afb5e22dc1aaf3abd431ee1135d7368d6f2d24ca2293",
+      "running": false,
+      "started_at": "2026-10-22T16:15:43.217135926Z"
+    },
+    "/kifu1000-c047-gpu0-20261018": {
+      "id": "4bd92c75b80aff50c20003f9b23c23dfeffe6e15505d6e7acb9d5380e081a986",
+      "running": false,
+      "started_at": "2026-10-22T17:19:36.167443327Z"
+    },
+    "/kifu1000-c047-gpu1-20261018": {
+      "id": "fb3256dbcb47f4bb5960c7b9f82be82cd9b489135e3f8ecb89b035227b6f79bd",
+      "running": false,
+      "started_at": "2026-10-22T18:21:05.531260892Z"
+    },
+    "/kifu1000-c048-gpu0-20261018": {
+      "id": "54105424a24165d90e0a3d89f2ac1eb69740819eb4a7fc6b200b9f55547a9ae2",
+      "running": false,
+      "started_at": "2026-10-22T19:20:02.66756544Z"
+    },
+    "/kifu1000-c048-gpu1-20261018": {
+      "id": "bdf570b8f2097626d76247d2ff68b3436c204986f175e208042adcdca0079dc1",
+      "running": false,
+      "started_at": "2026-10-22T20:35:49.856535901Z"
+    },
+    "/kifu1000-c049-gpu0-20261018": {
+      "id": "0106eebd97d1d2931ca2a219ec6d9af388b905efe1c87cf6cea4acb45505277f",
+      "running": false,
+      "started_at": "2026-10-22T21:46:27.64497523Z"
+    },
+    "/kifu1000-c049-gpu1-20261018": {
+      "id": "8bdd20acaf912eaa8ad126723064f72469c378bfca19065e588b7830bf454dc8",
+      "running": false,
+      "started_at": "2026-10-22T22:55:43.876642386Z"
+    },
+    "/kifu1000-c050-gpu0-20261018": {
+      "id": "4471a2518a0b6421379bedd8b1ba6a9d772c8b3473d59b0b1780af7e9e579868",
+      "running": false,
+      "started_at": "2026-10-23T00:01:22.264497795Z"
+    },
+    "/kifu1000-c050-gpu1-20261018": {
+      "id": "5fd04886a993d7df6cc974590e392eb8ca5179783dac87e58864cd65e50da0ff",
+      "running": false,
+      "started_at": "2026-10-23T01:00:20.957627326Z"
+    },
+    "/kifu1000-engine-gpu0-20261018": {
+      "id": "a92efaca010d4b0e46e32fb9d9790fc11bde6deafd38cacf90dbf131e5533970",
+      "running": false,
+      "started_at": "2026-10-18T07:40:52.781384459Z"
+    },
+    "/kifu1000-supervisor-20261018": {
+      "id": "fa5cabac0fc5d5f1ea2e3e3adbd09449bde7c7c1cab3bc8fb820efb567960902",
+      "running": false,
+      "started_at": "2026-10-18T07:45:39.751227404Z"
+    },
+    "/kifu200-c001-gpu0-20261018": {
+      "id": "c35e65c44d7060a7498b3d4b1ac1b870a08e1ff55f7c656df41a601031d893c7",
+      "running": false,
+      "started_at": "2026-10-17T17:13:06.854937887Z"
+    },
+    "/kifu200-c001-gpu1-20261018": {
+      "id": "9f2ca52ba16891f3ee2486f1b065e702b2da3e84014898be54e21199fc7a7ba5",
+      "running": false,
+      "started_at": "2026-10-17T17:13:07.23434281Z"
+    },
+    "/kifu200-c002-gpu0-20261018": {
+      "id": "57883f7ab3e7c2f51ead9201e7521c3d43f09d7f1fc39bb0e907b1b37a0c25d5",
+      "running": false,
+      "started_at": "2026-10-17T20:22:48.415508997Z"
+    },
+    "/kifu200-c002-gpu1-20261018": {
+      "id": "fd4c0115afa67c0a39987218eaf34e4504430808425141b76bb975257204ab69",
+      "running": false,
+      "started_at": "2026-10-17T19:48:57.840748258Z"
+    },
+    "/kifu200-c003-gpu0-20261018": {
+      "id": "2ddd290e9a5bad55ca0bdadbfa48ad0f7fbe7aadd10b848e77610dcdb24ccec8",
+      "running": false,
+      "started_at": "2026-10-17T23:29:13.341247938Z"
+    },
+    "/kifu200-c003-gpu1-20261018": {
+      "id": "7c9b42e070e5b1b9cea2f03eb8dab7ee66e5aeee8ee4be8bac9a21e718faea65",
+      "running": false,
+      "started_at": "2026-10-17T22:28:48.96261303Z"
+    },
+    "/kifu200-engine-gpu0-20261018": {
+      "id": "336b415f8bdb06015ee9744a91785b0ab03ff6993a395f42dd1557ac61387d97",
+      "running": false,
+      "started_at": "2026-10-17T17:11:21.811159984Z"
+    },
+    "/platform-postgres": {
+      "id": "f3f7edfb9d47b068bbe431ca0432976dbdbda6b81177ec5ac480fd963f2aa3f0",
+      "running": true,
+      "started_at": "2026-08-11T04:40:20.030122445Z"
+    },
+    "/smartbox-admin-admin-console-1": {
+      "id": "7978a87a938519a3c74b3e3859d9db0ce14bfb74d1bdc8a2d1e25a6ca24b64c0",
+      "running": true,
+      "started_at": "2026-10-21T05:34:43.933551148Z"
+    },
+    "/smartbox-platform": {
+      "id": "31577ccb6c4ac13a5396b09250b84cb1a403ea693ad12d704d1982318c7be0dc",
+      "running": true,
+      "started_at": "2026-10-11T23:07:16.982045274Z"
+    }
+  },
+  "other_containers_unchanged": true,
+  "phase": "deployed_verified",
+  "previous_develop_sha": "ef96a50a7e69e93e57e890cca837c9298f45f329",
+  "real_sync_recovery_claimed": false,
+  "receive_process_gate": "no active receive process at last mutation gate",
+  "receiver_wrapper": {
+    "status": "not_applicable_home_test_web"
+  },
+  "receiver_wrapper_unchanged": true,
+  "release_directory": "/mnt/disk1/fan/golaxy-publication-guard-overlay-662b6a250-20261024",
+  "resolved_config_preserved_except_image_buildsha": true,
+  "rollback_command": [
+    "docker",
+    "compose",
+    "--project-name",
+    "katrain",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml",
+    "-f",
+    "/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+    "up",
+    "-d",
+    "--no-deps",
+    "--no-build",
+    "--pull",
+    "never",
+    "--force-recreate",
+    "katrain-web"
+  ],
+  "rollback_required": false,
+  "runtime_env_mounts_ports_user_cmd_preserved_except_buildsha": true,
+  "scope": "three-Python-file publication-guard overlay on ef96 runtime; prior hourly repair, static UI and lobby backend preserved",
+  "source_develop_sha": "662b6a25048ee2bb3752bdbf54fb3a927ab68084",
+  "source_files_sha256": {
+    "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+    "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+    "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022"
+  },
+  "written_at": "2026-10-23T17:44:57.657885+00:00"
+}

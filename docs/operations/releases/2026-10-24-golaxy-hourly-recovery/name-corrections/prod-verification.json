@@ -1,0 +1,492 @@
+{
+  "changed_cells": 5,
+  "correction_bundle_sha256": "31d63f958bfbdb428f0b97d3c1e481c3d9d7cf5aa7e1c36af21f64d37ba21dc1",
+  "correction_spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6",
+  "date_checks": [
+    {
+      "album_id": 178724,
+      "date_played": "2026-10-23",
+      "lang": "cn"
+    },
+    {
+      "album_id": 178724,
+      "date_played": "2026-10-23",
+      "lang": "tw"
+    },
+    {
+      "album_id": 178724,
+      "date_played": "2026-10-23",
+      "lang": "jp"
+    },
+    {
+      "album_id": 178724,
+      "date_played": "2026-10-23",
+      "lang": "ko"
+    },
+    {
+      "album_id": 178724,
+      "date_played": "2026-10-23",
+      "lang": "en"
+    },
+    {
+      "album_id": 178725,
+      "date_played": "2026-10-22",
+      "lang": "cn"
+    },
+    {
+      "album_id": 178725,
+      "date_played": "2026-10-22",
+      "lang": "tw"
+    },
+    {
+      "album_id": 178725,
+      "date_played": "2026-10-22",
+      "lang": "jp"
+    },
+    {
+      "album_id": 178725,
+      "date_played": "2026-10-22",
+      "lang": "ko"
+    },
+    {
+      "album_id": 178725,
+      "date_played": "2026-10-22",
+      "lang": "en"
+    },
+    {
+      "album_id": 178726,
+      "date_played": "2026-10-22",
+      "lang": "cn"
+    },
+    {
+      "album_id": 178726,
+      "date_played": "2026-10-22",
+      "lang": "tw"
+    },
+    {
+      "album_id": 178726,
+      "date_played": "2026-10-22",
+      "lang": "jp"
+    },
+    {
+      "album_id": 178726,
+      "date_played": "2026-10-22",
+      "lang": "ko"
+    },
+    {
+      "album_id": 178726,
+      "date_played": "2026-10-22",
+      "lang": "en"
+    },
+    {
+      "album_id": 178727,
+      "date_played": "2026-10-22",
+      "lang": "cn"
+    },
+    {
+      "album_id": 178727,
+      "date_played": "2026-10-22",
+      "lang": "tw"
+    },
+    {
+      "album_id": 178727,
+      "date_played": "2026-10-22",
+      "lang": "jp"
+    },
+    {
+      "album_id": 178727,
+      "date_played": "2026-10-22",
+      "lang": "ko"
+    },
+    {
+      "album_id": 178727,
+      "date_played": "2026-10-22",
+      "lang": "en"
+    },
+    {
+      "album_id": 178728,
+      "date_played": "2026-10-21",
+      "lang": "cn"
+    },
+    {
+      "album_id": 178728,
+      "date_played": "2026-10-21",
+      "lang": "tw"
+    },
+    {
+      "album_id": 178728,
+      "date_played": "2026-10-21",
+      "lang": "jp"
+    },
+    {
+      "album_id": 178728,
+      "date_played": "2026-10-21",
+      "lang": "ko"
+    },
+    {
+      "album_id": 178728,
+      "date_played": "2026-10-21",
+      "lang": "en"
+    },
+    {
+      "album_id": 178729,
+      "date_played": "2026-10-21",
+      "lang": "cn"
+    },
+    {
+      "album_id": 178729,
+      "date_played": "2026-10-21",
+      "lang": "tw"
+    },
+    {
+      "album_id": 178729,
+      "date_played": "2026-10-21",
+      "lang": "jp"
+    },
+    {
+      "album_id": 178729,
+      "date_played": "2026-10-21",
+      "lang": "ko"
+    },
+    {
+      "album_id": 178729,
+      "date_played": "2026-10-21",
+      "lang": "en"
+    },
+    {
+      "album_id": 178730,
+      "date_played": "2026-10-21",
+      "lang": "cn"
+    },
+    {
+      "album_id": 178730,
+      "date_played": "2026-10-21",
+      "lang": "tw"
+    },
+    {
+      "album_id": 178730,
+      "date_played": "2026-10-21",
+      "lang": "jp"
+    },
+    {
+      "album_id": 178730,
+      "date_played": "2026-10-21",
+      "lang": "ko"
+    },
+    {
+      "album_id": 178730,
+      "date_played": "2026-10-21",
+      "lang": "en"
+    },
+    {
+      "album_id": 178731,
+      "date_played": "2026-10-21",
+      "lang": "cn"
+    },
+    {
+      "album_id": 178731,
+      "date_played": "2026-10-21",
+      "lang": "tw"
+    },
+    {
+      "album_id": 178731,
+      "date_played": "2026-10-21",
+      "lang": "jp"
+    },
+    {
+      "album_id": 178731,
+      "date_played": "2026-10-21",
+      "lang": "ko"
+    },
+    {
+      "album_id": 178731,
+      "date_played": "2026-10-21",
+      "lang": "en"
+    },
+    {
+      "album_id": 178732,
+      "date_played": "2026-10-19",
+      "lang": "cn"
+    },
+    {
+      "album_id": 178732,
+      "date_played": "2026-10-19",
+      "lang": "tw"
+    },
+    {
+      "album_id": 178732,
+      "date_played": "2026-10-19",
+      "lang": "jp"
+    },
+    {
+      "album_id": 178732,
+      "date_played": "2026-10-19",
+      "lang": "ko"
+    },
+    {
+      "album_id": 178732,
+      "date_played": "2026-10-19",
+      "lang": "en"
+    },
+    {
+      "album_id": 178733,
+      "date_played": "2026-10-19",
+      "lang": "cn"
+    },
+    {
+      "album_id": 178733,
+      "date_played": "2026-10-19",
+      "lang": "tw"
+    },
+    {
+      "album_id": 178733,
+      "date_played": "2026-10-19",
+      "lang": "jp"
+    },
+    {
+      "album_id": 178733,
+      "date_played": "2026-10-19",
+      "lang": "ko"
+    },
+    {
+      "album_id": 178733,
+      "date_played": "2026-10-19",
+      "lang": "en"
+    }
+  ],
+  "elapsed_seconds": 33.28,
+  "finished_at": "2026-10-23T18:50:53.878915+00:00",
+  "fresh_http_checkpoint_reuse": false,
+  "native_correction_receipt": {
+    "affected_albums": [
+      178724,
+      178728,
+      178729,
+      178730,
+      178731,
+      178732
+    ],
+    "batch_id": 906,
+    "bundle_sha256": "31d63f958bfbdb428f0b97d3c1e481c3d9d7cf5aa7e1c36af21f64d37ba21dc1",
+    "change_count": 10,
+    "resolved_refs": {
+      "raw_event:102404": 102404,
+      "raw_event:102408": 102408,
+      "raw_event:102409": 102409,
+      "raw_event:102410": 102410
+    },
+    "spec_sha256": "6c9ed23d97b9fd0e787bdf4277d659e2a33c738fdcbca1ba304c7becf0bf57f6",
+    "status": "applied"
+  },
+  "original_manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+  "original_receipt_sha256": "3610cf1dffdbaf1992a3d109cd489e70b8ddec6989c9bd4326a0ae2e060754eb",
+  "started_at": "2026-10-23T18:50:20.599484+00:00",
+  "target": "PROD",
+  "verification": {
+    "checks": [
+      {
+        "album_id": 178724,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178724,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178724,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178724,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178724,
+        "lang": "en"
+      },
+      {
+        "album_id": 178725,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178725,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178725,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178725,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178725,
+        "lang": "en"
+      },
+      {
+        "album_id": 178726,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178726,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178726,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178726,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178726,
+        "lang": "en"
+      },
+      {
+        "album_id": 178727,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178727,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178727,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178727,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178727,
+        "lang": "en"
+      },
+      {
+        "album_id": 178728,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178728,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178728,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178728,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178728,
+        "lang": "en"
+      },
+      {
+        "album_id": 178729,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178729,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178729,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178729,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178729,
+        "lang": "en"
+      },
+      {
+        "album_id": 178730,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178730,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178730,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178730,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178730,
+        "lang": "en"
+      },
+      {
+        "album_id": 178731,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178731,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178731,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178731,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178731,
+        "lang": "en"
+      },
+      {
+        "album_id": 178732,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178732,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178732,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178732,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178732,
+        "lang": "en"
+      },
+      {
+        "album_id": 178733,
+        "lang": "cn"
+      },
+      {
+        "album_id": 178733,
+        "lang": "tw"
+      },
+      {
+        "album_id": 178733,
+        "lang": "jp"
+      },
+      {
+        "album_id": 178733,
+        "lang": "ko"
+      },
+      {
+        "album_id": 178733,
+        "lang": "en"
+      }
+    ],
+    "games": 10,
+    "status": "verified"
+  },
+  "verification_expectations_sha256": "f45d706b76d2350a4c9a90385591d22e94010bef8b52dd8a5d604dbad37873bd"
+}

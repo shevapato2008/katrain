@@ -1,0 +1,73 @@
+{
+  "all_original_batch_receipts_and_historic_verifications_unchanged": true,
+  "all_original_five_batches_prod_synced": true,
+  "catalog_after": {
+    "latest_normalized_date_sort": "2026-10-23",
+    "public": 176593,
+    "total": 176852
+  },
+  "catalog_before": {
+    "latest_normalized_date_sort": "2026-10-23",
+    "public": 176593,
+    "total": 176852
+  },
+  "consecutive_failures": 0,
+  "coverage": {
+    "boundary_in_window": false,
+    "excluded": 0,
+    "head_page_cap": true,
+    "head_pages": 5,
+    "head_unique_ids": 100,
+    "last_observed_at": 1792781910.7212625,
+    "oldest_recheck_age_seconds": null,
+    "out_of_window": 36,
+    "publication_authority_complete": true,
+    "recheck_deferred": 0,
+    "recheck_selected": 0,
+    "sgf_attempt_cap": false,
+    "sgf_attempts": 54,
+    "source_budget_exhausted": false,
+    "source_http_attempts": 59,
+    "terminal_count": 17,
+    "time_budget_exhausted": false,
+    "unknown_match_time": 0
+  },
+  "head_pages": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "ledger_hash_format": "canonical JSON SHA-256",
+  "legacy_seven_attempts_unchanged": true,
+  "legacy_seven_source_requests": 0,
+  "model_ledger_after": {
+    "call_entries": 19,
+    "entry_count": 57,
+    "sha256": "409f9e1dc58b1046658958cfd7fed88416c5cdcf1dd0c21363355417db119370",
+    "spent_upper_tokens": 16477
+  },
+  "model_ledger_before": {
+    "call_entries": 19,
+    "entry_count": 57,
+    "sha256": "409f9e1dc58b1046658958cfd7fed88416c5cdcf1dd0c21363355417db119370",
+    "spent_upper_tokens": 16477
+  },
+  "next_scheduled_at_utc": "2026-10-23T19:54:49+00:00",
+  "overlay_revision": "4bf9a699a35ecdf025f5ec2f414425e3f2a13693",
+  "paused_control": null,
+  "rolling_cursor_unchanged": 1786,
+  "run": {
+    "duration_ms": 221734,
+    "error": null,
+    "error_count": 0,
+    "finished_at": "2026-10-23 18:58:31.247487+00:00",
+    "id": 71146,
+    "job_name": "kifu_ingest",
+    "started_at": "2026-10-23 18:54:49.513019+00:00",
+    "status": "success"
+  },
+  "scheduler_enabled": true,
+  "scheduler_interval_seconds": 3600
+}

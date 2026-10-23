@@ -1,0 +1,53 @@
+{
+  "completed_at": "2026-10-23T18:53:06.752131+00:00",
+  "created_at": "2026-10-23T18:53:06.627482+00:00",
+  "entries": [
+    {
+      "archive": "/app/data/kifu_ingest/name-correction-20261024/pre-correction-checkpoints/647226ebd805d9899f94c997c89425ae4f129ebb8265dbec6fdff6685c144d41.json",
+      "archived": true,
+      "binding": {
+        "algorithm": "album-api-five-languages-public-card-v1",
+        "languages": [
+          "cn",
+          "tw",
+          "jp",
+          "ko",
+          "en"
+        ],
+        "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+        "receipt_sha256": "1a51a7f6fcf8a41af328276fa34dfcd17565ace6244cd5a4c8dd526757ba908f",
+        "target": "http://host.docker.internal:8001"
+      },
+      "completed_albums": 10,
+      "raw_sha256": "290d9a6fc977e20acd7a901114b3abb3eae688ea8b1079908c701b5c3f1d460d",
+      "source": "/app/data/kifu_ingest/api-verification/647226ebd805d9899f94c997c89425ae4f129ebb8265dbec6fdff6685c144d41.json"
+    },
+    {
+      "archive": "/app/data/kifu_ingest/name-correction-20261024/pre-correction-checkpoints/bd64a5cd0e66029877e8bb15244fa5e8854135d6b0a2e00f4b5c94f61d1d4498.json",
+      "archived": true,
+      "binding": {
+        "algorithm": "album-api-five-languages-public-card-v1",
+        "languages": [
+          "cn",
+          "tw",
+          "jp",
+          "ko",
+          "en"
+        ],
+        "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+        "receipt_sha256": "3610cf1dffdbaf1992a3d109cd489e70b8ddec6989c9bd4326a0ae2e060754eb",
+        "target": "https://modelstella.com"
+      },
+      "completed_albums": 10,
+      "raw_sha256": "9cb485b899097623761fa1a8977cdb768831d9c4c8c55d41b8eec773ee2d8e59",
+      "source": "/app/data/kifu_ingest/api-verification/bd64a5cd0e66029877e8bb15244fa5e8854135d6b0a2e00f4b5c94f61d1d4498.json"
+    }
+  ],
+  "expected_receipt_hashes": {
+    "http://host.docker.internal:8001": "1a51a7f6fcf8a41af328276fa34dfcd17565ace6244cd5a4c8dd526757ba908f",
+    "https://modelstella.com": "3610cf1dffdbaf1992a3d109cd489e70b8ddec6989c9bd4326a0ae2e060754eb"
+  },
+  "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+  "operation": "archive exact pre-name-correction successful API checkpoints; not deletion",
+  "phase": "complete"
+}

@@ -632,3 +632,173 @@ def test_invalid_source_binding_spends_no_model_requests():
 
     run(check())
     assert not calls
+
+
+@pytest.mark.parametrize(
+    "key,language,wrong_display,correct_display,reason",
+    [
+        (
+            "第74期王座战挑战赛5番棋1局",
+            "jp",
+            "第74期王座戦挑戦者決定戦5番勝負第1局",
+            "第74期王座戦挑戦手合5番勝負第1局",
+            "Title match series",
+        ),
+        (
+            "第74期王座战挑战赛5番棋1局",
+            "ko",
+            "제74기 왕좌전 도전자 결정전 5번기 제1국",
+            "제74기 왕좌전 도전5번기 제1국",
+            "Title match series",
+        ),
+        (
+            "第74期王座战挑战赛5番棋1局",
+            "en",
+            "74th Oza Challenger Determination, Best-of-5 Game 1",
+            "74th Oza Title Match, Best-of-5 Game 1",
+            "Title match series",
+        ),
+        (
+            "第74期王座战挑战赛5番棋1局",
+            "en",
+            "74th Oza Challenger Decider, Best-of-5 Game 1",
+            "74th Oza Title Match, Best-of-5 Game 1",
+            "Title match series",
+        ),
+        (
+            "第74期王座战挑战赛5番棋1局",
+            "ko",
+            "제74기 왕좌전 도전 5선승부 제1국",
+            "제74기 왕좌전 도전5번기 제1국",
+            "Korean best-of series",
+        ),
+        (
+            "第9届吴清源杯世界女子赛预选赛",
+            "ko",
+            "제9회 우청원배 세계여자바둑대회 예선",
+            "제9회 오청원배 세계여자바둑대회 예선",
+            "Korean Wu Qingyuan Cup",
+        ),
+        (
+            "第9屆吳清源盃世界女子賽預選賽",
+            "ko",
+            "제9회 우청원배 세계여자바둑대회 예선",
+            "제9회 오청원배 세계여자바둑대회 예선",
+            "Korean Wu Qingyuan Cup",
+        ),
+        (
+            "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+            "ko",
+            "제12회 국수산맥배 결승 신진서 VS 이유청",
+            "제12회 국수산맥배 결승 신진서 VS 리웨이칭",
+            "Korean Li Weiqing",
+        ),
+        (
+            "第12屆國手山脈杯世界賽決賽 申真諝 VS 李維清",
+            "ko",
+            "제12회 국수산맥배 결승 신진서 VS 이유청",
+            "제12회 국수산맥배 결승 신진서 VS 리웨이칭",
+            "Korean Li Weiqing",
+        ),
+    ],
+)
+def test_confirmed_event_semantic_errors_repair_before_reviewer(key, language, wrong_display, correct_display, reason):
+    candidate = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, language: correct_display},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    wrong = {**candidate, "displays": {**candidate["displays"], language: wrong_display}}
+    with pytest.raises(NameRejected, match=reason):
+        QwenNameService._candidate(wrong, "raw_event", key, [])
+    service, client, calls = mock_service([wrong, candidate, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_event", key, [{**ITEM, "slot": "event"}])
+
+    decision = run(check())
+    prompts = [json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls]
+    assert len(calls) == 3
+    assert reason in prompts[1]["repair_reason"]
+    assert "candidate" not in prompts[1]  # The rejected first candidate never reaches a reviewer.
+    assert prompts[2]["candidate"] == candidate
+    assert decision["displays"][language] == correct_display
+    assert all(reason in " ".join(prompt["event_semantic_rules"]) for prompt in prompts)
+
+
+@pytest.mark.parametrize("series", [3, 5, 7])
+def test_unqualified_title_series_rejects_decider_for_each_supported_length(series):
+    key = f"第74期王座战挑战赛{series}番棋1局"
+    candidate = {
+        "displays": {
+            **{lang: key for lang in CANDIDATE["displays"]},
+            "jp": f"第74期王座戦挑戦者決定戦{series}番勝負第1局",
+        },
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    with pytest.raises(NameRejected, match="Title match series"):
+        QwenNameService._candidate(candidate, "raw_event", key, [])
+
+
+@pytest.mark.parametrize(
+    "key,displays",
+    [
+        (
+            "第74期王座战挑战赛5番棋1局",
+            {
+                "jp": "第74期王座戦挑戦手合5番勝負第1局",
+                "ko": "제74기 왕좌전 도전5번기 제1국",
+                "en": "74th Oza Title Match, Best-of-5 Game 1",
+            },
+        ),
+        ("第74期王座战挑战赛5番棋1局", {"ko": "제74기 왕좌전 도전 3선승제(5번기) 제1국"}),
+        (
+            "第74期王座战挑战者决定赛5番棋1局",
+            {
+                "jp": "第74期王座戦挑戦者決定戦5番勝負第1局",
+                "ko": "제74기 왕좌전 도전자 결정전 5번기 제1국",
+                "en": "74th Oza Challenger Determination, Best-of-5 Game 1",
+            },
+        ),
+        ("第74期王座战决定赛挑战赛5番棋1局", {"jp": "第74期王座戦挑戦者決定戦5番勝負第1局"}),
+        ("第9届吴清源杯世界女子赛预选赛", {"ko": "제9회 오청원 배 세계여자바둑대회 예선"}),
+        ("第12届国手山脉杯世界赛决赛 甲 VS 乙", {"ko": "제12회 국수산맥배 결승 홍길동 VS 이유청"}),
+    ],
+)
+def test_finite_event_semantic_guards_allow_correct_variants_and_explicit_qualifiers(key, displays):
+    candidate = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, **displays},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    assert QwenNameService._candidate(candidate, "raw_event", key, []) == candidate
+
+
+@pytest.mark.parametrize(
+    "key,korean",
+    [
+        ("第9届杯赛半决赛3番棋 决赛5番棋", "제9회 대회 준결승 3번기 결승 3선승제(5번기)"),
+        ("第9届杯赛决赛1番棋", "제9회 대회 결승 1선승제"),
+        ("第12届国手山脉杯世界赛决赛 李维清 VS 另一棋手", "제12회 국수산맥배 결승 리웨이칭 VS 이유청"),
+        ("第12届国手山脉杯世界赛决赛 李维清 VS 이유청", "제12회 국수산맥배 결승 Li Weiqing VS 이유청"),
+    ],
+    ids=[
+        "distinct-stage-lengths",
+        "single-game-first-to-one",
+        "li-retained-with-other-player",
+        "explicit-other-korean-name",
+    ],
+)
+def test_event_semantic_guards_defer_ambiguous_stages_and_other_players_to_reviewer(key, korean):
+    candidate = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, "ko": korean},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    assert QwenNameService._candidate(candidate, "raw_event", key, []) == candidate

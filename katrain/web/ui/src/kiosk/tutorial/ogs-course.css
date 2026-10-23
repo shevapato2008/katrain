@@ -86,11 +86,13 @@
 .kiosk .u-ogs.ogs-home{grid-template-columns:365px minmax(0,1fr)}
 .kiosk .u-ogs.ogs-exercise{grid-template-columns:516px minmax(0,1fr)}
 .kiosk .u-ogs .ogs-board-wrap{display:grid;grid-template-columns:var(--ogs-axis) minmax(0,1fr) var(--ogs-axis);grid-template-rows:var(--ogs-axis) minmax(0,1fr) var(--ogs-axis);background:#d9a45f}
-.kiosk .u-ogs .ogs-board-svg{grid-column:2;grid-row:2;width:100%;height:100%}
+.kiosk .u-ogs .ogs-board-svg{grid-column:2;grid-row:2;width:var(--ogs-board-width);height:var(--ogs-board-height);justify-self:center;align-self:center}
 .kiosk .u-ogs .ogs-board-axis{display:flex;align-items:center;justify-content:space-around;color:#f3d69f;font:600 16px "Kiosk Plex Mono",monospace}
 .kiosk .u-ogs .ogs-board-axis--top{grid-column:2;grid-row:1}
 .kiosk .u-ogs .ogs-board-axis--bottom{grid-column:2;grid-row:3}
 .kiosk .u-ogs .ogs-board-axis--left,.kiosk .u-ogs .ogs-board-axis--right{flex-direction:column;grid-row:2}
+.kiosk .u-ogs .ogs-board-axis--top,.kiosk .u-ogs .ogs-board-axis--bottom{width:var(--ogs-board-width);justify-self:center}
+.kiosk .u-ogs .ogs-board-axis--left,.kiosk .u-ogs .ogs-board-axis--right{height:var(--ogs-board-height);align-self:center}
 .kiosk .u-ogs .ogs-board-axis--left{grid-column:1}
 .kiosk .u-ogs .ogs-board-axis--right{grid-column:3}
 .kiosk .u-ogs.ogs-state{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:16px;padding:24px}

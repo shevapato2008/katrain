@@ -78,8 +78,9 @@ export default function OgsCourseExercisePage() {
   const status = currentAnswer.status;
   const choose = (value: string) => { const next = chooseOgsAnswer(currentAnswer, value); answerRef.current = next; setAnswer(next); };
   const act = (action: 'pass' | 'finish') => { const next = actOgsExercise(currentAnswer, action); answerRef.current = next; setAnswer(next); };
-  const next = () => { if (status !== 'correct') return; if (index + 1 < lesson.step_count) switchStep(index + 1); else back(); };
   const phase = physical.physical.phase;
+  const physicalBusy = physical.active && phase !== 'ready' && phase !== 'solved';
+  const next = () => { if (status !== 'correct' || physicalBusy) return; if (index + 1 < lesson.step_count) switchStep(index + 1); else back(); };
   const physicalMessage = physical.active ? phase === 'clearing' ? `请先清空实体棋盘${physical.physical.extra.length ? ` · 还剩 ${physical.physical.extra.length} 颗` : ''}` : phase === 'setup' ? `请摆放${physical.physical.stage === 'white' ? '白棋' : '黑棋'} · 已匹配 ${physical.physical.stageMatched}/${physical.physical.stageTotal} 颗${physical.physical.extra.length ? ` · 多余 ${physical.physical.extra.length} 颗` : ''}` : phase === 'replying' ? '请按棋盘灯光补摆应手并拿除被提的棋子' : phase === 'removing' ? `答错了：请取回 ${physical.physical.extra.length} 颗棋子${physical.physical.missing.length ? `，并放回被提的 ${physical.physical.missing.length} 颗` : ''}` : phase === 'restoring' ? '请按灯光将实体盘恢复到屏幕局面' : phase === 'ready' ? '实体盘已就绪 · 屏幕点击与实体落子均可' : phase === 'solved' ? '实体盘答对' : '正在连接实体盘' : physical.reason || '也可以在实体盘上练习';
   return <main className="u-ogs ogs-exercise" data-testid="ogs-exercise-page">
     <OgsCourseBoard step={currentStep} state={currentAnswer} onPoint={handleBoardPoint} disabled={physical.active && phase !== 'ready'} extra={physical.extra} />
@@ -87,18 +88,19 @@ export default function OgsCourseExercisePage() {
       <div className="ogs-breadcrumb"><span>第 {chapter.number} 章 · 第 {lesson.order} 课</span><span>第 {index + 1} / {lesson.step_count} 步</span></div>
       <div className="ogs-progress">{Array.from({ length: Math.min(lesson.step_count, 20) }, (_, i) => <i key={i} className={Math.floor(index * Math.min(lesson.step_count, 20) / lesson.step_count) === i ? 'is-current' : ''} />)}</div>
       <section className="ogs-card ogs-instruction"><span className="ogs-instruction-label">这一题</span><p>{currentStep.locale.text.instruction || currentStep.locale.text.title}</p></section>
-      <section className={`ogs-card ogs-interaction ${status === 'correct' ? 'is-success' : status === 'wrong' ? 'is-error' : ''}`}>
-        <strong>{status === 'correct' ? '回答正确' : status === 'wrong' ? '再试一次' : physical.active && phase !== 'ready' ? phase === 'clearing' || phase === 'setup' ? '准备实体盘' : phase === 'replying' ? '同步实体盘' : phase === 'removing' ? '拿除错子' : '核对实体盘' : kind === 'choice' ? '选出答案' : kind === 'remove' ? '点选要拿除的棋块' : kind === 'pass' ? '请弃手' : kind === 'finish' ? '请确认终局' : '轮到你落子'}</strong>
-        {kind === 'choice' && status === 'active' && <div className="ogs-choice-row">{currentStep.exercise.kind === 'choice' && currentStep.exercise.choices.map((choice) => <button key={choice.value} className="ogs-key" onClick={() => choose(choice.value)}>{choice.label_key || choice.value}</button>)}</div>}
+      <section className={`ogs-card ogs-interaction ${!physicalBusy && status === 'correct' ? 'is-success' : status === 'wrong' ? 'is-error' : ''}`}>
+        <strong>{physicalBusy ? phase === 'clearing' || phase === 'setup' ? '准备实体盘' : phase === 'replying' ? '同步实体盘' : phase === 'removing' ? '拿除错子' : '核对实体盘' : status === 'correct' ? '回答正确' : status === 'wrong' ? '再试一次' : kind === 'choice' ? '选出答案' : kind === 'remove' ? '点选要拿除的棋块' : kind === 'pass' ? '请弃手' : kind === 'finish' ? '请确认终局' : '轮到你落子'}</strong>
+        {kind === 'choice' && status === 'active' && <div className="ogs-choice-row">{currentStep.exercise.kind === 'choice' && currentStep.exercise.choices.map((choice) => <button key={choice.value} className="ogs-key" onClick={() => choose(choice.value)}>{currentStep.locale.text.choices?.[choice.value] ?? choice.label_key ?? choice.value}</button>)}</div>}
         {kind === 'pass' && status === 'active' && <button className="ogs-key ogs-inline-action" onClick={() => act('pass')}>弃手</button>}
         {kind === 'finish' && status === 'active' && <button className="ogs-key ogs-inline-action" onClick={() => act('finish')}>确认终局</button>}
-        {status === 'wrong' && <button className="ogs-key ogs-inline-action" onClick={retry}>重试</button>}
-        {status === 'correct' && <span>{index + 1 >= lesson.step_count ? '这一课已完成。' : '继续进入下一步。'}</span>}
-        {status === 'active' && kind === 'puzzle' && <span>{physical.active && phase !== 'ready' ? physicalMessage : `${currentAnswer.player === 'B' ? '黑棋' : '白棋'}行棋 · 点按棋盘交叉点。`}</span>}
+        {physicalBusy && <span>{physicalMessage}</span>}
+        {status === 'wrong' && !physicalBusy && <button className="ogs-key ogs-inline-action" onClick={retry}>重试</button>}
+        {status === 'correct' && !physicalBusy && <span>{index + 1 >= lesson.step_count ? '这一课已完成。' : '继续进入下一步。'}</span>}
+        {status === 'active' && kind === 'puzzle' && !physicalBusy && <span>{`${currentAnswer.player === 'B' ? '黑棋' : '白棋'}行棋 · 点按棋盘交叉点。`}</span>}
         {status === 'active' && kind === 'remove' && <span>点按棋盘上的棋块，再核对拿除目标。</span>}
       </section>
       <div className="ogs-physical-hint" data-testid="ogs-physical-hint">{physical.active ? '实体盘已开启 · 请按设备指引摆局' : physicalMessage}{physical.calibrate && <button className="ogs-calibrate" onClick={() => navigate('/kiosk/vision/setup', { state: backToState(location) })}>去标定</button>}{physical.active && !physical.physical.ledOk && <span> · LED 没连上，请按屏幕提示操作</span>}</div>
-      <div className="ogs-exercise-actions"><button className="ogs-key" disabled={index === 0} onClick={() => switchStep(index - 1)}>‹ 上一步</button><button className={`ogs-key ${physicalMode ? 'is-physical' : ''}`} aria-pressed={physicalMode} disabled={!physicalMode && !physical.available} onClick={() => setPhysicalMode((value) => !value)}><PhysicalBoardIcon />实体盘</button><button className="ogs-key ogs-key-primary" disabled={status !== 'correct'} onClick={next}>{index + 1 >= lesson.step_count ? '完成本课' : '下一步'} ›</button></div>
+      <div className="ogs-exercise-actions"><button className="ogs-key" disabled={index === 0} onClick={() => switchStep(index - 1)}>‹ 上一步</button><button className={`ogs-key ${physicalMode ? 'is-physical' : ''}`} aria-pressed={physicalMode} disabled={!physicalMode && !physical.available} onClick={() => setPhysicalMode((value) => !value)}><PhysicalBoardIcon />实体盘</button><button className="ogs-key ogs-key-primary" disabled={status !== 'correct' || physicalBusy} onClick={next}>{index + 1 >= lesson.step_count ? '完成本课' : '下一步'} ›</button></div>
     </section>
   </main>;
 }

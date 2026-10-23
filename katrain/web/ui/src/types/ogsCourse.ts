@@ -78,7 +78,7 @@ export interface OgsStep {
   locale: {
     requested: string;
     effective: string;
-    text: { title: string; instruction: string; fallback?: boolean };
+    text: { title: string; instruction: string; choices?: Record<string, string>; fallback?: boolean };
   };
   screenshot: { image_path: string; language: string; width: number; height: number } | null;
   screenshot_status: 'ready' | 'pending';

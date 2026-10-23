@@ -1,6 +1,6 @@
 # 本地对局标定后续开 Implementation Plan
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 本地实体对局点击开始后，标定成功自动继续同一次开局；标定失败留在标定页，只有手动返回才回设置。
 
@@ -46,28 +46,34 @@
 
 **Files:** Modify `katrain/web/ui/src/kiosk/pages/PvpLocalSetupPage.test.tsx`。
 
-- [ ] Step 1: 把“标定成功不自动开局”替换为“保持原参数、标定成功后自动开局一次”；先required→打开标定→ready→再次preflight ready，断言原姓名/规则/用时及onBoard、gameSetup和navigate各一次；重复ready不重复创建。
-- [ ] Step 2: 补failed/cancelled保持标定屏、零创建；重试后ready继续。补手动返回后迟到ready零创建、参数仍在；再点开始才开局。
-- [ ] Step 3: 补重新preflight未就绪/抛错、createSession/gameSetup失败在当前页可见且不循环；手动返回/卸载时在途结果被隔离并只清理自己未发布的会话。沿用现有覆盖屏幕/非19路和防重复测试，不新建测试平台。
-- [ ] Step 4: 在UI目录运行 `./node_modules/.bin/vitest run src/kiosk/pages/PvpLocalSetupPage.test.tsx`；新自动续开用例应因旧实现没有创建而FAIL，记录实际失败，不因修改mock制造绿。
+- [x] Step 1: 把“标定成功不自动开局”替换为“保持原参数、标定成功后自动开局一次”；先required→打开标定→ready→再次preflight ready，断言原姓名/规则/用时及onBoard、gameSetup和navigate各一次；重复ready不重复创建。
+- [x] Step 2: 补failed/cancelled保持标定屏、零创建；重试后ready继续。补手动返回后迟到ready零创建、参数仍在；再点开始才开局。
+- [x] Step 3: 补重新preflight未就绪/抛错、createSession/gameSetup失败在当前页可见且不循环；手动返回/卸载时在途结果被隔离并只清理自己未发布的会话。沿用现有覆盖屏幕/非19路和防重复测试，不新建测试平台。
+- [x] Step 4: 在UI目录运行 `./node_modules/.bin/vitest run src/kiosk/pages/PvpLocalSetupPage.test.tsx`；新自动续开用例应因旧实现没有创建而FAIL，记录实际失败，不因修改mock制造绿。
 
 ### Task 2: 最小实现待开局续接
 
 **Files:** Modify `katrain/web/ui/src/kiosk/pages/PvpLocalSetupPage.tsx`。
 
-- [ ] Step 1: 提取当前create/setup/publish/navigate链为可复用的同一次开局动作，携带点击时参数快照；保留attempt与清理语义，不改变后端载荷。
-- [ ] Step 2: 初次preflight需要标定时保留意图并打开原页面。ready effect在完整就绪且当前意图有效时只恢复一次，重核通过才进入API创建；请求中保留进入中内容。
-- [ ] Step 3: 手动返回清意图并使旧请求失效，保留设置。失败/取消状态不关屏；重试策略明确区分下一次标定与同一ready轮询，失败说明通过现有sub显示，不能隐藏在早退页面之外的Alert。
-- [ ] Step 4: 将“标定完成后返回设置，再开始对局”改为符合新行为的说明；不改其他标定入口。
-- [ ] Step 5: 同Task1命令转GREEN，检查24项旧测试中必须变化的旧语义已替换，其余仍通过。提交 `resume local game start after successful calibration`。
+- [x] Step 1: 提取当前create/setup/publish/navigate链为可复用的同一次开局动作，携带点击时参数快照；保留attempt与清理语义，不改变后端载荷。
+- [x] Step 2: 初次preflight需要标定时保留意图并打开原页面。ready effect在完整就绪且当前意图有效时只恢复一次，重核通过才进入API创建；请求中保留进入中内容。
+- [x] Step 3: 手动返回清意图并使旧请求失效，保留设置。失败/取消状态不关屏；重试策略明确区分下一次标定与同一ready轮询，失败说明通过现有sub显示，不能隐藏在早退页面之外的Alert。
+- [x] Step 4: 将“标定完成后返回设置，再开始对局”改为符合新行为的说明；不改其他标定入口。
+- [x] Step 5: 同Task1命令转GREEN，检查24项旧测试中必须变化的旧语义已替换，其余仍通过。提交 `resume local game start after successful calibration`。
 
 ### Task 3: 独立审查与最低充分验证
 
-- [ ] Step 1: 独立子代理先核对上表要求及真实代码；Astra Max再独立检查异步幂等、取消、参数快照、错误可见性及会话清理，修具体问题直到通过。实施者不能自审替代独立审核。
-- [ ] Step 2: UI目录运行 `./node_modules/.bin/vitest run src/kiosk/pages/PvpLocalSetupPage.test.tsx src/kiosk/context/GeometryContext.test.tsx src/kiosk/__tests__/PhysicalBoardGuard.test.tsx src/kiosk/__tests__/PlayInputGuard.test.tsx`，再 `npm run build:smartbox-kiosk-2d`，预期通过。
-- [ ] Step 3: 本地1024×600真实页面做一组代表性运行时预览：标定中→failed仍留屏→用户重试ready→自动进入（不触发真实RK标定）；如现有测试/环境足够，可用临时mock transport，不将Fixture写入生产。文案不溢出，退出明确保留参数。
-- [ ] Step 4: 完成前查看git diff/status和审核结果，报告代码提交与实际检查；未经本轮发布授权，不推远端、不重启/部署RK。设备实机验证留待部署时进行，不冒称已上线。
+- [x] Step 1: 独立子代理先核对上表要求及真实代码；Astra Max再独立检查异步幂等、取消、参数快照、错误可见性及会话清理，修具体问题直到通过。实施者不能自审替代独立审核。
+- [x] Step 2: UI目录运行 `./node_modules/.bin/vitest run src/kiosk/pages/PvpLocalSetupPage.test.tsx src/kiosk/context/GeometryContext.test.tsx src/kiosk/__tests__/PhysicalBoardGuard.test.tsx src/kiosk/__tests__/PlayInputGuard.test.tsx`，再 `npm run build:smartbox-kiosk-2d`，预期通过。
+- [x] Step 3: 本地1024×600真实页面做一组代表性运行时预览：标定中→failed仍留屏→用户重试ready→自动进入（不触发真实RK标定）；如现有测试/环境足够，可用临时mock transport，不将Fixture写入生产。文案不溢出，退出明确保留参数。
+- [x] Step 4: 完成前查看git diff/status和审核结果，报告代码提交与实际检查；未经本轮发布授权，不推远端、不重启/部署RK。设备实机验证留待部署时进行，不冒称已上线。
 
 ### 执行范围
 
 先Astra Max独立审本精简计划，最多两轮；之后独立工作树、TDD、subagent-driven-development实现并审查。此任务不执行另一个摆谱交互/语音大计划。
+
+## 完成记录（2026-10-23）
+
+实现提交 `fb19e95c24724d66dbc86010732868e199ca008d`；独立规范审核和 Astra Max 质量审核均通过。页面 40 项、相关三文件 46 项通过，生产构建通过，1024×600 临时 transport 预览确认失败留页和重试后续开一次。Task 3 Step 2 的 PhysicalBoardGuard 旧文案断言在未改动基线同样失败，记录为既有问题，不扩改共享组件。预览未覆盖完整对局或真实硬件；本轮不推送、不部署。
+
+详细证据与两份独立实现审核见 [验证记录](../reviews/2026-10-23-local-pvp-calibration-verification.md)。

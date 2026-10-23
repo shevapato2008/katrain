@@ -544,11 +544,8 @@ def _frozen_scope(manifest, row, stage, discovery):
         if game["source_item_id"] not in checked:
             return "source_unchecked"
         observed = item.get("recent", {}).get("raw_sha256")
-        if (
-            not observed
-            or game["raw_sha256"] != observed
-            or (item.get("raw_sha256") is not None and game["raw_sha256"] != item["raw_sha256"])
-        ):
+        original = item.get("raw_sha256")
+        if not original or not observed or game["raw_sha256"] != observed or game["raw_sha256"] != original:
             return "source_version_mismatch"
     return "recent"
 

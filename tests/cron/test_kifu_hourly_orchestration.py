@@ -230,10 +230,12 @@ async def test_recent_frozen_test_receipt_continues_to_prod_without_prepare(hour
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("reason", ["source_changed", "unchecked", "different_raw_baseline"])
+@pytest.mark.parametrize(
+    "reason", ["source_changed", "unchecked", "different_raw_baseline", "missing_original_baseline"]
+)
 async def test_unverified_source_version_never_publishes_frozen_test_package(hourly, monkeypatch, reason):
     h = hourly
-    manifest = freeze(h, "4", original=reason != "different_raw_baseline")
+    manifest = freeze(h, "4", original=reason not in {"different_raw_baseline", "missing_original_baseline"})
     h.pages = [source_metadata("4", black="Changed" if reason == "source_changed" else "Black")]
     if reason == "unchecked":
         monkeypatch.setattr(job.config, "KIFU_INGEST_MAX_GAMES", 0)
@@ -249,6 +251,13 @@ async def test_unverified_source_version_never_publishes_frozen_test_package(hou
     await job.KifuIngestJob()._run_locked()
     assert not [e for e in h.events if e[0] in {"publish", "sync"}]
     assert batch(h, "frozen-4")["status"] != "prod_synced"
+    if reason == "missing_original_baseline":
+        row = batch(h, "frozen-4")
+        assert row["status"] == "quarantined" and row["error"] == "source_version_mismatch"
+        assert row["test_receipt"] == h.receipt(manifest)
+        observed = Stage(h.root).manifest["items"]["4"]
+        assert observed["raw_sha256"] is None and observed["raw_sgf_path"] is None
+        assert observed["recent"]["raw_sha256"] == manifest["games"][0]["raw_sha256"]
 
 
 @pytest.mark.asyncio

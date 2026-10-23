@@ -1,0 +1,267 @@
+/* Report/research family. Fixed RK3562 geometry; foreground copy uses 18/22/28 px. */
+#stage .u-report-review,#stage .u-report-rail,#stage .u-report-research{position:absolute;z-index:2;color:#e8f2e9;font-family:"SmartBox Kai",serif;box-sizing:border-box}
+#stage .u-report-review *,#stage .u-report-rail *,#stage .u-report-research *{box-sizing:border-box}
+#stage .u-report-review button,#stage .u-report-rail button,#stage .u-report-research button{font-family:"SmartBox Kai",serif;color:inherit;cursor:pointer}
+#stage .u-report-review button:disabled,#stage .u-report-rail button:disabled,#stage .u-report-research button:disabled{cursor:default;opacity:.44}
+#stage .u-report-review button:focus-visible,#stage .u-report-rail button:focus-visible,#stage .u-report-research button:focus-visible{outline:2px solid #9ae8ad;outline-offset:2px}
+#stage .u-report-icon,#stage .u-report-review .ic,#stage .u-report-rail .ic,#stage .u-report-research .ic{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:none}
+#stage .u-report-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#stage .u-report-info{display:grid;place-items:center;width:44px;height:44px;min-width:44px;background:#203329;border:1px solid #568a63;border-radius:50%;color:#8ee4a5!important;padding:0}
+#stage .u-report-disc,#stage .u-report-white-disc{display:inline-block;flex:none;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#505258,#08090a 70%);border:1px solid #58605d}
+#stage .u-report-white-disc{background:radial-gradient(circle at 35% 28%,#fff,#bfc1b9 75%);border-color:#e4e4dc}
+
+/* L1 review: retain the actual two-column composition, plot, history, and report choices. */
+#stage .u-report-review{left:0;top:56px;width:1024px;height:462px;background:#0d1415;display:grid;grid-template-columns:296px 680px;gap:16px;padding:14px 16px}
+#stage .u-report-review-left{height:434px;background:#1b2924;border:1px solid #30483a;border-radius:13px;padding:0 11px;overflow:hidden}
+#stage .u-report-review-lefthead{height:44px;display:flex;align-items:center;justify-content:space-between;font-size:22px}
+#stage .u-report-preview{width:272px;height:270px;background:#15211e;border-radius:10px;padding:12px;display:grid;place-items:center}
+#stage .u-report-preview svg{width:248px;height:248px;display:block}
+#stage .u-report-selected{height:44px;display:flex;align-items:center;justify-content:space-between;font-size:18px}
+#stage .u-report-statuses{height:76px;display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+#stage .u-report-statuses>span{border:1px solid #344d3e;background:#17221e;border-radius:9px;padding:8px 4px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2px}
+#stage .u-report-statuses b{font-size:18px;font-weight:400;color:#bed0c1}
+#stage .u-report-statuses strong{font-size:18px;font-weight:500}
+#stage .u-report-review-right{height:434px;display:flex;flex-direction:column;gap:1px;min-width:0}
+#stage .u-report-review-heading{height:44px;display:flex;align-items:center;gap:7px;font-size:22px;white-space:nowrap}
+#stage .u-report-review-heading>strong{font-size:22px;font-weight:500}
+#stage .u-report-review-heading>span{font-size:18px;color:#62c989;margin-left:auto}
+#stage .u-report-review-heading>.u-report-info{margin-left:4px}
+#stage .u-report-review-heading>button:not(.u-report-info){width:44px;height:44px;display:grid;place-items:center;margin-left:4px;background:#1c2d24;border:1px solid #385341;border-radius:9px}
+#stage .u-report-review-chart{height:84px;flex:none}
+#stage .u-report-review-empty{height:40px;border:1px solid #344e40;border-radius:9px;display:grid;place-items:center;background:#14201c;color:#b9cabd;font-size:22px}
+#stage .u-report-review-games{height:252px;flex:none}
+#stage .u-report-review-row{height:54px;display:flex;align-items:center;gap:9px;padding:0 8px;margin-bottom:0;background:#1b2b24;border:1px solid #31493b;border-radius:9px}
+#stage .u-report-review-row.is-selected{background:#233e2f;border-color:#5ec084}
+#stage .u-report-review-select{min-width:0;flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0;border:0;background:transparent;padding:0;text-align:left}
+#stage .u-report-review-row strong{font-size:22px;font-weight:500;white-space:nowrap}
+#stage .u-report-review-row small{font-size:18px;color:#b3c7b6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stage .u-report-review-state{font-size:18px;color:#b2c5b5}
+#stage .u-report-review-row>button:not(.u-report-review-select){height:44px;min-width:108px;border:1px solid #405b47;border-radius:8px;background:#14221b;font-size:22px;padding:0 6px}
+#stage .u-report-review-row>button.u-report-delete{width:44px;min-width:44px;padding:0;display:grid;place-items:center;color:#e69b8b;border-color:#8f594c}
+#stage .u-report-review-row:not(.is-selected)>button.u-report-delete{visibility:hidden}
+#stage .u-report-review-more{height:44px;width:100%;display:flex;align-items:center;justify-content:center;gap:7px;background:#1b2b24;border:1px solid #344e3d;border-radius:9px;font-size:22px}
+#stage .u-report-review-generate{height:96px;flex:none}
+#stage .u-report-review-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;height:52px}
+#stage .u-report-review-cards>button{height:52px;display:flex;align-items:center;justify-content:center;gap:8px;background:#1b2b24;border:1px solid #344e3d;border-radius:9px;font-size:22px}
+#stage .u-report-review-cards>button:hover,#stage .u-report-review-row>button:hover{border-color:#6ac68e}
+#stage .u-report-preview.is-uncaptured{background:#15211e;border:1px dashed #6a8d71}
+#stage .u-report-preview.is-uncaptured svg{display:none}
+#stage .u-report-preview.is-uncaptured:after{content:"所选棋盘未采集";font-size:22px;color:#c8d9ca}
+
+/* Report detail: same 516 px board and 460 px work rail as captured. */
+#stage .u-report-rail{left:548px;top:70px;width:460px;height:516px;background:#0d1415;display:flex;flex-direction:column;overflow:hidden}
+#stage .u-report-summary{height:92px;flex:none;background:#17231e;border:1px solid #31473a;border-radius:11px;padding:0 8px}
+#stage .u-report-summary-main{height:44px;display:flex;align-items:center;gap:10px}
+#stage .u-report-summary-main>strong{font-size:22px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+#stage .u-report-back{width:126px;height:44px;flex:none;border:1px solid #425b48;border-radius:8px;background:#1b2d23;display:flex;align-items:center;justify-content:center;gap:6px;padding:0;font-size:22px;white-space:nowrap}
+#stage .u-report-summary-main>.u-report-expand{height:44px;width:44px;min-width:44px;display:grid;place-items:center;border:0;background:transparent;padding:0}
+#stage .u-report-score{height:24px;display:flex;align-items:center;justify-content:space-between;font-size:18px}
+#stage .u-report-score>span{display:flex;align-items:center;gap:5px}
+#stage .u-report-score>strong{color:#68ca8f;font-size:22px;font-weight:500}
+#stage .u-report-scoreline{height:22px;display:flex;align-items:center;justify-content:space-between;font-size:18px;color:#c4d6c8}
+#stage .u-report-tabs{height:88px;flex:none;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,44px);gap:0;margin-top:0;border-bottom:1px solid #385142}
+#stage .u-report-tabs>button{height:44px;min-width:0;padding:0 2px;border:1px solid #344c3d;border-bottom:3px solid transparent;background:#17241e;font-size:22px;white-space:nowrap;color:#d0ddd1}
+#stage .u-report-tabs>button.is-on{color:#70d394;border-bottom-color:#5fc883;background:#20392a}
+#stage .u-report-work{height:198px;flex:none;position:relative;background:#14211b;border:1px solid #344c3e;border-top:0;border-radius:0 0 11px 11px;overflow:hidden}
+#stage .u-report-workhead{height:36px;display:flex;align-items:center;justify-content:space-between;padding-right:48px;font-size:18px}
+#stage .u-report-workhead strong{font-size:18px;font-weight:500}
+#stage .u-report-tablehead,#stage .u-report-candidates>button{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;align-items:center;text-align:center;font-size:18px}
+#stage .u-report-tablehead{height:30px;background:#253b2c;color:#c9ddcf}
+#stage .u-report-candidates{height:132px;overflow-y:auto;scrollbar-color:#55725c #17251e;scrollbar-width:thin}
+#stage .u-report-candidates>button{width:100%;height:44px;background:#16221d;border:0;border-bottom:1px solid #2e4838;padding:0 4px;font-size:22px}
+#stage .u-report-candidates>button:hover{background:#244130}
+#stage .u-report-candidates>button>span:first-child{display:grid;grid-template-columns:16px minmax(0,1fr);align-items:center;column-gap:6px;padding-left:max(4px,calc(50% - 30px));text-align:left}
+#stage .u-report-candidates i{width:16px;height:16px;border-radius:50%;border:1px solid #788880;background:#0a0b0c}
+#stage .u-report-trend{height:100%;padding:0 4px}
+#stage .u-report-metrics{height:28px;display:flex;gap:10px;align-items:center;justify-content:space-between;padding-right:45px;font-size:18px;white-space:nowrap}
+#stage .u-report-metrics strong{color:#75d295;font-weight:500}
+#stage .u-report-plot{height:148px;display:grid;grid-template-columns:44px 291px 42px;align-items:stretch;justify-content:center;gap:2px}
+#stage .u-report-ylabels,#stage .u-report-right-axis{height:148px;width:44px;flex:none;display:flex;flex-direction:column;justify-content:space-between;color:#cad8c7;font-size:18px}
+#stage .u-report-right-axis{width:42px;align-items:flex-end;color:#e8b563}
+#stage .u-report-actual-chart{flex:none;background-image:var(--chart-url);background-size:1024px 600px;background-position:var(--crop-x) var(--crop-y);background-repeat:no-repeat}
+#stage .u-report-xlabels{height:23px;width:291px;position:relative;margin-left:84px;padding:0;font-size:18px;color:#c6d5c7}
+#stage .u-report-xlabels>span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+#stage .u-report-xlabels>span:nth-child(1){left:0}
+#stage .u-report-xlabels>span:nth-child(2){left:25%}
+#stage .u-report-xlabels>span:nth-child(3){left:50%}
+#stage .u-report-xlabels>span:nth-child(4){left:75%}
+#stage .u-report-xlabels>span:nth-child(5){left:100%}
+#stage .u-report-filters{height:44px;display:flex;align-items:center;justify-content:flex-start;gap:6px;padding-right:48px}
+#stage .u-report-phase,#stage .u-report-side{height:44px;display:flex;gap:2px}
+#stage .u-report-filters button{height:44px;min-width:44px;padding:0 5px;border:1px solid #405c47;border-radius:6px;background:#1b2a22;font-size:22px;white-space:nowrap}
+#stage .u-report-filters button.is-on{background:#27513a;color:#8febaa;border-color:#6fd894}
+#stage .u-report-no-results{height:156px;display:grid;place-items:center;color:#c5d9ca;font-size:22px}
+#stage .u-report-chart-frame{height:156px;display:grid;place-items:center;overflow:hidden}
+#stage .u-report-svgchart{display:block;width:440px;height:156px}
+#stage .u-report-svgchart text{font-family:"SmartBox Kai",serif;font-size:13px;fill:#d5e1d6}
+#stage .u-report-svgchart .u-report-axis text{font-size:14px}
+#stage .u-report-perf-chart{width:438px;height:154px;display:flex;flex-direction:column;padding:0 1px 1px}
+#stage .u-report-perf-legend{height:20px;flex:none;display:flex;align-items:center;justify-content:center;gap:16px;font-size:18px}
+#stage .u-report-perf-legend>span{display:flex;align-items:center;gap:4px}
+#stage .u-report-perf-legend .u-report-disc,#stage .u-report-perf-legend .u-report-white-disc{width:11px;height:11px}
+#stage .u-report-perf-grid{height:132px;display:grid;grid-template-columns:repeat(7,1fr);gap:2px;align-items:end}
+#stage .u-report-perf-grid>div{height:132px;display:flex;flex-direction:column;justify-content:end;align-items:center;gap:0}
+#stage .u-report-perf-bars{height:75px;width:50px;display:flex;align-items:end;justify-content:center;gap:3px;border-bottom:1px solid #58715b}
+#stage .u-report-perf-bars span{display:block;width:18px;height:max(2px,calc(var(--n) * 3px));border:2px solid #d9e2d7;border-bottom:0;background:#202b27;position:relative}
+#stage .u-report-perf-bars span+span{background:#e7e9df;border-color:#e7e9df}
+#stage .u-report-perf-bars span::before{content:attr(data-count);position:absolute;left:50%;bottom:100%;transform:translateX(-50%);color:#e9f2e8;font-size:18px;line-height:1}
+#stage .u-report-perf-chart strong{font-size:18px;font-weight:400;white-space:nowrap;line-height:19px}
+#stage .u-report-perf-chart small{display:flex;flex-direction:column;align-items:center;gap:0;font-size:18px;line-height:18px;color:#cbdccd}
+#stage .u-report-match-chart{height:156px;width:438px;display:grid;grid-template-rows:repeat(3,1fr)}
+#stage .u-report-match-row{display:grid;grid-template-columns:145px 1fr;align-items:center;border-bottom:1px solid #293e32}
+#stage .u-report-match-row strong{font-size:18px;font-weight:400;white-space:nowrap}
+#stage .u-report-match-row>div{display:grid;grid-template-rows:repeat(2,22px);gap:1px}
+#stage .u-report-match-row>div>span{display:flex;align-items:center;gap:5px}
+#stage .u-report-match-row .u-report-disc,#stage .u-report-match-row .u-report-white-disc{width:12px;height:12px}
+#stage .u-report-match-row em{height:9px;flex:1;border-radius:5px;background:#3b4a41;overflow:hidden}
+#stage .u-report-match-row em>b{display:block;height:100%;border-radius:5px}
+#stage .u-report-match-row output{font-size:18px;width:46px;text-align:right}
+#stage .u-report-actions{height:90px;flex:none;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,44px);gap:2px 4px;margin-top:0}
+#stage .u-report-action{min-width:0;height:44px;padding:0 3px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:8px;border:1px solid #344e3d;background:#1b2c24;font-size:22px;white-space:nowrap}
+#stage .u-report-action.is-on{background:#294b36;border-color:#60bc83;color:#a5e9b5}
+#stage .u-report-action:hover{border-color:#78d69b}
+#stage .u-report-playback{height:48px;flex:none;display:flex;align-items:center;gap:4px;background:#1a2921;border:1px solid #344c3e;border-radius:10px;padding:2px 4px}
+#stage .u-report-playback>button{width:44px;height:44px;flex:none;display:grid;place-items:center;border:0;background:transparent;border-radius:50%;padding:0}
+#stage .u-report-playback>button.is-play{background:#5fc385;color:#112219}
+#stage .u-report-playback input{width:92px;min-width:92px;height:44px;accent-color:#62c587;cursor:not-allowed}
+#stage .u-report-playback input:disabled{opacity:.75}
+#stage .u-report-playback output{font-size:18px;white-space:nowrap;flex:1;text-align:right}
+
+/* Research: exact blank board and pending-analysis state from the device. */
+#stage .u-report-research{left:548px;top:70px;width:460px;height:516px;background:#0d1415;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+#stage .u-report-research-head{height:48px;flex:none;display:flex;align-items:center;gap:9px}
+#stage .u-report-research-head>strong{font-size:22px;font-weight:500;flex:1}
+#stage .u-report-research-head>button{height:44px;width:44px;flex:none;display:grid;place-items:center;background:#1a2a22;border:1px solid #354e3d;border-radius:9px}
+#stage .u-report-research-head>button:first-child{width:126px;display:flex;gap:6px;justify-content:center;font-size:22px;white-space:nowrap}
+#stage .u-report-research-tools{height:48px;flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+#stage .u-report-research-tools>button{min-width:0;height:48px;display:flex;align-items:center;justify-content:center;gap:8px;background:#1a2a22;border:1px solid #344f3f;border-radius:8px;font-size:22px}
+#stage .u-report-research-tools>button.is-on{background:#28513a;border-color:#69cb8d}
+#stage .u-report-research-meta{height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 6px;color:#c9dccb;font-size:18px}
+#stage .u-report-research-fold{height:212px;flex:none;border:1px solid #344e3f;background:#17241e;border-radius:10px;overflow:hidden}
+#stage .u-report-research-foldhead{width:100%;height:48px;display:flex;align-items:center;gap:6px;padding:0 7px;font-size:22px;border:0;border-bottom:1px solid #3a5a46;background:#1b2d23;text-align:left}
+#stage .u-report-research-foldhead strong{font-size:22px;font-weight:500}
+#stage .u-report-research-foldhead .u-report-fold-minus{margin-left:auto;color:#67c78b}
+#stage .u-report-research-fold.is-collapsed{height:48px}
+#stage .u-report-research-fold.is-collapsed .u-report-research-pending{display:none}
+#stage .u-report-research-fold.is-collapsed .u-report-research-foldhead>.u-report-icon{transform:rotate(-90deg)}
+#stage .u-report-research-fold.is-collapsed .u-report-fold-minus{font-size:0}
+#stage .u-report-research-fold.is-collapsed .u-report-fold-minus:after{content:"+";font-size:22px}
+#stage .u-report-research-pending{height:164px;display:grid;place-items:center;color:#d0dfd1;font-size:22px}
+#stage .u-report-research-nav{height:44px;flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+#stage .u-report-research-nav button{height:44px;display:grid;place-items:center;border:1px solid #364e3f;background:#1b2a23;border-radius:8px}
+#stage .u-report-research-actions{height:90px;flex:none;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,44px);gap:2px 4px}
+#stage .u-report-research-actions .u-report-action{font-size:22px}
+#modal-root .u-report-modal>div{max-width:600px;max-height:calc(100vh - 40px);overflow:auto}
+#modal-root .u-report-modal h3{font-size:28px;margin:0 0 12px}
+#modal-root .u-report-modal dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
+#modal-root .u-report-modal dl>div{padding:8px 12px;border:1px solid #44664d;border-radius:9px;background:#17261e;min-height:66px}
+#modal-root .u-report-modal dt{font-size:18px;color:#b9cebe}
+#modal-root .u-report-modal dd{font-size:22px;margin:0;color:#eef5ed}
+#modal-root .u-report-modal p{font-size:18px;margin:8px 0;color:#cedbcf}
+#modal-root .u-report-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+#modal-root .u-report-modal-actions button{height:48px;min-width:116px;padding:0 12px;border-radius:9px;border:1px solid #42674e;background:#213d2b;color:#eef5ed;font-size:22px;cursor:pointer}
+#modal-root .u-report-modal-actions [data-report-go]{background:#59b980;border-color:#59b980;color:#102117}
+#modal-root .u-report-modal-actions [data-report-retry]{background:#263e2c}
+
+/* Full-stage enlargement: main HTML clones the current analysis work area. */
+#stage .u-report-expanded-overlay{position:absolute;inset:0;z-index:40;background:rgba(7,16,13,.97);border:2px solid #5dbd7f;border-radius:12px;padding:16px 24px;display:flex;flex-direction:column;gap:12px;color:#eef5ed;font-family:"SmartBox Kai",serif}
+#stage .u-report-expanded-overlay button{color:#e8f2e9;font-family:"SmartBox Kai",serif}
+#stage .u-report-expanded-head{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px}
+#stage .u-report-expanded-head strong{font-size:28px;font-weight:500}
+#stage .u-report-expanded-head button{min-width:112px;height:48px;padding:0 18px;background:#5fbe85;border:1px solid #88dea2;border-radius:9px;color:#102218;font-family:"SmartBox Kai",serif;font-size:22px;cursor:pointer}
+#stage .u-report-expanded-overlay>.u-report-work{position:relative;width:100%;height:calc(100% - 64px);min-height:0;flex:1;border:1px solid #42694d;border-radius:10px;overflow:auto;padding:8px 16px}
+#stage .u-report-expanded-overlay .u-report-workhead{height:50px;font-size:22px;padding-right:0}
+#stage .u-report-expanded-overlay .u-report-workhead strong{font-size:22px}
+#stage .u-report-expanded-overlay .u-report-tablehead{height:46px;font-size:22px}
+#stage .u-report-expanded-overlay .u-report-candidates{height:auto;max-height:310px}
+#stage .u-report-expanded-overlay .u-report-candidates>button{width:100%!important;height:58px!important;font-size:22px}
+#stage .u-report-expanded-overlay .u-report-filters{height:56px;padding-right:0}
+#stage .u-report-expanded-overlay .u-report-filters button{height:48px;min-width:80px;font-size:22px}
+#stage .u-report-expanded-overlay .u-report-no-results{height:300px;font-size:28px}
+#stage .u-report-expanded-overlay .u-report-chart-frame{height:340px}
+#stage .u-report-expanded-overlay .u-report-svgchart{width:900px;height:320px}
+#stage .u-report-expanded-overlay .u-report-perf-chart{width:850px;height:320px}
+#stage .u-report-expanded-overlay .u-report-perf-grid{height:290px}
+#stage .u-report-expanded-overlay .u-report-perf-grid>div{height:290px}
+#stage .u-report-expanded-overlay .u-report-perf-bars{height:200px;width:75px;gap:6px}
+#stage .u-report-expanded-overlay .u-report-perf-bars span{width:27px;height:max(2px,calc(var(--n) * 8px))}
+#stage .u-report-expanded-overlay .u-report-perf-bars span::before{font-size:22px}
+#stage .u-report-expanded-overlay .u-report-perf-chart strong,#stage .u-report-expanded-overlay .u-report-perf-chart small{font-size:22px;line-height:22px}
+#stage .u-report-expanded-overlay .u-report-match-chart{width:850px;height:320px}
+#stage .u-report-expanded-overlay .u-report-match-row{grid-template-columns:230px 1fr}
+#stage .u-report-expanded-overlay .u-report-match-row strong,#stage .u-report-expanded-overlay .u-report-match-row output{font-size:22px}
+#stage .u-report-expanded-overlay .u-report-match-row>div{grid-template-rows:repeat(2,36px)}
+#stage .u-report-expanded-overlay .u-report-match-row em{height:16px}
+#stage .u-report-expanded-overlay .u-report-trend{padding:0 20px}
+#stage .u-report-expanded-overlay .u-report-metrics{height:48px;font-size:22px;padding-right:0}
+#stage .u-report-expanded-overlay .u-report-plot{width:720px;height:296px;grid-template-columns:60px 582px 60px;margin:auto;gap:8px}
+#stage .u-report-expanded-overlay .u-report-ylabels,#stage .u-report-expanded-overlay .u-report-right-axis{height:296px;width:60px;font-size:22px}
+#stage .u-report-expanded-overlay .u-report-actual-chart{transform:scale(2);transform-origin:top left}
+#stage .u-report-expanded-overlay .u-report-xlabels{width:582px;height:40px;margin-left:auto;margin-right:auto;font-size:22px}
+
+/* My games: Galaxy-style selection cards; 20 real records per page. */
+#stage .u-report-review-games{height:349px;min-height:349px;display:flex;flex-direction:column}
+#stage .u-report-review-scroll{height:258px;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#5a8265 #14231c;scrollbar-width:thin;padding:0 3px 2px 0}
+#stage .u-report-review-row{height:82px;position:relative;display:flex;align-items:stretch;gap:7px;padding:4px 5px;margin-bottom:6px;border-color:#405b49;border-radius:12px;background:linear-gradient(#2a3e34,#1a2c24 66%,#15231e);box-shadow:inset 0 1px #5b7661,0 3px 0 #0b1a13}
+#stage .u-report-review-row.is-selected{border-color:#6aca8c;background:linear-gradient(#365e48,#203d2e 70%,#1a3025)}
+#stage .u-report-review-row:has(.u-report-review-menu){z-index:8}
+#stage .u-report-review-select{height:100%;min-width:0;flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:2px;padding:3px 2px;border:0;background:transparent;text-align:left}
+#stage .u-report-review-rowtop{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
+#stage .u-report-review-rowtop strong{font-size:20px;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#stage .u-report-review-rowtop small{font-size:16px;color:#b9cbbd;white-space:nowrap}
+#stage .u-report-review-players{display:grid;grid-template-columns:1fr auto 1fr;gap:5px;align-items:center;font-size:18px}
+#stage .u-report-review-players>span{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#stage .u-report-review-players>span:last-child{justify-content:flex-end}
+#stage .u-report-review-players>em{font-size:16px;font-style:normal;color:#e5c68b;white-space:nowrap}
+#stage .u-report-review-players .u-report-disc,#stage .u-report-review-players .u-report-white-disc{width:17px;height:17px}
+#stage .u-report-review-rowactions{width:112px;flex:none;display:flex;align-items:center;position:relative}
+#stage .u-report-review-report{height:45px;width:112px;display:flex;align-items:center;justify-content:center;gap:3px;padding:0 3px;border:1px solid #6ca781;border-radius:11px;background:linear-gradient(#3c604a,#244834 62%,#1a3326);box-shadow:inset 0 1px #85aa88,0 3px 0 #102318;font-size:18px;white-space:nowrap}
+#stage .u-report-review-report .u-report-icon,#stage .u-report-review-report .u-report-icon svg{width:16px;height:16px}
+#stage .u-report-review-menu{position:absolute;top:63px;right:0;width:164px;padding:5px;background:#17251e;border:1px solid #77b78a;border-radius:11px;box-shadow:0 10px 18px #000a;z-index:10}
+#stage .u-report-review-menu>button{height:54px;width:100%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 8px;border:0;border-radius:7px;background:transparent;text-align:left}
+#stage .u-report-review-menu>button:hover{background:#2d533b}
+#stage .u-report-review-menu strong{font-size:19px;font-weight:500}
+#stage .u-report-review-menu span{font-size:15px;color:#aec9b5}
+#stage .u-report-review-pages{height:46px;display:flex;align-items:center;justify-content:flex-end;gap:5px;flex:none}
+#stage .u-report-review-pages>span{margin-right:auto;font-size:17px;color:#aac0ad}
+#stage .u-report-review-pages>button{height:42px;min-width:42px;padding:0 4px;display:grid;place-items:center;border:1px solid #4b6b54;border-radius:10px;background:linear-gradient(#32483a,#192e22);box-shadow:inset 0 1px #67836d,0 2px 0 #0b1c12;font:20px "Kiosk Plex Mono",monospace}
+#stage .u-report-review-pages>button.is-current{background:#2d5b3e;border-color:#76cf93}
+#stage .u-report-review-pages .u-report-icon,#stage .u-report-review-pages .u-report-icon svg{width:19px;height:19px}
+#stage .u-report-review-pages>button:disabled{opacity:.38}
+#stage .u-report-statuses>span:first-child strong{font-size:14px}
+#stage .u-report-statuses>span:nth-child(2) strong{font-size:15px}
+
+/* Match the professional-library card geometry and move report actions under the board. */
+#stage .u-report-review-left{position:relative;overflow:visible;z-index:5}
+#stage .u-report-review-row{height:64px;padding:4px 6px;gap:4px}
+#stage .u-report-review-select{display:grid;grid-template-columns:26px minmax(0,1fr) 158px;grid-template-rows:26px 27px;gap:0 4px;padding:0 3px;justify-content:initial;align-items:initial}
+#stage .u-report-review-select .u-lib-record-kind{grid-column:1;grid-row:1}
+#stage .u-report-review-select .u-lib-record-title{grid-column:2;grid-row:1;font-size:20px;font-weight:400}
+#stage .u-report-review-select .u-lib-record-meta{grid-column:3;grid-row:1;font-size:16px}
+#stage .u-report-review-select .u-lib-record-players{grid-column:1/4;grid-row:2;display:grid;grid-template-columns:1fr auto 1fr;gap:8px;font-size:18px}
+#stage .u-report-review-select .u-lib-record-players>span{display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#stage .u-report-review-select .u-lib-record-players>span:last-child{justify-content:flex-end;text-align:right}
+#stage .u-report-review-select .u-lib-record-players>em{min-width:96px;text-align:center;font-size:18px;color:#c9e6d1}
+#stage .u-report-review-row>button.u-report-delete{height:44px;width:44px;min-width:44px;align-self:center}
+#stage .u-report-selection-actions{height:52px;display:grid;grid-template-columns:1fr 1fr;gap:7px;position:relative}
+#stage .u-report-selection-actions>button,#stage .u-report-selection-actions .u-report-review-report{height:46px;width:100%;border:1px solid #4f765a;border-radius:11px;background:linear-gradient(#405a48,#25432f 65%,#1a3225);box-shadow:inset 0 1px #729579,0 3px 0 #0d2117;font-size:20px;white-space:nowrap}
+#stage .u-report-selection-actions>.u-report-review-rowactions{width:auto;min-width:0}
+#stage .u-report-selection-actions .u-report-review-menu{top:auto;bottom:53px;right:0;width:180px}
+#stage .u-report-review-pages{gap:4px}
+#stage .u-report-review-pages output{min-width:64px;font:16px "Kiosk Plex Mono",monospace;text-align:center;white-space:nowrap}
+#stage .u-report-review-pages label{display:flex;align-items:center;gap:3px;font-size:17px;white-space:nowrap}
+#stage .u-report-review-pages input{width:49px;height:40px;border:1px solid #4b6b54;border-radius:8px;background:#192e22;color:#e4f0e5;font:18px "Kiosk Plex Mono",monospace;text-align:center}
+#stage .u-report-review-pages input::-webkit-inner-spin-button,#stage .u-report-review-pages input::-webkit-outer-spin-button{appearance:none;margin:0}
+#stage .u-report-review-pages input[type=number]{appearance:textfield}
+#stage .u-report-review-pages [data-review-jump]{min-width:54px;font:18px "SmartBox Kai",serif}
+#modal-root .u-report-modal [data-review-delete-confirm]{border-color:#a46759;background:#533128;color:#ffcec3}
+
+/* The analysed professional game reuses the same report rail geometry as screen 20. */
+#stage .u-lib-professional-board{position:absolute;left:16px;top:70px;width:516px;height:516px;overflow:hidden;border-radius:9px;box-shadow:0 4px 12px #0008;z-index:2}
+#stage .u-lib-professional-board img{position:absolute;left:-16px;top:-70px;width:1024px;height:600px;max-width:none}
+#stage .u-report-professional .u-report-summary-main>strong{font-size:20px}
+#stage .u-report-professional .u-report-summary-main>.u-report-info{margin-left:auto}
+#stage .u-report-professional .u-report-score>span{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#stage .u-report-professional .u-report-score>strong{font-size:19px}
+#stage .u-report-professional-trend svg{display:block;width:300px;height:146px;margin:auto}
+#stage .u-report-professional-axis{position:absolute;bottom:0;left:52px;right:50px;display:flex;justify-content:space-between;color:#a9c0af;font:14px "Kiosk Plex Mono",monospace}

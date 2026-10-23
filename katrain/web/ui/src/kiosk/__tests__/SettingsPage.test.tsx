@@ -18,6 +18,13 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 }));
 
 const mockSetLanguage = vi.fn();
+const typography = vi.hoisted(() => ({
+  preference: { font: 'wenkai', size: 'large' },
+  setPreference: vi.fn(), retry: vi.fn(),
+}));
+vi.mock('../typography/KioskTypographyContext', () => ({
+  useKioskTypography: () => ({ ...typography, loading: false, saving: false, error: null }),
+}));
 vi.mock('../../context/SettingsContext', () => ({
   useSettings: () => ({
     language: 'cn',
@@ -108,7 +115,7 @@ describe('屏 27 设置 · 分组与导航', () => {
     renderPage();
     const nav = screen.getByTestId('settings-nav');
     const labels = [...nav.querySelectorAll('button')].map((b) => b.textContent);
-    expect(labels).toEqual(['账号与平台', '实体棋盘', '落子与提示', '声音', '语言', '关于']);
+    expect(labels).toEqual(['实体棋盘', '落子与提示', '声音', '语言', '字体与字号', '关于']);
 
     const groups = [...document.querySelectorAll('[data-group]')].map(
       (g) => g.querySelector('.kiosk-seclabel h2')?.textContent,
@@ -138,7 +145,7 @@ describe('屏 27 设置 · 分组与导航', () => {
     const nav = screen.getByTestId('settings-nav');
     const current = [...nav.querySelectorAll('button')].filter((b) => b.getAttribute('aria-current') === 'true');
     expect(current).toHaveLength(1);
-    expect(current[0].textContent).toBe('账号与平台');
+    expect(current[0].textContent).toBe('实体棋盘');
   });
 
   // 设置是 Dock 项 ⇒ L1 ⇒ 没有返回键。
@@ -159,30 +166,25 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     mockHealth({ status: 'ok', engines: { local: 'reachable', cloud: 'unconfigured' } });
   });
 
-  // 上一版那四张平台卡是 `pointer-events:none` 的死装饰,而且列的是
-  // 99围棋/野狐/腾讯/新浪 —— **和真正能连的三家对不上**。
-  it('平台账号来自真实状态，并从对弈首页选择连接', async () => {
+  it('设置页移除账号与平台分组', () => {
     renderPage();
-    expect(screen.getByText('跨平台账号')).toBeInTheDocument();
-    expect(await screen.findByTestId('platform-account-ogs')).toHaveTextContent('未连接');
-    expect(screen.getByTestId('platform-account-golaxy')).toHaveTextContent('未连接');
-    expect(screen.queryByText(/99围棋/)).toBeNull();
-    expect(screen.queryByText(/腾讯围棋/)).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '去连接' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play');
+    expect(screen.queryByText('账号与平台')).toBeNull();
+    expect(screen.queryByTestId('settings-logout')).toBeNull();
   });
 
-  it('实体棋盘那一组给的是真读数和一条去标定的路', () => {
+  it('实体棋盘的状态在标定入口上方，未连接设备时禁止进入', () => {
     mockGeometry({ loaded: true });
     renderPage();
-    expect(screen.getByText('还没标定')).toBeInTheDocument();
-    // 措辞照抄标定屏那三格(同一件事只有一套写法);LED 那一格照视觉赛道 V4:
-    // 它只说**串口**通没通,不代表每颗灯都亮。
+    expect(screen.getByText('请先连接摄像头、LED')).toBeInTheDocument();
+    const statusRow = screen.getByLabelText('摄像头 · 标定 · LED');
+    expect(statusRow.compareDocumentPosition(screen.getByText('重新标定棋盘')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByTestId('settings-cap-camera')).toHaveTextContent('未连接');
     expect(screen.getByTestId('settings-cap-calib')).toHaveTextContent('未标定');
     expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('未连接');
-    fireEvent.click(screen.getByRole('button', { name: '开始标定' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/vision/setup');
+    const button = screen.getByRole('button', { name: '开始标定' });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('三件器件都在时,三格照标定屏的说法', () => {
@@ -203,12 +205,12 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     renderPage();
     for (const key of ['camera', 'calib']) {
       const cell = screen.getByTestId(`settings-cap-${key}`);
-      expect(cell).toHaveTextContent('—');
-      expect(cell.querySelector('.kiosk-tag--win')).toBeNull();
+      expect(cell).toHaveTextContent('未确认');
+      expect(cell.querySelector('.kiosk-board-status__good')).toBeNull();
     }
     expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('未确认');
     expect(screen.queryByText('未连接')).toBeNull();
-    expect(screen.queryByText('还没标定')).toBeNull();
+    expect(screen.queryByText('请先连接摄像头、LED')).toBeNull();
   });
 
   // 404 ⇒ `phase='disabled'`:这台盒子没起采集服务。把人送进标定屏再让那屏的空态弹回来,
@@ -224,7 +226,7 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     fireEvent.click(btn);
     expect(mockNavigate).not.toHaveBeenCalled();
     for (const key of ['camera', 'calib']) {
-      expect(screen.getByTestId(`settings-cap-${key}`)).toHaveTextContent('—');
+      expect(screen.getByTestId(`settings-cap-${key}`)).toHaveTextContent('未确认');
     }
     expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('已连接');
     expect(screen.queryByText('未连接')).toBeNull();
@@ -237,7 +239,7 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     renderPage();
     const cell = screen.getByTestId('settings-cap-led');
     expect(cell).toHaveTextContent(ledReady === false ? '未连接' : '未确认');
-    expect(cell.querySelector('.kiosk-tag--win')).toBeNull();
+    expect(cell.querySelector('.kiosk-board-status__good')).toBeNull();
   });
 
   // 今天的行为不许退化。
@@ -363,9 +365,14 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(container.textContent).not.toMatch(/设备名|device/i);
   });
 
-  it('账号那一块还在 —— 退出登录一个功能不少', () => {
+  it('字体和字号均即时调用同一共享设置，且位于关于之前', () => {
     renderPage();
-    expect(screen.getByTestId('settings-logout')).toBeInTheDocument();
-    expect(screen.getByText('张三')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '隶书' }));
+    fireEvent.click(screen.getByRole('button', { name: '小一号' }));
+    expect(typography.setPreference).toHaveBeenCalledWith({ font: 'lishu' });
+    expect(typography.setPreference).toHaveBeenCalledWith({ size: 'medium' });
+    const groups = [...document.querySelectorAll('[data-group]')].map((el) => el.getAttribute('data-group'));
+    expect(groups.indexOf('typography')).toBeLessThan(groups.indexOf('about'));
+    expect(screen.queryByText('预览')).toBeNull();
   });
 });

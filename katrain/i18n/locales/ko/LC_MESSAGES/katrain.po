@@ -3797,7 +3797,7 @@ msgid "login:box_gate_cta"
 msgstr "StellaBox 홈으로"
 
 msgid "vision:back_settings"
-msgstr "설정"
+msgstr "설정으로 돌아가기"
 
 msgid "vision:board_lost_hint"
 msgstr "카메라가 가려졌는지, 바둑판이 움직였는지 확인하세요. 움직였다면 다시 보정해야 합니다"
@@ -3806,7 +3806,7 @@ msgid "vision:calibrate_title"
 msgstr "바둑판 보정"
 
 msgid "vision:calibrate_sub"
-msgstr "먼저 판을 비우세요 · 네 귀 + 화점 9개, 모두 13개 지점"
+msgstr "먼저 판을 비우세요 · 네 귀와 천원, 모두 5개 지점"
 
 msgid "vision:cancel_calibration"
 msgstr "보정 취소"

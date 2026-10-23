@@ -340,7 +340,7 @@ describe('GamePage engine mode', () => {
 
       expect(screen.getByText('领地')).toBeInTheDocument();
       // 建议 was renamed to AI支招 (a one-shot hint action, not a toggle) in local free-play.
-      expect(screen.getByText('AI支招')).toBeInTheDocument();
+      expect(screen.getByText('支招')).toBeInTheDocument();
       expect(screen.getByText('图表')).toBeInTheDocument();
     });
 

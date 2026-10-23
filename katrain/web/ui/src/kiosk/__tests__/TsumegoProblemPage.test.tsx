@@ -460,15 +460,14 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       );
     });
 
-    /* ⚠️ 回的是**屏 13 题目列表**(这道题所在的那一单元),不是屏 12 类目页 ——
-     * 稿子上写的是「← 吃子」,那是 2026-08-21 补出屏 13 之前的画法;
-     * 从一道题退出来,该落在它旁边那 20 道题上。 */
-    it('最后一题时「下一题」变成「返回单元」,回的是这一单元的题目列表', () => {
+    it('最后一题保留「下一题」并禁用，底部不重复放返回键', () => {
       renderPage('p2');
-      const back = action('返回单元');
-      fireEvent.click(back);
-      expect(mockFlush).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/手筋/1');
+      const next = action('下一题');
+      expect(next).toBeDisabled();
+      expect(next).toHaveAttribute('title', '这是最后一题');
+      expect(within(screen.getByTestId('puzzle-actions')).queryByText('返回单元')).toBeNull();
+      fireEvent.click(next);
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('页控条的返回键同一个去处,而且也先落盘', () => {
@@ -719,11 +718,33 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/q41?set=wrong');
     });
 
-    it('最后一道时键写「返回错题」,回错题页;页控条返回键同一个去处', () => {
+    it('最后一道禁用下一题；上一题仍沿错题快照走，顶部返回仍回错题簿', () => {
       renderWrong('q41');
-      fireEvent.click(button('返回错题'));
-      expect(mockFlush).toHaveBeenCalled();
+      const next = button('下一题');
+      expect(next).toBeDisabled();
+      expect(next).toHaveAttribute('title', '这是最后一题');
+      expect(screen.queryByRole('button', { name: '返回错题' })).toBeNull();
+      fireEvent.click(next);
+      expect(mockNavigate).not.toHaveBeenCalled();
+      fireEvent.click(button('上一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p1?set=wrong');
+      expect(mockFlush.mock.invocationCallOrder[0]).toBeLessThan(mockNavigate.mock.invocationCallOrder[0]);
+      fireEvent.click(within(screen.getByTestId('puzzle-pagebar')).getByText('错题'));
       expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/手筋/wrong');
+    });
+
+    it('第一道禁用上一题，下一题仍可进入下一道错题', () => {
+      renderWrong('q3');
+      expect(button('上一题')).toBeDisabled();
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p1?set=wrong');
+    });
+
+    it('只有一道错题时两个导航键都禁用，顶部仍可返回', () => {
+      localStorage.setItem(`${wrongSequenceKey('15k', '手筋')}:${TEST_UUID}`, JSON.stringify(['p1']));
+      renderWrong('p1');
+      expect(button('上一题')).toBeDisabled();
+      expect(button('下一题')).toBeDisabled();
       fireEvent.click(within(screen.getByTestId('puzzle-pagebar')).getByText('错题'));
       expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/手筋/wrong');
     });

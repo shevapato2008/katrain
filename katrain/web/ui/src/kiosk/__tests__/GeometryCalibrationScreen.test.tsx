@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
-import type { GeometryStatus } from '../../api/geometryApi';
+import type { GeometryLayout, GeometryStatus } from '../../api/geometryApi';
 import { GeometryAPI } from '../../api/geometryApi';
 import { kioskTheme } from '../theme';
 import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationScreen';
@@ -76,6 +76,8 @@ const cells = () => Array.from(document.querySelectorAll('.kiosk-status__cell'))
 describe('屏 26 棋盘标定', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(GeometryAPI.layout).mockReset();
+    overlayBuilders.clear();
     loaded = true;
     status = {
       phase: 'required', session_calibrated: false, last_valid: false,
@@ -102,6 +104,14 @@ describe('屏 26 棋盘标定', () => {
     // 旁注最多两行:「先熄灯再亮灯各拍一张」那句 Fan 2026-09-27 裁定删掉
     expect(screen.getByTestId('geometry-led-advisory').closest('p'))
       .not.toHaveTextContent('先熄灯拍一张');
+  });
+
+  it('标题旁说明按钮保留五点提示，关闭后返回标定屏', () => {
+    renderScreen();
+    fireEvent.click(screen.getByRole('button', { name: '标定说明' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('四角和天元共 5 个定位点');
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '知道了' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('没在跑的时候第 1 步是「进行中」—— 清空棋盘本来就是按下之前要做的', () => {
@@ -135,6 +145,39 @@ describe('屏 26 棋盘标定', () => {
     renderScreen();
     // 3 个 ⇒ 曝光已锁、断在五点定位那一步
     expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'done', 'bad', 'todo']);
+  });
+
+  it('服务端 stopped_phase 比错误字串和已定位点数更权威', () => {
+    status = {
+      ...status, phase: 'failed', stopped_phase: 'converging_exposure',
+      error: 'anchor_not_found:9,9',
+      detected_anchors: Array.from({ length: 5 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+    };
+    renderScreen();
+    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'bad', 'todo', 'todo']);
+    expect(screen.getByTestId('calib-cap')).toHaveTextContent('停在第 2 步');
+  });
+
+  it.each([2, 5])('等待重新稳定时保留 %i 个锚点所在的步骤', (count) => {
+    status = {
+      ...status, phase: 'waiting_stable',
+      detected_anchors: Array.from({ length: count }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+    };
+    renderScreen();
+    const currentStep = count === 5 ? 3 : 2;
+    expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(
+      steps().map((_s, i) => i < currentStep ? 'done' : i === currentStep ? 'now' : 'todo'),
+    );
+  });
+
+  it.each(['failed', 'cancelled'] as const)('%s 后已有锚点的说明提示重新开始，不说继续标定', (phase) => {
+    status = {
+      ...status, phase,
+      detected_anchors: Array.from({ length: 3 }, (_, i) => ({ row: i, col: i, x: 0, y: 0, color: 'green' })),
+    };
+    renderScreen();
+    expect(screen.getByTestId('calib-cap')).toHaveTextContent('标定已停止，请重新开始');
+    expect(screen.getByTestId('calib-cap')).not.toHaveTextContent('继续标定');
   });
 
   // ── 诊断,不是「重试」 ─────────────────────────────────────────────────────
@@ -179,6 +222,7 @@ describe('屏 26 棋盘标定', () => {
     renderScreen();
     expect(cells()).toEqual(['摄像头—', '标定—', 'LED未确认']);
     expect(screen.queryByText('未连接')).toBeNull();
+    expect(within(acts()).getByRole('button', { name: '重新开始标定 · 正在读取设备状态' })).toBeDisabled();
   });
 
   it('读到了才说连没连上', () => {
@@ -199,7 +243,7 @@ describe('屏 26 棋盘标定', () => {
     status = { ...status, capabilities: { camera_ready: true, led_ready: null, geometry_ready: false } };
     renderScreen();
     expect(cells()).toContain('LED未确认');
-    expect(screen.getByRole('button', { name: /开始标定/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '重新开始标定 · LED 未确认' })).toBeDisabled();
   });
 
   // ── 标定质量:不许把「不知道」画成「满分」 ─────────────────────────────────
@@ -370,7 +414,7 @@ describe('屏 26 棋盘标定', () => {
   it('摄像头或 LED 掉线时按不了开始 —— 这条上一版就有,口径没变', () => {
     status = { ...status, capabilities: { camera_ready: false, led_ready: true, geometry_ready: false } };
     renderScreen();
-    expect(within(acts()).getByRole('button', { name: '重新开始标定' })).toBeDisabled();
+    expect(within(acts()).getByRole('button', { name: '重新开始标定 · 摄像头未连接' })).toBeDisabled();
   });
 
   /** 标定好了要按两次:第一次是「我真的要作废现在这份」。上一版就有这条。 */
@@ -503,6 +547,94 @@ describe('屏 26 棋盘标定', () => {
     expect(container.querySelector('canvas[aria-label="摄像头原始画面"]'))
       .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=raw&scale=3');
     expect(screen.queryByText('标定进行中，俯视画面在完成后重新生成')).toBeNull();
+  });
+
+  it('新几何布局暂时读取失败时保留原始预览，重试成功后只使用新版本俯视画面', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob() }));
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 528, height: 528, close: vi.fn() }));
+    const canvas = vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
+    const layout = (revision: number) => ({
+      revision, phase: 'ready' as const, stale: false,
+      frame: { width: 1920, height: 1080 }, out_size: 950,
+      corners: [], points: [] as [number, number][][],
+    });
+    status = { ...status, phase: 'ready', last_valid: true, geometry_revision: 1 };
+    vi.mocked(GeometryAPI.layout)
+      .mockResolvedValueOnce(layout(1))
+      .mockRejectedValueOnce(new Error('geometry request failed 503'))
+      .mockResolvedValueOnce(layout(2));
+    const { container, rerender } = renderScreen();
+    await waitFor(() => expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=warped&revision=1&scale=2'));
+    await waitFor(() => expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveStyle({ display: 'block' }));
+    const oldWarpedCanvas = container.querySelector('canvas[aria-label="俯视矫正画面"]');
+
+    status = { ...status, geometry_revision: 2 };
+    rerender(screenTree());
+    const rawCanvas = container.querySelector('canvas[aria-label="摄像头原始画面"]');
+    expect(rawCanvas).not.toBe(oldWarpedCanvas);
+    expect(oldWarpedCanvas?.isConnected).toBe(false);
+    expect(rawCanvas)
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=raw&scale=3');
+    expect(container.querySelector('canvas[aria-label="俯视矫正画面"]')).toBeNull();
+    await waitFor(() => expect(overlayBuilders.get('原始画面棋盘几何叠加层')).toBeDefined());
+    expect(overlayBuilders.get('原始画面棋盘几何叠加层')!({ width: 1920, height: 1080 })).toBeNull();
+    await waitFor(() => expect(GeometryAPI.layout).toHaveBeenCalledTimes(2));
+    expect(container.querySelector('canvas[aria-label="摄像头原始画面"]')).toBeInTheDocument();
+
+    await waitFor(() => expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=warped&revision=2&scale=2'),
+    { timeout: 2500 });
+    expect(GeometryAPI.layout).toHaveBeenCalledTimes(3);
+    canvas.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('布局响应版本落后时重试，手动选俯视仍等待当前版本', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('snapshot unavailable')));
+    const layout = (revision: number) => ({
+      revision, phase: 'ready' as const, stale: false,
+      frame: { width: 1920, height: 1080 }, out_size: 950,
+      corners: [], points: [] as [number, number][][],
+    });
+    status = { ...status, phase: 'ready', last_valid: true, geometry_revision: 2 };
+    vi.mocked(GeometryAPI.layout).mockResolvedValueOnce(layout(1)).mockResolvedValueOnce(layout(2));
+    const { container } = renderScreen();
+    fireEvent.click(within(screen.getByTestId('calib-pagebar')).getByRole('radio', { name: '俯视矫正' }));
+    await act(async () => { await Promise.resolve(); });
+    expect(container.querySelector('canvas[aria-label="俯视矫正画面"]')).toBeNull();
+    expect(screen.getByText('完成 LED 标定后生成俯视画面')).toBeInTheDocument();
+
+    await waitFor(() => expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=warped&revision=2&scale=2'),
+    { timeout: 2500 });
+    expect(GeometryAPI.layout).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+  });
+
+  it('状态换版本后忽略上一轮迟到的布局响应', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('snapshot unavailable')));
+    const layout = (revision: number): GeometryLayout => ({
+      revision, phase: 'ready', stale: false,
+      frame: { width: 1920, height: 1080 }, out_size: 950,
+      corners: [], points: [],
+    });
+    let resolveOld!: (value: GeometryLayout) => void;
+    const oldRequest = new Promise<GeometryLayout>((resolve) => { resolveOld = resolve; });
+    status = { ...status, phase: 'ready', last_valid: true, geometry_revision: 1 };
+    vi.mocked(GeometryAPI.layout).mockReturnValueOnce(oldRequest).mockResolvedValueOnce(layout(2));
+    const { container, rerender } = renderScreen();
+
+    status = { ...status, geometry_revision: 2 };
+    rerender(screenTree());
+    await waitFor(() => expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=warped&revision=2&scale=2'));
+    await act(async () => { resolveOld(layout(1)); });
+    expect(container.querySelector('canvas[aria-label="俯视矫正画面"]'))
+      .toHaveAttribute('data-src', '/api/v1/geometry/snapshot?view=warped&revision=2&scale=2');
+    vi.unstubAllGlobals();
   });
 
   // ── 俯视叠加层与 warped-stream 同一个 pad ─────────────────────────────────

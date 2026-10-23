@@ -4002,7 +4002,7 @@ msgid "login:box_gate_cta"
 msgstr "StellaBox ana ekranına git"
 
 msgid "vision:back_settings"
-msgstr "Ayarlar"
+msgstr "Ayarlara dön"
 
 msgid "vision:board_lost_hint"
 msgstr ""
@@ -4013,7 +4013,7 @@ msgid "vision:calibrate_title"
 msgstr "Tahta kalibrasyonu"
 
 msgid "vision:calibrate_sub"
-msgstr "Önce tahtayı boşaltın · 13 nokta: 4 köşe + 9 yıldız"
+msgstr "Önce tahtayı boşaltın · 5 nokta: 4 köşe ve merkez"
 
 msgid "vision:cancel_calibration"
 msgstr "Kalibrasyonu iptal et"

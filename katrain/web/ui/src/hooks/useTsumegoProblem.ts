@@ -13,7 +13,7 @@ import {
   sgfToCoords
 } from '../utils/sgfParser';
 import type { SGFNode, ParsedSGF } from '../utils/sgfParser';
-import { useTsumegoProgress, writeLocalProgress } from '../context/TsumegoProgressContext';
+import { useTsumegoProgress, readLocalProgress, writeLocalProgress } from '../context/TsumegoProgressContext';
 
 export interface ProblemDetail {
   id: string;
@@ -202,7 +202,10 @@ export interface UseTsumegoProblemReturn extends TsumegoProblemState {
 
 export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   // Unified progress source (safe default when no Provider — see TsumegoProgressContext).
-  const { markProgress } = useTsumegoProgress();
+  const { markProgress, progress } = useTsumegoProgress();
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
+  const touchedRef = useRef(false);
 
   // Problem data
   const [problem, setProblem] = useState<ProblemDetail | null>(null);
@@ -228,6 +231,11 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [attempts, setAttempts] = useState(0);
+  // History is a cumulative baseline; failures in this visit are an additive delta.
+  // Keep our own published totals separate so provider echoes are not new history.
+  const attemptBaselineRef = useRef(0);
+  const localAttemptsRef = useRef(0);
+  const publishedAttemptsRef = useRef<number | null>(null);
 
   // Hint
   const [showHint, setShowHint] = useState(false);
@@ -275,8 +283,11 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   useEffect(() => {
     if (!problemId) return;
 
+    let cancelled = false;
     setLoading(true);
     setError(null);
+    setProblem(null);
+    touchedRef.current = false;
 
     fetch(`/api/v1/tsumego/problems/${problemId}`)
       .then(res => {
@@ -286,15 +297,46 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         return res.json();
       })
       .then((data: ProblemDetail) => {
+        if (cancelled) return;
+        attemptBaselineRef.current = Math.max(progressRef.current[data.id]?.attempts ?? 0, readLocalProgress()[data.id]?.attempts ?? 0);
+        localAttemptsRef.current = 0;
+        publishedAttemptsRef.current = null;
+        setAttempts(attemptBaselineRef.current);
+        setIsTryMode(false);
+        tryModeSnapshotRef.current = null;
         setProblem(data);
         initializeProblem(data);
         setLoading(false);
       })
       .catch(err => {
+        if (cancelled) return;
         setError(err.message);
         setLoading(false);
       });
+    return () => {
+      cancelled = true;
+      flushProgress();
+    };
   }, [problemId]);
+
+  // Account history can finish loading after the problem details.
+  useEffect(() => {
+    if (!problem) return;
+    const historyAttempts = progress[problem.id]?.attempts ?? 0;
+    if (historyAttempts === publishedAttemptsRef.current) return;
+    attemptBaselineRef.current = Math.max(attemptBaselineRef.current, historyAttempts);
+    const rebasedAttempts = attemptBaselineRef.current + localAttemptsRef.current;
+    setAttempts(rebasedAttempts);
+    // A solve/explicit flush may already have published before history loaded.
+    // Publish the corrected absolute total once; ignore its provider echo above.
+    if (publishedAttemptsRef.current !== null && rebasedAttempts > publishedAttemptsRef.current) {
+      publishedAttemptsRef.current = rebasedAttempts;
+      const latest = latestRef.current;
+      markProgressRef.current(problem.id, {
+        completed: latest.isSolved, attempts: rebasedAttempts, lastDuration: latest.elapsedTime,
+      });
+    }
+  }, [problem, progress]);
 
   // Initialize problem state
   const initializeProblem = useCallback((data: ProblemDetail) => {
@@ -385,6 +427,8 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       };
     }
 
+    touchedRef.current = true;
+
     // If no SGF or no current node, just place the stone (free play mode)
     if (!currentNode) {
       let capturedCount = 0;
@@ -417,7 +461,8 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         nextPlayer,
       };
       setIsFailed(true);
-      setAttempts(prev => prev + 1);
+      localAttemptsRef.current += 1;
+      setAttempts(attemptBaselineRef.current + localAttemptsRef.current);
       setStones(prev => {
         const newStones = [...prev, newStone];
         return removeCaptures(newStones, newStone.player, boardSize);
@@ -439,7 +484,8 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         nextPlayer,
       };
       setIsFailed(true);
-      setAttempts(prev => prev + 1);
+      localAttemptsRef.current += 1;
+      setAttempts(attemptBaselineRef.current + localAttemptsRef.current);
       setStones(prev => {
         const newStones = [...prev, newStone];
         return removeCaptures(newStones, newStone.player, boardSize);
@@ -617,9 +663,13 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   const reset = useCallback(() => {
     if (problem) {
       initializeProblem(problem);
-      setAttempts(prev => prev + 1);
+      if (!isTryMode) {
+        touchedRef.current = true;
+        localAttemptsRef.current += 1;
+        setAttempts(attemptBaselineRef.current + localAttemptsRef.current);
+      }
     }
-  }, [problem, initializeProblem]);
+  }, [problem, initializeProblem, isTryMode]);
 
   // Toggle hint
   const toggleHint = useCallback(() => {
@@ -717,6 +767,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     const { problem: p, isSolved: solved, attempts: att, elapsedTime: et } = latestRef.current;
     if (!p) return;
     serverPersistedRef.current = true;
+    publishedAttemptsRef.current = att;
     markProgressRef.current(p.id, { completed: solved, attempts: att, lastDuration: et });
   }, []);
 
@@ -728,10 +779,10 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   // Flush on leave: if this problem had any attempt and wasn't already persisted this
   // session, write once. Safe to call repeatedly (guarded by serverPersistedRef).
   const flushProgress = useCallback(() => {
-    const { problem: p, attempts: att, moveHistoryLen } = latestRef.current;
+    const { problem: p } = latestRef.current;
     if (!p) return;
     if (serverPersistedRef.current) return;
-    if (att <= 0 && moveHistoryLen <= 0) return;
+    if (!touchedRef.current) return;
     persistProgress();
   }, [persistProgress]);
 
@@ -741,6 +792,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       prevSolvedRef.current = true;
       if (!serverPersistedRef.current && problem) {
         serverPersistedRef.current = true;
+        publishedAttemptsRef.current = attempts;
         markProgress(problem.id, { completed: true, attempts, lastDuration: elapsedTime });
       }
     } else if (!isSolved) {
@@ -762,11 +814,12 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   // Flush once on unmount (navigate away) if there was an unpersisted attempt.
   useEffect(() => {
     return () => {
-      const { problem: p, isSolved: solved, attempts: att, elapsedTime: et, moveHistoryLen } = latestRef.current;
+      const { problem: p, isSolved: solved, attempts: att, elapsedTime: et } = latestRef.current;
       if (!p) return;
       if (serverPersistedRef.current) return;
-      if (att <= 0 && moveHistoryLen <= 0) return;
+      if (!touchedRef.current) return;
       serverPersistedRef.current = true;
+      publishedAttemptsRef.current = att;
       markProgressRef.current(p.id, { completed: solved, attempts: att, lastDuration: et });
     };
   }, []);

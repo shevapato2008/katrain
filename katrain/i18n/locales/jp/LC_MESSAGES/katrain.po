@@ -3867,7 +3867,7 @@ msgid "login:box_gate_cta"
 msgstr "StellaBox のホームへ"
 
 msgid "vision:back_settings"
-msgstr "設定"
+msgstr "設定に戻る"
 
 msgid "vision:board_lost_hint"
 msgstr "カメラが遮られていないか、碁盤が動いていないか確認してください。動いた場合は再校正が必要です"
@@ -3876,7 +3876,7 @@ msgid "vision:calibrate_title"
 msgstr "碁盤の校正"
 
 msgid "vision:calibrate_sub"
-msgstr "まず碁盤を空にしてください · 四隅 + 星 9 点の計 13 点"
+msgstr "まず碁盤を空にしてください · 四隅と天元の計 5 点"
 
 msgid "vision:cancel_calibration"
 msgstr "校正を中止"

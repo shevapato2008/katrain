@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>智星盒 Kiosk · 数字字体与同色质感提案</title>
+  <link rel="stylesheet" href="../../katrain/web/ui/src/kiosk-shell/fonts.css">
+  <style>
+    @font-face{font-family:"Demo Fraunces";src:url("kiosk-depth-experiments/fonts/fraunces.woff2") format("woff2");font-weight:400 700;font-display:swap}
+    @font-face{font-family:"Demo Bodoni";src:url("kiosk-depth-experiments/fonts/bodoni-moda.woff2") format("woff2");font-weight:400 700;font-display:swap}
+    @font-face{font-family:"Demo DM Sans";src:url("kiosk-depth-experiments/fonts/dm-sans.woff2") format("woff2");font-weight:400 700;font-display:swap}
+    @font-face{font-family:"Demo Plex Mono";src:url("kiosk-depth-experiments/fonts/ibm-plex-mono.woff2") format("woff2");font-weight:400 700;font-display:swap}
+    :root{--digit-font:"Demo Plex Mono",monospace;color:#e7f1e8;background:#07120e;font-family:"SmartBox Kai",serif}
+    *{box-sizing:border-box}
+    body{margin:0;min-width:340px;background:radial-gradient(circle at 75% -20%,#1d3529 0,#08130f 42%,#050c0a 100%)}
+    button{cursor:pointer}
+    button:focus-visible{outline:3px solid #b7f1c7;outline-offset:2px}
+    .lab-header{display:flex;align-items:center;gap:22px;padding:18px 26px 10px;max-width:1800px;margin:auto}
+    .lab-header h1{font:600 25px "SmartBox Kai",serif;margin:0;letter-spacing:.01em}
+    .lab-header p{margin:2px 0 0;color:#afc5b5;font:15px "SmartBox Kai",serif}
+    .lab-header .badge{margin-left:auto;border:1px solid #42654e;background:#163325;color:#a9e3bd;border-radius:999px;padding:7px 12px;white-space:nowrap;font-size:14px}
+    .lab-toolbar{max-width:1800px;margin:0 auto;padding:6px 26px 16px;display:grid;gap:12px}
+    .control-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .control-label{font-size:16px;color:#b8cdbd;min-width:75px}
+    .chip{min-height:42px;padding:6px 15px;border:1px solid #3e5d4b;border-radius:11px;background:#14251d;color:#d9ecdd;font:17px "SmartBox Kai",serif;transition:background .18s,transform .18s,border-color .18s}
+    .chip:hover{transform:translateY(-1px);border-color:#81cc99}
+    .chip[aria-pressed="true"]{background:#4cae73;color:#07170e;border-color:#90e3ad}
+    .chip .tag{display:block;font:11px system-ui,sans-serif;opacity:.7;line-height:1.1}
+    .font-chip{min-width:178px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .font-chip .spec{font-size:24px;line-height:1;font-weight:500;white-space:nowrap}
+    .font-chip[aria-pressed="true"] .spec{color:#092014}
+    .view-row{display:flex;align-items:center;gap:9px;margin-left:auto}
+    .view-row .chip{font-size:15px;min-height:40px}
+    .font-note{margin:0;color:#9db6a4;font:14px "SmartBox Kai",serif}
+    .font-note a{color:#9cdfaf}
+    .lab-body{max-width:1800px;margin:0 auto;padding:0 26px 28px}
+    .comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+    .comparison.single{display:block;max-width:1060px;margin:auto}
+    .preview{min-width:0}
+    .preview[hidden]{display:none}
+    .preview-head{height:41px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:17px}
+    .preview-head strong{font-weight:600}
+    .preview-head span{font-size:14px;color:#adc3b2}
+    .stage-host{width:100%;aspect-ratio:1024/600;position:relative;overflow:hidden;background:#0c1511;border:1px solid #385745;border-radius:13px;box-shadow:0 22px 70px #0007}
+    .stage{position:absolute;left:0;top:0;width:1024px;height:600px;transform-origin:top left}
+    .preview-foot{padding-top:9px;font-size:14px;color:#9db8a4;line-height:1.45}
+    .lab-footer{max-width:1800px;margin:0 auto 25px;padding:0 26px;color:#92a997;font-size:14px}
+    .lab-footer a{color:#a8dfb8}
+    .kiosk{--bg:#0d1415;--top:#17231e;--rail:#0d1415;--card:#1b2924;--line:#365343;--text:#edf3ed;--muted:#bdccbd;--accent:#5ac080;--accent-dark:#173e2a;--shadow:0 4px 12px #0003;position:absolute;inset:0;background:var(--bg);color:var(--text);font:18px "SmartBox Kai",serif;overflow:hidden}
+    .kiosk::before{content:"";position:absolute;inset:56px 0 0;pointer-events:none;background:transparent}
+    .kiosk .num{font-family:var(--digit-font)!important;font-variant-numeric:lining-nums tabular-nums;font-synthesis:none}
+    .kiosk .topbar{position:absolute;left:0;right:0;top:0;height:56px;display:flex;align-items:center;gap:10px;padding:0 24px;background:var(--top);border-bottom:1px solid var(--line)}
+    .kiosk .brand-mark{display:block;width:35px;height:39px;flex:none;background:url("../../katrain/img/logo-white.png") center/contain no-repeat}
+    .kiosk .brand{font-family:"SmartBox Brand LongCang","SmartBox Kai",serif;font-size:22px;font-weight:400;white-space:nowrap}
+    .kiosk .brand-en{font-family:"SmartBox Serif",Georgia,serif;font-size:20px;font-style:italic;color:var(--muted)}
+    .kiosk .separator{height:28px;width:1px;background:var(--line);margin:0 5px}
+    .kiosk .product{color:var(--accent);font-size:22px;white-space:nowrap}
+    .kiosk .spacer{flex:1}
+    .kiosk .avatar{width:33px;height:33px;border-radius:50%;background:var(--accent);color:#102018;display:grid;place-items:center;font-size:18px}
+    .kiosk .user{font-size:18px}
+    .kiosk .clock{font-size:22px;margin-left:6px;min-width:54px}
+    .kiosk .board-shell{position:absolute;left:16px;top:70px;width:516px;height:516px;border:1px solid #493523;border-radius:10px;background:linear-gradient(140deg,#755033,#4e301d 55%,#392315);box-shadow:0 6px 18px #0004;overflow:hidden}
+    .kiosk .board-frame{position:absolute;inset:28px;background:linear-gradient(135deg,#b98d56,#996a36 55%,#c89b5b);box-shadow:inset 0 1px 3px #ffda9255,0 3px 8px #24110777}
+    .kiosk .board-surface{position:absolute;inset:0;background:repeating-linear-gradient(92deg,#00000007 0 1px,transparent 2px 16px),linear-gradient(90deg,#d7ac6c,#deb674 51%,#d6a766);box-shadow:inset 0 0 22px #915b2788}
+    .kiosk .grid-svg{display:block;width:100%;height:100%}
+    .kiosk .board-coords{position:absolute;inset:0;color:#dfb77e;font-size:18px;font-weight:600;pointer-events:none}
+    .kiosk .coord{position:absolute;display:grid;place-items:center;line-height:1;width:22px;height:22px;transform:translate(-50%,-50%)}
+    .kiosk .coord.num{font-size:18px}
+    .kiosk .rail{position:absolute;left:548px;top:70px;width:460px;height:516px;background:transparent;overflow:hidden}
+    .kiosk .match-head{height:62px;display:flex;align-items:center;gap:12px;min-width:0}
+    .kiosk button{font-family:"SmartBox Kai",serif;color:inherit}
+    .kiosk button:disabled{opacity:.48;cursor:not-allowed}
+    .kiosk .back-btn{height:46px;min-width:126px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:9px;font-size:22px;white-space:nowrap}
+    .kiosk .match-title{min-width:0;flex:1}
+    .kiosk .match-title strong{display:block;font-size:22px;font-weight:500;white-space:nowrap;line-height:1.18}
+    .kiosk .match-title small{display:block;color:var(--muted);font-size:18px;white-space:nowrap;line-height:1.2}
+    .kiosk .players{display:grid;grid-template-columns:1fr 1fr;gap:8px;height:126px;margin-top:8px}
+    .kiosk .player-card{position:relative;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow);overflow:hidden}
+    .kiosk .player-card.active{border-color:var(--accent);background:color-mix(in srgb,var(--card) 76%,var(--accent-dark));}
+    .kiosk .player-name{display:flex;align-items:center;gap:9px;font-size:22px;white-space:nowrap;line-height:1.1}
+    .kiosk .player-name strong{font-weight:500}
+    .kiosk .stone{display:inline-block;width:27px;height:27px;border-radius:50%;flex:none;box-shadow:0 2px 4px #0007}
+    .kiosk .stone.white{background:radial-gradient(circle at 35% 28%,#fff,#c9cac4 75%);border:1px solid #e6e8e2}
+    .kiosk .stone.black{background:radial-gradient(circle at 35% 28%,#54575a,#060708 75%);border:1px solid #303437}
+    .kiosk .player-status{margin-top:2px;font-size:18px;color:var(--muted);line-height:1.15}
+    .kiosk .player-card.active .player-status{color:var(--accent)}
+    .kiosk .player-detail{font-size:18px;color:var(--muted);line-height:1.15}
+    .kiosk .player-clock{font-size:22px;line-height:1.1;margin-top:1px}
+    .kiosk .chart-card{height:132px;margin-top:8px;padding:7px 10px;border:1px solid var(--line);border-radius:11px;background:var(--card);box-shadow:var(--shadow)}
+    .kiosk .chart-head{height:30px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:18px;white-space:nowrap}
+    .kiosk .chart-head strong{font-weight:500}
+    .kiosk .chart-head span{color:var(--accent)}
+    .kiosk .chart-plot{height:82px;border:1px solid var(--line);background:#112019;overflow:hidden}
+    .kiosk .chart-plot svg{width:100%;height:100%}
+    .kiosk .chart-plot line{stroke:#3b5846;stroke-dasharray:4 4}
+    .kiosk .chart-plot circle{fill:var(--accent)}
+    .kiosk .toggles{display:flex;align-items:center;gap:8px;height:52px;margin-top:8px}
+    .kiosk .toggle-btn{height:46px;width:112px;padding:0 9px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:9px;font-size:22px;white-space:nowrap}
+    .kiosk .toggle-btn.on{background:var(--accent-dark);border-color:var(--accent)}
+    .kiosk .info-btn{margin-left:auto;width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--accent);border-radius:50%;background:var(--accent-dark);color:var(--accent)!important}
+    .kiosk .actions{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:52px 52px;gap:6px 8px}
+    .kiosk .action-btn{height:52px;border:1px solid var(--line);border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center;gap:4px;font-size:22px;white-space:nowrap;box-shadow:var(--shadow)}
+    .kiosk .action-btn.danger{border-color:#a25e55;color:#e39a8e}
+    .kiosk .ic{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;flex:none}
+    .kiosk .ic svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .kiosk .info-btn .ic{width:24px;height:24px}
+    .kiosk .help-dialog{position:absolute;inset:0;background:#000b;display:grid;place-items:center;z-index:30}
+    .kiosk .help-dialog[hidden]{display:none}
+    .kiosk .help-box{width:450px;padding:20px;border:1px solid var(--accent);border-radius:15px;background:var(--card);box-shadow:0 22px 70px #0008;font-size:22px;line-height:1.5}
+    .kiosk .help-box button{display:block;margin:18px 0 0 auto;height:48px;padding:0 20px;border:1px solid var(--accent);border-radius:9px;background:var(--accent-dark);font-size:22px}
+    @media(max-width:1500px){.comparison{grid-template-columns:1fr;max-width:1040px;margin:auto}.comparison .preview:first-child{order:2}}
+    @media(max-width:1100px){.lab-header{flex-wrap:wrap}.lab-header .badge{margin-left:0}.view-row{margin-left:0}}
+    @media(prefers-reduced-motion:reduce){.chip{transition:none}}
+    body.capture{width:1024px;height:600px;min-width:1024px;background:#0d1415;overflow:hidden}
+    body.capture .lab-header,body.capture .lab-toolbar,body.capture .preview-head,body.capture .preview-foot,body.capture .lab-footer,body.capture .preview.current{display:none!important}
+    body.capture .lab-body{padding:0;max-width:none;margin:0}
+    body.capture .comparison{display:block;max-width:none;margin:0}
+    body.capture .preview.candidate{display:block!important}
+    body.capture .stage-host{width:1024px;height:600px;border:0;border-radius:0;box-shadow:none}
+    body.capture .stage{transform:none!important}
+  </style>
+  <style id="theme-css">
+/* Claude Design · five tactile treatments for the existing Go palette.
+   The shell, top bar, board, rail, content, type and functional colors stay
+   with the shared 1024 × 600 demo. Only enabled controls gain material depth. */
+
+#kiosk[data-theme="c1"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+#kiosk[data-theme="c2"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+#kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+#kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+#kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn) {
+  --material-base: var(--card);
+  --press-depth: 3px;
+  --pressed-shadow: inset 0 3px 8px #0008, 0 1px 0 #0005;
+  --pressed-background: color-mix(in srgb,var(--material-base) 88%,black);
+  transform: translateY(0);
+  transition: transform 130ms ease, box-shadow 130ms ease, background 130ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#kiosk[data-theme="c1"] :is(.toggle-btn.on,.info-btn),
+#kiosk[data-theme="c2"] :is(.toggle-btn.on,.info-btn),
+#kiosk[data-theme="c3"] :is(.toggle-btn.on,.info-btn),
+#kiosk[data-theme="c4"] :is(.toggle-btn.on,.info-btn),
+#kiosk[data-theme="c5"] :is(.toggle-btn.on,.info-btn) {
+  --material-base: var(--accent-dark);
+}
+
+/* C1 · 清透玻璃：原有深绿透出顶栏与卡片，右栏容器依旧透明。 */
+#kiosk[data-theme="c1"] .topbar {
+  background: linear-gradient(180deg,#ffffff13,transparent 51%),
+    color-mix(in srgb,var(--top) 91%,transparent);
+  box-shadow: inset 0 1px 0 #ffffff24, 0 5px 12px #0004;
+  backdrop-filter: blur(12px) saturate(1.05);
+}
+
+#kiosk[data-theme="c1"] :is(.player-card,.chart-card) {
+  background: linear-gradient(150deg,#ffffff18,transparent 42%,#0000000a),
+    color-mix(in srgb,var(--card) 88%,transparent);
+  box-shadow: inset 0 1px 0 #ffffff27, inset 0 -1px 0 #0000002b,
+    0 7px 13px #0005;
+  backdrop-filter: blur(10px) saturate(1.05);
+}
+
+#kiosk[data-theme="c1"] .player-card.active {
+  background: linear-gradient(150deg,#ffffff1a,transparent 42%,#0000000a),
+    color-mix(in srgb,color-mix(in srgb,var(--card) 76%,var(--accent-dark)) 88%,transparent);
+}
+
+#kiosk[data-theme="c1"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 2px;
+  --pressed-shadow: inset 0 3px 8px #0008, inset 0 1px 0 #ffffff18, 0 1px 1px #0007;
+  border-radius: 12px;
+  background: linear-gradient(160deg,#ffffff30,transparent 38%,#00000012),
+    color-mix(in srgb,var(--material-base) 88%,transparent);
+  box-shadow: inset 0 1px 0 #ffffff45, inset 0 -1px 0 #00000045,
+    0 2px 0 #07120e, 0 7px 15px #0007;
+  backdrop-filter: blur(10px) saturate(1.08);
+}
+
+/* C2 · 漆面按键：原有深绿表面，窄高光与厚实的底缘。 */
+#kiosk[data-theme="c2"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 4px;
+  --pressed-shadow: inset 0 4px 8px #0009, inset 0 1px 0 #ffffff15, 0 1px 0 #08180f;
+  border-radius: 10px;
+  background: linear-gradient(180deg,#ffffff27 0%,#ffffff09 14%,transparent 38%,#00000018 100%),
+    var(--material-base);
+  box-shadow: inset 0 1px 0 #ffffff40, inset 0 -2px 0 #00000042,
+    0 4px 0 #0b1b13, 0 8px 11px #0008;
+}
+
+/* C3 · 精密仪表：短行程、较直的角和清晰机械切边。 */
+#kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 2px;
+  --pressed-shadow: inset 0 3px 5px #0009, inset 0 0 0 1px #ffffff0b, 0 1px 0 #07150d;
+  border-radius: 6px;
+  background: linear-gradient(180deg,#ffffff20 0%,transparent 25%,#00000010 100%),
+    var(--material-base);
+  box-shadow: inset 0 1px 0 #ffffff40, inset 1px 0 0 #ffffff12,
+    inset 0 -1px 0 #0008, 0 2px 0 #08190f, 0 4px 5px #0008;
+}
+
+/* C4 · 圆润软键：宽而柔和的反射，按下后向内收光。 */
+#kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 3px;
+  --pressed-shadow: inset 0 4px 9px #0008, inset 0 1px 0 #ffffff14, 0 1px 2px #0006;
+  border-radius: 17px;
+  background: radial-gradient(ellipse 90% 70% at 50% -8%,#ffffff29,transparent 75%),
+    linear-gradient(180deg,transparent 57%,#00000016),var(--material-base);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 2px #0004,
+    0 3px 0 #102019, 0 8px 17px #0007;
+}
+
+/* C5 · 层叠实体：两级下缘、紧实面板和最长的按键行程。 */
+#kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 5px;
+  --pressed-shadow: inset 0 5px 8px #000a, inset 0 1px 0 #ffffff11, 0 1px 0 #07140c;
+  border-radius: 9px;
+  background: linear-gradient(180deg,#ffffff24 0%,#ffffff08 24%,transparent 47%,#0000001a 100%),
+    var(--material-base);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 0 #0008,
+    0 3px 0 #11241a, 0 5px 0 #07160e, 0 8px 11px #0008;
+}
+
+#kiosk[data-theme="c1"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):is(:active,.is-pressing):not(:disabled),
+#kiosk[data-theme="c2"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):is(:active,.is-pressing):not(:disabled),
+#kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):is(:active,.is-pressing):not(:disabled),
+#kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):is(:active,.is-pressing):not(:disabled),
+#kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):is(:active,.is-pressing):not(:disabled) {
+  transform: translateY(var(--press-depth));
+  background: var(--pressed-background);
+  box-shadow: var(--pressed-shadow);
+}
+
+#kiosk[data-theme="c1"] .info-btn:not(:disabled),
+#kiosk[data-theme="c2"] .info-btn:not(:disabled),
+#kiosk[data-theme="c3"] .info-btn:not(:disabled),
+#kiosk[data-theme="c4"] .info-btn:not(:disabled),
+#kiosk[data-theme="c5"] .info-btn:not(:disabled) {
+  border-radius: 50%;
+}
+
+#kiosk[data-theme="c1"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):disabled,
+#kiosk[data-theme="c2"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):disabled,
+#kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):disabled,
+#kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):disabled,
+#kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):disabled {
+  background: var(--card);
+  box-shadow: none;
+  transform: none;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #kiosk[data-theme="c1"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+  #kiosk[data-theme="c2"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+  #kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+  #kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn),
+  #kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn) {
+    transition: none;
+  }
+}
+
+/* UI/UX Pro Max: five tactile treatments on the existing Go palette.
+   The kiosk shell, top bar, board, transparent rail, typography and content
+   retain their original declarations. Only button material and press response
+   vary; the same functional colors flow through --surface and --edge. */
+#kiosk[data-theme^="u"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --surface: var(--card);
+  --edge: var(--line);
+  --press-distance: 3px;
+  position: relative;
+  border-color: var(--edge);
+  transform: translateY(0);
+  transition: transform 115ms ease-out, box-shadow 115ms ease-out,
+              background 115ms ease-out;
+  touch-action: manipulation;
+}
+
+#kiosk[data-theme^="u"] :is(.toggle-btn.on, .info-btn) {
+  --surface: var(--accent-dark);
+  --edge: var(--accent);
+}
+
+#kiosk[data-theme^="u"] .action-btn.danger {
+  --edge: #a25e55;
+}
+
+/* u1 — low-haze glass. The existing dark green surface remains visible. */
+#kiosk[data-theme="u1"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --press-distance: 2px;
+  background: linear-gradient(160deg, #ffffff16 0%, #ffffff04 40%, #0000000a 100%), var(--surface);
+  border-color: var(--edge);
+  box-shadow: inset 0 1px 0 #ffffff46, inset 1px 0 0 #ffffff13,
+              inset 0 -1px 0 #0005, 0 2px 0 #0b1c13,
+              0 5px 13px #0006;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* u2 — softly convex glaze, with a broad reflected highlight. */
+#kiosk[data-theme="u2"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --press-distance: 3px;
+  background: linear-gradient(180deg, #ffffff25 0%, #ffffff0d 22%, transparent 54%, #00000018 100%), var(--surface);
+  box-shadow: inset 0 1px 0 #ffffff48, inset 0 -2px 2px #0004,
+              0 3px 0 #0d2116, 0 7px 12px #0006;
+}
+
+/* u3 — a precise key cap with a short, well-defined travel. */
+#kiosk[data-theme="u3"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --press-distance: 4px;
+  background: linear-gradient(180deg, #ffffff11, transparent 32%, #0000001a), var(--surface);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 1px 0 0 #ffffff10,
+              inset -1px 0 0 #0005, 0 4px 0 #091b12,
+              0 5px 7px #0009;
+}
+
+/* u4 — a soft press pad, with broad low-contrast shadows. */
+#kiosk[data-theme="u4"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --press-distance: 3px;
+  background: radial-gradient(ellipse at 50% 0%, #ffffff17, transparent 70%), var(--surface);
+  box-shadow: inset 0 1px 2px #ffffff25, inset 0 -2px 4px #0004,
+              0 2px 0 #10251a, 0 7px 18px #0007;
+}
+
+/* u5 — a thin floating plate, with an illuminated rim and deep separation. */
+#kiosk[data-theme="u5"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+  --press-distance: 3px;
+  background: linear-gradient(145deg, #ffffff14, transparent 47%, #00000010), var(--surface);
+  box-shadow: inset 0 1px 0 #ffffff42, 0 0 0 1px #ffffff12,
+              0 2px 0 #0d2116, 0 8px 17px #0009;
+}
+
+/* The info button stays round, independent of the treatment. */
+#kiosk[data-theme^="u"] .info-btn { border-radius: 50%; }
+
+/* A press removes the outside lift and replaces it with an inset shadow. */
+#kiosk[data-theme^="u"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn):is(:active, .is-pressing):not(:disabled) {
+  background: linear-gradient(180deg, #0000001c, transparent 62%), var(--surface);
+  box-shadow: inset 0 3px 7px #0009, inset 0 1px 1px #0005,
+              0 1px 0 #0b1c13;
+  transform: translateY(var(--press-distance));
+}
+
+/* Disabled buttons remain recessed and never appear to rise or depress. */
+#kiosk[data-theme^="u"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn):disabled {
+  background: var(--surface);
+  box-shadow: inset 0 1px 3px #0007;
+  transform: none;
+  transition: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #kiosk[data-theme^="u"] :is(.back-btn, .toggle-btn, .action-btn, .info-btn) {
+    transition: none;
+  }
+}
+
+/* Keep the shell and rail geometry; reserve six pixels for the pressed key travel. */
+#kiosk:is([data-theme="u2"],[data-theme="c3"],[data-theme="c4"],[data-theme="u5"],[data-theme="c5"]) .rail {
+  overflow: visible;
+}
+#kiosk:is([data-theme="u2"],[data-theme="c3"],[data-theme="c4"],[data-theme="u5"],[data-theme="c5"]) .actions {
+  bottom: 6px;
+}
+#kiosk[data-theme="c3"] :is(.back-btn,.toggle-btn,.action-btn):disabled { border-radius: 6px; }
+#kiosk[data-theme="c4"] :is(.back-btn,.toggle-btn,.action-btn):disabled { border-radius: 17px; }
+#kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn):disabled { border-radius: 9px; }
+#kiosk[data-theme="c5"] :is(.back-btn,.toggle-btn,.action-btn,.info-btn):not(:disabled) {
+  --press-depth: 4px;
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 0 #0008,
+    0 2px 0 #11241a, 0 4px 0 #07160e, 0 6px 8px #0008;
+}
+
+  </style>
+
+</head>
+<body>
+  <header class="lab-header"><div><h1>智星盒 · 数字与同色质感</h1><p>人机对局 · 固定 1024 × 600 画布 · 沿用围棋配色与霞鹜楷体</p></div><span class="badge">设计演示，不写入设备</span></header>
+  <div class="lab-toolbar">
+    <div class="control-row" id="themes"><span class="control-label">同色质感</span></div>
+    <div class="control-row" id="fonts"><span class="control-label">数字字体</span></div>
+    <div class="control-row"><p class="font-note" id="font-note"></p><div class="view-row"><button class="chip" id="compare-button" type="button" aria-pressed="true">并排对比</button><button class="chip" id="single-button" type="button" aria-pressed="false">原尺寸查看</button></div></div>
+  </div>
+  <main class="lab-body"><div class="comparison" id="comparison"><section class="preview current"><div class="preview-head"><strong>当前设计</strong><span>同一内容 · 同一数字字体</span></div><div class="stage-host"><div class="stage" id="current-stage"></div></div><div class="preview-foot">作为视觉基线；右侧沿用相同主题色、棋盘及布局。</div></section><section class="preview candidate"><div class="preview-head"><strong id="candidate-name">质感方案</strong><span id="candidate-author"></span></div><div class="stage-host"><div class="stage" id="candidate-stage"></div></div><div class="preview-foot" id="candidate-note"></div></section></div></main>
+  <footer class="lab-footer">选择一种数字字体和一种同色系质感；两项可以任意组合。按住右侧按钮可体验下沉。<a href="kiosk-current-based-redesign-2026-10-14.html#game">查看完整现有设计</a>。</footer>
+  <script>
+    const iconPaths={back:'<path d="m15 4-8 8 8 8M7 12h15"/>',grid:'<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M3 15h18M9 3v18m6-18v18"/>',numbers:'<path d="M3 5h2v6M2 11h4M10 5h5l-5 6h5M20 5h2v6m-2-3h2M2 17h20"/>',board:'<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M3 15h18M9 3v18m6-18v18"/>',hint:'<path d="M9 18h6M10 21h4M8 16c-1-2-3-3-3-6a7 7 0 0 1 14 0c0 3-2 4-3 6z"/>',chart:'<path d="M3 18h18M4 14l5-5 4 3 6-7"/>',undo:'<path d="m9 8-5 4 5 4M4 12h10a6 6 0 1 1-6 6"/>',hand:'<path d="M8 13V5a2 2 0 0 1 4 0v6-3a2 2 0 0 1 4 0v4-2a2 2 0 0 1 4 0v7a5 5 0 0 1-5 5h-5a5 5 0 0 1-4-2l-4-5a2 2 0 0 1 3-3z"/>',flag:'<path d="M12 22V4m0 2c3-4 5 2 9 0v9c-4 2-6-4-9 0"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/>'};
+    const I=name=>`<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${iconPaths[name]}</svg></span>`;
+    const N=value=>`<span class="num">${value}</span>`;
+    const themes=[
+      {id:'current',name:'当前设计',author:'现有改版',note:'同一围棋主题的视觉基线。'},
+      {id:'u2',name:'温润釉面',author:'UI/UX Pro Max',note:'宽顶部反光与柔和实体按压。'},
+      {id:'c3',name:'精密仪表',author:'Claude Design',note:'直角切边与短行程机械触感。'},
+      {id:'c4',name:'圆润软键',author:'Claude Design',note:'柔和弧面反射与宽散投影。'},
+      {id:'u5',name:'悬浮薄片',author:'UI/UX Pro Max',note:'细亮边缘与清晰离面距离。'},
+      {id:'c5',name:'层叠实体',author:'Claude Design',note:'两级底缘与较深下沉行程。'}
+    ];
+    const fonts=[{id:'georgia',name:'Georgia',family:'Georgia,serif',note:'端庄、易读，适合目前的楷体气质。'},
+      {id:'fraunces',name:'Fraunces',family:'"Demo Fraunces",Georgia,serif',note:'温润的展示数字，具有适度的雕刻感。'},
+      {id:'bodoni',name:'Bodoni Moda',family:'"Demo Bodoni",Georgia,serif',note:'高对比优雅衬线，适合醒目的倒计时。'},
+      {id:'dm',name:'DM Sans',family:'"Demo DM Sans",sans-serif',note:'简洁清晰，适合密集状态数据。'},
+      {id:'plex',name:'IBM Plex Mono',family:'"Demo Plex Mono",monospace',note:'已选定：等宽数字，适合棋钟和分析读数。'}];
+    const params=new URLSearchParams(location.search);
+    let chosenTheme=params.get('theme')||'c4';
+    let chosenFont=params.get('font')||'plex';
+    let compare=params.get('mode')!=='single';
+    function board(){
+      const letters='ABCDEFGHJKLMNOPQRST'.split('');
+      const line=[];for(let n=0;n<19;n++){const p=12+n*(436/18);line.push(`<line x1="12" y1="${p}" x2="448" y2="${p}"/><line x1="${p}" y1="12" x2="${p}" y2="448"/>`)}
+      const stars=[];for(const x of [3,9,15])for(const y of [3,9,15])stars.push(`<circle cx="${12+x*436/18}" cy="${12+y*436/18}" r="3.2"/>`);
+      const coords=[];for(let n=0;n<19;n++){const p=40+n*(436/18);coords.push(`<span class="coord" style="left:${p}px;top:14px">${letters[n]}</span><span class="coord" style="left:${p}px;top:502px">${letters[n]}</span>`);const y=39+n*(436/18);coords.push(`<span class="coord num" style="left:14px;top:${y}px">${19-n}</span><span class="coord num" style="left:502px;top:${y}px">${19-n}</span>`)}
+      return `<div class="board-shell"><div class="board-frame"><div class="board-surface"><svg class="grid-svg" viewBox="0 0 460 460" aria-label="19路棋盘，当前为空盘"><g fill="none" stroke="#4e3b26" stroke-width="1">${line.join('')}</g><g fill="#5b442b">${stars.join('')}</g></svg></div></div><div class="board-coords">${coords.join('')}</div></div>`;
+    }
+    const action=(icon,label,disabled=false,danger=false)=>`<button type="button" class="action-btn${danger?' danger':''}"${disabled?' disabled':''}>${I(icon)}<span>${label}</span></button>`;
+    function kiosk(theme,baseline=false){return `<div class="kiosk" id="${baseline?'kiosk-baseline':'kiosk'}" data-theme="${theme}"><div class="topbar"><span class="brand-mark" aria-hidden="true"></span><strong class="brand">智星盒</strong><em class="brand-en">StellaBox</em><span class="separator"></span><span class="product">围棋</span><span class="spacer"></span><span class="avatar">F</span><span class="user">fan</span><time class="clock">${N('02:08')}</time></div>${board()}<aside class="rail"><div class="match-head"><button type="button" class="back-btn">${I('back')}退出对局</button><div class="match-title"><strong>自由对弈</strong><small>${N('19')} 路 · 中国规则 · 贴目 ${N('7.5')} · 不让子</small></div></div><div class="players"><section class="player-card"><div class="player-name"><span class="stone white"></span><strong>白方 · ${N('6')} 级</strong></div><div class="player-status">已落子</div><div class="player-detail">提子 ${N('0')}</div><div class="player-clock">不限时</div></section><section class="player-card active"><div class="player-name"><span class="stone black"></span><strong>黑 · fan（你）</strong></div><div class="player-status">轮到你</div><div class="player-detail">第 ${N('1')} 手 · 提子 ${N('0')}</div><div class="player-clock">不限时</div></section></div><section class="chart-card"><div class="chart-head"><strong>胜率 · KataGo</strong><span>黑 ${N('47.5%')} · 黑 +${N('0.2')} 目</span></div><div class="chart-plot"><svg viewBox="0 0 430 82" role="img" aria-label="黑方胜率47.5%"><line x1="8" y1="15" x2="422" y2="15"/><line x1="8" y1="41" x2="422" y2="41"/><line x1="8" y1="67" x2="422" y2="67"/><circle cx="20" cy="43" r="5"/></svg></div></section><div class="toggles"><button type="button" class="toggle-btn on" aria-label="坐标" aria-pressed="true">${I('grid')}坐标</button><button type="button" class="toggle-btn" aria-label="手数" aria-pressed="false">${I('numbers')}手数</button><button type="button" class="info-btn" aria-label="对局操作说明">${I('info')}</button></div><div class="actions">${action('board','领地')}${action('hint','AI 支招',true)}${action('chart','图表')}${action('grid','数子',true)}${action('undo','悔棋')}${action('hand','停一手')}${action('flag','认输',false,true)}</div></aside><div class="help-dialog" hidden><div class="help-box">本局满 ${N('100')} 手后可数子。领地、AI 支招、图表需要登录；实机当前不可用的操作以灰色显示。<button type="button">关闭</button></div></div></div>`}
+    function fit(){document.querySelectorAll('.stage').forEach(el=>{const w=el.parentElement.clientWidth;el.style.transform=`scale(${w/1024})`})}
+    function render(){
+      if(!themes.some(t=>t.id===chosenTheme))chosenTheme='c4';if(!fonts.some(f=>f.id===chosenFont))chosenFont='plex';
+      const font=fonts.find(f=>f.id===chosenFont);document.documentElement.style.setProperty('--digit-font',font.family);
+      document.getElementById('font-note').textContent=font.note;
+      document.getElementById('current-stage').innerHTML=kiosk('current',true);document.getElementById('candidate-stage').innerHTML=kiosk(chosenTheme);
+      document.getElementById('themes').innerHTML='<span class="control-label">同色质感</span>'+themes.map(t=>`<button type="button" class="chip" data-theme="${t.id}" aria-pressed="${t.id===chosenTheme}">${t.name}<small class="tag">${t.author}</small></button>`).join('');
+      document.getElementById('fonts').innerHTML='<span class="control-label">数字字体</span>'+fonts.map(f=>`<button type="button" class="chip font-chip" data-font="${f.id}" aria-pressed="${f.id===chosenFont}"><span>${f.name}</span><span class="spec" style='font-family:${f.family}'>47.5</span></button>`).join('');
+      const theme=themes.find(t=>t.id===chosenTheme);document.getElementById('candidate-name').textContent=theme.name;document.getElementById('candidate-author').textContent=theme.author;document.getElementById('candidate-note').textContent=theme.note;
+      document.getElementById('comparison').classList.toggle('single',!compare);document.querySelector('.preview.current').hidden=!compare;
+      document.getElementById('compare-button').setAttribute('aria-pressed',String(compare));document.getElementById('single-button').setAttribute('aria-pressed',String(!compare));
+      document.querySelector('.lab-body').classList.toggle('capture',document.body.classList.contains('capture'));
+      fit();
+    }
+    document.addEventListener('click',e=>{const t=e.target.closest('[data-theme],[data-font],#compare-button,#single-button,.info-btn,.help-box button,.toggle-btn');if(!t)return;
+      if(t.dataset.theme){chosenTheme=t.dataset.theme;render()}else if(t.dataset.font){chosenFont=t.dataset.font;render()}else if(t.id==='compare-button'){compare=true;render()}else if(t.id==='single-button'){compare=false;render()}else if(t.classList.contains('info-btn')){t.closest('.kiosk').querySelector('.help-dialog').hidden=false}else if(t.closest('.help-box')){t.closest('.help-dialog').hidden=true}else if(t.classList.contains('toggle-btn')){t.classList.toggle('on');t.setAttribute('aria-pressed',String(t.classList.contains('on')))}
+    });
+    const tactileButton=e=>e.target.closest('#kiosk button:not(:disabled):is(.back-btn,.toggle-btn,.action-btn,.info-btn)');
+    document.addEventListener('pointerdown',e=>{const button=tactileButton(e);if(button)button.classList.add('is-pressing')});
+    for(const eventName of ['pointerup','pointercancel'])document.addEventListener(eventName,()=>{
+      document.querySelectorAll('#kiosk button.is-pressing').forEach(button=>setTimeout(()=>button.classList.remove('is-pressing'),150));
+    });
+    document.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const button=tactileButton(e);if(button)button.classList.add('is-pressing')}});
+    document.addEventListener('keyup',e=>{if(e.key==='Enter'||e.key===' ')document.querySelectorAll('#kiosk button.is-pressing').forEach(button=>button.classList.remove('is-pressing'))});
+    window.addEventListener('resize',fit);
+    if(params.get('capture')==='1')document.body.classList.add('capture');
+    render();
+  </script>
+</body>
+</html>

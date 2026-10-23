@@ -1,0 +1,8 @@
+/* Shared HTML-artifact preferences. Font assets stay local; no system fonts are copied. */
+@font-face{font-family:"Kiosk Preview Kaiti";src:local("STKaitiSC-Regular"),local("Kaiti SC Regular");font-weight:400;font-display:swap;unicode-range:U+2E80-2FFF,U+3000-303F,U+31C0-31EF,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F,U+30000-323AF}
+@font-face{font-family:"Kiosk Preview Lishu";src:local("STLibianSC-Regular"),local("Libian SC Regular");font-weight:400;font-display:swap;unicode-range:U+2E80-2FFF,U+3000-303F,U+31C0-31EF,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F,U+30000-323AF}
+@font-face{font-family:"Kiosk Preview Heiti";src:local("STHeiti"),local("Heiti SC Light");font-weight:400;font-display:swap;unicode-range:U+2E80-2FFF,U+3000-303F,U+31C0-31EF,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F,U+30000-323AF}
+.u-settings-font-wenkai{font-family:"SmartBox Kai",serif}.u-settings-font-kaiti{font-family:"Kiosk Preview Kaiti","SmartBox Kai",serif}.u-settings-font-lishu{font-family:"Kiosk Preview Lishu","SmartBox Kai",serif}.u-settings-font-heiti{font-family:"Kiosk Preview Heiti","SmartBox Kai",serif}
+:is(#proposal-layer,#modal-root) [data-design-family],#proposal-layer[data-design-family],#modal-root[data-design-family]{font-family:var(--kiosk-design-font)!important}
+:is(#proposal-layer,#modal-root)[data-design-sizing="on"] [data-design-text],#proposal-layer[data-design-sizing="on"][data-design-text],#modal-root[data-design-sizing="on"][data-design-text]{font-size:max(12px,calc(var(--kiosk-design-base-size) - var(--kiosk-design-step)))!important}
+:is(#proposal-layer,#modal-root)[data-design-sizing="on"] [data-design-control]{width:var(--kiosk-design-control-width)!important;height:var(--kiosk-design-control-height)!important}

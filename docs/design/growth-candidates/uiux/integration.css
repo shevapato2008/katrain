@@ -1,0 +1,31 @@
+/* Append after growth.css; only the overview calendar selectors are affected. */
+      #stage .u-growth-calendar{height:227px;padding:8px 14px 9px;position:relative}
+      #stage .cx-head{display:flex;align-items:center;height:44px;gap:16px;font-size:22px}
+      #stage .cx-head>span{color:#74d395;font-size:28px;white-space:nowrap}
+      #stage .cx-head .u-growth-info{margin-left:auto;flex:none}
+      #stage .cx-plot{position:relative;margin-left:28px;width:604px}
+      #stage .cx-months{position:relative;height:30px;color:#d0dfd0;font-size:18px;line-height:24px}
+      #stage .cx-months span{position:absolute;white-space:nowrap;top:0}
+      #stage .cx-grid{position:relative;height:79px;width:604px}
+      #stage .cx-cell{position:absolute;border-radius:2px;background:#293a30;width:9.4px;height:9.4px}
+      #stage .cx-cell.l1{background:#3b6d49}#stage .cx-cell.l2{background:#51915e}#stage .cx-cell.l3{background:#66b77b}#stage .cx-cell.l4{background:#83d99a}
+      #stage .cx-cell.today{outline:1px solid #edf4e8;outline-offset:1px}
+      #stage .cx-days{position:absolute;left:-28px;top:30px;width:22px;font-size:18px;color:#c4d6c4;line-height:18px}
+      #stage .cx-days span{position:absolute;right:0}
+      #stage .cx-foot{height:43px;display:flex;align-items:center;justify-content:space-between;font-size:18px;color:#bcd0bc;padding-left:28px}
+      #stage .cx-legend{display:flex;gap:10px;align-items:center;white-space:nowrap}#stage .cx-key{display:flex;gap:4px;align-items:center}
+      #stage .cx-legend i{display:block;width:12px;height:12px;background:#293a30;border-radius:2px}
+      #stage .cx-key:nth-child(2) i{background:#3b6d49}#stage .cx-key:nth-child(3) i{background:#51915e}#stage .cx-key:nth-child(4) i{background:#66b77b}#stage .cx-key:nth-child(5) i{background:#83d99a}
+      #stage .cx-2 .cx-head{height:40px}#stage .cx-2 .cx-months{height:24px}
+      #stage .cx-2 .cx-grid{height:113px}#stage .cx-2 .cx-cell{height:13px}
+      #stage .cx-2 .cx-days{top:24px}#stage .cx-2 .cx-foot{height:28px}
+      #stage .cx-3 .cx-head{height:42px;gap:12px}#stage .cx-3 .cx-head .u-growth-info{margin-left:0}
+      #stage .cx-pan{margin-left:auto;display:flex;gap:6px}
+      #stage .cx-pan button{height:44px;width:44px;padding:10px;background:#284332;color:#daeadb;border:1px solid #55775c;border-radius:12px}
+      #stage .cx-pan button:disabled{opacity:.4;cursor:default}#stage .cx-pan button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+      #stage .cx-3 .cx-plot{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#577c60 #15221a;height:140px}
+      #stage .cx-3 .cx-plot::-webkit-scrollbar{height:4px}#stage .cx-3 .cx-plot::-webkit-scrollbar-thumb{background:#577c60;border-radius:3px}
+      #stage .cx-3 .cx-months{width:898px;height:24px}#stage .cx-3 .cx-grid{width:898px;height:116px}
+      #stage .cx-3 .cx-cell{width:14px;height:14px;border-radius:3px}#stage .cx-3 .cx-days{top:74px;left:14px}
+      #stage .cx-3 .cx-foot{height:26px;padding-left:28px}
+      #stage button:focus-visible{outline:2px solid #a8edb8;outline-offset:2px}

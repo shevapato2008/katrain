@@ -150,6 +150,10 @@ it('renders true metadata and core coordinates using the existing readonly spect
   expect(document.querySelector('[data-stone="w"][data-at="Q16"]')).not.toBeNull();
   expect(screen.getByRole('img', { name: '大厅观战棋盘' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /认输|停一手|悔棋|上一手|分析|实体盘/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '观战说明' }));
+  expect(screen.getByRole('dialog', { name: '观战说明' })).toHaveTextContent('每 2 秒从大厅同步一次');
+  fireEvent.click(screen.getByRole('button', { name: '知道了' }));
+  expect(screen.queryByRole('dialog', { name: '观战说明' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /返回大厅/ }));
   expect(screen.getByText('已返回大厅')).toBeInTheDocument();
   await act(async () => { await vi.advanceTimersByTimeAsync(10000); });

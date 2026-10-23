@@ -1,0 +1,252 @@
+/* Approved 1024 × 600 AI game rail. Other game modes keep go-screens.css. */
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) {
+  gap: 8px;
+  --eval-graph-h: 108px;
+}
+
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-pagebar {
+  height: 62px;
+  flex: none;
+  gap: 10px;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-pagebar__back {
+  height: 48px;
+  min-width: 126px;
+  padding: 0 8px;
+  border-radius: 17px;
+  font-family: var(--font-serif);
+  font-size: 21px;
+  white-space: nowrap;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-pagebar__back svg {
+  width: 23px;
+  height: 23px;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-pagebar__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 22px;
+  line-height: 1.18;
+  overflow: visible;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-pagebar__sub {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.1;
+  font-style: normal;
+}
+
+.kiosk-screen[data-journey="ai-play"] .ai-player-cards {
+  position: relative;
+  height: 104px;
+  flex: none;
+}
+
+.kiosk-screen[data-journey="ai-play"] .ai-player-card {
+  position: absolute;
+  top: 0;
+  width: calc(50% + 8px);
+  height: 104px;
+  min-width: 0;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #bfcec2;
+}
+
+.kiosk-screen[data-journey="ai-play"] .ai-player-card:first-child { left: 0; padding-right: 32px; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card:last-child { right: 0; padding-left: 32px; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card.turn { background: transparent; color: #f2faf1; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card__surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 3px 5px #0006);
+  pointer-events: none;
+}
+.kiosk-screen[data-journey="ai-play"] .ai-player-card__surface path { stroke: #405948; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card.turn .ai-player-card__surface path { stroke: #69c98a; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card__gradient-start { stop-color: #26362c; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card__gradient-end { stop-color: #15231b; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card.turn .ai-player-card__gradient-start { stop-color: #2b6244; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card.turn .ai-player-card__gradient-end { stop-color: #1c432f; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card > div { position: relative; z-index: 1; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  flex: none;
+}
+.kiosk-screen[data-journey="ai-play"] .ai-player-card h4 { font-size: 22px; line-height: 1.1; font-weight: 500; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card .disc { width: 28px; height: 28px; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock {
+  margin: auto 0 0;
+  text-align: left;
+  min-height: 28px;
+}
+.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock b {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 500;
+}
+.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock span { font-size: 14px; line-height: 1; }
+/* Keep both "不限时" labels level; only the player to move gets the move number at its right. */
+.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock--untimed {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock--untimed b { font-size: 14px; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock--untimed span { font-size: 28px; line-height: 1; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  margin-top: 2px;
+  font-size: 18px;
+  line-height: 1.1;
+  color: #acbeb1;
+  white-space: nowrap;
+}
+.kiosk-screen[data-journey="ai-play"] .ai-player-card__foot > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kiosk-screen[data-journey="ai-play"] .ai-player-card__foot > span:last-child { flex: none; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card.turn .ai-player-card__foot { color: #91e5a7; }
+.kiosk-screen[data-journey="ai-play"] .ai-player-card[data-clock="expired"] .ai-player-card__surface path { stroke: var(--bad); }
+
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-fold[data-fold="eval"] {
+  height: 152px;
+  flex: 0 1 152px;
+  min-height: 108px;
+  border-color: #355043;
+  background: #182720;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-fold[data-fold="eval"][data-open="false"] {
+  height: 38px;
+  min-height: 38px;
+  flex: none;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-fold[data-fold="eval"] .kiosk-fold__head {
+  height: 42px;
+  padding: 0 8px;
+  gap: 4px;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  letter-spacing: 0;
+  color: var(--text);
+  white-space: nowrap;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-fold[data-fold="eval"] .kiosk-fold__head b {
+  font-size: 18px;
+  font-weight: 500;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-eval { height: 100%; }
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-eval__axis,
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .gevax { font-size: 12px; }
+
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .gtoggles {
+  height: 54px;
+  gap: 8px;
+  flex: none;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .gtoggles button {
+  width: calc((100% - 24px) / 4);
+  height: 50px;
+  flex: none;
+  padding: 0 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #365241;
+  border-radius: 17px;
+  background: #192820;
+  color: #dce9dd;
+  font-family: var(--font-serif);
+  font-size: 22px;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .gtoggles button::before,
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .gtoggles button::after { display: none; }
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .gtoggles button[aria-checked="true"] {
+  border-color: #5fbd80;
+  background: #274a35;
+  color: #dce9dd;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .gtoggles .kiosk-icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .gtoggles svg { width: 100%; height: 100%; }
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .ghint { font-size: 12px; line-height: 1.25; }
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-actions {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  flex: none;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-actions button {
+  min-width: 0;
+  height: 50px;
+  padding: 0 2px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #3a5848;
+  border-radius: 17px;
+  background-color: #21352b;
+  background-image: radial-gradient(ellipse 90% 70% at 50% -8%, #ffffff29, transparent 75%),
+    linear-gradient(180deg, transparent 57%, #00000016);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 2px #0004, 0 3px 0 #102019, 0 6px 10px #0007;
+  transition: translate 130ms ease, box-shadow 130ms ease;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  white-space: nowrap;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-actions .kiosk-icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-actions svg { width: 22px; height: 22px; }
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-actions button[aria-pressed="true"] {
+  border-color: #5fbd80;
+  background: #274a35;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-actions button.danger {
+  border-color: #ae685d;
+  background-color: #2b211f;
+  color: #e69b8d;
+}
+
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-actions button:disabled {
+  background-image: none;
+  box-shadow: none;
+}
+.kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-actions button:active:not(:disabled) {
+  translate: 0 3px;
+  box-shadow: inset 0 4px 9px #0008, inset 0 1px 0 #ffffff14, 0 1px 2px #0006;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-actions button { transition: none; }
+}

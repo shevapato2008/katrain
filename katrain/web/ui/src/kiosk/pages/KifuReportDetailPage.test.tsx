@@ -160,20 +160,20 @@ describe('职业报告固定右栏', () => {
       sgf_sha256: 'sgf', parameter_sha256: 'parameters', provenance: {} };
     mocks.getAlbum.mockResolvedValue({ ...album, rules: 'chinese' });
     renderPage(); await loaded();
-    const metadata = screen.getByTestId('kifu-report-metadata');
-    expect(metadata.querySelectorAll('span')).toHaveLength(3);
-    expect(within(metadata).getByText('日本规则', { exact: true })).toBeInTheDocument();
-    expect(within(metadata).getByText('贴目 0', { exact: true })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '查看棋谱' })).toBeNull();
     const actions = within(screen.getByTestId('kifu-report-actions')).getAllByRole('button');
     expect(actions).toHaveLength(4);
-    ['试下', '领地', '支招', '实体棋盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
+    ['试下', '领地', '支招', '实体盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
     const toggles = within(screen.getByTestId('kifu-report-toggles')).getAllByRole('button');
     expect(toggles).toHaveLength(2);
     ['手数', '坐标'].forEach((name, index) => expect(toggles[index]).toHaveAccessibleName(name));
     expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog', { name: '对局详情' });
+    const metadata = screen.getByTestId('kifu-report-metadata');
+    expect(metadata.querySelectorAll('span')).toHaveLength(3);
+    expect(within(metadata).getByText('日本规则', { exact: true })).toBeInTheDocument();
+    expect(within(metadata).getByText('贴目 0', { exact: true })).toBeInTheDocument();
     expect(dialog).toHaveTextContent('日本规则');
     expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('chinese');
     expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent('6.5');
@@ -188,14 +188,14 @@ describe('职业报告固定右栏', () => {
     analysisCompleted = true;
     mocks.getAlbum.mockResolvedValue({ ...album, rules: 'japanese', komi });
     renderPage(); await loaded();
-    const metadata = screen.getByTestId('kifu-report-metadata');
-    expect(metadata.querySelectorAll('span')).toHaveLength(3);
-    expect(within(metadata).getByText(label, { exact: true })).toBeInTheDocument();
-    expect(within(metadata).getByText(`贴目 ${komi}`, { exact: true })).toBeInTheDocument();
     expect(screen.queryByTestId('kifu-report-head')).toBeNull();
     expect(screen.getAllByTestId('ai-recommend-row')).toHaveLength(6);
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog', { name: '对局详情' });
+    const metadata = screen.getByTestId('kifu-report-metadata');
+    expect(metadata.querySelectorAll('span')).toHaveLength(3);
+    expect(within(metadata).getByText(label, { exact: true })).toBeInTheDocument();
+    expect(within(metadata).getByText(`贴目 ${komi}`, { exact: true })).toBeInTheDocument();
     expect(dialog).toHaveTextContent('分析已完成');
     expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('—');
     expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent(String(komi));
@@ -207,17 +207,17 @@ describe('职业报告固定右栏', () => {
 });
 
 
-it('报告的实体棋盘入口携带原始 SGF 和报告返回地址', async () => {
+it('报告的实体盘入口携带原始 SGF 和报告返回地址', async () => {
   renderPage(); await loaded();
   expect(screen.queryByRole('button', { name: '清空' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '实体棋盘' }));
+  fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
   expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/baipu/session/kifu_7', {
     state: expect.objectContaining({ sgf: album.sgf_content, backTo: '/kiosk/kifu/7', backLabel: '报告' }),
   });
 });
 
-it('非19路报告不能进入实体棋盘摆谱', async () => {
+it('非19路报告不能进入实体盘摆谱', async () => {
   mocks.getAlbum.mockResolvedValue({ ...album, board_size: 9, sgf_content: '(;SZ[9];B[dd])' });
   renderPage(); await loaded();
-  expect(screen.getByRole('button', { name: '实体棋盘' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '实体盘' })).toBeDisabled();
 });

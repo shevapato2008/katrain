@@ -17,7 +17,7 @@ const VisionSetupPage = () => {
   const { t } = useTranslation();
   return (
     <GeometryCalibrationScreen
-      backLabel={fromSettings ? t('vision:back_settings', '设置') : t('Back', '返回')}
+      backLabel={fromSettings ? t('vision:back_settings', '返回设置') : t('Back', '返回')}
       onBack={back}
       title={t('vision:calibrate_title', '棋盘标定')}
       sub={t('vision:calibrate_sub', '先把棋盘清空 · 四角和天元共 5 个定位点')}

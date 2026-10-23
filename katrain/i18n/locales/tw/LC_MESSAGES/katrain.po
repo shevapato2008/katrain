@@ -3847,7 +3847,7 @@ msgid "login:box_gate_cta"
 msgstr "前往智星盒主頁"
 
 msgid "vision:back_settings"
-msgstr "設定"
+msgstr "返回設定"
 
 msgid "vision:board_lost_hint"
 msgstr "看一下攝影機有沒有被擋住、棋盤有沒有被移動；移動過的話要重新標定"
@@ -3856,7 +3856,7 @@ msgid "vision:calibrate_title"
 msgstr "棋盤標定"
 
 msgid "vision:calibrate_sub"
-msgstr "先把棋盤清空 · 四角 + 九星共 13 個定位點"
+msgstr "先把棋盤清空 · 四角與天元共 5 個定位點"
 
 msgid "vision:cancel_calibration"
 msgstr "取消標定"

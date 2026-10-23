@@ -4,7 +4,7 @@ import { createTheme } from '@mui/material';
 // go-tokens.css / seclabel.css 排在同一处,顺序才控得住。两个文件各引一份同样的 CSS,
 // 「谁先谁后」就变成打包器的实现细节了。
 
-// 三个字族栈**逐字**取自 `kiosk-shell/tokens.css:21-23`,不要在这里另起一套。
+// 三个字族栈与 `kiosk-shell/tokens.css` 共用 --kiosk-cjk-font。
 //
 // 为什么不是「删掉 go-tokens.css 里覆盖 --font-* 的三行」就完事:MUI 组件的字体走的是
 // `typography.fontFamily`(emotion 类),**根本不读 `var(--font-*)`**,而 kiosk 屏上绝大多数
@@ -15,15 +15,15 @@ import { createTheme } from '@mui/material';
 // 没有消失,它们由 `fonts.css` 以 "SmartBox Serif" / "SmartBox Mono" 的族名自托管同一款。
 //
 // 中西文靠**栈的回退**分开,不靠同族内的声明顺序:拉丁面带显式 latin `unicode-range`,
-// 中文码点在那儿匹配不到面,自然落到下一个族 "SmartBox Kai"。**顺序不可调** —— 把 Kai 提前,
-// 它会连 ASCII 一起抢走。
+// 中文码点在那儿匹配不到面,自然落到当前中文选项,缺字再由 WenKai 兜底。
+// **顺序不可调** —— 把中文族提前会连 ASCII 一起抢走。
 // 导出:kiosk 里有 22 处 `sx={{ fontFamily: … }}` 绕开主题直接写字体栈(标题、品牌行、
 // 棋钟、SGF 文本…)。它们**不受 `typography` 管**,所以只改上面的主题它们一个都不会变 ——
 // 字体闸第一次跑出来的就是这个:「智星盒」「晚上好」还落在 Songti SC 上。
 // 让它们 import 同一个常量,而不是各写各的字符串。
-export const KIOSK_SANS = '"SmartBox Sans", "SmartBox Kai", "Kaiti SC", system-ui, sans-serif';
-export const KIOSK_SERIF = '"SmartBox Serif", "SmartBox Kai", "Kaiti SC", Georgia, serif';
-export const KIOSK_MONO = '"SmartBox Mono", "SmartBox Kai", ui-monospace, monospace';
+export const KIOSK_SANS = '"SmartBox Sans", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", system-ui, sans-serif';
+export const KIOSK_SERIF = '"SmartBox Serif", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", Georgia, serif';
+export const KIOSK_MONO = '"SmartBox Mono", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", ui-monospace, monospace';
 
 /* 品牌字常量(KIOSK_BRAND)在 Task 3 随 `Header.tsx` 一起删了。
  *

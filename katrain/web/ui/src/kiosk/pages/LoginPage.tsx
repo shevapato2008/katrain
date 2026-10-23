@@ -7,7 +7,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { KIOSK_SERIF } from '../theme';
 import { LAUNCHER_LOGIN_URL } from '../shell/boxUrls';
 
-// Brand lockup matches the Header (智星盒 / StellaBox) — Newsreader serif, jade console palette.
+// Brand lockup matches the Header (智星盒 / StellaBox).
 const BRAND_SERIF = KIOSK_SERIF;
 
 // Decision B (logout-then-register): in a strict box kiosk there is no local
@@ -166,7 +166,7 @@ const LoginPage = () => {
             </Box>
             <Typography
               component="span"
-              sx={{ fontFamily: BRAND_SERIF, fontStyle: 'italic', fontWeight: 500, fontSize: 19, color: 'text.secondary' }}
+              sx={{ fontFamily: '"SmartBox Fondamento", serif', fontStyle: 'normal', fontWeight: 400, fontSynthesis: 'none', fontSize: 27, letterSpacing: '0.005em', color: 'text.secondary', position: 'relative', top: 2 }}
             >
               StellaBox
             </Typography>

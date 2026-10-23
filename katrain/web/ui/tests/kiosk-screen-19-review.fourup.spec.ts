@@ -1,14 +1,8 @@
-import { test } from '@playwright/test';
-import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
+import { expect, test } from '@playwright/test';
+import { freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
-
-const SHOTS = resolve(process.cwd(),
-  '../../../../smartbox-software/superpowers/shared/kiosk-shell/sample-go/shots');
-const OUT = resolve(process.cwd(),
-  '../../../superpowers/tracks/kiosk-go-shell-align/visual/19-review/1024x600');
 
 /**
  * 屏 19 复盘(L1 布局 A,**形态 2**:头尾固定,只有中间那条列表滚)。
@@ -23,8 +17,7 @@ const OUT = resolve(process.cwd(),
  *  ② 组标题右端多一个放大镜(搜索开关)。稿子这一屏没画搜索,但**稿子自己的 `.sbox` 注释
  *    把复盘列进了「有搜索的四屏」**,而现状这条搜索是通的 —— 也是漏画。
  *    收起态和稿子逐像素一样,展开才多出那条框。
- *  ③ 第三张卡在稿子上是 `is-soon`「接口还没有 · 即将上线」,实现里是**能用的** ——
- *    两条导入路(本地 SGF / 棋谱库)都在跑,挂「即将上线」等于把有的说成没有。
+ *  ③ 第三张卡打开可搜索的职业棋谱库;Kiosk 不提供本地 SGF 导入入口。
  *  ④ 三格的数字对不上稿子的 78% / 4 手 / 1 手:稿子那三个是示意值,实现是拿
  *    `report_task_moves` 真算的(算式见 `features/report/reportStats.ts`)。
  *    造的数据让**失误 4 手、妙手 1 手**落在稿子那两个数上,准确率随算式走。
@@ -136,7 +129,7 @@ const FINAL_BOARD = [
   ['B', 2, 16],  // R17 —— 最后一手
 ] as const;
 
-test('四图:复盘 ←→ sample-go/shots/19-review.png', async ({ page }) => {
+test('approved personal history selection and tier menu', async ({ page }) => {
   await freezeClock(page);
   await page.addInitScript(() => {
     localStorage.setItem('token', 'fourup');
@@ -156,7 +149,7 @@ test('四图:复盘 ←→ sample-go/shots/19-review.png', async ({ page }) => {
     json: { ...GAMES[0], sgf_content: '(;FF[4]GM[1]SZ[19];B[pd];W[dd])' },
   }));
   await page.route('**/api/v1/user-games**', (route) => route.fulfill({
-    json: { items: GAMES, total: GAMES.length, page: 1, page_size: 12 },
+    json: { items: GAMES, total: GAMES.length, page: 1, page_size: 20 },
   }));
   await page.route('**/api/v1/reports/summary', (route) => route.fulfill({
     json: { pending: 0, running: 0, completed: 1, failed: 0 },
@@ -179,28 +172,51 @@ test('四图:复盘 ←→ sample-go/shots/19-review.png', async ({ page }) => {
     },
   }));
 
+  await page.route('**/api/v1/user-games/g*', route => route.fulfill({ json: { ...GAMES[0], sgf_content: '(;SZ[19];B[pd];W[dd])' } }));
+  await page.route('**/api/v1/kifu/albums?*', route => route.fulfill({ json: {
+    items: [{ id: 10, player_black: '棋手甲', player_white: '棋手乙', display_player_black: '棋手甲', display_player_white: '棋手乙',
+      event: '职业赛', display_event: '职业赛', date_played: '2026-08-01', move_count: 186, board_size: 19, komi: 7.5,
+      rules: 'chinese', result: 'B+R', handicap: 0 }], total: 1, page: 1, page_size: 10,
+  } }));
   await page.goto('/kiosk/report');
-  await page.waitForSelector('[data-testid="review-rows"] .kiosk-row:nth-child(3)');
-  await page.waitForSelector('[data-testid="review-winrate-plot"][data-state="plotted"]');
+  await page.waitForSelector('[data-testid="review-rows"] [data-testid="review-row"]:nth-child(3)');
+  await expect(page.getByTestId('review-search')).toBeVisible();
+  await expect(page.getByTestId('review-source')).toHaveCount(0);
+  await expect(page.getByText('这一局的胜率')).toHaveCount(0);
+  await page.waitForFunction(() => !(Array.from(document.querySelectorAll('button')).find(button => button.textContent === '查看棋谱') as HTMLButtonElement | undefined)?.disabled);
+  const rows = page.getByTestId('review-row');
+  await expect(rows.nth(0).locator('.personal-game-head b')).toHaveText('自由对弈');
+  await expect(rows.nth(2).locator('.personal-game-head b')).toHaveText('升降级对弈');
+  await expect(rows.nth(3).locator('.personal-game-head b')).toHaveText('人人对弈');
+  await expect(rows.nth(0).locator('.personal-game-match em')).toHaveText('白中盘胜');
+  await expect(rows.nth(1).locator('.personal-game-match em')).toHaveText('黑6.5子胜');
+  const resultCenters = await rows.locator('.personal-game-match em').evaluateAll(elements => elements.slice(0, 3).map(element => {
+    const rect = element.getBoundingClientRect();
+    return rect.left + rect.width / 2;
+  }));
+  expect(Math.max(...resultCenters) - Math.min(...resultCenters)).toBeLessThanOrEqual(1);
+  expect((await rows.nth(1).locator('.rvpick').boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await rows.nth(1).locator('.personal-game-match > span').last().click();
+  await expect(rows.nth(1)).toHaveAttribute('data-selected', 'true');
+  await rows.nth(0).locator('.personal-game-match > span').first().click();
+  await expect(rows.nth(0)).toHaveAttribute('data-selected', 'true');
+  await page.waitForFunction(() => !(Array.from(document.querySelectorAll('button')).find(button => button.textContent === '查看棋谱') as HTMLButtonElement | undefined)?.disabled);
   await page.waitForLoadState('networkidle');
 
-  const r = await captureFourUp({
-    page,
-    referencePng: resolve(SHOTS, '19-review.png'),
-    outDir: OUT,
-    slug: '19-review',
-    referenceCaption:
-      '参考:sample-go/shots/19-review.png · L1 布局 A 形态 2(镜像栏 296 + 16 + 右栏 680;'
-      + '胜率固定 122 / 历史对局 194 会滚 / 生成报告 102 固定)· 上黑下白 · 行尾只有一个状态标',
-    implementationCaption:
-      '实现:/kiosk/report @1024×600 · 时钟冻 16:40 · 六局与逐手分析是 fixture · '
-      + '**三格是「妙手」不是国象的「漏着」**:围棋的报告是 cron 离线跑的(每手 500/2000 次),'
-      + '不受盒子算力限制,且 `reportModel.ts:192` 早有 `delta_score ≥ 2` 这条口径 —— 转判据不转结论 · '
-      + '曲线接真数据,稿子那枚「后端已有 · 界面未接」蓝标本轮不成立,已去掉 · '
-      + '行尾多出动作键(规范 §11 四态各有各的样子 + 就地干活不跳页,国象稿子同处就是这么画的)· '
-      + '组标题右端多一个搜索开关(稿子漏画,它自己的 `.sbox` 注释把复盘算进了有搜索的四屏)· '
-      + '第三张卡是能用的,不是「即将上线」· 三格数字随算式走,稿子那三个是示意值 · '
-      + 'Dock 七项(2026-08-25 起补了「成长」,围棋独有)',
-  });
-  console.log(`[fourup 19-review] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
+  await page.screenshot({ path: '/tmp/kiosk-19-reviewed.png' });
+  await page.getByRole('button', { name: '分析报告', exact: true }).click();
+  await page.screenshot({ path: '/tmp/kiosk-19-tier-menu.png' });
+  await page.getByRole('button', { name: '分析报告', exact: true }).click();
+  await page.getByRole('button', { name: /导入棋谱复盘/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '搜索棋谱库' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '从本地导入 SGF' })).toHaveCount(0);
+  await page.waitForTimeout(350);
+  await page.screenshot({ path: process.env.KATRAIN_IMPORT_PREVIEW ?? '/tmp/kiosk-19-library-import.png' });
+  await page.getByRole('textbox', { name: '搜索棋谱库' }).fill('职业赛');
+  await page.getByRole('button', { name: '搜索', exact: true }).click();
+  const album = page.getByRole('button', { name: /职业赛，黑方/ });
+  await expect(album).toHaveAttribute('aria-pressed', 'true');
+  await album.click();
+  await expect(page.getByRole('button', { name: '仅导入', exact: true })).toBeEnabled();
 });

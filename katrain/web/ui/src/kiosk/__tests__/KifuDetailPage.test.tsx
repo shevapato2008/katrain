@@ -132,27 +132,39 @@ describe('屏 16 棋谱详情 · 三种状态', () => {
     expect(hero.textContent).toContain('柯洁');
     expect(hero.textContent).toContain('九段');
     expect(hero.textContent).toContain('2026-06-30');
-    expect(hero.textContent).toContain('19 路');
-    expect(hero.textContent).toContain('中国规则');
-    expect(hero.textContent).toContain('SGF 贴目 7.5 目');
-    expect(hero.textContent).toContain('241 手');
+    expect(hero).toHaveAttribute('title', expect.stringContaining('19 路'));
+    expect(hero).toHaveAttribute('title', expect.stringContaining('中国规则'));
+    expect(hero).toHaveAttribute('title', expect.stringContaining('SGF 贴目 7.5 目'));
+    expect(hero.textContent).toContain('4 手');
   });
 });
 
+it('棋局详情触控入口显示规则、路数和贴目', async () => {
+  renderPage(); await waitLoaded();
+  fireEvent.click(screen.getByRole('button', { name: '棋局详情' }));
+  const dialog = screen.getByRole('dialog', { name: '棋局详情' });
+  expect(dialog).toHaveTextContent('19 路');
+  expect(dialog).toHaveTextContent('中国规则');
+  expect(dialog).toHaveTextContent('SGF 贴目 7.5 目');
+  fireEvent.click(within(dialog).getByRole('button', { name: '关闭' }));
+  expect(screen.queryByRole('dialog')).toBeNull();
+});
+
 describe('屏 16 棋谱详情 · 逐手回放', () => {
-  it('一进来停在开局:盘上一颗子都没有,页控条写 0 / 4', async () => {
+  it('一进来显示终局盘和真实回放手数 4 / 4', async () => {
     renderPage();
     await waitLoaded();
-    expect(board().querySelectorAll('[data-stone]')).toHaveLength(0);
-    expect(screen.getByTestId('kifu-detail-pagebar').textContent).toContain('第 0 / 4 手');
+    expect(board().querySelectorAll('[data-stone]')).toHaveLength(3);
+    expect(screen.getByTestId('kifu-detail-moves').textContent).toContain('第 4 / 4 手');
   });
 
   it('下一手走一步,第一手那颗黑子出现在 Q16', async () => {
     renderPage();
     await waitLoaded();
+    fireEvent.click(screen.getByRole('button', { name: '回到开局' }));
     fireEvent.click(screen.getByRole('button', { name: '下一手' }));
     expect(stoneAt('Q16')).toHaveAttribute('data-stone', 'b');
-    expect(screen.getByTestId('kifu-detail-pagebar').textContent).toContain('第 1 / 4 手');
+    expect(screen.getByTestId('kifu-detail-moves').textContent).toContain('第 1 / 4 手');
   });
 
   // ⚠️ 本文件的重点:提子**不在前端算**,播的是后端给的 `removed[]`。
@@ -180,6 +192,7 @@ describe('屏 16 棋谱详情 · 逐手回放', () => {
   it('开局时前两个键灰、末手时后两个键灰', async () => {
     renderPage();
     await waitLoaded();
+    fireEvent.click(screen.getByRole('button', { name: '回到开局' }));
     expect(screen.getByRole('button', { name: '回到开局' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '上一手' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '下一手' })).not.toBeDisabled();
@@ -193,10 +206,10 @@ describe('屏 16 棋谱详情 · 逐手回放', () => {
     renderPage();
     await waitLoaded();
     const moves = screen.getByTestId('kifu-detail-moves');
-    expect([...moves.querySelectorAll('.mv')].map((s) => s.textContent))
-      .toEqual(['Q16', 'D16', 'D4', 'Q4']);
-    fireEvent.click(within(moves).getByText('D4'));
-    expect(screen.getByTestId('kifu-detail-pagebar').textContent).toContain('第 3 / 4 手');
+    expect([...moves.querySelectorAll('.kifu-replay-move-grid button')].map(button => button.textContent))
+      .toEqual(['1Q16', '2D16', '3D4', '4Q4']);
+    fireEvent.click(moves.querySelectorAll('.kifu-replay-move-grid button')[2]);
+    expect(screen.getByTestId('kifu-detail-moves').textContent).toContain('第 3 / 4 手');
     expect(stoneAt('D4')).toHaveAttribute('data-stone', 'b');
     expect(stoneAt('Q4')).toBeNull();
   });
@@ -209,8 +222,9 @@ describe('屏 16 棋谱详情 · 逐手回放', () => {
     });
     renderPage();
     await waitLoaded();
+    fireEvent.click(screen.getByRole('button', { name: '回到开局' }));
     expect(stoneAt('K10')).toHaveAttribute('data-stone', 'b');
-    expect(screen.getByTestId('kifu-detail-pagebar').textContent).toContain('第 0 / 4 手');
+    expect(screen.getByTestId('kifu-detail-moves').textContent).toContain('第 0 / 4 手');
   });
 });
 
@@ -220,19 +234,19 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
   // 名局棋谱在那张表里没有行,得先复制一份进去,而**复盘屏的「从棋谱库导入」就是干这个的**。
   // 在这儿再开一个入口 = 同一条路两个口;galaxy 的棋谱库也只有「在研究中打开」一个出口。
   // 这条断言把那个裁定钉住:**多出第三个键就红**。
-  it('只有两个动作键,没有「送去复盘」', async () => {
+  it('回放提供实体盘出口，不混入分析操作', async () => {
     renderPage();
     await waitLoaded();
     const actions = screen.getByTestId('kifu-detail-actions');
     expect([...actions.querySelectorAll('button')].map((b) => b.textContent))
-      .toEqual(['摆到实体盘', '去研究']);
+      .toEqual(['实体盘']);
     expect(screen.queryByText('送去复盘')).not.toBeInTheDocument();
   });
 
   it('「摆到实体盘」先把整份谱缓存到本地,再进摆谱屏', async () => {
     renderPage();
     await waitLoaded();
-    fireEvent.click(screen.getByRole('button', { name: '摆到实体盘' }));
+    fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
     expect(cacheSgfMock).toHaveBeenCalledWith('kifu_7', '第 29 届三星杯 · 半决赛', ALBUM.sgf_content);
     expect(mockNavigate).toHaveBeenCalledWith(
       '/kiosk/baipu/session/kifu_7',
@@ -241,20 +255,17 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
     );
   });
 
-  it('「去研究」带着 kifu_id 进研究屏', async () => {
-    renderPage();
-    await waitLoaded();
-    fireEvent.click(screen.getByRole('button', { name: '去研究' }));
-    // `&from=kifu` 是 2026-08-24 屏 21 加的:研究屏有四个入口、回去的地方各不相同,
-    // 而屏 20 和对局历史两条的 URL 形状一模一样(都是 `?user_game_id=`)、反推不出来。
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/research?kifu_id=7&analyze=1&from=kifu');
+  it('未分析状态说明不会伪造 AI 数据', async () => {
+    renderPage(); await waitLoaded();
+    expect(screen.getByText('尚未分析')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: '着手评价' })).not.toBeInTheDocument();
   });
 
   it('返回键回棋谱屏', async () => {
     renderPage();
     await waitLoaded();
     // 限定在页控条里找 —— 「棋谱」两个字在折叠块标题(「棋谱 · 交叉点坐标」)里也有一份。
-    fireEvent.click(within(screen.getByTestId('kifu-detail-pagebar')).getByRole('button'));
+    fireEvent.click(within(screen.getByTestId('kifu-detail-pagebar')).getByRole('button', { name: /棋谱/ }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
   });
 
@@ -265,7 +276,7 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
     });
     renderPage();
     await waitLoaded();
-    const btn = screen.getByRole('button', { name: '摆到实体盘' });
+    const btn = screen.getByRole('button', { name: '实体盘' });
     expect(btn).toBeDisabled();
     expect(btn).toHaveAttribute('title', expect.stringContaining('13 路'));
   });
@@ -274,6 +285,8 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
 it('keeps archive load, pass and start silent while explicit forward/backward/jump replay sounds once', async () => {
   baipuLoad.mockResolvedValue({ board_size: 19, steps: [...STEPS, step({ kind: 'pass', color: 'B' })], meta: {} });
   renderPage(); await waitLoaded();
+  expect(play).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '回到开局' }));
   expect(play).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '下一手' }));
   expect(play).toHaveBeenCalledExactlyOnceWith('stone');

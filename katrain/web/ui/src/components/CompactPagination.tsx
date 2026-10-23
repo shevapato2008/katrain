@@ -6,11 +6,12 @@ interface Props {
   page: number;
   totalPages: number;
   disabled?: boolean;
+  showEdgeButtons?: boolean;
   onPageChange: (page: number) => void;
 }
 
 /** One bounded page input, shared by the kiosk and Galaxy libraries. */
-export default function CompactPagination({ page, totalPages, disabled = false, onPageChange }: Props) {
+export default function CompactPagination({ page, totalPages, disabled = false, showEdgeButtons = false, onPageChange }: Props) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<string | null>(null);
@@ -40,6 +41,9 @@ export default function CompactPagination({ page, totalPages, disabled = false, 
 
   return (
     <form className="compact-pagination" aria-label={t('kifu:pagination', '棋谱分页')} onSubmit={submit}>
+      {showEdgeButtons && <button type="button" aria-label={t('kifu:first_page', '第一页')} disabled={disabled || page <= 1} onClick={() => go(1)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14m13-13-6 6 6 6" /></svg>
+      </button>}
       <button type="button" aria-label={t('kifu:prev_page', '上一页')} disabled={disabled || page <= 1} onClick={() => go(page - 1)}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
       </button>
@@ -60,6 +64,9 @@ export default function CompactPagination({ page, totalPages, disabled = false, 
       <button type="button" aria-label={t('kifu:next_page', '下一页')} disabled={disabled || page >= max} onClick={() => go(page + 1)}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
       </button>
+      {showEdgeButtons && <button type="button" aria-label={t('kifu:last_page', '最后一页')} disabled={disabled || page >= max} onClick={() => go(max)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 6 6-6 6m13-13v14" /></svg>
+      </button>}
     </form>
   );
 }

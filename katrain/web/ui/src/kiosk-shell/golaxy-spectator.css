@@ -57,3 +57,45 @@
 .golaxy-spectator__sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 
 .golaxy-spectator__latest,.golaxy-spectator__clock-card { line-height:normal; }
+
+/* The public lobby watcher shares its board shell with Golaxy, but follows the
+   reviewed kiosk duel-card layout. Keep these rules scoped to this page. */
+.pvp-spectator {position:relative;}
+.pvp-spectator .kiosk-pagebar__back {min-width:136px;font-size:22px;}
+.pvp-spectator .kiosk-pagebar__back svg {width:22px;height:22px;}
+.pvp-spectator .golaxy-spectator__page-title {font-size:22px;}
+.pvp-spectator .golaxy-spectator__info,
+.pvp-spectator .kiosk-pagebar__status .golaxy-spectator__sync {font-size:18px;}
+.pvp-spectator .golaxy-spectator__panel {gap:10px;padding:12px;background:#182720;}
+.pvp-spectator .golaxy-spectator__watch-head {min-height:38px;gap:12px;font:18px var(--font-serif);}
+.pvp-spectator .golaxy-spectator__watch-head b {font-size:22px;font-weight:500;}
+.pvp-spectator .golaxy-spectator__watch-head>span:nth-child(2) {color:#bdd2c1;}
+.pvp-spectator .golaxy-spectator__watch-head .golaxy-spectator__sync {font-size:18px;font-weight:400;letter-spacing:0;border:0;border-radius:6px;background:#254e34;padding:5px 8px;}
+.pvp-spectator .golaxy-spectator__watch-head .golaxy-spectator__sync::before {display:none;}
+.pvp-spectator .golaxy-spectator__clocks {height:136px;flex:none;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));}
+.pvp-spectator .golaxy-spectator__clock-card {position:relative;display:flex;flex-direction:column;justify-content:space-between;min-width:0;height:136px;padding:10px 26px 12px 10px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#c1d0c4;}
+.pvp-spectator .golaxy-spectator__clock-card:last-child {padding:10px 10px 12px 27px;}
+.pvp-spectator .golaxy-spectator__clock-card.is-turn {border:0;box-shadow:none;color:#f2faf1;}
+.pvp-spectator__card-surface {position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 4px 3px #0005);pointer-events:none;}
+.pvp-spectator .golaxy-spectator__clock-card>*:not(.pvp-spectator__card-surface) {position:relative;z-index:1;}
+.pvp-spectator .golaxy-spectator__clock-name {gap:6px;font:18px var(--font-serif);white-space:nowrap;}
+.pvp-spectator .golaxy-spectator__clock-name b {font-size:22px;font-weight:500;}
+.pvp-spectator .golaxy-spectator__clock-name>span {font-size:18px;color:#aec8b5;}
+.pvp-spectator .golaxy-spectator__stone {width:22px;height:22px;background:linear-gradient(#48494a,#020303);box-shadow:0 2px 4px #0006;}
+.pvp-spectator .golaxy-spectator__stone--white {background:linear-gradient(#fff,#c7c8c3);}
+.pvp-spectator .golaxy-spectator__clock-card strong {margin:0;font-size:28px;font-weight:500;line-height:1;}
+.pvp-spectator .golaxy-spectator__clock-card.is-turn strong {color:#f2faf1;}
+.pvp-spectator .golaxy-spectator__clock-card small {font:18px var(--font-serif);color:#b5cdb9;}
+.pvp-spectator .golaxy-spectator__clock-card.is-turn small {color:#91e5a7;}
+.pvp-spectator .golaxy-spectator__latest {min-height:78px;flex:none;padding:9px 12px;border-radius:10px;background:#312e23;}
+.pvp-spectator .golaxy-spectator__latest b {font:22px var(--font-serif);}
+.pvp-spectator .golaxy-spectator__latest small {font:18px var(--font-serif);color:#d2c3a3;}
+.pvp-spectator .golaxy-spectator__members {display:flex;flex:none;align-items:center;justify-content:space-between;min-height:52px;overflow:visible;}
+.pvp-spectator .golaxy-spectator__note {font:18px var(--font-serif);}
+.pvp-spectator__help {display:grid;place-items:center;width:44px;height:44px;min-width:44px;border:1px solid #61856b;border-radius:50%;background:linear-gradient(#345c43,#173123);box-shadow:inset 0 2px 2px #ffffff2b,0 4px 5px #0007;}
+.pvp-spectator__help svg {width:25px;height:25px;fill:none;stroke:#9ee0af;stroke-width:2;stroke-linecap:round;}
+.pvp-spectator__dialog-backdrop {position:absolute;inset:0;z-index:50;display:grid;place-items:center;background:#0009;}
+.pvp-spectator__dialog {width:min(420px,calc(100% - 40px));padding:24px;border:1px solid #6fa57c;border-radius:14px;background:#1d3025;box-shadow:0 12px 30px #000b;color:var(--text);}
+.pvp-spectator__dialog h2 {margin:0 0 12px;font:24px "SmartBox Serif",var(--kiosk-cjk-font,"SmartBox Kai"),"SmartBox Kai",serif;}
+.pvp-spectator__dialog p {font:18px/1.55 "SmartBox Serif",var(--kiosk-cjk-font,"SmartBox Kai"),"SmartBox Kai",serif;}
+.pvp-spectator__dialog button {float:right;min-width:110px;min-height:44px;border:1px solid #8fd5a0;border-radius:10px;background:linear-gradient(#437c57,#22563a);box-shadow:inset 0 2px 1px #ffffff3b,0 4px 3px #0007;}

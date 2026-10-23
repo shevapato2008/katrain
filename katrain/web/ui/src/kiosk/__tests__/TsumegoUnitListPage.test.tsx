@@ -24,7 +24,7 @@ const { mockNavigate, mockRefresh, progressMap, progressFlags } = vi.hoisted(() 
   mockNavigate: vi.fn(),
   mockRefresh: vi.fn(),
   progressMap: {} as Record<string, TsumegoProgressEntry>,
-  progressFlags: { failed: false },
+  progressFlags: { failed: false, loading: false },
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -43,6 +43,7 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
     }),
     categoryProgress: () => ({ completed: 0, total: 0 }),
     serverLoadFailed: progressFlags.failed,
+    progressLoading: progressFlags.loading,
     refresh: mockRefresh,
   }),
 }));
@@ -70,6 +71,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   for (const k of Object.keys(progressMap)) delete progressMap[k];
   progressFlags.failed = false;
+  progressFlags.loading = false;
   sessionStorage.clear();
   localStorage.clear();
   __resetKioskActivityStorageForTests();
@@ -428,9 +430,32 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
       // 重读回来了:Provider 合并进度、清掉失败标志、重渲(Provider 那一半在 TsumegoProgressContext.test.tsx 里守)。
       progressMap['q3'] = { completed: false, attempts: 1 };
       progressFlags.failed = false;
+      progressFlags.loading = false;
       view.rerender(wrongTree());
       await waitFor(() => expect(cells()).toHaveLength(1));
       expect(screen.queryByTestId('problems-wrong-unknown')).toBeNull();
     });
   });
+});
+
+it('waits for account history before showing an empty wrong book', async () => {
+  seedSequence();
+  progressFlags.loading = true;
+  const view = renderWrong();
+  expect(screen.getByRole('status')).toHaveTextContent('正在读取做题记录…');
+  expect(screen.queryByTestId('problems-no-wrong')).toBeNull();
+  progressFlags.loading = false;
+  progressMap.q3 = { completed: false, attempts: 2 };
+  view.rerender(wrongTree());
+  await waitFor(() => expect(cells()).toHaveLength(1));
+  expect(cells()[0]).toHaveAccessibleName('第 4 题，做错过，2 次');
+});
+
+it('shows a dash for untouched problems and labels unresolved attempted ones as wrong', async () => {
+  seedSequence();
+  progressMap.q1 = { completed: false, attempts: 2 };
+  renderPage();
+  await waitFor(() => expect(cells()).toHaveLength(20));
+  expect(cells()[0].querySelector('em')).toHaveTextContent('—');
+  expect(cells()[1]).toHaveAccessibleName('第 2 题，做错过，2 次');
 });

@@ -12,6 +12,7 @@ import { kioskTheme } from '../theme';
 const navigate = vi.fn();
 const refresh = vi.fn().mockResolvedValue(undefined);
 const retry = vi.fn().mockResolvedValue(undefined);
+const create = vi.fn();
 const getReport = vi.fn();
 const getMoves = vi.fn();
 const getGame = vi.fn();
@@ -39,6 +40,7 @@ vi.mock('../../api/reportApi', async (original) => ({
     get: (...args: unknown[]) => getReport(...args),
     getMoves: (...args: unknown[]) => getMoves(...args),
     retry: (...args: unknown[]) => retry(...args),
+    create: (...args: unknown[]) => create(...args),
   },
 }));
 vi.mock('../../api/userGamesApi', async (original) => ({
@@ -154,8 +156,9 @@ function pickTab(name: string) {
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => { resolve = done; });
-  return { promise, resolve };
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((done, fail) => { resolve = done; reject = fail; });
+  return { promise, resolve, reject };
 }
 
 function renderPage(taskId = '42') {
@@ -189,6 +192,7 @@ describe('屏 20 · 题头与状态', () => {
     boardProps = {};
     realHook.enabled = false;
     retry.mockReset().mockResolvedValue(undefined);
+    create.mockReset();
     getReport.mockReset();
     getMoves.mockReset();
     getGame.mockReset();
@@ -204,6 +208,7 @@ describe('屏 20 · 题头与状态', () => {
     expect(screen.getByTestId('live-board')).toHaveAttribute('data-board-size', '19');
     expect(screen.getByTestId('report-detail-status')).toHaveTextContent('生成中 · 深度报告');
     expect(within(screen.getByTestId('report-detail-ai')).getByTestId('report-detail-status')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     expect([...screen.getByTestId('report-detail-metadata').querySelectorAll('span')].map(span => span.textContent))
       .toEqual(['—', '中国规则', '贴目 7.5']);
     // 页控条的标题走的是复盘列表那套说法(同一局在两屏之间不许改口)
@@ -491,7 +496,7 @@ describe('屏 20 · 盘上的交互', () => {
   // 2026-09-02:这一排的名字、顺序、图标全部按 galaxy 的 `LiveMatchDisplayControls` 对齐
   // (Fan:「icon 还有名称也和 galaxy 界面中的不一致,这是不能接受的」)。
   // **顺序也是判据** —— 两端左起第一颗都得是「试下」,不然「一眼对应上」这句话不成立。
-  it('动作保持试下、领地、支招、实体棋盘，显示保持手数、坐标，领地无数据时禁用', () => {
+  it('动作保持试下、领地、支招、实体盘，显示保持手数、坐标，领地无数据时禁用', () => {
     detail = { ...baseDetail(), analysisByMove: { 2: { ...analysis, ownership: null } } };
     renderPage();
     const toggles = within(screen.getByTestId('report-detail-toggles')).getAllByRole('button');
@@ -499,9 +504,9 @@ describe('屏 20 · 盘上的交互', () => {
     ['手数', '坐标'].forEach((name, index) => expect(toggles[index]).toHaveAccessibleName(name));
     const actions = within(screen.getByTestId('report-detail-actions')).getAllByRole('button');
     expect(actions).toHaveLength(4);
-    ['试下', '领地', '支招', '实体棋盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
+    ['试下', '领地', '支招', '实体盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
     expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '实体棋盘' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '实体盘' })).toBeEnabled();
   });
 
   it('坐标仅切换外壳文字，刻度带和盘的参数保留', () => {
@@ -534,7 +539,7 @@ describe('屏 20 · 盘上的交互', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog');
-    for (const text of ['测试赛事', '9D', 'chinese', '7.5', '生成中', 'import', '日期', '结果']) expect(dialog).toHaveTextContent(text);
+    for (const text of ['测试赛事', '9D', '中国规则', '7.5', '生成中', 'import', '日期', '结果']) expect(dialog).toHaveTextContent(text);
   });
 
   it('三个显示开关真的传到盘上', () => {
@@ -681,6 +686,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
     boardProps = {};
     realHook.enabled = false;
     retry.mockReset().mockResolvedValue(undefined);
+    create.mockReset();
   });
 
   afterEach(() => vi.useRealTimers());
@@ -725,7 +731,8 @@ describe('屏 20 · 翻手、出口与出错', () => {
     );
   });
 
-  it('「重算」在详情中可达，点了先刷新再重跑', async () => {
+  it('失败报告重算先刷新，再重试同一个任务', async () => {
+    detail = { ...baseDetail(), task: { ...task, status: 'failed' } };
     renderPage();
     openDetails();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
@@ -733,7 +740,66 @@ describe('屏 20 · 翻手、出口与出错', () => {
     expect(refresh).toHaveBeenCalled();
   });
 
+  it.each(['normal', 'deep'] as const)('已完成的 %s 报告重算创建新任务并打开它', async (reportType) => {
+    detail = { ...baseDetail(), task: { ...task, status: 'completed', report_type: reportType } };
+    create.mockResolvedValueOnce({ ...task, id: 99, status: 'pending' });
+    renderPage();
+    openDetails();
+    fireEvent.click(screen.getByRole('button', { name: '重算' }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/kiosk/report/99'));
+    expect(create).toHaveBeenCalledWith('token', { user_game_id: task.user_game_id, report_type: reportType, force: true });
+    expect(retry).not.toHaveBeenCalled();
+  });
+
+  it('新任务创建期间禁用重算，积分不足保留当前报告和错误', async () => {
+    detail = { ...baseDetail(), task: { ...task, status: 'completed' } };
+    const pending = deferred<ReportTaskSummary>();
+    create.mockReturnValueOnce(pending.promise);
+    renderPage();
+    openDetails();
+    fireEvent.click(screen.getByRole('button', { name: '重算' }));
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+    openDetails();
+    expect(screen.getByRole('button', { name: /正在重试/ })).toBeDisabled();
+    await act(async () => pending.reject(Object.assign(new Error('credits'), {
+      status: 402, body: JSON.stringify({ detail: { code: 'insufficient_credits' } }),
+    })));
+    expect(await screen.findByText('重算没成 · 积分不足')).toBeVisible();
+    expect(screen.getByTestId('live-board')).toBeVisible();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(retry).not.toHaveBeenCalled();
+  });
+
+  it.each(['pending', 'running'] as const)('排队或运行中的 %s 任务不重复创建', (status) => {
+    detail = { ...baseDetail(), task: { ...task, status } };
+    renderPage();
+    openDetails();
+    expect(screen.getByRole('button', { name: '重算' })).toBeDisabled();
+    expect(create).not.toHaveBeenCalled();
+    expect(retry).not.toHaveBeenCalled();
+  });
+
+  it('切换报告后忽略旧报告创建完成的导航', async () => {
+    detail = { ...baseDetail(), task: { ...task, status: 'completed' } };
+    const pending = deferred<ReportTaskSummary>();
+    create.mockReturnValueOnce(pending.promise);
+    render(
+      <ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/report/42']}>
+        <Link to="/kiosk/report/43">change report</Link>
+        <Routes><Route path="/kiosk/report/:taskId" element={<ReportDetailPage />} /></Routes>
+      </MemoryRouter></ThemeProvider>,
+    );
+    openDetails();
+    fireEvent.click(screen.getByRole('button', { name: '重算' }));
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+    detail = { ...baseDetail(), task: { ...task, id: 43 } };
+    fireEvent.click(screen.getByRole('link', { name: 'change report' }));
+    await act(async () => pending.resolve({ ...task, id: 99 }));
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('重算失败时话说出来(不印原文),盘和数据还在;重试加载能把那条错清掉', async () => {
+    detail = { ...baseDetail(), task: { ...task, status: 'failed' } };
     retry.mockRejectedValueOnce(Object.assign(new Error('Request failed 503: {"detail":"x"}'), { status: 503 }));
     renderPage();
     openDetails();
@@ -799,6 +865,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
   });
 
   it('换一份报告时,上一份的变化、试下和错都不许跟过来', async () => {
+    detail = { ...baseDetail(), task: { ...task, status: 'failed' } };
     retry.mockRejectedValueOnce(new Error('旧任务重试失败'));
     render(
       <ThemeProvider theme={kioskTheme}>
@@ -833,6 +900,7 @@ describe('屏 20 · 接真钩子的轮询', () => {
     detail = baseDetail();
     realHook.enabled = true;
     retry.mockReset().mockResolvedValue(undefined);
+    create.mockReset();
     getReport.mockReset();
     getMoves.mockReset().mockResolvedValue([]);
     getGame.mockReset().mockResolvedValue(game);
@@ -956,10 +1024,10 @@ describe('屏 20 · 让子局的下标要对得上', () => {
 });
 
 
-it('个人报告可通过实体棋盘进入现有摆谱流程并返回报告', () => {
+it('个人报告可通过实体盘进入现有摆谱流程并返回报告', () => {
   detail = baseDetail(); renderPage();
   expect(screen.queryByRole('button', { name: '清空' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '实体棋盘' }));
+  fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
   expect(navigate).toHaveBeenCalledWith('/kiosk/baipu/session/user_game_game%20id%2F%E6%B1%89%E5%AD%97', {
     state: expect.objectContaining({ sgf: game.sgf_content, backTo: '/kiosk/report/42', backLabel: '报告' }),
   });

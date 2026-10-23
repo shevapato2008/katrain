@@ -1094,6 +1094,25 @@ describe('GamePage', () => {
       } finally { del.mockRestore(); }
     });
 
+    it('确认弃局走删除会话，不走认输；删除失败时仍留在本局', async () => {
+      mockGameState = local({ local_confirmation: { enabled: true, status: 'idle' } });
+      const del = vi.spyOn(API, 'deleteSession').mockRejectedValueOnce(new ApiError(500, 'offline')).mockResolvedValue(undefined);
+      try {
+        renderPage();
+        fireEvent.click(screen.getAllByRole('button', { name: '弃局' })[0]);
+        expect(screen.getByRole('dialog')).toHaveTextContent('不会出现在复盘页面');
+        fireEvent.click(screen.getByRole('button', { name: '确认弃局' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent('当前对局仍然保留');
+        expect(screen.queryByText('PLAY_PAGE')).not.toBeInTheDocument();
+        expect(clearActiveSession).not.toHaveBeenCalledWith('game');
+        fireEvent.click(screen.getByRole('button', { name: '确认弃局' }));
+        expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
+        expect(del).toHaveBeenCalledTimes(2);
+        expect(del).toHaveBeenCalledWith('test-session');
+        expect(mockHandleAction).not.toHaveBeenCalledWith('resign', expect.anything());
+      } finally { del.mockRestore(); }
+    });
+
     // R1 ruling: 退出不保存 is pvp_local's ONLY exit, so a failed DELETE must not trap the
     // user either - stranding them cleans up nothing (the session is equally un-deleted
     // either way). The delete is still attempted best-effort; the user just isn't blocked

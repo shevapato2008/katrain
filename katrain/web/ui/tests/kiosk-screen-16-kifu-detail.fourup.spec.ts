@@ -1,14 +1,8 @@
 import { test } from '@playwright/test';
-import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
+import { freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
-
-const SHOTS = resolve(process.cwd(),
-  '../../../../smartbox-software/superpowers/shared/kiosk-shell/sample-go/shots');
-const OUT = resolve(process.cwd(),
-  '../../../superpowers/tracks/kiosk-go-shell-align/visual/16-kifu-detail/1024x600');
 
 /**
  * 屏 16 棋谱详情(L2 布局 A)。
@@ -68,27 +62,13 @@ test('四图:棋谱详情 ←→ sample-go/shots/16-kifu-detail.png', async ({ p
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({
     json: { board_size: 19, steps: STEPS, meta: {} },
   }));
-  await page.goto('/kiosk/kifu/7');
+  await page.goto('/kiosk/kifu/7/replay');
   await page.waitForSelector('[data-testid="kifu-detail-actions"] button');
   // 稿子停在第 13 手(C7),这里走到最后一手 —— 正好也是第 13 手。
-  await page.getByRole('button', { name: '跳到最后' }).click();
-  await page.waitForSelector('.mvrows .mv.now');
+  await page.getByRole('button', { name: '上一手', exact: true }).click();
+  await page.getByRole('button', { name: '跳到最后', exact: true }).click();
+  await page.waitForSelector('.kifu-replay-move-grid button[aria-pressed="true"]');
   await page.waitForLoadState('networkidle');
 
-  const r = await captureFourUp({
-    page,
-    referencePng: resolve(SHOTS, '16-kifu-detail.png'),
-    outDir: OUT,
-    slug: '16-kifu-detail',
-    referenceCaption:
-      '参考:sample-go/shots/16-kifu-detail.png · L2 布局 A(盘 516 + 16 + 右栏 460)· '
-      + '照 galaxy 的棋谱库补齐 · 稿子标的是「后端已有 · 盒内界面未接」',
-    implementationCaption:
-      '实现:/kiosk/kifu/:kifuId @1024×600 · 时钟冻 16:40 · 谱逐手照稿子前 13 手(fixture) · '
-      + '**接上了**,所以稿子那枚「界面未接」蓝标不成立、没搬 · '
-      + '**两个动作键不是三个**:「送去复盘」对棋谱库不存在(reports 收 user_game_id,'
-      + '服务端拿它查 UserGame;galaxy 棋谱库也只有「在研究中打开」)—— 画个必然报错的键更坏 · '
-      + '题头补了段位(库里真有的列) · 总手数写的是这份 fixture 真有的 13 手,不是稿子那个 241',
-  });
-  console.log(`[fourup 16-kifu-detail] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
+  await page.screenshot({ path: '/tmp/kiosk-16-replay.png' });
 });

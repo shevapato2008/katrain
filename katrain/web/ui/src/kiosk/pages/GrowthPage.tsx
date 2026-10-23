@@ -72,6 +72,17 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
 /** 净胜 / 净负多少盘升降一档。与 `formatNetScoreValueText`(ladder copy)的 ±3 同源。 */
 const NET_STEP = 3;
 
+type GrowthTab = 'overview' | 'diagnosis' | 'opponents';
+
+const GrowthHelp = ({ label, onClick }: { label: string; onClick: () => void }) => (
+  <button type="button" className="growth-help" aria-label={label} onClick={onClick}>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v6m0-10h.01" />
+    </svg>
+  </button>
+);
+
 const GrowthPage = () => {
   const { t } = useTranslation();
   const { token, user } = useAuth();
@@ -82,6 +93,8 @@ const GrowthPage = () => {
   const identity = user?.uuid ?? null;
   const ladder = useAiLadderStatus(token ?? undefined, true, identity);
   const { progress, serverLoadFailed } = useTsumegoProgress();
+  const [tab, setTab] = useState<GrowthTab>('overview');
+  const [help, setHelp] = useState<string | null>(null);
   const [summary, setSummary] = useState<GrowthSummary | null>(null);
   const [summaryFailed, setSummaryFailed] = useState(false);
 
@@ -188,14 +201,18 @@ const GrowthPage = () => {
     { v: solved === null ? dash : String(solved), k: t('growth:stat_solved', '累计已解题') },
     { v: num(summary?.ranked_total), k: t('growth:stat_ranked', '升降级局 · 累计') },
   ];
+  const trend = summary ? trendPoints(summary) : null;
 
   return (
-    <div className="kiosk-layout-l1" data-testid="growth-page">
+    <div className="kiosk-layout-l1 growth-page" data-testid="growth-page">
       {/* 左栏 296:段位。这一栏**不是实体盘镜像栏** —— 这一屏和盘没关系。 */}
       <div className="panel gsec" data-testid="growth-rank">
         <h3>
           {t('growth:rank_title', '盒内段位')}
-          <em>Rank</em>
+          <GrowthHelp
+            label={t('growth:rank_help_label', '盒内段位说明')}
+            onClick={() => setHelp(t('growth:rank_help', '盒内段位由升降级对弈决定。净胜分达到正 3 升一档，达到负 3 降一档。'))}
+          />
         </h3>
         <div className="grank" data-testid="growth-rank-value">{rankText}</div>
 
@@ -212,15 +229,23 @@ const GrowthPage = () => {
 
         {/* 近 30 天档位走势(共享规范 §5 的左栏顺序:大数 → 进度 → 走势 → 两格)。
             老云端不回 `rung_trend` 时整块不出现 —— 不画,不是画一条空轴。 */}
-        {summary && trendPoints(summary) && (
+        {summary && trend && trend.length >= 2 && (
           <RungTrend
-            points={trendPoints(summary)!}
+            points={trend}
             days={summary.window_days}
             placed={placement?.phase === 'placed'}
           />
         )}
+        {trend && trend.length < 2 && <>
+          <h3 className="gsec__h" data-testid="growth-trend-block">{t('growth:trend_title', '近 30 天走势')}</h3>
+          <p className="setnote gtrend-note" data-testid="growth-trend-empty">
+            {placement?.phase === 'placed'
+              ? t('growth:trend_short', '升降级对局不足两天，暂不连线')
+              : t('growth:trend_unplaced_short', '定级完成后开始记录档位走势')}
+          </p>
+        </>}
 
-        <h3 className="gsec__h">{t('growth:rules_title', '升降的规矩')}</h3>
+        <h3 className="gsec__h growth-rules-title">{t('growth:rules_title', '升降的规矩')}</h3>
         <div className="grules">
           {LADDER_RULES(t).map((rule, i) => (
             <div className="grule" key={rule}>
@@ -241,50 +266,84 @@ const GrowthPage = () => {
         />
       </div>
 
-      {/* 右栏 680:数据条 → 权威口径 → 两块诊断 */}
+      {/* 右栏 680:三个标签共用一块内容区；数据请求仍各自独立。 */}
       <div className="gcol">
-        <div className="kiosk-stats" data-testid="growth-stats">
-          {stats.map((s) => (
-            <div className="kiosk-stat" key={s.k}>
-              <div className={s.good ? 'kiosk-stat__v is-good' : 'kiosk-stat__v'}>{s.v}</div>
-              <div className="kiosk-stat__k">{s.k}</div>
-            </div>
+        <div className="growth-tabs" role="tablist" aria-label={t('growth:tabs_label', '成长记录')}>
+          {([
+            ['overview', t('growth:tab_overview', '概览')],
+            ['diagnosis', t('growth:tab_diagnosis', '能力诊断')],
+            ['opponents', t('growth:tab_opponents', '对手')],
+          ] as const).map(([id, label]) => (
+            <button
+              key={id}
+              id={`growth-tab-${id}`}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              aria-controls={tab === id ? `growth-panel-${id}` : undefined}
+              tabIndex={tab === id ? 0 : -1}
+              onClick={() => setTab(id)}
+              onKeyDown={(event) => {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                const tabs: GrowthTab[] = ['overview', 'diagnosis', 'opponents'];
+                const next = tabs[(tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % tabs.length];
+                setTab(next);
+                document.getElementById(`growth-tab-${next}`)?.focus();
+              }}
+            >
+              {label}
+            </button>
           ))}
         </div>
-
-        {/* 这一条**只在有话要说时出现**。稿子那块道歉式的大空态已经不成立(见文件头),
-            剩下真正要交代的只有两件:数没取到、或者这几个数出自本机缓存。 */}
-        {summaryFailed && (
-          <p className="setnote" data-testid="growth-summary-error">
-            {t('growth:summary_failed', '这几个数没取到 —— 不是「一局没下」。稍后再看一次。')}
-          </p>
-        )}
-        {summary?.authority === 'local_cache' && (
-          <p className="setnote" data-testid="growth-local-note">
-            {t('growth:local_note_a', '这几个数是')}
-            <b>{t('growth:local_note_b', '本机记录')}</b>
-            {t('growth:local_note_c', '。账在云端,盒子上这一份可能少几局。')}
-          </p>
-        )}
-        {/* 胜率的分母比「近 30 天对局」小的时候,差额要说出来 —— 否则 10 局里只算了 2 局的
-            50% 和 10 局全算的 50% 在屏上长得一模一样。 */}
-        {cell && cell.scope === 'all' && cell.unknownGames > 0 && (
-          <p className="setnote" data-testid="growth-unknown-seat">
-            {t('growth:unknown_seat_a', '有 ')}
-            <b>{cell.unknownGames}</b>
-            {t('growth:unknown_seat_b', ' 局没算进胜率：面对面的局，以及没记下你执黑还是执白的局。')}
-          </p>
-        )}
-
-        {/* 近一年练棋日历(Fan 2026-09-22):数据条之下、诊断之上,占整栏宽 —— 左栏放不下一年 53 列。 */}
-        <ActivityCalendar activity={activity} failed={activityFailed} />
-
-        <div className="gdiag">
+        {tab === 'overview' && <section className="growth-tab-content" id="growth-panel-overview" role="tabpanel" aria-labelledby="growth-tab-overview">
+          <div className="kiosk-stats" data-testid="growth-stats">
+            {stats.map((s) => (
+              <div className="kiosk-stat" key={s.k}>
+                <div className={s.good ? 'kiosk-stat__v is-good' : 'kiosk-stat__v'}>{s.v}</div>
+                <div className="kiosk-stat__k">{s.k}</div>
+              </div>
+            ))}
+          </div>
+          <div className="growth-overview-notes">
+            {summaryFailed && <p className="setnote" data-testid="growth-summary-error">
+              {t('growth:summary_failed', '这几个数没取到 —— 不是「一局没下」。稍后再看一次。')}
+            </p>}
+            {summary?.authority === 'local_cache' && <p className="setnote" data-testid="growth-local-note">
+              {t('growth:local_note_short', '本机记录 · 可能少几局')}
+            </p>}
+            {cell && cell.scope === 'all' && cell.unknownGames > 0 && <p className="setnote" data-testid="growth-unknown-seat">
+              <b>{cell.unknownGames}</b>
+              {' '}{t('growth:unknown_seat_short', '局未计入胜率')}
+              <GrowthHelp
+                label={t('growth:winrate_help_label', '胜率口径说明')}
+                onClick={() => setHelp(t('growth:unknown_seat_b', '面对面的局，以及没记下你执黑还是执白的局，没有计入近 30 天胜率。'))}
+              />
+            </p>}
+          </div>
+          <ActivityCalendar activity={activity} failed={activityFailed} />
+        </section>}
+        {tab === 'diagnosis' && <section className="growth-tab-content growth-tab-content--diagnosis" id="growth-panel-diagnosis" role="tabpanel" aria-labelledby="growth-tab-diagnosis">
           <DiagnosisPanel diag={diag} failed={diagFailed} />
-
+        </section>}
+        {tab === 'opponents' && <section className="growth-tab-content growth-tab-content--opponents" id="growth-panel-opponents" role="tabpanel" aria-labelledby="growth-tab-opponents">
           <div className="panel gsec" data-testid="growth-by-rung">
-            <h3>{t('growth:rung_title', '按对手强度')}</h3>
-            {summary && summary.by_opponent_rung.length > 0 ? (
+            <h3>{t('growth:rung_title', '按对手强度')}
+              <GrowthHelp
+                label={t('growth:rung_help_label', '按对手强度说明')}
+                onClick={() => setHelp(t('growth:rung_help', '这里只列已计入的升降级对局，按对手当时的段位分组。开局设置里的强度调的是对手，不是你的段位。'))}
+              />
+            </h3>
+            {summary?.authority === 'local_cache' && summary.by_opponent_rung.length > 0 && (
+              <p className="growth-opponents-local" data-testid="growth-opponents-local">
+                {t('growth:rung_local', '本机记录；云端可能还有几局。')}
+              </p>
+            )}
+            {summaryFailed ? <div className="empty" data-testid="growth-rung-error">
+              <h4>{t('growth:rung_failed', '对手战绩没读到')}</h4>
+              <p>{t('growth:rung_failed_p', '稍后再看一次。')}</p>
+            </div> : summary === null ? <div className="empty" data-testid="growth-rung-loading">
+              <h4>{t('growth:rung_loading', '正在读对手战绩…')}</h4>
+            </div> : summary.by_opponent_rung.length > 0 ? (
               <div className="grungs">
                 {summary.by_opponent_rung.map((r) => (
                   <div className="grung" key={r.rung}>
@@ -297,6 +356,11 @@ const GrowthPage = () => {
                   </div>
                 ))}
               </div>
+            ) : summary.authority === 'local_cache' ? (
+              <div className="empty" data-testid="growth-rung-local-empty">
+                <h4>{t('growth:rung_local_empty_h', '本机暂无战绩')}</h4>
+                <p>{t('growth:rung_local_empty_p', '当前只读到本机记录；云端可能还有升降级对局。联网后再看。')}</p>
+              </div>
             ) : (
               <div className="empty">
                 <h4>{t('growth:rung_empty_h', '还没有战绩')}</h4>
@@ -305,8 +369,12 @@ const GrowthPage = () => {
               </div>
             )}
           </div>
-        </div>
+        </section>}
       </div>
+      {help && <div className="growth-help-popover" role="dialog" aria-label={t('growth:help_title', '说明')}>
+        <p>{help}</p>
+        <button type="button" onClick={() => setHelp(null)}>{t('growth:help_close', '知道了')}</button>
+      </div>}
     </div>
   );
 };

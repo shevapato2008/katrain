@@ -504,3 +504,18 @@ describe('useTsumegoProgress without a Provider (safe default)', () => {
     expect(result.current.unitProgress(['a', 'b'])).toEqual({ completed: 1, total: 2 });
   });
 });
+
+
+it('exposes pending account history until loading succeeds, including refresh', async () => {
+  let resolve!: (value: { progress: TsumegoProgressMap; degraded: boolean }) => void;
+  mockGetProgress.mockReturnValue(new Promise(r => { resolve = r; }));
+  const { result } = renderHook(() => useTsumegoProgress(), { wrapper: TsumegoProgressProvider });
+  expect(result.current.progressLoading).toBe(true);
+  await act(async () => resolve({ progress: {}, degraded: false }));
+  expect(result.current.progressLoading).toBe(false);
+  mockGetProgress.mockRejectedValue(new Error('offline'));
+  act(() => result.current.refresh());
+  expect(result.current.progressLoading).toBe(true);
+  await waitFor(() => expect(result.current.serverLoadFailed).toBe(true));
+  expect(result.current.progressLoading).toBe(false);
+});

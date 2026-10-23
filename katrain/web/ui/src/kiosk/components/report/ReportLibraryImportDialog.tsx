@@ -123,7 +123,9 @@ export default function ReportLibraryImportDialog({
         },
       }}
     >
-      <DialogTitle sx={{ flexShrink: 0, py: 1.5 }}>{t('report:import_library', '从棋谱库导入')}</DialogTitle>
+      <DialogTitle sx={{ flexShrink: 0, minHeight: 80, boxSizing: 'border-box', py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+        {t('report:import_library', '从棋谱库导入')}
+      </DialogTitle>
       <DialogContent
         data-testid="report-library-import-content"
         dividers
@@ -205,16 +207,24 @@ export default function ReportLibraryImportDialog({
                       whiteSpace: 'normal',
                       overflowWrap: 'anywhere',
                       px: 1.5,
+                      // Match the approved screen 15 library cards, including the selected surface.
+                      backgroundImage: 'radial-gradient(ellipse 90% 70% at 50% -8%,#ffffff24,transparent 75%),linear-gradient(180deg,transparent 55%,#00000020)',
+                      boxShadow: 'inset 0 1px 0 #ffffff38,inset 0 -2px 1px #0b1d1280,0 3px 0 #0a1a10,0 5px 8px #0006',
+                      '&:active': {
+                        boxShadow: 'inset 0 2px 5px #08160f,0 1px 0 #496650',
+                        transform: 'translateY(1px)',
+                      },
+                      '&.Mui-disabled': { backgroundImage: 'none', boxShadow: 'none' },
                     }}
                   >
                     <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 1, width: '100%', minWidth: 0 }}>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography noWrap variant="body2" sx={{ fontWeight: 600 }}>{title}</Typography>
-                        <Typography noWrap variant="caption" color="text.secondary">
+                        <Typography noWrap variant="body2" sx={{ fontWeight: 600, color: selected ? '#10251a' : undefined }}>{title}</Typography>
+                        <Typography noWrap variant="caption" sx={{ color: selected ? '#254733' : 'text.secondary' }}>
                           {black} {item.display_black_rank || ''} · {white} {item.display_white_rank || ''}
                         </Typography>
                       </Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right', whiteSpace: 'normal' }}>
+                      <Typography variant="caption" sx={{ color: selected ? '#254733' : 'text.secondary', textAlign: 'right', whiteSpace: 'normal' }}>
                         {item.date_played || '—'} · {item.move_count} {t('report:moves_unit', '手')}
                       </Typography>
                     </Box>

@@ -1,0 +1,68 @@
+/* Screen 17 keeps the physical-board contract and 516px board geometry. */
+.baipu-layout .kiosk-rail { min-height:0; gap:8px; height:516px; }
+.baipu-layout .kiosk-board__ruler { font-family:var(--font-mono); font-size:18px; font-weight:400; letter-spacing:0; }
+.baipu-layout .kiosk-pagebar { height:58px; gap:8px; }
+.baipu-layout .kiosk-pagebar__back { height:48px; padding:0 10px; font-size:22px; border-radius:13px; }
+.baipu-layout .kiosk-pagebar__title { min-width:0; font-size:22px; line-height:1.2; }
+.baipu-layout .kiosk-pagebar__sub { display:block; margin:3px 0 0; font-size:18px; font-style:normal; white-space:nowrap; }
+.baipu-layout .kiosk-pagebar__iconbtn { width:48px; height:48px; flex:none; border-radius:13px; }
+.baipu-layout .kiosk-pagebar__iconbtn svg,.baipu-layout .kiosk-pagebar__back svg { width:22px; height:22px; }
+.baipu-layout .kiosk-pagebar__back,.baipu-layout .kiosk-pagebar__iconbtn,.baipu-layout .kiosk-actions button { border:1px solid #56745e; background:linear-gradient(#354d3e,#233b2c 65%,#1a2e23); box-shadow:inset 0 1px #6c8a73,0 3px 0 #0c1c12,0 4px 7px #0004; }
+.baipu-players { display:flex; gap:8px; flex:none; }
+.baipu-players:empty { display:none; }
+.baipu-players .pcard { flex:1; min-width:0; height:76px; padding:8px 12px; gap:10px; border-color:#3d5848; border-radius:12px; background:linear-gradient(#24372c,#17271e); }
+.baipu-players .pcard.turn { border-color:#6dca8a; background:linear-gradient(#2b5940,#1c3e2b); }
+.baipu-layout .pcard h4 { font-size:22px; line-height:1.2; font-weight:400; }
+.baipu-layout .pcard p { font-size:18px; line-height:1.35; color:#c0d0c4; }
+.baipu-layout .disc { width:28px; height:28px; }
+.baipu-next { display:flex; align-items:center; flex:none; gap:8px; min-height:58px; padding:8px 12px; border:1px solid #4e7859; border-radius:12px; background:#1c3327; }
+.baipu-next strong { font-size:22px; font-weight:400; white-space:nowrap; }
+.baipu-next>span:last-child { margin-left:auto; color:#c0d0c4; font-size:18px; white-space:nowrap; }
+.baipu-layout .kiosk-rail>.pcard { height:auto; min-height:88px; padding:8px 12px; gap:8px; }
+.baipu-layout .kiosk-rail>.pcard>div:not(.clock) { flex:1; }
+.baipu-layout .kiosk-rail>.pcard h4,.baipu-layout .kiosk-rail>.pcard p { white-space:normal; overflow:visible; }
+.baipu-layout .kiosk-rail>.pcard .clock { display:none; }
+.baipu-layout .pcard.removal { border-color:#7098ef; background:#1d2b42; }
+.baipu-layout .pcard.failed { border-color:var(--bad); }
+.baipu-tabs { display:flex; flex:none; height:48px; padding:2px; gap:2px; border:1px solid #385245; border-radius:14px; background:#10231a; box-shadow:inset 0 2px 5px #0008; }
+.baipu-tabs button { flex:1; min-width:0; min-height:44px; border:0; border-radius:11px; color:#bfd0c3; background:transparent; font-family:var(--font-serif); font-size:22px; cursor:pointer; }
+.baipu-tabs button[aria-selected="true"] { color:#edf7ed; background:#2a513a radial-gradient(ellipse at top,#ffffff24,transparent 75%); box-shadow:inset 0 1px #ffffff38,inset 0 -2px 2px #0004,0 2px 3px #0006; }
+.baipu-tab-panel { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+.baipu-tab-panel[hidden] { display:none; }
+.baipu-layout .kiosk-fold { min-height:0; border-color:#3b5747; border-radius:12px; background:#18291f; }
+.baipu-layout .kiosk-fold__head { height:44px; min-height:44px; padding:0 10px; gap:6px; font-family:var(--font-serif); font-size:22px; letter-spacing:0; }
+.baipu-layout .kiosk-fold__head b { font-size:18px; font-weight:400; }
+.baipu-layout .kiosk-fold__head svg { width:18px; height:18px; }
+.baipu-layout .mvrows { grid-template-columns:44px 1fr 1fr; padding:2px 12px 8px; }
+.baipu-layout .mvrows span,.baipu-layout .mvrows .n { font-size:18px; line-height:32px; }
+.baipu-layout .mvrows .mv.now { background:#284e35; border-radius:6px; padding-left:8px; margin-left:-8px; }
+.baipu-layout .ledger { padding:4px 10px; overflow-y:auto; }
+.baipu-layout .lrow { min-height:30px; gap:6px; }
+.baipu-layout .lrow b,.baipu-layout .lrow i { font-size:18px; }
+.baipu-info { border:1px solid #3b5747; border-radius:12px; background:#18291f; padding:10px 12px; overflow:auto; }
+.baipu-info h3 { margin:0 0 8px; font-size:22px; font-weight:400; }
+.baipu-info p { margin:0 0 8px; font-size:18px; line-height:1.4; color:#bfd0c3; }
+.baipu-layout .kiosk-actions { gap:8px; flex:none; margin-top:0; padding-bottom:3px; }
+.baipu-layout .kiosk-actions button { height:48px; min-width:0; padding:0 3px; display:flex; flex-direction:row; align-items:center; justify-content:center; gap:6px; font-size:22px; white-space:nowrap; border-radius:13px; }
+.baipu-layout .kiosk-actions:has(button:nth-child(4)) { grid-auto-flow:row; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.baipu-layout .kiosk-actions svg { width:22px; height:22px; }
+.baipu-layout .kiosk-actions button[aria-pressed="true"] { background:linear-gradient(#3b7050,#254b34); border-color:#7ccc94; color:#edf7ed; }
+.baipu-layout .kiosk-actions button:disabled { box-shadow:none; background:#18271e; border-color:#344b3e; opacity:.4; }
+.baipu-layout button:focus-visible { outline:2px solid var(--accent); outline-offset:-3px; }
+.baipu-layout .kiosk-pagebar__back:active,.baipu-layout .kiosk-pagebar__iconbtn:active,.baipu-layout .kiosk-actions button:active:not(:disabled),.baipu-tabs button:active { box-shadow:inset 0 2px 5px #06120aaa; transform:translateY(1px); }
+/* Coordinates stay inside their 28px bands; text metrics must not grow the board tracks. */
+.baipu-layout .kiosk-board { grid-template-columns:28px minmax(0,1fr) 28px; grid-template-rows:28px minmax(0,1fr) 28px; }
+.baipu-layout .kiosk-board__ruler { min-width:0; min-height:0; line-height:1; }
+.baipu-dialog .MuiPaper-root { border:1px solid #52735d; border-radius:16px; background:#1b2b23; color:var(--text); }
+.baipu-dialog .MuiDialogTitle-root { font-family:var(--font-serif); font-size:28px; }
+.baipu-dialog .MuiTypography-root { font-family:var(--font-serif); }
+.baipu-dialog .MuiDialogContent-root .MuiTypography-root { font-size:22px; line-height:1.5; }
+.baipu-dialog .MuiDialogActions-root { padding:12px 24px 20px; gap:8px; }
+.baipu-dialog .MuiButton-root { min-height:48px; min-width:120px; font-family:var(--font-serif); font-size:22px; border-radius:12px; }
+.baipu-layout .kiosk-pagebar__sub,
+.baipu-layout .kiosk-fold__head b,
+.baipu-layout .lrow b,
+.baipu-layout .lrow i { font-family:var(--font-mono); }
+.baipu-layout .kiosk-fold__body.mvrows { flex:none; }
+/* A clipped scroll viewport ends on a complete 32px move row. */
+.baipu-layout .kiosk-fold__body.mvrows { padding:0 12px; }

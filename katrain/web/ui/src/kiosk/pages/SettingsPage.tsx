@@ -5,8 +5,7 @@ import { API, type EngineHealthResponse } from '../../api';
 import { useSettings } from '../../context/SettingsContext';
 import { useGeometry } from '../context/GeometryContext';
 import { useTranslation } from '../../hooks/useTranslation';
-import AccountSection from '../components/settings/AccountSection';
-import PlatformAccounts from '../components/settings/PlatformAccounts';
+import { useKioskTypography } from '../typography/KioskTypographyContext';
 import { Icon, type IconName } from '../shell/icons';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
@@ -63,10 +62,9 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
  * 上一版那条页控条(带返回 + `location.state.from`)是它还是 L2 时留下的。
  */
 
-type GroupKey = 'account' | 'board' | 'move' | 'sound' | 'language' | 'about';
+type GroupKey = 'board' | 'move' | 'sound' | 'language' | 'typography' | 'about';
 
 const GROUPS: readonly { key: GroupKey; zh: string; en: string; icon: IconName }[] = [
-  { key: 'account', zh: '账号与平台', en: 'Account', icon: 'user-circle' },
   { key: 'board', zh: '实体棋盘', en: 'Physical board', icon: 'camera' },
   { key: 'move', zh: '落子与提示', en: 'Move & hints', icon: 'hand-pointing' },
   // 稿子这一组叫「声音与报着」。**这里只写「声音」** —— 盒子上没有报着:
@@ -75,6 +73,7 @@ const GROUPS: readonly { key: GroupKey; zh: string; en: string; icon: IconName }
   // 「导航里写什么,右边那组的标题就是什么」)。
   { key: 'sound', zh: '声音', en: 'Sound', icon: 'speaker-high' },
   { key: 'language', zh: '语言', en: 'Language', icon: 'globe-hemisphere-west' },
+  { key: 'typography', zh: '字体与字号', en: 'Typography', icon: 'sliders-horizontal' },
   { key: 'about', zh: '关于', en: 'About', icon: 'info' },
 ];
 
@@ -103,6 +102,7 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language, setLanguage, languages } = useSettings();
+  const { preference: typography, setPreference: setTypography, saving: typographySaving, error: typographyError, retry: retryTypography } = useKioskTypography();
   const { status, loaded } = useGeometry();
   const [autoAdvance, setAutoAdvance] = useState(() => readAutoAdvance());
   const [active, setActive] = useState<GroupKey>(GROUPS[0].key);
@@ -184,6 +184,19 @@ const SettingsPage = () => {
   // 「还没问到」「问到了没连上」「这台盒子压根没有摄像头」是三件事,屏上是三句话。
   // `GeometryContext` 为前两件留了 `loaded`;第三件是 `/status` 404 ⇒ `phase='disabled'`。
   const noCamera = loaded && status.phase === 'disabled';
+  const cameraReady = loaded && status.capabilities.camera_ready === true;
+  const ledReady = loaded && status.capabilities.led_ready === true;
+  const canCalibrate = cameraReady && ledReady;
+  const disconnected = [
+    !noCamera && status.capabilities.camera_ready === false && '摄像头',
+    status.capabilities.led_ready === false && 'LED',
+  ].filter(Boolean).join('、');
+  const calibrationBlockers = [
+    noCamera && '这台盒子没有配摄像头',
+    disconnected && `请先连接${disconnected}`,
+    !noCamera && status.capabilities.camera_ready == null && '摄像头状态未确认',
+    status.capabilities.led_ready == null && 'LED 状态未确认',
+  ].filter(Boolean).join(' · ');
   const calibratedAt = !loaded
     ? '—'
     : noCamera
@@ -193,7 +206,7 @@ const SettingsPage = () => {
         : t('settings:not_calibrated', '还没标定');
 
   return (
-    <div className="kiosk-layout-l1" data-testid="settings-page">
+    <div className="kiosk-layout-l1 settings-page" data-testid="settings-page">
       <aside className="kiosk-console">
         <div className="kiosk-console__title">
           <b>{t('Settings', '设置')}</b><em>Settings</em>
@@ -214,45 +227,13 @@ const SettingsPage = () => {
       </aside>
 
       <KioskScrollZone>
-        <section className="kiosk-section" data-group="account" ref={anchorRef}>
-          <KioskSecLabel zh={t('settings:nav_account', '账号与平台')} en="Account" />
-          <p className="setnote">
-            {t('settings:box_account_sub', '不登录也能用，成绩存在这台盒子上；登录只是为了换机器时能带走')}
-          </p>
-          <div className="kiosk-rows">
-            {/* 账号那两行(账号 + AI 段位)在 `AccountSection` 里,和下面那行是同一族 `.kiosk-row`。
-                ⚠️ **段位详情那张卡还没重画** —— 它只在点开对话框之后才出现,不占这一组的正面。 */}
-            <AccountSection />
-            <PlatformAccounts />
-          </div>
-        </section>
-
-        <section className="kiosk-section" data-group="board">
+        <section className="kiosk-section" data-group="board" ref={anchorRef}>
           <KioskSecLabel
             zh={t('settings:nav_board', '实体棋盘')}
             en="Physical board"
             value={t('settings:board_secval', '摄像头 · 标定 · LED')}
           />
-          <div className="kiosk-rows">
-            <div className="kiosk-row">
-              <span className="kiosk-row__t">
-                <b>{t('Recalibrate board', '重新标定棋盘')}</b>
-                <em data-testid={noCamera ? 'settings-no-camera' : undefined}>{calibratedAt}</em>
-              </span>
-              <span className="kiosk-row__end">
-                {/* 没有摄像头时入口**不可点**,原因写在左边那行小字里 —— 不把人送进标定屏,
-                    再让那屏的空态把他弹回来(多一跳,而且那一跳没有解释)。 */}
-                <button
-                  type="button"
-                  className="kiosk-btn kiosk-btn--secondary"
-                  disabled={noCamera}
-                  onClick={() => { if (!noCamera) navigate('/kiosk/vision/setup'); }}
-                >
-                  {t('settings:start_calib', '开始标定')}
-                </button>
-              </span>
-            </div>
-            {/* LED 的 Board A 供电确认独立于摄像头；未知状态没有绿色灯色。 */}
+          <div className="kiosk-board-status" aria-label={t('settings:board_secval', '摄像头 · 标定 · LED')}>
             {([
               ['camera', t('Camera', '摄像头'), status.capabilities.camera_ready,
                 t('settings:camera_connected', '已连接'), t('settings:not_ready', '未连接')],
@@ -261,19 +242,33 @@ const SettingsPage = () => {
               ['led', 'LED', status.capabilities.led_ready,
                 t('settings:camera_connected', '已连接'), t('settings:not_ready', '未连接')],
             ] as const).map(([key, label, ok, yes, no]) => (
-              <div className="kiosk-row" key={key} data-testid={`settings-cap-${key}`}>
-                <span className="kiosk-row__t"><b>{label}</b></span>
-                <span className="kiosk-row__end">
-                  {key === 'led' && (!loaded || ok == null) ? (
-                    <span className="kiosk-tag">未确认</span>
-                  ) : !loaded || (noCamera && key !== 'led') ? (
-                    <span className="kiosk-tag">—</span>
-                  ) : (
-                    <span className={ok ? 'kiosk-tag kiosk-tag--win' : 'kiosk-tag'}>{ok ? yes : no}</span>
-                  )}
-                </span>
+              <div className="kiosk-board-status__item" key={key} data-testid={`settings-cap-${key}`}>
+                <span>{label}</span>
+                <strong className={loaded && ok === true ? 'kiosk-board-status__good' : ''}>
+                  {!loaded || ok == null ? '未确认' : noCamera && key !== 'led' ? '未确认' : ok ? yes : no}
+                </strong>
               </div>
             ))}
+          </div>
+          <div className="kiosk-rows">
+            <div className="kiosk-row">
+              <span className="kiosk-row__t">
+                <b>{t('Recalibrate board', '重新标定棋盘')}</b>
+                <em data-testid={noCamera ? 'settings-no-camera' : undefined}>
+                  {!loaded ? '正在读取设备状态' : !canCalibrate ? calibrationBlockers : calibratedAt}
+                </em>
+              </span>
+              <span className="kiosk-row__end">
+                <button
+                  type="button"
+                  className="kiosk-btn kiosk-btn--secondary"
+                  disabled={!canCalibrate}
+                  onClick={() => { if (canCalibrate) navigate('/kiosk/vision/setup'); }}
+                >
+                  {t('settings:start_calib', '开始标定')}
+                </button>
+              </span>
+            </div>
           </div>
         </section>
 
@@ -365,6 +360,39 @@ const SettingsPage = () => {
               </span>
             </div>
           </div>
+        </section>
+        <section className="kiosk-section" data-group="typography">
+          <KioskSecLabel zh={t('settings:nav_typography', '字体与字号')} en="Typography" />
+          <p className="setnote">{t('settings:typography_scope', '中文字体应用于围棋界面的汉字；英文字母与数字保持原样。')}</p>
+          <div className="kiosk-type-heading">{t('settings:font', '字体')}</div>
+          <div className="kiosk-type-fonts" role="group" aria-label={t('settings:font', '字体')}>
+            {([
+              ['wenkai', '霞鹜楷体'], ['kaiti', '楷体'], ['lishu', '隶书'], ['heiti', '黑体'],
+            ] as const).map(([id, label]) => (
+              <button key={id} type="button" className="kiosk-type-choice" data-font={id}
+                aria-pressed={typography.font === id} onClick={() => setTypography({ font: id })}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="kiosk-type-heading">{t('settings:font_size', '字号')}</div>
+          <div className="kiosk-type-sizes kiosk-seg" role="group" aria-label={t('settings:font_size', '字号')}>
+            {([
+              ['large', '当前大小'], ['medium', '小一号'], ['small', '小两号'],
+            ] as const).map(([id, label]) => (
+              <button key={id} type="button" className="kiosk-seg__btn"
+                aria-pressed={typography.size === id} onClick={() => setTypography({ size: id })}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {typographySaving && <p className="kiosk-type-save" role="status">正在保存…</p>}
+          {typographyError && (
+            <p className="kiosk-type-save kiosk-type-save--error" role="alert">
+              设置尚未保存，重启后可能恢复旧值。
+              <button type="button" onClick={retryTypography}>重试</button>
+            </p>
+          )}
         </section>
         {/* ⚠️ 尾部留白量的是**最后一组** —— 它挂在这一组上;以后再加组,`lastGroupRef` 要跟着挪。 */}
         <section className="kiosk-section" data-group="about" ref={lastGroupRef}>

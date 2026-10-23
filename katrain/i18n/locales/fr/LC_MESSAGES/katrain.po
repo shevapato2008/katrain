@@ -3973,7 +3973,7 @@ msgid "login:box_gate_cta"
 msgstr "Aller à l'accueil StellaBox"
 
 msgid "vision:back_settings"
-msgstr "Réglages"
+msgstr "Retour aux paramètres"
 
 msgid "vision:board_lost_hint"
 msgstr ""
@@ -3984,7 +3984,7 @@ msgid "vision:calibrate_title"
 msgstr "Calibrage du goban"
 
 msgid "vision:calibrate_sub"
-msgstr "Videz d'abord le goban · 13 points : 4 coins + 9 hoshi"
+msgstr "Videz d'abord le goban · 5 points : 4 coins et le centre"
 
 msgid "vision:cancel_calibration"
 msgstr "Annuler le calibrage"

@@ -3945,7 +3945,7 @@ msgid "login:box_gate_cta"
 msgstr "Go to the StellaBox home screen"
 
 msgid "vision:back_settings"
-msgstr "Settings"
+msgstr "Back to Settings"
 
 msgid "vision:board_lost_hint"
 msgstr ""
@@ -3956,7 +3956,7 @@ msgid "vision:calibrate_title"
 msgstr "Board calibration"
 
 msgid "vision:calibrate_sub"
-msgstr "Clear the board first · 13 points: 4 corners + 9 star points"
+msgstr "Clear the board first · 5 points: 4 corners and the center"
 
 msgid "vision:cancel_calibration"
 msgstr "Cancel calibration"

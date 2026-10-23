@@ -17,6 +17,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { ruleNameOf } from '../utils/setupOptions';
 import { useAuth } from '../../context/AuthContext';
 import { API } from '../../api';
+import { sgfToMoves } from '../../utils/sgfSerializer';
 import { durationLabel } from '../utils/durationLabel';
 import { whenLabel } from '../utils/whenLabel';
 import { KifuAPI } from '../../api/kifuApi';
@@ -146,6 +147,9 @@ const ResearchPage = () => {
   const session = useResearchSession({ token: token || undefined });
 
   const [scan, setScan] = useState<Scan>('none');
+  // Local moves include root AB/AW stones; session history includes the root once.
+  // Capture the offset from the actual SGF sent to this session, including deep links.
+  const [scanSetupCount, setScanSetupCount] = useState(0);
   const [progress, setProgress] = useState<{ analyzed: number; total: number } | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
@@ -159,7 +163,7 @@ const ResearchPage = () => {
   const [showTerritory, setShowTerritory] = useState(false);
 
   /** `quickAnalyze`(200 visits)那一路的表。这一份是**取回来的**,所以是 state。 */
-  const [quickRows, setQuickRows] = useState<AiRow[] | null>(null);
+  const [quickRows, setQuickRows] = useState<{ key: string; rows: AiRow[] } | null>(null);
   /**
    * 领地那张图,**连同产出它的那个局面一起记**。
    *
@@ -182,7 +186,7 @@ const ResearchPage = () => {
    * 还没算出来时,旧的那张不跟过去」当场红。
    */
   const [ownership, setOwnership] = useState<{ key: string; grid: number[][] } | null>(null);
-  const [rowsError, setRowsError] = useState<string | null>(null);
+  const [quickError, setQuickError] = useState<{ key: string; message: string } | null>(null);
 
   const activeSessionIdRef = useRef<string | null>(null);
   const scanStartRef = useRef<{ time: number; analyzed: number } | null>(null);
@@ -224,8 +228,8 @@ const ResearchPage = () => {
   // **防抖是必需的不是优化**:常亮之后每落一子都会触发一次 200-visit 请求;上一版没有
   // 防抖只是因为它默认关着。
   const positionKey = useMemo(
-    () => `${board.boardSize}-${board.komi}-${board.rules}-${board.currentMove}-${board.moves.slice(0, board.currentMove).join(',')}`,
-    [board.boardSize, board.komi, board.rules, board.currentMove, board.moves],
+    () => `${board.boardSize}-${board.komi}-${board.rules}-${board.currentMove}-${board.moves.slice(0, board.currentMove).join(',')}-${board.stoneColors.slice(0, board.currentMove).join(',')}`,
+    [board.boardSize, board.komi, board.rules, board.currentMove, board.moves, board.stoneColors],
   );
   const rowsKeyRef = useRef('');
 
@@ -247,8 +251,8 @@ const ResearchPage = () => {
       }, token ?? undefined).then((result) => {
         if (rowsKeyRef.current !== key) return; // 陈旧
         const turn = result?.turnInfos?.[0] ?? result;
-        setQuickRows(toRows((turn?.moveInfos ?? []) as RawMove[], mover));
-        setRowsError(null);
+        setQuickRows({ key, rows: toRows((turn?.moveInfos ?? []) as RawMove[], mover) });
+        setQuickError(null);
         const raw = turn?.ownership;
         if (raw && Array.isArray(raw)) {
           const size = board.boardSize;
@@ -263,10 +267,13 @@ const ResearchPage = () => {
         // 状态诚实:算不出来就说算不出来,**不留着上一手的数假装是这一手的**。
         // 领地那一格不用在这儿清 —— 它带着产出它的那个 key,渲染时按 key 比。
         setQuickRows(null);
-        setRowsError(err instanceof Error ? err.message : String(err));
+        setQuickError({ key, message: err instanceof Error ? err.message : String(err) });
       });
     }, 400);
-    return () => clearTimeout(handle);
+    return () => {
+      clearTimeout(handle);
+      rowsKeyRef.current = '';
+    };
   }, [positionKey, scan, token, mover]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
@@ -276,11 +283,14 @@ const ResearchPage = () => {
    * 而且「会话已经换了节点、表还是上一节点的」这个中间态会真的上屏一帧。
    */
   const rows = useMemo(() => {
-    if (scan !== 'done') return quickRows;
+    if (scan !== 'done') return quickRows?.key === positionKey ? quickRows.rows : null;
     const gs = session.gameState;
-    if (!gs) return null;
+    const nodeIndex = board.currentMove - scanSetupCount;
+    if (!gs || nodeIndex < 0 || gs.current_node_index !== nodeIndex
+      || gs.history[nodeIndex]?.node_id !== gs.current_node_id) return null;
     return toRows((gs.analysis?.moves ?? []) as RawMove[], mover);
-  }, [scan, quickRows, session.gameState, mover]);
+  }, [scan, quickRows, positionKey, session.gameState, board.currentMove, scanSetupCount, mover]);
+  const rowsError = scan !== 'done' && quickError?.key === positionKey ? quickError.message : null;
 
   // ── 全局分析 ───────────────────────────────────────────────────────────────
   /**
@@ -293,9 +303,10 @@ const ResearchPage = () => {
     setConfirmScan(false);
     const { sgf } = board.serializeToSGF();
     const toLoad = explicitSgf ?? (board.moves.length > 0 ? sgf : undefined);
+    const setupCount = toLoad ? sgfToMoves(toLoad).setupCount : 0;
     const sid = await session.createSession(toLoad, {
       skipAnalysis: true,
-      initialMove: explicitSgf ? undefined : board.currentMove,
+      initialMove: explicitSgf ? undefined : Math.max(0, board.currentMove - setupCount),
     });
     if (!sid) {
       setScanError(t('research:session_failed', '无法创建研究会话，请重试'));
@@ -303,6 +314,7 @@ const ResearchPage = () => {
       return;
     }
     activeSessionIdRef.current = sid;
+    setScanSetupCount(setupCount);
     setProgress(null);
     setEtaSeconds(null);
     setScanError(null);
@@ -411,10 +423,11 @@ const ResearchPage = () => {
     if (clamped > 0 && isReplayStoneMove(board.moves[clamped - 1], board.boardSize)) play('stone');
     // 扫完之后会话也要跟着挪,否则 `gs.analysis` 说的还是上一个节点。
     if (scan === 'done' && session.gameState) {
-      const node = session.gameState.history[clamped]?.node_id;
+      const nodeIndex = clamped - scanSetupCount;
+      const node = nodeIndex >= 0 ? session.gameState.history[nodeIndex]?.node_id : undefined;
       if (node !== undefined) void session.onNavigate(node);
     }
-  }, [board, scan, session, play]);
+  }, [board, scan, scanSetupCount, session, play]);
 
   // ── 入口:三条深链 ─────────────────────────────────────────────────────────
   //
@@ -541,10 +554,10 @@ const ResearchPage = () => {
     : '—';
 
   const TOOLS: { value: BoardTool; label: React.ReactNode }[] = [
-    { value: 'alternate', label: t('research:alternate', '交替') },
+    { value: 'alternate', label: <><Icon name="arrows-clockwise" />{t('research:alternate', '交替')}</> },
     { value: 'black', label: <><span className="disc b" />{t('research:place_black', '摆黑')}</> },
     { value: 'white', label: <><span className="disc w" />{t('research:place_white', '摆白')}</> },
-    { value: 'delete', label: t('research:delete', '删除') },
+    { value: 'delete', label: <><Icon name="trash" />{t('research:delete', '删除')}</> },
   ];
 
   /**
@@ -589,13 +602,13 @@ const ResearchPage = () => {
       onClick: () => editGuard(board.openLocalSGF), disabled: scan === 'running',
     },
     // 保存**不跟着灰** —— 它只读,扫描期间存下当前这份谱没有任何危险。
-    { key: 'save', icon: 'books', label: t('research:save', '保存'), onClick: board.saveLocalSGF },
+    { key: 'save', icon: 'floppy-disk', label: t('research:save', '保存'), onClick: board.saveLocalSGF },
     {
-      key: 'pass', icon: 'skip-forward', label: t('research:pass', '停一手'),
+      key: 'pass', icon: 'hand-pointing', label: t('research:pass', '停一手'),
       onClick: () => editGuard(board.handlePass), disabled: scan === 'running',
     },
     {
-      key: 'clear', icon: 'arrows-clockwise', label: t('research:clear', '清空'),
+      key: 'clear', icon: 'eraser', label: t('research:clear', '清空'),
       onClick: () => setConfirmClear(true), disabled: scan === 'running',
     },
     fifth,
@@ -651,7 +664,7 @@ const ResearchPage = () => {
           sub={provenance?.label}
           /* §11 的那**一颗**页级图标键。领地是盘面视图叠加,和「翻转棋盘/全屏」同族。 */
           action={{
-            icon: 'grid-nine',
+            icon: 'map-trifold',
             label: t('research:territory', '领地'),
             pressed: showTerritory,
             onClick: () => setShowTerritory((v) => !v),

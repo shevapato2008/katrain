@@ -316,3 +316,10 @@ def test_persistent_absent_last_checked_rotates_across_rounds(tmp_path):
     checked_first = {i for phase, i in first.calls if phase == "sgf"}
     checked_second = [i for phase, i in second.calls if phase == "sgf"]
     assert not set(checked_second[:4]).intersection(checked_first)
+
+
+def test_terminal_candidate_is_reported_even_when_new_candidate_exhausts_budget(tmp_path):
+    stage = Stage(tmp_path.resolve())
+    run(Source({0: [meta(1)]}, failures={"1": SourceError("missing", retryable=False)}), stage)
+    result = run(Source({0: [meta(2), meta(1)]}), stage, max_downloads=0)
+    assert result["quarantined_ids"] == ["1"]

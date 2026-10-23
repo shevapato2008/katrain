@@ -275,7 +275,14 @@ async def discover_recent(
             "deferred_until": stage.manifest.get("source_next_retry_at"),
             "eligible_ids": eligible,
             "changed_ids": changed,
-            "quarantined_ids": quarantined,
+            "quarantined_ids": sorted(
+                set(quarantined)
+                | {
+                    external_id
+                    for external_id in candidates
+                    if stage.manifest["items"].get(external_id, {}).get("recent", {}).get("terminal")
+                }
+            ),
             "checked_ids": sorted(checked_ids),
             "coverage": coverage,
         }

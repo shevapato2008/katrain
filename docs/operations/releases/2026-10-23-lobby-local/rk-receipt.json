@@ -1,0 +1,78 @@
+{
+  "verified_utc": "2026-10-23T13:23:05.529147+00:00",
+  "katrain_source": "0ac3190d8a114403f35d37ffd76c34caaa31825b",
+  "smartbox_parent": "a87024e2af512685998cdb65b771ece6db565a40",
+  "scope": "runtime Python/full static/strict static only",
+  "pid": 35814,
+  "service_active": "active",
+  "health": {
+    "status": "ok",
+    "version": "1.17.1",
+    "engines": {
+      "local": "reachable",
+      "cloud": "unconfigured"
+    }
+  },
+  "http_status": {
+    "/health": 200,
+    "/api/v1/health": 200,
+    "/kiosk": 200,
+    "/kiosk/play/pvp/lobby": 200
+  },
+  "vision": {
+    "enabled": true,
+    "bound_session_id": null,
+    "sync_state": "unbound",
+    "camera_connected": true,
+    "camera_ready": true,
+    "geometry_ready": true,
+    "recognition_ready": true,
+    "model_ready": true,
+    "led_connected": true
+  },
+  "source_files_verified": 384,
+  "all_manifest_files_verified": 1165,
+  "preserved_file_checks": {
+    "/mnt/data/weiqi/dot-katrain/config.json": true,
+    "/etc/smartbox/identity.env": true,
+    "/etc/smartbox/box-sso-bridge.key": true,
+    "/opt/smartbox/share/katrain-vision/go4_s.rknn": true,
+    "/var/lib/smartbox/hardware/vision/legacy-import/geometry_lock.json": true,
+    "/var/lib/smartbox/hardware/vision/legacy-import/geometry_lock.npz": true
+  },
+  "static_index_sha256": "899145bb4527a1ef13e6f47895f74db65c1049bea022aea249568c464e384f1a",
+  "strict_index_sha256": "366702d3598a7f50c43e7bfb869c1538823ffe0c10ae151dbeb387df53ab0fd0",
+  "server_sha256": "d7525ae106b1fc1347565231902fe4340b28572065135a5fbfd8a06575c2315a",
+  "territory_helper_sha256": "8bdc390ac039b23b4b09f325e4ade41e1595f2d1dfd65ebc598d69a257b5ba52",
+  "lobby_four_actions_bundle": "GamePage-BTwYxS4q.js",
+  "local_resume_bundle": "PvpLocalSetupPage-C4kAMT7u.js",
+  "territory_api_bundle": "api-DyCYjWfx.js",
+  "browser": {
+    "path": "/kiosk/research",
+    "ready": "complete",
+    "rendered": true,
+    "user": "fan",
+    "scripts": [
+      "index-gNws6MT_.js",
+      "pinyin-ime.js?v=kbd5",
+      "pinyin-compose.js?v=kbd5",
+      "smartkeyboard.js?v=kbd6"
+    ],
+    "viewport": [
+      1024,
+      600
+    ],
+    "authGate": false,
+    "bodyCharacters": 361,
+    "auth_status": 200,
+    "normal_launcher_bridge": true,
+    "restored_same_saved_url": true
+  },
+  "root_free_bytes": 2245193728,
+  "rollback": "/mnt/data/smartbox-deployments/20261023-lobby-local-0ac3190d8/rollback",
+  "manifest": "/mnt/data/smartbox-deployments/20261023-lobby-local-0ac3190d8/manifest.json",
+  "limitations": [
+    "No new game, resign/count or two-device territory end-to-end acceptance executed.",
+    "Saved research page was restored through normal existing launcher SSO; automatic research-page analysis is normal product behavior, not a controlled GPU acceptance test."
+  ]
+}

@@ -17,6 +17,7 @@ vi.mock('../../context/AuthContext', () => ({
 }));
 
 interface MockBoardProps {
+  engineOverlay?: unknown;
   analysisToggles?: Record<string, boolean>;
   playerColor?: 'B' | 'W' | null;
   onPaintedNode?: (nodeId: number) => void;
@@ -133,6 +134,7 @@ vi.mock('../../hooks/useGameSession', () => ({
       setGameState: mockSetGameState,
       error: mockSessionError,
       connectionLost: mockConnectionLost,
+      connected: !mockConnectionLost,
       reconnect: mockReconnect,
       onMove: mockOnMove,
       onNavigate: mockOnNavigate,
@@ -1243,6 +1245,24 @@ describe('GamePage', () => {
 
   // --- 3D board removed from kiosk (2026-07-13) -------------------------------------
   describe('self-owned lobby room', () => {
+    it('renders the real four-action lobby panel and privately requests territory on click', async () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'B',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '我' },
+          W: { ...basePlayer, player_type: 'player:human', name: '对手' } } });
+      const territory = vi.spyOn(API, 'lobbyTerritory').mockResolvedValue({ session_id: 'test-session', game_id: 'test-game',
+        current_node_id: 5, move_count: 5, board_size: [19, 19], ownership: Array(361).fill(.5),
+        black_area: 80, white_area: 70, stale: false });
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        expect(screen.getByRole('heading', { name: '大厅对局' })).toBeInTheDocument();
+        expect(territory).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: '领地' }));
+        await waitFor(() => expect(territory).toHaveBeenCalledWith('test-session', 'mock-token'));
+        await waitFor(() => expect(capturedBoardProps.current?.engineOverlay).toEqual(expect.objectContaining({ kind: 'area' })));
+        expect(mockSetGameState).not.toHaveBeenCalled();
+      } finally { territory.mockRestore(); }
+    });
+
     it('holds moves and resignation while automatic count is pending', async () => {
       mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'W',
         end_result: '终局', awaiting_count: true, degraded: false,
@@ -1252,7 +1272,7 @@ describe('GamePage', () => {
       expect(screen.getByText('正在自动数子')).toBeInTheDocument();
       await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
       expect(mockOnMove).not.toHaveBeenCalled();
-      fireEvent.click(screen.getByRole('button', { name: 'MOCK_RESIGN' }));
+      fireEvent.click(screen.getByRole('button', { name: '认输' }));
       expect(screen.queryByText('确认认输？')).not.toBeInTheDocument();
     });
     it('applies a central opponent departure result carried by game_end', () => {
@@ -1301,17 +1321,17 @@ describe('GamePage', () => {
     });
 
     it('shows pending count and clears it on rejection or timeout', async () => {
-      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+      mockGameState = makeGameState({ history: Array(100).fill({}), game_type: 'pvp_lobby', platform_my_color: 'W',
         players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
           W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
       const request = vi.spyOn(API, 'requestCount').mockResolvedValue({ status: 'pending' });
       try {
         renderPage('/kiosk/play/pvp/room/test-session');
-        fireEvent.click(screen.getByRole('button', { name: 'MOCK_COUNT' }));
+        fireEvent.click(screen.getByRole('button', { name: '数子' }));
         expect(await screen.findByText('等待对方确认数子')).toBeInTheDocument();
         act(() => capturedSessionOptions.current?.onCountRejected?.());
         expect(screen.getByText('数子请求已被拒绝')).toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', { name: 'MOCK_COUNT' }));
+        fireEvent.click(screen.getByRole('button', { name: '数子' }));
         expect(await screen.findByText('等待对方确认数子')).toBeInTheDocument();
         act(() => capturedSessionOptions.current?.onCountTimeout?.());
         expect(screen.getByText('数子请求已超时')).toBeInTheDocument();
@@ -1379,7 +1399,7 @@ describe('GamePage', () => {
         renderPage('/kiosk/play/pvp/room/test-session');
         expect(screen.getByTestId('lobby-count-error')).toHaveTextContent('自动数子失败');
         await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
-        await act(async () => { await capturedControlPanelProps.current?.onAction('pass'); });
+        await act(async () => { fireEvent.click(screen.getByRole('button', { name: '停一手' })); });
         expect(mockOnMove).not.toHaveBeenCalled();
         expect(mockHandleAction).not.toHaveBeenCalledWith('pass');
         fireEvent.click(screen.getByRole('button', { name: '重试数子' }));

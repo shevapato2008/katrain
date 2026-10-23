@@ -1,0 +1,50 @@
+/* Approved 06a lobby composition; scoped so other game modes retain their controls. */
+.kiosk-rail.lobby-game { gap:8px; color:#edf4eb; font-family:"SmartBox Kai",serif; font-size:18px; overflow:visible; }
+.lobby-game *, .lobby-game *::before, .lobby-game *::after { box-sizing:border-box; }
+.lobby-game__head { height:62px; flex:none; display:grid; grid-template-columns:126px 1fr; grid-template-rows:30px 24px; column-gap:10px; align-content:center; white-space:nowrap; }
+.lobby-game__head h2 { margin:0; font-size:22px; font-weight:500; align-self:end; }
+.lobby-game__head>span { font-size:18px; color:#a8bbae; align-self:start; }
+.lobby-game__key { height:50px; min-width:0; padding:0 2px; display:flex; align-items:center; justify-content:center; gap:8px; border:1px solid #3a5848; border-radius:17px; background-color:#21352b; color:#edf4ec; font:22px "SmartBox Kai",serif; white-space:nowrap; cursor:pointer; touch-action:manipulation; background-image:radial-gradient(ellipse 90% 70% at 50% -8%,#ffffff29,transparent 75%),linear-gradient(180deg,transparent 57%,#00000016); box-shadow:inset 0 1px 0 #ffffff38,inset 0 -2px 2px #0004,0 3px 0 #102019,0 6px 10px #0007; transition:translate 130ms ease,box-shadow 130ms ease; }
+.lobby-game__key .kiosk-icon svg { width:22px; height:22px; flex:none; }
+.lobby-game__key:active:not(:disabled) { translate:0 3px; background-image:linear-gradient(180deg,#0000001b,transparent 62%); box-shadow:inset 0 4px 9px #0008,inset 0 1px 0 #ffffff14,0 1px 2px #0006; }
+.lobby-game__key:focus-visible { outline:3px solid #e9b66e; outline-offset:2px; }
+.lobby-game__key:disabled { opacity:.46; cursor:default; background-image:none; box-shadow:none; }
+.lobby-game__key[aria-pressed=true] { border-color:#5fbd80; background-color:#274a35; }
+.lobby-game__head .lobby-game__back { grid-row:1/3; align-self:center; height:46px; padding:0 9px; }
+.lobby-game__seats { height:104px; flex:none; position:relative; }
+.lobby-game__seat { position:absolute; top:0; width:calc(50% + 8px); height:104px; min-width:0; padding:7px 10px; display:flex; flex-direction:column; color:#bfcec2; }
+.lobby-game__seat:first-child { left:0; padding-right:32px; }
+.lobby-game__seat:last-child { right:0; padding-left:32px; }
+.lobby-game__seat[data-turn=true] { color:#f2faf1; }
+.lobby-game__seat-surface { position:absolute; inset:0; width:100%; height:100%; overflow:visible; filter:drop-shadow(0 3px 5px #0006); pointer-events:none; }
+.lobby-game__seat>*:not(svg) { position:relative; }
+.lobby-game__name { display:flex; align-items:center; gap:8px; min-width:0; font-size:22px; line-height:1.1; white-space:nowrap; }
+.lobby-game__name strong { min-width:0; overflow:hidden; text-overflow:ellipsis; font-weight:500; }
+.lobby-game__stone { width:28px; height:28px; flex:none; border-radius:50%; box-shadow:0 2px 5px #0008; }
+.lobby-game__stone--B { background:radial-gradient(circle at 37% 29%,#4c5150,#050807 70%); }
+.lobby-game__stone--W { background:radial-gradient(circle at 34% 27%,#fff,#c9ccc9 72%); }
+.lobby-game__move { margin-top:auto; font-size:28px; line-height:1.05; white-space:nowrap; }
+.lobby-game__seat-foot { display:flex; justify-content:space-between; gap:3px; margin-top:2px; font-size:18px; line-height:1.1; white-space:nowrap; color:#acbeb1; }
+.lobby-game__seat[data-turn=true] .lobby-game__seat-foot>span:first-child { color:#91e5a7; }
+.lobby-game b { font-family:var(--font-mono,"IBM Plex Mono",monospace); font-weight:400; }
+.lobby-game__status { height:152px; flex:none; border:1px solid #355043; border-radius:12px; background:#182720; padding:8px 10px; }
+.lobby-game__status-head { height:32px; display:flex; align-items:center; justify-content:space-between; gap:4px; white-space:nowrap; }
+.lobby-game__status-head strong { font-size:22px; font-weight:500; }
+.lobby-game__status-head>span { color:#82d39b; font-size:18px; }
+.lobby-game__status h3 { margin:9px 0 8px; font-size:28px; font-weight:500; line-height:1.2; }
+.lobby-game__status p { margin:0; font-size:18px; line-height:1.45; color:#bfd2c3; }
+.lobby-game__status .gstatus { min-height:0; margin:0; padding:4px 0; border:0; background:transparent; display:flex; gap:8px; align-items:center; }
+.lobby-game__status .gstatus>div { min-width:0; flex:1; }
+.lobby-game__status .gstatus b { font:22px/1.15 "SmartBox Kai",serif; display:block; }
+.lobby-game__status .gstatus span { font-size:18px; line-height:1.3; }
+.lobby-game__status .gstatus button { flex:none; min-width:96px; min-height:44px; font-size:22px; padding:0 8px; }
+.lobby-game__status .gstatus[data-tone=bad], .lobby-game__fault { color:#efb3a4; font-size:18px; }
+.lobby-game__toggles { height:54px; flex:none; display:flex; align-items:center; gap:8px; }
+.lobby-game__toggles>.lobby-game__key:not(.lobby-game__help) { width:calc((100% - 24px)/4); }
+.lobby-game__toggles .lobby-game__help { width:44px; height:44px; border-radius:50%; margin-left:auto; background-color:#1b3527; color:#a6e1b8; }
+.lobby-game__actions { height:50px; flex:none; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.lobby-game__danger { color:#e69b8d; border-color:#ae685d; background-color:#2b211f; }
+.lobby-game__footer { flex:none; font-size:18px; line-height:1.35; color:#b6c9bc; }
+.lobby-game__footer>div { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.lobby-game__footer p { margin:2px 0 0; font-size:18px; color:#a6b7aa; }
+.lobby-game__footer [role=alert] { color:#efb3a4; }

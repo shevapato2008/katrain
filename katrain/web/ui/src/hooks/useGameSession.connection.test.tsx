@@ -41,6 +41,18 @@ describe('useGameSession · 断线与一次性错误分开记(N25)', () => {
     return hook;
   };
 
+  it('reports connected only after the current socket opens, clearing on close and session change', async () => {
+    const { result } = await connected();
+    expect(result.current.connected).toBe(false);
+    act(() => { sockets[0].onopen?.(); });
+    expect(result.current.connected).toBe(true);
+    act(() => { sockets[0].onclose?.({ code: 1006, reason: '', wasClean: false }); });
+    expect(result.current.connected).toBe(false);
+    act(() => { sockets[0].onopen?.(); });
+    await act(async () => { result.current.setSessionId('session-456'); });
+    expect(result.current.connected).toBe(false);
+  });
+
   it('意外断开: connectionLost = dropped，error 文案不变', async () => {
     const { result } = await connected();
     act(() => { sockets[0].onclose?.({ code: 1006, reason: '', wasClean: false }); });

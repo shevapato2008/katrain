@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
+import { TutorialReadAPI } from '../tutorialApi';
 
 // Guard: the kiosk tutorial module is a READ-ONLY mirror. No file under
 // src/kiosk/** may reference any tutorial write method. Kiosk pages must consume
@@ -34,4 +35,28 @@ describe('kiosk tutorial is read-only', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('exports OGS course reads without tutorial writes', () => {
+    expect(TutorialReadAPI.getOgsCourse).toBeTypeOf('function');
+    expect(TutorialReadAPI.getOgsStep).toBeTypeOf('function');
+    for (const method of WRITE_METHODS) {
+      expect(TutorialReadAPI).not.toHaveProperty(method);
+    }
+  });
+});
+
+afterEach(() => vi.unstubAllGlobals());
+
+it('uses the public OGS course URLs on the current surface', async () => {
+  const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response('{}')));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await TutorialReadAPI.getOgsCourse();
+  await TutorialReadAPI.getOgsStep(12, 'en');
+
+  const base = __KIOSK_2D_ONLY__ ? '/api/v1/board/tutorials' : '/api/v1/tutorials';
+  expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+    `${base}/ogs-course?lang=zh-cn`,
+    `${base}/ogs-course/steps/12?lang=en`,
+  ]);
 });

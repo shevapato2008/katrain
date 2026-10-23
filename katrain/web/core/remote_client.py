@@ -385,6 +385,18 @@ class RemoteAPIClient:
 
     # ── Tutorial (read-only, public) ──
 
+    async def get_ogs_course(self, lang: str = "zh-cn") -> Any:
+        resp = await self._request("GET", "/api/v1/tutorials/ogs-course", params={"lang": lang}, auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_ogs_step(self, page: int, lang: str = "zh-cn") -> Any:
+        resp = await self._request(
+            "GET", f"/api/v1/tutorials/ogs-course/steps/{page}", params={"lang": lang}, auth=False
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     async def get_tutorial_categories(self) -> Any:
         resp = await self._request("GET", "/api/v1/tutorials/categories", auth=False)
         resp.raise_for_status()

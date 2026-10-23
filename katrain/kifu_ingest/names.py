@@ -352,6 +352,33 @@ class QwenNameService:
                 raise NameRejected("English Qingbaijiang place name was misspelled")
             if re.search(r"[烂爛]柯[杯盃]", key) and re.search(r"\bLangke\b", english, re.I):
                 raise NameRejected("English Lanke cup name was misspelled")
+            korean = displays["ko"]
+            if (
+                re.search(r"挑[战戰][赛賽]\s*[357]\s*番棋", key)
+                and not re.search(r"挑[战戰]者|[决決]定[赛賽战戰戦]", key)
+                and (
+                    re.search(r"挑[戦戰]者\s*決定", displays["jp"])
+                    or re.search(r"도전자\s*결정", korean)
+                    or re.search(r"\bchallenger[\s-]+(?:determination|decider)\b", english, re.I)
+                )
+            ):
+                raise NameRejected("Title match series was mistranslated as challenger determination")
+            series_lengths = re.findall(r"(?<!\d)(\d+)\s*番棋", key)
+            if (
+                len(set(series_lengths)) == 1
+                and series_lengths[0] in {"3", "5", "7"}
+                and re.search(rf"(?<!\d){series_lengths[0]}\s*선승", korean)
+            ):
+                raise NameRejected("Korean best-of series was mistranslated as first-to-N wins")
+            if re.search(r"[吴吳]清源[杯盃]", key) and re.search(r"우\s*청원\s*배", korean):
+                raise NameRejected("Korean Wu Qingyuan Cup name was mistransliterated")
+            if (
+                re.search(r"李[维維]清", key)
+                and "이유청" in korean
+                and "리웨이칭" not in korean
+                and "이유청" not in key
+            ):
+                raise NameRejected("Korean Li Weiqing event name was mistransliterated")
         return candidate
 
     async def translate_and_review(
@@ -439,6 +466,22 @@ class QwenNameService:
                     "Quarterfinal or Round of 8, never Round of 16, even with a Top 8 suffix.",
                     "青白江 is Qingbaijiang, never Qingshuijiang.",
                     "烂柯杯/爛柯盃 uses Lanke, never Langke. Preserve the original domestic/world/team scope.",
+                ]
+                prompt["event_semantic_rules"] = [
+                    "Title match series: unqualified 挑战赛/挑戰賽 followed by 3/5/7番棋 is a title match, "
+                    "e.g. jp 挑戦手合, ko 도전N번기, en Title Match. Never substitute jp 挑戦者決定, "
+                    "ko 도전자 결정, or English challenger determination/decider. Preserve explicit "
+                    "挑战者/挑戰者 or 决定赛/決定賽 qualifiers when they are in the original.",
+                    "Korean best-of series: for one unambiguous 3/5/7番棋 length, N番棋 is best-of-N, "
+                    "not first to N wins (N선승/N선승부). Use N번기 or another semantically correct form; "
+                    "5番棋 may be 3선승제(5번기). Multiple distinct series lengths need stage-aware review, "
+                    "not a whole-event rejection; 1番棋 may correctly use 1선승제.",
+                    "Korean Wu Qingyuan Cup: 吴清源杯/吳清源盃 uses the official cup name 오청원배, "
+                    "never 우청원배; preserve the remaining event and stage details.",
+                    "Korean Li Weiqing: when the original event literally includes 李维清/李維清, "
+                    "preserve 리웨이칭 rather than substituting 이유청. If 리웨이칭 is already preserved "
+                    "or the original also explicitly names 이유청, do not globally reject 이유청; "
+                    "independently review the other player's name. This rule does not identify other players.",
                 ]
             repair_reason = None
             for repair in range(2):

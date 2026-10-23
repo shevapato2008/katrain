@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -30,7 +31,7 @@ const vision = { enabled: false, loaded: true };
 const ready = { phase: 'ready', session_calibrated: true, last_valid: true, capabilities: { camera_ready: true, geometry_ready: true, recognition_ready: true, model_ready: true } };
 const geometry = { status: ready, loaded: true, preflight: vi.fn() };
 vi.mock('../context/GeometryContext', () => ({ useGeometry: () => geometry }));
-vi.mock('../components/vision/GeometryCalibrationScreen', () => ({ default: ({ onBack }: { onBack: () => void }) => <div data-testid="calib-screen"><button onClick={onBack}>返回设置</button></div> }));
+vi.mock('../components/vision/GeometryCalibrationScreen', () => ({ default: ({ onBack, sub }: { onBack: () => void; sub: string }) => <div data-testid="calib-screen"><p>{sub}</p><button onClick={onBack}>返回设置</button></div> }));
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
     visionStatus: { enabled: vision.enabled }, loaded: vision.loaded, isVisionEnabled: vision.enabled, refreshStatus: vi.fn(),
@@ -49,6 +50,9 @@ const renderPage = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(API.createSession).mockReset().mockResolvedValue({ session_id: 's1', state: {} } as any);
+  vi.mocked(API.gameSetup).mockReset().mockResolvedValue({ session_id: 's1', state: {} } as any);
+  vi.mocked(API.deleteSession).mockReset().mockResolvedValue(undefined);
   // 偏好活在 localStorage 里,**跨用例会串**。清掉 = 回到默认(开)。
   localStorage.removeItem(PLAY_ON_BOARD_KEY);
   localStorage.removeItem('kiosk_audio_sfx');
@@ -261,18 +265,157 @@ describe('physical local preflight', () => {
     expect(screen.getByTestId('setup-clock-value')).toHaveTextContent('60分');
     expect(API.createSession).not.toHaveBeenCalled();
   });
-  it('successful calibration returns to retained setup without automatically starting', async () => {
+  const page = (strict = false) => {
+    const content = <ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/play/pvp/local/setup']}><PvpLocalSetupPage /></MemoryRouter></ThemeProvider>;
+    return strict ? <StrictMode>{content}</StrictMode> : content;
+  };
+  const requireCalibration = () => {
     vision.enabled = true;
-    geometry.status = { ...ready, phase: 'required' };
-    geometry.preflight.mockResolvedValue({ ready: false, status: geometry.status });
-    const view = renderPage();
+    geometry.status = { ...ready, phase: 'required', session_calibrated: false };
+    geometry.preflight.mockResolvedValueOnce({ ready: false, status: geometry.status });
+  };
+  const updateStatus = (view: ReturnType<typeof render>, status: typeof ready, strict = false) => {
+    geometry.status = status;
+    view.rerender(page(strict));
+  };
+
+  it('successful calibration resumes captured parameters exactly once under StrictMode and ready polling', async () => {
+    requireCalibration();
+    const view = render(page(true));
     await userEvent.type(screen.getByTestId('black-name-input'), '小明');
-    await userEvent.click(screen.getByTestId('local-start-action'));
-    expect(screen.getByTestId('calib-screen')).toBeInTheDocument();
-    geometry.status = ready;
-    view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter><PvpLocalSetupPage /></MemoryRouter></ThemeProvider>);
-    expect(screen.getByTestId('black-name-input')).toHaveValue('小明');
+    await userEvent.type(screen.getByTestId('white-name-input'), '小红');
+    await pick(userEvent.setup(), 'setup-rules', 'japanese');
+    await pick(userEvent.setup(), 'setup-handicap', '3');
+    await pick(userEvent.setup(), 'setup-clock', '60');
+    const start = screen.getByTestId('local-start-action');
+    fireEvent.click(start);
+    fireEvent.click(start);
+    expect(await screen.findByTestId('calib-screen')).toHaveTextContent('标定成功后自动进入对局');
     expect(API.createSession).not.toHaveBeenCalled();
+    updateStatus(view, ready, true);
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
+    updateStatus(view, { ...ready }, true);
+    updateStatus(view, { ...ready }, true);
+    expect(geometry.preflight).toHaveBeenCalledTimes(2);
+    expect(API.createSession).toHaveBeenCalledTimes(1);
+    expect(API.gameSetup).toHaveBeenCalledTimes(1);
+    expect(lastSetup()).toEqual(['s1', 'pvp_local', {
+      board_size: 19, rules: 'japanese', handicap: 3, komi: 0,
+      black_name: '小明', white_name: '小红', time_enabled: true,
+      main_time: 60, byo_length: 30, byo_periods: 3,
+    }]);
+    expect(writeActiveSession).toHaveBeenCalledTimes(1);
+    expect(writeActiveSession).toHaveBeenCalledWith(expect.objectContaining({ onBoard: true, label: '小明 vs 小红' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/local/game/s1', { state: { backTo: '/kiosk/play/pvp/local/setup' } });
+    expect(API.deleteSession).not.toHaveBeenCalled();
+  });
+
+  it.each(['failed', 'cancelled'])('%s stays on calibration and resumes after a retry succeeds', async phase => {
+    requireCalibration();
+    const view = render(page());
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    updateStatus(view, { ...ready, phase, session_calibrated: false });
+    expect(screen.getByTestId('calib-screen')).toBeInTheDocument();
+    expect(API.createSession).not.toHaveBeenCalled();
+    updateStatus(view, { ...ready, phase: 'waiting_empty', session_calibrated: false });
+    expect(API.createSession).not.toHaveBeenCalled();
+    updateStatus(view, ready);
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
+    expect(geometry.preflight).toHaveBeenCalledTimes(2);
+    expect(API.createSession).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['phase', 'session_calibrated', 'geometry_ready', 'recognition_ready', 'model_ready'])('waits for complete readiness: %s', async missing => {
+    requireCalibration();
+    const view = render(page());
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    const incomplete = missing === 'phase' ? { ...ready, phase: 'verifying' }
+      : missing === 'session_calibrated' ? { ...ready, session_calibrated: false }
+        : { ...ready, capabilities: { ...ready.capabilities, [missing]: false } };
+    updateStatus(view, incomplete);
+    expect(screen.getByTestId('calib-screen')).toBeInTheDocument();
+    expect(geometry.preflight).toHaveBeenCalledTimes(1);
+    expect(API.createSession).not.toHaveBeenCalled();
+    updateStatus(view, ready);
+    await waitFor(() => expect(API.createSession).toHaveBeenCalledTimes(1));
+  });
+
+  it('manual return preserves inputs and ignores late ready until another start click', async () => {
+    requireCalibration();
+    const view = render(page());
+    await userEvent.type(screen.getByTestId('black-name-input'), '小明');
+    await pick(userEvent.setup(), 'setup-clock', '60');
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    fireEvent.click(screen.getByRole('button', { name: '返回设置' }));
+    updateStatus(view, ready);
+    expect(screen.getByTestId('black-name-input')).toHaveValue('小明');
+    expect(screen.getByTestId('setup-clock-value')).toHaveTextContent('60分');
+    expect(API.createSession).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
+  });
+
+  it.each(['not-ready', 'preflight-error', 'create-error', 'setup-error'])('resume %s stays visible on calibration without polling retries', async failure => {
+    requireCalibration();
+    const view = render(page());
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    if (failure === 'not-ready') geometry.preflight.mockImplementationOnce(async () => {
+      geometry.status = { ...ready, phase: 'failed' };
+      view.rerender(page()); // A preflight status write is not a new user retry.
+      return { ready: false, status: geometry.status };
+    });
+    if (failure === 'preflight-error') geometry.preflight.mockRejectedValueOnce(new Error('timeout'));
+    if (failure === 'create-error') vi.mocked(API.createSession).mockRejectedValueOnce(new Error('create failed'));
+    if (failure === 'setup-error') vi.mocked(API.gameSetup).mockRejectedValueOnce(new Error('setup failed'));
+    updateStatus(view, ready);
+    const message = failure === 'not-ready' ? '棋盘检查未就绪' : failure === 'preflight-error' ? '检查棋盘失败' : failure === 'create-error' ? 'create failed' : 'setup failed';
+    await waitFor(() => expect(screen.getByTestId('calib-screen')).toHaveTextContent(message));
+    updateStatus(view, { ...ready, phase: 'waiting_empty' });
+    updateStatus(view, { ...ready });
+    updateStatus(view, { ...ready });
+    expect(geometry.preflight).toHaveBeenCalledTimes(2);
+    expect(API.createSession).toHaveBeenCalledTimes(failure === 'not-ready' || failure === 'preflight-error' ? 0 : 1);
+    expect(writeActiveSession).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    if (failure === 'setup-error') expect(API.deleteSession).toHaveBeenCalledExactlyOnceWith('s1');
+    else expect(API.deleteSession).not.toHaveBeenCalled();
+  });
+
+  it.each(['preflight', 'create', 'setup'])('manual return cancels resumed in-flight %s and cleans only its session', async stage => {
+    requireCalibration();
+    const view = render(page());
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    let resolve!: (value: any) => void;
+    const pending = new Promise<any>(r => { resolve = r; });
+    if (stage === 'preflight') geometry.preflight.mockReturnValueOnce(pending);
+    if (stage === 'create') vi.mocked(API.createSession).mockReturnValueOnce(pending);
+    if (stage === 'setup') {
+      vi.mocked(API.createSession).mockResolvedValueOnce({ session_id: 'resume-only', state: {} } as any);
+      vi.mocked(API.gameSetup).mockReturnValueOnce(pending);
+    }
+    updateStatus(view, ready);
+    await waitFor(() => expect(stage === 'preflight' ? geometry.preflight : stage === 'create' ? API.createSession : API.gameSetup).toHaveBeenCalledTimes(stage === 'preflight' ? 2 : 1));
+    expect(screen.getByTestId('calib-screen')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '返回设置' }));
+    expect(screen.getByTestId('local-start-action')).toBeEnabled();
+    await act(async () => resolve(stage === 'preflight' ? { ready: true, status: ready } : { session_id: 'resume-only', state: {} }));
+    expect(writeActiveSession).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    if (stage === 'preflight') expect(API.createSession).not.toHaveBeenCalled();
+    else expect(API.deleteSession).toHaveBeenCalledExactlyOnceWith('resume-only');
+  });
+
+  it('leaving during resumed setup cleans its session without publishing', async () => {
+    requireCalibration();
+    const view = render(page());
+    await userEvent.click(screen.getByTestId('local-start-action'));
+    let resolve!: (value: any) => void;
+    vi.mocked(API.gameSetup).mockReturnValueOnce(new Promise(r => { resolve = r; }));
+    updateStatus(view, ready);
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalledTimes(1));
+    view.unmount();
+    await act(async () => resolve({ session_id: 's1', state: {} }));
+    expect(API.deleteSession).toHaveBeenCalledExactlyOnceWith('s1');
     expect(writeActiveSession).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });

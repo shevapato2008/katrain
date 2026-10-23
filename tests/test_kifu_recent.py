@@ -141,7 +141,7 @@ def test_shared_attempt_budget_continues_fairly_and_unpublished_unchanged_remain
     second_source = Source({0: page})
     second = run(second_source, Stage(tmp_path.resolve()), max_head_pages=1, max_downloads=2)
     assert [c[1] for c in second_source.calls if c[0] == "sgf"] == ["3", "4"]
-    assert set(second["eligible_ids"]) == {"1", "2", "3", "4"}
+    assert set(second["eligible_ids"]) == {"3", "4"}
     third = run(Source({0: page}), stage, max_head_pages=1, max_downloads=4)
     assert set(third["eligible_ids"]) == {"1", "2", "3", "4"}
     assert first["coverage"]["sgf_attempt_cap"] is True
@@ -378,3 +378,59 @@ def test_new_and_unchanged_metadata_is_durable_before_sgf_request(tmp_path):
     saved = Stage(stage.root).manifest["items"]["3"]
     assert saved["recent"]["seen_metadata"] == meta(3)
     assert saved["recent"]["seen_metadata_sha256"] == recent.metadata_sha256(meta(3))
+
+
+@pytest.mark.parametrize(
+    "head_error", [SourceRateLimited(120), SourceBudgetExceeded("source request budget exhausted")]
+)
+def test_partial_head_never_treats_unresolved_published_item_as_unpublished(tmp_path, head_error):
+    stage = Stage(tmp_path.resolve())
+    run(Source({0: [meta(1)]}), stage)
+    original = stage.manifest["items"]["1"].copy()
+    lookup_calls = []
+
+    def lookup(ids):
+        lookup_calls.append(ids)
+        return {"1"}
+
+    result = run(Source({0: [meta(1)], 1: head_error}), stage, published_lookup=lookup)
+    assert result["eligible_ids"] == []
+    assert result["coverage"]["publication_authority_complete"] is False
+    assert result["status"] == "partial"
+    assert lookup_calls == []
+    assert result["candidate_ids"] == ["1"]
+    assert stage.manifest["items"]["1"]["status"] == original["status"]
+    assert stage.manifest["items"]["1"]["raw_sha256"] == original["raw_sha256"]
+
+
+def test_publication_lookup_deadline_returns_partial_and_keeps_scanned_metadata(tmp_path):
+    import time
+
+    stage = Stage(tmp_path.resolve())
+
+    async def lookup(ids):
+        await asyncio.sleep(1)
+        return {"1"}
+
+    source = Source({0: [meta(1)]})
+    result = run(source, stage, max_head_pages=1, published_lookup=lookup, deadline=time.monotonic() + 0.02)
+    assert result["status"] == "partial"
+    assert result["eligible_ids"] == []
+    assert result["coverage"]["publication_authority_complete"] is False
+    assert result["coverage"]["time_budget_exhausted"] is True
+    saved = Stage(stage.root).manifest["items"]["1"]
+    assert saved["recent"]["seen_metadata"] == meta(1)
+    assert saved["status"] == "pending"
+    assert not any(phase == "sgf" for phase, _ in source.calls)
+
+
+def test_existing_unpublished_raw_waits_for_current_successful_recheck(tmp_path):
+    stage = Stage(tmp_path.resolve())
+    run(Source({0: [meta(1)]}), stage)
+    deferred = run(Source({0: [meta(1)]}), stage, max_downloads=0)
+    assert deferred["eligible_ids"] == []
+    assert deferred["checked_ids"] == []
+    assert Stage(stage.root).manifest["items"]["1"]["raw_sha256"]
+    continued = run(Source({0: [meta(1)]}), Stage(stage.root), max_downloads=1)
+    assert continued["checked_ids"] == ["1"]
+    assert continued["eligible_ids"] == ["1"]

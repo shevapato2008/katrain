@@ -162,8 +162,10 @@ async def discover_recent(
     known_ids and published_ids mean catalog/native-receipt publication only.
     StateStore discovered/downloaded membership is deliberately not publication.
     eligible_ids are downloaded, unchanged, unpublished window candidates and
-    include previously prepared-but-unpublished items deferred by other budgets.
-    published_lookup receives only the finite candidate ID set after the scan.
+    include previously prepared-but-unpublished items after a successful current
+    SGF recheck. Unresolved publication authority and deferred rechecks never
+    authorize preparation. published_lookup receives only the finite candidate
+    ID set after the scan; all candidate metadata is durable before it waits.
     """
     for name, value, maximum in (
         ("max_head_pages", max_head_pages, 10),
@@ -207,6 +209,7 @@ async def discover_recent(
         oldest_recheck_age_seconds=None,
         source_http_attempts=0,
         terminal_count=0,
+        publication_authority_complete=published_lookup is None,
     )
     head = dict(stage.manifest.get("recent_head", {}))
     head.update(started_at=wall_clock(), complete=False, window_start=lower.isoformat(), window_end=now.isoformat())
@@ -253,6 +256,8 @@ async def discover_recent(
             item = stage.manifest["items"].get(external_id)
             if (
                 item
+                and coverage["publication_authority_complete"]
+                and external_id in checked_ids
                 and external_id not in published
                 and item.get("raw_sgf_path")
                 and item.get("recent", {}).get("raw_sha256")
@@ -372,12 +377,6 @@ async def discover_recent(
             0, wall_clock() - (absent[0]["recent"].get("last_checked_at") or wall_clock())
         )
 
-    if published_lookup is not None and candidates and not source_stopped:
-        found = published_lookup(set(candidates))
-        if inspect.isawaitable(found):
-            found = await request(lambda: found)
-        published.update(_id(i) for i in found)
-
     for external_id, metadata in candidates.items():
         item = stage.manifest["items"].get(external_id)
         if item is None:
@@ -404,6 +403,26 @@ async def discover_recent(
             changed.append(external_id)
             quarantined.append(external_id)
     stage._persist()
+
+    # A partial source scan does not establish absence from the published
+    # catalog. Keep candidates durable, but fail closed until authority resolves.
+    if published_lookup is not None and candidates and not source_stopped and not coverage["source_budget_exhausted"]:
+        try:
+            if clock() >= deadline:
+                raise SourceBudgetExceeded("source time budget exhausted before publication lookup")
+            found = published_lookup(set(candidates))
+            if inspect.isawaitable(found):
+                try:
+                    found = await asyncio.wait_for(found, max(0, deadline - clock()))
+                except asyncio.TimeoutError as exc:
+                    raise SourceBudgetExceeded("source time budget exhausted during publication lookup") from exc
+            if clock() >= deadline:
+                raise SourceBudgetExceeded("source time budget exhausted during publication lookup")
+        except SourceBudgetExceeded as exc:
+            budget(exc)
+        else:
+            published.update(_id(i) for i in found)
+            coverage["publication_authority_complete"] = True
 
     def priority(external_id):
         item = stage.manifest["items"][external_id]

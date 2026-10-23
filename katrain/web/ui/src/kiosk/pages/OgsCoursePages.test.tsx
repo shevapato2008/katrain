@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   geometry: null as null | { status: { phase: string; session_calibrated: boolean; capabilities: { geometry_ready: boolean } } },
   physicalOptions: null as PhysicalTsumegoOptions | null,
   physicalPhase: null as null | string,
+  physicalExtra: [] as Array<[number, number, number]>,
   screenMove: vi.fn(),
 }));
 vi.mock('../../api/tutorialApi', () => ({ TutorialReadAPI: {
@@ -26,7 +27,7 @@ vi.mock('../context/GeometryContext', () => ({ useOptionalGeometry: () => mocks.
 vi.mock('../hooks/useVisionSync', () => ({ useVisionSync: () => ({ connected: true, syncEvents: [] }) }));
 vi.mock('../hooks/usePhysicalTsumego', () => ({ usePhysicalTsumego: (options: PhysicalTsumegoOptions) => {
   mocks.physicalOptions = options;
-  return { phase: options.enabled ? mocks.physicalPhase ?? 'ready' : 'off', stage: null, missing: [], extra: [], stageMatched: 0, stageTotal: 0, ledOk: true, onScreenMove: mocks.screenMove };
+  return { phase: options.enabled ? mocks.physicalPhase ?? 'ready' : 'off', stage: null, missing: [], extra: mocks.physicalExtra, stageMatched: 0, stageTotal: 0, ledOk: true, onScreenMove: mocks.screenMove };
 } }));
 vi.mock('../shell/KioskPagebar', () => ({ KioskPagebar: ({ onBack, title }: { onBack: () => void; title: string }) => <div><button onClick={onBack}>返回课程</button>{title}</div> }));
 vi.mock('../shell/KioskScrollZone', () => ({ KioskScrollZone: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
@@ -63,6 +64,7 @@ beforeEach(() => {
   mocks.vision.enabled = false; mocks.vision.recognitionReady = false;
   mocks.geometry = null;
   mocks.physicalPhase = null;
+  mocks.physicalExtra = [];
   mocks.physicalOptions = null; mocks.screenMove.mockReset();
 });
 
@@ -128,8 +130,13 @@ describe('OGS course journey', () => {
     expect(screen.getByRole('button', { name: '实体盘' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
     expect(mocks.physicalOptions?.enabled).toBe(true);
-    act(() => { expect(mocks.physicalOptions?.placeStone(2, 15)?.type).toBe('solved'); });
-    expect(screen.getByText('回答正确')).toBeInTheDocument();
+    mocks.physicalExtra = [[2, 3, 1]];
+    rerender(<MemoryRouter initialEntries={['/kiosk/tutorial/lesson/bl4-opening-4']}><Routes><Route path="/kiosk/tutorial/lesson/:lessonId" element={<OgsCourseExercisePage />} /></Routes></MemoryRouter>);
+    expect(screen.getByText('×')).toHaveAttribute('x', '350');
+    expect(screen.getByText('×')).toHaveAttribute('y', '270');
+    act(() => { expect(mocks.physicalOptions?.placeStone(2, 15)?.type).toBe('correct'); mocks.physicalPhase = 'replying'; });
+    expect(screen.getByText('同步实体盘')).toBeInTheDocument();
+    expect(mocks.physicalOptions?.isSolved).toBe(false);
     expect(mocks.getStep).toHaveBeenCalledWith(1);
   });
 
@@ -186,6 +193,14 @@ describe('OGS course journey', () => {
     expect(screen.getByText('回答正确')).toBeInTheDocument();
   });
 
+  it('renders source cross annotations as a board symbol', async () => {
+    mocks.getStep.mockResolvedValueOnce({ ...base, shapes: { '2,2': 'cross' } });
+    renderAt('/kiosk/tutorial/lesson/bl4-opening-4');
+    await screen.findByText('白先，点 A 位。');
+    expect(screen.getByText('×')).toBeInTheDocument();
+    expect(screen.queryByText('cross')).not.toBeInTheDocument();
+  });
+
   it('keeps physical removal guidance ahead of a wrong judge result', async () => {
     mocks.vision.enabled = true; mocks.vision.recognitionReady = true;
     mocks.geometry = { status: { phase: 'ready', session_calibrated: true, capabilities: { geometry_ready: true } } };
@@ -214,13 +229,17 @@ describe('OGS course journey', () => {
   it('keeps physical response guidance ahead of a correct judge result until resolved', async () => {
     mocks.vision.enabled = true; mocks.vision.recognitionReady = true;
     mocks.geometry = { status: { phase: 'ready', session_calibrated: true, capabilities: { geometry_ready: true } } };
-    mocks.screenMove.mockImplementation((result: { type: string }) => { if (result.type === 'solved') mocks.physicalPhase = 'replying'; });
-    renderAt('/kiosk/tutorial/lesson/bl4-opening-4');
+    mocks.screenMove.mockImplementation((result: { type: string }) => { if (result.type === 'correct') mocks.physicalPhase = 'replying'; });
+    const { rerender } = renderAt('/kiosk/tutorial/lesson/bl4-opening-4');
     await screen.findByText('白先，点 A 位。');
     fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
     fireEvent.click(screen.getByTestId('ogs-point-2-3'));
     expect(screen.getByText('同步实体盘')).toBeInTheDocument();
     expect(screen.getByText(/按棋盘灯光补摆应手/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /下一步/ })).toBeDisabled();
+    expect(mocks.physicalOptions?.isSolved).toBe(false);
+    mocks.physicalPhase = 'ready';
+    rerender(<MemoryRouter initialEntries={['/kiosk/tutorial/lesson/bl4-opening-4']}><Routes><Route path="/kiosk/tutorial/lesson/:lessonId" element={<OgsCourseExercisePage />} /></Routes></MemoryRouter>);
+    expect(mocks.physicalOptions?.isSolved).toBe(true);
   });
 });

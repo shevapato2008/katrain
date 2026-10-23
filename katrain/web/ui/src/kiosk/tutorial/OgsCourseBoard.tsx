@@ -31,7 +31,6 @@ export function OgsCourseBoard({ step, state, onPoint, disabled = false, extra =
   const showPoint = (x: number, y: number) => x >= vp.col && x < vp.col + vp.cols && y >= vp.row && y < vp.row + vp.rows;
   const position = (n: number) => (n + .5) * cell;
   const selected = new Set(state.selectedRemoval.map(([x, y]) => key(x, y)));
-  const extras = new Set(extra.map(([x, y]) => key(x, y)));
   const clickable = !disabled && state.status === 'active' && (step.exercise.kind === 'puzzle' || step.exercise.kind === 'remove');
   return <div className="ogs-board-wrap" data-testid="ogs-board" data-window={`${vp.cols}x${vp.rows}`} style={{ ['--ogs-axis' as string]: `${axis}px`, ['--ogs-board-width' as string]: `${boardWidth}px`, ['--ogs-board-height' as string]: `${boardHeight}px` }}>
     <div className="ogs-board-axis ogs-board-axis--top">{Array.from({ length: vp.cols }, (_, i) => <span key={i}>{GO_COLS[vp.col + i]}</span>)}</div>
@@ -53,15 +52,15 @@ export function OgsCourseBoard({ step, state, onPoint, disabled = false, extra =
       {state.board.flatMap((row, y) => row.map((stone, x) => stone && showPoint(x, y) ? <g key={key(x, y)}>
         <circle cx={position(x)} cy={position(y)} r="39" fill={`url(#ogs-${stone === 'B' ? 'black' : 'white'})`} stroke={stone === 'B' ? '#111718' : '#d5d8d0'} strokeWidth="3" />
         {selected.has(key(x, y)) && <circle cx={position(x)} cy={position(y)} r="33" fill="none" stroke="#75e9a0" strokeWidth="7" />}
-        {extras.has(key(x, y)) && <text x={position(x)} y={position(y) + 20} textAnchor="middle" fontSize="64" fill="#ec635a">×</text>}
       </g> : null))}
+      {extra.map(([x, y]) => showPoint(x, y) ? <text key={`extra-${key(x, y)}`} x={position(x)} y={position(y) + 20} textAnchor="middle" fontSize="64" fill="#ec635a">×</text> : null)}
       {Object.entries(step.letters).map(([point, label]) => {
         const [x, y] = point.split(',').map(Number);
         return showPoint(x, y) ? <text key={`l${point}`} x={position(x)} y={position(y) - 31} textAnchor="middle" fontSize={annotationFontSize} fontWeight="bold" fill="#183c28" paintOrder="stroke" stroke="#f3d496" strokeWidth="8">{label}</text> : null;
       })}
       {Object.entries(step.shapes).map(([point, shape]) => {
         const [x, y] = point.split(',').map(Number);
-        return showPoint(x, y) ? <text key={`s${point}`} x={position(x)} y={position(y) + 13} textAnchor="middle" fontSize="38" fill="#ee914b">{shape === 'triangle' ? '△' : shape === 'square' ? '□' : shape === 'circle' ? '○' : shape}</text> : null;
+        return showPoint(x, y) ? <text key={`s${point}`} x={position(x)} y={position(y) + 13} textAnchor="middle" fontSize="38" fill="#ee914b">{shape === 'triangle' ? '△' : shape === 'square' ? '□' : shape === 'circle' ? '○' : shape === 'cross' ? '×' : shape}</text> : null;
       })}
       {clickable && Array.from({ length: vp.rows * vp.cols }, (_, i) => {
         const x = vp.col + i % vp.cols;

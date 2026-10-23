@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { OgsStep } from '../../types/ogsCourse';
 import type { OgsExerciseState, OgsPoint } from './ogsExercise';
 import { useVision } from '../context/VisionContext';
@@ -41,6 +41,8 @@ export function useOgsPhysicalBoard({ step, state, enabled, revision, playPoint,
         : !visionStatus.recognitionReady
         ? '正在连接摄像头与识别模型，请稍候…' : '';
   const active = enabled && available && !!state;
+  const [terminalSynced, setTerminalSynced] = useState(false);
+  const sawConvergence = useRef(false);
   const stones = useMemo(() => state ? toStones(state) : [], [state]);
   const placeStone = useCallback((x: number, bottomY: number): MoveResult | null => {
     if (!step) return null;
@@ -55,7 +57,10 @@ export function useOgsPhysicalBoard({ step, state, enabled, revision, playPoint,
     resyncKey: 0,
     boardSize: 19,
     stones,
-    isSolved: state?.status === 'correct',
+    // A correct OGS answer may include an automatic reply or captured stones.
+    // Let the shared machine converge to the final screen board before it
+    // celebrates; its direct `solved` path would skip that physical sync.
+    isSolved: active && state?.status === 'correct' && terminalSynced,
     showHint: false,
     hintCoords: null,
     isTryMode: false,
@@ -66,11 +71,24 @@ export function useOgsPhysicalBoard({ step, state, enabled, revision, playPoint,
     playMoveSound: () => {},
     onAdvance: () => {},
   });
+  useEffect(() => {
+    if (!active || state?.status !== 'correct') {
+      sawConvergence.current = false;
+      setTerminalSynced(false);
+    } else if (physical.phase === 'replying') {
+      sawConvergence.current = true;
+    } else if (physical.phase === 'ready' && sawConvergence.current) {
+      sawConvergence.current = false;
+      setTerminalSynced(true);
+    }
+  }, [active, state?.status, physical.phase, revision, step?.page]);
   const onScreenMove = useCallback((next: OgsExerciseState, previous: OgsExerciseState) => {
     if (!active || physical.phase !== 'ready') return;
     physical.onScreenMove(moveResult(next, previous, step!.size), toVisionBoard(previous));
   }, [active, physical, step]);
-  const extra = active ? physical.extra.map(([row, col]): OgsPoint => [col, 18 - row]) : [];
+  // Vision rows and the OGS board both count from the top. The tsumego page
+  // flips this value only because its drawing component counts from the bottom.
+  const extra = active ? physical.extra.map(([row, col]): OgsPoint => [col, row]) : [];
   return { available, reason, calibrate, active, physical, onScreenMove, extra };
 }
 
@@ -80,7 +98,7 @@ function moveResult(next: OgsExerciseState, previous: OgsExerciseState, size: nu
   const reply = transition.automaticResponses.at(-1);
   const captured = transition.playerMove.captured.length + transition.automaticResponses.reduce((count, move) => count + move.captured.length, 0);
   return {
-    type: next.status === 'wrong' ? 'incorrect' : next.status === 'correct' ? 'solved' : 'correct',
+    type: next.status === 'wrong' ? 'incorrect' : 'correct',
     captured,
     scheduledReply: reply ? { player: reply.player, coords: [reply.point[0], size - 1 - reply.point[1]] } : undefined,
   };

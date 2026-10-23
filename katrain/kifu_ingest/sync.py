@@ -135,8 +135,13 @@ def check_production_identities(request, *, host, key_path, known_hosts, timeout
         raise IdentityCheckUnavailable("production identity check unavailable") from None
 
 
-def send_verified_manifest(manifest, manifest_sha256, test_verification, *, host, key_path, known_hosts, timeout=180):
-    """Send a tested logical package to a forced, restricted receiver command."""
+def send_verified_manifest(manifest, manifest_sha256, test_verification, *, host, key_path, known_hosts, timeout=None):
+    """Wait for a native receipt; transport cancellation cannot stop its writer.
+
+    Publication admission has a cooperative round budget. SSH keepalives still
+    detect connection loss; the remote publication guard prevents a second
+    receiver from warming/publishing while a disconnected writer finishes.
+    """
     validate_test_verification(manifest, manifest_sha256, test_verification)
     if canonical_sha256(manifest) != manifest_sha256:
         raise ValueError("manifest hash mismatch")

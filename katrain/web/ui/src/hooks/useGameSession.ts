@@ -41,6 +41,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const [connectionLost, setConnectionLost] = useState<'rejected' | 'dropped' | 'gone' | 'central' | null>(null);
     const [retryEpoch, setRetryEpoch] = useState(0);
     const [reconnecting, setReconnecting] = useState(false);
+    const [connected, setConnected] = useState(false);
     const [lastLog, setLastLog] = useState<string | null>(null);
     // wire 契约 `shapes.Chat`:身份两项由服务端填,字段叫 `from_name` **不叫 `sender`**。
     const [chatMessages, setChatMessages] = useState<{from_id: number, from_name: string, text: string}[]>([]);
@@ -175,6 +176,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         if (sessionId) {
             let disposed = false;
             let ownedWs: WebSocket | null = null;
+            setConnected(false);
             const connect = async () => {
                 try {
                     const data = await API.getState(sessionId, token);
@@ -193,6 +195,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                     wsRef.current = ws;
                     ws.onopen = () => {
                         if (wsRef.current !== ws) return;
+                        setConnected(true);
                         setConnectionLost(null);
                         setReconnecting(false);
                         if (centralRoom) setError(null);
@@ -207,6 +210,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                                 setPlatformPhase(msg.state.platform_phase);
                             }
                         } else if (centralRoom && msg.type === 'error' && msg.code === 'CENTRAL_DISCONNECTED') {
+                            setConnected(false);
                             setConnectionLost('central');
                             setReconnecting(false);
                             setError('中央对局连接中断');
@@ -288,6 +292,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                        「点了没反应」。对局状态全靠这条推送，它断 = 页面在撒谎。 */
                     ws.onclose = (event) => {
                         if (wsRef.current !== ws) return;  // 已被新连接替换或组件卸载
+                        setConnected(false);
                         clearQueuedSounds();
                         setPlatformPendingMove(null);
                         if (centralRoom && event.code === 1013) {
@@ -342,6 +347,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             connect();
             return () => {
                 disposed = true;
+                setConnected(false);
                 clearQueuedSounds();
                 if (wsRef.current === ownedWs) {
                     wsRef.current = null;  // 先清空，让上面的 onclose 认出这是我们自己关的
@@ -464,7 +470,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // disable-while-pending wiring). This hook's own onmessage switch above only handles
     // the generic game-session message types and deliberately ignores platform_* ones.
     return {
-        sessionId, setSessionId, gameState, setGameState, error, connectionLost, reconnecting, reconnect,
+        sessionId, setSessionId, gameState, setGameState, error, connectionLost, connected, reconnecting, reconnect,
         clearError, reportSessionGone, onMove, onNavigate, handleAction,
         initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
         physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,

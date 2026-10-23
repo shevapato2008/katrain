@@ -717,7 +717,7 @@ async def test_failed_package_records_phase_and_continues_to_next_package():
     )
     assert processed == ["one", "two"]
     assert failures == 1
-    assert store.failures == [("one", "retry_wait", "TEST API timed out")]
+    assert store.failures == [("one", "retry_wait", "test_published: TimeoutError: TEST API timed out")]
     assert store.rows["one"]["next_retry_at"] > datetime(2026, 10, 19, tzinfo=timezone.utc)
 
 

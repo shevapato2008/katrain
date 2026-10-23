@@ -172,3 +172,13 @@ def test_manifest_written_before_download_and_atomic_replace(tmp_path):
     stage.save_sgf("12", SGF)
     assert not list(tmp_path.rglob("*.tmp"))
     assert (tmp_path / "sgf" / "12.sgf").read_bytes() == SGF.encode()
+
+
+def test_remember_never_overwrites_original_metadata_or_sidecar(tmp_path):
+    stage = Stage(tmp_path.resolve())
+    stage.remember({"id": 1, "pb": "Original"})
+    stage.save_sgf("1", SGF)
+    raw = (stage.metadata_dir / "1.json").read_bytes()
+    stage.remember({"id": 1, "pb": "Changed"})
+    assert stage.manifest["items"]["1"]["metadata"]["pb"] == "Original"
+    assert (stage.metadata_dir / "1.json").read_bytes() == raw

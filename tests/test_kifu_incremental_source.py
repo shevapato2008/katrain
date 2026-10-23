@@ -161,3 +161,91 @@ def test_429_longer_than_wait_cap_is_deferred_without_early_retry():
     run(check())
     assert len(calls) == 1
     assert slept == []
+
+
+@pytest.mark.parametrize("path,terminal", [("sgf", True), ("list", False)])
+def test_only_shared_7004_is_terminal_and_retains_bounded_evidence(path, terminal):
+    async def check():
+        payload = httpx.Response(200, json={"code": 7004, "msg": "gone" * 300})
+        async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _: payload)) as client:
+            source = Source19x19(client, list_interval=(0, 0), sgf_interval=(0, 0))
+            with pytest.raises(SourceError) as exc:
+                await (source.fetch_sgf("12") if path == "sgf" else source.fetch_page(0))
+            assert exc.value.retryable is not terminal
+            assert exc.value.code == 7004
+            assert exc.value.source_message == ("gone" * 300)[:512]
+
+    run(check())
+
+
+def test_short_429_also_defers_without_internal_retry():
+    calls = []
+
+    async def check():
+        async with httpx.AsyncClient(
+            transport=httpx.MockTransport(
+                lambda req: calls.append(req) or response(status=429, headers={"Retry-After": "1"})
+            )
+        ) as client:
+            source = Source19x19(client, list_interval=(0, 0), sgf_interval=(0, 0))
+            with pytest.raises(SourceRateLimited):
+                await source.fetch_sgf("12")
+
+    run(check())
+    assert len(calls) == 1
+
+
+def test_absolute_deadline_cancels_transport_and_clamps_httpx_timeout():
+    import time
+
+    seen = []
+
+    async def handle(req):
+        seen.append(req.extensions["timeout"])
+        await asyncio.sleep(1)
+        return response(data={"gameMetaList": []})
+
+    async def check():
+        from katrain.kifu_ingest.source_19x19 import SourceBudgetExceeded
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            source = Source19x19(client, deadline=time.monotonic() + 0.03, list_interval=(0, 0))
+            with pytest.raises(SourceBudgetExceeded):
+                await source.fetch_page(0)
+
+    run(check())
+    assert 0 < seen[0]["read"] <= 0.03
+
+
+def test_global_spacing_applies_between_list_and_sgf():
+    now = [0.0]
+    requests_at = []
+
+    async def sleep(seconds):
+        now[0] += seconds
+
+    def handle(req):
+        requests_at.append(now[0])
+        return response(data={"gameMetaList": []} if req.method == "GET" else {"sgf": "(;GM[1])"})
+
+    async def check():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            source = Source19x19(client, sleep=sleep, clock=lambda: now[0], list_interval=(5, 5), sgf_interval=(2, 2))
+            await source.fetch_page(0)
+            await source.fetch_sgf("12")
+            await source.fetch_page(1)
+
+    run(check())
+    assert requests_at == [0, 2, 7]
+
+
+def test_list_response_cannot_exceed_requested_twenty_rows():
+    async def check():
+        async with httpx.AsyncClient(
+            transport=httpx.MockTransport(lambda _: response(data={"gameMetaList": [{"id": i} for i in range(21)]}))
+        ) as client:
+            source = Source19x19(client, list_interval=(0, 0))
+            with pytest.raises(SourceError, match="20"):
+                await source.fetch_page(0)
+
+    run(check())

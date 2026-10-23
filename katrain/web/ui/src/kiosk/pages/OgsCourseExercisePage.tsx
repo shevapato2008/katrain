@@ -89,9 +89,9 @@ export default function OgsCourseExercisePage() {
       <div className="ogs-progress">{Array.from({ length: Math.min(lesson.step_count, 20) }, (_, i) => <i key={i} className={Math.floor(index * Math.min(lesson.step_count, 20) / lesson.step_count) === i ? 'is-current' : ''} />)}</div>
       <section className="ogs-card ogs-instruction"><span className="ogs-instruction-label">这一题</span><p>{currentStep.locale.text.instruction || currentStep.locale.text.title}</p></section>
       <section className={`ogs-card ogs-interaction ${!physicalBusy && status === 'correct' ? 'is-success' : status === 'wrong' ? 'is-error' : ''}`}>
-        <strong>{physicalBusy ? phase === 'clearing' || phase === 'setup' ? '准备实体盘' : phase === 'replying' ? '同步实体盘' : phase === 'removing' ? '拿除错子' : '核对实体盘' : status === 'correct' ? '回答正确' : status === 'wrong' ? '再试一次' : kind === 'choice' ? '选出答案' : kind === 'remove' ? '点选要拿除的棋块' : kind === 'pass' ? '请弃手' : kind === 'finish' ? '请确认终局' : '轮到你落子'}</strong>
+        <strong>{physicalBusy ? phase === 'clearing' || phase === 'setup' ? '准备实体盘' : phase === 'replying' ? '同步实体盘' : phase === 'removing' ? '拿除错子' : '核对实体盘' : status === 'correct' ? '回答正确' : status === 'wrong' ? '再试一次' : kind === 'choice' ? '选出答案' : kind === 'remove' ? '点选要拿除的棋块' : kind === 'pass' ? '请停一手' : kind === 'finish' ? '请确认终局' : '轮到你落子'}</strong>
         {kind === 'choice' && status === 'active' && <div className="ogs-choice-row">{currentStep.exercise.kind === 'choice' && currentStep.exercise.choices.map((choice) => <button key={choice.value} className="ogs-key" onClick={() => choose(choice.value)}>{currentStep.locale.text.choices?.[choice.value] ?? choice.label_key ?? choice.value}</button>)}</div>}
-        {kind === 'pass' && status === 'active' && <button className="ogs-key ogs-inline-action" onClick={() => act('pass')}>弃手</button>}
+        {kind === 'pass' && status === 'active' && <button className="ogs-key ogs-inline-action" onClick={() => act('pass')}>停一手</button>}
         {kind === 'finish' && status === 'active' && <button className="ogs-key ogs-inline-action" onClick={() => act('finish')}>确认终局</button>}
         {physicalBusy && <span>{physicalMessage}</span>}
         {status === 'wrong' && !physicalBusy && <button className="ogs-key ogs-inline-action" onClick={retry}>重试</button>}

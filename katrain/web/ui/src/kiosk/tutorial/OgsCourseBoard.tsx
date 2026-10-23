@@ -22,6 +22,9 @@ export function OgsCourseBoard({ step, state, onPoint, disabled = false, extra =
   const displayCell = Math.min(available / vp.cols, available / vp.rows);
   const boardWidth = displayCell * vp.cols;
   const boardHeight = displayCell * vp.rows;
+  // SVG coordinates are in 100-unit cells. Keep annotations readable when a
+  // wide source crop is scaled into the fixed Kiosk board area.
+  const annotationFontSize = Math.max(39, Math.round(1600 / displayCell));
   const cell = 100;
   const startX = vp.col * cell;
   const startY = vp.row * cell;
@@ -54,7 +57,7 @@ export function OgsCourseBoard({ step, state, onPoint, disabled = false, extra =
       </g> : null))}
       {Object.entries(step.letters).map(([point, label]) => {
         const [x, y] = point.split(',').map(Number);
-        return showPoint(x, y) ? <text key={`l${point}`} x={position(x)} y={position(y) - 31} textAnchor="middle" fontSize="39" fontWeight="bold" fill="#183c28" paintOrder="stroke" stroke="#f3d496" strokeWidth="8">{label}</text> : null;
+        return showPoint(x, y) ? <text key={`l${point}`} x={position(x)} y={position(y) - 31} textAnchor="middle" fontSize={annotationFontSize} fontWeight="bold" fill="#183c28" paintOrder="stroke" stroke="#f3d496" strokeWidth="8">{label}</text> : null;
       })}
       {Object.entries(step.shapes).map(([point, shape]) => {
         const [x, y] = point.split(',').map(Number);

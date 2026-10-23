@@ -91,8 +91,8 @@ describe('OGS course journey', () => {
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     fireEvent.click(screen.getByRole('button', { name: '3' }));
     fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
-    await screen.findByRole('button', { name: '弃手' });
-    fireEvent.click(screen.getByRole('button', { name: '弃手' }));
+    await screen.findByRole('button', { name: '停一手' });
+    fireEvent.click(screen.getByRole('button', { name: '停一手' }));
     fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
     await screen.findByText('点选要拿除的棋块');
     fireEvent.click(screen.getByTestId('ogs-point-1-1'));

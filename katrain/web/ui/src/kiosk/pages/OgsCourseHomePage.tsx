@@ -22,12 +22,12 @@ export default function OgsCourseHomePage() {
       <span className="ogs-kicker">边学边下 · 互动教程</span>
       <h1>围棋入门</h1><h2>{course.title}</h2>
       <p>从第一手落子开始，逐章掌握规则与基本技巧。</p>
-      <div className="ogs-metrics"><span><strong>{course.counts.chapters}</strong>章节</span><span><strong>{course.counts.lessons}</strong>课目</span><span><strong>{course.counts.steps}</strong>练习步骤</span></div>
+      <div className="ogs-metrics"><span><strong>{course.counts.chapters.toLocaleString('zh-CN')}</strong>章节</span><span><strong>{course.counts.lessons.toLocaleString('zh-CN')}</strong>课目</span><span><strong>{course.counts.steps.toLocaleString('zh-CN')}</strong>练习步骤</span></div>
       <button className="ogs-key ogs-key-primary" disabled={!first} onClick={() => navigate(`/kiosk/tutorial/chapter/${encodeURIComponent(first.id)}`)}>开始第一章 ›</button>
       <button className="ogs-library-link" onClick={() => navigate('/kiosk/tutorial/library')}>其他教材 ›</button>
     </section>
     <section className="ogs-home-right"><div className="ogs-section-head"><h2>课程目录</h2><span>选一章开始</span></div><div className="ogs-chapter-grid">
-      {course.chapters.map((chapter) => <button key={chapter.id} className="ogs-chapter" onClick={() => navigate(`/kiosk/tutorial/chapter/${encodeURIComponent(chapter.id)}`)}><span className="ogs-chapter-no">{String(chapter.number).padStart(2, '0')}</span><span className="ogs-chapter-copy"><strong>{chapter.title}</strong><em>{chapter.lesson_count} 课 · {chapter.step_count} 步</em></span><span aria-hidden="true">›</span></button>)}
+      {course.chapters.map((chapter) => <button key={chapter.id} className="ogs-chapter" onClick={() => navigate(`/kiosk/tutorial/chapter/${encodeURIComponent(chapter.id)}`)}><span className="ogs-chapter-no">{String(chapter.number).padStart(2, '0')}</span><span className="ogs-chapter-copy"><strong>{chapter.title}</strong><em>{chapter.lesson_count.toLocaleString('zh-CN')} 课 · {chapter.step_count.toLocaleString('zh-CN')} 步</em></span><span className="ogs-chapter-next" aria-hidden="true">›</span></button>)}
     </div></section>
   </main>;
 }

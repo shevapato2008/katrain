@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import '../../../kiosk-shell/engine-game-redesign.css';
 import { Icon } from '../../shell/icons';
 import { KioskFold } from '../../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../../shell/KioskActions';
+import { PlayerCardSurface } from '../../shell/PlayerCardSurface';
 import { GoEvalGraph, goEvalSummary } from './GoEvalGraph';
 import { localizedRank } from '../../../utils/rankUtils';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
@@ -211,7 +212,6 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t, paired 
   lang: string;
   t: (key: string, fallback?: string) => string;
 }) {
-  const surfaceId = useId();
   // 段位:阶梯 AI 的段位是 `rank_display` 里的字符串,其他人走数值 `calculated_rank`。
   const rawRank = info.rank_display ?? localizedRank(info.calculated_rank, lang);
   const rank = !rawRank || rawRank === 'No Rank' ? null : rawRank;
@@ -225,19 +225,9 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t, paired 
   //  设备上设置页承诺「黑方」、对局页给「黑棋」,而注释说它们是同一句话。)
   const name = info.name || (color === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'));
   if (paired) {
-    // Separate SVG surfaces keep every corner rounded along the diagonal seam.
-    const outline = color === 'W'
-      ? 'M14 1 H218 Q233 1 230 15 L214 111 Q211 125 197 125 H14 Q1 125 1 112 V14 Q1 1 14 1 Z'
-      : 'M36 1 H220 Q233 1 233 14 V112 Q233 125 220 125 H17 Q1 125 4 111 L20 15 Q22 1 36 1 Z';
     return (
       <div className={`pcard ai-player-card${turn ? ' turn' : ''}`} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
-        <svg className="ai-player-card__surface" viewBox="0 0 234 126" preserveAspectRatio="none" aria-hidden="true">
-          <defs><linearGradient id={surfaceId} x2="0.8" y2="1">
-            <stop className="ai-player-card__gradient-start" />
-            <stop className="ai-player-card__gradient-end" offset="1" />
-          </linearGradient></defs>
-          <path d={outline} fill={`url(#${surfaceId})`} strokeWidth="1.5" />
-        </svg>
+        <PlayerCardSurface left={color === 'W'} />
         <div className="ai-player-card__name">
           <span className={color === 'B' ? 'disc b' : 'disc w'} aria-hidden="true" />
           <h4 title={rank ? `${name} · ${rank}` : name}>{rank ? `${name} · ${rank}` : name}</h4>
@@ -488,7 +478,7 @@ const GameControlPanel = ({
   // 时钟栏(本地对局直接使用；其它对局不计时时作为 SeatRow 的回落)。没有时限时,
   // 不显示继承默认配置后累计的 main_time_used。这一栏唯一为真的量是
   // **当前是第几手**,而那是**局面的量、不是某一方的量** ⇒ 只挂在轮到的那张卡上,
-  // 另一张卡的时钟栏不渲染。两张都写「不限时」是把同一句话说两遍;
+  // paired 名卡双方都显示「不限时」，只有当前方额外显示手数；
   // 写 `0:00 本局已下` 更糟 —— 那不是「用了 0 秒」,是「压根没在计」。
   const clockFor = (c: 'B' | 'W'): { value: string; label: string; phase?: 'byoyomi' | 'expired' } | null => {
     const lc = localClock(c);
@@ -628,18 +618,18 @@ const GameControlPanel = ({
   return (
     <>
       {localGame || onlineGame ? (
-        <>
+        <div className="ai-player-cards" role="group" aria-label={t('game:players', '对局双方')}>
           <PlayerRow
             color="W" info={gameState.players_info.W} captures={gameState.prisoner_count.W}
             turn={toMove === 'W' && !isGameOver && !lobbyCountStopped} state={stateWord('W')}
-            clock={ogsGame ? onlineClock('W') : clockFor('W')} lang={lang} t={t}
+            clock={ogsGame ? onlineClock('W') : clockFor('W')} lang={lang} t={t} paired
           />
           <PlayerRow
             color="B" info={gameState.players_info.B} captures={gameState.prisoner_count.B}
             turn={toMove === 'B' && !isGameOver && !lobbyCountStopped} state={stateWord('B')}
-            clock={ogsGame ? onlineClock('B') : clockFor('B')} lang={lang} t={t}
+            clock={ogsGame ? onlineClock('B') : clockFor('B')} lang={lang} t={t} paired
           />
-        </>
+        </div>
       ) : freeVsAi || rankedGame || engineMode ? (
         <div className="ai-player-cards" role="group" aria-label={t('game:players', '对局双方')}>
           <SeatRow

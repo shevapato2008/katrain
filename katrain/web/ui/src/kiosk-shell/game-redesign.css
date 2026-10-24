@@ -1,4 +1,4 @@
-/* Approved 1024 × 600 AI game rail. Other game modes keep go-screens.css. */
+/* Approved 1024 × 600 AI controls; player pairs are shared across Kiosk modes. */
 .kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) {
   gap: 8px;
   --eval-graph-h: 108px;
@@ -37,13 +37,13 @@
   font-style: normal;
 }
 
-.kiosk-screen[data-journey="ai-play"] .ai-player-cards {
+.kiosk-screen .ai-player-cards {
   position: relative;
   height: 104px;
   flex: none;
 }
 
-.kiosk-screen[data-journey="ai-play"] .ai-player-card {
+.kiosk-screen .ai-player-card {
   position: absolute;
   top: 0;
   width: calc(50% + 8px);
@@ -60,10 +60,10 @@
   color: #bfcec2;
 }
 
-.kiosk-screen[data-journey="ai-play"] .ai-player-card:first-child { left: 0; padding-right: 32px; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card:last-child { right: 0; padding-left: 32px; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card.turn { background: transparent; color: #f2faf1; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card__surface {
+.kiosk-screen .ai-player-card:first-child { left: 0; padding-right: 32px; }
+.kiosk-screen .ai-player-card:last-child { right: 0; padding-left: 32px; }
+.kiosk-screen .ai-player-card.turn { background: transparent; color: #f2faf1; }
+.kiosk-screen .ai-player-card__surface {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -72,46 +72,46 @@
   filter: drop-shadow(0 3px 5px #0006);
   pointer-events: none;
 }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card__surface path { stroke: #405948; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card.turn .ai-player-card__surface path { stroke: #69c98a; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card__gradient-start { stop-color: #26362c; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card__gradient-end { stop-color: #15231b; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card.turn .ai-player-card__gradient-start { stop-color: #2b6244; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card.turn .ai-player-card__gradient-end { stop-color: #1c432f; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card > div { position: relative; z-index: 1; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card__name {
+.kiosk-screen .ai-player-card__surface path { stroke: #405948; }
+.kiosk-screen .ai-player-card.turn .ai-player-card__surface path { stroke: #69c98a; }
+.kiosk-screen .ai-player-card__gradient-start { stop-color: #26362c; }
+.kiosk-screen .ai-player-card__gradient-end { stop-color: #15231b; }
+.kiosk-screen .ai-player-card.turn .ai-player-card__gradient-start { stop-color: #2b6244; }
+.kiosk-screen .ai-player-card.turn .ai-player-card__gradient-end { stop-color: #1c432f; }
+.kiosk-screen .ai-player-card > div { position: relative; z-index: 1; }
+.kiosk-screen .ai-player-card__name {
   display: flex;
   align-items: center;
   gap: 8px;
   height: 28px;
   flex: none;
 }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card h4 { font-size: 22px; line-height: 1.1; font-weight: 500; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card .disc { width: 28px; height: 28px; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock {
+.kiosk-screen .ai-player-card h4 { font-size: 22px; line-height: 1.1; font-weight: 500; }
+.kiosk-screen .ai-player-card .disc { width: 28px; height: 28px; }
+.kiosk-screen .ai-player-card .clock {
   margin: auto 0 0;
   text-align: left;
   min-height: 28px;
 }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock b {
+.kiosk-screen .ai-player-card .clock b {
   display: block;
   font-family: var(--font-serif);
   font-size: 28px;
   line-height: 1;
   font-weight: 500;
 }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock span { font-size: 14px; line-height: 1; }
+.kiosk-screen .ai-player-card .clock span { font-size: 14px; line-height: 1; }
 /* Keep both "不限时" labels level; only the player to move gets the move number at its right. */
-.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock--untimed {
+.kiosk-screen .ai-player-card .clock--untimed {
   display: flex;
   flex-direction: row-reverse;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
 }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock--untimed b { font-size: 14px; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card .clock--untimed span { font-size: 28px; line-height: 1; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card__foot {
+.kiosk-screen .ai-player-card .clock--untimed b { font-size: 14px; }
+.kiosk-screen .ai-player-card .clock--untimed span { font-size: 28px; line-height: 1; }
+.kiosk-screen .ai-player-card__foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -122,13 +122,13 @@
   color: #acbeb1;
   white-space: nowrap;
 }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card__foot > span:first-child {
+.kiosk-screen .ai-player-card__foot > span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card__foot > span:last-child { flex: none; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card.turn .ai-player-card__foot { color: #91e5a7; }
-.kiosk-screen[data-journey="ai-play"] .ai-player-card[data-clock="expired"] .ai-player-card__surface path { stroke: var(--bad); }
+.kiosk-screen .ai-player-card__foot > span:last-child { flex: none; }
+.kiosk-screen .ai-player-card.turn .ai-player-card__foot { color: #91e5a7; }
+.kiosk-screen .ai-player-card[data-clock="expired"] .ai-player-card__surface path { stroke: var(--bad); }
 
 .kiosk-screen[data-journey="ai-play"] .kiosk-rail:has(> .ai-player-cards) .kiosk-fold[data-fold="eval"] {
   height: 152px;

@@ -17,6 +17,7 @@ import { colsFor, rowsFor } from '../shell/goBoard';
 import { KioskActions, type KioskAction } from '../shell/KioskActions';
 import { KioskFold } from '../shell/KioskFold';
 import { KioskPagebar } from '../shell/KioskPagebar';
+import { PlayerCardSurface } from '../shell/PlayerCardSurface';
 import { useBackTo } from '../hooks/useBackTo';
 import { driftLine } from '../utils/baipuDrift';
 import { playShutter } from '../utils/baipuShutter';
@@ -794,13 +795,14 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           </div>
         </div>}
 
-        <div className="baipu-players">{!collect && ([
+        <div className="baipu-players ai-player-cards" role="group" aria-label={t('game:players', '对局双方')}>{!collect && ([
           { color: 'B' as const, name: meta?.player_black?.trim() || t('game:black_side', '黑方'), side: t('game:plays_black', '执黑') },
           { color: 'W' as const, name: meta?.player_white?.trim() || t('game:white_side', '白方'), side: t('game:plays_white', '执白') },
-        ]).map(({ color, name, side }) => {
+        ]).map(({ color, name, side }, index) => {
           const turn = nextColor === color && phase !== 'done' && mood !== 'trying' && mood !== 'hint';
           return (
-            <div key={color} className={turn ? 'pcard turn' : 'pcard'} data-testid={`baipu-player-${color === 'B' ? 'black' : 'white'}`} data-turn={turn}>
+            <div key={color} className={`pcard ai-player-card${turn ? ' turn' : ''}`} data-testid={`baipu-player-${color === 'B' ? 'black' : 'white'}`} data-turn={turn}>
+              <PlayerCardSurface left={index === 0} />
               <span className={color === 'B' ? 'disc b' : 'disc w'} aria-hidden="true" />
               <div>
                 <h4 title={name}>{name}</h4>

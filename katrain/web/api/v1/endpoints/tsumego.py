@@ -1,7 +1,7 @@
 """Tsumego API endpoints."""
 
 import logging
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
@@ -69,6 +69,7 @@ class ProblemDetail(BaseModel):
     initialBlack: List[str]
     initialWhite: List[str]
     sgfContent: str
+    board_variant: Optional[dict] = None
 
 
 class ProgressData(BaseModel):
@@ -283,21 +284,30 @@ async def get_problems(
     ]
 
 
-@router.get("/problems/{problem_id}", response_model=ProblemDetail)
-async def get_problem(request: Request, problem_id: str, db: Session = Depends(get_db)):
+@router.get("/problems/{problem_id}", response_model=ProblemDetail, response_model_exclude_unset=True)
+async def get_problem(
+    request: Request,
+    problem_id: str,
+    db: Session = Depends(get_db),
+    board_variant: Optional[Literal["kiosk19"]] = None,
+):
     """Get full problem details including SGF content."""
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
         result = await _board_read(lambda: dispatcher.tsumego_get_problem(problem_id))
         if not result:
             raise HTTPException(status_code=404, detail=f"Problem {problem_id} not found")
+        if board_variant == "kiosk19":
+            from katrain.web.content.board_variants import adapt_tsumego_detail
+
+            return adapt_tsumego_detail(result)
         return result
 
     problem = db.query(TsumegoProblem).filter(TsumegoProblem.id == problem_id).first()
     if not problem:
         raise HTTPException(status_code=404, detail=f"Problem {problem_id} not found")
 
-    return ProblemDetail(
+    result = ProblemDetail(
         id=problem.id,
         level=problem.level,
         category=problem.category,
@@ -307,6 +317,11 @@ async def get_problem(request: Request, problem_id: str, db: Session = Depends(g
         initialWhite=problem.initial_white or [],
         sgfContent=problem.sgf_content or "",
     )
+    if board_variant == "kiosk19":
+        from katrain.web.content.board_variants import adapt_tsumego_detail
+
+        return adapt_tsumego_detail(result.model_dump(exclude_unset=True))
+    return result
 
 
 @router.get("/progress", response_model=dict[str, ProgressData])

@@ -206,3 +206,27 @@ def test_public_corresponding_source_is_anonymous_and_ogs_only(imported_course):
         notice = archive.read('README.txt').decode()
         assert 'AGPL-3.0-or-later' in notice and '2026-10-24' in notice
         assert 'TEST' not in notice and 'commercial authorization' not in notice
+
+
+def test_public_step_kiosk_variant_is_explicit_and_source_download_stays_original(imported_course, monkeypatch):
+    import sys
+    from types import SimpleNamespace
+
+    client, _, _ = imported_course
+    original = client.get("/api/v1/tutorials/ogs-course/steps/1").json()
+    source_archive = client.get("/api/v1/tutorials/ogs-course/source.zip").content
+    calls = []
+    derived = {**original, "size": 19, "viewport": None, "board_variant": {"status": "adapted"}}
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.content.board_variants",
+        SimpleNamespace(
+            adapt_ogs_step=lambda step: calls.append(step) or derived,
+        ),
+    )
+    assert client.get("/api/v1/tutorials/ogs-course/steps/1").json() == original
+    assert calls == []
+    response = client.get("/api/v1/tutorials/ogs-course/steps/1?board_variant=kiosk19")
+    assert response.status_code == 200 and response.json() == derived
+    assert calls == [original]
+    assert client.get("/api/v1/tutorials/ogs-course/source.zip?board_variant=kiosk19").content == source_archive

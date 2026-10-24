@@ -6,6 +6,7 @@ import { kioskTheme } from '../theme';
 import { AUTO_ADVANCE_KEY, sequenceKey, wrongSequenceKey } from '../pages/tsumegoUnits';
 import { API } from '../../api';
 import { LedAPI } from '../../api/ledApi';
+import type { ProblemDetail } from '../../hooks/useTsumegoProblem';
 import type { PhysicalTsumegoOptions, PhysicalTsumegoState } from '../hooks/usePhysicalTsumego';
 import { setKioskIdentity, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
@@ -14,10 +15,11 @@ import { setKioskIdentity, __resetKioskActivityStorageForTests } from '../storag
 const TEST_UUID = 'test-uuid';
 
 // ---- Hoisted spies referenced by the mock factories below ----
-const { mockNavigate, mockFlush, mockReadPhysicalMode } = vi.hoisted(() => ({
+const { mockNavigate, mockFlush, mockReadPhysicalMode, mockUseProblem } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFlush: vi.fn(),
   mockReadPhysicalMode: vi.fn(() => false),
+  mockUseProblem: vi.fn(),
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -105,7 +107,7 @@ const mockPlaceStone = vi.fn();
 const mockSaveProgress = vi.fn();
 
 const defaultHookReturn = {
-  problem: { id: 'p1', level: '15k', category: '手筋', hint: '找到要点', boardSize: 9, initialBlack: [], initialWhite: [], sgfContent: '' },
+  problem: { id: 'p1', level: '15k', category: '手筋', hint: '找到要点', boardSize: 9, initialBlack: [], initialWhite: [], sgfContent: '' } as ProblemDetail,
   loading: false,
   error: null,
   boardSize: 9,
@@ -137,7 +139,7 @@ const defaultHookReturn = {
 let hookReturn = { ...defaultHookReturn };
 
 vi.mock('../../hooks/useTsumegoProblem', () => ({
-  useTsumegoProblem: () => hookReturn,
+  useTsumegoProblem: (...args: unknown[]) => { mockUseProblem(...args); return hookReturn; },
 }));
 
 // usePhysicalTsumego is the REAL IO hook (its own 38-test suite covers the phase machine +
@@ -224,6 +226,20 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
   };
 
   const action = (name: string) => screen.getByRole('button', { name });
+
+  it('requests the Kiosk variant and explains a retained four-line source without blocking screen practice', () => {
+    hookReturn = { ...hookReturn, boardSize: 4, problem: { ...hookReturn.problem, boardSize: 4,
+      board_variant: { status: 'unavailable', source_size: 4, target_size: 19, policy_version: 'test', source_sha256: 'test', offset: [0, 0], reason: '本题需要保留四侧边界' },
+    } };
+    renderPage('p1');
+    expect(mockUseProblem).toHaveBeenCalledWith('p1', { boardVariant: 'kiosk19' });
+    expect(screen.getByTestId('puzzle-original-board-reason')).toHaveTextContent('原4路题：本题需要保留四侧边界');
+    expect(screen.getByTestId('physical-mode-toggle')).toBeDisabled();
+    expect(action('提示')).toBeEnabled();
+    expect(action('重摆')).toBeEnabled();
+    fireEvent.click(action('重摆'));
+    expect(mockReset).toHaveBeenCalled();
+  });
 
   it('页控条:标题是第几题,副标是档位和分类,返回键回这一题所在的单元', () => {
     renderPage('p1');

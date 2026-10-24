@@ -253,3 +253,50 @@ def test_marks_and_wrong_branches_also_preserve_source_edges():
     source["exercise"]["tree"]["children"].append({"point": [8, 0], "correct": False, "wrong": True, "children": []})
     with pytest.raises(bv.Unavailable, match="相反两边"):
         bv._prepare_ogs(source)
+
+
+@pytest.mark.parametrize(
+    "source_id,goal_text",
+    [
+        ("66104", "对杀"),
+        ("81717", "连接"),
+        ("81740", "分断"),
+        ("82153", "反击"),
+    ],
+)
+def test_specific_gc_goal_cannot_be_certified_as_generic_capture(source_id, goal_text):
+    from katrain.web.content import board_variants as bv
+
+    source = tsumego(source_id)
+    result = bv.adapt_tsumego_detail(source)
+    metadata = result.pop("board_variant")
+    assert metadata["status"] == "unavailable"
+    assert goal_text in metadata["reason"]
+    assert result == source
+    entry = bv._policy()["tsumego"][source_id]
+    assert entry["reason_code"] == "objective_unconfirmed"
+    assert not entry["available"]
+    assert "goal" not in entry
+
+
+def test_accepted_tsumego_requires_full_gc_and_all_comments_review(monkeypatch):
+    from katrain.web.content import board_variants as bv
+
+    policy = copy.deepcopy(bv._policy())
+    policy["tsumego"]["92643"].pop("semantic_review", None)
+    monkeypatch.setattr(bv, "_policy", lambda: policy)
+    result = bv.adapt_tsumego_detail(tsumego("92643"))
+    assert result["board_variant"]["status"] == "unavailable"
+    assert "完整题面" in result["board_variant"]["reason"]
+
+
+def test_offline_audit_does_not_call_unreviewed_language_policy_approved():
+    from katrain.web.content import board_variants as bv
+    from scripts.audit_kiosk_board_variants import audit
+
+    source = ogs(73)
+    payload = {key: source[key] for key in bv.STRUCTURE_FIELDS}
+    payload["translations"] = {"fr": source["locale"]["text"]}
+    report = audit({"tsumego": [], "ogs": [{"payload": payload}]}, "fr")
+    assert report["ogs"][0]["status"] == "unavailable"
+    assert report["summary"]["ogs"]["approved_but_failed"] == 0

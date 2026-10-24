@@ -64,11 +64,13 @@ def audit(snapshot, language="zh-cn"):
             adapted = bv.adapt_tsumego_detail(source) if kind == "tsumego" else bv.adapt_ogs_step(source)
             metadata = adapted["board_variant"]
             entry = policy.get(kind, {}).get(source_id, {})
+            locale_approved = kind == "tsumego" or source["locale"]["effective"] in entry.get("locale_sha256", {})
             result = {
                 "id": source_id,
                 **metadata,
                 "reason_code": entry.get("reason_code", "unreviewed"),
-                "policy_declared_available": entry.get("available", False),
+                "policy_declared_available": entry.get("available", False) and locale_approved,
+                "source_declared_available": entry.get("available", False),
                 "derived_sha256": bv.digest({k: v for k, v in adapted.items() if k != "board_variant"}),
                 "branch_count": None,
                 "node_count": None,
@@ -76,6 +78,8 @@ def audit(snapshot, language="zh-cn"):
             }
             if kind == "ogs":
                 result["page"] = source["page"]
+                if entry.get("available") and not locale_approved:
+                    result["reason_code"] = "locale_unreviewed"
             if metadata["status"] == "adapted":
                 prepare = bv._prepare_tsumego if kind == "tsumego" else bv._prepare_ogs
                 certificate = bv.verify_goal(prepare(source), entry["goal"], source.get("exercise"))

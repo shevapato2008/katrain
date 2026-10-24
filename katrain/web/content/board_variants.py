@@ -518,6 +518,20 @@ def _adapt(source, kind):
         if not entry.get("available"):
             raise Unavailable(entry["reason"])
         prepared = _prepare_tsumego(source) if kind == "tsumego" else _prepare_ogs(source)
+        if kind == "tsumego":
+            root = prepared[5]
+            # Hashes attest which complete text was reviewed against this goal;
+            # they never infer a goal from category, keywords, or a correct flag.
+            evidence = {
+                "gc_sha256": digest(root.get_list_property("GC", [])),
+                "all_comments_sha256": digest([node.get_list_property("C", []) for node in root.nodes_in_tree]),
+                "goal_sha256": digest(entry["goal"]),
+            }
+            reviewed = entry.get("semantic_review", {})
+            if reviewed.get("decision") != "accepted" or any(
+                reviewed.get(key) != value for key, value in evidence.items()
+            ):
+                raise Unavailable("完整题面尚无与当前目标一致的审核证据")
         certificate = verify_goal(prepared, entry["goal"], source.get("exercise"))
         if digest(certificate) != entry["certificate_sha256"]:
             raise Unavailable("局部目标证书校验不一致")

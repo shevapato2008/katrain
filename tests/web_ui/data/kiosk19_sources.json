@@ -238,6 +238,120 @@
         "dg"
       ],
       "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[9]\nGN[Q-76898]\nAN[弈学园围棋]\nSO[https://www.101weiqi.com/15K/76898/]\nGC[吃子题 | 15K+ | 正确率: 80.4% (13926/17320)]\nC[黑先 吃子题]\nAB[gc][ge][ig][ii][hg][hf][gh][he]\nAW[gg][ef][hh][gf][eh][ih][fh][fe][dg]\nPL[B]\n(;B[hi]C[✓ 正确])(;B[gi](;W[fi](;B[hi]C[✓ 正确 | 黑官子后手])))(;B[fg](;W[gi]C[✗ 失败])))"
+    },
+    {
+      "id": "66104",
+      "level": "15k",
+      "category": "capturing",
+      "hint": "黑先",
+      "boardSize": 9,
+      "initialBlack": [
+        "gd",
+        "gg",
+        "hh",
+        "hd",
+        "fh",
+        "fe",
+        "ff",
+        "hg"
+      ],
+      "initialWhite": [
+        "fg",
+        "hf",
+        "gf",
+        "eh",
+        "eg",
+        "gh"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[9]\nGN[Q-66104]\nAN[huangziming]\nSO[https://www.101weiqi.com/15K/66104/]\nGC[吃子题 | 15K | 正确率: 92.6% (15772/17040) | 黑△和白△正在对杀，现在轮黑走，谁能获胜？]\nC[黑先 吃子题]\nAB[gd][gg][hh][hd][fh][fe][ff][hg]\nAW[fg][hf][gf][eh][eg][gh]\nPL[B]\n(;B[gi]C[✓ 正确 | 恭喜答对。])(;B[fi](;W[ei](;B[gi]C[✓ 正确]))))"
+    },
+    {
+      "id": "81717",
+      "level": "15k",
+      "category": "capturing",
+      "hint": "黑先",
+      "boardSize": 13,
+      "initialBlack": [
+        "ej",
+        "ck",
+        "fk",
+        "dk"
+      ],
+      "initialWhite": [
+        "ek",
+        "dj",
+        "cj",
+        "gk",
+        "fl"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[13]\nGN[Q-81717]\nAN[lst931207]\nSO[https://www.101weiqi.com/15K/81717/]\nGC[吃子题 | 15K | 正确率: 94.0% (15747/16760) | 手筋专项训练：从入门到10级\n\n第037题\n    黑先，黑棋怎样走才能连接?]\nC[黑先 吃子题]\nAB[ej][ck][fk][dk]\nAW[ek][dj][cj][gk][fl]\nPL[B]\n(;B[el]C[✓ 正确])(;B[fj](;W[el]C[✗ 失败])))"
+    },
+    {
+      "id": "81740",
+      "level": "15k",
+      "category": "capturing",
+      "hint": "黑先",
+      "boardSize": 13,
+      "initialBlack": [
+        "hh",
+        "ji",
+        "fi",
+        "jj",
+        "eh",
+        "dh",
+        "ik",
+        "gi",
+        "ih"
+      ],
+      "initialWhite": [
+        "gg",
+        "hi",
+        "ij",
+        "ei",
+        "ej",
+        "gk",
+        "gj",
+        "fh",
+        "ii",
+        "gh"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[13]\nGN[Q-81740]\nAN[lst931207]\nSO[https://www.101weiqi.com/15K/81740/]\nGC[吃子题 | 15K | 正确率: 95.3% (15929/16707) | 手筋专项训练：从入门到10级\n第060题\n    黑先，黑棋怎样走才能分断白棋?]\nC[黑先 吃子题]\nAB[hh][ji][fi][jj][eh][dh][ik][gi][ih]\nAW[gg][hi][ij][ei][ej][gk][gj][fh][ii][gh]\nPL[B]\n(;B[hj]C[✓ 正确]))"
+    },
+    {
+      "id": "82153",
+      "level": "14k",
+      "category": "capturing",
+      "hint": "黑先",
+      "boardSize": 13,
+      "initialBlack": [
+        "dl",
+        "dm",
+        "bk",
+        "bj",
+        "gl",
+        "ej",
+        "fj",
+        "gk",
+        "fl",
+        "gm",
+        "dk",
+        "cl"
+      ],
+      "initialWhite": [
+        "hk",
+        "hm",
+        "hl",
+        "hj",
+        "fi",
+        "dj",
+        "ei",
+        "fm",
+        "cj",
+        "ck",
+        "gj",
+        "el"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[13]\nGN[Q-82153]\nAN[lst931207]\nSO[https://www.101weiqi.com/14K/82153/]\nGC[吃子题 | 14K+ | 正确率: 74.1% (13494/18203) | 749\n黑先\n    黑应该如何反击白▲错着？请走出必要过程。]\nC[黑先 吃子题]\nAB[dl][dm][bk][bj][gl][ej][fj][gk][fl][gm][dk][cl]\nAW[hk][hm][hl][hj][fi][dj][ei][fm][cj][ck][gj][el]\nPL[B]\n(;B[em](;W[ek](;B[fk]C[✓ 正确]))))"
     }
   ],
   "ogs": [

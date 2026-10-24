@@ -1,0 +1,20 @@
+{
+  "test": {
+    "all_pixel_delta_bbox": [
+      134,
+      18,
+      200,
+      33
+    ],
+    "outside_wordmark_delta_bbox": null
+  },
+  "prod": {
+    "all_pixel_delta_bbox": [
+      134,
+      18,
+      200,
+      33
+    ],
+    "outside_wordmark_delta_bbox": null
+  }
+}

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>var kifuModules={"galaxy":["assets/GalaxyApp-DOYM9qeg.js","assets/rolldown-runtime-QTnfLwEv.js","assets/index-C90zRD53.js","assets/ui-core-KixCoRFD.js","assets/api-C-UlmUHc.js","assets/CompactPagination-DNQbSyHE.js","assets/useTranslation-0p8NhE-g.js","assets/LiveBoard-Cz829oO5.js","assets/PlaybackBar-Bv0UW8fm.js","assets/railStyles-DhiVdXXP.js","assets/LoginModal-B8RmY1Qb.js","assets/BoardPageShell-D1CP8a1l.js","assets/useBoardCoordinates-DjMCk-oC.js","assets/AuthGuard-DKqsUz1k.js","assets/ModulePlate-BTIIDP5F.js","assets/useReplayStoneSound-Daq9PRC3.js","assets/useSound-DGuw8gku.js","assets/sgfSerializer-Cr0TO2SB.js"],"kiosk":["assets/KioskApp-D4_UCgGx.js","assets/rolldown-runtime-QTnfLwEv.js","assets/index-C90zRD53.js","assets/ui-core-KixCoRFD.js","assets/api-C-UlmUHc.js","assets/baipuApi-iGO5L1pr.js","assets/GeometryContext-CEmaKoim.js","assets/CompactPagination-DNQbSyHE.js","assets/useTranslation-0p8NhE-g.js","assets/icons-Cy-sSFyZ.js","assets/KioskAuthGuard-D8qEHqzl.js","assets/boxUrls-yPmsJ_Cn.js","assets/PhysicalBoardGuard-BS6kexiJ.js","assets/GeometryCalibrationScreen-Gx-cd90k.js","assets/useVoice-DCjDiY8o.js","assets/KioskPagebar-BfsmRAdx.js","assets/KioskScrollZone--E1v-HI8.js","assets/scrollSync-1-dO7C3u.js","assets/KioskStatusCells-CLLIl1o1.js","assets/useBackTo-Bljfwzvo.js","assets/EngineReadinessContext-s18SnDRq.js","assets/VisionContext-Df0VXW2s.js","assets/tsumegoUnits-C-U2hrS0.js","assets/GoBoardSvg-ksuGqgfa.js","assets/goBoard-DeGC8CPS.js","assets/KioskConsoleRail-BdoN-PtL.js","assets/KioskSecLabel-CURkJtI7.js","assets/theme-BDJJKhrv.js","assets/playInput-Bsy-M_BS.js","assets/activeSession-Ci7sL3yE.js","assets/whenLabel-BpK1Vijg.js"]};var kifuSurface=location.pathname.match(/^\/(galaxy|kiosk)\/kifu\/?$/);if(kifuSurface){(kifuModules[kifuSurface[1]]||[]).forEach(function(file){var link=document.createElement('link');link.rel='modulepreload';link.href='/'+file;document.head.appendChild(link);});}</script>
+
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>智星盒 · 围棋</title>
+    <script>
+      // Start the one bounded library request while application modules download.
+      if (/^\/(galaxy|kiosk)\/kifu\/?$/.test(location.pathname)) {
+        var query = new URLSearchParams(location.search);
+        var params = new URLSearchParams();
+        if (query.get('q')) params.set('q', query.get('q'));
+        params.set('page', query.get('page') || '1');
+        params.set('page_size', '20');
+        var language = 'cn';
+        try { language = localStorage.getItem('katrain_language') || 'cn'; } catch (_) {}
+        params.set('lang', language);
+        var path = '/api/v1/kifu/albums?' + params;
+        window.__kifuListRequest = { path: path, response: fetch(path, { priority: 'high' }) };
+        window.__kifuListRequest.response.catch(function () {});
+      }
+    </script>
+    <script type="module" crossorigin src="/assets/index-C90zRD53.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-QTnfLwEv.js">
+    <link rel="modulepreload" crossorigin href="/assets/ui-core-KixCoRFD.js">
+    <link rel="modulepreload" crossorigin href="/assets/api-C-UlmUHc.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-DFEU3Joj.css">
+    <link rel="stylesheet" href="/assets/galaxy-brand-latin-10e120749af9.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- SBC kiosk 触屏键盘:仅在 /kiosk 路由加载,桌面/服务器版(galaxy)不受影响 -->
+    <script>
+      if (location.pathname.indexOf('/kiosk') === 0) {
+        document.documentElement.lang = 'zh-CN';
+        var kbCss = document.createElement('link');
+        kbCss.rel = 'stylesheet'; kbCss.href = '/smartkeyboard.css?v=kbd5';
+        document.head.appendChild(kbCss);
+        function loadScript(src, next) {
+          var s = document.createElement('script');
+          s.src = src;
+          if (next) s.onload = next;
+          document.body.appendChild(s);
+        }
+        function loadKioskKeyboard() {
+          loadScript('/pinyin-ime.js?v=kbd5', function () {
+            loadScript('/pinyin-compose.js?v=kbd5', function () {
+              loadScript('/smartkeyboard.js?v=kbd6');
+            });
+          });
+        }
+        if (document.readyState === 'complete') {
+          setTimeout(loadKioskKeyboard, 0);
+        } else {
+          window.addEventListener('load', loadKioskKeyboard, { once: true });
+        }
+      }
+    </script>
+  </body>
+</html>

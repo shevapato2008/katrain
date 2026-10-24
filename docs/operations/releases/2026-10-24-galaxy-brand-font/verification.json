@@ -1,0 +1,338 @@
+{
+  "test": {
+    "deployment": {
+      "container": "katrain-web",
+      "running_base_image": "sha256:2eaccedb9fe74f51810b9e77e2367bf2cd40b0181b19719c9b33c568fde735d8",
+      "durable_image": "sha256:d67dd7b38d7e0de615156f966447cadeddc377ec0b990c231ce5d51ae32570be",
+      "durable_tag": "katrain-galaxy-brand:20261024-10e120749af9",
+      "compose_last_file": "/mnt/disk1/fan/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+      "compose_before_sha256": "7f51f9ad683a9a407d2efce1fc83543197aa588b9cc34a16b47baa1ea1b07e65",
+      "compose_after_sha256": "94d784758675f763dceae57ffb06d08818419dc6b091a8569e366645c482bb96",
+      "static_changes": {
+        "index.html": "51794ab8c9ab1fb0987ca64ad608da4ecf62a6557fb3f32ad3add48faafc94b9",
+        "assets/galaxy-brand-latin-10e120749af9.css": "10e120749af95841006d16e2fa96dc7ff1f3c2500e6ed4e20214126eee6ccaab",
+        "assets/fondamento-latin-regular-01e17adcd642.woff2": "01e17adcd642631e89b529fd50fb42a236abd603455d4b9aa63304de46f00794"
+      },
+      "candidate_backend_inherited_exactly": true,
+      "candidate_static_only_three_file_delta": true,
+      "compose_only_web_image_change": true,
+      "activated_at": "2026-10-24T04:40:55.971306+00:00",
+      "mode": "hot three-file static overlay; no container recreation/restart; compose persists candidate image for future recreate",
+      "running_container_id": "80ffd302bb0d47c983ec404ae242439e2abba0640a79f497a19f8daae5c35e7d",
+      "running_started_at": "2026-10-23T18:29:35.43122185Z",
+      "rollback_directory": "/mnt/disk1/fan/galaxy-brand-font-20261024/rollback"
+    },
+    "browser": {
+      "url": "https://go.sailorvoyage.top/galaxy/play",
+      "latin": {
+        "text": "StellaBox",
+        "style": {
+          "fontFamily": "\"SmartBox Fondamento\", serif",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "fontStyle": "normal",
+          "fontSynthesis": "none",
+          "lineHeight": "16px",
+          "letterSpacing": "0.08px",
+          "position": "relative",
+          "top": "1px"
+        },
+        "rect": {
+          "x": 134,
+          "y": 18.5,
+          "width": 64.078125,
+          "height": 16,
+          "top": 18.5,
+          "right": 198.078125,
+          "bottom": 34.5,
+          "left": 134
+        }
+      },
+      "platform": {
+        "fonts": [
+          {
+            "familyName": "Fondamento",
+            "postScriptName": "Fondamento-Regular",
+            "isCustomFont": true,
+            "glyphCount": 9
+          }
+        ]
+      },
+      "unchanged": {
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 52,
+          "top": 0,
+          "right": 1280,
+          "bottom": 52,
+          "left": 0
+        },
+        "cn": {
+          "text": "\u667a\u661f\u76d2",
+          "rect": {
+            "x": 60,
+            "y": 14.5,
+            "width": 66,
+            "height": 22,
+            "top": 14.5,
+            "right": 126,
+            "bottom": 36.5,
+            "left": 60
+          },
+          "font": "\"Galaxy Long Cang\"",
+          "size": "22px",
+          "weight": "400"
+        },
+        "logo": {
+          "src": "/assets/img/logo-white.png",
+          "rect": {
+            "x": 20,
+            "y": 9.5,
+            "width": 32,
+            "height": 32,
+            "top": 9.5,
+            "right": 52,
+            "bottom": 41.5,
+            "left": 20
+          }
+        }
+      },
+      "resources": [
+        {
+          "url": "https://go.sailorvoyage.top/assets/galaxy-brand-latin-10e120749af9.css",
+          "status": 200,
+          "bytes": 1099
+        },
+        {
+          "url": "https://go.sailorvoyage.top/assets/fondamento-latin-regular-01e17adcd642.woff2",
+          "status": 200,
+          "bytes": 23836
+        }
+      ]
+    },
+    "http": [
+      {
+        "path": "/api/v1/health",
+        "status": 200,
+        "sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f",
+        "health_status": "ok"
+      },
+      {
+        "path": "/galaxy/play",
+        "status": 200,
+        "sha256": "51794ab8c9ab1fb0987ca64ad608da4ecf62a6557fb3f32ad3add48faafc94b9"
+      },
+      {
+        "path": "/assets/index-C90zRD53.js",
+        "status": 200,
+        "sha256": "93bb8235719b5a49e92524071fb9bc40f7a18fe74778ba96a9fbaa060d38cf04"
+      },
+      {
+        "path": "/assets/GalaxyApp-DOYM9qeg.js",
+        "status": 200,
+        "sha256": "dc6b33105ae050f1cdb4d7603761b894cae48a3710287fc6bd1a44b3b262e608"
+      },
+      {
+        "path": "/assets/index-DFEU3Joj.css",
+        "status": 200,
+        "sha256": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+      },
+      {
+        "path": "/assets/img/logo-white.png",
+        "status": 200,
+        "sha256": "095d4cdecc4a567ea9c03129e9e7c6264c8ca697526b666d93e4e77c169bfd7c"
+      },
+      {
+        "path": "/api/v1/kifu/albums?page=1&page_size=1&lang=cn",
+        "status": 200,
+        "sha256": "6586ad76d305681184a3d005e354aa3ca0369146be0923c29550d9792f1f0a83"
+      },
+      {
+        "path": "/openapi.json",
+        "status": 200,
+        "sha256": "52f4de7a51762393508f02cf27b15be0a605e725b84baf8421a8faf2d4b15b6d",
+        "territory_route_present": true
+      },
+      {
+        "path": "/api/pvp/territory",
+        "method": "POST",
+        "status": 401,
+        "unauthenticated_probe": true
+      }
+    ],
+    "unchanged_runtime_identity_env_mounts_backend_and_all_other_services": true,
+    "unchanged_11_sync_module_hashes": true,
+    "unchanged_all_existing_js_css_logo_assets": true,
+    "static_delta_exactly_three_files": true
+  },
+  "prod": {
+    "deployment": {
+      "container": "katrain-ucloud-katrain-web-1",
+      "running_base_image": "sha256:6ced68bdd5db0fde24838f384c450bcd7e329b681eaa40788578bc0a0c4042d2",
+      "durable_image": "sha256:5c82b80d306b5b4f1c5577c29da013d390041ac4f976d5888b8b307a168162fb",
+      "durable_tag": "katrain-galaxy-brand:20261024-10e120749af9",
+      "compose_last_file": "/home/ubuntu/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+      "compose_before_sha256": "7f51f9ad683a9a407d2efce1fc83543197aa588b9cc34a16b47baa1ea1b07e65",
+      "compose_after_sha256": "94d784758675f763dceae57ffb06d08818419dc6b091a8569e366645c482bb96",
+      "static_changes": {
+        "index.html": "51794ab8c9ab1fb0987ca64ad608da4ecf62a6557fb3f32ad3add48faafc94b9",
+        "assets/galaxy-brand-latin-10e120749af9.css": "10e120749af95841006d16e2fa96dc7ff1f3c2500e6ed4e20214126eee6ccaab",
+        "assets/fondamento-latin-regular-01e17adcd642.woff2": "01e17adcd642631e89b529fd50fb42a236abd603455d4b9aa63304de46f00794"
+      },
+      "candidate_backend_inherited_exactly": true,
+      "candidate_static_only_three_file_delta": true,
+      "compose_only_web_image_change": true,
+      "activated_at": "2026-10-24T04:41:49.695534+00:00",
+      "mode": "hot three-file static overlay; no container recreation/restart; compose persists candidate image for future recreate",
+      "running_container_id": "1b99bbb57210c4343a2a51727ac2e6e6b5cbe9e3fb3de62d31dbbe53642dcc22",
+      "running_started_at": "2026-10-23T18:29:04.0885886Z",
+      "rollback_directory": "/home/ubuntu/galaxy-brand-font-20261024/rollback"
+    },
+    "browser": {
+      "url": "https://modelstella.com/galaxy/play",
+      "latin": {
+        "text": "StellaBox",
+        "style": {
+          "fontFamily": "\"SmartBox Fondamento\", serif",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "fontStyle": "normal",
+          "fontSynthesis": "none",
+          "lineHeight": "16px",
+          "letterSpacing": "0.08px",
+          "position": "relative",
+          "top": "1px"
+        },
+        "rect": {
+          "x": 134,
+          "y": 18.5,
+          "width": 64.078125,
+          "height": 16,
+          "top": 18.5,
+          "right": 198.078125,
+          "bottom": 34.5,
+          "left": 134
+        }
+      },
+      "platform": {
+        "fonts": [
+          {
+            "familyName": "Fondamento",
+            "postScriptName": "Fondamento-Regular",
+            "isCustomFont": true,
+            "glyphCount": 9
+          }
+        ]
+      },
+      "unchanged": {
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 52,
+          "top": 0,
+          "right": 1280,
+          "bottom": 52,
+          "left": 0
+        },
+        "cn": {
+          "text": "\u667a\u661f\u76d2",
+          "rect": {
+            "x": 60,
+            "y": 14.5,
+            "width": 66,
+            "height": 22,
+            "top": 14.5,
+            "right": 126,
+            "bottom": 36.5,
+            "left": 60
+          },
+          "font": "\"Galaxy Long Cang\"",
+          "size": "22px",
+          "weight": "400"
+        },
+        "logo": {
+          "src": "/assets/img/logo-white.png",
+          "rect": {
+            "x": 20,
+            "y": 9.5,
+            "width": 32,
+            "height": 32,
+            "top": 9.5,
+            "right": 52,
+            "bottom": 41.5,
+            "left": 20
+          }
+        }
+      },
+      "resources": [
+        {
+          "url": "https://modelstella.com/assets/galaxy-brand-latin-10e120749af9.css",
+          "status": 200,
+          "bytes": 1099
+        },
+        {
+          "url": "https://modelstella.com/assets/fondamento-latin-regular-01e17adcd642.woff2",
+          "status": 200,
+          "bytes": 23836
+        }
+      ]
+    },
+    "http": [
+      {
+        "path": "/api/v1/health",
+        "status": 200,
+        "sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f",
+        "health_status": "ok"
+      },
+      {
+        "path": "/galaxy/play",
+        "status": 200,
+        "sha256": "51794ab8c9ab1fb0987ca64ad608da4ecf62a6557fb3f32ad3add48faafc94b9"
+      },
+      {
+        "path": "/assets/index-C90zRD53.js",
+        "status": 200,
+        "sha256": "93bb8235719b5a49e92524071fb9bc40f7a18fe74778ba96a9fbaa060d38cf04"
+      },
+      {
+        "path": "/assets/GalaxyApp-DOYM9qeg.js",
+        "status": 200,
+        "sha256": "dc6b33105ae050f1cdb4d7603761b894cae48a3710287fc6bd1a44b3b262e608"
+      },
+      {
+        "path": "/assets/index-DFEU3Joj.css",
+        "status": 200,
+        "sha256": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+      },
+      {
+        "path": "/assets/img/logo-white.png",
+        "status": 200,
+        "sha256": "095d4cdecc4a567ea9c03129e9e7c6264c8ca697526b666d93e4e77c169bfd7c"
+      },
+      {
+        "path": "/api/v1/kifu/albums?page=1&page_size=1&lang=cn",
+        "status": 200,
+        "sha256": "407539f5fbf48224956e4ff8af882731a24274e9e93e1b779a488920d9af8090"
+      },
+      {
+        "path": "/openapi.json",
+        "status": 200,
+        "sha256": "52f4de7a51762393508f02cf27b15be0a605e725b84baf8421a8faf2d4b15b6d",
+        "territory_route_present": true
+      },
+      {
+        "path": "/api/pvp/territory",
+        "method": "POST",
+        "status": 401,
+        "unauthenticated_probe": true
+      }
+    ],
+    "unchanged_runtime_identity_env_mounts_backend_and_all_other_services": true,
+    "unchanged_11_sync_module_hashes": true,
+    "unchanged_all_existing_js_css_logo_assets": true,
+    "static_delta_exactly_three_files": true
+  }
+}

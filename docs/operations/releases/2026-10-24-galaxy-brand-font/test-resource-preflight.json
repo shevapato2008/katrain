@@ -1,0 +1,14 @@
+[
+  {
+    "path": "assets/galaxy-brand-latin-10e120749af9.css",
+    "status": 200,
+    "sha256": "10e120749af95841006d16e2fa96dc7ff1f3c2500e6ed4e20214126eee6ccaab",
+    "content_type": "text/css; charset=utf-8"
+  },
+  {
+    "path": "assets/fondamento-latin-regular-01e17adcd642.woff2",
+    "status": 200,
+    "sha256": "01e17adcd642631e89b529fd50fb42a236abd603455d4b9aa63304de46f00794",
+    "content_type": "font/woff2"
+  }
+]

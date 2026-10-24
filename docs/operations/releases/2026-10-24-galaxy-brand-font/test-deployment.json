@@ -1,0 +1,22 @@
+{
+  "container": "katrain-web",
+  "running_base_image": "sha256:2eaccedb9fe74f51810b9e77e2367bf2cd40b0181b19719c9b33c568fde735d8",
+  "durable_image": "sha256:d67dd7b38d7e0de615156f966447cadeddc377ec0b990c231ce5d51ae32570be",
+  "durable_tag": "katrain-galaxy-brand:20261024-10e120749af9",
+  "compose_last_file": "/mnt/disk1/fan/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+  "compose_before_sha256": "7f51f9ad683a9a407d2efce1fc83543197aa588b9cc34a16b47baa1ea1b07e65",
+  "compose_after_sha256": "94d784758675f763dceae57ffb06d08818419dc6b091a8569e366645c482bb96",
+  "static_changes": {
+    "index.html": "51794ab8c9ab1fb0987ca64ad608da4ecf62a6557fb3f32ad3add48faafc94b9",
+    "assets/galaxy-brand-latin-10e120749af9.css": "10e120749af95841006d16e2fa96dc7ff1f3c2500e6ed4e20214126eee6ccaab",
+    "assets/fondamento-latin-regular-01e17adcd642.woff2": "01e17adcd642631e89b529fd50fb42a236abd603455d4b9aa63304de46f00794"
+  },
+  "candidate_backend_inherited_exactly": true,
+  "candidate_static_only_three_file_delta": true,
+  "compose_only_web_image_change": true,
+  "activated_at": "2026-10-24T04:40:55.971306+00:00",
+  "mode": "hot three-file static overlay; no container recreation/restart; compose persists candidate image for future recreate",
+  "running_container_id": "80ffd302bb0d47c983ec404ae242439e2abba0640a79f497a19f8daae5c35e7d",
+  "running_started_at": "2026-10-23T18:29:35.43122185Z",
+  "rollback_directory": "/mnt/disk1/fan/galaxy-brand-font-20261024/rollback"
+}

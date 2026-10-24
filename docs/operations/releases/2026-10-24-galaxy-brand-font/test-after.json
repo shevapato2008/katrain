@@ -1,0 +1,90 @@
+{
+  "url": "https://go.sailorvoyage.top/galaxy/play",
+  "latin": {
+    "text": "StellaBox",
+    "style": {
+      "fontFamily": "\"SmartBox Fondamento\", serif",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "fontStyle": "normal",
+      "fontSynthesis": "none",
+      "lineHeight": "16px",
+      "letterSpacing": "0.08px",
+      "position": "relative",
+      "top": "1px"
+    },
+    "rect": {
+      "x": 134,
+      "y": 18.5,
+      "width": 64.078125,
+      "height": 16,
+      "top": 18.5,
+      "right": 198.078125,
+      "bottom": 34.5,
+      "left": 134
+    }
+  },
+  "platform": {
+    "fonts": [
+      {
+        "familyName": "Fondamento",
+        "postScriptName": "Fondamento-Regular",
+        "isCustomFont": true,
+        "glyphCount": 9
+      }
+    ]
+  },
+  "unchanged": {
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 52,
+      "top": 0,
+      "right": 1280,
+      "bottom": 52,
+      "left": 0
+    },
+    "cn": {
+      "text": "\u667a\u661f\u76d2",
+      "rect": {
+        "x": 60,
+        "y": 14.5,
+        "width": 66,
+        "height": 22,
+        "top": 14.5,
+        "right": 126,
+        "bottom": 36.5,
+        "left": 60
+      },
+      "font": "\"Galaxy Long Cang\"",
+      "size": "22px",
+      "weight": "400"
+    },
+    "logo": {
+      "src": "/assets/img/logo-white.png",
+      "rect": {
+        "x": 20,
+        "y": 9.5,
+        "width": 32,
+        "height": 32,
+        "top": 9.5,
+        "right": 52,
+        "bottom": 41.5,
+        "left": 20
+      }
+    }
+  },
+  "resources": [
+    {
+      "url": "https://go.sailorvoyage.top/assets/galaxy-brand-latin-10e120749af9.css",
+      "status": 200,
+      "bytes": 1099
+    },
+    {
+      "url": "https://go.sailorvoyage.top/assets/fondamento-latin-regular-01e17adcd642.woff2",
+      "status": 200,
+      "bytes": 23836
+    }
+  ]
+}

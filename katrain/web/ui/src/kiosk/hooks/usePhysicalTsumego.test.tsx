@@ -338,12 +338,14 @@ describe('usePhysicalTsumego', () => {
     await flush();
     rerender({ ...opts, ...(outage === 'connection' ? { visionConnected: false } : { enabled: false }) });
     await flush();
+    expect(result.current.hasPendingReset()).toBe(true);
     rerender(opts);
     await flush();
     expect(result.current.phase).toBe('restoring');
     expect(API.visionSetupMode).toHaveBeenLastCalledWith(board, expect.any(String));
     rerender({ ...opts, enabled: false, physicalRequested: false });
     await flush();
+    expect(result.current.hasPendingReset()).toBe(false);
     rerender(opts);
     await flush();
     expect(result.current.phase).toBe('clearing');

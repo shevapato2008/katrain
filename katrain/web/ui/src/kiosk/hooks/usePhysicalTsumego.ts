@@ -78,6 +78,8 @@ export interface PhysicalTsumegoState {
   ledOk: boolean;
   /** Synchronously fence inputs before resetting virtual-board state. */
   resetToInitial: (board: number[][]) => void;
+  /** Pending convergence survives temporary recognition/readiness loss. */
+  hasPendingReset: () => boolean;
   /** Screen input gate; try/hint pause applies only to physical recognition. */
   canAcceptInput: () => boolean;
   /** Page reports screen clicks so the physical board follows (PRD TR1). */
@@ -376,6 +378,8 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
     ledOk,
     onScreenMove,
     resetToInitial,
+    hasPendingReset: () => Boolean((optsRef.current.physicalRequested ?? optsRef.current.enabled)
+      && resetIntentRef.current?.key === optsRef.current.problemKey),
     canAcceptInput: () => optsRef.current.enabled && optsRef.current.visionConnected && machineRef.current.phase === 'ready',
   };
 }

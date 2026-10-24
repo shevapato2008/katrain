@@ -296,6 +296,11 @@ const TsumegoProblemPage = () => {
     onAdvance: handleAutoComplete, // 与既有 auto-advance 同一导航路径
   });
 
+  // A pending physical reset owns the screen board even while recognition is unavailable.
+  // Read the live intent in handlers so another input in the reset click's turn is fenced too.
+  const isPhysicalResetPending = () => physicalMode && physical.hasPendingReset();
+  const pendingPhysicalReset = isPhysicalResetPending();
+
   const handleReset = useCallback(() => {
     // Use the problem definition, never the current solution/try board.
     const initialStones: Stone[] = [];
@@ -406,9 +411,9 @@ const TsumegoProblemPage = () => {
       key: 'hint',
       icon: 'lightbulb',
       label: showHint ? t('Hide Hint', '收提示') : t('Hint', '提示'),
-      onClick: toggleHint,
+      onClick: () => { if (!isPhysicalResetPending()) toggleHint(); },
       pressed: showHint,
-      disabled: physicalEnabled && physical.phase !== 'ready',
+      disabled: pendingPhysicalReset || (physicalEnabled && physical.phase !== 'ready'),
     },
     {
       key: 'undo',
@@ -416,11 +421,11 @@ const TsumegoProblemPage = () => {
       // ⚠️ **不能用 `t('Undo', …)`** —— cn PO 里 `Undo` 是「悔棋」,翻译表赢过默认值,
       // 屏上会写「悔棋」。做题没有对手,悔的是自己上一手,稿子写的是「退一手」。
       label: t('tsumego:undoMove', '退一手'),
-      onClick: undo,
+      onClick: () => { if (!isPhysicalResetPending()) undo(); },
       // 实体模式下屏幕上按一下会让机器和盘对不上,所以灰着。**原因只许说做得到的事**:
       // 状态机里没有「用户主动收回一手」这条流程,拿掉子机器毫无反应(T4);
       // 实体重摆保留正确棋子，直接核对题目初始局面。
-      disabled: physicalEnabled,
+      disabled: physicalEnabled || pendingPhysicalReset,
       reason: t('tsumego:undoPhysicalReset', '实体棋盘上退不了一手；想重来，按「重摆」'),
     },
     { key: 'reset', icon: 'arrows-clockwise', label: t('Reset', '重摆'), onClick: handleReset },
@@ -498,12 +503,12 @@ const TsumegoProblemPage = () => {
             hintCoords={hintCoords}
             showHint={showHint}
             extraMarkers={extraMarkers}
-            disabled={isSolved || (isFailed && !isTryMode)}
+            disabled={pendingPhysicalReset || isSolved || (isFailed && !isTryMode)}
             moveHistory={moveHistory}
             onPlaceStone={(x, y) => {
               // 实体模式下屏幕点击只在轮到人时受理(别的阶段盘由引导接管);
               // 受理之后由机器引导实体盘跟上。
-              if (physicalEnabled && !physical.canAcceptInput()) return;
+              if (isPhysicalResetPending() || (physicalEnabled && !physical.canAcceptInput())) return;
               const preBoard = physicalEnabled ? stonesToVisionBoard(stones, boardSize) : null;
               const result = placeStone(x, y);
               if (result?.sound) playSound(result.sound);
@@ -685,8 +690,8 @@ const TsumegoProblemPage = () => {
             role="switch"
             aria-checked={isTryMode}
             data-testid="try-mode-toggle"
-            disabled={physicalEnabled && physical.phase !== 'ready'}
-            onClick={() => (isTryMode ? exitTryMode() : enterTryMode())}
+            disabled={pendingPhysicalReset || (physicalEnabled && physical.phase !== 'ready')}
+            onClick={() => { if (!isPhysicalResetPending()) (isTryMode ? exitTryMode() : enterTryMode()); }}
           >
             <Icon name="hand-pointing" />{t('Try', '试下')}
           </button>

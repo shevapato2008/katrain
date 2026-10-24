@@ -128,11 +128,14 @@ class VisionService:
         board = game_state_stones_to_board(stones, board_size)
         self.set_expected_board(board, expected_node_id=expected_node_id)
 
-    def enter_setup_mode(self, target_board: np.ndarray) -> None:
+    def enter_setup_mode(self, target_board: np.ndarray, setup_id: str | None = None) -> None:
         """Enter tsumego setup mode with target position."""
         if self._worker:
             self._worker.send_command(
-                WorkerCommand(action=CommandType.ENTER_SETUP_MODE, data={"target_board": target_board.tolist()})
+                WorkerCommand(
+                    action=CommandType.ENTER_SETUP_MODE,
+                    data={"target_board": target_board.tolist(), **({"setup_id": setup_id} if setup_id is not None else {})},
+                )
             )
 
     def reset_sync(self, expected: np.ndarray | None = None) -> None:

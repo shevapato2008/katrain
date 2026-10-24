@@ -11,6 +11,8 @@ import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
 import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
+import LobbyGamePanel from '../components/game/LobbyGamePanel';
+import { useLobbyTerritory } from '../hooks/useLobbyTerritory';
 import LocalConfirmGame from '../components/game/LocalConfirmGame';
 import { useLocalMoveConfirmation } from '../hooks/useLocalMoveConfirmation';
 import { KioskPagebar } from '../shell/KioskPagebar';
@@ -671,6 +673,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 也继续请求当前手分析。界面是否展示胜率块由 GameControlPanel 独立决定。
   const wantAnalysis = analysisToggles.ownership || analysisToggles.score;
   const gs = session.gameState;
+  const lobbyTerritory = useLobbyTerritory({
+    sessionId, gameId: gs?.game_id, nodeId: gs?.current_node_id,
+    moveCount: gs?.current_node_index ?? 0, boardSize: gs?.board_size, token: token ?? undefined,
+    enabled: gs?.game_type === 'pvp_lobby' && !!(gs.platform_my_color ?? gs.my_color) && session.connected === true && !session.connectionLost
+      && !endResultOf(gs) && !gs.awaiting_count && !countPending && !countRequest && !counting,
+  });
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;
     if (gs.game_type === 'pvp_online' || gs.game_type === 'pvp_lobby') return;
@@ -724,8 +732,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   if (centralRoom && session.connectionLost === 'central') {
     return <Box data-testid="central-room-disconnected" sx={{ display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', gap: 2, height: '100%', px: 4, textAlign: 'center' }}>
-      <Typography variant="h5">中央连接中断</Typography>
-      <Typography sx={{ color: 'text.secondary', fontSize: 14, maxWidth: 520 }}>
+      <Typography sx={{ fontSize: 28 }}>中央连接中断</Typography>
+      <Typography sx={{ color: 'text.secondary', fontSize: 18, maxWidth: 520 }}>
         对局状态暂时无法确认。重新连接后会读取最新棋盘，请先不要继续落子。
       </Typography>
       <button type="button" className="kiosk-btn" disabled={session.reconnecting} onClick={session.reconnect}>
@@ -1501,7 +1509,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               onMove={handleBoardMove}
               analysisToggles={boardAnalysisToggles}
               playerColor={humanColor}
-              engineOverlay={isRanked ? rankedTerritory.overlay : engineOverlay}
+              engineOverlay={lobbyGame ? lobbyTerritory.overlay : isRanked ? rankedTerritory.overlay : engineOverlay}
               externalRulers
               suppressEndResultOverlay={!!timeoutLoserColor}
               onPaintedNode={session.acknowledgePaintedNode}
@@ -1524,8 +1532,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           </div>
         </div>
 
-        <div className="kiosk-rail">
-          <KioskPagebar
+        <div className={`kiosk-rail${lobbyGame ? ' lobby-game' : ''}`}>
+          {lobbyGame ? <LobbyGamePanel
+            gameState={gameState} setupLine={gameSetupLine} connected={session.connected === true && !session.connectionLost}
+            isGameOver={isGameOver} physicalPlay={physicalPlay}
+            blocked={countPending || !!opponentCountRequest} countDisabled={countIdentityError || centralUserId === null}
+            counting={counting || lobbyAutoCountPending}
+            statusSlot={opponentCountRequest ? <div className="gstatus" role="status"><div><b>对方请求数子</b><span>请选择是否结束这局。</span></div></div>
+              : countError ? <div className="gstatus" role="alert" data-tone="bad"><div><b>{countError}</b></div></div>
+              : statusSlot}
+            hardwareFault={hardwareFault} analysisToggles={analysisToggles}
+            onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+            onAction={handleAction} onExit={handleExit} territory={lobbyTerritory}
+          /> : <><KioskPagebar
             testId="game-pagebar"
             backLabel={t('game:exit_game', '退出对局')}
             onBack={handleExit}
@@ -1568,7 +1587,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             platformPhase={ogsGame ? onlinePhase : null}
             onlineScoringPending={onlineScoringPending}
             statusSlot={statusSlot}
-          />
+          /></>}
         </div>
       </div>
 

@@ -151,9 +151,10 @@ class SyncStateMachine:
             self._expected_node_id = expected_node_id
             self._pending_expected_node_id = expected_node_id
 
-    def enter_setup_mode(self, target_board: np.ndarray) -> None:
+    def enter_setup_mode(self, target_board: np.ndarray, setup_id: str | None = None) -> None:
         """Enter tsumego setup mode with a target position."""
         self._target_board = target_board.copy()
+        self._setup_id = setup_id
         self._state = SyncState.SETUP_IN_PROGRESS
         # A fresh setup must not inherit a stale degraded countdown: otherwise an
         # already-empty board (mean_conf reported as 0.0) re-enters DEGRADED on the
@@ -306,12 +307,20 @@ class SyncStateMachine:
         events.append(
             SyncEvent(
                 SyncEventType.SETUP_PROGRESS,
-                data={"matched": matched, "total": total, "missing": missing, "extra": extra},
+                data={
+                    "matched": matched, "total": total, "missing": missing, "extra": extra,
+                    **({"setup_id": self._setup_id} if self._setup_id is not None else {}),
+                },
             )
         )
 
         if not missing and not extra:
-            events.append(SyncEvent(SyncEventType.SETUP_COMPLETE))
+            events.append(
+                SyncEvent(
+                    SyncEventType.SETUP_COMPLETE,
+                    data={"setup_id": self._setup_id} if self._setup_id is not None else {},
+                )
+            )
             self._target_board = None
             self._expected_board = observed_board.copy()
             self._prev_expected_board = None

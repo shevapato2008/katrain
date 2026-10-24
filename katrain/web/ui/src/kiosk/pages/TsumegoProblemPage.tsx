@@ -4,6 +4,8 @@ import { Icon } from '../shell/icons';
 import { Fragment, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { backToState, useBackTo } from '../hooks/useBackTo';
+import { sgfToCoords } from '../../utils/sgfParser';
+import type { Stone } from '../../hooks/useTsumegoProblem';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
@@ -89,13 +91,6 @@ const TsumegoProblemPage = () => {
     writePhysicalMode(v);
     setPhysicalMode(v);
   }, []);
-  // Reset re-runs the physical clearing→setup lifecycle (reset() keeps problem.id, so the
-  // hook's per-problem restart won't fire on its own — bump resyncKey to force it).
-  const [resyncKey, setResyncKey] = useState(0);
-  const handleReset = useCallback(() => {
-    reset();
-    setResyncKey((k) => k + 1);
-  }, [reset]);
   // recognition_ready = 相机+模型+几何全就绪；物理盘固定 19 路（PRD Q1：非 19 路题隐藏物理模式）
   // ⚠️ 2026-09-14(T9):recognition_ready **不含「本次开机确认过」**。服务启动时持久化的标定锁
   // 直接推进识别 worker ⇒ 盒子一重启它就是真,而几何是 required / session_calibrated=false。
@@ -261,10 +256,12 @@ const TsumegoProblemPage = () => {
   // Auto-advance (4.2): default ON, ~1.5s after solving, unless last problem or disabled.
   // Guard against double-fire (SuccessOverlay's timer + any re-render). Reset per problem.
   const autoAdvancedRef = useRef(false);
+  const resetClockPendingRef = useRef(false);
   // Reset per-problem UI flags when the route param changes (this page stays mounted across
   // prev/next + auto-advance, so React does NOT remount it — we must reset manually).
   useEffect(() => {
     autoAdvancedRef.current = false;
+    resetClockPendingRef.current = false;
   }, [problemId]);
 
   // Physical mode owns the clearing_next → advance handoff (PRD TR7); the timer-based
@@ -281,9 +278,10 @@ const TsumegoProblemPage = () => {
   // Physical-board tsumego — real hook with our availability gating (recognition + geometry + 19-路).
   const physical = usePhysicalTsumego({
     enabled: physicalEnabled,
+    physicalRequested: physicalMode,
     visionConnected: visionSync.connected,
     problemKey: problem?.id ?? null,
-    resyncKey,
+    resyncKey: 0,
     boardSize,
     stones,
     isSolved,
@@ -298,6 +296,25 @@ const TsumegoProblemPage = () => {
     onAdvance: handleAutoComplete, // 与既有 auto-advance 同一导航路径
   });
 
+  // A pending physical reset owns the screen board even while recognition is unavailable.
+  // Read the live intent in handlers so another input in the reset click's turn is fenced too.
+  const isPhysicalResetPending = () => physicalMode && physical.hasPendingReset();
+  const pendingPhysicalReset = isPhysicalResetPending();
+
+  const handleReset = useCallback(() => {
+    // Use the problem definition, never the current solution/try board.
+    const initialStones: Stone[] = [];
+    for (const [player, points] of [['B', problem?.initialBlack ?? []], ['W', problem?.initialWhite ?? []]] as const) {
+      for (const point of points) {
+        const coords = sgfToCoords(point, boardSize);
+        if (coords) initialStones.push({ player, coords });
+      }
+    }
+    resetClockPendingRef.current = physicalMode;
+    physical.resetToInitial(stonesToVisionBoard(initialStones, boardSize));
+    reset();
+  }, [problem, boardSize, physicalMode, physical.resetToInitial, reset]);
+
   // Physical mode: don't count board-setup time toward 用时. Rebase the answer clock the first
   // time the board reaches 'ready' after (re)entering setup; answer-phase revisits to 'ready'
   // (after a reply / wrong-move removal) keep the clock running.
@@ -307,16 +324,18 @@ const TsumegoProblemPage = () => {
       answerClockArmedRef.current = false;
       return;
     }
-    if (['clearing', 'clearing_next', 'setup'].includes(physical.phase)) {
+    if (['clearing', 'clearing_next', 'setup'].includes(physical.phase)
+      || (physical.phase === 'restoring' && resetClockPendingRef.current)) {
       answerClockArmedRef.current = true; // in setup → arm the next ready-restart
     } else if (physical.phase === 'ready' && answerClockArmedRef.current) {
       answerClockArmedRef.current = false;
+      resetClockPendingRef.current = false;
       restartTimer();
     }
   }, [physicalEnabled, physical.phase, restartTimer]);
 
   const inPhysicalSetup =
-    physicalEnabled && ['clearing', 'clearing_next', 'setup'].includes(physical.phase);
+    physicalEnabled && ['clearing', 'clearing_next', 'setup', 'restoring'].includes(physical.phase);
 
   // Flag wrong/extra physical stones on the electronic board with a red ✕. physical.extra is in
   // vision coords [row(0=top), col, color]; TsumegoBoard wants board coords [x=col, y=(size-1-row)].
@@ -392,9 +411,9 @@ const TsumegoProblemPage = () => {
       key: 'hint',
       icon: 'lightbulb',
       label: showHint ? t('Hide Hint', '收提示') : t('Hint', '提示'),
-      onClick: toggleHint,
+      onClick: () => { if (!isPhysicalResetPending()) toggleHint(); },
       pressed: showHint,
-      disabled: physicalEnabled && physical.phase !== 'ready',
+      disabled: pendingPhysicalReset || (physicalEnabled && physical.phase !== 'ready'),
     },
     {
       key: 'undo',
@@ -402,11 +421,11 @@ const TsumegoProblemPage = () => {
       // ⚠️ **不能用 `t('Undo', …)`** —— cn PO 里 `Undo` 是「悔棋」,翻译表赢过默认值,
       // 屏上会写「悔棋」。做题没有对手,悔的是自己上一手,稿子写的是「退一手」。
       label: t('tsumego:undoMove', '退一手'),
-      onClick: undo,
+      onClick: () => { if (!isPhysicalResetPending()) undo(); },
       // 实体模式下屏幕上按一下会让机器和盘对不上,所以灰着。**原因只许说做得到的事**:
       // 状态机里没有「用户主动收回一手」这条流程,拿掉子机器毫无反应(T4);
-      // 「重摆」在实体模式下会重走清盘 → 摆题(`handleReset`),这句是真的。真流程待 Fan 拍板(prd.md §4 D1)。
-      disabled: physicalEnabled,
+      // 实体重摆保留正确棋子，直接核对题目初始局面。
+      disabled: physicalEnabled || pendingPhysicalReset,
       reason: t('tsumego:undoPhysicalReset', '实体棋盘上退不了一手；想重来，按「重摆」'),
     },
     { key: 'reset', icon: 'arrows-clockwise', label: t('Reset', '重摆'), onClick: handleReset },
@@ -484,12 +503,12 @@ const TsumegoProblemPage = () => {
             hintCoords={hintCoords}
             showHint={showHint}
             extraMarkers={extraMarkers}
-            disabled={isSolved || (isFailed && !isTryMode)}
+            disabled={pendingPhysicalReset || isSolved || (isFailed && !isTryMode)}
             moveHistory={moveHistory}
             onPlaceStone={(x, y) => {
               // 实体模式下屏幕点击只在轮到人时受理(别的阶段盘由引导接管);
               // 受理之后由机器引导实体盘跟上。
-              if (physicalEnabled && physical.phase !== 'ready') return;
+              if (isPhysicalResetPending() || (physicalEnabled && !physical.canAcceptInput())) return;
               const preBoard = physicalEnabled ? stonesToVisionBoard(stones, boardSize) : null;
               const result = placeStone(x, y);
               if (result?.sound) playSound(result.sound);
@@ -601,7 +620,10 @@ const TsumegoProblemPage = () => {
                   </p>
                 )}
                 {physical.phase === 'restoring' && (
-                  <p className="qtext">{t('tsumego:physVerify', '正在核对棋盘和题面是否一致，请按灯光调整棋子。')}</p>
+                  <p className="qtext" data-testid="puzzle-physical-restore">
+                    {t('tsumego:physRestoreInitial', '保留正确棋子，取走红 × 标记的多余或错色棋子，按红灯补黑子、绿灯补白子。棋盘一致后自动开始。')}
+                    {interpolate(t('tsumego:physRestoreCounts', '（待取走 {extra} 颗，待补回 {missing} 颗）'), { extra: physical.extra.length, missing: physical.missing.length })}
+                  </p>
                 )}
                 {!physical.ledOk && (
                   <p className="qtext" data-testid="puzzle-led-down">
@@ -668,8 +690,8 @@ const TsumegoProblemPage = () => {
             role="switch"
             aria-checked={isTryMode}
             data-testid="try-mode-toggle"
-            disabled={physicalEnabled && physical.phase !== 'ready'}
-            onClick={() => (isTryMode ? exitTryMode() : enterTryMode())}
+            disabled={pendingPhysicalReset || (physicalEnabled && physical.phase !== 'ready')}
+            onClick={() => { if (!isPhysicalResetPending()) (isTryMode ? exitTryMode() : enterTryMode()); }}
           >
             <Icon name="hand-pointing" />{t('Try', '试下')}
           </button>

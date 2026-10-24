@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
@@ -69,6 +69,7 @@ const PvpLocalSetupPage = () => {
   const { token } = useAuth();
   const { isVisionEnabled, loaded: visionLoaded } = useVision();
   const geometry = useGeometry();
+  const { preflight } = geometry;
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
@@ -106,12 +107,6 @@ const PvpLocalSetupPage = () => {
     current.active = true;
     return () => { current.active = false; current.request += 1; };
   }, []);
-  // Calibration returns to this same setup instance; starting remains a separate user action.
-  useEffect(() => {
-    if (calibrationOpen && geometry.status.phase === 'ready' && geometry.status.session_calibrated
-      && geometry.status.capabilities.geometry_ready && geometry.status.capabilities.recognition_ready
-      && geometry.status.capabilities.model_ready !== false) setCalibrationOpen(false);
-  }, [calibrationOpen, geometry.status]);
   const leave = () => {
     attempt.current.request += 1;
     attempt.current.busy = false;
@@ -185,28 +180,46 @@ const PvpLocalSetupPage = () => {
       ? t('setup:seat_hint_not19', '这一局不是 19 路,只能下在屏幕上')
       : t('setup:seat_hint_uncalibrated', '这台机器没标定过摄像头,只能下在屏幕上');
 
-  const handleStart = async () => {
+  // Keep the original click's settings and return context while calibration is on screen.
+  const captureStart = () => ({
+    settings: {
+      board_size: boardSize,
+      rules: ruleDef.wire,
+      handicap: terms.handicap,
+      komi: terms.komi,
+      black_name: blackName,
+      white_name: whiteName,
+      time_enabled: timeEnabled,
+      main_time: mainTime,
+      byo_length: byoyomiTime,
+      byo_periods: byoyomiPeriods,
+    },
+    label: `${blackName || t('setup:black_side', '黑方')} vs ${whiteName || t('setup:white_side', '白方')}`,
+    onBoard: playInput.onBoard,
+    backState: backToState(location),
+  });
+  const pendingStart = useRef<ReturnType<typeof captureStart> | null>(null);
+
+  const startGame = useCallback(async (intent: ReturnType<typeof captureStart>, resuming = false) => {
     if (attempt.current.busy) return;
-    if (visionLoaded === false && playInput.onBoard) {
-      setError(t('local:device_check_pending', '正在读取设备状态，请稍后再试'));
-      return;
-    }
     const request = ++attempt.current.request;
     attempt.current.busy = true;
     const current = () => attempt.current.active && attempt.current.request === request;
     let createdSession: string | null = null;
     let published = false;
-    let checkingBoard = playInput.onBoard;
+    let checkingBoard = intent.onBoard;
     setError('');
     setLoading(true);
     setChecking(checkingBoard);
     try {
       if (checkingBoard) {
-        const result = await geometry.preflight();
+        const result = await preflight();
         if (!current()) return;
         if (!result.ready) {
-          if (['required', 'degraded', 'failed', 'cancelled'].includes(result.status.phase)) setCalibrationOpen(true);
-          else setError(t('local:board_check_not_ready', '棋盘检查未就绪，请保持盘面稳定后重试'));
+          if (!resuming && ['required', 'degraded', 'failed', 'cancelled'].includes(result.status.phase)) {
+            pendingStart.current = intent;
+            setCalibrationOpen(true);
+          } else setError(t('local:board_check_not_ready', '棋盘检查未就绪，请保持盘面稳定后重试'));
           return;
         }
       }
@@ -215,34 +228,18 @@ const PvpLocalSetupPage = () => {
       const { session_id } = await API.createSession(token ?? undefined);
       createdSession = session_id;
       if (!current()) return;
-      await API.gameSetup(session_id, 'pvp_local', {
-        board_size: boardSize,
-        // 见屏 02 同一处的注释:develop 那版(aeae84e1)在这里写
-        // `komi: handicap > 0 ? 0 : komi`,判据等价但覆盖不了让先/倒贴两档。
-        // 现在三个字段同出 `resolveGameTerms`。
-        rules: ruleDef.wire,
-        handicap: terms.handicap,
-        komi: terms.komi,
-        black_name: blackName,
-        white_name: whiteName,
-        time_enabled: timeEnabled,
-        main_time: mainTime,
-        byo_length: byoyomiTime,
-        byo_periods: byoyomiPeriods,
-      });
+      await API.gameSetup(session_id, 'pvp_local', intent.settings);
       if (!current()) return;
       writeActiveSession({
         kind: 'game',
-        // 铸的是新键,不套 PO 里的 `Black` / `White` —— 那两条是「黑棋 / 白棋」(说的是子),
-        // 这里说的是**人**(黑方 / 白方),和对局屏上那两张卡的回落值是同一句话。
-        label: `${blackName || t('setup:black_side', '黑方')} vs ${whiteName || t('setup:white_side', '白方')}`,
+        label: intent.label,
         route: `/kiosk/play/pvp/local/game/${session_id}`,
         ts: Date.now(),
         // 这一局下不下实体盘,开局这一刻定下(v2 §3.5):守卫和对局屏都读它,不再各自判断。
-        onBoard: playInput.onBoard,
+        onBoard: intent.onBoard,
       });
       published = true;
-      navigate(`/kiosk/play/pvp/local/game/${session_id}`, { state: backToState(location) });
+      navigate(`/kiosk/play/pvp/local/game/${session_id}`, { state: intent.backState });
     } catch (e) {
       if (current()) setError(checkingBoard
         ? t('local:board_check_failed', '检查棋盘失败，请检查连接后重试')
@@ -255,12 +252,46 @@ const PvpLocalSetupPage = () => {
         setChecking(false);
       }
     }
+  }, [preflight, token, t, navigate]);
+
+  const handleStart = () => {
+    if (attempt.current.busy) return;
+    if (visionLoaded === false && playInput.onBoard) {
+      setError(t('local:device_check_pending', '正在读取设备状态，请稍后再试'));
+      return;
+    }
+    void startGame(captureStart());
+  };
+
+  useEffect(() => {
+    if (!calibrationOpen || !pendingStart.current || attempt.current.busy) return;
+    const status = geometry.status;
+    if (status.phase !== 'ready' || !status.session_calibrated || !status.capabilities.geometry_ready
+      || !status.capabilities.recognition_ready || status.capabilities.model_ready === false) return;
+    const intent = pendingStart.current;
+    // Consume before preflight writes status or another ready poll can run this effect.
+    pendingStart.current = null;
+    void startGame(intent, true);
+  }, [calibrationOpen, geometry.status, startGame]);
+
+  const returnToSetup = () => {
+    pendingStart.current = null;
+    attempt.current.request += 1;
+    attempt.current.busy = false;
+    setLoading(false);
+    setChecking(false);
+    setError('');
+    setCalibrationOpen(false);
   };
 
   if (calibrationOpen) return <GeometryCalibrationScreen
-    backLabel={t('local:return_setup', '返回设置')} onBack={() => setCalibrationOpen(false)}
+    backLabel={t('local:return_setup', '返回设置')} onBack={returnToSetup}
     title={t('local:prestart_calibration', '先检查棋盘标定')}
-    sub={t('local:prestart_calibration_sub', '标定完成后返回设置，再开始对局')} requireRecognition
+    sub={error
+      ? `${error}；${t('local:return_setup_retry', '请返回设置后重试')}`
+      : loading ? t('local:entering_game', '正在进入对局…')
+        : t('local:prestart_calibration_resume', '标定成功后自动进入对局；失败可重试，返回设置保留参数')}
+    requireRecognition
   />;
 
   return (

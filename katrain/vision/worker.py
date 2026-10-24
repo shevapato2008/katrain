@@ -716,7 +716,7 @@ class _VisionWorkerLoop:
                 # rejected downstream) still force_syncs — that is the poller's re-arm.
             elif cmd.action == CommandType.ENTER_SETUP_MODE:
                 target = np.array(cmd.data["target_board"], dtype=int)
-                self._sync.enter_setup_mode(target)
+                self._sync.enter_setup_mode(target, setup_id=cmd.data.get("setup_id"))
             elif cmd.action == CommandType.RESET_SYNC:
                 self._board_locked = False
                 self._board_finder.is_first = True  # Reset corner baseline

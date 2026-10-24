@@ -5,6 +5,7 @@ import { TutorialReadAPI } from '../../api/tutorialApi';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { TutorialCategory } from '../../types/tutorial';
 import { KioskCard } from '../shell/KioskCard';
+import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { interpolate } from '../utils/interpolate';
@@ -80,7 +81,9 @@ const TutorialCategoriesPage = () => {
   const books = sorted?.reduce((n, c) => n + (c.book_count || 0), 0) ?? 0;
 
   return (
-    <KioskScrollZone resetKey={reload}>
+    <div className="kiosk-layout-b" data-testid="tutorial-library-page">
+      <KioskPagebar backLabel="课程" onBack={() => navigate('/kiosk/tutorial')} title="其他教材" />
+      <KioskScrollZone resetKey={reload}>
       <div className="kiosk-greet">
         <b>{t('tutorial:title_cn', '课程')}<i>{t('tutorial:synced', '随云端同步')}</i></b>
         <span>{t('tutorial:greet_sub', '后端是五层结构，内容不在这台盒子上生成')}</span>
@@ -194,7 +197,8 @@ const TutorialCategoriesPage = () => {
           </div>
         </section>
       )}
-    </KioskScrollZone>
+      </KioskScrollZone>
+    </div>
   );
 };
 

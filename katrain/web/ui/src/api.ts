@@ -15,6 +15,18 @@ export interface PlayerInfo {
 
 export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online' | 'pvp_lobby';
 
+export interface LobbyTerritoryResult {
+  session_id: string;
+  game_id: string;
+  current_node_id: number;
+  move_count: number;
+  board_size: [number, number];
+  ownership: number[];
+  black_area: number;
+  white_area: number;
+  stale: boolean;
+}
+
 export interface LocalConfirmationState {
   enabled: boolean;
   status: 'idle' | 'recognizing';
@@ -592,6 +604,8 @@ export const API = {
     apiPost("/api/timeout", { session_id: sessionId, ...expect }, token),
   requestCount: (sessionId: string, token?: string): Promise<any> =>
     apiPost("/api/count/request", { session_id: sessionId }, token),
+  lobbyTerritory: (sessionId: string, token?: string): Promise<LobbyTerritoryResult> =>
+    apiPost("/api/pvp/territory", { session_id: sessionId }, token),
   respondCount: (sessionId: string, accept: boolean, token?: string): Promise<any> =>
     apiPost("/api/count/respond", { session_id: sessionId, accept }, token),
   pauseTimer: (sessionId: string): Promise<SessionResponse> =>
@@ -738,8 +752,8 @@ export const API = {
   // 那条路是把假阳性收进基线当成现实。
   visionDenyStone: (row: number, col: number): Promise<void> =>
     apiPost("/api/v1/vision/deny-stone", { row, col }),
-  visionSetupMode: (targetBoard: number[][]): Promise<void> =>
-    apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
+  visionSetupMode: (targetBoard: number[][], setupId?: string): Promise<void> =>
+    apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard, ...(setupId !== undefined ? { setup_id: setupId } : {}) }),
   visionMonitor: (active: boolean): Promise<void> =>
     apiPost("/api/v1/vision/monitor", { active }),
   visionPause: (paused: boolean): Promise<void> =>

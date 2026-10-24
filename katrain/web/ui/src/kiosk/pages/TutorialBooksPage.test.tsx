@@ -226,10 +226,10 @@ describe('屏 24 课程 · 书目与章节', () => {
     expect(screen.getByTestId('tutorial-toc-empty')).toHaveTextContent('这本书还没有章节');
   });
 
-  it('返回键回课程首页', async () => {
+  it('返回键回其他教材目录', async () => {
     renderPage();
     await tocReady();
     await userEvent.click(screen.getByRole('button', { name: /课程/ }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tutorial');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tutorial/library');
   });
 });

@@ -47,6 +47,18 @@ async def _proxy(call, what: str):
 
 
 # ── Tutorial Proxy (board mode only) ──
+@router.get("/tutorials/ogs-course")
+async def proxy_ogs_course(request: Request, lang: str = "zh-cn"):
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_ogs_course(lang), "OGS course")
+
+
+@router.get("/tutorials/ogs-course/steps/{page}")
+async def proxy_ogs_step(request: Request, page: int, lang: str = "zh-cn"):
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_ogs_step(page, lang), "OGS step")
+
+
 @router.get("/tutorials/categories")
 async def proxy_tutorial_categories(request: Request):
     c = _get_remote_client(request)

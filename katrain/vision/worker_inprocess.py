@@ -1829,7 +1829,7 @@ class InProcessAdapter:
                 # rejected downstream) still force_syncs — that is the poller's re-arm.
             elif cmd.action == CommandType.ENTER_SETUP_MODE:
                 target = np.array(cmd.data["target_board"], dtype=int)
-                self._sync.enter_setup_mode(target)
+                self._sync.enter_setup_mode(target, setup_id=cmd.data.get("setup_id"))
                 self._invalidate_reference("setup mode")
                 if self._monitor and not self._bound:
                     # A clean setup frame is the monitor's reference before the next guidance lamp lights.

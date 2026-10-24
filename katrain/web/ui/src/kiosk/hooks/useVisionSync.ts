@@ -86,6 +86,14 @@ export function useVisionSync(sessionId: string | null, onBound?: (sessionId: st
 
   useEffect(() => {
     let cancelled = false;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let currentSocket: WebSocket | null = null;
+    const detach = (ws: WebSocket) => {
+      ws.onopen = null;
+      ws.onmessage = null;
+      ws.onerror = null;
+      ws.onclose = null;
+    };
 
     let binding = false;
     const bind = async () => {
@@ -117,10 +125,22 @@ export function useVisionSync(sessionId: string | null, onBound?: (sessionId: st
          直接 accept），所以不传 token —— helper 在 token 缺席时不会拼空参数。 */
       const ws = new WebSocket(websocketUrl('/ws/vision'));
       wsRef.current = ws;
+      currentSocket = ws;
       ws.onopen = () => { if (!cancelled) setConnected(true); };
       ws.onmessage = handleMessage;
       ws.onerror = (err) => console.error('Vision WebSocket error', err);
-      ws.onclose = () => { wsRef.current = null; setConnected(false); };
+      ws.onclose = () => {
+        if (cancelled || currentSocket !== ws) return;
+        detach(ws);
+        wsRef.current = null;
+        setConnected(false);
+        if (reconnectTimer === null) {
+          reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
+            void connect();
+          }, 1000);
+        }
+      };
     };
 
     connect();
@@ -128,9 +148,11 @@ export function useVisionSync(sessionId: string | null, onBound?: (sessionId: st
     return () => {
       cancelled = true;
       retryBindRef.current = async () => false;
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+      if (reconnectTimer !== null) clearTimeout(reconnectTimer);
+      if (currentSocket) {
+        detach(currentSocket);
+        currentSocket.close();
+        if (wsRef.current === currentSocket) wsRef.current = null;
       }
       if (sessionId) {
         API.visionUnbind().catch((err) => console.error('Vision unbind failed during cleanup', err));

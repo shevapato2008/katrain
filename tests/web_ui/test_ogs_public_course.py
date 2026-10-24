@@ -111,7 +111,8 @@ def test_public_index_is_localized_ordered_and_anonymous(imported_course):
     assert index["chapters"][0]["step_count"] == 2
     assert index["counts"]["steps"] == 2
     assert index["source"]["commit"] == bundle["source"]["commit"]
-    assert "translations" not in str(index) and "license_text" not in index["source"]
+    assert all("translations" not in item for item in index["chapters"] + index["lessons"])
+    assert "license_text" not in index["source"]
     english = client.get("/api/v1/tutorials/ogs-course?lang=en").json()
     assert english["chapters"][0]["title"] == "Basics"
     assert english["lessons"][0]["title"] == "Moves"
@@ -184,3 +185,24 @@ def test_missing_ogs_tables_are_503_without_creating_them(imported_course):
         assert response.status_code == 503, response.text
         assert "SELECT" not in response.text
     assert inspect(engine).get_table_names() == before
+
+
+def test_public_corresponding_source_is_anonymous_and_ogs_only(imported_course):
+    import io
+    import json
+    import zipfile
+
+    client, imported, bundle = imported_course
+    response = client.get('/api/v1/tutorials/ogs-course/source.zip')
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'application/zip'
+    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+        assert set(archive.namelist()) == {'source.json', 'index.json', 'LICENSE', 'README.txt', 'sgf/0001.sgf', 'sgf/0002.sgf'}
+        source = json.loads(archive.read('source.json'))
+        assert source['source'] == bundle['source']
+        assert len(source['steps']) == 2
+        assert source['steps'][0]['raw_source'] == bundle['steps'][0]['raw_source']
+        assert archive.read('LICENSE').decode() == bundle['source']['license_text']
+        notice = archive.read('README.txt').decode()
+        assert 'AGPL-3.0-or-later' in notice and '2026-10-24' in notice
+        assert 'TEST' not in notice and 'commercial authorization' not in notice

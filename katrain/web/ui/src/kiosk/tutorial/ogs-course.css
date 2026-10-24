@@ -113,3 +113,10 @@
 .kiosk .u-ogs button:disabled{cursor:not-allowed}
 .kiosk .u-ogs button:focus-visible,.kiosk .u-ogs .ogs-hit:focus-visible{outline:3px solid #baf2c7;outline-offset:2px}
 .kiosk .u-ogs .ogs-calibrate{border:1px solid #79c996;background:#244b32;color:#d7f4de;border-radius:8px;margin-left:8px;min-height:35px;padding:0 8px;font-size:16px}
+
+.u-ogs .ogs-source-card{border:1px solid #3a6048;border-radius:14px;background:#14271e;color:#b9d7c2;font:16px/1.6 sans-serif;text-align:center;padding:6px;cursor:pointer}
+.u-ogs .ogs-notice-backdrop{position:fixed;inset:0;z-index:1000;background:#000b;display:grid;place-items:center}
+.u-ogs .ogs-notice{width:720px;max-height:550px;overflow:auto;border:1px solid #6e9b7c;border-radius:16px;padding:24px;background:#192e24;font:20px/1.5 sans-serif;color:#eaf2e8}
+.u-ogs .ogs-notice h2{margin:0 0 12px}.u-ogs .ogs-notice .ogs-key{font-size:20px;margin:8px 16px 0 0;text-decoration:none}
+
+.u-ogs .ogs-notice p a{color:#96e9b3}

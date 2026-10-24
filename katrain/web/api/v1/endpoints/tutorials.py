@@ -66,6 +66,22 @@ def get_public_ogs_course(lang: str = "zh-cn", db: Session = Depends(get_db)):
         raise _ogs_unavailable() from exc
 
 
+@router.get("/ogs-course/source.zip")
+def get_public_ogs_source(db: Session = Depends(get_db)):
+    """Anonymous corresponding source for this OGS course only; no other books or storage credentials."""
+    from katrain.web.tutorials.ogs_course import export_zip
+
+    try:
+        book, course = _public_ogs_course(db)
+        return Response(
+            export_zip(db, book, course),
+            media_type="application/zip",
+            headers={"Content-Disposition": 'attachment; filename="ogs-course-source.zip"'},
+        )
+    except (OperationalError, ProgrammingError, KeyError, TypeError, ValueError) as exc:
+        raise _ogs_unavailable() from exc
+
+
 @router.get("/ogs-course/steps/{page}")
 def get_public_ogs_step(page: int, lang: str = "zh-cn", db: Session = Depends(get_db)):
     from katrain.web.tutorials.ogs_course import public_step_output

@@ -14,7 +14,7 @@ from katrain.web.core.models_db import TutorialChapter, TutorialFigure, Tutorial
 from katrain.web.tutorials.ogs_import import SLUG
 from katrain.web.tutorials.ogs_models import TutorialOgsStep
 
-LICENSE_NOTICE = "OGS / Online-Go.com contributors · AGPL-3.0. Source and translation revisions are preserved. Adapted for TEST tutorial import; commercial authorization scope remains unconfirmed."
+LICENSE_NOTICE = "Copyright OGS / Online-Go.com contributors. Course material is licensed under AGPL-3.0-or-later. Adapted for StellaBox on 2026-10-24: normalized duplicate setup stones, mapped course identities, and converted exercises into independent SGF and structured JSON. Source revisions and all translations are preserved in the downloadable source archive."
 
 
 def screenshot_output(value):

@@ -63,7 +63,7 @@ export default function LobbyGamePanel({ gameState: gs, playerRanks, setupLine, 
         return <section className="lobby-game__seat kiosk-player-card" data-testid="lobby-player" data-turn={turn} key={color} aria-label={`${color === 'B' ? '黑' : '白'}方玩家`}>
           <PlayerCardSurface left={index === 0} />
           <div className="lobby-game__name"><span className={`lobby-game__stone lobby-game__stone--${color}`} />
-            <strong title={gs.players_info[color].name}>{color === 'B' ? '黑' : '白'} · {gs.players_info[color].name}{color === myColor ? '（你）' : ''}</strong><span className="kiosk-player-rank" title={rank.title} aria-label={rank.title}>{rank.label}</span></div>
+            <strong title={gs.players_info[color].name} aria-label={`${gs.players_info[color].name}${color === myColor ? '（你）' : ''}`}>{gs.players_info[color].name}</strong><span className="kiosk-player-rank" title={rank.title} aria-label={rank.title}>{rank.label}</span></div>
           <div className="lobby-game__move">{turn ? <>第 <b>{gs.current_node_index + 1}</b> 手</> : '不限时'}</div>
           <div className="lobby-game__seat-foot"><span>{!connected ? '等待重连' : isGameOver ? '已结束'
             : stopped || blocked || counting ? '等待确认' : turn ? color === myColor ? '轮到你' : '对方回合' : '等待中'}</span>

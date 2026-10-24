@@ -20,6 +20,9 @@ describe('lobby game panel', () => {
     expect(within(seats[0]).getByTitle('在线棋友的长名字')).not.toContainElement(within(seats[0]).getByText('20k'));
     rerender(<LobbyGamePanel {...p} />);
     expect(screen.getAllByText('等级未知')).toHaveLength(2);
+    expect(screen.getByTitle('fan')).toHaveTextContent(/^fan$/);
+    expect(screen.getByTitle('fan')).toHaveAttribute('aria-label', 'fan（你）');
+    expect(screen.getByTitle('在线棋友的长名字')).toHaveTextContent(/^在线棋友的长名字$/);
     expect(screen.queryByText('尚未定级')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '停一手' })); expect(p.onAction).toHaveBeenCalledWith('pass');
   });
@@ -27,9 +30,9 @@ describe('lobby game panel', () => {
     const p = props(); render(<LobbyGamePanel {...p} />);
     expect(screen.getByRole('heading', { name: '大厅对局' })).toBeInTheDocument();
     const seats = screen.getAllByTestId('lobby-player');
-    expect(seats[0]).toHaveTextContent('白 · 在线棋友的长名字');
+    expect(seats[0]).toHaveTextContent('在线棋友的长名字');
     expect(seats[0]).toHaveTextContent('提子 2');
-    expect(seats[1]).toHaveTextContent('黑 · fan（你）');
+    expect(seats[1]).toHaveTextContent('fan');
     expect(seats[1]).toHaveTextContent('提子 3');
     expect(seats[1]).toHaveAttribute('data-turn', 'true');
     expect(screen.getByText('轮到你落子')).toBeInTheDocument();

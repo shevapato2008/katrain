@@ -1,0 +1,29 @@
+{
+  "original_url": "http://127.0.0.1:8081/kiosk/tutorial",
+  "auth_after_refresh": {
+    "status": 401,
+    "username": null
+  },
+  "identity_restored": true,
+  "launcher_auth": {
+    "status": 200,
+    "username": "fan"
+  },
+  "final_auth": {
+    "status": 200,
+    "username": "fan"
+  },
+  "page": {
+    "url": "http://127.0.0.1:8081/kiosk/tutorial",
+    "title": "智星盒 StellaBox",
+    "width": 1024,
+    "height": 600,
+    "loaded_scripts": [
+      "http://127.0.0.1:8081/assets/index-Dg5sY7DI.js",
+      "http://127.0.0.1:8081/pinyin-ime.js?v=kbd5",
+      "http://127.0.0.1:8081/pinyin-compose.js?v=kbd5",
+      "http://127.0.0.1:8081/smartkeyboard.js?v=kbd6"
+    ],
+    "text": "智星盒\nStellaBox\n围棋\n主页\nF\nfan\n16:56\n正在读取课程\n其他教材\n对弈\n训练营\n棋谱\n复盘\n成长\n课程\n设置\n⌄\nq\nw\ne\nr\nt\ny\nu\ni\no\np\na\ns\nd\nf\ng\nh\nj\nk\nl\nz\nx\nc\nv\nb\nn\nm\n123\nEN\n空格\n换行"
+  }
+}

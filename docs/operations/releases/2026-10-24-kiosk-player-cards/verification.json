@@ -1,0 +1,33 @@
+{
+  "static_index_sha256": "fa1c48529742d53cae394c98a0cc9d6015a4138951b180c95847e977ec6939cb",
+  "static-kiosk-2d_index_sha256": "13a4e3a8e879d30a6ef3031a73ab127252ca2aff102e8274f09ee770ef0ec048",
+  "baipu_chunk_names": [
+    "BaipuSessionRoute-Cl5x8POZ.js"
+  ],
+  "shared_shape_chunk_names": [
+    "PlayerCardSurface-B0zHjN-u.js"
+  ],
+  "baipu_paired_classes": true,
+  "shared_shape_rounded_diagonal": true,
+  "/health": 200,
+  "/api/v1/health": 200,
+  "/kiosk": 200,
+  "/kiosk/baipu/session/release-readiness": 200,
+  "pid": 276356,
+  "process_build_sha": "db32efe06878f37786d0cd58d1785fd8747fb419",
+  "source_sha": "db32efe06878f37786d0cd58d1785fd8747fb419",
+  "smartbox_parent": "0ebec02f7b625db9499a116fe44027f550748bd2",
+  "root_available_bytes": 2205147136,
+  "verified_manifest_files": 1184,
+  "verified_runtime_python_files": 388,
+  "preserved_file_hashes_unchanged": 449,
+  "services_after": {
+    "smartbox-katrain.service": "MainPID=276356\nActiveState=active\nActiveEnterTimestamp=Sat 2026-10-24 16:54:55 CST",
+    "smartbox-kiosk.service": "MainPID=2014\nActiveState=active\nActiveEnterTimestamp=Fri 2026-10-23 18:29:48 CST",
+    "smartbox-mode-go.target": "ActiveState=inactive\nActiveEnterTimestamp="
+  },
+  "non_katrain_services_unchanged": {
+    "smartbox-kiosk.service": true,
+    "smartbox-mode-go.target": true
+  }
+}

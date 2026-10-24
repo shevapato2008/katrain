@@ -33,8 +33,8 @@ export function OgsCourseBoard({ step, state, onPoint, disabled = false, extra =
   const selected = new Set(state.selectedRemoval.map(([x, y]) => key(x, y)));
   const clickable = !disabled && state.status === 'active' && (step.exercise.kind === 'puzzle' || step.exercise.kind === 'remove');
   return <div className="ogs-board-wrap" data-testid="ogs-board" data-window={`${vp.cols}x${vp.rows}`} style={{ ['--ogs-axis' as string]: `${axis}px`, ['--ogs-board-width' as string]: `${boardWidth}px`, ['--ogs-board-height' as string]: `${boardHeight}px` }}>
-    <div className="ogs-board-axis ogs-board-axis--top">{Array.from({ length: vp.cols }, (_, i) => <span key={i}>{GO_COLS[vp.col + i]}</span>)}</div>
-    <div className="ogs-board-axis ogs-board-axis--left">{Array.from({ length: vp.rows }, (_, i) => <span key={i}>{size - vp.row - i}</span>)}</div>
+    <div className="ogs-board-axis ogs-board-axis--top" data-kiosk-type-fixed>{Array.from({ length: vp.cols }, (_, i) => <span key={i}>{GO_COLS[vp.col + i]}</span>)}</div>
+    <div className="ogs-board-axis ogs-board-axis--left" data-kiosk-type-fixed>{Array.from({ length: vp.rows }, (_, i) => <span key={i}>{size - vp.row - i}</span>)}</div>
     <svg className="ogs-board-svg" viewBox={`${startX} ${startY} ${vp.cols * cell} ${vp.rows * cell}`} role="img" aria-label={`${size} 路互动棋盘`} preserveAspectRatio="xMidYMid meet">
       <defs>
         <linearGradient id="ogs-wood" x2=".9" y2="1"><stop stopColor="#e8bd77"/><stop offset=".48" stopColor="#e6b66d"/><stop offset="1" stopColor="#c98f4b"/></linearGradient>
@@ -70,7 +70,7 @@ export function OgsCourseBoard({ step, state, onPoint, disabled = false, extra =
         return <circle key={`h${i}`} cx={position(x)} cy={position(y)} r="47" fill="transparent" className="ogs-hit" role="button" tabIndex={0} aria-label={`${GO_COLS[x]}${size - y}`} data-testid={`ogs-point-${x}-${y}`} onClick={() => onPoint([x, y])} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onPoint([x, y]); } }} />;
       })}
     </svg>
-    <div className="ogs-board-axis ogs-board-axis--right">{Array.from({ length: vp.rows }, (_, i) => <span key={i}>{size - vp.row - i}</span>)}</div>
-    <div className="ogs-board-axis ogs-board-axis--bottom">{Array.from({ length: vp.cols }, (_, i) => <span key={i}>{GO_COLS[vp.col + i]}</span>)}</div>
+    <div className="ogs-board-axis ogs-board-axis--right" data-kiosk-type-fixed>{Array.from({ length: vp.rows }, (_, i) => <span key={i}>{size - vp.row - i}</span>)}</div>
+    <div className="ogs-board-axis ogs-board-axis--bottom" data-kiosk-type-fixed>{Array.from({ length: vp.cols }, (_, i) => <span key={i}>{GO_COLS[vp.col + i]}</span>)}</div>
   </div>;
 }

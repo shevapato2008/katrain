@@ -354,6 +354,33 @@ describe('usePhysicalTsumego', () => {
     expect(result.current.phase).toBe('clearing');
   });
 
+  it('allows screen exploration in ready try mode while physical recognition stays paused, and reset fences the old try render', async () => {
+    const opts = makeOpts();
+    const { result, rerender } = renderHook(usePhysicalTsumego, { initialProps: opts });
+    await flush();
+    rerender({ ...opts, syncEvents: [setupCompleteEvent(0)] });
+    await flush();
+    rerender({ ...opts, syncEvents: [setupCompleteEvent(1)] });
+    await flush();
+    const tryOpts = { ...opts, isTryMode: true };
+    rerender(tryOpts);
+    await flush();
+    expect(result.current.phase).toBe('ready');
+    expect(result.current.canAcceptInput()).toBe(true);
+    rerender({ ...tryOpts, syncEvents: [moveConfirmedEvent(2, 4, 4)] });
+    await flush();
+    expect(opts.placeStone).not.toHaveBeenCalled();
+    expect(API.visionPause).toHaveBeenLastCalledWith(true);
+    act(() => {
+      result.current.resetToInitial(stonesToVisionBoard([], 19));
+      expect(result.current.canAcceptInput()).toBe(false);
+    });
+    await flush();
+    // Hook has re-rendered with the old isTryMode=true props; reset still wins.
+    expect(result.current.phase).toBe('restoring');
+    expect(result.current.canAcceptInput()).toBe(false);
+  });
+
   it('serializes an in-flight old setup before the newest reset, dropping queued stale commands', async () => {
     let finishOld!: () => void;
     vi.mocked(API.visionSetupMode).mockImplementationOnce(() => new Promise<void>((resolve) => { finishOld = resolve; }));

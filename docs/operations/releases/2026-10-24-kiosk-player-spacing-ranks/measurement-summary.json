@@ -1,0 +1,216 @@
+{
+  "viewport": {
+    "width": 1024,
+    "height": 600
+  },
+  "method": "Browser SVG getPointAtLength sampling finds actual seam/path intersections at 25/50/75% of rendered SVG height; getScreenCTM transforms native points. Outward horizontal stroke reach at fixed y is half the computed stroke width times sqrt(1+(1/6)^2) times scaleX for these parallel straight segments. Visible gap excludes decorative drop shadows.",
+  "reference": "before-ai-free.png",
+  "reference_visible_gap_px": 6.863570583403316,
+  "max_after_difference_from_ai_px": 0.06692847281567538,
+  "baseline": {
+    "ai-free": {
+      "height": 104,
+      "path_gap_px": [
+        8.410262144683315,
+        8.410255927645721,
+        8.410250747176974
+      ],
+      "visible_gap_px": [
+        6.86357680044091,
+        6.863570583403316,
+        6.863565402934569
+      ]
+    },
+    "lobby": {
+      "height": 104,
+      "path_gap_px": [
+        8.410262144683315,
+        8.410255927645721,
+        8.410250747176974
+      ],
+      "visible_gap_px": [
+        6.86357680044091,
+        6.863570583403316,
+        6.863565402934569
+      ]
+    },
+    "pvp-spectator": {
+      "height": 136,
+      "path_gap_px": [
+        32.205133891366586,
+        32.20512772657298,
+        32.20512258963777
+      ],
+      "visible_gap_px": [
+        30.671445902958112,
+        30.67143973816451,
+        30.671434601229294
+      ]
+    },
+    "golaxy-spectator": {
+      "height": 97,
+      "path_gap_px": [
+        null,
+        null,
+        null
+      ],
+      "visible_gap_px": [
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "after": {
+    "ai-free": {
+      "height": 104,
+      "path_gap_px": [
+        8.410262144683315,
+        8.410255927645721,
+        8.410250747176974
+      ],
+      "visible_gap_px": [
+        6.86357680044091,
+        6.863570583403316,
+        6.863565402934569
+      ],
+      "absolute_svg": true,
+      "document_overflow": false
+    },
+    "ai-ladder": {
+      "height": 104,
+      "path_gap_px": [
+        8.410262144683315,
+        8.410255927645721,
+        8.410250747176974
+      ],
+      "visible_gap_px": [
+        6.86357680044091,
+        6.863570583403316,
+        6.863565402934569
+      ],
+      "absolute_svg": true,
+      "document_overflow": false
+    },
+    "ogs": {
+      "height": 104,
+      "path_gap_px": [
+        8.410262144683315,
+        8.410255927645721,
+        8.410250747176974
+      ],
+      "visible_gap_px": [
+        6.86357680044091,
+        6.863570583403316,
+        6.863565402934569
+      ],
+      "absolute_svg": true,
+      "document_overflow": false
+    },
+    "local-long": {
+      "height": 104,
+      "path_gap_px": [
+        8.410262144683315,
+        8.410255927645721,
+        8.410250747176974
+      ],
+      "visible_gap_px": [
+        6.86357680044091,
+        6.863570583403316,
+        6.863565402934569
+      ],
+      "absolute_svg": true,
+      "document_overflow": false
+    },
+    "golaxy-engine": {
+      "height": 104,
+      "path_gap_px": [
+        8.410262144683315,
+        8.410255927645721,
+        8.410250747176974
+      ],
+      "visible_gap_px": [
+        6.86357680044091,
+        6.863570583403316,
+        6.863565402934569
+      ],
+      "absolute_svg": true,
+      "document_overflow": false
+    },
+    "lobby": {
+      "height": 104,
+      "path_gap_px": [
+        8.410262144683315,
+        8.410255927645721,
+        8.410250747176974
+      ],
+      "visible_gap_px": [
+        6.86357680044091,
+        6.863570583403316,
+        6.863565402934569
+      ],
+      "absolute_svg": true,
+      "document_overflow": false
+    },
+    "pvp-spectator": {
+      "height": 136,
+      "path_gap_px": [
+        8.427890603553806,
+        8.427884111418734,
+        8.427878701719806
+      ],
+      "visible_gap_px": [
+        6.812766057498038,
+        6.812759565362967,
+        6.812754155664038
+      ],
+      "absolute_svg": true,
+      "document_overflow": false
+    },
+    "golaxy-spectator": {
+      "height": 104,
+      "path_gap_px": [
+        8.425486808223695,
+        8.425480260987683,
+        8.42547480537462
+      ],
+      "visible_gap_px": [
+        6.796654113436716,
+        6.796647566200704,
+        6.796642110587641
+      ],
+      "absolute_svg": true,
+      "document_overflow": false
+    },
+    "baipu": {
+      "height": 76,
+      "path_gap_px": [
+        8.410262144683315,
+        8.410255927645721,
+        8.410250747176974
+      ],
+      "visible_gap_px": [
+        6.86357680044091,
+        6.863570583403316,
+        6.863565402934569
+      ],
+      "absolute_svg": true,
+      "document_overflow": false
+    },
+    "pvp-spectator-long": {
+      "height": 136,
+      "path_gap_px": [
+        8.427890603553806,
+        8.427884111418734,
+        8.427878701719806
+      ],
+      "visible_gap_px": [
+        6.812766057498038,
+        6.812759565362967,
+        6.812754155664038
+      ],
+      "absolute_svg": true,
+      "document_overflow": false
+    }
+  }
+}

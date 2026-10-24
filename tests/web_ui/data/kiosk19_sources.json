@@ -1,0 +1,4157 @@
+{
+  "tsumego": [
+    {
+      "id": "122131",
+      "level": "6d",
+      "category": "endgame",
+      "hint": "黑先",
+      "boardSize": 4,
+      "initialBlack": [
+        "da",
+        "db"
+      ],
+      "initialWhite": [
+        "ba",
+        "ac",
+        "ad",
+        "dd",
+        "aa"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[4]\nGN[Q-111661]\nAN[方块A]\nSO[https://www.101weiqi.com/6D/122131/]\nGC[官子题 | 6D | 正确率: 16.9% (346/2043) | 张栩九段创作]\nC[黑先 官子题]\nAB[da][db]\nAW[ba][ac][ad][dd][aa]\nPL[B]\n(;B[cc](;W[bc](;B[ca](;W[bb](;B[cd](;W[cb](;B[dc]C[✓ 正确])))))(;B[cb](;W[cd](;B[bb](;W[ab]C[✗ 失败 | 盘面平空]))))(;B[bb](;W[ab](;B[cd](;W[cb](;B[dc](;W[ca]C[✗ 失败]))))(;B[cb](;W[cd]C[✗ 失败]))))(;B[cd](;W[cb](;B[bb](;W[ab](;B[dc](;W[ca]C[✗ 失败]))))))))(;B[bb](;W[cc](;B[bc](;W[cb](;B[bd](;W[ca](;B[ab](;W[ad]C[✗ 失败]))))))(;B[ab](;W[bc](;B[cb](;W[dc]C[✗ 失败]))))))(;B[bc](;W[cc]C[✗ 失败])))"
+    },
+    {
+      "id": "108018",
+      "level": "14k",
+      "category": "life-death",
+      "hint": "黑先",
+      "boardSize": 4,
+      "initialBlack": [
+        "bb",
+        "db",
+        "cc",
+        "bd"
+      ],
+      "initialWhite": [
+        "cb",
+        "da",
+        "ab",
+        "bc",
+        "cd",
+        "dd",
+        "ca",
+        "ac"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[4]\nGN[Q-101799]\nAN[stevenyzc]\nSO[https://www.101weiqi.com/14K/108018/]\nGC[死活题 | 14K | 正确率: 74.5% (14662/19692)]\nC[黑先 死活题]\nAB[bb][db][cc][bd]\nAW[cb][da][ab][bc][cd][dd][ca][ac]\nPL[B]\n(;B[ba]C[✓ 正确])(;B[dc](;W[ba]C[✗ 失败]))(;B[aa](;W[dc]C[✗ 失败])))"
+    },
+    {
+      "id": "218387",
+      "level": "15k",
+      "category": "capturing",
+      "hint": "黑先",
+      "boardSize": 7,
+      "initialBlack": [
+        "df",
+        "be",
+        "ag",
+        "dg",
+        "af"
+      ],
+      "initialWhite": [
+        "ef",
+        "bg",
+        "cf",
+        "cg",
+        "cd",
+        "ed",
+        "bf"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[7]\nGN[Q-189068]\nAN[101小围]\nSO[https://www.101weiqi.com/15K/218387/]\nGC[吃子题 | 15K | 正确率: 97.6% (15765/16160)]\nC[黑先 吃子题]\nAB[df][be][ag][dg][af]\nAW[ef][bg][cf][cg][cd][ed][bf]\nPL[B]\n(;B[ce]C[✓ 正确]))"
+    },
+    {
+      "id": "213404",
+      "level": "7d",
+      "category": "endgame",
+      "hint": "黑先",
+      "boardSize": 7,
+      "initialBlack": [
+        "ef",
+        "fb",
+        "ec",
+        "dd",
+        "ee",
+        "ff",
+        "dc"
+      ],
+      "initialWhite": [
+        "de",
+        "fc",
+        "gb",
+        "ed",
+        "ce",
+        "fe",
+        "fd"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[7]\nGN[Q-184297]\nAN[方块A]\nSO[https://www.101weiqi.com/7D/213404/]\nGC[官子题 | 7D | 正确率: 15.8% (51/322)]\nC[黑先 官子题]\nAB[ef][fb][ec][dd][ee][ff][dc]\nAW[de][fc][gb][ed][ce][fe][fd]\nPL[B]\n(;B[be](;W[eb](;B[cd](;W[db](;B[bc](;W[bb](;B[ab](;W[cb](;B[ge](;W[fa](;B[gd](;W[gc](;B[gf](;W[cc](;B[bd](;W[ac](;B[ad](;W[ba](;B[cf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[df](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[bf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[ac](;W[aa](;B[bf]C[✓ 正确 | 盘面11目])(;B[cf]C[✓ 正确 | 盘面11目])(;B[df]C[✓ 正确 | 盘面11目])))))))))))(;B[cc](;W[gd](;B[gf](;W[ba](;B[cf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[df](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[bf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[ac](;W[aa](;B[cf]C[✓ 正确 | 盘面11目])(;B[bf]C[✓ 正确 | 盘面11目])(;B[df]C[✓ 正确 | 盘面11目])(;B[ad]C[✓ 正确 | 盘面11目])(;B[ae]C[✓ 正确 | 盘面11目])(;B[bd]C[✓ 正确 | 盘面11目])))(;B[ad](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[ae](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))))))))))(;B[ge](;W[fa](;B[ab](;W[cb](;B[gd](;W[gc](;B[gf](;W[cc](;B[bd](;W[ac](;B[ad](;W[ba](;B[cf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[df](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[bf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[ac](;W[aa](;B[cf]C[✓ 正确 | 盘面11目])(;B[bf]C[✓ 正确 | 盘面11目])(;B[df]C[✓ 正确 | 盘面11目])))))))))))(;B[cc](;W[gd](;B[gf](;W[ba](;B[cf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[df](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[bf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[ac](;W[aa](;B[cf]C[✓ 正确 | 盘面11目])(;B[df]C[✓ 正确 | 盘面11目])(;B[bf]C[✓ 正确 | 盘面11目])(;B[ad]C[✓ 正确 | 盘面11目])(;B[ae]C[✓ 正确 | 盘面11目])(;B[bd]C[✓ 正确 | 盘面11目])))))))))))(;B[fa](;W[cb](;B[ge](;W[ea](;B[gd](;W[ga](;B[ab](;W[gc](;B[gf](;W[cc](;B[bd](;W[ac](;B[ad](;W[ba](;B[cf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[bf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[df](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[ac](;W[aa](;B[bf]C[✓ 正确 | 盘面11目])(;B[cf]C[✓ 正确 | 盘面11目])(;B[df]C[✓ 正确 | 盘面11目])))))))))))(;B[fb](;W[fa](;B[ab](;W[gc](;B[gf](;W[cc](;B[bd](;W[ac](;B[ad](;W[ba](;B[cf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[df](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[bf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[ac](;W[aa](;B[bf]C[✓ 正确 | 盘面11目])(;B[cf]C[✓ 正确 | 盘面11目])(;B[df]C[✓ 正确 | 盘面11目])))))))))))))))(;B[ab](;W[ga](;B[gd](;W[cc](;B[bd](;W[gc](;B[gf](;W[ac](;B[ad](;W[ba](;B[cf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[df](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[bf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[ac](;W[aa](;B[bf]C[✓ 正确 | 盘面11目])(;B[cf]C[✓ 正确 | 盘面11目])(;B[df]C[✓ 正确 | 盘面11目])))))))))))(;B[fb](;W[fa](;B[gd](;W[gc](;B[gf](;W[cc](;B[bd](;W[ac](;B[ad](;W[ba](;B[cf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[df](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[bf](;W[aa](;B[ac]C[✓ 正确 | 盘面11目])))(;B[ac](;W[aa](;B[bf]C[✓ 正确 | 盘面11目])(;B[cf]C[✓ 正确 | 盘面11目])(;B[df]C[✓ 正确 | 盘面11目]))))))))))))))))))))(;W[cb](;B[bb](;W[gf](;B[ca](;W[cc](;B[bd](;W[fg](;B[dg](;W[fa](;B[da](;W[ea](;B[ba](;W[ge](;B[cf](;W[gg](;B[eg]C[⚡ 变化 | 盘面11目]))))))))))))))))))))(;W[cd](;B[cc](;W[bd](;B[bc](;W[gf](;B[cf](;W[bf](;B[df](;W[ae](;B[ac](;W[eb](;B[db](;W[fa](;B[ad](;W[fg](;B[da](;W[ea](;B[eg](;W[ge](;B[be](;W[gg]C[⚡ 变化]))))))))))))))))))))))(;B[cd](;W[be](;B[df](;W[cf](;B[gf](;W[bd](;B[db](;W[fa](;B[eb](;W[bb](;B[cb](;W[ba](;B[ca](;W[dg](;B[eg](;W[bc](;B[cg](;W[ea](;B[gc](;W[cc](;B[ga](;W[bg](;B[gb](;W[dg]C[✗ 失败]))))))))))))))))))))))(;B[ge](;W[eb](;B[fa](;W[ea](;B[gd](;W[ga](;B[fb](;W[fa](;B[gf](;W[cb](;B[db](;W[bd](;B[gc](;W[da](;B[fb](;W[fc](;B[fd](;W[cc](;B[fb](;W[ca](;B[bg](;W[fc](;B[ed](;W[bf](;B[dg](;W[af](;B[df](;W[fb]C[✗ 失败]))))))))))))))))))))))))(;B[gf](;W[ga](;B[fb](;W[fa](;B[gd](;W[cb](;B[db](;W[bd](;B[gc](;W[da](;B[fb](;W[fc](;B[fd](;W[cc](;B[fb](;W[ca](;B[bg](;W[fc](;B[ed](;W[bf](;B[dg](;W[af](;B[df](;W[fb]C[✗ 失败]))))))))))))))))))))))))(;B[bd](;W[db](;B[cb](;W[ga](;B[df](;W[bb](;B[bc](;W[ab](;B[ad](;W[ca](;B[ae](;W[gd](;B[gf](;W[cc](;B[bf](;W[cb]C[✗ 失败]))))))))))))(;B[bf](;W[bb](;B[bc](;W[ab](;B[ae](;W[ca](;B[cf](;W[gd](;B[gf](;W[cc](;B[df](;W[cb](;B[ac]C[✗ 失败])))))))))))))))))))))(;B[bd](;W[gf]C[✗ 失败]))(;B[gf](;W[eb](;B[bd](;W[db](;B[cb](;W[fa](;B[df](;W[bb](;B[bc](;W[ab](;B[ad](;W[ca](;B[ae](;W[ge](;B[bf](;W[ac](;B[cf](;W[cc]C[✗ 失败]))))))))))))(;B[bf](;W[bb](;B[bc](;W[ab](;B[ae](;W[ad](;B[ac](;W[ca](;B[cf](;W[ge](;B[df](;W[cc]C[✗ 失败]))))))))))))))))(;B[fa](;W[ea](;B[bd](;W[db](;B[cb](;W[ga](;B[df](;W[bb](;B[bc](;W[ab](;B[ad](;W[ca](;B[ae](;W[ge](;B[bf](;W[ac](;B[cf](;W[cc]C[✗ 失败]))))))))))))(;B[bf](;W[bb](;B[bc](;W[ab](;B[ae](;W[ad](;B[ac](;W[ca](;B[cf](;W[ge](;B[df](;W[cc]C[✗ 失败]))))))))))))))))))))))(;B[ge](;W[eb](;B[fa](;W[ea](;B[gd](;W[ga](;B[fb](;W[fa](;B[gf](;W[cc](;B[db](;W[cb](;B[gc](;W[da](;B[fb](;W[fc]C[✗ 失败]))))))))))))(;B[gf](;W[ga](;B[fb](;W[fa](;B[gd](;W[cc](;B[db](;W[cb](;B[gc](;W[da](;B[fb](;W[fc]C[✗ 失败]))))))))))))(;B[db](;W[ga](;B[fb](;W[fa](;B[gd](;W[cb](;B[gf](;W[da](;B[gc](;W[cc](;B[fb](;W[fc]C[✗ 失败]))))))))))))(;B[bd](;W[df](;B[gd](;W[ga](;B[fb](;W[fa](;B[gf](;W[cd](;B[cc](;W[bc](;B[gc](;W[bb](;B[fb](;W[ca](;B[dg](;W[be]C[✗ 失败]))))))))(;B[gc](;W[cc](;B[db](;W[cb](;B[fb](;W[ca]C[✗ 失败]))))))))))))(;B[gf](;W[ga](;B[fb](;W[fa](;B[gd](;W[cd](;B[cc](;W[bc](;B[gc](;W[bb](;B[fb](;W[ca](;B[dg](;W[be]C[✗ 失败]))))))))(;B[gc](;W[cc](;B[db](;W[cb](;B[fb](;W[ca]C[✗ 失败]))))))))))))))))))(;B[gf](;W[eb](;B[fa](;W[db](;B[cc](;W[cb](;B[bc](;W[bb]C[✗ 失败]))))(;B[bd](;W[cd]C[✗ 失败]))))(;B[bd](;W[df](;B[fa](;W[ea](;B[ge](;W[ga](;B[fb](;W[fa](;B[gd](;W[cd](;B[cc](;W[bc](;B[gc](;W[bb](;B[fb](;W[ca](;B[dg](;W[be]C[✗ 失败]))))))))(;B[gc](;W[cc](;B[db](;W[cb](;B[fb](;W[ca]C[✗ 失败]))))))))))))))(;B[be](;W[ge](;B[cd](;W[dg](;B[cg](;W[bf]C[✗ 失败]))(;B[cf](;W[bf](;B[bg](;W[eg]C[✗ 失败]))))))))))))(;B[bd](;W[gf]C[✗ 失败]))(;B[eb](;W[gf](;B[ge](;W[gd](;B[gg](;W[fg](;B[eg](;W[df](;B[gg](;W[cd](;B[ge](;W[cc](;B[gc](;W[cb]C[✗ 失败]))))))))))))))(;B[fa](;W[gf](;B[gg](;W[fg](;B[eg](;W[df](;B[gg](;W[ge]C[✗ 失败]))))))(;B[ge](;W[eb](;B[db](;W[gd](;B[gg](;W[fg](;B[eg](;W[df](;B[gg](;W[cd](;B[ge](;W[cc](;B[gc](;W[cb]C[✗ 失败])))))))))))))))))"
+    },
+    {
+      "id": "92643",
+      "level": "15k",
+      "category": "capturing",
+      "hint": "黑先",
+      "boardSize": 8,
+      "initialBlack": [
+        "de",
+        "ef",
+        "eb",
+        "ec",
+        "fc",
+        "dd",
+        "fe"
+      ],
+      "initialWhite": [
+        "df",
+        "ff",
+        "ed",
+        "ee",
+        "fd",
+        "dc"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[8]\nGN[Q-92643]\nAN[1919]\nSO[https://www.101weiqi.com/15K/92643/]\nGC[吃子题 | 15K | 正确率: 95.4% (16414/17197)]\nC[黑先 吃子题]\nAB[de][ef][eb][ec][fc][dd][fe]\nAW[df][ff][ed][ee][fd][dc]\nPL[B]\n(;B[gd]C[✓ 正确]))"
+    },
+    {
+      "id": "124386",
+      "level": "15k",
+      "category": "capturing",
+      "hint": "黑先",
+      "boardSize": 9,
+      "initialBlack": [
+        "gd",
+        "gg",
+        "gf",
+        "hd",
+        "hf",
+        "fe"
+      ],
+      "initialWhite": [
+        "fg",
+        "ge",
+        "hg",
+        "ff",
+        "gh",
+        "he"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[9]\nGN[Q-113464]\nAN[快乐小笛子]\nSO[https://www.101weiqi.com/15K/124386/]\nGC[吃子题 | 15K | 正确率: 96.0% (16253/16924)]\nC[黑先 吃子题]\nAB[gd][gg][gf][hd][hf][fe]\nAW[fg][ge][hg][ff][gh][he]\nPL[B]\n(;B[ie]C[✓ 正确])(;B[if](;W[ie](;B[id]C[✓ 正确])))(;B[hh](;W[if]C[✗ 失败])))"
+    },
+    {
+      "id": "123086",
+      "level": "7d",
+      "category": "endgame",
+      "hint": "黑先",
+      "boardSize": 9,
+      "initialBlack": [
+        "dc",
+        "fg",
+        "gg",
+        "ec",
+        "df",
+        "fi",
+        "ab",
+        "cc",
+        "cf",
+        "ee",
+        "ag",
+        "ae",
+        "ed",
+        "ah",
+        "bb",
+        "ff",
+        "gh",
+        "af"
+      ],
+      "initialWhite": [
+        "bh",
+        "ef",
+        "fb",
+        "eb",
+        "hf",
+        "db",
+        "fc",
+        "cb",
+        "fd",
+        "gf",
+        "ba",
+        "eh",
+        "hd",
+        "fh",
+        "eg",
+        "fe",
+        "dg",
+        "bf"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[9]\nGN[Q-112435]\nAN[爱乐奕]\nSO[https://www.101weiqi.com/7D/123086/]\nGC[官子题 | 7D | 正确率: 12.9% (48/372)]\nC[黑先 官子题]\nAB[dc][fg][gg][ec][df][fi][ab][cc][cf][ee][ag][ae][ed][ah][bb][ff][gh][af]\nAW[bh][ef][fb][eb][hf][db][fc][cb][fd][gf][ba][eh][hd][fh][eg][fe][dg][bf]\nPL[B]\n(;B[gi]C[正解](;W[ch](;B[di](;W[bd](;B[be](;W[bc](;B[cd](;W[hg](;B[bi](;W[hh](;B[ei](;W[hi](;B[ci]C[✓ 正确 | 正解 盘面6目。])))))(;B[ei](;W[hh](;B[bi](;W[hi](;B[ci]C[✓ 正确])))))))))))))(;B[cg](;W[ch](;B[di](;W[dh]C[✗ 失败 | 黑失败]))))(;B[di](;W[cg](;B[bg](;W[ei](;B[ch](;W[gi](;B[hi](;W[hg](;B[fi](;W[bc](;B[bd](;W[gi](;B[hh](;W[ih](;B[fi](;W[ac](;B[dh](;W[aa]C[✗ 失败 | 失败 盘面4目。])))))))))))))))))))"
+    },
+    {
+      "id": "129993",
+      "level": "15k",
+      "category": "tesuji",
+      "hint": "黑先",
+      "boardSize": 9,
+      "initialBlack": [
+        "fe",
+        "dc",
+        "ee"
+      ],
+      "initialWhite": [
+        "de",
+        "ef",
+        "fd",
+        "ge",
+        "ff"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[9]\nGN[Q-118516]\nAN[cxg893]\nSO[https://www.101weiqi.com/15K/129993/]\nGC[手筋题 | 15K | 正确率: 97.5% (16799/17237)]\nC[黑先 手筋题]\nAB[fe][dc][ee]\nAW[de][ef][fd][ge][ff]\nPL[B]\n(;B[ed]C[✓ 正确])(;B[gd](;W[ed]C[✗ 失败]))(;B[ec](;W[ed]C[✗ 失败])))"
+    },
+    {
+      "id": "76898",
+      "level": "15k",
+      "category": "capturing",
+      "hint": "黑先",
+      "boardSize": 9,
+      "initialBlack": [
+        "gc",
+        "ge",
+        "ig",
+        "ii",
+        "hg",
+        "hf",
+        "gh",
+        "he"
+      ],
+      "initialWhite": [
+        "gg",
+        "ef",
+        "hh",
+        "gf",
+        "eh",
+        "ih",
+        "fh",
+        "fe",
+        "dg"
+      ],
+      "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[9]\nGN[Q-76898]\nAN[弈学园围棋]\nSO[https://www.101weiqi.com/15K/76898/]\nGC[吃子题 | 15K+ | 正确率: 80.4% (13926/17320)]\nC[黑先 吃子题]\nAB[gc][ge][ig][ii][hg][hf][gh][he]\nAW[gg][ef][hh][gf][eh][ih][fh][fe][dg]\nPL[B]\n(;B[hi]C[✓ 正确])(;B[gi](;W[fi](;B[hi]C[✓ 正确 | 黑官子后手])))(;B[fg](;W[gi]C[✗ 失败])))"
+    }
+  ],
+  "ogs": [
+    {
+      "source_id": "ogs-learning:rules-intro:1",
+      "lesson_id": "rules-intro",
+      "step": 1,
+      "page": 1,
+      "source_url": "https://online-go.com/learn-to-play-go/rules-intro/0",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [],
+        "W": []
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                0,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 101,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "围棋",
+          "instruction": "棋局开始时棋盘是空的。黑棋和白棋两位棋手轮流在棋盘上落子。开局黑棋先下。你可以将棋子落到任何空的交叉点上，即使是最外侧的交叉点。落子以继续。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:rules-intro:2",
+      "lesson_id": "rules-intro",
+      "step": 2,
+      "page": 2,
+      "source_url": "https://online-go.com/learn-to-play-go/rules-intro/1",
+      "size": 9,
+      "initial_player": "W",
+      "stones": {
+        "B": [
+          [
+            2,
+            6
+          ]
+        ],
+        "W": []
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                0,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                0,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                1,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                2,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                3,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                4,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 102,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "围棋",
+          "instruction": "黑棋下了第一手，现在轮到白棋了。请落子以继续。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:self-capture:1",
+      "lesson_id": "self-capture",
+      "step": 1,
+      "page": 7,
+      "source_url": "https://online-go.com/learn-to-play-go/self-capture/0",
+      "size": 9,
+      "initial_player": "W",
+      "stones": {
+        "B": [
+          [
+            2,
+            4
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            4,
+            6
+          ],
+          [
+            4,
+            7
+          ],
+          [
+            7,
+            0
+          ],
+          [
+            6,
+            1
+          ],
+          [
+            8,
+            1
+          ],
+          [
+            7,
+            2
+          ]
+        ],
+        "W": [
+          [
+            4,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            5
+          ],
+          [
+            5,
+            6
+          ]
+        ]
+      },
+      "letters": {
+        "8,0": "A",
+        "7,1": "B",
+        "4,5": "C"
+      },
+      "shapes": {
+        "4,4": "triangle",
+        "5,5": "triangle"
+      },
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                4,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 107,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "自填（以提吃自己）",
+          "instruction": "轮白下。在A点或B点落子称为“自填”（落子后白棋就没气了）。对局中禁止能致使自己的棋被提吃的自填。不过，在C点落子不受限制，这是因为其提掉了这些被标记的棋子，为白棋延出气。请提掉被标记的黑子。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:territory:3",
+      "lesson_id": "territory",
+      "step": 3,
+      "page": 21,
+      "source_url": "https://online-go.com/learn-to-play-go/territory/2",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            3,
+            8
+          ],
+          [
+            3,
+            7
+          ],
+          [
+            3,
+            6
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            5
+          ],
+          [
+            6,
+            4
+          ],
+          [
+            7,
+            5
+          ],
+          [
+            8,
+            5
+          ]
+        ],
+        "W": [
+          [
+            4,
+            7
+          ],
+          [
+            4,
+            6
+          ],
+          [
+            5,
+            8
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            6,
+            6
+          ],
+          [
+            7,
+            8
+          ],
+          [
+            7,
+            6
+          ],
+          [
+            8,
+            6
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "choice",
+        "choices": [
+          {
+            "value": "5",
+            "label_key": "5"
+          },
+          {
+            "value": "6",
+            "label_key": "6"
+          },
+          {
+            "value": "7",
+            "label_key": "7"
+          }
+        ],
+        "correct_choice": "6"
+      },
+      "book_id": 42,
+      "figure_id": 121,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "空",
+          "instruction": "角空有多少目？",
+          "fallback": false,
+          "choices": {
+            "5": "5",
+            "6": "6",
+            "7": "7"
+          }
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:ending-the-game:1",
+      "lesson_id": "ending-the-game",
+      "step": 1,
+      "page": 31,
+      "source_url": "https://online-go.com/learn-to-play-go/ending-the-game/0",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            5,
+            0
+          ],
+          [
+            5,
+            1
+          ],
+          [
+            6,
+            1
+          ],
+          [
+            7,
+            1
+          ],
+          [
+            6,
+            3
+          ],
+          [
+            7,
+            3
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            8,
+            4
+          ],
+          [
+            1,
+            5
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            6,
+            5
+          ],
+          [
+            7,
+            5
+          ],
+          [
+            0,
+            6
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            4,
+            6
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            6
+          ]
+        ],
+        "W": [
+          [
+            4,
+            0
+          ],
+          [
+            7,
+            0
+          ],
+          [
+            4,
+            1
+          ],
+          [
+            8,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            4,
+            2
+          ],
+          [
+            5,
+            2
+          ],
+          [
+            6,
+            2
+          ],
+          [
+            7,
+            2
+          ],
+          [
+            8,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            5,
+            3
+          ],
+          [
+            8,
+            3
+          ],
+          [
+            0,
+            4
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            5,
+            5
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "pass"
+      },
+      "book_id": 42,
+      "figure_id": 131,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "终局",
+          "instruction": "轮到你下子时，您不是必须落子，可以停招。当双方均认为无处可下时，双方各停一手，比赛结束。点击“停一手”终局。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:ending-the-game:2",
+      "lesson_id": "ending-the-game",
+      "step": 2,
+      "page": 32,
+      "source_url": "https://online-go.com/learn-to-play-go/ending-the-game/1",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            5,
+            0
+          ],
+          [
+            5,
+            1
+          ],
+          [
+            6,
+            1
+          ],
+          [
+            7,
+            1
+          ],
+          [
+            6,
+            3
+          ],
+          [
+            7,
+            3
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            8,
+            4
+          ],
+          [
+            1,
+            5
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            6,
+            5
+          ],
+          [
+            7,
+            5
+          ],
+          [
+            0,
+            6
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            4,
+            6
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            6
+          ]
+        ],
+        "W": [
+          [
+            4,
+            0
+          ],
+          [
+            7,
+            0
+          ],
+          [
+            4,
+            1
+          ],
+          [
+            8,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            4,
+            2
+          ],
+          [
+            5,
+            2
+          ],
+          [
+            6,
+            2
+          ],
+          [
+            7,
+            2
+          ],
+          [
+            8,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            5,
+            3
+          ],
+          [
+            8,
+            3
+          ],
+          [
+            0,
+            4
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            5,
+            5
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "remove",
+        "remove_targets": [
+          [
+            5,
+            0
+          ],
+          [
+            5,
+            1
+          ],
+          [
+            6,
+            1
+          ],
+          [
+            7,
+            1
+          ]
+        ]
+      },
+      "book_id": 42,
+      "figure_id": 132,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "终局",
+          "instruction": "当双方均停招时，进入“清除死子阶段”，此时你可以从棋盘上清除显然已死的棋子。点击死子以清除这些死子。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:ending-the-game:3",
+      "lesson_id": "ending-the-game",
+      "step": 3,
+      "page": 33,
+      "source_url": "https://online-go.com/learn-to-play-go/ending-the-game/2",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            6,
+            3
+          ],
+          [
+            7,
+            3
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            8,
+            4
+          ],
+          [
+            1,
+            5
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            6,
+            5
+          ],
+          [
+            7,
+            5
+          ],
+          [
+            0,
+            6
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            4,
+            6
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            6
+          ]
+        ],
+        "W": [
+          [
+            4,
+            0
+          ],
+          [
+            7,
+            0
+          ],
+          [
+            4,
+            1
+          ],
+          [
+            8,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            4,
+            2
+          ],
+          [
+            5,
+            2
+          ],
+          [
+            6,
+            2
+          ],
+          [
+            7,
+            2
+          ],
+          [
+            8,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            5,
+            3
+          ],
+          [
+            8,
+            3
+          ],
+          [
+            0,
+            4
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            5,
+            5
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "finish"
+      },
+      "book_id": 42,
+      "figure_id": 133,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "终局",
+          "instruction": "清除死子后，计算黑空与白空大小。黑空为24目，白空为18目+4个死子，共计22目。黑胜。点击“结束”终局。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:the-board:1",
+      "lesson_id": "the-board",
+      "step": 1,
+      "page": 34,
+      "source_url": "https://online-go.com/learn-to-play-go/the-board/0",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [],
+        "W": []
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                5,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                1
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                2
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                5,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                6,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                7,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                8,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 134,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "棋盘",
+          "instruction": "您可以在任何地方落子，但是通常来说更好的策略是先从角开始，然后是边，最后才是中央。在右上角的位置落下一枚棋子。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:the-board:2",
+      "lesson_id": "the-board",
+      "step": 2,
+      "page": 35,
+      "source_url": "https://online-go.com/learn-to-play-go/the-board/1",
+      "size": 13,
+      "initial_player": "B",
+      "stones": {
+        "B": [],
+        "W": []
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                9,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                10,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                11,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                12,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                9,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                10,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                11,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                12,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                9,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                10,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                11,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                12,
+                6
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                9,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                10,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                11,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                12,
+                7
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                9,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                10,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                11,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            },
+            {
+              "point": [
+                12,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 135,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "棋盘",
+          "instruction": "您可以在任何尺寸的棋盘上下围棋，但常见的尺寸包括9x9（建议您从此尺寸开始学习）， 13x13，以及最流行的19x19。在右边下一子（注意不要下在角上）。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:count-liberties:1",
+      "lesson_id": "count-liberties",
+      "step": 1,
+      "page": 37,
+      "source_url": "https://online-go.com/learn-to-play-go/count-liberties/0",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            4,
+            4
+          ]
+        ],
+        "W": [
+          [
+            3,
+            3
+          ],
+          [
+            3,
+            4
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {
+        "4,3": "cross",
+        "4,5": "cross",
+        "5,4": "cross"
+      },
+      "viewport": null,
+      "exercise": {
+        "kind": "choice",
+        "choices": [
+          {
+            "value": "3",
+            "label_key": "3"
+          },
+          {
+            "value": "4",
+            "label_key": "4"
+          },
+          {
+            "value": "6",
+            "label_key": "6"
+          }
+        ],
+        "correct_choice": "3"
+      },
+      "book_id": 42,
+      "figure_id": 137,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "气",
+          "instruction": "数一数这块黑棋的气。",
+          "fallback": false,
+          "choices": {
+            "3": "3",
+            "4": "4",
+            "6": "6"
+          }
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:count_chains:1",
+      "lesson_id": "count_chains",
+      "step": 1,
+      "page": 49,
+      "source_url": "https://online-go.com/learn-to-play-go/count_chains/0",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [],
+        "W": [
+          [
+            4,
+            6
+          ],
+          [
+            4,
+            7
+          ],
+          [
+            6,
+            2
+          ],
+          [
+            6,
+            3
+          ],
+          [
+            6,
+            4
+          ],
+          [
+            7,
+            7
+          ],
+          [
+            3,
+            5
+          ]
+        ]
+      },
+      "letters": {
+        "3,5": "1",
+        "4,6": "2",
+        "4,7": "2",
+        "6,2": "3",
+        "6,3": "3",
+        "6,4": "3",
+        "7,7": "4"
+      },
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "choice",
+        "choices": [
+          {
+            "value": "2",
+            "label_key": "2"
+          },
+          {
+            "value": "4",
+            "label_key": "4"
+          },
+          {
+            "value": "7",
+            "label_key": "7"
+          }
+        ],
+        "correct_choice": "4"
+      },
+      "book_id": 42,
+      "figure_id": 149,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "棋块",
+          "instruction": "只有直线相连的棋子才能称为一块棋。数一数有几块白棋。",
+          "fallback": false,
+          "choices": {
+            "2": "2",
+            "4": "4",
+            "7": "7"
+          }
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:in_atari:1",
+      "lesson_id": "in_atari",
+      "step": 1,
+      "page": 55,
+      "source_url": "https://online-go.com/learn-to-play-go/in_atari/0",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            2,
+            5
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ]
+        ],
+        "W": [
+          [
+            3,
+            5
+          ],
+          [
+            4,
+            6
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {
+        "3,5": "triangle",
+        "3,6": "cross"
+      },
+      "viewport": null,
+      "exercise": {
+        "kind": "choice",
+        "choices": [
+          {
+            "value": "yes",
+            "label_key": "Yes"
+          },
+          {
+            "value": "no",
+            "label_key": "No"
+          }
+        ],
+        "correct_choice": "yes"
+      },
+      "book_id": 42,
+      "figure_id": 155,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "打吃",
+          "instruction": "当一块棋仅有一口气时，这块棋被打吃。标注的这块棋是否被打吃？",
+          "fallback": false,
+          "choices": {
+            "yes": "是",
+            "no": "否"
+          }
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:count-atari:3",
+      "lesson_id": "count-atari",
+      "step": 3,
+      "page": 63,
+      "source_url": "https://online-go.com/learn-to-play-go/count-atari/2",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            4,
+            3
+          ],
+          [
+            5,
+            6
+          ]
+        ],
+        "W": [
+          [
+            3,
+            3
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            2,
+            2
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "choice",
+        "choices": [
+          {
+            "value": "1",
+            "label_key": "1"
+          },
+          {
+            "value": "2",
+            "label_key": "2"
+          },
+          {
+            "value": "3",
+            "label_key": "3"
+          }
+        ],
+        "correct_choice": "2"
+      },
+      "book_id": 42,
+      "figure_id": 163,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "数打吃数",
+          "instruction": "几块白棋被打吃？",
+          "fallback": false,
+          "choices": {
+            "1": "1",
+            "2": "2",
+            "3": "3"
+          }
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:capture_stone:1",
+      "lesson_id": "capture_stone",
+      "step": 1,
+      "page": 73,
+      "source_url": "https://online-go.com/learn-to-play-go/capture_stone/0",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            0,
+            7
+          ]
+        ],
+        "W": [
+          [
+            0,
+            8
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {
+        "0,8": "triangle"
+      },
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                1,
+                8
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 173,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "提子",
+          "instruction": "黑方先行。请提掉这颗被标记的白子。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:both_atari:1",
+      "lesson_id": "both_atari",
+      "step": 1,
+      "page": 95,
+      "source_url": "https://online-go.com/learn-to-play-go/both_atari/0",
+      "size": 9,
+      "initial_player": "W",
+      "stones": {
+        "B": [
+          [
+            2,
+            4
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            4,
+            6
+          ],
+          [
+            4,
+            7
+          ]
+        ],
+        "W": [
+          [
+            4,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            5
+          ],
+          [
+            5,
+            6
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {
+        "3,4": "triangle",
+        "4,4": "triangle",
+        "5,5": "triangle"
+      },
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                4,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 195,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "双方都被打吃",
+          "instruction": "轮白下。图中标记的一颗白子被打吃，但您可以提掉被标记的黑子以救活这颗白子。请提掉这些黑子。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:escape:1",
+      "lesson_id": "escape",
+      "step": 1,
+      "page": 107,
+      "source_url": "https://online-go.com/learn-to-play-go/escape/0",
+      "size": 9,
+      "initial_player": "W",
+      "stones": {
+        "B": [
+          [
+            5,
+            2
+          ],
+          [
+            6,
+            2
+          ],
+          [
+            7,
+            3
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ]
+        ],
+        "W": [
+          [
+            5,
+            3
+          ],
+          [
+            6,
+            3
+          ],
+          [
+            6,
+            6
+          ],
+          [
+            5,
+            7
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {
+        "6,3": "triangle",
+        "5,3": "triangle"
+      },
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                4,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 207,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "求活",
+          "instruction": "轮白下。请通过延伸白棋棋块来延气以救出这块被打吃的白棋。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:find_escape:1",
+      "lesson_id": "find_escape",
+      "step": 1,
+      "page": 113,
+      "source_url": "https://online-go.com/learn-to-play-go/find_escape/0",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            4,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            2,
+            6
+          ]
+        ],
+        "W": [
+          [
+            3,
+            3
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            2,
+            5
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            3,
+            6
+          ],
+          [
+            4,
+            6
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                4,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 213,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "寻找解救方法",
+          "instruction": "轮黑下。找到被打吃的黑棋并救出这些黑棋。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:connect:1",
+      "lesson_id": "connect",
+      "step": 1,
+      "page": 137,
+      "source_url": "https://online-go.com/learn-to-play-go/connect/0",
+      "size": 9,
+      "initial_player": "W",
+      "stones": {
+        "B": [
+          [
+            3,
+            2
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            2,
+            5
+          ],
+          [
+            3,
+            5
+          ]
+        ],
+        "W": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            4,
+            4
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {
+        "3,4": "cross"
+      },
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                3,
+                4
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 237,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "连接",
+          "instruction": "棋子可通过集合成一块棋来互相帮助。棋块比单个棋子更难吃掉。您可以通过连接将棋子连成一块棋。连接白棋的棋子。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:cut:1",
+      "lesson_id": "cut",
+      "step": 1,
+      "page": 143,
+      "source_url": "https://online-go.com/learn-to-play-go/cut/0",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            3,
+            1
+          ],
+          [
+            3,
+            2
+          ]
+        ],
+        "W": [
+          [
+            1,
+            0
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            4,
+            0
+          ],
+          [
+            4,
+            1
+          ],
+          [
+            5,
+            1
+          ]
+        ]
+      },
+      "letters": {
+        "3,0": "A"
+      },
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                3,
+                0
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 42,
+      "figure_id": 243,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "切断",
+          "instruction": "白棋下在A处即可连接，黑方也可以在A位落子阻止白方连接。断开白子。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:connect:2",
+      "lesson_id": "connect",
+      "step": 2,
+      "page": 138,
+      "source_url": "https://online-go.com/learn-to-play-go/connect/1",
+      "size": 9,
+      "initial_player": "W",
+      "stones": {
+        "B": [
+          [
+            5,
+            2
+          ],
+          [
+            6,
+            3
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            6
+          ]
+        ],
+        "W": [
+          [
+            4,
+            2
+          ],
+          [
+            5,
+            3
+          ],
+          [
+            4,
+            4
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {},
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                4,
+                3
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 0,
+      "figure_id": 0,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "连接",
+          "instruction": "轮白下。连接白子。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:play_double_atari:10",
+      "lesson_id": "play_double_atari",
+      "step": 10,
+      "page": 278,
+      "source_url": "https://online-go.com/learn-to-play-go/play_double_atari/9",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            4,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            2,
+            5
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            4,
+            6
+          ]
+        ],
+        "W": [
+          [
+            6,
+            1
+          ],
+          [
+            6,
+            2
+          ],
+          [
+            5,
+            3
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            3,
+            6
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {
+        "3,6": "triangle",
+        "3,5": "triangle",
+        "4,4": "triangle"
+      },
+      "viewport": null,
+      "exercise": {
+        "kind": "puzzle",
+        "tree": {
+          "point": null,
+          "correct": false,
+          "wrong": false,
+          "children": [
+            {
+              "point": [
+                4,
+                5
+              ],
+              "correct": true,
+              "wrong": false,
+              "children": []
+            }
+          ]
+        }
+      },
+      "book_id": 0,
+      "figure_id": 0,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "双打吃",
+          "instruction": "轮白下。双打吃标记的黑棋。",
+          "fallback": false
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    },
+    {
+      "source_id": "ogs-learning:compare-liberties:1",
+      "lesson_id": "compare-liberties",
+      "step": 1,
+      "page": 492,
+      "source_url": "https://online-go.com/learn-to-play-go/compare-liberties/0",
+      "size": 9,
+      "initial_player": "B",
+      "stones": {
+        "B": [
+          [
+            3,
+            6
+          ],
+          [
+            2,
+            7
+          ],
+          [
+            4,
+            7
+          ]
+        ],
+        "W": [
+          [
+            4,
+            6
+          ],
+          [
+            3,
+            7
+          ],
+          [
+            5,
+            7
+          ]
+        ]
+      },
+      "letters": {},
+      "shapes": {
+        "4,7": "triangle",
+        "3,7": "triangle"
+      },
+      "viewport": null,
+      "exercise": {
+        "kind": "choice",
+        "choices": [
+          {
+            "value": "Black",
+            "label_key": "Black"
+          },
+          {
+            "value": "White",
+            "label_key": "White"
+          },
+          {
+            "value": "same",
+            "label_key": "same"
+          }
+        ],
+        "correct_choice": "same"
+      },
+      "book_id": 0,
+      "figure_id": 0,
+      "locale": {
+        "requested": "zh-cn",
+        "effective": "zh-cn",
+        "text": {
+          "title": "比气",
+          "instruction": "黑白谁的气多？",
+          "fallback": false,
+          "choices": {
+            "Black": "Black",
+            "White": "White",
+            "same": "same"
+          }
+        }
+      },
+      "screenshot": null,
+      "screenshot_status": "pending"
+    }
+  ]
+}

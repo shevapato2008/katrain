@@ -94,6 +94,7 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
 
 const mockUndo = vi.fn();
 const mockReset = vi.fn();
+const mockRestartTimer = vi.fn();
 const mockToggleHint = vi.fn();
 const mockEnterTryMode = vi.fn();
 const mockExitTryMode = vi.fn();
@@ -121,6 +122,7 @@ const defaultHookReturn = {
   placeStone: mockPlaceStone,
   undo: mockUndo,
   reset: mockReset,
+  restartTimer: mockRestartTimer,
   toggleHint: mockToggleHint,
   enterTryMode: mockEnterTryMode,
   exitTryMode: mockExitTryMode,
@@ -149,6 +151,8 @@ const defaultPhysicalReturn: PhysicalTsumegoState = {
   stageTotal: 0,
   ledOk: true,
   onScreenMove: vi.fn(),
+  resetToInitial: vi.fn(),
+  canAcceptInput: () => true,
 };
 let physicalReturn: PhysicalTsumegoState = { ...defaultPhysicalReturn };
 
@@ -589,6 +593,39 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       // 摆盘阶段这一块**换掉**着法表,不是加一块 —— 加一块会把动作区顶出右栏。
       expect(screen.queryByTestId('puzzle-moves')).toBeNull();
       expect(screen.getByTestId('puzzle-physical-guide')).toBeInTheDocument();
+    });
+
+    it('重摆同步暂停实体输入，目标来自初始题面而非当前试下棋子', () => {
+      enablePhysical();
+      hookReturn = { ...hookReturn, isTryMode: true, problem: { ...hookReturn.problem, initialBlack: ['dd'], initialWhite: ['ee'] } };
+      physicalReturn = { ...defaultPhysicalReturn, phase: 'ready' };
+      renderPage('p1');
+      fireEvent.click(action('重摆'));
+      const calls = vi.mocked(physicalReturn.resetToInitial);
+      const target = calls.mock.calls[0][0];
+      expect(target[3][3]).toBe(1);
+      expect(target[4][4]).toBe(2);
+      expect(target.flat().filter(Boolean)).toHaveLength(2);
+      expect(calls.mock.invocationCallOrder[0]).toBeLessThan(mockReset.mock.invocationCallOrder[0]);
+    });
+
+    it('核对初始局面显示红×与缺子指引，匹配后重设计时；普通退出试下保留计时', () => {
+      enablePhysical();
+      physicalReturn = { ...defaultPhysicalReturn, phase: 'ready' };
+      const view = renderPage('p1');
+      fireEvent.click(action('重摆'));
+      physicalReturn = { ...physicalReturn, phase: 'restoring', extra: [[3, 3, 2]], missing: [[4, 4]] };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      expect(screen.getByTestId('puzzle-physical-restore')).toHaveTextContent('待取走 1 颗，待补回 1 颗');
+      expect(screen.getByTestId('puzzle-physical-restore')).toHaveTextContent('红灯补黑子、绿灯补白子');
+      physicalReturn = { ...physicalReturn, phase: 'ready' };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      expect(mockRestartTimer).toHaveBeenCalledTimes(1);
+      physicalReturn = { ...physicalReturn, phase: 'restoring' };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      physicalReturn = { ...physicalReturn, phase: 'ready' };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      expect(mockRestartTimer).toHaveBeenCalledTimes(1);
     });
 
     it('只开开关、视觉没就绪时进不去 —— 状态板不挂,着法表还在', () => {

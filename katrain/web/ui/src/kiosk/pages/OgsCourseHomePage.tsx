@@ -6,6 +6,7 @@ import '../tutorial/ogs-course.css';
 
 export default function OgsCourseHomePage() {
   const navigate = useNavigate();
+  const [noticeOpen, setNoticeOpen] = useState(false);
   const [course, setCourse] = useState<OgsCourseIndex | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
@@ -28,6 +29,15 @@ export default function OgsCourseHomePage() {
     </section>
     <section className="ogs-home-right"><div className="ogs-section-head"><h2>课程目录</h2><span>选一章开始</span></div><div className="ogs-chapter-grid">
       {course.chapters.map((chapter) => <button key={chapter.id} className="ogs-chapter" onClick={() => navigate(`/kiosk/tutorial/chapter/${encodeURIComponent(chapter.id)}`)}><span className="ogs-chapter-no">{String(chapter.number).padStart(2, '0')}</span><span className="ogs-chapter-copy"><strong>{chapter.title}</strong><em>{chapter.lesson_count.toLocaleString('zh-CN')} 课 · {chapter.step_count.toLocaleString('zh-CN')} 步</em></span><span className="ogs-chapter-next" aria-hidden="true">›</span></button>)}
+      <button className="ogs-source-card" onClick={() => setNoticeOpen(true)}>© OGS / Online-Go.com<br />AGPL-3.0-or-later · 来源与许可 ›</button>
     </div></section>
+    {noticeOpen && <div className="ogs-notice-backdrop"><section className="ogs-notice" role="dialog" aria-modal="true" aria-label="课程来源与许可">
+      <h2>课程来源与许可</h2>
+      <p>© OGS / Online-Go.com contributors<br />AGPL-3.0-or-later</p>
+      <p>本课程改编自 OGS 围棋教程，保留原始来源版本与全部翻译。2026-10-24 改动：合并重复初始棋子、映射课程目录，将练习转换为独立 SGF 与结构化 JSON。</p>
+      <p>源码包含对应课程源数据、原始来源证据、全部翻译、SGF、完整许可证及改动说明。原始项目：<a href="https://github.com/online-go/online-go.com" target="_blank" rel="noreferrer">online-go/online-go.com</a>。</p>
+      <a className="ogs-key" href={`${__KIOSK_2D_ONLY__ ? '/api/v1/board/tutorials' : '/api/v1/tutorials'}/ogs-course/source.zip`}>下载源码与许可证</a>
+      <button className="ogs-key" onClick={() => setNoticeOpen(false)}>返回课程</button>
+    </section></div>}
   </main>;
 }

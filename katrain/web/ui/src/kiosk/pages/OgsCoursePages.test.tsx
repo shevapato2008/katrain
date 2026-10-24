@@ -243,3 +243,13 @@ describe('OGS course journey', () => {
     expect(mocks.physicalOptions?.isSolved).toBe(true);
   });
 });
+
+it('shows OGS attribution and opens the public source and license download', async () => {
+  renderAt('/kiosk/tutorial');
+  fireEvent.click(await screen.findByRole('button', { name: /© OGS/ }));
+  expect(screen.getByRole('dialog', { name: '课程来源与许可' })).toBeTruthy();
+  expect(screen.getByRole('link', { name: '下载源码与许可证' }).getAttribute('href')).toMatch(/\/api\/v1\/(board\/)?tutorials\/ogs-course\/source.zip$/);
+  expect(screen.getByText(/2026-10-24 改动/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '返回课程' }));
+  expect(screen.queryByRole('dialog')).toBeNull();
+});

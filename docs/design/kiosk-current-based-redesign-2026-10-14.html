@@ -28,7 +28,7 @@
 .proposal-overlay{position:absolute;inset:0;opacity:1}.stage-label{position:absolute;z-index:4;top:10px;padding:5px 9px;border:1px solid #426148;border-radius:6px;background:#0c1a13dd;color:#e6f4e9;font:12px system-ui,-apple-system,"PingFang SC",sans-serif;pointer-events:none}.stage-label.current{left:10px}.stage-label.proposed{right:10px}
 @media(max-width:900px){.compare-layout{grid-template-columns:215px minmax(0,1fr)}.work-head{flex-wrap:wrap}.mix-controls input{width:125px}.compare-sidebar{top:94px;height:calc(100vh - 94px)}}
 @media(max-width:620px){.compare-layout{display:block}.compare-sidebar{position:relative;top:auto;height:210px;border-right:0;border-bottom:1px solid #30443b}.compare-main{padding:14px}.work-head h1{white-space:normal}.work-head .mix-controls{margin-left:0}}
-</style><style>@font-face{font-family:"Kiosk Plex Mono";src:url("kiosk-depth-experiments/fonts/ibm-plex-mono.woff2") format("woff2");font-weight:400 700;font-display:swap}.kiosk-plex-num{display:inline;font-family:"Kiosk Plex Mono",monospace!important;font-variant-numeric:lining-nums tabular-nums;font-synthesis:none}#stage .proposal-overlay input[type=number]{font-family:"Kiosk Plex Mono",monospace}</style><link rel="stylesheet" href="kiosk-unified/core.css"><link rel="stylesheet" href="kiosk-unified/play.css"><link rel="stylesheet" href="kiosk-unified/setup.css"><link rel="stylesheet" href="kiosk-unified/game.css"><link rel="stylesheet" href="kiosk-unified/platform.css"><link rel="stylesheet" href="kiosk-unified/training.css"><link rel="stylesheet" href="kiosk-unified/library.css?v=20261019b"><link rel="stylesheet" href="kiosk-unified/report.css?v=20261020-move-align"><link rel="stylesheet" href="kiosk-unified/growth.css"><link rel="stylesheet" href="kiosk-unified/settings.css"><link rel="stylesheet" href="kiosk-unified/tactile.css?v=20261019"><link rel="stylesheet" href="kiosk-unified/typography.css"></head><body><div class="work-head"><h1>智星盒 Kiosk · 统一可读性改版</h1><small>目标画布 1024 × 600 · 仅设计 HTML</small><a href="KIOSK-UNIFIED-REDESIGN-RULES-2026-10-14.md">改版规则</a><a href="kiosk-live-comparison-2026-10-14.html">查看旧稿对照</a><div class="mix-controls"><label for="mix">实机</label><input id="mix" type="range" min="0" max="100" value="100" aria-label="新版提案叠加透明度"><label for="mix">提案</label><output id="mix-value" for="mix">100%</output></div></div><div class="compare-layout"><aside class="compare-sidebar"><div class="sidebar-head">页面索引<small>选择页面，右侧叠加查看</small></div><nav class="chooser" id="chooser" aria-label="页面索引"></nav></aside><main class="compare-main"><div class="compare-content"><div class="intro" id="intro"></div><section class="panel"><h2>实机现状与新版提案叠加 <small id="stage-status">滑杆左端看实机，右端看提案</small></h2><div class="stage-host"><div class="stage" id="stage"></div></div></section><div class="design-note" id="note"></div><div class="footer">真实设备不可进入的流程仅展示状态，不设计虚构画面。截图中的账号、战绩、钟点是采集时数据。提案中的控件示意不写入设备或正式应用。</div></div></main></div><div id="modal-root"></div><script src="kiosk-unified/play.js"></script><script src="kiosk-unified/setup.js"></script><script src="kiosk-unified/game.js"></script><script src="kiosk-unified/platform.js"></script><script src="kiosk-unified/training.js"></script><script src="kiosk-unified/kifu-fixture.js?v=20261019"></script><script src="kiosk-unified/kifu-positions.js?v=20261019b"></script><script src="kiosk-unified/library.js?v=20261019b"></script><script src="kiosk-unified/review-fixture.js?v=20261019"></script><script src="kiosk-unified/report.js?v=20261020-move-align"></script><script src="kiosk-unified/growth.js"></script><script src="kiosk-unified/typography.js"></script><script src="kiosk-unified/settings.js"></script><script>
+</style><style>@font-face{font-family:"Kiosk Plex Mono";src:url("kiosk-depth-experiments/fonts/ibm-plex-mono.woff2") format("woff2");font-weight:400 700;font-display:swap}.kiosk-plex-num{display:inline;font-family:"Kiosk Plex Mono",monospace!important;font-variant-numeric:lining-nums tabular-nums;font-synthesis:none}#stage .proposal-overlay input[type=number]{font-family:"Kiosk Plex Mono",monospace}</style><link rel="stylesheet" href="kiosk-unified/core.css"><link rel="stylesheet" href="kiosk-unified/play.css"><link rel="stylesheet" href="kiosk-unified/setup.css"><link rel="stylesheet" href="kiosk-unified/game.css?v=20261023-lobby-four-actions"><link rel="stylesheet" href="kiosk-unified/platform.css"><link rel="stylesheet" href="kiosk-unified/training.css"><link rel="stylesheet" href="kiosk-unified/library.css?v=20261019b"><link rel="stylesheet" href="kiosk-unified/ogs-course.css?v=20261023a"><link rel="stylesheet" href="kiosk-unified/report.css?v=20261020-move-align"><link rel="stylesheet" href="kiosk-unified/growth.css"><link rel="stylesheet" href="kiosk-unified/settings.css"><link rel="stylesheet" href="kiosk-unified/tactile.css?v=20261019"><link rel="stylesheet" href="kiosk-unified/typography.css"><link rel="stylesheet" href="kiosk-unified/personal-review.css?v=20261024a"></head><body><div class="work-head"><h1>智星盒 Kiosk · 统一可读性改版</h1><small>目标画布 1024 × 600 · 仅设计 HTML</small><a href="KIOSK-UNIFIED-REDESIGN-RULES-2026-10-14.md">改版规则</a><a href="kiosk-live-comparison-2026-10-14.html">查看旧稿对照</a><div class="mix-controls"><label for="mix">实机</label><input id="mix" type="range" min="0" max="100" value="100" aria-label="新版提案叠加透明度"><label for="mix">提案</label><output id="mix-value" for="mix">100%</output></div></div><div class="compare-layout"><aside class="compare-sidebar"><div class="sidebar-head">页面索引<small>选择页面，右侧叠加查看</small></div><nav class="chooser" id="chooser" aria-label="页面索引"></nav></aside><main class="compare-main"><div class="compare-content"><div class="intro" id="intro"></div><div class="personal-review-demo-controls" id="personal-review-demo-controls" hidden><label for="personal-review-scenario">设计示意 · 非实机任务状态</label><select id="personal-review-scenario" aria-label="切换个人复盘示意状态"><option value="mixed">普通完成 + 深度分析中</option><option value="completed">普通 / 深度均已完成</option><option value="failed">深度中断 · 保留进度续算</option><option value="waiting">提交中 / 排队中</option><option value="rerun">同档上次完成 + 本次分析</option><option value="missing">两档尚未生成</option><option value="unknown">分析中 · 总手数未确认</option></select><small>棋局、图表与任务为隔离示意；无自动进度，不导入、不提交、不扣费。</small></div><section class="panel"><h2>实机现状与新版提案叠加 <small id="stage-status">滑杆左端看实机，右端看提案</small></h2><div class="stage-host"><div class="stage" id="stage"></div></div></section><div class="design-note" id="note"></div><div class="footer">真实设备不可进入的流程仅展示状态，不设计虚构画面。截图中的账号、战绩、钟点是采集时数据。提案中的控件示意不写入设备或正式应用。</div></div></main></div><div id="modal-root"></div><script src="kiosk-unified/play.js"></script><script src="kiosk-unified/setup.js"></script><script src="kiosk-unified/game.js?v=20261023-lobby-four-actions"></script><script src="kiosk-unified/platform.js"></script><script src="kiosk-unified/training.js"></script><script src="kiosk-unified/kifu-fixture.js?v=20261019"></script><script src="kiosk-unified/kifu-positions.js?v=20261019b"></script><script src="kiosk-unified/library.js?v=20261019b"></script><script src="kiosk-unified/ogs-course-fixture.js?v=20261023a"></script><script src="kiosk-unified/ogs-course.js?v=20261023a"></script><script src="kiosk-unified/review-fixture.js?v=20261019"></script><script src="kiosk-unified/report.js?v=20261020-move-align"></script><script src="kiosk-unified/personal-review.js?v=20261024a"></script><script src="kiosk-unified/growth.js"></script><script src="kiosk-unified/typography.js"></script><script src="kiosk-unified/settings.js"></script><script>
 const screens=[
   {
     "id": "play",
@@ -128,6 +128,16 @@ const screens=[
     "current": "docs/design/kiosk-evidence-2026-10-14/current/lobby-device.png",
     "prior": "docs/design/kiosk-evidence-2026-10-14/prior/lobby-prior.png",
     "status": "实机截图"
+  },
+  {
+    "id": "game-lobby",
+    "group": "对弈",
+    "name": "06a 大厅对局",
+    "note": "邀请棋友后的在线对局；沿用自由对弈的左右棋手卡与操作区",
+    "current": null,
+    "prior": null,
+    "designOnly": true,
+    "status": "新增设计示意 · 非实机截图"
   },
   {
     "id": "platform",
@@ -409,6 +419,33 @@ const screens=[
     "status": "实机截图"
   },
   {
+    "id": "review-import",
+    "group": "复盘与研究",
+    "name": "19a 导入棋谱复盘",
+    "note": "公共职业棋谱库；固定分页与操作区，列表独立滚动",
+    "current": null,
+    "designOnly": true,
+    "status": "新增设计 · 隔离示意，无实机截图"
+  },
+  {
+    "id": "review-replay",
+    "group": "复盘与研究",
+    "name": "19b 个人棋谱回放",
+    "note": "个人原谱只读逐手回放，不依赖付费报告",
+    "current": null,
+    "designOnly": true,
+    "status": "新增设计 · 匿名示意，无实机截图"
+  },
+  {
+    "id": "review-report",
+    "group": "复盘与研究",
+    "name": "19c 已完成个人报告",
+    "note": "只允许已完成档位进入；报告与选中示意棋局一致",
+    "current": null,
+    "designOnly": true,
+    "status": "新增设计 · 图表与数值为示意"
+  },
+  {
     "id": "report",
     "group": "复盘与研究",
     "name": "20 复盘报告",
@@ -447,8 +484,8 @@ const screens=[
   {
     "id": "courses",
     "group": "课程",
-    "name": "23 课程分类",
-    "note": "当前 TutorialCategoriesPage",
+    "name": "23 课程 · OGS 教程",
+    "note": "OGS 互动教程首页；根据已导入的七章、248 课与 3551 步设计",
     "current": "docs/design/kiosk-evidence-2026-10-14/current/courses-device.png",
     "prior": "docs/design/kiosk-evidence-2026-10-14/prior/courses-prior.png",
     "status": "实机截图"
@@ -456,8 +493,8 @@ const screens=[
   {
     "id": "books",
     "group": "课程",
-    "name": "24 书目和章节",
-    "note": "当前 TutorialBooksPage：书目、章节树",
+    "name": "24 教程 · 章节课目",
+    "note": "七章目录与所选章节的真实课目列表",
     "current": "docs/design/kiosk-evidence-2026-10-14/current/books-device.png",
     "prior": "docs/design/kiosk-evidence-2026-10-14/prior/books-prior.png",
     "status": "实机截图"
@@ -465,8 +502,8 @@ const screens=[
   {
     "id": "section",
     "group": "课程",
-    "name": "25 章节学习",
-    "note": "当前 TutorialSectionPage：棋图、讲解、视频",
+    "name": "25 教程 · 互动落子",
+    "note": "第一课第 1 步：真实中文讲解与九路盘面",
     "current": "docs/design/kiosk-evidence-2026-10-14/current/section-device.png",
     "prior": "docs/design/kiosk-evidence-2026-10-14/prior/section-prior.png",
     "status": "实机截图"
@@ -646,11 +683,12 @@ const screens=[
   {
     "id": "books-chapter-open",
     "group": "课程",
-    "name": "书目 · 章节展开",
-    "note": "真实设备展开状态",
-    "current": "docs/design/kiosk-evidence-2026-10-14/current/books-chapter-open-device.png",
+    "name": "教程 · 选择题示例",
+    "note": "基本规则章的气数选择题；仅设计预览",
+    "current": null,
     "prior": null,
-    "status": "实机截图；旧稿缺失"
+    "designOnly": true,
+    "status": "新增设计预览"
   },
   {
     "id": "kifu-replay",
@@ -703,9 +741,14 @@ const captureTimes={play:'02:08','setup-free':'02:31','setup-ranked':'02:31','se
 function commonTop(s){if(s.id==='login')return '';const local=s.id==='game-local'||s.id==='game-local-dialogs';const home=l1.has(s.id)?`<button class="u-shell-home" data-switch="login"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-7H9v7H3z"/></svg></span>主页</button>`:'';const right=local?`<span class="u-shell-local-title">本地对局</span><span class="u-shell-local-meta">第 0 手 · 19 路</span><button class="u-shell-local-action" data-audio="true" data-help="两人在同一块棋盘上下棋。先在棋盘选点，再由当前一方点击确认落子。确认时双方计时暂停；成功后对方开始计时，失败则仍由当前一方计时。读秒结束按规则判超时负。请听到确认音或看到对方卡片亮起后再落下一子。"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></svg></span>落子说明</button><button class="u-shell-local-action" data-switch="game-local-dialogs">${I('back')}退出对局</button>`:`${home}<span class="u-shell-avatar">F</span><span class="u-shell-user">fan</span><time class="u-shell-clock">${captureTimes[s.id]||"02:08"}</time>`;return `<div class="u-shell-top"><span class="u-shell-logo" aria-hidden="true"></span><strong class="u-shell-brand">智星盒</strong><span class="u-shell-en">StellaBox</span><span class="u-shell-separator"></span><span class="u-shell-product">围棋</span><span class="u-shell-spacer"></span>${right}</div>`}
 function commonDock(s){if(s.id==='login'||!l1.has(s.id))return '';const tab=s.group==='对弈'?'play':s.id==='review'?'review':s.id==='growth'?'growth':s.group==='训练营'?'training':s.group==='棋谱'?'kifu':s.group==='课程'?'courses':s.group==='设置'?'settings':'play';return `<div class="u-shell-dock">${[['play','对弈'],['training','训练营'],['kifu','棋谱'],['review','复盘'],['growth','成长'],['courses','课程'],['settings','设置']].map(([id,t])=>`<button class="${tab===id?'is-active':''}" data-switch="${id}">${I(id)}${t}</button>`).join('')}</div>`}
 function overlays(s){const custom=window.KioskDesignFamilies?.[s.id];let body;if(custom){body=custom(s,{I,root,byId})}else if(['setup-free','setup-ranked','setup-local'].includes(s.id))body=setup(s.id);else if(s.id==='platform-engine')body=engineSetup();else if(s.id==='game'||s.id==='game-ranked')body=game();else if(s.id==='game-local')body='';else if(s.id==='growth')body=growth();else if(s.id==='report'||s.id.startsWith('report-')&&['recommend','trend','brilliant','mistake','perf','match'].includes(s.id.slice(7)))body=report(s.id);else body=generic(s);return body+commonTop(s)+commonDock(s)}
-const notes={kifu:'棋谱列表每页 20 局，列表区域独立滚动。前两页使用已采集的真实记录；其余页仅展示分页入口，不虚构内容。','kifu-report':'已分析职业棋局沿用复盘报告的布局；棋手、赛事、棋谱和已采集的逐手分析数据来自同一真实职业棋局。',review:'历史对局使用采集到的真实个人 SGF 摘要；点击卡片显示终局。报告档位菜单展示每手 500／2000 次计算，设计预览不提交任务。','platform-engine':'按实机保留星阵 39 档对手、固定 19 路与中国规则、让子和猜先。设备显示星小蚊·18级，第 1 / 39 档。',growth:'左侧段位卡与外壳保持原样。右侧新增「概览 / 能力诊断 / 对手」三个标签：近一年热图、问题手、对手强度和未计入胜率的说明各有归属，信息不丢失。',report:'保留真实 516 棋盘与 460 右栏。六个分析标签改为单排横向滑动，当前标签自动保持可见；对应图表／表格、操作键和回放条继续沿用真实报告结构。',"setup-ranked":'设备当前配到第 19 档，对手是 2 级；提案按实机显示 2 级。贴目与路数值卡同尺寸；用时提案默认最大值「60分+30秒×3」。',"setup-free":'移走档位解释和不可更改等长段落；路数、规则、让子、贴目、对手、落子、执子、用时都保留。详细规则通过 ⓘ 查看。',"setup-local":'保留两位玩家输入及实体盘／屏幕落子设置；关于确认键和判定的长说明收到 ⓘ 中。',game:'保留真实棋盘、双方身份、胜率图、坐标／手数开关与七个动作。双方采用留有间隙、四角圆润的等宽梯形计时卡，轮到的一侧高亮、另一侧变暗；动作按钮统一图文水平排列。',"game-local":'以实机 LocalConfirmGame 为底保留居中棋盘；重绘两侧玩家卡与等宽操作。空盘时确认键仍不可用，说明弹窗保留计时与确认规则。'};
-function note(s){if(s.id==='settings-typography')return '新增字体与字号分组，位于关于之前。四种字体展示实际字形，选择后立即应用于所有围棋提案页面；常规楷体、隶书（隶变体）、黑体使用本机字体，霞鹜楷体沿用仓库字体。字体选项只改变汉字与中文标点；英文字母、数字始终沿用默认字体，不提供英文字体设置。中文字体偏好仅用于中文界面，其他语言使用适合该语言的默认字体，切回中文恢复所选字体；字号跨语言保留。字号当前最大为默认，依次缩小两档；字体与字号保存在本浏览器，下次打开设计稿时恢复。正式应用后续需按用户／设备保存，并在 RK3562 重启后恢复；本次不写入生产应用。未安装对应系统字体时，选项会明确提示。';if(s.id==='calib')return '本页以 RK3562 已部署实机为准：四角和天元共 5 个定位点，标定共 4 步；保留设备未连接与按钮禁用的真实状态。当前工作区 GeometryCalibrationScreen.tsx 为 13 点／5 步，与实机采集状态不同，不作为本页提案依据。';if(s.id==='play')return '保留实机棋盘预览及摄像头、标定、LED 的真实状态；人机、人人、跨平台和对局历史仍按实机顺序同屏排列，文字与按钮适度放大并增加软键按压质感。';if(s.id==='kifu-detail')return '以真实未分析职业棋谱的 185 手 SGF 展示逐手回放；规则、贴目和胜负据谱头标注。';if(notes[s.id])return notes[s.id];if(s.id.startsWith('report-')&&['recommend','trend','brilliant','mistake','perf','match'].includes(s.id.slice(7)))return notes.report;if(l1.has(s.id))return '以实机模块结构为基础，统一字号、同类按钮和图标；通过页内分组容纳原有信息。';if(s.id==='kifu-replay')return '实机回放页持续显示“正在读这一局”，本次未得到载入完成的状态；提案保持此状态，不虚构谱面。';if(s.id==='baipu')return '实机当前只到「需要标定」门槛，尚未取得摆谱主界面；不编造摆谱功能画面。';return '依据实机截图保留这一状态的内容、尺寸、图标与交互位置；当前没有足够理由改变基础布局。'}
+const notes={kifu:'棋谱列表每页 20 局，列表区域独立滚动。前两页使用已采集的真实记录；其余页仅展示分页入口，不虚构内容。','kifu-report':'已分析职业棋局沿用复盘报告的布局；棋手、赛事、棋谱和已采集的逐手分析数据来自同一真实职业棋局。',review:'保留选中棋局／历史列表结构；普通 500 与深度 2000 两档常驻，独立显示提交、排队、真实字段格式进度、失败续算和完成入口。棋局与任务为隔离设计示意，非当前设备状态；原实机截图只用于几何与视觉对照。','platform-engine':'按实机保留星阵 39 档对手、固定 19 路与中国规则、让子和猜先。设备显示星小蚊·18级，第 1 / 39 档。',growth:'左侧段位卡与外壳保持原样。右侧新增「概览 / 能力诊断 / 对手」三个标签：近一年热图、问题手、对手强度和未计入胜率的说明各有归属，信息不丢失。',report:'保留真实 516 棋盘与 460 右栏。六个分析标签改为单排横向滑动，当前标签自动保持可见；对应图表／表格、操作键和回放条继续沿用真实报告结构。',"setup-ranked":'设备当前配到第 19 档，对手是 2 级；提案按实机显示 2 级。贴目与路数值卡同尺寸；用时提案默认最大值「60分+30秒×3」。',"setup-free":'移走档位解释和不可更改等长段落；路数、规则、让子、贴目、对手、落子、执子、用时都保留。详细规则通过 ⓘ 查看。',"setup-local":'保留两位玩家输入及实体盘／屏幕落子设置；关于确认键和判定的长说明收到 ⓘ 中。',game:'保留真实棋盘、双方身份、胜率图、坐标／手数开关与七个动作。双方采用留有间隙、四角圆润的等宽梯形计时卡，轮到的一侧高亮、另一侧变暗；动作按钮统一图文水平排列。',"game-local":'以实机 LocalConfirmGame 为底保留居中棋盘；重绘两侧玩家卡与等宽操作。空盘时确认键仍不可用，说明弹窗保留计时与确认规则。'};
+function note(s){if(s.id==='review-import')return '来源为公共职业棋谱库。标题 28、棋手与按钮 22、元数据 18 px；列表独立滚动，每屏约四局，分页与导入方式固定可见。仅导入不生成报告；普通 500／深度 2000 为导入并分析的方式，当前预览不调用 API。';if(s.id==='review-replay')return '新增个人原谱只读回放设计：516 px 棋盘、逐手／跳手／终局、坐标／手数开关。无需报告即可看原谱，返回保留选中棋局与原进度。匿名棋局只借公开棋谱作为几何示例，未导出私有 SGF。';if(s.id==='review-report')return '新增已完成个人报告设计：入口保留所选普通／深度档位，只展示 completed 报告。复用现有报告／回放视觉；图表与分析数值均为设计示意。上次完成报告与本次运行任务在主页明确区分。';if(s.id==='settings-typography')return '新增字体与字号分组，位于关于之前。四种字体展示实际字形，选择后立即应用于所有围棋提案页面；常规楷体、隶书（隶变体）、黑体使用本机字体，霞鹜楷体沿用仓库字体。字体选项只改变汉字与中文标点；英文字母、数字始终沿用默认字体，不提供英文字体设置。中文字体偏好仅用于中文界面，其他语言使用适合该语言的默认字体，切回中文恢复所选字体；字号跨语言保留。字号当前最大为默认，依次缩小两档；字体与字号保存在本浏览器，下次打开设计稿时恢复。正式应用后续需按用户／设备保存，并在 RK3562 重启后恢复；本次不写入生产应用。未安装对应系统字体时，选项会明确提示。';if(s.id==='calib')return '本页以 RK3562 已部署实机为准：四角和天元共 5 个定位点，标定共 4 步；保留设备未连接与按钮禁用的真实状态。当前工作区 GeometryCalibrationScreen.tsx 为 13 点／5 步，与实机采集状态不同，不作为本页提案依据。';if(s.id==='play')return '保留实机棋盘预览及摄像头、标定、LED 的真实状态；人机、人人、跨平台和对局历史仍按实机顺序同屏排列，文字与按钮适度放大并增加软键按压质感。';if(s.id==='kifu-detail')return '以真实未分析职业棋谱的 185 手 SGF 展示逐手回放；规则、贴目和胜负据谱头标注。';if(notes[s.id])return notes[s.id];if(s.id.startsWith('report-')&&['recommend','trend','brilliant','mistake','perf','match'].includes(s.id.slice(7)))return notes.report;if(l1.has(s.id))return '以实机模块结构为基础，统一字号、同类按钮和图标；通过页内分组容纳原有信息。';if(s.id==='kifu-replay')return '实机回放页持续显示“正在读这一局”，本次未得到载入完成的状态；提案保持此状态，不虚构谱面。';if(s.id==='baipu')return '实机当前只到「需要标定」门槛，尚未取得摆谱主界面；不编造摆谱功能画面。';return '依据实机截图保留这一状态的内容、尺寸、图标与交互位置；当前没有足够理由改变基础布局。'}
 Object.assign(notes,{
+  'game-lobby':'邀请成功后的大厅对局新增提案：保留 516 px 棋盘、460 px 右栏和自由对弈的左右梯形棋手卡；文字统一 18 / 22 / 28 px，按钮沿用圆润软键。棋盘区域借用自由对弈实机空盘作为几何、材质参考；棋手与状态均为设计示意，并非正在进行的真实对局。联网对局保留坐标、手数、数子、停一手、认输与退出；按本次要求新增领地设计入口，图标沿用「05 人机对局」，点击查看用途说明，尚未接入实际领地计算；数子有手数门槛，并需要对方确认。<div class="u-game-scenarios" role="group" aria-label="大厅对局设计状态"><span>切换示意</span><button type="button" data-lobby-scenario="mine" aria-pressed="true">轮到我</button><button type="button" data-lobby-scenario="opponent" aria-pressed="false">等待对方</button><button type="button" data-lobby-scenario="disconnected" aria-pressed="false">连接中断</button><button type="button" data-lobby-scenario="count" aria-pressed="false">数子请求</button></div>',
+  courses:'OGS 教程已在 TEST 教材库导入为一本书：七章、248 课、3551 步，含中文讲解和盘面。本提案把互动教程直接呈现在课程入口，章节卡片按真实章节数与步骤数展示；不虚构个人学习进度。',
+  books:'左侧固定七章学习路径，右侧按已导入的中文课目和实际步骤数列出课程。课目卡片可点按，长列表在右侧独立滚动。',
+  section:'互动练习保留原题盘面与答题方式：可在屏幕棋盘落子；19 路落子题另提供实体盘入口，按训练营死活题流程检查设备、清盘和摆题。九路题与非落子题在按钮旁说明不可用原因。',
+  'books-chapter-open':'从已导入的「基本规则 · 气」选择题抽取真实九路盘面、中文讲解和三个选项，展示与落子练习共用的交互框架。',
   training:'去掉训练营首页的实体盘预览；四组棋力使用立体卡片轮播，手指拖动时跟手移动、松手吸附。15 级饼图与比例来自已核实的题型数量；其余等级比例数据暂不可用。',
   categories:'六种题型统一卡片尺寸，综合训练与专项题型同级展示。未采集的题量明确标记，不沿用其他等级的数据。',
   units:'移除最近做过的题目横幅；单元与错题使用同组标签。错题簿继承当前棋力和题型，单元进度保留。',
@@ -770,16 +813,19 @@ function render(){
   window.KioskDesignTypography.apply();
   window.KioskTrainingInit?.();
   window.KioskReportInit?.();
+  window.KioskPersonalReviewInit?.(s.id);
   mix.disabled=s.designOnly||!changed.trim();
   if(s.designOnly)mix.value=100;
   document.getElementById('stage-status').textContent=s.designOnly?'新增设计预览 · 无对应实机截图':mix.disabled?'本页提案保留实机原样':'滑杆左端看实机，右端看提案';
   document.getElementById('intro').innerHTML=`<b>${s.name}</b>　${s.status}。${s.designOnly?'此页为 1024 × 600 新增提案，未使用其他设置页冒充实拍。':'左端为 RK3562 实拍，右端为同尺寸改版提案。'}`;
   document.getElementById('note').innerHTML=`<b>本页设计判断：</b>${note(s)}`;
+  window.KioskGameInit?.();
   history.replaceState(null,'','#'+active);
   updateMix();resize();
 }
 chooser.onclick=e=>{const button=e.target.closest('button[data-id]');if(!button)return;active=button.dataset.id;growthTab='overview';render();button.scrollIntoView({block:'center'})};
 window.KioskTrainingRefresh=render;
+window.KioskGameRefresh=render;
 mix.oninput=updateMix;
 document.getElementById('stage').onclick=e=>{
   const info=e.target.closest('[data-help]');

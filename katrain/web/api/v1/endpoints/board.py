@@ -53,6 +53,12 @@ async def proxy_ogs_course(request: Request, lang: str = "zh-cn"):
     return await _proxy(lambda: c.get_ogs_course(lang), "OGS course")
 
 
+@router.get("/tutorials/ogs-course/source.zip")
+async def proxy_ogs_source(request: Request):
+    c = _get_remote_client(request)
+    return RedirectResponse(f"{c.base_url}/api/v1/tutorials/ogs-course/source.zip", status_code=302)
+
+
 @router.get("/tutorials/ogs-course/steps/{page}")
 async def proxy_ogs_step(request: Request, page: int, lang: str = "zh-cn"):
     c = _get_remote_client(request)

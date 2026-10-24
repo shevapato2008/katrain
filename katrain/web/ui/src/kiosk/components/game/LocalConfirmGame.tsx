@@ -11,10 +11,12 @@ import { useVoice } from '../../hooks/useVoice';
 import { useLightingWarning } from '../../hooks/useLightingWarning';
 import LightingWarningDialog from '../vision/LightingWarningDialog';
 import { useGoClock, type GoClockReading } from './goClock';
+import { UNKNOWN_RANK, type PlayerRanks } from '../../utils/playerRank';
 import './LocalConfirmGame.css';
 
 interface Props {
   gameState: GameState;
+  playerRanks?: PlayerRanks;
   input: 'screen' | 'physical';
   point: { x: number; y: number } | null;
   busy: boolean;
@@ -40,7 +42,7 @@ const clockText = (seconds: number) => {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 };
 
-export default function LocalConfirmGame({ gameState, input, point, busy, failed, analysisToggles,
+export default function LocalConfirmGame({ gameState, playerRanks, input, point, busy, failed, analysisToggles,
   onToggle, onSelect, onConfirm, onPass, onCount, onResign, onAbandon, onExit, onPaintedNode, onExpired, blocked = false, physicalPreparation, onRetryPreparation }: Props) {
   const { t } = useTranslation();
   const { speak, stop } = useVoice();
@@ -138,7 +140,7 @@ export default function LocalConfirmGame({ gameState, input, point, busy, failed
     return <section key={color} aria-label={`${label}玩家面板`} className={`lc-seat ${active ? 'is-active' : 'is-waiting'}${busy && active ? ' is-busy' : ''}${ownError ? ' is-error' : ''}`}>
       <div className="lc-seat-head"><span className="lc-stone-disc" aria-hidden="true"><img src={`/assets/img/${color}_stone.png`} alt="" /></span>
         <div><div className="lc-side">{label}<span className="lc-pill">{busy ? active ? t('game:local_confirming', '确认中') : t('game:local_wait_short', '请稍候') : active && physicalNotReady ? preparationFailed ? t('game:local_needs_attention', '待处理') : t('game:local_preparing_short', '准备中') : ownError ? t('game:local_needs_attention', '待处理') : active ? t('game:local_playing', '走棋中') : t('game:local_waiting', '等待中')}</span></div>
-          <div className="lc-name">{gameState.players_info[color].name || label}</div></div>
+          <div className="lc-name"><span title={gameState.players_info[color].name || label}>{gameState.players_info[color].name || label}</span><span className="kiosk-player-rank" title={(playerRanks?.[color] ?? UNKNOWN_RANK).title}>{(playerRanks?.[color] ?? UNKNOWN_RANK).label}</span></div></div>
       </div>
       <div className={`lc-clock-block${clock?.byoLeft != null ? ' is-byoyomi' : ''}`}>
         <div className="lc-clock-top"><span>{clock?.byoLeft != null ? t('game:local_byoyomi', '读秒时间') : t('game:local_main_left', '剩余主时间')}</span>

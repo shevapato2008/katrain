@@ -1,3 +1,4 @@
+import { knownRank } from '../utils/playerRank';
 import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
@@ -796,16 +797,16 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
         </div>}
 
         <div className="baipu-players ai-player-cards kiosk-player-pair" role="group" aria-label={t('game:players', '对局双方')}>{!collect && ([
-          { color: 'B' as const, name: meta?.player_black?.trim() || t('game:black_side', '黑方'), side: t('game:plays_black', '执黑') },
-          { color: 'W' as const, name: meta?.player_white?.trim() || t('game:white_side', '白方'), side: t('game:plays_white', '执白') },
-        ]).map(({ color, name, side }, index) => {
+          { color: 'B' as const, name: meta?.player_black?.trim() || t('game:black_side', '黑方'), side: t('game:plays_black', '执黑'), rank: knownRank(meta?.player_black_rank) },
+          { color: 'W' as const, name: meta?.player_white?.trim() || t('game:white_side', '白方'), side: t('game:plays_white', '执白'), rank: knownRank(meta?.player_white_rank) },
+        ]).map(({ color, name, side, rank }, index) => {
           const turn = nextColor === color && phase !== 'done' && mood !== 'trying' && mood !== 'hint';
           return (
             <div key={color} className={`pcard ai-player-card kiosk-player-card${turn ? ' turn' : ''}`} data-testid={`baipu-player-${color === 'B' ? 'black' : 'white'}`} data-turn={turn}>
               <PlayerCardSurface left={index === 0} />
               <span className={color === 'B' ? 'disc b' : 'disc w'} aria-hidden="true" />
               <div>
-                <h4 title={name}>{name}</h4>
+                <h4 className="kiosk-player-name-line"><span title={name}>{name}</span><span className="kiosk-player-rank" title={rank.title}>{rank.label}</span></h4>
                 <p>{side}{turn && coord ? ` · ${coord}` : ''}</p>
               </div>
             </div>

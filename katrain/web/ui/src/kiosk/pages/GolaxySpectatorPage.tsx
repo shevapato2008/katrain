@@ -1,3 +1,4 @@
+import { knownRank } from '../utils/playerRank';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { API, ApiError, type GolaxySpectatorPosition, type GolaxySpectatorSnapshot } from '../../api';
@@ -37,7 +38,6 @@ function snapshotError(snapshot: GolaxySpectatorSnapshot, roomId: string): strin
   const textOrNull = (value: unknown) => value === null || typeof value === 'string';
   const validPlayer = (value: unknown) => value === null || (
     typeof value === 'object' && value !== null && 'username' in value && typeof value.username === 'string'
-    && 'rank' in value && textOrNull(value.rank)
   );
   if (typeof snapshot.room_id !== 'string' || !textOrNull(snapshot.room_number)
     || !validPlayer(snapshot.black) || !validPlayer(snapshot.white)
@@ -224,7 +224,7 @@ const GolaxySpectatorPage = () => {
     const active = ready?.clocks?.active_color === (color === 'black' ? 'B' : 'W');
     return <div className={`golaxy-spectator__clock-card kiosk-player-card${active ? ' is-turn' : ''}`} key={color}>
       <PlayerCardSurface left={color === 'black'} />
-      <div className="golaxy-spectator__clock-name"><i className={`golaxy-spectator__stone golaxy-spectator__stone--${color}`} /><b title={person?.username}>{color === 'black' ? '黑' : '白'} · <span>{person?.username || t('platform:unknown_player', '棋手信息待返回')}</span></b>{person?.rank && <span>{person.rank}</span>}</div>
+      <div className="golaxy-spectator__clock-name"><i className={`golaxy-spectator__stone golaxy-spectator__stone--${color}`} /><b title={person?.username}>{color === 'black' ? '黑' : '白'} · <span>{person?.username || t('platform:unknown_player', '棋手信息待返回')}</span></b><span className="kiosk-player-rank">{knownRank(person?.rank).label}</span></div>
       <strong>{clock && Number.isFinite(clock.remaining_seconds) && clock.remaining_seconds >= 0 ? formatClock(clock.remaining_seconds) : '—'}</strong>
       <small>{clock ? clock.period_seconds != null && clock.periods_remaining != null ? `读秒 ${clock.period_seconds} 秒 · 剩余 ${clock.periods_remaining} 次` : '星阵时钟快照' : '计时信息未返回'}</small>
     </div>;

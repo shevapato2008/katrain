@@ -162,6 +162,10 @@ export interface GameState {
   // PVP, multiplayer). Authoritative signal for humanColor/aiColor derivation —
   // see kiosk/pages/GamePage.tsx deriveHumanColor/deriveAiTurnState (G2).
   platform_engine_color?: 'B' | 'W' | null;
+  /** Verified platform seats; an empty map does not imply platform mode. */
+  platform_player_ranks?: Partial<Record<'B' | 'W', string | null>>;
+  /** Actual account owning the sole human seat in this eligible private AI game. */
+  rank_owner?: { user_id: number; color: 'B' | 'W' } | null;
   /** OGS online game: the authenticated box user's seat, supplied by the session bridge. */
   platform_my_color?: 'B' | 'W' | null;
   /** Self-owned PvP mirror also exposes this neutral seat alias. */
@@ -350,8 +354,8 @@ export interface GolaxySpectatorSnapshot {
   game_id: string | null; // Null until matching upstream room/meta/state IDs establish identity.
   room_number: string | null;
   board_size: 19;
-  black: { username: string; rank: string | null } | null;
-  white: { username: string; rank: string | null } | null;
+  black: { username: string; rank?: string | null } | null;
+  white: { username: string; rank?: string | null } | null;
   black_stones: string[];
   white_stones: string[];
   move_number: number;

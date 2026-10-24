@@ -6,13 +6,13 @@
 .golaxy-spectator__sync::before {content:""; width:6px; height:6px; border-radius:50%; background:#7fe39b; }
 .golaxy-spectator__clock-card {display:flex; flex-direction:column; padding:9px 26px 9px 10px; }
 .golaxy-spectator__clock-card:last-child {padding:9px 10px 9px 27px; }
-.golaxy-spectator__clock-name {display:flex; align-items:center; gap:6px; min-width:0; font-size:12px; }
+.golaxy-spectator__clock-name {display:flex; align-items:center; gap:6px; min-width:0; font-size:22px; line-height:28px; }
 .golaxy-spectator__clock-name b {min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.golaxy-spectator__stone {display:inline-block; width:12px; height:12px; flex:none; border:1px solid #99ad9d; border-radius:50%; background:#111715; }
+.golaxy-spectator__stone {display:inline-block; width:22px; height:22px; flex:none; border:1px solid #99ad9d; border-radius:50%; background:#111715; }
 .golaxy-spectator__stone--white {background:#f5f3e9; }
 .golaxy-spectator__clock-card strong {display:block; margin:auto 0 1px; font-size:27px; line-height:1; font-variant-numeric:tabular-nums; }
 .golaxy-spectator__clock-card.is-turn strong {color:#a9edb7; }
-.golaxy-spectator__clock-card small {color:#c2d0c3; font-size:11px; }
+.golaxy-spectator__clock-card small {color:#c2d0c3; font-size:16px; line-height:1.2; }
 .golaxy-spectator__latest {display:flex; align-items:center; gap:8px; min-height:45px; padding:7px 10px; border:1px solid #80684c; border-radius:8px; background:#302d24; }
 .golaxy-spectator__latest-dot {display:grid; place-items:center; width:25px; height:25px; border:1px solid #d8c29a; border-radius:50%; background:#141918; color:#fa725e; font-size:17px; }
 .golaxy-spectator__latest b {display:block; font-size:12px; }

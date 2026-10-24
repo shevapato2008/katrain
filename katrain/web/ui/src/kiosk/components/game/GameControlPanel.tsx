@@ -5,7 +5,7 @@ import { KioskFold } from '../../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../../shell/KioskActions';
 import { PlayerCardSurface } from '../../shell/PlayerCardSurface';
 import { GoEvalGraph, goEvalSummary } from './GoEvalGraph';
-import { localizedRank } from '../../../utils/rankUtils';
+import { seatRank, UNKNOWN_RANK, type PlayerRank, type PlayerRanks } from '../../utils/playerRank';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import { autoCountEligible } from '../../hooks/useAutoCount';
 import type { EngineItemCounts, GameState, PlatformClockState, PlayerInfo } from '../../../api';
@@ -17,6 +17,7 @@ import { computeClock, type ClockView } from '../../../utils/gameClock';
 
 interface Props {
   gameState: GameState;
+  playerRanks?: PlayerRanks;
   onAction: (action: string) => void;
   onNavigate: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
@@ -200,7 +201,7 @@ function useClientElapsed(snapshot: object | undefined, running: boolean): numbe
  * 不是另起一块面板;规则和贴目同理,它们是**这一局开局时定死的**,写在页控条副标里
  * 一次就够。两处都占 0 高度,这正是右栏 516 能装下胜率块的原因。
  */
-function PlayerRow({ color, info, captures, turn, state, clock, lang, t, paired = false, untimedClock = false }: {
+function PlayerRow({ color, info, captures, turn, state, clock, rank = UNKNOWN_RANK, t, paired = false, untimedClock = false }: {
   color: 'B' | 'W';
   paired?: boolean;
   untimedClock?: boolean;
@@ -209,12 +210,9 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t, paired 
   turn: boolean;
   state: string;
   clock: { value: string; label: string; phase?: 'byoyomi' | 'expired' } | null;
-  lang: string;
+  rank?: PlayerRank;
   t: (key: string, fallback?: string) => string;
 }) {
-  // 段位:阶梯 AI 的段位是 `rank_display` 里的字符串,其他人走数值 `calculated_rank`。
-  const rawRank = info.rank_display ?? localizedRank(info.calculated_rank, lang);
-  const rank = !rawRank || rawRank === 'No Rank' ? null : rawRank;
   // ⚠️ 这里是**人名缺席时的占位**,站的是「谁在下」那个位置,不是「哪一方的子」。
   // 屏 04 对同一个位置承诺的是「黑方」(`PvpLocalSetupPage.tsx:227`,用的是自铸的
   // `setup:black_side`),而那一屏的注释白纸黑字写着「**和对局屏上那两张卡的回落值是同一句话**」。
@@ -230,7 +228,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t, paired 
         <PlayerCardSurface left={color === 'W'} />
         <div className="ai-player-card__name">
           <span className={color === 'B' ? 'disc b' : 'disc w'} aria-hidden="true" />
-          <h4 title={rank ? `${name} · ${rank}` : name}>{rank ? `${name} · ${rank}` : name}</h4>
+          <h4 title={name}>{name}</h4><span className="kiosk-player-rank" title={rank.title} aria-label={rank.title}>{rank.label}</span>
         </div>
         <div className={untimedClock ? 'clock clock--untimed' : 'clock'}>
           {clock ? <><b>{clock.value}</b><span>{clock.label}</span></> : <span>{t('game:untimed', '不限时')}</span>}
@@ -246,7 +244,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t, paired 
     <div className={turn ? 'pcard turn' : 'pcard'} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
       <span className={color === 'B' ? 'disc b' : 'disc w'} />
       <div>
-        <h4>{rank ? `${name} · ${rank}` : name}</h4>
+        <h4 className="kiosk-player-name-line"><span title={name}>{name}</span><span className="kiosk-player-rank" title={rank.title} aria-label={rank.title}>{rank.label}</span></h4>
         <p>
           {state} · {color === 'B' ? t('game:plays_black', '执黑') : t('game:plays_white', '执白')}
           {' · '}{t('game:captures', '提子')} {captures}
@@ -266,9 +264,10 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t, paired 
  * 一方的玩家卡 + 时钟(A18)。时钟跟着本地时间走,所以 hook 挂在每张卡自己身上 ——
  * 放在父组件里算,每 250ms 一次的重渲会把胜率图、棋谱一起带着重画。
  */
-function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout, paired = false }: {
+function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout, paired = false, rank }: {
   gameState: GameState;
   paired?: boolean;
+  rank?: PlayerRank;
   color: 'B' | 'W';
   turn: boolean;
   state: string;
@@ -319,7 +318,7 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout, p
   return (
     <PlayerRow
       color={color} info={gameState.players_info[color]} captures={gameState.prisoner_count[color]}
-      turn={turn} state={state} clock={clock} lang={lang} t={t} paired={paired} untimedClock={reading === null}
+      turn={turn} state={state} clock={clock} rank={rank ?? seatRank(gameState, color, false, lang)} t={t} paired={paired} untimedClock={reading === null}
     />
   );
 }
@@ -339,7 +338,7 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout, p
  * —— 这个数只在真浏览器里量,见 `tests/kiosk-screen-05-game.spec.ts` 的本地对局那几条。
  */
 const GameControlPanel = ({
-  gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
+  gameState, playerRanks, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
   isGameOver = false, isRanked = false, analysisRequiresLogin = false, engineMode = false,
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, physicalStatus = null, onTimeExpired,
   onTimeout, counting = false, statusSlot = null, territory, platformClock = null, platformPhase = null,
@@ -622,33 +621,33 @@ const GameControlPanel = ({
           <PlayerRow
             color="W" info={gameState.players_info.W} captures={gameState.prisoner_count.W}
             turn={toMove === 'W' && !isGameOver && !lobbyCountStopped} state={stateWord('W')}
-            clock={ogsGame ? onlineClock('W') : clockFor('W')} lang={lang} t={t} paired
+            clock={ogsGame ? onlineClock('W') : clockFor('W')} rank={playerRanks?.W ?? seatRank(gameState, 'W', engineMode, lang)} t={t} paired
           />
           <PlayerRow
             color="B" info={gameState.players_info.B} captures={gameState.prisoner_count.B}
             turn={toMove === 'B' && !isGameOver && !lobbyCountStopped} state={stateWord('B')}
-            clock={ogsGame ? onlineClock('B') : clockFor('B')} lang={lang} t={t} paired
+            clock={ogsGame ? onlineClock('B') : clockFor('B')} rank={playerRanks?.B ?? seatRank(gameState, 'B', engineMode, lang)} t={t} paired
           />
         </div>
       ) : freeVsAi || rankedGame || engineMode ? (
         <div className="ai-player-cards kiosk-player-pair" role="group" aria-label={t('game:players', '对局双方')}>
           <SeatRow
-            gameState={gameState} color="W" turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
+            gameState={gameState} color="W" rank={playerRanks?.W ?? seatRank(gameState, 'W', engineMode, lang)} turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
             untimed={clockFor('W')} lang={lang} t={t} onTimeout={onTimeout} paired
           />
           <SeatRow
-            gameState={gameState} color="B" turn={toMove === 'B' && !isGameOver} state={stateWord('B')}
+            gameState={gameState} color="B" rank={playerRanks?.B ?? seatRank(gameState, 'B', engineMode, lang)} turn={toMove === 'B' && !isGameOver} state={stateWord('B')}
             untimed={clockFor('B')} lang={lang} t={t} onTimeout={onTimeout} paired
           />
         </div>
       ) : (
         <>
           <SeatRow
-            gameState={gameState} color="W" turn={toMove === 'W' && !isGameOver && !lobbyCountStopped} state={stateWord('W')}
+            gameState={gameState} color="W" rank={playerRanks?.W ?? seatRank(gameState, 'W', engineMode, lang)} turn={toMove === 'W' && !isGameOver && !lobbyCountStopped} state={stateWord('W')}
             untimed={clockFor('W')} lang={lang} t={t} onTimeout={onTimeout}
           />
           <SeatRow
-            gameState={gameState} color="B" turn={toMove === 'B' && !isGameOver && !lobbyCountStopped} state={stateWord('B')}
+            gameState={gameState} color="B" rank={playerRanks?.B ?? seatRank(gameState, 'B', engineMode, lang)} turn={toMove === 'B' && !isGameOver && !lobbyCountStopped} state={stateWord('B')}
             untimed={clockFor('B')} lang={lang} t={t} onTimeout={onTimeout}
           />
         </>

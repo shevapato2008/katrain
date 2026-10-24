@@ -39,3 +39,10 @@
 .kiosk-player-card:is(.turn, .is-turn, [data-turn="true"]) .kiosk-player-card__surface path { stroke: #69c98a; }
 .kiosk-player-card:is(.turn, .is-turn, [data-turn="true"]) .kiosk-player-card__gradient-start { stop-color: #2b6244; }
 .kiosk-player-card:is(.turn, .is-turn, [data-turn="true"]) .kiosk-player-card__gradient-end { stop-color: #1c432f; }
+
+/* Keep the grade visible while only the independent name is ellipsized. */
+.kiosk-player-rank { flex:none; white-space:nowrap; font-size:18px; font-weight:400; line-height:1.2; }
+.kiosk-player-name-line { display:flex; align-items:center; gap:6px; min-width:0; }
+.kiosk-player-name-line > :first-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.kiosk-screen .ai-player-card__name { min-width:0; }
+.kiosk-screen .ai-player-card__name h4 { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

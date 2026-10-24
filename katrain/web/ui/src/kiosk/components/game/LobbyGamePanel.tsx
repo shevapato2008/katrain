@@ -3,10 +3,13 @@ import { Dialog, DialogActions, DialogContent, DialogTitle, Button } from '@mui/
 import type { GameState, LobbyTerritoryResult } from '../../../api';
 import { PlayerCardSurface } from '../../shell/PlayerCardSurface';
 import { Icon } from '../../shell/icons';
+import { UNKNOWN_RANK, type PlayerRanks } from '../../utils/playerRank';
 import './LobbyGamePanel.css';
 
 interface Props {
   gameState: GameState;
+  sessionId?: string;
+  playerRanks?: PlayerRanks;
   setupLine: string;
   connected: boolean;
   isGameOver: boolean;
@@ -24,7 +27,7 @@ interface Props {
     result?: LobbyTerritoryResult; request: () => void };
 }
 
-export default function LobbyGamePanel({ gameState: gs, setupLine, connected, isGameOver, blocked, counting,
+export default function LobbyGamePanel({ gameState: gs, playerRanks, setupLine, connected, isGameOver, blocked, counting,
   countDisabled = false, statusSlot, hardwareFault, physicalPlay, analysisToggles, onToggleAnalysis, onAction, onExit, territory }: Props) {
   const [helpOpen, setHelpOpen] = useState(false);
   const myColor = gs.platform_my_color ?? gs.my_color;
@@ -51,15 +54,16 @@ export default function LobbyGamePanel({ gameState: gs, setupLine, connected, is
   return <>
     <header className="lobby-game__head" data-testid="game-pagebar">
       <button type="button" className="lobby-game__key lobby-game__back" onClick={onExit}><Icon name="arrow-left" />退出对局</button>
-      <h2>大厅对局</h2><span>{setupLine}</span>
+      <h2>大厅对局</h2><span title={setupLine}>{setupLine}</span>
     </header>
     <div className="lobby-game__seats kiosk-player-pair">
       {(['W', 'B'] as const).map((color, index) => {
+        const rank = playerRanks?.[color] ?? UNKNOWN_RANK;
         const turn = active && gs.player_to_move === color;
         return <section className="lobby-game__seat kiosk-player-card" data-testid="lobby-player" data-turn={turn} key={color} aria-label={`${color === 'B' ? '黑' : '白'}方玩家`}>
           <PlayerCardSurface left={index === 0} />
           <div className="lobby-game__name"><span className={`lobby-game__stone lobby-game__stone--${color}`} />
-            <strong title={gs.players_info[color].name}>{color === 'B' ? '黑' : '白'} · {gs.players_info[color].name}{color === myColor ? '（你）' : ''}</strong></div>
+            <strong title={gs.players_info[color].name}>{color === 'B' ? '黑' : '白'} · {gs.players_info[color].name}{color === myColor ? '（你）' : ''}</strong><span className="kiosk-player-rank" title={rank.title} aria-label={rank.title}>{rank.label}</span></div>
           <div className="lobby-game__move">{turn ? <>第 <b>{gs.current_node_index + 1}</b> 手</> : '不限时'}</div>
           <div className="lobby-game__seat-foot"><span>{!connected ? '等待重连' : isGameOver ? '已结束'
             : stopped || blocked || counting ? '等待确认' : turn ? color === myColor ? '轮到你' : '对方回合' : '等待中'}</span>

@@ -1,9 +1,9 @@
 /* Approved 06a lobby composition; scoped so other game modes retain their controls. */
 .kiosk-rail.lobby-game { gap:8px; color:#edf4eb; font-family:"SmartBox Kai",serif; font-size:18px; overflow:visible; }
 .lobby-game *, .lobby-game *::before, .lobby-game *::after { box-sizing:border-box; }
-.lobby-game__head { height:62px; flex:none; display:grid; grid-template-columns:126px 1fr; grid-template-rows:30px 24px; column-gap:10px; align-content:center; white-space:nowrap; }
+.lobby-game__head { height:62px; flex:none; display:grid; grid-template-columns:126px minmax(0,1fr); grid-template-rows:30px 24px; column-gap:10px; align-content:center; white-space:nowrap; }
 .lobby-game__head h2 { margin:0; font-size:22px; font-weight:500; align-self:end; }
-.lobby-game__head>span { font-size:18px; color:#a8bbae; align-self:start; }
+.lobby-game__head>span { min-width:0; overflow:hidden; text-overflow:ellipsis; font-size:18px; color:#a8bbae; align-self:start; }
 .lobby-game__key { height:50px; min-width:0; padding:0 2px; display:flex; align-items:center; justify-content:center; gap:8px; border:1px solid #3a5848; border-radius:17px; background-color:#21352b; color:#edf4ec; font:22px "SmartBox Kai",serif; white-space:nowrap; cursor:pointer; touch-action:manipulation; background-image:radial-gradient(ellipse 90% 70% at 50% -8%,#ffffff29,transparent 75%),linear-gradient(180deg,transparent 57%,#00000016); box-shadow:inset 0 1px 0 #ffffff38,inset 0 -2px 2px #0004,0 3px 0 #102019,0 6px 10px #0007; transition:translate 130ms ease,box-shadow 130ms ease; }
 .lobby-game__key .kiosk-icon svg { width:22px; height:22px; flex:none; }
 .lobby-game__key:active:not(:disabled) { translate:0 3px; background-image:linear-gradient(180deg,#0000001b,transparent 62%); box-shadow:inset 0 4px 9px #0008,inset 0 1px 0 #ffffff14,0 1px 2px #0006; }

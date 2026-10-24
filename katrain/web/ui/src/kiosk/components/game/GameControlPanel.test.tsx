@@ -35,6 +35,20 @@ const mockGameState: GameState = {
 } as GameState;
 
 describe('GameControlPanel', () => {
+  test('isolates human, actual AI difficulty and platform sources with independent name and grade spans', () => {
+    const props = { onAction: vi.fn(), onNavigate: vi.fn(), analysisToggles: {}, onToggleAnalysis: vi.fn() };
+    const { rerender } = render(<GameControlPanel {...props} gameState={{ ...mockGameState, game_type: 'free' }} />);
+    expect(within(screen.getByTestId('player-card-B')).getByText('等级未知')).toBeInTheDocument();
+    expect(within(screen.getByTestId('player-card-W')).getByLabelText(/AI 估计难度/)).toHaveTextContent('5段');
+    const longName = 'Alexander Dinerchtein long invited player name';
+    rerender(<GameControlPanel {...props} gameState={{ ...mockGameState, game_type: 'free', players_info: {
+      ...mockGameState.players_info, B: { ...mockGameState.players_info.B, name: longName },
+    } }} playerRanks={{ B: { label: '3段', title: '账号等级 · 3段' } }} />);
+    expect(screen.getByTitle(longName)).not.toContainElement(screen.getByText('3段'));
+    rerender(<GameControlPanel {...props} gameState={{ ...mockGameState, game_type: 'pvp_online', platform_player_ranks: { B: '1d', W: null } }} />);
+    expect(within(screen.getByTestId('player-card-B')).getByText('1d')).toBeInTheDocument();
+    expect(within(screen.getByTestId('player-card-W')).getByText('等级未知')).toBeInTheDocument();
+  });
   test('ranked territory uses the shared action icon and shows quota and result without analysis scores', () => {
     const onRequest = vi.fn();
     const { rerender } = render(<GameControlPanel gameState={{ ...mockGameState, game_type: 'ai_ladder_ranked' }}

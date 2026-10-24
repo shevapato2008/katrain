@@ -65,6 +65,13 @@ const move = (i: number, row: number, col: number, color: 'B' | 'W'): BaipuStep 
 const STEPS: BaipuStep[] = [move(0, 3, 15, 'B'), move(1, 15, 3, 'W')];
 const META = { player_black: '申真谞', player_white: '柯洁', handicap: 0, komi: 7.5, ruleset: 'chinese', result: 'W+R' };
 
+it('uses raw SGF professional ranks in independent spans', async () => {
+  baipuLoad.mockResolvedValue({ board_size: 19, steps: STEPS, meta: { ...META, player_black_rank: '9p', player_white_rank: '职业九段' } });
+  renderPage(); expect(await screen.findByText('9p')).toHaveClass('kiosk-player-rank');
+  expect(screen.getByText('职业九段')).toHaveClass('kiosk-player-rank');
+  expect(screen.getByTitle('申真谞')).not.toContainElement(screen.getByText('9p'));
+});
+
 const renderPage = (collect = false) =>
   render(
     <MemoryRouter initialEntries={['/kiosk/baipu/session/g1']}>

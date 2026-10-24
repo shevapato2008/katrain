@@ -11,7 +11,10 @@
 .lc-pill { font-size:14px; padding:1px 8px; border-radius:12px; background:#58b57a20; color:#91d7ab; white-space:nowrap; }
 .is-waiting .lc-pill { background:#23312b; color:var(--lc-sub); }
 .is-busy .lc-pill,.is-error .lc-pill { background:#e0a24a20; color:#f1c582; }
-.lc-name { font-size:22px; font-weight:500; line-height:30px; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lc-seat-head > div { min-width:0; flex:1; }
+.lc-name { display:flex; align-items:center; gap:6px; font-size:22px; font-weight:500; line-height:30px; min-width:0; white-space:nowrap; }
+.lc-name > :first-child { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.lc-name > .kiosk-player-rank { flex:none; font-size:18px; font-weight:400; }
 .is-waiting .lc-name,.is-waiting .lc-clock,.is-waiting .lc-instruction h2 { color:#bdcbc4; }
 .lc-clock-block { height:86px; flex:none; border-top:1px solid var(--hair); padding-top:5px; box-sizing:border-box; }
 .lc-clock-top { display:flex; justify-content:space-between; align-items:center; font-size:14px; color:var(--lc-sub); line-height:21px; }

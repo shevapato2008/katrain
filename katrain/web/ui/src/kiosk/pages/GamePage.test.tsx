@@ -1359,8 +1359,10 @@ describe('GamePage', () => {
 
     it('does not classify a count invitation when central identity fails', async () => {
       strictBox.value = true;
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response('{}', { status: 503 }))
-        .mockResolvedValueOnce(new Response(JSON.stringify({ user_id: 42 }), { status: 200 })));
+      const identityFetch = vi.fn().mockResolvedValueOnce(new Response('{}', { status: 503 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ user_id: 42 }), { status: 200 }));
+      vi.stubGlobal('fetch', vi.fn((url: string) => url === '/api/pvp/identity' ? identityFetch()
+        : Promise.resolve(new Response('[]', { status: 200 }))));
       mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
         players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
           W: { ...basePlayer, player_type: 'player:human', name: '我' } } });

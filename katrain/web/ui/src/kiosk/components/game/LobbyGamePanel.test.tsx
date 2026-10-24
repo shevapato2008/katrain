@@ -11,6 +11,18 @@ const props = () => ({ gameState: state, setupLine: '19 路 · 中国规则 · �
   analysisToggles: { coords: true, numbers: false }, onToggleAnalysis: vi.fn(), onAction: vi.fn(), onExit: vi.fn(),
   territory: { phase: 'idle' as const, visible: false, disabled: false, request: vi.fn() } });
 describe('lobby game panel', () => {
+  it('keeps both invited grades separate from long names and defaults missing labels to unknown', () => {
+    const p = props();
+    const { rerender } = render(<LobbyGamePanel {...p} sessionId="local" playerRanks={{ B: { label: '2段', title: '2段' }, W: { label: '20k', title: '20k' } }} />);
+    const seats = screen.getAllByTestId('lobby-player');
+    expect(within(seats[0]).getByText('20k')).toHaveClass('kiosk-player-rank');
+    expect(within(seats[1]).getByText('2段')).toHaveClass('kiosk-player-rank');
+    expect(within(seats[0]).getByTitle('在线棋友的长名字')).not.toContainElement(within(seats[0]).getByText('20k'));
+    rerender(<LobbyGamePanel {...p} />);
+    expect(screen.getAllByText('等级未知')).toHaveLength(2);
+    expect(screen.queryByText('尚未定级')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '停一手' })); expect(p.onAction).toHaveBeenCalledWith('pass');
+  });
   it('binds real seats, captures and turn with the four approved actions and equal toggles', () => {
     const p = props(); render(<LobbyGamePanel {...p} />);
     expect(screen.getByRole('heading', { name: '大厅对局' })).toBeInTheDocument();

@@ -261,6 +261,12 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     nextPlayer: 'B' | 'W';
   } | null>(null);
 
+  const pendingRepliesRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  const cancelPendingReplies = useCallback(() => {
+    for (const timer of pendingRepliesRef.current) clearTimeout(timer);
+    pendingRepliesRef.current.clear();
+  }, []);
+
   // Timer effect
   useEffect(() => {
     if (!startTime || isSolved || isFailed) return;
@@ -315,6 +321,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       });
     return () => {
       cancelled = true;
+      cancelPendingReplies();
       flushProgress();
     };
   }, [problemId]);
@@ -340,6 +347,9 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
   // Initialize problem state
   const initializeProblem = useCallback((data: ProblemDetail) => {
+    cancelPendingReplies();
+    setIsTryMode(false);
+    tryModeSnapshotRef.current = null;
     const size = data.boardSize || 19;
     setBoardSize(size);
 
@@ -395,7 +405,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     // Start timing
     setStartTime(Date.now());
     setElapsedTime(0);
-  }, []);
+  }, [cancelPendingReplies]);
 
   // Place a stone and validate against SGF tree
   const placeStone = useCallback((x: number, y: number): MoveResult | null => {
@@ -516,7 +526,8 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     const aiResponse = getAIResponse(matchingChild);
     if (aiResponse) {
       // Play AI's response after a short delay
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        pendingRepliesRef.current.delete(timer);
         const aiStone: Stone = { player: aiResponse.player, coords: aiResponse.coords };
         setStones(prev => {
           const newStones = [...prev, aiStone];
@@ -547,6 +558,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         // In tsumego, user always plays the same color (e.g., Black for 黑先)
         setNextPlayer(aiResponse.player === 'B' ? 'W' : 'B');
       }, 300);
+      pendingRepliesRef.current.add(timer);
     } else {
       // Only switch player if no AI response (terminal node or free play)
       setNextPlayer(prev => prev === 'B' ? 'W' : 'B');

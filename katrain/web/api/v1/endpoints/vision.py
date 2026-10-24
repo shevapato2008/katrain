@@ -31,6 +31,7 @@ class BindRequest(BaseModel):
 
 class SetupModeRequest(BaseModel):
     target_board: list[list[int]]  # (board_size x board_size) matrix
+    setup_id: str | None = None
 
 
 class DenyStoneRequest(BaseModel):
@@ -398,7 +399,7 @@ async def enter_setup_mode(request: Request, body: SetupModeRequest):
     import numpy as np
 
     target = np.array(body.target_board, dtype=int)
-    vision.enter_setup_mode(target)
+    vision.enter_setup_mode(target, **({"setup_id": body.setup_id} if body.setup_id is not None else {}))
     return {"ok": True}
 
 

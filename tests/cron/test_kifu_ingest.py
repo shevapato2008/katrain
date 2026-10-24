@@ -253,6 +253,7 @@ def test_sync_uses_fixed_ssh_command_and_stdin(monkeypatch):
         known_hosts="/run/secrets/hosts",
     )
     assert result["status"] == "applied"
+    assert captured["timeout"] is None
     assert captured["args"] == [
         "ssh",
         "-o",
@@ -717,7 +718,7 @@ async def test_failed_package_records_phase_and_continues_to_next_package():
     )
     assert processed == ["one", "two"]
     assert failures == 1
-    assert store.failures == [("one", "retry_wait", "TEST API timed out")]
+    assert store.failures == [("one", "retry_wait", "test_published: TimeoutError: TEST API timed out")]
     assert store.rows["one"]["next_retry_at"] > datetime(2026, 10, 19, tzinfo=timezone.utc)
 
 

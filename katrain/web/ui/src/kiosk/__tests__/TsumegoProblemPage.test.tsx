@@ -4,7 +4,9 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { AUTO_ADVANCE_KEY, sequenceKey, wrongSequenceKey } from '../pages/tsumegoUnits';
-import type { PhysicalTsumegoState } from '../hooks/usePhysicalTsumego';
+import { API } from '../../api';
+import { LedAPI } from '../../api/ledApi';
+import type { PhysicalTsumegoOptions, PhysicalTsumegoState } from '../hooks/usePhysicalTsumego';
 import { setKioskIdentity, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
 // AUTO_ADVANCE_KEY is identity-scoped (box-SSO guest mode, R9-F1) — these tests exercise a
@@ -68,6 +70,7 @@ vi.mock('../context/GeometryContext', async (importOriginal) => {
 
 vi.mock('../hooks/useVisionSync', () => ({
   useVisionSync: () => ({
+    connected: true,
     syncEvents: [],
     latestEvent: null,
     setupProgress: null,
@@ -94,6 +97,7 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
 
 const mockUndo = vi.fn();
 const mockReset = vi.fn();
+const mockRestartTimer = vi.fn();
 const mockToggleHint = vi.fn();
 const mockEnterTryMode = vi.fn();
 const mockExitTryMode = vi.fn();
@@ -121,6 +125,7 @@ const defaultHookReturn = {
   placeStone: mockPlaceStone,
   undo: mockUndo,
   reset: mockReset,
+  restartTimer: mockRestartTimer,
   toggleHint: mockToggleHint,
   enterTryMode: mockEnterTryMode,
   exitTryMode: mockExitTryMode,
@@ -149,12 +154,19 @@ const defaultPhysicalReturn: PhysicalTsumegoState = {
   stageTotal: 0,
   ledOk: true,
   onScreenMove: vi.fn(),
+  resetToInitial: vi.fn(),
+  canAcceptInput: () => true,
+  hasPendingReset: () => false,
 };
 let physicalReturn: PhysicalTsumegoState = { ...defaultPhysicalReturn };
+let useRealPhysical = false;
 
 vi.mock('../hooks/usePhysicalTsumego', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../hooks/usePhysicalTsumego')>();
-  return { ...actual, usePhysicalTsumego: () => physicalReturn };
+  return { ...actual, usePhysicalTsumego: (opts: PhysicalTsumegoOptions) => {
+    if (useRealPhysical) physicalReturn = actual.usePhysicalTsumego(opts);
+    return physicalReturn;
+  } };
 });
 
 import TsumegoProblemPage from '../pages/TsumegoProblemPage';
@@ -177,6 +189,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   hookReturn = { ...defaultHookReturn };
   physicalReturn = { ...defaultPhysicalReturn };
+  useRealPhysical = false;
   for (const k of Object.keys(mockProgress)) delete mockProgress[k];
   sessionStorage.clear();
   localStorage.clear();
@@ -589,6 +602,101 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       // 摆盘阶段这一块**换掉**着法表,不是加一块 —— 加一块会把动作区顶出右栏。
       expect(screen.queryByTestId('puzzle-moves')).toBeNull();
       expect(screen.getByTestId('puzzle-physical-guide')).toBeInTheDocument();
+    });
+
+    it('重摆同步暂停实体输入，目标来自初始题面而非当前试下棋子', () => {
+      enablePhysical();
+      hookReturn = { ...hookReturn, isTryMode: true, problem: { ...hookReturn.problem, initialBlack: ['dd'], initialWhite: ['ee'] } };
+      physicalReturn = { ...defaultPhysicalReturn, phase: 'ready' };
+      renderPage('p1');
+      fireEvent.click(action('重摆'));
+      const calls = vi.mocked(physicalReturn.resetToInitial);
+      const target = calls.mock.calls[0][0];
+      expect(target[3][3]).toBe(1);
+      expect(target[4][4]).toBe(2);
+      expect(target.flat().filter(Boolean)).toHaveLength(2);
+      expect(calls.mock.invocationCallOrder[0]).toBeLessThan(mockReset.mock.invocationCallOrder[0]);
+    });
+
+    it('核对初始局面显示红×与缺子指引，匹配后重设计时；普通退出试下保留计时', () => {
+      enablePhysical();
+      physicalReturn = { ...defaultPhysicalReturn, phase: 'ready' };
+      const view = renderPage('p1');
+      fireEvent.click(action('重摆'));
+      physicalReturn = { ...physicalReturn, phase: 'restoring', extra: [[3, 3, 2]], missing: [[4, 4]] };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      expect(screen.getByTestId('puzzle-physical-restore')).toHaveTextContent('待取走 1 颗，待补回 1 颗');
+      expect(screen.getByTestId('puzzle-physical-restore')).toHaveTextContent('红灯补黑子、绿灯补白子');
+      physicalReturn = { ...physicalReturn, phase: 'ready' };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      expect(mockRestartTimer).toHaveBeenCalledTimes(1);
+      physicalReturn = { ...physicalReturn, phase: 'restoring' };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      physicalReturn = { ...physicalReturn, phase: 'ready' };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      expect(mockRestartTimer).toHaveBeenCalledTimes(1);
+    });
+
+    it('真实 hook 的重摆意图在识别不可用时仍锁住屏幕操作，明确关实体后恢复', async () => {
+      for (const method of ['visionMonitor', 'visionPause', 'visionMoveDetection', 'visionExpectedBoard', 'visionSetupMode'] as const) {
+        vi.spyOn(API, method).mockResolvedValue({} as never);
+      }
+      vi.spyOn(LedAPI, 'clear').mockResolvedValue({} as never);
+      vi.spyOn(LedAPI, 'points').mockResolvedValue({ connected: true } as never);
+      enablePhysical();
+      useRealPhysical = true;
+      const view = renderPage('p1');
+      const flush = () => act(async () => { for (let i = 0; i < 60; i++) await Promise.resolve(); });
+      await flush();
+      fireEvent.click(action('重摆'));
+      await flush();
+      expect(physicalReturn.phase).toBe('restoring');
+      mockVision.recognitionReady = false;
+      const repaint = () => view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      repaint();
+      await flush();
+      const clickBoard = () => {
+        const canvas = view.container.querySelector('canvas')!;
+        vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 800, height: 800 } as DOMRect);
+        fireEvent.click(canvas, { clientX: 400, clientY: 400 });
+      };
+      clickBoard();
+      expect(mockPlaceStone).not.toHaveBeenCalled();
+      expect(action('提示')).toBeDisabled();
+      expect(action('退一手')).toBeDisabled();
+      expect(screen.getByTestId('try-mode-toggle')).toBeDisabled();
+      fireEvent.click(action('提示'));
+      fireEvent.click(action('退一手'));
+      fireEvent.click(screen.getByTestId('try-mode-toggle'));
+      expect(mockToggleHint).not.toHaveBeenCalled();
+      expect(mockUndo).not.toHaveBeenCalled();
+      expect(mockEnterTryMode).not.toHaveBeenCalled();
+      expect(action('重摆')).toBeEnabled();
+      expect(action('下一题')).toBeEnabled();
+      fireEvent.click(screen.getByTestId('physical-mode-toggle'));
+      await flush();
+      clickBoard();
+      expect(mockPlaceStone).toHaveBeenCalledTimes(1);
+      expect(action('提示')).toBeEnabled();
+      expect(action('退一手')).toBeEnabled();
+      expect(screen.getByTestId('try-mode-toggle')).toBeEnabled();
+      vi.restoreAllMocks();
+    });
+
+    it('没有待核对重摆时，识别不可用仍允许原有屏幕做题', () => {
+      enablePhysical();
+      mockVision.recognitionReady = false;
+      useRealPhysical = true;
+      const view = renderPage('p1');
+      expect(physicalReturn.hasPendingReset()).toBe(false);
+      const canvas = view.container.querySelector('canvas')!;
+      vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 800, height: 800 } as DOMRect);
+      fireEvent.click(canvas, { clientX: 400, clientY: 400 });
+      expect(mockPlaceStone).toHaveBeenCalledTimes(1);
+      expect(action('提示')).toBeEnabled();
+      expect(action('退一手')).toBeEnabled();
+      expect(screen.getByTestId('try-mode-toggle')).toBeEnabled();
+      vi.restoreAllMocks();
     });
 
     it('只开开关、视觉没就绪时进不去 —— 状态板不挂,着法表还在', () => {

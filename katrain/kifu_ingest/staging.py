@@ -1,6 +1,8 @@
 """Crash-safe, database-free staging for incremental kifu collection."""
 
+from contextlib import contextmanager
 import errno
+import fcntl
 import hashlib
 import json
 import os
@@ -21,6 +23,30 @@ def _id(value):
     if not re.fullmatch(r"[0-9]+", result):
         raise ValueError("external_id must contain only digits")
     return result
+
+
+@contextmanager
+def staging_writer_lock(root):
+    """Exclusive nonblocking writer lock shared by hourly and manual writers.
+
+    Acquire before constructing Stage, so its in-memory manifest cannot be stale.
+    The production scheduler must use this lock too (or be stopped for maintenance).
+    """
+    root = Path(root)
+    if not root.is_absolute() or root.is_symlink():
+        raise ValueError("staging root must be an absolute non-symlink directory")
+    root = root.resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / ".writer.lock"
+    fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise ValueError("writer lock must be a regular file")
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        yield
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
 
 
 class Stage:
@@ -196,6 +222,9 @@ class Stage:
         if not isinstance(metadata, dict):
             raise ValueError("metadata must be an object")
         external_id = _id(metadata.get("id"))
+        # Original source metadata is immutable, just like its raw SGF.
+        if external_id in self.manifest["items"]:
+            return self.manifest["items"][external_id]
         path = self.metadata_dir / f"{external_id}.json"
         self._atomic(path, json.dumps(metadata, ensure_ascii=False, sort_keys=True).encode("utf-8"))
         items = self.manifest["items"]
@@ -211,8 +240,6 @@ class Stage:
                 "attempts": 0,
                 "next_retry_at": None,
             }
-        else:
-            items[external_id]["metadata"] = metadata
         self._persist()
         return items[external_id]
 

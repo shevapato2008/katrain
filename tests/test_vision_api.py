@@ -156,3 +156,20 @@ def test_sync_reset_falls_back_to_vision_without_orchestrator():
     response = TestClient(app).post("/vision/sync/reset")
     assert response.status_code == 200
     assert app.state.vision.reset_calls == 1
+
+
+@pytest.mark.parametrize("setup_id", ["clear-1", "place-2", None])
+def test_setup_mode_forwards_optional_identity(setup_id):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    app = FastAPI()
+    app.include_router(vision.router, prefix="/vision")
+    app.state.vision = SimpleNamespace(enter_setup_mode=Mock())
+    body = {"target_board": [[0]]}
+    if setup_id is not None:
+        body["setup_id"] = setup_id
+    assert TestClient(app).post("/vision/setup-mode", json=body).status_code == 200
+    args, kwargs = app.state.vision.enter_setup_mode.call_args
+    assert args[0].tolist() == [[0]]
+    assert kwargs == ({"setup_id": setup_id} if setup_id is not None else {})

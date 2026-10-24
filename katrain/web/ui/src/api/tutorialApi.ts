@@ -7,6 +7,7 @@ import type {
   TutorialFigure,
   BoardPayload,
 } from '../types/tutorial';
+import type { OgsCourseIndex, OgsStep } from '../types/ogsCourse';
 
 // kiosk/board builds talk to the board-mode read-only proxy (/board/tutorials/*,
 // which forwards to the remote catalog + 302s assets to the public media gateway);
@@ -44,6 +45,12 @@ async function apiPost<T>(path: string, body: unknown, token?: string): Promise<
 }
 
 export const TutorialAPI = {
+  // Public OGS course
+  getOgsCourse: (lang = 'zh-cn'): Promise<OgsCourseIndex> =>
+    apiGet(`/ogs-course?lang=${encodeURIComponent(lang)}`),
+  getOgsStep: (page: number, lang = 'zh-cn'): Promise<OgsStep> =>
+    apiGet(`/ogs-course/steps/${page}?lang=${encodeURIComponent(lang)}`),
+
   // Categories
   getCategories: (): Promise<TutorialCategory[]> => apiGet('/categories'),
 
@@ -89,6 +96,8 @@ export const TutorialAPI = {
 // generateFigureAudio / verifyFigure), which remain galaxy-admin only.
 // Enforced by src/api/__tests__/tutorialReadonly.guard.test.ts.
 export const TutorialReadAPI = {
+  getOgsCourse: TutorialAPI.getOgsCourse,
+  getOgsStep: TutorialAPI.getOgsStep,
   getCategories: TutorialAPI.getCategories,
   getBooks: TutorialAPI.getBooks,
   getBook: TutorialAPI.getBook,

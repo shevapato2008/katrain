@@ -98,7 +98,7 @@ const setup = async (page: Page) => {
 test.describe('课程(只读镜像)', () => {
   test('分类 → 书目与目录 → 小节讲解 → 原路返回,四段路径都在地址里', async ({ page }) => {
     await setup(page);
-    await page.goto('/kiosk/tutorial');
+    await page.goto('/kiosk/tutorial/library');
 
     // 屏 23:分类
     await page.getByRole('button', { name: /入门/ }).click();
@@ -157,7 +157,7 @@ test.describe('课程(只读镜像)', () => {
     await expect(page.locator('video')).toHaveCount(0);
   });
 
-  test('深链进小节(没有 router state):照样画得出,「← 目录」退回课程首页', async ({ page }) => {
+  test('深链进小节(没有 router state):照样画得出,「← 目录」退回其他教材', async ({ page }) => {
     await setup(page);
     await page.goto('/kiosk/tutorial/section/1011');
     await expect(page.getByTestId('tutorial-figure-board')).toBeVisible();
@@ -165,6 +165,6 @@ test.describe('课程(只读镜像)', () => {
     await expect(page.getByText('undefined')).toHaveCount(0);
 
     await page.getByRole('button', { name: /目录/ }).click();
-    await expect(page).toHaveURL(/\/kiosk\/tutorial$/);
+    await expect(page).toHaveURL(/\/kiosk\/tutorial\/library$/);
   });
 });

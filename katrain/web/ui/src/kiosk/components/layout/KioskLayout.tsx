@@ -10,12 +10,12 @@ import EngineWarmupBanner from './EngineWarmupBanner';
 
 /**
  * 哪些 L1 屏出左边的镜像栏。规范 §5 的判据是**「这个模块的活动会不会发生在实体盘上」**——
- * 对弈和课程在此处显示实体盘镜像。训练营首页使用整幅卡片轮播，
+ * 对弈在此处显示实体盘镜像。课程首页改为全宽章节入口；训练营首页使用整幅卡片轮播，
  * 棋谱库使用随选中棋局变化的预览，因此由页面自己安排宽度和左栏。
  * ⚠️ 比的是**整条 pathname 相等**,不是前缀 —— `/kiosk/tsumego/15k` 是 L2,`dockLevelOf` 已经
  * 把它挡在外面了,但这里写成 `startsWith` 会让两条判据各说各的,而只有一条会被人记住。
  */
-const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tutorial'];
+const RAIL_ROUTES = ['/kiosk/play'];
 
 /**
  * 自己布局的屏。训练营首页是全宽卡片轮播；棋谱库和复盘的左栏随
@@ -23,7 +23,7 @@ const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tutorial'];
  * `.kiosk-layout-l1` 由页面自己出。外壳只负责别再往它外面套一层滚动容器
  * (那层 `<Box overflow:auto>` 会让 434 高的两栏在自己里面再滚一次)。
  */
-const SELF_LAYOUT_ROUTES = ['/kiosk/tsumego', '/kiosk/kifu', '/kiosk/report', '/kiosk/settings'];
+const SELF_LAYOUT_ROUTES = ['/kiosk/tsumego', '/kiosk/kifu', '/kiosk/report', '/kiosk/settings', '/kiosk/tutorial'];
 
 /**
  * `EngineWarmupBanner` 报的是**本地 KataGo** 的就绪状态。跨平台这几屏(`/kiosk/play/
@@ -87,13 +87,7 @@ const KioskShell = ({ username, accessBlocked = false }: KioskLayoutProps) => {
           本 Task 只动有左栏的那一支,一次只改一层。 */}
       {showRail ? (
         <div className="kiosk-layout-l1">
-          <GoConsoleRail
-            help={location.pathname === '/kiosk/play'}
-            // 课程屏那句同步行是「课上的图会摆到盘上 / 等选课」—— 规范 §5 允许的唯一差别。
-            {...(location.pathname === '/kiosk/tutorial'
-              ? { syncLeft: '课上的图会摆到盘上', syncRight: '等选课' }
-              : {})}
-          />
+          <GoConsoleRail help={location.pathname === '/kiosk/play'} />
           <Outlet />
         </div>
       ) : level === 1 && SELF_LAYOUT_ROUTES.includes(location.pathname) ? (

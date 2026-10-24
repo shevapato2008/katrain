@@ -752,8 +752,8 @@ export const API = {
   // 那条路是把假阳性收进基线当成现实。
   visionDenyStone: (row: number, col: number): Promise<void> =>
     apiPost("/api/v1/vision/deny-stone", { row, col }),
-  visionSetupMode: (targetBoard: number[][]): Promise<void> =>
-    apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
+  visionSetupMode: (targetBoard: number[][], setupId?: string): Promise<void> =>
+    apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard, ...(setupId !== undefined ? { setup_id: setupId } : {}) }),
   visionMonitor: (active: boolean): Promise<void> =>
     apiPost("/api/v1/vision/monitor", { active }),
   visionPause: (paused: boolean): Promise<void> =>

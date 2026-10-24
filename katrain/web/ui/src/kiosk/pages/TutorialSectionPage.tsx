@@ -156,7 +156,7 @@ const TutorialSectionPage = () => {
   }, [onAudio, index]);
 
   const backToToc = useCallback(() => {
-    if (!nav?.category || !nav.bookId) { navigate('/kiosk/tutorial'); return; }
+    if (!nav?.category || !nav.bookId) { navigate('/kiosk/tutorial/library'); return; }
     const ch = nav.chapterId ? `&ch=${nav.chapterId}` : '';
     navigate(`/kiosk/tutorial/${encodeURIComponent(nav.category)}?book=${nav.bookId}${ch}`);
   }, [nav, navigate]);

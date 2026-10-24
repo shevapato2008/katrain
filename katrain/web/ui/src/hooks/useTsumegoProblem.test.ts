@@ -167,6 +167,64 @@ describe('scheduledReply metadata', () => {
   });
 });
 
+describe('restart cancels pending state', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('reset cancels a delayed reply and restores the initial position', async () => {
+    const { result } = await setup();
+    const initialStones = result.current.stones;
+    const root = result.current.currentNode;
+    vi.useFakeTimers();
+    act(() => { result.current.placeStone(...sgfToCoords('cc', 9)!); });
+    act(() => result.current.reset());
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current.stones).toEqual(initialStones);
+    expect(result.current.moveHistory).toEqual([]);
+    expect(result.current.lastMove).toBeNull();
+    expect(result.current.currentNode).toEqual(root);
+    expect(result.current.nextPlayer).toBe('B');
+    expect(result.current.isSolved).toBe(false);
+    expect(result.current.isFailed).toBe(false);
+  });
+
+  it('problem change cancels a delayed reply while the next problem loads', async () => {
+    const { result, rerender } = renderHook(({ id }) => useTsumegoProblem(id), { initialProps: { id: 'p1' } });
+    await waitFor(() => expect(result.current.problem).not.toBeNull());
+    vi.useFakeTimers();
+    act(() => { result.current.placeStone(...sgfToCoords('cc', 9)!); });
+    const beforeChange = result.current.stones;
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    rerender({ id: 'p2' });
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current.stones).toEqual(beforeChange);
+    expect(result.current.moveHistory).toHaveLength(1);
+  });
+
+  it('unmount cancels the delayed reply timer', async () => {
+    const { result, unmount } = await setup();
+    vi.useFakeTimers();
+    act(() => { result.current.placeStone(...sgfToCoords('cc', 9)!); });
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('reset exits try mode and discards the previous snapshot', async () => {
+    const { result } = await setup();
+    const initialStones = result.current.stones;
+    act(() => { result.current.placeStone(...sgfToCoords('ab', 9)!); });
+    act(() => result.current.enterTryMode());
+    const exitPreviousTryMode = result.current.exitTryMode;
+    act(() => { result.current.placeStone(...sgfToCoords('gg', 9)!); });
+    act(() => result.current.reset());
+    expect(result.current.isTryMode).toBe(false);
+    act(() => exitPreviousTryMode());
+    expect(result.current.stones).toEqual(initialStones);
+    expect(result.current.isFailed).toBe(false);
+    expect(result.current.moveHistory).toEqual([]);
+    expect(result.current.lastMove).toBeNull();
+  });
+});
+
 describe('load errors', () => {
   it('只有 404 说「Problem not found」;其它状态码原样带上 —— 503 不许被说成题不存在', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}) })));

@@ -1,0 +1,26 @@
+{
+  "original_url": "http://127.0.0.1:8081/kiosk/tutorial/chapter/ogs-learning%3ABeginnerLevel1",
+  "temporary_background_only": true,
+  "physical_actions": false,
+  "actual_fonts": [
+    {
+      "familyName": "TW-Kai",
+      "isCustomFont": true,
+      "glyphCount": 6
+    }
+  ],
+  "current": {
+    "url": "http://127.0.0.1:8081/kiosk/tutorial/chapter/ogs-learning%3ABeginnerLevel1",
+    "width": 1024,
+    "height": 600,
+    "font": "\"SmartBox CNS Kai\"",
+    "size": "large",
+    "heading": "七章学习路径",
+    "computedFont": "\"SmartBox Sans\", \"SmartBox CNS Kai\", \"SmartBox Kai\", system-ui, sans-serif",
+    "computedSize": "22px",
+    "lessons": 37
+  },
+  "derived_device_visual_checked": false,
+  "derived_verification": "real board API plus local same-viewport runtime; background tab did not render and was closed without affecting the original page",
+  "vision_binding_unchanged": true
+}

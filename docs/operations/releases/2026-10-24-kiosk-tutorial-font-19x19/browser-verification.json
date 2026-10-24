@@ -1,0 +1,29 @@
+{
+  "original_url": "http://127.0.0.1:8081/kiosk/tutorial/chapter/ogs-learning%3ABeginnerLevel1",
+  "auth_after_refresh": {
+    "status": 401,
+    "username": null
+  },
+  "identity_restored": true,
+  "launcher_auth": {
+    "status": 200,
+    "username": "fan"
+  },
+  "final_auth": {
+    "status": 200,
+    "username": "fan"
+  },
+  "page": {
+    "url": "http://127.0.0.1:8081/kiosk/tutorial/chapter/ogs-learning%3ABeginnerLevel1",
+    "title": "智星盒 StellaBox",
+    "width": 1024,
+    "height": 600,
+    "loaded_scripts": [
+      "http://127.0.0.1:8081/assets/index-D4KBMil6.js",
+      "http://127.0.0.1:8081/pinyin-ime.js?v=kbd5",
+      "http://127.0.0.1:8081/pinyin-compose.js?v=kbd5",
+      "http://127.0.0.1:8081/smartkeyboard.js?v=kbd6"
+    ],
+    "text": "智星盒\nStellaBox\n围棋\nF\nfan\n18:53\n‹ 课程\n正在读取章节\n⌄\nq\nw\ne\nr\nt\ny\nu\ni\no\np\na\ns\nd\nf\ng\nh\nj\nk\nl\nz\nx\nc\nv\nb\nn\nm\n123\nEN\n空格\n换行"
+  }
+}

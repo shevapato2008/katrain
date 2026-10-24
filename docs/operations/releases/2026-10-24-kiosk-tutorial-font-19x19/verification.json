@@ -1,0 +1,239 @@
+{
+  "source": "09ee7f59faf40e4908e70d6c201aebd25257d33c",
+  "parent": "8c29181163542d6e53cecfc52e33850c16254807",
+  "pid": "300462",
+  "manifest_files": 1188,
+  "protected_files_unchanged": 458,
+  "typography": {
+    "font": "kaiti",
+    "size": "large"
+  },
+  "health": {
+    "status": "ok",
+    "version": "1.17.1",
+    "engines": {
+      "local": "reachable",
+      "cloud": "unconfigured"
+    }
+  },
+  "api_cases": [
+    {
+      "type": "training",
+      "id": "92643",
+      "source_size": 8,
+      "size": 19,
+      "metadata": {
+        "status": "adapted",
+        "source_size": 8,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "af673536f42420024cd5850203afd432f93f00813c8b1613c35d0d61ab69e1d3",
+        "offset": [
+          5,
+          5
+        ],
+        "reason": "已核对源题与全部记录分支的局部提吃目标"
+      }
+    },
+    {
+      "type": "training",
+      "id": "218387",
+      "source_size": 7,
+      "size": 19,
+      "metadata": {
+        "status": "adapted",
+        "source_size": 7,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "22ee13f2aa331b01d6f84663a48f3dd3ba56796991c1797061d66cf696bd56c8",
+        "offset": [
+          0,
+          12
+        ],
+        "reason": "已核对源题与全部记录分支的局部提吃目标"
+      }
+    },
+    {
+      "type": "training",
+      "id": "124386",
+      "source_size": 9,
+      "size": 19,
+      "metadata": {
+        "status": "adapted",
+        "source_size": 9,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "95291306ce93fcc5667e7c6c5cf2bdb8f5095dfeebea3c280161c93024b75150",
+        "offset": [
+          10,
+          5
+        ],
+        "reason": "已核对源题与全部记录分支的局部提吃目标"
+      }
+    },
+    {
+      "type": "training",
+      "id": "129993",
+      "source_size": 9,
+      "size": 19,
+      "metadata": {
+        "status": "adapted",
+        "source_size": 9,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "6a9714fa908bebec5925b0d67ce292630e555988de97d6289421eddbb72e7fb1",
+        "offset": [
+          5,
+          5
+        ],
+        "reason": "已核对全部记录分支解除当前打吃"
+      }
+    },
+    {
+      "type": "training",
+      "id": "108018",
+      "source_size": 4,
+      "size": 4,
+      "metadata": {
+        "status": "unavailable",
+        "source_size": 4,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "d9e41edc5c9b88d0ddd41e574d3e2c9195f8b3032f8b2de6d958193c6346c5d1",
+        "offset": [
+          0,
+          0
+        ],
+        "reason": "相反两边均参与，19路平移不能保持边界"
+      }
+    },
+    {
+      "type": "training",
+      "id": "66104",
+      "source_size": 9,
+      "size": 9,
+      "metadata": {
+        "status": "unavailable",
+        "source_size": 9,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "96b817a3a4f96bbca30f0237d2c168144a8a886148fd12faeee210e2635a61af",
+        "offset": [
+          0,
+          0
+        ],
+        "reason": "题面要求判断对杀胜负，本次未能确认该目标"
+      }
+    },
+    {
+      "type": "ogs",
+      "page": 73,
+      "source_size": 9,
+      "size": 19,
+      "metadata": {
+        "status": "adapted",
+        "source_size": 9,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "246c94dbc2306430f3d40c3e5e5c35bf66ff11e857a8f9cb587fddfdf3a5eca7",
+        "offset": [
+          0,
+          10
+        ],
+        "reason": "已核对题面与局部提吃目标"
+      }
+    },
+    {
+      "type": "ogs",
+      "page": 553,
+      "source_size": 9,
+      "size": 19,
+      "metadata": {
+        "status": "adapted",
+        "source_size": 9,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "b416992a2a4cf9a53f8347ce24f9a4d069e85f88c5e0e6e7247940792932d3b9",
+        "offset": [
+          0,
+          5
+        ],
+        "reason": "已核对题面与局部提吃目标"
+      }
+    },
+    {
+      "type": "ogs",
+      "page": 1,
+      "source_size": 9,
+      "size": 9,
+      "metadata": {
+        "status": "unavailable",
+        "source_size": 9,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "6f4021c27ef5a5013feaa61137a55fd2a297fc2a9ad6ef1b71440eb363ebb34f",
+        "offset": [
+          0,
+          0
+        ],
+        "reason": "原树接受全部源空点；扩19后仅接受原9路子区，与任意空点落子教学冲突。"
+      }
+    },
+    {
+      "type": "ogs",
+      "page": 35,
+      "source_size": 13,
+      "size": 13,
+      "metadata": {
+        "status": "unavailable",
+        "source_size": 13,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "6fc961f40fb3091330d37f0d49ad3dabcaec432f1ed3f34629e358a48a221138",
+        "offset": [
+          0,
+          0
+        ],
+        "reason": "正文明确比较9×9/13×13/19×19，当前13路本身是教学示例，改盘宽会改变展示对象。"
+      }
+    },
+    {
+      "type": "ogs",
+      "page": 1723,
+      "source_size": 19,
+      "size": 19,
+      "metadata": {
+        "status": "original",
+        "source_size": 19,
+        "target_size": 19,
+        "policy_version": "kiosk19-local-v1",
+        "source_sha256": "09e771697d3a5337db77a59a49b2c0f87905b645860644117d8505506fe1fbdb",
+        "offset": [
+          0,
+          0
+        ],
+        "reason": "原生19路"
+      }
+    }
+  ],
+  "served_entries": [
+    {
+      "route": "/kiosk/tutorial",
+      "entry": "/assets/index-D4KBMil6.js",
+      "served_builds": [
+        "static-kiosk-2d"
+      ],
+      "sha256": "654bf802c8282cf3949ee1d32d581371ba514a34755f9c5be0c616b31acbfca6"
+    },
+    {
+      "route": "/galaxy/tutorial",
+      "entry": "/assets/index-D4KBMil6.js",
+      "served_builds": [
+        "static-kiosk-2d"
+      ],
+      "sha256": "654bf802c8282cf3949ee1d32d581371ba514a34755f9c5be0c616b31acbfca6"
+    }
+  ],
+  "other_services_unchanged": true,
+  "physical_board_actions": false
+}

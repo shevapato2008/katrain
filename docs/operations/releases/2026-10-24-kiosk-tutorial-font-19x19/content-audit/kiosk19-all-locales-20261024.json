@@ -1,0 +1,233 @@
+{
+  "policy_version": "kiosk19-local-v1",
+  "total_ogs": 691,
+  "locales": {
+    "be": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "ca": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "cs": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "da": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "de": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "el": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "en": {
+      "total": 691,
+      "status": {
+        "unavailable": 579,
+        "adapted": 112
+      },
+      "approved_but_failed": 0
+    },
+    "eo": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "es": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "et": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "eu": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "fi": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "fr": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "he": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "hr": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "hu": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "it": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "ja": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "ko": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "nl": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "pl": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "pt": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "ro": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "ru": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "sr": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "sv": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "th": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "tr": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "uk": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "vi": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    },
+    "zh-cn": {
+      "total": 691,
+      "status": {
+        "unavailable": 579,
+        "adapted": 112
+      },
+      "approved_but_failed": 0
+    },
+    "zh-tw": {
+      "total": 691,
+      "status": {
+        "unavailable": 691
+      },
+      "approved_but_failed": 0
+    }
+  },
+  "unreviewed_locales_accepted": 0
+}

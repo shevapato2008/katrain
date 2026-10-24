@@ -8,6 +8,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { PLATFORM_MARKS } from '../constants/platformMarks';
 import { GO_COLS } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
+import { PlayerCardSurface } from '../shell/PlayerCardSurface';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import '../../kiosk-shell/golaxy-spectator.css';
 
@@ -221,8 +222,9 @@ const GolaxySpectatorPage = () => {
   const clockCard = (color: 'black' | 'white') => {
     const person = ready?.[color]; const clock = ready?.clocks?.[color];
     const active = ready?.clocks?.active_color === (color === 'black' ? 'B' : 'W');
-    return <div className={`golaxy-spectator__clock-card${active ? ' is-turn' : ''}`} key={color}>
-      <div className="golaxy-spectator__clock-name"><i className={`golaxy-spectator__stone golaxy-spectator__stone--${color}`} /><b>{color === 'black' ? '黑' : '白'} · <span>{person?.username || t('platform:unknown_player', '棋手信息待返回')}</span></b>{person?.rank && <span>{person.rank}</span>}</div>
+    return <div className={`golaxy-spectator__clock-card kiosk-player-card${active ? ' is-turn' : ''}`} key={color}>
+      <PlayerCardSurface left={color === 'black'} />
+      <div className="golaxy-spectator__clock-name"><i className={`golaxy-spectator__stone golaxy-spectator__stone--${color}`} /><b title={person?.username}>{color === 'black' ? '黑' : '白'} · <span>{person?.username || t('platform:unknown_player', '棋手信息待返回')}</span></b>{person?.rank && <span>{person.rank}</span>}</div>
       <strong>{clock && Number.isFinite(clock.remaining_seconds) && clock.remaining_seconds >= 0 ? formatClock(clock.remaining_seconds) : '—'}</strong>
       <small>{clock ? clock.period_seconds != null && clock.periods_remaining != null ? `读秒 ${clock.period_seconds} 秒 · 剩余 ${clock.periods_remaining} 次` : '星阵时钟快照' : '计时信息未返回'}</small>
     </div>;
@@ -252,7 +254,7 @@ const GolaxySpectatorPage = () => {
       </div>
       <aside className="golaxy-spectator__panel" aria-label="对局与观战信息">
         <div className="golaxy-spectator__watch-head"><b>{ready?.room_number ? `${ready.room_number} 房` : '对局状态'}</b><span>{ready ? `${ready.room_type || '类型未返回'} · ${handicap}` : '等待星阵棋谱'}</span><span className="golaxy-spectator__sync">{ready?.result || ready?.phase || '同步中'}</span></div>
-        <div className="golaxy-spectator__clocks">{clockCard('black')}{clockCard('white')}</div>
+        <div className="golaxy-spectator__clocks kiosk-player-pair">{clockCard('black')}{clockCard('white')}</div>
         <div className="golaxy-spectator__latest" aria-live="polite"><span className="golaxy-spectator__latest-dot">•</span><span><b>{ready ? lastMove ? `最新：${lastMove.color === 'B' ? '黑' : '白'} ${lastMove.coordinate || '停一手'} · 第 ${ready.move_number} 手` : `第 ${ready.move_number} 手 · 暂无落子` : '等待星阵最新落子'}</b><small>{historyMove !== null ? '回看棋谱时仍接收新快照' : view.kind === 'refreshing' ? '正在同步，当前为上次快照' : ready?.phase === '已结束' && !ready.result ? '胜负结果尚未返回' : '星阵棋谱快照 · 每 2 秒同步'}</small></span></div>
         <div className="golaxy-spectator__members-head"><strong>房间成员</strong><span>{ready?.members ? `对局双方与观战棋友 · ${ready.members.length} 人` : '成员信息未返回'}</span></div>
         <div className="golaxy-spectator__members">{ready?.members ? ready.members.map((member) => <div className="golaxy-spectator__member" key={member.user_id}><span className="golaxy-spectator__avatar">{member.username.slice(-1)}</span><b>{member.username}</b><small>{member.role === 'black' ? '对局 · 黑' : member.role === 'white' ? '对局 · 白' : member.role === 'spectator' ? '观战' : '身份未返回'}</small></div>) : <p className="golaxy-spectator__note">星阵尚未提供可展示的房间成员名单。</p>}</div>

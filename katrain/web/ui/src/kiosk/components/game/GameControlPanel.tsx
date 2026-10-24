@@ -226,7 +226,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t, paired 
   const name = info.name || (color === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'));
   if (paired) {
     return (
-      <div className={`pcard ai-player-card${turn ? ' turn' : ''}`} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
+      <div className={`pcard ai-player-card kiosk-player-card${turn ? ' turn' : ''}`} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
         <PlayerCardSurface left={color === 'W'} />
         <div className="ai-player-card__name">
           <span className={color === 'B' ? 'disc b' : 'disc w'} aria-hidden="true" />
@@ -618,7 +618,7 @@ const GameControlPanel = ({
   return (
     <>
       {localGame || onlineGame ? (
-        <div className="ai-player-cards" role="group" aria-label={t('game:players', '对局双方')}>
+        <div className="ai-player-cards kiosk-player-pair" role="group" aria-label={t('game:players', '对局双方')}>
           <PlayerRow
             color="W" info={gameState.players_info.W} captures={gameState.prisoner_count.W}
             turn={toMove === 'W' && !isGameOver && !lobbyCountStopped} state={stateWord('W')}
@@ -631,7 +631,7 @@ const GameControlPanel = ({
           />
         </div>
       ) : freeVsAi || rankedGame || engineMode ? (
-        <div className="ai-player-cards" role="group" aria-label={t('game:players', '对局双方')}>
+        <div className="ai-player-cards kiosk-player-pair" role="group" aria-label={t('game:players', '对局双方')}>
           <SeatRow
             gameState={gameState} color="W" turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
             untimed={clockFor('W')} lang={lang} t={t} onTimeout={onTimeout} paired

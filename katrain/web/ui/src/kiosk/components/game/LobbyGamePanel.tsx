@@ -1,6 +1,7 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Dialog, DialogActions, DialogContent, DialogTitle, Button } from '@mui/material';
 import type { GameState, LobbyTerritoryResult } from '../../../api';
+import { PlayerCardSurface } from '../../shell/PlayerCardSurface';
 import { Icon } from '../../shell/icons';
 import './LobbyGamePanel.css';
 
@@ -21,17 +22,6 @@ interface Props {
   onExit: () => void;
   territory: { phase: 'idle' | 'loading' | 'result' | 'error'; visible: boolean; disabled: boolean;
     result?: LobbyTerritoryResult; request: () => void };
-}
-
-function SeatSurface({ left, turn }: { left: boolean; turn: boolean }) {
-  const id = useId();
-  return <svg className="lobby-game__seat-surface" viewBox="0 0 234 126" preserveAspectRatio="none" aria-hidden="true">
-    <defs><linearGradient id={id} x2="0.8" y2="1"><stop stopColor={turn ? '#2b6244' : '#26362c'} />
-      <stop offset="1" stopColor={turn ? '#1c432f' : '#15231b'} /></linearGradient></defs>
-    <path d={left ? 'M14 1 H218 Q233 1 230 15 L214 111 Q211 125 197 125 H14 Q1 125 1 112 V14 Q1 1 14 1 Z'
-      : 'M36 1 H220 Q233 1 233 14 V112 Q233 125 220 125 H17 Q1 125 4 111 L20 15 Q22 1 36 1 Z'}
-      fill={`url(#${id})`} stroke={turn ? '#69c98a' : '#405948'} strokeWidth="1.5" />
-  </svg>;
 }
 
 export default function LobbyGamePanel({ gameState: gs, setupLine, connected, isGameOver, blocked, counting,
@@ -63,11 +53,11 @@ export default function LobbyGamePanel({ gameState: gs, setupLine, connected, is
       <button type="button" className="lobby-game__key lobby-game__back" onClick={onExit}><Icon name="arrow-left" />退出对局</button>
       <h2>大厅对局</h2><span>{setupLine}</span>
     </header>
-    <div className="lobby-game__seats">
+    <div className="lobby-game__seats kiosk-player-pair">
       {(['W', 'B'] as const).map((color, index) => {
         const turn = active && gs.player_to_move === color;
-        return <section className="lobby-game__seat" data-testid="lobby-player" data-turn={turn} key={color} aria-label={`${color === 'B' ? '黑' : '白'}方玩家`}>
-          <SeatSurface left={index === 0} turn={turn} />
+        return <section className="lobby-game__seat kiosk-player-card" data-testid="lobby-player" data-turn={turn} key={color} aria-label={`${color === 'B' ? '黑' : '白'}方玩家`}>
+          <PlayerCardSurface left={index === 0} />
           <div className="lobby-game__name"><span className={`lobby-game__stone lobby-game__stone--${color}`} />
             <strong title={gs.players_info[color].name}>{color === 'B' ? '黑' : '白'} · {gs.players_info[color].name}{color === myColor ? '（你）' : ''}</strong></div>
           <div className="lobby-game__move">{turn ? <>第 <b>{gs.current_node_index + 1}</b> 手</> : '不限时'}</div>

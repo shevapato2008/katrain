@@ -1,0 +1,41 @@
+/* The original 234 × 126 rounded paths have parallel inner edges 210 units apart.
+   With pair width G and card width C, the path gap is G - (74 / 39) C.
+   C = (39 / 74) (G - 8.4px) keeps the same visible seam at every pair width. */
+.kiosk-player-pair {
+  position: relative;
+  display: block;
+  height: var(--kiosk-player-card-height, 104px);
+  min-width: 0;
+  flex: none;
+}
+
+.kiosk-player-pair > .kiosk-player-card {
+  position: absolute;
+  top: 0;
+  width: calc(52.7027027% - 4.427027px);
+  height: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.kiosk-player-pair > .kiosk-player-card:first-child { left: 0; }
+.kiosk-player-pair > .kiosk-player-card:last-child { right: 0; }
+
+.kiosk-player-pair > .kiosk-player-card > .kiosk-player-card__surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 3px 5px #0006);
+  pointer-events: none;
+}
+.kiosk-player-card > :not(.kiosk-player-card__surface) { position: relative; z-index: 1; }
+.kiosk-player-card__surface path { stroke: #405948; }
+.kiosk-player-card__gradient-start { stop-color: #26362c; }
+.kiosk-player-card__gradient-end { stop-color: #15231b; }
+.kiosk-player-card:is(.turn, .is-turn, [data-turn="true"]) .kiosk-player-card__surface path { stroke: #69c98a; }
+.kiosk-player-card:is(.turn, .is-turn, [data-turn="true"]) .kiosk-player-card__gradient-start { stop-color: #2b6244; }
+.kiosk-player-card:is(.turn, .is-turn, [data-turn="true"]) .kiosk-player-card__gradient-end { stop-color: #1c432f; }

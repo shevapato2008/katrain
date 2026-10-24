@@ -4,14 +4,13 @@
 .golaxy-spectator__watch-head b {font-size:14px; }
 .golaxy-spectator__sync {display:inline-flex; align-items:center; gap:5px; margin-left:auto; padding:3px 7px; border:1px solid #70ba83; border-radius:4px; color:#a6edb5; font-size:10px; font-weight:700; letter-spacing:.03em; }
 .golaxy-spectator__sync::before {content:""; width:6px; height:6px; border-radius:50%; background:#7fe39b; }
-.golaxy-spectator__clocks {display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.golaxy-spectator__clock-card {height:97px; padding:9px; border:1px solid #50614e; border-radius:9px; background:#223029; }
-.golaxy-spectator__clock-card.is-turn {border-color:#76cd8d; box-shadow:inset 0 0 0 1px #76cd8d; }
+.golaxy-spectator__clock-card {display:flex; flex-direction:column; padding:9px 26px 9px 10px; }
+.golaxy-spectator__clock-card:last-child {padding:9px 10px 9px 27px; }
 .golaxy-spectator__clock-name {display:flex; align-items:center; gap:6px; min-width:0; font-size:12px; }
-.golaxy-spectator__clock-name b {overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.golaxy-spectator__clock-name b {min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .golaxy-spectator__stone {display:inline-block; width:12px; height:12px; flex:none; border:1px solid #99ad9d; border-radius:50%; background:#111715; }
 .golaxy-spectator__stone--white {background:#f5f3e9; }
-.golaxy-spectator__clock-card strong {display:block; margin:4px 0 1px; font-size:27px; line-height:1; font-variant-numeric:tabular-nums; }
+.golaxy-spectator__clock-card strong {display:block; margin:auto 0 1px; font-size:27px; line-height:1; font-variant-numeric:tabular-nums; }
 .golaxy-spectator__clock-card.is-turn strong {color:#a9edb7; }
 .golaxy-spectator__clock-card small {color:#c2d0c3; font-size:11px; }
 .golaxy-spectator__latest {display:flex; align-items:center; gap:8px; min-height:45px; padding:7px 10px; border:1px solid #80684c; border-radius:8px; background:#302d24; }
@@ -50,7 +49,7 @@
 .golaxy-spectator__ruler--left { top:16px; bottom:16px; left:0; width:16px; grid-template-rows:repeat(19,1fr); align-items:center; }
 .golaxy-spectator__board-state { display:grid; place-items:center; width:100%; height:100%; padding:24px; color:var(--dim); text-align:center; }
 .golaxy-spectator__panel { display:flex; flex-direction:column; gap:8px; padding:10px; }
-.golaxy-spectator__clock-name>span { margin-left:auto; }
+.golaxy-spectator__clock-name>span { margin-left:auto; flex:none; }
 .golaxy-spectator__note { margin:0; color:var(--dim); font-size:11px; line-height:1.5; }
 .golaxy-spectator__footer button:disabled { opacity:.6; cursor:default; }
 .golaxy-spectator__error-actions button { min-height:44px; padding:0 18px; border:1px solid var(--accent); border-radius:8px; background:var(--raise); }
@@ -72,12 +71,10 @@
 .pvp-spectator .golaxy-spectator__watch-head>span:nth-child(2) {color:#bdd2c1;}
 .pvp-spectator .golaxy-spectator__watch-head .golaxy-spectator__sync {font-size:18px;font-weight:400;letter-spacing:0;border:0;border-radius:6px;background:#254e34;padding:5px 8px;}
 .pvp-spectator .golaxy-spectator__watch-head .golaxy-spectator__sync::before {display:none;}
-.pvp-spectator .golaxy-spectator__clocks {height:136px;flex:none;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));}
-.pvp-spectator .golaxy-spectator__clock-card {position:relative;display:flex;flex-direction:column;justify-content:space-between;min-width:0;height:136px;padding:10px 26px 12px 10px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#c1d0c4;}
+.pvp-spectator .golaxy-spectator__clocks {--kiosk-player-card-height:136px;}
+.pvp-spectator .golaxy-spectator__clock-card {display:flex;flex-direction:column;justify-content:space-between;min-width:0;padding:10px 26px 12px 10px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#c1d0c4;}
 .pvp-spectator .golaxy-spectator__clock-card:last-child {padding:10px 10px 12px 27px;}
 .pvp-spectator .golaxy-spectator__clock-card.is-turn {border:0;box-shadow:none;color:#f2faf1;}
-.pvp-spectator__card-surface {position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 4px 3px #0005);pointer-events:none;}
-.pvp-spectator .golaxy-spectator__clock-card>*:not(.pvp-spectator__card-surface) {position:relative;z-index:1;}
 .pvp-spectator .golaxy-spectator__clock-name {gap:6px;font:18px var(--font-serif);white-space:nowrap;}
 .pvp-spectator .golaxy-spectator__clock-name b {font-size:22px;font-weight:500;}
 .pvp-spectator .golaxy-spectator__clock-name>span {font-size:18px;color:#aec8b5;}

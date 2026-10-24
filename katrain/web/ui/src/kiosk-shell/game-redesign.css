@@ -37,17 +37,7 @@
   font-style: normal;
 }
 
-.kiosk-screen .ai-player-cards {
-  position: relative;
-  height: 104px;
-  flex: none;
-}
-
 .kiosk-screen .ai-player-card {
-  position: absolute;
-  top: 0;
-  width: calc(50% + 8px);
-  height: 104px;
   min-width: 0;
   padding: 7px 10px;
   display: flex;
@@ -60,25 +50,9 @@
   color: #bfcec2;
 }
 
-.kiosk-screen .ai-player-card:first-child { left: 0; padding-right: 32px; }
-.kiosk-screen .ai-player-card:last-child { right: 0; padding-left: 32px; }
+.kiosk-screen .ai-player-card:first-child { padding-right: 32px; }
+.kiosk-screen .ai-player-card:last-child { padding-left: 32px; }
 .kiosk-screen .ai-player-card.turn { background: transparent; color: #f2faf1; }
-.kiosk-screen .ai-player-card__surface {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  filter: drop-shadow(0 3px 5px #0006);
-  pointer-events: none;
-}
-.kiosk-screen .ai-player-card__surface path { stroke: #405948; }
-.kiosk-screen .ai-player-card.turn .ai-player-card__surface path { stroke: #69c98a; }
-.kiosk-screen .ai-player-card__gradient-start { stop-color: #26362c; }
-.kiosk-screen .ai-player-card__gradient-end { stop-color: #15231b; }
-.kiosk-screen .ai-player-card.turn .ai-player-card__gradient-start { stop-color: #2b6244; }
-.kiosk-screen .ai-player-card.turn .ai-player-card__gradient-end { stop-color: #1c432f; }
-.kiosk-screen .ai-player-card > div { position: relative; z-index: 1; }
 .kiosk-screen .ai-player-card__name {
   display: flex;
   align-items: center;

@@ -146,6 +146,8 @@ def build_steps_from_sgf(sgf: str) -> Dict[str, Any]:
     meta = {
         "player_black": root.get_property("PB", "") or "",
         "player_white": root.get_property("PW", "") or "",
+        "player_black_rank": root.get_property("BR") or None,
+        "player_white_rank": root.get_property("WR") or None,
         "result": root.get_property("RE", "") or "",
         "handicap": int(root.handicap or 0),
         "komi": komi,

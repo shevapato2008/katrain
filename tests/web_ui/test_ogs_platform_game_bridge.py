@@ -13,7 +13,14 @@ from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user
 from katrain.web.models import User
 from katrain.web.platforms.gateway import PlatformCommandGateway
 from katrain.web.platforms.manager import PlatformManager
-from katrain.web.platforms.models import OnlineUser, PlatformGameContext, PlatformGameSession, TimeControl
+from katrain.web.platforms.models import (
+    GamePhase,
+    OnlineUser,
+    PlatformGameContext,
+    PlatformGameSession,
+    PlatformGameSnapshot,
+    TimeControl,
+)
 from katrain.web.platforms.ogs.adapter import OGSAdapter
 from katrain.web.server import create_app
 from katrain.web.session import SessionManager, WebSession
@@ -184,6 +191,97 @@ async def test_ogs_game_connection_requires_logged_in_player_in_exactly_one_seat
     assert session.my_color == my_color
     assert session.board_size == 19
     assert session.opponent.user_id == "8"
+    assert session.player_ranks == ({"B": "1d", "W": "10k"} if my_color == "B" else {"B": "10k", "W": "1d"})
+
+
+@pytest.mark.parametrize(
+    "unverified",
+    [
+        {},
+        {"ranking": None},
+        {"ranking": -1},
+        {"ranking": True},
+        {"ranking": "30"},
+        {"ranking": float("nan")},
+        {"ranking": 39},
+        {"ranking": 30, "provisional": True},
+        {"ranking": 30, "is_provisional": True},
+    ],
+)
+def test_ogs_rank_metadata_does_not_turn_missing_invalid_or_provisional_rank_into_15k(unverified):
+    adapter = OGSAdapter()
+    adapter._rest = SimpleNamespace(user_id=7)
+    session = adapter._session_from_game_data(
+        42,
+        _ogs_data(
+            players={
+                "black": {"id": 7, "rank": "9p"},
+                "white": {"id": 8, **unverified},
+            }
+        ),
+    )
+    assert session.player_ranks == {"B": "9p", "W": None}
+
+
+@pytest.mark.asyncio
+async def test_existing_same_move_game_refreshes_and_clears_rank_metadata():
+    sessions = FakeSessions()
+    manager = PlatformManager(sessions)
+    first = _game(player_ranks={"B": "1d", "W": "4k"})
+    session_id = await manager.start_platform_game("ogs", first, user_id=7)
+    katrain = sessions.get_session(session_id).katrain
+    assert katrain.platform_player_ranks == first.player_ranks
+    refreshed = _game(player_ranks={"B": None, "W": "3k"})
+    await manager.start_platform_game("ogs", refreshed, user_id=7)
+    assert katrain.platform_player_ranks == refreshed.player_ranks
+    assert manager.get_game_context(session_id).remote_session is refreshed
+    await manager.start_platform_game("ogs", _game(), user_id=7)
+    assert katrain.platform_player_ranks == {}
+
+
+@pytest.mark.asyncio
+async def test_no_move_reconnect_snapshot_refreshes_verified_ranks_before_early_return():
+    sessions = FakeSessions()
+    manager = PlatformManager(sessions)
+    game = _game(player_ranks={"B": "1d", "W": "4k"})
+    session_id = await manager.start_platform_game("ogs", game, user_id=7)
+    current = _game(player_ranks={"B": None, "W": None})
+    manager._adapters["ogs"] = SimpleNamespace(get_game_session=lambda game_id: current)
+    await manager._on_game_snapshot("ogs-42", PlatformGameSnapshot("ogs-42", 13, (), (), GamePhase.PLAYING))
+    assert sessions.get_session(session_id).katrain.platform_player_ranks == {"B": None, "W": None}
+
+    def unverified_session(game_id):
+        raise ValueError("OGS game is not seated for this account")
+
+    manager._adapters["ogs"].get_game_session = unverified_session
+    await manager._on_game_snapshot("ogs-42", PlatformGameSnapshot("ogs-42", 13, (), (), GamePhase.PLAYING))
+    assert sessions.get_session(session_id).katrain.platform_player_ranks == {}
+    assert manager.get_game_context(session_id).remote_session.player_ranks == {}
+
+
+def test_cached_session_metadata_requires_current_account_in_verified_seat():
+    adapter = OGSAdapter()
+    adapter._rest = SimpleNamespace(user_id=7)
+    adapter._game_data[42] = _ogs_data()
+    assert adapter.get_game_session("42").player_ranks == {"B": "1d", "W": "10k"}
+    adapter._game_data[42] = _ogs_data(players={"black": {"id": 7}, "white": {"id": 8}})
+    assert adapter.get_game_session("42").player_ranks == {"B": None, "W": None}
+    adapter._rest.user_id = 9
+    with pytest.raises(ValueError, match="not seated"):
+        adapter.get_game_session("42")
+
+
+def test_snapshot_restore_reapplies_ranks_after_new_game_clears_them():
+    class ClearingKatrain(FakeKatrain):
+        def __call__(self, action, **kwargs):
+            super().__call__(action, **kwargs)
+            if action == "new_game":
+                self.platform_player_ranks = {}
+
+    session = SimpleNamespace(katrain=ClearingKatrain())
+    game = _game(player_ranks={"B": "1d", "W": "4k"})
+    PlatformManager._restore_ogs_snapshot(session, PlatformGameSnapshot("ogs-42", 13, (), (), GamePhase.PLAYING), game)
+    assert session.katrain.platform_player_ranks == game.player_ranks
 
 
 @pytest.mark.asyncio

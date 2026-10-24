@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 import asyncio
 import time
+import math
+import re
 from dataclasses import dataclass, replace
 from typing import Callable, Optional
 
@@ -60,6 +62,22 @@ def _parse_rank(ranking: float) -> tuple[str, float]:
     else:
         dan = int(ranking) - 29
         return f"{dan}d", ranking
+
+
+def _verified_player_rank(player: dict) -> Optional[str]:
+    """Do not turn an absent/provisional rank into OnlineUser's legacy 15k."""
+    if player.get("provisional") or player.get("is_provisional"):
+        return None
+    explicit = player.get("rank")
+    if isinstance(explicit, str):
+        label = explicit.strip()
+        match = re.fullmatch(r"([1-9][0-9]?)([kdp])", label, re.IGNORECASE)
+        if match and int(match[1]) <= (30 if match[2].lower() == "k" else 9):
+            return label
+    ranking = player.get("ranking")
+    if type(ranking) in (int, float) and math.isfinite(ranking) and 0 <= ranking <= 38:
+        return _parse_rank(ranking)[0]
+    return None
 
 
 def _parse_time_control(tc: dict) -> TimeControl:
@@ -402,6 +420,10 @@ class OGSAdapter(PlatformAdapter):
     async def refresh_game_session(self, game_id: str) -> PlatformGameSession:
         """Verify the remote board and account seat before a local resume."""
         await self.fetch_game_snapshot(game_id)
+        return self.get_game_session(game_id)
+
+    def get_game_session(self, game_id: str) -> PlatformGameSession:
+        """Recheck current cached gamedata seats against the connected account."""
         return self._session_from_game_data(int(game_id), self._game_data[int(game_id)])
 
     def parse_game_snapshot(self, game_id: int, data: dict) -> PlatformGameSnapshot:
@@ -600,7 +622,7 @@ class OGSAdapter(PlatformAdapter):
             self._game_data[game_id] = fresh
             self._snapshots[game_id] = snapshot
         self._active_game_id = game_id
-        return self._session_from_game_data(game_id, game_data)
+        return self.get_game_session(str(game_id))
 
     def _verified_seats(self, game_data: dict) -> tuple[str, dict]:
         players = game_data.get("players")
@@ -609,7 +631,7 @@ class OGSAdapter(PlatformAdapter):
         black, white = players.get("black"), players.get("white")
         if not isinstance(black, dict) or not isinstance(white, dict):
             raise ValueError("OGS game has no verified seats")
-        black_id, white_id, owner_id = black.get("id"), white.get("id"), self._rest.user_id
+        black_id, white_id, owner_id = black.get("id"), white.get("id"), getattr(self._rest, "user_id", None)
         if any(type(value) not in (int, str) or not str(value).strip() for value in (black_id, white_id, owner_id)):
             raise ValueError("OGS game has no verified seats")
         if str(black_id) == str(white_id) or str(owner_id) not in (str(black_id), str(white_id)):
@@ -619,7 +641,12 @@ class OGSAdapter(PlatformAdapter):
 
     def _session_from_game_data(self, game_id: int, game_data: dict) -> PlatformGameSession:
         my_color, opponent_data = self._verified_seats(game_data)
-        opp_rank, opp_rank_num = _parse_rank(opponent_data.get("ranking", 15))
+        ranking = opponent_data.get("ranking")
+        # Preserve the legacy OnlineUser fallback API; new UI metadata below
+        # deliberately does not use it.
+        if type(ranking) not in (int, float) or not math.isfinite(ranking):
+            ranking = 15
+        opp_rank, opp_rank_num = _parse_rank(ranking)
         return PlatformGameSession(
             platform="ogs",
             game_id=str(game_id),
@@ -637,6 +664,10 @@ class OGSAdapter(PlatformAdapter):
             ranked=game_data.get("ranked", False),
             handicap=game_data.get("handicap", 0),
             komi=game_data.get("komi", 6.5),
+            player_ranks={
+                color: _verified_player_rank(game_data["players"][seat])
+                for color, seat in (("B", "black"), ("W", "white"))
+            },
         )
 
     # --- Event handlers ---

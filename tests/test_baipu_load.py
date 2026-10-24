@@ -124,6 +124,14 @@ class TestDeterminism:
         assert data["meta"]["komi"] == 7.5
         assert data["meta"]["result"] == "W+R"
 
+    def test_rank_metadata_preserves_sgf_labels_without_name_lookup(self):
+        meta = _steps("(;SZ[19]PB[Lee]PW[AlphaGo]BR[9p]WR[职业九段];B[pd])")["meta"]
+        assert meta["player_black_rank"] == "9p"
+        assert meta["player_white_rank"] == "职业九段"
+        missing = _steps("(;SZ[19]PB[Lee]PW[AlphaGo];B[pd])")["meta"]
+        assert missing["player_black_rank"] is None
+        assert missing["player_white_rank"] is None
+
 
 class TestExpectedBoardAndNext:
     def test_expected_board_applies_and_captures(self):

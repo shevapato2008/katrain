@@ -334,11 +334,16 @@ class PlatformManager:
         if existing is not None:
             if existing_session.user_id != user_id:
                 raise ValueError("remote game belongs to a different local user")
+            existing.remote_session = game_session
+            existing_session.katrain.platform_player_ranks = dict(game_session.player_ranks)
             if snapshot is not None and (existing.needs_resync or existing.last_confirmed_move != snapshot.move_number):
                 self._restore_ogs_snapshot(existing_session, snapshot, game_session)
                 existing.last_confirmed_move = snapshot.move_number
                 existing.game_phase = snapshot.phase
                 existing.needs_resync = False
+            update_state = getattr(existing_session.katrain, "update_state", None)
+            if update_state is not None:
+                update_state()
             return existing.session_id
 
         # Create a multiplayer session (local user vs virtual opponent)
@@ -373,6 +378,7 @@ class PlatformManager:
             if snapshot is not None:
                 self._restore_ogs_snapshot(session, snapshot, game_session)
             session.katrain.platform_my_color = game_session.my_color
+            session.katrain.platform_player_ranks = dict(game_session.player_ranks)
         except Exception:
             self._session_manager.remove_session(session.session_id)
             raise
@@ -390,6 +396,9 @@ class PlatformManager:
             ctx.game_phase = snapshot.phase
             session.katrain.platform_phase = snapshot.phase.value
         self._session_to_game[session.session_id] = game_session.game_id
+        update_state = getattr(session.katrain, "update_state", None)
+        if update_state is not None:
+            update_state()
 
         if snapshot is not None and snapshot.phase == GamePhase.FINISHED:
             # A finished snapshot may have arrived before this context was
@@ -429,13 +438,14 @@ class PlatformManager:
             game_type="pvp_online", skip_initial_analysis=True,
         )
         game = getattr(session.katrain, "game", None)
+        session.katrain.platform_player_ranks = dict(game_session.player_ranks)
+        session.katrain.platform_my_color = game_session.my_color
         if game is not None:
             node = game.root
             while node.children:
                 node = node.children[0]
             game.set_current_node(node)
             session.katrain.update_state()
-        session.katrain.platform_my_color = game_session.my_color
 
     async def start_engine_game(self, platform: str, config, user_id: int) -> str:
         """Start a human-vs-engine game. Returns the local session_id.
@@ -481,6 +491,7 @@ class PlatformManager:
             komi=gs.komi,
             rules=gs.rules,
             platform_engine_color=ai_color,
+            platform_player_ranks=gs.player_ranks,
         )
 
         ctx = PlatformGameContext(
@@ -692,6 +703,29 @@ class PlatformManager:
         except KeyError:
             ctx.needs_resync = True
             return
+        # Reconnect may change only rank metadata. Refresh it before the
+        # unchanged-board early returns, and clear on unverified/missing seats.
+        adapter = self._adapters.get("ogs")
+        get_session = getattr(adapter, "get_game_session", None)
+        if get_session is not None:
+            try:
+                current = get_session(game_id)
+                if (
+                    current.game_id != game_id
+                    or current.my_color != ctx.my_color
+                    or current.board_size != snapshot.board_size
+                ):
+                    raise ValueError("OGS rank metadata does not match this game")
+                ctx.remote_session = current
+                ranks = dict(current.player_ranks)
+            except (KeyError, ValueError, TypeError):
+                ranks = {}
+                ctx.remote_session.player_ranks = {}
+            if session.katrain.platform_player_ranks != ranks:
+                session.katrain.platform_player_ranks = ranks
+                update_state = getattr(session.katrain, "update_state", None)
+                if update_state is not None:
+                    update_state()
         terminal = getattr(getattr(session.katrain, "game", None), "terminal", None)
         if (
             terminal is not None and snapshot.phase == GamePhase.FINISHED

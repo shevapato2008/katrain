@@ -117,6 +117,20 @@ async def test_human_black_start_no_ai_move():
     adapter._rest.engine_genmove.assert_not_awaited()
 
 
+@pytest.mark.parametrize("human_color", ["B", "W"])
+@pytest.mark.parametrize("level_row", [{"name": "Verified bot", "level_name": "3d"}, None, {"name": "Bot"}])
+async def test_player_ranks_only_include_verified_ai_level_name(monkeypatch, human_color, level_row):
+    adapter = make_adapter()
+    adapter._rest.engine_genmove = AsyncMock(return_value=GenmoveResult(coord=AI_COORD, prob=0.19))
+    monkeypatch.setattr("katrain.web.platforms.golaxy.adapter.engine_client.get_level", lambda level: level_row)
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color=human_color))
+    ai_color = "W" if human_color == "B" else "B"
+    assert start.session.player_ranks == {
+        human_color: None,
+        ai_color: "3d" if level_row and "level_name" in level_row else None,
+    }
+
+
 # --------------------------------------------------------------------------- #
 # 4-7: retry / commit discipline (the correctness core)                       #
 # --------------------------------------------------------------------------- #

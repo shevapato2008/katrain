@@ -82,6 +82,7 @@ class SessionManager:
         user_id: Optional[int] = None,
         initial_game_type: str = "free",
         skip_initial_analysis: bool = False,
+        _rank_owner_eligible: bool = True,
     ) -> WebSession:
         evicted: List[WebSession] = []
         with self._lock:
@@ -97,6 +98,14 @@ class SessionManager:
             # Use provided UUID for KataGo requests if available, otherwise session_id
             engine_user_id = katago_uuid or session_id
             katrain = WebKaTrain(force_package_config=False, enable_engine=self.enable_engine, user_id=engine_user_id)
+            # Engine UUID and authenticated account identity are unrelated. Set
+            # eligibility before start() can publish its very first state.
+            katrain.account_user_id = user_id
+            katrain._rank_owner_session_eligible = _rank_owner_eligible and initial_game_type in (
+                "free",
+                "ranked",
+                "ai_ladder_ranked",
+            )
             # 无人认领的会话不交付分析结果（理由见 `WebKaTrain.get_state` 的 docstring）。
             # 注意不能用 `engine_user_id` 判 —— 它对匿名会话退化成 session_id，永远为真。
             # 在线平台对局由平台权威裁定，开局期间不得交付本机分析结果。
@@ -118,7 +127,7 @@ class SessionManager:
         return session
 
     def create_research_session(self, user_id: int, katago_uuid: Optional[str] = None) -> WebSession:
-        session = self.create_session(katago_uuid=katago_uuid, user_id=user_id)
+        session = self.create_session(katago_uuid=katago_uuid, user_id=user_id, _rank_owner_eligible=False)
         session.mode = "research"
         session.user_id = user_id
         return session
@@ -137,6 +146,7 @@ class SessionManager:
             user_id=primary_user_id,
             initial_game_type=initial_game_type,
             skip_initial_analysis=skip_initial_analysis,
+            _rank_owner_eligible=False,
         )
         try:
             session.player_b_id = player_b_id

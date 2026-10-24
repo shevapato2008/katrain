@@ -1,0 +1,92 @@
+{
+  "existing_report_list_read_count": 1,
+  "existing_report_status": "completed",
+  "kifu_batches": [
+    {
+      "manifest_sha256": "de72b20baf344b7c7be1be8086ca8fd67c7a3510ca2e8138d9d4c69dac941b6f",
+      "publication_key": "19x19-91346707-f4a8506c99b59a1a",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "8604c27f9b9a9b47a6e2309938144f45d6e05d05efd0c80cf5736b53fad9e96d",
+      "publication_key": "19x19-batch-dd279a0c3a6e99f61304827b",
+      "status": "quarantined"
+    },
+    {
+      "manifest_sha256": "ae8fd9d9f9f4a0bde3ea72e20b74c64b0b3e041848dbb5f50d73a3b7d935e019",
+      "publication_key": "19x19-recovery-a5425ac6c5b3d96d9bc23d3b",
+      "status": "quarantined"
+    },
+    {
+      "manifest_sha256": "0f64c2b366a0d9ba59b452d4aac4148dc5609d19c57c6befa1deacde06459e67",
+      "publication_key": "19x19-event-recovery-870a06d9f6b3f234b354a5f4",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "e38a900e4099ef656a7f1633c129d34004a6b85f33840c50ad5386612588fbb5",
+      "publication_key": "19x19-batch-bea3f0ea4759c01dd0888b14",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "105ddaa947f5e70f89fe7dfcca6ce350f5f2dc0cea8bb35782f2467ec8177c9c",
+      "publication_key": "19x19-batch-1e94d4da06e3965510f4c7f5",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "674ce938503bbdb98debec291b090051a38112495fde03bf787e888703e1700a",
+      "publication_key": "19x19-batch-5b133ae1e1db15c1c4056c0e",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "d42944b656b95b55f8c10aebecef82a882aaac6b4ce0aec69e251c3415962875",
+      "publication_key": "19x19-batch-2565d295b7498111a097ea40",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "bd374a966a2e4d6599787d57820512f9b94adbe5b2c308d0b15aa9ada46b9799",
+      "publication_key": "19x19-batch-bd5fdf7640ad9a37de370794",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "13a663101de18f61bc03a5ef89007b8e753a94f78652d7717d0eb42fd351363f",
+      "publication_key": "19x19-batch-31fe3d7bf66a3f1cb6f7c193",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "929e00f8894cd659b134c5c740bdafa1e05b89a69c71f3a9dcd60da352a8634c",
+      "publication_key": "19x19-batch-97061826dfdb67f04141b18f",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "c89844f13bf9a88a7c5b73020bb8c280e722cc2ee2a5c2a4fb13307cd75a29c9",
+      "publication_key": "19x19-batch-60894512997190ed20cbb32a",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "5854455069911345779ce7e7dc8617fc7da559238688bfbdc891c4d96057a85d",
+      "publication_key": "19x19-batch-e54e5c4cbb7055af9fc2b0ee",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "61e6048901f0bbd54606a2f7cb88963dd2b61e242e19e6dc1593b13cd5b46452",
+      "publication_key": "19x19-batch-e6dee0d9da0e5e8c1e33271b",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+      "publication_key": "19x19-batch-fc134b52cd61f94092118e61",
+      "status": "prod_synced"
+    },
+    {
+      "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+      "publication_key": "19x19-batch-62854d648ca7b10ad8f3290d",
+      "status": "prod_synced"
+    }
+  ],
+  "report_counts": {
+    "completed": 17
+  },
+  "schema_and_kifu_guards": "ok",
+  "server_orm_tables": 69,
+  "tutorial_figure_read": true
+}

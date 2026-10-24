@@ -1,0 +1,32 @@
+{
+  "source_revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+  "container_id": "b7f76f8dc571927420c450622b20651ef1821e7ae0a07f20b95c362818261bd2",
+  "image": "sha256:a6e5d74cd88dd43e581a12eb129d20563f77e269714885620b58a17b8716c41a",
+  "started_at": "2026-10-24T07:10:21.208654739Z",
+  "full_source_verified_files": 4171,
+  "only_environment_changes": [
+    "KATRAIN_BUILD_SHA",
+    "KATRAIN_FRONTEND_BUILD_SHA"
+  ],
+  "mounts_and_runtime_config_preserved": true,
+  "health": {
+    "status": "ok",
+    "version": "1.17.1",
+    "engines": {
+      "local": "reachable",
+      "cloud": "unconfigured"
+    }
+  },
+  "activated_at": "2026-10-24T07:10:33.902889+00:00",
+  "compose_files": [
+    "/home/ubuntu/kifu-hourly-incremental-20261019/web-base.private.json",
+    "/home/ubuntu/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+    "/home/ubuntu/kifu-hourly-incremental-20261019/web-final.override.yml",
+    "/home/ubuntu/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+    "/home/ubuntu/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+    "/home/ubuntu/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+    "/home/ubuntu/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+    "/home/ubuntu/full-develop-495d0284c-20261024/full-develop.override.json"
+  ],
+  "rollback_directory": "/home/ubuntu/full-develop-495d0284c-20261024/rollback"
+}

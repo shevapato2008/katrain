@@ -1,0 +1,87 @@
+{
+  "katrain-ucloud-katrain-web-1": {
+    "id": "b7f76f8dc571927420c450622b20651ef1821e7ae0a07f20b95c362818261bd2",
+    "image": "sha256:a6e5d74cd88dd43e581a12eb129d20563f77e269714885620b58a17b8716c41a",
+    "started": "2026-10-24T07:10:21.208654739Z"
+  },
+  "smartbox-admin-admin-console-1": {
+    "id": "09f7b80a0a351ffcff16d0051bbf9a79f663d9310846181a1b0a48de10c9c0b3",
+    "image": "sha256:cf96fe9e743263206e8aad91ecc8d554ef885d42d735a42fdf2e9ebcefa64602",
+    "started": "2026-10-12T07:14:29.593386034Z"
+  },
+  "smartbox-platform": {
+    "id": "251f3f6f9958c809971e32134efaae34211cfb15e6974c6db44adaa621fed0db",
+    "image": "sha256:485903bb2ae878287de244f90b8dac457cdbb37564f3ff0005dcf0b4a0c606df",
+    "started": "2026-10-11T23:22:12.03574366Z"
+  },
+  "katrain-ucloud-katrain-admin-1": {
+    "id": "a458659481c02d42486b7dbf91d42f796bba952a14789adb4c6c26917fc6a95c",
+    "image": "sha256:86f9abb4fcec71c920ab7885bae39011292f776089cd24c24346095579ea19d9",
+    "started": "2026-10-11T23:22:10.757313599Z"
+  },
+  "katrain-ucloud-katrain-cron-1": {
+    "id": "c66398c2cf199b67cc7419561b7ec2f15754dfc01e3d129c2168215a2438e225",
+    "image": "sha256:9b28e8be9b77deb63f99cac2b076aac9df584a521f9b00989d6cc2bc920adb79",
+    "started": "2026-10-10T18:04:39.203555945Z"
+  },
+  "katrain-ucloud-katago-cron-1": {
+    "id": "d43e95882cc8630370935a8614504fff0737c85d0c817693bb713fd05544b084",
+    "image": "sha256:b242fd2a379b28b7dda5cf965e41230324bc825e7d23cd4aa1c0c81f7a16798e",
+    "started": "2026-10-02T08:54:00.567946419Z"
+  },
+  "pitch-booking-caddy-1": {
+    "id": "86dac59b9c470a6728b29689e965e724ed41e16fab957dc1e840d7b0424ae1a6",
+    "image": "sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d",
+    "started": "2026-09-02T14:11:21.526282135Z"
+  },
+  "pitch-booking-worker-1": {
+    "id": "aad0a24cc87b0acec1f6e8dae6d574fae8a96f03be2d2b2d1cdddb9a46476d2f",
+    "image": "sha256:471818775e4743ea00dd07f95a77ac6782c9e4d0ede399b46d460093b0e16c29",
+    "started": "2026-09-02T14:11:21.526895004Z"
+  },
+  "pitch-booking-api-1": {
+    "id": "e6f073492f581b69ebb23c9bf6c9700708201f110dc9e945f1107b33a638eab8",
+    "image": "sha256:28f423c069fc439faa2b486eeb88d0a4c8297a221bdc407518661347acdf3ac0",
+    "started": "2026-09-02T14:11:10.333706631Z"
+  },
+  "katrain-ucloud-katago-web-1": {
+    "id": "130b77bc74f07e561d8727fe59be0bd8caa428130a589b31dd4b82ab113363b4",
+    "image": "sha256:efdeb9de4f64faf68072d236a3f73ff5c1f38af9566d78a52af78ec03f3026f3",
+    "started": "2026-08-29T19:44:14.684351183Z"
+  },
+  "platform-postgres": {
+    "id": "77a12179463764da990e25a33e94be72209e8306a9e7b4fff5a2d59c31507a49",
+    "image": "sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b",
+    "started": "2026-08-20T04:53:09.28408473Z"
+  },
+  "pitch-booking-postgres-1": {
+    "id": "f4192e25f92c7dc2a7991e2d4a6feed549ddb379f0887df0d542fd89e75ab603",
+    "image": "sha256:d4bb0a8c1b7bb2e29f976d099e7bfb9a5d8858cffe9e46b35cd302cd1f1f8168",
+    "started": "2026-08-14T02:44:20.376796692Z"
+  },
+  "katrain-ucloud-minio-1": {
+    "id": "8913f3910a9574b5b5583adfe19836cae69db373efbf00e4118d744bdb5aa815",
+    "image": "sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e",
+    "started": "2026-08-10T11:08:57.708576931Z"
+  },
+  "smartbox-kifu-api-1": {
+    "id": "d4f65b82f97a8773597a7e6bc1c0891385f11e191a05d63f4ddead43e85ae89c",
+    "image": "sha256:9760261da8ffebc648abb630f63f9f73d436ee26fe594b440f1a22f35f7c4d10",
+    "started": "2026-08-03T16:02:19.415723377Z"
+  },
+  "smartbox-kifu-api-b-1": {
+    "id": "5ab2bb7db0366f693402d1b688e0d9bb64d76c7d4b7a40fa594c3ee282497d90",
+    "image": "sha256:9760261da8ffebc648abb630f63f9f73d436ee26fe594b440f1a22f35f7c4d10",
+    "started": "2026-08-03T10:00:25.933246515Z"
+  },
+  "smartbox-kifu-postgres-1": {
+    "id": "e911b571dc382d042a246bbf86520b5740f2c86240855c7b77f0b15f76476b5f",
+    "image": "sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777",
+    "started": "2026-08-04T05:25:00.689058662Z"
+  },
+  "katrain-ucloud-postgres-1": {
+    "id": "bc2f47b264e16c2e230713c8771d27085984588e2fd7c85719f5467937219d6c",
+    "image": "sha256:3d0f7584ed7d04e27fa050d6683a74746608faf21f202be78460d679cc56461f",
+    "started": "2026-07-25T14:27:13.320636901Z"
+  }
+}

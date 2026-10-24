@@ -1,0 +1,11 @@
+{
+  "existing_report_list_read_count": 15,
+  "existing_report_status": "completed",
+  "kifu_batches": [],
+  "report_counts": {
+    "completed": 21
+  },
+  "schema_and_kifu_guards": "ok",
+  "server_orm_tables": 69,
+  "tutorial_figure_read": true
+}

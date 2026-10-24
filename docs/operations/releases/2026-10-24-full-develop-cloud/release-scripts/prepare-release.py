@@ -1,0 +1,12 @@
+import pathlib,json,subprocess,hashlib,os,sys
+r=pathlib.Path(sys.argv[1]);name=sys.argv[2];meta=json.loads((r/'built.json').read_text());before=json.loads((r/'rollback/container.private.json').read_text());c=json.loads(subprocess.check_output(['docker','inspect',name]))[0];assert c['Id']==before['Id'] and c['Image']==before['Image']
+secret=r/'candidate.env.private';assert not any('\n' in v for v in c['Config']['Env']);secret.write_text('\n'.join(c['Config']['Env'])+'\n');os.chmod(secret,0o600)
+command=['docker','run','--rm','--network','container:'+name,'--env-file',str(secret),'-e','PGOPTIONS=-c default_transaction_read_only=on','-v',str(r/'candidate-readonly.py')+':/tmp/release-readonly.py:ro','--entrypoint','python3',meta['tag'],'/tmp/release-readonly.py']
+result=subprocess.check_output(command,text=True);(r/'candidate-readonly.json').write_text(json.dumps(json.loads(result.strip().splitlines()[-1]),indent=2)+'\n')
+sha=meta['revision'];override={'services':{'katrain-web':{'image':meta['tag'],'environment':{'KATRAIN_BUILD_SHA':sha,'KATRAIN_FRONTEND_BUILD_SHA':sha}}}}
+(r/'full-develop.override.json').write_text(json.dumps(override,indent=2)+'\n');files=meta['compose_files'];compose=['docker','compose','-p',meta['project']]+sum((['-f',p] for p in files),[])
+new=json.loads(subprocess.check_output(compose+['-f',str(r/'full-develop.override.json'),'config','--format','json']));old=json.loads((r/'rollback/compose.private.json').read_text());expected=json.loads(json.dumps(old));expected['services']['katrain-web']['image']=meta['tag'];expected['services']['katrain-web']['environment']['KATRAIN_BUILD_SHA']=sha;expected['services']['katrain-web']['environment']['KATRAIN_FRONTEND_BUILD_SHA']=sha;assert new==expected,'Unexpected resolved config change'
+command=compose+['-f',str(r/'full-develop.override.json'),'up','-d','--no-deps','--no-build','--pull','never','katrain-web'];rollback=['docker','compose','-p',meta['project'],'-f',str(r/'rollback/compose.private.json'),'up','-d','--no-deps','--no-build','--pull','never','katrain-web']
+# The old resolved image points at the durable font hotfix, so rollback retains that state.
+(r/'prepared.json').write_text(json.dumps({'activate_command':command,'rollback_command':rollback,'new_image':meta['image'],'sha':sha,'only_config_changes':['web.image','web.environment.KATRAIN_BUILD_SHA','web.environment.KATRAIN_FRONTEND_BUILD_SHA']},indent=2)+'\n')
+print(result);print('Prepared full release; no active container changed')

@@ -1,0 +1,53 @@
+{
+  "activate_command": [
+    "docker",
+    "compose",
+    "-p",
+    "katrain",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml",
+    "-f",
+    "/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+    "-f",
+    "/mnt/disk1/fan/full-develop-495d0284c-20261024/full-develop.override.json",
+    "up",
+    "-d",
+    "--no-deps",
+    "--no-build",
+    "--pull",
+    "never",
+    "katrain-web"
+  ],
+  "rollback_command": [
+    "docker",
+    "compose",
+    "-p",
+    "katrain",
+    "-f",
+    "/mnt/disk1/fan/full-develop-495d0284c-20261024/rollback/compose.private.json",
+    "up",
+    "-d",
+    "--no-deps",
+    "--no-build",
+    "--pull",
+    "never",
+    "katrain-web"
+  ],
+  "new_image": "sha256:0fb0f640b44bc054d2cc064f3b7df644bf366c36bc4aebc68bc1777268b9d07f",
+  "sha": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+  "only_config_changes": [
+    "web.image",
+    "web.environment.KATRAIN_BUILD_SHA",
+    "web.environment.KATRAIN_FRONTEND_BUILD_SHA"
+  ]
+}

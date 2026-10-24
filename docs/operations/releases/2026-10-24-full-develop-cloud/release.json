@@ -1,0 +1,901 @@
+{
+  "source_revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+  "parent_main": "bfb939b1d7e9be923a77fd4060c83f06b9c8928c",
+  "source_manifest_sha256": "69bcb7648d5faeaeb286a29b9b434224d1a4b34ffc79d6c135aa12c4a2e36f51",
+  "environments": {
+    "test": {
+      "built": {
+        "revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+        "image": "sha256:0fb0f640b44bc054d2cc064f3b7df644bf366c36bc4aebc68bc1777268b9d07f",
+        "tag": "katrain-full-develop:495d0284c-20261024",
+        "base_dependency_image": "sha256:d67dd7b38d7e0de615156f966447cadeddc377ec0b990c231ce5d51ae32570be",
+        "original_container_id": "a9d6e134dd052c93dfec3dbcc0172ba2c3bed10744b99ff5d8d1777d5301a823",
+        "original_started_at": "2026-10-24T07:04:44.125862206Z",
+        "source_manifest_sha256": "69bcb7648d5faeaeb286a29b9b434224d1a4b34ffc79d6c135aa12c4a2e36f51",
+        "source_file_count": 4171,
+        "source_and_frontend_probe": "WARNING: kivy already imported before ensure_kivy called!\nVERIFIED 4171 files; server import ok",
+        "compose_files": [
+          "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json",
+          "/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+          "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml",
+          "/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+          "/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+          "/mnt/disk1/fan/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+          "/mnt/disk1/fan/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json"
+        ],
+        "project": "katrain",
+        "runtime_user": "root"
+      },
+      "activated": {
+        "source_revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+        "container_id": "b61d88499472124d15a23af759e205ba74d3007440d2cbef590329dcc74c9c53",
+        "image": "sha256:0fb0f640b44bc054d2cc064f3b7df644bf366c36bc4aebc68bc1777268b9d07f",
+        "started_at": "2026-10-24T07:07:48.067104367Z",
+        "full_source_verified_files": 4171,
+        "only_environment_changes": [
+          "KATRAIN_BUILD_SHA",
+          "KATRAIN_FRONTEND_BUILD_SHA"
+        ],
+        "mounts_and_runtime_config_preserved": true,
+        "health": {
+          "status": "ok",
+          "version": "1.17.1",
+          "engines": {
+            "local": "reachable",
+            "cloud": "unconfigured"
+          }
+        },
+        "activated_at": "2026-10-24T07:07:55.053468+00:00",
+        "compose_files": [
+          "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json",
+          "/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+          "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml",
+          "/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+          "/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+          "/mnt/disk1/fan/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+          "/mnt/disk1/fan/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+          "/mnt/disk1/fan/full-develop-495d0284c-20261024/full-develop.override.json"
+        ],
+        "rollback_directory": "/mnt/disk1/fan/full-develop-495d0284c-20261024/rollback"
+      },
+      "prepared": {
+        "activate_command": [
+          "docker",
+          "compose",
+          "-p",
+          "katrain",
+          "-f",
+          "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json",
+          "-f",
+          "/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+          "-f",
+          "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml",
+          "-f",
+          "/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+          "-f",
+          "/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+          "-f",
+          "/mnt/disk1/fan/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+          "-f",
+          "/mnt/disk1/fan/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+          "-f",
+          "/mnt/disk1/fan/full-develop-495d0284c-20261024/full-develop.override.json",
+          "up",
+          "-d",
+          "--no-deps",
+          "--no-build",
+          "--pull",
+          "never",
+          "katrain-web"
+        ],
+        "rollback_command": [
+          "docker",
+          "compose",
+          "-p",
+          "katrain",
+          "-f",
+          "/mnt/disk1/fan/full-develop-495d0284c-20261024/rollback/compose.private.json",
+          "up",
+          "-d",
+          "--no-deps",
+          "--no-build",
+          "--pull",
+          "never",
+          "katrain-web"
+        ],
+        "new_image": "sha256:0fb0f640b44bc054d2cc064f3b7df644bf366c36bc4aebc68bc1777268b9d07f",
+        "sha": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+        "only_config_changes": [
+          "web.image",
+          "web.environment.KATRAIN_BUILD_SHA",
+          "web.environment.KATRAIN_FRONTEND_BUILD_SHA"
+        ]
+      },
+      "candidate-readonly": {
+        "existing_report_list_read_count": 1,
+        "existing_report_status": "completed",
+        "kifu_batches": [
+          {
+            "manifest_sha256": "de72b20baf344b7c7be1be8086ca8fd67c7a3510ca2e8138d9d4c69dac941b6f",
+            "publication_key": "19x19-91346707-f4a8506c99b59a1a",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "8604c27f9b9a9b47a6e2309938144f45d6e05d05efd0c80cf5736b53fad9e96d",
+            "publication_key": "19x19-batch-dd279a0c3a6e99f61304827b",
+            "status": "quarantined"
+          },
+          {
+            "manifest_sha256": "ae8fd9d9f9f4a0bde3ea72e20b74c64b0b3e041848dbb5f50d73a3b7d935e019",
+            "publication_key": "19x19-recovery-a5425ac6c5b3d96d9bc23d3b",
+            "status": "quarantined"
+          },
+          {
+            "manifest_sha256": "0f64c2b366a0d9ba59b452d4aac4148dc5609d19c57c6befa1deacde06459e67",
+            "publication_key": "19x19-event-recovery-870a06d9f6b3f234b354a5f4",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "e38a900e4099ef656a7f1633c129d34004a6b85f33840c50ad5386612588fbb5",
+            "publication_key": "19x19-batch-bea3f0ea4759c01dd0888b14",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "105ddaa947f5e70f89fe7dfcca6ce350f5f2dc0cea8bb35782f2467ec8177c9c",
+            "publication_key": "19x19-batch-1e94d4da06e3965510f4c7f5",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "674ce938503bbdb98debec291b090051a38112495fde03bf787e888703e1700a",
+            "publication_key": "19x19-batch-5b133ae1e1db15c1c4056c0e",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "d42944b656b95b55f8c10aebecef82a882aaac6b4ce0aec69e251c3415962875",
+            "publication_key": "19x19-batch-2565d295b7498111a097ea40",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "bd374a966a2e4d6599787d57820512f9b94adbe5b2c308d0b15aa9ada46b9799",
+            "publication_key": "19x19-batch-bd5fdf7640ad9a37de370794",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "13a663101de18f61bc03a5ef89007b8e753a94f78652d7717d0eb42fd351363f",
+            "publication_key": "19x19-batch-31fe3d7bf66a3f1cb6f7c193",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "929e00f8894cd659b134c5c740bdafa1e05b89a69c71f3a9dcd60da352a8634c",
+            "publication_key": "19x19-batch-97061826dfdb67f04141b18f",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "c89844f13bf9a88a7c5b73020bb8c280e722cc2ee2a5c2a4fb13307cd75a29c9",
+            "publication_key": "19x19-batch-60894512997190ed20cbb32a",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "5854455069911345779ce7e7dc8617fc7da559238688bfbdc891c4d96057a85d",
+            "publication_key": "19x19-batch-e54e5c4cbb7055af9fc2b0ee",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "61e6048901f0bbd54606a2f7cb88963dd2b61e242e19e6dc1593b13cd5b46452",
+            "publication_key": "19x19-batch-e6dee0d9da0e5e8c1e33271b",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+            "publication_key": "19x19-batch-fc134b52cd61f94092118e61",
+            "status": "prod_synced"
+          },
+          {
+            "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+            "publication_key": "19x19-batch-62854d648ca7b10ad8f3290d",
+            "status": "prod_synced"
+          }
+        ],
+        "report_counts": {
+          "completed": 17
+        },
+        "schema_and_kifu_guards": "ok",
+        "server_orm_tables": 69,
+        "tutorial_figure_read": true
+      },
+      "completed_own_readonly_probe_containers": {
+        "sharp_clarke": {
+          "id": "b6f9f21664f20c4d922d34874f9749cc326052224a882ce7e5197f1883afb149",
+          "image": "sha256:89075b36b0559af595101bdca89b97b49cd685d59b0ba440167bf740bcc3f645",
+          "started": "2026-10-24T07:03:09.177979761Z"
+        }
+      },
+      "browser": {
+        "galaxy_status": 200,
+        "english": {
+          "text": "StellaBox",
+          "fontFamily": "\"SmartBox Fondamento\", serif",
+          "fontWeight": "400",
+          "fontSize": "16px",
+          "fontStyle": "normal"
+        },
+        "platform": {
+          "fonts": [
+            {
+              "familyName": "Fondamento",
+              "postScriptName": "Fondamento-Regular",
+              "isCustomFont": true,
+              "glyphCount": 9
+            }
+          ]
+        },
+        "resources": [
+          {
+            "path": "/assets/index-DyeB9emj.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/rolldown-runtime-QTnfLwEv.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/ui-core-KixCoRFD.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/api-F4MBphUX.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/index-DFEU3Joj.css",
+            "status": 200
+          },
+          {
+            "path": "/assets/GalaxyApp-CvcJJrsF.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/useTranslation-2s7QijL4.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/CompactPagination-B1dgnMiC.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/CompactPagination-CGmypQPo.css",
+            "status": 200
+          },
+          {
+            "path": "/assets/LiveBoard-Ba5XrlMT.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/PlaybackBar-CEWsGrrb.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/railStyles-DhiVdXXP.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/LoginModal-BRZk7hrX.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/BoardPageShell-D1CP8a1l.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/useBoardCoordinates-DjMCk-oC.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/AuthGuard-FCd5G4N_.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/useReplayStoneSound-mbBgIhcZ.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/ModulePlate-CqtDfXVF.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/GalaxyApp-9_7Du12x.css",
+            "status": 200
+          },
+          {
+            "path": "/assets/useSound-B05xx7cK.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/PlayMenu-XE9q8N-W.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/ContentPageHeader-CJFueiOk.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/fondamento-latin-regular-CAcpMF8n.woff2",
+            "status": 200
+          }
+        ],
+        "header": "\u667a\u661f\u76d2\nStellaBox",
+        "kiosk_status": 200,
+        "kiosk_body": "\u667a\u661f\u76d2\nStellaBox\n\u56f4\u68cb\n\u8bbf\n\u8bbf\u5ba2\n15:09\n\u2190 \u8fd4\u56de\u5bf9\u5f08\n\u5728\u7ebf\u5927\u5385\n\u5f00\u4e00\u5c40\nStart\n\u68cb\n\u5feb\u901f\u5339\u914d\n\u5339\u914d\u540c\u6bb5\u4f4d\u5bf9\u624b\uff0c\u6216\u76f4\u63a5\u9080\u8bf7\u68cb\u53cb\n\u53cb\n\u9080\u8bf7\u68cb\u53cb\n\u76f4\u63a5\u9080\u8bf7\u4efb\u610f\u6bb5\u4f4d\u7684\u7a7a\u95f2\u68cb\u53cb\n\u5bf9\u6218\u5927\u5385\nLobby\n\u8fdb\u884c\u4e2d\u7684\u5bf9\u5c40\n\n\u5728\u7ebf\u5927\u5385\n\n\u767b\u5f55\u540e\u8fdb\u5165\u5728\u7ebf\u5927\u5385\n\n\u67e5\u770b\u6b63\u5728\u8fdb\u884c\u7684\u5bf9\u5c40\uff0c\u9080\u8bf7\u68cb\u53cb\u6216\u5339\u914d\u5bf9\u624b\u3002\n\n\u767b\u5f55\u5b8c\u6210\u540e\u56de\u5230\u5f53\u524d\u9875\u9762\uff0c\u65e0\u9700\u91cd\u65b0\u5bfb\u627e\u5165\u53e3\u3002\n\n\u8fd4\u56de\u5bf9\u5f08\n\u767b\u5f55\u5e76\u7ee7\u7eed\n\n\u672a\u767b\u5f55\u65f6\u4e0d\u663e\u793a\u68cb\u53cb\u540d\u5355\u548c\u8fdb\u884c\u4e2d\u7684\u5bf9\u5c40\u3002\n\n\u2304\nq\nw\ne\nr\nt\ny\nu\ni\no\np\na\ns\nd\nf\ng\nh\nj\nk\nl\nz\nx\nc\nv\nb\nn\nm\n123\nEN\n\u7a7a\u683c\n\u6362\u884c"
+      },
+      "http": {
+        "environment": "test",
+        "source_revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+        "health_status": "ok",
+        "main_assets": [
+          "/assets/index-DyeB9emj.js",
+          "/assets/rolldown-runtime-QTnfLwEv.js",
+          "/assets/ui-core-KixCoRFD.js",
+          "/assets/api-F4MBphUX.js",
+          "/assets/index-DFEU3Joj.css"
+        ],
+        "existing_sgf_read": true,
+        "stored_analysis_read": {
+          "album_id": 179060,
+          "status": "unavailable",
+          "moves": 0
+        },
+        "http": [
+          {
+            "path": "/api/v1/health",
+            "status": 200,
+            "sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f"
+          },
+          {
+            "path": "/galaxy/play",
+            "status": 200,
+            "sha256": "ca2035e375f8377efe4b24e73771d1a31f865a597adcfab0d607accddca75fa1"
+          },
+          {
+            "path": "/kiosk/play/pvp/lobby",
+            "status": 200,
+            "sha256": "ca2035e375f8377efe4b24e73771d1a31f865a597adcfab0d607accddca75fa1"
+          },
+          {
+            "path": "/assets/index-DyeB9emj.js",
+            "status": 200,
+            "sha256": "2be2d2999436feb92bdd4cf734bbae047b8814cda64d3d6d14de269fef1ab2df"
+          },
+          {
+            "path": "/assets/rolldown-runtime-QTnfLwEv.js",
+            "status": 200,
+            "sha256": "5db5ba82eef00d1dee7e86e663098c9427d01183a88d357437daff295aec3e75"
+          },
+          {
+            "path": "/assets/ui-core-KixCoRFD.js",
+            "status": 200,
+            "sha256": "384b6f4b0671da7babf94eacd483def695ef856b7d658163873bc27c99a60c18"
+          },
+          {
+            "path": "/assets/api-F4MBphUX.js",
+            "status": 200,
+            "sha256": "d3d3a134c1f589b29b66a7f922002f1f32519bd3c458671b998b3406aa13932c"
+          },
+          {
+            "path": "/assets/index-DFEU3Joj.css",
+            "status": 200,
+            "sha256": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+          },
+          {
+            "path": "/api/v1/kifu/albums?page=1&page_size=20&lang=cn",
+            "status": 200,
+            "sha256": "922fe18e59d614c81414c26325950778e073f4ffd36fed4eb4397afcba88632c"
+          },
+          {
+            "path": "/api/v1/kifu/albums/179060?lang=cn",
+            "status": 200,
+            "sha256": "533801102ffea7e9d462cdad25a11f386bb959a42744bdbde04c0fd357cba5fa"
+          },
+          {
+            "path": "/api/v1/kifu/albums/179060/analysis",
+            "status": 200,
+            "sha256": "73f167916855c1820704c0c2a5246ea4cad7205cc183b288ed5695457587c91d"
+          },
+          {
+            "path": "/openapi.json",
+            "status": 200,
+            "sha256": "621b3a3ff42e29e435766de6a6d55f685c2b0a1f4fd5ce4c620cc2f098af806f"
+          },
+          {
+            "path": "/api/pvp/territory",
+            "method": "POST",
+            "status": 401,
+            "anonymous_guard": true
+          },
+          {
+            "path": "/api/v1/reports/",
+            "method": "GET",
+            "status": 401,
+            "anonymous_guard": true
+          }
+        ]
+      },
+      "existing-analysis": {
+        "path": "/api/v1/kifu/albums/23038/analysis",
+        "status": 200,
+        "report_status": "completed",
+        "moves": 185,
+        "sha256": "093c2c7c904661d962836f0d4960f37ecf99e221c93dc5304646f860c0f40277"
+      },
+      "other_service_identities_unchanged": true
+    },
+    "prod": {
+      "built": {
+        "revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+        "image": "sha256:a6e5d74cd88dd43e581a12eb129d20563f77e269714885620b58a17b8716c41a",
+        "tag": "katrain-full-develop:495d0284c-20261024",
+        "base_dependency_image": "sha256:6ced68bdd5db0fde24838f384c450bcd7e329b681eaa40788578bc0a0c4042d2",
+        "original_container_id": "1b99bbb57210c4343a2a51727ac2e6e6b5cbe9e3fb3de62d31dbbe53642dcc22",
+        "original_started_at": "2026-10-23T18:29:04.0885886Z",
+        "source_manifest_sha256": "69bcb7648d5faeaeb286a29b9b434224d1a4b34ffc79d6c135aa12c4a2e36f51",
+        "source_file_count": 4171,
+        "source_and_frontend_probe": "WARNING: kivy already imported before ensure_kivy called!\nVERIFIED 4171 files; server import ok",
+        "compose_files": [
+          "/home/ubuntu/kifu-hourly-incremental-20261019/web-base.private.json",
+          "/home/ubuntu/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+          "/home/ubuntu/kifu-hourly-incremental-20261019/web-final.override.yml",
+          "/home/ubuntu/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+          "/home/ubuntu/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+          "/home/ubuntu/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+          "/home/ubuntu/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json"
+        ],
+        "project": "katrain-ucloud",
+        "runtime_user": "10001:10001"
+      },
+      "activated": {
+        "source_revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+        "container_id": "b7f76f8dc571927420c450622b20651ef1821e7ae0a07f20b95c362818261bd2",
+        "image": "sha256:a6e5d74cd88dd43e581a12eb129d20563f77e269714885620b58a17b8716c41a",
+        "started_at": "2026-10-24T07:10:21.208654739Z",
+        "full_source_verified_files": 4171,
+        "only_environment_changes": [
+          "KATRAIN_BUILD_SHA",
+          "KATRAIN_FRONTEND_BUILD_SHA"
+        ],
+        "mounts_and_runtime_config_preserved": true,
+        "health": {
+          "status": "ok",
+          "version": "1.17.1",
+          "engines": {
+            "local": "reachable",
+            "cloud": "unconfigured"
+          }
+        },
+        "activated_at": "2026-10-24T07:10:33.902889+00:00",
+        "compose_files": [
+          "/home/ubuntu/kifu-hourly-incremental-20261019/web-base.private.json",
+          "/home/ubuntu/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+          "/home/ubuntu/kifu-hourly-incremental-20261019/web-final.override.yml",
+          "/home/ubuntu/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+          "/home/ubuntu/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+          "/home/ubuntu/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+          "/home/ubuntu/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+          "/home/ubuntu/full-develop-495d0284c-20261024/full-develop.override.json"
+        ],
+        "rollback_directory": "/home/ubuntu/full-develop-495d0284c-20261024/rollback"
+      },
+      "prepared": {
+        "activate_command": [
+          "docker",
+          "compose",
+          "-p",
+          "katrain-ucloud",
+          "-f",
+          "/home/ubuntu/kifu-hourly-incremental-20261019/web-base.private.json",
+          "-f",
+          "/home/ubuntu/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+          "-f",
+          "/home/ubuntu/kifu-hourly-incremental-20261019/web-final.override.yml",
+          "-f",
+          "/home/ubuntu/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+          "-f",
+          "/home/ubuntu/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+          "-f",
+          "/home/ubuntu/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+          "-f",
+          "/home/ubuntu/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+          "-f",
+          "/home/ubuntu/full-develop-495d0284c-20261024/full-develop.override.json",
+          "up",
+          "-d",
+          "--no-deps",
+          "--no-build",
+          "--pull",
+          "never",
+          "katrain-web"
+        ],
+        "rollback_command": [
+          "docker",
+          "compose",
+          "-p",
+          "katrain-ucloud",
+          "-f",
+          "/home/ubuntu/full-develop-495d0284c-20261024/rollback/compose.private.json",
+          "up",
+          "-d",
+          "--no-deps",
+          "--no-build",
+          "--pull",
+          "never",
+          "katrain-web"
+        ],
+        "new_image": "sha256:a6e5d74cd88dd43e581a12eb129d20563f77e269714885620b58a17b8716c41a",
+        "sha": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+        "only_config_changes": [
+          "web.image",
+          "web.environment.KATRAIN_BUILD_SHA",
+          "web.environment.KATRAIN_FRONTEND_BUILD_SHA"
+        ]
+      },
+      "candidate-readonly": {
+        "existing_report_list_read_count": 15,
+        "existing_report_status": "completed",
+        "kifu_batches": [],
+        "report_counts": {
+          "completed": 21
+        },
+        "schema_and_kifu_guards": "ok",
+        "server_orm_tables": 69,
+        "tutorial_figure_read": true
+      },
+      "completed_own_readonly_probe_containers": {},
+      "browser": {
+        "galaxy_status": 200,
+        "english": {
+          "text": "StellaBox",
+          "fontFamily": "\"SmartBox Fondamento\", serif",
+          "fontWeight": "400",
+          "fontSize": "16px",
+          "fontStyle": "normal"
+        },
+        "platform": {
+          "fonts": [
+            {
+              "familyName": "Fondamento",
+              "postScriptName": "Fondamento-Regular",
+              "isCustomFont": true,
+              "glyphCount": 9
+            }
+          ]
+        },
+        "resources": [
+          {
+            "path": "/assets/index-DyeB9emj.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/rolldown-runtime-QTnfLwEv.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/api-F4MBphUX.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/ui-core-KixCoRFD.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/index-DFEU3Joj.css",
+            "status": 200
+          },
+          {
+            "path": "/assets/GalaxyApp-CvcJJrsF.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/CompactPagination-B1dgnMiC.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/useTranslation-2s7QijL4.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/LiveBoard-Ba5XrlMT.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/CompactPagination-CGmypQPo.css",
+            "status": 200
+          },
+          {
+            "path": "/assets/PlaybackBar-CEWsGrrb.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/LoginModal-BRZk7hrX.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/railStyles-DhiVdXXP.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/BoardPageShell-D1CP8a1l.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/useBoardCoordinates-DjMCk-oC.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/AuthGuard-FCd5G4N_.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/useReplayStoneSound-mbBgIhcZ.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/ModulePlate-CqtDfXVF.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/useSound-B05xx7cK.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/GalaxyApp-9_7Du12x.css",
+            "status": 200
+          },
+          {
+            "path": "/assets/PlayMenu-XE9q8N-W.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/ContentPageHeader-CJFueiOk.js",
+            "status": 200
+          },
+          {
+            "path": "/assets/fondamento-latin-regular-CAcpMF8n.woff2",
+            "status": 200
+          }
+        ],
+        "header": "\u667a\u661f\u76d2\nStellaBox",
+        "kiosk_status": 200,
+        "kiosk_body": "\u667a\u661f\u76d2\nStellaBox\n\u56f4\u68cb\n\u8bbf\n\u8bbf\u5ba2\n15:11\n\u2190 \u8fd4\u56de\u5bf9\u5f08\n\u5728\u7ebf\u5927\u5385\n\u5f00\u4e00\u5c40\nStart\n\u68cb\n\u5feb\u901f\u5339\u914d\n\u5339\u914d\u540c\u6bb5\u4f4d\u5bf9\u624b\uff0c\u6216\u76f4\u63a5\u9080\u8bf7\u68cb\u53cb\n\u53cb\n\u9080\u8bf7\u68cb\u53cb\n\u76f4\u63a5\u9080\u8bf7\u4efb\u610f\u6bb5\u4f4d\u7684\u7a7a\u95f2\u68cb\u53cb\n\u5bf9\u6218\u5927\u5385\nLobby\n\u8fdb\u884c\u4e2d\u7684\u5bf9\u5c40\n\n\u5728\u7ebf\u5927\u5385\n\n\u767b\u5f55\u540e\u8fdb\u5165\u5728\u7ebf\u5927\u5385\n\n\u67e5\u770b\u6b63\u5728\u8fdb\u884c\u7684\u5bf9\u5c40\uff0c\u9080\u8bf7\u68cb\u53cb\u6216\u5339\u914d\u5bf9\u624b\u3002\n\n\u767b\u5f55\u5b8c\u6210\u540e\u56de\u5230\u5f53\u524d\u9875\u9762\uff0c\u65e0\u9700\u91cd\u65b0\u5bfb\u627e\u5165\u53e3\u3002\n\n\u8fd4\u56de\u5bf9\u5f08\n\u767b\u5f55\u5e76\u7ee7\u7eed\n\n\u672a\u767b\u5f55\u65f6\u4e0d\u663e\u793a\u68cb\u53cb\u540d\u5355\u548c\u8fdb\u884c\u4e2d\u7684\u5bf9\u5c40\u3002\n\n\u2304\nq\nw\ne\nr\nt\ny\nu\ni\no\np\na\ns\nd\nf\ng\nh\nj\nk\nl\nz\nx\nc\nv\nb\nn\nm\n123\nEN\n\u7a7a\u683c\n\u6362\u884c"
+      },
+      "http": {
+        "environment": "prod",
+        "source_revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+        "health_status": "ok",
+        "main_assets": [
+          "/assets/index-DyeB9emj.js",
+          "/assets/rolldown-runtime-QTnfLwEv.js",
+          "/assets/ui-core-KixCoRFD.js",
+          "/assets/api-F4MBphUX.js",
+          "/assets/index-DFEU3Joj.css"
+        ],
+        "existing_sgf_read": true,
+        "stored_analysis_read": {
+          "album_id": 178724,
+          "status": "unavailable",
+          "moves": 0
+        },
+        "http": [
+          {
+            "path": "/api/v1/health",
+            "status": 200,
+            "sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f"
+          },
+          {
+            "path": "/galaxy/play",
+            "status": 200,
+            "sha256": "ca2035e375f8377efe4b24e73771d1a31f865a597adcfab0d607accddca75fa1"
+          },
+          {
+            "path": "/kiosk/play/pvp/lobby",
+            "status": 200,
+            "sha256": "ca2035e375f8377efe4b24e73771d1a31f865a597adcfab0d607accddca75fa1"
+          },
+          {
+            "path": "/assets/index-DyeB9emj.js",
+            "status": 200,
+            "sha256": "2be2d2999436feb92bdd4cf734bbae047b8814cda64d3d6d14de269fef1ab2df"
+          },
+          {
+            "path": "/assets/rolldown-runtime-QTnfLwEv.js",
+            "status": 200,
+            "sha256": "5db5ba82eef00d1dee7e86e663098c9427d01183a88d357437daff295aec3e75"
+          },
+          {
+            "path": "/assets/ui-core-KixCoRFD.js",
+            "status": 200,
+            "sha256": "384b6f4b0671da7babf94eacd483def695ef856b7d658163873bc27c99a60c18"
+          },
+          {
+            "path": "/assets/api-F4MBphUX.js",
+            "status": 200,
+            "sha256": "d3d3a134c1f589b29b66a7f922002f1f32519bd3c458671b998b3406aa13932c"
+          },
+          {
+            "path": "/assets/index-DFEU3Joj.css",
+            "status": 200,
+            "sha256": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+          },
+          {
+            "path": "/api/v1/kifu/albums?page=1&page_size=20&lang=cn",
+            "status": 200,
+            "sha256": "f72eb8267d6749fb38f050fad5f5ae114027282de82acb8910a6cb101d86a4ea"
+          },
+          {
+            "path": "/api/v1/kifu/albums/178724?lang=cn",
+            "status": 200,
+            "sha256": "aea0a0d66f546ba5817edc687458e3773703c40cec6d2feb09f5f69c7cf9c7aa"
+          },
+          {
+            "path": "/api/v1/kifu/albums/178724/analysis",
+            "status": 200,
+            "sha256": "ab1b12d1900312e6dd270e222feb5cc4d701d3687212cd92baf9c8b2a38c2fd2"
+          },
+          {
+            "path": "/openapi.json",
+            "status": 200,
+            "sha256": "621b3a3ff42e29e435766de6a6d55f685c2b0a1f4fd5ce4c620cc2f098af806f"
+          },
+          {
+            "path": "/api/pvp/territory",
+            "method": "POST",
+            "status": 401,
+            "anonymous_guard": true
+          },
+          {
+            "path": "/api/v1/reports/",
+            "method": "GET",
+            "status": 401,
+            "anonymous_guard": true
+          }
+        ]
+      },
+      "existing-analysis": {
+        "path": "/api/v1/kifu/albums/23038/analysis",
+        "status": 200,
+        "report_status": "completed",
+        "moves": 185,
+        "sha256": "093c2c7c904661d962836f0d4960f37ecf99e221c93dc5304646f860c0f40277"
+      },
+      "other_service_identities_unchanged": true
+    }
+  },
+  "window": {
+    "original": {
+      "owned": true,
+      "original": null,
+      "marker": "full-develop-495d0284c-20261024-release-window"
+    },
+    "before": {
+      "advisory_locks": [],
+      "control": [
+        {
+          "job_name": "kifu_ingest",
+          "paused": true,
+          "reason": "full-develop-495d0284c-20261024-release-window"
+        }
+      ],
+      "ledgers": {
+        "qwen-usage-20261019.json": "8cda8297e89e84a80bd8b2c2ee2c09b8150082af1a8160dcc3401c7cb610565a",
+        "qwen-usage-20261020.json": "6c85469b1ee805151f39f597d8627c51599402237dd4768a51d9973f00bfc514",
+        "qwen-usage-20261021.json": "d763806f7c8b50d979627f2ef4abae732e8ba4bb563bceafd3cc9eac76974dfb",
+        "qwen-usage-20261022.json": "1095d74ea88560cbbab1c492c06d45db9196c75f2080bc721813fb7bd50a4404",
+        "qwen-usage-20261023.json": "f1298062bb1d4c9393abc8fe5b58611601db060ca00c15b406659ac2688e6cb9"
+      },
+      "stage_manifest_sha256": "a42c1e5a53f9274d88d7c74ee4dd9249faf5302ba0207e012587f2bfa07d8d11"
+    },
+    "after": {
+      "advisory_locks": [],
+      "control": [
+        {
+          "job_name": "kifu_ingest",
+          "paused": true,
+          "reason": "full-develop-495d0284c-20261024-release-window"
+        }
+      ],
+      "kifu_batches": [
+        {
+          "manifest_sha256": "de72b20baf344b7c7be1be8086ca8fd67c7a3510ca2e8138d9d4c69dac941b6f",
+          "publication_key": "19x19-91346707-f4a8506c99b59a1a",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "8604c27f9b9a9b47a6e2309938144f45d6e05d05efd0c80cf5736b53fad9e96d",
+          "publication_key": "19x19-batch-dd279a0c3a6e99f61304827b",
+          "status": "quarantined"
+        },
+        {
+          "manifest_sha256": "ae8fd9d9f9f4a0bde3ea72e20b74c64b0b3e041848dbb5f50d73a3b7d935e019",
+          "publication_key": "19x19-recovery-a5425ac6c5b3d96d9bc23d3b",
+          "status": "quarantined"
+        },
+        {
+          "manifest_sha256": "0f64c2b366a0d9ba59b452d4aac4148dc5609d19c57c6befa1deacde06459e67",
+          "publication_key": "19x19-event-recovery-870a06d9f6b3f234b354a5f4",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "e38a900e4099ef656a7f1633c129d34004a6b85f33840c50ad5386612588fbb5",
+          "publication_key": "19x19-batch-bea3f0ea4759c01dd0888b14",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "105ddaa947f5e70f89fe7dfcca6ce350f5f2dc0cea8bb35782f2467ec8177c9c",
+          "publication_key": "19x19-batch-1e94d4da06e3965510f4c7f5",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "674ce938503bbdb98debec291b090051a38112495fde03bf787e888703e1700a",
+          "publication_key": "19x19-batch-5b133ae1e1db15c1c4056c0e",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "d42944b656b95b55f8c10aebecef82a882aaac6b4ce0aec69e251c3415962875",
+          "publication_key": "19x19-batch-2565d295b7498111a097ea40",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "bd374a966a2e4d6599787d57820512f9b94adbe5b2c308d0b15aa9ada46b9799",
+          "publication_key": "19x19-batch-bd5fdf7640ad9a37de370794",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "13a663101de18f61bc03a5ef89007b8e753a94f78652d7717d0eb42fd351363f",
+          "publication_key": "19x19-batch-31fe3d7bf66a3f1cb6f7c193",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "929e00f8894cd659b134c5c740bdafa1e05b89a69c71f3a9dcd60da352a8634c",
+          "publication_key": "19x19-batch-97061826dfdb67f04141b18f",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "c89844f13bf9a88a7c5b73020bb8c280e722cc2ee2a5c2a4fb13307cd75a29c9",
+          "publication_key": "19x19-batch-60894512997190ed20cbb32a",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "5854455069911345779ce7e7dc8617fc7da559238688bfbdc891c4d96057a85d",
+          "publication_key": "19x19-batch-e54e5c4cbb7055af9fc2b0ee",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "61e6048901f0bbd54606a2f7cb88963dd2b61e242e19e6dc1593b13cd5b46452",
+          "publication_key": "19x19-batch-e6dee0d9da0e5e8c1e33271b",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "72e6ee0fe9b6ec9d07db8fd10bfefcb67d68b800b8579cca165dfeae4af307e8",
+          "publication_key": "19x19-batch-fc134b52cd61f94092118e61",
+          "status": "prod_synced"
+        },
+        {
+          "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5",
+          "publication_key": "19x19-batch-62854d648ca7b10ad8f3290d",
+          "status": "prod_synced"
+        }
+      ],
+      "ledgers": {
+        "qwen-usage-20261019.json": "8cda8297e89e84a80bd8b2c2ee2c09b8150082af1a8160dcc3401c7cb610565a",
+        "qwen-usage-20261020.json": "6c85469b1ee805151f39f597d8627c51599402237dd4768a51d9973f00bfc514",
+        "qwen-usage-20261021.json": "d763806f7c8b50d979627f2ef4abae732e8ba4bb563bceafd3cc9eac76974dfb",
+        "qwen-usage-20261022.json": "1095d74ea88560cbbab1c492c06d45db9196c75f2080bc721813fb7bd50a4404",
+        "qwen-usage-20261023.json": "f1298062bb1d4c9393abc8fe5b58611601db060ca00c15b406659ac2688e6cb9"
+      },
+      "stage_manifest_sha256": "a42c1e5a53f9274d88d7c74ee4dd9249faf5302ba0207e012587f2bfa07d8d11"
+    },
+    "restored": {
+      "restored_original_control": true
+    },
+    "final_controls": [],
+    "stage_and_ledger_bytes_unchanged": true,
+    "all_prior_batch_statuses_and_manifest_hashes_unchanged": true
+  }
+}

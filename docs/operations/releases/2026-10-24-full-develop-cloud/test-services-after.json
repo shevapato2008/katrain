@@ -1,0 +1,62 @@
+{
+  "katrain-web": {
+    "id": "b61d88499472124d15a23af759e205ba74d3007440d2cbef590329dcc74c9c53",
+    "image": "sha256:0fb0f640b44bc054d2cc064f3b7df644bf366c36bc4aebc68bc1777268b9d07f",
+    "started": "2026-10-24T07:07:48.067104367Z"
+  },
+  "katrain-cron": {
+    "id": "db7120a4fa3376a409e93009c767abf25ecc81797f174b5ba6723cd8e11ab4e5",
+    "image": "sha256:9c414726fa56da734e7f47f6fb409d6373e747a9198c4c80bb31fc4606bccb98",
+    "started": "2026-10-23T18:32:20.87269849Z"
+  },
+  "smartbox-admin-admin-console-1": {
+    "id": "7978a87a938519a3c74b3e3859d9db0ce14bfb74d1bdc8a2d1e25a6ca24b64c0",
+    "image": "sha256:ef2503f6e5ab4831d26471484f0d2fedf8d372b621a622213f1553047675a584",
+    "started": "2026-10-21T05:34:43.933551148Z"
+  },
+  "katrain-admin": {
+    "id": "b887a3623b088a984520ccc86f5b8a5c9cdbf6ec63f236e74c059b12ee2cf93e",
+    "image": "sha256:65b03ca1719cf7f74169bf099dbc8dd2f565fd5e1c0f11d897b43aff9c617a99",
+    "started": "2026-10-21T05:34:35.586927099Z"
+  },
+  "smartbox-platform": {
+    "id": "31577ccb6c4ac13a5396b09250b84cb1a403ea693ad12d704d1982318c7be0dc",
+    "image": "sha256:67277029adee2ecbdaf17427277c0b77fab4c77fd73bebb428009d2870473e80",
+    "started": "2026-10-11T23:07:16.982045274Z"
+  },
+  "katago-gpu1": {
+    "id": "b75a25eef03d61f641d676ff4ac886792c24594f0a4aa43620db6db8a7a3687c",
+    "image": "sha256:7004f5721d21dac82831ba136d1e98b4c809e958a0032395da2025bd645ca589",
+    "started": "2026-10-02T08:43:48.752509172Z"
+  },
+  "katrain-kifu-42d-test": {
+    "id": "b0bfacccd7d0bb94874475bd2fc7c5732caf74f7ffb73e2728b4faf0e70dd0df",
+    "image": "sha256:5d16508dd6d569c44c93f7f6de5049bed2fa991f4fa1b893378bde5e802b7d9d",
+    "started": "2026-10-01T09:46:32.361532651Z"
+  },
+  "katago-gpu0": {
+    "id": "2f589d0d1f82c6728a228bc9a77ce48bfcd73b617168b431b75efaf0df3734a8",
+    "image": "sha256:462515e83c36e1ff4aa31f91aca1c259c6afc8dc4b22815d23a56e9d95a3cf94",
+    "started": "2026-08-25T09:19:40.53463688Z"
+  },
+  "katago-calib": {
+    "id": "615ee63dceea20ffbb885ef89e23d51972a348051c120cf5dca16eb0cd91506b",
+    "image": "sha256:df1e90ac3231b41af5daaa91301b7f618115d739091e2ba396ea4031f89c32aa",
+    "started": "2026-08-13T04:45:16.933340189Z"
+  },
+  "platform-postgres": {
+    "id": "f3f7edfb9d47b068bbe431ca0432976dbdbda6b81177ec5ac480fd963f2aa3f0",
+    "image": "sha256:36a937f48ac758aef4bb5254440933c81fc970f6dbf9f96b87542b4dda7e7b6b",
+    "started": "2026-08-11T04:40:20.030122445Z"
+  },
+  "katrain-minio": {
+    "id": "5a1b5d8b022b2afbf6ad0aab4d661032b1f6940cfa0ab770423826225d246ab8",
+    "image": "sha256:69b2ec208575b69597784255eec6fa6a2985ee9e1a47f4411a51f7f5fdd193a9",
+    "started": "2026-08-11T04:40:20.021709016Z"
+  },
+  "katrain-postgres": {
+    "id": "b32fad7f168eebf03ef9650f094449964fe924541cae4f6b979d5f4ccbb5bf35",
+    "image": "sha256:36a937f48ac758aef4bb5254440933c81fc970f6dbf9f96b87542b4dda7e7b6b",
+    "started": "2026-08-11T04:40:20.031540875Z"
+  }
+}

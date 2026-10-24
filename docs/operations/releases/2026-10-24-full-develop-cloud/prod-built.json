@@ -1,0 +1,22 @@
+{
+  "revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+  "image": "sha256:a6e5d74cd88dd43e581a12eb129d20563f77e269714885620b58a17b8716c41a",
+  "tag": "katrain-full-develop:495d0284c-20261024",
+  "base_dependency_image": "sha256:6ced68bdd5db0fde24838f384c450bcd7e329b681eaa40788578bc0a0c4042d2",
+  "original_container_id": "1b99bbb57210c4343a2a51727ac2e6e6b5cbe9e3fb3de62d31dbbe53642dcc22",
+  "original_started_at": "2026-10-23T18:29:04.0885886Z",
+  "source_manifest_sha256": "69bcb7648d5faeaeb286a29b9b434224d1a4b34ffc79d6c135aa12c4a2e36f51",
+  "source_file_count": 4171,
+  "source_and_frontend_probe": "WARNING: kivy already imported before ensure_kivy called!\nVERIFIED 4171 files; server import ok",
+  "compose_files": [
+    "/home/ubuntu/kifu-hourly-incremental-20261019/web-base.private.json",
+    "/home/ubuntu/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+    "/home/ubuntu/kifu-hourly-incremental-20261019/web-final.override.yml",
+    "/home/ubuntu/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+    "/home/ubuntu/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+    "/home/ubuntu/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+    "/home/ubuntu/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json"
+  ],
+  "project": "katrain-ucloud",
+  "runtime_user": "10001:10001"
+}

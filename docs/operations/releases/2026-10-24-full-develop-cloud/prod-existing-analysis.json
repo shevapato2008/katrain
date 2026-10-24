@@ -1,0 +1,7 @@
+{
+  "path": "/api/v1/kifu/albums/23038/analysis",
+  "status": 200,
+  "report_status": "completed",
+  "moves": 185,
+  "sha256": "093c2c7c904661d962836f0d4960f37ecf99e221c93dc5304646f860c0f40277"
+}

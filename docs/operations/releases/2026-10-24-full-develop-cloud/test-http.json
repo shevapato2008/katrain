@@ -1,0 +1,92 @@
+{
+  "environment": "test",
+  "source_revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+  "health_status": "ok",
+  "main_assets": [
+    "/assets/index-DyeB9emj.js",
+    "/assets/rolldown-runtime-QTnfLwEv.js",
+    "/assets/ui-core-KixCoRFD.js",
+    "/assets/api-F4MBphUX.js",
+    "/assets/index-DFEU3Joj.css"
+  ],
+  "existing_sgf_read": true,
+  "stored_analysis_read": {
+    "album_id": 179060,
+    "status": "unavailable",
+    "moves": 0
+  },
+  "http": [
+    {
+      "path": "/api/v1/health",
+      "status": 200,
+      "sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f"
+    },
+    {
+      "path": "/galaxy/play",
+      "status": 200,
+      "sha256": "ca2035e375f8377efe4b24e73771d1a31f865a597adcfab0d607accddca75fa1"
+    },
+    {
+      "path": "/kiosk/play/pvp/lobby",
+      "status": 200,
+      "sha256": "ca2035e375f8377efe4b24e73771d1a31f865a597adcfab0d607accddca75fa1"
+    },
+    {
+      "path": "/assets/index-DyeB9emj.js",
+      "status": 200,
+      "sha256": "2be2d2999436feb92bdd4cf734bbae047b8814cda64d3d6d14de269fef1ab2df"
+    },
+    {
+      "path": "/assets/rolldown-runtime-QTnfLwEv.js",
+      "status": 200,
+      "sha256": "5db5ba82eef00d1dee7e86e663098c9427d01183a88d357437daff295aec3e75"
+    },
+    {
+      "path": "/assets/ui-core-KixCoRFD.js",
+      "status": 200,
+      "sha256": "384b6f4b0671da7babf94eacd483def695ef856b7d658163873bc27c99a60c18"
+    },
+    {
+      "path": "/assets/api-F4MBphUX.js",
+      "status": 200,
+      "sha256": "d3d3a134c1f589b29b66a7f922002f1f32519bd3c458671b998b3406aa13932c"
+    },
+    {
+      "path": "/assets/index-DFEU3Joj.css",
+      "status": 200,
+      "sha256": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+    },
+    {
+      "path": "/api/v1/kifu/albums?page=1&page_size=20&lang=cn",
+      "status": 200,
+      "sha256": "922fe18e59d614c81414c26325950778e073f4ffd36fed4eb4397afcba88632c"
+    },
+    {
+      "path": "/api/v1/kifu/albums/179060?lang=cn",
+      "status": 200,
+      "sha256": "533801102ffea7e9d462cdad25a11f386bb959a42744bdbde04c0fd357cba5fa"
+    },
+    {
+      "path": "/api/v1/kifu/albums/179060/analysis",
+      "status": 200,
+      "sha256": "73f167916855c1820704c0c2a5246ea4cad7205cc183b288ed5695457587c91d"
+    },
+    {
+      "path": "/openapi.json",
+      "status": 200,
+      "sha256": "621b3a3ff42e29e435766de6a6d55f685c2b0a1f4fd5ce4c620cc2f098af806f"
+    },
+    {
+      "path": "/api/pvp/territory",
+      "method": "POST",
+      "status": 401,
+      "anonymous_guard": true
+    },
+    {
+      "path": "/api/v1/reports/",
+      "method": "GET",
+      "status": 401,
+      "anonymous_guard": true
+    }
+  ]
+}

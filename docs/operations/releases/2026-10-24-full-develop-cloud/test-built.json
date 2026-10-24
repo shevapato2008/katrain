@@ -1,0 +1,22 @@
+{
+  "revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+  "image": "sha256:0fb0f640b44bc054d2cc064f3b7df644bf366c36bc4aebc68bc1777268b9d07f",
+  "tag": "katrain-full-develop:495d0284c-20261024",
+  "base_dependency_image": "sha256:d67dd7b38d7e0de615156f966447cadeddc377ec0b990c231ce5d51ae32570be",
+  "original_container_id": "a9d6e134dd052c93dfec3dbcc0172ba2c3bed10744b99ff5d8d1777d5301a823",
+  "original_started_at": "2026-10-24T07:04:44.125862206Z",
+  "source_manifest_sha256": "69bcb7648d5faeaeb286a29b9b434224d1a4b34ffc79d6c135aa12c4a2e36f51",
+  "source_file_count": 4171,
+  "source_and_frontend_probe": "WARNING: kivy already imported before ensure_kivy called!\nVERIFIED 4171 files; server import ok",
+  "compose_files": [
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml",
+    "/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+    "/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+    "/mnt/disk1/fan/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+    "/mnt/disk1/fan/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json"
+  ],
+  "project": "katrain",
+  "runtime_user": "root"
+}

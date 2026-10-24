@@ -1,0 +1,30 @@
+{
+  "source_revision": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+  "published_develop": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+  "published_parent_main": "bfb939b1d7e9be923a77fd4060c83f06b9c8928c",
+  "published_parent_gitlink": "495d0284c05cb7c9e8b388ded49a82f2959bfdf7",
+  "no_source_change_needed": "Font commit adbb60017 already ancestor; parent main already points at published develop. No synthetic fix, merge, or pointer commit.",
+  "frontend_builds": [
+    "npm ci",
+    "npm run build",
+    "npm run build:admin"
+  ],
+  "frontend_runtime_versions": {
+    "vite": "8.0.16",
+    "react": "19.2.3",
+    "typescript": "5.9.3"
+  },
+  "tests": {
+    "backend": 71,
+    "frontend": 23
+  },
+  "static_file_count": 542,
+  "source_manifest_sha256": "69bcb7648d5faeaeb286a29b9b434224d1a4b34ffc79d6c135aa12c4a2e36f51",
+  "archive_initial_sha256": "52cb5a43c640a2f26fde12f9a8fe0c5feb8b30862b4aa885050cb1e529c90745",
+  "staging_frontend_update_sha256": "43816ff4f2c542e00443f49ba6c848dd48dae2fa29052b42764d014a391e7adc",
+  "full_static_index_sha256": "ca2035e375f8377efe4b24e73771d1a31f865a597adcfab0d607accddca75fa1",
+  "admin_index_sha256": "42443a767d766b12ed2c7b2df1a2808ba61360d5a20f9c4283f6b2cf9173de31",
+  "font_commit_already_merged": true,
+  "source_file_count": 4171,
+  "locale_compilation": "polib compiles original pinned PO files directly; no tracked-source edits"
+}

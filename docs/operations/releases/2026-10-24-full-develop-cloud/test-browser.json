@@ -1,0 +1,117 @@
+{
+  "galaxy_status": 200,
+  "english": {
+    "text": "StellaBox",
+    "fontFamily": "\"SmartBox Fondamento\", serif",
+    "fontWeight": "400",
+    "fontSize": "16px",
+    "fontStyle": "normal"
+  },
+  "platform": {
+    "fonts": [
+      {
+        "familyName": "Fondamento",
+        "postScriptName": "Fondamento-Regular",
+        "isCustomFont": true,
+        "glyphCount": 9
+      }
+    ]
+  },
+  "resources": [
+    {
+      "path": "/assets/index-DyeB9emj.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/rolldown-runtime-QTnfLwEv.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/ui-core-KixCoRFD.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/api-F4MBphUX.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/index-DFEU3Joj.css",
+      "status": 200
+    },
+    {
+      "path": "/assets/GalaxyApp-CvcJJrsF.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/useTranslation-2s7QijL4.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/CompactPagination-B1dgnMiC.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/CompactPagination-CGmypQPo.css",
+      "status": 200
+    },
+    {
+      "path": "/assets/LiveBoard-Ba5XrlMT.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/PlaybackBar-CEWsGrrb.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/railStyles-DhiVdXXP.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/LoginModal-BRZk7hrX.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/BoardPageShell-D1CP8a1l.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/useBoardCoordinates-DjMCk-oC.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/AuthGuard-FCd5G4N_.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/useReplayStoneSound-mbBgIhcZ.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/ModulePlate-CqtDfXVF.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/GalaxyApp-9_7Du12x.css",
+      "status": 200
+    },
+    {
+      "path": "/assets/useSound-B05xx7cK.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/PlayMenu-XE9q8N-W.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/ContentPageHeader-CJFueiOk.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/fondamento-latin-regular-CAcpMF8n.woff2",
+      "status": 200
+    }
+  ],
+  "header": "\u667a\u661f\u76d2\nStellaBox",
+  "kiosk_status": 200,
+  "kiosk_body": "\u667a\u661f\u76d2\nStellaBox\n\u56f4\u68cb\n\u8bbf\n\u8bbf\u5ba2\n15:09\n\u2190 \u8fd4\u56de\u5bf9\u5f08\n\u5728\u7ebf\u5927\u5385\n\u5f00\u4e00\u5c40\nStart\n\u68cb\n\u5feb\u901f\u5339\u914d\n\u5339\u914d\u540c\u6bb5\u4f4d\u5bf9\u624b\uff0c\u6216\u76f4\u63a5\u9080\u8bf7\u68cb\u53cb\n\u53cb\n\u9080\u8bf7\u68cb\u53cb\n\u76f4\u63a5\u9080\u8bf7\u4efb\u610f\u6bb5\u4f4d\u7684\u7a7a\u95f2\u68cb\u53cb\n\u5bf9\u6218\u5927\u5385\nLobby\n\u8fdb\u884c\u4e2d\u7684\u5bf9\u5c40\n\n\u5728\u7ebf\u5927\u5385\n\n\u767b\u5f55\u540e\u8fdb\u5165\u5728\u7ebf\u5927\u5385\n\n\u67e5\u770b\u6b63\u5728\u8fdb\u884c\u7684\u5bf9\u5c40\uff0c\u9080\u8bf7\u68cb\u53cb\u6216\u5339\u914d\u5bf9\u624b\u3002\n\n\u767b\u5f55\u5b8c\u6210\u540e\u56de\u5230\u5f53\u524d\u9875\u9762\uff0c\u65e0\u9700\u91cd\u65b0\u5bfb\u627e\u5165\u53e3\u3002\n\n\u8fd4\u56de\u5bf9\u5f08\n\u767b\u5f55\u5e76\u7ee7\u7eed\n\n\u672a\u767b\u5f55\u65f6\u4e0d\u663e\u793a\u68cb\u53cb\u540d\u5355\u548c\u8fdb\u884c\u4e2d\u7684\u5bf9\u5c40\u3002\n\n\u2304\nq\nw\ne\nr\nt\ny\nu\ni\no\np\na\ns\nd\nf\ng\nh\nj\nk\nl\nz\nx\nc\nv\nb\nn\nm\n123\nEN\n\u7a7a\u683c\n\u6362\u884c"
+}

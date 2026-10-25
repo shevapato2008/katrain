@@ -38,6 +38,8 @@ const mocks = vi.hoisted(() => ({
   retryReport: vi.fn(),
   refreshTasks: vi.fn(),
   clearError: vi.fn(),
+  language: 'cn',
+  translations: {} as Record<string, string>,
   hookResult: {} as Record<string, unknown>,
   auth: { token: 'token' as string | null, isAuthenticated: true, user: { username: '阿福' } },
 }));
@@ -46,8 +48,8 @@ const mocks = vi.hoisted(() => ({
 // 夹具只给「token 非空」就永远测不到盒子上的那条路。
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => mocks.auth }));
 vi.mock('../../hooks/useTranslation', () => ({ useTranslation: () => ({
-  lang: 'cn',
-  t: (key: string, fallback?: string) => (({ 'result:black_win': '黑胜', 'result:white_win': '白胜' } as Record<string, string>)[key] ?? fallback ?? key),
+  lang: mocks.language,
+  t: (key: string, fallback?: string) => mocks.translations[key] ?? fallback ?? key,
 }) }));
 vi.mock('../../api/userGamesApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api/userGamesApi')>();
@@ -171,6 +173,8 @@ const stoneAt = (coord: string) => document.querySelector(`.kiosk-mini-board [da
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.language = 'cn';
+  mocks.translations = { 'result:black_win': '黑胜', 'result:white_win': '白胜' };
   mocks.auth = { token: 'token', isAuthenticated: true, user: { username: '阿福' } };
   mocks.list.mockResolvedValue(response([game('a'), game('b', { player_white: '柯洁', white_rank: '九段' })]));
   mocks.get.mockImplementation(async (_token: string, id: string) => detail(game(id)));
@@ -391,6 +395,18 @@ describe('屏 19 · 搜索与卡片信息', () => {
     expect(within(rows()[1]).getByText('升降级对弈')).toBeInTheDocument();
     expect(within(rows()[1]).getByText('黑胜6.5子')).toBeInTheDocument();
     expect(within(rows()[2]).getByText('人人对弈')).toBeInTheDocument();
+  });
+
+  it('保留日文历史卡片原有的白中押し勝ち结果', async () => {
+    mocks.language = 'jp';
+    mocks.translations = {
+      'review:white': '白', 'review:by_resign': '中押し', 'review:win': '勝ち',
+      'result:white_win': '白勝', 'result:resign': '中押',
+    };
+    mocks.list.mockResolvedValue(response([game('jp', { result: 'W+R' })]));
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    expect(rows()[0].querySelector('.record-match__result')).toHaveTextContent('白中押し勝ち');
   });
 
   it('镜像显示同局职业、业余和级位,保留长姓名与缺失说明而不取当前账号等级', async () => {

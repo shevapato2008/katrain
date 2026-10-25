@@ -623,7 +623,7 @@ function ReviewRow({ game, state, selected, username, t, lang, onSelect, onDelet
   const mine = yourColor(game, username);
   const ts = savedAt(game);
   const rawResult = game.result?.trim();
-  const result = !rawResult || /^void$/i.test(rawResult)
+  const result = (lang !== 'cn' && lang !== 'tw') || !rawResult || /^void$/i.test(rawResult)
     ? historyResult(game, t)
     : listResult(rawResult, t, game.rules, lang).label;
   // 没下完的那句话自己就带着手数(「下到第 22 手就退出了」),再挂一段「22 手」是同一个数说两遍。

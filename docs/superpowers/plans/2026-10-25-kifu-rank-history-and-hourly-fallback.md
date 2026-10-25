@@ -14,6 +14,8 @@
 
 ## Chunk 1: 最小数据基础与有界来源
 
+实施进度：foundation 已在 `32f1273812e` 完成，规范审与质量审均 Approved；聚焦 113 项通过。审核补齐了启动 DDL 排除、迟到冲突、损坏 SGF 单人隔离及 typed/unknown 到达顺序。临时 PostgreSQL 演练尚未取得环境，不将 SQLite 结果称作 PostgreSQL 并发证据；发布前显式迁移及约束核对仍须执行。其余 chunk 继续实施，尚未部署。
+
 ### Task 1: 两张增量表与纯等级解析
 
 **Files:**

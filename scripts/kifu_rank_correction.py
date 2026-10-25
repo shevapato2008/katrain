@@ -26,6 +26,7 @@ from katrain.kifu_ingest.ranks import (
     FORMAT_V2,
     MAX_MANIFEST_BYTES,
     freeze_game_ranks,
+    merge_rank_facts,
     validate_manifest_ranks,
     validate_rank_snapshot,
 )
@@ -307,7 +308,7 @@ def build_correction(engine, originals, *, matched_at=None):
             "original_manifest_sha256": PINNED_ORIGINALS[game["source_item_id"]]["manifest_sha256"],
             "expected_snapshots": preimages[game["source_item_id"]][1],
         }
-        manifest["rank_facts"].update(frozen["rank_facts"])
+        manifest["rank_facts"] = merge_rank_facts(manifest["rank_facts"], frozen["rank_facts"])
     return validate_correction(manifest)
 
 

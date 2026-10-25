@@ -126,16 +126,23 @@ class SQLAlchemyUserRepository(UserRepository):
         # before these authoritative name tables appear. A truly empty database
         # is bootstrapped with its history triggers in one transaction.
         fresh_database = not inspect(engine).get_table_names()
+        rank_tables = {"kifu_player_rank_history", "kifu_album_rank_snapshots"}
         startup_tables = [
             table for table in models_db.Base.metadata.sorted_tables
-            if table.name not in migrations.KIFU_NAME_TABLES | migrations.KIFU_EVENT_SELECTION_TABLES
+            if table.name not in (
+                migrations.KIFU_NAME_TABLES | migrations.KIFU_EVENT_SELECTION_TABLES | rank_tables
+            )
         ]
         if fresh_database:
             with engine.begin() as conn:
                 if engine.dialect.name == "sqlite":
                     # sqlite3 legacy transaction mode does not begin for DDL.
                     conn.exec_driver_sql("BEGIN")
-                models_db.Base.metadata.create_all(bind=conn)
+                # Rank tables are explicit-only even for a new application database.
+                models_db.Base.metadata.create_all(
+                    bind=conn,
+                    tables=[table for table in models_db.Base.metadata.sorted_tables if table.name not in rank_tables],
+                )
                 migrations.install_kifu_name_change_immutability(conn)
         else:
             # Refuse an unmigrated existing database before any startup DDL.

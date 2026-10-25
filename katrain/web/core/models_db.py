@@ -4,6 +4,7 @@ from sqlalchemy import (
     Integer,
     String,
     DateTime,
+    Date,
     Float,
     ForeignKey,
     ForeignKeyConstraint,
@@ -1101,6 +1102,73 @@ def _lower_sha256_check(column: str) -> str:
     for digit in "0123456789abcdef":
         remainder = f"replace({remainder}, '{digit}', '')"
     return f"length({column}) = 64 AND length({remainder}) = 0"
+
+
+class KifuPlayerRankHistory(Base):
+    """Immutable rank observations; the single active row may signal a conflict."""
+
+    __tablename__ = "kifu_player_rank_history"
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=False)
+    rank_value = Column(Integer, nullable=False)
+    rank_system = Column(String(24), nullable=False)
+    source_as_of = Column(Date, nullable=True)
+    valid_from = Column(Date, nullable=True)
+    observed_at = Column(DateTime(timezone=True), nullable=False)
+    last_checked_at = Column(DateTime(timezone=True), nullable=True)
+    source_kind = Column(String(32), nullable=False)
+    source_ref = Column(JSON, nullable=False)
+    evidence = Column(JSON, nullable=False)
+    content_sha256 = Column(String(64), nullable=False)
+    status = Column(String(16), nullable=False)
+    is_current = Column(Boolean, nullable=False, default=False, server_default=text("false"))
+
+    __table_args__ = (
+        UniqueConstraint("player_id", "content_sha256", name="uq_kifu_player_rank_fact"),
+        CheckConstraint(
+            "rank_system IN ('professional_dan', 'amateur_dan', 'kyu', 'dan_unspecified')",
+            name="ck_kifu_player_rank_system",
+        ),
+        CheckConstraint(
+            "rank_value >= 1 AND ((rank_system = 'kyu' AND rank_value <= 30) OR "
+            "(rank_system <> 'kyu' AND rank_value <= 9))",
+            name="ck_kifu_player_rank_value",
+        ),
+        CheckConstraint("status IN ('qualified', 'conflict')", name="ck_kifu_player_rank_status"),
+        CheckConstraint(_lower_sha256_check("content_sha256"), name="ck_kifu_player_rank_sha256"),
+        Index(
+            "uq_kifu_player_rank_current",
+            "player_id",
+            unique=True,
+            postgresql_where=text("is_current"),
+            sqlite_where=text("is_current"),
+        ),
+        Index("ix_kifu_player_rank_date", "player_id", "source_as_of"),
+    )
+
+
+class KifuAlbumRankSnapshot(Base):
+    """Frozen per-game overlay; deleting a referenced rank fact is forbidden."""
+
+    __tablename__ = "kifu_album_rank_snapshots"
+
+    id = Column(Integer, primary_key=True)
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=False)
+    side = Column(String(5), nullable=False)
+    rank_fact_id = Column(
+        Integer, ForeignKey("kifu_player_rank_history.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
+    snapshot = Column(JSON, nullable=False)
+    snapshot_sha256 = Column(String(64), nullable=False)
+    publication_key = Column(String(160), nullable=False)
+    native_batch_id = Column(Integer, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("album_id", "side", name="uq_kifu_album_rank_side"),
+        CheckConstraint("side IN ('black', 'white')", name="ck_kifu_album_rank_side"),
+        CheckConstraint(_lower_sha256_check("snapshot_sha256"), name="ck_kifu_album_rank_sha256"),
+    )
 
 
 class KifuEventSelectionBatch(Base):

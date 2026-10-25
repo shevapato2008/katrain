@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, expect, it, vi } from 'vitest';
 import KifuPage from './KifuPage';
@@ -34,6 +34,34 @@ it('uses twenty-record server pagination and numeric page jump', async () => {
   fireEvent.change(screen.getByRole('textbox', { name: '跳转页码' }), { target: { value: '2' } });
   fireEvent.click(screen.getByRole('button', { name: '跳转', exact: true }));
   await waitFor(() => expect(api.list).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, page_size: 20 })));
+});
+
+it('mirrors historical ranks around complete accessible names and uses this record raw rank as fallback', async () => {
+  const black = '示例中文很长的棋手姓名';
+  const white = 'Example Alexander Dinerchtein';
+  api.list.mockResolvedValue({ items: [{ ...albums[0], display_player_black: black, display_player_white: white,
+    display_black_rank: ' ', black_rank: '9p', display_white_rank: '9d', white_rank: '6k' }], total: 1 });
+  render(<MemoryRouter><KifuPage /></MemoryRouter>);
+  const card = await screen.findByRole('button', { name: /赛事 1/ });
+  const players = card.querySelectorAll('.record-match__player');
+  expect(players[0]).toHaveTextContent(`${black}职业9段`);
+  expect(players[1]).toHaveTextContent(`9段${white}`);
+  expect(within(card).getByText(black)).toHaveAttribute('title', black);
+  expect(within(card).getByText(white)).toHaveAttribute('title', white);
+  await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
+});
+
+it('shows absent historical ranks honestly and highlights black when white resigns', async () => {
+  api.list.mockResolvedValue({ items: [{ ...albums[0], result: '白认输' }, { ...albums[1], result: '白棋结果待核实', display_white_rank: '6k' }], total: 2 });
+  render(<MemoryRouter><KifuPage /></MemoryRouter>);
+  const card = await screen.findByRole('button', { name: /赛事 1/ });
+  expect(within(card).getAllByLabelText('等级未记录')).toHaveLength(2);
+  expect(within(card).getByText('黑中盘胜')).toBeInTheDocument();
+  expect(card.querySelector('.record-match__player--black')).toHaveClass('is-winner');
+  expect(card.querySelector('.record-match__player--white')).not.toHaveClass('is-winner');
+  const unknown = screen.getByRole('button', { name: /赛事 2/ });
+  expect(unknown.querySelector('.is-winner')).toBeNull();
+  expect(within(unknown).getByText('6级')).toBeInTheDocument();
 });
 
 it('unanalysed professional replay shows honest status and real range/step controls', async () => {

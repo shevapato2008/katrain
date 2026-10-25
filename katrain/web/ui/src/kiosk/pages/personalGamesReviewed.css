@@ -31,12 +31,6 @@
 .personal-game-head b{font-size:22px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .personal-game-head small{font-size:18px;color:var(--dim);white-space:nowrap}
 .personal-game-head .kiosk-icon{flex:none;width:22px;color:var(--accent)}
-.personal-game-match{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;margin-top:4px;font-size:20px}
-.personal-game-match>span{display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.personal-game-match>span:last-child{justify-content:flex-end}
-.personal-game-match em{justify-self:center;text-align:center;font-size:18px;font-style:normal;color:#c7e7cf;white-space:nowrap}
-.personal-game-stone{display:inline-block;flex:none;width:14px;height:14px;border-radius:50%;border:1px solid #95a49b;background:#080b09}
-.personal-game-stone.is-white{background:#f2f4ef}
 .personal-game-state{flex:none;margin-left:auto;font-size:14px;color:#acc8b3;opacity:.85;white-space:nowrap}
 .personal-game-delete{flex:none;align-self:center;display:grid;place-items:center;width:48px;height:48px;padding:0;border:1px solid #99675d;border-radius:11px;background:linear-gradient(#392f2c,#251d1c);color:#e99486;box-shadow:inset 0 1px #8c6d67,0 3px 0 #170d0c;cursor:pointer}
 .personal-game-delete svg{width:26px;height:26px}

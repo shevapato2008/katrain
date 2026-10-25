@@ -45,6 +45,10 @@ const mocks = vi.hoisted(() => ({
 // 可以逐条改:严格盒端 SSO 里 token 恒为 null 而人是登录的 —— 这两个量在盒上本来就不同步,
 // 夹具只给「token 非空」就永远测不到盒子上的那条路。
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => mocks.auth }));
+vi.mock('../../hooks/useTranslation', () => ({ useTranslation: () => ({
+  lang: 'cn',
+  t: (key: string, fallback?: string) => (({ 'result:black_win': '黑胜', 'result:white_win': '白胜' } as Record<string, string>)[key] ?? fallback ?? key),
+}) }));
 vi.mock('../../api/userGamesApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api/userGamesApi')>();
   return { ...actual, UserGamesAPI: { ...actual.UserGamesAPI, list: mocks.list, get: mocks.get, create: mocks.create, delete: mocks.deleteGame } };
@@ -374,7 +378,7 @@ describe('屏 19 · 搜索与卡片信息', () => {
     });
   });
 
-  it('卡片标明对局类型,并把结果写成「白中盘胜」「黑6.5子胜」', async () => {
+  it('卡片标明对局类型,并把结果写成「白中盘胜」「黑胜6.5子」', async () => {
     mocks.list.mockResolvedValue(response([
       game('free', { result: 'W+R' }),
       game('ranked', { game_type: 'ai_ladder_ranked', result: 'B+6.5' }),
@@ -385,8 +389,27 @@ describe('屏 19 · 搜索与卡片信息', () => {
     expect(within(rows()[0]).getByText('自由对弈')).toBeInTheDocument();
     expect(within(rows()[0]).getByText('白中盘胜')).toBeInTheDocument();
     expect(within(rows()[1]).getByText('升降级对弈')).toBeInTheDocument();
-    expect(within(rows()[1]).getByText('黑6.5子胜')).toBeInTheDocument();
+    expect(within(rows()[1]).getByText('黑胜6.5子')).toBeInTheDocument();
     expect(within(rows()[2]).getByText('人人对弈')).toBeInTheDocument();
+  });
+
+  it('镜像显示同局职业、业余和级位,保留长姓名与缺失说明而不取当前账号等级', async () => {
+    const black = '示例中文很长的棋手姓名';
+    const white = 'Example Alexander Dinerchtein';
+    mocks.list.mockResolvedValue(response([
+      game('known', { player_black: black, player_white: white, black_rank: '9p', white_rank: '9d' }),
+      game('unknown', { black_rank: null, white_rank: '6k' }),
+    ]));
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    const players = rows()[0].querySelectorAll('.record-match__player');
+    expect(players[0]).toHaveTextContent(`${black}职业9段`);
+    expect(players[1]).toHaveTextContent(`9段${white}`);
+    expect(within(rows()[0]).getByText(black)).toHaveAttribute('title', black);
+    expect(within(rows()[0]).getByText(white)).toHaveAttribute('title', white);
+    expect(within(rows()[1]).getByLabelText('等级未记录')).toHaveTextContent('—');
+    expect(within(rows()[1]).getByText('6级')).toBeInTheDocument();
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(1));
   });
 });
 

@@ -11,8 +11,8 @@ import {
   cacheSgf, getCachedSgf, getProgress, listRecent,
   type BaipuProgress, type BaipuRecentEntry,
 } from '../../api/baipuApi';
-import { translateResult } from '../../utils/resultTranslation';
-import { formatRank } from '../../utils/rank';
+import RecordMatchLine from '../components/records/RecordMatchLine';
+import { getListRank, listResult } from '../utils/listRecordPresentation';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { Icon } from '../shell/icons';
@@ -297,8 +297,7 @@ const KifuPage = () => {
               {visibleAlbums.map((a) => {
                 const event = a.display_event ?? '';
                 const round = a.display_round_name ?? '';
-                const winner = /^[Bb黑]/.test(a.result || '') ? 'black'
-                  : /^[Ww白]/.test(a.result || '') ? 'white' : null;
+                const result = listResult(a.result, t, a.rules, lang);
                 return (
                   <button
                     type="button"
@@ -322,21 +321,11 @@ const KifuPage = () => {
                         <span>{a.move_count} {t('kifu:moves_unit', '手')}</span>
                       </span>
                     </span>
-                    <span className="kifu-record__match">
-                      <span className={`kifu-record__player${winner === 'black' ? ' is-winner' : ''}`}>
-                        <span className="kifu-record__stone kifu-record__stone--black" aria-hidden="true" />
-                        <span className="kifu-record__name">{a.display_player_black ?? t('game:black_side', '黑方')}</span>
-                        {a.display_black_rank && <small>{formatRank(a.display_black_rank, t)}</small>}
-                      </span>
-                      <span className={`kifu-record__result${winner ? ` kifu-record__result--${winner}` : ''}`}>
-                        {translateResult(a.result, t, a.rules)}
-                      </span>
-                      <span className={`kifu-record__player kifu-record__player--white${winner === 'white' ? ' is-winner' : ''}`}>
-                        {a.display_white_rank && <small>{formatRank(a.display_white_rank, t)}</small>}
-                        <span className="kifu-record__name">{a.display_player_white ?? t('game:white_side', '白方')}</span>
-                        <span className="kifu-record__stone kifu-record__stone--white" aria-hidden="true" />
-                      </span>
-                    </span>
+                    <RecordMatchLine variant="kifu"
+                      black={{ name: a.display_player_black ?? t('game:black_side', '黑方'), rank: getListRank(a.display_black_rank, a.black_rank, t) }}
+                      white={{ name: a.display_player_white ?? t('game:white_side', '白方'), rank: getListRank(a.display_white_rank, a.white_rank, t) }}
+                      result={result.label} winner={result.winner}
+                      unknownRankLabel={t('review:rank_not_recorded', '等级未记录')} />
                   </button>
                 );
               })}

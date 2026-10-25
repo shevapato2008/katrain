@@ -6,7 +6,8 @@ import KifuPage from '../pages/KifuPage';
 import { kioskTheme } from '../theme';
 
 const { getAlbums, language } = vi.hoisted(() => ({ getAlbums: vi.fn(), language: { current: 'cn' } }));
-vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums } }));
+vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums, getAlbum: () => Promise.resolve({ sgf_content: '(;SZ[19])' }) } }));
+vi.mock('../../api/baipuApi', () => ({ BaipuAPI: { load: () => Promise.resolve({ board_size: 19, steps: [] }) }, listRecent: () => [] }));
 vi.mock('../../hooks/useTranslation', () => ({
   useTranslation: () => ({
     lang: language.current,
@@ -87,7 +88,7 @@ describe('棋谱 kiosk 语言展示', () => {
     const view = renderPage();
     const row = await screen.findByRole('button', { name: /cn-event.*cn-black.*cn-white/ });
     expect(row).toHaveTextContent('9段');
-    expect(row).toHaveTextContent('黑胜中盘');
+    expect(row).toHaveTextContent('黑中盘胜');
     expect(within(row).getByRole('img', { name: '查看分析报告' })).toBeInTheDocument();
     expect(within(row).queryByText('来源')).not.toBeInTheDocument();
 

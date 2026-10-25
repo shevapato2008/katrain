@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from functools import lru_cache
 import hashlib
 import json
 from pathlib import Path
 import re
 
-from sqlalchemy import DateTime, func, or_, select, text
+from sqlalchemy import Date, DateTime, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -20,6 +20,7 @@ from katrain.web.core.models_db import (
     KifuNameChange, KifuNameResearchEvidence, KifuNameSourceRegistry,
     KifuPlayer, KifuPlayerAlias, KifuPlayerName, KifuRawEventName, KifuRawEventValue,
     KifuRawPlayerName, KifuRawPlayerValue, KifuSource,
+    KifuPlayerRankHistory, KifuAlbumRankSnapshot,
 )
 from katrain.web.kifu.identity import normalize_alias
 from katrain.web.kifu.name_candidates import (
@@ -48,6 +49,7 @@ _UNDO_TABLES = {model.__tablename__: model.__table__ for model in (
     KifuNameSourceRegistry, KifuNameResearchEvidence, KifuPlayerName, KifuEventName,
     KifuRawPlayerName, KifuRawEventName, KifuPlayer, KifuEvent,
     KifuRawPlayerValue, KifuRawEventValue, KifuAlbum, KifuAlbumEventSelection,
+    KifuPlayerRankHistory, KifuAlbumRankSnapshot,
 )}
 _ADVISORY_LOCK_KEY = 720220261002
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -232,7 +234,7 @@ def _image(conn, table, row_id: int) -> dict | None:
     row = conn.execute(select(table).where(_primary_key(table) == row_id)).mappings().one_or_none()
     if row is None:
         return None
-    return {key: value.isoformat() if isinstance(value, datetime) else value for key, value in row.items()}
+    return {key: value.isoformat() if isinstance(value, (datetime, date)) else value for key, value in row.items()}
 
 
 def _team_raw_scope(conn) -> dict:
@@ -632,6 +634,8 @@ def _values_for_table(table, image: dict) -> dict:
     for key, value in values.items():
         if value is not None and isinstance(table.c[key].type, DateTime):
             values[key] = datetime.fromisoformat(value)
+        elif value is not None and isinstance(table.c[key].type, Date):
+            values[key] = date.fromisoformat(value)
     return values
 
 

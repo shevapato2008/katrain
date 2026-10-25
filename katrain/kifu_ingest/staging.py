@@ -107,6 +107,117 @@ class Stage:
     def items(self):
         return list(self.manifest["items"].values())
 
+    def _rank_decision_path(self, game):
+        from katrain.kifu_ingest.ranks import rank_decision_request
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        request = rank_decision_request(game)
+        digest = canonical_sha256(request)
+        directory = self.root / "rank-snapshots"
+        if directory.is_symlink() or directory.exists() and not directory.is_dir():
+            raise ValueError("rank checkpoint directory unsafe")
+        path = directory / f"{digest}.json"
+        if path.is_symlink():
+            raise ValueError("rank checkpoint symlink unsafe")
+        return path, request, digest
+
+    @staticmethod
+    def _validate_rank_decision(game, decision):
+        from katrain.kifu_ingest.ranks import FORMAT_V2, validate_manifest_ranks
+
+        if not isinstance(decision, dict) or set(decision) != {"rank_snapshots", "rank_observations", "rank_facts"}:
+            raise ValueError("rank checkpoint decision invalid")
+        validate_manifest_ranks(
+            {
+                "format": FORMAT_V2,
+                "games": [{**game, **{key: decision[key] for key in ("rank_snapshots", "rank_observations")}}],
+                "rank_facts": decision["rank_facts"],
+            }
+        )
+
+    def load_rank_decision(self, game):
+        """Load the entire immutable decision, including an explicit unknown."""
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        path, request, digest = self._rank_decision_path(game)
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        except FileNotFoundError:
+            return None
+        except OSError as exc:
+            raise ValueError("rank checkpoint unsafe") from exc
+        with os.fdopen(fd, "rb") as handle:
+            info = os.fstat(handle.fileno())
+            if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= 16 * 1024 * 1024:
+                raise ValueError("rank checkpoint exceeds limit or is not a regular file")
+            raw = handle.read(info.st_size + 1)
+            if len(raw) != info.st_size or os.fstat(handle.fileno()).st_size != info.st_size:
+                raise ValueError("rank checkpoint changed during read")
+        try:
+            record = json.loads(raw)
+            if (
+                set(record) != {"version", "request", "request_sha256", "decision", "decision_sha256"}
+                or type(record["version"]) is not int
+                or record["version"] != 1
+                or record["request"] != request
+                or record["request_sha256"] != digest
+                or canonical_sha256(record["request"]) != digest
+                or canonical_sha256(record["decision"]) != record["decision_sha256"]
+            ):
+                raise ValueError("rank checkpoint binding mismatch")
+            self._validate_rank_decision(game, record["decision"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("rank checkpoint invalid") from exc
+        return record["decision"]
+
+    def save_rank_decision(self, game, decision):
+        """Persist once; a retry must reuse rather than replace a frozen grade."""
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        path, request, digest = self._rank_decision_path(game)
+        existing = self.load_rank_decision(game)
+        if existing is not None:
+            if existing != decision:
+                raise ValueError("rank decision is already frozen")
+            return
+        self._validate_rank_decision(game, decision)
+        payload = json.dumps(
+            {
+                "version": 1,
+                "request": request,
+                "request_sha256": digest,
+                "decision": decision,
+                "decision_sha256": canonical_sha256(decision),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            allow_nan=False,
+        ).encode("utf-8")
+        if len(payload) > 16 * 1024 * 1024:
+            raise ValueError("rank checkpoint exceeds limit")
+        path.parent.mkdir(mode=0o700, exist_ok=True)
+        os.chmod(path.parent, 0o700)
+        # Link the fully fsynced temporary file without overwriting an existing decision.
+        fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=".rank-")
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
+            try:
+                os.link(temporary, path)
+            except FileExistsError:
+                if self.load_rank_decision(game) != decision:
+                    raise ValueError("rank decision is already frozen")
+            for directory in (path.parent, self.root):
+                directory_fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+                try:
+                    os.fsync(directory_fd)
+                finally:
+                    os.close(directory_fd)
+        finally:
+            os.unlink(temporary)
+
     def _name_decision_path(self, request):
         from katrain.web.kifu.name_candidates import canonical_sha256
 

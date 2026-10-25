@@ -618,7 +618,8 @@ def apply_rank_fact(conn, player_id, fact, *, source_games=()):
 
     The existing player row is locked even when no current observation exists.
     Conflict is sticky pending explicit review; older uploads cannot roll back a
-    dated projection. The caller owns commit, journal and undo dependencies.
+    typed projection. Explicit dan may refine a later unspecified observation.
+    The caller owns commit, journal and undo dependencies.
     """
     _require(conn.in_transaction(), "rank apply requires caller transaction")
     owner = conn.scalar(select(KifuPlayer.id).where(KifuPlayer.id == player_id).with_for_update())
@@ -652,6 +653,12 @@ def apply_rank_fact(conn, player_id, fact, *, source_games=()):
     # Unspecified dan may acquire a professional/amateur type; it is still dan,
     # so a dan/kyu disagreement remains a real cross-system conflict.
     system_conflict = len(systems) > 1 and ("dan_unspecified" not in systems or "kyu" in systems)
+    if (
+        current is not None
+        and current["rank_system"] == "dan_unspecified"
+        and fact["rank_system"] in {"professional_dan", "amateur_dan"}
+    ):
+        active = True  # Prefer the explicit fact, preserving its own true basis date.
     if current is not None and current["rank_system"] != "dan_unspecified" and fact["rank_system"] == "dan_unspecified":
         active = False  # Keep the last known typed projection; retain the raw observation below.
     status = "qualified"

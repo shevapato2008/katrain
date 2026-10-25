@@ -413,3 +413,33 @@ def test_newer_unspecified_dan_marks_known_kyu_conflict_without_overwriting_curr
         )
         assert current["content_sha256"] == kyu["content_sha256"]
         assert current["status"] == "conflict"
+
+
+@pytest.mark.parametrize("typed_rank", ["8p", "8d"])
+@pytest.mark.parametrize("newer_unspecified_rank", ["八段", "九段"])
+@pytest.mark.parametrize("arrival_order", ["typed_first", "unspecified_first"])
+def test_explicit_dan_refines_newer_unspecified_current_in_either_arrival_order(
+    engine, typed_rank, newer_unspecified_rank, arrival_order
+):
+    typed, tg = source_fact(rank=typed_rank, day="2026-10-01", item="1")
+    unspecified, ug = source_fact(rank=newer_unspecified_rank, day="2026-10-03", item="2")
+    observations = [(typed, tg), (unspecified, ug)]
+    if arrival_order == "unspecified_first":
+        observations.reverse()
+    with engine.begin() as conn:
+        for fact, game in observations:
+            apply(conn, fact, game)
+        rows = conn.execute(select(m.KifuPlayerRankHistory.__table__)).mappings().all()
+        assert len(rows) == 2
+        current = next(row for row in rows if row["is_current"])
+        assert current["content_sha256"] == typed["content_sha256"]
+        assert current["rank_system"] == typed["rank_system"] and current["rank_value"] == 8
+        assert current["source_as_of"].isoformat() == "2026-10-01"
+        assert current["status"] == "qualified"
+        raw_unknown = next(row for row in rows if row["content_sha256"] == unspecified["content_sha256"])
+        assert raw_unknown["source_as_of"].isoformat() == "2026-10-03"
+        assert raw_unknown["rank_system"] == "dan_unspecified"
+        assert raw_unknown["rank_value"] == unspecified["rank_value"]
+    result = ranks().lookup_library_rank_facts(engine, [{"id": 1, "canonical_name": "甲", "status": "qualified"}])[1]
+    assert result["status"] == "qualified"
+    assert result["fact"]["content_sha256"] == typed["content_sha256"]

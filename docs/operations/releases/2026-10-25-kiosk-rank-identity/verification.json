@@ -1,0 +1,52 @@
+{
+  "source": "2e7640d892e311f3fc8ed70d4dc5a32e470d2ddf",
+  "parent": "350c927bade41104670fbe4b414a8ceb60e5bb62",
+  "pid": "591004",
+  "manifest_files": 1189,
+  "protected_files_unchanged": 462,
+  "typography": {
+    "font": "kaiti",
+    "size": "large"
+  },
+  "health": {
+    "status": "ok",
+    "version": "1.17.1",
+    "engines": {
+      "local": "reachable",
+      "cloud": "unconfigured"
+    }
+  },
+  "vision": {
+    "enabled": true,
+    "camera_connected": true,
+    "pose_locked": false,
+    "sync_state": "unbound",
+    "bound_session_id": null,
+    "camera_ready": true,
+    "geometry_ready": true,
+    "model_ready": true,
+    "recognition_ready": true,
+    "led_connected": true
+  },
+  "previous_policy_preserved": true,
+  "served_entries": [
+    {
+      "route": "/kiosk/play",
+      "entry": "/assets/index-DRVGXi41.js",
+      "served_builds": [
+        "static-kiosk-2d"
+      ],
+      "sha256": "b20c8825b6868d5ab6d416ea4d640b9184933b2171775f5aae0edfcb172a7081"
+    },
+    {
+      "route": "/galaxy/tutorial",
+      "entry": "/assets/index-DRVGXi41.js",
+      "served_builds": [
+        "static-kiosk-2d"
+      ],
+      "sha256": "b20c8825b6868d5ab6d416ea4d640b9184933b2171775f5aae0edfcb172a7081"
+    }
+  ],
+  "other_services_unchanged": true,
+  "physical_board_actions": false
+}

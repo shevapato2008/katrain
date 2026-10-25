@@ -22,4 +22,23 @@
 
 fresh独立gpt-6-astra/max已批准固定产品候选0a6399cf163c05f225b6205d5b034b124c57daa3的有限方案：显示修复＋本轮调查结论，无must-fix。它独立核对源证据SHA、官方脚本SHA、8处消费者片段、运行时字典与组件值；UI11/11 helper测试及真实1024×600预览通过，职业九段/业余6段/6级/未记录均18px，无长名碰撞或页面溢出。负责人71项聚焦及TypeScript通过。批准不等于这三盘或全库历史段位已补齐。
 
-发布版本与RK回执在完成已授权流程后单独记录。
+已按授权完成feature追最新develop、推feature/develop、Smartbox gitlink与main推送及RK定向发布。
+
+
+## 发布回执
+
+| 项目 | 已核实版本 |
+| --- | --- |
+| published develop / feature | 2e7640d892e311f3fc8ed70d4dc5a32e470d2ddf |
+| Smartbox origin/main | 350c927bade41104670fbe4b414a8ceb60e5bb62 |
+| vendor/katrain gitlink | 同上述published develop |
+| RK实际进程KATRAIN_BUILD_SHA | 同上述published develop，PID591004 |
+| 实际严格入口 | index-DRVGXi41.js |
+
+[设备校验](verification.json)、[原页与身份恢复、真实卡片文字](browser-verification.json)、[文件清单](manifest.json)。原fan身份200、原/kiosk/kifu及1024×600保持；三条实际卡片的未知段位均明确显示未记录、18px，结果相对姓名中心差0px。相应列表原rank仍为null：这验证显示修复，**不代表三盘真实历史段位已补齐**。
+
+391受控Python、19路policy及同源full/strict共1189文件哈希通过；462项配置/身份/模型/标定/字体保护状态不变。只有围棋服务重启，Kiosk及围棋target未动，原19路功能验证保持。没有中央棋谱数据回填、profile查询、新采集、翻译、冻结包变更、付费报告或实体盘操作。SSO通过真实主页→围棋恢复，不读取/注入cookie。
+
+回滚材料保留于 /mnt/data/smartbox-deployments/20261025-kiosk-rank-identity-2e7640d89/，含[rollback.sh](rollback.sh)、旧受控源码/静态/标记与在线SQLite快照；未执行回滚。本次上传包/解包候选已清理，源站调查和原始采集缓存未动。现场截图仅留本机/tmp/kiosk-rank-identity-release-20261025/receipt/browser-after-restored.png和设备同发布目录。
+
+本回执提交仅文档，在独立evidence分支保存；实际部署源码保持上表published develop。

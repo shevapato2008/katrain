@@ -324,9 +324,7 @@ const KifuPage = () => {
                     <RecordMatchLine variant="kifu"
                       black={{ name: a.display_player_black ?? t('game:black_side', '黑方'), rank: getListRank(a.display_black_rank, a.black_rank, t, lang) }}
                       white={{ name: a.display_player_white ?? t('game:white_side', '白方'), rank: getListRank(a.display_white_rank, a.white_rank, t, lang) }}
-                      result={result.label} winner={result.winner}
-                      unknownRankText={t('review:rank_unrecorded_short', lang === 'cn' ? '未记录' : lang === 'tw' ? '未記錄' : 'Unrecorded')}
-                      unknownRankLabel={t('review:rank_not_recorded', lang === 'cn' ? '等级未记录' : lang === 'tw' ? '等級未記錄' : 'Rank not recorded')} />
+                      result={result.label} winner={result.winner} />
                   </button>
                 );
               })}

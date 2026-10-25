@@ -51,11 +51,12 @@ it('mirrors historical ranks around complete accessible names and uses this reco
   await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
 });
 
-it('shows absent historical ranks honestly and highlights black when white resigns', async () => {
+it('omits absent historical ranks and highlights black when white resigns', async () => {
   api.list.mockResolvedValue({ items: [{ ...albums[0], result: '白认输' }, { ...albums[1], result: '白棋结果待核实', display_white_rank: '6k' }], total: 2 });
   render(<MemoryRouter><KifuPage /></MemoryRouter>);
   const card = await screen.findByRole('button', { name: /赛事 1/ });
-  expect(within(card).getAllByLabelText('等级未记录')).toHaveLength(2);
+  expect(card.querySelectorAll('.record-match__rank')).toHaveLength(0);
+  expect(card).not.toHaveTextContent('未记录');
   expect(within(card).getByText('黑中盘胜')).toBeInTheDocument();
   expect(card.querySelector('.record-match__player--black')).toHaveClass('is-winner');
   expect(card.querySelector('.record-match__player--white')).not.toHaveClass('is-winner');

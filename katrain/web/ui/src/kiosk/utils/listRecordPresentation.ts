@@ -5,7 +5,7 @@ type Translate = (key: string, fallback?: string) => string;
 type Rank = string | number | null | undefined;
 type Winner = 'B' | 'W';
 
-const UNKNOWN_RANK = /^(?:unknown|no rank|null|undefined|等级未知|等級未知|未知|\?|—|-)$/i;
+const UNKNOWN_RANK = /^(?:unknown|no rank|null|undefined|等级未知|等級未知|未知|未记录|未記錄|unrecorded|rank not recorded|\?|—|-)$/i;
 const RESIGNATION = /^R(?:esign(?:ation)?)?$/i;
 const CHINESE_DIGITS = '零一二三四五六七八九';
 

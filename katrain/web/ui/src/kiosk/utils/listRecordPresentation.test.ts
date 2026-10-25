@@ -45,6 +45,9 @@ describe('getListRank', () => {
     expect(getListRank(undefined, null, cn)).toBeNull();
     expect(getListRank('', ' ', cn)).toBeNull();
     expect(getListRank('?', '等级未知', cn)).toBeNull();
+    expect(getListRank('未记录', null, cn)).toBeNull();
+    expect(getListRank('未記錄', '—', cn)).toBeNull();
+    expect(getListRank('Unrecorded', '', tFor('en'), 'en')).toBeNull();
   });
 
   it('keeps the existing free-text rank convention', () => {

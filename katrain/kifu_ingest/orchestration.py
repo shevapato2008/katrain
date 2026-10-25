@@ -33,7 +33,7 @@ from katrain.kifu_ingest.exclusions import assert_source_allowed, historical_exc
 from katrain.kifu_ingest.inventory import scan_inventory
 from katrain.kifu_ingest.names import NameRejected, NeedsCredentials, QwenNameService, wiki_sources
 from katrain.kifu_ingest.preparation import derive_metadata
-from katrain.kifu_ingest.ranks import FORMAT_V2, freeze_game_ranks, preflight_manifest_budget
+from katrain.kifu_ingest.ranks import FORMAT_V2, freeze_game_ranks, merge_rank_facts, preflight_manifest_budget
 from katrain.kifu_ingest.state import StateStore
 from katrain.kifu_ingest.sync import IdentityCheckUnavailable, validate_test_verification
 from katrain.web.kifu.name_candidates import canonical_sha256
@@ -264,11 +264,10 @@ async def prepare_staged_games(
         if decision_store is not None:
             await asyncio.to_thread(decision_store.save_rank_decision, game, decision)
         rank_decisions[game["source_item_id"]] = decision
-    rank_facts = {}
+    rank_facts = merge_rank_facts(*(rank_decisions[game["source_item_id"]]["rank_facts"] for game in rank_games))
     for game in rank_games:
         decision = rank_decisions[game["source_item_id"]]
         game.update({key: decision[key] for key in ("rank_snapshots", "rank_observations")})
-        rank_facts.update(decision["rank_facts"])
     rank_counts = {
         key: 0
         for key in ("cached", "source", "library_current", "unknown", "unknown_identity", "unknown_system", "conflict")

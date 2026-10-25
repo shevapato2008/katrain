@@ -292,6 +292,11 @@ def _validate_manifest(manifest, expected):
             derived = derive_metadata(content, game.get("source_metadata"), source_key)
         except Exception as exc:
             raise PublicationError(f"SGF/metadata cannot be prepared: {exc}") from exc
+        if manifest["format"] == FORMAT_V2:
+            _require(
+                all(metadata.get(f"{side}_rank") == derived.get(f"{side}_rank") for side in ("black", "white")),
+                "album original rank assertion differs from deterministic SGF/source derivation",
+            )
         _require(
             all(value == derived.get(field) for field, value in metadata.items()),
             "album metadata differs from deterministic SGF/source derivation",

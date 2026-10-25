@@ -219,3 +219,70 @@ async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile
     }
     assert counts["external_rank_refreshes"] == 0
     assert counts["profile_refresh_deferred"] is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("reverse", [False, True])
+async def test_cached_and_new_games_share_fact_without_rewriting_observation_times(tmp_path, monkeypatch, reverse):
+    from katrain.kifu_ingest import orchestration
+    from katrain.kifu_ingest.staging import Stage
+    from tests.test_kifu_incremental_decision_resume import ReviewedNames, _qualified_target, _stage_game
+
+    stage = Stage(tmp_path / "mixed-observations")
+    cached = _stage_game(stage, "99999001")
+    fresh = _stage_game(stage, "99999002")
+    monkeypatch.setattr(
+        orchestration,
+        "lookup_qualified_identities",
+        lambda *a, **kw: {
+            "player": {
+                name: {"id": i, "canonical_name": name, "status": "qualified"}
+                for i, name in enumerate(("Black", "White"), 1)
+            },
+            "event": {"Match": {"status": "unresolved"}},
+        },
+    )
+    monkeypatch.setattr(orchestration, "qualified_raw_event_templates", lambda *a, **kw: {"templates": {}})
+    monkeypatch.setattr(orchestration, "_professional_identity_evidence", lambda *a: {})
+    observed = ["2026-10-01T00:00:00+00:00", "2026-10-02T00:00:00+00:00"]
+
+    def lookup(*args, **kwargs):
+        current = fact()
+        current["observed_at"] = observed.pop(0)
+        return {1: {"status": "qualified", "fact": current}}
+
+    monkeypatch.setattr(orchestration, "lookup_library_rank_facts", lookup)
+    names = ReviewedNames("mixed-times")
+
+    async def prepare(items):
+        return await orchestration.prepare_staged_games(
+            items,
+            engine=object(),
+            client=object(),
+            names=names,
+            check_identities=_qualified_target,
+            decision_store=stage,
+        )
+
+    first = await prepare([cached])
+    frozen_game = deepcopy(first["games"][0])
+    cached_path = stage._rank_decision_path(frozen_game)[0]
+    cached_bytes = cached_path.read_bytes()
+    order = [fresh, cached] if reverse else [cached, fresh]
+    result = await prepare(order)
+    by_source = {item["source_item_id"]: item for item in result["games"]}
+    assert by_source["99999001"]["rank_snapshots"] == frozen_game["rank_snapshots"]
+    assert by_source["99999002"]["rank_snapshots"]["black"]["observed_at"] == "2026-10-02T00:00:00+00:00"
+    assert next(iter(result["rank_facts"].values()))["observed_at"] == "2026-10-01T00:00:00+00:00"
+    assert cached_path.read_bytes() == cached_bytes
+    all_paths = [stage._rank_decision_path(item)[0] for item in result["games"]]
+    all_bytes = {path: path.read_bytes() for path in all_paths}
+    monkeypatch.setattr(
+        orchestration, "lookup_library_rank_facts", lambda *a, **kw: pytest.fail("cached retry queried ranks")
+    )
+    replay = await prepare(list(reversed(order)))
+    assert replay["rank_facts"] == result["rank_facts"]
+    assert {item["source_item_id"]: item["rank_snapshots"] for item in replay["games"]} == {
+        source_id: item["rank_snapshots"] for source_id, item in by_source.items()
+    }
+    assert all(path.read_bytes() == content for path, content in all_bytes.items())

@@ -199,3 +199,76 @@ def test_rank_only_correction_has_finite_fast_path_and_preserves_original_receip
         for row in rank_state(engine)[KifuAlbumRankSnapshot.__tablename__]
         if row["album_id"] != receipt["games"][0]["album_id"]
     ]
+
+
+def test_shared_fact_keeps_earlier_native_observation_and_each_snapshot_on_replay(tmp_path):
+    from katrain.kifu_ingest.ranks import snapshot_sha256
+
+    engine = make_engine(tmp_path / "observed-times.db")
+    source = ranked("99999000", "7p", "2026-09-01")
+    original_fact = next(iter(source["rank_facts"].values()))
+    original_fact["observed_at"] = "2026-09-15T00:00:00+00:00"
+    source_snapshot = source["games"][0]["rank_snapshots"]["black"]
+    source_snapshot["observed_at"] = original_fact["observed_at"]
+    source_snapshot["content_sha256"] = snapshot_sha256(source_snapshot)
+    publish(engine, source)
+    t1 = {**deepcopy(original_fact), "observed_at": "2026-10-01T00:00:00+00:00"}
+    t2 = {**deepcopy(original_fact), "observed_at": "2026-10-02T00:00:00+00:00"}
+    value = ranked("99999001", "", "2026-10-01", {"Black": t1})
+    second = ranked("99999002", "", "2026-10-02", {"Black": t2})
+    value["games"].extend(second["games"])
+    snapshots = deepcopy([game["rank_snapshots"] for game in value["games"]])
+    receipt = publish(engine, value)
+    before = rank_state(engine)
+    assert publish(engine, value) == receipt
+    assert rank_state(engine) == before
+    with engine.connect() as conn:
+        history = conn.execute(select(KifuPlayerRankHistory)).mappings().one()
+        assert history["observed_at"].isoformat() == "2026-09-15T00:00:00"
+        for result, expected in zip(receipt["games"], snapshots):
+            stored = (
+                conn.execute(select(KifuAlbumRankSnapshot).where(KifuAlbumRankSnapshot.album_id == result["album_id"]))
+                .mappings()
+                .all()
+            )
+            assert {row["side"]: row["snapshot"] for row in stored} == expected
+            assert all(row["snapshot_sha256"] == row["snapshot"]["content_sha256"] for row in stored)
+
+
+@pytest.mark.parametrize("rank_source", ["sgf", "source_metadata"])
+@pytest.mark.parametrize("omit", [True, False])
+def test_v2_original_rank_cannot_be_omitted_or_null_to_publish_fallback(tmp_path, rank_source, omit):
+    from hashlib import sha256
+    from katrain.web.core.models_db import Base
+
+    engine = make_engine(tmp_path / "original-rank-assertion.db")
+    grade = ranked("99999000", "7p", "2026-01-01")
+    publish(engine, grade)
+    library_fact = next(iter(grade["rank_facts"].values()))
+    value = ranked("99999001", "9p", "2026-02-01")
+    game = value["games"][0]
+    if rank_source == "source_metadata":
+        game["sgf_content"] = game["sgf_content"].replace("BR[9p]", "")
+        game["sgf_sha256"] = game["raw_sha256"] = sha256(game["sgf_content"].encode()).hexdigest()
+        game["source_metadata"] = {"black_rank": "9p"}
+        game["metadata"] = derive_metadata(game["sgf_content"], game["source_metadata"])
+    if omit:
+        game["metadata"].pop("black_rank")
+    else:
+        game["metadata"]["black_rank"] = None
+    decision = freeze_game_ranks(game, library_facts={"Black": library_fact})
+    game.update({key: decision[key] for key in ("rank_snapshots", "rank_observations")})
+    value["rank_facts"] = decision["rank_facts"]
+    assert game["rank_snapshots"]["black"]["display_rank"] == "7p"
+
+    def all_table_images():
+        with engine.connect() as conn:
+            return {
+                table.name: [dict(row) for row in conn.execute(select(table)).mappings()]
+                for table in Base.metadata.sorted_tables
+            }
+
+    before = all_table_images()
+    with pytest.raises(ValueError):
+        publish(engine, value)
+    assert all_table_images() == before

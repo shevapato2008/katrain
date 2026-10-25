@@ -57,6 +57,25 @@ def snapshot_sha256(snapshot):
     return canonical_sha256({key: value for key, value in snapshot.items() if key != "content_sha256"})
 
 
+def merge_rank_facts(*fact_maps):
+    """Deduplicate immutable facts using their earliest observation as representative.
+
+    Snapshot observation/match times belong to each frozen decision. Selecting a
+    shared fact representative never changes the input maps or those snapshots.
+    """
+    merged = {}
+    for facts in fact_maps:
+        for digest, fact in facts.items():
+            validate_rank_fact(fact)
+            _require(digest == fact["content_sha256"], "rank fact map hash mismatch")
+            previous = merged.get(digest)
+            if previous is None or datetime.fromisoformat(fact["observed_at"]) < datetime.fromisoformat(
+                previous["observed_at"]
+            ):
+                merged[digest] = fact
+    return merged
+
+
 def rank_decision_request(game):
     """The independent disk cache key intentionally excludes mutable profiles."""
     return {
@@ -396,8 +415,7 @@ def validate_manifest_ranks(manifest):
                 and snapshot["rank_system"] == (parsed["rank_system"] if parsed else None)
                 and snapshot["source_proof"] == _proof(fact)
                 and snapshot["source_as_of"] == (fact["source_as_of"] if fact else None)
-                and snapshot["valid_from"] == (fact["valid_from"] if fact else None)
-                and (not fact or snapshot["observed_at"] == fact["observed_at"]),
+                and snapshot["valid_from"] == (fact["valid_from"] if fact else None),
                 "rank snapshot fact decision mismatch",
             )
         if manifest.get("mode") == "rank_only":

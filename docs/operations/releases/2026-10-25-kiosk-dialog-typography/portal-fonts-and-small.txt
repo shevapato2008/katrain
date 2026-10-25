@@ -1,0 +1,18 @@
+### Result
+{"fonts":{"fonts":[{"familyName":"TW-Kai","postScriptName":"TW-Kai-98_1","isCustomFont":true,"glyphCount":6}]},"sizes":[{"text":"从棋谱库导入","size":"24px"},{"text":"职业棋谱示例","size":"18px"},{"text":"棋手甲  · 棋手乙 ","size":"14px"},{"text":"2026-10-25 · 186 手","size":"14px"},{"text":"取消","size":"18px"},{"text":"仅导入","size":"18px"},{"text":"导入并生成普通报告","size":"18px"},{"text":"导入并生成深度报告","size":"18px"}]}
+### Ran Playwright code
+```js
+await (async page => {
+const cdp=await page.context().newCDPSession(page); await cdp.send('DOM.enable'); await cdp.send('CSS.enable');
+const {root}=await cdp.send('DOM.getDocument',{depth:-1});const {nodeId}=await cdp.send('DOM.querySelector',{nodeId:root.nodeId,selector:'.MuiDialogTitle-root'});
+const fonts=await cdp.send('CSS.getPlatformFontsForNode',{nodeId});
+await cdp.detach();
+const title=page.locator('.MuiDialogTitle-root');
+await page.evaluate(()=>{document.body.style.setProperty('--kiosk-size-step','4px');document.body.setAttribute('data-kiosk-font-size','small');});
+await page.waitForFunction(()=>getComputedStyle(document.querySelector('.MuiDialogTitle-root')).fontSize==='24px');
+const sizes=await page.getByRole('dialog').evaluate(el=>[...el.querySelectorAll('.MuiDialogTitle-root,.MuiTypography-root,.MuiDialogActions-root button')].map(n=>({text:n.textContent,size:getComputedStyle(n).fontSize})));
+await page.screenshot({path:'output/playwright/kiosk-dialog-typography/library-after-small.png',animations:'disabled'});
+await page.evaluate(()=>{document.body.style.setProperty('--kiosk-size-step','0px');document.body.setAttribute('data-kiosk-font-size','large');});
+return {fonts,sizes};
+})(page);
+```

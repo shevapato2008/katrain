@@ -1,0 +1,86 @@
+/* Kiosk dialogs use the same unscaled 18 / 22 / 28px hierarchy as the pages.
+   applyTextSizing records these bases, including body portals, and applies the
+   device's size step. Keep chart/board coordinates and their fixed geometry out
+   of these prose/control rules. The body scope disappears on kiosk teardown. */
+body[data-kiosk-typography] .MuiDialog-root .MuiDialogTitle-root {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  line-height: 1.25;
+  flex-shrink: 0;
+}
+body[data-kiosk-typography] .MuiDialog-root .MuiDialogContent-root {
+  font-size: 22px;
+  line-height: 1.5;
+  min-height: 0;
+}
+body[data-kiosk-typography] .MuiDialog-root .MuiDialogContent-root :is(.MuiTypography-body1, .MuiTypography-h6) {
+  font-size: 22px;
+  line-height: 1.5;
+}
+body[data-kiosk-typography] .MuiDialog-root :is(.MuiTypography-body2, .MuiTypography-caption, .MuiFormHelperText-root, .MuiAlert-message, .MuiInputLabel-root) {
+  font-size: 18px;
+  line-height: 1.5;
+}
+body[data-kiosk-typography] .MuiDialog-root :is(.MuiButton-root, .MuiInputBase-root, .MuiPaginationItem-root) {
+  font-size: 22px;
+  min-height: 44px;
+}
+body[data-kiosk-typography] .MuiDialog-root .MuiButton-root .MuiTypography-body2 {
+  font-size: 22px;
+}
+body[data-kiosk-typography] .MuiDialog-root .MuiDialogActions-root {
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* Legacy canvas confirmation templates: history deletion, research actions,
+   OGS challenge/accept and platform sign-out. Preserve their danger colours. */
+.kiosk :is(.rvconfirm .empty, .cdlg__box, .calib-light-dialog) {
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+  font-family: var(--font-serif);
+}
+.kiosk :is(.rvconfirm .empty h4, .cdlg__box h3, .calib-light-dialog h2) {
+  font-size: 28px;
+  line-height: 1.25;
+}
+.kiosk :is(.rvconfirm .empty p, .cdlg__box p, .calib-light-dialog p) {
+  font-size: 22px;
+  line-height: 1.5;
+}
+.kiosk :is(.rvconfirm__row, .cdlg__acts, .calib-light-actions) {
+  flex-wrap: wrap;
+}
+.kiosk :is(.rvconfirm__row, .cdlg__acts, .calib-light-actions) button {
+  min-height: 48px;
+  height: auto;
+  padding: 8px 18px;
+  font-size: 22px;
+  line-height: 1.25;
+}
+.kiosk :is(.calib-light-eyebrow, .calib-light-voice, .calib-light-dialog .calib-light-error, .wdlg__num, .wdlg__num b, .wdlg__tc) {
+  font-size: 18px;
+}
+
+/* Existing explanation overlays already use the page's font stack. */
+.kiosk :is(.kiosk-console__help-dialog, .u-ogs .ogs-notice) { font-size: 22px; }
+.kiosk :is(.u-ogs .ogs-notice h2, .pvp-spectator__dialog h2) { font-size: 28px; }
+.kiosk :is(.growth-help-popover button, .u-ogs .ogs-notice .ogs-key, [data-testid="tutorial-figure-video"] > button) { font-size: 22px; }
+
+/* The platform level sheet is a scrollable choice list, not a fixed data plot. */
+.kiosk .aisheet__head { font-size: 22px; }
+.kiosk .aisheet__head button { min-height: 44px; font-size: 22px; }
+.kiosk .aisheet__row > button {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 2px 10px;
+  padding: 8px 10px;
+  font-family: var(--font-serif);
+}
+.kiosk .aisheet__row .nm { font-size: 22px; }
+.kiosk .aisheet__row .idx { font-size: 18px; }
+.kiosk .aisheet__row .el {
+  grid-column: 2;
+  font-size: 18px;
+  white-space: normal;
+}

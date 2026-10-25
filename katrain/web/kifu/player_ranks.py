@@ -21,10 +21,12 @@ from katrain.web.core.models_db import (
     KifuAlbumRankSnapshot,
     KifuNameResearchEvidence,
     KifuPlayer,
+    KifuPlayerAlias,
     KifuPlayerName,
     KifuPlayerRankHistory,
 )
 from katrain.web.kifu.name_parse import parse_player
+from katrain.web.kifu.identity import normalize_alias, player_identity_name
 
 FACT_VERSION = "kifu-rank-fact-v1"
 IDENTITY_VERSION = "official-rank-identity-v1"
@@ -534,11 +536,53 @@ def lookup_professional_identity_evidence(conn, player_ids):
     return {player_id: min(values, key=lambda value: value["capture_sha256"]) for player_id, values in proofs.items()}
 
 
+def build_rank_identity_index(conn, *, raw_values=()):
+    """Check finite raw tokens against canonical owners and indexed exact aliases.
+
+    Canonical names have no stored normalized key, so read only their ID/name
+    scalars once per batch and apply the existing Python normalizer exactly.
+    Native publishers can instead pass their already-built player identity index.
+    No display translations, SGF bodies or fuzzy matches participate.
+    """
+    _require(
+        isinstance(raw_values, (list, tuple, set))
+        and len(raw_values) <= MAX_PLAYERS * 4
+        and all(isinstance(value, str) and len(value) <= 1024 for value in raw_values),
+        "rank raw identity limit exceeded",
+    )
+    tokens = {normalize_alias(player_identity_name(value)) for value in raw_values}
+    tokens.discard("")
+    index = {token: set() for token in tokens}
+    if not tokens:
+        return index
+    for player_id, canonical in conn.execute(select(KifuPlayer.id, KifuPlayer.canonical_name)):
+        token = normalize_alias(canonical)
+        if token in index:
+            index[token].add(player_id)
+    for player_id, token in conn.execute(
+        select(KifuPlayerAlias.player_id, KifuPlayerAlias.normalized_alias).where(
+            KifuPlayerAlias.normalized_alias.in_(tokens)
+        )
+    ):
+        index[token].add(player_id)
+    return index
+
+
+def _rank_source_name_matches(raw_name, player_id, allowed_names, identity_index):
+    token = normalize_alias(player_identity_name(raw_name))
+    owners = set(identity_index.get(token, ()))
+    if owners:
+        return owners == {player_id}
+    # Approved same-owner display strings only verify a previously bound owner;
+    # they never become an index for discovering or merging identities.
+    return _name(player_identity_name(raw_name)) in {_name(name) for name in allowed_names}
+
+
 def _source_path(ref):
     return f"data/kifu-album/{ref['source_key']}/{ref['source_item_id']}.sgf"
 
 
-def verify_rank_fact_for_player(conn, player_id, fact, *, source_games=()):
+def verify_rank_fact_for_player(conn, player_id, fact, *, source_games=(), identity_index=None):
     """Verify fixed evidence against this target's exact owner and captured sources.
 
     source_games may anchor exact manifest games that have not been inserted yet.
@@ -554,9 +598,12 @@ def verify_rank_fact_for_player(conn, player_id, fact, *, source_games=()):
         _require(proof in proofs.get(player_id, []), "professional capture differs from approved owner evidence")
     grade, ref = fact["evidence"]["grade"], fact["source_ref"]
     allowed_names = {canonical} | names.get(player_id, set())
+    if identity_index is None:
+        identity_index = build_rank_identity_index(conn, raw_values=[grade["raw_name"]])
+    _require(isinstance(identity_index, dict), "rank identity index invalid")
     _require(
-        _name(parse_player(grade["raw_name"], grade["raw_rank"]).name) in {_name(name) for name in allowed_names},
-        "source name differs from bound owner",
+        _rank_source_name_matches(grade["raw_name"], player_id, allowed_names, identity_index),
+        "source alias/name differs from unique bound owner",
     )
     anchored = False
     _require(isinstance(source_games, (list, tuple)) and len(source_games) <= 100, "source games bound exceeded")
@@ -613,7 +660,7 @@ def _row_fact(row, canonical_name):
     return validate_rank_fact(fact)
 
 
-def apply_rank_fact(conn, player_id, fact, *, source_games=()):
+def apply_rank_fact(conn, player_id, fact, *, source_games=(), identity_index=None):
     """Append/deduplicate within the native publisher's existing write transaction.
 
     The existing player row is locked even when no current observation exists.
@@ -624,7 +671,7 @@ def apply_rank_fact(conn, player_id, fact, *, source_games=()):
     _require(conn.in_transaction(), "rank apply requires caller transaction")
     owner = conn.scalar(select(KifuPlayer.id).where(KifuPlayer.id == player_id).with_for_update())
     _require(owner is not None, "rank player owner missing")
-    verify_rank_fact_for_player(conn, player_id, fact, source_games=source_games)
+    verify_rank_fact_for_player(conn, player_id, fact, source_games=source_games, identity_index=identity_index)
     h = KifuPlayerRankHistory.__table__
     duplicate = (
         conn.execute(select(h).where(h.c.player_id == player_id, h.c.content_sha256 == fact["content_sha256"]))
@@ -796,6 +843,7 @@ def lookup_library_rank_facts(engine, resolved_players, *, observed_at=None):
             .label("n"),
         ).subquery()
         candidates = conn.execute(select(ordered).where(ordered.c.n <= 3)).mappings().all()
+        identity_index = build_rank_identity_index(conn, raw_values=[row["raw_name"] for row in candidates])
         # This aggregate also sees the fourth/later same-day raw grade. It reads
         # scalar indexed-owner rows only, never a whole-library SGF scan.
         latest = (
@@ -840,7 +888,7 @@ def lookup_library_rank_facts(engine, resolved_players, *, observed_at=None):
             rows = by_player.get(player_id, [])
             result[player_id] = {"status": "unknown_system", "reason": "no_verifiable_raw_rank"}
             facts = []
-            allowed_names = {_name(requested[player_id])} | {_name(name) for name in names.get(player_id, set())}
+            allowed_names = {requested[player_id]} | names.get(player_id, set())
             proof = min(proofs[player_id], key=lambda value: value["capture_sha256"]) if proofs.get(player_id) else None
             for row in rows:
                 path = re.fullmatch(
@@ -865,9 +913,10 @@ def lookup_library_rank_facts(engine, resolved_players, *, observed_at=None):
                     # under their exact indexed side FK. Reuse the batch owner
                     # context instead of a per-person query/verification loop.
                     grade = fact["evidence"]["grade"]
-                    if _name(parse_player(grade["raw_name"], grade["raw_rank"]).name) not in allowed_names or _name(
-                        parse_player(grade["raw_name"], grade["raw_rank"]).name
-                    ) != _name(parse_player(row["raw_name"], row["raw_rank"]).name):
+                    if not _rank_source_name_matches(grade["raw_name"], player_id, allowed_names, identity_index) or (
+                        normalize_alias(player_identity_name(grade["raw_name"]))
+                        != normalize_alias(player_identity_name(row["raw_name"]))
+                    ):
                         continue
                 except (ValueError, TypeError, ParseError):
                     continue

@@ -263,7 +263,7 @@ def test_professional_downgrade_among_recent_raw_candidates_is_conflict(engine):
 def test_resolved_id_owner_mismatch_or_ambiguity_never_uses_names_as_identity_index(engine):
     with engine.begin() as conn:
         conn.execute(
-            m.KifuPlayer.__table__.insert(), [{"id": 1, "canonical_name": "甲"}, {"id": 2, "canonical_name": "甲"}]
+            m.KifuPlayer.__table__.insert(), [{"id": 1, "canonical_name": "甲"}, {"id": 2, "canonical_name": "乙"}]
         )
         album(conn, "甲", rank="7p")
     assert (
@@ -307,7 +307,7 @@ def test_batch_lookup_uses_constant_number_of_reads_and_fetches_only_candidates(
     finally:
         event.remove(engine, "before_cursor_execute", capture)
     assert len(results) == 6 and all(v["status"] == "qualified" for v in results.values())
-    assert len(statements) <= 8, len(statements)
+    assert len(statements) <= 10, len(statements)
     assert sum("SELECT kifu_albums.id, kifu_albums.sgf_content" in sql for sql in statements) == 1
 
 
@@ -418,3 +418,102 @@ def test_malformed_candidate_is_isolated_from_other_candidates_and_players(engin
         assert results[1]["fact"]["rank_value"] == 7
     assert results[2]["status"] == "qualified"
     assert results[2]["fact"]["rank_value"] == 8
+
+
+def rank_alias(conn, player_id, alias):
+    from katrain.web.kifu.identity import normalize_alias
+
+    conn.execute(
+        m.KifuPlayerAlias.__table__.insert().values(
+            player_id=player_id, alias=alias, normalized_alias=normalize_alias(alias)
+        )
+    )
+
+
+@pytest.mark.parametrize("raw_alias", ["Raw Alias", "ＲＡＷ    Alias"])
+def test_unique_bound_alias_can_verify_source_observation_and_library_grade(engine, raw_alias):
+    with engine.begin() as conn:
+        conn.execute(
+            m.KifuPlayer.__table__.insert(), [{"id": 1, "canonical_name": "甲"}, {"id": 2, "canonical_name": "乙"}]
+        )
+        rank_alias(conn, 1, "Raw Alias")
+        album(conn, "甲", player_id=1, root_name=raw_alias, rank="7p")
+        content = f"(;PB[{raw_alias}]PW[乙]BR[7p]DT[2026-10-19])"
+        game = {
+            "source_key": "19x19",
+            "source_item_id": "new",
+            "sgf_content": content,
+            "identities": {"black": {"canonical_name": "甲"}},
+        }
+        fact = ranks.build_source_rank_fact(
+            canonical_name="甲",
+            raw_rank="7p",
+            sgf_content=content,
+            slot="black",
+            source_ref={"source_key": "19x19", "source_item_id": "new"},
+        )
+        ranks.verify_rank_fact_for_player(conn, 1, fact, source_games=[game])
+    result = ranks.lookup_library_rank_facts(engine, [resolved("甲")])[1]
+    assert result["status"] == "qualified", result
+    assert result["fact"]["rank_value"] == 7
+    with engine.begin() as conn:
+        ranks.verify_rank_fact_for_player(conn, 1, result["fact"])
+        identity_index = ranks.build_rank_identity_index(conn, raw_values=[raw_alias, "甲"])
+        statements = []
+
+        def capture(_conn, _cursor, statement, _parameters, _context, _executemany):
+            statements.append(statement)
+
+        event.listen(conn, "before_cursor_execute", capture)
+        try:
+            assert (
+                ranks.apply_rank_fact(conn, 1, result["fact"], identity_index=identity_index)["status"] == "qualified"
+            )
+        finally:
+            event.remove(conn, "before_cursor_execute", capture)
+        assert not any("FROM kifu_players" in sql and "WHERE" not in sql for sql in statements)
+
+
+@pytest.mark.parametrize("collision", ["another_alias", "another_canonical", "only_other_owner"])
+def test_alias_ambiguity_or_wrong_owner_cannot_authorize_rank_fact(engine, collision):
+    with engine.begin() as conn:
+        conn.execute(
+            m.KifuPlayer.__table__.insert(),
+            [
+                {"id": 1, "canonical_name": "甲"},
+                {"id": 2, "canonical_name": "Raw Alias" if collision == "another_canonical" else "乙"},
+            ],
+        )
+        if collision != "only_other_owner":
+            rank_alias(conn, 1, "Raw Alias")
+        if collision != "another_canonical":
+            rank_alias(conn, 2, "RAW ALIAS")
+        album(conn, "甲", player_id=1, root_name="ＲＡＷ    Alias", rank="7p")
+        content = "(;PB[ＲＡＷ    Alias]PW[乙]BR[7p]DT[2026-10-19])"
+        game = {
+            "source_key": "19x19",
+            "source_item_id": "new",
+            "sgf_content": content,
+            "identities": {"black": {"canonical_name": "甲"}},
+        }
+        fact = ranks.build_source_rank_fact(
+            canonical_name="甲",
+            raw_rank="7p",
+            sgf_content=content,
+            slot="black",
+            source_ref={"source_key": "19x19", "source_item_id": "new"},
+        )
+        with pytest.raises(ValueError, match="alias|owner|ambiguous"):
+            ranks.verify_rank_fact_for_player(conn, 1, fact, source_games=[game])
+    assert ranks.lookup_library_rank_facts(engine, [resolved("甲")])[1]["status"] != "qualified"
+
+
+def test_rank_identity_index_preserves_exact_nfkc_casefold_collision_semantics(engine):
+    with engine.begin() as conn:
+        conn.execute(
+            m.KifuPlayer.__table__.insert(),
+            [{"id": 1, "canonical_name": "甲"}, {"id": 2, "canonical_name": "ＳＴＲＡＳＳＥ"}],
+        )
+        rank_alias(conn, 1, "Straße")
+        index = ranks.build_rank_identity_index(conn, raw_values=["  STRASSE 九段", "not alias"])
+    assert index == {"strasse": {1, 2}, "not alias": set()}

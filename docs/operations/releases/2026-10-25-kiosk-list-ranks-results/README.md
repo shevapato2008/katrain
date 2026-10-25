@@ -41,6 +41,6 @@ Writing Plans计划经独立Astra Max两轮R2 Approved；subagent-driven-develop
 
 [文件清单](manifest.json)、[设备健康与保护校验](verification.json)。现场截图仅保留本机/tmp/kiosk-list-ranks-results-release-20261025/receipt/browser-after-restored.png及设备同发布目录，不把个人历史截图加入远端源码；上方对比图为明确标注的匿名真实React预览。
 
-设备回滚保留在 /mnt/data/smartbox-deployments/20261025-kiosk-list-ranks-results-c49cbb442/，含[rollback.sh](rollback.sh)、旧受控源码/静态/标记、在线数据库快照及保护哈希。回滚未执行，不覆盖当前数据库或标定。已清理本次上传包和解包候选，回滚保留；根盘约2GiB、数据盘约15GiB可用。
+设备回滚保留在 /mnt/data/smartbox-deployments/20261025-kiosk-list-ranks-results-c49cbb442/，含[rollback.sh](rollback.sh)、旧受控源码/静态/标记、在线数据库快照及保护哈希。回滚未执行，不覆盖当前数据库或标定。已清理本次上传包和解包候选，回滚保留；根盘约2GiB、数据盘约14GiB可用。
 
 本提交仅增加发布回执，在独立evidence分支保存；设备与Smartbox仍指向上表已审核的published develop，不把回执提交误报为新设备源码。

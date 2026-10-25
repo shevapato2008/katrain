@@ -1,0 +1,512 @@
+[
+  {
+    "evidence_id": 1709,
+    "player_id": 9,
+    "canonical_name": "上野梨纱",
+    "status": "approved",
+    "reviewed_at": "2026-10-05 16:25:23.484839+00:00",
+    "captures": [
+      {
+        "path": ".research.source_checks[0]",
+        "keys": [
+          "source_id",
+          "query",
+          "url",
+          "fetched_at",
+          "http_status",
+          "status",
+          "body_sha256",
+          "body_path",
+          "body_excerpt",
+          "language_basis",
+          "observed_lang",
+          "candidate_name",
+          "identity_basis",
+          "identity_bridges",
+          "owner"
+        ],
+        "references": {
+          "source_id": "goratings-zh",
+          "url": "https://www.goratings.org/zh/players/2146.html",
+          "body_sha256": "8be0888379002f7fb7a3c1c57691e31991dd13bd565e7ba3fe217512ba7c6113"
+        },
+        "body_chars": 1558,
+        "rank_excerpts": []
+      },
+      {
+        "path": ".research.source_checks[0].identity_bridges[0]",
+        "keys": [
+          "source_id",
+          "url",
+          "resolved_url",
+          "fetched_at",
+          "http_status",
+          "body_sha256",
+          "body_path",
+          "text_path",
+          "title",
+          "heading",
+          "html_lang",
+          "excerpt",
+          "body_excerpt"
+        ],
+        "references": {
+          "source_id": "nihon-kiin",
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki000489.html",
+          "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000489.html",
+          "body_sha256": "f48f200d51e37470c2c08641cce5b2d3afa7ac37fd5825a93d9433662af7c4ca"
+        },
+        "body_chars": 1400,
+        "rank_excerpts": [
+          "棋戦 棋士 大会・イベント 施設案内 出版・販売 会員・免状 日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 2"
+        ]
+      },
+      {
+        "path": ".research.original_language_evidence",
+        "keys": [
+          "body_path",
+          "body_sha256",
+          "fetched_at",
+          "body_excerpt",
+          "identity_basis"
+        ],
+        "references": {
+          "body_sha256": "f48f200d51e37470c2c08641cce5b2d3afa7ac37fd5825a93d9433662af7c4ca"
+        },
+        "body_chars": 1400,
+        "rank_excerpts": [
+          "棋戦 棋士 大会・イベント 施設案内 出版・販売 会員・免状 日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 2"
+        ]
+      }
+    ]
+  },
+  {
+    "evidence_id": 742,
+    "player_id": 30,
+    "canonical_name": "藤泽里菜",
+    "status": "approved",
+    "reviewed_at": "2026-10-05 11:21:08.566765+00:00",
+    "captures": [
+      {
+        "path": ".research.source_checks[0]",
+        "keys": [
+          "source_id",
+          "query",
+          "url",
+          "fetched_at",
+          "http_status",
+          "status",
+          "body_sha256",
+          "body_path",
+          "body_excerpt",
+          "language_basis",
+          "observed_lang",
+          "candidate_name",
+          "identity_basis",
+          "article_evidence",
+          "identity_corroboration",
+          "owner"
+        ],
+        "references": {
+          "source_id": "wikipedia-zh",
+          "url": "https://zh.wikipedia.org/zh-hans/%E8%97%A4%E6%BE%A4%E9%87%8C%E8%8F%9C",
+          "body_sha256": "2d91b6e15f78ae6363aee1c4a3302e69dca12ad52d917aad245f8026182482a9"
+        },
+        "body_chars": 550,
+        "rank_excerpts": []
+      },
+      {
+        "path": ".research.source_checks[0].identity_corroboration",
+        "keys": [
+          "source_id",
+          "url",
+          "fetched_at",
+          "http_status",
+          "body_sha256",
+          "body_path",
+          "body_excerpt",
+          "identity_basis",
+          "original_name"
+        ],
+        "references": {
+          "source_id": "nihon-kiin",
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki000434_5.html",
+          "body_sha256": "61a7ba268b0685e3f989f4ebc61bb9259dacd3b4606a02bc9ef8dc1708c5a7f0"
+        },
+        "body_chars": 1400,
+        "rank_excerpts": [
+          " 大会・イベント 施設案内 出版・販売 会員・免状 日本棋院ホーム 棋士 藤沢　里菜 藤沢　里菜 （フジサワ　リナ / FUJISAWA, Rina） ファンメッセージ 性別 女 棋士段位 七段 出身地 埼玉県 所属 日本棋院東京本院 タイトル数 27 タイトル/称号 女流本因坊 ナショナルチーム 参加棋士 プロフィール 1998年（平成10年）9月18日生。埼玉県出身。故 藤沢秀行名"
+        ]
+      },
+      {
+        "path": ".research.original_language_evidence",
+        "keys": [
+          "body_path",
+          "body_sha256",
+          "fetched_at",
+          "body_excerpt",
+          "identity_basis"
+        ],
+        "references": {
+          "body_sha256": "61a7ba268b0685e3f989f4ebc61bb9259dacd3b4606a02bc9ef8dc1708c5a7f0"
+        },
+        "body_chars": 1400,
+        "rank_excerpts": [
+          " 大会・イベント 施設案内 出版・販売 会員・免状 日本棋院ホーム 棋士 藤沢　里菜 藤沢　里菜 （フジサワ　リナ / FUJISAWA, Rina） ファンメッセージ 性別 女 棋士段位 七段 出身地 埼玉県 所属 日本棋院東京本院 タイトル数 27 タイトル/称号 女流本因坊 ナショナルチーム 参加棋士 プロフィール 1998年（平成10年）9月18日生。埼玉県出身。故 藤沢秀行名"
+        ]
+      }
+    ]
+  },
+  {
+    "evidence_id": 1232,
+    "player_id": 483,
+    "canonical_name": "唐奕",
+    "status": "approved",
+    "reviewed_at": "2026-10-05 14:21:15.122279+00:00",
+    "captures": [
+      {
+        "path": ".research.source_checks[0]",
+        "keys": [
+          "source_id",
+          "query",
+          "url",
+          "fetched_at",
+          "http_status",
+          "status",
+          "body_sha256",
+          "body_path",
+          "body_excerpt",
+          "language_basis",
+          "observed_lang",
+          "candidate_name",
+          "identity_basis",
+          "article_evidence",
+          "identity_corroboration",
+          "owner"
+        ],
+        "references": {
+          "source_id": "wikipedia-zh",
+          "url": "https://zh.wikipedia.org/zh-hans/%E5%94%90%E5%A5%95%20%28%E5%9B%B4%E6%A3%8B%29",
+          "body_sha256": "6da835c7632f69621c2d7101c4ac5c9064534bf7a87c322107d475fde74f3176"
+        },
+        "body_chars": 355,
+        "rank_excerpts": []
+      },
+      {
+        "path": ".research.source_checks[0].identity_corroboration",
+        "keys": [
+          "source_id",
+          "url",
+          "fetched_at",
+          "http_status",
+          "body_sha256",
+          "body_path",
+          "body_excerpt",
+          "identity_basis",
+          "original_name"
+        ],
+        "references": {
+          "source_id": "weiqi-association-api",
+          "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+          "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+        },
+        "body_chars": 1480,
+        "rank_excerpts": [
+          "y\":\"1961-09-01\",\"playerRating\":\"2400.00\"},{\"playerNo\":\"CWA000149\",\"playerName\":\"唐奕\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://www.cwql.org.cn/file/player/17266548795863114564000.png\",\"playerGende",
+          "thday\":\"1988-01-22\",\"playerRating\":\"2258.70\"},{\"playerNo\":\"CWA000851\",\"playerName\":\"涂季康\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://cwa-web.oss-cn-beijing.aliyuncs.com/player/17794248238601742937192.pn",
+          "thday\":\"2010-01-16\",\"playerRating\":\"2347.80\"},{\"playerNo\":\"CWA001097\",\"playerName\":\"唐锦潮\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1949-07-07\"},{\"playerNo\":\"CWA001100\",\"pl",
+          "layerGender\":1,\"playerBirthday\":\"1949-07-07\"},{\"playerNo\":\"CWA001100\",\"playerName\":\"田小侬\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1965-05-12\"},{\"playerNo\":\"CWA000111\",\"pl",
+          "playerGender\":1,\"playerBirthday\":\"1965-05-12\"},{\"playerNo\":\"CWA000111\",\"playerName\":\"王谊\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1960-10-18\",\"playerRating\":\"2390.00\"},{\""
+        ]
+      },
+      {
+        "path": ".research.original_language_evidence",
+        "keys": [
+          "body_path",
+          "body_sha256",
+          "fetched_at",
+          "body_excerpt",
+          "identity_basis"
+        ],
+        "references": {
+          "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+        },
+        "body_chars": 1480,
+        "rank_excerpts": [
+          "y\":\"1961-09-01\",\"playerRating\":\"2400.00\"},{\"playerNo\":\"CWA000149\",\"playerName\":\"唐奕\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://www.cwql.org.cn/file/player/17266548795863114564000.png\",\"playerGende",
+          "thday\":\"1988-01-22\",\"playerRating\":\"2258.70\"},{\"playerNo\":\"CWA000851\",\"playerName\":\"涂季康\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://cwa-web.oss-cn-beijing.aliyuncs.com/player/17794248238601742937192.pn",
+          "thday\":\"2010-01-16\",\"playerRating\":\"2347.80\"},{\"playerNo\":\"CWA001097\",\"playerName\":\"唐锦潮\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1949-07-07\"},{\"playerNo\":\"CWA001100\",\"pl",
+          "layerGender\":1,\"playerBirthday\":\"1949-07-07\"},{\"playerNo\":\"CWA001100\",\"playerName\":\"田小侬\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1965-05-12\"},{\"playerNo\":\"CWA000111\",\"pl",
+          "playerGender\":1,\"playerBirthday\":\"1965-05-12\"},{\"playerNo\":\"CWA000111\",\"playerName\":\"王谊\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1960-10-18\",\"playerRating\":\"2390.00\"},{\""
+        ]
+      }
+    ]
+  },
+  {
+    "evidence_id": 1942,
+    "player_id": 575,
+    "canonical_name": "王爽",
+    "status": "approved",
+    "reviewed_at": "2026-10-05 18:02:07.974249+00:00",
+    "captures": [
+      {
+        "path": ".research.source_checks[0]",
+        "keys": [
+          "source_id",
+          "query",
+          "url",
+          "fetched_at",
+          "http_status",
+          "status",
+          "body_sha256",
+          "body_path",
+          "body_excerpt",
+          "language_basis",
+          "observed_lang",
+          "candidate_name",
+          "identity_basis",
+          "identity_bridges",
+          "owner"
+        ],
+        "references": {
+          "source_id": "goratings-zh",
+          "url": "https://www.goratings.org/zh/players/1287.html",
+          "body_sha256": "e1c32541da93ee9de14258f4b1e2017487763d80cb9f32567f45ffd8a39f5781"
+        },
+        "body_chars": 1400,
+        "rank_excerpts": []
+      },
+      {
+        "path": ".research.source_checks[0].identity_bridges[0]",
+        "keys": [
+          "key",
+          "canonical",
+          "gr_id",
+          "language",
+          "source_id",
+          "url",
+          "resolved_url",
+          "http_status",
+          "fetched_at",
+          "body_sha256",
+          "body_path",
+          "text_path",
+          "heading",
+          "excerpt",
+          "body_excerpt"
+        ],
+        "references": {
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000627",
+          "resolved_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000627",
+          "body_sha256": "6b6b10d11d8540d573784dc4a5d9e7e5d21cd91fb8f67ff5717670240faec0f0"
+        },
+        "body_chars": 760,
+        "rank_excerpts": [
+          "뉴스\n기록실\n기보감상\n기전정보\n바둑인광장\n바둑이야기\n기록실\n대국결과\n대국일정\n기사랭킹\n부문별 순위\n기사정보\n타이틀현황\n타이틀기록\n기사정보 상세\n왕솽(\n王爽\n)\n5단\n생년월일\n1995년 05월 16일\n소속\n중국\n통산전적\n기사랭킹\n승률 0.552\n183전 101승 82패\n--\n(2026년 10월 현재)\n특기사항\n승단이력\n◆ 1단\n/\n2012.0",
+          "단\n생년월일\n1995년 05월 16일\n소속\n중국\n통산전적\n기사랭킹\n승률 0.552\n183전 101승 82패\n--\n(2026년 10월 현재)\n특기사항\n승단이력\n◆ 1단\n/\n2012.03.12\n/\n◆ 3단\n/\n2017.08.08\n/\n◆ 4단\n/\n2019.05.22\n/\n◆ 5단\n/\n2023.05.09\n/\n경력사항\n최근대국\n더보기\n제13회 중국 여자",
+          "\n소속\n중국\n통산전적\n기사랭킹\n승률 0.552\n183전 101승 82패\n--\n(2026년 10월 현재)\n특기사항\n승단이력\n◆ 1단\n/\n2012.03.12\n/\n◆ 3단\n/\n2017.08.08\n/\n◆ 4단\n/\n2019.05.22\n/\n◆ 5단\n/\n2023.05.09\n/\n경력사항\n최근대국\n더보기\n제13회 중국 여자 갑조리그 13R\n리샤오시94\nVS\n",
+          "0.552\n183전 101승 82패\n--\n(2026년 10월 현재)\n특기사항\n승단이력\n◆ 1단\n/\n2012.03.12\n/\n◆ 3단\n/\n2017.08.08\n/\n◆ 4단\n/\n2019.05.22\n/\n◆ 5단\n/\n2023.05.09\n/\n경력사항\n최근대국\n더보기\n제13회 중국 여자 갑조리그 13R\n리샤오시94\nVS\n왕솽\n0수 흑 집승\n제13회 중국 여",
+          "--\n(2026년 10월 현재)\n특기사항\n승단이력\n◆ 1단\n/\n2012.03.12\n/\n◆ 3단\n/\n2017.08.08\n/\n◆ 4단\n/\n2019.05.22\n/\n◆ 5단\n/\n2023.05.09\n/\n경력사항\n최근대국\n더보기\n제13회 중국 여자 갑조리그 13R\n리샤오시94\nVS\n왕솽\n0수 흑 집승\n제13회 중국 여자 갑조리그 12R\n왕솽\nVS\n왕위보"
+        ]
+      },
+      {
+        "path": ".research.original_language_evidence",
+        "keys": [
+          "body_path",
+          "body_sha256",
+          "fetched_at",
+          "body_excerpt",
+          "identity_basis"
+        ],
+        "references": {
+          "body_sha256": "6b6b10d11d8540d573784dc4a5d9e7e5d21cd91fb8f67ff5717670240faec0f0"
+        },
+        "body_chars": 756,
+        "rank_excerpts": [
+          "록실\n기보감상\n기전정보\n바둑인광장\n바둑이야기\n기록실\n대국결과\n대국일정\n기사랭킹\n부문별 순위\n기사정보\n타이틀현황\n타이틀기록\n기사정보 상세\n왕솽(\n王爽\n)\n5단\n생년월일\n1995년 05월 16일\n소속\n중국\n통산전적\n기사랭킹\n승률 0.552\n183전 101승 82패\n--\n(2026년 10월 현재)\n특기사항\n승단이력\n◆ 1단\n/\n2012.0",
+          "단\n생년월일\n1995년 05월 16일\n소속\n중국\n통산전적\n기사랭킹\n승률 0.552\n183전 101승 82패\n--\n(2026년 10월 현재)\n특기사항\n승단이력\n◆ 1단\n/\n2012.03.12\n/\n◆ 3단\n/\n2017.08.08\n/\n◆ 4단\n/\n2019.05.22\n/\n◆ 5단\n/\n2023.05.09\n/\n경력사항\n최근대국\n더보기\n제13회 중국 여자",
+          "\n소속\n중국\n통산전적\n기사랭킹\n승률 0.552\n183전 101승 82패\n--\n(2026년 10월 현재)\n특기사항\n승단이력\n◆ 1단\n/\n2012.03.12\n/\n◆ 3단\n/\n2017.08.08\n/\n◆ 4단\n/\n2019.05.22\n/\n◆ 5단\n/\n2023.05.09\n/\n경력사항\n최근대국\n더보기\n제13회 중국 여자 갑조리그 13R\n리샤오시94\nVS\n",
+          "0.552\n183전 101승 82패\n--\n(2026년 10월 현재)\n특기사항\n승단이력\n◆ 1단\n/\n2012.03.12\n/\n◆ 3단\n/\n2017.08.08\n/\n◆ 4단\n/\n2019.05.22\n/\n◆ 5단\n/\n2023.05.09\n/\n경력사항\n최근대국\n더보기\n제13회 중국 여자 갑조리그 13R\n리샤오시94\nVS\n왕솽\n0수 흑 집승\n제13회 중국 여",
+          "--\n(2026년 10월 현재)\n특기사항\n승단이력\n◆ 1단\n/\n2012.03.12\n/\n◆ 3단\n/\n2017.08.08\n/\n◆ 4단\n/\n2019.05.22\n/\n◆ 5단\n/\n2023.05.09\n/\n경력사항\n최근대국\n더보기\n제13회 중국 여자 갑조리그 13R\n리샤오시94\nVS\n왕솽\n0수 흑 집승\n제13회 중국 여자 갑조리그 12R\n왕솽\nVS\n왕위보"
+        ]
+      }
+    ]
+  },
+  {
+    "evidence_id": 1177,
+    "player_id": 196,
+    "canonical_name": "周泓余",
+    "status": "approved",
+    "reviewed_at": "2026-10-05 12:40:36.756102+00:00",
+    "captures": [
+      {
+        "path": ".research.source_checks[0]",
+        "keys": [
+          "source_id",
+          "query",
+          "url",
+          "fetched_at",
+          "http_status",
+          "status",
+          "body_sha256",
+          "body_path",
+          "body_excerpt",
+          "language_basis",
+          "observed_lang",
+          "candidate_name",
+          "identity_basis",
+          "article_evidence",
+          "identity_corroboration",
+          "owner"
+        ],
+        "references": {
+          "source_id": "wikipedia-zh",
+          "url": "https://zh.wikipedia.org/zh-hans/%E5%91%A8%E6%B3%93%E4%BD%99",
+          "body_sha256": "6dfb913ef21ea1b749daef1bb2029de47819155ca722760b856b7fb205485be6"
+        },
+        "body_chars": 127,
+        "rank_excerpts": []
+      },
+      {
+        "path": ".research.source_checks[0].identity_corroboration",
+        "keys": [
+          "source_id",
+          "url",
+          "fetched_at",
+          "http_status",
+          "body_sha256",
+          "body_path",
+          "body_excerpt",
+          "identity_basis",
+          "original_name"
+        ],
+        "references": {
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001261",
+          "body_sha256": "eff98ab19798882037dd0c2103679e2e80e90984d725c38d279287c02aece7cc"
+        },
+        "body_chars": 926,
+        "rank_excerpts": [
+          " 기보감상 기전정보 바둑인광장 바둑이야기 기록실 대국결과 대국일정 기사랭킹 부문별 순위 기사정보 타이틀현황 타이틀기록 기사정보 상세 저우훙위( 周泓余 ) 7단 생년월일 2002년 07월 01일 소속 중국 통산전적 기사랭킹 승률 0.687 249전 171승 78패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2016.0",
+          "단 생년월일 2002년 07월 01일 소속 중국 통산전적 기사랭킹 승률 0.687 249전 171승 78패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2016.03.29 / ◆ 2단 / 2017.03.28 / ◆ 3단 / 2017.10.09 / 중국기원 발표 ◆ 4단 / 2018.05.06 / 중국기원 발표 ◆ 5단 / 2",
+          " 소속 중국 통산전적 기사랭킹 승률 0.687 249전 171승 78패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2016.03.29 / ◆ 2단 / 2017.03.28 / ◆ 3단 / 2017.10.09 / 중국기원 발표 ◆ 4단 / 2018.05.06 / 중국기원 발표 ◆ 5단 / 2019.10.30 / ◆ 6단 / 2",
+          "0.687 249전 171승 78패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2016.03.29 / ◆ 2단 / 2017.03.28 / ◆ 3단 / 2017.10.09 / 중국기원 발표 ◆ 4단 / 2018.05.06 / 중국기원 발표 ◆ 5단 / 2019.10.30 / ◆ 6단 / 2020.07.01 / ◆ 7단 / 2",
+          "년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2016.03.29 / ◆ 2단 / 2017.03.28 / ◆ 3단 / 2017.10.09 / 중국기원 발표 ◆ 4단 / 2018.05.06 / 중국기원 발표 ◆ 5단 / 2019.10.30 / ◆ 6단 / 2020.07.01 / ◆ 7단 / 2023.05.09 / 경력사항 2019년 - 제10"
+        ]
+      },
+      {
+        "path": ".research.original_language_evidence",
+        "keys": [
+          "body_path",
+          "body_sha256",
+          "fetched_at",
+          "body_excerpt",
+          "identity_basis"
+        ],
+        "references": {
+          "body_sha256": "eff98ab19798882037dd0c2103679e2e80e90984d725c38d279287c02aece7cc"
+        },
+        "body_chars": 926,
+        "rank_excerpts": [
+          " 기보감상 기전정보 바둑인광장 바둑이야기 기록실 대국결과 대국일정 기사랭킹 부문별 순위 기사정보 타이틀현황 타이틀기록 기사정보 상세 저우훙위( 周泓余 ) 7단 생년월일 2002년 07월 01일 소속 중국 통산전적 기사랭킹 승률 0.687 249전 171승 78패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2016.0",
+          "단 생년월일 2002년 07월 01일 소속 중국 통산전적 기사랭킹 승률 0.687 249전 171승 78패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2016.03.29 / ◆ 2단 / 2017.03.28 / ◆ 3단 / 2017.10.09 / 중국기원 발표 ◆ 4단 / 2018.05.06 / 중국기원 발표 ◆ 5단 / 2",
+          " 소속 중국 통산전적 기사랭킹 승률 0.687 249전 171승 78패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2016.03.29 / ◆ 2단 / 2017.03.28 / ◆ 3단 / 2017.10.09 / 중국기원 발표 ◆ 4단 / 2018.05.06 / 중국기원 발표 ◆ 5단 / 2019.10.30 / ◆ 6단 / 2",
+          "0.687 249전 171승 78패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2016.03.29 / ◆ 2단 / 2017.03.28 / ◆ 3단 / 2017.10.09 / 중국기원 발표 ◆ 4단 / 2018.05.06 / 중국기원 발표 ◆ 5단 / 2019.10.30 / ◆ 6단 / 2020.07.01 / ◆ 7단 / 2",
+          "년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2016.03.29 / ◆ 2단 / 2017.03.28 / ◆ 3단 / 2017.10.09 / 중국기원 발표 ◆ 4단 / 2018.05.06 / 중국기원 발표 ◆ 5단 / 2019.10.30 / ◆ 6단 / 2020.07.01 / ◆ 7단 / 2023.05.09 / 경력사항 2019년 - 제10"
+        ]
+      }
+    ]
+  },
+  {
+    "evidence_id": 1574,
+    "player_id": 503,
+    "canonical_name": "高星",
+    "status": "approved",
+    "reviewed_at": "2026-10-05 15:15:52.290555+00:00",
+    "captures": [
+      {
+        "path": ".research.source_checks[0]",
+        "keys": [
+          "source_id",
+          "query",
+          "url",
+          "fetched_at",
+          "http_status",
+          "status",
+          "body_sha256",
+          "body_path",
+          "body_excerpt",
+          "language_basis",
+          "observed_lang",
+          "candidate_name",
+          "identity_basis",
+          "identity_bridges",
+          "owner"
+        ],
+        "references": {
+          "source_id": "goratings-zh",
+          "url": "https://www.goratings.org/zh/players/1310.html",
+          "body_sha256": "e61b9f28fdd2309b36717aa9a58b86f6c9a1103ee03bcec3c4818a4dd1852fbc"
+        },
+        "body_chars": 1400,
+        "rank_excerpts": []
+      },
+      {
+        "path": ".research.source_checks[0].identity_bridges[0]",
+        "keys": [
+          "person",
+          "canonical",
+          "lang",
+          "url",
+          "resolved_url",
+          "fetched_at",
+          "http_status",
+          "body_sha256",
+          "body_path",
+          "text_path",
+          "title",
+          "heading",
+          "revision_id",
+          "html_lang",
+          "excerpt",
+          "body_excerpt"
+        ],
+        "references": {
+          "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20000805",
+          "resolved_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20000805",
+          "body_sha256": "21c074d315984440101260dce455dee5172a15b7dc70f41652388b7d73f4d87a"
+        },
+        "body_chars": 845,
+        "rank_excerpts": [
+          "기사정보 | 한국기원 기사정보 5단 가오싱 (高星) 생년월일 1996년 06월 14일 소속 중국 특기사항 승단이력 5단 / 2024.07.12 / 2024 중국 여자 갑조리그 4단 / 2017.11.05 / 중국기",
+          "기사정보 | 한국기원 기사정보 5단 가오싱 (高星) 생년월일 1996년 06월 14일 소속 중국 특기사항 승단이력 5단 / 2024.07.12 / 2024 중국 여자 갑조리그 4단 / 2017.11.05 / 중국기원 발표 3단 / 2017.04.03 / 2단 / 2015.04.13 / 1단 / 2",
+          "국기원 기사정보 5단 가오싱 (高星) 생년월일 1996년 06월 14일 소속 중국 특기사항 승단이력 5단 / 2024.07.12 / 2024 중국 여자 갑조리그 4단 / 2017.11.05 / 중국기원 발표 3단 / 2017.04.03 / 2단 / 2015.04.13 / 1단 / 2013.04.17 / 경력사항 2013년 07.02 제4회 인",
+          "1996년 06월 14일 소속 중국 특기사항 승단이력 5단 / 2024.07.12 / 2024 중국 여자 갑조리그 4단 / 2017.11.05 / 중국기원 발표 3단 / 2017.04.03 / 2단 / 2015.04.13 / 1단 / 2013.04.17 / 경력사항 2013년 07.02 제4회 인천 실내&무도 아시안게임 바둑 혼성페어 금메달(",
+          "국 특기사항 승단이력 5단 / 2024.07.12 / 2024 중국 여자 갑조리그 4단 / 2017.11.05 / 중국기원 발표 3단 / 2017.04.03 / 2단 / 2015.04.13 / 1단 / 2013.04.17 / 경력사항 2013년 07.02 제4회 인천 실내&무도 아시안게임 바둑 혼성페어 금메달(파트너 펑리야오) 07.05 제4"
+        ]
+      },
+      {
+        "path": ".research.original_language_evidence",
+        "keys": [
+          "body_path",
+          "body_sha256",
+          "fetched_at",
+          "body_excerpt",
+          "identity_basis"
+        ],
+        "references": {
+          "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+        },
+        "body_chars": 1480,
+        "rank_excerpts": [
+          "y\":\"1995-06-29\",\"playerRating\":\"2365.60\"},{\"playerNo\":\"CWA000548\",\"playerName\":\"高星\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://www.cwql.org.cn/file/player/17262162655391215303560.PNG\",\"playerGende",
+          "thday\":\"1996-06-14\",\"playerRating\":\"2327.50\"},{\"playerNo\":\"CWA001101\",\"playerName\":\"郭春林\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1966-02-15\"},{\"playerNo\":\"CWA001317\",\"pl",
+          "playerGender\":1,\"playerBirthday\":\"1966-02-15\"},{\"playerNo\":\"CWA001317\",\"playerName\":\"郭鹃\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":2,\"playerBirthday\":\"1960-05-06\"},{\"playerNo\":\"CWA001392\",\"pl",
+          "layerGender\":2,\"playerBirthday\":\"1960-05-06\"},{\"playerNo\":\"CWA001392\",\"playerName\":\"过惕生\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1},{\"playerNo\":\"CWA000079\",\"playerName\":\"黄晨\",\"playerGrade\":\"",
+          "rade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1},{\"playerNo\":\"CWA000079\",\"playerName\":\"黄晨\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1988-08-17\",\"playerRating\":\"2399.80\"},{\""
+        ]
+      }
+    ]
+  }
+]

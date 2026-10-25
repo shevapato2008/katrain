@@ -722,14 +722,15 @@ def apply_rank_fact(conn, player_id, fact, *, source_games=(), identity_index=No
             status = "conflict"
     elif current is not None and (
         system_conflict
+        or (basis == current["source_as_of"] and current["rank_value"] != fact["rank_value"])
         or (
             basis is not None
             and current["rank_system"] == fact["rank_system"] == "professional_dan"
             and fact["rank_value"] > current["rank_value"]
         )
     ):
-        # An older observation cannot replace the newer fact, but can reveal
-        # that its professional downgrade/system projection needs review.
+        # A retained fact can still be contradicted by a same-basis grade or
+        # older typed evidence. Change only its review status, not its content.
         conn.execute(h.update().where(h.c.id == current["id"]).values(status="conflict"))
     if active and current is not None:
         conn.execute(h.update().where(h.c.id == current["id"]).values(is_current=False))

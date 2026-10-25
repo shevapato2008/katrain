@@ -443,3 +443,48 @@ def test_explicit_dan_refines_newer_unspecified_current_in_either_arrival_order(
     result = ranks().lookup_library_rank_facts(engine, [{"id": 1, "canonical_name": "甲", "status": "qualified"}])[1]
     assert result["status"] == "qualified"
     assert result["fact"]["content_sha256"] == typed["content_sha256"]
+
+
+@pytest.mark.parametrize("typed_rank", ["8p", "8d"])
+@pytest.mark.parametrize("arrival_order", ["typed_first", "unspecified_first"])
+@pytest.mark.parametrize("basis_day", ["2026-10-03", ""])
+def test_same_basis_different_unspecified_grade_conflicts_and_stays_sticky(
+    engine, typed_rank, arrival_order, basis_day
+):
+    typed, tg = source_fact(rank=typed_rank, day=basis_day, item="1")
+    unspecified, ug = source_fact(rank="九段", day=basis_day, item="2")
+    observations = [(typed, tg), (unspecified, ug)]
+    if arrival_order == "unspecified_first":
+        observations.reverse()
+    with engine.begin() as conn:
+        for fact, game in observations:
+            apply(conn, fact, game)
+        rows = conn.execute(select(m.KifuPlayerRankHistory.__table__)).mappings().all()
+        assert len(rows) == 2
+        current = next(row for row in rows if row["is_current"])
+        assert current["content_sha256"] == typed["content_sha256"]
+        assert current["rank_value"] == 8 and current["rank_system"] == typed["rank_system"]
+        assert (current["source_as_of"].isoformat() if current["source_as_of"] else None) == typed["source_as_of"]
+        assert current["evidence"] == typed["evidence"] and current["source_ref"] == typed["source_ref"]
+        assert current["status"] == "conflict"
+    assert (
+        ranks().lookup_library_rank_facts(engine, [{"id": 1, "canonical_name": "甲", "status": "qualified"}])[1][
+            "status"
+        ]
+        == "conflict"
+    )
+    later, lg = source_fact(rank="9" + typed_rank[-1], day="2026-10-04", item="3")
+    with engine.begin() as conn:
+        assert apply(conn, later, lg)["status"] == "conflict"
+        current = (
+            conn.execute(select(m.KifuPlayerRankHistory.__table__).where(m.KifuPlayerRankHistory.is_current))
+            .mappings()
+            .one()
+        )
+        assert current["content_sha256"] == later["content_sha256"] and current["rank_value"] == 9
+    assert (
+        ranks().lookup_library_rank_facts(engine, [{"id": 1, "canonical_name": "甲", "status": "qualified"}])[1][
+            "status"
+        ]
+        == "conflict"
+    )

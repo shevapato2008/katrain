@@ -22,4 +22,25 @@ Writing Plans计划经独立Astra Max两轮R2 Approved；subagent-driven-develop
 
 真实浏览器验证选中另一张卡、分页实际GET page2，删除确认只打开并取消，没有真实删除或报告生成。Fixture只在测试浏览器路由，生产代码没有模拟业务数据。各项测量及交互记录同目录；开发预览在list-match-cards worktree的output/playwright/list-match-cards-20261025保留复现脚本。
 
-发布将按用户已授权顺序完成feature追最新develop、推feature、合入/push develop、Smartbox仅更新gitlink并push main，再定向RK。设备实际版本与回执在发布后记录，避免将本机预览或未发布分支误报为已上线。
+发布已按授权顺序完成feature追最新develop、推feature、快进合入/push develop、Smartbox仅更新gitlink并push main，再定向RK。实际版本如下。
+
+
+## 已发布与实机验收
+
+| 项目 | 已核实版本 |
+| --- | --- |
+| feature / published develop | c49cbb44296cdb5edc83992a1a3ec47c64f3b702 |
+| Smartbox origin/main | 786a9d46072a29a7146227694cb7cd460e39adc6 |
+| vendor/katrain gitlink | 同上述published develop |
+| RK实际进程KATRAIN_BUILD_SHA | 同上述published develop，PID570303 |
+| 实际严格入口 | index-BMo6luDS.js |
+
+从已发布develop导出391受控Python、19路policy及同源full/strict静态，共1189文件逐项哈希通过。462项配置、身份、模型、标定、字体偏好等保护文件不变，SQLite在线备份；只有围棋服务重启，Kiosk服务及围棋target未动。最新弹窗字体及原19路适配/保留接口验证保持。
+
+通过真实“主页→围棋”恢复既有fan身份200，并回到原/kiosk/report，不读/注入cookie。实际1024×600页面已核实前三张历史卡：白中盘胜；原云端white_rank=6k实际显示6级（18px）、黑胜33.9子；黑胜37.5子。真实没记等级显示—。这三行结果相对姓名的centerY差均0px，见[原账号、页面与真实卡片回执](browser-verification.json)。这部分来自部署后的真实API/DOM，不是fixture。原页保持，无新建/进入棋局、真实删除、付费报告生成或实体盘操作。
+
+[文件清单](manifest.json)、[设备健康与保护校验](verification.json)。现场截图仅保留本机/tmp/kiosk-list-ranks-results-release-20261025/receipt/browser-after-restored.png及设备同发布目录，不把个人历史截图加入远端源码；上方对比图为明确标注的匿名真实React预览。
+
+设备回滚保留在 /mnt/data/smartbox-deployments/20261025-kiosk-list-ranks-results-c49cbb442/，含[rollback.sh](rollback.sh)、旧受控源码/静态/标记、在线数据库快照及保护哈希。回滚未执行，不覆盖当前数据库或标定。已清理本次上传包和解包候选，回滚保留；根盘约2GiB、数据盘约15GiB可用。
+
+本提交仅增加发布回执，在独立evidence分支保存；设备与Smartbox仍指向上表已审核的published develop，不把回执提交误报为新设备源码。

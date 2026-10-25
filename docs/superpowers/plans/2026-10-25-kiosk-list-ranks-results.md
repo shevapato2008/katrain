@@ -1,6 +1,6 @@
 # Kiosk List Historical Ranks and Result Alignment Implementation Plan
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 在 Kiosk 职业棋谱和个人复盘历史卡片中镜像展示真实历史段位，并统一结果的视觉中心和中盘胜中文语序。
 
@@ -53,9 +53,9 @@
 ### Task 3: 集成与定向 RK 发布
 
 - [x] 独立 Astra Max（gpt-6-astra/max，无历史fork）先审核本计划，修改最多两轮；获批才开始上述产品实现。
-- [ ] 与弹窗字体发布负责人协调，不并发写develop/Smartboxmain/RK。fetch真正最新develop→合入feature，解决冲突并验证本切片→commit/push feature→合入/push develop。
-- [ ] Smartbox最新main的隔离worktree只更新vendor/katrain到**published develop的实际完整SHA**，commit/push main；不手猜SHA、不force、不覆盖其他改动。
-- [ ] 使用最新已验证RK发布脚本，从干净published develop导出全部受控Python、19路policy和同源full/strict产物；备份SQLite/旧代码/静态、动态保护配置/身份/模型/标定/字体；即时核实用户原URL及真实活跃棋局，不能重启活跃真实棋局。只定向重启围棋服务，不跑整机provision。
-- [ ] 验证实际进程SHA、入口资源哈希、服务与保护状态；必要时走真实主页→围棋恢复原账号与原URL，不读/注入cookie。有限读取现有分页/选中详情确认真实源，无全库扫描、批量历史写入、N+1下载或新建报告/棋局。
-- [ ] 若真实中央合同缺字段，给主session明确最小云端依赖再执行适当授权范围；不能把fixture或仅RK发布说成真实中央数据已恢复。
-- [ ] 汇报published两个repo提交、RK进程/入口、最终Astra结论、两页前后图、真实等级例子及客观缺失/实机验收边界；保留回滚并清理本次上传候选。
+- [x] 与弹窗字体发布负责人协调，不并发写develop/Smartboxmain/RK。fetch真正最新develop→合入feature，解决冲突并验证本切片→commit/push feature→合入/push develop。
+- [x] Smartbox最新main的隔离worktree只更新vendor/katrain到**published develop的实际完整SHA**，commit/push main；不手猜SHA、不force、不覆盖其他改动。
+- [x] 使用最新已验证RK发布脚本，从干净published develop导出全部受控Python、19路policy和同源full/strict产物；备份SQLite/旧代码/静态、动态保护配置/身份/模型/标定/字体；即时核实用户原URL及真实活跃棋局，不能重启活跃真实棋局。只定向重启围棋服务，不跑整机provision。
+- [x] 验证实际进程SHA、入口资源哈希、服务与保护状态；必要时走真实主页→围棋恢复原账号与原URL，不读/注入cookie。有限读取现有分页/选中详情确认真实源，无全库扫描、批量历史写入、N+1下载或新建报告/棋局。
+- [x] 若真实中央合同缺字段，给主session明确最小云端依赖再执行适当授权范围；不能把fixture或仅RK发布说成真实中央数据已恢复。
+- [x] 汇报published两个repo提交、RK进程/入口、最终Astra结论、两页前后图、真实等级例子及客观缺失/实机验收边界；保留回滚并清理本次上传候选。

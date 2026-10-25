@@ -33,6 +33,14 @@ body[data-kiosk-typography] .MuiDialog-root .MuiDialogActions-root {
   flex-wrap: wrap;
 }
 
+/* Shared auth/chart components use semantic HTML rather than MUI typography.
+   Scope their kiosk presentation here; their Galaxy presentation stays intact. */
+body[data-kiosk-typography] .MuiDialog-root .access-dialog h2 { font-size: 28px; }
+body[data-kiosk-typography] .MuiDialog-root :is(.access-description, .access-button) { font-size: 22px; }
+body[data-kiosk-typography] .MuiDialog-root :is(.access-eyebrow, .access-next-note, .access-quiet) { font-size: 18px; }
+body[data-kiosk-typography] .MuiPopover-root [role="dialog"] { font-size: 18px; line-height: 1.5; }
+body[data-kiosk-typography] .MuiPopover-root [role="dialog"] > .MuiBox-root > strong { font-size: 22px; }
+
 /* Legacy canvas confirmation templates: history deletion, research actions,
    OGS challenge/accept and platform sign-out. Preserve their danger colours. */
 .kiosk :is(.rvconfirm .empty, .cdlg__box, .calib-light-dialog) {

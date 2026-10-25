@@ -282,3 +282,134 @@ def test_fresh_application_startup_also_requires_explicit_rank_migration():
         assert "kifu_album_rank_snapshots" not in tables
     finally:
         empty.dispose()
+
+
+def test_startup_never_repairs_or_rebuilds_existing_partial_rank_schema(engine):
+    from sqlalchemy import text
+    from sqlalchemy.orm import sessionmaker
+    from katrain.web.core.auth import SQLAlchemyUserRepository
+    from katrain.web.core import migrations
+
+    migrations.install_kifu_name_change_immutability(engine)
+    migrations.create_kifu_name_indexes(engine)
+    tables = {"kifu_player_rank_history": "player_id", "kifu_album_rank_snapshots": "album_id"}
+    with engine.begin() as conn:
+        m.KifuAlbumRankSnapshot.__table__.drop(conn)
+        m.KifuPlayerRankHistory.__table__.drop(conn)
+        for table, owner_column in tables.items():
+            conn.exec_driver_sql(f"CREATE TABLE {table} (id INTEGER PRIMARY KEY, {owner_column} INTEGER)")
+            conn.exec_driver_sql(f"INSERT INTO {table} (id, {owner_column}) VALUES (1, 1)")
+    SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+    for table, owner_column in tables.items():
+        assert {column["name"] for column in inspect(engine).get_columns(table)} == {"id", owner_column}
+        assert inspect(engine).get_indexes(table) == []
+        with engine.connect() as conn:
+            assert conn.execute(text(f"SELECT * FROM {table}")).all() == [(1, 1)]
+
+
+@pytest.mark.parametrize("older_rank", ["8p", "7d"])
+@pytest.mark.parametrize("arrival_order", ["older_first", "newer_first"])
+def test_late_old_evidence_marks_newer_current_conflict_without_replacing_fact(engine, older_rank, arrival_order):
+    older, older_game = source_fact(rank=older_rank, day="2026-10-01", item="1")
+    newer, newer_game = source_fact(rank="7p", day="2026-10-03", item="2")
+    observations = [(older, older_game), (newer, newer_game)]
+    if arrival_order == "newer_first":
+        observations.reverse()
+    with engine.begin() as conn:
+        for fact, game in observations:
+            apply(conn, fact, game)
+        rows = conn.execute(select(m.KifuPlayerRankHistory.__table__)).mappings().all()
+        assert len(rows) == 2
+        assert {row["content_sha256"] for row in rows} == {older["content_sha256"], newer["content_sha256"]}
+        current = next(row for row in rows if row["is_current"])
+        assert current["content_sha256"] == newer["content_sha256"]
+        assert current["rank_value"] == 7 and current["source_as_of"].isoformat() == "2026-10-03"
+        assert current["status"] == "conflict"
+        assert ranks().validate_rank_fact(ranks()._row_fact(current, "甲"))["content_sha256"] == newer["content_sha256"]
+    assert (
+        ranks().lookup_library_rank_facts(engine, [{"id": 1, "canonical_name": "甲", "status": "qualified"}])[1][
+            "status"
+        ]
+        == "conflict"
+    )
+
+
+@pytest.mark.parametrize("unspecified_rank", ["七段", "九段"])
+@pytest.mark.parametrize("arrival_order", ["older_first", "newer_first"])
+def test_unspecified_system_is_not_a_cross_system_or_professional_downgrade_conflict(
+    engine, unspecified_rank, arrival_order
+):
+    unspecified, ug = source_fact(rank=unspecified_rank, day="2026-10-01", item="1")
+    typed, tg = source_fact(rank="8p", day="2026-10-03", item="2")
+    observations = [(unspecified, ug), (typed, tg)]
+    if arrival_order == "newer_first":
+        observations.reverse()
+    with engine.begin() as conn:
+        for fact, game in observations:
+            apply(conn, fact, game)
+        current = (
+            conn.execute(select(m.KifuPlayerRankHistory.__table__).where(m.KifuPlayerRankHistory.is_current))
+            .mappings()
+            .one()
+        )
+        assert current["content_sha256"] == typed["content_sha256"]
+        assert current["rank_system"] == "professional_dan" and current["rank_value"] == 8
+        assert current["status"] == "qualified"
+    assert (
+        ranks().lookup_library_rank_facts(engine, [{"id": 1, "canonical_name": "甲", "status": "qualified"}])[1][
+            "status"
+        ]
+        == "qualified"
+    )
+
+
+def test_newer_unspecified_observation_cannot_replace_known_typed_current(engine):
+    typed, tg = source_fact(rank="8p", day="2026-10-01", item="1")
+    unspecified, ug = source_fact(rank="九段", day="2026-10-03", item="2")
+    with engine.begin() as conn:
+        apply(conn, typed, tg)
+        added = apply(conn, unspecified, ug)
+        assert added["inserted"] and not added["is_current"]
+        rows = conn.execute(select(m.KifuPlayerRankHistory.__table__)).mappings().all()
+        assert len(rows) == 2
+        current = next(row for row in rows if row["is_current"])
+        assert current["content_sha256"] == typed["content_sha256"]
+        assert current["source_as_of"].isoformat() == "2026-10-01"
+        assert current["status"] == "qualified"
+    result = ranks().lookup_library_rank_facts(engine, [{"id": 1, "canonical_name": "甲", "status": "qualified"}])[1]
+    assert result["status"] == "qualified"
+    assert result["fact"]["rank_value"] == 8 and result["fact"]["rank_system"] == "professional_dan"
+
+
+@pytest.mark.parametrize("arrival_order", ["older_first", "newer_first"])
+def test_unspecified_dan_and_kyu_still_conflict_in_either_arrival_order(engine, arrival_order):
+    dan, dg = source_fact(rank="七段", day="2026-10-01", item="1")
+    kyu, kg = source_fact(rank="6k", day="2026-10-03", item="2")
+    observations = [(dan, dg), (kyu, kg)]
+    if arrival_order == "newer_first":
+        observations.reverse()
+    with engine.begin() as conn:
+        for fact, game in observations:
+            apply(conn, fact, game)
+        current = (
+            conn.execute(select(m.KifuPlayerRankHistory.__table__).where(m.KifuPlayerRankHistory.is_current))
+            .mappings()
+            .one()
+        )
+        assert current["content_sha256"] == kyu["content_sha256"]
+        assert current["status"] == "conflict"
+
+
+def test_newer_unspecified_dan_marks_known_kyu_conflict_without_overwriting_current(engine):
+    kyu, kg = source_fact(rank="6k", day="2026-10-01", item="1")
+    dan, dg = source_fact(rank="七段", day="2026-10-03", item="2")
+    with engine.begin() as conn:
+        apply(conn, kyu, kg)
+        assert not apply(conn, dan, dg)["is_current"]
+        current = (
+            conn.execute(select(m.KifuPlayerRankHistory.__table__).where(m.KifuPlayerRankHistory.is_current))
+            .mappings()
+            .one()
+        )
+        assert current["content_sha256"] == kyu["content_sha256"]
+        assert current["status"] == "conflict"

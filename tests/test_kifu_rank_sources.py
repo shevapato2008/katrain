@@ -397,3 +397,24 @@ def test_explicit_sgf_dt_cannot_be_overridden_by_album_date_sort(engine):
         album_id = album(conn, "甲", rank="7p", day="2026-10-18")
         conn.execute(m.KifuAlbum.__table__.update().where(m.KifuAlbum.id == album_id).values(date_sort="2026-10-19"))
     assert ranks.lookup_library_rank_facts(engine, [resolved("甲")])[1]["status"] == "unknown_system"
+
+
+@pytest.mark.parametrize("has_good_same_owner_candidate", [False, True])
+def test_malformed_candidate_is_isolated_from_other_candidates_and_players(engine, has_good_same_owner_candidate):
+    with engine.begin() as conn:
+        conn.execute(
+            m.KifuPlayer.__table__.insert(), [{"id": 1, "canonical_name": "甲"}, {"id": 2, "canonical_name": "乙"}]
+        )
+        if has_good_same_owner_candidate:
+            album(conn, "甲", player_id=1, rank="7p", item="1")
+        bad_album_id = album(conn, "甲", player_id=1, rank="7p", item="2")
+        conn.execute(
+            m.KifuAlbum.__table__.update().where(m.KifuAlbum.id == bad_album_id).values(sgf_content="broken SGF")
+        )
+        album(conn, "乙", player_id=2, rank="8p", item="3")
+    results = ranks.lookup_library_rank_facts(engine, [resolved("甲", 1), resolved("乙", 2)])
+    assert results[1]["status"] == ("qualified" if has_good_same_owner_candidate else "unknown_system")
+    if has_good_same_owner_candidate:
+        assert results[1]["fact"]["rank_value"] == 7
+    assert results[2]["status"] == "qualified"
+    assert results[2]["fact"]["rank_value"] == 8

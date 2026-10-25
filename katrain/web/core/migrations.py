@@ -59,7 +59,16 @@ KIFU_CATALOG_TABLES = {
     "kifu_analysis_jobs",
     "kifu_analysis_moves",
 }
-PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | QUOTA_TABLES | KIFU_CATALOG_TABLES | {AI_LADDER_LEGACY_TABLE, "tutorial_media_tasks", "tutorial_figures"}
+# Only the explicit 004 migration owns rank DDL, including partial schemas.
+KIFU_RANK_TABLES = {"kifu_player_rank_history", "kifu_album_rank_snapshots"}
+PROTECTED_TABLES = (
+    BILLING_TABLES
+    | AI_LADDER_TABLES
+    | QUOTA_TABLES
+    | KIFU_CATALOG_TABLES
+    | KIFU_RANK_TABLES
+    | {AI_LADDER_LEGACY_TABLE, "tutorial_media_tasks", "tutorial_figures"}
+)
 
 KIFU_ALBUM_FKS = {
     "black_player_id": "kifu_players",
@@ -1106,8 +1115,8 @@ def add_missing_columns(engine) -> None:
         for table in models_db.Base.metadata.sorted_tables:
             if table.name not in existing_tables:
                 continue
-            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES:
-                # The explicit catalog CLI owns authoritative name and selection tables.
+            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES | KIFU_RANK_TABLES:
+                # Explicit migrations own authoritative name, selection and rank tables.
                 continue
             existing_cols = {c["name"] for c in inspector.get_columns(table.name)}
             for col in table.columns:
@@ -1160,8 +1169,8 @@ def create_missing_indexes(engine) -> None:
         for table in models_db.Base.metadata.sorted_tables:
             if table.name not in existing_tables:
                 continue
-            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES:
-                continue  # Explicit catalog CLI owns these indexes, including PostgreSQL CONCURRENTLY.
+            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES | KIFU_RANK_TABLES:
+                continue  # Explicit migrations own these indexes, including PostgreSQL CONCURRENTLY.
             existing_idx = {ix["name"] for ix in inspector.get_indexes(table.name)}
             for index in table.indexes:
                 if index.name in existing_idx:

@@ -126,7 +126,7 @@ class SQLAlchemyUserRepository(UserRepository):
         # before these authoritative name tables appear. A truly empty database
         # is bootstrapped with its history triggers in one transaction.
         fresh_database = not inspect(engine).get_table_names()
-        rank_tables = {"kifu_player_rank_history", "kifu_album_rank_snapshots"}
+        rank_tables = migrations.KIFU_RANK_TABLES
         startup_tables = [
             table for table in models_db.Base.metadata.sorted_tables
             if table.name not in (

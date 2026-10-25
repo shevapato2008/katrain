@@ -15,7 +15,7 @@ from urllib.parse import parse_qs, urlparse
 
 from sqlalchemy import LargeBinary, and_, cast, func, literal, select, union_all
 
-from katrain.core.sgf_parser import SGF
+from katrain.core.sgf_parser import SGF, ParseError
 from katrain.web.core.models_db import (
     KifuAlbum,
     KifuAlbumRankSnapshot,
@@ -648,16 +648,35 @@ def apply_rank_fact(conn, player_id, fact, *, source_games=()):
         or (basis is not None and (current["source_as_of"] is None or basis >= current["source_as_of"]))
         or (basis is None and current["source_as_of"] is None)
     )
+    systems = {current["rank_system"], fact["rank_system"]} if current is not None else set()
+    # Unspecified dan may acquire a professional/amateur type; it is still dan,
+    # so a dan/kyu disagreement remains a real cross-system conflict.
+    system_conflict = len(systems) > 1 and ("dan_unspecified" not in systems or "kyu" in systems)
+    if current is not None and current["rank_system"] != "dan_unspecified" and fact["rank_system"] == "dan_unspecified":
+        active = False  # Keep the last known typed projection; retain the raw observation below.
     status = "qualified"
     if active and current is not None:
-        different = (current["rank_value"], current["rank_system"]) != (fact["rank_value"], fact["rank_system"])
         if (
             current["status"] == "conflict"
-            or current["rank_system"] != fact["rank_system"]
-            or (basis == current["source_as_of"] and different)
-            or (fact["rank_system"] == "professional_dan" and fact["rank_value"] < current["rank_value"])
+            or system_conflict
+            or (basis == current["source_as_of"] and current["rank_value"] != fact["rank_value"])
+            or (
+                current["rank_system"] == fact["rank_system"] == "professional_dan"
+                and fact["rank_value"] < current["rank_value"]
+            )
         ):
             status = "conflict"
+    elif current is not None and (
+        system_conflict
+        or (
+            basis is not None
+            and current["rank_system"] == fact["rank_system"] == "professional_dan"
+            and fact["rank_value"] > current["rank_value"]
+        )
+    ):
+        # An older observation cannot replace the newer fact, but can reveal
+        # that its professional downgrade/system projection needs review.
+        conn.execute(h.update().where(h.c.id == current["id"]).values(status="conflict"))
     if active and current is not None:
         conn.execute(h.update().where(h.c.id == current["id"]).values(is_current=False))
     inserted = conn.execute(
@@ -843,7 +862,7 @@ def lookup_library_rank_facts(engine, resolved_players, *, observed_at=None):
                         parse_player(grade["raw_name"], grade["raw_rank"]).name
                     ) != _name(parse_player(row["raw_name"], row["raw_rank"]).name):
                         continue
-                except (ValueError, TypeError):
+                except (ValueError, TypeError, ParseError):
                     continue
                 facts.append(fact)
             latest_facts = [fact for fact in facts if fact["source_as_of"] == rows[0]["date_sort"]] if rows else []

@@ -1,0 +1,34 @@
+{
+  "auth": {
+    "status": 200,
+    "username": "fan",
+    "id": 2
+  },
+  "typography": {
+    "font": "kaiti",
+    "size": "large"
+  },
+  "sizes": [
+    {
+      "text": "确认删除",
+      "size": "15px",
+      "height": 18.75
+    },
+    {
+      "text": "删除后对局及所有关联分析数据将不可恢复，确认删除？",
+      "size": "11.5px",
+      "height": 17.8125
+    },
+    {
+      "text": "取消",
+      "size": "12px",
+      "height": 26
+    },
+    {
+      "text": "删除对局",
+      "size": "12px",
+      "height": 26
+    }
+  ],
+  "url": "http://127.0.0.1:8081/kiosk/report"
+}

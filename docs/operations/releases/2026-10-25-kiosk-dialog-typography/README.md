@@ -34,3 +34,18 @@
 独立 fresh `gpt-6-astra` / `max` 已完成代码与真实截图审核，结论 **Approved，无 must-fix**，并独立补充380px侧栏长文及三操作预览，未裁切。见[审核报告](../../../superpowers/reviews/2026-10-25-kiosk-dialog-typography-astra-review.md)和[侧栏预览](screenshots/side-dialog-astra-large.png)。发布版本及设备回执在部署后另行记录。
 
 补漏复核同样为 **Approved，无 must-fix**：[登录提示](screenshots/access-prompt-astra-large.png)实测460×462px、28/22/18px；[图表说明](screenshots/chart-help-astra-top.png)标题22/正文18，临时长文在380×568px浮层内可[滚动到底](screenshots/chart-help-astra-bottom.png)，无横向溢出。临时长文只用于本机预览，不进入产品。
+
+## 最终发布与 RK 回执
+
+- 功能分支与 published `develop`：`105661aba56bc6b27c80e0acf8066425338d258c`。Smartbox published `main`：`3a9e9926fa22dc68a02681c8b9bec4b43d77b7e5`，`vendor/katrain` 精确指向上述 develop。
+- RK3562 实际 `smartbox-katrain.service` PID **565010**，进程 `KATRAIN_BUILD_SHA` 与 release marker 均为上述 develop。只重启围棋服务；kiosk服务及围棋mode target的PID/启动时间保留。
+- 以干净、已发布 develop 构建完整 full 和 strict；strict SSO/无three.js检查通过。受控391个Python、十九路policy及完整双static合计1189个文件逐项SHA校验一致，实际入口为 `/assets/index-CTOP7LY8.js`。462个设备配置、字体与标定等保护文件哈希保持，SQLite在线备份保存。
+- 实际原账号 `fan` / id2 / HTTP200，恢复原 `http://127.0.0.1:8081/kiosk/report`，历史仍共34局。重启后的SSO通过真实主页登录入口、围棋tile恢复，未读取或注入cookie。恢复后只读教程19路适配/保留例外API验证通过。
+- 实机删除框由15/11.5/12px及26px高按钮变为28/22/22px及48px高按钮，CDP确认中文为TW-Kai。打开后取消，记录到的DELETE请求为零。登录提示同样实测28/22/18px、操作22px，完整可见。
+- 未执行真实删除、清空、开局、付费分析、标定或实体盘动作；不宣称物理完整端到端验收。云服务无本次依赖，未更新。
+
+设备截图：[真实旧版](screenshots/rk-delete-before.png)、[真实新版](screenshots/rk-delete-after.png)、[同尺寸并排](screenshots/rk-delete-side-by-side.png)、[真实登录提示](screenshots/rk-access-after.png)、[原复盘页恢复](screenshots/rk-restored-report.png)。设备前后图来自不同真实时间，时钟变化不属于字号差异。
+
+详细证据：[设备文件/进程/健康验证](verification.json)、[浏览器字号、字体、身份与零删除请求](browser-verification.json)、[登录提示字号](access-browser.json)。设备部署、回滚脚本和备份保留在 `/mnt/data/smartbox-deployments/20261025-kiosk-dialog-typography-105661aba/`；本机脚本在 `/tmp/kiosk-dialog-typography-final-20261025/`。候选和备份都在data分区；根盘约2GiB可用，完整双static合计约97MB且略小于旧版，本次采用1GiB剩余安全储备门槛，未清理用户或系统缓存。
+
+本段回执提交位于独立证据分支；上列功能 develop / Smartbox提交及实际部署版本保持不变。

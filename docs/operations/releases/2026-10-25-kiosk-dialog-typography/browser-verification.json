@@ -1,0 +1,55 @@
+{
+  "auth": {
+    "status": 200,
+    "username": "fan",
+    "id": 2
+  },
+  "typography": {
+    "font": "kaiti",
+    "size": "large"
+  },
+  "sizes": [
+    {
+      "text": "确认删除",
+      "size": "28px",
+      "height": 35
+    },
+    {
+      "text": "删除后对局及所有关联分析数据将不可恢复，确认删除？",
+      "size": "22px",
+      "height": 33
+    },
+    {
+      "text": "取消",
+      "size": "22px",
+      "height": 48
+    },
+    {
+      "text": "删除对局",
+      "size": "22px",
+      "height": 48
+    }
+  ],
+  "fonts": {
+    "fonts": [
+      {
+        "familyName": "TW-Kai",
+        "isCustomFont": true,
+        "glyphCount": 4
+      }
+    ]
+  },
+  "delete_requests": [],
+  "url": "http://127.0.0.1:8081/kiosk/report",
+  "viewport": {
+    "width": 1024,
+    "height": 600
+  },
+  "history_label": "共 34 局",
+  "scripts": [
+    "http://127.0.0.1:8081/assets/index-CTOP7LY8.js",
+    "http://127.0.0.1:8081/pinyin-ime.js?v=kbd5",
+    "http://127.0.0.1:8081/pinyin-compose.js?v=kbd5",
+    "http://127.0.0.1:8081/smartkeyboard.js?v=kbd6"
+  ]
+}

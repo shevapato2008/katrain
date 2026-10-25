@@ -12,6 +12,8 @@
 
 状态：**用户已授权实施和真实发布；先fresh Astra Max最多两轮计划审核，Approved后实施，完成后独立代码/实际效果复审。** 基线实际fetch的develop2e7640d892e311f3fc8ed70d4dc5a32e470d2ddf；隔离分支feature/kifu-rank-fallback-20261025。保持其他UI分支与未跟踪报告。首切片仅库内已绑定身份、最近明确原始等级及现存可靠官方证据；不引入任何外部人物定时爬虫或新增LLM。
 
+代码阶段已完成：`727fecb97` 已获 fresh Astra Max Approved，整体规范审也已通过。审核发现的同日矛盾到达顺序、同内容事实的不同观察时刻合包、v2 省略原等级断言三项均已最小修复并复核。真实 PostgreSQL 迁移、三 ID TEST→同包 PROD 纠正/重放、线上 API 和同源 RK 验收继续按发布门执行；此状态不表示已经上线。
+
 ## Chunk 1: 最小数据基础与有界来源
 
 实施进度：foundation 已在 `32f1273812e` 完成，规范审与质量审均 Approved；聚焦 113 项通过。审核补齐了启动 DDL 排除、迟到冲突、损坏 SGF 单人隔离及 typed/unknown 到达顺序。临时 PostgreSQL 演练尚未取得环境，不将 SQLite 结果称作 PostgreSQL 并发证据；发布前显式迁移及约束核对仍须执行。其余 chunk 继续实施，尚未部署。

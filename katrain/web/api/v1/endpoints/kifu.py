@@ -10,6 +10,7 @@ from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, defer
 from katrain.core.sgf_parser import SGF
 from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
+from katrain.kifu_ingest.ranks import display_rank_for_game_slot
 
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import (
@@ -33,6 +34,7 @@ from katrain.web.kifu.identity import (
     strict_selected_event_search_ids,
 )
 from katrain.web.kifu.name_parse import parse_event, parse_player
+from katrain.web.kifu.player_ranks import lookup_album_rank_snapshots
 from katrain.web.kifu.round_names import display_round_name
 from katrain.web.kifu.library import report_availability
 
@@ -113,6 +115,10 @@ class KifuAlbumSummary(BaseModel):
     display_player_white: str = ""
     display_black_rank: Optional[str] = None
     display_white_rank: Optional[str] = None
+    black_rank_origin: str = "unknown"
+    white_rank_origin: str = "unknown"
+    black_rank_source: Optional[dict] = None
+    white_rank_source: Optional[dict] = None
     display_event: Optional[str] = None
     display_round_name: Optional[str] = None
     sources: List[str] = Field(default_factory=list)
@@ -393,12 +399,14 @@ async def list_kifu_albums(
         db, records, lang, selected_events=selected_events, orthographic_batch_contexts=orthographic_batch_contexts
     )
     availability = report_availability(db, records, KIFU_MODEL_SHA256, KIFU_VISITS)
+    rank_snapshots = lookup_album_rank_snapshots(db.connection(), [record.id for record in records])
     items = [
         _summary(
             r, players, events, event_canonical_names, sources, lang,
             round_lang=requested_lang, raw_players=raw_players, raw_events=raw_events,
             obscured_event_ids=obscured_event_ids, selected_events=selected_events,
             fallback_maps=fallback_maps,
+            rank_snapshots=rank_snapshots,
         ).model_copy(update={"has_analysis": availability[r.id]})
         for r in records
     ]
@@ -464,6 +472,7 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
         obscured_event_ids=obscured_event_ids,
         selected_events=selected_events,
         fallback_maps=fallback_maps,
+        rank_snapshots=lookup_album_rank_snapshots(db.connection(), [record.id]),
     ).model_dump()
     values["has_analysis"] = report_availability(db, [record], KIFU_MODEL_SHA256, KIFU_VISITS)[record.id]
     return KifuAlbumDetail.model_validate(
@@ -485,10 +494,12 @@ def _summary(
     obscured_event_ids: set[int] | None = None,
     selected_events: dict[int, tuple[str, int | None]] | None = None,
     fallback_maps: tuple | None = None,
+    rank_snapshots: dict | None = None,
 ) -> KifuAlbumSummary:
     summary = KifuAlbumSummary.model_validate(record)
     black = parse_player(record.player_black, record.black_rank)
     white = parse_player(record.player_white, record.white_rank)
+    rank_displays = _rank_displays(record, black, white, rank_snapshots or {})
     strict = raw_players is not None and raw_events is not None
     fallback_names = None
     if fallback_maps is not None:
@@ -535,10 +546,47 @@ def _summary(
         update={
             "display_player_black": black_name,
             "display_player_white": white_name,
-            "display_black_rank": black.display_rank,
-            "display_white_rank": white.display_rank,
+            **rank_displays,
             "display_event": displayed_event,
             "display_round_name": display_round_name(record.round_name, round_lang or lang),
             "sources": sources.get(record.id, []),
         }
     )
+
+
+def _rank_displays(record, black, white, snapshots):
+    """Render only exact-bound frozen overlays; malformed rows keep raw display."""
+    values = {}
+    sgf_sha256 = None
+    for side, parsed in (("black", black), ("white", white)):
+        raw = getattr(record, f"{side}_rank")
+        rendered = display_rank_for_game_slot(None, parsed.display_rank)
+        if raw:
+            rendered["rank_origin"] = "source"
+        row = snapshots.get((record.id, side))
+        if row is not None:
+            try:
+                snapshot = row["snapshot"]
+                ref = snapshot["source_ref"]
+                if sgf_sha256 is None:
+                    sgf_sha256 = hashlib.sha256(record.sgf_content.encode("utf-8")).hexdigest()
+                if (
+                    row["album_id"] == record.id
+                    and row["side"] == side
+                    and row["snapshot_sha256"] == snapshot["content_sha256"]
+                    and ref["slot"] == side
+                    and ref["sgf_sha256"] == sgf_sha256
+                    and record.source_path == f"data/kifu-album/{ref['source_key']}/{ref['source_item_id']}.sgf"
+                    and snapshot["raw_rank"] == (raw or parsed.display_rank or "")
+                ):
+                    rendered = display_rank_for_game_slot(snapshot, parsed.display_rank)
+            except (ValueError, TypeError, KeyError, AttributeError):
+                pass
+        values.update(
+            {
+                f"display_{side}_rank": rendered["rank"],
+                f"{side}_rank_origin": rendered["rank_origin"],
+                f"{side}_rank_source": rendered["rank_source"],
+            }
+        )
+    return values

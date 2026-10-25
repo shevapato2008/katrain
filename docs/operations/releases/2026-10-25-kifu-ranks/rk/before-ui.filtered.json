@@ -1,0 +1,67 @@
+{
+  "width": 1024,
+  "height": 600,
+  "record_count": 20,
+  "ranks": [
+    [
+      {
+        "text": "九段",
+        "font": "18px"
+      },
+      {
+        "text": "九段",
+        "font": "18px"
+      }
+    ],
+    [
+      {
+        "text": "四段",
+        "font": "18px"
+      },
+      {
+        "text": "四段",
+        "font": "18px"
+      }
+    ],
+    [
+      {
+        "text": "七段",
+        "font": "18px"
+      },
+      {
+        "text": "六段",
+        "font": "18px"
+      }
+    ],
+    [
+      {
+        "text": "職七",
+        "font": "18px"
+      },
+      {
+        "text": "職九",
+        "font": "18px"
+      }
+    ],
+    [
+      {
+        "text": "七段",
+        "font": "18px"
+      },
+      {
+        "text": "三段",
+        "font": "18px"
+      }
+    ],
+    [
+      {
+        "text": "九段",
+        "font": "18px"
+      },
+      {
+        "text": "八段",
+        "font": "18px"
+      }
+    ]
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "original_route": "http://127.0.0.1:9119/chat",
+  "original_chat_idle": {
+    "stop": false,
+    "audio": false,
+    "draft": false
+  },
+  "original_go_active": false,
+  "started_utc": "2026-10-25T17:07:01.254233+00:00"
+}

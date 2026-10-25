@@ -1,0 +1,86 @@
+{
+  "test_web": {
+    "source_develop_sha": "93f2038a0020d43b3090b1a71c8877980580f740",
+    "candidate_image_id": "sha256:e5b77e0a6165617132900d22104bc7fbfe91b760b81ade7822f63fb345a2281f",
+    "bundle_sha256": "daf9fffed3d38697538d598afb5910d6c427bdba98fb23e4236eb77cec30a656",
+    "other_containers_unchanged": true,
+    "original_compose_unchanged": true,
+    "actual": {
+      "build_sha": "93f2038a0020d43b3090b1a71c8877980580f740",
+      "health": null,
+      "id": "9537d4ef7fa0c2a1537335dfa54339c3dc596f1bfb3b78a57d0b0d385c6cc646",
+      "image_id": "sha256:e5b77e0a6165617132900d22104bc7fbfe91b760b81ade7822f63fb345a2281f",
+      "image_tag": "katrain-rank-release:kifu-ranks-93f2038a0020-web",
+      "name": "/katrain-web",
+      "running": true,
+      "started_at": "2026-10-25T15:56:33.717656567Z"
+    }
+  },
+  "test_cron": {
+    "source_develop_sha": "93f2038a0020d43b3090b1a71c8877980580f740",
+    "candidate_image_id": "sha256:d67fcb72cbb31470b8cbbc24745ff0826fc7111e8594b64dbfecfaa98a46dc44",
+    "bundle_sha256": "daf9fffed3d38697538d598afb5910d6c427bdba98fb23e4236eb77cec30a656",
+    "other_containers_unchanged": true,
+    "original_compose_unchanged": true,
+    "actual": {
+      "build_sha": "93f2038a0020d43b3090b1a71c8877980580f740",
+      "health": null,
+      "id": "34601d357fd82c33f2814cdef400fb19084b7b74c739274412b28dc2c5bef2d7",
+      "image_id": "sha256:d67fcb72cbb31470b8cbbc24745ff0826fc7111e8594b64dbfecfaa98a46dc44",
+      "image_tag": "katrain-rank-release:kifu-ranks-93f2038a0020-cron",
+      "name": "/katrain-cron",
+      "running": true,
+      "started_at": "2026-10-25T16:13:17.619919908Z"
+    }
+  },
+  "prod_web": {
+    "source_develop_sha": "93f2038a0020d43b3090b1a71c8877980580f740",
+    "candidate_image_id": "sha256:dd83ae55fdb2549844be8d4d8f518b24f671990471a4b7d3f2b876555863ce2e",
+    "bundle_sha256": "daf9fffed3d38697538d598afb5910d6c427bdba98fb23e4236eb77cec30a656",
+    "other_containers_unchanged": true,
+    "original_compose_unchanged": true,
+    "actual": {
+      "build_sha": "93f2038a0020d43b3090b1a71c8877980580f740",
+      "health": "healthy",
+      "id": "cab121b6d6e91945e44fa15bcef98fb07c2fd90fc594d664dd45e5a1f4a94dcd",
+      "image_id": "sha256:dd83ae55fdb2549844be8d4d8f518b24f671990471a4b7d3f2b876555863ce2e",
+      "image_tag": "katrain-rank-release:kifu-ranks-93f2038a0020-web",
+      "name": "/katrain-ucloud-katrain-web-1",
+      "running": true,
+      "started_at": "2026-10-25T16:00:17.670134119Z"
+    }
+  },
+  "publication": {
+    "publication_key": "rank-only-19x19-91637528-91638738-91694911-v1",
+    "manifest_sha256": "1db149a53968f4a4b6c524624034ce876afc9d351434ef32e2e4114cd61675f2",
+    "file_sha256": "d69ce9788ca34009af508e05b87b35e92cefee62cd7a0dbdda6c3f64891bb283",
+    "test_batch": 927,
+    "prod_batch": 920
+  },
+  "rk": {
+    "source": "93f2038a0020d43b3090b1a71c8877980580f740",
+    "parent": "51825c0e00a7f58544193ea6d584489252c6887e",
+    "pid": "658469",
+    "manifest_files": 1191,
+    "protected_files_unchanged": 462,
+    "served_entries": [
+      {
+        "route": "/kiosk/play",
+        "entry": "/assets/index-BL-M4qBg.js",
+        "served_builds": [
+          "static-kiosk-2d"
+        ],
+        "sha256": "19e60d9e3d65f3b5167785f7562a9b3fd479abaaa3cc1af9baaf0f78d2dd4719"
+      },
+      {
+        "route": "/galaxy/tutorial",
+        "entry": "/assets/index-BL-M4qBg.js",
+        "served_builds": [
+          "static-kiosk-2d"
+        ],
+        "sha256": "19e60d9e3d65f3b5167785f7562a9b3fd479abaaa3cc1af9baaf0f78d2dd4719"
+      }
+    ]
+  },
+  "published_smartbox_main": "51825c0e00a7f58544193ea6d584489252c6887e"
+}

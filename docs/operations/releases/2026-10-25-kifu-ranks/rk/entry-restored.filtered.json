@@ -1,0 +1,9 @@
+{
+  "utc": "2026-10-25T17:22:34.726693+00:00",
+  "original_route_restored": true,
+  "restored_route": "http://127.0.0.1:9119/chat",
+  "kifu_search_page_restored": 5,
+  "no_chat_content_read": true,
+  "no_chat_input_sent": true,
+  "go_service": "MainPID=0\nActiveState=inactive"
+}

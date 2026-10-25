@@ -1,0 +1,18 @@
+{
+  "album_count": 176876,
+  "protected_unchanged": {
+    "album_count": true,
+    "albums": true,
+    "original_item_states": true,
+    "original_native_batches": true,
+    "protected_files_sha256": true,
+    "source_links": true
+  },
+  "rank_history_rows": 6,
+  "rank_snapshot_rows": 6,
+  "snapshot_origins": [
+    "library_current"
+  ],
+  "source_rank_fields_unchanged": true,
+  "target": "test"
+}

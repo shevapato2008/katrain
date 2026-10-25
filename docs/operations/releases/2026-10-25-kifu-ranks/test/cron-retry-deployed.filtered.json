@@ -1,0 +1,434 @@
+{
+  "after": {
+    "build_sha": "93f2038a0020d43b3090b1a71c8877980580f740",
+    "health": null,
+    "id": "34601d357fd82c33f2814cdef400fb19084b7b74c739274412b28dc2c5bef2d7",
+    "image_id": "sha256:d67fcb72cbb31470b8cbbc24745ff0826fc7111e8594b64dbfecfaa98a46dc44",
+    "image_tag": "katrain-rank-release:kifu-ranks-93f2038a0020-cron",
+    "name": "/katrain-cron",
+    "running": true,
+    "started_at": "2026-10-25T16:13:17.619919908Z"
+  },
+  "baseline_sha256": "edb0aa2bdbf560ff047eab8da847693797da51a8273c89036165817052182ed9",
+  "before": {
+    "build_sha": "4bf9a699a35ecdf025f5ec2f414425e3f2a13693",
+    "health": null,
+    "id": "cb228a17497bda54805c885bcb30f3c9c860def75cc3ca92b073229f2ca332b5",
+    "image_id": "sha256:9c414726fa56da734e7f47f6fb409d6373e747a9198c4c80bb31fc4606bccb98",
+    "image_tag": "katrain-rank-release:kifu-ranks-93f2038a0020-cron-base",
+    "name": "/katrain-cron",
+    "running": true,
+    "started_at": "2026-10-25T16:05:18.484192728Z"
+  },
+  "bundle_sha256": "daf9fffed3d38697538d598afb5910d6c427bdba98fb23e4236eb77cec30a656",
+  "candidate_image_id": "sha256:d67fcb72cbb31470b8cbbc24745ff0826fc7111e8594b64dbfecfaa98a46dc44",
+  "compose_command": [
+    "docker",
+    "compose",
+    "--project-name",
+    "katrain",
+    "--project-directory",
+    "/home/fan/Repositories/katrain",
+    "--env-file",
+    "/home/fan/Repositories/katrain/.env",
+    "-f",
+    "/home/fan/Repositories/katrain/docker-compose.yml",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/cron-kifu.override.yml",
+    "-f",
+    "/mnt/disk1/fan/golaxy-hourly-repair-ef96a50a7-20261024/cron-release.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-receiver-662b6a250-20261024/cron-second.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-name-quality-4bf9a699a-20261024/cron-name-quality.override.json",
+    "-f",
+    "/mnt/disk1/fan/kifu-rank-fallback-93f2038a0-20261025/kifu-ranks-93f2038a0020-cron.rollback.json",
+    "-f",
+    "/mnt/disk1/fan/kifu-rank-fallback-93f2038a0-20261025/kifu-ranks-93f2038a0020-cron.override.json",
+    "up",
+    "-d",
+    "--no-deps",
+    "--no-build",
+    "--pull",
+    "never",
+    "--force-recreate",
+    "katrain-cron"
+  ],
+  "host": "home-ubuntu",
+  "kind": "cron",
+  "lifespan_in_candidate": false,
+  "maintenance_gate": {
+    "db_gate": {
+      "advisory_lock": false,
+      "control_sha256": "fb012df491c4c54156c8a5618c7acea51156cfc1ec36667067f64f8be0333550",
+      "finished_not_before_started": true,
+      "paused": true,
+      "running_run_count": 0
+    },
+    "expires_unix": 1792945043.4220889,
+    "holder_pid": 2733454,
+    "lock_container": {
+      "container_id": "435fbca36bcb8b15415f4cdcfc42afd43d6fdf760ab48901d0263356b0883cdf",
+      "container_pid": 2734010,
+      "lock_inode": 203039078
+    }
+  },
+  "model_calls": 0,
+  "original_compose_unchanged": true,
+  "other_containers_unchanged": true,
+  "phase": "deployed_verified",
+  "rollback_command": [
+    "docker",
+    "compose",
+    "--project-name",
+    "katrain",
+    "--project-directory",
+    "/home/fan/Repositories/katrain",
+    "--env-file",
+    "/home/fan/Repositories/katrain/.env",
+    "-f",
+    "/home/fan/Repositories/katrain/docker-compose.yml",
+    "-f",
+    "/mnt/disk1/fan/kifu-hourly-incremental-20261019/cron-kifu.override.yml",
+    "-f",
+    "/mnt/disk1/fan/golaxy-hourly-repair-ef96a50a7-20261024/cron-release.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-receiver-662b6a250-20261024/cron-second.override.json",
+    "-f",
+    "/mnt/disk1/fan/golaxy-name-quality-4bf9a699a-20261024/cron-name-quality.override.json",
+    "-f",
+    "/mnt/disk1/fan/kifu-rank-fallback-93f2038a0-20261025/kifu-ranks-93f2038a0020-cron.rollback.json",
+    "-f",
+    "/mnt/disk1/fan/kifu-rank-fallback-93f2038a0-20261025/kifu-ranks-93f2038a0020-cron.rollback.json",
+    "up",
+    "-d",
+    "--no-deps",
+    "--no-build",
+    "--pull",
+    "never",
+    "--force-recreate",
+    "katrain-cron"
+  ],
+  "rollback_required": false,
+  "runtime": {
+    "active_static_graph": {
+      "katrain/web/static": {},
+      "katrain/web/static-kiosk-2d": {}
+    },
+    "compile_imports": "ok",
+    "rank_models": {
+      "kifu_album_rank_snapshots": {
+        "check_names": [
+          "ck_kifu_album_rank_sha256",
+          "ck_kifu_album_rank_side"
+        ],
+        "columns": {
+          "album_id": {
+            "kind": "Integer",
+            "length": null,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "INTEGER"
+          },
+          "id": {
+            "kind": "Integer",
+            "length": null,
+            "nullable": false,
+            "primary_key": true,
+            "timezone": null,
+            "type": "INTEGER"
+          },
+          "native_batch_id": {
+            "kind": "Integer",
+            "length": null,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "INTEGER"
+          },
+          "publication_key": {
+            "kind": "String",
+            "length": 160,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "VARCHAR(160)"
+          },
+          "rank_fact_id": {
+            "kind": "Integer",
+            "length": null,
+            "nullable": true,
+            "primary_key": false,
+            "timezone": null,
+            "type": "INTEGER"
+          },
+          "side": {
+            "kind": "String",
+            "length": 5,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "VARCHAR(5)"
+          },
+          "snapshot": {
+            "kind": "JSON",
+            "length": null,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "JSON"
+          },
+          "snapshot_sha256": {
+            "kind": "String",
+            "length": 64,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "VARCHAR(64)"
+          }
+        },
+        "foreign_keys": [
+          {
+            "columns": [
+              "album_id"
+            ],
+            "ondelete": "NO ACTION",
+            "target_columns": [
+              "id"
+            ],
+            "target_table": "kifu_albums"
+          },
+          {
+            "columns": [
+              "rank_fact_id"
+            ],
+            "ondelete": "RESTRICT",
+            "target_columns": [
+              "id"
+            ],
+            "target_table": "kifu_player_rank_history"
+          }
+        ],
+        "indexes": {
+          "ix_kifu_album_rank_snapshots_rank_fact_id": {
+            "columns": [
+              "rank_fact_id"
+            ],
+            "predicate": null,
+            "unique": false
+          }
+        },
+        "unique_columns": [
+          [
+            "album_id",
+            "side"
+          ]
+        ]
+      },
+      "kifu_player_rank_history": {
+        "check_names": [
+          "ck_kifu_player_rank_sha256",
+          "ck_kifu_player_rank_status",
+          "ck_kifu_player_rank_system",
+          "ck_kifu_player_rank_value"
+        ],
+        "columns": {
+          "content_sha256": {
+            "kind": "String",
+            "length": 64,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "VARCHAR(64)"
+          },
+          "evidence": {
+            "kind": "JSON",
+            "length": null,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "JSON"
+          },
+          "id": {
+            "kind": "Integer",
+            "length": null,
+            "nullable": false,
+            "primary_key": true,
+            "timezone": null,
+            "type": "INTEGER"
+          },
+          "is_current": {
+            "kind": "Boolean",
+            "length": null,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "BOOLEAN"
+          },
+          "last_checked_at": {
+            "kind": "DateTime",
+            "length": null,
+            "nullable": true,
+            "primary_key": false,
+            "timezone": true,
+            "type": "DATETIME"
+          },
+          "observed_at": {
+            "kind": "DateTime",
+            "length": null,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": true,
+            "type": "DATETIME"
+          },
+          "player_id": {
+            "kind": "Integer",
+            "length": null,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "INTEGER"
+          },
+          "rank_system": {
+            "kind": "String",
+            "length": 24,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "VARCHAR(24)"
+          },
+          "rank_value": {
+            "kind": "Integer",
+            "length": null,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "INTEGER"
+          },
+          "source_as_of": {
+            "kind": "Date",
+            "length": null,
+            "nullable": true,
+            "primary_key": false,
+            "timezone": null,
+            "type": "DATE"
+          },
+          "source_kind": {
+            "kind": "String",
+            "length": 32,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "VARCHAR(32)"
+          },
+          "source_ref": {
+            "kind": "JSON",
+            "length": null,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "JSON"
+          },
+          "status": {
+            "kind": "String",
+            "length": 16,
+            "nullable": false,
+            "primary_key": false,
+            "timezone": null,
+            "type": "VARCHAR(16)"
+          },
+          "valid_from": {
+            "kind": "Date",
+            "length": null,
+            "nullable": true,
+            "primary_key": false,
+            "timezone": null,
+            "type": "DATE"
+          }
+        },
+        "foreign_keys": [
+          {
+            "columns": [
+              "player_id"
+            ],
+            "ondelete": "NO ACTION",
+            "target_columns": [
+              "id"
+            ],
+            "target_table": "kifu_players"
+          }
+        ],
+        "indexes": {
+          "ix_kifu_player_rank_date": {
+            "columns": [
+              "player_id",
+              "source_as_of"
+            ],
+            "predicate": null,
+            "unique": false
+          },
+          "uq_kifu_player_rank_current": {
+            "columns": [
+              "player_id"
+            ],
+            "predicate": "is_current",
+            "unique": true
+          }
+        },
+        "unique_columns": [
+          [
+            "player_id",
+            "content_sha256"
+          ]
+        ]
+      }
+    },
+    "receiver_import": "not_applicable_to_producer",
+    "source_files": {
+      "katrain/core/sgf_parser.py": "59a4d743d0d36ddc22ad1a21ce789110fc56c29b3356d9fe2e0cc5e9f9961cb5",
+      "katrain/cron/__main__.py": "2a8287ea97a366db2b5244eeea0ba70a629e8d8916adf29a5e3b2fdde7f3fe72",
+      "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+      "katrain/cron/db.py": "9eb40436631d3e60c5fc57760397669a1b557b1f741f66956207c575624ce076",
+      "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+      "katrain/cron/migrations/004_kifu_player_ranks.sql": "77c1b870add4e4dc860272e892f5f10d5ac787ee0151e7592f10c7fad03c9b22",
+      "katrain/cron/models.py": "ebcb6c2695978203587a42a03c9caaba0031d4a3209dc94b8ea8d8f3b48b5e9c",
+      "katrain/cron/scheduler.py": "bc8a2e5ee36da5ec859eb56b088bbe9680eaead2f7020d2b6aa1b03e8e7b5e6a",
+      "katrain/kifu_ingest/__init__.py": "e3580e699bd74d8cf82262883e492e2123df4d966edded1c5703e4e132fe531b",
+      "katrain/kifu_ingest/catalog.py": "c62bddc2e0f22c06c81d9c2e998e1657537294ebb7f2d4780a239b2ff0efee24",
+      "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+      "katrain/kifu_ingest/inventory.py": "b27b9088a11aa2a2a8726c88ac0d53fab5ddb381b2c7671fc301915249bf2f1f",
+      "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+      "katrain/kifu_ingest/name_reuse.py": "9c8813e41b838e700148106b6f4e52a22169911ae0e539ca6a0b88da283c89c4",
+      "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+      "katrain/kifu_ingest/orchestration.py": "4866d52292b78c23bd6a1631381d7b84836464028a0e6c0200b279cadab58e32",
+      "katrain/kifu_ingest/preparation.py": "79611f491d5dd36b7b0068a52c7a29dcd6b4e0853ee91a78729a35ce64cbe857",
+      "katrain/kifu_ingest/ranks.py": "6db78342399338c9fbeae593d560459af9dba991e5bd689209ceab2b0c81eb5c",
+      "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+      "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+      "katrain/kifu_ingest/staging.py": "bda235e847192981a26ccb3816b49f0f1b1383b28e00ef3465c7c5aded725a8a",
+      "katrain/kifu_ingest/state.py": "7bd2a5047f3804dd9a82f7344a06e3ae0c6fef625d6fef34ef1232ef47b1c24e",
+      "katrain/kifu_ingest/sync.py": "2b04f22adad3b20c52b287b8ac7a7dec4e153aa79d4248a28438e4b910d5a8a3",
+      "katrain/kifu_ingest/verification.py": "803c8d519a9165d00aaff318eee51e74a8bdf1a7e1801af16b158fb306f324b0",
+      "katrain/web/api/v1/endpoints/kifu.py": "34ed08515c03dcfb5578b0cf47c15bdf0ee6e84deb856b4046ea610ac2f0e45a",
+      "katrain/web/core/auth.py": "ea10719dccc254de6469a47704ca574a4eb7ca83e297a0f73d3810670bce82ed",
+      "katrain/web/core/config.py": "3b95aa82adeee8458f880341f9dac541ee351a322cd35be96f0df0e57cb4293e",
+      "katrain/web/core/db.py": "f52f03d3e490cd02007da1414e1bd32b1e54bd130a6204b36f02d6f7afb3fe51",
+      "katrain/web/core/migrations.py": "57badbb1720cd66d4e77010a295a5acef1a317af39cce0a67897e47c318505f4",
+      "katrain/web/core/models_db.py": "9084c3387145c958eef7ee20091b0ca7de2f741f7bedcaebfae549963b1ae4e6",
+      "katrain/web/core/pvp_territory.py": null,
+      "katrain/web/kifu/identity.py": "54e4281bb247c102b47bba5068e87ea7ac6cef972856065390c3b22961c74d5e",
+      "katrain/web/kifu/library.py": "052a01fbdb5c1808a6ef0b86ac9811291ed0c3b05b5ac8fb8cd7a033294fa6dc",
+      "katrain/web/kifu/name_batch.py": "dd9b675953138cc4b7c6294f94f41f91f23407bedd486c5c40e0a8d377442455",
+      "katrain/web/kifu/name_parse.py": "1fbd3212d7d10b62785e6341f83683c552ad1a2526d7b681905d69d1a685809b",
+      "katrain/web/kifu/player_ranks.py": "f9944188fd9e28e505db0b0c85dcbff54162d97daa6faecf623f56049ccebc80",
+      "katrain/web/server.py": null,
+      "scripts/kifu_incremental.py": null,
+      "scripts/kifu_rank_correction.py": "385ac35f23363d440d228ebf1ba6c65dc481ebc02fb2de25ab7e8a80d06b527a"
+    },
+    "static_files": {}
+  },
+  "settings_sha256": "76aabebd64317f6a9c724843a922204c108ce38a383adda39ba85cf515f27b24",
+  "source_collection": false,
+  "source_develop_sha": "93f2038a0020d43b3090b1a71c8877980580f740"
+}

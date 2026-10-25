@@ -1,0 +1,31 @@
+{
+  "id": "435fbca36bcb8b15415f4cdcfc42afd43d6fdf760ab48901d0263356b0883cdf",
+  "image": "sha256:9c414726fa56da734e7f47f6fb409d6373e747a9198c4c80bb31fc4606bccb98",
+  "state": {
+    "Status": "exited",
+    "Running": false,
+    "Paused": false,
+    "Restarting": false,
+    "OOMKilled": false,
+    "Dead": false,
+    "Pid": 0,
+    "ExitCode": 0,
+    "Error": "",
+    "StartedAt": "2026-10-25T15:47:24.200956966Z",
+    "FinishedAt": "2026-10-25T16:17:23.433215983Z"
+  },
+  "mounts": [
+    {
+      "Type": "bind",
+      "Source": "/mnt/disk1/fan/kifu-hourly-incremental-20261019/ingest-stage",
+      "Destination": "/stage",
+      "Mode": "",
+      "RW": false,
+      "Propagation": "rprivate"
+    }
+  ],
+  "lock_inode": 203039078,
+  "lock_uid": 0,
+  "lock_gid": 0,
+  "lock_mode": "0o600"
+}

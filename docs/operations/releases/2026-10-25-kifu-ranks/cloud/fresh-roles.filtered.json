@@ -1,0 +1,25 @@
+{
+  "roles": [
+    {
+      "host": "home-ubuntu",
+      "kind": "web",
+      "role_sha256": "18eb9f873bb7291769de9511681381f50f5f4cda83bb13bfb9b0aa60804512f0",
+      "database_target_sha256": "34cd541a4c9fae574dac13f2328f9660cd3022b09b407d61e05e57b661788b47"
+    },
+    {
+      "host": "home-ubuntu",
+      "kind": "cron",
+      "role_sha256": "18eb9f873bb7291769de9511681381f50f5f4cda83bb13bfb9b0aa60804512f0",
+      "database_target_sha256": "34cd541a4c9fae574dac13f2328f9660cd3022b09b407d61e05e57b661788b47"
+    },
+    {
+      "host": "ucloud-v100",
+      "kind": "web",
+      "role_sha256": "18eb9f873bb7291769de9511681381f50f5f4cda83bb13bfb9b0aa60804512f0",
+      "database_target_sha256": "09e42ee66a6c48a6fc30bd67e4326bd0a07f851ebbdd566905fa936926985fdf"
+    }
+  ],
+  "same_test_web_cron_role": true,
+  "same_test_web_cron_database_target": true,
+  "remote_mutations": false
+}

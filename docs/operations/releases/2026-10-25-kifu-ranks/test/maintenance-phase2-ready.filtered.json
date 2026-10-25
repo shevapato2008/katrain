@@ -1,0 +1,25 @@
+{
+  "db_container": "katrain-cron",
+  "expires_unix": 1792947142.2048304,
+  "host": "home-ubuntu",
+  "lock_container_id": "33876c6ed01c0aea4430fe279cfd14a98ae5317dfe113d1d828e90c486ff29e7",
+  "lock_container_name": "kifu-rank-lock-93f2038a0020",
+  "lock_container_pid": 2772531,
+  "lock_device": 2081,
+  "lock_fd": 3,
+  "lock_image_id": "sha256:d67fcb72cbb31470b8cbbc24745ff0826fc7111e8594b64dbfecfaa98a46dc44",
+  "lock_inode": 203039078,
+  "lock_kind": "isolated_docker",
+  "lock_ttl": 1799,
+  "original_control_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+  "paused_control_sha256": "807fe1807aca96314ac75c43f7b97c35d039a8bcdf3a7f388ee4672a503976a3",
+  "phase": "restored_after_verification",
+  "pid": 2771956,
+  "restore": {
+    "control_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+    "original_row_missing": true,
+    "restored": true
+  },
+  "source_develop_sha": "93f2038a0020d43b3090b1a71c8877980580f740",
+  "stage_lock": "/mnt/disk1/fan/kifu-hourly-incremental-20261019/ingest-stage/.writer.lock"
+}

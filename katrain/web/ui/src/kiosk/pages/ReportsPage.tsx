@@ -648,9 +648,10 @@ function ReviewRow({ game, state, selected, username, t, lang, onSelect, onDelet
           <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))} · {game.move_count} {t('report:moves_unit', '手')}</small>
         </span>
         <RecordMatchLine variant="history"
-          black={{ name: game.player_black || t('game:black_side', '黑方'), rank: getListRank(null, game.black_rank, t) }}
-          white={{ name: game.player_white || t('game:white_side', '白方'), rank: getListRank(null, game.white_rank, t) }}
-          result={result} unknownRankLabel={t('review:rank_not_recorded', '等级未记录')} />
+          black={{ name: game.player_black || t('game:black_side', '黑方'), rank: getListRank(null, game.black_rank, t, lang) }}
+          white={{ name: game.player_white || t('game:white_side', '白方'), rank: getListRank(null, game.white_rank, t, lang) }}
+          result={result} unknownRankText={t('review:rank_unrecorded_short', lang === 'cn' ? '未记录' : lang === 'tw' ? '未記錄' : 'Unrecorded')}
+                      unknownRankLabel={t('review:rank_not_recorded', lang === 'cn' ? '等级未记录' : lang === 'tw' ? '等級未記錄' : 'Rank not recorded')} />
       </button>
       {selected && game.source !== 'kifu_library' && (
         <button type="button" className="personal-game-delete" aria-label={t('review:delete_game', '删除对局')} title={t('review:delete_game', '删除对局')} onClick={onDelete}>

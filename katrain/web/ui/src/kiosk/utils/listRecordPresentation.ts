@@ -7,12 +7,40 @@ type Winner = 'B' | 'W';
 
 const UNKNOWN_RANK = /^(?:unknown|no rank|null|undefined|等级未知|等級未知|未知|\?|—|-)$/i;
 const RESIGNATION = /^R(?:esign(?:ation)?)?$/i;
+const CHINESE_DIGITS = '零一二三四五六七八九';
+
+function identityRank(value: Rank): { number: number; unit: 'p' | 'd' } | null {
+  if (typeof value !== 'string') return null;
+  const sgf = value.trim().match(/^(\d{1,2})\s*([pd])$/i);
+  if (sgf) return { number: Number(sgf[1]), unit: sgf[2].toLowerCase() as 'p' | 'd' };
+  const named = value.trim().match(/^(职业|職業|业余|業餘)\s*([一二三四五六七八九]|\d{1,2})段$/);
+  if (!named) return null;
+  return { number: /^\d/.test(named[2]) ? Number(named[2]) : CHINESE_DIGITS.indexOf(named[2]), unit: /职业|職業/.test(named[1]) ? 'p' : 'd' };
+}
+
+function chineseNumber(number: number): string {
+  if (number < 10) return CHINESE_DIGITS[number];
+  const tens = Math.floor(number / 10), ones = number % 10;
+  return (tens === 1 ? '' : CHINESE_DIGITS[tens]) + '十' + (ones ? CHINESE_DIGITS[ones] : '');
+}
 
 /** Historical fields only: an absent display rank may use this record's raw rank. */
-export function getListRank(displayRank: Rank, rawRank: Rank, t: Translate): string | null {
+export function getListRank(displayRank: Rank, rawRank: Rank, t: Translate, lang = 'cn'): string | null {
   for (const rank of [displayRank, rawRank]) {
     const label = formatRank(rank, t);
-    if (label && !UNKNOWN_RANK.test(label)) return label;
+    if (!label || UNKNOWN_RANK.test(label)) continue;
+    if (lang !== 'cn' && lang !== 'tw') return label;
+    let identity = identityRank(rank);
+    // Qualify a bare display label only from an agreeing, typed same-record
+    // raw value. Names and the current account never establish identity.
+    const bare = label.match(/^([一二三四五六七八九]|\d{1,2})段$/);
+    const rawIdentity = identityRank(rawRank);
+    const number = bare ? (/^\d/.test(bare[1]) ? Number(bare[1]) : CHINESE_DIGITS.indexOf(bare[1])) : null;
+    if (!identity && rawIdentity?.number === number) identity = rawIdentity;
+    if (!identity) return label;
+    return identity.unit === 'p'
+      ? (lang === 'tw' ? '職業' : '职业') + chineseNumber(identity.number) + '段'
+      : (lang === 'tw' ? '業餘' : '业余') + identity.number + '段';
   }
   return null;
 }

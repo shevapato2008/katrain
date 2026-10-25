@@ -15,6 +15,7 @@ const translations: Record<string, Record<string, string>> = {
     'result:resign': '中盤', 'result:time': '超時', 'result:forfeit': '棄權',
     'review:black': '黑', 'review:white': '白', 'review:by_resign': '中盤', 'review:win': '勝',
   },
+  en: { 'strength:professional_dan_format': 'Professional {rank} dan', 'strength:dan': ' dan', 'strength:kyu': ' kyu' },
   fr: { 'result:black_win': 'N+', 'result:white_win': 'B+', 'result:resign': 'Aband.' },
 };
 const tFor = (lang: string) => (key: string, fallback = '') => translations[lang]?.[key] ?? fallback;
@@ -22,9 +23,22 @@ const cn = tFor('cn');
 
 describe('getListRank', () => {
   it('prefers the display rank and falls back only to the same record raw rank', () => {
-    expect(getListRank(' 9p ', '6k', cn)).toBe('职业9段');
-    expect(getListRank(' ', '9d', cn)).toBe('9段');
+    expect(getListRank(' 9p ', '6k', cn)).toBe('职业九段');
+    expect(getListRank(' ', '9d', cn)).toBe('业余9段');
     expect(getListRank('unknown', '6k', cn)).toBe('6级');
+  });
+
+  it('uses explicit identity and locale while preserving ambiguous saved ranks', () => {
+    expect(getListRank('9p', null, cn, 'cn')).toBe('职业九段');
+    expect(getListRank(null, '6d', cn, 'cn')).toBe('业余6段');
+    expect(getListRank(null, '6k', cn, 'cn')).toBe('6级');
+    expect(getListRank('职业9段', null, cn, 'tw')).toBe('職業九段');
+    expect(getListRank('業餘六段', null, cn, 'tw')).toBe('業餘6段');
+    expect(getListRank('九段', '9p', cn, 'cn')).toBe('职业九段');
+    expect(getListRank('九段', null, cn, 'cn')).toBe('九段');
+    expect(getListRank('九段', '6p', cn, 'cn')).toBe('九段');
+    expect(getListRank('9p', null, tFor('en'), 'en')).toBe('Professional 9 dan');
+    expect(getListRank(null, '6d', tFor('en'), 'en')).toBe('6 dan');
   });
 
   it('returns null when historical ranks are missing or explicitly unknown', () => {

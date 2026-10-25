@@ -8,6 +8,7 @@ type Props = {
   white: Player;
   result: string;
   unknownRankLabel: string;
+  unknownRankText: string;
   variant: 'kifu' | 'history';
   winner?: 'B' | 'W' | null;
 };
@@ -15,11 +16,11 @@ type Props = {
 const rankSize = { '--kiosk-base-size': '18px' } as CSSProperties;
 
 /** Shared, non-interactive historical match line for the two record lists. */
-export default function RecordMatchLine({ black, white, result, unknownRankLabel, variant, winner }: Props) {
+export default function RecordMatchLine({ black, white, result, unknownRankLabel, unknownRankText, variant, winner }: Props) {
   const rank = (value: string | null) => (
     <small className="record-match__rank" title={value ?? unknownRankLabel}
       aria-label={value ?? unknownRankLabel} data-kiosk-base-size="" style={rankSize}>
-      {value ?? '—'}
+      {value ?? unknownRankText}
     </small>
   );
 

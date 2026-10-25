@@ -44,8 +44,8 @@ it('mirrors historical ranks around complete accessible names and uses this reco
   render(<MemoryRouter><KifuPage /></MemoryRouter>);
   const card = await screen.findByRole('button', { name: /赛事 1/ });
   const players = card.querySelectorAll('.record-match__player');
-  expect(players[0]).toHaveTextContent(`${black}职业9段`);
-  expect(players[1]).toHaveTextContent(`9段${white}`);
+  expect(players[0]).toHaveTextContent(`${black}职业九段`);
+  expect(players[1]).toHaveTextContent(`业余9段${white}`);
   expect(within(card).getByText(black)).toHaveAttribute('title', black);
   expect(within(card).getByText(white)).toHaveAttribute('title', white);
   await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));

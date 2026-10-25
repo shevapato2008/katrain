@@ -419,11 +419,11 @@ describe('屏 19 · 搜索与卡片信息', () => {
     renderPage();
     await waitFor(() => expect(rows()).toHaveLength(2));
     const players = rows()[0].querySelectorAll('.record-match__player');
-    expect(players[0]).toHaveTextContent(`${black}职业9段`);
-    expect(players[1]).toHaveTextContent(`9段${white}`);
+    expect(players[0]).toHaveTextContent(`${black}职业九段`);
+    expect(players[1]).toHaveTextContent(`业余9段${white}`);
     expect(within(rows()[0]).getByText(black)).toHaveAttribute('title', black);
     expect(within(rows()[0]).getByText(white)).toHaveAttribute('title', white);
-    expect(within(rows()[1]).getByLabelText('等级未记录')).toHaveTextContent('—');
+    expect(within(rows()[1]).getByLabelText('等级未记录')).toHaveTextContent('未记录');
     expect(within(rows()[1]).getByText('6级')).toBeInTheDocument();
     await waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(1));
   });

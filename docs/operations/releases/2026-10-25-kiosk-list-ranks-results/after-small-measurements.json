@@ -1,0 +1,1596 @@
+{
+  "kifu": [
+    {
+      "nameTextBoxes": [
+        {
+          "x": 359,
+          "y": 261.5390625,
+          "width": 54,
+          "height": 20.5,
+          "top": 261.5390625,
+          "right": 413,
+          "bottom": 282.0390625,
+          "left": 359
+        },
+        {
+          "x": 836.75,
+          "y": 261.5390625,
+          "width": 134.25,
+          "height": 20.5,
+          "top": 261.5390625,
+          "right": 971,
+          "bottom": 282.0390625,
+          "left": 836.75
+        }
+      ],
+      "resultTextBox": {
+        "x": 637,
+        "y": 264.1953125,
+        "width": 56,
+        "height": 16,
+        "top": 264.1953125,
+        "right": 693,
+        "bottom": 280.1953125,
+        "left": 637
+      },
+      "text": "示例棋谱 1 · 示例轮次2026-10-252 手示例甲职业9段白中盘胜9段Example White",
+      "card": {
+        "x": 328,
+        "y": 226,
+        "width": 674,
+        "height": 78,
+        "top": 226,
+        "right": 1002,
+        "bottom": 304,
+        "left": 328
+      },
+      "result": {
+        "x": 628,
+        "y": 260.1953125,
+        "width": 74,
+        "height": 24.09375,
+        "top": 260.1953125,
+        "right": 702,
+        "bottom": 284.2890625,
+        "left": 628
+      },
+      "resultStyle": {
+        "fontSize": "18px",
+        "border": "1px solid rgb(83, 100, 90)",
+        "borderRadius": "5px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "color": "rgb(238, 243, 241)"
+      },
+      "players": [
+        {
+          "text": "示例甲职业9段",
+          "box": {
+            "x": 341,
+            "y": 260.5390625,
+            "width": 277,
+            "height": 23.3984375,
+            "top": 260.5390625,
+            "right": 618,
+            "bottom": 283.9375,
+            "left": 341
+          },
+          "fontSize": "22px"
+        },
+        {
+          "text": "9段Example White",
+          "box": {
+            "x": 712,
+            "y": 260.5390625,
+            "width": 277,
+            "height": 23.3984375,
+            "top": 260.5390625,
+            "right": 989,
+            "bottom": 283.9375,
+            "left": 712
+          },
+          "fontSize": "22px"
+        }
+      ],
+      "names": [
+        {
+          "text": "示例甲",
+          "box": {
+            "x": 359,
+            "y": 260.5390625,
+            "width": 54,
+            "height": 23.3984375,
+            "top": 260.5390625,
+            "right": 413,
+            "bottom": 283.9375,
+            "left": 359
+          },
+          "fontSize": "18px",
+          "title": "示例甲",
+          "scrollWidth": 54,
+          "clientWidth": 54
+        },
+        {
+          "text": "Example White",
+          "box": {
+            "x": 836.75,
+            "y": 260.5390625,
+            "width": 134.25,
+            "height": 23.3984375,
+            "top": 260.5390625,
+            "right": 971,
+            "bottom": 283.9375,
+            "left": 836.75
+          },
+          "fontSize": "18px",
+          "title": "Example White",
+          "scrollWidth": 134,
+          "clientWidth": 134
+        }
+      ],
+      "ranks": [
+        {
+          "text": "职业9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 418,
+            "y": 263.140625,
+            "width": 50.7421875,
+            "height": 18.1953125,
+            "top": 263.140625,
+            "right": 468.7421875,
+            "bottom": 281.3359375,
+            "left": 418
+          }
+        },
+        {
+          "text": "9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 809.0078125,
+            "y": 263.140625,
+            "width": 22.7421875,
+            "height": 18.1953125,
+            "top": 263.140625,
+            "right": 831.75,
+            "bottom": 281.3359375,
+            "left": 809.0078125
+          }
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "nameTextBoxes": [
+        {
+          "x": 359,
+          "y": 347.5390625,
+          "width": 198,
+          "height": 20.5,
+          "top": 347.5390625,
+          "right": 557,
+          "bottom": 368.0390625,
+          "left": 359
+        },
+        {
+          "x": 742.9140625,
+          "y": 347.5390625,
+          "width": 260.984375,
+          "height": 20.5,
+          "top": 347.5390625,
+          "right": 1003.8984375,
+          "bottom": 368.0390625,
+          "left": 742.9140625
+        }
+      ],
+      "resultTextBox": {
+        "x": 633.828125,
+        "y": 350.1953125,
+        "width": 62.34375,
+        "height": 16,
+        "top": 350.1953125,
+        "right": 696.171875,
+        "bottom": 366.1953125,
+        "left": 633.828125
+      },
+      "text": "示例棋谱 2 · 示例轮次2026-10-252 手示例中文很长的棋手姓名—黑胜6.5子6级Example Alexander Dinerchtein",
+      "card": {
+        "x": 328,
+        "y": 312,
+        "width": 674,
+        "height": 78,
+        "top": 312,
+        "right": 1002,
+        "bottom": 390,
+        "left": 328
+      },
+      "result": {
+        "x": 624.828125,
+        "y": 346.1953125,
+        "width": 80.34375,
+        "height": 24.09375,
+        "top": 346.1953125,
+        "right": 705.171875,
+        "bottom": 370.2890625,
+        "left": 624.828125
+      },
+      "resultStyle": {
+        "fontSize": "18px",
+        "border": "1px solid rgb(83, 100, 90)",
+        "borderRadius": "5px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "color": "rgb(238, 243, 241)"
+      },
+      "players": [
+        {
+          "text": "示例中文很长的棋手姓名—",
+          "box": {
+            "x": 341,
+            "y": 346.5390625,
+            "width": 273.828125,
+            "height": 23.3984375,
+            "top": 346.5390625,
+            "right": 614.828125,
+            "bottom": 369.9375,
+            "left": 341
+          },
+          "fontSize": "22px"
+        },
+        {
+          "text": "6级Example Alexander Dinerchtein",
+          "box": {
+            "x": 715.171875,
+            "y": 346.5390625,
+            "width": 273.828125,
+            "height": 23.3984375,
+            "top": 346.5390625,
+            "right": 989,
+            "bottom": 369.9375,
+            "left": 715.171875
+          },
+          "fontSize": "22px"
+        }
+      ],
+      "names": [
+        {
+          "text": "示例中文很长的棋手姓名",
+          "box": {
+            "x": 359,
+            "y": 346.5390625,
+            "width": 198,
+            "height": 23.3984375,
+            "top": 346.5390625,
+            "right": 557,
+            "bottom": 369.9375,
+            "left": 359
+          },
+          "fontSize": "18px",
+          "title": "示例中文很长的棋手姓名",
+          "scrollWidth": 198,
+          "clientWidth": 198
+        },
+        {
+          "text": "Example Alexander Dinerchtein",
+          "box": {
+            "x": 742.9140625,
+            "y": 346.5390625,
+            "width": 228.0859375,
+            "height": 23.3984375,
+            "top": 346.5390625,
+            "right": 971,
+            "bottom": 369.9375,
+            "left": 742.9140625
+          },
+          "fontSize": "18px",
+          "title": "Example Alexander Dinerchtein",
+          "scrollWidth": 261,
+          "clientWidth": 228
+        }
+      ],
+      "ranks": [
+        {
+          "text": "—",
+          "fontSize": "14px",
+          "box": {
+            "x": 562,
+            "y": 349.140625,
+            "width": 12.796875,
+            "height": 18.1953125,
+            "top": 349.140625,
+            "right": 574.796875,
+            "bottom": 367.3359375,
+            "left": 562
+          }
+        },
+        {
+          "text": "6级",
+          "fontSize": "14px",
+          "box": {
+            "x": 715.171875,
+            "y": 349.140625,
+            "width": 22.7421875,
+            "height": 18.1953125,
+            "top": 349.140625,
+            "right": 737.9140625,
+            "bottom": 367.3359375,
+            "left": 715.171875
+          }
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "nameTextBoxes": [
+        {
+          "x": 359,
+          "y": 433.5390625,
+          "width": 133.8671875,
+          "height": 20.5,
+          "top": 433.5390625,
+          "right": 492.8671875,
+          "bottom": 454.0390625,
+          "left": 359
+        },
+        {
+          "x": 917,
+          "y": 433.5390625,
+          "width": 54,
+          "height": 20.5,
+          "top": 433.5390625,
+          "right": 971,
+          "bottom": 454.0390625,
+          "left": 917
+        }
+      ],
+      "resultTextBox": {
+        "x": 637,
+        "y": 436.1953125,
+        "width": 56,
+        "height": 16,
+        "top": 436.1953125,
+        "right": 693,
+        "bottom": 452.1953125,
+        "left": 637
+      },
+      "text": "示例棋谱 3 · 示例轮次2026-10-252 手Example Black9段黑中盘胜—示例乙",
+      "card": {
+        "x": 328,
+        "y": 398,
+        "width": 674,
+        "height": 78,
+        "top": 398,
+        "right": 1002,
+        "bottom": 476,
+        "left": 328
+      },
+      "result": {
+        "x": 628,
+        "y": 432.1953125,
+        "width": 74,
+        "height": 24.09375,
+        "top": 432.1953125,
+        "right": 702,
+        "bottom": 456.2890625,
+        "left": 628
+      },
+      "resultStyle": {
+        "fontSize": "18px",
+        "border": "1px solid rgb(83, 100, 90)",
+        "borderRadius": "5px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "color": "rgb(238, 243, 241)"
+      },
+      "players": [
+        {
+          "text": "Example Black9段",
+          "box": {
+            "x": 341,
+            "y": 432.5390625,
+            "width": 277,
+            "height": 23.3984375,
+            "top": 432.5390625,
+            "right": 618,
+            "bottom": 455.9375,
+            "left": 341
+          },
+          "fontSize": "22px"
+        },
+        {
+          "text": "—示例乙",
+          "box": {
+            "x": 712,
+            "y": 432.5390625,
+            "width": 277,
+            "height": 23.3984375,
+            "top": 432.5390625,
+            "right": 989,
+            "bottom": 455.9375,
+            "left": 712
+          },
+          "fontSize": "22px"
+        }
+      ],
+      "names": [
+        {
+          "text": "Example Black",
+          "box": {
+            "x": 359,
+            "y": 432.5390625,
+            "width": 133.8671875,
+            "height": 23.3984375,
+            "top": 432.5390625,
+            "right": 492.8671875,
+            "bottom": 455.9375,
+            "left": 359
+          },
+          "fontSize": "18px",
+          "title": "Example Black",
+          "scrollWidth": 134,
+          "clientWidth": 134
+        },
+        {
+          "text": "示例乙",
+          "box": {
+            "x": 917,
+            "y": 432.5390625,
+            "width": 54,
+            "height": 23.3984375,
+            "top": 432.5390625,
+            "right": 971,
+            "bottom": 455.9375,
+            "left": 917
+          },
+          "fontSize": "18px",
+          "title": "示例乙",
+          "scrollWidth": 54,
+          "clientWidth": 54
+        }
+      ],
+      "ranks": [
+        {
+          "text": "9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 497.8671875,
+            "y": 435.140625,
+            "width": 22.7421875,
+            "height": 18.1953125,
+            "top": 435.140625,
+            "right": 520.609375,
+            "bottom": 453.3359375,
+            "left": 497.8671875
+          }
+        },
+        {
+          "text": "—",
+          "fontSize": "14px",
+          "box": {
+            "x": 899.203125,
+            "y": 435.140625,
+            "width": 12.796875,
+            "height": 18.1953125,
+            "top": 435.140625,
+            "right": 912,
+            "bottom": 453.3359375,
+            "left": 899.203125
+          }
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "nameTextBoxes": [
+        {
+          "x": 359,
+          "y": 519.5390625,
+          "width": 54,
+          "height": 20.5,
+          "top": 519.5390625,
+          "right": 413,
+          "bottom": 540.0390625,
+          "left": 359
+        },
+        {
+          "x": 816.03125,
+          "y": 519.5390625,
+          "width": 154.96875,
+          "height": 20.5,
+          "top": 519.5390625,
+          "right": 971,
+          "bottom": 540.0390625,
+          "left": 816.03125
+        }
+      ],
+      "resultTextBox": {
+        "x": 637,
+        "y": 522.1953125,
+        "width": 56,
+        "height": 16,
+        "top": 522.1953125,
+        "right": 693,
+        "bottom": 538.1953125,
+        "left": 637
+      },
+      "text": "示例棋谱 4 · 示例轮次2026-10-252 手示例丙6级白胜超时职业9段Example Timeout",
+      "card": {
+        "x": 328,
+        "y": 484,
+        "width": 674,
+        "height": 78,
+        "top": 484,
+        "right": 1002,
+        "bottom": 562,
+        "left": 328
+      },
+      "result": {
+        "x": 628,
+        "y": 518.1953125,
+        "width": 74,
+        "height": 24.09375,
+        "top": 518.1953125,
+        "right": 702,
+        "bottom": 542.2890625,
+        "left": 628
+      },
+      "resultStyle": {
+        "fontSize": "18px",
+        "border": "1px solid rgb(83, 100, 90)",
+        "borderRadius": "5px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "color": "rgb(238, 243, 241)"
+      },
+      "players": [
+        {
+          "text": "示例丙6级",
+          "box": {
+            "x": 341,
+            "y": 518.5390625,
+            "width": 277,
+            "height": 23.3984375,
+            "top": 518.5390625,
+            "right": 618,
+            "bottom": 541.9375,
+            "left": 341
+          },
+          "fontSize": "22px"
+        },
+        {
+          "text": "职业9段Example Timeout",
+          "box": {
+            "x": 712,
+            "y": 518.5390625,
+            "width": 277,
+            "height": 23.3984375,
+            "top": 518.5390625,
+            "right": 989,
+            "bottom": 541.9375,
+            "left": 712
+          },
+          "fontSize": "22px"
+        }
+      ],
+      "names": [
+        {
+          "text": "示例丙",
+          "box": {
+            "x": 359,
+            "y": 518.5390625,
+            "width": 54,
+            "height": 23.3984375,
+            "top": 518.5390625,
+            "right": 413,
+            "bottom": 541.9375,
+            "left": 359
+          },
+          "fontSize": "18px",
+          "title": "示例丙",
+          "scrollWidth": 54,
+          "clientWidth": 54
+        },
+        {
+          "text": "Example Timeout",
+          "box": {
+            "x": 816.03125,
+            "y": 518.5390625,
+            "width": 154.96875,
+            "height": 23.3984375,
+            "top": 518.5390625,
+            "right": 971,
+            "bottom": 541.9375,
+            "left": 816.03125
+          },
+          "fontSize": "18px",
+          "title": "Example Timeout",
+          "scrollWidth": 155,
+          "clientWidth": 155
+        }
+      ],
+      "ranks": [
+        {
+          "text": "6级",
+          "fontSize": "14px",
+          "box": {
+            "x": 418,
+            "y": 521.140625,
+            "width": 22.7421875,
+            "height": 18.1953125,
+            "top": 521.140625,
+            "right": 440.7421875,
+            "bottom": 539.3359375,
+            "left": 418
+          }
+        },
+        {
+          "text": "职业9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 760.2890625,
+            "y": 521.140625,
+            "width": 50.7421875,
+            "height": 18.1953125,
+            "top": 521.140625,
+            "right": 811.03125,
+            "bottom": 539.3359375,
+            "left": 760.2890625
+          }
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "nameTextBoxes": [
+        {
+          "x": 359,
+          "y": 605.5390625,
+          "width": 142.328125,
+          "height": 20.5,
+          "top": 605.5390625,
+          "right": 501.328125,
+          "bottom": 626.0390625,
+          "left": 359
+        },
+        {
+          "x": 917,
+          "y": 605.5390625,
+          "width": 54,
+          "height": 20.5,
+          "top": 605.5390625,
+          "right": 971,
+          "bottom": 626.0390625,
+          "left": 917
+        }
+      ],
+      "resultTextBox": {
+        "x": 637,
+        "y": 608.1953125,
+        "width": 56,
+        "height": 16,
+        "top": 608.1953125,
+        "right": 693,
+        "bottom": 624.1953125,
+        "left": 637
+      },
+      "text": "示例棋谱 5 · 示例轮次2026-10-252 手Example Forfeit职业9段黑胜弃权9段示例丁",
+      "card": {
+        "x": 328,
+        "y": 570,
+        "width": 674,
+        "height": 78,
+        "top": 570,
+        "right": 1002,
+        "bottom": 648,
+        "left": 328
+      },
+      "result": {
+        "x": 628,
+        "y": 604.1953125,
+        "width": 74,
+        "height": 24.09375,
+        "top": 604.1953125,
+        "right": 702,
+        "bottom": 628.2890625,
+        "left": 628
+      },
+      "resultStyle": {
+        "fontSize": "18px",
+        "border": "1px solid rgb(83, 100, 90)",
+        "borderRadius": "5px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "color": "rgb(238, 243, 241)"
+      },
+      "players": [
+        {
+          "text": "Example Forfeit职业9段",
+          "box": {
+            "x": 341,
+            "y": 604.5390625,
+            "width": 277,
+            "height": 23.3984375,
+            "top": 604.5390625,
+            "right": 618,
+            "bottom": 627.9375,
+            "left": 341
+          },
+          "fontSize": "22px"
+        },
+        {
+          "text": "9段示例丁",
+          "box": {
+            "x": 712,
+            "y": 604.5390625,
+            "width": 277,
+            "height": 23.3984375,
+            "top": 604.5390625,
+            "right": 989,
+            "bottom": 627.9375,
+            "left": 712
+          },
+          "fontSize": "22px"
+        }
+      ],
+      "names": [
+        {
+          "text": "Example Forfeit",
+          "box": {
+            "x": 359,
+            "y": 604.5390625,
+            "width": 142.328125,
+            "height": 23.3984375,
+            "top": 604.5390625,
+            "right": 501.328125,
+            "bottom": 627.9375,
+            "left": 359
+          },
+          "fontSize": "18px",
+          "title": "Example Forfeit",
+          "scrollWidth": 142,
+          "clientWidth": 142
+        },
+        {
+          "text": "示例丁",
+          "box": {
+            "x": 917,
+            "y": 604.5390625,
+            "width": 54,
+            "height": 23.3984375,
+            "top": 604.5390625,
+            "right": 971,
+            "bottom": 627.9375,
+            "left": 917
+          },
+          "fontSize": "18px",
+          "title": "示例丁",
+          "scrollWidth": 54,
+          "clientWidth": 54
+        }
+      ],
+      "ranks": [
+        {
+          "text": "职业9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 506.328125,
+            "y": 607.140625,
+            "width": 50.7421875,
+            "height": 18.1953125,
+            "top": 607.140625,
+            "right": 557.0703125,
+            "bottom": 625.3359375,
+            "left": 506.328125
+          }
+        },
+        {
+          "text": "9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 889.2578125,
+            "y": 607.140625,
+            "width": 22.7421875,
+            "height": 18.1953125,
+            "top": 607.140625,
+            "right": 912,
+            "bottom": 625.3359375,
+            "left": 889.2578125
+          }
+        }
+      ],
+      "overflow": false
+    }
+  ],
+  "reports": [
+    {
+      "nameTextBoxes": [
+        {
+          "x": 357,
+          "y": 193.1015625,
+          "width": 48,
+          "height": 18,
+          "top": 193.1015625,
+          "right": 405,
+          "bottom": 211.1015625,
+          "left": 357
+        },
+        {
+          "x": 811.828125,
+          "y": 193.1015625,
+          "width": 111.171875,
+          "height": 18,
+          "top": 193.1015625,
+          "right": 923,
+          "bottom": 211.1015625,
+          "left": 811.828125
+        }
+      ],
+      "resultTextBox": {
+        "x": 612,
+        "y": 194.453125,
+        "width": 56,
+        "height": 16,
+        "top": 194.453125,
+        "right": 668,
+        "bottom": 210.453125,
+        "left": 612
+      },
+      "text": "白中盘胜 · 2 手 · 今天 08:00示例历史 1未分析2026-10-25 · 2 手示例甲职业9段白中盘胜9段Example White",
+      "card": {
+        "x": 328,
+        "y": 150,
+        "width": 624,
+        "height": 74,
+        "top": 150,
+        "right": 952,
+        "bottom": 224,
+        "left": 328
+      },
+      "result": {
+        "x": 603,
+        "y": 190.453125,
+        "width": 74,
+        "height": 24.09375,
+        "top": 190.453125,
+        "right": 677,
+        "bottom": 214.546875,
+        "left": 603
+      },
+      "resultStyle": {
+        "fontSize": "18px",
+        "border": "1px solid rgb(83, 100, 90)",
+        "borderRadius": "5px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "color": "rgb(238, 243, 241)"
+      },
+      "players": [
+        {
+          "text": "示例甲职业9段",
+          "box": {
+            "x": 339,
+            "y": 192.1015625,
+            "width": 258,
+            "height": 20.796875,
+            "top": 192.1015625,
+            "right": 597,
+            "bottom": 212.8984375,
+            "left": 339
+          },
+          "fontSize": "20px"
+        },
+        {
+          "text": "9段Example White",
+          "box": {
+            "x": 683,
+            "y": 192.1015625,
+            "width": 258,
+            "height": 20.796875,
+            "top": 192.1015625,
+            "right": 941,
+            "bottom": 212.8984375,
+            "left": 683
+          },
+          "fontSize": "20px"
+        }
+      ],
+      "names": [
+        {
+          "text": "示例甲",
+          "box": {
+            "x": 357,
+            "y": 192.1015625,
+            "width": 48,
+            "height": 20.796875,
+            "top": 192.1015625,
+            "right": 405,
+            "bottom": 212.8984375,
+            "left": 357
+          },
+          "fontSize": "16px",
+          "title": "示例甲",
+          "scrollWidth": 48,
+          "clientWidth": 48
+        },
+        {
+          "text": "Example White",
+          "box": {
+            "x": 811.828125,
+            "y": 192.1015625,
+            "width": 111.171875,
+            "height": 20.796875,
+            "top": 192.1015625,
+            "right": 923,
+            "bottom": 212.8984375,
+            "left": 811.828125
+          },
+          "fontSize": "16px",
+          "title": "Example White",
+          "scrollWidth": 111,
+          "clientWidth": 111
+        }
+      ],
+      "ranks": [
+        {
+          "text": "职业9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 410,
+            "y": 193.3984375,
+            "width": 50.7421875,
+            "height": 18.1953125,
+            "top": 193.3984375,
+            "right": 460.7421875,
+            "bottom": 211.59375,
+            "left": 410
+          }
+        },
+        {
+          "text": "9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 784.0859375,
+            "y": 193.3984375,
+            "width": 22.7421875,
+            "height": 18.1953125,
+            "top": 193.3984375,
+            "right": 806.828125,
+            "bottom": 211.59375,
+            "left": 784.0859375
+          }
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "nameTextBoxes": [
+        {
+          "x": 357,
+          "y": 275.1015625,
+          "width": 176,
+          "height": 18,
+          "top": 275.1015625,
+          "right": 533,
+          "bottom": 293.1015625,
+          "left": 357
+        },
+        {
+          "x": 713.9140625,
+          "y": 275.1015625,
+          "width": 231.984375,
+          "height": 18,
+          "top": 275.1015625,
+          "right": 945.8984375,
+          "bottom": 293.1015625,
+          "left": 713.9140625
+        }
+      ],
+      "resultTextBox": {
+        "x": 608.828125,
+        "y": 276.453125,
+        "width": 62.34375,
+        "height": 16,
+        "top": 276.453125,
+        "right": 671.171875,
+        "bottom": 292.453125,
+        "left": 608.828125
+      },
+      "text": "黑胜 6.5 子 · 2 手 · 今天 08:00示例历史 2未分析2026-10-25 · 2 手示例中文很长的棋手姓名—黑胜6.5子6级Example Alexander Dinerchtein",
+      "card": {
+        "x": 328,
+        "y": 232,
+        "width": 624,
+        "height": 74,
+        "top": 232,
+        "right": 952,
+        "bottom": 306,
+        "left": 328
+      },
+      "result": {
+        "x": 599.828125,
+        "y": 272.453125,
+        "width": 80.34375,
+        "height": 24.09375,
+        "top": 272.453125,
+        "right": 680.171875,
+        "bottom": 296.546875,
+        "left": 599.828125
+      },
+      "resultStyle": {
+        "fontSize": "18px",
+        "border": "1px solid rgb(83, 100, 90)",
+        "borderRadius": "5px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "color": "rgb(238, 243, 241)"
+      },
+      "players": [
+        {
+          "text": "示例中文很长的棋手姓名—",
+          "box": {
+            "x": 339,
+            "y": 274.1015625,
+            "width": 254.828125,
+            "height": 20.796875,
+            "top": 274.1015625,
+            "right": 593.828125,
+            "bottom": 294.8984375,
+            "left": 339
+          },
+          "fontSize": "20px"
+        },
+        {
+          "text": "6级Example Alexander Dinerchtein",
+          "box": {
+            "x": 686.171875,
+            "y": 274.1015625,
+            "width": 254.828125,
+            "height": 20.796875,
+            "top": 274.1015625,
+            "right": 941,
+            "bottom": 294.8984375,
+            "left": 686.171875
+          },
+          "fontSize": "20px"
+        }
+      ],
+      "names": [
+        {
+          "text": "示例中文很长的棋手姓名",
+          "box": {
+            "x": 357,
+            "y": 274.1015625,
+            "width": 176,
+            "height": 20.796875,
+            "top": 274.1015625,
+            "right": 533,
+            "bottom": 294.8984375,
+            "left": 357
+          },
+          "fontSize": "16px",
+          "title": "示例中文很长的棋手姓名",
+          "scrollWidth": 176,
+          "clientWidth": 176
+        },
+        {
+          "text": "Example Alexander Dinerchtein",
+          "box": {
+            "x": 713.9140625,
+            "y": 274.1015625,
+            "width": 209.0859375,
+            "height": 20.796875,
+            "top": 274.1015625,
+            "right": 923,
+            "bottom": 294.8984375,
+            "left": 713.9140625
+          },
+          "fontSize": "16px",
+          "title": "Example Alexander Dinerchtein",
+          "scrollWidth": 232,
+          "clientWidth": 209
+        }
+      ],
+      "ranks": [
+        {
+          "text": "—",
+          "fontSize": "14px",
+          "box": {
+            "x": 538,
+            "y": 275.3984375,
+            "width": 12.796875,
+            "height": 18.1953125,
+            "top": 275.3984375,
+            "right": 550.796875,
+            "bottom": 293.59375,
+            "left": 538
+          }
+        },
+        {
+          "text": "6级",
+          "fontSize": "14px",
+          "box": {
+            "x": 686.171875,
+            "y": 275.3984375,
+            "width": 22.7421875,
+            "height": 18.1953125,
+            "top": 275.3984375,
+            "right": 708.9140625,
+            "bottom": 293.59375,
+            "left": 686.171875
+          }
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "nameTextBoxes": [
+        {
+          "x": 357,
+          "y": 357.1015625,
+          "width": 111.4921875,
+          "height": 18,
+          "top": 357.1015625,
+          "right": 468.4921875,
+          "bottom": 375.1015625,
+          "left": 357
+        },
+        {
+          "x": 875,
+          "y": 357.1015625,
+          "width": 48,
+          "height": 18,
+          "top": 357.1015625,
+          "right": 923,
+          "bottom": 375.1015625,
+          "left": 875
+        }
+      ],
+      "resultTextBox": {
+        "x": 612,
+        "y": 358.453125,
+        "width": 56,
+        "height": 16,
+        "top": 358.453125,
+        "right": 668,
+        "bottom": 374.453125,
+        "left": 612
+      },
+      "text": "白认输 · 2 手 · 今天 08:00示例历史 3未分析2026-10-25 · 2 手Example Black9段黑中盘胜—示例乙",
+      "card": {
+        "x": 328,
+        "y": 314,
+        "width": 624,
+        "height": 74,
+        "top": 314,
+        "right": 952,
+        "bottom": 388,
+        "left": 328
+      },
+      "result": {
+        "x": 603,
+        "y": 354.453125,
+        "width": 74,
+        "height": 24.09375,
+        "top": 354.453125,
+        "right": 677,
+        "bottom": 378.546875,
+        "left": 603
+      },
+      "resultStyle": {
+        "fontSize": "18px",
+        "border": "1px solid rgb(83, 100, 90)",
+        "borderRadius": "5px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "color": "rgb(238, 243, 241)"
+      },
+      "players": [
+        {
+          "text": "Example Black9段",
+          "box": {
+            "x": 339,
+            "y": 356.1015625,
+            "width": 258,
+            "height": 20.796875,
+            "top": 356.1015625,
+            "right": 597,
+            "bottom": 376.8984375,
+            "left": 339
+          },
+          "fontSize": "20px"
+        },
+        {
+          "text": "—示例乙",
+          "box": {
+            "x": 683,
+            "y": 356.1015625,
+            "width": 258,
+            "height": 20.796875,
+            "top": 356.1015625,
+            "right": 941,
+            "bottom": 376.8984375,
+            "left": 683
+          },
+          "fontSize": "20px"
+        }
+      ],
+      "names": [
+        {
+          "text": "Example Black",
+          "box": {
+            "x": 357,
+            "y": 356.1015625,
+            "width": 111.4921875,
+            "height": 20.796875,
+            "top": 356.1015625,
+            "right": 468.4921875,
+            "bottom": 376.8984375,
+            "left": 357
+          },
+          "fontSize": "16px",
+          "title": "Example Black",
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "示例乙",
+          "box": {
+            "x": 875,
+            "y": 356.1015625,
+            "width": 48,
+            "height": 20.796875,
+            "top": 356.1015625,
+            "right": 923,
+            "bottom": 376.8984375,
+            "left": 875
+          },
+          "fontSize": "16px",
+          "title": "示例乙",
+          "scrollWidth": 48,
+          "clientWidth": 48
+        }
+      ],
+      "ranks": [
+        {
+          "text": "9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 473.4921875,
+            "y": 357.3984375,
+            "width": 22.7421875,
+            "height": 18.1953125,
+            "top": 357.3984375,
+            "right": 496.234375,
+            "bottom": 375.59375,
+            "left": 473.4921875
+          }
+        },
+        {
+          "text": "—",
+          "fontSize": "14px",
+          "box": {
+            "x": 857.203125,
+            "y": 357.3984375,
+            "width": 12.796875,
+            "height": 18.1953125,
+            "top": 357.3984375,
+            "right": 870,
+            "bottom": 375.59375,
+            "left": 857.203125
+          }
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "nameTextBoxes": [
+        {
+          "x": 357,
+          "y": 439.1015625,
+          "width": 48,
+          "height": 18,
+          "top": 439.1015625,
+          "right": 405,
+          "bottom": 457.1015625,
+          "left": 357
+        },
+        {
+          "x": 794.0234375,
+          "y": 439.1015625,
+          "width": 128.9765625,
+          "height": 18,
+          "top": 439.1015625,
+          "right": 923,
+          "bottom": 457.1015625,
+          "left": 794.0234375
+        }
+      ],
+      "resultTextBox": {
+        "x": 612,
+        "y": 440.453125,
+        "width": 56,
+        "height": 16,
+        "top": 440.453125,
+        "right": 668,
+        "bottom": 456.453125,
+        "left": 612
+      },
+      "text": "白超时胜 · 2 手 · 今天 08:00示例历史 4未分析2026-10-25 · 2 手示例丙6级白胜超时职业9段Example Timeout",
+      "card": {
+        "x": 328,
+        "y": 396,
+        "width": 624,
+        "height": 74,
+        "top": 396,
+        "right": 952,
+        "bottom": 470,
+        "left": 328
+      },
+      "result": {
+        "x": 603,
+        "y": 436.453125,
+        "width": 74,
+        "height": 24.09375,
+        "top": 436.453125,
+        "right": 677,
+        "bottom": 460.546875,
+        "left": 603
+      },
+      "resultStyle": {
+        "fontSize": "18px",
+        "border": "1px solid rgb(83, 100, 90)",
+        "borderRadius": "5px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "color": "rgb(238, 243, 241)"
+      },
+      "players": [
+        {
+          "text": "示例丙6级",
+          "box": {
+            "x": 339,
+            "y": 438.1015625,
+            "width": 258,
+            "height": 20.796875,
+            "top": 438.1015625,
+            "right": 597,
+            "bottom": 458.8984375,
+            "left": 339
+          },
+          "fontSize": "20px"
+        },
+        {
+          "text": "职业9段Example Timeout",
+          "box": {
+            "x": 683,
+            "y": 438.1015625,
+            "width": 258,
+            "height": 20.796875,
+            "top": 438.1015625,
+            "right": 941,
+            "bottom": 458.8984375,
+            "left": 683
+          },
+          "fontSize": "20px"
+        }
+      ],
+      "names": [
+        {
+          "text": "示例丙",
+          "box": {
+            "x": 357,
+            "y": 438.1015625,
+            "width": 48,
+            "height": 20.796875,
+            "top": 438.1015625,
+            "right": 405,
+            "bottom": 458.8984375,
+            "left": 357
+          },
+          "fontSize": "16px",
+          "title": "示例丙",
+          "scrollWidth": 48,
+          "clientWidth": 48
+        },
+        {
+          "text": "Example Timeout",
+          "box": {
+            "x": 794.0234375,
+            "y": 438.1015625,
+            "width": 128.9765625,
+            "height": 20.796875,
+            "top": 438.1015625,
+            "right": 923,
+            "bottom": 458.8984375,
+            "left": 794.0234375
+          },
+          "fontSize": "16px",
+          "title": "Example Timeout",
+          "scrollWidth": 129,
+          "clientWidth": 129
+        }
+      ],
+      "ranks": [
+        {
+          "text": "6级",
+          "fontSize": "14px",
+          "box": {
+            "x": 410,
+            "y": 439.3984375,
+            "width": 22.7421875,
+            "height": 18.1953125,
+            "top": 439.3984375,
+            "right": 432.7421875,
+            "bottom": 457.59375,
+            "left": 410
+          }
+        },
+        {
+          "text": "职业9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 738.28125,
+            "y": 439.3984375,
+            "width": 50.7421875,
+            "height": 18.1953125,
+            "top": 439.3984375,
+            "right": 789.0234375,
+            "bottom": 457.59375,
+            "left": 738.28125
+          }
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "nameTextBoxes": [
+        {
+          "x": 357,
+          "y": 521.1015625,
+          "width": 117.71875,
+          "height": 18,
+          "top": 521.1015625,
+          "right": 474.71875,
+          "bottom": 539.1015625,
+          "left": 357
+        },
+        {
+          "x": 875,
+          "y": 521.1015625,
+          "width": 48,
+          "height": 18,
+          "top": 521.1015625,
+          "right": 923,
+          "bottom": 539.1015625,
+          "left": 875
+        }
+      ],
+      "resultTextBox": {
+        "x": 612,
+        "y": 522.453125,
+        "width": 56,
+        "height": 16,
+        "top": 522.453125,
+        "right": 668,
+        "bottom": 538.453125,
+        "left": 612
+      },
+      "text": "黑弃权胜 · 2 手 · 今天 08:00示例历史 5未分析2026-10-25 · 2 手Example Forfeit职业9段黑胜弃权9段示例丁",
+      "card": {
+        "x": 328,
+        "y": 478,
+        "width": 624,
+        "height": 74,
+        "top": 478,
+        "right": 952,
+        "bottom": 552,
+        "left": 328
+      },
+      "result": {
+        "x": 603,
+        "y": 518.453125,
+        "width": 74,
+        "height": 24.09375,
+        "top": 518.453125,
+        "right": 677,
+        "bottom": 542.546875,
+        "left": 603
+      },
+      "resultStyle": {
+        "fontSize": "18px",
+        "border": "1px solid rgb(83, 100, 90)",
+        "borderRadius": "5px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "color": "rgb(238, 243, 241)"
+      },
+      "players": [
+        {
+          "text": "Example Forfeit职业9段",
+          "box": {
+            "x": 339,
+            "y": 520.1015625,
+            "width": 258,
+            "height": 20.796875,
+            "top": 520.1015625,
+            "right": 597,
+            "bottom": 540.8984375,
+            "left": 339
+          },
+          "fontSize": "20px"
+        },
+        {
+          "text": "9段示例丁",
+          "box": {
+            "x": 683,
+            "y": 520.1015625,
+            "width": 258,
+            "height": 20.796875,
+            "top": 520.1015625,
+            "right": 941,
+            "bottom": 540.8984375,
+            "left": 683
+          },
+          "fontSize": "20px"
+        }
+      ],
+      "names": [
+        {
+          "text": "Example Forfeit",
+          "box": {
+            "x": 357,
+            "y": 520.1015625,
+            "width": 117.71875,
+            "height": 20.796875,
+            "top": 520.1015625,
+            "right": 474.71875,
+            "bottom": 540.8984375,
+            "left": 357
+          },
+          "fontSize": "16px",
+          "title": "Example Forfeit",
+          "scrollWidth": 118,
+          "clientWidth": 118
+        },
+        {
+          "text": "示例丁",
+          "box": {
+            "x": 875,
+            "y": 520.1015625,
+            "width": 48,
+            "height": 20.796875,
+            "top": 520.1015625,
+            "right": 923,
+            "bottom": 540.8984375,
+            "left": 875
+          },
+          "fontSize": "16px",
+          "title": "示例丁",
+          "scrollWidth": 48,
+          "clientWidth": 48
+        }
+      ],
+      "ranks": [
+        {
+          "text": "职业9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 479.71875,
+            "y": 521.3984375,
+            "width": 50.7421875,
+            "height": 18.1953125,
+            "top": 521.3984375,
+            "right": 530.4609375,
+            "bottom": 539.59375,
+            "left": 479.71875
+          }
+        },
+        {
+          "text": "9段",
+          "fontSize": "14px",
+          "box": {
+            "x": 847.2578125,
+            "y": 521.3984375,
+            "width": 22.7421875,
+            "height": 18.1953125,
+            "top": 521.3984375,
+            "right": 870,
+            "bottom": 539.59375,
+            "left": 847.2578125
+          }
+        }
+      ],
+      "overflow": false
+    }
+  ]
+}

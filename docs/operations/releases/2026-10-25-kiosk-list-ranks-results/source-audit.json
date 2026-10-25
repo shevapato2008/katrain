@@ -1,0 +1,25 @@
+{
+  "scope": "Read-only fetch from the already authenticated RK browser; no navigation, cookie reads, writes, broad scan, report creation or per-card details",
+  "kifu": {
+    "path": "/api/v1/kifu/albums?page=1&page_size=3&lang=cn",
+    "status": 200,
+    "rows": [
+      {"black_rank": null, "white_rank": null, "display_black_rank": "", "display_white_rank": "", "result": "B+R"},
+      {"black_rank": null, "white_rank": null, "display_black_rank": "", "display_white_rank": "", "result": "B+R"},
+      {"black_rank": null, "white_rank": null, "display_black_rank": "", "display_white_rank": "", "result": "W+R"}
+    ],
+    "one_list_embedded_preview_sgf_root": {"BR": null, "WR": null, "RE": "B+R"},
+    "sgf_parse_location": "local existing KaTrain SGF parser; private SGF not printed or saved"
+  },
+  "personal_history": {
+    "path": "/api/v1/user-games/?page=1&page_size=3",
+    "status": 200,
+    "authority": "cloud",
+    "rows": [
+      {"black_rank": null, "white_rank": null, "result": "W+R", "source": "play_human"},
+      {"black_rank": "", "white_rank": "6k", "result": "B+33.9", "source": "play_ai"},
+      {"black_rank": "", "white_rank": "", "result": "B+37.5", "source": "play_ai"}
+    ]
+  },
+  "conclusion": "Existing list contracts carry saved historical grades. Some source records genuinely omit grades; never infer from current account/name. No central code deployment or historical rewrite is required for this presentation slice."
+}

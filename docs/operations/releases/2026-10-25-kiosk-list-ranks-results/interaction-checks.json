@@ -1,0 +1,32 @@
+{
+  "selection": [
+    "false",
+    "true",
+    "false",
+    "false",
+    "false"
+  ],
+  "pagination": {
+    "url": "http://127.0.0.1:4205/kiosk/kifu",
+    "requests": [
+      {
+        "method": "GET",
+        "path": "/api/v1/kifu/albums?page=1&page_size=20&lang=cn"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/kifu/albums?page=1&page_size=20&lang=cn"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/kifu/albums?page=2&page_size=20&lang=cn"
+      }
+    ]
+  },
+  "typography": {
+    "selectedFont": "\"SmartBox CNS Kai\"",
+    "font": "\"SmartBox Sans\", \"SmartBox CNS Kai\", \"SmartBox Kai\", system-ui, sans-serif",
+    "loaded": true
+  },
+  "writes": []
+}

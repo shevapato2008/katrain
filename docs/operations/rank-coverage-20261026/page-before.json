@@ -1,0 +1,976 @@
+{
+  "page": 1,
+  "page_size": 20,
+  "games": [
+    {
+      "album_id": 178758,
+      "source_id": "91737274",
+      "date_played": "2026-10-26",
+      "sgf_sha256": "c6d2a2feb6c22f694e4a225f685ab795e721515de150aef4d73a3e4ad63b094a",
+      "sides": {
+        "black": {
+          "player_id": 463,
+          "canonical_name": "小池芳弘",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": true,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 764,
+          "canonical_name": "萧钰洋",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": true,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178757,
+      "source_id": "91694911",
+      "date_played": "2026-10-25",
+      "sgf_sha256": "b044277aaac3223d3304fee2b958358418a83624d8c817fedb850c1994d845c2",
+      "sides": {
+        "black": {
+          "player_id": 30,
+          "canonical_name": "藤泽里菜",
+          "raw_rank": null,
+          "display_rank": "7p",
+          "origin": "library_current",
+          "snapshot_exists": true,
+          "lookup_status": "qualified",
+          "lookup_reason": null,
+          "fact": {
+            "rank_value": 7,
+            "rank_system": "professional_dan",
+            "source_as_of": "2026-10-19",
+            "source_ref": {
+              "kind": "explicit_album_rank",
+              "sgf_sha256": "3b572eece08387ec1d8a592ebf250abe68e8a425f90c9b4419a7bcc1119523b4",
+              "slot": "white",
+              "source_item_id": "91664767",
+              "source_key": "19x19"
+            }
+          }
+        },
+        "white": {
+          "player_id": 9,
+          "canonical_name": "上野梨纱",
+          "raw_rank": null,
+          "display_rank": "4p",
+          "origin": "library_current",
+          "snapshot_exists": true,
+          "lookup_status": "qualified",
+          "lookup_reason": null,
+          "fact": {
+            "rank_value": 4,
+            "rank_system": "professional_dan",
+            "source_as_of": "2026-10-15",
+            "source_ref": {
+              "kind": "explicit_album_rank",
+              "sgf_sha256": "05fcf2e6e71b6114e3f37425c1ac257b7fd00d42bd548d0cfb1eb5c488d011d6",
+              "slot": "white",
+              "source_item_id": "91284570",
+              "source_key": "19x19"
+            }
+          }
+        }
+      }
+    },
+    {
+      "album_id": 178749,
+      "source_id": "91638738",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "0da65da0d6d75d9839585fdeac0f3860929e019ca03d7445c42887324a9bfd8f",
+      "sides": {
+        "black": {
+          "player_id": 502,
+          "canonical_name": "高星",
+          "raw_rank": null,
+          "display_rank": "5p",
+          "origin": "library_current",
+          "snapshot_exists": true,
+          "lookup_status": "qualified",
+          "lookup_reason": null,
+          "fact": {
+            "rank_value": 5,
+            "rank_system": "professional_dan",
+            "source_as_of": "2026-09-16",
+            "source_ref": {
+              "kind": "explicit_album_rank",
+              "sgf_sha256": "8818cc69bbd65091f569389b219e0b0a635f0f850a406f4fb322b913e9758536",
+              "slot": "black",
+              "source_item_id": "89651576",
+              "source_key": "19x19"
+            }
+          }
+        },
+        "white": {
+          "player_id": 574,
+          "canonical_name": "王爽",
+          "raw_rank": null,
+          "display_rank": "5p",
+          "origin": "library_current",
+          "snapshot_exists": true,
+          "lookup_status": "qualified",
+          "lookup_reason": null,
+          "fact": {
+            "rank_value": 5,
+            "rank_system": "professional_dan",
+            "source_as_of": "2026-09-05",
+            "source_ref": {
+              "kind": "explicit_album_rank",
+              "sgf_sha256": "71913fc2fdda3ed3eef11a5c36763bd5ed90382d8c36967e5dc21ba610eed523",
+              "slot": "white",
+              "source_item_id": "88955900",
+              "source_key": "19x19"
+            }
+          }
+        }
+      }
+    },
+    {
+      "album_id": 178748,
+      "source_id": "91637528",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "97edeb6666a08122e24940c7d4e303f7c1a2f4f4dfb8c94b2dc7b7ef762557d8",
+      "sides": {
+        "black": {
+          "player_id": 482,
+          "canonical_name": "唐奕",
+          "raw_rank": null,
+          "display_rank": "5p",
+          "origin": "library_current",
+          "snapshot_exists": true,
+          "lookup_status": "qualified",
+          "lookup_reason": null,
+          "fact": {
+            "rank_value": 5,
+            "rank_system": "professional_dan",
+            "source_as_of": "2026-10-11",
+            "source_ref": {
+              "kind": "explicit_album_rank",
+              "sgf_sha256": "36c9c39d3d81126d4e8ca34da802e23c0ff4c3567d1efe7143254ecf54356826",
+              "slot": "white",
+              "source_item_id": "91116424",
+              "source_key": "19x19"
+            }
+          }
+        },
+        "white": {
+          "player_id": 195,
+          "canonical_name": "周泓余",
+          "raw_rank": null,
+          "display_rank": "7p",
+          "origin": "library_current",
+          "snapshot_exists": true,
+          "lookup_status": "qualified",
+          "lookup_reason": null,
+          "fact": {
+            "rank_value": 7,
+            "rank_system": "professional_dan",
+            "source_as_of": "2026-10-01",
+            "source_ref": {
+              "kind": "explicit_album_rank",
+              "sgf_sha256": "83fcf1493087c6da1a175fe46712c04a481f42ff51608e071a09a25ed7c41892",
+              "slot": "black",
+              "source_item_id": "90521040",
+              "source_key": "19x19"
+            }
+          }
+        }
+      }
+    },
+    {
+      "album_id": 178747,
+      "source_id": "91635753",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "ac14c90afdff6c89ab15e41f7e4e60cef23413759d191332afed83b073fdac00",
+      "sides": {
+        "black": {
+          "player_id": 389,
+          "canonical_name": "张子涵",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 228,
+          "canonical_name": "潘阳",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178746,
+      "source_id": "91635650",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "285cf23061dfc655b8ac3ce6a9a2f5f6ccb690089b26650bd48ed7911d9eca9a",
+      "sides": {
+        "black": {
+          "player_id": 319,
+          "canonical_name": "汪雨博",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 514,
+          "canonical_name": "丁明君",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178745,
+      "source_id": "91635363",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "5d6a72d65c62eecbf9d96ba73f8869f81174503cb51100fdfd0d15fe7e6dced8",
+      "sides": {
+        "black": {
+          "player_id": 181,
+          "canonical_name": "赵奕斐",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 218,
+          "canonical_name": "於之莹",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178744,
+      "source_id": "91634842",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "2229ca9a23fdee74f9058f54968a7b7089d6c71eb78062f77847a71c2411b164",
+      "sides": {
+        "black": {
+          "player_id": 210,
+          "canonical_name": "方若曦",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 209,
+          "canonical_name": "芮乃伟",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178743,
+      "source_id": "91632021",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "9edf408d6e7ba58e656261d737f71b82d630b4851a7274c1311491a7a3b2c838",
+      "sides": {
+        "black": {
+          "player_id": 127,
+          "canonical_name": "党毅飞",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 37,
+          "canonical_name": "辜梓豪",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178742,
+      "source_id": "91634488",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "29f9ebe635e1d3ffccb4e4b10c99af008f34e9786ea061006c8d357f22b64126",
+      "sides": {
+        "black": {
+          "player_id": 377,
+          "canonical_name": "李小溪94",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "no_verifiable_raw_rank"
+        },
+        "white": {
+          "player_id": 331,
+          "canonical_name": "严惜蓦",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178741,
+      "source_id": "91634345",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "6ffad65cb38f6dce113a50d102ae01cc62bca4268d8ba000914d5c5120e79b17",
+      "sides": {
+        "black": {
+          "player_id": 177,
+          "canonical_name": "李思璇",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 185,
+          "canonical_name": "陆敏全",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178740,
+      "source_id": "91634218",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "eedf05d033d5c5226fd43df91a4baadbabd72a06848f0ddd86d8c47c583b47ec",
+      "sides": {
+        "black": {
+          "player_id": 577,
+          "canonical_name": "刘慧玲",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 390,
+          "canonical_name": "丁柯文",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178739,
+      "source_id": "91634055",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "d5b0118682c49d7fcc7a8168c3c1f16570aa662cf08fd45c3eac4893cbe9cd03",
+      "sides": {
+        "black": {
+          "player_id": 183,
+          "canonical_name": "罗楚玥",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 575,
+          "canonical_name": "王晨星",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178738,
+      "source_id": "91633894",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "8dc341883dc39c2f711be16782348f7d933a99c753cc672f83deb666a446afa1",
+      "sides": {
+        "black": {
+          "player_id": 433,
+          "canonical_name": "冯韵嘉",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 182,
+          "canonical_name": "李小溪05",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178737,
+      "source_id": "91633693",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "17d86c00d8f9820e0e1723c8d7986232c480475dbea6fd9fb100e54dfa4d6b1f",
+      "sides": {
+        "black": {
+          "player_id": 86,
+          "canonical_name": "吴依铭",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 186,
+          "canonical_name": "唐嘉雯",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178736,
+      "source_id": "91633333",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "43f9a14fe385385a417a821abeddaf8be5108628891743fd7c420a9f07fc5d1d",
+      "sides": {
+        "black": {
+          "player_id": 569,
+          "canonical_name": "陈一鸣",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 180,
+          "canonical_name": "陈蔓淇",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178735,
+      "source_id": "91633003",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "fba41db37daa99f1838102b1f77df698ee67f21e936854adf56ca84136b1f269",
+      "sides": {
+        "black": {
+          "player_id": 197,
+          "canonical_name": "杨子萱",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 260,
+          "canonical_name": "徐晶琦",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178734,
+      "source_id": "91631224",
+      "date_played": "2026-10-24",
+      "sgf_sha256": "4f33d9dd15ffd117fa50258495ba307050a3be6f5d6bbf85ff9afdf14d3595f2",
+      "sides": {
+        "black": {
+          "player_id": 553,
+          "canonical_name": "曾楚典",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 318,
+          "canonical_name": "徐海哲",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178724,
+      "source_id": "91574352",
+      "date_played": "2026-10-23",
+      "sgf_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73",
+      "sides": {
+        "black": {
+          "player_id": 10,
+          "canonical_name": "福冈航太朗",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 42,
+          "canonical_name": "一力辽",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    },
+    {
+      "album_id": 178727,
+      "source_id": "91511645",
+      "date_played": "2026-10-22",
+      "sgf_sha256": "e65536dbc4f659156266a32d8a86da6c7672212547319bc2aa1c2f1a2bc54b0b",
+      "sides": {
+        "black": {
+          "player_id": 6513,
+          "canonical_name": "鸟井裕太",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        },
+        "white": {
+          "player_id": 74,
+          "canonical_name": "山田规三生",
+          "raw_rank": null,
+          "display_rank": "",
+          "origin": "unknown",
+          "snapshot_exists": false,
+          "lookup_status": "unknown_system",
+          "lookup_reason": "professional_identity_unverified"
+        }
+      }
+    }
+  ],
+  "capture_inventory": [
+    {
+      "player_id": 209,
+      "canonical_name": "芮乃伟",
+      "original_name": "芮乃偉",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000186",
+      "body_sha256": "a8352024a916386e46cb5748ec4c2ac29e4aa45e3fa54cbff090a6f80f6ba41b"
+    },
+    {
+      "player_id": 42,
+      "canonical_name": "一力辽",
+      "original_name": "一力　遼",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000435.htm",
+      "body_sha256": "f95f60154f267d6c5abed5d4778e0ffa1cf35c35143ad6ca4c10f763f850a6e5"
+    },
+    {
+      "player_id": 74,
+      "canonical_name": "山田规三生",
+      "original_name": "山田　規三生",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000292.html",
+      "body_sha256": "c8299ee05fbc6f4b15ad85d4f53b911d4b29338222a1fc98a89c357a501666c6"
+    },
+    {
+      "player_id": 218,
+      "canonical_name": "於之莹",
+      "original_name": "於之瑩",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000560",
+      "body_sha256": "f272ea7f5bd0adfcd8f818c0326d70e6c5b6823f1ff297ce6b6693df44d479da"
+    },
+    {
+      "player_id": 127,
+      "canonical_name": "党毅飞",
+      "original_name": "黨毅飛",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000536",
+      "body_sha256": "237d3a44fd2f547bb3c9a27e5ca24e13571a140d44fa91410b9abea1e6a57766"
+    },
+    {
+      "player_id": 30,
+      "canonical_name": "藤泽里菜",
+      "original_name": "藤沢　里菜",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000434_5.html",
+      "body_sha256": "61a7ba268b0685e3f989f4ebc61bb9259dacd3b4606a02bc9ef8dc1708c5a7f0"
+    },
+    {
+      "player_id": 37,
+      "canonical_name": "辜梓豪",
+      "original_name": "辜梓豪",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20000629",
+      "body_sha256": "29b6c39db0e8d1133d64a48518fdc9529749846f946279618a471d6bd22c091c"
+    },
+    {
+      "player_id": 575,
+      "canonical_name": "王晨星",
+      "original_name": "王晨星",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000384",
+      "body_sha256": "de660d1eaac69ad8e50aae1009acc3bef4be31047e9090c547d6058f47181813"
+    },
+    {
+      "player_id": 195,
+      "canonical_name": "周泓余",
+      "original_name": "周泓余",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001261",
+      "body_sha256": "eff98ab19798882037dd0c2103679e2e80e90984d725c38d279287c02aece7cc"
+    },
+    {
+      "player_id": 482,
+      "canonical_name": "唐奕",
+      "original_name": "唐奕",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+    },
+    {
+      "player_id": 482,
+      "canonical_name": "唐奕",
+      "original_name": "唐奕",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20000419",
+      "body_sha256": "e6aec27a1a3cd8f750c24a1bf9a2ab1a39177f325a2b1f448705e587121c6536"
+    },
+    {
+      "player_id": 185,
+      "canonical_name": "陆敏全",
+      "original_name": "陆敏全",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+    },
+    {
+      "player_id": 185,
+      "canonical_name": "陆敏全",
+      "original_name": "陆敏全",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20001001",
+      "body_sha256": "6d1041e14540f8f0fbb74ad41af89cbf31fc644fbe2f476b2cdc89294175012c"
+    },
+    {
+      "player_id": 569,
+      "canonical_name": "陈一鸣",
+      "original_name": "陳一鳴",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000549",
+      "body_sha256": "ee5c754788b547a50078a86514b2390a4de319e056331a49d67e2de26fb2200a"
+    },
+    {
+      "player_id": 569,
+      "canonical_name": "陈一鸣",
+      "original_name": "陳一鳴",
+      "url": "https://www.nihonkiin.or.jp/match/okage_w/003.html",
+      "body_sha256": "fbe970812f580b5a6c9dea7e032434444f79e8a9187217bd92eaa14c6a5dc097"
+    },
+    {
+      "player_id": 86,
+      "canonical_name": "吴依铭",
+      "original_name": "吳依銘",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001776",
+      "body_sha256": "76d0bf247bbf2dd60db42c43c36e835f102743df550febc143c534b6c08ed347"
+    },
+    {
+      "player_id": 86,
+      "canonical_name": "吴依铭",
+      "original_name": "吳依銘",
+      "url": "https://www.nihonkiin.or.jp/match_news/match_result/ibk_12026_ibk1.html",
+      "body_sha256": "35169e6667e5f3412f86ce15fa3f398b5ac37fc45ba02dd296c38158cf0b15c0"
+    },
+    {
+      "player_id": 502,
+      "canonical_name": "高星",
+      "original_name": "高星",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20000805",
+      "body_sha256": "21c074d315984440101260dce455dee5172a15b7dc70f41652388b7d73f4d87a"
+    },
+    {
+      "player_id": 502,
+      "canonical_name": "高星",
+      "original_name": "高星",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+    },
+    {
+      "player_id": 186,
+      "canonical_name": "唐嘉雯",
+      "original_name": "唐嘉雯",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20001829",
+      "body_sha256": "1a72e6488cca460cf2aced69e01a427006a36b3a8bb6c0f7453fd215129c7501"
+    },
+    {
+      "player_id": 186,
+      "canonical_name": "唐嘉雯",
+      "original_name": "唐嘉雯",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+    },
+    {
+      "player_id": 10,
+      "canonical_name": "福冈航太朗",
+      "original_name": "福岡　航太朗",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000488.html",
+      "body_sha256": "76615856cfdfb0dedc4fb150e9b2204cedc0d0fb8beb13003400094b633fecea"
+    },
+    {
+      "player_id": 10,
+      "canonical_name": "福冈航太朗",
+      "original_name": "福岡　航太朗",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001784",
+      "body_sha256": "34cb7128e91bd5c75ed416f28274bdcf8fa48a2c6cb4f9b910e21e25fca6ff2c"
+    },
+    {
+      "player_id": 9,
+      "canonical_name": "上野梨纱",
+      "original_name": "上野　梨紗",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000489.html",
+      "body_sha256": "f48f200d51e37470c2c08641cce5b2d3afa7ac37fd5825a93d9433662af7c4ca"
+    },
+    {
+      "player_id": 210,
+      "canonical_name": "方若曦",
+      "original_name": "方若曦",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001720",
+      "body_sha256": "d301491ecc376214d23c499e56046ea5998fbdd81f05c72129254a1bca9a4c77"
+    },
+    {
+      "player_id": 463,
+      "canonical_name": "小池芳弘",
+      "original_name": "小池　芳弘",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000465.html",
+      "body_sha256": "eadc4f86c2c185dd21e28620a47ad1666529087f322d007ebf3d6e793bee357d"
+    },
+    {
+      "player_id": 389,
+      "canonical_name": "张子涵",
+      "original_name": "장쯔한",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000822",
+      "body_sha256": "47257fd5d558fd413b3077eb0772d3a4f2eb1f28494f1fe97601cbbfada3c856"
+    },
+    {
+      "player_id": 319,
+      "canonical_name": "汪雨博",
+      "original_name": "汪雨博",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000976",
+      "body_sha256": "dff91741988096d0ee4c6961d9ede7d77cc6b9456aaffb342a37c160ca5c77e8"
+    },
+    {
+      "player_id": 181,
+      "canonical_name": "赵奕斐",
+      "original_name": "赵奕斐",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+    },
+    {
+      "player_id": 181,
+      "canonical_name": "赵奕斐",
+      "original_name": "赵奕斐",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001043",
+      "body_sha256": "305d827326f9b4062fa53892fb88951f415310d9c1ea6c61cbe43bd505d4007f"
+    },
+    {
+      "player_id": 183,
+      "canonical_name": "罗楚玥",
+      "original_name": "罗楚玥",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+    },
+    {
+      "player_id": 183,
+      "canonical_name": "罗楚玥",
+      "original_name": "罗楚玥",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001260",
+      "body_sha256": "0e4f7ce83cca996238c812e9055763470833c4d504ea78d5771bef97e23f4ec3"
+    },
+    {
+      "player_id": 574,
+      "canonical_name": "王爽",
+      "original_name": "王爽",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000627",
+      "body_sha256": "6b6b10d11d8540d573784dc4a5d9e7e5d21cd91fb8f67ff5717670240faec0f0"
+    },
+    {
+      "player_id": 574,
+      "canonical_name": "王爽",
+      "original_name": "王爽",
+      "url": "https://www.nihonkiin.or.jp/match_news/match_info/23_19.html",
+      "body_sha256": "5765edbca6941ded80605b4d009d3f1ba18e3e800e881a2d5804a3b49d197535"
+    },
+    {
+      "player_id": 228,
+      "canonical_name": "潘阳",
+      "original_name": "潘阳",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+    },
+    {
+      "player_id": 228,
+      "canonical_name": "潘阳",
+      "original_name": "潘阳",
+      "url": "https://www.nihonkiin.or.jp/match/heisei/001.htm",
+      "body_sha256": "0f0b2d01f954bb98798718daafb601943cd44bf92122ceb56c26f72567758700"
+    },
+    {
+      "player_id": 177,
+      "canonical_name": "李思璇",
+      "original_name": "李思璇",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+    },
+    {
+      "player_id": 577,
+      "canonical_name": "刘慧玲",
+      "original_name": "류후이링",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001640",
+      "body_sha256": "723283b1fc2b13f0b450184c491632e4b642bd0c41400b3bd5349aa05e61d713"
+    },
+    {
+      "player_id": 260,
+      "canonical_name": "徐晶琦",
+      "original_name": "徐晶琦",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+    },
+    {
+      "player_id": 514,
+      "canonical_name": "丁明君",
+      "original_name": "丁明君",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9"
+    },
+    {
+      "player_id": 180,
+      "canonical_name": "陈蔓淇",
+      "original_name": "陈蔓淇",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002110",
+      "body_sha256": "078d5a5aacecd1ae4c2b1655bcd95714949a4d82c3d0509fc13a1ecf4ff26aa8"
+    },
+    {
+      "player_id": 318,
+      "canonical_name": "徐海哲",
+      "original_name": "徐海哲",
+      "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002116",
+      "body_sha256": "17ad0df851ccf20b3fc6d848b513dac50b161226788b16d9491e87a9728444bd"
+    },
+    {
+      "player_id": 318,
+      "canonical_name": "徐海哲",
+      "original_name": "徐海哲",
+      "url": "https://www.nihonkiin.or.jp/match/goseigen/008.html",
+      "body_sha256": "54fcbd87b7c9b89517bf1ac85fb3d8dd662072a3e84d2e62d6d752957e3ac3d0"
+    },
+    {
+      "player_id": 553,
+      "canonical_name": "曾楚典",
+      "original_name": "曾楚典",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20002167",
+      "body_sha256": "7351c927fbf876ba4e8f7428754392eefb1526cb76ce156d15757468a62f8d84"
+    },
+    {
+      "player_id": 331,
+      "canonical_name": "严惜蓦",
+      "original_name": "严惜蓦",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20002128",
+      "body_sha256": "209ca9f257c20caf9a8d0050e296d8b4464b95fd3db78f6a079f86b9ee927169"
+    },
+    {
+      "player_id": 433,
+      "canonical_name": "冯韵嘉",
+      "original_name": "冯韵嘉",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10001143",
+      "body_sha256": "0d982ba0b610318966d85d1f019110c1844c33bd76d91755e4206429896396b9"
+    },
+    {
+      "player_id": 390,
+      "canonical_name": "丁柯文",
+      "original_name": "丁柯文",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20002122",
+      "body_sha256": "68c93c38900bfbc7924e6a1f995a24e78e1720b41e0e3549c2850a36abde99cf"
+    },
+    {
+      "player_id": 182,
+      "canonical_name": "李小溪05",
+      "original_name": "李小溪(05)",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20002111",
+      "body_sha256": "0807f682712ffb233eaa9ef537337d3bd9bf75c1a209d907f1e2b98e904acb87"
+    }
+  ]
+}

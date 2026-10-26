@@ -1,17 +1,24 @@
-"""Freeze one rank-only correction for three explicitly authorized source games.
+"""Freeze one rank-only correction for explicitly pinned 19x19 source games.
 
 Build is read-only unless --output is given. Applying an existing frozen file is
 restricted to the local TEST workflow; PROD uses the verified native receiver.
 This module never constructs Stage or StateStore and never searches SGF files.
+
+--scope-file accepts {"publication_key": "a-new-key", "originals": [
+  {"source_item_id": "123", "sgf_sha256": "<64 lowercase hex>",
+   "manifest_sha256": "<64 lowercase hex>"}]}, with 1..20 exact 19x19 members.
+Omitting it preserves the original three-game correction scope.
 """
 
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from hashlib import sha256
 import argparse
 import json
 import os
 from pathlib import Path
+import re
 import stat
 import sys
 import tempfile
@@ -60,9 +67,58 @@ PINNED_ORIGINALS = {
 PUBLICATION_KEY = "rank-only-19x19-91637528-91638738-91694911-v1"
 
 
+@dataclass(frozen=True)
+class _CorrectionScope:
+    publication_key: str
+    originals: tuple
+
+    @property
+    def pins(self):
+        return {item: {"sgf_sha256": sgf, "manifest_sha256": manifest} for item, sgf, manifest in self.originals}
+
+
 def _require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def _correction_scope(scope=None):
+    """Copy operator pins into an immutable value; never change global defaults."""
+    if isinstance(scope, _CorrectionScope):
+        return scope
+    if scope is None:
+        scope = {
+            "publication_key": PUBLICATION_KEY,
+            "originals": [{"source_item_id": item, **pin} for item, pin in PINNED_ORIGINALS.items()],
+        }
+    _require(isinstance(scope, dict) and set(scope) == {"publication_key", "originals"}, "scope fields invalid")
+    key, originals = scope["publication_key"], scope["originals"]
+    _require(
+        isinstance(key, str) and 0 < len(key) <= 200 and key.strip() == key,
+        "scope publication key invalid",
+    )
+    _require(isinstance(originals, list) and 1 <= len(originals) <= 20, "scope needs 1..20 original source IDs")
+    pins = {}
+    for pin in originals:
+        _require(
+            isinstance(pin, dict) and set(pin) == {"source_item_id", "sgf_sha256", "manifest_sha256"},
+            "scope original fields invalid",
+        )
+        item = pin["source_item_id"]
+        _require(isinstance(item, str) and re.fullmatch(r"[0-9]+", item), "scope source ID invalid")
+        _require(item not in pins, "scope source ID duplicated")
+        _require(
+            all(
+                isinstance(pin[name], str) and re.fullmatch(r"[0-9a-f]{64}", pin[name])
+                for name in ("sgf_sha256", "manifest_sha256")
+            ),
+            "scope original hash invalid",
+        )
+        pins[item] = {name: pin[name] for name in ("sgf_sha256", "manifest_sha256")}
+    _require(key != PUBLICATION_KEY or pins == PINNED_ORIGINALS, "scope cannot reuse default publication key")
+    return _CorrectionScope(
+        key, tuple((item, pin["sgf_sha256"], pin["manifest_sha256"]) for item, pin in sorted(pins.items()))
+    )
 
 
 def _safe_path(path):
@@ -93,17 +149,14 @@ def _read_json(path):
     return value
 
 
-def _check_game(game):
+def _check_game(game, *, scope=None):
+    pins = _correction_scope(scope).pins
     item = game.get("source_item_id")
-    _require(
-        game.get("source_key") == "19x19" and item in PINNED_ORIGINALS, "source is outside exact correction whitelist"
-    )
+    _require(game.get("source_key") == "19x19" and item in pins, "source is outside exact correction scope")
     content = game.get("sgf_content")
     _require(
         isinstance(content, str)
-        and sha256(content.encode("utf-8")).hexdigest()
-        == game.get("sgf_sha256")
-        == PINNED_ORIGINALS[item]["sgf_sha256"],
+        and sha256(content.encode("utf-8")).hexdigest() == game.get("sgf_sha256") == pins[item]["sgf_sha256"],
         "original SGF hash mismatch",
     )
     root = SGF.parse_sgf(content)
@@ -123,19 +176,22 @@ def _check_game(game):
     return item
 
 
-def _original_games(paths):
-    _require(len(paths) == len(PINNED_ORIGINALS), "provide exactly three original packages")
+def _original_games(paths, *, scope=None):
+    scope = _correction_scope(scope)
+    pins = scope.pins
+    digests = {pin["manifest_sha256"] for pin in pins.values()}
+    _require(len(paths) == len(digests), "provide each exact original package once")
     manifests = {}
     for path in paths:
         original = _read_json(path)
         digest = canonical_sha256(original)
         _require(
-            digest in {pin["manifest_sha256"] for pin in PINNED_ORIGINALS.values()} and digest not in manifests,
+            digest in digests and digest not in manifests,
             "original package digest is unpinned or duplicated",
         )
         manifests[digest] = original
     result = []
-    for item, pin in sorted(PINNED_ORIGINALS.items()):
+    for item, pin in pins.items():
         original = manifests.get(pin["manifest_sha256"], {})
         matches = [
             game
@@ -144,15 +200,15 @@ def _original_games(paths):
         ]
         _require(len(matches) == 1, "original package has no exact unique source member")
         game = deepcopy(matches[0])
-        _check_game(game)
+        _check_game(game, scope=scope)
         result.append(game)
     return result
 
 
-def _local_preimage(conn, game):
+def _local_preimage(conn, game, *, scope=None):
     """Read exact original native authority and current overlay; never use a portable numeric ID."""
     item = game["source_item_id"]
-    digest = PINNED_ORIGINALS[item]["manifest_sha256"]
+    digest = _correction_scope(scope).pins[item]["manifest_sha256"]
     batch = (
         conn.execute(select(KifuNameBatch.__table__).where(KifuNameBatch.bundle_sha256 == digest))
         .mappings()
@@ -262,16 +318,18 @@ def _local_preimage(conn, game):
     return players, expected
 
 
-def build_correction(engine, originals, *, matched_at=None):
-    """Read three native preimages and at most six already-bound player profiles."""
-    games = _original_games(originals)
+def build_correction(engine, originals, *, matched_at=None, scope=None):
+    """Read only scoped native preimages and their already-bound player profiles."""
+    scope = _correction_scope(scope)
+    pins = scope.pins
+    games = _original_games(originals, scope=scope)
     preimages = {}
     with engine.connect() as conn:
         if conn.dialect.name == "postgresql":
             conn.exec_driver_sql("SET TRANSACTION READ ONLY")
             conn.exec_driver_sql("SET LOCAL statement_timeout = '5s'")
         for game in games:
-            preimages[game["source_item_id"]] = _local_preimage(conn, game)
+            preimages[game["source_item_id"]] = _local_preimage(conn, game, scope=scope)
     resolved = lookup_qualified_identities(
         engine, player_values={game["metadata"][f"player_{side}"] for game in games for side in ("black", "white")}
     )
@@ -296,7 +354,7 @@ def build_correction(engine, originals, *, matched_at=None):
     manifest = {
         "format": FORMAT_V2,
         "mode": "rank_only",
-        "publication_key": PUBLICATION_KEY,
+        "publication_key": scope.publication_key,
         "games": games,
         "decisions": [],
         "rank_facts": {},
@@ -305,33 +363,37 @@ def build_correction(engine, originals, *, matched_at=None):
         frozen = freeze_game_ranks(game, library_facts=facts, matched_at=matched_at)
         game.update({key: frozen[key] for key in ("rank_snapshots", "rank_observations")})
         game["rank_correction"] = {
-            "original_manifest_sha256": PINNED_ORIGINALS[game["source_item_id"]]["manifest_sha256"],
+            "original_manifest_sha256": pins[game["source_item_id"]]["manifest_sha256"],
             "expected_snapshots": preimages[game["source_item_id"]][1],
         }
         manifest["rank_facts"] = merge_rank_facts(manifest["rank_facts"], frozen["rank_facts"])
-    return validate_correction(manifest)
+    return validate_correction(manifest, scope=scope)
 
 
-def validate_correction(manifest, expected_sha256=None):
+def validate_correction(manifest, expected_sha256=None, *, scope=None):
     """Validate frozen immutable bindings; native apply/replay owns live CAS."""
+    scope = _correction_scope(scope)
+    pins = scope.pins
     _require(
         manifest.get("format") == FORMAT_V2
         and manifest.get("mode") == "rank_only"
-        and manifest.get("publication_key") == PUBLICATION_KEY
+        and manifest.get("publication_key") == scope.publication_key
         and manifest.get("decisions") == [],
         "not the finite rank-only correction",
     )
     games = manifest.get("games", [])
     _require(
-        len(games) == len(PINNED_ORIGINALS) and {game.get("source_item_id") for game in games} == set(PINNED_ORIGINALS),
-        "correction must contain exact three source IDs",
+        isinstance(games, list)
+        and len(games) == len(pins)
+        and all(isinstance(game, dict) for game in games)
+        and {game.get("source_item_id") for game in games} == set(pins),
+        "correction must contain exact scope source IDs",
     )
     for game in games:
-        item = _check_game(game)
+        item = _check_game(game, scope=scope)
         _require(
             "album_id" not in game
-            and game.get("rank_correction", {}).get("original_manifest_sha256")
-            == PINNED_ORIGINALS[item]["manifest_sha256"],
+            and game.get("rank_correction", {}).get("original_manifest_sha256") == pins[item]["manifest_sha256"],
             "correction original authority mismatch",
         )
     validate_manifest_ranks(manifest)
@@ -340,9 +402,9 @@ def validate_correction(manifest, expected_sha256=None):
     return manifest
 
 
-def freeze_output(path, manifest):
+def freeze_output(path, manifest, *, scope=None):
     """Link complete fsynced bytes once; never overwrite a frozen package."""
-    validate_correction(manifest)
+    validate_correction(manifest, scope=scope)
     path = _safe_path(path)
     _require(not path.exists(), "correction output already exists")
     raw = json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False).encode("utf-8") + b"\n"
@@ -377,7 +439,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     build = commands.add_parser("build", help="read-only summary, or freeze once with --output")
-    build.add_argument("--original", action="append", default=[], help="exact original package; repeat three times")
+    build.add_argument("--original", action="append", default=[], help="each unique pinned original package once")
+    build.add_argument(
+        "--scope-file", help="explicit bounded 19x19 correction scope JSON; defaults to original three IDs"
+    )
     build.add_argument("--output", help="new immutable output, or reuse an existing frozen output")
     build.add_argument("--database-url", help="TEST database override; defaults to configured database")
     apply = commands.add_parser("apply-existing", help="explicit local TEST native apply/replay")
@@ -386,17 +451,19 @@ def main(argv=None):
     apply.add_argument("--apply", action="store_true")
     apply.add_argument("--target", choices=["test"])
     apply.add_argument("--database-url")
+    apply.add_argument("--scope-file", help="same explicit correction scope used to freeze this package")
     args = parser.parse_args(argv)
     try:
+        scope = _correction_scope(_read_json(args.scope_file) if args.scope_file else None)
         if args.command == "build":
             existing = args.output is not None and _safe_path(args.output).exists()
             manifest = (
-                validate_correction(_read_json(args.output))
+                validate_correction(_read_json(args.output), scope=scope)
                 if existing
-                else build_correction(_engine(args.database_url), args.original)
+                else build_correction(_engine(args.database_url), args.original, scope=scope)
             )
             if args.output and not existing:
-                freeze_output(args.output, manifest)
+                freeze_output(args.output, manifest, scope=scope)
             result = {
                 "status": "frozen" if args.output else "dry_run",
                 "manifest_sha256": canonical_sha256(manifest),
@@ -413,7 +480,7 @@ def main(argv=None):
                 result["path"] = str(_safe_path(args.output))
         else:
             _require(args.apply and args.target == "test", "local application requires --apply --target test")
-            manifest = validate_correction(_read_json(args.manifest), args.expected_sha256)
+            manifest = validate_correction(_read_json(args.manifest), args.expected_sha256, scope=scope)
             receipt = publish_manifest(
                 _engine(args.database_url), manifest, expected_manifest_sha256=args.expected_sha256
             )

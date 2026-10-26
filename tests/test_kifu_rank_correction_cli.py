@@ -321,7 +321,142 @@ def test_public_whitelist_is_exact():
     )
 
 
-def test_frozen_cli_pack_applies_and_replays_through_actual_native_publisher(tmp_path, monkeypatch, capsys):
+def correction_scope(module, items=None, *, publication_key="rank-only-current-page-test-v1", pins=None):
+    return {
+        "publication_key": publication_key,
+        "originals": [
+            {"source_item_id": item, **pin}
+            for item, pin in (module.PINNED_ORIGINALS if pins is None else pins).items()
+            if items is None or item in items
+        ],
+    }
+
+
+def test_explicit_scope_selects_only_members_of_one_pinned_multigame_package(fixture, tmp_path):
+    module, engine, originals, _ = fixture
+    packs = [json.loads(path.read_text()) for path in originals]
+    original = {**packs[0], "games": [pack["games"][0] for pack in packs]}
+    digest = canonical_sha256(original)
+    with engine.begin() as conn:
+        artifacts = list(conn.scalars(select(m.KifuNameBatch.reviewed_artifact)))
+        artifact = {
+            **artifacts[0],
+            "manifest_sha256": digest,
+            "logical_manifest": {
+                **original,
+                "games": [
+                    {key: value for key, value in game.items() if key != "sgf_content"} for game in original["games"]
+                ],
+            },
+            "sources": [source for value in artifacts for source in value["sources"]],
+            "receipt": {
+                "status": "applied",
+                "games": [game for value in artifacts for game in value["receipt"]["games"]],
+            },
+        }
+        conn.execute(m.KifuNameBatch.__table__.delete())
+        conn.execute(
+            m.KifuNameBatch.__table__.insert().values(
+                bundle_sha256=digest,
+                inventory_sha256="b" * 64,
+                source_registry_id=1,
+                reviewed_artifact=artifact,
+                status="applied",
+            )
+        )
+        conn.execute(m.KifuPlayerRankHistory.__table__.delete().where(m.KifuPlayerRankHistory.player_id == 1))
+    path = tmp_path / "multigame.json"
+    path.write_text(json.dumps(original), encoding="utf-8")
+    scope = correction_scope(module, {"91694911", "91637528"})
+    for pin in scope["originals"]:
+        pin["manifest_sha256"] = digest
+    value = module.build_correction(engine, [path], scope=scope)
+    assert [game["source_item_id"] for game in value["games"]] == ["91637528", "91694911"]
+    assert value["publication_key"] == scope["publication_key"]
+    unknown = next(game for game in value["games"] if game["source_item_id"] == "91694911")
+    assert unknown["rank_snapshots"]["black"]["display_rank"] == ""
+    assert unknown["rank_snapshots"]["white"]["display_rank"] == "7p"
+    assert module.validate_correction(value, scope=scope) == value
+    with pytest.raises(ValueError, match="package"):
+        module.build_correction(engine, [path, path], scope=scope)
+
+
+@pytest.mark.parametrize("change", ["empty", "over_limit", "duplicate", "hash", "id", "extra", "old_key"])
+def test_explicit_scope_is_strict_and_bounded_before_database_access(fixture, monkeypatch, change):
+    module, engine, originals, _ = fixture
+    scope = correction_scope(module, {"91694911"})
+    if change == "empty":
+        scope["originals"] = []
+    elif change == "over_limit":
+        scope["originals"] = [{**scope["originals"][0], "source_item_id": str(n)} for n in range(21)]
+    elif change == "duplicate":
+        scope["originals"].append(dict(scope["originals"][0]))
+    elif change == "hash":
+        scope["originals"][0]["sgf_sha256"] = "A" * 64
+    elif change == "id":
+        scope["originals"][0]["source_item_id"] = 91694911
+    elif change == "extra":
+        scope["originals"][0]["source_key"] = "other"
+    else:
+        scope["publication_key"] = module.PUBLICATION_KEY
+    monkeypatch.setattr(engine, "connect", lambda: pytest.fail("opened database for invalid scope"))
+    with pytest.raises(ValueError, match="scope"):
+        module.build_correction(engine, originals, scope=scope)
+
+
+@pytest.mark.parametrize("change", ["member", "sgf", "manifest", "key"])
+def test_frozen_scoped_reuse_rejects_changed_scope_without_database(fixture, tmp_path, monkeypatch, capsys, change):
+    module, engine, originals, _ = fixture
+    scope = correction_scope(module, {"91694911"})
+    value = module.build_correction(engine, originals[:1], scope=scope)
+    frozen = tmp_path / "scoped.json"
+    module.freeze_output(frozen, value, scope=scope)
+    before = frozen.read_bytes()
+    if change == "member":
+        scope["originals"][0] = correction_scope(module, {"91638738"})["originals"][0]
+    elif change in {"sgf", "manifest"}:
+        scope["originals"][0][f"{change}_sha256"] = "e" * 64
+    else:
+        scope["publication_key"] += "-changed"
+    scope_file = tmp_path / "scope.json"
+    scope_file.write_text(json.dumps(scope), encoding="utf-8")
+    monkeypatch.setattr(module, "_engine", lambda *_a: pytest.fail("opened database on frozen retry"))
+    assert module.main(["build", "--scope-file", str(scope_file), "--output", str(frozen)]) == 2
+    assert json.loads(capsys.readouterr().out)["status"] == "error"
+    assert frozen.read_bytes() == before
+
+
+def test_scoped_build_preserves_exact_native_original_authority(fixture):
+    module, engine, originals, _ = fixture
+    scope = correction_scope(module, {"91694911"})
+    with engine.begin() as conn:
+        digest = scope["originals"][0]["manifest_sha256"]
+        artifact = conn.scalar(select(m.KifuNameBatch.reviewed_artifact).where(m.KifuNameBatch.bundle_sha256 == digest))
+        artifact["logical_manifest"]["games"][0]["raw_sha256"] = "a" * 64
+        conn.execute(
+            m.KifuNameBatch.__table__.update()
+            .where(m.KifuNameBatch.bundle_sha256 == digest)
+            .values(reviewed_artifact=artifact)
+        )
+    with pytest.raises(ValueError, match="logical game"):
+        module.build_correction(engine, originals[:1], scope=scope)
+
+
+def test_explicit_scope_cli_build_reads_only_the_supplied_original(fixture, tmp_path, monkeypatch, capsys):
+    module, engine, originals, _ = fixture
+    scope = correction_scope(module, {"91694911"})
+    scope_file = tmp_path / "scope.json"
+    scope_file.write_text(json.dumps(scope), encoding="utf-8")
+    monkeypatch.setattr(module, "_engine", lambda *_a: engine)
+    assert module.main(["build", "--scope-file", str(scope_file), "--original", str(originals[0])]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "dry_run" and result["source_ids"] == ["91694911"]
+
+
+@pytest.mark.parametrize("explicit_scope", [False, True])
+def test_frozen_cli_pack_applies_and_replays_through_actual_native_publisher(
+    tmp_path, monkeypatch, capsys, explicit_scope
+):
     from katrain.kifu_ingest import catalog
     from tests.web_ui.test_kifu_incremental_catalog import make_engine, manifest, publish, state
     from tests.web_ui.test_kifu_rank_publication import ranked
@@ -329,7 +464,8 @@ def test_frozen_cli_pack_applies_and_replays_through_actual_native_publisher(tmp
     module = cli()
     engine = make_engine(tmp_path / "native.db")
     originals, pins = [], {}
-    for item in ("91694911", "91638738", "91637528"):
+    items = ("91635363", "91634842", "91637528") if explicit_scope else ("91694911", "91638738", "91637528")
+    for item in items:
         original = manifest(item, black="Black")
         game = original["games"][0]
         content = game["sgf_content"].replace("whole original", f"synthetic {item}")
@@ -347,10 +483,16 @@ def test_frozen_cli_pack_applies_and_replays_through_actual_native_publisher(tmp
         path.write_text(json.dumps(original), encoding="utf-8")
         originals.append(path)
     publish(engine, ranked("99999099", "7p", "2026-03-01"))
-    monkeypatch.setattr(module, "PINNED_ORIGINALS", pins)
-    value = module.build_correction(engine, originals)
+    if not explicit_scope:
+        monkeypatch.setattr(module, "PINNED_ORIGINALS", pins)
+    scope = correction_scope(module, set(items[:2]), pins=pins) if explicit_scope else None
+    selected = originals[:2] if explicit_scope else originals
+    value = module.build_correction(engine, selected, scope=scope)
     frozen = tmp_path / "frozen.json"
-    module.freeze_output(frozen, value)
+    module.freeze_output(frozen, value, scope=scope)
+    if explicit_scope:
+        changed_scope = correction_scope(module, {items[2]}, pins=pins)
+        changed = module.build_correction(engine, originals[2:], scope=changed_scope)
     before = state(engine)
     monkeypatch.setattr(module, "_engine", lambda *_a: engine)
     for name in ("warm_sgf_cache", "_identity_indexes", "_source_records", "_apply_decisions"):
@@ -365,6 +507,14 @@ def test_frozen_cli_pack_applies_and_replays_through_actual_native_publisher(tmp
         "--target",
         "test",
     ]
+    if explicit_scope:
+        scope_file = tmp_path / "scope.json"
+        scope_file.write_text(json.dumps(scope), encoding="utf-8")
+        args.extend(["--scope-file", str(scope_file)])
+        frozen_bytes = frozen.read_bytes()
+        assert module.main(["build", "--scope-file", str(scope_file), "--output", str(frozen)]) == 0
+        assert json.loads(capsys.readouterr().out)["status"] == "frozen"
+        assert frozen.read_bytes() == frozen_bytes
     assert module.main(args) == 0
     first = json.loads(capsys.readouterr().out)
     after = state(engine)
@@ -374,4 +524,13 @@ def test_frozen_cli_pack_applies_and_replays_through_actual_native_publisher(tmp
     assert module.main(args) == 0
     assert json.loads(capsys.readouterr().out) == first
     assert state(engine) == after
+    if explicit_scope:
+        other_frozen = tmp_path / "different-scope.json"
+        module.freeze_output(other_frozen, changed, scope=changed_scope)
+        scope_file.write_text(json.dumps(changed_scope), encoding="utf-8")
+        args[args.index("--manifest") + 1] = str(other_frozen)
+        args[args.index("--expected-sha256") + 1] = canonical_sha256(changed)
+        assert module.main(args) == 2
+        assert "publication key" in json.loads(capsys.readouterr().out)["error"]
+        assert state(engine) == after
     engine.dispose()

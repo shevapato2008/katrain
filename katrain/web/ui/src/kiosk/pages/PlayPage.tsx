@@ -8,7 +8,7 @@ import { PLATFORM_META, defaultPlatforms, mergePlatformStatus } from '../constan
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
-import { Icon } from '../shell/icons';
+import { Icon, type IconName } from '../shell/icons';
 import { PLATFORM_MARKS } from '../constants/platformMarks';
 import { useEngineReadiness } from '../context/EngineReadinessContext';
 
@@ -22,8 +22,9 @@ const FALLBACK_ICON = 'globe-hemisphere-west' as const;
 
 // 目录顺序和「少下发就补一条全 false」都上提到 `constants/platforms.ts` —— 屏 07 共读同一份。
 
-// The approved play home uses compact text keys; platform cards retain their own marks.
-function PlayChoice({ title, sub, disabled, onClick }: {
+// Compact play choices pair semantic icons with titles; platform cards retain their own marks.
+function PlayChoice({ icon, title, sub, disabled, onClick }: {
+  icon: IconName;
   title: string;
   sub: string;
   disabled?: boolean;
@@ -38,6 +39,7 @@ function PlayChoice({ title, sub, disabled, onClick }: {
       disabled={disabled}
       onClick={onClick}
     >
+      <Icon name={icon} />
       <span className="kiosk-play-choice__title">{title}</span>
       <span className="kiosk-play-choice__description">{sub}</span>
       <Icon name="caret-right" />
@@ -147,6 +149,7 @@ const PlayPage = () => {
         />
         <div className="kiosk-cards">
           <PlayChoice
+            icon="robot"
             title={t('Free Game', '自由对弈')}
             sub={engineReady
               ? t('Pick the strength yourself · form estimate available', '自己挑强度 · 可以看形势判断')
@@ -155,6 +158,7 @@ const PlayPage = () => {
             onClick={() => navigate('/kiosk/play/ai/setup/free')}
           />
           <PlayChoice
+            icon="trophy"
             title={t('Ranked Game', '升降级对弈')}
             sub={engineReady
               ? t('Tier picked from your strength · analysis sealed throughout', '按棋力自动配档 · 全程封分析')
@@ -174,6 +178,7 @@ const PlayPage = () => {
         />
         <div className="kiosk-cards">
           <PlayChoice
+            icon="users"
             title={t('Local Game', '本地对局')}
             sub={
               isAuthenticated
@@ -183,6 +188,7 @@ const PlayPage = () => {
             onClick={() => navigate('/kiosk/play/pvp/setup')}
           />
           <PlayChoice
+            icon="globe-hemisphere-west"
             title={t('Online Lobby', '在线大厅')}
             sub={t('Challenge others · rated queue available', '约战 · 有定级队列')}
             onClick={() => navigate('/kiosk/play/pvp/lobby')}
@@ -237,6 +243,7 @@ const PlayPage = () => {
         <KioskSecLabel zh={t('Game History', '对局历史')} />
         <div className="kiosk-cards">
           <PlayChoice
+            icon="clock-counter-clockwise"
             title={t('All games', '全部对局')}
             sub={t('Every game played, with its review report', '下过的每一局,连同它的复盘报告')}
             onClick={() => navigate('/kiosk/report')}

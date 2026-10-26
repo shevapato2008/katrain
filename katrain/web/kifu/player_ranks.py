@@ -50,16 +50,6 @@ _FACT_FIELDS = {
     "observed_at",
     "content_sha256",
 }
-# Deliberately finite first-slice subjects; no name search or broad profile scraper.
-_SUBJECTS = {
-    "ki000489": "上野梨紗",
-    "ki000434_5": "藤沢里菜",
-    "CWA000149": "唐奕",
-    "CWA000548": "高星",
-    "20000805": "高星",
-    "20001261": "周泓余",
-    "20000627": "王爽",
-}
 
 
 def _require(condition, message):
@@ -168,7 +158,7 @@ def _sgf_grade(sgf_content, slot):
     return rank, raw_name, basis, raw_date
 
 
-def _official_subject(capture, original_name):
+def _official_subject(capture, original_name, approved_name=None):
     """Read only the exact official subject field, never a first/max dan mention."""
     _require(isinstance(capture, dict), "official capture missing")
     body = capture.get("body_excerpt")
@@ -185,44 +175,65 @@ def _official_subject(capture, original_name):
     _require(isinstance(url, str), "official capture URL missing")
     parsed = urlparse(url)
     _require(
-        parsed.scheme == "https" and not parsed.username and not parsed.password and not parsed.fragment,
+        parsed.scheme == "https"
+        and not parsed.username
+        and not parsed.password
+        and not parsed.fragment
+        and not parsed.params
+        and "#" not in url
+        and not re.search(r"[\x00-\x20\x7f]", url),
         "official capture URL invalid",
     )
+    # Only this independently reviewed row's exact original/display spellings
+    # are candidates. Canonical names and inferred transliterations never enter.
+    names = [_name(value) for value in (original_name, approved_name) if isinstance(value, str) and value.strip()]
+    _require(names, "official owner name missing")
     compact = " ".join(body.split())
     subject_key = None
     subject_name = None
     grade_field = None
     if parsed.netloc == "www.nihonkiin.or.jp":
-        path = re.fullmatch(r"/player/htm/(ki000489|ki000434_5)\.html", parsed.path)
+        path = re.fullmatch(r"/player/htm/(ki[0-9]{6}(?:_[1-9][0-9]?)?)\.html?", parsed.path)
         _require(path and not parsed.query, "unsupported official subject")
         subject_key = path.group(1)
-        subject_name = _SUBJECTS[subject_key]
-        _require(_name(subject_name) == _name(original_name), "official subject differs from reviewed owner")
-        # The profile heading must precede its specific 棋士段位 label.
-        heading = re.search(
-            re.escape(subject_name[0:2])
-            + r"\s*"
-            + re.escape(subject_name[2:])
-            + r".{0,160}?棋士段位\s*([一二三四五六七八九])段",
-            compact,
+        # The breadcrumb and repeated main heading precede the profile's own
+        # rank field. A teacher/relative or later biography cannot supply it.
+        headings = list(
+            re.finditer(
+                r"日本棋院ホーム\s+棋士\s+(?P<name>[^（）]{1,160}?)\s*"
+                r"（[^（）]{1,160}）\s+ファンメッセージ\s+性別\s+[男女]\s+"
+                r"棋士段位\s*(?P<grade>[一二三四五六七八九初])段(?:\s|$)",
+                compact,
+            )
         )
-        _require(heading, "official subject rank label missing")
-        grade_field = {"field": "棋士段位", "value": heading.group(1) + "段"}
+        _require(len(headings) == 1, "official subject rank label missing or ambiguous")
+        heading = headings[0]
+        subject_name = next((name for name in names if _name(heading.group("name")) == name * 2), None)
+        _require(subject_name is not None, "official subject differs from reviewed owner")
+        grade_field = {"field": "棋士段位", "value": heading.group("grade") + "段"}
     elif parsed.netloc == "wqapi.cwql.org.cn" and parsed.path == "/playerInfo/professional/list" and not parsed.query:
         # A captured roster may begin/end mid-response. Decode only complete records.
-        targets = []
+        records = []
         for match in re.finditer(r'\{[^{}]*"playerNo"\s*:[^{}]*\}', body):
             try:
-                record = json.loads(match.group())
+                pairs = json.loads(match.group(), object_pairs_hook=list)
             except ValueError:
                 continue
-            if _name(record.get("playerName", "")) == _name(original_name):
-                targets.append(record)
+            # Duplicate keys must not silently replace a different identity.
+            _require(len({key for key, _ in pairs}) == len(pairs), "official roster record is ambiguous")
+            records.append(dict(pairs))
+        targets = [
+            record
+            for record in records
+            if isinstance(record.get("playerName"), str) and _name(record["playerName"]) in names
+        ]
         _require(len(targets) == 1, "official roster owner is not unique")
         record = targets[0]
         subject_key, subject_name = record.get("playerNo"), record.get("playerName")
         _require(
-            subject_key in {"CWA000149", "CWA000548"} and _SUBJECTS[subject_key] == subject_name,
+            isinstance(subject_key, str)
+            and re.fullmatch(r"CWA[0-9]{6}", subject_key)
+            and sum(other.get("playerNo") == subject_key for other in records) == 1,
             "official roster subject mismatch",
         )
         grade_field = {
@@ -232,13 +243,12 @@ def _official_subject(capture, original_name):
             "playerGrade": record.get("playerGrade"),
         }
     elif parsed.netloc in {"www.baduk.or.kr", "m.baduk.or.kr"}:
-        query = parse_qs(parsed.query)
+        query = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True)
+        native_heading = r"(?P<native>[가-힣][가-힣0-9 ·ㆍ・-]{0,63}?)\s*\(\s*(?P<original>[^()]{1,64}?)\s*\)"
         if parsed.netloc == "m.baduk.or.kr" and parsed.path == "/record/gisa_info.asp":
             _require(set(query) == {"PRPL_CODE"} and len(query["PRPL_CODE"]) == 1, "official subject key invalid")
             subject_key = query["PRPL_CODE"][0]
-            _require(subject_key == "20000805", "unsupported official subject")
-            subject_name = _SUBJECTS[subject_key]
-            match = re.search(r"기사정보\s+([1-9])단\s+가오싱\s*\(\s*高星\s*\)", compact)
+            heading_pattern = r"기사정보\s+(?P<grade>[1-9])단\s+" + native_heading
         else:
             _require(
                 parsed.netloc == "www.baduk.or.kr"
@@ -248,12 +258,15 @@ def _official_subject(capture, original_name):
                 "unsupported official subject",
             )
             subject_key = query["pkey"][0]
-            _require(subject_key in {"20001261", "20000627"}, "unsupported official subject")
-            subject_name = _SUBJECTS[subject_key]
-            korean = "저우훙위" if subject_key == "20001261" else "왕솽"
-            match = re.search(r"기사정보 상세\s+" + korean + r"\s*\(\s*" + subject_name + r"\s*\)\s*([1-9])단", compact)
-        _require(match and _name(subject_name) == _name(original_name), "official subject/heading differs from owner")
-        grade_field = {"field": "기사정보 subject heading", "value": match.group(1) + "단"}
+            heading_pattern = r"기사정보 상세\s+" + native_heading + r"\s*(?P<grade>[1-9])단"
+        _require(re.fullmatch(r"[1-9][0-9]{7}", subject_key), "official subject key invalid")
+        headings = list(re.finditer(heading_pattern + r"\s+생년월일(?:\s|$)", compact))
+        _require(len(headings) == 1, "official subject heading missing or ambiguous")
+        heading = headings[0]
+        heading_names = {_name(heading.group("native")), _name(heading.group("original"))}
+        subject_name = next((name for name in names if name in heading_names), None)
+        _require(subject_name is not None, "official subject/heading differs from owner")
+        grade_field = {"field": "기사정보 subject heading", "value": heading.group("grade") + "단"}
     else:
         raise ValueError("unsupported official rank source")
     return {
@@ -273,7 +286,7 @@ def _identity_proof(canonical_name, approved_name, original_name, capture, captu
         "approved_name": approved_name,
         "original_name": original_name,
         "capture_path": capture_path,
-        **_official_subject(capture, original_name),
+        **_official_subject(capture, original_name, approved_name),
     }
     proof["capture_sha256"] = _digest(proof)
     return proof
@@ -315,6 +328,7 @@ def _validate_identity(proof, canonical_name):
             "http_status": 200,
         },
         proof["original_name"],
+        proof["approved_name"],
     )
     _require(all(proof.get(key) == value for key, value in parsed.items()), "professional subject evidence mismatch")
     return proof

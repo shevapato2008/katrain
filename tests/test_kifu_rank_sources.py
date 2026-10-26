@@ -517,3 +517,107 @@ def test_rank_identity_index_preserves_exact_nfkc_casefold_collision_semantics(e
         rank_alias(conn, 1, "Straße")
         index = ranks.build_rank_identity_index(conn, raw_values=["  STRASSE 九段", "not alias"])
     assert index == {"strasse": {1, 2}, "not alias": set()}
+
+
+@pytest.mark.parametrize(
+    ("canonical", "original", "url", "heading"),
+    [
+        (
+            "於之莹",
+            "於之瑩",
+            "https://www.baduk.or.kr/record/player_view.asp?pkey=20000560",
+            "기사정보 상세 위즈잉( 於之瑩 ) 8단",
+        ),
+        (
+            "芮乃伟",
+            "芮乃偉",
+            "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000186",
+            "기사정보 | 한국기원 기사정보 9단 루이나이웨이 (芮乃偉)",
+        ),
+        (
+            "党毅飞",
+            "黨毅飛",
+            "https://www.baduk.or.kr/record/player_view.asp?pkey=20000536",
+            "기사정보 상세 당이페이( 黨毅飛 ) 9단",
+        ),
+        (
+            "辜梓豪",
+            "辜梓豪",
+            "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20000629",
+            "기사정보 | 한국기원 기사정보 9단 구쯔하오 (辜梓豪)",
+        ),
+    ],
+)
+def test_new_owner_capture_types_only_bound_raw_sgf_grade_and_native_rechecks_capture(
+    engine, canonical, original, url, heading
+):
+    capture = {
+        "canonical_name": canonical,
+        "approved_name": canonical,
+        "original_name": original,
+        "capture_path": "research.source_checks[0].identity_corroboration",
+        "capture": {
+            "url": url,
+            "http_status": 200,
+            "body_sha256": "a" * 64,
+            "body_excerpt": heading + " 생년월일 소속 중국 배우자 9단 승단이력 1단",
+        },
+    }
+    with engine.begin() as conn:
+        seed_owner(conn, capture)
+        album(conn, canonical, rank="二段")
+    result = ranks.lookup_library_rank_facts(engine, [resolved(canonical)])[1]
+    assert result["status"] == "qualified", result
+    fact = result["fact"]
+    assert (fact["rank_value"], fact["rank_system"]) == (2, "professional_dan")
+    with engine.begin() as conn:
+        ranks.verify_rank_fact_for_player(conn, 1, fact)
+        # A plausible numeric key is still not the actual independently approved capture.
+        forged = deepcopy(fact)
+        proof = forged["evidence"]["professional_identity"]
+        proof["url"] = proof["url"][:-1] + "7"
+        proof["subject_key"] = proof["subject_key"][:-1] + "7"
+        proof.pop("capture_sha256")
+        proof["capture_sha256"] = ranks._digest(proof)
+        forged["content_sha256"] = ranks.rank_fact_sha256(forged)
+        ranks.validate_rank_fact(forged)
+        with pytest.raises(ValueError, match="approved owner evidence"):
+            ranks.verify_rank_fact_for_player(conn, 1, forged)
+
+
+@pytest.mark.parametrize("approved_alias", [True, False])
+def test_approved_same_row_alias_is_required_for_different_original_spelling(engine, approved_alias):
+    capture = {
+        "canonical_name": "冯韵嘉",
+        "approved_name": "馮韻嘉" if approved_alias else "冯韵嘉",
+        "original_name": "冯韵嘉",
+        "capture_path": "research.source_checks[0].identity_corroboration",
+        "capture": {
+            "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10001143",
+            "http_status": 200,
+            "body_sha256": "b" * 64,
+            "body_excerpt": "기사정보 | 한국기원 기사정보 4단 펑윈자 (馮韻嘉) 생년월일 소속 중국",
+        },
+    }
+    with engine.begin() as conn:
+        seed_owner(conn, capture)
+        album(conn, "冯韵嘉", rank="三段")
+    result = ranks.lookup_library_rank_facts(engine, [resolved("冯韵嘉")])[1]
+    assert result["status"] == ("qualified" if approved_alias else "unknown_system")
+    if approved_alias:
+        assert result["fact"]["rank_value"] == 3
+        with engine.begin() as conn:
+            ranks.verify_rank_fact_for_player(conn, 1, result["fact"])
+    else:
+        proof = ranks._identity_proof("冯韵嘉", "馮韻嘉", "冯韵嘉", capture["capture"], capture["capture_path"])
+        fact = ranks.build_source_rank_fact(
+            canonical_name="冯韵嘉",
+            raw_rank="三段",
+            sgf_content="(;PB[冯韵嘉]BR[三段]DT[2026-10-19])",
+            slot="black",
+            source_ref={"source_key": "19x19", "source_item_id": "1"},
+            identity_evidence=proof,
+        )
+        with engine.begin() as conn:
+            with pytest.raises(ValueError, match="approved owner evidence"):
+                ranks.verify_rank_fact_for_player(conn, 1, fact)

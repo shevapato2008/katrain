@@ -548,7 +548,7 @@ def test_rank_identity_index_preserves_exact_nfkc_casefold_collision_semantics(e
         ),
     ],
 )
-def test_new_owner_capture_types_only_bound_raw_sgf_grade_and_native_rechecks_capture(
+def test_new_owner_capture_types_only_source_first_raw_sgf_grade_and_native_rechecks_capture(
     engine, canonical, original, url, heading
 ):
     capture = {
@@ -565,10 +565,16 @@ def test_new_owner_capture_types_only_bound_raw_sgf_grade_and_native_rechecks_ca
     }
     with engine.begin() as conn:
         seed_owner(conn, capture)
-        album(conn, canonical, rank="二段")
-    result = ranks.lookup_library_rank_facts(engine, [resolved(canonical)])[1]
-    assert result["status"] == "qualified", result
-    fact = result["fact"]
+        album_id = album(conn, canonical, rank="二段")
+        proof = ranks.lookup_professional_identity_evidence(conn, [1])[1]
+        fact = ranks.build_source_rank_fact(
+            canonical_name=canonical,
+            raw_rank="二段",
+            sgf_content=conn.scalar(select(m.KifuAlbum.sgf_content).where(m.KifuAlbum.id == album_id)),
+            slot="black",
+            source_ref={"source_key": "19x19", "source_item_id": "1"},
+            identity_evidence=proof,
+        )
     assert (fact["rank_value"], fact["rank_system"]) == (2, "professional_dan")
     with engine.begin() as conn:
         ranks.verify_rank_fact_for_player(conn, 1, fact)
@@ -601,19 +607,19 @@ def test_approved_same_row_alias_is_required_for_different_original_spelling(eng
     }
     with engine.begin() as conn:
         seed_owner(conn, capture)
-        album(conn, "冯韵嘉", rank="三段")
+        album(conn, "冯韵嘉", rank="五段")
     result = ranks.lookup_library_rank_facts(engine, [resolved("冯韵嘉")])[1]
     assert result["status"] == ("qualified" if approved_alias else "unknown_system")
     if approved_alias:
-        assert result["fact"]["rank_value"] == 3
+        assert result["fact"]["rank_value"] == 5
         with engine.begin() as conn:
             ranks.verify_rank_fact_for_player(conn, 1, result["fact"])
     else:
         proof = ranks._identity_proof("冯韵嘉", "馮韻嘉", "冯韵嘉", capture["capture"], capture["capture_path"])
         fact = ranks.build_source_rank_fact(
             canonical_name="冯韵嘉",
-            raw_rank="三段",
-            sgf_content="(;PB[冯韵嘉]BR[三段]DT[2026-10-19])",
+            raw_rank="五段",
+            sgf_content="(;PB[冯韵嘉]BR[五段]DT[2026-10-19])",
             slot="black",
             source_ref={"source_key": "19x19", "source_item_id": "1"},
             identity_evidence=proof,
@@ -621,3 +627,79 @@ def test_approved_same_row_alias_is_required_for_different_original_spelling(eng
         with engine.begin() as conn:
             with pytest.raises(ValueError, match="approved owner evidence"):
                 ranks.verify_rank_fact_for_player(conn, 1, fact)
+
+
+@pytest.mark.parametrize("stored_current", [False, True])
+@pytest.mark.parametrize("profile", ["korean", "japanese"])
+def test_library_fallback_rejects_grade_below_own_official_heading_without_invalidating_source_fact(
+    engine, stored_current, profile
+):
+    if profile == "japanese":
+        capture = next(c for c in CAPTURES if c["canonical_name"] == "藤泽里菜")
+    else:
+        capture = {
+            "canonical_name": "李小溪05",
+            "approved_name": "李小溪05",
+            "original_name": "李小溪(05)",
+            "capture_path": "research.source_checks[0].identity_corroboration",
+            "capture": {
+                "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20002111",
+                "http_status": 200,
+                "body_sha256": "c" * 64,
+                "body_excerpt": "기사정보 | 한국기원 기사정보 6단 리샤오시05 (李小溪05) 생년월일 소속 중국 승단이력 6단 / 2026.08.19",
+            },
+        }
+    canonical = capture["canonical_name"]
+    with engine.begin() as conn:
+        seed_owner(conn, capture)
+        album_id = album(conn, canonical, rank="一段", day="2020-07-28", item="41407549")
+        proof = ranks.lookup_professional_identity_evidence(conn, [1])[1]
+        historical = ranks.build_source_rank_fact(
+            canonical_name=canonical,
+            raw_rank="一段",
+            sgf_content=conn.scalar(select(m.KifuAlbum.sgf_content).where(m.KifuAlbum.id == album_id)),
+            slot="black",
+            source_ref={"source_key": "19x19", "source_item_id": "41407549"},
+            identity_evidence=proof,
+        )
+        assert ranks.verify_rank_fact_for_player(conn, 1, historical) == historical
+        if stored_current:
+            assert ranks.apply_rank_fact(conn, 1, historical)["status"] == "qualified"
+            row = conn.execute(select(m.KifuPlayerRankHistory.__table__)).mappings().one()
+            assert ranks._row_fact(row, canonical) == historical
+    assert ranks.lookup_library_rank_facts(engine, [resolved(canonical)])[1] == {
+        "status": "conflict",
+        "reason": "official_grade_above_library_grade",
+    }
+    assert ranks.validate_rank_fact(historical) == historical
+    assert historical["rank_value"] == 1 and historical["valid_from"] is None
+
+
+@pytest.mark.parametrize("stored_current", [False, True])
+def test_library_fallback_keeps_raw_grade_above_own_official_heading(engine, stored_current):
+    capture = next(c for c in CAPTURES if c["canonical_name"] == "藤泽里菜")
+    with engine.begin() as conn:
+        seed_owner(conn, capture)
+        album(conn, "藤泽里菜", rank="八段")
+    result = ranks.lookup_library_rank_facts(engine, [resolved("藤泽里菜")])[1]
+    assert result["status"] == "qualified"
+    if stored_current:
+        with engine.begin() as conn:
+            ranks.apply_rank_fact(conn, 1, result["fact"])
+        result = ranks.lookup_library_rank_facts(engine, [resolved("藤泽里菜")])[1]
+    assert (result["status"], result["fact"]["rank_value"]) == ("qualified", 8)
+
+
+@pytest.mark.parametrize("stored_current", [False, True])
+def test_library_fallback_does_not_infer_heading_grade_from_chinese_roster_codes(engine, stored_current):
+    capture = next(c for c in CAPTURES if c["canonical_name"] == "唐奕")
+    with engine.begin() as conn:
+        seed_owner(conn, capture)
+        album(conn, "唐奕", rank="一段")
+    result = ranks.lookup_library_rank_facts(engine, [resolved("唐奕")])[1]
+    assert result["status"] == "qualified"
+    if stored_current:
+        with engine.begin() as conn:
+            ranks.apply_rank_fact(conn, 1, result["fact"])
+        result = ranks.lookup_library_rank_facts(engine, [resolved("唐奕")])[1]
+    assert (result["status"], result["fact"]["rank_value"]) == ("qualified", 1)

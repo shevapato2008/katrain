@@ -767,6 +767,25 @@ def apply_rank_fact(conn, player_id, fact, *, source_games=(), identity_index=No
     return {"rank_fact_id": inserted.inserted_primary_key[0], "status": status, "is_current": active, "inserted": True}
 
 
+def _library_rank_result(fact):
+    """An already-verified subject heading can veto, never supply, a fallback grade."""
+    proof = fact["evidence"]["professional_identity"]
+    if fact["rank_system"] == "professional_dan" and proof is not None:
+        field = proof["identity_field"]
+        heading_grade = None
+        if field["field"] == "기사정보 subject heading":
+            match = re.fullmatch(r"([1-9])단", field["value"])
+            if match:
+                heading_grade = int(match.group(1))
+        elif field["field"] == "棋士段位":
+            match = re.fullmatch(r"([一二三四五六七八九初])段", field["value"])
+            if match:
+                heading_grade = 1 if match.group(1) == "初" else _DIGITS.index(match.group(1)) + 1
+        if heading_grade is not None and heading_grade > fact["rank_value"]:
+            return {"status": "conflict", "reason": "official_grade_above_library_grade"}
+    return {"status": "qualified", "fact": fact}
+
+
 def lookup_library_rank_facts(engine, resolved_players, *, observed_at=None):
     """Read <=200 already-resolved owners, their current rows or <=3 raw candidates.
 
@@ -820,7 +839,7 @@ def lookup_library_rank_facts(engine, resolved_players, *, observed_at=None):
                 result[player_id] = {"status": "unknown_system", "reason": "current_system_unspecified"}
             else:
                 try:
-                    result[player_id] = {"status": "qualified", "fact": _row_fact(row, requested[player_id])}
+                    result[player_id] = _library_rank_result(_row_fact(row, requested[player_id]))
                 except ValueError:
                     result[player_id] = {"status": "conflict", "reason": "stored_fact_invalid"}
         missing = [player_id for player_id in ids if player_id not in result]
@@ -949,7 +968,7 @@ def lookup_library_rank_facts(engine, resolved_players, *, observed_at=None):
             ):
                 result[player_id] = {"status": "conflict", "reason": "recent_raw_rank_conflict"}
             else:
-                result[player_id] = {"status": "qualified", "fact": fact}
+                result[player_id] = _library_rank_result(fact)
 
     return result
 

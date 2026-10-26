@@ -1,0 +1,273 @@
+- generic [ref=f2e4]:
+  - banner [ref=f2e5]:
+    - button "回到首页" [ref=f2e6] [cursor=pointer]:
+      - img "智星盒 StellaBox" [ref=f2e7]
+      - generic [ref=f2e8]: 智星盒
+      - generic [ref=f2e9]: StellaBox
+  - generic [ref=f2e10]:
+    - generic [ref=f2e12]:
+      - navigation [ref=f2e13]:
+        - button "首页" [ref=f2e14] [cursor=pointer]
+        - button "对局" [ref=f2e20] [cursor=pointer]
+        - button "研究" [ref=f2e26] [cursor=pointer]
+        - button "死活题" [ref=f2e32] [cursor=pointer]
+        - button "复盘" [ref=f2e38] [cursor=pointer]
+        - button "直播" [ref=f2e44] [cursor=pointer]
+        - button "棋谱库" [ref=f2e50] [cursor=pointer]
+        - button "教程" [ref=f2e56] [cursor=pointer]
+      - separator [ref=f2e63]
+      - generic [ref=f2e64]:
+        - button "设置" [ref=f2e65] [cursor=pointer]
+        - button [ref=f2e71] [cursor=pointer]
+    - button "Collapse navigation" [expanded] [ref=f2e75] [cursor=pointer]
+    - main [ref=f2e78]:
+      - generic [ref=f2e83]:
+        - generic [ref=f2e85]:
+          - generic [ref=f2e86]:
+            - heading "棋谱库" [level=1] [ref=f2e87]
+            - paragraph [ref=f2e88]: 羽根直树 vs 田中伸幸 · 133 手
+          - generic [ref=f2e89]: 黑胜中盘
+        - generic [ref=f2e92]:
+          - generic [ref=f2e93]:
+            - generic [ref=f2e95]:
+              - textbox "按棋手、赛事、日期搜索…" [active] [ref=f2e99]: 王星昊
+              - group [aria-hidden]
+            - generic [ref=f2e472]: 504 条记录 · 第 1 / 26 页
+          - generic [ref=f2e473]:
+            - button "第12届国手山脉杯世界赛半决赛 2026-10-20 219 手 申真谞 黑胜中盘 王星昊" [ref=f2e476] [cursor=pointer]:
+              - generic [ref=f2e477]:
+                - generic [ref=f2e478]: 第12届国手山脉杯世界赛半决赛
+                - generic [ref=f2e479]: 2026-10-20
+                - generic [ref=f2e480]: 219 手
+              - generic [ref=f2e481]:
+                - paragraph [ref=f2e484]: 申真谞
+                - generic [ref=f2e485]: 黑胜中盘
+                - paragraph [ref=f2e488]: 王星昊
+            - button "第12届国手山脉杯世界赛8强赛 2026-10-19 238 手 芝野虎丸 白胜中盘 王星昊" [ref=f2e492] [cursor=pointer]:
+              - generic [ref=f2e493]:
+                - generic [ref=f2e494]: 第12届国手山脉杯世界赛8强赛
+                - generic [ref=f2e495]: 2026-10-19
+                - generic [ref=f2e496]: 238 手
+              - generic [ref=f2e497]:
+                - paragraph [ref=f2e500]: 芝野虎丸
+                - generic [ref=f2e501]: 白胜中盘
+                - paragraph [ref=f2e504]: 王星昊
+            - button "第12届国手山脉杯世界职业最强战16强赛 2026-10-19 187 手 王星昊 黑胜中盘 李志贤" [ref=f2e508] [cursor=pointer]:
+              - generic [ref=f2e509]:
+                - generic [ref=f2e510]: 第12届国手山脉杯世界职业最强战16强赛
+                - generic [ref=f2e511]: 2026-10-19
+                - generic [ref=f2e512]: 187 手
+              - generic [ref=f2e513]:
+                - paragraph [ref=f2e516]: 王星昊
+                - generic [ref=f2e517]: 黑胜中盘
+                - paragraph [ref=f2e520]: 李志贤
+            - button "2026Q4野狐围棋研究会金银冠训练赛 2026-10-16 171 手 申旻埈 九段 黑胜中盘 九段 王星昊" [ref=f2e524] [cursor=pointer]:
+              - generic [ref=f2e525]:
+                - generic [ref=f2e526]: 2026Q4野狐围棋研究会金银冠训练赛
+                - generic [ref=f2e527]: 2026-10-16
+                - generic [ref=f2e528]: 171 手
+              - generic [ref=f2e529]:
+                - generic [ref=f2e530]:
+                  - paragraph [ref=f2e532]: 申旻埈
+                  - generic [ref=f2e533]: 九段
+                - generic [ref=f2e534]: 黑胜中盘
+                - generic [ref=f2e536]:
+                  - generic [ref=f2e537]: 九段
+                  - paragraph [ref=f2e538]: 王星昊
+            - button "2026Q4野狐围棋研究会金银冠训练赛 2026-10-15 142 手 谢尔豪 九段 白胜中盘 九段 王星昊" [ref=f2e542] [cursor=pointer]:
+              - generic [ref=f2e543]:
+                - generic [ref=f2e544]: 2026Q4野狐围棋研究会金银冠训练赛
+                - generic [ref=f2e545]: 2026-10-15
+                - generic [ref=f2e546]: 142 手
+              - generic [ref=f2e547]:
+                - generic [ref=f2e548]:
+                  - paragraph [ref=f2e550]: 谢尔豪
+                  - generic [ref=f2e551]: 九段
+                - generic [ref=f2e552]: 白胜中盘
+                - generic [ref=f2e554]:
+                  - generic [ref=f2e555]: 九段
+                  - paragraph [ref=f2e556]: 王星昊
+            - button "2026Q4野狐围棋研究会金银冠训练赛 2026-10-09 167 手 王星昊 九段 黑胜中盘 八段 童梦成" [ref=f2e560] [cursor=pointer]:
+              - generic [ref=f2e561]:
+                - generic [ref=f2e562]: 2026Q4野狐围棋研究会金银冠训练赛
+                - generic [ref=f2e563]: 2026-10-09
+                - generic [ref=f2e564]: 167 手
+              - generic [ref=f2e565]:
+                - generic [ref=f2e566]:
+                  - paragraph [ref=f2e568]: 王星昊
+                  - generic [ref=f2e569]: 九段
+                - generic [ref=f2e570]: 黑胜中盘
+                - generic [ref=f2e572]:
+                  - generic [ref=f2e573]: 八段
+                  - paragraph [ref=f2e574]: 童梦成
+            - button "28届中国围甲常规赛15轮华东师大校友-深圳聂道厚势主将 2026-09-21 176 手 辜梓豪 白胜中盘 王星昊" [ref=f2e578] [cursor=pointer]:
+              - generic [ref=f2e579]:
+                - generic [ref=f2e580]: 28届中国围甲常规赛15轮华东师大校友-深圳聂道厚势主将
+                - generic [ref=f2e581]: 2026-09-21
+                - generic [ref=f2e582]: 176 手
+              - generic [ref=f2e583]:
+                - paragraph [ref=f2e586]: 辜梓豪
+                - generic [ref=f2e587]: 白胜中盘
+                - paragraph [ref=f2e590]: 王星昊
+            - button "28届中国围甲常规赛14轮浙江浙商证券-华东师大校友1台 2026-09-18 160 手 童梦成 白胜中盘 王星昊" [ref=f2e594] [cursor=pointer]:
+              - generic [ref=f2e595]:
+                - generic [ref=f2e596]: 28届中国围甲常规赛14轮浙江浙商证券-华东师大校友1台
+                - generic [ref=f2e597]: 2026-09-18
+                - generic [ref=f2e598]: 160 手
+              - generic [ref=f2e599]:
+                - paragraph [ref=f2e602]: 童梦成
+                - generic [ref=f2e603]: 白胜中盘
+                - paragraph [ref=f2e606]: 王星昊
+            - button "2026野狐围棋研究会金银冠训练赛 2026-09-12 128 手 王星昊 九段 白胜中盘 九段 赵晨宇" [ref=f2e610] [cursor=pointer]:
+              - generic [ref=f2e611]:
+                - generic [ref=f2e612]: 2026野狐围棋研究会金银冠训练赛
+                - generic [ref=f2e613]: 2026-09-12
+                - generic [ref=f2e614]: 128 手
+              - generic [ref=f2e615]:
+                - generic [ref=f2e616]:
+                  - paragraph [ref=f2e618]: 王星昊
+                  - generic [ref=f2e619]: 九段
+                - generic [ref=f2e620]: 白胜中盘
+                - generic [ref=f2e622]:
+                  - generic [ref=f2e623]: 九段
+                  - paragraph [ref=f2e624]: 赵晨宇
+            - button "2026野狐围棋研究会金银冠训练赛 2026-09-10 237 手 王星昊 九段 黑胜中盘 九段 黄云嵩" [ref=f2e628] [cursor=pointer]:
+              - generic [ref=f2e629]:
+                - generic [ref=f2e630]: 2026野狐围棋研究会金银冠训练赛
+                - generic [ref=f2e631]: 2026-09-10
+                - generic [ref=f2e632]: 237 手
+              - generic [ref=f2e633]:
+                - generic [ref=f2e634]:
+                  - paragraph [ref=f2e636]: 王星昊
+                  - generic [ref=f2e637]: 九段
+                - generic [ref=f2e638]: 黑胜中盘
+                - generic [ref=f2e640]:
+                  - generic [ref=f2e641]: 九段
+                  - paragraph [ref=f2e642]: 黄云嵩
+            - button "2026野狐围棋研究会金银冠训练赛 2026-09-09 211 手 王星昊 九段 黑胜中盘 九段 江维杰" [ref=f2e646] [cursor=pointer]:
+              - generic [ref=f2e647]:
+                - generic [ref=f2e648]: 2026野狐围棋研究会金银冠训练赛
+                - generic [ref=f2e649]: 2026-09-09
+                - generic [ref=f2e650]: 211 手
+              - generic [ref=f2e651]:
+                - generic [ref=f2e652]:
+                  - paragraph [ref=f2e654]: 王星昊
+                  - generic [ref=f2e655]: 九段
+                - generic [ref=f2e656]: 黑胜中盘
+                - generic [ref=f2e658]:
+                  - generic [ref=f2e659]: 九段
+                  - paragraph [ref=f2e660]: 江维杰
+            - button "28届中国围甲常规赛13轮华东师大校友-江苏体彩1台 2026-09-03 188 手 王星昊 白胜中盘 黄云嵩" [ref=f2e664] [cursor=pointer]:
+              - generic [ref=f2e665]:
+                - generic [ref=f2e666]: 28届中国围甲常规赛13轮华东师大校友-江苏体彩1台
+                - generic [ref=f2e667]: 2026-09-03
+                - generic [ref=f2e668]: 188 手
+              - generic [ref=f2e669]:
+                - paragraph [ref=f2e672]: 王星昊
+                - generic [ref=f2e673]: 白胜中盘
+                - paragraph [ref=f2e676]: 黄云嵩
+            - button "2026野狐围棋研究会金银冠训练赛 2026-08-29 290 手 王星昊 九段 白胜0.5子 九段 杨楷文" [ref=f2e680] [cursor=pointer]:
+              - generic [ref=f2e681]:
+                - generic [ref=f2e682]: 2026野狐围棋研究会金银冠训练赛
+                - generic [ref=f2e683]: 2026-08-29
+                - generic [ref=f2e684]: 290 手
+              - generic [ref=f2e685]:
+                - generic [ref=f2e686]:
+                  - paragraph [ref=f2e688]: 王星昊
+                  - generic [ref=f2e689]: 九段
+                - generic [ref=f2e690]: 白胜0.5子
+                - generic [ref=f2e692]:
+                  - generic [ref=f2e693]: 九段
+                  - paragraph [ref=f2e694]: 杨楷文
+            - button "28届中国围甲常规赛12轮衢州烂柯队-华东师大校友队主将 2026-08-22 208 手 王星昊 白胜中盘 连笑" [ref=f2e698] [cursor=pointer]:
+              - generic [ref=f2e699]:
+                - generic [ref=f2e700]: 28届中国围甲常规赛12轮衢州烂柯队-华东师大校友队主将
+                - generic [ref=f2e701]: 2026-08-22
+                - generic [ref=f2e702]: 208 手
+              - generic [ref=f2e703]:
+                - paragraph [ref=f2e706]: 王星昊
+                - generic [ref=f2e707]: 白胜中盘
+                - paragraph [ref=f2e710]: 连笑
+            - button "28届中国围甲11轮华东师大校友队-山东银丰队主将 2026-08-20 248 手 范廷钰 白胜中盘 王星昊" [ref=f2e714] [cursor=pointer]:
+              - generic [ref=f2e715]:
+                - generic [ref=f2e716]: 28届中国围甲11轮华东师大校友队-山东银丰队主将
+                - generic [ref=f2e717]: 2026-08-20
+                - generic [ref=f2e718]: 248 手
+              - generic [ref=f2e719]:
+                - paragraph [ref=f2e722]: 范廷钰
+                - generic [ref=f2e723]: 白胜中盘
+                - paragraph [ref=f2e726]: 王星昊
+            - button "2026野狐围棋研究会金银冠训练赛 2026-08-18 152 手 檀啸 九段 白胜中盘 九段 王星昊" [ref=f2e730] [cursor=pointer]:
+              - generic [ref=f2e731]:
+                - generic [ref=f2e732]: 2026野狐围棋研究会金银冠训练赛
+                - generic [ref=f2e733]: 2026-08-18
+                - generic [ref=f2e734]: 152 手
+              - generic [ref=f2e735]:
+                - generic [ref=f2e736]:
+                  - paragraph [ref=f2e738]: 檀啸
+                  - generic [ref=f2e739]: 九段
+                - generic [ref=f2e740]: 白胜中盘
+                - generic [ref=f2e742]:
+                  - generic [ref=f2e743]: 九段
+                  - paragraph [ref=f2e744]: 王星昊
+            - button "第6届梦百合杯世界公开赛64强战 2026-08-15 266 手 王星昊 白胜中盘 三浦太郎" [ref=f2e748] [cursor=pointer]:
+              - generic [ref=f2e749]:
+                - generic [ref=f2e750]: 第6届梦百合杯世界公开赛64强战
+                - generic [ref=f2e751]: 2026-08-15
+                - generic [ref=f2e752]: 266 手
+              - generic [ref=f2e753]:
+                - paragraph [ref=f2e756]: 王星昊
+                - generic [ref=f2e757]: 白胜中盘
+                - paragraph [ref=f2e760]: 三浦太郎
+            - button "28届中国围甲6轮补赛山西元工弘弈队-华东师大校友队主将 2026-08-13 224 手 王星昊 白胜中盘 王世一" [ref=f2e764] [cursor=pointer]:
+              - generic [ref=f2e765]:
+                - generic [ref=f2e766]: 28届中国围甲6轮补赛山西元工弘弈队-华东师大校友队主将
+                - generic [ref=f2e767]: 2026-08-13
+                - generic [ref=f2e768]: 224 手
+              - generic [ref=f2e769]:
+                - paragraph [ref=f2e772]: 王星昊
+                - generic [ref=f2e773]: 白胜中盘
+                - paragraph [ref=f2e776]: 王世一
+            - button "28届中国围甲10轮成都队-华东师大校友队1台 2026-08-11 188 手 廖元赫 白胜中盘 王星昊" [ref=f2e780] [cursor=pointer]:
+              - generic [ref=f2e781]:
+                - generic [ref=f2e782]: 28届中国围甲10轮成都队-华东师大校友队1台
+                - generic [ref=f2e783]: 2026-08-11
+                - generic [ref=f2e784]: 188 手
+              - generic [ref=f2e785]:
+                - paragraph [ref=f2e788]: 廖元赫
+                - generic [ref=f2e789]: 白胜中盘
+                - paragraph [ref=f2e792]: 王星昊
+            - button "2026浙江平湖当湖十局元萝卜杯中国快棋赛决赛 2026-08-09 263 手 王星昊 黑胜中盘 许嘉阳" [ref=f2e796] [cursor=pointer]:
+              - generic [ref=f2e797]:
+                - generic [ref=f2e798]: 2026浙江平湖当湖十局元萝卜杯中国快棋赛决赛
+                - generic [ref=f2e799]: 2026-08-09
+                - generic [ref=f2e800]: 263 手
+              - generic [ref=f2e801]:
+                - paragraph [ref=f2e804]: 王星昊
+                - generic [ref=f2e805]: 黑胜中盘
+                - paragraph [ref=f2e808]: 许嘉阳
+          - form "棋谱分页" [ref=f2e810]:
+            - button "上一页" [disabled] [ref=f2e811]
+            - generic [ref=f2e814]:
+              - textbox "跳转页码" [ref=f2e815]: "1"
+              - generic [ref=f2e816]: /26
+            - button "跳转" [ref=f2e817] [cursor=pointer]
+            - button "下一页" [ref=f2e818] [cursor=pointer]
+        - generic [ref=f2e441]:
+          - generic [ref=f2e442]:
+            - slider "手数进度" [ref=f2e448]: "133"
+            - generic [ref=f2e449]:
+              - generic "第一手" [ref=f2e450]:
+                - button "第一手" [ref=f2e451] [cursor=pointer]
+              - generic "上一手" [ref=f2e455]:
+                - button "上一手" [ref=f2e456] [cursor=pointer]
+              - button "播放" [ref=f2e459] [cursor=pointer]
+              - generic "下一手" [ref=f2e462]:
+                - button "下一手" [disabled]
+              - generic "最新" [ref=f2e463]:
+                - button "最新" [disabled]
+              - paragraph [ref=f2e464]: 133 / 133 手
+          - button [ref=f2e466] [cursor=pointer]
+  - contentinfo [ref=f2e470]:
+    - link "京ICP备2026047949号" [ref=f2e471] [cursor=pointer]:
+      - /url: https://beian.miit.gov.cn/

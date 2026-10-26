@@ -630,12 +630,25 @@ def test_approved_same_row_alias_is_required_for_different_original_spelling(eng
 
 
 @pytest.mark.parametrize("stored_current", [False, True])
-@pytest.mark.parametrize("profile", ["korean", "japanese"])
+@pytest.mark.parametrize("profile", ["korean", "japanese", "haifong"])
 def test_library_fallback_rejects_grade_below_own_official_heading_without_invalidating_source_fact(
     engine, stored_current, profile
 ):
     if profile == "japanese":
         capture = next(c for c in CAPTURES if c["canonical_name"] == "藤泽里菜")
+    elif profile == "haifong":
+        capture = {
+            "canonical_name": "杨子萱",
+            "approved_name": "杨子萱",
+            "original_name": "楊子萱",
+            "capture_path": "research.source_checks[0].identity_corroboration",
+            "capture": {
+                "url": "https://www.haifong.org/profession/venue/C52F5EFDF989D8CE3BA53AB7A2355F45",
+                "http_status": 200,
+                "body_sha256": "d" * 64,
+                "body_excerpt": "海峰棋院-楊子萱 棋譜 關於海峰 職業棋士 世界賽 棋譜 職業棋士 楊子萱 六段 歷史成績 簡介 老師九段",
+            },
+        }
     else:
         capture = {
             "canonical_name": "李小溪05",

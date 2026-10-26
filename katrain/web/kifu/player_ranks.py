@@ -242,6 +242,26 @@ def _official_subject(capture, original_name, approved_name=None):
             "playerName": subject_name,
             "playerGrade": record.get("playerGrade"),
         }
+    elif parsed.netloc == "www.haifong.org":
+        path = re.fullmatch(r"/profession/venue/([0-9A-Fa-f]{32})", parsed.path)
+        _require(path and not parsed.query, "unsupported official subject")
+        subject_key = path.group(1)
+        title = re.match(r"海峰棋院-(?P<name>\S{1,64})\s+棋譜(?:\s|$)", compact)
+        headings = list(
+            re.finditer(
+                r"(?:^|\s)棋譜\s+職業棋士\s+(?P<name>\S{1,64})\s+"
+                r"(?P<grade>[一二三四五六七八九初])段\s+歷史成績(?:\s|$)",
+                compact,
+            )
+        )
+        _require(title and len(headings) == 1, "official subject heading missing or ambiguous")
+        heading = headings[0]
+        subject_name = next(
+            (name for name in names if _name(title.group("name")) == name == _name(heading.group("name"))),
+            None,
+        )
+        _require(subject_name is not None, "official subject/heading differs from owner")
+        grade_field = {"field": "職業棋士 subject heading", "value": heading.group("grade") + "段"}
     elif parsed.netloc in {"www.baduk.or.kr", "m.baduk.or.kr"}:
         query = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True)
         native_heading = r"(?P<native>[가-힣][가-힣0-9 ·ㆍ・-]{0,63}?)\s*\(\s*(?P<original>[^()]{1,64}?)\s*\)"
@@ -777,7 +797,7 @@ def _library_rank_result(fact):
             match = re.fullmatch(r"([1-9])단", field["value"])
             if match:
                 heading_grade = int(match.group(1))
-        elif field["field"] == "棋士段位":
+        elif field["field"] in {"棋士段位", "職業棋士 subject heading"}:
             match = re.fullmatch(r"([一二三四五六七八九初])段", field["value"])
             if match:
                 heading_grade = 1 if match.group(1) == "初" else _DIGITS.index(match.group(1)) + 1

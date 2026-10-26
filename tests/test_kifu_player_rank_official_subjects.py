@@ -224,6 +224,61 @@ def test_official_url_only_accepts_exact_supported_hosts_paths_and_key_schemas(u
         ranks._official_subject(source, original)
 
 
+HAIFONG_URL = "https://www.haifong.org/profession/venue/C52F5EFDF989D8CE3BA53AB7A2355F45"
+HAIFONG_BODY = (
+    "海峰棋院-楊子萱 棋譜 關於海峰 最新消息 職業棋士 世界賽 職業賽 "
+    "棋譜 職業棋士 楊子萱 六段 歷史成績 冠軍數: 3冠 簡介 2017年入段 2024年六段 父親九段 老師九段"
+)
+
+
+@pytest.mark.parametrize(("original", "approved"), [("楊子萱", "杨子萱"), ("杨子萱", "楊子萱")])
+def test_haifong_exact_title_and_subject_heading_bind_original_or_reviewed_alias(original, approved):
+    source = capture(HAIFONG_URL, HAIFONG_BODY)
+    proof = ranks._identity_proof("杨子萱", approved, original, source, "research.source_checks[0]")
+    assert proof["subject_name"] == "楊子萱"
+    assert proof["subject_key"] == "C52F5EFDF989D8CE3BA53AB7A2355F45"
+    assert proof["identity_field"] == {"field": "職業棋士 subject heading", "value": "六段"}
+    fact = ranks.build_source_rank_fact(
+        canonical_name="杨子萱",
+        raw_rank="七段",
+        sgf_content="(;PB[杨子萱]BR[七段]DT[2026-10-19])",
+        slot="black",
+        source_ref={"source_key": "19x19", "source_item_id": "haifong"},
+        identity_evidence=proof,
+    )
+    assert ranks.validate_rank_fact(fact) == fact
+    assert fact["rank_value"] == 7 and fact["valid_from"] is None
+    assert ranks._library_rank_result(fact)["status"] == "qualified"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        HAIFONG_BODY.replace("海峰棋院-楊子萱", "海峰棋院-別人"),
+        HAIFONG_BODY.replace("職業棋士 楊子萱", "職業棋士 別人"),
+        HAIFONG_BODY.replace("楊子萱 六段 歷史成績", "楊子萱 歷史成績") + " 楊子萱老師六段",
+        HAIFONG_BODY + " 棋譜 職業棋士 楊子萱 六段 歷史成績",
+    ],
+)
+def test_haifong_wrong_title_other_subject_teacher_only_or_duplicate_heading_is_rejected(body):
+    with pytest.raises(ValueError):
+        ranks._official_subject(capture(HAIFONG_URL, body), "楊子萱")
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        HAIFONG_URL.replace("www.haifong.org", "www.haifong.org.evil.test"),
+        HAIFONG_URL.replace("/profession/venue/", "/news/"),
+        HAIFONG_URL[:-1],
+        HAIFONG_URL + "?name=楊子萱",
+    ],
+)
+def test_haifong_only_exact_host_profile_path_and_32_hex_key_are_supported(url):
+    with pytest.raises(ValueError):
+        ranks._official_subject(capture(url, HAIFONG_BODY), "楊子萱")
+
+
 FROZEN_DIGESTS = {
     "藤泽里菜": (
         "535c33ab8e82fa729975aa386c27c64596b6646bd5d4cb95f5c10e07a8252804",

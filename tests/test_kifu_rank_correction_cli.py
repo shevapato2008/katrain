@@ -332,6 +332,20 @@ def correction_scope(module, items=None, *, publication_key="rank-only-current-p
     }
 
 
+@pytest.mark.parametrize("key_length,source_length,valid", [(160, 64, True), (161, 64, False), (160, 65, False)])
+def test_scope_lengths_match_existing_persistence_limits(key_length, source_length, valid):
+    module = cli()
+    scope = correction_scope(module, {"91694911"}, publication_key="k" * key_length)
+    scope["originals"][0]["source_item_id"] = "1" * source_length
+    if valid:
+        parsed = module._correction_scope(scope)
+        assert parsed.publication_key == scope["publication_key"]
+        assert set(parsed.pins) == {"1" * source_length}
+    else:
+        with pytest.raises(ValueError, match="scope"):
+            module._correction_scope(scope)
+
+
 def test_explicit_scope_selects_only_members_of_one_pinned_multigame_package(fixture, tmp_path):
     module, engine, originals, _ = fixture
     packs = [json.loads(path.read_text()) for path in originals]

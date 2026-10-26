@@ -94,7 +94,7 @@ def _correction_scope(scope=None):
     _require(isinstance(scope, dict) and set(scope) == {"publication_key", "originals"}, "scope fields invalid")
     key, originals = scope["publication_key"], scope["originals"]
     _require(
-        isinstance(key, str) and 0 < len(key) <= 200 and key.strip() == key,
+        isinstance(key, str) and 0 < len(key) <= 160 and key.strip() == key,
         "scope publication key invalid",
     )
     _require(isinstance(originals, list) and 1 <= len(originals) <= 20, "scope needs 1..20 original source IDs")
@@ -105,7 +105,7 @@ def _correction_scope(scope=None):
             "scope original fields invalid",
         )
         item = pin["source_item_id"]
-        _require(isinstance(item, str) and re.fullmatch(r"[0-9]+", item), "scope source ID invalid")
+        _require(isinstance(item, str) and re.fullmatch(r"[0-9]{1,64}", item), "scope source ID invalid")
         _require(item not in pins, "scope source ID duplicated")
         _require(
             all(

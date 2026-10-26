@@ -52,6 +52,7 @@ _RANK_LOOKUP_REASONS = frozenset(
         "same_day_raw_rank_conflict",
         "no_verifiable_raw_rank",
         "professional_identity_unverified",
+        "official_grade_above_library_grade",
         "recent_raw_rank_conflict",
     }
 )

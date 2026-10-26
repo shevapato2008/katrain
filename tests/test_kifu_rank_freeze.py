@@ -159,14 +159,15 @@ def test_unknown_and_library_checkpoint_are_immutable(tmp_path):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "lookup_reason,logged_reason",
+    "lookup_status,lookup_reason,logged_reason",
     [
-        ("professional_identity_unverified", "professional_identity_unverified"),
-        ("private evidence for White with credential=secret", "lookup_reason_unavailable"),
+        ("unknown_system", "professional_identity_unverified", "professional_identity_unverified"),
+        ("conflict", "official_grade_above_library_grade", "official_grade_above_library_grade"),
+        ("unknown_system", "private evidence for White with credential=secret", "lookup_reason_unavailable"),
     ],
 )
 async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile(
-    tmp_path, monkeypatch, caplog, lookup_reason, logged_reason
+    tmp_path, monkeypatch, caplog, lookup_status, lookup_reason, logged_reason
 ):
     from katrain.kifu_ingest import orchestration
     from katrain.kifu_ingest.staging import Stage
@@ -193,7 +194,7 @@ async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile
         lambda *a, **kw: calls.append(1)
         or {
             1: {"status": "qualified", "fact": fact()},
-            2: {"status": "unknown_system", "reason": lookup_reason},
+            2: {"status": lookup_status, "reason": lookup_reason},
         },
     )
     monkeypatch.setattr(orchestration, "_professional_identity_evidence", lambda *a: {})
@@ -209,6 +210,7 @@ async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile
             decision_store=stage,
         )
     first_counts = json.loads(caplog.records[-1].getMessage().split(" ", 1)[1])
+    assert first_counts[lookup_status] == 1
     assert first_counts["lookup_reasons"] == {logged_reason: 1}
     assert first_counts["unresolved_slots"] == [
         {"source_item_id": "99999001", "side": "white", "reason": logged_reason}

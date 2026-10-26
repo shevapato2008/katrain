@@ -11,4 +11,4 @@
 - 代表真实 Chromium 使用 strict 打包静态产物，1024×600、楷体最大，与设备一致。五前导 SVG 均可见24×24，五右箭头20×20，五按钮219×63，标题22px，无标题截断或页面溢出。[实机修改前 / 本机实际产物预览](screenshots/before-preview.png)、[预览几何](preview-dom.json)。右图使用仅浏览器中的只读固定输入，时钟及问候为当时时间；不是设备已部署凭证。
 - 设备修改前截图为真实 `/kiosk/play`，只读捕获，没有导航、修改偏好或操作盘面。设备当时 source93f、PID825578，vision unbound。
 
-审核与最终发布回执在操作完成后追加，未完成部署前不得以预览替代实机验收。
+独立 fresh Astra Max（gpt-6-astra/max）已审核七文件产品差异、Smartbox canonical 两SVG/manifest，并实际查看RK修改前及strict产物截图：Approved，无must-fix。未重复构建；沿用本轮34测试及full/strict日志。最终发布回执在操作完成后追加，未完成部署前不得以预览替代实机验收。

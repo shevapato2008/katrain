@@ -42,6 +42,19 @@ from katrain.web.kifu.player_ranks import lookup_library_rank_facts, lookup_prof
 
 MAX_RECEIVE_BYTES = 16 * 1024 * 1024
 logger = logging.getLogger(__name__)
+_RANK_LOOKUP_REASONS = frozenset(
+    {
+        "identity_not_unique",
+        "local_owner_mismatch",
+        "current_conflict",
+        "current_system_unspecified",
+        "stored_fact_invalid",
+        "same_day_raw_rank_conflict",
+        "no_verifiable_raw_rank",
+        "professional_identity_unverified",
+        "recent_raw_rank_conflict",
+    }
+)
 
 
 def _engine():
@@ -273,20 +286,42 @@ async def prepare_staged_games(
         for key in ("cached", "source", "library_current", "unknown", "unknown_identity", "unknown_system", "conflict")
     }
     rank_counts["cached"] = 2 * (len(rank_games) - len(unfrozen))
-    ages = []
+    lookup_reasons, lookup_failures = {}, {}
+    for player_id, result in library.items():
+        if isinstance(result, dict) and result.get("status") in {"unknown_identity", "unknown_system", "conflict"}:
+            rank_counts[result["status"]] += 1
+            reason = result.get("reason")
+            if not isinstance(reason, str) or reason not in _RANK_LOOKUP_REASONS:
+                reason = "lookup_reason_unavailable"
+            lookup_reasons[reason] = lookup_reasons.get(reason, 0) + 1
+            lookup_failures[player_id] = reason
+    ages, unresolved_slots = [], []
+    unfrozen_ids = {game["source_item_id"] for game in unfrozen}
     for game in rank_games:
-        for snapshot in game["rank_snapshots"].values():
+        for side, snapshot in game["rank_snapshots"].items():
             rank_counts[snapshot["origin"]] += 1
             if snapshot["source_as_of"]:
                 ages.append((datetime.now(timezone.utc).date() - date.fromisoformat(snapshot["source_as_of"])).days)
-    for result in library.values():
-        if isinstance(result, dict) and result.get("status") in {"unknown_identity", "unknown_system", "conflict"}:
-            rank_counts[result["status"]] += 1
+            if snapshot["origin"] != "unknown" or len(unresolved_slots) >= 200:
+                continue
+            # A frozen unknown is historical, even if a new game queried this owner.
+            reason = "frozen_unknown"
+            if game["source_item_id"] in unfrozen_ids:
+                match = resolved["player"].get(game["metadata"][f"player_{side}"], {})
+                reason = "identity_not_unique"
+                if (
+                    match.get("status") in {"qualified", "missing_qualified_five_languages"}
+                    and type(match.get("id")) is int
+                ):
+                    reason = lookup_failures.get(match["id"], "rank_fact_unavailable")
+            unresolved_slots.append({"source_item_id": game["source_item_id"], "side": side, "reason": reason})
     logger.info(
         "kifu_rank_decisions %s",
         json.dumps(
             {
                 **rank_counts,
+                "lookup_reasons": lookup_reasons,
+                "unresolved_slots": unresolved_slots,
                 "profile_refresh_deferred": True,
                 "external_rank_refreshes": 0,
                 "source_age_days_min": min(ages) if ages else None,

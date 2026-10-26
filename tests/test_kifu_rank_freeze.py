@@ -3,6 +3,7 @@
 from copy import deepcopy
 from hashlib import sha256
 import importlib
+import json
 
 import pytest
 
@@ -157,7 +158,16 @@ def test_unknown_and_library_checkpoint_are_immutable(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile(tmp_path, monkeypatch, caplog):
+@pytest.mark.parametrize(
+    "lookup_reason,logged_reason",
+    [
+        ("professional_identity_unverified", "professional_identity_unverified"),
+        ("private evidence for White with credential=secret", "lookup_reason_unavailable"),
+    ],
+)
+async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile(
+    tmp_path, monkeypatch, caplog, lookup_reason, logged_reason
+):
     from katrain.kifu_ingest import orchestration
     from katrain.kifu_ingest.staging import Stage
     from tests.test_kifu_incremental_decision_resume import ReviewedNames, _qualified_target, _stage_game
@@ -180,7 +190,11 @@ async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile
     monkeypatch.setattr(
         orchestration,
         "lookup_library_rank_facts",
-        lambda *a, **kw: calls.append(1) or {1: {"status": "qualified", "fact": fact()}},
+        lambda *a, **kw: calls.append(1)
+        or {
+            1: {"status": "qualified", "fact": fact()},
+            2: {"status": "unknown_system", "reason": lookup_reason},
+        },
     )
     monkeypatch.setattr(orchestration, "_professional_identity_evidence", lambda *a: {})
     failing = ReviewedNames("first", on_translate=lambda _request: (_ for _ in ()).throw(ValueError("name outage")))
@@ -194,6 +208,13 @@ async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile
             check_identities=_qualified_target,
             decision_store=stage,
         )
+    first_counts = json.loads(caplog.records[-1].getMessage().split(" ", 1)[1])
+    assert first_counts["lookup_reasons"] == {logged_reason: 1}
+    assert first_counts["unresolved_slots"] == [
+        {"source_item_id": "99999001", "side": "white", "reason": logged_reason}
+    ]
+    assert "White" not in caplog.records[-1].getMessage()
+    assert "credential" not in caplog.records[-1].getMessage()
     monkeypatch.setattr(
         orchestration, "lookup_library_rank_facts", lambda *a, **kw: pytest.fail("cached retry queried current ranks")
     )
@@ -208,8 +229,6 @@ async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile
     assert len(calls) == 1
     assert result["format"] == ranks().FORMAT_V2
     assert result["games"][0]["rank_snapshots"]["black"]["display_rank"] == "7p"
-    import json
-
     counts = json.loads(caplog.records[-1].getMessage().split(" ", 1)[1])
     assert {key: counts[key] for key in ("cached", "source", "library_current", "unknown")} == {
         "cached": 2,
@@ -219,6 +238,8 @@ async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile
     }
     assert counts["external_rank_refreshes"] == 0
     assert counts["profile_refresh_deferred"] is True
+    assert counts["lookup_reasons"] == {}
+    assert counts["unresolved_slots"] == [{"source_item_id": "99999001", "side": "white", "reason": "frozen_unknown"}]
 
 
 @pytest.mark.asyncio

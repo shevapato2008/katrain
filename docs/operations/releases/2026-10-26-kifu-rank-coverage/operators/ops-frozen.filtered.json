@@ -1,0 +1,29 @@
+{
+  "baseline_files": [
+    "/private/tmp/kifu-rank-coverage-release-20261026/fresh-baselines/home-ubuntu-cron.json",
+    "/private/tmp/kifu-rank-coverage-release-20261026/fresh-baselines/home-ubuntu-existing-schema.readonly.json",
+    "/private/tmp/kifu-rank-coverage-release-20261026/fresh-baselines/home-ubuntu-web.json",
+    "/private/tmp/kifu-rank-coverage-release-20261026/fresh-baselines/ucloud-v100-existing-schema.readonly.json",
+    "/private/tmp/kifu-rank-coverage-release-20261026/fresh-baselines/ucloud-v100-web.json"
+  ],
+  "captured_at": "2026-10-26T08:04:07.972726+00:00",
+  "final_new_source_sha": null,
+  "ingest_db_status": "optional_read_timed_out_after_one_fallback_not_retried",
+  "ledger_read": false,
+  "ops_files_sha256": {
+    "README.md": "a416fdac2b82571829f5f439b67a2b82f76704089a1ff99a3bc5461df504284f",
+    "cloud_overlay.py": "0d03529e22c2103c977581309fd95af82fa53e0e100905a183a5bd5537efcbd4",
+    "fresh_baselines.py": "831efbf567503037233c44252ac14b8de619af48fc19390937dc8630f1e81e05",
+    "maintenance.py": "953791eace80880418c4151cae2a52f326f9f44588e22e62e23345d24b0a0e4e",
+    "prepare_bundle.py": "9fdf00831ae5fab208a414052f774515baf8c61b30ce3cc5d4aab5611e0fba24",
+    "probe_runtime.py": "6172f9a38598b49085f10818a9f1ad7fa06a4702b86c65e0592795d44714c1ef",
+    "schema_rank.py": "e76894a24b8947432c9cc978462716c2113f74d9f742fda9688de5d8006de040"
+  },
+  "phase": "local_preparation_frozen",
+  "py_compile": "passed",
+  "remote_mutations": false,
+  "unchanged_copies": {
+    "maintenance.py": true,
+    "probe_runtime.py": true
+  }
+}

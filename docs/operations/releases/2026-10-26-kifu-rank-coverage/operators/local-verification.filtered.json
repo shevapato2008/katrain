@@ -1,0 +1,16 @@
+{
+  "fixture_scope": "local packaging of already-published 93f only; not a release of pending source",
+  "focused_gates": {
+    "backend_bundle_has_14_runtime_and_no_ui": true,
+    "backend_rejects_ui_artifacts": true,
+    "deploy_rejects_missing_go_before_docker": true,
+    "inherited_ui_positive_gate": true,
+    "missing_inherited_ui_sha": true,
+    "readonly_rejects_changed_migration_before_connection": true,
+    "reject_graph_change": true,
+    "reject_index_change": true
+  },
+  "ledger_read": false,
+  "py_compile": "passed",
+  "remote_mutations": false
+}

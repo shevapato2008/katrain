@@ -1,0 +1,30 @@
+{
+  "publication_key": "rank-only-current-page-tail-20261026-v1",
+  "originals": [
+    {
+      "source_item_id": "91740418",
+      "sgf_sha256": "385c1bd3a1f7582dde0c4e0360e989d8ee52df02d5f88b6a53491403c545716c",
+      "manifest_sha256": "0ac5317fbc7f1f1265e29e9faed0f59461dfdf19807a0328d05576ee96148467"
+    },
+    {
+      "source_item_id": "91740570",
+      "sgf_sha256": "35a8b9ba33b34ec5071152a7e6d88effddd5cfd81cbdee84b353a35145305375",
+      "manifest_sha256": "0ac5317fbc7f1f1265e29e9faed0f59461dfdf19807a0328d05576ee96148467"
+    },
+    {
+      "source_item_id": "91741359",
+      "sgf_sha256": "615a93cca36d6fde3cab99e4fcada96d1a083d94915faa17b940c13b7213ee28",
+      "manifest_sha256": "6e2a93d9d6df8b23fa4e6ba110acafca530cff0fff3865c2d632c686dca6ef03"
+    },
+    {
+      "source_item_id": "91741775",
+      "sgf_sha256": "755eafa551a84dc266657e87d2f1b4c72ba0e2f767565b6b79839c67bc67a0e4",
+      "manifest_sha256": "5e89c7bd689de0fd9453301f4322c67a2156819572a5959b4826497a03ce52bd"
+    },
+    {
+      "source_item_id": "91742836",
+      "sgf_sha256": "20537990181043b3bb8bed6ef56b2ab4de01c8bd962a1b15715d00749dd04712",
+      "manifest_sha256": "5e89c7bd689de0fd9453301f4322c67a2156819572a5959b4826497a03ce52bd"
+    }
+  ]
+}

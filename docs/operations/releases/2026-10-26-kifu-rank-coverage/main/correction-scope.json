@@ -1,0 +1,95 @@
+{
+  "publication_key": "rank-only-page-coverage-20261026-v1",
+  "originals": [
+    {
+      "source_item_id": "91511645",
+      "sgf_sha256": "e65536dbc4f659156266a32d8a86da6c7672212547319bc2aa1c2f1a2bc54b0b",
+      "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5"
+    },
+    {
+      "source_item_id": "91574352",
+      "sgf_sha256": "af20d037ed9429d753450982d49aafe1eb4359b1c27f036ae5806c4646d95e73",
+      "manifest_sha256": "57a579a34b83134e7cca5fa51836e3cea4dfa69b00177d3cdf50abd4668a60c5"
+    },
+    {
+      "source_item_id": "91631224",
+      "sgf_sha256": "4f33d9dd15ffd117fa50258495ba307050a3be6f5d6bbf85ff9afdf14d3595f2",
+      "manifest_sha256": "d01730567be1f11b35fd8960277a4da4fb64c3cbc1bb4247480033ae08b4c57d"
+    },
+    {
+      "source_item_id": "91632021",
+      "sgf_sha256": "9edf408d6e7ba58e656261d737f71b82d630b4851a7274c1311491a7a3b2c838",
+      "manifest_sha256": "d01730567be1f11b35fd8960277a4da4fb64c3cbc1bb4247480033ae08b4c57d"
+    },
+    {
+      "source_item_id": "91633003",
+      "sgf_sha256": "fba41db37daa99f1838102b1f77df698ee67f21e936854adf56ca84136b1f269",
+      "manifest_sha256": "d01730567be1f11b35fd8960277a4da4fb64c3cbc1bb4247480033ae08b4c57d"
+    },
+    {
+      "source_item_id": "91633333",
+      "sgf_sha256": "43f9a14fe385385a417a821abeddaf8be5108628891743fd7c420a9f07fc5d1d",
+      "manifest_sha256": "d01730567be1f11b35fd8960277a4da4fb64c3cbc1bb4247480033ae08b4c57d"
+    },
+    {
+      "source_item_id": "91633693",
+      "sgf_sha256": "17d86c00d8f9820e0e1723c8d7986232c480475dbea6fd9fb100e54dfa4d6b1f",
+      "manifest_sha256": "d01730567be1f11b35fd8960277a4da4fb64c3cbc1bb4247480033ae08b4c57d"
+    },
+    {
+      "source_item_id": "91633894",
+      "sgf_sha256": "8dc341883dc39c2f711be16782348f7d933a99c753cc672f83deb666a446afa1",
+      "manifest_sha256": "d01730567be1f11b35fd8960277a4da4fb64c3cbc1bb4247480033ae08b4c57d"
+    },
+    {
+      "source_item_id": "91634055",
+      "sgf_sha256": "d5b0118682c49d7fcc7a8168c3c1f16570aa662cf08fd45c3eac4893cbe9cd03",
+      "manifest_sha256": "d01730567be1f11b35fd8960277a4da4fb64c3cbc1bb4247480033ae08b4c57d"
+    },
+    {
+      "source_item_id": "91634218",
+      "sgf_sha256": "eedf05d033d5c5226fd43df91a4baadbabd72a06848f0ddd86d8c47c583b47ec",
+      "manifest_sha256": "d01730567be1f11b35fd8960277a4da4fb64c3cbc1bb4247480033ae08b4c57d"
+    },
+    {
+      "source_item_id": "91634345",
+      "sgf_sha256": "6ffad65cb38f6dce113a50d102ae01cc62bca4268d8ba000914d5c5120e79b17",
+      "manifest_sha256": "d01730567be1f11b35fd8960277a4da4fb64c3cbc1bb4247480033ae08b4c57d"
+    },
+    {
+      "source_item_id": "91634488",
+      "sgf_sha256": "29f9ebe635e1d3ffccb4e4b10c99af008f34e9786ea061006c8d357f22b64126",
+      "manifest_sha256": "d01730567be1f11b35fd8960277a4da4fb64c3cbc1bb4247480033ae08b4c57d"
+    },
+    {
+      "source_item_id": "91634842",
+      "sgf_sha256": "2229ca9a23fdee74f9058f54968a7b7089d6c71eb78062f77847a71c2411b164",
+      "manifest_sha256": "c14e011c14dbca7511ae472e0c70c0f3fda4f0cb3ef2ba42e7dbe348de924824"
+    },
+    {
+      "source_item_id": "91635363",
+      "sgf_sha256": "5d6a72d65c62eecbf9d96ba73f8869f81174503cb51100fdfd0d15fe7e6dced8",
+      "manifest_sha256": "c14e011c14dbca7511ae472e0c70c0f3fda4f0cb3ef2ba42e7dbe348de924824"
+    },
+    {
+      "source_item_id": "91635650",
+      "sgf_sha256": "285cf23061dfc655b8ac3ce6a9a2f5f6ccb690089b26650bd48ed7911d9eca9a",
+      "manifest_sha256": "c14e011c14dbca7511ae472e0c70c0f3fda4f0cb3ef2ba42e7dbe348de924824"
+    },
+    {
+      "source_item_id": "91635753",
+      "sgf_sha256": "ac14c90afdff6c89ab15e41f7e4e60cef23413759d191332afed83b073fdac00",
+      "manifest_sha256": "c14e011c14dbca7511ae472e0c70c0f3fda4f0cb3ef2ba42e7dbe348de924824"
+    },
+    {
+      "source_item_id": "91737274",
+      "sgf_sha256": "c6d2a2feb6c22f694e4a225f685ab795e721515de150aef4d73a3e4ad63b094a",
+      "manifest_sha256": "b2645c38a8c417b725998d468649f73599c83ffb76664e336e6a3b8932d85025"
+    },
+    {
+      "source_item_id": "91738010",
+      "sgf_sha256": "3b6ad86a7b27a553a5b45f3dab16c94a823829eaefb579667bdf71cbeb859772",
+      "manifest_sha256": "5568be47617aac14b8e79bd3e12b381ef491361042456d18eae9273a3683b507"
+    }
+  ]
+}

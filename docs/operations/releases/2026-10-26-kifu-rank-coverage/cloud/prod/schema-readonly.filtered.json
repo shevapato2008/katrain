@@ -1,0 +1,324 @@
+{
+  "business_writes": false,
+  "ddl_executed": false,
+  "grants_executed": false,
+  "host": "ucloud-v100",
+  "migration_sha256": "77c1b870add4e4dc860272e892f5f10d5ac787ee0151e7592f10c7fad03c9b22",
+  "phase": "schema_verified",
+  "row_counts": {
+    "kifu_album_rank_snapshots": 22,
+    "kifu_player_rank_history": 6
+  },
+  "schema": {
+    "kifu_album_rank_snapshots": {
+      "columns": {
+        "album_id": {
+          "default": null,
+          "nullable": false,
+          "type": "integer"
+        },
+        "id": {
+          "default": "sequence_nextval",
+          "nullable": false,
+          "type": "integer"
+        },
+        "native_batch_id": {
+          "default": null,
+          "nullable": false,
+          "type": "integer"
+        },
+        "publication_key": {
+          "default": null,
+          "nullable": false,
+          "type": "character varying(160)"
+        },
+        "rank_fact_id": {
+          "default": null,
+          "nullable": true,
+          "type": "integer"
+        },
+        "side": {
+          "default": null,
+          "nullable": false,
+          "type": "character varying(5)"
+        },
+        "snapshot": {
+          "default": null,
+          "nullable": false,
+          "type": "json"
+        },
+        "snapshot_sha256": {
+          "default": null,
+          "nullable": false,
+          "type": "character varying(64)"
+        }
+      },
+      "constraints": {
+        "ck_kifu_album_rank_sha256": {
+          "columns": [
+            "snapshot_sha256"
+          ],
+          "definition": "CHECK (snapshot_sha256::text ~ '^[0-9a-f]{64}$'::text)",
+          "kind": "c"
+        },
+        "ck_kifu_album_rank_side": {
+          "columns": [
+            "side"
+          ],
+          "definition": "CHECK (side::text = ANY (ARRAY['black'::character varying, 'white'::character varying]::text[]))",
+          "kind": "c"
+        },
+        "kifu_album_rank_snapshots_album_id_fkey": {
+          "columns": [
+            "album_id"
+          ],
+          "kind": "f",
+          "ondelete": "a",
+          "target_columns": [
+            "id"
+          ],
+          "target_table": "kifu_albums"
+        },
+        "kifu_album_rank_snapshots_pkey": {
+          "columns": [
+            "id"
+          ],
+          "kind": "p"
+        },
+        "kifu_album_rank_snapshots_rank_fact_id_fkey": {
+          "columns": [
+            "rank_fact_id"
+          ],
+          "kind": "f",
+          "ondelete": "r",
+          "target_columns": [
+            "id"
+          ],
+          "target_table": "kifu_player_rank_history"
+        },
+        "uq_kifu_album_rank_side": {
+          "columns": [
+            "album_id",
+            "side"
+          ],
+          "kind": "u"
+        }
+      },
+      "indexes": {
+        "ix_kifu_album_rank_snapshots_rank_fact_id": {
+          "columns": [
+            "rank_fact_id"
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "kifu_album_rank_snapshots_pkey": {
+          "columns": [
+            "id"
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_kifu_album_rank_side": {
+          "columns": [
+            "album_id",
+            "side"
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      }
+    },
+    "kifu_player_rank_history": {
+      "columns": {
+        "content_sha256": {
+          "default": null,
+          "nullable": false,
+          "type": "character varying(64)"
+        },
+        "evidence": {
+          "default": null,
+          "nullable": false,
+          "type": "json"
+        },
+        "id": {
+          "default": "sequence_nextval",
+          "nullable": false,
+          "type": "integer"
+        },
+        "is_current": {
+          "default": "false",
+          "nullable": false,
+          "type": "boolean"
+        },
+        "last_checked_at": {
+          "default": null,
+          "nullable": true,
+          "type": "timestamp with time zone"
+        },
+        "observed_at": {
+          "default": null,
+          "nullable": false,
+          "type": "timestamp with time zone"
+        },
+        "player_id": {
+          "default": null,
+          "nullable": false,
+          "type": "integer"
+        },
+        "rank_system": {
+          "default": null,
+          "nullable": false,
+          "type": "character varying(24)"
+        },
+        "rank_value": {
+          "default": null,
+          "nullable": false,
+          "type": "integer"
+        },
+        "source_as_of": {
+          "default": null,
+          "nullable": true,
+          "type": "date"
+        },
+        "source_kind": {
+          "default": null,
+          "nullable": false,
+          "type": "character varying(32)"
+        },
+        "source_ref": {
+          "default": null,
+          "nullable": false,
+          "type": "json"
+        },
+        "status": {
+          "default": null,
+          "nullable": false,
+          "type": "character varying(16)"
+        },
+        "valid_from": {
+          "default": null,
+          "nullable": true,
+          "type": "date"
+        }
+      },
+      "constraints": {
+        "ck_kifu_player_rank_sha256": {
+          "columns": [
+            "content_sha256"
+          ],
+          "definition": "CHECK (content_sha256::text ~ '^[0-9a-f]{64}$'::text)",
+          "kind": "c"
+        },
+        "ck_kifu_player_rank_status": {
+          "columns": [
+            "status"
+          ],
+          "definition": "CHECK (status::text = ANY (ARRAY['qualified'::character varying, 'conflict'::character varying]::text[]))",
+          "kind": "c"
+        },
+        "ck_kifu_player_rank_system": {
+          "columns": [
+            "rank_system"
+          ],
+          "definition": "CHECK (rank_system::text = ANY (ARRAY['professional_dan'::character varying, 'amateur_dan'::character varying, 'kyu'::character varying, 'dan_unspecified'::character varying]::text[]))",
+          "kind": "c"
+        },
+        "ck_kifu_player_rank_value": {
+          "columns": [
+            "rank_value",
+            "rank_system"
+          ],
+          "definition": "CHECK (rank_value >= 1 AND (rank_system::text = 'kyu'::text AND rank_value <= 30 OR rank_system::text <> 'kyu'::text AND rank_value <= 9))",
+          "kind": "c"
+        },
+        "kifu_player_rank_history_pkey": {
+          "columns": [
+            "id"
+          ],
+          "kind": "p"
+        },
+        "kifu_player_rank_history_player_id_fkey": {
+          "columns": [
+            "player_id"
+          ],
+          "kind": "f",
+          "ondelete": "a",
+          "target_columns": [
+            "id"
+          ],
+          "target_table": "kifu_players"
+        },
+        "uq_kifu_player_rank_fact": {
+          "columns": [
+            "player_id",
+            "content_sha256"
+          ],
+          "kind": "u"
+        }
+      },
+      "indexes": {
+        "ix_kifu_player_rank_date": {
+          "columns": [
+            "player_id",
+            "source_as_of"
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "kifu_player_rank_history_pkey": {
+          "columns": [
+            "id"
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_kifu_player_rank_current": {
+          "columns": [
+            "player_id"
+          ],
+          "predicate": "is_current",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_kifu_player_rank_fact": {
+          "columns": [
+            "player_id",
+            "content_sha256"
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      }
+    }
+  },
+  "source_develop_sha": "e9b4d3ecce03b3269f12922a476fd6d6c6545547",
+  "tables_preexisting": {
+    "kifu_album_rank_snapshots": true,
+    "kifu_player_rank_history": true
+  },
+  "temp_objects_created": false,
+  "transaction_read_only": true,
+  "verification_mode": "existing-readonly",
+  "web_role_sha256": "18eb9f873bb7291769de9511681381f50f5f4cda83bb13bfb9b0aa60804512f0"
+}

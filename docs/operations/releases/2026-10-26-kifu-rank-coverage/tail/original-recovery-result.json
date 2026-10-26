@@ -1,0 +1,1 @@
+[{"after": "prod_synced", "before": "prod_published", "checks": 10, "games": 2, "manifest_sha256": "5e89c7bd689de0fd9453301f4322c67a2156819572a5959b4826497a03ce52bd", "original_package_unchanged": true, "original_receipts_unchanged": true, "publication_calls": 0, "publication_key": "19x19-batch-19caaa5732be98c16944f87e", "translation_calls": 0}]

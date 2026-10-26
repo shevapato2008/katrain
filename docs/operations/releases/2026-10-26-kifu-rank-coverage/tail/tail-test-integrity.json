@@ -1,0 +1,21 @@
+{
+  "unchanged": {
+    "albums": true,
+    "source_links": true,
+    "original_native_batches": true,
+    "original_item_states": true,
+    "protected_files_sha256": true
+  },
+  "album_count": [
+    176884,
+    176884
+  ],
+  "history_rows": [
+    38,
+    46
+  ],
+  "snapshot_rows": [
+    54,
+    54
+  ]
+}

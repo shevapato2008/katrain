@@ -208,3 +208,28 @@ npm run build
 现有PG核心双侧筛选已是几ms；剩余主要是应用读取/证明工作，换存储仍需解决。Redis若用于小热点缓存，只在统计命中率/热集合和多实例需要后采用；同样需要版本失效，miss与冷词必须过完整验收。HBase如需验证，可为`player_id + reverse_date + album_id`建立双侧索引读模型并单独比较，其10ms单次操作经验不能替代带姓名解析/审批/列表/预览/网络的200ms测试。
 
 费用只按实际热数据RAM、持久副本、节点、备份、运维及一致性工作量比较；未知账单不报精确价格。不存在“本任务不许HBase”的用户硬约束；本计划先PG是证据驱动的最小验证顺序，若优化后或未来规模/吞吐要求证明不适合，保留重新评估HBase的选项。
+
+## Chunk 5：TEST未过预算后的最小增量（Astra第2轮计划审核范围）
+
+首轮已按授权顺序发布feature、develop `dc17489e2`、父main `f44676ae`，并仅部署TEST与3条并发索引。16项API检查及11项旧新契约等价通过，27次正确棋盘paint为563–3804ms，未达200ms；已停止扩量和PROD发布。[实际记录](../reviews/evidence/2026-10-27-kifu-search/test-after-summary.md)。
+
+一次暖profile647ms中display586ms：11个first-pass批次snapshot深拷贝341ms，bundle/member编译120ms，SQL总82ms。11批次artifact约5.22MB，紧凑编译结果仅328132B（最大66014B/500候选）。同组完整artifact SQL SHA一次59.51ms，小字段MVCC guard一次4.44ms；这是定位样本，不是p99。另两族在该profile几乎无编译成本，因此只优化first-pass，不进入Task5写投影/epoch、Redis或HBase。
+
+### Task 2b：仅复用内容不变的first-pass纯编译结果
+
+**Files:** 新`katrain/web/kifu/compiled_first_pass.py`、`identity.py`、`name_first_pass.py`、`server.py`仅启动前一个预算化hook；新`tests/web_ui/test_kifu_compiled_first_pass.py`及必要PG隔离验证。前端暂不追加优化，响应后paint成本单独保留。
+
+- [ ] 先红测试已运行：两个独立Session/request仍重复bundle编译（1 failed / 3 passed）。保留跨请求artifact整数/浮点数、布尔值/整数、正负零变化拒绝；增加状态/hash/metadata变化、源/ledger/scope变化、dirty Session禁用、缓存可变别名隔离、预算淘汰与并发读取行为。
+- [ ] `compile_first_pass(status,bundle_sha,artifact)`只产出已验证candidate/research哈希集合和`shared_displays`；成员canonical SHA和研究/owner/name/evidence/source/creation ledger/raw-scope校验照旧。`persisted_eligible(..., compiled=...)`仅省去已经验证且当前未变的完整bundle搬运及重编译；无compiled仍走原路径。
+- [ ] 仅`first_pass_ids - (transliteration | orthographic | positive | legacy)`走该路径；混合批次、其它证明族及dirty Session保留旧reader，不做通用缓存框架。
+- [ ] 进程内LRU仅存内部生成的marshal bytes，默认64MiB总payload、1024项、单项1MiB。每次命中私有解码，不共享可变dict/list/ORM；锁只保护namespace/LRU bytes取得和放入，编译与解码在锁外。超限/miss/不支持时原reader，仍计真实耗时，不得fast-empty。
+
+**首选PG guard（需Astra本轮认可）：** 同一SQL statement snapshot返回fresh batch全部小字段，以及`tableoid`、`ctid`、`xmin`、`pg_relation_filenode(tableoid)`、`floor(pg_snapshot_xmax(pg_current_snapshot())::text::numeric / 4294967296)`、`pg_postmaster_start_time()`。缓存键再包含每Engine弱引用生命周期的随机namespace；不是仅用batch_id、stored bundle hash或`xmin`作永久身份。UPDATE生成新tuple；FREEZE在PG15保留原xmin；FULL/TRUNCATE/rewrite由filenode/ctid区分，32bit回绕由xid8 epoch区分，重启/重新建Engine由server/engine namespace区分。guard不完整/不支持即原reader，不能无guard命中。[PG15系统列](https://www.postgresql.org/docs/15/ddl-system-columns.html)、[FREEZE说明](https://www.postgresql.org/docs/15/routine-vacuuming.html)、[xid8/snapshot](https://www.postgresql.org/docs/15/functions-info.html)、[filenode](https://www.postgresql.org/docs/15/functions-admin.html)。
+
+- [ ] 命中时query使用`populate_existing`并defer大artifact；proof使用同语句得到的fresh scalars和私有compiled。miss必须在**一个statement**同时读artifact和新的完整guard，用该statement的guard编译/入缓存；不得把旧header guard配新artifact。保守替代方案为同语句完整artifact原文SHA256，SQLite测试走该替代；不得用JSONB数字归一化或Python宽松相等。
+- [ ] 在隔离PG15环境验证真实UPDATE（含只改artifact、TOAST、同事务多次更新/rollback）、旧ORM对象、关系rewrite/namespace边界与guard变化。仅改隔离数据，不在正式TEST/PROD创建永久对象或改业务行；本地测试不能冒充已验证PG物理语义。
+
+**就绪/首次查询：** 不按硬编码热门姓名预热。此前两次公开引用集合发现超过5秒预算已取消，不继续同类盲扫。改为先分页读当前applied batch小字段（已知921），再逐批预算化读取artifact，只对实际first-pass候选编译；这是纯proof输入预编译，不扫描/回填17万棋谱、不调用模型、不写DB。lifespan yield前最多90秒，总缓存仍受上述预算约束，输出attempted/compiled/skipped/invalid/bytes/evicted/complete等小统计。超时/超容量保留原reader可用且明确预热不完整，不能称首次未搜棋手预算已过；TEST实测决定是否覆盖充分及启动耗时是否可接受。自然写入后的新guard仍即时miss校验，不能返回旧证明。
+
+- [ ] 独立spec检查后Astra只审本次delta及必要operator适配；不重审已通过的前端/原索引范围。TEST现已12层Compose，第二次web发布仅允许同链增加下一层image/buildSHA override，保留collector与全部非web身份。
+- [ ] 审核通过后再重复授权发布顺序；TEST先以少量首次不同姓名和公开结果等价复测，若仍明显未过200立即停止扩量并定位，达到后再做1/4客户端及明确网络条件。PROD仍待TEST门禁通过才发布；任何未达项如实报告。

@@ -1,6 +1,6 @@
 # Galaxy 棋谱搜索验证记录
 
-状态：实施已完成独立规格及Astra Max整体代码/部署工具审核；尚未部署或执行索引DDL，未声称达到200ms。
+状态：首轮实施及审核已完成；已发布develop与父仓库指针，并部署TEST和三条索引。TEST正确性通过但200ms预算失败，PROD尚未发布本轮变更；继续聚焦证明编译成本。
 
 ## 新机只读基线
 
@@ -26,6 +26,10 @@
 - 旧e9调查worktree独立复证14项既有失败（迁移保护表集合、CWI旧hint、历史俄语断言）；本次不扩修这些旧契约。旧SQL数量阈值3项也在e9原样失败，新增保守候选增加固定1次查询，已保留随页尺寸不增长的N+1断言。另9项旧evidence错误文案正则不符，相关生产源码未改。
 
 ## 部署验收待办
+
+首轮实际发布：feature `ce010cddf4ff9c77a1baa0c174dafaae0ab74019`，develop `dc17489e2269926b34da5f040a74990d2f4db3c9`，smartbox-software/main `f44676aeb94e3e9baa9333ebdb616b5eadc2e0d8`。TEST image `sha256:8754652a8d475d65d2671573683553ec940f0380590f206da0262691a120768c`，web `6b9dda84a8e4`；137个非web容器ID/start/restart/state全部相同，唯一collector未重启。3条索引定义、valid、ready均通过；没有启动时DDL。
+
+TEST首轮实测已停止扩量：16项API检查通过、11项旧新契约完全等价；27次真实棋盘paint全部正确，但563–3804ms（中位1429.8ms），均超200ms。未进入4客户端/40ms组，未做PROD变更。详见[test-after-summary](evidence/2026-10-27-kifu-search/test-after-summary.md)。一次隔离暖profile647ms中display586ms，11次batch snapshot deepcopy341ms、bundle/member canonical编译120ms，SQL合计82ms。下一刀只按这些实际成本收敛，不继续无目的压测。
 
 完整Astra审核通过后，严格依次发布feature、合并develop、父main子模块指针，然后先TEST web-only替换与显式AUTOCOMMIT CONCURRENTLY索引，再新PROD小样本复验。保留唯一TEST collector和两边cron/PG/GPU/MinIO及权限、SSO、媒体配置。
 

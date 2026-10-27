@@ -1,6 +1,6 @@
 # Galaxy 棋谱搜索验证记录
 
-状态：实施已完成独立规格检查，Astra Max整体代码审核进行中；尚未部署或执行索引DDL，未声称达到200ms。
+状态：实施已完成独立规格及Astra Max整体代码/部署工具审核；尚未部署或执行索引DDL，未声称达到200ms。
 
 ## 新机只读基线
 
@@ -22,6 +22,7 @@
 - 证明缓存审核发现Python相等把17/17.0等JSON变化当作相同内容，已恢复逐条canonical candidate SHA，并使用类型严格的artifact内容比较；补整数/浮点数、布尔值/整数、正负零四项回归（`ca3810747`）。没有跨请求缓存。
 - 负责人独立集成验证：新候选/worker/索引/context与现有list/name API/first-pass/selected/rank合计 **284 passed, 1 skipped**；skip为既有SQLite无法验证的实际PG计划检查，留待部署阶段。
 - 前端focused **29 passed**，`npm run build`通过。真实1280×720预览使用新前端及TEST只读API：搜索王星昊后504条，首条/标题为申真谞vs王星昊219手，左侧棋盘已绘制。仅既有未登录`auth/me`401，搜索无新增控制台错误。
+- Astra Max整体审核未留下Critical/Important；Minor失败提示复用了已有全语言翻译key（`ca7393960`），最终前端29例及构建再次通过。生产operator经实际只读inspect核对挂载/别名可重建性，TEST/PROD均未执行apply。
 - 旧e9调查worktree独立复证14项既有失败（迁移保护表集合、CWI旧hint、历史俄语断言）；本次不扩修这些旧契约。旧SQL数量阈值3项也在e9原样失败，新增保守候选增加固定1次查询，已保留随页尺寸不增长的N+1断言。另9项旧evidence错误文案正则不符，相关生产源码未改。
 
 ## 部署验收待办

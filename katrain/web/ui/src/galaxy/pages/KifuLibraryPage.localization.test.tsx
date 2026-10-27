@@ -58,7 +58,7 @@ describe('Galaxy 棋谱库语言展示', () => {
   it('首屏自动打开当前页首局，按真实报告可用性命名入口', async () => {
     const view = render(page());
     expect(await screen.findByTestId('board')).toBeInTheDocument();
-    expect(getAlbums).toHaveBeenCalledWith({ q: '原黑', page: 2, page_size: 20, lang: 'cn' });
+    expect(getAlbums).toHaveBeenCalledWith(expect.objectContaining({ q: '原黑', page: 2, page_size: 20, lang: 'cn' }));
     expect(screen.getByRole('button', { name: '查看棋谱' })).toBeInTheDocument();
     view.unmount();
     getAlbums.mockResolvedValue({ items: [{ ...record('cn'), has_analysis: true }], total: 1, page: 2, page_size: 20 });
@@ -88,15 +88,15 @@ describe('Galaxy 棋谱库语言展示', () => {
   it('切语言保留搜索、页码和选中卡，并更新卡片及页头译名', async () => {
     const view = render(page());
     fireEvent.click(await screen.findByText('cn-black'));
-    await waitFor(() => expect(getAlbum).toHaveBeenCalledWith(9, 'cn'));
+    await waitFor(() => expect(getAlbum).toHaveBeenCalledWith(9, 'cn', expect.any(AbortSignal)));
     expect(screen.getByText(/cn-black vs cn-white/)).toBeInTheDocument();
     expect(screen.queryByText('来源待核实')).not.toBeInTheDocument();
 
     for (const lang of ['en', 'jp']) {
       language.current = lang;
       view.rerender(page());
-      await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: '原黑', page: 2, page_size: 20, lang }));
-      await waitFor(() => expect(getAlbum).toHaveBeenLastCalledWith(9, lang));
+      await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ q: '原黑', page: 2, page_size: 20, lang })));
+      await waitFor(() => expect(getAlbum).toHaveBeenLastCalledWith(9, lang, expect.any(AbortSignal)));
       expect(await screen.findByText(`${lang}-black`)).toBeInTheDocument();
       expect(screen.getByText(new RegExp(`${lang}-black vs ${lang}-white`))).toBeInTheDocument();
       expect(screen.queryByText('GoLaxy')).not.toBeInTheDocument();
@@ -150,7 +150,7 @@ describe('Galaxy 棋谱库语言展示', () => {
       getAlbum.mockRejectedValueOnce(new Error('offline'));
       render(page());
       await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(1));
-      await screen.findByText('选择一局棋谱预览');
+      await screen.findByText('棋谱预览加载失败');
 
       fireEvent.click(screen.getByText('cn-black'));
       await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(2));
@@ -170,7 +170,7 @@ describe('Galaxy 棋谱库语言展示', () => {
       language.current = 'en';
       view.rerender(page());
       await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(2));
-      await screen.findByText('选择一局棋谱预览');
+      await screen.findByText('棋谱预览加载失败');
 
       fireEvent.click(await screen.findByText('en-black'));
       await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(3));
@@ -190,7 +190,7 @@ describe('Galaxy 紧凑分页', () => {
     expect(input).toHaveValue('2');
     fireEvent.change(input, { target: { value: '8639' } });
     fireEvent.submit(input.closest('form')!);
-    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: '原黑', page: 8639, page_size: 20, lang: 'cn' }));
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ q: '原黑', page: 8639, page_size: 20, lang: 'cn' })));
     expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: '上一页' }));
     await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ page: 8638 })));

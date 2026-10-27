@@ -104,6 +104,29 @@ describe('Galaxy 棋谱库语言展示', () => {
     }
   });
 
+  it('手动选择第二局后切语言保留该局，并加载新语言详情', async () => {
+    const second = (lang: string) => ({
+      ...record(lang), id: 10, display_player_black: `${lang}-second`, display_player_white: `${lang}-second-white`,
+    });
+    getAlbums.mockImplementation(({ lang }: { lang: string }) => Promise.resolve({
+      items: [record(lang), second(lang)], preview: detail(lang), total: 40, page: 2, page_size: 20,
+    }));
+    getAlbum.mockImplementation((id: number, lang: string) => Promise.resolve(id === 10
+      ? { ...detail(lang), ...second(lang), display_player_black: `${lang}-second-detail` }
+      : detail(lang)));
+    const view = render(page());
+    await screen.findByTestId('board');
+    fireEvent.click(screen.getByText('cn-second'));
+    await waitFor(() => expect(screen.getByTestId('subtitle')).toHaveTextContent('cn-second-detail vs cn-second-white'));
+
+    language.current = 'en';
+    view.rerender(page());
+    await waitFor(() => expect(getAlbum).toHaveBeenLastCalledWith(10, 'en', expect.any(AbortSignal)));
+    await waitFor(() => expect(screen.getByTestId('subtitle')).toHaveTextContent('en-second-detail vs en-second-white'));
+    expect(screen.getByTestId('board')).toBeInTheDocument();
+    expect(getAlbum).not.toHaveBeenCalledWith(9, 'en', expect.any(AbortSignal));
+  });
+
   it('旧语言详情迟到时不会盖掉新语言', async () => {
     const oldList = deferred<{ items: ReturnType<typeof record>[]; total: number; page: number; page_size: number }>();
     const oldDetail = deferred<ReturnType<typeof detail>>();

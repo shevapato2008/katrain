@@ -13,7 +13,7 @@
  * 400 下限在窄档必然把棋盘顶出容器。这里和已迁的三页一样传 0/0。
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
@@ -242,6 +242,7 @@ export default function KifuLibraryPage() {
   const query = searchParams.get('q') || '';
 
   const [listReload, setListReload] = useState(0);
+  const selectionScope = JSON.stringify([query, page]);
   const requestKey = JSON.stringify([query, page, lang, listReload]);
   const [result, setResult] = useState<{
     key: string; loading: boolean; error: boolean; items: KifuAlbumSummary[];
@@ -255,6 +256,7 @@ export default function KifuLibraryPage() {
 
   // Board preview state
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const selection = useRef<{ scope: string; id: number | null }>({ scope: selectionScope, id: null });
   const [selectedAlbum, setSelectedAlbum] = useState<KifuAlbumSummary | null>(null);
   const [selectedAlbumLang, setSelectedAlbumLang] = useState<string | null>(null);
   const [previewMoves, setPreviewMoves] = useState<string[]>([]);
@@ -289,27 +291,31 @@ export default function KifuLibraryPage() {
   useEffect(() => {
     const controller = new AbortController();
     const request = { cancelled: false };
+    if (selection.current.scope !== selectionScope) selection.current = { scope: selectionScope, id: null };
     setResult({ key: requestKey, loading: true, error: false, items: [], total: 0, preview: null });
     const fetchData = async () => {
       try {
         const data = await KifuAPI.getAlbums({ q: query || undefined, page, page_size: PAGE_SIZE, lang, signal: controller.signal });
         if (request.cancelled) return;
         const first = data.items[0] ?? null;
+        const selected = data.items.find((album) => album.id === selection.current.id) ?? first;
         const preview = data.preview?.id === first?.id ? data.preview ?? null : null;
-        // Accept this response's list, count and first board in the same render.
-        setSelectedId(first?.id ?? null);
-        setSelectedAlbum(first);
-        setSelectedAlbumLang(first ? lang : null);
+        // New search/page selects the first game; language/refresh keeps a valid selection.
+        selection.current = { scope: selectionScope, id: selected?.id ?? null };
+        setSelectedId(selected?.id ?? null);
+        setSelectedAlbum(selected);
+        setSelectedAlbumLang(selected ? lang : null);
         setPreviewMoves([]);
         setPreviewLoading(false);
         setPreviewError(false);
         setPreviewReload(0);
         setReplaySelection(null);
-        if (preview) acceptPreview(preview);
+        if (preview && preview.id === selected?.id) acceptPreview(preview);
         setResult({ key: requestKey, loading: false, error: false, items: data.items, total: data.total, preview });
       } catch (err) {
         if (request.cancelled || controller.signal.aborted) return;
         console.error('Failed to fetch kifu albums:', err);
+        selection.current = { scope: selectionScope, id: null };
         setResult({ key: requestKey, loading: false, error: true, items: [], total: 0, preview: null });
         setSelectedId(null);
         setSelectedAlbum(null);
@@ -320,7 +326,7 @@ export default function KifuLibraryPage() {
     };
     void fetchData();
     return () => { request.cancelled = true; controller.abort(); };
-  }, [query, page, lang, requestKey, acceptPreview]);
+  }, [query, page, lang, selectionScope, requestKey, acceptPreview]);
 
   const handleSearch = () => {
     const params: Record<string, string> = {};
@@ -340,7 +346,7 @@ export default function KifuLibraryPage() {
     setSearchParams(params, { replace: false });
   };
 
-  // A list replacement owns its first selection; cards can select another ID.
+  // Keep manual choices within this query/page when language or data refreshes.
   const handleCardClick = useCallback((album: KifuAlbumSummary) => {
     if (selectedId === album.id) {
       if (!previewLoading && (selectedAlbumLang !== lang || previewMoves.length === 0)) {
@@ -348,6 +354,7 @@ export default function KifuLibraryPage() {
       }
       return;
     }
+    selection.current.id = album.id;
     setSelectedId(album.id);
     if (result.preview?.id === album.id && result.preview.sgf_content) {
       setPreviewReload(0);

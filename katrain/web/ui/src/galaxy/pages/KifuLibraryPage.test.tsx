@@ -141,6 +141,19 @@ describe('Galaxy 棋谱搜索请求一致性', () => {
     expect(getAlbum).toHaveBeenCalledTimes(1);
   });
 
+  it('同页刷新保留仍在结果中的手动选择并刷新详情', async () => {
+    getAlbums.mockResolvedValue({ ...list(a), items: [a, b] });
+    renderPage();
+    await screen.findByTestId('board');
+    fireEvent.click(screen.getByText('王星昊-event'));
+    await waitFor(() => expectBoard(b));
+    search('');
+    await waitFor(() => expect(getAlbums).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(2));
+    expect(getAlbum).toHaveBeenLastCalledWith(b.id, 'cn', expect.any(AbortSignal));
+    expectBoard(b);
+  });
+
   it('无结果清空旧选择和棋盘，入口不可用', async () => {
     getAlbums.mockResolvedValueOnce(list(a)).mockResolvedValueOnce({ items: [], total: 0, page: 1, page_size: 20, preview: null });
     renderPage();

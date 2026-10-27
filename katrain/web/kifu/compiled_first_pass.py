@@ -97,6 +97,10 @@ def read_compiled_first_pass(db, batch_ids):
     )
     batches, contexts, misses = {}, {}, set()
     for batch, current_guard in headers:
+        # defer does not discard JSON already held by this Session. A later
+        # scope reader must load current artifact instead of pairing old JSON
+        # with the refreshed scalar metadata above. This expiry performs no SQL.
+        db.expire(batch, ["reviewed_artifact"])
         batches[batch.id] = batch
         if batch.status != "applied" or not isinstance(current_guard, str):
             contexts[batch.id] = None

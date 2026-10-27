@@ -15,7 +15,7 @@ from katrain.web.kifu.compiled_first_pass import _CACHE, _CompiledFirstPassCache
 from katrain.web.kifu.name_batch import apply_bundle
 from tests.web_ui.test_kifu_identity_context import read_player
 from tests.web_ui.test_kifu_name_batch import engine, registry
-from tests.web_ui.test_kifu_name_first_pass import bound_player_bundle
+from tests.web_ui.test_kifu_name_first_pass import bound_player_bundle, bound_raw_player_bundle
 
 
 @pytest.fixture(autouse=True)
@@ -248,3 +248,30 @@ def test_cache_hit_does_not_load_deferred_artifact(engine):
     finally:
         event.remove(KifuNameBatch, "load", capture)
     assert loaded == [False]
+
+
+def test_raw_player_cache_hit_expires_held_old_artifact_before_scope_read(engine):
+    from katrain.web.kifu.identity import _approved_raw_player_names
+
+    inventory, bundle, research = bound_raw_player_bundle(engine)
+    applied = apply_bundle(engine, bundle, registry(), inventory, research)
+
+    def read(db):
+        return _approved_raw_player_names(db, values={"李元赫九段"}, lang="en", orthographic_batch_contexts={})
+
+    with Session(engine) as held_session:
+        held = held_session.get(KifuNameBatch, applied["batch_id"])
+        assert len(read(held_session)) == 1
+        artifact = deepcopy(held.reviewed_artifact)
+        artifact["bundle"]["metadata_probe"] = "current legal bundle"
+        with engine.begin() as conn:
+            conn.execute(
+                KifuNameBatch.__table__.update()
+                .where(KifuNameBatch.id == held.id)
+                .values(reviewed_artifact=artifact, bundle_sha256=name_candidates.canonical_sha256(artifact["bundle"]))
+            )
+        # Another request warms the new, valid content while A holds old JSON.
+        with Session(engine) as fresh_session:
+            assert len(read(fresh_session)) == 1
+        assert len(read(held_session)) == 1
+        assert held.reviewed_artifact == artifact

@@ -1,18 +1,20 @@
 """REST API endpoints for the kifu album (tournament game records) module."""
 
-from typing import Optional, List
+from typing import Annotated, Optional, List
 import hashlib
+from time import perf_counter
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import case, func, or_
+from sqlalchemy import case, false, func, or_
 from sqlalchemy.orm import Session, defer
+from starlette.concurrency import run_in_threadpool
 from katrain.core.sgf_parser import SGF
 from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
 from katrain.kifu_ingest.ranks import display_rank_for_game_slot
 
-from katrain.web.core.db import get_db
+from katrain.web.core.db import SessionLocal, get_db
 from katrain.web.core.models_db import (
     KifuAlbum, KifuAlbumEventSelection, KifuAnalysisJob, KifuAnalysisMove, KifuEvent,
 )
@@ -37,6 +39,7 @@ from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.player_ranks import lookup_album_rank_snapshots
 from katrain.web.kifu.round_names import display_round_name
 from katrain.web.kifu.library import report_availability
+from katrain.web.kifu.library_search import public_player_id, unique_exact_player_id
 
 router = APIRouter()
 KIFU_MODEL_SHA256 = "93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871"
@@ -259,24 +262,75 @@ async def get_kifu_analysis(request: Request, album_id: int, db: Session = Depen
     }
 
 
+def get_kifu_session_factory():
+    """Inject a factory, never a Session created on a dependency worker thread."""
+    return SessionLocal
+
+
+def read_in_owned_session(session_factory, *, submitted_at, timings, **params):
+    """Construct, read and close each local Session on the same bounded pool worker."""
+    started = perf_counter()
+    timings["kifu_queue"] = (started - submitted_at) * 1000
+    try:
+        with session_factory() as db:
+            return read_album_page(db, timings=timings, **params)
+    finally:
+        timings["kifu_worker"] = (perf_counter() - started) * 1000
+
+
 @router.get("/albums", response_model=KifuAlbumListResponse)
 async def list_kifu_albums(
     request: Request,
+    response: Response = None,
     q: Optional[str] = Query(None, description="Search query (fuzzy match on player names, event, date)"),
+    player_id: Annotated[int | None, Query(ge=1, description="Filter a public player identity")] = None,
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     lang: str = "cn",
-    db: Session = Depends(get_db),
+    session_factory=Depends(get_kifu_session_factory),
 ):
-    """List tournament game records with optional search and pagination."""
-    if lang not in LANGUAGES:
-        raise HTTPException(status_code=422, detail="Unsupported language")
-    # Board mode: delegate to repository dispatcher
+    """List records; local synchronous database work stays off the event loop."""
+    started = perf_counter()
+    _validate_list_params(q, player_id, lang)
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await _from_dispatcher(
-            lambda: dispatcher.kifu_list_albums(q, page, page_size, lang), "Kifu albums not found"
+        params = {"q": q, "page": page, "page_size": page_size, "lang": lang}
+        if player_id is not None:
+            params["player_id"] = player_id
+        return await _from_dispatcher(lambda: dispatcher.kifu_list_albums(**params), "Kifu albums not found")
+    timings = {}
+    result = await run_in_threadpool(
+        read_in_owned_session,
+        session_factory,
+        submitted_at=perf_counter(),
+        timings=timings,
+        q=q,
+        player_id=player_id,
+        page=page,
+        page_size=page_size,
+        lang=lang,
+    )
+    # Handler ends before FastAPI serialization/ASGI sending. These explicit names
+    # must not be presented as complete HTTP or browser request measurements.
+    timings["kifu_handler"] = (perf_counter() - started) * 1000
+    if response is not None:
+        response.headers["Server-Timing"] = ", ".join(
+            f"{name};dur={duration:.3f}" for name, duration in timings.items()
         )
+    return result
+
+
+def _validate_list_params(q, player_id, lang):
+    if lang not in LANGUAGES:
+        raise HTTPException(status_code=422, detail="Unsupported language")
+    if player_id is not None and (player_id < 1 or q is not None):
+        raise HTTPException(status_code=422, detail="player_id must be positive and cannot be combined with q")
+
+
+def read_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="cn", timings=None):
+    """Synchronous local list core, retaining the existing page and preview contract."""
+    _validate_list_params(q, player_id, lang)
+    timings = {} if timings is None else timings
     requested_lang = lang
     lang = name_display_language(lang)
     orthographic_batch_contexts = {}
@@ -286,7 +340,27 @@ async def list_kifu_albums(
     query = query.filter(*visible)
     count_query = db.query(func.count(KifuAlbum.id)).filter(*visible)
 
-    if q:
+    candidate_started = perf_counter()
+    exact_id = (
+        unique_exact_player_id(
+            db, q, strict=strict_names_enabled(), orthographic_batch_contexts=orthographic_batch_contexts
+        )
+        if q
+        else None
+    )
+    if player_id is not None or exact_id is not None:
+        identity_id = player_id if player_id is not None else exact_id
+        approved = exact_id is not None or public_player_id(
+            db, identity_id, orthographic_batch_contexts=orthographic_batch_contexts
+        )
+        needle = (
+            or_(KifuAlbum.black_player_id == identity_id, KifuAlbum.white_player_id == identity_id)
+            if approved
+            else false()
+        )
+        query = query.filter(needle)
+        count_query = count_query.filter(needle)
+    elif q:
         strict = strict_names_enabled()
         raw_name_rows = []
         player_ids, event_ids, raw_players, raw_event_name_ids = strict_matching_names(
@@ -381,6 +455,8 @@ async def list_kifu_albums(
         query = query.filter(needle)
         count_query = count_query.filter(needle)
 
+    timings["kifu_candidate"] = (perf_counter() - candidate_started) * 1000
+
     # Sort by normalized date descending (nulls last), then by id for deterministic pagination
     query = query.order_by(KifuAlbum.date_sort.desc().nulls_last(), KifuAlbum.id.desc())
 
@@ -388,9 +464,14 @@ async def list_kifu_albums(
     # into a COUNT that cannot possibly need it. On the 151k-row production table that
     # cost an external merge sort on disk: 557ms, versus 27ms for a bare COUNT
     # (measured 2026-08-24 with EXPLAIN ANALYZE). Count from a separate unordered query.
+    segment_started = perf_counter()
     total = count_query.scalar() or 0
+    timings["kifu_count"] = (perf_counter() - segment_started) * 1000
+    segment_started = perf_counter()
     records = query.offset((page - 1) * page_size).limit(page_size).all()
 
+    timings["kifu_page"] = (perf_counter() - segment_started) * 1000
+    segment_started = perf_counter()
     selected_events = live_event_selections(db, records)
     strict = strict_names_enabled()
     fallback_maps = None if strict else display_maps(db, records, lang, selected_events=selected_events)
@@ -398,8 +479,13 @@ async def list_kifu_albums(
     players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
         db, records, lang, selected_events=selected_events, orthographic_batch_contexts=orthographic_batch_contexts
     )
+    timings["kifu_display"] = (perf_counter() - segment_started) * 1000
+    segment_started = perf_counter()
     availability = report_availability(db, records, KIFU_MODEL_SHA256, KIFU_VISITS)
+    timings["kifu_report"] = (perf_counter() - segment_started) * 1000
+    segment_started = perf_counter()
     rank_snapshots = lookup_album_rank_snapshots(db.connection(), [record.id for record in records])
+    timings["kifu_rank"] = (perf_counter() - segment_started) * 1000
     items = [
         _summary(
             r, players, events, event_canonical_names, sources, lang,

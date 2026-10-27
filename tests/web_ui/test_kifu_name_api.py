@@ -71,7 +71,7 @@ def _evidence(db, owner, owner_id, lang, display, decision="conventional", revis
 
 
 def _list(db, q=None, lang="cn", page_size=20):
-    return asyncio.run(kifu.list_kifu_albums(_request(), q=q, page=1, page_size=page_size, lang=lang, db=db))
+    return kifu.read_album_page(db, q=q, page=1, page_size=page_size, lang=lang)
 
 
 def _assert_page_scoped_sgf_read(statements):
@@ -540,7 +540,8 @@ def test_strict_page_batches_twenty_albums_in_all_languages(monkeypatch):
                 )
                 _assert_page_scoped_sgf_read(statements)
                 query_counts.append(len(statements))
-                assert len(statements) <= 10
+                # Existing rank snapshots add one bounded bulk read.
+                assert len(statements) <= 11
             assert len(set(query_counts)) == 1
         finally:
             event.remove(engine, "before_cursor_execute", record_sql)
@@ -961,7 +962,8 @@ def test_strict_composed_display_search_and_queries_are_bounded(monkeypatch, own
         assert {item.id for item in page.items} == {album.id for album in albums}
         assert all(item.display_event == "第1届本因坊战" for item in page.items)
         assert first.total == 20 and len(first.items) == 1
-        assert len(page_statements) <= 28
+        # Existing rank bulk read plus the new conservative scalar candidate.
+        assert len(page_statements) <= 30
         assert len(page_statements) <= len(first_statements) + 2
         _assert_page_scoped_sgf_read(page_statements)
         _assert_page_scoped_sgf_read(first_statements)

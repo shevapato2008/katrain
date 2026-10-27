@@ -82,7 +82,7 @@ def _request_without_dispatcher():
 def _list_albums(session, **kwargs):
     params = {"q": None, "page": 1, "page_size": 20}
     params.update(kwargs)
-    return asyncio.run(kifu.list_kifu_albums(request=_request_without_dispatcher(), db=session, **params))
+    return kifu.read_album_page(session, **params)
 
 
 def _capture_sql(session):

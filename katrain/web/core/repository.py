@@ -47,7 +47,9 @@ class TsumegoRepositoryProtocol(Protocol):
 class KifuRepositoryProtocol(Protocol):
     """Interface for kifu album data access."""
 
-    def list_albums(self, db: Any, q: Optional[str], page: int, page_size: int) -> Dict: ...
+    def list_albums(
+        self, db: Any, q: Optional[str], page: int, page_size: int, lang: str = "cn", player_id: int | None = None
+    ) -> Dict: ...
     def get_album(self, db: Any, album_id: int) -> Any: ...
 
 
@@ -129,10 +131,19 @@ class RemoteKifuRepository:
     def __init__(self, client: RemoteAPIClient):
         self._client = client
 
-    async def list_albums(self, q: Optional[str] = None, page: int = 1, page_size: int = 20, lang: str = "cn") -> Dict:
+    async def list_albums(
+        self,
+        q: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 20,
+        lang: str = "cn",
+        player_id: int | None = None,
+    ) -> Dict:
         params = {"page": page, "page_size": page_size, "lang": lang}
         if q:
             params["q"] = q
+        if player_id is not None:
+            params["player_id"] = player_id
         return await self._client.search_kifu(**params)
 
     async def get_album(self, album_id: int, lang: str = "cn") -> Dict:
@@ -244,13 +255,18 @@ class RepositoryDispatcher:
     # 说成了「没搜到 / 没有这一局」,屏 15 写「没有对得上的谱 · 换棋手名再试」。
     # 远端 404 照旧是 404:`_remote_only` 只把离线、传输错误和 5xx 收成不可用。
 
-    async def kifu_list_albums(self, q=None, page=1, page_size=20, lang="cn"):
+    async def kifu_list_albums(self, q=None, page=1, page_size=20, lang="cn", player_id=None):
         return await self._remote_only(
-            lambda: self.remote_kifu.list_albums(q, page, page_size, lang), "Remote kifu service unavailable"
+            lambda: self.remote_kifu.list_albums(
+                q, page, page_size, lang, **({"player_id": player_id} if player_id is not None else {})
+            ),
+            "Remote kifu service unavailable",
         )
 
     async def kifu_get_album(self, album_id, lang="cn"):
-        return await self._remote_only(lambda: self.remote_kifu.get_album(album_id, lang), "Remote kifu service unavailable")
+        return await self._remote_only(
+            lambda: self.remote_kifu.get_album(album_id, lang), "Remote kifu service unavailable"
+        )
 
     async def kifu_get_analysis(self, album_id):
         return await self._remote_only(lambda: self.remote_kifu.get_analysis(album_id), "Remote kifu service unavailable")

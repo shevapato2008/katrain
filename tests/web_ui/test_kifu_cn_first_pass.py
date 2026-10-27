@@ -61,11 +61,9 @@ def test_exact_player_search_does_not_include_games_named_for_player_in_event(en
 
         for query, lang in (("吴清源", "cn"), ("吴清源", "en"),
                             ("Go Seigen", "cn"), ("Go Seigen", "en")):
-            result = asyncio.run(api.list_kifu_albums(_request(), q=query, page=1, page_size=20, lang=lang, db=db))
+            result = kifu.read_album_page(db, q=query, page=1, page_size=20, lang=lang)
             assert (result.total, [item.id for item in result.items]) == (1, [game.id])
-        event_result = asyncio.run(api.list_kifu_albums(
-            _request(), q=chinese_event, page=1, page_size=20, lang="cn", db=db
-        ))
+        event_result = kifu.read_album_page(db, q=chinese_event, page=1, page_size=20, lang="cn")
         assert (event_result.total, [item.id for item in event_result.items]) == (1, [event_game.id])
     engine.dispose()
 
@@ -104,13 +102,9 @@ def test_cn_fallback_uses_linked_canonical_and_exact_raw_without_changing_source
         assert (result.player_black, result.event) == (
             "Iwamoto Kaoru", "JapanPromotionTournament,1934,Fall"
         )
-        searched = asyncio.run(kifu.list_kifu_albums(
-            _request(), q="赵治勋", page=1, page_size=20, lang="cn", db=db
-        ))
+        searched = kifu.read_album_page(db, q="赵治勋", page=1, page_size=20, lang="cn")
         assert [item.id for item in searched.items] == [album.id]
-        searched_event = asyncio.run(kifu.list_kifu_albums(
-            _request(), q="1934年秋季大手合", page=1, page_size=20, lang="cn", db=db
-        ))
+        searched_event = kifu.read_album_page(db, q="1934年秋季大手合", page=1, page_size=20, lang="cn")
         assert [item.id for item in searched_event.items] == [album.id]
         assert asyncio.run(kifu.get_kifu_album(_request(), album.id, lang="en", db=db)).display_event == album.event
     finally:

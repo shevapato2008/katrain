@@ -450,7 +450,7 @@ def validate_candidate(row, research, shared_displays=()):
 
 
 def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
-                       source_names=None, source_evidence=None, batch_members=None):
+                       source_names=None, source_evidence=None, batch_members=None, *, compiled=None):
     """A signed, applied creation with unchanged live name, evidence and source."""
     from katrain.web.kifu.name_candidates import canonical_sha256
 
@@ -462,14 +462,19 @@ def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
         return False
     artifact = batch.get("reviewed_artifact")
     bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+    if compiled is not None:
+        # The caller bound these pure values to a fresh complete-artifact digest.
+        batch_members, shared_displays = compiled[:2], compiled[2]
+    else:
+        shared_displays = bundle.get("shared_displays", ()) if isinstance(bundle, dict) else ()
     try:
         validate_research(research)
-        validate_candidate(candidate, research, bundle.get("shared_displays", ()) if isinstance(bundle, dict) else ())
+        validate_candidate(candidate, research, shared_displays)
     except (ValueError, KeyError, TypeError):
         return False
     candidate_hash = canonical_sha256(candidate)
     research_hash = canonical_sha256(research)
-    if (batch.get("status") != "applied" or not isinstance(bundle, dict)
+    if (batch.get("status") != "applied" or compiled is None and not isinstance(bundle, dict)
             or batch_members is None or candidate_hash not in batch_members[0]
             or research_hash not in batch_members[1]
             or proof != {"batch_id": batch["id"], "candidate_sha256": candidate_hash,

@@ -1,6 +1,7 @@
 # Kifu search: one-release web-only operator
 
-`web-only.py` is prepared for this release; it has not deployed either host. Run only
+`web-only.py` completed the first TEST release at `dc17489e2`; PROD is still on its
+prior release while the TEST latency gate is unresolved. Run further updates only
 after full Astra review and the required feature push → develop merge/push →
 `smartbox-software` parent-main submodule-pointer push. Release TEST first, complete
 its actual Galaxy/kiosk acceptance, then release the new PROD. Image construction,
@@ -53,14 +54,15 @@ mutations by its inspected full ID. Do not run another deployment concurrently.
 
 ## Preservation boundaries
 
-TEST reads the live web's exact eleven Compose `config_files` labels, checks its
+TEST reads the live web's exact Compose `config_files` labels (eleven before the
+first release, twelve before its measured proof follow-up), checks its
 current `config --hash` against the running container's hash, and checks effective
 env against live env. It adds one mode0600 JSON override containing only web image
 and `KATRAIN_BUILD_SHA`. Full effective config before/after must differ only at those
 two fields. Apply uses only:
 
 ```text
-docker compose <same eleven files + private override> up -d --no-deps --no-build --pull never --force-recreate katrain-web
+docker compose <same live files + private override> up -d --no-deps --no-build --pull never --force-recreate katrain-web
 ```
 
 It does not revive any stopped Compose cron. The running `katrain-cron` collector

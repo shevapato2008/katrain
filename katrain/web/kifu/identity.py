@@ -130,9 +130,11 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     )
     from katrain.web.core.models_db import KifuNameChange, KifuNameSourceRegistry
 
-    def image(row):
+    def image(row, *, include_artifact=True):
         return {column.name: (value.isoformat() if hasattr(value, "isoformat") else value)
-                for column in row.__table__.columns for value in [getattr(row, column.name)]}
+                for column in row.__table__.columns
+                if include_artifact or column.name != "reviewed_artifact"
+                for value in [getattr(row, column.name)]}
 
     def positive_kind(name, evidence):
         payload = evidence.research_payload
@@ -159,10 +161,13 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     evidence_creation_changes = {key: [] for key in evidence_ids}
     legacy_batch_ids = set()
     if evidence_ids:
-        for change in db.query(KifuNameChange).filter(
+        creation_query = db.query(KifuNameChange).filter(
             KifuNameChange.target_table == "kifu_name_research_evidence",
             KifuNameChange.target_row_id.in_(evidence_ids),
-        ):
+        )
+        if use_contexts:
+            creation_query = creation_query.populate_existing()
+        for change in creation_query:
             after = change.after_image
             evidence_creation_changes[change.target_row_id].append(image(change))
             if (isinstance(after, dict) and after.get("generation_rule_version") == "nikl-zh-ko-personal-name-v1"
@@ -235,10 +240,30 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
                     (orthographic_batch_ids if orthographic_proof(name, evidence)
                      else transliteration_batch_ids).add(proof["batch_id"])
     batch_ids |= first_pass_batch_ids
-    batch_query = db.query(KifuNameBatch).filter(KifuNameBatch.id.in_(batch_ids))
+    positive_batch_ids = set()
+    for name, evidence, *_ in rows:
+        kind = positive_kind(name, evidence)
+        payload = evidence.research_payload
+        proof = payload.get("normative_zh_ko" if kind == "zh" else "normative_ja_ko") if kind and isinstance(payload, dict) else None
+        batch_id = proof.get("batch_id") if isinstance(proof, dict) else None
+        if type(batch_id) is int:
+            positive_batch_ids.add(batch_id)
+    compiled_batches, compiled_first_pass = {}, {}
+    if use_contexts:
+        from katrain.web.kifu.compiled_first_pass import read_compiled_first_pass
+
+        compiled_ids = first_pass_batch_ids - (
+            transliteration_batch_ids | orthographic_batch_ids | positive_batch_ids | legacy_batch_ids
+        )
+        compiled = read_compiled_first_pass(db, compiled_ids)
+        if compiled is not None:
+            compiled_batches, compiled_first_pass = compiled
+    remaining_batch_ids = batch_ids - compiled_batches.keys()
+    batch_query = db.query(KifuNameBatch).filter(KifuNameBatch.id.in_(remaining_batch_ids))
     if use_contexts:
         batch_query = batch_query.populate_existing()
-    batches = {batch.id: batch for batch in batch_query} if batch_ids else {}
+    batches = {batch.id: batch for batch in batch_query} if remaining_batch_ids else {}
+    batches.update(compiled_batches)
 
     def batch_context(key, family, build):
         batch = batches[key]
@@ -259,14 +284,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
                 for key in transliteration_batch_ids if key in batches}
     orthographic_contexts = {key: batch_context(key, "orthographic", name_orthographic.persisted_batch_bindings)
                             for key in orthographic_batch_ids if key in batches}
-    positive_batch_ids = set()
-    for name, evidence, *_ in rows:
-        kind = positive_kind(name, evidence)
-        payload = evidence.research_payload
-        proof = payload.get("normative_zh_ko" if kind == "zh" else "normative_ja_ko") if kind and isinstance(payload, dict) else None
-        batch_id = proof.get("batch_id") if isinstance(proof, dict) else None
-        if type(batch_id) is int and batch_id in batches:
-            positive_batch_ids.add(batch_id)
+    positive_batch_ids.intersection_update(batches)
     registry_ids = {batches[key].source_registry_id for key in positive_batch_ids | legacy_batch_ids
                     if key in batches}
     registries = {row.id: row.registry for row in db.query(KifuNameSourceRegistry).filter(
@@ -280,7 +298,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
         # A first-pass name needs only its own name and evidence creation rows.
         # Batches can contain thousands of other names and album changes.
         name_ids = {name.id for name, *_ in rows}
-        for change in db.query(KifuNameChange).filter(
+        change_query = db.query(KifuNameChange).filter(
             KifuNameChange.batch_id.in_(first_pass_batch_ids),
             or_(
                 and_(KifuNameChange.target_table == "kifu_name_research_evidence",
@@ -288,7 +306,10 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
                 and_(KifuNameChange.target_table == model.__tablename__,
                      KifuNameChange.target_row_id.in_(name_ids)),
             ),
-        ):
+        )
+        if use_contexts:
+            change_query = change_query.populate_existing()
+        for change in change_query:
             first_pass_changes[change.batch_id][(change.target_table, change.target_row_id)] = image(change)
     from katrain.web.kifu.name_candidates import canonical_sha256
 
@@ -304,7 +325,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
         return None
 
     first_pass_members = {key: batch_context(key, "first_pass", first_pass_membership)
-                          for key in first_pass_batch_ids if key in batches}
+                          for key in first_pass_batch_ids if key in batches and key not in compiled_first_pass}
     owner_kind = {KifuPlayerName: "player", KifuEventName: "event",
                   KifuRawEventName: "raw_event", KifuRawPlayerName: "raw_player"}.get(model)
     first_pass_rows = [row for row in rows if owner_kind and (
@@ -352,9 +373,10 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
             batch = batches.get(batch_id)
             if batch and name_first_pass.persisted_eligible(
                     image(name), image(evidence), owner_kind,
-                    owner_images.get(getattr(name, owner_column)), image(batch),
+                    owner_images.get(getattr(name, owner_column)),
+                    image(batch, include_artifact=batch_id not in compiled_first_pass),
                     first_pass_changes.get(batch_id, {}), source_names, source_evidence,
-                    first_pass_members.get(batch_id)):
+                    first_pass_members.get(batch_id), compiled=compiled_first_pass.get(batch_id)):
                 result.append(row)
             continue
         if (name.decision_kind == "generated" and name.lang == "ko" and len(creation_changes) == 1

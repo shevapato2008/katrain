@@ -208,3 +208,28 @@ npm run build
 现有PG核心双侧筛选已是几ms；剩余主要是应用读取/证明工作，换存储仍需解决。Redis若用于小热点缓存，只在统计命中率/热集合和多实例需要后采用；同样需要版本失效，miss与冷词必须过完整验收。HBase如需验证，可为`player_id + reverse_date + album_id`建立双侧索引读模型并单独比较，其10ms单次操作经验不能替代带姓名解析/审批/列表/预览/网络的200ms测试。
 
 费用只按实际热数据RAM、持久副本、节点、备份、运维及一致性工作量比较；未知账单不报精确价格。不存在“本任务不许HBase”的用户硬约束；本计划先PG是证据驱动的最小验证顺序，若优化后或未来规模/吞吐要求证明不适合，保留重新评估HBase的选项。
+
+## Chunk 5：TEST未过预算后的最小增量（Astra第2轮计划审核范围）
+
+首轮已按授权顺序发布feature、develop `dc17489e2`、父main `f44676ae`，并仅部署TEST与3条并发索引。16项API检查及11项旧新契约等价通过，27次正确棋盘paint为563–3804ms，未达200ms；已停止扩量和PROD发布。[实际记录](../reviews/evidence/2026-10-27-kifu-search/test-after-summary.md)。
+
+一次暖profile647ms中display586ms：11个first-pass批次snapshot深拷贝341ms，bundle/member编译120ms，SQL总82ms。11批次artifact约5.22MB，紧凑编译结果仅328132B（最大66014B/500候选）。完整artifact SQL SHA一次59.51ms只是定位样本，不证明最小SHA缓存路径不可能达到端到端目标。另两族在该profile几乎无编译成本，因此只优化first-pass，不进入Task5写投影/epoch、Redis或HBase。root已明确撤回复杂MVCC row-version方案：不实现xmin/ctid/filenode/XID64/postmaster协议。
+
+### Task 2b：仅复用内容不变的first-pass纯编译结果
+
+**Files:** 新`katrain/web/kifu/compiled_first_pass.py`、`identity.py`、`name_first_pass.py`；新`tests/web_ui/test_kifu_compiled_first_pass.py`。不提前加server启动预热hook；前端暂不追加优化，响应后paint成本单独保留。
+
+- [ ] 先红测试已运行：两个独立Session/request仍重复bundle编译（1 failed / 3 passed）。保留跨请求artifact整数/浮点数、布尔值/整数、正负零变化拒绝；增加状态/hash/metadata变化、源/ledger/scope变化、dirty Session禁用、缓存可变别名隔离、预算淘汰与并发读取行为。
+- [ ] `compile_first_pass(status,bundle_sha,artifact)`只产出已验证candidate/research哈希集合和`shared_displays`；成员canonical SHA和研究/owner/name/evidence/source/creation ledger/raw-scope校验照旧。`persisted_eligible(..., compiled=...)`仅省去已经验证且当前未变的完整bundle搬运及重编译；无compiled仍走原路径。
+- [ ] 仅`first_pass_ids - (transliteration | orthographic | positive | legacy)`走该路径；混合批次、其它证明族及dirty Session保留旧reader，不做通用缓存框架。
+- [ ] 进程内LRU仅存内部生成的marshal bytes，默认64MiB总payload、1024项、单项1MiB。每次命中私有解码，不共享可变dict/list/ORM；锁只保护namespace/LRU bytes取得和放入，编译与解码在锁外。超限/miss/不支持时原reader，仍计真实耗时，不得fast-empty。
+
+**唯一PG guard：** 每次同一SQL statement snapshot返回fresh batch小字段和完整artifact原文SHA256：`encode(sha256(convert_to(CAST(reviewed_artifact AS text), 'UTF8')), 'hex')`。键含batch id/status/bundle SHA/完整artifact SHA与实际编译所需标量；不能仅用batch_id、stored bundle hash或旧ORM artifact。SQLite取原文并在Python算SHA，只用于可移植行为验证。不得用JSONB数字归一化或Python宽松相等代替完整内容绑定。
+
+- [ ] 命中时query使用`populate_existing`并defer大artifact；proof使用同语句得到的fresh scalars和私有compiled。miss必须在**一个statement**同时读artifact、新SHA和scalars，用该statement的新key编译/入缓存；不得把旧header SHA配新artifact。guard不可用则原reader，不允许无guard缓存命中。
+- [ ] 聚焦验证artifact只改内容/JSON类型、status/hash/metadata变化、旧ORM对象、同一请求后续撤销和dirty Session；PG实际查询与完整返回在TEST部署验收，禁止改正式业务行来造测试。
+
+**首次查询/停止条件：** 本轮先不做预热，不再扫全artifact或重复引用集合发现，不按硬编码热门姓名伪造首次查询。最小SHA缓存实现审过后，以少量真实hit、miss、首次不同姓名及同一公开结果等价复测；各类实际耗时照实纳入。只有新的分层实测证明仍需下一刀时才提出必要增量，不能把缓存命中200ms暗示所有首次/miss均达标。
+
+- [ ] 独立spec检查后Astra只审本次delta及必要operator适配；不重审已通过的前端/原索引范围。TEST现已12层Compose，第二次web发布仅允许同链增加下一层image/buildSHA override，保留collector与全部非web身份。
+- [ ] 审核通过后再重复授权发布顺序；TEST先以少量首次不同姓名和公开结果等价复测，若仍明显未过200立即停止扩量并定位，达到后再做1/4客户端及明确网络条件。PROD仍待TEST门禁通过才发布；任何未达项如实报告。

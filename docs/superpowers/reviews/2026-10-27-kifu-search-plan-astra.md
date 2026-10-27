@@ -29,3 +29,22 @@ PROD 目标以 `ubuntu@117.50.177.254` 的实际运行容器/配置为权威；�
 验收按计划的 1 与 4 客户端各约 30–50 次聚焦样本，包含不同棋手首次查询、精确结果/total/顺序核对以及有限自然导入窗口；同请求观测 server、TTFB 和正确列表/棋盘实际绘制。已建立连接与新连接分开报告，样本尾部分位不外推为总体 SLA。200ms 只有完整正确结果达标才成立；达到目标即停止追加工作。
 
 本轮为计划与源码审阅，未运行产品测试、未操作服务或数据库。没有其它阻断实施的问题；后续独立代码审核聚焦上述两项修订和已有审批/当前内容边界，无需重新开启设计讨论。
+
+## 第 2 轮：Task 2b 最小 SHA 编译缓存增量
+
+日期：2026-10-27。仅审核当前 Chunk 5、[TEST 结果](evidence/2026-10-27-kifu-search/test-after-summary.md)、[display profile](evidence/2026-10-27-kifu-search/test-display-profile.txt)及 first-pass reader 接口；不重审首轮已批准代码。首轮已发布至 develop `dc17489e2`、父 main `f44676ae`，TEST 正确性通过但 200ms 未达，PROD 尚未发布。
+
+**结论：Approved。当前收敛后的完整 artifact 原文 SHA 方案没有阻断实施的问题；计划审核到此结束，不需要第 3 轮文案审核。** MVCC row-version 协议已撤回，不在本轮批准范围，也不得作为实现中的替代捷径；server 预热 hook、全 artifact 扫描及投影/epoch 均不在本轮范围。
+
+实测已把主要成本定位到 first-pass 的快照 deepcopy 与 bundle/member 编译。只缓存经过校验的 candidate/research 哈希集合及 shared-displays，能直接移除这部分重复计算，并保留当前源数据及审批的读取边界。约 59.5ms 的单次 SQL SHA 样本不能单独证明完整链路能否达标；先实现、再少量真实复测的顺序合理。
+
+实现和独立代码审核须守住以下已约定边界：
+
+- **内容与状态必须来自同一读取。** hit 的 key 和 proof 输入使用该 SQL 返回的 fresh scalars、完整 artifact 原文 SHA；miss 在另一个单独 statement 同时取得 artifact、新 SHA 和 scalars，并完全使用这组新值。禁止把旧 header key、旧 ORM artifact 或只存储的 bundle SHA 与新内容拼接。每次后续 proof 读取都重新取当前状态，保留同请求撤销测试。
+- **缓存只替代纯编译。** canonical bundle 校验仍在 miss 完整执行；每次请求仍校验当前 candidate/research、owner/name/evidence、source、creation ledger 和 raw scope，rank/report 保持原路径。编译结果不能携带可复用的最终 eligible/批准结论。dirty Session、混合证明族、缺少有效 guard 均走原 reader。
+- **命中不得隐式再读或误用旧 artifact。** `populate_existing` 与 defer 配合时，调用点不能继续通过通用 `image(batch)` 或访问 `batch.reviewed_artifact` 触发大 JSON 加载；first-pass 的 compiled 分支应显式使用同语句的小字段。原 reader 分支继续保留完整输入。此项同时防止快路径失效和不同读取时刻的数据混用，不需要引入新的 ORM 抽象。
+- **共享的是内部 bytes。** 64MiB payload / 1024 项 / 单项 1MiB 边界、每次私有解码和短锁范围足够；淘汰或并发 miss 只影响速度，不能使旧 key 的编译结果冒充新 key。无须增建缓存服务、后台刷新或 single-flight 平台。
+
+最低充分验证沿用计划中的聚焦用例：跨请求复用；artifact 类型/符号零及内容变化；状态/hash 与 held-ORM 刷新；同请求撤销、live source/scope 与 dirty Session；私有解码和容量边界。补足一次 header→miss 之间内容改变时的新 key 绑定断言，并在现有 TEST 的只读真实查询中核对 PG SHA 返回与完整结果即可；无需再做已撤回 MVCC 的物理 tuple/rewrite/XID 测试。guard/编译失败不得变成成功空结果。
+
+本轮先不预热。hit、miss、首次不同姓名的真实完整 paint 分开保留，未达标即停止扩样并报告剩余分段成本；不得用热命中代替首次搜索目标。后续按既有独立代码审核与标准发布顺序推进，TEST 门禁通过前保持 PROD 不变，继续保护唯一小时 writer 和当前 Compose 非 web 配置。本轮未改业务代码、未运行数据库写操作。

@@ -10,7 +10,11 @@
 
 ---
 
-状态：**调查产生的可执行草案，尚未Astra计划审核、未开始实现。** 本轮不执行DDL、业务代码修改、重启或推送。主session统一安排“Astra计划审核最多两轮 → SDD → 最终Astra → TEST/PROD标准发布”；每轮审核保存结论，不能无限追加review。当前draft没有消耗Astra审核轮次。
+状态：**2026-10-27 已授权实施与标准发布，承接既有调查；Astra Max整体计划审核最多两轮。** 隔离worktree为`kifu-search-200ms-20261027`，分支`perf/kifu-search-200ms-20261027`，最新`origin/develop=e9b4d3ecc`。先完成索引与proof去重最小切片，再依实测落实必要后续工作；不得因扩大审核或样本延误第一刀。
+
+**用户明确的两阶段（2026-10-27）：** 实施阶段按 Writing Plans → Astra Max计划审核修订最多两轮 → SDD安全并行开发 → 独立Astra Max代码审核修到通过；只允许本地/隔离验证和环境只读探针，不提前变更TEST正式运行版本或执行DDL。部署阶段严格按feature同步最新develop/解冲突/验证/commit push → merge push develop → smartbox-software/vendor/katrain更新并commit push父main → 先home-ubuntu TEST部署、受控索引和正确性/性能验收 → 新PROD ucloud-v100=117.50.177.254小样本复验。禁止恢复旧183入口/writer，原17服务配置为权威。
+
+**首轮Astra必要修订：** 唯一棋手候选还需保守探测`KifuAlbumEventSelection.selected_raw.contains(q)`；存在潜在匹配即回原兼容分支，防漏掉有效selected赛事结果。新增player_id在现有repository dispatcher及remote_kifu adapter透传，不能盒端静默丢弃过滤条件。
 
 调查基准：[93f正式性能证据](../reviews/2026-10-26-galaxy-kifu-search-performance-investigation.md)。代码调查基线`e9b4d3ecce03b3269f12922a476fd6d6c6545547`；hourly维护可能继续前进，实施前只需同步最新develop并核对相关文件差异，不能用维护窗口时延替代稳定性能验收。
 
@@ -192,10 +196,10 @@ npm run build
 ### Task 6：预算验收与发布
 
 - [ ] 在TEST既有同等176k规模数据中，先验证正确性：王星昊504样本的ID/total/顺序、其它已批准棋手首次查询、五语/别名、重名/raw、无结果、翻页；赛事/模糊兼容路径单独报告，不用平均值掩盖。
-- [ ] 用现有browser/API工具，正常1客户端与约定4客户端各收集约500次代表搜索，含未被缓存的不同棋手；带有限自然导入窗口。输出p50/p95/p99、错误/取消/漏结果、worker等待和分段耗时；500次尾部样本仍有限，不声称可外推全球SLA。生产只做小批功能/延迟确认，不生产压测。
+- [ ] 用现有browser/API工具，正常1客户端与约定4客户端各收集约30–50次代表搜索，含未被缓存的不同棋手；带有限自然导入窗口。输出p50/p95/p99、错误/取消/漏结果、worker等待和分段耗时；小样本尾部分位仅供本次验收，不声称可外推全球SLA。生产只做小批功能/延迟确认，不生产压测。
 - [ ] 同一请求测server、TTFB、列表和首盘实际paint；warm/cold连接、暖服务/新服务readiness分别列；完整链路满足Chunk1预算才过门。
 - [ ] 运行相关pytest、前端focused tests和build；最终Astra审业务/一致性边界。若Task5未启用则不审其不存在的基础设施；预算已过即停止追加候选。
-- [ ] 获得主session实施/发布授权后，按仓库标准：合并最新develop到feature→验证/commit/push feature→merge/push develop→更新并发布smartbox-software submodule→TEST home-ubuntu / PROD ucloud-v100部署→服务健康及实际Galaxy页验证。索引先TEST验证再PROD显式窗口执行，不能把大表DDL暗藏在Web启动中。
+- [ ] 实施/发布已获授权，按仓库标准：合并最新develop到feature→验证/commit/push feature→merge/push develop→更新并发布smartbox-software submodule→TEST home-ubuntu / PROD ucloud-v100部署→服务健康及实际Galaxy页验证。索引先TEST验证再PROD显式窗口执行，不能把大表DDL暗藏在Web启动中。
 - [ ] 与hourly维护agent确认writer/control/lock原状态及source SHA，守住单写者；不取消旧任务、不kill DB session、不重发翻译、不重启RK。回滚仅回代码/开关并保留兼容索引；新投影如已启用须有旧reader退路和写契约兼容。
 - [ ] 报告实际发布commit、部署版本、索引valid状态、完整成功结果的延迟分布及任何未达项；未部署前不写“已优化上线”。
 

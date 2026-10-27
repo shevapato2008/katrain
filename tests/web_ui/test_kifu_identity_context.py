@@ -13,6 +13,15 @@ from tests.web_ui.test_kifu_name_batch import engine, registry
 from tests.web_ui.test_kifu_name_first_pass import bound_player_bundle, bound_shared_raw_event_bundle
 
 
+@pytest.fixture(autouse=True)
+def clear_compiled_first_pass_cache():
+    from katrain.web.kifu.compiled_first_pass import _CACHE
+
+    _CACHE.clear()
+    yield
+    _CACHE.clear()
+
+
 def read_player(db, contexts):
     return _qualified_name_rows(
         db,

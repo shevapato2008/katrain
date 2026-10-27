@@ -1,3 +1,7 @@
+> 最终状态：[`can_retire_old=true`，独立运营审查已通过](post-dns-independent-review.md)。下文历史状态保留，不代表当前仍不可退旧。
+
+> 后续已通过Root既有登录AliDNS主账号完成五A切换；最新见[DNS切换](dns-cutover.md)与[DNS后收尾](post-dns-closeout.md)。下文OSS API403及早期解析限制属于历史调查，不代表当前仍缺DNS权限。
+
 > 历史只读调查：下文是 UTC17:38 的递归观察。后续通过 gateway 直查两台权威 NS，已独立确认五域 AA/NOERROR、A=117.50.183.169/TTL600；见 [最终独立审核](final-independent-review.md)。权限仍为403 Forbidden.RAM，没有执行DNS写入。
 
 # DNS 只读核查

@@ -1,10 +1,10 @@
 # UCloud V100 迁移记录 — 2026-10-27
 
-**新机后端已接管并实际验收，旧机仍承担公网入口代理。`can_retire_old=false`。**
+**迁移完成：`can_retire_old=true`。全新独立Astra最终运营审查通过，未解决必修项0；旧云资源尚未删除，由用户自行操作。**
 
-UTC 22:41（北京时间06:41）运行复查；审核时点22:00–22:12：新机17个原有服务容器运行，双GPU模型ready/warm；TEST→新PROD同包原生链路验证通过，TEST8个及新PROD7个控制均恢复原前像，无临时暂停遗留。旧机11个业务容器退出、receiver授权为空、WG masked，仅保留HTTPS代理及4PG/2GPU回滚对照。全新独立Astra已完成实际只读流程审核：有条件批准新后端继续运行，没有要求停新服务的问题；不批准删除旧机或宣称DNS切换完成。
+UTC03:20最终审核实况：新机17个原有服务容器正常运行，单张V100上的两个KataGo engine ready/warm；五A已切新177并过完整TTL，关旧后的gateway和RK普通DNS五域均200/TLS通过，媒体与真实WS通过。新certbot续期timer已接管，live证书字节不变，旧private临时real-IP信任已撤除。本轮审核发现并已修复两个webroot证书续签后缺nginx reload的漏项：精确两lineage成功deploy hook及一次聚焦staging实际调用/重载均通过。旧11个业务容器及receiver/WG均维持隔离，旧nginx inactive/disabled，只保留4PG与两个旧engine供对照，未删除旧资源。
 
-DNS仍是阻塞：两台权威NS实际返回五个A均指旧IP。旧机现在不能删除，也不能把“后端迁好”称为域名切换完成。
+本页为最新汇总；[DNS切换](dns-cutover.md)与[DNS后实际收尾](post-dns-closeout.md) · [最终独立运营审核](post-dns-independent-review.md)记录这次最终阶段。此前UTC22:00–22:12的Astra报告保持历史原文，不能把其当时DNS未切的结论误读为现状，也不把控制者新结果冒称为当时审核已证明的内容。
 
 ## 运行与数据
 
@@ -19,7 +19,7 @@ DNS仍是阻塞：两台权威NS实际返回五个A均指旧IP。旧机现在不
 | 非PG数据 | 4卷＋4bind最终checksum delta，两次完整dry-run均0；含MinIO全部metadata、平台静态资源、模型及审计状态 |
 | 持久可写层 | 原14份教程备份、必要Kivy/Caddy配置已保留；当前新GPU同设备/驱动/配置的timing cache复用 |
 | 重启核验 | 4PG配置16文件原bytes/UID70/mode复制；各19项GUC及全部库清单一致，配置错误与pending_restart均0 |
-| 新机容量 | 独立审核22:00实测约35GiB空余，满足保留至少15GiB的迁移门槛 |
+| 新机容量 | 此前独立审核实测约35GiB空余，满足保留至少15GiB的迁移门槛 |
 
 运行权威是冻结的私有Engine manifest/operator，原历史Compose文件链不作为新机部署依据。所有image、volume、bind、网络、原GPU单卡双engine及权限按真实运行配置保留。新Docker增加WG启动顺序依赖，防VPN地址未就绪时原端口绑定失败。
 
@@ -55,27 +55,21 @@ PROD仍保留原有live fetch、免费Wiki和分析功能；本次未把旧默�
 
 新WG唯一接管10.8.0.3，旧WG停并mask。gateway仅替换PROD的10.8.0.3 host pin并重连，TEST原pin/PID未改；PROD admin health200/providers available，Legacy A/B通过新WG readiness200。
 
-新nginx五SNI证书验证通过。旧入口只代理新private HTTPS，CA/hostname/SNI验证始终开启。实际发现跨SNI复用TLS会话造成3域502，已仅关闭旧上游session reuse；指定五域两轮串行health全200/TLS0。新nginx只信旧private的real_ip，伪造XFF/X-Real-IP经旧及直达新公网两条路径均未改变真实客户端IP。
+新nginx五SNI证书验证通过。过渡期旧入口曾只代理新private HTTPS，CA/hostname/SNI验证始终开启；现旧proxy已正常退出。实际发现跨SNI复用TLS会话造成3域502，已仅关闭旧上游session reuse；指定五域两轮串行health全200/TLS0。过渡期新nginx曾仅临时信旧private；最终已撤除该三条real-IP指令并重新核对伪造XFF/X-Real-IP未被采信。
 
 Galaxy、lobby/chess HTML、未登录认证拒绝边界、原路由ACL、媒体Range206/字节哈希均通过。未新建测试用户或改用户登录状态。RK仅执行严格TLS health请求，唯一nonce在新机日志命中，实证RK→旧proxy→新机；设备验收前后服务状态相同，未改Chat/Go模式、导航、SSO或标定。
 
 MinIO保持原内部网络。容器重建后必须运行`sudo /usr/local/sbin/refresh-minio-upstream.py`再reload nginx；公开媒体Env修为同域`https://modelstella.com/media`，修复原preview域名不可解析的实际问题，未改bucket权限或开放数据库/GPU/MinIO公网端口。
 
-## 旧机退役条件与回滚
+## 旧机退役与回滚
 
-**`can_retire_old=false`。** 权威NS为dns27/dns28.hichina.com；最后实测五域A均旧IP/TTL600、AAAA/CNAME无：
+五个现有A（主域、www、lobby、ranked、pitch-api-staging）已于UTC02:36:13改为117.50.177.254，TTL600、其余10记录未动；两独立gateway TCP53权威AA/NOERROR核验通过，采用02:42:17的较晚首次证明，02:52:17完整TTL后才收口。此前OSS API身份403及原生窗口故障是历史阶段阻塞，Root已用既有登录主账号完成实际修改，没有申请新凭据或扩权。
 
-- `modelstella.com`
-- `www.modelstella.com`
-- `lobby.modelstella.com`
-- `ranked.modelstella.com`
-- `pitch-api-staging.modelstella.com`
+新机三组原ACME配置一次staging模拟全部成功，live三证书SHA不变，canonical certbot.timer active/enabled，旧timer仍停。旧edge在0连接/0active upstream时直接QUIT自然退出，无强kill；新机不再信任旧private10.60.219.118。[本轮独立运营审查](post-dns-independent-review.md)已确认在已盘点迁移范围内`can_retire_old=true`、未解决must-fix0；尚未执行云资源删除/退订/续费。
 
-已授权DNS切换，但既有OSS credential对AliDNS返回403 Forbidden.RAM，无可用zone编辑凭据；没有扩权或读取用户Google密码文档。CUA未能取得浏览器窗口，未把工具问题当作DNS账号认证失败。
+已实际验证的外部路径是gateway与同LAN RK：旧proxy关闭后五域普通DNS均直达新177/TLS通过。Root Mac新建TCP同时对新机、旧机和gateway超时，而其它互联网目标可达；具体根因未证，本轮不确认该Mac路径恢复，不泛称所有互联网客户端均已验证，也没有盲改云防火墙或本地网络。用户另确认实际浏览器已能打开新机页面，该项仅为user-reported。
 
-后续需将这五个A改为117.50.177.254，核权威及常用resolver、排空旧TTL/连接并验证新公网直接TLS/代表功能。之后启用新certbot续期（nginx插件及两个webroot目录已就绪），撤除新nginx对旧private的临时real_ip信任；确认无其它旧入口依赖后，用户再自行删除旧资源。旧certbot保持disabled，新certbot当前masked，证书现仍有效。
-
-新后端已接收正常业务，旧PG只是19:36的停写快照，**不能直接启旧writer当无损回滚**。若需回滚，须先停新写入并保护新权威数据，执行受控反向数据同步/验证及网络单writer交接。当前旧proxy到新后端可继续提供服务，不需让旧数据库重新接写。
+新后端已接收正常业务，旧PG只是停写快照，**不能直接启旧writer当无损回滚**。若需回滚，须先停新写入并保护新权威数据，执行受控反向数据同步/验证及网络单writer交接。旧nginx配置保留，可单独start恢复代理能力；这不意味着允许陈旧旧库重新接写。
 
 ## 备份与记录
 
@@ -85,6 +79,6 @@ Mac初始完整主库备份1,091,146,291 bytes及配置/14教程历史备份已�
 
 [运行盘点](runtime-inventory.md) · [客户端依赖](client-dependencies.md) · [基础安装](foundation.md) · [初始恢复](database-initial-restore.md) · [入口准备](host-edge.md) · [GPU验收](gpu-preflight.md) · [隔离功能预检](services-preflight.md) · [DNS权限](dns-access.md) · [writer边界](writer-drain.md) · [控制CAS](control-batch.md)
 
-[最终导入执行记录](final-data.md) · [实际入口与RK验收](ingress-cutover.md) · [全新Astra流程审核](final-independent-review.md) · [审核后收尾实证](closeout.md)
+[最终导入执行记录](final-data.md) · [实际入口与RK验收](ingress-cutover.md) · [首次Astra流程审核（历史）](final-independent-review.md) · [首次审核后收尾](closeout.md) · [DNS切换](dns-cutover.md) · [DNS后实际收尾](post-dns-closeout.md) · [最终独立运营审核](post-dns-independent-review.md)
 
 附：迁移临时SSH授权已从旧机精确撤销，其他授权原字节保留，新机临时private key已删除；常规Mac管理key经新机VPC代理访问旧机仍可严格host-key登录/sudo。TEST旧stopped cron保留作回滚证据，Compose标签存在后续维护歧义，独立审核列为非阻塞；再次常规Compose部署前须明确唯一实例，不可误启动旧collector。

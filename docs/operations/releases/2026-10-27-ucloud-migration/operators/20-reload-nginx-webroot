@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+case "${RENEWED_LINEAGE:-}" in
+    /etc/letsencrypt/live/pitch-api-staging.modelstella.com|/etc/letsencrypt/live/smartbox-platform)
+        /usr/sbin/nginx -t
+        /usr/bin/systemctl reload nginx
+        printf 'nginx reload completed for %s\n' "$RENEWED_LINEAGE"
+        ;;
+esac

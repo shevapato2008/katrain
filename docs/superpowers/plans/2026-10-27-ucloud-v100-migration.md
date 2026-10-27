@@ -1,3 +1,5 @@
+> 最终执行结论（UTC2026-10-27 03:20）：[迁移与DNS/续期接管完成，独立运营审核通过，can_retire_old=true](../../operations/releases/2026-10-27-ucloud-migration/README.md)。下方原计划/早期执行补记保留历史时间与边界。旧资源未删除，实际删除由用户操作。
+
 > 执行补记（UTC22:42）：保护/基础安装/17服务与13库最终恢复、VPN/receiver/TEST交接、旧写端隔离、同包原生幂等验收及独立审核已实际完成。下方复选项保留原审核计划，实际范围/证据以[发布记录](../../operations/releases/2026-10-27-ucloud-migration/README.md)和[最终独立审核](../../operations/releases/2026-10-27-ucloud-migration/final-independent-review.md)为准；并非所有拟议用户写入旅程均重放。DNS编辑权限缺失，五个A仍依赖旧机入口，`can_retire_old=false`；未删除或续费旧资源。最终DB与非PG离机副本均完整并核验通过。
 
 # UCloud V100 全服务迁移执行计划

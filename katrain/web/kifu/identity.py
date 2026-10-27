@@ -1,6 +1,7 @@
 """Resolve multilingual kifu names without changing original SGF metadata."""
 
 import hashlib
+import math
 import os
 import unicodedata
 from copy import deepcopy
@@ -100,6 +101,21 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
     if lang is not None:
         query = query.filter(model.lang == lang)
     return query
+
+
+def _same_json_content(left, right):
+    """Compare refreshed JSON with canonical type and signed-zero distinctions."""
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return (left.keys() == right.keys()
+                and all(type(key) is str and _same_json_content(value, right[key])
+                        for key, value in left.items()))
+    if isinstance(left, list):
+        return len(left) == len(right) and all(_same_json_content(a, b) for a, b in zip(left, right))
+    if isinstance(left, float):
+        return math.isfinite(left) and math.isfinite(right) and left.hex() == right.hex()
+    return left is None or isinstance(left, (str, int, bool)) and left == right
 
 
 def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic_batch_contexts=None):
@@ -229,7 +245,8 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
         cache_key = key if family == "orthographic" else (family, key)
         cached = orthographic_batch_contexts.get(cache_key) if use_contexts else None
         snapshot = (batch.status, batch.bundle_sha256, batch.reviewed_artifact)
-        if cached is not None and batch.status == "applied" and cached[:3] == snapshot:
+        if (cached is not None and batch.status == "applied" and cached[:2] == snapshot[:2]
+                and _same_json_content(cached[2], snapshot[2])):
             return cached[3]
         if use_contexts:
             orthographic_batch_contexts.pop(cache_key, None)
@@ -281,7 +298,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
         if (batch.status == "applied" and isinstance(bundle, dict)
                 and canonical_sha256(bundle) == batch.bundle_sha256):
             return (
-                {canonical_sha256(item): item for item in bundle.get("candidates", ())},
+                {canonical_sha256(item) for item in bundle.get("candidates", ())},
                 set(artifact.get("research_hashes", ())),
             )
         return None

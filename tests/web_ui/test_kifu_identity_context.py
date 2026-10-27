@@ -59,7 +59,8 @@ def test_first_pass_reuses_bundle_and_member_digests_for_current_snapshot(engine
         first = read_player(db, contexts)
         second = read_player(db, contexts)
         assert len(first) == len(second) == 1
-    assert digests == {"bundle": 1, "member": 1}
+    # Compile signed membership once, then hash each live candidate on every read.
+    assert digests == {"bundle": 1, "member": 3}
 
 
 @pytest.mark.parametrize(
@@ -85,7 +86,7 @@ def test_first_pass_context_refreshes_held_batch(engine, drift, changed):
         assert getattr(held, drift) == changed
 
 
-@pytest.mark.parametrize("target", ["owner", "evidence", "candidate"])
+@pytest.mark.parametrize("target", ["owner", "evidence", "candidate", "candidate_json_number"])
 def test_first_pass_context_rechecks_live_source_and_payload(engine, target):
     inventory, bundle, research = bound_player_bundle(engine)
     apply_bundle(engine, bundle, registry(), inventory, research)
@@ -103,6 +104,8 @@ def test_first_pass_context_rechecks_live_source_and_payload(engine, target):
                 payload = deepcopy(evidence.research_payload)
                 if target == "evidence":
                     payload["first_pass"]["candidate_sha256"] = []
+                elif target == "candidate_json_number":
+                    payload["candidate"]["owner"]["id"] = 17.0
                 else:
                     payload["candidate"]["unsigned_extra"] = True
                 conn.execute(
@@ -113,6 +116,26 @@ def test_first_pass_context_rechecks_live_source_and_payload(engine, target):
         assert read_player(db, contexts) == []
         if target == "owner":
             assert held_owner.canonical_name == "Changed source"
+
+
+@pytest.mark.parametrize("original, changed", [(17, 17.0), (True, 1), (0.0, -0.0)])
+def test_first_pass_context_requires_canonical_batch_snapshot(engine, original, changed):
+    inventory, bundle, research = bound_player_bundle(engine)
+    bundle["json_number_probe"] = original
+    applied = apply_bundle(engine, bundle, registry(), inventory, research)
+    with Session(engine) as db:
+        contexts = {}
+        assert len(read_player(db, contexts)) == 1
+        batch = db.get(KifuNameBatch, applied["batch_id"])
+        artifact = deepcopy(batch.reviewed_artifact)
+        artifact["bundle"]["json_number_probe"] = changed
+        assert artifact == batch.reviewed_artifact
+        assert name_candidates.canonical_sha256(artifact["bundle"]) != batch.bundle_sha256
+        with engine.begin() as conn:
+            conn.execute(
+                KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch.id).values(reviewed_artifact=artifact)
+            )
+        assert read_player(db, contexts) == []
 
 
 def test_dirty_session_does_not_reuse_first_pass_context(engine):

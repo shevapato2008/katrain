@@ -459,7 +459,7 @@ export default function KifuLibraryPage() {
         <CircularProgress data-testid="kifu-preview-spinner" />
       ) : previewError && !listError ? (
         <Box sx={{ textAlign: 'center', px: 2 }}>
-          <Typography variant="body2" color="text.secondary">{t('kifu:preview_failed', '棋谱预览加载失败')}</Typography>
+          <Typography variant="body2" color="text.secondary">{t('report:preview_failed', '棋谱预览加载失败')}</Typography>
           <Button onClick={() => setPreviewReload((value) => value + 1)}>{t('kifu:retry', '重试')}</Button>
         </Box>
       ) : (

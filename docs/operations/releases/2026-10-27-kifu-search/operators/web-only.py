@@ -218,8 +218,8 @@ def compose_setup(old, args, out):
     require(labels.get("com.docker.compose.project") == "katrain" and
             labels.get("com.docker.compose.service") == "katrain-web", "TEST Compose ownership mismatch")
     files = labels.get("com.docker.compose.project.config_files", "").split(",")
-    require(len(files) == 11 and len(set(files)) == 11 and all(Path(p).is_absolute() for p in files),
-            "TEST expected exact eleven existing Compose paths")
+    require(len(files) in {11, 12} and len(set(files)) == len(files) and all(Path(p).is_absolute() for p in files),
+            "TEST expected first or second release Compose chain")
     require(all(Path(p).is_file() for p in files), "TEST Compose source file missing")
     base = ["docker", "--host", "unix:///var/run/docker.sock", "compose", "--project-directory",
             labels["com.docker.compose.project.working_dir"], "-p", "katrain"]

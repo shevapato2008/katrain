@@ -7,8 +7,9 @@ protects authoritative tables from the SQLite schema-drift rebuild fallback.
 """
 
 import logging
+from time import monotonic
 
-from sqlalchemy import CheckConstraint, UniqueConstraint, inspect, text
+from sqlalchemy import CheckConstraint, UniqueConstraint, bindparam, inspect, text
 from sqlalchemy.engine import Connection
 
 from katrain.web.core import models_db
@@ -77,6 +78,100 @@ KIFU_ALBUM_FKS = {
     "duplicate_of_id": "kifu_albums",
 }
 KIFU_ALBUM_IDENTITY_INDEXES = {column: f"ix_kifu_albums_{column}" for column in KIFU_ALBUM_FKS}
+
+# Deliberately absent from startup/create_missing_indexes: these large indexes
+# are built only by the explicit scripts/kifu_search_indexes.py operation.
+KIFU_SEARCH_INDEX_SPECS = {
+    "ix_kifu_name_changes_target_row": ("kifu_name_changes", ("target_table", "target_row_id")),
+    "ix_kifu_raw_event_names_display": ("kifu_raw_event_names", ("display_name",)),
+    "ix_kifu_raw_event_names_lower_display": ("kifu_raw_event_names", ("lower(display_name)",)),
+}
+
+
+def _search_index_key(key):
+    key = "".join(key.replace('"', "").split())
+    return {
+        "lower((display_name)::text)": "lower(display_name)",
+        "lower(display_name::text)": "lower(display_name)",
+    }.get(key, key)
+
+
+def postgres_kifu_search_index_statements(*, existing_indexes) -> list[str]:
+    """Check the actual definition and both readiness flags before planning DDL."""
+    statements = []
+    for name, (table, keys) in KIFU_SEARCH_INDEX_SPECS.items():
+        if name in existing_indexes:
+            actual_table, actual_keys, valid, ready, full_btree = existing_indexes[name]
+            if (
+                actual_table != table
+                or tuple(map(_search_index_key, actual_keys)) != keys
+                or not valid
+                or not ready
+                or not full_btree
+            ):
+                raise RuntimeError(f"Invalid PostgreSQL index {name}; inspect and repair it explicitly")
+            continue
+        columns = ", ".join('lower("display_name")' if key == "lower(display_name)" else f'"{key}"' for key in keys)
+        statements.append(f'CREATE INDEX CONCURRENTLY "{name}" ON "{table}" ({columns})')
+    return statements
+
+
+def _postgres_kifu_search_index_status(engine):
+    sql = text(
+        """
+        SELECT idx.relname, tbl.relname, i.indisvalid, i.indisready,
+               ARRAY(SELECT pg_get_indexdef(i.indexrelid, key, true)
+                     FROM generate_series(1, i.indnkeyatts) AS key ORDER BY key),
+               (i.indpred IS NULL AND NOT i.indisunique AND NOT i.indisexclusion
+                AND i.indnkeyatts = i.indnatts AND am.amname = 'btree')
+        FROM pg_index i
+        JOIN pg_class idx ON idx.oid = i.indexrelid
+        JOIN pg_class tbl ON tbl.oid = i.indrelid
+        JOIN pg_am am ON am.oid = idx.relam
+        WHERE idx.relnamespace = current_schema()::regnamespace
+          AND idx.relname IN :names
+    """
+    ).bindparams(bindparam("names", expanding=True))
+    with engine.connect() as conn:
+        return {
+            name: (table, tuple(keys), bool(valid), bool(ready), bool(full_btree))
+            for name, table, valid, ready, keys, full_btree in conn.execute(
+                sql, {"names": tuple(KIFU_SEARCH_INDEX_SPECS)}
+            )
+        }
+
+
+def check_kifu_search_indexes(engine):
+    """Read-only status plus missing-index plan; never executes DDL."""
+    if engine.dialect.name != "postgresql":
+        raise RuntimeError("Kifu search index operation requires PostgreSQL")
+    status = _postgres_kifu_search_index_status(engine)
+    return status, postgres_kifu_search_index_statements(existing_indexes=status)
+
+
+def apply_kifu_search_indexes(engine, *, timeout_ms=900_000, lock_timeout_ms=10_000):
+    """Explicit bounded operation; each concurrent index has its own autocommit connection."""
+    if timeout_ms < 1 or lock_timeout_ms < 1:
+        raise ValueError("Index time budgets must be positive")
+    deadline = monotonic() + timeout_ms / 1000
+    _, statements = check_kifu_search_indexes(engine)
+    for statement in statements:
+        remaining_ms = int((deadline - monotonic()) * 1000)
+        if remaining_ms < 1:
+            raise TimeoutError("Kifu search index operation exceeded its time budget")
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            conn.execute(
+                text("SELECT set_config('statement_timeout', :timeout, false)"), {"timeout": f"{remaining_ms}ms"}
+            )
+            conn.execute(
+                text("SELECT set_config('lock_timeout', :timeout, false)"),
+                {"timeout": f"{min(lock_timeout_ms, remaining_ms)}ms"},
+            )
+            conn.execute(text(statement))
+    status, missing = check_kifu_search_indexes(engine)
+    if missing:
+        raise RuntimeError("Kifu search indexes remain missing after apply")
+    return status
 
 
 def postgres_kifu_album_fk_statements(*, existing_columns: set[str], existing_fks: dict[str, object]) -> list[str]:

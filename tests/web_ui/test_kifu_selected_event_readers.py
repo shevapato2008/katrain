@@ -217,9 +217,7 @@ def test_later_reviewed_player_link_keeps_selected_event_api_proof(engine, monke
     with Session(engine) as db:
         assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
         assert asyncio.run(kifu.get_kifu_album(_request(), 11, lang="en", db=db)).display_event == "Example event EN"
-        result = asyncio.run(
-            kifu.list_kifu_albums(_request(), q="Example event RU", page=1, page_size=20, lang="en", db=db)
-        )
+        result = kifu.read_album_page(db, q="Example event RU", page=1, page_size=20, lang="en")
         assert result.total == 1
         assert result.items[0].display_event == "Example event EN"
 
@@ -328,9 +326,7 @@ def test_malformed_player_ledger_ids_leave_readers_unverified(engine, monkeypatc
             asyncio.run(kifu.get_kifu_album(_request(), 11, lang="en", db=db)).display_event == "Event name unverified"
         )
         assert (
-            asyncio.run(
-                kifu.list_kifu_albums(_request(), q="Example event EN", page=1, page_size=20, lang="en", db=db)
-            ).total
+            kifu.read_album_page(db, q="Example event EN", page=1, page_size=20, lang="en").total
             == 0
         )
     report = coverage_report(engine, build_inventory(engine, inventory_format=4), languages=("en",))
@@ -501,9 +497,7 @@ def test_selected_event_link_readers_share_valid_proof(engine, monkeypatch):
         assert detail.display_event == "Example event EN"
         assert detail.event == "GNUGo3.8"
         assert "GN[Selected Cup]" in detail.sgf_content
-        result = asyncio.run(
-            kifu.list_kifu_albums(_request(), q="Example event RU", page=1, page_size=20, lang="en", db=db)
-        )
+        result = kifu.read_album_page(db, q="Example event RU", page=1, page_size=20, lang="en")
         assert result.total == 1
         assert result.items[0].display_event == "Example event EN"
     inventory = build_inventory(engine, inventory_format=4)
@@ -604,9 +598,7 @@ def test_selected_event_core_does_not_cover_full_current_field(engine, monkeypat
     with Session(engine) as db:
         detail = asyncio.run(kifu.get_kifu_album(_request(), 11, lang="en", db=db))
         assert detail.display_event == "Event name unverified"
-        result = asyncio.run(
-            kifu.list_kifu_albums(_request(), q="Example event EN", page=1, page_size=20, lang="en", db=db)
-        )
+        result = kifu.read_album_page(db, q="Example event EN", page=1, page_size=20, lang="en")
         assert result.total == 0
         report = coverage_report(engine, inventory, languages=("en",))
         assert any(row["slot"] == "event" for row in report["missing_examples"])
@@ -628,9 +620,7 @@ def test_selected_event_core_does_not_cover_full_current_field(engine, monkeypat
         )
         db.commit()
         assert asyncio.run(kifu.get_kifu_album(_request(), 11, lang="en", db=db)).display_event == "28th Honinbo Final"
-        result = asyncio.run(
-            kifu.list_kifu_albums(_request(), q="Example event EN", page=1, page_size=20, lang="en", db=db)
-        )
+        result = kifu.read_album_page(db, q="Example event EN", page=1, page_size=20, lang="en")
         assert result.total == 1
     report = coverage_report(engine, inventory, languages=("en",))
     assert not [row for row in report["missing_examples"] if row["slot"] == "event"]
@@ -655,9 +645,7 @@ def test_selected_event_invalid_proof_and_current_name_keep_gap(engine, monkeypa
         assert (
             asyncio.run(kifu.get_kifu_album(_request(), 11, lang="en", db=db)).display_event == "Event name unverified"
         )
-        result = asyncio.run(
-            kifu.list_kifu_albums(_request(), q="Example event EN", page=1, page_size=20, lang="en", db=db)
-        )
+        result = kifu.read_album_page(db, q="Example event EN", page=1, page_size=20, lang="en")
         assert result.total == 0
         assert result.items == []
     report = coverage_report(engine, inventory, languages=("en",))

@@ -472,7 +472,7 @@ def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
     if (batch.get("status") != "applied" or not isinstance(bundle, dict)
             or batch_members is None or candidate_hash not in batch_members[0]
             or research_hash not in batch_members[1]
-            or proof != {"batch_id": batch["id"], "candidate_sha256": canonical_sha256(candidate),
+            or proof != {"batch_id": batch["id"], "candidate_sha256": candidate_hash,
                          "research_sha256": research_hash, "verification_level": LEVEL,
                          "raw_scope_sha256": canonical_sha256(research["raw_scope"])
                          if owner_kind == "raw_event" else research.get("raw_display_scope_sha256")

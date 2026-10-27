@@ -13,7 +13,7 @@
  * 400 下限在窄档必然把棋盘顶出容器。这里和已迁的三页一样传 0/0。
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
@@ -241,13 +241,22 @@ export default function KifuLibraryPage() {
   const page = Number(searchParams.get('page')) || 1;
   const query = searchParams.get('q') || '';
 
-  const [items, setItems] = useState<KifuAlbumSummary[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [listReload, setListReload] = useState(0);
+  const selectionScope = JSON.stringify([query, page]);
+  const requestKey = JSON.stringify([query, page, lang, listReload]);
+  const [result, setResult] = useState<{
+    key: string; loading: boolean; error: boolean; items: KifuAlbumSummary[];
+    total: number; preview: KifuAlbumDetail | null;
+  }>({ key: '', loading: true, error: false, items: [], total: 0, preview: null });
+  const loading = result.key !== requestKey || result.loading;
+  const listError = result.key === requestKey && result.error;
+  const items = loading || listError ? [] : result.items;
+  const total = loading || listError ? 0 : result.total;
   const [searchInput, setSearchInput] = useState(query);
 
   // Board preview state
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const selection = useRef<{ scope: string; id: number | null }>({ scope: selectionScope, id: null });
   const [selectedAlbum, setSelectedAlbum] = useState<KifuAlbumSummary | null>(null);
   const [selectedAlbumLang, setSelectedAlbumLang] = useState<string | null>(null);
   const [previewMoves, setPreviewMoves] = useState<string[]>([]);
@@ -257,6 +266,7 @@ export default function KifuLibraryPage() {
   const [previewBoardSize, setPreviewBoardSize] = useState(19);
   const [previewSetupCount, setPreviewSetupCount] = useState(0);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
   const [previewReload, setPreviewReload] = useState(0);
   const [boardEdge, setBoardEdge] = useState(0);
   const coordinates = useBoardCoordinates(boardEdge);
@@ -265,29 +275,63 @@ export default function KifuLibraryPage() {
     setSearchInput(query);
   }, [query]);
 
-  const fetchData = useCallback(async (request: { cancelled: boolean }) => {
-    setLoading(true);
-    try {
-      const data = await KifuAPI.getAlbums({ q: query || undefined, page, page_size: PAGE_SIZE, lang });
-      if (request.cancelled) return;
-      setItems(data.items);
-      setTotal(data.total);
-    } catch (err) {
-      if (!request.cancelled) console.error('Failed to fetch kifu albums:', err);
-    } finally {
-      if (!request.cancelled) setLoading(false);
-    }
-  }, [query, page, lang]);
+  const acceptPreview = useCallback((detail: KifuAlbumDetail) => {
+    const parsed = sgfToMoves(detail.sgf_content || '');
+    setSelectedAlbum(detail);
+    setSelectedAlbumLang(lang);
+    setPreviewMoves(parsed.moves);
+    setPreviewColors(parsed.stoneColors);
+    setPreviewSetupCount(parsed.setupCount ?? 0);
+    setPreviewCurrentMove(parsed.moves.length);
+    setPreviewBoardSize(parsed.metadata.boardSize || detail.board_size || 19);
+    setPreviewError(false);
+    setPreviewLoading(false);
+  }, [lang]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const request = { cancelled: false };
-    fetchData(request);
-    return () => { request.cancelled = true; };
-  }, [fetchData]);
+    if (selection.current.scope !== selectionScope) selection.current = { scope: selectionScope, id: null };
+    setResult({ key: requestKey, loading: true, error: false, items: [], total: 0, preview: null });
+    const fetchData = async () => {
+      try {
+        const data = await KifuAPI.getAlbums({ q: query || undefined, page, page_size: PAGE_SIZE, lang, signal: controller.signal });
+        if (request.cancelled) return;
+        const first = data.items[0] ?? null;
+        const selected = data.items.find((album) => album.id === selection.current.id) ?? first;
+        const preview = data.preview?.id === first?.id ? data.preview ?? null : null;
+        // New search/page selects the first game; language/refresh keeps a valid selection.
+        selection.current = { scope: selectionScope, id: selected?.id ?? null };
+        setSelectedId(selected?.id ?? null);
+        setSelectedAlbum(selected);
+        setSelectedAlbumLang(selected ? lang : null);
+        setPreviewMoves([]);
+        setPreviewLoading(false);
+        setPreviewError(false);
+        setPreviewReload(0);
+        setReplaySelection(null);
+        if (preview && preview.id === selected?.id) acceptPreview(preview);
+        setResult({ key: requestKey, loading: false, error: false, items: data.items, total: data.total, preview });
+      } catch (err) {
+        if (request.cancelled || controller.signal.aborted) return;
+        console.error('Failed to fetch kifu albums:', err);
+        selection.current = { scope: selectionScope, id: null };
+        setResult({ key: requestKey, loading: false, error: true, items: [], total: 0, preview: null });
+        setSelectedId(null);
+        setSelectedAlbum(null);
+        setPreviewMoves([]);
+        setPreviewLoading(false);
+        setPreviewError(false);
+      }
+    };
+    void fetchData();
+    return () => { request.cancelled = true; controller.abort(); };
+  }, [query, page, lang, selectionScope, requestKey, acceptPreview]);
 
   const handleSearch = () => {
     const params: Record<string, string> = {};
     if (searchInput) params.q = searchInput;
+    if (searchInput === query && page === 1) setListReload((value) => value + 1);
     setSearchParams(params, { replace: false });
   };
 
@@ -302,7 +346,7 @@ export default function KifuLibraryPage() {
     setSearchParams(params, { replace: false });
   };
 
-  // Keep the selection by ID so a language change can refresh its detail.
+  // Keep manual choices within this query/page when language or data refreshes.
   const handleCardClick = useCallback((album: KifuAlbumSummary) => {
     if (selectedId === album.id) {
       if (!previewLoading && (selectedAlbumLang !== lang || previewMoves.length === 0)) {
@@ -310,46 +354,46 @@ export default function KifuLibraryPage() {
       }
       return;
     }
+    selection.current.id = album.id;
     setSelectedId(album.id);
+    if (result.preview?.id === album.id && result.preview.sgf_content) {
+      setPreviewReload(0);
+      acceptPreview(result.preview);
+      return;
+    }
     setSelectedAlbum(album);
     setSelectedAlbumLang(lang);
     setPreviewMoves([]);
-  }, [lang, selectedId, selectedAlbumLang, previewLoading, previewMoves.length]);
+    setPreviewError(false);
+  }, [lang, selectedId, selectedAlbumLang, previewLoading, previewMoves.length, result.preview, acceptPreview]);
 
-  const fetchSelected = useCallback(async (id: number, request: { cancelled: boolean }) => {
+  const fetchSelected = useCallback(async (id: number, request: { cancelled: boolean; signal: AbortSignal }) => {
     setPreviewLoading(true);
+    setPreviewError(false);
     try {
-      const detail: KifuAlbumDetail = await KifuAPI.getAlbum(id, lang);
+      const detail: KifuAlbumDetail = await KifuAPI.getAlbum(id, lang, request.signal);
       if (request.cancelled) return;
-      setSelectedAlbum(detail);
-      setSelectedAlbumLang(lang);
-      if (detail.sgf_content) {
-        const parsed = sgfToMoves(detail.sgf_content);
-        setPreviewMoves(parsed.moves);
-        setPreviewColors(parsed.stoneColors);
-        setPreviewSetupCount(parsed.setupCount ?? 0);
-        setPreviewCurrentMove(parsed.moves.length); // Show final position
-        setPreviewBoardSize(parsed.metadata.boardSize || detail.board_size || 19);
-      }
+      acceptPreview(detail);
     } catch (err) {
-      if (!request.cancelled) console.error('Failed to load kifu preview:', err);
+      if (!request.cancelled && !request.signal.aborted) {
+        console.error('Failed to load kifu preview:', err);
+        setPreviewError(true);
+      }
     } finally {
       if (!request.cancelled) setPreviewLoading(false);
     }
-  }, [lang]);
+  }, [lang, acceptPreview]);
 
   useEffect(() => {
-    if (selectedId === null) return;
-    const request = { cancelled: false };
+    if (loading || listError || selectedId === null) return;
+    if (result.preview?.id === selectedId && result.preview.sgf_content && previewReload === 0) return;
+    const controller = new AbortController();
+    const request = { cancelled: false, signal: controller.signal };
     fetchSelected(selectedId, request);
-    return () => { request.cancelled = true; };
-  }, [selectedId, fetchSelected, previewReload]);
+    return () => { request.cancelled = true; controller.abort(); };
+  }, [selectedId, fetchSelected, previewReload, loading, listError, result.preview]);
 
-  useEffect(() => {
-    if (selectedId === null && items[0]) handleCardClick(items[0]);
-  }, [items, selectedId, handleCardClick]);
-
-  const visibleSelectedAlbum = selectedAlbum?.id === selectedId && selectedAlbumLang === lang ? selectedAlbum : null;
+  const visibleSelectedAlbum = !loading && !listError && selectedAlbum?.id === selectedId && selectedAlbumLang === lang ? selectedAlbum : null;
   const selectPreviewMove = (move: number) => {
     setReplaySelection({ id: selectedId, move });
     setPreviewCurrentMove(move);
@@ -371,9 +415,11 @@ export default function KifuLibraryPage() {
 
   /* 模块牌副标题：选中棋谱后是对局双方 + 手数，没选中时是记录总数。
      列表还在加载时给一条骨架，避免标题行先塌一次再撑开。 */
-  const plateSubtitle = (loading && selectedId === null) || (selectedId !== null && !visibleSelectedAlbum)
+  const plateSubtitle = loading
     ? <Skeleton width={140} />
-    : visibleSelectedAlbum
+    : listError
+      ? t('kifu:list_failed', '棋谱库读不到')
+      : visibleSelectedAlbum
       ? `${visibleSelectedAlbum.display_player_black ?? t('game:black_side', '黑方')} vs ${visibleSelectedAlbum.display_player_white ?? t('game:white_side', '白方')} · ${visibleSelectedAlbum.move_count} ${movesUnit}`
       : `${total.toLocaleString()} ${t('kifu:records', 'records')}${query ? ` · "${query}"` : ''}`;
 
@@ -409,8 +455,13 @@ export default function KifuLibraryPage() {
           minimumCanvasSize={0}
           minContainerHeight={0}
         />
-      ) : previewLoading ? (
+      ) : loading || (!listError && previewLoading) ? (
         <CircularProgress data-testid="kifu-preview-spinner" />
+      ) : previewError && !listError ? (
+        <Box sx={{ textAlign: 'center', px: 2 }}>
+          <Typography variant="body2" color="text.secondary">{t('report:preview_failed', '棋谱预览加载失败')}</Typography>
+          <Button onClick={() => setPreviewReload((value) => value + 1)}>{t('kifu:retry', '重试')}</Button>
+        </Box>
       ) : (
         <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.5, textAlign: 'center', px: 2 }}>
           {/* 冻结稿写的是「从右边选一局棋谱预览」。这里保留原来那句不带方位的说法 ——
@@ -465,7 +516,7 @@ export default function KifuLibraryPage() {
             />
             {/* 记录数与页码。选中棋谱后模块牌的副标题会换成对局双方，所以这一行
                 是「一共多少局、看到第几页」唯一常驻的地方（冻结稿同址）。 */}
-            {!loading && (
+            {!loading && !listError && (
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -482,6 +533,11 @@ export default function KifuLibraryPage() {
           <Box sx={{ px: 1.5, pb: 1 }}>
             {loading ? (
               <SkeletonCards count={8} />
+            ) : listError ? (
+              <Box role="alert" sx={{ textAlign: 'center', py: 6 }}>
+                <Typography color="text.secondary">{t('kifu:list_failed', '棋谱库读不到')}</Typography>
+                <Button onClick={() => setListReload((value) => value + 1)}>{t('kifu:retry', '重试')}</Button>
+              </Box>
             ) : items.length === 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 6, pb: 6, gap: 1 }}>
                 <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 500 }}>

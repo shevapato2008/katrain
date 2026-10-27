@@ -47,7 +47,7 @@ def _status_error(code):
 @pytest.mark.asyncio
 async def test_offline_list_is_503_not_an_empty_library():
     with pytest.raises(HTTPException) as exc:
-        await kifu.list_kifu_albums(request=_request(_dispatcher(online=False)), q=None, page=1, page_size=6, db=None)
+        await kifu.list_kifu_albums(request=_request(_dispatcher(online=False)), q=None, page=1, page_size=6)
     assert exc.value.status_code == 503
     assert exc.value.detail == {"code": "kifu_cloud_unreachable", "message": "Remote kifu service unavailable"}
 
@@ -63,7 +63,7 @@ async def test_offline_detail_is_503_not_not_found():
 async def test_cloud_unreachable_is_503():
     d = _dispatcher(search=AsyncMock(side_effect=httpx.ConnectError("refused")))
     with pytest.raises(HTTPException) as exc:
-        await kifu.list_kifu_albums(request=_request(d), q=None, page=1, page_size=6, db=None)
+        await kifu.list_kifu_albums(request=_request(d), q=None, page=1, page_size=6)
     assert exc.value.status_code == 503
     assert exc.value.detail["code"] == "kifu_cloud_unreachable"
 
@@ -85,7 +85,7 @@ async def test_online_passes_through():
     search = AsyncMock(return_value=payload)
     get = AsyncMock(return_value=detail)
     d = _dispatcher(search=search, get=get)
-    listed = await kifu.list_kifu_albums(request=_request(d), q="三星杯", page=3, page_size=6, lang="jp", db=None)
+    listed = await kifu.list_kifu_albums(request=_request(d), q="三星杯", page=3, page_size=6, lang="jp")
     assert listed == payload
     search.assert_awaited_once_with(q="三星杯", page=3, page_size=6, lang="jp")
     assert await kifu.get_kifu_album(request=_request(d), album_id=23, lang="jp", db=None) == detail
@@ -100,7 +100,7 @@ async def test_cloud_errors_keep_4xx_and_map_5xx(endpoint, upstream_status, expe
     d = _dispatcher(**{"search" if endpoint == "list" else "get": remote_call})
     with pytest.raises(HTTPException) as exc:
         if endpoint == "list":
-            await kifu.list_kifu_albums(request=_request(d), q=None, page=1, page_size=6, db=None)
+            await kifu.list_kifu_albums(request=_request(d), q=None, page=1, page_size=6)
         else:
             await kifu.get_kifu_album(request=_request(d), album_id=7, db=None)
     assert exc.value.status_code == expected_status

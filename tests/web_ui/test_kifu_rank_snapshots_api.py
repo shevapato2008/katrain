@@ -95,7 +95,7 @@ def album(db, *, raw=None, name="Black Player", fallback=True):
 
 
 def listing(db, lang="cn", **kwargs):
-    return asyncio.run(kifu.list_kifu_albums(request(), q=None, page=1, page_size=100, lang=lang, db=db, **kwargs))
+    return kifu.read_album_page(db, q=None, page=1, page_size=100, lang=lang, **kwargs)
 
 
 def detail(db, album_id, lang="cn"):

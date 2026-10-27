@@ -467,12 +467,20 @@ def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
         validate_candidate(candidate, research, bundle.get("shared_displays", ()) if isinstance(bundle, dict) else ())
     except (ValueError, KeyError, TypeError):
         return False
-    candidate_hash = canonical_sha256(candidate)
+    # Readers compile signed members once per refreshed batch snapshot. Writers
+    # may still provide the original digest set, so keep that validation path.
+    signed_members = batch_members[0] if batch_members is not None else None
+    if isinstance(signed_members, dict):
+        candidate_hash = proof.get("candidate_sha256")
+        if not isinstance(candidate_hash, str) or signed_members.get(candidate_hash) != candidate:
+            return False
+    else:
+        candidate_hash = canonical_sha256(candidate)
     research_hash = canonical_sha256(research)
     if (batch.get("status") != "applied" or not isinstance(bundle, dict)
             or batch_members is None or candidate_hash not in batch_members[0]
             or research_hash not in batch_members[1]
-            or proof != {"batch_id": batch["id"], "candidate_sha256": canonical_sha256(candidate),
+            or proof != {"batch_id": batch["id"], "candidate_sha256": candidate_hash,
                          "research_sha256": research_hash, "verification_level": LEVEL,
                          "raw_scope_sha256": canonical_sha256(research["raw_scope"])
                          if owner_kind == "raw_event" else research.get("raw_display_scope_sha256")

@@ -129,6 +129,9 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
             return "ja"
         return None
 
+    use_contexts = orthographic_batch_contexts is not None and not (db.new or db.dirty or db.deleted)
+    if use_contexts:
+        query = query.populate_existing()
     rows = query.with_entities(model, KifuNameResearchEvidence, *entities).all()
     # The creation ledger retains the original method even if every mutable
     # discriminator was removed. Bound this lookup to evidence already returned.
@@ -192,6 +195,8 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
 
     batch_ids = set(legacy_batch_ids)
     first_pass_batch_ids = set()
+    transliteration_batch_ids = set()
+    orthographic_batch_ids = set()
     for name, evidence, *_ in rows:
         payload = evidence.research_payload
         proof = payload.get("first_pass") if isinstance(payload, dict) else None
@@ -210,26 +215,33 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
             )
             if isinstance(proof, dict) and type(proof.get("batch_id")) is int:
                 batch_ids.add(proof["batch_id"])
+                if not positive_kind(name, evidence):
+                    (orthographic_batch_ids if orthographic_proof(name, evidence)
+                     else transliteration_batch_ids).add(proof["batch_id"])
     batch_ids |= first_pass_batch_ids
-    use_contexts = orthographic_batch_contexts is not None and not (db.new or db.dirty or db.deleted)
     batch_query = db.query(KifuNameBatch).filter(KifuNameBatch.id.in_(batch_ids))
     if use_contexts:
         batch_query = batch_query.populate_existing()
     batches = {batch.id: batch for batch in batch_query} if batch_ids else {}
-    contexts = {key: persisted_batch_bindings(batch) for key, batch in batches.items()}
-    orthographic_contexts = {}
-    for key, batch in batches.items():
-        cached = orthographic_batch_contexts.get(key) if use_contexts else None
+
+    def batch_context(key, family, build):
+        batch = batches[key]
+        cache_key = key if family == "orthographic" else (family, key)
+        cached = orthographic_batch_contexts.get(cache_key) if use_contexts else None
         snapshot = (batch.status, batch.bundle_sha256, batch.reviewed_artifact)
         if cached is not None and batch.status == "applied" and cached[:3] == snapshot:
-            orthographic_contexts[key] = cached[3]
-            continue
+            return cached[3]
         if use_contexts:
-            orthographic_batch_contexts.pop(key, None)
-        context = name_orthographic.persisted_batch_bindings(batch)
-        orthographic_contexts[key] = context
+            orthographic_batch_contexts.pop(cache_key, None)
+        context = build(batch)
         if use_contexts and context is not None:
-            orthographic_batch_contexts[key] = (*deepcopy(snapshot), context)
+            orthographic_batch_contexts[cache_key] = (*deepcopy(snapshot), context)
+        return context
+
+    contexts = {key: batch_context(key, "transliteration", persisted_batch_bindings)
+                for key in transliteration_batch_ids if key in batches}
+    orthographic_contexts = {key: batch_context(key, "orthographic", name_orthographic.persisted_batch_bindings)
+                            for key in orthographic_batch_ids if key in batches}
     positive_batch_ids = set()
     for name, evidence, *_ in rows:
         kind = positive_kind(name, evidence)
@@ -262,17 +274,20 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
         ):
             first_pass_changes[change.batch_id][(change.target_table, change.target_row_id)] = image(change)
     from katrain.web.kifu.name_candidates import canonical_sha256
-    first_pass_members = {}
-    for batch_id in first_pass_batch_ids:
-        batch = batches.get(batch_id)
-        artifact = batch.reviewed_artifact if batch else None
+
+    def first_pass_membership(batch):
+        artifact = batch.reviewed_artifact
         bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
-        if (batch and batch.status == "applied" and isinstance(bundle, dict)
+        if (batch.status == "applied" and isinstance(bundle, dict)
                 and canonical_sha256(bundle) == batch.bundle_sha256):
-            first_pass_members[batch_id] = (
-                {canonical_sha256(item) for item in bundle.get("candidates", ())},
+            return (
+                {canonical_sha256(item): item for item in bundle.get("candidates", ())},
                 set(artifact.get("research_hashes", ())),
             )
+        return None
+
+    first_pass_members = {key: batch_context(key, "first_pass", first_pass_membership)
+                          for key in first_pass_batch_ids if key in batches}
     owner_kind = {KifuPlayerName: "player", KifuEventName: "event",
                   KifuRawEventName: "raw_event", KifuRawPlayerName: "raw_player"}.get(model)
     first_pass_rows = [row for row in rows if owner_kind and (
@@ -290,16 +305,25 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     source_evidence = {}
     if first_pass_rows:
         owner_ids = {getattr(name, owner_column) for name, *_ in first_pass_rows}
-        owner_images = {owner.id: image(owner) for owner in db.query(owner_model).filter(owner_model.id.in_(owner_ids))}
+        owner_query = db.query(owner_model).filter(owner_model.id.in_(owner_ids))
+        if use_contexts:
+            owner_query = owner_query.populate_existing()
+        owner_images = {owner.id: image(owner) for owner in owner_query}
         source_ids = {source.get("name_id") for _, evidence, *_ in first_pass_rows
                       for research in [(evidence.research_payload or {}).get("research")]
                       for source in [research.get("source_input", {}) if isinstance(research, dict) else {}]
                       if source.get("kind") == "existing_locale" and type(source.get("name_id")) is int}
         if source_ids:
-            source_names = {item.id: image(item) for item in db.query(model).filter(model.id.in_(source_ids))}
+            source_query = db.query(model).filter(model.id.in_(source_ids))
+            if use_contexts:
+                source_query = source_query.populate_existing()
+            source_names = {item.id: image(item) for item in source_query}
             evidence_source_ids = {item["evidence_id"] for item in source_names.values() if item["evidence_id"]}
-            source_evidence = {item.id: image(item) for item in db.query(KifuNameResearchEvidence).filter(
-                KifuNameResearchEvidence.id.in_(evidence_source_ids))}
+            source_evidence_query = db.query(KifuNameResearchEvidence).filter(
+                KifuNameResearchEvidence.id.in_(evidence_source_ids))
+            if use_contexts:
+                source_evidence_query = source_evidence_query.populate_existing()
+            source_evidence = {item.id: image(item) for item in source_evidence_query}
     result = []
     for row in rows:
         name, evidence, *extra = row
@@ -476,7 +500,9 @@ def strict_raw_player_search_clause(db, raw_values: set[str], display: str, *, n
     return or_(*clauses) if clauses else KifuAlbum.id.in_([])
 
 
-def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=None, name_ids=None):
+def _approved_raw_event_names(
+    db: Session, *, values=None, lang=None, display=None, name_ids=None, orthographic_batch_contexts=None
+):
     """Read complete names and their live base dependencies in at most two queries.
 
     Composition is checked against stored approvals; no renderer or source lookup
@@ -509,7 +535,8 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
     rows = [
         (name, raw, evidence, raw_owner)
         for name, evidence, raw, raw_owner in _qualified_name_rows(
-            db, query, KifuRawEventName, "raw_event_id", KifuRawEventValue.raw_value, KifuRawEventValue
+            db, query, KifuRawEventName, "raw_event_id", KifuRawEventValue.raw_value, KifuRawEventValue,
+            orthographic_batch_contexts=orthographic_batch_contexts,
         )
     ]
     composed = [row for row in rows if row[0].decision_kind == "composed"]
@@ -529,6 +556,7 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
                 _approved_names(db, KifuEventName, "event_id").filter(KifuEventName.id.in_(base_ids)),
                 KifuEventName,
                 "event_id",
+                orthographic_batch_contexts=orthographic_batch_contexts,
             )
         }
     result = []
@@ -876,7 +904,7 @@ def strict_matching_names(
         )
         qualified = _qualified_name_rows(
             db, rows, model, owner,
-            orthographic_batch_contexts=orthographic_batch_contexts if model is KifuPlayerName else None
+            orthographic_batch_contexts=orthographic_batch_contexts
         )
         if model is KifuPlayerName:
             player_rows = [(row, evidence) for row, evidence in qualified
@@ -892,7 +920,9 @@ def strict_matching_names(
         if model is KifuRawEventName:
             matched = [
                 (name, raw, proof)
-                for name, raw, proof in _approved_raw_event_names(db, display=query)
+                for name, raw, proof in _approved_raw_event_names(
+                    db, display=query, orthographic_batch_contexts=orthographic_batch_contexts
+                )
                 if normalize_alias(name.display_name) == needle
             ]
             raw_matches.append({raw for _, raw, _ in matched})
@@ -1098,6 +1128,7 @@ def strict_display_maps(
         KifuEventName,
         "event_id",
         KifuEvent.canonical_name,
+        orthographic_batch_contexts=orthographic_batch_contexts,
     )
     events = {row.event_id: row.display_name for row, _, _ in event_rows}
     canonical = {row.event_id: canonical for row, _, canonical in event_rows}
@@ -1107,7 +1138,9 @@ def strict_display_maps(
         (KifuRawEventName, KifuRawEventValue, "raw_event_id", raw_events),
     ):
         if model is KifuRawEventName:
-            rows = _approved_raw_event_names(db, values=values, lang=lang)
+            rows = _approved_raw_event_names(
+                db, values=values, lang=lang, orthographic_batch_contexts=orthographic_batch_contexts
+            )
             linked_members = _linked_live_members(db, rows, candidate_ids={album.id for album in albums})
             selected_ids = ({album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
                 KifuAlbumEventSelection.album_id.in_([album.id for album in albums]))}

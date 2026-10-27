@@ -1,6 +1,6 @@
 # Galaxy 棋谱搜索验证记录
 
-状态：首轮实施及审核已完成；已发布develop与父仓库指针，并部署TEST和三条索引。TEST正确性通过但200ms预算失败，PROD尚未发布本轮变更；继续聚焦证明编译成本。
+状态：两轮受控实现均已审核并发布到develop及父仓库指针，仅部署TEST。正确性通过，最小SHA缓存后的完整paint仍349–3693ms，200ms门禁未过，PROD未发布本轮变更。已停止扩样及新机制，向主session报告实际界限等待下一步决定。
 
 ## 新机只读基线
 
@@ -30,6 +30,14 @@
 首轮实际发布：feature `ce010cddf4ff9c77a1baa0c174dafaae0ab74019`，develop `dc17489e2269926b34da5f040a74990d2f4db3c9`，smartbox-software/main `f44676aeb94e3e9baa9333ebdb616b5eadc2e0d8`。TEST image `sha256:8754652a8d475d65d2671573683553ec940f0380590f206da0262691a120768c`，web `6b9dda84a8e4`；137个非web容器ID/start/restart/state全部相同，唯一collector未重启。3条索引定义、valid、ready均通过；没有启动时DDL。
 
 TEST首轮实测已停止扩量：16项API检查通过、11项旧新契约完全等价；27次真实棋盘paint全部正确，但563–3804ms（中位1429.8ms），均超200ms。未进入4客户端/40ms组，未做PROD变更。详见[test-after-summary](evidence/2026-10-27-kifu-search/test-after-summary.md)。一次隔离暖profile647ms中display586ms，11次batch snapshot deepcopy341ms、bundle/member canonical编译120ms，SQL合计82ms。下一刀只按这些实际成本收敛，不继续无目的压测。
+
+第二轮为最小同SQL完整artifact SHA + first-pass纯compiled缓存，无MVCC协议、预热hook或全扫描。第二轮计划及代码独立Astra Approved；Important旧ORM artifact导致raw scope误拒由`fec348cae`闭环。实现focused363 passed（9个已确认旧文案用例排除），独立spec/代码审核及合并后30 passed。
+
+第二轮实际发布：feature `1db3162c16e87dc587a042a60810943d5c4dda8b`，develop `06d8e732f2c9cb956c76d9c9806f3f3584adcd43`，父main `2abc47d6f2e5b6d2647b6122e027bb34f2fe7e87`。TEST image `sha256:80be16d9e88e2d754c3d646944c0569ed4db9be82dd0c02226327be4eadf8987`、web `7266e0c60af6`，health200，137个非web状态再次完全相同；保留唯一collector、全部索引与原配置。
+
+第二轮限定17公开GET：11项旧新契约完全等价；新进程首个观测API781.89ms，后续王五语166–249ms，page2首次660.75ms，柯首次1935.27ms。5次正确paint：王507.3、柯539.7、一力辽3693.3、王repeat349.0、page2 530.3ms；全部超200ms。王repeat fetch237.8ms含display134.3/candidate79.5，暖response→paint约97–133ms；未进入并发/40ms，未将成功退出的`budget_stop`当作性能通过。详见[test-sha-cache-summary](evidence/2026-10-27-kifu-search/test-sha-cache-summary.md)。
+
+复用原4条只读EXPLAIN的实际索引验证：history 0.102/0.252ms用`ix_kifu_name_changes_target_row`，raw零匹配0.126ms用两个名称索引，player COUNT4.405ms用黑白索引。业务结果没有靠空/少返回或旧棋盘缩短时间。
 
 完整Astra审核通过后，严格依次发布feature、合并develop、父main子模块指针，然后先TEST web-only替换与显式AUTOCOMMIT CONCURRENTLY索引，再新PROD小样本复验。保留唯一TEST collector和两边cron/PG/GPU/MinIO及权限、SSO、媒体配置。
 

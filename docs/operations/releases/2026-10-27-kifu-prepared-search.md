@@ -10,7 +10,7 @@
 | --- | --- |
 | 集成 | fetch 最新 `develop` → merge 到 feature、解冲突、聚焦验证、commit/push feature → merge/push `develop`，记录完整 SHA |
 | 父仓库 | `smartbox-software/vendor/katrain` 指向已发布 `develop` SHA；仅 commit/push 父 `main` 的 submodule pointer，保留无关工作树改动 |
-| TEST | `home-ubuntu`，现有 Web `katrain-web`、唯一 collector `katrain-cron`；Web disabled 换版、显式迁移、有界准备、唯一 cron 安全换版及真实 hook 验证后才 enable |
+| TEST | `home-ubuntu`，现有 Web `katrain-web`、唯一 collector `katrain-cron`；显式迁移并确认 disabled → 新 Web / 唯一 cron 安全换包且核实 hook/signature → 有界实际 prepare → 其余验收后才 enable |
 | TEST 验收 | 实际新旧语义差异 0、完整响应错误 0、1 QPS p95≤20ms、100 固定到达 QPS p95≤200ms，以及真实 Galaxy/kiosk 页面和正确棋盘 |
 | 新 PROD | 仅 `ubuntu@117.50.177.254`，现有 Web `katrain-ucloud-katrain-web-1`；全部 TEST 门禁通过后，Web/receiver disabled 换版、准备/验证、原子 enable、小样本复验 |
 
@@ -108,7 +108,7 @@ python -c 'from katrain.web.kifu.prepared_read import current_policy_signature; 
 
 ## TEST 正确性、负载和真实页面
 
-保持新包 disabled，完成显式 migrate、分批初始准备和真实资源验收。经真实新 cron/人工 CLI 入口，使用隔离或已明确批准的小范围 TEST 包验证正常发布、幂等 replay、undo/恢复，业务 receipts/images/hash 语义不变，dirty 同事务消费、ready 持续正确。不得为验收撤销无关现有数据，不新增模型请求，不全库重导入。验证实际下一次 writer 仍使用新包后才 enable。
+先显式 migrate 并确认 disabled，再安全换包新 Web / 唯一 cron 并核实实际 hook/signature，然后分批初始准备和真实资源验收。经真实新 cron/人工 CLI 入口，使用隔离或已明确批准的小范围 TEST 包验证正常发布、幂等 replay、undo/恢复，业务 receipts/images/hash 语义不变，dirty 同事务消费、ready 持续正确。不得为验收撤销无关现有数据，不新增模型请求，不全库重导入。验证实际下一次 writer 仍使用新包后才 enable。
 
 冻结至少 24 个实际主查询、至少 12 个不同棋手，包含王/柯/张涛/一力辽的实际记录、姓名 q、原 `player_id`、合法别名、同名授权、未归并 raw、五语和页2。每个姓名保留完整同名/raw/碰撞结果，不能以 ID 快分支代替自由 q。主到达分布固定 50% 唯一姓名、25% player_id、15% 别名/同名、10% 含 raw 结果的姓名；兼容赛事/日期/模糊/无条件页/无结果另列结果/耗时，不稀释主 SLO。缺实际类别时报告缺口，不用捏造 fixture 冒充生产语义。
 

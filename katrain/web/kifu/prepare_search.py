@@ -374,6 +374,7 @@ def _finite_members(db, kind, qualified):
 def _prepare_owners(conn, db, targets, budget):
     """One proof read per domain/owner batch, including rejected verified rows."""
     prepared_count = 0
+    player_authorizations = {}
     for kind, owner_ids in targets.items():
         if not owner_ids:
             continue
@@ -458,7 +459,7 @@ def _prepare_owners(conn, db, targets, budget):
                         else {"raw_type": "ineligible", "record_label": False, "linked_event_ids": []}
                     )
                 authorization = set()
-                if kind == "player" and approved:
+                if kind == "player" and approved and name.display_name not in player_authorizations:
                     # The SQL exact class remains distinct from normalize_alias. Most
                     # names have one owner and never need the finite-group proof.
                     query = identity._approved_names(db, name_model, owner_col).filter(
@@ -486,6 +487,11 @@ def _prepare_owners(conn, db, targets, budget):
                             db, rows, identity.normalize_alias(name.display_name)
                         )
                         del rows
+                    # Reuse only this call's literal SQL match class, including
+                    # empty authorization; every source row still gets its proof.
+                    player_authorizations[name.display_name] = authorization
+                if kind == "player" and approved:
+                    authorization = player_authorizations[name.display_name]
                 values.append(
                     {
                         "name_kind": kind,

@@ -252,6 +252,33 @@ def test_finite_raw_player_scope_and_rank_suffix_are_prepared_without_expansion(
         assert outputs[15, "en"]["player_white"] == "Lee Wonhyuk"
         assert outputs[13, "en"]["player_black"] == "Player name unverified"
         assert outputs[14, "en"]["player_black"] == "Player name unverified"
+        from sqlalchemy import event
+        from katrain.web.kifu import identity
+
+        with Session(bind=conn) as db:
+            qualified = identity._approved_raw_player_names(db, values={"李元赫九段"})
+            statements = []
+
+            def capture(_conn, _cursor, statement, _parameters, _context, _many):
+                statements.append(statement.lower())
+
+            event.listen(engine, "before_cursor_execute", capture)
+            try:
+                actual = module._finite_members(db, "raw_player", qualified)
+            finally:
+                event.remove(engine, "before_cursor_execute", capture)
+        source_ids = {row["id"]: row["source_name_id"] for row in names}
+        stored = {
+            (source_ids[row["prepared_name_id"]], row["album_id"], row["slot"]): {
+                key: value for key, value in row.items() if key != "prepared_name_id"
+            }
+            for row in members
+        }
+        measured = {
+            (name_id, row["album_id"], row["slot"]): row for name_id, values in actual.items() for row in values
+        }
+        assert measured == stored
+        assert statements and all("sgf_content" not in statement for statement in statements)
 
 
 def _shared_player_bundle(engine):
@@ -451,6 +478,26 @@ def test_late_source_association_updates_existing_album_output(engine, monkeypat
         module.prepare_changed(conn)
         assert _outputs(conn)[11, "en"]["strict_outputs"]["sources"] == ["19x19"]
         assert conn.execute(select(prepared.state.c.ready)).scalar_one()
+        rows = conn.execute(select(prepared.names).where(prepared.names.c.owner_id.isnot(None))).mappings().all()
+        source = conn.execute(select(KifuAlbumSource.__table__)).mappings().one()
+        with Session(bind=conn) as db:
+            inputs = module._album_display_dependencies(
+                db.get(KifuAlbum, 11),
+                rows,
+                selected_event=None,
+                selection=None,
+                source_inputs={("kifu_album_sources", str(source["id"])), ("kifu_sources", str(source_id))},
+                selection_inputs=set(),
+            )
+        stored = {
+            (row.input_kind, row.input_key)
+            for row in conn.execute(
+                select(prepared.dependencies).where(
+                    prepared.dependencies.c.target_kind == "display", prepared.dependencies.c.target_key == "11"
+                )
+            )
+        }
+        assert inputs == stored
 
 
 def test_name_writer_apply_replay_and_undo_maintain_prepared_while_disabled(engine, monkeypatch):
@@ -536,6 +583,18 @@ def test_selected_gn_apply_and_undo_reprepare_display_and_query_independent_memb
         assert member["semantic"]["raw_value"] == "Other"
         assert member["semantic"]["selected_search"]
         assert conn.execute(select(prepared.state.c.ready)).scalar_one()
+        rows = conn.execute(select(prepared.names).where(prepared.names.c.owner_id.isnot(None))).mappings().all()
+        with Session(bind=conn) as db:
+            album = db.get(KifuAlbum, 11)
+            selected_events = live_event_selections(db, [album], album_ids={11})
+            approvals = {}
+            for lang in set(prepared.NAME_LANGUAGES) | {name_lang}:
+                maps = module._display_maps([album], rows, [member], lang, {}, approvals=True)
+                approvals[lang] = {11: module._slot_approval(album, maps, set(), selected_events)}
+            measured = module._selected_event_members(
+                album, rows, [member], selected_event=selected_events[11], approvals_by_lang=approvals
+            )
+        assert measured == [dict(member)]
     undo_batch(engine, selected["batch_id"])
     with engine.connect() as conn:
         assert _outputs(conn)[11, "en"]["event"] == "Event name unverified"

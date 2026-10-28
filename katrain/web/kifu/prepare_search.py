@@ -14,13 +14,14 @@ import os
 import resource
 import sys
 from time import monotonic
+from types import SimpleNamespace
 
 from sqlalchemy import String, and_, cast, delete, func, literal, or_, select
 from sqlalchemy.orm import Session
 
 from katrain.web.core import models_db as business
 from katrain.web.kifu import identity, prepared_models as m
-from katrain.web.kifu.name_raw_player_scope import PreparedRawPlayerScope, raw_player_scope_slot
+from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS, PreparedRawPlayerScope, raw_player_scope_slot
 from katrain.web.kifu.prepared_read import current_policy_signature, read_state
 
 
@@ -276,7 +277,14 @@ def _finite_album_ids(proof):
 def _finite_members(db, kind, qualified):
     finite = [(name, raw, proof) for name, raw, proof in qualified if proof is not None]
     ids = set().union(*(_finite_album_ids(proof) for _name, _raw, proof in finite)) if finite else set()
-    albums = _rows(db, business.KifuAlbum, ids)
+    fields = tuple(dict.fromkeys(("id", *CONTEXT_FIELDS, "list_hidden_reason", "source_path", "event_edition_id")))
+    albums = [
+        SimpleNamespace(**row)
+        for chunk in _chunks(ids)
+        for row in db.execute(
+            select(*(getattr(business.KifuAlbum, field) for field in fields)).where(business.KifuAlbum.id.in_(chunk))
+        ).mappings()
+    ]
     physical_selected = {
         album_id
         for chunk in _chunks(ids)
@@ -752,6 +760,95 @@ def _selection_inputs(conn, album_ids):
     return inputs
 
 
+def _album_display_dependencies(album, rows, *, selected_event, selection, source_inputs, selection_inputs):
+    """Build exactly the input set shared by all name-language displays of one album."""
+    inputs = {
+        (business.KifuAlbum.__tablename__, str(album.id)),
+        ("album_sources", str(album.id)),
+        (business.KifuAlbumEventSelection.__tablename__, str(album.id)),
+    } | source_inputs
+    album_owners = {
+        "player": {value for value in (album.black_player_id, album.white_player_id) if value},
+        "event": {value for value in (album.event_id, (selected_event or (None, None))[1]) if value},
+        "raw_player": {
+            row["owner_id"]
+            for row in rows
+            if row["name_kind"] == "raw_player"
+            and row["semantic"].get("raw_value") in {album.player_black, album.player_white}
+        },
+        "raw_event": {
+            row["owner_id"]
+            for row in rows
+            if row["name_kind"] == "raw_event"
+            and row["semantic"].get("raw_value") in {album.event, (selected_event or (None, None))[0]}
+        },
+    }
+    for kind, ids in album_owners.items():
+        inputs.update(("owner", _key(kind, owner_id)) for owner_id in ids)
+    # Raw scope watches belong to the name/selection proof that actually
+    # reads a cohort. A new canonical game with the same literal must not
+    # dirty every other display which merely falls back to that literal.
+    for row in rows:
+        if row["source_name_id"] is not None and row["owner_id"] in album_owners.get(row["name_kind"], ()):
+            inputs.add((_SPECS[row["name_kind"]][1].__tablename__, str(row["source_name_id"])))
+    if selection is not None:
+        inputs.add((business.KifuEventSelectionBatch.__tablename__, str(selection["batch_id"])))
+        inputs |= selection_inputs
+    return inputs
+
+
+def _selected_event_members(album, rows, member_rows, *, selected_event, approvals_by_lang):
+    """Build this album's final selected-event rows without changing their approval rules."""
+    selected_members = []
+    if selected_event is None or album.duplicate_of_id is not None or album.event != "GNUGo3.8":
+        return []
+    raw, event_id = selected_event
+    structured = (
+        bool(identity.structure_event(raw)["components"])
+        or identity.parse_event(raw, None).category == "formal_event_candidate"
+    )
+    identity_allowed = not structured or any(values[album.id][2] is not None for values in approvals_by_lang.values())
+    for row in rows:
+        if not row["eligible"] or row["match_class"] != "approved_exact":
+            continue
+        semantic = row["semantic"]
+        if row["name_kind"] == "event" and row["owner_id"] == event_id:
+            selected_members.append(
+                {
+                    "prepared_name_id": row["id"],
+                    "album_id": album.id,
+                    "slot": "selected_event",
+                    "event_id": event_id,
+                    "selection_id": album.id,
+                    "semantic": {"identity_search": identity_allowed, "raw_value": raw, "display": False},
+                }
+            )
+        elif row["name_kind"] == "raw_event" and semantic.get("raw_value") == raw:
+            approved = approvals_by_lang.get(row["lang"], {}).get(album.id, (None, None, None))[2]
+            allowed = semantic.get("decision_kind") != "translated" and approved == (
+                semantic.get("decision_kind"),
+                semantic.get("evidence_id"),
+            )
+            display = any(
+                member["prepared_name_id"] == row["id"]
+                and member["album_id"] == album.id
+                and member["slot"] == "selected_event"
+                and member["semantic"].get("display")
+                for member in member_rows
+            )
+            selected_members.append(
+                {
+                    "prepared_name_id": row["id"],
+                    "album_id": album.id,
+                    "slot": "selected_event",
+                    "event_id": event_id,
+                    "selection_id": album.id,
+                    "semantic": {"selected_search": allowed, "raw_value": raw, "display": display},
+                }
+            )
+    return selected_members
+
+
 def _prepare_displays(conn, db, album_ids, budget, *, refresh_invalid_names=False):
     budget.check(album_ids)
     albums = _rows(db, business.KifuAlbum, album_ids)
@@ -881,93 +978,25 @@ def _prepare_displays(conn, db, album_ids, budget, *, refresh_invalid_names=Fals
         approvals_by_lang[lang] = {album.id: _slot_approval(album, maps, obscured, selected) for album in albums}
     selection_inputs = _selection_inputs(conn, set(selections)) if selections else set()
     for album in albums:
-        inputs = {
-            (business.KifuAlbum.__tablename__, str(album.id)),
-            ("album_sources", str(album.id)),
-            (business.KifuAlbumEventSelection.__tablename__, str(album.id)),
-        } | source_inputs[album.id]
-        album_owners = {
-            "player": {value for value in (album.black_player_id, album.white_player_id) if value},
-            "event": {value for value in (album.event_id, selected.get(album.id, (None, None))[1]) if value},
-            "raw_player": {
-                row["owner_id"]
-                for row in rows
-                if row["name_kind"] == "raw_player"
-                and row["semantic"].get("raw_value") in {album.player_black, album.player_white}
-            },
-            "raw_event": {
-                row["owner_id"]
-                for row in rows
-                if row["name_kind"] == "raw_event"
-                and row["semantic"].get("raw_value") in {album.event, selected.get(album.id, (None, None))[0]}
-            },
-        }
-        for kind, ids in album_owners.items():
-            inputs.update(("owner", _key(kind, owner_id)) for owner_id in ids)
-        # Raw scope watches belong to the name/selection proof that actually
-        # reads a cohort. A new canonical game with the same literal must not
-        # dirty every other display which merely falls back to that literal.
-        for row in rows:
-            if row["source_name_id"] is not None and row["owner_id"] in album_owners.get(row["name_kind"], ()):
-                inputs.add((_SPECS[row["name_kind"]][1].__tablename__, str(row["source_name_id"])))
-        if album.id in selections:
-            inputs.add((business.KifuEventSelectionBatch.__tablename__, str(selections[album.id]["batch_id"])))
-            inputs |= selection_inputs
-        dependency_values[album.id] = inputs
+        dependency_values[album.id] = _album_display_dependencies(
+            album,
+            rows,
+            selected_event=selected.get(album.id),
+            selection=selections.get(album.id),
+            source_inputs=source_inputs[album.id],
+            selection_inputs=selection_inputs,
+        )
     _dependencies(conn, "display", dependency_values)
     # Selected search approval is independent of the later query substring. A
     # physical but rejected selection is deliberately retained in business SQL.
     selected_members = []
     conn.execute(delete(m.members).where(m.members.c.album_id.in_(existing_ids), m.members.c.slot == "selected_event"))
     for album in albums:
-        if album.id not in selected or album.duplicate_of_id is not None or album.event != "GNUGo3.8":
-            continue
-        raw, event_id = selected[album.id]
-        structured = (
-            bool(identity.structure_event(raw)["components"])
-            or identity.parse_event(raw, None).category == "formal_event_candidate"
+        selected_members.extend(
+            _selected_event_members(
+                album, rows, member_rows, selected_event=selected.get(album.id), approvals_by_lang=approvals_by_lang
+            )
         )
-        identity_allowed = not structured or any(
-            values[album.id][2] is not None for values in approvals_by_lang.values()
-        )
-        for row in rows:
-            if not row["eligible"] or row["match_class"] != "approved_exact":
-                continue
-            semantic = row["semantic"]
-            if row["name_kind"] == "event" and row["owner_id"] == event_id:
-                selected_members.append(
-                    {
-                        "prepared_name_id": row["id"],
-                        "album_id": album.id,
-                        "slot": "selected_event",
-                        "event_id": event_id,
-                        "selection_id": album.id,
-                        "semantic": {"identity_search": identity_allowed, "raw_value": raw, "display": False},
-                    }
-                )
-            elif row["name_kind"] == "raw_event" and semantic.get("raw_value") == raw:
-                approved = approvals_by_lang.get(row["lang"], {}).get(album.id, (None, None, None))[2]
-                allowed = semantic.get("decision_kind") != "translated" and approved == (
-                    semantic.get("decision_kind"),
-                    semantic.get("evidence_id"),
-                )
-                display = any(
-                    member["prepared_name_id"] == row["id"]
-                    and member["album_id"] == album.id
-                    and member["slot"] == "selected_event"
-                    and member["semantic"].get("display")
-                    for member in member_rows
-                )
-                selected_members.append(
-                    {
-                        "prepared_name_id": row["id"],
-                        "album_id": album.id,
-                        "slot": "selected_event",
-                        "event_id": event_id,
-                        "selection_id": album.id,
-                        "semantic": {"selected_search": allowed, "raw_value": raw, "display": display},
-                    }
-                )
     _upsert(conn, m.members, selected_members, ("prepared_name_id", "album_id", "slot"))
     budget.check(album_ids)
     return len(albums)

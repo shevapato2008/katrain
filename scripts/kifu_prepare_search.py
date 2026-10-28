@@ -148,7 +148,7 @@ def _global_proof_metadata(conn, checkpoint):
     result = {}
     with Session(bind=conn) as db:
         for kind, (owner, model, owner_column, alias) in SPECS.items():
-            checkpoint()
+            checkpoint("metadata:" + kind)
             name_owners = dict(db.query(model.id, getattr(model, owner_column)))
             owner_ids = {row_id for row_id, in db.query(owner.id)} | set(name_owners.values())
             if alias is not None:
@@ -162,11 +162,22 @@ def _global_proof_metadata(conn, checkpoint):
                 "largest_group": 0,
                 "named_owners": len(set(name_owners.values())),
             }
+            checkpoint(
+                completed={
+                    "metadata:" + kind + ":names": value["names"],
+                    "metadata:" + kind + ":owner_pages": value["owner_pages"],
+                }
+            )
             for group in identity.iter_name_proof_groups(db, model, name_owners):
                 value["groups"] += 1
                 value["group_page_calls"] += len({owner_pages[name_owners[row_id]] for row_id in group})
                 value["largest_group"] = max(value["largest_group"], len(group))
-                checkpoint()
+                checkpoint(
+                    completed={
+                        "metadata:" + kind + ":groups": value["groups"],
+                        "metadata:" + kind + ":group_page_calls": value["group_page_calls"],
+                    }
+                )
             result[kind] = value
             del name_owners, owner_ids, owner_pages
             db.expunge_all()
@@ -402,7 +413,7 @@ def _sample_proof(conn, albums, checkpoint):
     proof_started = monotonic()
     with Session(bind=conn) as db:
         for kind, (owner_model, model, owner_column, _alias) in SPECS.items():
-            checkpoint()
+            checkpoint("proof:" + kind)
             kind_started = monotonic()
             timing = {"groups": 0, "proof_seconds": 0, "member_seconds": 0, "dependency_seconds": 0}
             dependency_counts[kind] = 0
@@ -424,11 +435,12 @@ def _sample_proof(conn, albums, checkpoint):
             )
             physical_by_kind[kind] = len(names)
             physical += len(names)
+            checkpoint(completed={"physical_names:" + kind: len(names)}, check=False)
             name_widths.extend(_json_bytes(conn, list(row[1:])) for row in names)
             # Group complete proof batches using scalar IDs before loading payloads.
             # Count each original full proof, then release it before the next group.
             for group in identity.iter_name_proof_groups(db, model, {row.id for row in names}):
-                checkpoint()
+                checkpoint("proof:" + kind)
                 timing["groups"] += 1
                 started = monotonic()
                 if kind == "raw_player":
@@ -445,6 +457,11 @@ def _sample_proof(conn, albums, checkpoint):
                 try:
                     timing["proof_seconds"] += monotonic() - started
                     qualified += len(rows)
+                    checkpoint(
+                        completed={"proof:" + kind + ":groups": timing["groups"], "qualified_names_total": qualified},
+                        check=False,
+                    )
+                    checkpoint("name_dependencies:" + kind, check=False)
                     eligible = {row[0].id: row for row in rows}
                     source_rows = db.query(model).filter(model.id.in_(group)).all()
                     evidence_ids = {name.evidence_id for name in source_rows if name.evidence_id}
@@ -555,6 +572,9 @@ def _sample_proof(conn, albums, checkpoint):
                     timing["dependency_seconds"] += monotonic() - started
                     started = monotonic()
                     if kind.startswith("raw_"):
+                        checkpoint(
+                            "live_member:" + kind, {"name_dependencies:" + kind: dependency_counts[kind]}, check=False
+                        )
                         members = core._finite_members(db, kind, rows)
                         for name_id, values in members.items():
                             proxy = proxy_ids[kind, name_id]
@@ -576,7 +596,13 @@ def _sample_proof(conn, albums, checkpoint):
                         del eligible, source_rows, evidence_rows, creation_changes, batch_cache
                     db.expire_all()
                     db.expunge_all()
-                checkpoint()
+                checkpoint(
+                    completed={
+                        "name_dependencies:" + kind: dependency_counts[kind],
+                        "member_rows_full_scope": len(full_member_keys),
+                        "member_rows_sample": len(sample_members),
+                    }
+                )
             timing["owners"] = len(ids)
             timing["metadata_seconds"] = max(
                 0,
@@ -636,7 +662,7 @@ def _sample_displays(conn, db, sample_ids, names, members, widths, checkpoint):
 
     dependency_count = 0
     for chunk in core._chunks(sorted(sample_ids), 500):
-        checkpoint()
+        checkpoint("display")
         albums = (
             db.query(business.KifuAlbum)
             .options(
@@ -762,21 +788,35 @@ def _sample_displays(conn, db, sample_ids, names, members, widths, checkpoint):
             ):
                 members[row["prepared_name_id"], row["album_id"], row["slot"]] = row
         db.expunge_all()
-        checkpoint()
+        checkpoint(
+            completed={
+                "display_rows": widths.get("displays", {}).get("rows", 0),
+                "display_dependency_rows": dependency_count,
+            }
+        )
     return dependency_count
 
 
 def plan(engine, args):
     started, rss_before = monotonic(), _rss_bytes()
+    progress = {"phase": "initial_counts", "completed": {}}
     with engine.connect() as conn:
         transaction = conn.begin()
         if conn.dialect.name == "postgresql":
             conn.exec_driver_sql("SET TRANSACTION READ ONLY")
 
-        def checkpoint():
-            _timeout(conn, _remaining(started, args.max_seconds))
+        def checkpoint(phase=None, completed=None, *, check=True):
+            if completed:
+                progress["completed"].update({key: value for key, value in completed.items() if type(value) is int})
+            remaining = args.max_seconds - (monotonic() - started)
+            if remaining <= 0:
+                raise PreparationError("plan sampling time budget exceeded")
             if _rss_bytes() > 512 * MIB:
                 raise PreparationError("plan memory budget exceeded")
+            if phase is not None:
+                progress["phase"] = phase
+            if check:
+                _timeout(conn, remaining)
 
         try:
             checkpoint()
@@ -793,14 +833,19 @@ def plan(engine, args):
                     .where(album.c.duplicate_of_id.is_(None), album.c.list_hidden_reason.is_(None))
                 ),
             }
+            checkpoint(completed=counts, check=False)
             owner_counts, name_counts, alias_counts, languages = {}, {}, {}, {}
             for kind, (owner, model, _column, alias) in SPECS.items():
-                checkpoint()
+                checkpoint("counts:" + kind)
                 owner_counts[kind] = conn.scalar(select(func.count()).select_from(owner))
                 grouped = conn.execute(select(model.lang, func.count()).group_by(model.lang)).all()
                 languages[kind] = {lang: count for lang, count in grouped}
                 name_counts[kind] = sum(count for _lang, count in grouped)
                 alias_counts[kind] = conn.scalar(select(func.count()).select_from(alias)) if alias else 0
+                checkpoint(
+                    completed={"source_names:" + kind: name_counts[kind], "owners:" + kind: owner_counts[kind]},
+                    check=False,
+                )
             counts.update(owners=owner_counts, names=name_counts, aliases=alias_counts, languages=languages)
             checkpoint()
             columns = ("id", "black_player_id", "white_player_id", "event_id", "player_black", "player_white", "event")
@@ -872,6 +917,28 @@ def plan(engine, args):
                 "elapsed_seconds": monotonic() - started,
                 "policy_signature": current_policy_signature(),
                 "estimate_basis": "Live member PK density within sampled albums; per-source-name and per-album dependency sets; complete proof-group counts; actual Connection JSON serializer; isolated PG storage/write calibration; unsampled density remains an estimate",
+            }
+        except (PreparationError, SQLAlchemyError, ValueError) as exc:
+            reason = (
+                str(exc)
+                if isinstance(exc, PreparationError)
+                and str(exc) in {"plan sampling time budget exceeded", "plan memory budget exceeded"}
+                else (
+                    _error_reason(exc)
+                    if isinstance(exc, SQLAlchemyError)
+                    else "plan stopped (" + type(exc).__name__ + ")"
+                )
+            )
+            return {
+                "ok": False,
+                "ready": False,
+                "read_only": True,
+                "reason": reason,
+                "phase": progress["phase"],
+                "completed": progress["completed"],
+                "elapsed_seconds": monotonic() - started,
+                "peak_rss_bytes": _rss_bytes(),
+                "sampling_seconds_limit": args.max_seconds,
             }
         finally:
             transaction.rollback()

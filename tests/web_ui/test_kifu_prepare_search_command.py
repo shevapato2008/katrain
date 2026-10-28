@@ -211,6 +211,28 @@ def test_plan_accepts_explicit_120_second_sampling_window(engine, capsys):
     assert result["limits"] == {"seconds": 1800, "relation_bytes": 2 * 1024**3, "rss_bytes": 512 * 1024**2}
 
 
+def test_plan_timeout_preserves_phase_peak_and_completed_numeric_counts(engine, capsys, monkeypatch):
+    now = [0.0]
+
+    def metadata(conn, checkpoint):
+        checkpoint("metadata:raw_event", {"metadata:player:groups": 7, "metadata:raw_event:names": 123})
+        now[0] = 121
+        checkpoint()
+
+    monkeypatch.setattr(command, "monotonic", lambda: now[0])
+    monkeypatch.setattr(command, "_rss_bytes", lambda: 128 * command.MIB)
+    monkeypatch.setattr(command, "_global_proof_metadata", metadata)
+    code, result = invoke(engine, capsys, "plan", "--max-seconds", "120")
+    assert code == 1 and not result["ok"] and result["read_only"]
+    assert result["phase"] == "metadata:raw_event"
+    assert result["elapsed_seconds"] == 121
+    assert result["peak_rss_bytes"] == 128 * command.MIB
+    assert result["completed"]["metadata:player:groups"] == 7
+    assert result["completed"]["metadata:raw_event:names"] == 123
+    assert all(type(value) is int for value in result["completed"].values())
+    assert "sqlite" not in json.dumps(result) and "time budget" in result["reason"]
+
+
 def test_plan_member_projection_uses_sample_live_slots_not_full_scope():
     kinds = tuple(command.SPECS)
     counts = {
@@ -362,7 +384,7 @@ def test_display_measurement_replaces_selected_rows_even_when_search_flags_false
     monkeypatch.setattr(core, "_selected_event_members", selected)
     widths = {}
     with engine.connect() as conn, Session(bind=conn) as db:
-        command._sample_displays(conn, db, {11}, [], members, widths, lambda: None)
+        command._sample_displays(conn, db, {11}, [], members, widths, lambda *args, **kwargs: None)
     assert called == [11] and members == {key: replacement}
     assert widths["displays"]["rows"] == 5
 

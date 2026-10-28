@@ -1,6 +1,6 @@
 # 棋谱 prepared search 发布与回滚
 
-本文件是操作候选 runbook，不是执行记录。尚未据此执行远端迁移、准备、enable 或压测，不能据本地测试宣称线上 ready/性能达标。最终记录补在文末，原始 inspect、环境、数据库 URL、SSH key 和完整响应保存在私有证据目录，不进入 Git。
+本文件包含操作 runbook 和文末的实际执行记录。迁移、换包、准备和性能验收分别记录，不能据本地测试或换包成功宣称线上 ready/性能达标。原始 inspect、环境、数据库 URL、SSH key 和完整响应保存在私有证据目录，不进入 Git。
 
 已批准的范围及语义见 [实施计划](../../superpowers/plans/2026-10-27-kifu-search-prepared-read-path.md)。本轮保留现有受信 DB owner/运维边界和业务 engine；不声称能防止持有 superuser/table-owner 身份的运维伪造派生行或关闭守卫。发现实际存在不应受信的调用方时，停止 enable 并报告具体权限事实。
 
@@ -126,16 +126,16 @@ python -c 'from katrain.web.kifu.prepared_read import current_policy_signature; 
 
 最终在 writer 锁下全覆盖/guard/dirty/policy 校验并原子 enable。PROD 仅做少量代表性正确性、读延迟、真实页面/正确棋盘复验，不重跑 100 QPS 压测。任一失败先 disable，明确恢复原完整 proof/慢延迟；再在相同自然空闲边界回退 collector/receiver pin 和 Web。绝不可先退旧 writer 而留下 enabled prepared reader。保留六表、守卫、checkpoint 和准备/负载证据，不急卸迁移、不修改审批事实或旧 receipts。若 Web 切换本身失败，结合 operator receipt 的真实旧/新 full ID 做受控恢复，不盲重跑 apply。
 
-## 实际交付记录（待执行填写）
+## 实际交付记录（持续更新，尚未完成）
 
 | 证据 | 实际结果 |
 | --- | --- |
-| feature / develop / 父 main 发布 SHA | 未执行 |
-| TEST/PROD Web、TEST 唯一 cron、PROD receiver 实际 package/image/container/pin | 未执行 |
-| 四入口实际 policy signature、strict、schema/guard/角色事实 | 未执行 |
-| plan 诊断、实际 RSS/耗时/六表 bytes、phase/cursor、覆盖/dirty | 原 30/120 秒诊断失败；完整 proof 诊断 51.149s / 399.95MiB。真实有界准备尚未执行，未安装业务库六表 |
-| cron 原控制行/CAS 恢复、自然 drain/原锁、旧新实例证据 | 未执行 |
+| feature / develop / 父 main 发布 SHA | 首次集成：`782348c2eb1560b84f79dfe186569783aa0afa67` / `2129acd4e67a7b98d72236a56be3352a0977602b` / `d07defd6049d0de421dead9136a28f330c10682c`。后续局部修复尚未发布 |
+| TEST/PROD Web、TEST 唯一 cron、PROD receiver 实际 package/image/container/pin | TEST Web code `2129acd4`、image `d17ed5ad041f`、container `361c6fa9d76c`；TEST cron code `2129acd4`、补齐原 Git runtime assets 的 image `ca2965ae00a7`、container `f689e6831350`。PROD 未变更 |
+| 四入口实际 policy signature、strict、schema/guard/角色事实 | TEST Web/新 cron/准备 CLI 实际 signature 均 `33f11ccbefd8290c1b27719afa338cc17ae64210f694c5ee655c48a721266b9b`，strict=false。显式迁移及 verify-schema 通过；保留原受信 DB owner。PROD receiver 尚未换版 |
+| plan 诊断、实际 RSS/耗时/六表 bytes、phase/cursor、覆盖/dirty | 原 30/120 秒诊断失败。实际 batch500：78.564s CLI / 385.85MiB；batch100：30.507s CLI / 366.41MiB，均首批合作式时间检查失败、0 批 commit。一次 exact 首100 cProfile 事务最终 rollback，额外计入32.841s；三次累计145.940s，1800s剩1654.060s，不因后续修复重置。六关系含索引实际172032B，durable phase=unprepared/cursor=NULL，enabled/ready/coverage=false；各自 backend 已释放 |
+| cron 原控制行/CAS 恢复、自然 drain/原锁、旧新实例证据 | 最终 v3 cutover-verified：旧实例自然 exit0，唯一新实例/完整配置/两个同process新鲜 heartbeat通过，8个interval controls精确恢复、helper exit0、pending0、new_bad_runs=[]。中间缺asset启动失败已补齐并真实重验，未关闭exclusions |
 | 实际发布/replay/undo 与新旧完整 JSON 对照 | 未执行 |
 | 1 QPS/100 QPS 完整响应、到达率、各类分位、错误/语义差异、资源 | 未执行 |
 | TEST/PROD 实际 Galaxy/kiosk 正确棋盘与公网复验 | 未执行 |
-| 回滚开关与残留阻塞 | prepared 尚未启用；无本 runbook 远端执行 |
+| 回滚开关与残留阻塞 | TEST prepared 尚未启用，原读取继续；PROD 未变更。首names阶段同名授权重复成本待局部修复：首100中 `_finite_shared_player_ids` 122次/12.227s、`_qualified_name_rows`286次/7.114s、exact/lower owner查询409次/5.936s。尚无覆盖、语义或 API SLO 通过声明 |

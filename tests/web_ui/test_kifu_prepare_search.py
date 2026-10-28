@@ -46,6 +46,49 @@ def _prepare_module():
     return importlib.import_module("katrain.web.kifu.prepare_search")
 
 
+def test_preparer_uses_uncached_proof_groups_and_scalar_batch_dependencies(engine, monkeypatch):
+    module = _prepare_module()
+    from katrain.web.kifu import identity
+    from sqlalchemy import event
+
+    inventory, bundle, research = bound_player_bundle(engine)
+    applied = apply_bundle(engine, bundle, registry(), inventory, research)
+    original = identity._qualified_name_rows
+    contexts = []
+
+    def prove(*args, **kwargs):
+        context = kwargs.get("orthographic_batch_contexts")
+        assert context is None, "offline preparation must not retain full snapshot contexts"
+        contexts.append(context)
+        return original(*args, **kwargs)
+
+    _install(engine)
+    monkeypatch.setattr(identity, "_qualified_name_rows", prove)
+    with engine.begin() as conn:
+        module.prepare_all(conn)
+    assert contexts
+    with Session(engine) as db:
+        name = db.query(KifuPlayerName).one()
+        evidence = db.get(KifuNameResearchEvidence, name.evidence_id)
+        statements = []
+
+        def capture(_conn, _cursor, statement, _parameters, _context, _many):
+            statements.append(statement.lower())
+
+        event.listen(engine, "before_cursor_execute", capture)
+        try:
+            inputs = module._proof_inputs(db, "player", name, evidence, {}, {})
+        finally:
+            event.remove(engine, "before_cursor_execute", capture)
+        assert ("kifu_name_batches", str(applied["batch_id"])) in inputs
+        batch_reads = [statement for statement in statements if "from kifu_name_batches" in statement]
+        assert batch_reads and all("reviewed_artifact" not in statement for statement in batch_reads)
+        change_reads = [statement for statement in statements if "from kifu_name_changes" in statement]
+        assert change_reads and all(
+            "after_image" not in statement and "before_image" not in statement for statement in change_reads
+        )
+
+
 def _install(engine):
     from katrain.web.kifu.prepared_migration import apply_migration
 
@@ -182,6 +225,78 @@ def test_prepare_reads_uncommitted_changes_and_rollback_restores_both(engine, mo
         assert not conn.execute(select(prepared.dirty)).first()
 
 
+def test_initial_names_terminal_budget_failure_rolls_back_rows_and_cursor(engine, monkeypatch):
+    module = _prepare_module()
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    with Session(engine) as db:
+        evidence = _evidence(db, "player", 17, "en", "Go Seigen")
+        db.add(
+            KifuPlayerName(
+                player_id=17,
+                lang="en",
+                display_name="Go Seigen",
+                status="verified",
+                decision_kind="conventional",
+                generation_rule_version="test-v1",
+                revision=1,
+                evidence_id=evidence.id,
+            )
+        )
+        db.commit()
+    _install(engine)
+    with engine.connect() as conn:
+        before = dict(conn.execute(select(prepared.state)).mappings().one())
+    check = module._Budget.check
+
+    def reject_final_write(limit, albums=()):
+        check(limit, albums)
+        cursor = limit.conn.scalar(select(prepared.state.c.cursor))
+        if cursor == {"kind": 1, "owner": 0}:
+            assert limit.conn.execute(select(prepared.names.c.id)).first()
+            assert limit.conn.execute(select(prepared.dependencies)).first()
+            raise module.PreparationError("final names size budget exceeded")
+
+    monkeypatch.setattr(module._Budget, "check", reject_final_write)
+    with pytest.raises(module.PreparationError, match="final names size budget exceeded"):
+        with engine.begin() as conn:
+            module.prepare_initial_batch(conn)
+    with engine.connect() as conn:
+        assert dict(conn.execute(select(prepared.state)).mappings().one()) == before
+        assert not conn.execute(select(prepared.names)).first()
+        assert not conn.execute(select(prepared.dependencies)).first()
+
+
+def test_incremental_terminal_budget_failure_rolls_back_ready_and_data(engine, monkeypatch):
+    module = _prepare_module()
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "0")
+    _install(engine)
+    with engine.begin() as conn:
+        module.prepare_all(conn)
+        before_state = dict(conn.execute(select(prepared.state)).mappings().one())
+        before_outputs = _outputs(conn)
+    check = module._Budget.check
+
+    def reject_final_write(limit, albums=()):
+        check(limit, albums)
+        if (
+            limit.conn.scalar(select(prepared.state.c.ready))
+            and not limit.conn.execute(select(prepared.dirty).limit(1)).first()
+        ):
+            assert _outputs(limit.conn)[11, "en"]["player_white"] == "Budget mutation"
+            raise module.PreparationError("final incremental size budget exceeded")
+
+    monkeypatch.setattr(module._Budget, "check", reject_final_write)
+    with pytest.raises(module.PreparationError, match="final incremental size budget exceeded"):
+        with engine.begin() as conn:
+            conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(player_white="Budget mutation"))
+            module.prepare_changed(conn)
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.player_white).where(KifuAlbum.id == 11)) == "Unknown"
+        assert _outputs(conn) == before_outputs
+        assert dict(conn.execute(select(prepared.state)).mappings().one()) == before_state
+        assert not conn.execute(select(prepared.dirty)).first()
+
+
 def test_finite_raw_player_scope_and_rank_suffix_are_prepared_without_expansion(engine, monkeypatch):
     module = _prepare_module()
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
@@ -209,6 +324,33 @@ def test_finite_raw_player_scope_and_rank_suffix_are_prepared_without_expansion(
         assert outputs[15, "en"]["player_white"] == "Lee Wonhyuk"
         assert outputs[13, "en"]["player_black"] == "Player name unverified"
         assert outputs[14, "en"]["player_black"] == "Player name unverified"
+        from sqlalchemy import event
+        from katrain.web.kifu import identity
+
+        with Session(bind=conn) as db:
+            qualified = identity._approved_raw_player_names(db, values={"李元赫九段"})
+            statements = []
+
+            def capture(_conn, _cursor, statement, _parameters, _context, _many):
+                statements.append(statement.lower())
+
+            event.listen(engine, "before_cursor_execute", capture)
+            try:
+                actual = module._finite_members(db, "raw_player", qualified)
+            finally:
+                event.remove(engine, "before_cursor_execute", capture)
+        source_ids = {row["id"]: row["source_name_id"] for row in names}
+        stored = {
+            (source_ids[row["prepared_name_id"]], row["album_id"], row["slot"]): {
+                key: value for key, value in row.items() if key != "prepared_name_id"
+            }
+            for row in members
+        }
+        measured = {
+            (name_id, row["album_id"], row["slot"]): row for name_id, values in actual.items() for row in values
+        }
+        assert measured == stored
+        assert statements and all("sgf_content" not in statement for statement in statements)
 
 
 def _shared_player_bundle(engine):
@@ -408,6 +550,26 @@ def test_late_source_association_updates_existing_album_output(engine, monkeypat
         module.prepare_changed(conn)
         assert _outputs(conn)[11, "en"]["strict_outputs"]["sources"] == ["19x19"]
         assert conn.execute(select(prepared.state.c.ready)).scalar_one()
+        rows = conn.execute(select(prepared.names).where(prepared.names.c.owner_id.isnot(None))).mappings().all()
+        source = conn.execute(select(KifuAlbumSource.__table__)).mappings().one()
+        with Session(bind=conn) as db:
+            inputs = module._album_display_dependencies(
+                db.get(KifuAlbum, 11),
+                rows,
+                selected_event=None,
+                selection=None,
+                source_inputs={("kifu_album_sources", str(source["id"])), ("kifu_sources", str(source_id))},
+                selection_inputs=set(),
+            )
+        stored = {
+            (row.input_kind, row.input_key)
+            for row in conn.execute(
+                select(prepared.dependencies).where(
+                    prepared.dependencies.c.target_kind == "display", prepared.dependencies.c.target_key == "11"
+                )
+            )
+        }
+        assert inputs == stored
 
 
 def test_name_writer_apply_replay_and_undo_maintain_prepared_while_disabled(engine, monkeypatch):
@@ -493,6 +655,18 @@ def test_selected_gn_apply_and_undo_reprepare_display_and_query_independent_memb
         assert member["semantic"]["raw_value"] == "Other"
         assert member["semantic"]["selected_search"]
         assert conn.execute(select(prepared.state.c.ready)).scalar_one()
+        rows = conn.execute(select(prepared.names).where(prepared.names.c.owner_id.isnot(None))).mappings().all()
+        with Session(bind=conn) as db:
+            album = db.get(KifuAlbum, 11)
+            selected_events = live_event_selections(db, [album], album_ids={11})
+            approvals = {}
+            for lang in set(prepared.NAME_LANGUAGES) | {name_lang}:
+                maps = module._display_maps([album], rows, [member], lang, {}, approvals=True)
+                approvals[lang] = {11: module._slot_approval(album, maps, set(), selected_events)}
+            measured = module._selected_event_members(
+                album, rows, [member], selected_event=selected_events[11], approvals_by_lang=approvals
+            )
+        assert measured == [dict(member)]
     undo_batch(engine, selected["batch_id"])
     with engine.connect() as conn:
         assert _outputs(conn)[11, "en"]["event"] == "Event name unverified"

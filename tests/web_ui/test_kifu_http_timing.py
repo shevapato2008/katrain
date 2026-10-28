@@ -219,10 +219,14 @@ async def test_total_includes_worker_queue_and_pydantic_json_delay_while_queue_l
 
 @pytest.mark.asyncio
 async def test_server_installs_timing_around_kifu_validation_response_without_timing_other_routes(caplog):
+    from katrain.web.core.db import engine
+    from katrain.web.core.kifu_http_timing import KifuHTTPTimingMiddleware
     from katrain.web.server import create_app
 
     caplog.set_level(logging.INFO, logger=LOGGER)
     app = create_app(enable_engine=False)
+    timing = next(middleware for middleware in app.user_middleware if middleware.cls is KifuHTTPTimingMiddleware)
+    assert timing.kwargs["pool"] is engine.pool
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         result = await client.get("/api/v1/kifu/albums?player_id=0", headers={"x-kifu-request-id": REQUEST_ID})
         other = await client.get("/unrelated")
@@ -232,3 +236,80 @@ async def test_server_installs_timing_around_kifu_validation_response_without_ti
     (metric,) = _metrics(caplog)
     assert metric["status"] == 422
     assert metric["bytes"] == len(result.content)
+
+
+@pytest.mark.asyncio
+async def test_injected_pool_is_observed_at_scope_and_after_final_send_but_never_on_other_routes(caplog):
+    from katrain.web.core.kifu_http_timing import KifuHTTPTimingMiddleware
+
+    caplog.set_level(logging.INFO, logger=LOGGER)
+    calls = []
+
+    class FakePool:
+        values = {"size": 20, "checkedout": 1, "overflow": -19}
+
+        def size(self):
+            calls.append("size")
+            return self.values["size"]
+
+        def checkedout(self):
+            calls.append("checkedout")
+            return self.values["checkedout"]
+
+        def overflow(self):
+            calls.append("overflow")
+            return self.values["overflow"]
+
+    pool = FakePool()
+    sent = []
+
+    async def send(message):
+        sent.append(message)
+        if message["type"] == "http.response.body" and not message.get("more_body", False):
+            # Only the observation after this awaited send may see these values.
+            pool.values = {"size": 20, "checkedout": 4, "overflow": -16}
+
+    async def app(scope, receive, send):
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"first", "more_body": True})
+        await send({"type": "http.response.body", "body": b"last"})
+
+    middleware = KifuHTTPTimingMiddleware(app, pool=pool)
+    await middleware(_scope(), _receive, send)
+    (metric,) = _metrics(caplog)
+    assert metric["db_pool_at_scope_entry"] == {"size": 20, "checkedout": 1, "overflow": -19}
+    assert metric["db_pool_after_final_body"] == {"size": 20, "checkedout": 4, "overflow": -16}
+    assert calls == ["size", "checkedout", "overflow"] * 2
+    assert metric["bytes"] == len(b"firstlast")
+    caplog.clear()
+    await middleware(_scope(path="/health"), _receive, send)
+    assert calls == ["size", "checkedout", "overflow"] * 2
+    assert _metrics(caplog) == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("unknown", [False, True])
+async def test_unknown_or_failing_pool_observation_does_not_affect_response(caplog, unknown):
+    from katrain.web.core.kifu_http_timing import KifuHTTPTimingMiddleware
+
+    caplog.set_level(logging.INFO, logger=LOGGER)
+
+    class BrokenPool:
+        def size(self):
+            raise RuntimeError("observation failed")
+
+    sent = []
+
+    async def send(message):
+        sent.append(message)
+
+    async def app(scope, receive, send):
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"ok"})
+
+    await KifuHTTPTimingMiddleware(app, pool=object() if unknown else BrokenPool())(_scope(), _receive, send)
+    (metric,) = _metrics(caplog)
+    assert metric["db_pool_at_scope_entry"] is None
+    assert metric["db_pool_after_final_body"] is None
+    assert sent[-1]["body"] == b"ok"
+    assert metric["status"] == 200 and metric["bytes"] == 2

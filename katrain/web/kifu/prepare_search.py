@@ -14,13 +14,14 @@ import os
 import resource
 import sys
 from time import monotonic
+from types import SimpleNamespace
 
 from sqlalchemy import String, and_, cast, delete, func, literal, or_, select
 from sqlalchemy.orm import Session
 
 from katrain.web.core import models_db as business
 from katrain.web.kifu import identity, prepared_models as m
-from katrain.web.kifu.name_raw_player_scope import PreparedRawPlayerScope, raw_player_scope_slot
+from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS, PreparedRawPlayerScope, raw_player_scope_slot
 from katrain.web.kifu.prepared_read import current_policy_signature, read_state
 
 
@@ -66,6 +67,12 @@ _SPECS = {
     "raw_player": (business.KifuRawPlayerValue, business.KifuRawPlayerName, "raw_player_id", None),
     "raw_event": (business.KifuRawEventValue, business.KifuRawEventName, "raw_event_id", None),
 }
+_CHANGE_REFS = (
+    business.KifuNameChange.id,
+    business.KifuNameChange.batch_id,
+    business.KifuNameChange.target_table,
+    business.KifuNameChange.target_row_id,
+)
 _OWNER_TABLES = {spec[0].__tablename__: kind for kind, spec in _SPECS.items()}
 _NAME_TABLES = {spec[1].__tablename__: kind for kind, spec in _SPECS.items()}
 _ALIAS_TABLES = {spec[3].__tablename__: kind for kind, spec in _SPECS.items() if spec[3]}
@@ -196,7 +203,7 @@ def _proof_inputs(db, kind, name, evidence, creation_changes, batch_cache):
     for row_id in missing:
         creation_changes[business.KifuNameResearchEvidence.__tablename__, row_id] = []
     if missing:
-        for change in db.query(business.KifuNameChange).filter(
+        for change in db.query(*_CHANGE_REFS).filter(
             business.KifuNameChange.target_table == business.KifuNameResearchEvidence.__tablename__,
             business.KifuNameChange.target_row_id.in_(missing),
         ):
@@ -212,7 +219,11 @@ def _proof_inputs(db, kind, name, evidence, creation_changes, batch_cache):
         result.add((business.KifuNameChange.__tablename__, str(change.id)))
     result.update((business.KifuNameResearchEvidence.__tablename__, str(row_id)) for row_id in evidence_ids)
     for batch_id in batch_ids - batch_cache.keys():
-        batch_cache[batch_id] = db.get(business.KifuNameBatch, batch_id)
+        batch_cache[batch_id] = (
+            db.query(business.KifuNameBatch.id, business.KifuNameBatch.source_registry_id)
+            .filter(business.KifuNameBatch.id == batch_id)
+            .one_or_none()
+        )
     for batch in (batch_cache[batch_id] for batch_id in batch_ids if batch_cache[batch_id] is not None):
         result.add((business.KifuNameBatch.__tablename__, str(batch.id)))
         result.add((business.KifuNameSourceRegistry.__tablename__, str(batch.source_registry_id)))
@@ -266,7 +277,14 @@ def _finite_album_ids(proof):
 def _finite_members(db, kind, qualified):
     finite = [(name, raw, proof) for name, raw, proof in qualified if proof is not None]
     ids = set().union(*(_finite_album_ids(proof) for _name, _raw, proof in finite)) if finite else set()
-    albums = _rows(db, business.KifuAlbum, ids)
+    fields = tuple(dict.fromkeys(("id", *CONTEXT_FIELDS, "list_hidden_reason", "source_path", "event_edition_id")))
+    albums = [
+        SimpleNamespace(**row)
+        for chunk in _chunks(ids)
+        for row in db.execute(
+            select(*(getattr(business.KifuAlbum, field) for field in fields)).where(business.KifuAlbum.id.in_(chunk))
+        ).mappings()
+    ]
     physical_selected = {
         album_id
         for chunk in _chunks(ids)
@@ -367,106 +385,131 @@ def _prepare_owners(conn, db, targets, budget):
             for chunk in _chunks(owner_ids)
             for row in db.query(name_model).filter(getattr(name_model, owner_col).in_(chunk))
         ]
-        evidence_ids = {row.evidence_id for row in source_rows if row.evidence_id}
-        evidence = {row.id: row for row in _rows(db, business.KifuNameResearchEvidence, evidence_ids)}
-        creation_changes = {(name_model.__tablename__, row.id): [] for row in source_rows}
-        creation_changes.update(
-            {(business.KifuNameResearchEvidence.__tablename__, row_id): [] for row_id in evidence_ids}
-        )
-        clauses = [
-            and_(
-                business.KifuNameChange.target_table == name_model.__tablename__,
-                business.KifuNameChange.target_row_id.in_([row.id for row in source_rows]),
-            ),
-            and_(
-                business.KifuNameChange.target_table == business.KifuNameResearchEvidence.__tablename__,
-                business.KifuNameChange.target_row_id.in_(evidence_ids),
-            ),
-        ]
-        for change in db.query(business.KifuNameChange).filter(or_(*clauses)):
-            creation_changes[change.target_table, change.target_row_id].append(change)
-        batch_cache = {}
-        if kind == "raw_player":
-            qualified = identity._approved_raw_player_names(db, values={row.raw_value for row in owners.values()})
-        elif kind == "raw_event":
-            qualified = identity._approved_raw_event_names(db, values={row.raw_value for row in owners.values()})
-        else:
-            qualified = identity._qualified_name_rows(
-                db, identity._approved_names(db, name_model, owner_col, set(owner_ids)), name_model, owner_col
+        values, inputs_by_source, finite_members = [], {}, {}
+        for group_ids in identity.iter_name_proof_groups(db, name_model, {row.id for row in source_rows}):
+            budget.check()
+            group_rows = [row for row in source_rows if row.id in group_ids]
+            evidence_ids = {row.evidence_id for row in group_rows if row.evidence_id}
+            evidence = {row.id: row for row in _rows(db, business.KifuNameResearchEvidence, evidence_ids)}
+            creation_changes = {(name_model.__tablename__, row.id): [] for row in group_rows}
+            creation_changes.update(
+                {(business.KifuNameResearchEvidence.__tablename__, row_id): [] for row_id in evidence_ids}
             )
-        eligible = {row[0].id: row for row in qualified}
-        finite_members = _finite_members(db, kind, qualified) if kind.startswith("raw_") else {}
-        values, inputs_by_source = [], {}
-        for name in source_rows:
-            approved = name.id in eligible
-            semantic = {
-                "decision_kind": name.decision_kind,
-                "evidence_id": name.evidence_id,
-                "generation_rule_version": name.generation_rule_version,
-                "public_primary": bool(
-                    approved
-                    and getattr(name, owner_col) in owners
-                    and name.lang in identity.PRIMARY_NAME_LANGUAGES
-                    and name.decision_kind not in {"hidden", "error", "placeholder"}
-                    and name.display_name.strip()
+            clauses = [
+                and_(
+                    business.KifuNameChange.target_table == name_model.__tablename__,
+                    business.KifuNameChange.target_row_id.in_([row.id for row in group_rows]),
                 ),
-                "legacy_display": bool(
-                    name.status == "verified"
-                    and name.evidence_id is None
-                    and name.decision_kind is None
-                    and name.generation_rule_version is None
-                    and name.revision is None
+                and_(
+                    business.KifuNameChange.target_table == business.KifuNameResearchEvidence.__tablename__,
+                    business.KifuNameChange.target_row_id.in_(evidence_ids),
                 ),
-            }
+            ]
+            for change in db.query(*_CHANGE_REFS).filter(or_(*clauses)):
+                creation_changes[change.target_table, change.target_row_id].append(change)
+            batch_cache = {}
+            if kind == "raw_player":
+                qualified = identity._approved_raw_player_names(
+                    db, values={row.raw_value for row in owners.values()}, name_ids=group_ids
+                )
+            elif kind == "raw_event":
+                qualified = identity._approved_raw_event_names(
+                    db, values={row.raw_value for row in owners.values()}, name_ids=group_ids
+                )
+            else:
+                qualified = identity._qualified_name_rows(
+                    db,
+                    identity._approved_names(db, name_model, owner_col, set(owner_ids)).filter(
+                        name_model.id.in_(group_ids)
+                    ),
+                    name_model,
+                    owner_col,
+                )
+            eligible = {row[0].id: row for row in qualified}
             if kind.startswith("raw_"):
-                owner = owners.get(getattr(name, owner_col))
-                semantic["raw_value"] = owner.raw_value if owner else None
-                semantic.update(
-                    _raw_description(name, eligible[name.id][2])
-                    if approved
-                    else {"raw_type": "ineligible", "record_label": False, "linked_event_ids": []}
-                )
-            authorization = set()
-            if kind == "player" and approved:
-                # The SQL exact class remains distinct from normalize_alias. Most
-                # names have one owner and never need the finite-group proof.
-                query = identity._approved_names(db, name_model, owner_col).filter(
-                    or_(
-                        name_model.display_name == name.display_name,
-                        func.lower(name_model.display_name) == name.display_name.lower(),
-                    )
-                )
-                ids = {value for value, in query.with_entities(name_model.player_id)}
-                if len(ids) > 1:
-                    rows = identity._qualified_name_rows(db, query, name_model, owner_col)
-                    rows = [
-                        (row, proof)
-                        for row, proof in rows
-                        if identity.normalize_alias(row.display_name) == identity.normalize_alias(name.display_name)
-                    ]
-                    authorization = identity._finite_shared_player_ids(
-                        db, rows, identity.normalize_alias(name.display_name)
-                    )
-            values.append(
-                {
-                    "name_kind": kind,
-                    "source_key": str(name.id),
-                    "source_name_id": name.id,
-                    "lang": name.lang,
-                    "display_name": name.display_name,
-                    "normalized_term": identity.normalize_alias(name.display_name),
-                    "match_class": "approved_exact",
-                    "owner_id": getattr(name, owner_col),
-                    "eligible": approved,
-                    "exact_group_authorized_ids": sorted(authorization),
-                    "semantic": semantic,
-                    "valid": True,
-                    "policy_version": m.POLICY_VERSION,
+                finite_members.update(_finite_members(db, kind, qualified))
+            for name in group_rows:
+                approved = name.id in eligible
+                semantic = {
+                    "decision_kind": name.decision_kind,
+                    "evidence_id": name.evidence_id,
+                    "generation_rule_version": name.generation_rule_version,
+                    "public_primary": bool(
+                        approved
+                        and getattr(name, owner_col) in owners
+                        and name.lang in identity.PRIMARY_NAME_LANGUAGES
+                        and name.decision_kind not in {"hidden", "error", "placeholder"}
+                        and name.display_name.strip()
+                    ),
+                    "legacy_display": bool(
+                        name.status == "verified"
+                        and name.evidence_id is None
+                        and name.decision_kind is None
+                        and name.generation_rule_version is None
+                        and name.revision is None
+                    ),
                 }
-            )
-            inputs_by_source[str(name.id)] = _proof_inputs(
-                db, kind, name, evidence.get(name.evidence_id), creation_changes, batch_cache
-            )
+                if kind.startswith("raw_"):
+                    owner = owners.get(getattr(name, owner_col))
+                    semantic["raw_value"] = owner.raw_value if owner else None
+                    semantic.update(
+                        _raw_description(name, eligible[name.id][2])
+                        if approved
+                        else {"raw_type": "ineligible", "record_label": False, "linked_event_ids": []}
+                    )
+                authorization = set()
+                if kind == "player" and approved:
+                    # The SQL exact class remains distinct from normalize_alias. Most
+                    # names have one owner and never need the finite-group proof.
+                    query = identity._approved_names(db, name_model, owner_col).filter(
+                        or_(
+                            name_model.display_name == name.display_name,
+                            func.lower(name_model.display_name) == name.display_name.lower(),
+                        )
+                    )
+                    ids = {value for value, in query.with_entities(name_model.player_id)}
+                    if len(ids) > 1:
+                        rows = []
+                        matched_ids = {name_id for name_id, in query.with_entities(name_model.id)}
+                        for matching_group in identity.iter_name_proof_groups(db, name_model, matched_ids):
+                            rows.extend(
+                                identity._qualified_name_rows(
+                                    db, query.filter(name_model.id.in_(matching_group)), name_model, owner_col
+                                )
+                            )
+                        rows = [
+                            (row, proof)
+                            for row, proof in rows
+                            if identity.normalize_alias(row.display_name) == identity.normalize_alias(name.display_name)
+                        ]
+                        authorization = identity._finite_shared_player_ids(
+                            db, rows, identity.normalize_alias(name.display_name)
+                        )
+                        del rows
+                values.append(
+                    {
+                        "name_kind": kind,
+                        "source_key": str(name.id),
+                        "source_name_id": name.id,
+                        "lang": name.lang,
+                        "display_name": name.display_name,
+                        "normalized_term": identity.normalize_alias(name.display_name),
+                        "match_class": "approved_exact",
+                        "owner_id": getattr(name, owner_col),
+                        "eligible": approved,
+                        "exact_group_authorized_ids": sorted(authorization),
+                        "semantic": semantic,
+                        "valid": True,
+                        "policy_version": m.POLICY_VERSION,
+                    }
+                )
+                inputs_by_source[str(name.id)] = _proof_inputs(
+                    db, kind, name, evidence.get(name.evidence_id), creation_changes, batch_cache
+                )
+            # Derived values retain only semantic fields; do not carry research
+            # payloads or full ledger images into the next proof batch.
+            del qualified, eligible, evidence, creation_changes, group_rows
+            budget.check()
         if alias_model is not None:
             for chunk in _chunks(owner_ids):
                 for alias in db.query(alias_model).filter(getattr(alias_model, owner_col).in_(chunk)):
@@ -717,6 +760,95 @@ def _selection_inputs(conn, album_ids):
     return inputs
 
 
+def _album_display_dependencies(album, rows, *, selected_event, selection, source_inputs, selection_inputs):
+    """Build exactly the input set shared by all name-language displays of one album."""
+    inputs = {
+        (business.KifuAlbum.__tablename__, str(album.id)),
+        ("album_sources", str(album.id)),
+        (business.KifuAlbumEventSelection.__tablename__, str(album.id)),
+    } | source_inputs
+    album_owners = {
+        "player": {value for value in (album.black_player_id, album.white_player_id) if value},
+        "event": {value for value in (album.event_id, (selected_event or (None, None))[1]) if value},
+        "raw_player": {
+            row["owner_id"]
+            for row in rows
+            if row["name_kind"] == "raw_player"
+            and row["semantic"].get("raw_value") in {album.player_black, album.player_white}
+        },
+        "raw_event": {
+            row["owner_id"]
+            for row in rows
+            if row["name_kind"] == "raw_event"
+            and row["semantic"].get("raw_value") in {album.event, (selected_event or (None, None))[0]}
+        },
+    }
+    for kind, ids in album_owners.items():
+        inputs.update(("owner", _key(kind, owner_id)) for owner_id in ids)
+    # Raw scope watches belong to the name/selection proof that actually
+    # reads a cohort. A new canonical game with the same literal must not
+    # dirty every other display which merely falls back to that literal.
+    for row in rows:
+        if row["source_name_id"] is not None and row["owner_id"] in album_owners.get(row["name_kind"], ()):
+            inputs.add((_SPECS[row["name_kind"]][1].__tablename__, str(row["source_name_id"])))
+    if selection is not None:
+        inputs.add((business.KifuEventSelectionBatch.__tablename__, str(selection["batch_id"])))
+        inputs |= selection_inputs
+    return inputs
+
+
+def _selected_event_members(album, rows, member_rows, *, selected_event, approvals_by_lang):
+    """Build this album's final selected-event rows without changing their approval rules."""
+    selected_members = []
+    if selected_event is None or album.duplicate_of_id is not None or album.event != "GNUGo3.8":
+        return []
+    raw, event_id = selected_event
+    structured = (
+        bool(identity.structure_event(raw)["components"])
+        or identity.parse_event(raw, None).category == "formal_event_candidate"
+    )
+    identity_allowed = not structured or any(values[album.id][2] is not None for values in approvals_by_lang.values())
+    for row in rows:
+        if not row["eligible"] or row["match_class"] != "approved_exact":
+            continue
+        semantic = row["semantic"]
+        if row["name_kind"] == "event" and row["owner_id"] == event_id:
+            selected_members.append(
+                {
+                    "prepared_name_id": row["id"],
+                    "album_id": album.id,
+                    "slot": "selected_event",
+                    "event_id": event_id,
+                    "selection_id": album.id,
+                    "semantic": {"identity_search": identity_allowed, "raw_value": raw, "display": False},
+                }
+            )
+        elif row["name_kind"] == "raw_event" and semantic.get("raw_value") == raw:
+            approved = approvals_by_lang.get(row["lang"], {}).get(album.id, (None, None, None))[2]
+            allowed = semantic.get("decision_kind") != "translated" and approved == (
+                semantic.get("decision_kind"),
+                semantic.get("evidence_id"),
+            )
+            display = any(
+                member["prepared_name_id"] == row["id"]
+                and member["album_id"] == album.id
+                and member["slot"] == "selected_event"
+                and member["semantic"].get("display")
+                for member in member_rows
+            )
+            selected_members.append(
+                {
+                    "prepared_name_id": row["id"],
+                    "album_id": album.id,
+                    "slot": "selected_event",
+                    "event_id": event_id,
+                    "selection_id": album.id,
+                    "semantic": {"selected_search": allowed, "raw_value": raw, "display": display},
+                }
+            )
+    return selected_members
+
+
 def _prepare_displays(conn, db, album_ids, budget, *, refresh_invalid_names=False):
     budget.check(album_ids)
     albums = _rows(db, business.KifuAlbum, album_ids)
@@ -846,93 +978,25 @@ def _prepare_displays(conn, db, album_ids, budget, *, refresh_invalid_names=Fals
         approvals_by_lang[lang] = {album.id: _slot_approval(album, maps, obscured, selected) for album in albums}
     selection_inputs = _selection_inputs(conn, set(selections)) if selections else set()
     for album in albums:
-        inputs = {
-            (business.KifuAlbum.__tablename__, str(album.id)),
-            ("album_sources", str(album.id)),
-            (business.KifuAlbumEventSelection.__tablename__, str(album.id)),
-        } | source_inputs[album.id]
-        album_owners = {
-            "player": {value for value in (album.black_player_id, album.white_player_id) if value},
-            "event": {value for value in (album.event_id, selected.get(album.id, (None, None))[1]) if value},
-            "raw_player": {
-                row["owner_id"]
-                for row in rows
-                if row["name_kind"] == "raw_player"
-                and row["semantic"].get("raw_value") in {album.player_black, album.player_white}
-            },
-            "raw_event": {
-                row["owner_id"]
-                for row in rows
-                if row["name_kind"] == "raw_event"
-                and row["semantic"].get("raw_value") in {album.event, selected.get(album.id, (None, None))[0]}
-            },
-        }
-        for kind, ids in album_owners.items():
-            inputs.update(("owner", _key(kind, owner_id)) for owner_id in ids)
-        # Raw scope watches belong to the name/selection proof that actually
-        # reads a cohort. A new canonical game with the same literal must not
-        # dirty every other display which merely falls back to that literal.
-        for row in rows:
-            if row["source_name_id"] is not None and row["owner_id"] in album_owners.get(row["name_kind"], ()):
-                inputs.add((_SPECS[row["name_kind"]][1].__tablename__, str(row["source_name_id"])))
-        if album.id in selections:
-            inputs.add((business.KifuEventSelectionBatch.__tablename__, str(selections[album.id]["batch_id"])))
-            inputs |= selection_inputs
-        dependency_values[album.id] = inputs
+        dependency_values[album.id] = _album_display_dependencies(
+            album,
+            rows,
+            selected_event=selected.get(album.id),
+            selection=selections.get(album.id),
+            source_inputs=source_inputs[album.id],
+            selection_inputs=selection_inputs,
+        )
     _dependencies(conn, "display", dependency_values)
     # Selected search approval is independent of the later query substring. A
     # physical but rejected selection is deliberately retained in business SQL.
     selected_members = []
     conn.execute(delete(m.members).where(m.members.c.album_id.in_(existing_ids), m.members.c.slot == "selected_event"))
     for album in albums:
-        if album.id not in selected or album.duplicate_of_id is not None or album.event != "GNUGo3.8":
-            continue
-        raw, event_id = selected[album.id]
-        structured = (
-            bool(identity.structure_event(raw)["components"])
-            or identity.parse_event(raw, None).category == "formal_event_candidate"
+        selected_members.extend(
+            _selected_event_members(
+                album, rows, member_rows, selected_event=selected.get(album.id), approvals_by_lang=approvals_by_lang
+            )
         )
-        identity_allowed = not structured or any(
-            values[album.id][2] is not None for values in approvals_by_lang.values()
-        )
-        for row in rows:
-            if not row["eligible"] or row["match_class"] != "approved_exact":
-                continue
-            semantic = row["semantic"]
-            if row["name_kind"] == "event" and row["owner_id"] == event_id:
-                selected_members.append(
-                    {
-                        "prepared_name_id": row["id"],
-                        "album_id": album.id,
-                        "slot": "selected_event",
-                        "event_id": event_id,
-                        "selection_id": album.id,
-                        "semantic": {"identity_search": identity_allowed, "raw_value": raw, "display": False},
-                    }
-                )
-            elif row["name_kind"] == "raw_event" and semantic.get("raw_value") == raw:
-                approved = approvals_by_lang.get(row["lang"], {}).get(album.id, (None, None, None))[2]
-                allowed = semantic.get("decision_kind") != "translated" and approved == (
-                    semantic.get("decision_kind"),
-                    semantic.get("evidence_id"),
-                )
-                display = any(
-                    member["prepared_name_id"] == row["id"]
-                    and member["album_id"] == album.id
-                    and member["slot"] == "selected_event"
-                    and member["semantic"].get("display")
-                    for member in member_rows
-                )
-                selected_members.append(
-                    {
-                        "prepared_name_id": row["id"],
-                        "album_id": album.id,
-                        "slot": "selected_event",
-                        "event_id": event_id,
-                        "selection_id": album.id,
-                        "semantic": {"selected_search": allowed, "raw_value": raw, "display": display},
-                    }
-                )
     _upsert(conn, m.members, selected_members, ("prepared_name_id", "album_id", "slot"))
     budget.check(album_ids)
     return len(albums)
@@ -1210,6 +1274,7 @@ def prepare_changed(conn, dirty_keys=None, *, policy_version=m.POLICY_VERSION, b
             ready=not remaining, prepared_at=datetime.now(timezone.utc), phase="complete" if not remaining else "dirty"
         )
     )
+    limit.check()
     return {"installed": True, "ready": not remaining, "names": count, "albums": album_count}
 
 
@@ -1401,7 +1466,9 @@ def prepare_initial_batch(conn, *, batch_size=500, budget=None):
         value = dict(value, phase="names", cursor={"kind": 0, "owner": 0}, initial_coverage_complete=False)
     limit = _Budget(budget, conn)
     if value["initial_coverage_complete"]:
-        return prepare_changed(conn, budget=budget)
+        result = prepare_changed(conn, budget=budget)
+        limit.check()
+        return result
     with Session(bind=conn, expire_on_commit=False) as db:
         if value["phase"] == "names":
             cursor = value["cursor"] or {"kind": 0, "owner": 0}
@@ -1429,6 +1496,7 @@ def prepare_initial_batch(conn, *, batch_size=500, budget=None):
                 _prepare_generic(conn, db)
                 cursor, phase = {"album": 0}, "displays"
             conn.execute(m.state.update().where(m.state.c.id == 1).values(phase=phase, cursor=cursor))
+            limit.check()
             return {"ready": False, "phase": phase, "cursor": cursor, "names": count, "albums": 0}
         cursor = value["cursor"] or {"album": 0}
         ids = [
@@ -1443,12 +1511,14 @@ def prepare_initial_batch(conn, *, batch_size=500, budget=None):
             m.state.update().where(m.state.c.id == 1).values(cursor={"album": ids[-1] if ids else cursor["album"]})
         )
         if len(ids) == batch_size:
+            limit.check()
             return {"ready": False, "phase": "displays", "names": 0, "albums": count}
     # Every current album has now been covered. Reconcile writes made during an
     # earlier checkpoint before this transaction is allowed to mark ready.
     conn.execute(m.state.update().where(m.state.c.id == 1).values(initial_coverage_complete=True))
     result = prepare_changed(conn, budget=budget)
     result["albums"] += count
+    limit.check()
     return result
 
 

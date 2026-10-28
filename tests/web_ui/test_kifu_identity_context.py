@@ -32,6 +32,103 @@ def read_player(db, contexts):
     )
 
 
+def test_uncached_proof_groups_do_not_load_two_orthographic_artifacts_together(monkeypatch):
+    from katrain.web.kifu import identity
+    from tests.web_ui.test_kifu_name_orthographic import fixture
+    from tests.web_ui.test_kifu_name_transliteration import registry as orthographic_registry
+
+    engine, bundle, anchors, inventory = fixture()
+    try:
+        applied = apply_bundle(engine, bundle, orthographic_registry(), inventory, anchors)
+        with Session(engine) as db:
+            first = db.query(KifuPlayerName).one()
+            evidence = db.get(KifuNameResearchEvidence, first.evidence_id)
+            original = db.get(KifuNameBatch, applied["batch_id"])
+            artifact = deepcopy(original.reviewed_artifact)
+            artifact["bundle"]["independent_packet_probe"] = True
+            second = KifuNameBatch(
+                bundle_sha256=name_candidates.canonical_sha256(artifact["bundle"]),
+                inventory_sha256=original.inventory_sha256,
+                source_registry_id=original.source_registry_id,
+                reviewed_artifact=artifact,
+                status="applied",
+            )
+            db.add_all([KifuPlayer(id=18, canonical_name="Different owner"), second])
+            db.flush()
+            values = {
+                column.name: getattr(evidence, column.name)
+                for column in evidence.__table__.columns
+                if column.name != "id"
+            }
+            values["player_id"] = 18
+            values["candidate_name"] = "Different packet name"
+            values["research_payload"] = deepcopy(values["research_payload"])
+            values["research_payload"]["primary_orthographic"]["batch_id"] = second.id
+            copied = KifuNameResearchEvidence(**values)
+            db.add(copied)
+            db.flush()
+            db.add(
+                KifuPlayerName(
+                    player_id=18,
+                    lang=first.lang,
+                    display_name="Different packet name",
+                    status="verified",
+                    evidence_id=copied.id,
+                    decision_kind=first.decision_kind,
+                    generation_rule_version=first.generation_rule_version,
+                    revision=first.revision,
+                )
+            )
+            db.commit()
+        original_build = name_orthographic.persisted_batch_bindings
+        checked = []
+        with Session(engine) as db:
+
+            def build(batch):
+                checked.append(batch.id)
+                resident = [
+                    row
+                    for row in db.identity_map.values()
+                    if isinstance(row, KifuNameBatch) and "reviewed_artifact" in row.__dict__
+                ]
+                assert len(resident) == 1
+                return original_build(batch)
+
+            monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", build)
+            monkeypatch.setattr(identity, "deepcopy", lambda value: pytest.fail("offline snapshot deepcopy"))
+            names = {name_id for name_id, in db.query(KifuPlayerName.id)}
+            qualified = []
+            for group in identity.iter_name_proof_groups(db, KifuPlayerName, names):
+                qualified.extend(
+                    _qualified_name_rows(
+                        db,
+                        _approved_names(db, KifuPlayerName, "player_id").filter(KifuPlayerName.id.in_(group)),
+                        KifuPlayerName,
+                        "player_id",
+                    )
+                )
+            assert len(checked) == 2 and len(set(checked)) == 2
+            # The second packet is fully checked, then rejected for its different owner.
+            assert [name.player_id for name, _evidence in qualified] == [17]
+        from katrain.web.kifu.prepared_migration import apply_migration
+        from katrain.web.kifu import prepare_search
+
+        apply_migration(engine)
+        checked.clear()
+        with engine.begin() as conn, Session(bind=conn) as db:
+
+            def build_core(batch):
+                resident = [row for row in db.identity_map.values() if isinstance(row, KifuNameResearchEvidence)]
+                assert len(resident) == 1, "preparer must not retain the whole domain's research payloads"
+                return build(batch)
+
+            monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", build_core)
+            assert prepare_search._prepare_owners(conn, db, {"player": {17, 18}}, prepare_search._Budget()) == 2
+            assert len(checked) == 2
+    finally:
+        engine.dispose()
+
+
 def test_first_pass_only_does_not_build_other_proof_families(engine, monkeypatch):
     inventory, bundle, research = bound_player_bundle(engine)
     apply_bundle(engine, bundle, registry(), inventory, research)

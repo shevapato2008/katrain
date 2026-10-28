@@ -18,6 +18,17 @@ from katrain.web.kifu.identity import (
     normalize_alias,
 )
 
+# The archive uses Japanese romanizations while many kiosk users search in Chinese.
+HISTORICAL_PLAYER_ALIASES = {
+    "吴清源": ("go seigen",),
+    "吳清源": ("吴清源", "go seigen"),
+    "道策": ("honinbo dosaku",),
+    "丈和": ("honinbo jowa", "kadono jowa", "kadono matsunosuke", "todani matsunosuke"),
+    "秀策": ("shusaku", "yasuda eisai"),
+    "木谷实": ("kitani minoru",),
+    "木谷實": ("木谷实", "kitani minoru"),
+}
+
 
 def unique_exact_player_id(db, query: str, *, strict: bool, orthographic_batch_contexts=None) -> int | None:
     """Prove the current exact-player case without loading unrelated proof JSON.

@@ -247,6 +247,10 @@ def import_kifu(
 
             if i % COMMIT_EVERY == 0 or i == total:
                 if not dry_run:
+                    from katrain.web.kifu.prepare_search import maintain_after_write
+
+                    db.flush()
+                    maintain_after_write(db.connection())
                     db.commit()
                 print(
                     f"  Progress: {i}/{total} ({i * 100 // total}%)"

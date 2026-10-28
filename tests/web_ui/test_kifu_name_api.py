@@ -541,7 +541,8 @@ def test_strict_page_batches_twenty_albums_in_all_languages(monkeypatch):
                 _assert_page_scoped_sgf_read(statements)
                 query_counts.append(len(statements))
                 # Existing rank snapshots add one bounded bulk read.
-                assert len(statements) <= 11
+                # One fixed prepared-table discovery query on an unmigrated legacy DB.
+                assert len(statements) <= 12
             assert len(set(query_counts)) == 1
         finally:
             event.remove(engine, "before_cursor_execute", record_sql)
@@ -963,7 +964,8 @@ def test_strict_composed_display_search_and_queries_are_bounded(monkeypatch, own
         assert all(item.display_event == "第1届本因坊战" for item in page.items)
         assert first.total == 20 and len(first.items) == 1
         # Existing rank bulk read plus the new conservative scalar candidate.
-        assert len(page_statements) <= 30
+        # The prepared gate adds one fixed discovery query on a legacy DB.
+        assert len(page_statements) <= 31
         assert len(page_statements) <= len(first_statements) + 2
         _assert_page_scoped_sgf_read(page_statements)
         _assert_page_scoped_sgf_read(first_statements)

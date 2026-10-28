@@ -9,6 +9,38 @@ import pytest
 from katrain.web.kifu.name_candidates import canonical_sha256
 
 
+def test_actual_receiver_publication_and_replay_keep_prepared_coverage(tmp_path, monkeypatch, capsys):
+    from io import StringIO
+    from katrain.kifu_ingest import orchestration
+    from katrain.web.kifu import prepare_search
+    from katrain.web.kifu.prepared_migration import apply_migration
+    from tests.web_ui.test_kifu_incremental_catalog import make_engine, manifest
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine = make_engine(tmp_path / "receiver-prepared.db")
+    try:
+        apply_migration(engine)
+        with engine.begin() as conn:
+            prepare_search.prepare_all(conn)
+        value = manifest()
+        value["games"][0]["origin_path"] = "data/kifu-album/19x19/123.sgf"
+        digest = canonical_sha256(value)
+        envelope = {"manifest": value, "manifest_sha256": digest, "test_verification": {
+            "status": "verified", "manifest_sha256": digest, "games": 1,
+            "checks": [{"album_id": 11, "lang": lang} for lang in ("cn", "tw", "jp", "ko", "en")]}}
+        monkeypatch.setattr(orchestration, "_engine", lambda: engine)
+        responses = []
+        for _ in range(2):
+            monkeypatch.setattr(orchestration.sys, "stdin", StringIO(json.dumps(envelope)))
+            assert orchestration.main(["receive"]) == 0
+            responses.append(json.loads(capsys.readouterr().out))
+            with engine.connect() as conn:
+                assert prepare_search.verify_coverage(conn)["ready"]
+        assert responses[0] == responses[1]
+    finally:
+        engine.dispose()
+
+
 def _manifest():
     sgf = "(;FF[4]SZ[19]PB[Black]PW[White]EV[Match]DT[2026-02-01];B[aa])"
     return {

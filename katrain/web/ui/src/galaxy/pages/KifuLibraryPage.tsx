@@ -21,7 +21,6 @@ import {
   TextField,
   InputAdornment,
   Skeleton,
-  Fade,
   Card,
   CardActionArea,
   Button,
@@ -54,7 +53,6 @@ import CompactPagination from '../../components/CompactPagination';
 const RAIL_NARROW = RAIL_TIGHT;
 
 const PAGE_SIZE = 20;
-const ROW_STAGGER = 25;
 
 /* ── Result badge (inline) ── */
 function ResultBadge({ result, rules, t }: { result: string | null; rules?: string | null; t: (key: string, fallback?: string) => string }) {
@@ -265,6 +263,7 @@ export default function KifuLibraryPage() {
   const [replaySelection, setReplaySelection] = useState<{ id: number | null; move: number } | null>(null);
   const [previewBoardSize, setPreviewBoardSize] = useState(19);
   const [previewSetupCount, setPreviewSetupCount] = useState(0);
+  const [previewReady, setPreviewReady] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [previewReload, setPreviewReload] = useState(0);
@@ -284,6 +283,7 @@ export default function KifuLibraryPage() {
     setPreviewSetupCount(parsed.setupCount ?? 0);
     setPreviewCurrentMove(parsed.moves.length);
     setPreviewBoardSize(parsed.metadata.boardSize || detail.board_size || 19);
+    setPreviewReady(true);
     setPreviewError(false);
     setPreviewLoading(false);
   }, [lang]);
@@ -305,7 +305,8 @@ export default function KifuLibraryPage() {
         setSelectedId(selected?.id ?? null);
         setSelectedAlbum(selected);
         setSelectedAlbumLang(selected ? lang : null);
-        setPreviewMoves([]);
+        setPreviewReady(false);
+        if (!selected) setPreviewMoves([]);
         setPreviewLoading(false);
         setPreviewError(false);
         setPreviewReload(0);
@@ -320,6 +321,7 @@ export default function KifuLibraryPage() {
         setSelectedId(null);
         setSelectedAlbum(null);
         setPreviewMoves([]);
+        setPreviewReady(false);
         setPreviewLoading(false);
         setPreviewError(false);
       }
@@ -349,7 +351,7 @@ export default function KifuLibraryPage() {
   // Keep manual choices within this query/page when language or data refreshes.
   const handleCardClick = useCallback((album: KifuAlbumSummary) => {
     if (selectedId === album.id) {
-      if (!previewLoading && (selectedAlbumLang !== lang || previewMoves.length === 0)) {
+      if (!previewLoading && (selectedAlbumLang !== lang || !previewReady)) {
         setPreviewReload((value) => value + 1);
       }
       return;
@@ -363,9 +365,9 @@ export default function KifuLibraryPage() {
     }
     setSelectedAlbum(album);
     setSelectedAlbumLang(lang);
-    setPreviewMoves([]);
+    setPreviewReady(false);
     setPreviewError(false);
-  }, [lang, selectedId, selectedAlbumLang, previewLoading, previewMoves.length, result.preview, acceptPreview]);
+  }, [lang, selectedId, selectedAlbumLang, previewLoading, previewReady, result.preview, acceptPreview]);
 
   const fetchSelected = useCallback(async (id: number, request: { cancelled: boolean; signal: AbortSignal }) => {
     setPreviewLoading(true);
@@ -399,7 +401,7 @@ export default function KifuLibraryPage() {
     setPreviewCurrentMove(move);
   };
   useReplayStoneSound({ identity: selectedId, cursor: Math.max(0, previewCurrentMove - previewSetupCount), move: previewMoves[previewCurrentMove - 1],
-    ready: !!visibleSelectedAlbum && !previewLoading, boardSize: previewBoardSize,
+    ready: !!visibleSelectedAlbum && previewReady && !previewLoading, boardSize: previewBoardSize,
     selected: replaySelection?.id === selectedId && replaySelection.move === previewCurrentMove });
 
   const handleViewReport = useCallback(() => {
@@ -411,7 +413,7 @@ export default function KifuLibraryPage() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const movesUnit = t('kifu:moves_unit', '手');
 
-  const hasPreview = visibleSelectedAlbum !== null && !previewLoading && previewMoves.length > 0;
+  const hasPreview = visibleSelectedAlbum !== null && previewReady && !previewLoading && previewMoves.length > 0;
 
   /* 模块牌副标题：选中棋谱后是对局双方 + 手数，没选中时是记录总数。
      列表还在加载时给一条骨架，避免标题行先塌一次再撑开。 */
@@ -440,34 +442,51 @@ export default function KifuLibraryPage() {
   return (
     <BoardPageShell
       onBoardSizeChange={setBoardEdge}
-      board={hasPreview ? (
-        <LiveBoard
-          moves={previewMoves}
-          stoneColors={previewColors}
-          currentMove={previewCurrentMove}
-          handicapCount={previewSetupCount}
-          boardSize={previewBoardSize}
-          /* 迁版式前这里写死 `showCoordinates={true}`。改成走共享的自动档：
-             spec §3.2「棋盘边长低于 500px 时坐标默认关闭」。本页冻结稿里没有坐标
-             开关（右栏塞的是列表，没有显示开关那一段），所以只取 `visible`，
-             不挂 toggle —— 有开关的那几页才需要开关。 */
-          showCoordinates={coordinates.visible}
-          minimumCanvasSize={0}
-          minContainerHeight={0}
-        />
-      ) : loading || (!listError && previewLoading) ? (
-        <CircularProgress data-testid="kifu-preview-spinner" />
-      ) : previewError && !listError ? (
-        <Box sx={{ textAlign: 'center', px: 2 }}>
-          <Typography variant="body2" color="text.secondary">{t('report:preview_failed', '棋谱预览加载失败')}</Typography>
-          <Button onClick={() => setPreviewReload((value) => value + 1)}>{t('kifu:retry', '重试')}</Button>
+      board={(
+        <Box sx={{ position: 'relative', width: '100%', height: '100%', minHeight: 0 }}>
+          {/* Retain the canvas and its assets while loading, but never expose the old
+              position as the current result. New SGF props are accepted together. */}
+          <Box
+            aria-hidden={!hasPreview}
+            inert={!hasPreview}
+            sx={{ width: '100%', height: '100%', visibility: hasPreview ? 'visible' : 'hidden' }}
+          >
+            {previewMoves.length > 0 && (
+              <LiveBoard
+                moves={previewMoves}
+                stoneColors={previewColors}
+                currentMove={previewCurrentMove}
+                handicapCount={previewSetupCount}
+                boardSize={previewBoardSize}
+                /* 迁版式前这里写死 `showCoordinates={true}`。改成走共享的自动档：
+                   spec §3.2「棋盘边长低于 500px 时坐标默认关闭」。本页冻结稿里没有坐标
+                   开关（右栏塞的是列表，没有显示开关那一段），所以只取 `visible`，
+                   不挂 toggle —— 有开关的那几页才需要开关。 */
+                showCoordinates={coordinates.visible}
+                minimumCanvasSize={0}
+                minContainerHeight={0}
+              />
+            )}
+          </Box>
+          {!hasPreview && (
+            <Box sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
+              {loading || (!listError && previewLoading) ? (
+                <CircularProgress data-testid="kifu-preview-spinner" />
+              ) : previewError && !listError ? (
+                <Box sx={{ textAlign: 'center', px: 2 }}>
+                  <Typography variant="body2" color="text.secondary">{t('report:preview_failed', '棋谱预览加载失败')}</Typography>
+                  <Button onClick={() => setPreviewReload((value) => value + 1)}>{t('kifu:retry', '重试')}</Button>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.5, textAlign: 'center', px: 2 }}>
+                  {/* 冻结稿写的是「从右边选一局棋谱预览」。这里保留原来那句不带方位的说法 ——
+                      <900px 竖屏下列表在棋盘**下方**，「从右边」就是假的。 */}
+                  {t('kifu:select_to_preview', '选择一局棋谱预览')}
+                </Typography>
+              )}
+            </Box>
+          )}
         </Box>
-      ) : (
-        <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.5, textAlign: 'center', px: 2 }}>
-          {/* 冻结稿写的是「从右边选一局棋谱预览」。这里保留原来那句不带方位的说法 ——
-              <900px 竖屏下列表在棋盘**下方**，「从右边」就是假的。 */}
-          {t('kifu:select_to_preview', '选择一局棋谱预览')}
-        </Typography>
       )}
       modulePlate={(
         <ModulePlate
@@ -551,18 +570,15 @@ export default function KifuLibraryPage() {
               </Box>
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {items.map((album, index) => (
-                  <Fade key={album.id} in timeout={200 + index * ROW_STAGGER}>
-                    <Box>
-                      <GameRecordCard
-                        album={album}
-                        onClick={() => handleCardClick(album)}
-                        tMovesUnit={movesUnit}
-                        t={t}
-                        selected={selectedId === album.id}
-                      />
-                    </Box>
-                  </Fade>
+                {items.map((album) => (
+                  <GameRecordCard
+                    key={album.id}
+                    album={album}
+                    onClick={() => handleCardClick(album)}
+                    tMovesUnit={movesUnit}
+                    t={t}
+                    selected={selectedId === album.id}
+                  />
                 ))}
               </Box>
             )}

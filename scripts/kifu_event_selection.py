@@ -24,6 +24,7 @@ from katrain.web.kifu.event_selection import (
     undo_batch,
     validate_bundle,
 )
+from katrain.web.kifu.prepare_search import PreparationError
 
 
 def main(argv=None) -> int:
@@ -40,6 +41,8 @@ def main(argv=None) -> int:
         sub = commands.add_parser(command)
         sub.add_argument("--database-url", required=True)
         sub.add_argument("--batch-id", type=int, required=True)
+        if command == "undo":
+            sub.add_argument("--emergency-invalidate-search", action="store_true")
     args = parser.parse_args(argv)
     engine = None
     try:
@@ -55,8 +58,9 @@ def main(argv=None) -> int:
                     result = apply_bundle(engine, bundle, expected_bundle_sha256=args.approved_bundle_sha256)
         else:
             engine = create_engine(args.database_url)
-            result = (batch_status if args.command == "status" else undo_batch)(engine, args.batch_id)
-    except (EventSelectionError, OSError, json.JSONDecodeError) as exc:
+            result = (batch_status(engine, args.batch_id) if args.command == "status" else
+                      undo_batch(engine, args.batch_id, emergency_invalidate_search=args.emergency_invalidate_search))
+    except (EventSelectionError, PreparationError, OSError, json.JSONDecodeError) as exc:
         result = {"ready": False, "error": str(exc)}
     finally:
         if engine is not None:

@@ -6,9 +6,10 @@ from time import perf_counter
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import case, false, func, or_
-from sqlalchemy.orm import Session, defer
+from sqlalchemy.orm import Session, defer, load_only
 from starlette.concurrency import run_in_threadpool
 from katrain.core.sgf_parser import SGF
 from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
@@ -16,7 +17,11 @@ from katrain.kifu_ingest.ranks import display_rank_for_game_slot
 
 from katrain.web.core.db import SessionLocal, get_db
 from katrain.web.core.models_db import (
-    KifuAlbum, KifuAlbumEventSelection, KifuAnalysisJob, KifuAnalysisMove, KifuEvent,
+    KifuAlbum,
+    KifuAlbumEventSelection,
+    KifuAnalysisJob,
+    KifuAnalysisMove,
+    KifuEvent,
 )
 from katrain.web.core.repository import RemoteServiceUnavailableError
 from katrain.web.kifu.identity import (
@@ -39,22 +44,22 @@ from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.player_ranks import lookup_album_rank_snapshots
 from katrain.web.kifu.round_names import display_round_name
 from katrain.web.kifu.library import report_availability
-from katrain.web.kifu.library_search import public_player_id, unique_exact_player_id
+from katrain.web.kifu.library_search import HISTORICAL_PLAYER_ALIASES, public_player_id, unique_exact_player_id
+from katrain.web.kifu.prepared_read import (
+    PreparedSearchNotReady,
+    begin_read_snapshot,
+    current_policy_signature,
+    read_displays,
+    read_state,
+    require_ready,
+    search_filter,
+)
 
 router = APIRouter()
 KIFU_MODEL_SHA256 = "93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871"
 KIFU_VISITS = 2000
 
-# The archive uses Japanese romanizations while many kiosk users search in Chinese.
-_HISTORICAL_PLAYER_ALIASES = {
-    "吴清源": ("go seigen",),
-    "吳清源": ("吴清源", "go seigen"),
-    "道策": ("honinbo dosaku",),
-    "丈和": ("honinbo jowa", "kadono jowa", "kadono matsunosuke", "todani matsunosuke"),
-    "秀策": ("shusaku", "yasuda eisai"),
-    "木谷实": ("kitani minoru",),
-    "木谷實": ("木谷实", "kitani minoru"),
-}
+_HISTORICAL_PLAYER_ALIASES = HISTORICAL_PLAYER_ALIASES
 
 
 def _obscured_program_event_ids_loaded(db: Session, albums: list, selected_events: dict) -> set[int]:
@@ -63,7 +68,8 @@ def _obscured_program_event_ids_loaded(db: Session, albums: list, selected_event
     if not candidates:
         return set()
     obscured = {
-        album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
+        album_id
+        for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
             KifuAlbumEventSelection.album_id.in_([album.id for album in candidates])
         )
     }
@@ -73,13 +79,29 @@ def _obscured_program_event_ids_loaded(db: Session, albums: list, selected_event
         except Exception:
             obscured.add(album.id)
             continue
-        if names and names[0] == "GNUGo3.8" and any(
-            name and name != names[0]
-            and parse_event(name, None).category not in {"program_source_label", "corrupt_data"}
-            for name in names[1:]
+        if (
+            names
+            and names[0] == "GNUGo3.8"
+            and any(
+                name
+                and name != names[0]
+                and parse_event(name, None).category not in {"program_source_label", "corrupt_data"}
+                for name in names[1:]
+            )
         ):
             obscured.add(album.id)
     return obscured
+
+
+def _cloud_prepared_not_ready(exc):
+    if not isinstance(exc, httpx.HTTPStatusError) or exc.response.status_code != 503:
+        return False
+    try:
+        payload = exc.response.json()
+    except ValueError:
+        return False
+    detail = payload.get("detail") if isinstance(payload, dict) else None
+    return isinstance(detail, dict) and detail.get("code") == PreparedSearchNotReady.code
 
 
 async def _from_dispatcher(call, not_found_detail: str):
@@ -87,9 +109,13 @@ async def _from_dispatcher(call, not_found_detail: str):
     try:
         return await call()
     except RemoteServiceUnavailableError as exc:
+        if _cloud_prepared_not_ready(exc.__cause__):
+            raise _not_ready(PreparedSearchNotReady("cloud")) from exc
         code = "kifu_cloud_error" if isinstance(exc.__cause__, httpx.HTTPStatusError) else "kifu_cloud_unreachable"
         raise HTTPException(status_code=503, detail={"code": code, "message": str(exc)}) from exc
     except httpx.HTTPStatusError as exc:
+        if _cloud_prepared_not_ready(exc):
+            raise _not_ready(PreparedSearchNotReady("cloud")) from exc
         status = exc.response.status_code
         detail = not_found_detail if status == 404 else f"Remote kifu request failed ({status})"
         raise HTTPException(status_code=status, detail=detail) from exc
@@ -145,6 +171,29 @@ class KifuAlbumListResponse(BaseModel):
     page: int
     page_size: int
     preview: Optional[KifuAlbumDetail] = None
+
+
+_PREPARED_ALBUM_COLUMNS = (
+    KifuAlbum.id,
+    KifuAlbum.player_black,
+    KifuAlbum.player_white,
+    KifuAlbum.black_rank,
+    KifuAlbum.white_rank,
+    KifuAlbum.event,
+    KifuAlbum.result,
+    KifuAlbum.rules,
+    KifuAlbum.date_played,
+    KifuAlbum.komi,
+    KifuAlbum.handicap,
+    KifuAlbum.board_size,
+    KifuAlbum.round_name,
+    KifuAlbum.move_count,
+    KifuAlbum.place,
+    KifuAlbum.source,
+    KifuAlbum.sgf_content,
+    KifuAlbum.source_path,
+    KifuAlbum.duplicate_of_id,
+)
 
 
 @router.get("/albums/{album_id}/analysis")
@@ -267,6 +316,32 @@ def get_kifu_session_factory():
     return SessionLocal
 
 
+@router.get("/search-ready")
+def kifu_search_ready(session_factory=Depends(get_kifu_session_factory)):
+    """Expose this web process's policy hash independently of generic health."""
+    with session_factory() as db:
+        begin_read_snapshot(db)
+        runtime_signature = current_policy_signature()
+        value, ready, unavailable = None, False, False
+        try:
+            value = read_state(db)
+            ready = require_ready(db) is not None
+        except PreparedSearchNotReady:
+            unavailable = True
+        return JSONResponse(
+            status_code=503 if unavailable else 200,
+            content={
+                "kifu_search_ready": ready,
+                "runtime_policy_signature": runtime_signature,
+                "policy_signature": value["policy_signature"] if value else None,
+                "enabled": bool(value and value["enabled"]),
+                "ready": bool(value and value["ready"]),
+                "initial_coverage_complete": bool(value and value["initial_coverage_complete"]),
+                "phase": value["phase"] if value else "unmigrated",
+            },
+        )
+
+
 def read_in_owned_session(session_factory, *, submitted_at, timings, **params):
     """Construct, read and close each local Session on the same bounded pool worker."""
     started = perf_counter()
@@ -327,9 +402,95 @@ def _validate_list_params(q, player_id, lang):
         raise HTTPException(status_code=422, detail="player_id must be positive and cannot be combined with q")
 
 
+def _not_ready(exc):
+    return HTTPException(status_code=503, detail={"code": exc.code, "message": "Kifu search is not ready"})
+
+
 def read_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="cn", timings=None):
+    """Read prepared names and the complete page in the worker's one snapshot."""
+    _validate_list_params(q, player_id, lang)
+    begin_read_snapshot(db)
+    try:
+        if require_ready(db) is None:
+            return read_album_page_legacy(
+                db, q=q, player_id=player_id, page=page, page_size=page_size, lang=lang, timings=timings
+            )
+        return _read_prepared_album_page(
+            db, q=q, player_id=player_id, page=page, page_size=page_size, lang=lang, timings=timings
+        )
+    except PreparedSearchNotReady as exc:
+        raise _not_ready(exc) from exc
+
+
+def _read_prepared_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="cn", timings=None):
+    """Forced prepared read after the caller verifies its snapshot's ready gate.
+
+    The explicit CLI comparison may use this while enabled is still false; it
+    checks coverage/policy/dirty in the same snapshot before calling this helper.
+    """
+    timings = {} if timings is None else timings
+    started = perf_counter()
+    predicate, priority = search_filter(
+        db, query=q, player_id=player_id, lang=name_display_language(lang), strict=strict_names_enabled()
+    )
+    timings["kifu_candidate"] = (perf_counter() - started) * 1000
+    visible = (KifuAlbum.duplicate_of_id.is_(None), KifuAlbum.list_hidden_reason.is_(None))
+    query = db.query(KifuAlbum).options(load_only(*_PREPARED_ALBUM_COLUMNS)).filter(*visible)
+    count_query = db.query(func.count(KifuAlbum.id)).filter(*visible)
+    if predicate is not None:
+        query = query.filter(predicate)
+        count_query = count_query.filter(predicate)
+    if priority is not None:
+        query = query.order_by(case((priority, 0), else_=1))
+    query = query.order_by(KifuAlbum.date_sort.desc().nulls_last(), KifuAlbum.id.desc())
+    started = perf_counter()
+    total = count_query.scalar() or 0
+    timings["kifu_count"] = (perf_counter() - started) * 1000
+    started = perf_counter()
+    # Current report/rank identity checks require every page row's SGF. Keep the
+    # bounded page read rather than weakening those checks to load only preview.
+    records = query.offset((page - 1) * page_size).limit(page_size).all()
+    timings["kifu_page"] = (perf_counter() - started) * 1000
+    started = perf_counter()
+    displays = read_displays(db, [record.id for record in records], name_display_language(lang))
+    timings["kifu_display"] = (perf_counter() - started) * 1000
+    started = perf_counter()
+    availability = report_availability(db, records, KIFU_MODEL_SHA256, KIFU_VISITS)
+    timings["kifu_report"] = (perf_counter() - started) * 1000
+    started = perf_counter()
+    ranks = lookup_album_rank_snapshots(db.connection(), [record.id for record in records])
+    timings["kifu_rank"] = (perf_counter() - started) * 1000
+    items = []
+    for record in records:
+        display = displays[record.id]
+        items.append(
+            _summary(
+                record,
+                (display["player_black"], display["player_white"], display["event"]),
+                display["strict_outputs"]["sources"],
+                lang,
+                rank_snapshots=ranks,
+            ).model_copy(update={"has_analysis": availability[record.id]})
+        )
+    preview = (
+        None
+        if not records
+        else KifuAlbumDetail.model_validate(
+            {
+                **items[0].model_dump(),
+                "place": records[0].place,
+                "source": records[0].source,
+                "sgf_content": records[0].sgf_content,
+            }
+        )
+    )
+    return KifuAlbumListResponse(items=items, total=total, page=page, page_size=page_size, preview=preview)
+
+
+def read_album_page_legacy(db, *, q=None, player_id=None, page=1, page_size=20, lang="cn", timings=None):
     """Synchronous local list core, retaining the existing page and preview contract."""
     _validate_list_params(q, player_id, lang)
+    begin_read_snapshot(db)
     timings = {} if timings is None else timings
     requested_lang = lang
     lang = name_display_language(lang)
@@ -376,8 +537,13 @@ def read_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="c
             event_ids |= legacy_events
         exact_raw_event = bool(raw_event_name_ids) and not player_ids and not event_ids and not raw_players
         exact_player = len(player_ids) == 1 and not event_ids and not raw_players and not raw_event_name_ids
-        exact_player_with_raw = (len(player_ids) == 1 and bool(raw_players) and not event_ids
-                                 and not raw_event_name_ids and not selected_event_ids)
+        exact_player_with_raw = (
+            len(player_ids) == 1
+            and bool(raw_players)
+            and not event_ids
+            and not raw_event_name_ids
+            and not selected_event_ids
+        )
         player_only_search = (exact_player or exact_player_with_raw) and not selected_event_ids
         shared_players = bool(shared_player_ids) and not event_ids and not raw_event_name_ids
         if exact_player:
@@ -385,11 +551,15 @@ def read_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="c
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
         elif exact_player_with_raw:
             player_id = next(iter(player_ids))
-            needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id,
-                         strict_raw_player_search_clause(db, raw_players, q, names=raw_name_rows))
+            needle = or_(
+                KifuAlbum.black_player_id == player_id,
+                KifuAlbum.white_player_id == player_id,
+                strict_raw_player_search_clause(db, raw_players, q, names=raw_name_rows),
+            )
         elif shared_players:
-            needle = or_(KifuAlbum.black_player_id.in_(shared_player_ids),
-                         KifuAlbum.white_player_id.in_(shared_player_ids))
+            needle = or_(
+                KifuAlbum.black_player_id.in_(shared_player_ids), KifuAlbum.white_player_id.in_(shared_player_ids)
+            )
             if raw_players:
                 needle = or_(needle, strict_raw_player_search_clause(db, raw_players, q, names=raw_name_rows))
         elif len(event_ids) == 1 and not player_ids and not raw_players and not raw_event_name_ids:
@@ -435,19 +605,24 @@ def read_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="c
 
             provisional_players, provisional_events, provisional_albums = search_raw_names(q)
             if provisional_players:
-                needle = or_(needle, KifuAlbum.player_black.in_(provisional_players),
-                             KifuAlbum.player_white.in_(provisional_players))
+                needle = or_(
+                    needle,
+                    KifuAlbum.player_black.in_(provisional_players),
+                    KifuAlbum.player_white.in_(provisional_players),
+                )
             if provisional_events and not exact_player:
                 no_selection = ~KifuAlbum.id.in_(db.query(KifuAlbumEventSelection.album_id))
                 unlinked_raws = {raw for raw, canonical in provisional_events if canonical is None}
                 if unlinked_raws:
-                    needle = or_(needle, KifuAlbum.event_id.is_(None) & KifuAlbum.event.in_(unlinked_raws)
-                                 & no_selection)
+                    needle = or_(
+                        needle, KifuAlbum.event_id.is_(None) & KifuAlbum.event.in_(unlinked_raws) & no_selection
+                    )
                 for canonical in {canonical for _, canonical in provisional_events if canonical is not None}:
                     raws = {raw for raw, name in provisional_events if name == canonical}
                     matching_ids = db.query(KifuEvent.id).filter(KifuEvent.canonical_name == canonical)
-                    needle = or_(needle, KifuAlbum.event.in_(raws) & KifuAlbum.event_id.in_(matching_ids)
-                                 & no_selection)
+                    needle = or_(
+                        needle, KifuAlbum.event.in_(raws) & KifuAlbum.event_id.in_(matching_ids) & no_selection
+                    )
             if provisional_albums and not exact_player:
                 verified_albums = valid_override_search_ids(db, provisional_albums)
                 if verified_albums:
@@ -487,10 +662,18 @@ def read_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="c
     rank_snapshots = lookup_album_rank_snapshots(db.connection(), [record.id for record in records])
     timings["kifu_rank"] = (perf_counter() - segment_started) * 1000
     items = [
-        _summary(
-            r, players, events, event_canonical_names, sources, lang,
-            round_lang=requested_lang, raw_players=raw_players, raw_events=raw_events,
-            obscured_event_ids=obscured_event_ids, selected_events=selected_events,
+        _summary_legacy(
+            r,
+            players,
+            events,
+            event_canonical_names,
+            sources,
+            lang,
+            round_lang=requested_lang,
+            raw_players=raw_players,
+            raw_events=raw_events,
+            obscured_event_ids=obscured_event_ids,
+            selected_events=selected_events,
             fallback_maps=fallback_maps,
             rank_snapshots=rank_snapshots,
         ).model_copy(update={"has_analysis": availability[r.id]})
@@ -517,8 +700,19 @@ def read_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="c
     )
 
 
+def _direct_kifu_db():
+    """Production receives a factory; explicit Sessions remain a direct-call seam."""
+    return None
+
+
 @router.get("/albums/{album_id}", response_model=KifuAlbumDetail)
-async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: Session = Depends(get_db)):
+async def get_kifu_album(
+    request: Request,
+    album_id: int,
+    lang: str = "cn",
+    db: Session = Depends(_direct_kifu_db),
+    session_factory=Depends(get_kifu_session_factory),
+):
     """Get a single kifu album record with full SGF content."""
     if lang not in LANGUAGES:
         raise HTTPException(status_code=422, detail="Unsupported language")
@@ -531,10 +725,57 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
         if not result:
             raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
         return result
+    if isinstance(db, Session):
+        return read_album_detail(db, album_id, lang=lang)
+    factory = session_factory if callable(session_factory) else get_kifu_session_factory()
+    return await run_in_threadpool(read_detail_in_owned_session, factory, album_id, lang=lang)
+
+
+def read_detail_in_owned_session(session_factory, album_id, *, lang="cn"):
+    with session_factory() as db:
+        return read_album_detail(db, album_id, lang=lang)
+
+
+def read_album_detail(db, album_id, *, lang="cn"):
+    if lang not in LANGUAGES:
+        raise HTTPException(status_code=422, detail="Unsupported language")
+    begin_read_snapshot(db)
+    record = db.query(KifuAlbum).filter(KifuAlbum.id == album_id).first()
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
+    try:
+        if require_ready(db) is None:
+            return read_album_detail_legacy(db, album_id, lang=lang, _record=record)
+        display = read_displays(db, [record.id], name_display_language(lang))[record.id]
+        values = _summary(
+            record,
+            (display["player_black"], display["player_white"], display["event"]),
+            display["strict_outputs"]["sources"],
+            lang,
+            rank_snapshots=lookup_album_rank_snapshots(db.connection(), [record.id]),
+        ).model_dump()
+        values["has_analysis"] = report_availability(db, [record], KIFU_MODEL_SHA256, KIFU_VISITS)[record.id]
+        return KifuAlbumDetail.model_validate(
+            {
+                **values,
+                "place": record.place,
+                "source": record.source,
+                "sgf_content": record.sgf_content,
+            }
+        )
+    except PreparedSearchNotReady as exc:
+        raise _not_ready(exc) from exc
+
+
+def read_album_detail_legacy(db, album_id, *, lang="cn", _record=None):
+    """Explicit original proof reader, also usable for same-snapshot comparison."""
+    if lang not in LANGUAGES:
+        raise HTTPException(status_code=422, detail="Unsupported language")
+    begin_read_snapshot(db)
     requested_lang = lang
     lang = name_display_language(lang)
 
-    record = db.query(KifuAlbum).filter(KifuAlbum.id == album_id).first()
+    record = _record if _record is not None else db.query(KifuAlbum).filter(KifuAlbum.id == album_id).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
 
@@ -545,7 +786,7 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
     players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
         db, [record], lang, selected_events=selected_events
     )
-    values = _summary(
+    values = _summary_legacy(
         record,
         players,
         events,
@@ -566,7 +807,7 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
     )
 
 
-def _summary(
+def _summary_legacy(
     record: KifuAlbum,
     players: dict[int, str],
     events: dict[int, str],
@@ -582,10 +823,8 @@ def _summary(
     fallback_maps: tuple | None = None,
     rank_snapshots: dict | None = None,
 ) -> KifuAlbumSummary:
-    summary = KifuAlbumSummary.model_validate(record)
     black = parse_player(record.player_black, record.black_rank)
     white = parse_player(record.player_white, record.white_rank)
-    rank_displays = _rank_displays(record, black, white, rank_snapshots or {})
     strict = raw_players is not None and raw_events is not None
     fallback_names = None
     if fallback_maps is not None:
@@ -604,7 +843,9 @@ def _summary(
             )
         else:
             fallback_event = event_hints.get(record.id) or display_event_name(
-                record.event, linked_canonical if lang == "cn" else None, lang,
+                record.event,
+                linked_canonical if lang == "cn" else None,
+                lang,
                 linked_canonical_name=linked_canonical,
             )
         fallback_names = (
@@ -614,7 +855,13 @@ def _summary(
         )
     if strict:
         black_name, white_name, displayed_event = resolve_strict_display(
-            record, lang, players, events, event_canonical_names, raw_players, raw_events,
+            record,
+            lang,
+            players,
+            events,
+            event_canonical_names,
+            raw_players,
+            raw_events,
             obscured_event_ids=obscured_event_ids,
             selected_events=selected_events,
             fallback_names=fallback_names,
@@ -628,14 +875,28 @@ def _summary(
             lang,
             linked_canonical_name=event_canonical_names.get(record.event_id),
         )
+    return _summary(
+        record,
+        (black_name, white_name, displayed_event),
+        sources.get(record.id, []),
+        round_lang or lang,
+        rank_snapshots=rank_snapshots,
+    )
+
+
+def _summary(record, names, sources, round_lang, *, rank_snapshots=None):
+    """Assemble approved names with current game scalars and bounded rank data."""
+    summary = KifuAlbumSummary.model_validate(record)
+    black = parse_player(record.player_black, record.black_rank)
+    white = parse_player(record.player_white, record.white_rank)
     return summary.model_copy(
         update={
-            "display_player_black": black_name,
-            "display_player_white": white_name,
-            **rank_displays,
-            "display_event": displayed_event,
-            "display_round_name": display_round_name(record.round_name, round_lang or lang),
-            "sources": sources.get(record.id, []),
+            "display_player_black": names[0],
+            "display_player_white": names[1],
+            **_rank_displays(record, black, white, rank_snapshots or {}),
+            "display_event": names[2],
+            "display_round_name": display_round_name(record.round_name, round_lang),
+            "sources": sources,
         }
     )
 

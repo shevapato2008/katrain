@@ -2,6 +2,8 @@
 
 import asyncio
 import logging
+import json
+import os
 import signal
 import sys
 
@@ -19,6 +21,15 @@ def _setup_logging():
 async def _main():
     logger = logging.getLogger("katrain_cron")
     logger.info("katrain-cron starting")
+    from katrain.web.kifu.prepared_read import current_policy_signature
+
+    logger.info(
+        "kifu_search_writer_runtime %s",
+        json.dumps(
+            {"policy_signature": current_policy_signature(), "build_sha": os.getenv("KATRAIN_BUILD_SHA", "unknown")},
+            separators=(",", ":"),
+        ),
+    )
 
     # Late import so logging is configured first
     from katrain.cron.scheduler import CronScheduler

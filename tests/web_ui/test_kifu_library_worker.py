@@ -102,3 +102,60 @@ async def test_player_id_validation_and_async_remote_forwarding():
         result = await client.get("/kifu/albums?player_id=7&page=2&lang=jp")
     assert result.status_code == 200
     search.assert_awaited_once_with(player_id=7, page=2, page_size=20, lang="jp")
+
+
+@pytest.mark.asyncio
+async def test_detail_constructs_queries_and_closes_its_session_in_one_responsive_worker(tmp_path, monkeypatch):
+    engine = create_engine(f"sqlite:///{tmp_path / 'detail-owned.db'}")
+    started, release = Event(), Event()
+    seen = []
+
+    class OwnedSession(Session):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            seen.append(("open", id(self), get_ident()))
+
+        def close(self):
+            seen.append(("close", id(self), get_ident()))
+            super().close()
+
+    def read(db, album_id, *, lang):
+        seen.append(("query", id(db), get_ident()))
+        assert db.execute(text("SELECT 1")).scalar_one() == 1
+        started.set()
+        assert release.wait(3), "test did not release detail reader"
+        return kifu.KifuAlbumDetail(
+            id=album_id,
+            player_black="Black",
+            player_white="White",
+            black_rank=None,
+            white_rank=None,
+            event=None,
+            result=None,
+            rules=None,
+            date_played=None,
+            komi=None,
+            handicap=0,
+            board_size=19,
+            round_name=None,
+            move_count=1,
+            place=None,
+            source=None,
+            sgf_content="(;B[aa])",
+        )
+
+    monkeypatch.setattr(kifu, "read_album_detail", read)
+    factory = sessionmaker(bind=engine, class_=OwnedSession)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=_app(factory)), base_url="http://test") as client:
+        detail = asyncio.create_task(client.get("/kifu/albums/17?lang=jp"))
+        try:
+            assert await asyncio.to_thread(started.wait, 1)
+            assert (await asyncio.wait_for(client.get("/ping"), 0.5)).json() == {"ok": True}
+        finally:
+            release.set()
+            response = await detail
+        assert response.status_code == 200 and response.json()["id"] == 17
+    assert [entry[0] for entry in seen] == ["open", "query", "close"]
+    assert len({entry[1] for entry in seen}) == len({entry[2] for entry in seen}) == 1
+    assert seen[0][2] != get_ident()
+    engine.dispose()

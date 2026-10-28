@@ -308,3 +308,93 @@ def test_verify_schema_uses_existing_connection_without_owning_transaction(engin
         outer.rollback()
         assert command.read_state(conn)["phase"] == original_phase
         assert not conn.closed
+
+
+def _collection_invalidated(engine):
+    with engine.begin() as conn:
+        conn.execute(m.dirty.insert().values(input_kind="kifu_players", input_key="*", reason="TRUNCATE"))
+        conn.execute(m.state.update().values(ready=False))
+
+
+def test_full_rebuild_resolves_existing_collection_invalidation(engine, capsys):
+    apply_migration(engine)
+    assert invoke(engine, capsys, "prepare")[0] == 0
+    _collection_invalidated(engine)
+    assert invoke(engine, capsys, "prepare", "--resume")[0] == 1
+    code, result = invoke(engine, capsys, "prepare", "--full")
+    assert code == 0 and result["ready"]
+    with engine.connect() as conn:
+        state = command.read_state(conn)
+        assert state["initial_coverage_complete"] and not state["enabled"]
+        assert not conn.execute(select(m.dirty)).first()
+
+
+def test_full_rebuild_requires_explicit_disable(engine, capsys):
+    apply_migration(engine)
+    assert invoke(engine, capsys, "prepare")[0] == 0
+    assert invoke(engine, capsys, "enable", "--expected-policy-version", "1")[0] == 0
+    code, result = invoke(engine, capsys, "prepare", "--full")
+    assert code == 1 and "disable" in result["reason"]
+    with engine.connect() as conn:
+        state = command.read_state(conn)
+        assert state["enabled"] and state["ready"] and state["initial_coverage_complete"]
+
+
+def test_full_start_is_committed_once_and_resume_does_not_reset(engine, capsys, monkeypatch):
+    apply_migration(engine)
+    assert invoke(engine, capsys, "prepare")[0] == 0
+    _collection_invalidated(engine)
+    original_batch, original_full = command.prepare_initial_batch, command.begin_full_prepare
+    calls, starts = [], []
+
+    def start(conn):
+        starts.append(True)
+        return original_full(conn)
+
+    def interrupted(conn, **kwargs):
+        calls.append(True)
+        if len(calls) == 2:
+            raise command.PreparationError("simulated interruption")
+        return original_batch(conn, **kwargs)
+
+    monkeypatch.setattr(command, "begin_full_prepare", start)
+    monkeypatch.setattr(command, "prepare_initial_batch", interrupted)
+    code, result = invoke(engine, capsys, "prepare", "--full", "--batch-size", "1")
+    assert code == 1 and result["committed_batches"] == 1
+    assert starts == [True]
+    with engine.connect() as conn:
+        state = command.read_state(conn)
+        assert not state["initial_coverage_complete"] and not state["enabled"]
+        assert state["cursor"] == {"kind": 0, "owner": 17}
+    monkeypatch.setattr(command, "prepare_initial_batch", original_batch)
+    assert invoke(engine, capsys, "prepare", "--resume", "--batch-size", "1")[0] == 0
+    assert starts == [True]
+
+
+def test_new_collection_invalidation_during_rebuild_refuses_completion(engine, capsys, monkeypatch):
+    apply_migration(engine)
+    assert invoke(engine, capsys, "prepare")[0] == 0
+    _collection_invalidated(engine)
+    original = command.prepare_initial_batch
+    calls = []
+
+    def newly_invalidated(conn, **kwargs):
+        calls.append(True)
+        if len(calls) == 2:
+            conn.execute(m.dirty.insert().values(input_kind="kifu_events", input_key="*", reason="TRUNCATE"))
+        return original(conn, **kwargs)
+
+    monkeypatch.setattr(command, "prepare_initial_batch", newly_invalidated)
+    code, result = invoke(engine, capsys, "prepare", "--full", "--batch-size", "1")
+    assert code == 1 and not result["ready"]
+    with engine.connect() as conn:
+        assert not command.read_state(conn)["initial_coverage_complete"]
+        assert conn.execute(select(m.dirty).where(m.dirty.c.input_key == "*")).first()
+    monkeypatch.setattr(command, "prepare_initial_batch", original)
+    assert invoke(engine, capsys, "prepare", "--full")[0] == 0
+
+
+def test_full_and_resume_cannot_be_combined(engine):
+    with pytest.raises(SystemExit) as caught:
+        command.main(["--database-url", str(engine.url), "prepare", "--full", "--resume"])
+    assert caught.value.code == 2

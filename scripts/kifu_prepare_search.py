@@ -26,6 +26,7 @@ from katrain.web.kifu import identity, prepared_models as m
 from katrain.web.kifu.prepare_search import (
     PrepareBudget,
     PreparationError,
+    begin_full_prepare,
     prepare_changed,
     prepare_initial_batch,
 )
@@ -347,7 +348,13 @@ def prepare(engine, args):
     try:
         with engine.connect() as conn:
             value = _state_required(conn)
-            if value["phase"] != "unprepared" and not value["initial_coverage_complete"] and not args.resume:
+            if args.full and value["enabled"]:
+                raise PreparationError("disable prepared search explicitly before prepare --full")
+            if (
+                value["phase"] != "unprepared"
+                and not value["initial_coverage_complete"]
+                and not (args.resume or args.full)
+            ):
                 raise PreparationError("checkpoint exists; pass --resume to continue")
             if value["enabled"] and (
                 not value["initial_coverage_complete"] or value["policy_signature"] != current_policy_signature()
@@ -356,6 +363,8 @@ def prepare(engine, args):
         while True:
             remaining = _remaining(started, args.max_seconds)
             with _writer_transaction(engine, seconds=min(30, remaining)) as conn:
+                if args.full and committed == 0:
+                    begin_full_prepare(conn)
                 pending = prepare_initial_batch(
                     conn,
                     batch_size=args.batch_size,
@@ -550,7 +559,9 @@ def main(argv=None):
     preparation.add_argument("--batch-size", type=_bounded_number(500, integer=True), default=500)
     preparation.add_argument("--max-seconds", type=_bounded_number(1800), default=1800)
     preparation.add_argument("--max-memory-mib", type=_bounded_number(512, integer=True), default=512)
-    preparation.add_argument("--resume", action="store_true")
+    preparation_mode = preparation.add_mutually_exclusive_group()
+    preparation_mode.add_argument("--resume", action="store_true")
+    preparation_mode.add_argument("--full", action="store_true", help="start an explicit disabled full rebuild")
     verification = sub.add_parser("verify")
     verification.add_argument("--all-coverage", action="store_true")
     verification.add_argument("--compare-sample", type=_bounded_number(24, integer=True), default=0)

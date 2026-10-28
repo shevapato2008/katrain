@@ -41,6 +41,19 @@ python scripts/kifu_prepare_search.py disable
 
 `prepare` 的 state.phase/cursor 与该批结果在同一 Connection/事务提交，每批至多 500，单批最多 30 秒 statement timeout、1 秒 lock timeout；命令总截止 1800 秒不因换批重置。沿用名称 writer advisory lock `720220261002`，再取 publication lock `720220261003`，再锁源表、singleton 和目标；不得倒序或在已有 Session 内另开连接取锁。遇活跃 writer/锁超时立即让出并返回非零，保留最后成功 checkpoint，下次显式 `--resume`；没有后台自动重试、跨全库长快照或第二 collector。超时当前批回滚，已提交批保留。初次覆盖未完成时正常 writer 保留 dirty，最终闭包统一核对；不得半准备 enable。
 
+普通增量准备遇到 `input_key='*'`（如 TRUNCATE）的 collection invalidation 必须拒绝完成，操作入口是显式完整重建：
+
+```sh
+python scripts/kifu_prepare_search.py disable
+python scripts/kifu_prepare_search.py prepare --full --batch-size 500 --max-seconds 1800 --max-memory-mib 512
+# 如中断，只继续 checkpoint，不再传 --full：
+python scripts/kifu_prepare_search.py prepare --resume --batch-size 500 --max-seconds 1800 --max-memory-mib 512
+python scripts/kifu_prepare_search.py verify --all-coverage --compare-sample 24 --compare-queries /private/evidence/frozen-main-cases.json
+python scripts/kifu_prepare_search.py enable --expected-policy-version 1
+```
+
+`--full` 与 `--resume` 互斥；enabled 时 `--full` 拒绝，绝不暗中关闭开关。第一批在既有 writer 锁、同一事务中将启动时已有的 `*` dirty 转为持久的完整重建义务，保留普通旧 dirty，关闭 ready/initial coverage、重置 phase/cursor，再写入该批结果；只有整批 commit 后才算开始。中断用 `--resume` 不重复 reset，预算不变。重建期间新业务变更保留 dirty，在完整扫描后处理实际闭包；若期间又出现新 `*`，拒绝 complete，须再次显式 `--full` 重新开始，不能静默清除/无限自动重跑。没有新增表、业务审批改写或预算扩张。
+
 `verify --all-coverage` 读取一致快照，检查全部详情 album×五语、所有物理名称（包括不合资格的否定记录）、aliases、有限成员/当前 scope、当前 policy 和 dirty；不把 `ready=true` 当自证。`--compare-queries` 直接使用负载工具的 `{version:1,cases:[{id,category,params,expected,...}]}` casefile，比较其前 `--compare-sample 24` 个有效 case；控制器冻结真实 params/expected，不能自动生成空 query。缺 manifest/不足 24/格式无效时 `observed=false`、非零。比较在同一个 PostgreSQL REPEATABLE READ READ ONLY Connection/Session 中先核验全覆盖/policy/dirty，再分别调用实际 `_read_prepared_album_page()` 与原 `read_album_page_legacy()`；前者只绕过 enabled 开关，确保 disabled 时仍是真 prepared 对照，绝非 legacy 对 legacy。比较完整 public `model_dump` 的 JSON、ID 顺序、total、展示/来源、分页、rank/report/preview SGF，只记录 opaque case id/category、equivalent 和两侧 SHA256，不输出姓名/SGF。存在差异返回非零；真正运行完这 24 个实际 case 前，不能称发布语义门禁通过。
 
 `enable` 在原 writer 锁下消费最终 dirty closure，复核完整覆盖、policy version/signature、有效 schema/guard，然后仅在同一事务末置 enabled。任一失败不提交 enable。`disable` 只改 existing singleton 的 enabled，不删除业务、proof、派生结果或守卫；即使派生索引/guard 的 schema 验证不通过，仍允许用既有 singleton 关闭读取开关。

@@ -327,7 +327,18 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
         KifuNameSourceRegistry.id.in_(registry_ids))} if registry_ids else {}
     positive_changes = {key: [] for key in positive_batch_ids}
     if positive_batch_ids:
-        for change in db.query(KifuNameChange).filter(KifuNameChange.batch_id.in_(positive_batch_ids)):
+        # Positive gates inspect only these exact name/evidence targets. Keep
+        # every matching physical row so duplicate-target rejection is unchanged.
+        name_ids = {name.id for name, *_ in rows}
+        for change in db.query(KifuNameChange).filter(
+            KifuNameChange.batch_id.in_(positive_batch_ids),
+            or_(
+                and_(KifuNameChange.target_table == "kifu_name_research_evidence",
+                     KifuNameChange.target_row_id.in_(evidence_ids)),
+                and_(KifuNameChange.target_table == model.__tablename__,
+                     KifuNameChange.target_row_id.in_(name_ids)),
+            ),
+        ):
             positive_changes[change.batch_id].append(image(change))
     first_pass_changes = {key: {} for key in first_pass_batch_ids}
     if first_pass_batch_ids:

@@ -62,7 +62,7 @@ PostgreSQL `migrate --apply` 在同一迁移事务、首个 DDL 之前设置 `SE
 
 新policy必须按原guard完整重建。主会话为此必要重建再明确授权一次有界3600秒窗口，累计上限7200秒；旧2949.052637325秒完整保留，重建前余额4250.947362675秒，每次CLI仍≤1800秒，实际reclaim/停止/监督耗时也计账。普通相同合作式30秒原因的100/200参数选择只在原≤500范围基于事实处理，不无限重试。512MiB/no-swap/no-restart/2GiB、完整语义/writer/API SLO和TEST→PROD门禁均不变；本轮CODE/OPS增量审核通过后才执行。
 
-由于DELETE不缩物理页，重建前允许一次明确的TEST派生缓存reclaim：仅在disabled、未完成覆盖、自有CLI已停且持既有name+publication锁及有限SQL/lock timeout时，在同一Connection事务 `TRUNCATE members,dependencies,displays,names RESTRICT`。四表必须全部在明确列表中以满足内部FK；不用CASCADE/RESTART IDENTITY，不动business、receipts、sources或schema。随后调用现有 `begin_full_prepare`，由原full协议转移已知collection `*`义务并记录consumed count，普通dirty全字段hash守恒；不手写signature/cursor。记录精确before/after，失败回滚，未知COMMIT先读durable状态和自有backend，不盲重跑。该reclaim是新算法完整重建的未验收缓存处置，不能称为清除超限后原算法已经达标。
+由于DELETE不缩物理页，重建前允许一次明确的TEST派生缓存reclaim：仅在disabled、未完成覆盖、自有CLI已停且持既有name+publication锁及有限SQL/lock timeout时，在同一Connection事务对members/dependencies/displays/names明确各写 `ONLY`，以 `CONTINUE IDENTITY RESTRICT` 截断四表。四表必须全部在明确列表中以满足内部FK；不用CASCADE/RESTART IDENTITY，不含继承子表，不动business、receipts、sources或schema。随后调用现有 `begin_full_prepare`，由原full协议转移已知collection `*`义务并记录consumed count，普通dirty全字段hash守恒；不手写signature/cursor。记录精确before/after，失败回滚，未知COMMIT先读durable状态和自有backend，不盲重跑。按[PostgreSQL 15官方语义](https://www.postgresql.org/docs/15/sql-truncate.html)，该操作可随事务回滚、会取目标表排他锁且不是MVCC-safe；不能声称旧prepared快照继续可读。它仅用于从未启用、原reader仍disabled的未验收派生缓存，不能称为清除超限后原算法已经达标。
 
 执行前 fresh 核对 PG 数据与 WAL 所在磁盘的充分余量、六关系现状及 reader disabled。512MiB 容器限制不涵盖 PG/WAL；2GiB 是执行中的观测停止阈值和完成/enable 验收上限，不是物理配额。回滚不会自动缩掉 relation EOF 残页；失败后仍按真实 `pg_total_relation_size` 和剩余磁盘记录，超限继续保持失败/disabled，不自动清理、重试或放宽。只有真实资源、完整覆盖、24 个实际语义比较和新 writer 验证通过，才进入既定 enable/API 验收流程。
 

@@ -1274,6 +1274,7 @@ def prepare_changed(conn, dirty_keys=None, *, policy_version=m.POLICY_VERSION, b
             ready=not remaining, prepared_at=datetime.now(timezone.utc), phase="complete" if not remaining else "dirty"
         )
     )
+    limit.check()
     return {"installed": True, "ready": not remaining, "names": count, "albums": album_count}
 
 
@@ -1465,7 +1466,9 @@ def prepare_initial_batch(conn, *, batch_size=500, budget=None):
         value = dict(value, phase="names", cursor={"kind": 0, "owner": 0}, initial_coverage_complete=False)
     limit = _Budget(budget, conn)
     if value["initial_coverage_complete"]:
-        return prepare_changed(conn, budget=budget)
+        result = prepare_changed(conn, budget=budget)
+        limit.check()
+        return result
     with Session(bind=conn, expire_on_commit=False) as db:
         if value["phase"] == "names":
             cursor = value["cursor"] or {"kind": 0, "owner": 0}
@@ -1493,6 +1496,7 @@ def prepare_initial_batch(conn, *, batch_size=500, budget=None):
                 _prepare_generic(conn, db)
                 cursor, phase = {"album": 0}, "displays"
             conn.execute(m.state.update().where(m.state.c.id == 1).values(phase=phase, cursor=cursor))
+            limit.check()
             return {"ready": False, "phase": phase, "cursor": cursor, "names": count, "albums": 0}
         cursor = value["cursor"] or {"album": 0}
         ids = [
@@ -1507,12 +1511,14 @@ def prepare_initial_batch(conn, *, batch_size=500, budget=None):
             m.state.update().where(m.state.c.id == 1).values(cursor={"album": ids[-1] if ids else cursor["album"]})
         )
         if len(ids) == batch_size:
+            limit.check()
             return {"ready": False, "phase": "displays", "names": 0, "albums": count}
     # Every current album has now been covered. Reconcile writes made during an
     # earlier checkpoint before this transaction is allowed to mark ready.
     conn.execute(m.state.update().where(m.state.c.id == 1).values(initial_coverage_complete=True))
     result = prepare_changed(conn, budget=budget)
     result["albums"] += count
+    limit.check()
     return result
 
 

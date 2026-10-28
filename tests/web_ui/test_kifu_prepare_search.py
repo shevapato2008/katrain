@@ -225,6 +225,78 @@ def test_prepare_reads_uncommitted_changes_and_rollback_restores_both(engine, mo
         assert not conn.execute(select(prepared.dirty)).first()
 
 
+def test_initial_names_terminal_budget_failure_rolls_back_rows_and_cursor(engine, monkeypatch):
+    module = _prepare_module()
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    with Session(engine) as db:
+        evidence = _evidence(db, "player", 17, "en", "Go Seigen")
+        db.add(
+            KifuPlayerName(
+                player_id=17,
+                lang="en",
+                display_name="Go Seigen",
+                status="verified",
+                decision_kind="conventional",
+                generation_rule_version="test-v1",
+                revision=1,
+                evidence_id=evidence.id,
+            )
+        )
+        db.commit()
+    _install(engine)
+    with engine.connect() as conn:
+        before = dict(conn.execute(select(prepared.state)).mappings().one())
+    check = module._Budget.check
+
+    def reject_final_write(limit, albums=()):
+        check(limit, albums)
+        cursor = limit.conn.scalar(select(prepared.state.c.cursor))
+        if cursor == {"kind": 1, "owner": 0}:
+            assert limit.conn.execute(select(prepared.names.c.id)).first()
+            assert limit.conn.execute(select(prepared.dependencies)).first()
+            raise module.PreparationError("final names size budget exceeded")
+
+    monkeypatch.setattr(module._Budget, "check", reject_final_write)
+    with pytest.raises(module.PreparationError, match="final names size budget exceeded"):
+        with engine.begin() as conn:
+            module.prepare_initial_batch(conn)
+    with engine.connect() as conn:
+        assert dict(conn.execute(select(prepared.state)).mappings().one()) == before
+        assert not conn.execute(select(prepared.names)).first()
+        assert not conn.execute(select(prepared.dependencies)).first()
+
+
+def test_incremental_terminal_budget_failure_rolls_back_ready_and_data(engine, monkeypatch):
+    module = _prepare_module()
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "0")
+    _install(engine)
+    with engine.begin() as conn:
+        module.prepare_all(conn)
+        before_state = dict(conn.execute(select(prepared.state)).mappings().one())
+        before_outputs = _outputs(conn)
+    check = module._Budget.check
+
+    def reject_final_write(limit, albums=()):
+        check(limit, albums)
+        if (
+            limit.conn.scalar(select(prepared.state.c.ready))
+            and not limit.conn.execute(select(prepared.dirty).limit(1)).first()
+        ):
+            assert _outputs(limit.conn)[11, "en"]["player_white"] == "Budget mutation"
+            raise module.PreparationError("final incremental size budget exceeded")
+
+    monkeypatch.setattr(module._Budget, "check", reject_final_write)
+    with pytest.raises(module.PreparationError, match="final incremental size budget exceeded"):
+        with engine.begin() as conn:
+            conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(player_white="Budget mutation"))
+            module.prepare_changed(conn)
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.player_white).where(KifuAlbum.id == 11)) == "Unknown"
+        assert _outputs(conn) == before_outputs
+        assert dict(conn.execute(select(prepared.state)).mappings().one()) == before_state
+        assert not conn.execute(select(prepared.dirty)).first()
+
+
 def test_finite_raw_player_scope_and_rank_suffix_are_prepared_without_expansion(engine, monkeypatch):
     module = _prepare_module()
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")

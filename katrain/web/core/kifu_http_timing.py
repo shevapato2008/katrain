@@ -19,9 +19,23 @@ _ROUTE = re.compile(r"/api/v1/kifu/albums(?:/[^/]+(?:/analysis)?)?/?")
 _REQUEST_ID = re.compile(r"[0-9a-f]{32}")
 
 
+def _pool_snapshot(pool):
+    """Read boundary values only, with QueuePool's raw possibly negative overflow.
+
+    size() is base capacity, not the base-plus-max-overflow connection limit.
+    Unsupported pools and observation failures remain unknown.
+    """
+    try:
+        values = {"size": pool.size(), "checkedout": pool.checkedout(), "overflow": pool.overflow()}
+        return values if all(type(value) is int for value in values.values()) else None
+    except Exception:
+        return None
+
+
 class KifuHTTPTimingMiddleware:
-    def __init__(self, app: ASGIApp):
+    def __init__(self, app: ASGIApp, pool=None):
         self.app = app
+        self.pool = pool
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http" or not _ROUTE.fullmatch(scope["path"]):
@@ -30,6 +44,7 @@ class KifuHTTPTimingMiddleware:
 
         started = perf_counter()
         ingress_unix_s = time()
+        pool_at_scope_entry = _pool_snapshot(self.pool) if self.pool is not None else None
         incoming_id = Headers(scope=scope).get("x-kifu-request-id", "")
         request_id = incoming_id if _REQUEST_ID.fullmatch(incoming_id) else uuid4().hex
         status = None
@@ -48,18 +63,17 @@ class KifuHTTPTimingMiddleware:
                 body_bytes += len(message.get("body", b""))
                 if not message.get("more_body", False) and not completed:
                     completed = True
-                    _LOGGER.info(
-                        json.dumps(
-                            {
-                                "event": "kifu_http_timing",
-                                "request_id": request_id,
-                                "ingress_unix_s": ingress_unix_s,
-                                "asgi_total_ms": (perf_counter() - started) * 1000,
-                                "status": status,
-                                "bytes": body_bytes,
-                            },
-                            separators=(",", ":"),
-                        )
-                    )
+                    metric = {
+                        "event": "kifu_http_timing",
+                        "request_id": request_id,
+                        "ingress_unix_s": ingress_unix_s,
+                        "asgi_total_ms": (perf_counter() - started) * 1000,
+                        "status": status,
+                        "bytes": body_bytes,
+                    }
+                    if self.pool is not None:
+                        metric["db_pool_at_scope_entry"] = pool_at_scope_entry
+                        metric["db_pool_after_final_body"] = _pool_snapshot(self.pool)
+                    _LOGGER.info(json.dumps(metric, separators=(",", ":")))
 
         await self.app(scope, receive, send_with_timing)

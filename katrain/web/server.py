@@ -27,6 +27,7 @@ from katrain.web.api.v1.endpoints.ai_ladder import (
 )
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
+from katrain.web.core.db import engine as kifu_db_engine
 from katrain.web.core.game_end_rules import is_awaiting_count
 from katrain.web.core.kifu_http_timing import KifuHTTPTimingMiddleware
 from katrain.web.core.ranked_session_guard import (
@@ -1134,7 +1135,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     app.include_router(create_pvp_spectator_router(guard_session_viewer, session_state_for_read))
     add_catalog_cache_middleware(app)
-    app.add_middleware(KifuHTTPTimingMiddleware)
+    app.add_middleware(KifuHTTPTimingMiddleware, pool=kifu_db_engine.pool)
     # Board mode serves the kiosk-2d bundle (board-proxy API base, no three.js);
     # the full server serves the complete build. Both emit index.html + /assets,
     # so we point the SPA routes + root mount at the matching directory.

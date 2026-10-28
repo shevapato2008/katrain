@@ -7,6 +7,33 @@ from types import SimpleNamespace
 import pytest
 
 
+def test_cron_imported_publisher_maintains_prepared_coverage_in_same_transaction(tmp_path, monkeypatch):
+    from sqlalchemy import select
+    from katrain.cron.jobs import kifu_ingest
+    from katrain.kifu_ingest import catalog
+    from katrain.web.kifu import prepare_search, prepared_models
+    from katrain.web.kifu.prepared_migration import apply_migration
+    from katrain.web.kifu.name_candidates import canonical_sha256
+    from tests.web_ui.test_kifu_incremental_catalog import make_engine, manifest
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine = make_engine(tmp_path / "cron-prepared.db")
+    try:
+        apply_migration(engine)
+        with engine.begin() as conn:
+            prepare_search.prepare_all(conn)
+        assert kifu_ingest.publish_manifest is catalog.publish_manifest
+        value = manifest()
+        digest = canonical_sha256(value)
+        receipt = kifu_ingest.publish_manifest(engine, value, expected_manifest_sha256=digest)
+        assert kifu_ingest.publish_manifest(engine, value, expected_manifest_sha256=digest) == receipt
+        with engine.connect() as conn:
+            assert prepare_search.verify_coverage(conn)["ready"]
+            assert not conn.execute(select(prepared_models.dirty)).first()
+    finally:
+        engine.dispose()
+
+
 def test_fully_reusable_games_are_prepared_before_paid_names():
     from katrain.cron.jobs.kifu_ingest import group_staged_items, select_review_items
 

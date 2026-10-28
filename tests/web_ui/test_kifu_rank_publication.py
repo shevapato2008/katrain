@@ -168,6 +168,12 @@ def test_rank_only_correction_has_finite_fast_path_and_preserves_original_receip
     value.update(
         format=FORMAT_V2, mode="rank_only", publication_key="correction-one", rank_facts=decision["rank_facts"]
     )
+    from katrain.web.kifu.prepared_migration import apply_migration
+    from katrain.web.kifu.prepare_search import prepare_all, verify_coverage
+
+    apply_migration(engine)
+    with engine.begin() as conn:
+        prepare_all(conn)
     before = state(engine)
     ranks_before = rank_state(engine)
     for name in ("warm_sgf_cache", "_identity_indexes", "_source_records", "_apply_decisions"):
@@ -187,6 +193,8 @@ def test_rank_only_correction_has_finite_fast_path_and_preserves_original_receip
     assert state(engine) == before
     assert rank_state(engine) == ranks_before
     receipt = publish(engine, value)
+    with engine.connect() as conn:
+        assert verify_coverage(conn)["ready"]
     assert receipt["games"][0]["album_id"] == original_receipt["games"][0]["album_id"]
     assert receipt["games"][0]["action"] == "rank_corrected"
     assert publish(engine, value) == receipt
@@ -194,6 +202,8 @@ def test_rank_only_correction_has_finite_fast_path_and_preserves_original_receip
     assert after[KifuAlbum.__table__] == before[KifuAlbum.__table__]
     assert after[KifuNameBatch.__table__][: len(before[KifuNameBatch.__table__])] == before[KifuNameBatch.__table__]
     catalog.undo_publication(engine, receipt["batch_id"])
+    with engine.connect() as conn:
+        assert verify_coverage(conn)["ready"]
     assert rank_state(engine)[KifuAlbumRankSnapshot.__tablename__] == [
         row
         for row in rank_state(engine)[KifuAlbumRankSnapshot.__tablename__]

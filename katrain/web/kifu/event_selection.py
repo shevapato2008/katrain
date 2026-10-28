@@ -1214,7 +1214,7 @@ def dry_run_bundle(engine, bundle: dict) -> dict:
 
 
 @contextmanager
-def _locked_write(engine):
+def _locked_write(engine, *, _emergency_undo=False):
     conn = engine.connect()
     try:
         if engine.dialect.name == "postgresql":
@@ -1235,6 +1235,10 @@ def _locked_write(engine):
         else:
             raise EventSelectionError("Only PostgreSQL and SQLite are supported")
         yield conn
+        from katrain.web.kifu.prepare_search import maintain_after_write
+
+        if not _emergency_undo:
+            maintain_after_write(conn)
         conn.commit()
     except Exception:
         conn.rollback()
@@ -1356,12 +1360,14 @@ def batch_status(engine, batch_id: int) -> dict:
         }
 
 
-def undo_batch(engine, batch_id: int) -> dict:
+def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = False) -> dict:
     """Remove this batch only if every album and selection still matches its after-image."""
     batches = KifuEventSelectionBatch.__table__
     selections = KifuAlbumEventSelection.__table__
     albums = KifuAlbum.__table__
-    with _locked_write(engine) as conn:
+    _require(type(emergency_invalidate_search) is bool, "emergency invalidation must be a boolean")
+    context = _locked_write(engine, _emergency_undo=True) if emergency_invalidate_search else _locked_write(engine)
+    with context as conn:
         batch = conn.execute(select(batches).where(batches.c.id == batch_id)).mappings().one_or_none()
         _require(batch is not None, f"batch {batch_id} not found")
         _require(batch["status"] == "applied", "batch is not applied")
@@ -1399,4 +1405,9 @@ def undo_batch(engine, batch_id: int) -> dict:
             .where(batches.c.id == batch_id)
             .values(status="undone", undone_at=datetime.now(timezone.utc))
         )
-        return {"status": "undone", "batch_id": batch_id, "reverted": len(before)}
+        result = {"status": "undone", "batch_id": batch_id, "reverted": len(before)}
+        if emergency_invalidate_search:
+            from katrain.web.kifu.prepare_search import emergency_undo_status
+
+            result.update(emergency_undo_status(conn))
+        return result

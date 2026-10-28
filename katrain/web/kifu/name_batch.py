@@ -185,7 +185,7 @@ def approved_name_snapshot(engine) -> list[dict]:
 
 
 @contextmanager
-def _locked_write(engine, *, lock_timeout_ms=None):
+def _locked_write(engine, *, lock_timeout_ms=None, _emergency_undo=False):
     conn = engine.connect()
     try:
         if engine.dialect.name == "postgresql":
@@ -218,6 +218,10 @@ def _locked_write(engine, *, lock_timeout_ms=None):
         else:
             raise BatchError("Only PostgreSQL and SQLite are supported")
         yield conn
+        from katrain.web.kifu.prepare_search import maintain_after_write
+
+        if not _emergency_undo:
+            maintain_after_write(conn)
         conn.commit()
     except Exception:
         conn.rollback()
@@ -1748,9 +1752,11 @@ def _retained_composition_dependency(conn, table, row_id: int, before_image: dic
     return False
 
 
-def undo_batch(engine, batch_id: int) -> dict:
+def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = False) -> dict:
     """Undo each unchanged after-image in reverse order, retaining later edits."""
-    with _locked_write(engine) as conn:
+    _fail(type(emergency_invalidate_search) is bool, "emergency invalidation must be a boolean")
+    context = _locked_write(engine, _emergency_undo=True) if emergency_invalidate_search else _locked_write(engine)
+    with context as conn:
         batch = conn.execute(select(KifuNameBatch).where(KifuNameBatch.id == batch_id)).mappings().one_or_none()
         _fail(batch is not None, f"batch {batch_id} not found")
         bundle = batch["reviewed_artifact"].get("bundle")
@@ -1786,8 +1792,13 @@ def undo_batch(engine, batch_id: int) -> dict:
                 raise BatchError("dependent row blocks atomic v4 undo") from exc
             conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id)
                          .values(status="undone"))
-            return {"batch_id": batch_id, "status": "undone", "reverted": len(changes),
-                    "already_reverted": 0, "skipped": 0}
+            result = {"batch_id": batch_id, "status": "undone", "reverted": len(changes),
+                      "already_reverted": 0, "skipped": 0}
+            if emergency_invalidate_search:
+                from katrain.web.kifu.prepare_search import emergency_undo_status
+
+                result.update(emergency_undo_status(conn))
+            return result
         _fail(batch["status"] in {"applied", "partial_undo"}, "batch is not applied")
         changes = conn.execute(select(KifuNameChange).where(KifuNameChange.batch_id == batch_id)
                                .order_by(KifuNameChange.sequence.desc())).mappings().all()
@@ -1820,5 +1831,10 @@ def undo_batch(engine, batch_id: int) -> dict:
             reverted += 1
         status = "undone" if skipped == 0 else "partial_undo"
         conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id).values(status=status))
-        return {"batch_id": batch_id, "status": status, "reverted": reverted,
-                "already_reverted": already_reverted, "skipped": skipped}
+        result = {"batch_id": batch_id, "status": status, "reverted": reverted,
+                  "already_reverted": already_reverted, "skipped": skipped}
+        if emergency_invalidate_search:
+            from katrain.web.kifu.prepare_search import emergency_undo_status
+
+            result.update(emergency_undo_status(conn))
+        return result

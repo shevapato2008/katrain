@@ -411,6 +411,64 @@ def _shared_player_bundle(engine):
     return inventory, bundle, records + [research]
 
 
+@pytest.mark.parametrize("invalid_verified_member", [False, True])
+def test_prepare_reuses_literal_shared_authorization_across_proof_groups(engine, monkeypatch, invalid_verified_member):
+    module = _prepare_module()
+    from sqlalchemy import event
+    from katrain.web.kifu import identity
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    inventory, bundle, research = _shared_player_bundle(engine)
+    apply_bundle(engine, bundle, registry(), inventory, research)
+    if invalid_verified_member:
+        with engine.begin() as conn:
+            conn.execute(
+                KifuPlayerName.__table__.insert().values(
+                    player_id=19,
+                    lang="cn",
+                    display_name="吴清源",
+                    status="verified",
+                    decision_kind="generated",
+                    generation_rule_version="user_authorized_first_pass_v1",
+                    revision=1,
+                )
+            )
+    _install(engine)
+    groups = identity.iter_name_proof_groups
+    authorize = identity._finite_shared_player_ids
+    authorizations, scalar_matches = [], []
+
+    def separate_groups(*args, **kwargs):
+        for group in groups(*args, **kwargs):
+            for name_id in sorted(group):
+                yield {name_id}
+
+    def record_authorization(db, rows, needle):
+        result = authorize(db, rows, needle)
+        authorizations.append((needle, result))
+        return result
+
+    def capture(_conn, _cursor, statement, _parameters, _context, _many):
+        sql = statement.lower()
+        if sql.startswith("select kifu_player_names.player_id ") and "lower(kifu_player_names.display_name)" in sql:
+            scalar_matches.append(statement)
+
+    monkeypatch.setattr(identity, "iter_name_proof_groups", separate_groups)
+    monkeypatch.setattr(identity, "_finite_shared_player_ids", record_authorization)
+    event.listen(engine, "before_cursor_execute", capture)
+    try:
+        with engine.begin() as conn:
+            module.prepare_all(conn)
+            rows = conn.execute(select(prepared.names).where(prepared.names.c.name_kind == "player")).mappings().all()
+    finally:
+        event.remove(engine, "before_cursor_execute", capture)
+    expected = set() if invalid_verified_member else {17, 18}
+    assert authorizations == [("吴清源", expected)]
+    assert len(scalar_matches) == 1
+    assert {tuple(row["exact_group_authorized_ids"]) for row in rows} == {tuple(sorted(expected))}
+    assert sum(row["eligible"] for row in rows) == 2
+
+
 def test_invalid_verified_c_revokes_and_delete_restores_whole_shared_token_group(engine, monkeypatch):
     module = _prepare_module()
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")

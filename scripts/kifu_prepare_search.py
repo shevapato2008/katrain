@@ -150,9 +150,12 @@ def _global_proof_metadata(conn, checkpoint):
         for kind, (owner, model, owner_column, alias) in SPECS.items():
             checkpoint("metadata:" + kind)
             name_owners = dict(db.query(model.id, getattr(model, owner_column)))
-            owner_ids = {row_id for row_id, in db.query(owner.id)} | set(name_owners.values())
+            dependency_owners = set(name_owners.values())
+            owner_ids = {row_id for row_id, in db.query(owner.id)} | dependency_owners
             if alias is not None:
-                owner_ids.update(row_id for row_id, in db.query(getattr(alias, owner_column)))
+                alias_owners = {row_id for row_id, in db.query(getattr(alias, owner_column))}
+                dependency_owners.update(alias_owners)
+                owner_ids.update(alias_owners)
             owner_pages = {owner_id: offset // 500 for offset, owner_id in enumerate(sorted(owner_ids))}
             value = {
                 "groups": 0,
@@ -161,6 +164,7 @@ def _global_proof_metadata(conn, checkpoint):
                 "names": len(name_owners),
                 "largest_group": 0,
                 "named_owners": len(set(name_owners.values())),
+                "dependency_owners": len(dependency_owners),
             }
             checkpoint(
                 completed={
@@ -179,7 +183,7 @@ def _global_proof_metadata(conn, checkpoint):
                     }
                 )
             result[kind] = value
-            del name_owners, owner_ids, owner_pages
+            del name_owners, owner_ids, owner_pages, dependency_owners
             db.expunge_all()
     return result
 
@@ -193,11 +197,18 @@ def _estimate_plan(counts, sample, peak_bytes):
         slot: 2 * max(full_slots.get(slot, 0), math.ceil(sample["member_slots"].get(slot, {}).get("rows", 0) * scale))
         for slot in set(full_slots) | set(sample["member_slots"])
     }
+    owner_counts = sample.get("dependency_owners_by_kind", {})
+    fixed_samples = sample.get("name_dependency_fixed_rows_by_kind", sample["name_dependency_rows_by_kind"])
+    for kind, number in fixed_samples.items():
+        if number and (
+            not owner_counts.get(kind) or "dependency_owners" not in counts.get("proof_groups", {}).get(kind, {})
+        ):
+            raise PreparationError("owner dependency measurement unavailable")
     name_deps = sum(
         math.ceil(
-            sample.get("name_dependency_fixed_rows_by_kind", sample["name_dependency_rows_by_kind"]).get(kind, 0)
-            * counts["names"][kind]
-            / max(1, sample["physical_names_by_kind"].get(kind, 0))
+            fixed_samples.get(kind, 0)
+            * counts.get("proof_groups", {}).get(kind, {}).get("dependency_owners", 0)
+            / max(1, owner_counts.get(kind, 0))
             * 2
         )
         for kind in SPECS
@@ -225,6 +236,9 @@ def _estimate_plan(counts, sample, peak_bytes):
         "name_dependency_fixed_rows": name_deps,
         "name_dependency_scope_rows": scope_deps,
         "name_dependency_scope_basis": "Accepted finite scope album edges only; independent source anchors and unverified scopes remain fixed",
+        "fixed_dependency_projection_unit": "Owner UNION, not source-name rows",
+        "alias_dependency_reserve_rows": 3 * sum(counts["aliases"].values()),
+        "alias_dependency_reserve_basis": "Conservative extra reserve on top of the measured owner UNION; not actual per-name stored edges",
         "rss_basis": "Observed full-process peak plus retained 8MiB buffer; no rescaling of an already observed peak",
     }
     model["write_time_basis"] = (
@@ -406,18 +420,22 @@ def _sample_proof(conn, albums, checkpoint):
             events.add(event_id)
     physical, qualified, owners = 0, 0, 0
     physical_by_kind, name_widths, widths, timings, dependency_counts, fixed_counts = {}, [], {}, {}, {}, {}
+    dependency_owners_by_kind = {}
     full_slot_widths = {}
     full_scope_inputs, sampled_scope_inputs = set(), set()
     derived_names, sample_members, full_member_keys, calibration_members = [], {}, set(), {}
     proxy_ids = {}
     proof_started = monotonic()
     with Session(bind=conn) as db:
-        for kind, (owner_model, model, owner_column, _alias) in SPECS.items():
+        for kind, (owner_model, model, owner_column, alias_model) in SPECS.items():
             checkpoint("proof:" + kind)
             kind_started = monotonic()
             timing = {"groups": 0, "proof_seconds": 0, "member_seconds": 0, "dependency_seconds": 0}
             dependency_counts[kind] = 0
             fixed_counts[kind] = 0
+            source_inputs, fixed_source_inputs, kind_refs = {}, {}, []
+            owner_inputs, owner_fixed, representatives = {}, {}, {}
+            inputs_checked = 0
             if kind.startswith("raw_"):
                 values = raws[kind]
                 raw_owners = dict(
@@ -534,13 +552,17 @@ def _sample_proof(conn, albums, checkpoint):
                             "policy_version": m.POLICY_VERSION,
                         }
                         derived_names.append(ref)
+                        kind_refs.append(ref)
+                        owner_key = kind, ref["owner_id"]
+                        representatives[owner_key] = min(representatives.get(owner_key, proxy), proxy)
                         _width_add(widths, "names", _body_bytes(conn, m.names, ref))
                         inputs = set(
                             core._proof_inputs(
                                 db, kind, name, evidence_rows.get(name.evidence_id), creation_changes, batch_cache
                             )
                         )
-                        dependency_counts[kind] += len(inputs)
+                        source_inputs[ref["source_key"]] = inputs
+                        inputs_checked += len(inputs)
                         scope_ids = (
                             core._finite_album_ids(eligible[name.id][2])
                             if kind.startswith("raw_") and approved
@@ -555,25 +577,20 @@ def _sample_proof(conn, albums, checkpoint):
                                 else {}
                             ),
                         )
-                        fixed_counts[kind] += len(fixed)
-                        for input_kind, input_key in scope:
-                            key = proxy, input_kind, input_key
-                            full_scope_inputs.add(key)
-                            if int(input_key) in sample_ids:
-                                sampled_scope_inputs.add(key)
-                        for input_kind, input_key in inputs:
-                            dependency = {
-                                "target_kind": "name",
-                                "target_key": str(proxy),
-                                "input_kind": input_kind,
-                                "input_key": str(input_key),
-                            }
-                            _width_add(widths, "dependencies", _dependency_bytes(conn, dependency))
+                        fixed_source_inputs[ref["source_key"]] = fixed
+                    # UNION is associative: release per-source sets after this
+                    # packet, but retain each owner's union across all packets.
+                    for accumulated, by_source in ((owner_inputs, source_inputs), (owner_fixed, fixed_source_inputs)):
+                        for owner_key, inputs in core._owner_dependency_inputs(kind_refs, by_source).items():
+                            accumulated.setdefault(owner_key, set()).update(inputs)
+                    source_inputs.clear()
+                    fixed_source_inputs.clear()
+                    kind_refs.clear()
                     timing["dependency_seconds"] += monotonic() - started
                     started = monotonic()
                     if kind.startswith("raw_"):
                         checkpoint(
-                            "live_member:" + kind, {"name_dependencies:" + kind: dependency_counts[kind]}, check=False
+                            "live_member:" + kind, {"source_inputs_checked:" + kind: inputs_checked}, check=False
                         )
                         members = core._finite_members(db, kind, rows)
                         for name_id, values in members.items():
@@ -598,11 +615,68 @@ def _sample_proof(conn, albums, checkpoint):
                     db.expunge_all()
                 checkpoint(
                     completed={
-                        "name_dependencies:" + kind: dependency_counts[kind],
+                        "source_inputs_checked:" + kind: inputs_checked,
                         "member_rows_full_scope": len(full_member_keys),
                         "member_rows_sample": len(sample_members),
                     }
                 )
+            if alias_model is not None:
+                for alias in db.query(alias_model).filter(getattr(alias_model, owner_column).in_(ids)):
+                    source_key = "alias:" + str(alias.id)
+                    proxy = proxy_ids.setdefault((kind, source_key), len(proxy_ids) + 1)
+                    owner_id = getattr(alias, owner_column)
+                    ref = {
+                        "id": proxy,
+                        "name_kind": kind,
+                        "source_key": source_key,
+                        "source_name_id": None,
+                        "owner_id": owner_id,
+                        "match_class": "legacy_alias",
+                        "eligible": True,
+                        "lang": "*",
+                        "display_name": alias.alias,
+                        "normalized_term": alias.normalized_alias,
+                        "semantic": {},
+                        "exact_group_authorized_ids": [],
+                        "valid": True,
+                        "policy_version": m.POLICY_VERSION,
+                    }
+                    kind_refs.append(ref)
+                    derived_names.append(ref)
+                    _width_add(widths, "names", _body_bytes(conn, m.names, ref))
+                    source_inputs[source_key] = {
+                        (alias_model.__tablename__, str(alias.id)),
+                        ("owner", core._key(kind, owner_id)),
+                        ("token", core._key(kind, "*", identity.normalize_alias(alias.alias))),
+                    }
+                    fixed_source_inputs[source_key] = source_inputs[source_key]
+            # Alias inputs join the same accumulated owner union, including an
+            # owner whose names were checked in several different proof groups.
+            for accumulated, by_source in ((owner_inputs, source_inputs), (owner_fixed, fixed_source_inputs)):
+                for owner_key, inputs in core._owner_dependency_inputs(kind_refs, by_source).items():
+                    accumulated.setdefault(owner_key, set()).update(inputs)
+            for ref in kind_refs:
+                owner_key = kind, ref["owner_id"]
+                representatives[owner_key] = min(representatives.get(owner_key, ref["id"]), ref["id"])
+            dependency_owners_by_kind[kind] = len(owner_inputs)
+            for owner_key, inputs in owner_inputs.items():
+                fixed = owner_fixed[owner_key]
+                dependency_counts[kind] += len(inputs)
+                fixed_counts[kind] += len(fixed)
+                for input_kind, input_key in inputs - fixed:
+                    key = owner_key, input_kind, input_key
+                    full_scope_inputs.add(key)
+                    if int(input_key) in sample_ids:
+                        sampled_scope_inputs.add(key)
+                for input_kind, input_key in inputs:
+                    dependency = {
+                        "target_kind": "name",
+                        "target_key": str(representatives[owner_key]),
+                        "input_kind": input_kind,
+                        "input_key": str(input_key),
+                    }
+                    _width_add(widths, "dependencies", _dependency_bytes(conn, dependency))
+            del source_inputs, fixed_source_inputs, kind_refs, owner_inputs, owner_fixed, representatives
             timing["owners"] = len(ids)
             timing["metadata_seconds"] = max(
                 0,
@@ -613,7 +687,7 @@ def _sample_proof(conn, albums, checkpoint):
                 - timing["dependency_seconds"],
             )
             timings[kind] = timing
-            checkpoint()
+            checkpoint(completed={"owner_dependencies:" + kind: dependency_counts[kind]})
         display_started = monotonic()
         display_dependencies = _sample_displays(conn, db, sample_ids, derived_names, sample_members, widths, checkpoint)
         display_seconds = monotonic() - display_started
@@ -641,6 +715,8 @@ def _sample_proof(conn, albums, checkpoint):
         "member_rows_sample": len(sample_members),
         "member_slots": slots,
         "name_dependency_rows_by_kind": dependency_counts,
+        "dependency_owners_by_kind": dependency_owners_by_kind,
+        "name_dependency_storage_basis": "Owner UNION of all checked source names and aliases across proof groups; one representative target per owner",
         "name_dependency_fixed_rows_by_kind": fixed_counts,
         "name_dependency_scope_rows_full": len(full_scope_inputs),
         "name_dependency_scope_rows_sample": len(sampled_scope_inputs),

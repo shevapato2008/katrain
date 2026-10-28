@@ -95,6 +95,7 @@ def test_plan_samples_head_middle_and_tail_within_one_album_limit(engine, capsys
 
 def test_plan_consumes_complete_proof_groups_and_releases_rows_before_next_group(engine, capsys, monkeypatch):
     from tests.web_ui.test_kifu_name_api import _evidence
+    from katrain.web.kifu import prepare_search as core
 
     with Session(engine) as db:
         for name_id, lang, display in ((101, "cn", "吴清源"), (102, "en", "Go Seigen")):
@@ -113,6 +114,7 @@ def test_plan_consumes_complete_proof_groups_and_releases_rows_before_next_group
                 )
             )
         db.add(KifuPlayerName(id=103, player_id=17, lang="jp", display_name="negative", status="review"))
+        db.add(KifuPlayerAlias(id=201, player_id=17, alias="Go", normalized_alias="go"))
         db.commit()
     original = command.identity._qualified_name_rows
     active, observed, references, sessions = {}, [], [], []
@@ -146,10 +148,24 @@ def test_plan_consumes_complete_proof_groups_and_releases_rows_before_next_group
 
     monkeypatch.setattr(command.identity, "iter_name_proof_groups", groups)
     monkeypatch.setattr(command.identity, "_qualified_name_rows", observe)
+    # The same owner edges occur in both proof groups and in the alias. Every
+    # individual name edge, including the negative row, still has to survive.
+    monkeypatch.setattr(
+        core,
+        "_proof_inputs",
+        lambda db, kind, name, *args: {
+            ("owner", core._key(kind, 17)),
+            ("kifu_name_source_registry", "4"),
+            (KifuPlayerName.__tablename__, str(name.id)),
+        },
+    )
     monkeypatch.setattr(
         command,
         "_global_proof_metadata",
-        lambda *_: {kind: {"groups": 2 if kind == "player" else 0} for kind in command.SPECS},
+        lambda *_: {
+            kind: {"groups": 2 if kind == "player" else 0, "dependency_owners": 1 if kind == "player" else 0}
+            for kind in command.SPECS
+        },
     )
     code, result = invoke(engine, capsys, "plan", "--sample-albums", "1000")
     assert code == 0, result
@@ -158,6 +174,11 @@ def test_plan_consumes_complete_proof_groups_and_releases_rows_before_next_group
     assert all(reference() is None for reference in references)
     assert result["sample"]["physical_names"] == 3
     assert result["sample"]["qualified_names"] == 2
+    assert result["sample"]["name_dependency_rows_by_kind"]["player"] == 7
+    assert result["sample"]["dependency_owners_by_kind"]["player"] == 1
+    assert result["sample"]["row_widths"]["dependencies"]["rows"] == (
+        7 + result["sample"]["display_dependency_rows_sample"]
+    )
 
 
 def test_plan_scopes_raw_helpers_to_complete_physical_groups_including_negative_names(engine, capsys, monkeypatch):
@@ -245,6 +266,7 @@ def test_plan_member_projection_uses_sample_live_slots_not_full_scope():
     counts["names"]["player"] = 10
     counts["aliases"]["player"] = 1
     counts["proof_groups"]["player"]["groups"] = 2
+    counts["proof_groups"]["player"]["dependency_owners"] = 10
     sample = {
         "albums": 10,
         "physical_names_by_kind": dict.fromkeys(kinds, 0),
@@ -257,6 +279,8 @@ def test_plan_member_projection_uses_sample_live_slots_not_full_scope():
         "display_seconds": 0.1,
     }
     sample["physical_names_by_kind"]["player"] = 2
+    sample["dependency_owners_by_kind"] = dict.fromkeys(kinds, 0)
+    sample["dependency_owners_by_kind"]["player"] = 2
     sample["name_dependency_rows_by_kind"]["player"] = 4
     sample["timings_by_kind"]["player"] = {
         "groups": 1,

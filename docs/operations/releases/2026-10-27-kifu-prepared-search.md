@@ -23,7 +23,7 @@
 准备 CLI 使用发布包中的 `scripts/kifu_prepare_search.py` 和目标现有数据库身份；显式 `--database-url` 放在子命令前，默认沿用 `settings.DATABASE_URL`。不得建立另一个 prepare engine/凭证再把业务和准备拆成两个事务。执行前只读记录当前 DB role 属性及有关表/守卫权限，隐藏凭证。
 
 ```sh
-python scripts/kifu_prepare_search.py plan --max-seconds 30 --sample-albums 1000
+python scripts/kifu_prepare_search.py plan --max-seconds 120 --sample-albums 1000
 python scripts/kifu_prepare_search.py migrate --dry-run
 python scripts/kifu_prepare_search.py migrate --apply
 python scripts/kifu_prepare_search.py verify-schema
@@ -35,7 +35,11 @@ python scripts/kifu_prepare_search.py disable
 
 `plan` 在 migrate 前保持只读，不隐式创建六张表。小字段统计分别覆盖列表 visible albums 和所有详情可读 albums，包含 hidden/duplicate；另列 owner、raw、所有物理 name、alias 和语言数量。至多 1000 个 album 的相关 owner/raw 使用原 proof 做实际成本取样；只读相关有限证明，不遍历全库 artifact/SGF，不 reimport，不请求 LLM/翻译。输出取样范围、有限成员上界、预计六表行数、空间、RSS、时间和估算依据；未观察的 closure 必须明确标出，不能把估算当覆盖证明。估计超过 1800 秒、六张新关系合计 2GiB 或进程 512MiB 时返回非零并报告，不放宽预算。取样失败或成本无法可靠估计时也停止；不以缩小 sample 掩盖超预算。
 
-成本模型的基础系数来自隔离 PostgreSQL 15.15 上 1000 album 的机械 canonical fixture：5000 display 行含索引 925696B、9030 个共享 album dependency 含索引 2236416B、2942 name 行（含固定 generic 资产）1908736B，六表合计约 5.14MB。当前 plan 再按目标库头/中/尾样本实际 UTF-8 宽度和有限成员密度调整，显示 metadata、dependency/member 密度保留明示余量。这个 fixture 没有 raw members，不代表真实 176k 库预测或性能证明；Mac→PG 的往返耗时也不是容器本机准备耗时。若目标全库实际存在某 name family 而本次样本完全未见，返回非零/成本未充分观察；全库本不存在的 family 不成为阻塞条件。真实 TEST plan 和 actual 六关系 2GiB guard 始终必需。
+2026-10-28 主会话明确将只读 `plan` 采样窗口从原计划的 30 秒调整为有界 120 秒。原 30 秒窗口未通过：完成同一 1000 album、四域 6735 个物理名称的完整 proof，在一次仅作诊断的 180 秒上限进程中实际耗时 51.149 秒，进程峰值 399.95MiB。此诊断没有迁移、业务写入或 enable，也不算原 30 秒门禁通过。调整只涉及离线预检窗口；1000 样本、完整 proof、初始准备总计 1800 秒、512MiB、2GiB，以及 API 的 1 QPS p95≤20ms / 100 QPS p95≤200ms 均保持不变。历史批准计划保留原文，运行命令以本节的显式调整为准。
+
+成本模型保留原隔离 PostgreSQL 15.15 机械 canonical fixture 的行和索引成本基础。2026-10-28 另用现有已验证 fixture 经原 Core 生成的有限 primitive rows，在专属隔离库的自有 schema 中按每类 1000 行校准；该 schema 已删除，业务库未安装准备表。`pg_total_relation_size` 实测 raw member 的 black/white、event、selected_event 分别为 557.056、245.760、262.144 B/行，包含 heap 和全部索引。names/displays/dependencies 同次测量为 425.984、212.992、294.912 B/行；取较保守的既有基数，按实际 Text UTF-8 与该 Connection 的 JSON serializer（含 nullable JSON）宽度调整。fixture 仅校准结构成本，不能代表真实库密度。
+
+实际行数按原构造函数的 live member 主键、去重的 `(target,input)` 依赖和每 album 一份 display 依赖计量；完整 scope 与 1000 album 内的密度分开，不把已包含样本外成员的完整 scope 再按 album 倍数放大。保留明示的密度、时间及 display metadata 余量。固定 proof、构造 CPU、每 album 五语 display 和写入分别估时；写入系数使用隔离 PG 的 `EXPLAIN ANALYZE` 执行/计划时间与客户端 process CPU，明确客户端 CPU 来自 Mac 的代理测量。Mac→PG/SSH 的 wall time 单列，不能冒充容器本机准备耗时。未观察的名称域或无法可靠计量的部分必须返回非零/列出不确定项；全库本不存在的 family 不成为阻塞条件。真实 TEST plan 和 actual 六关系 2GiB guard 始终必需。
 
 `migrate` 默认 dry-run。只有明确 `--apply` 安装独立 MetaData 的六张派生表、默认 disabled singleton 和普通 DML/TRUNCATE 失效守卫；重复执行保留既有 checkpoint/开关。显式迁移外，Web startup 和 plan/prepare/verify/enable 均不建表。先核对迁移计划、全部输入表和守卫定义，再检查 `verify-schema` 实际结果，不能仅看表名存在。
 

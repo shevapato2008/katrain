@@ -2478,6 +2478,75 @@ def test_positive_zh_ko_persisted_gate_has_no_importer_dependency(engine, monkey
         assert not persisted_positive_zh_ko_eligible(name, changed, batch, reg, changes)
 
 
+@pytest.mark.parametrize("family", ["ja", "zh"])
+def test_positive_reader_loads_only_current_target_ledgers_and_preserves_duplicate_rejection(engine, family):
+    from katrain.web.kifu.identity import _approved_names, _qualified_name_rows
+    from katrain.web.kifu import name_evidence
+    from katrain.web.kifu.name_batch import _image
+
+    owner_id = 17 if family == "ja" else 5498
+    if family == "zh":
+        with engine.begin() as conn:
+            conn.execute(KifuPlayer.__table__.insert().values(id=owner_id, canonical_name="王宏伟"))
+            conn.execute(
+                KifuAlbum.__table__.insert().values(
+                    id=12,
+                    black_player_id=owner_id,
+                    player_black="王宏伟",
+                    player_white="Unknown",
+                    event="GNUGo3.8",
+                    sgf_content="(;PB[王宏伟])",
+                    source_path="two.sgf",
+                )
+            )
+    inv = build_inventory(engine)
+    if family == "ja":
+        proposed, research = positive_ja_ko_bundle(inv)
+        reg = registry()
+    else:
+        proposed, research, reg = positive_zh_ko_bundle(inv)
+    receipt = apply_bundle(engine, proposed, reg, inv, research)
+    with engine.begin() as conn:
+        sequence = conn.scalar(select(func.max(KifuNameChange.sequence))) + 1
+        unrelated_id = conn.execute(
+            KifuNameChange.__table__.insert().values(
+                batch_id=receipt["batch_id"],
+                sequence=sequence,
+                target_table=KifuPlayerName.__tablename__,
+                target_row_id=999999,
+                after_image={"unrelated_payload": "not part of the current proof"},
+            )
+        ).inserted_primary_key[0]
+    loaded_changes = []
+    with Session(engine) as db:
+
+        def capture(_session, row):
+            if isinstance(row, KifuNameChange):
+                loaded_changes.append(row.id)
+
+        event.listen(db, "loaded_as_persistent", capture)
+        rows = _qualified_name_rows(
+            db, _approved_names(db, KifuPlayerName, "player_id", [owner_id], "ko"), KifuPlayerName, "player_id"
+        )
+        assert len(rows) == 1
+        name_id, evidence_id = rows[0][0].id, rows[0][1].id
+    assert unrelated_id not in loaded_changes
+    with engine.connect() as conn:
+        name = _image(conn, KifuPlayerName.__table__, name_id)
+        stored = _image(conn, KifuNameResearchEvidence.__table__, evidence_id)
+        batch = _image(conn, KifuNameBatch.__table__, receipt["batch_id"])
+        changes = [
+            _image(conn, KifuNameChange.__table__, change_id)
+            for change_id in conn.scalars(select(KifuNameChange.id).where(KifuNameChange.id != unrelated_id))
+        ]
+    eligible = getattr(name_evidence, f"persisted_positive_{family}_ko_eligible")
+    assert eligible(name, stored, batch, reg, changes)
+    # SQL constraints prevent a second physical row in this fixture; the pure
+    # gate must still receive a list and reject either duplicated target.
+    for change in changes:
+        assert not eligible(name, stored, batch, reg, [*changes, dict(change, id=unrelated_id + 1)])
+
+
 def test_positive_ja_ko_importer_reader_requires_exact_applied_ledger(engine):
     from katrain.web.kifu.identity import _approved_names, _qualified_name_rows
     inv = build_inventory(engine)

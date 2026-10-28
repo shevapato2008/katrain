@@ -717,7 +717,7 @@ def _selection_inputs(conn, album_ids):
     return inputs
 
 
-def _prepare_displays(conn, db, album_ids, budget):
+def _prepare_displays(conn, db, album_ids, budget, *, refresh_invalid_names=False):
     budget.check(album_ids)
     albums = _rows(db, business.KifuAlbum, album_ids)
     existing_ids = {album.id for album in albums}
@@ -759,6 +759,19 @@ def _prepare_displays(conn, db, album_ids, budget):
         and_(m.names.c.name_kind == kind, m.names.c.owner_id.in_(ids)) for kind, ids in owner_ids.items() if ids
     ]
     rows = conn.execute(select(m.names).where(or_(*conditions))).mappings().all() if conditions else []
+    if refresh_invalid_names:
+        # Initial checkpoints may span normal writes. Refresh only invalid
+        # owners actually needed by this display page, leaving their dirty keys
+        # for the complete final closure and keeping initial coverage unready.
+        targets = {kind: set() for kind in _SPECS}
+        for row in rows:
+            if not row["valid"] or row["policy_version"] != m.POLICY_VERSION:
+                targets[row["name_kind"]].add(row["owner_id"])
+        for kind, ids in targets.items():
+            for chunk in _chunks(ids, budget.value.max_albums):
+                _prepare_owners(conn, db, {kind: set(chunk)}, budget)
+        if any(targets.values()):
+            rows = conn.execute(select(m.names).where(or_(*conditions))).mappings().all()
     if any(not row["valid"] or row["policy_version"] != m.POLICY_VERSION for row in rows):
         raise PreparationError("display depends on an unprepared name")
     member_rows = conn.execute(select(m.members).where(m.members.c.album_id.in_(existing_ids))).mappings().all()
@@ -1425,7 +1438,7 @@ def prepare_initial_batch(conn, *, batch_size=500, budget=None):
             .order_by(business.KifuAlbum.id)
             .limit(batch_size)
         ]
-        count = _prepare_displays(conn, db, set(ids), limit)
+        count = _prepare_displays(conn, db, set(ids), limit, refresh_invalid_names=True)
         conn.execute(
             m.state.update().where(m.state.c.id == 1).values(cursor={"album": ids[-1] if ids else cursor["album"]})
         )

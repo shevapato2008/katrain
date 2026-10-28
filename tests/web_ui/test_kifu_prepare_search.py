@@ -840,6 +840,56 @@ def test_initial_final_dirty_reconciles_names_and_albums_inserted_behind_cursor(
         assert not conn.execute(select(prepared.dirty)).first()
 
 
+@pytest.mark.parametrize("mutation", ["update_negative", "undo"])
+def test_initial_display_resume_refreshes_names_invalidated_after_names_checkpoint(engine, monkeypatch, mutation):
+    module = _prepare_module()
+    from katrain.web.kifu import name_batch
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    if mutation == "undo":
+        inventory, bundle, research = bound_player_bundle(engine)
+        applied = apply_bundle(engine, bundle, registry(), inventory, research)
+    else:
+        with Session(engine) as db:
+            db.add(KifuPlayerName(player_id=17, lang="en", display_name="Negative before", status="review"))
+            db.commit()
+    _install(engine)
+    while True:
+        with engine.begin() as conn:
+            module.prepare_initial_batch(conn)
+            value = conn.execute(select(prepared.state)).mappings().one()
+            if value["phase"] == "displays":
+                assert value["cursor"] == {"album": 0}
+                break
+    if mutation == "undo":
+        name_batch.undo_batch(engine, applied["batch_id"])
+    else:
+        with name_batch._locked_write(engine) as conn:
+            conn.execute(
+                KifuPlayerName.__table__.update()
+                .where(KifuPlayerName.player_id == 17)
+                .values(display_name="Negative after")
+            )
+    with engine.begin() as conn:
+        assert conn.execute(select(prepared.names.c.id).where(~prepared.names.c.valid)).first()
+        dirty_before = {(row.input_kind, row.input_key) for row in conn.execute(select(prepared.dirty))}
+        assert dirty_before
+        module.prepare_initial_batch(conn, batch_size=1)
+        value = conn.execute(select(prepared.state)).mappings().one()
+        assert value["cursor"] == {"album": 11}
+        assert not value["ready"] and not value["initial_coverage_complete"]
+        assert {(row.input_kind, row.input_key) for row in conn.execute(select(prepared.dirty))} == dirty_before
+        assert _outputs(conn)[11, "en"]["player_black"] == "Player name unverified"
+        if mutation == "update_negative":
+            row = conn.execute(select(prepared.names).where(prepared.names.c.name_kind == "player")).mappings().one()
+            assert row["display_name"] == "Negative after" and row["valid"] and not row["eligible"]
+        else:
+            assert not conn.execute(select(prepared.names).where(prepared.names.c.name_kind == "player")).first()
+    with engine.begin() as conn:
+        module.prepare_all(conn)
+        assert module.verify_coverage(conn)["ready"]
+
+
 def test_ready_requires_negative_source_and_alias_coverage(engine, monkeypatch):
     module = _prepare_module()
     from katrain.web.core.models_db import KifuPlayerAlias

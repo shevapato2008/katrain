@@ -5,12 +5,14 @@ force ordinary DML to invalidate; they do not claim resistance to owner DDL.
 No application startup imports or calls this migration.
 """
 
+from contextlib import nullcontext
 import re
 import warnings
 
 from sqlalchemy import Boolean, CheckConstraint, UniqueConstraint, inspect, select, text
 from sqlalchemy.schema import CreateIndex, CreateTable
 from sqlalchemy.exc import SAWarning
+from sqlalchemy.engine import Connection
 
 from katrain.web.kifu import prepared_models as m
 
@@ -366,9 +368,10 @@ def _verify_table_contract(conn, inspector, table, actual, errors):
 
 
 def verify_schema(engine):
+    """Inspect an Engine or a caller-owned Connection without changing its transaction."""
     errors = []
     role = None
-    with engine.connect() as conn:
+    with nullcontext(engine) if isinstance(engine, Connection) else engine.connect() as conn:
         _set_schema(conn)
         inspector = inspect(conn)
         existing = set(inspector.get_table_names())

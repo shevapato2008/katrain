@@ -1,13 +1,14 @@
 """Operator commands keep preparation explicit, bounded, and resumable."""
 
 import json
+from contextlib import contextmanager
 
 import pytest
 from sqlalchemy import inspect, select, text
 
 from katrain.web.core.models_db import KifuAlbum, KifuPlayerAlias
 from katrain.web.kifu import prepared_models as m
-from katrain.web.kifu.prepared_migration import apply_migration
+from katrain.web.kifu.prepared_migration import apply_migration, verify_schema
 from scripts import kifu_prepare_search as command
 from tests.web_ui.test_kifu_name_batch import engine  # noqa: F401
 
@@ -265,3 +266,45 @@ def test_disable_remains_available_when_schema_verification_fails(engine, capsys
         conn.exec_driver_sql("DROP TRIGGER kifu_prepared_kifu_albums_update")
     code, result = invoke(engine, capsys, "disable")
     assert code == 0 and result["enabled"] is False
+
+
+def test_enable_rechecks_guards_on_the_locked_connection(engine, capsys, monkeypatch):
+    apply_migration(engine)
+    assert invoke(engine, capsys, "prepare")[0] == 0
+    original = command._writer_transaction
+
+    @contextmanager
+    def changed_after_preflight(engine, **kwargs):
+        with original(engine, **kwargs) as conn:
+            conn.exec_driver_sql("DROP TRIGGER kifu_prepared_kifu_albums_update")
+            yield conn
+
+    monkeypatch.setattr(command, "_writer_transaction", changed_after_preflight)
+    code, result = invoke(engine, capsys, "enable", "--expected-policy-version", "1")
+    assert code == 1 and "guard definition mismatch" in result["reason"]
+    with engine.connect() as conn:
+        assert not command.read_state(conn)["enabled"]
+        assert (
+            conn.scalar(
+                text(
+                    "SELECT count(*) FROM sqlite_master WHERE type='trigger' "
+                    "AND name='kifu_prepared_kifu_albums_update'"
+                )
+            )
+            == 1
+        )
+
+
+def test_verify_schema_uses_existing_connection_without_owning_transaction(engine):
+    apply_migration(engine)
+    with engine.connect() as conn:
+        original_phase = command.read_state(conn)["phase"]
+        conn.rollback()
+        outer = conn.begin()
+        conn.execute(m.state.update().values(phase="caller-uncommitted"))
+        result = verify_schema(conn)
+        assert result["ok"] and result["state"]["phase"] == "caller-uncommitted"
+        assert outer.is_active and conn.in_transaction() and not conn.closed
+        outer.rollback()
+        assert command.read_state(conn)["phase"] == original_phase
+        assert not conn.closed

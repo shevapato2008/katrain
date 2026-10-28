@@ -508,6 +508,7 @@ def switch(engine, *, enabled, expected_policy_version=None):
         return {"ok": True, "enabled": False, "policy_signature": current_policy_signature()}
     _schema_required(engine)
     with _writer_transaction(engine) as conn:
+        _schema_required(conn)
         value = _state_required(conn)
         if enabled:
             if expected_policy_version != m.POLICY_VERSION or value["policy_version"] != expected_policy_version:

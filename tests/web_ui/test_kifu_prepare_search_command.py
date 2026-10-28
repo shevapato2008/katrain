@@ -2,11 +2,20 @@
 
 import json
 from contextlib import contextmanager
+import weakref
 
 import pytest
 from sqlalchemy import inspect, select, text
+from sqlalchemy.orm import Session
 
-from katrain.web.core.models_db import KifuAlbum, KifuPlayerAlias
+from katrain.web.core.models_db import (
+    KifuAlbum,
+    KifuPlayerAlias,
+    KifuPlayerName,
+    KifuRawPlayerValue,
+    KifuRawPlayerName,
+    KifuRawEventName,
+)
 from katrain.web.kifu import prepared_models as m
 from katrain.web.kifu.prepared_migration import apply_migration, verify_schema
 from scripts import kifu_prepare_search as command
@@ -84,24 +93,94 @@ def test_plan_samples_head_middle_and_tail_within_one_album_limit(engine, capsys
     assert result["relation_model"]["basis"].startswith("PostgreSQL 15.15")
 
 
-def test_plan_uses_fresh_bounded_proof_context_for_each_source_domain(engine, capsys, monkeypatch):
+def test_plan_consumes_complete_proof_groups_and_releases_rows_before_next_group(engine, capsys, monkeypatch):
+    from tests.web_ui.test_kifu_name_api import _evidence
+
+    with Session(engine) as db:
+        for name_id, lang, display in ((101, "cn", "吴清源"), (102, "en", "Go Seigen")):
+            evidence = _evidence(db, "player", 17, lang, display)
+            db.add(
+                KifuPlayerName(
+                    id=name_id,
+                    player_id=17,
+                    lang=lang,
+                    display_name=display,
+                    status="verified",
+                    decision_kind="conventional",
+                    generation_rule_version="test-v1",
+                    revision=1,
+                    evidence_id=evidence.id,
+                )
+            )
+        db.add(KifuPlayerName(id=103, player_id=17, lang="jp", display_name="negative", status="review"))
+        db.commit()
     original = command.identity._qualified_name_rows
-    calls = []
+    active, observed, references, sessions = {}, [], [], []
+
+    class GroupRows(list):
+        pass
+
+    def groups(db, model, name_ids):
+        observed.append((model, set(name_ids)))
+        if model is not KifuPlayerName:
+            assert not name_ids
+            return
+        assert set(name_ids) == {101, 102, 103}
+        for group in ({101, 103}, {102}):
+            if references:
+                assert references[-1]() is None
+                assert not db.identity_map
+            active["ids"] = group
+            yield group
+        assert references[-1]() is None
+        assert not db.identity_map
 
     def observe(db, query, model, owner_column, *entities, **kwargs):
-        context = kwargs.get("orthographic_batch_contexts")
-        calls.append((db, model, context, isinstance(context, dict) and not context))
-        return original(db, query, model, owner_column, *entities, **kwargs)
+        assert active.get("ids") is not None
+        assert kwargs.get("orthographic_batch_contexts") is None
+        rows = GroupRows(original(db, query, model, owner_column, *entities, **kwargs))
+        assert len(rows) == 1 and rows[0][0].id in active["ids"]
+        sessions.append(db)
+        references.append(weakref.ref(rows))
+        return rows
 
+    monkeypatch.setattr(command.identity, "iter_name_proof_groups", groups)
     monkeypatch.setattr(command.identity, "_qualified_name_rows", observe)
     code, result = invoke(engine, capsys, "plan", "--sample-albums", "1000")
     assert code == 0, result
-    assert {model for _db, model, _context, _empty in calls} == {spec[1] for spec in command.SPECS.values()}
-    assert len(calls) == 4
-    assert all(empty for _db, _model, _context, empty in calls)
-    assert len({id(context) for _db, _model, context, _empty in calls}) == 4
-    assert len({id(db) for db, _model, _context, _empty in calls}) == 1
-    assert result["sample"]["proof_observed"] is True
+    assert {model for model, _ids in observed} == {spec[1] for spec in command.SPECS.values()}
+    assert len(sessions) == 2 and len({id(db) for db in sessions}) == 1
+    assert all(reference() is None for reference in references)
+    assert result["sample"]["physical_names"] == 3
+    assert result["sample"]["qualified_names"] == 2
+
+
+def test_plan_scopes_raw_helpers_to_complete_physical_groups_including_negative_names(engine, capsys, monkeypatch):
+    with Session(engine) as db:
+        db.add(
+            KifuRawPlayerValue(id=91, raw_value="吴清源九段", category="unclassified_pending", review_status="pending")
+        )
+        db.flush()
+        db.add(KifuRawPlayerName(id=201, raw_player_id=91, lang="cn", display_name="negative player", status="review"))
+        db.add(KifuRawEventName(id=301, raw_event_id=7, lang="cn", display_name="negative event", status="review"))
+        db.commit()
+    calls = []
+    for helper, expected in (("_approved_raw_player_names", {201}), ("_approved_raw_event_names", {301})):
+        original = getattr(command.identity, helper)
+
+        def observe(db, *, _original=original, _expected=expected, **kwargs):
+            assert set(kwargs.get("name_ids", ())) == _expected
+            assert kwargs.get("orthographic_batch_contexts") is None
+            assert kwargs["values"]
+            calls.append(_expected)
+            return _original(db, **kwargs)
+
+        monkeypatch.setattr(command.identity, helper, observe)
+    code, result = invoke(engine, capsys, "plan", "--sample-albums", "1000")
+    assert code == 0, result
+    assert calls == [{201}, {301}]
+    assert result["sample"]["physical_names"] == 2
+    assert result["sample"]["qualified_names"] == 0
 
 
 @pytest.mark.parametrize(

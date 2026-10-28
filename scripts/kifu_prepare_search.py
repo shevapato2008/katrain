@@ -155,34 +155,41 @@ def _sample_proof(conn, albums, checkpoint):
                 ids = players if kind == "player" else events
             owners += len(ids)
             names = (
-                db.query(model.display_name, model.lang, model.decision_kind, model.generation_rule_version)
+                db.query(model.id, model.display_name, model.lang, model.decision_kind, model.generation_rule_version)
                 .filter(getattr(model, owner_column).in_(ids))
                 .all()
             )
             physical_by_kind[kind] = len(names)
             physical += len(names)
-            name_widths.extend(len(json.dumps(list(row), ensure_ascii=False).encode()) for row in names)
-            # Each domain owns a cold bounded context; retaining it across domains
-            # would keep source snapshots alive for the whole sample transaction.
-            if kind == "raw_player":
-                rows = identity._approved_raw_player_names(db, values=raws[kind], orthographic_batch_contexts={})
-            elif kind == "raw_event":
-                rows = identity._approved_raw_event_names(db, values=raws[kind], orthographic_batch_contexts={})
-            else:
-                rows = identity._qualified_name_rows(
-                    db,
-                    identity._approved_names(db, model, owner_column, ids),
-                    model,
-                    owner_column,
-                    orthographic_batch_contexts={},
-                )
-            qualified += len(rows)
-            if kind.startswith("raw_"):
-                from katrain.web.kifu.prepare_search import _finite_album_ids
+            name_widths.extend(len(json.dumps(list(row[1:]), ensure_ascii=False).encode()) for row in names)
+            # Group complete proof batches using scalar IDs before loading payloads.
+            # Count each original full proof, then release it before the next group.
+            for group in identity.iter_name_proof_groups(db, model, {row.id for row in names}):
+                checkpoint()
+                if kind == "raw_player":
+                    rows = identity._approved_raw_player_names(db, values=raws[kind], name_ids=group)
+                elif kind == "raw_event":
+                    rows = identity._approved_raw_event_names(db, values=raws[kind], name_ids=group)
+                else:
+                    rows = identity._qualified_name_rows(
+                        db,
+                        identity._approved_names(db, model, owner_column, ids).filter(model.id.in_(group)),
+                        model,
+                        owner_column,
+                    )
+                try:
+                    qualified += len(rows)
+                    if kind.startswith("raw_"):
+                        from katrain.web.kifu.prepare_search import _finite_album_ids
 
-                # Signed finite scopes may include members outside the sampled
-                # albums. Count their complete proof closure, never truncate it.
-                finite_members += sum(len(_finite_album_ids(row[2])) * 2 for row in rows if row[2] is not None)
+                        # Signed scopes may include albums outside this sample.
+                        # Count their complete proof closure, never truncate it.
+                        finite_members += sum(len(_finite_album_ids(row[2])) * 2 for row in rows if row[2] is not None)
+                finally:
+                    del rows
+                    db.expire_all()
+                    db.expunge_all()
+                checkpoint()
             checkpoint()
     return {
         "albums": len(albums),

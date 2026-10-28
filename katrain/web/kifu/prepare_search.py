@@ -577,6 +577,14 @@ def _prepare_owners(conn, db, targets, budget):
             .mappings()
             .all()
         )
+        # An incoming source can retain its old owner's representative ID after
+        # upsert, while the receiving owner already has a smaller representative.
+        for ids in _chunks([str(row["id"]) for row in current]):
+            conn.execute(
+                delete(m.dependencies).where(
+                    m.dependencies.c.target_kind == "name", m.dependencies.c.target_key.in_(ids)
+                )
+            )
         member_values = []
         owner_inputs = _owner_dependency_inputs(current, inputs_by_source)
         representatives = {}

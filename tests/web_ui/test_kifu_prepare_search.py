@@ -215,6 +215,57 @@ def test_owner_dependency_representative_moves_then_clears_and_rebuilds_from_new
         assert module.verify_coverage(conn)["ready"]
 
 
+def test_owner_dependency_move_to_existing_smaller_representative_across_batches(engine, monkeypatch):
+    module = _prepare_module()
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert().values(id=18, canonical_name="Old owner"))
+        conn.execute(
+            KifuPlayerName.__table__.insert().values(player_id=17, lang="en", display_name="Target", status="verified")
+        )
+        incoming = conn.execute(
+            KifuPlayerName.__table__.insert().values(
+                player_id=18, lang="cn", display_name="Incoming", status="verified"
+            )
+        ).inserted_primary_key[0]
+        conn.execute(
+            KifuPlayerName.__table__.insert().values(player_id=18, lang="ru", display_name="Remaining", status="review")
+        )
+    _install(engine)
+    expand = module._expand_targets
+
+    def target_first(*args, **kwargs):
+        owners, albums = expand(*args, **kwargs)
+        return {kind: sorted(ids) for kind, ids in owners.items()}, albums
+
+    monkeypatch.setattr(module, "_expand_targets", target_first)
+    with engine.begin() as conn:
+        module.prepare_all(conn)
+        before = conn.execute(select(prepared.names).where(prepared.names.c.name_kind == "player")).mappings().all()
+        incoming_id = next(row["id"] for row in before if row["source_name_id"] == incoming)
+        assert min(row["id"] for row in before if row["owner_id"] == 17) < incoming_id
+        conn.execute(KifuPlayerName.__table__.update().where(KifuPlayerName.id == incoming).values(player_id=17))
+        module.prepare_changed(conn, budget=module.PrepareBudget(max_albums=1))
+        rows = conn.execute(select(prepared.names).where(prepared.names.c.name_kind == "player")).mappings().all()
+        for owner in (17, 18):
+            owned = [row for row in rows if row["owner_id"] == owner]
+            targets = set(
+                conn.scalars(
+                    select(prepared.dependencies.c.target_key).where(
+                        prepared.dependencies.c.target_kind == "name",
+                        prepared.dependencies.c.target_key.in_([str(row["id"]) for row in owned]),
+                    )
+                )
+            )
+            assert targets == {str(min(row["id"] for row in owned))}
+        assert not conn.execute(
+            select(prepared.dependencies).where(
+                prepared.dependencies.c.target_kind == "name", prepared.dependencies.c.target_key == str(incoming_id)
+            )
+        ).first()
+        assert module.verify_coverage(conn)["ready"]
+
+
 def test_prepares_five_languages_real_fallback_and_detail_only_albums(engine, monkeypatch):
     module = _prepare_module()
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")

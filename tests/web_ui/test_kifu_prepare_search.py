@@ -46,6 +46,45 @@ def _prepare_module():
     return importlib.import_module("katrain.web.kifu.prepare_search")
 
 
+def test_preparer_uses_transaction_local_proof_context_and_scalar_batch_dependencies(engine, monkeypatch):
+    module = _prepare_module()
+    from katrain.web.kifu import identity
+    from sqlalchemy import event
+
+    inventory, bundle, research = bound_player_bundle(engine)
+    applied = apply_bundle(engine, bundle, registry(), inventory, research)
+    original = identity._qualified_name_rows
+    contexts = []
+
+    def prove(*args, **kwargs):
+        context = kwargs.get("orthographic_batch_contexts")
+        assert context is not None, "offline preparation must use fresh guarded compilation"
+        contexts.append(context)
+        return original(*args, **kwargs)
+
+    _install(engine)
+    monkeypatch.setattr(identity, "_qualified_name_rows", prove)
+    with engine.begin() as conn:
+        module.prepare_all(conn)
+    assert contexts
+    with Session(engine) as db:
+        name = db.query(KifuPlayerName).one()
+        evidence = db.get(KifuNameResearchEvidence, name.evidence_id)
+        statements = []
+
+        def capture(_conn, _cursor, statement, _parameters, _context, _many):
+            statements.append(statement.lower())
+
+        event.listen(engine, "before_cursor_execute", capture)
+        try:
+            inputs = module._proof_inputs(db, "player", name, evidence, {}, {})
+        finally:
+            event.remove(engine, "before_cursor_execute", capture)
+        assert ("kifu_name_batches", str(applied["batch_id"])) in inputs
+        batch_reads = [statement for statement in statements if "from kifu_name_batches" in statement]
+        assert batch_reads and all("reviewed_artifact" not in statement for statement in batch_reads)
+
+
 def _install(engine):
     from katrain.web.kifu.prepared_migration import apply_migration
 

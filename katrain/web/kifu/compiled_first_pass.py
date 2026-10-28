@@ -93,8 +93,10 @@ def read_compiled_first_pass(db, batch_ids):
         .options(defer(KifuNameBatch.reviewed_artifact))
         .filter(KifuNameBatch.id.in_(batch_ids))
         .populate_existing()
-        .all()
     )
+    # PostgreSQL returns only a digest here. SQLite's guard is the raw JSON
+    # text, so fetch one header at a time rather than retaining every string.
+    headers = headers.yield_per(1) if dialect == "sqlite" else headers
     batches, contexts, misses = {}, {}, set()
     for batch, current_guard in headers:
         # defer does not discard JSON already held by this Session. A later
@@ -110,23 +112,37 @@ def read_compiled_first_pass(db, batch_ids):
             misses.add(batch.id)
         else:
             contexts[batch.id] = compiled
+    # A SQLite header's text must not remain live while a cold JSON is decoded.
+    if batches:
+        del current_guard
     if misses:
         # A header can change before this read. Never pair its old guard with
         # this new artifact; every scalar and guard below comes from one row.
-        full_rows = (
-            db.query(KifuNameBatch, guard.label("artifact_guard"))
-            .options(undefer(KifuNameBatch.reviewed_artifact))
-            .filter(KifuNameBatch.id.in_(misses))
-            .populate_existing()
-            .all()
-        )
-        for batch, current_guard in full_rows:
+        found = set()
+        for batch_id in sorted(misses):
+            full_row = (
+                db.query(KifuNameBatch, guard.label("artifact_guard"))
+                .options(undefer(KifuNameBatch.reviewed_artifact))
+                .filter(KifuNameBatch.id == batch_id)
+                .populate_existing()
+                .one_or_none()
+            )
+            if full_row is None:
+                continue
+            batch, current_guard = full_row
+            found.add(batch.id)
             batches[batch.id] = batch
-            compiled = compile_first_pass(batch.status, batch.bundle_sha256, batch.reviewed_artifact)
-            contexts[batch.id] = compiled
-            if compiled is not None and isinstance(current_guard, str):
-                _CACHE.put(_key(batch, current_guard, dialect), compiled)
+            try:
+                compiled = compile_first_pass(batch.status, batch.bundle_sha256, batch.reviewed_artifact)
+                contexts[batch.id] = compiled
+                if compiled is not None and isinstance(current_guard, str):
+                    _CACHE.put(_key(batch, current_guard, dialect), compiled)
+            finally:
+                # Only scalar headers and pure compiled membership escape this
+                # iteration. A later scope reader reloads current full JSON.
+                db.expire(batch, ["reviewed_artifact"])
+                del full_row, current_guard
         # Deleted rows cannot retain the earlier header as usable proof.
-        for missing in misses - {batch.id for batch, _ in full_rows}:
+        for missing in misses - found:
             batches.pop(missing, None)
     return batches, contexts

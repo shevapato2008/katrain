@@ -9,7 +9,13 @@ import pytest
 from sqlalchemy import event
 from sqlalchemy.orm import Session
 
-from katrain.web.core.models_db import KifuNameBatch, KifuNameChange, KifuNameResearchEvidence, KifuPlayer
+from katrain.web.core.models_db import (
+    KifuNameBatch,
+    KifuNameChange,
+    KifuNameResearchEvidence,
+    KifuPlayer,
+    KifuNameSourceRegistry,
+)
 from katrain.web.kifu import name_candidates
 from katrain.web.kifu.compiled_first_pass import _CACHE, _CompiledFirstPassCache
 from katrain.web.kifu.name_batch import apply_bundle
@@ -275,3 +281,72 @@ def test_raw_player_cache_hit_expires_held_old_artifact_before_scope_read(engine
             assert len(read(fresh_session)) == 1
         assert len(read(held_session)) == 1
         assert held.reviewed_artifact == artifact
+
+
+def test_cold_batches_compile_serially_and_release_full_json_before_return(engine, monkeypatch):
+    from katrain.web.kifu import compiled_first_pass
+
+    with Session(engine) as db:
+        source = KifuNameSourceRegistry(version="serial", sha256="b" * 64, registry={})
+        db.add(source)
+        db.flush()
+        ids = []
+        for index in range(3):
+            bundle = {"candidates": [{"id": index}], "padding": str(index) * (1024 * 1024)}
+            batch = KifuNameBatch(
+                bundle_sha256=name_candidates.canonical_sha256(bundle),
+                inventory_sha256="c" * 64,
+                source_registry_id=source.id,
+                reviewed_artifact={"bundle": bundle, "research_hashes": []},
+                status="applied",
+            )
+            db.add(batch)
+            db.flush()
+            ids.append(batch.id)
+        db.commit()
+    compile_original = compiled_first_pass.compile_first_pass
+    with Session(engine) as db:
+
+        def compile_one(status, digest, artifact):
+            loaded = [
+                row
+                for row in db.identity_map.values()
+                if isinstance(row, KifuNameBatch) and "reviewed_artifact" in row.__dict__
+            ]
+            assert len(loaded) == 1, "cold artifacts must not accumulate before compilation"
+            return compile_original(status, digest, artifact)
+
+        monkeypatch.setattr(compiled_first_pass, "compile_first_pass", compile_one)
+        batches, compiled = compiled_first_pass.read_compiled_first_pass(db, set(ids))
+        assert set(batches) == set(compiled) == set(ids)
+        assert all(value is not None for value in compiled.values())
+        assert all("reviewed_artifact" not in batch.__dict__ for batch in batches.values())
+
+
+@pytest.mark.parametrize("drift", ["artifact", "status", "source"])
+def test_serial_compilation_still_rechecks_same_connection_uncommitted_drift(engine, drift):
+    inventory, bundle, research = bound_player_bundle(engine)
+    applied = apply_bundle(engine, bundle, registry(), inventory, research)
+    with engine.begin() as conn, Session(bind=conn) as db:
+        assert len(read_player(db, {})) == 1
+        held_batch = db.get(KifuNameBatch, applied["batch_id"])
+        held_owner = db.get(KifuPlayer, 17)
+        if drift == "artifact":
+            artifact = deepcopy(held_batch.reviewed_artifact)
+            artifact["bundle"]["changed_probe"] = True
+            conn.execute(
+                KifuNameBatch.__table__.update()
+                .where(KifuNameBatch.id == held_batch.id)
+                .values(reviewed_artifact=artifact)
+            )
+        elif drift == "status":
+            conn.execute(
+                KifuNameBatch.__table__.update().where(KifuNameBatch.id == held_batch.id).values(status="undone")
+            )
+        else:
+            conn.execute(
+                KifuPlayer.__table__.update()
+                .where(KifuPlayer.id == held_owner.id)
+                .values(canonical_name="Changed source")
+            )
+        assert read_player(db, {}) == []

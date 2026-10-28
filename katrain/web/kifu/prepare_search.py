@@ -212,7 +212,11 @@ def _proof_inputs(db, kind, name, evidence, creation_changes, batch_cache):
         result.add((business.KifuNameChange.__tablename__, str(change.id)))
     result.update((business.KifuNameResearchEvidence.__tablename__, str(row_id)) for row_id in evidence_ids)
     for batch_id in batch_ids - batch_cache.keys():
-        batch_cache[batch_id] = db.get(business.KifuNameBatch, batch_id)
+        batch_cache[batch_id] = (
+            db.query(business.KifuNameBatch.id, business.KifuNameBatch.source_registry_id)
+            .filter(business.KifuNameBatch.id == batch_id)
+            .one_or_none()
+        )
     for batch in (batch_cache[batch_id] for batch_id in batch_ids if batch_cache[batch_id] is not None):
         result.add((business.KifuNameBatch.__tablename__, str(batch.id)))
         result.add((business.KifuNameSourceRegistry.__tablename__, str(batch.source_registry_id)))
@@ -387,12 +391,20 @@ def _prepare_owners(conn, db, targets, budget):
             creation_changes[change.target_table, change.target_row_id].append(change)
         batch_cache = {}
         if kind == "raw_player":
-            qualified = identity._approved_raw_player_names(db, values={row.raw_value for row in owners.values()})
+            qualified = identity._approved_raw_player_names(
+                db, values={row.raw_value for row in owners.values()}, orthographic_batch_contexts={}
+            )
         elif kind == "raw_event":
-            qualified = identity._approved_raw_event_names(db, values={row.raw_value for row in owners.values()})
+            qualified = identity._approved_raw_event_names(
+                db, values={row.raw_value for row in owners.values()}, orthographic_batch_contexts={}
+            )
         else:
             qualified = identity._qualified_name_rows(
-                db, identity._approved_names(db, name_model, owner_col, set(owner_ids)), name_model, owner_col
+                db,
+                identity._approved_names(db, name_model, owner_col, set(owner_ids)),
+                name_model,
+                owner_col,
+                orthographic_batch_contexts={},
             )
         eligible = {row[0].id: row for row in qualified}
         finite_members = _finite_members(db, kind, qualified) if kind.startswith("raw_") else {}
@@ -438,7 +450,9 @@ def _prepare_owners(conn, db, targets, budget):
                 )
                 ids = {value for value, in query.with_entities(name_model.player_id)}
                 if len(ids) > 1:
-                    rows = identity._qualified_name_rows(db, query, name_model, owner_col)
+                    rows = identity._qualified_name_rows(
+                        db, query, name_model, owner_col, orthographic_batch_contexts={}
+                    )
                     rows = [
                         (row, proof)
                         for row, proof in rows

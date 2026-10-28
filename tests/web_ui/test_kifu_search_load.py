@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import time
 
 import httpx
 import pytest
@@ -125,6 +126,37 @@ async def test_every_http_json_semantic_and_timeout_error_remains_in_statistics(
     assert records[-1] == summary
     log = json.dumps(records)
     assert "public name" not in log and "must never log" not in log and "unavailable" not in log
+
+
+@pytest.mark.asyncio
+async def test_http_timer_excludes_slow_client_validation_but_wall_includes_it(load, monkeypatch):
+    records = []
+    validation_ms = []
+    validate = load.semantic_errors
+
+    def slow_validation(body, frozen):
+        started = time.perf_counter()
+        time.sleep(0.04)
+        result = validate(body, frozen)
+        validation_ms.append((time.perf_counter() - started) * 1000)
+        return result
+
+    monkeypatch.setattr(load, "semantic_errors", slow_validation)
+
+    async def respond(request):
+        await sent(request)
+        return httpx.Response(200, json=empty_body())
+
+    await load.run_load(
+        "http://test",
+        [case()],
+        load.make_plan("custom", rate=100, count=1),
+        emit=records.append,
+        transport=httpx.MockTransport(respond),
+    )
+    sample = next(row for row in records if row["type"] == "sample")
+    assert validation_ms[0] >= 30
+    assert sample["client_wall_ms"] - sample["generator_queue_ms"] - sample["http_ms"] >= validation_ms[0] - 2
 
 
 @pytest.mark.asyncio
@@ -293,6 +325,24 @@ def test_missing_offline_samples_are_errors_not_discarded(load):
     assert result["scheduled"] == 3000 and result["missing_samples"] == 1
     assert result["errors"] == 1 and result["not_sent"] == 1
     assert result["gates"]["overall"] == "fail"
+
+
+@pytest.mark.parametrize("corruption", ["same_row", "request_id", "sequence", "out_of_range", "invalid_id"])
+def test_offline_client_evidence_requires_unique_valid_sample_identities(load, corruption):
+    run, samples, metrics = synthetic_high()
+    if corruption == "same_row":
+        samples = [samples[0]] * run["scheduled_count"]
+        metrics = [metrics[0]]
+    elif corruption == "request_id":
+        samples[1]["request_id"] = samples[0]["request_id"]
+    elif corruption == "sequence":
+        samples[1]["sequence"] = samples[0]["sequence"]
+    elif corruption == "out_of_range":
+        samples[-1]["sequence"] = run["scheduled_count"]
+    else:
+        samples[0]["request_id"] = "invalid-id"
+    with pytest.raises(ValueError, match="client sample"):
+        load.summarize(run, samples, metrics)
 
 
 def test_cli_requires_observed_server_gate_and_never_overwrites_output(load, tmp_path):

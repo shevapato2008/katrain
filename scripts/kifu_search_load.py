@@ -27,7 +27,8 @@ not_observed, never a performance pass. Percentiles use nearest rank, ceil(p*N).
 
 Timing logs contain case IDs and numeric measurements, never query text/SGFs.
 Client wall includes scheduler/worker/connection queue and JSON validation;
-http_ms starts at the HTTP call, generator_queue_ms ends at worker dispatch,
+http_ms runs from the HTTP call through final body/context close and excludes
+client JSON/semantic validation; generator_queue_ms ends at worker dispatch,
 dispatch_queue_ms ends when httpcore confirms request headers have been sent.
 The drain (at most 2s) never contributes to achieved QPS in the offered window.
 Exit codes: 0=observed gate pass, 1=failed gate, 2=invalid input/output,
@@ -221,6 +222,20 @@ def read_server_metrics(path):
 
 
 def summarize(run, samples, server_metrics=None):
+    count = run.get("scheduled_count")
+    if not _integer(count, 1):
+        raise ValueError("invalid client sample count")
+    sequences, request_ids = set(), set()
+    for row in samples:
+        if not isinstance(row, dict):
+            raise ValueError("invalid client sample")
+        sequence, request_id = row.get("sequence"), row.get("request_id")
+        if not _integer(sequence) or sequence >= count or sequence in sequences:
+            raise ValueError("invalid or duplicate client sample sequence")
+        if not isinstance(request_id, str) or not REQUEST_ID.fullmatch(request_id) or request_id in request_ids:
+            raise ValueError("invalid or duplicate client sample request_id")
+        sequences.add(sequence)
+        request_ids.add(request_id)
     metrics = {row["request_id"]: row for row in (server_metrics or [])}
     window_ms, start = run["window_s"] * 1000, run["started_unix_s"]
 
@@ -428,6 +443,7 @@ async def run_load(
                             content.extend(chunk)
                             sample["response_bytes"] += len(chunk)
                         sample["complete_body"] = True
+                    sample["http_ms"] = (loop.time() - http_start) * 1000
                     try:
                         body = json.loads(content)
                     except (ValueError, UnicodeError):
@@ -449,7 +465,8 @@ async def run_load(
                 # Keep exception text out of logs because it can embed URLs or body content.
                 sample["errors"].append("client_error")
             finally:
-                sample["http_ms"] = (loop.time() - http_start) * 1000
+                if sample["http_ms"] is None:
+                    sample["http_ms"] = (loop.time() - http_start) * 1000
                 active -= 1
                 finish(sample)
                 queue.task_done()

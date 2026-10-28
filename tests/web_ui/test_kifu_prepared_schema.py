@@ -1,6 +1,7 @@
 """Explicit prepared-schema contract; business metadata remains untouched."""
 
 import importlib.util
+import json
 
 import pytest
 from sqlalchemy import create_engine, inspect, select, update
@@ -39,6 +40,52 @@ def test_six_tables_are_independent_and_explicit():
         assert not any(row[key] for key in ("enabled", "ready", "initial_coverage_complete"))
     assert migration.verify_schema(engine)["ok"]
     migration.apply_migration(engine)  # repeat migration does not reset operator state
+    engine.dispose()
+
+
+def test_postgresql_migration_sets_timeouts_before_ddl_and_busy_rolls_back(tmp_path, monkeypatch, capsys):
+    """SQLite executes the transaction; only PG timeout/lock behavior is simulated."""
+    from sqlalchemy import event
+    from sqlalchemy.exc import OperationalError
+    from scripts import kifu_prepare_search as command
+
+    m, migration, _ = prepared_modules()
+    engine = create_engine(f"sqlite:///{tmp_path / 'migration-timeout.db'}")
+    Base.metadata.create_all(engine)
+    original_tables = set(inspect(engine).get_table_names())
+    statements, observed_enabled = [], []
+
+    @event.listens_for(engine, "begin")
+    def explicit_transaction(conn):
+        conn.exec_driver_sql("BEGIN IMMEDIATE")
+
+    @event.listens_for(engine, "before_cursor_execute", retval=True)
+    def simulate_postgresql(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+        if statement.startswith("SET LOCAL "):
+            return "SELECT 1", ()
+        if statement == "DROP TRIGGER IF EXISTS busy_source_guard":
+            raise OperationalError(statement, parameters, RuntimeError("source writer lock busy"))
+        return statement, parameters
+
+    def busy_guard(conn):
+        observed_enabled.append(conn.scalar(select(m.state.c.enabled)))
+        return ["DROP TRIGGER IF EXISTS busy_source_guard"]
+
+    monkeypatch.setattr(engine.dialect, "name", "postgresql")
+    monkeypatch.setattr(migration, "_set_schema", lambda conn: None)
+    monkeypatch.setattr(migration, "_guard_statements", busy_guard)
+    monkeypatch.setattr(command, "create_engine", lambda *args, **kwargs: engine)
+    assert command.main(["migrate", "--apply"]) == 1
+    assert not json.loads(capsys.readouterr().out)["ok"]
+    first_ddl = next(
+        index for index, sql in enumerate(statements) if sql.lstrip().startswith(("CREATE ", "DROP ", "ALTER "))
+    )
+    assert statements.index("SET LOCAL lock_timeout = '1000ms'") < first_ddl
+    assert statements.index("SET LOCAL statement_timeout = '30000ms'") < first_ddl
+    assert observed_enabled == [False]
+    assert set(inspect(engine).get_table_names()) == original_tables
+    assert not set(m.metadata.tables).intersection(original_tables)
     engine.dispose()
 
 

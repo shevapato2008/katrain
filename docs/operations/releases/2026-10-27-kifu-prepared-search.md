@@ -39,6 +39,8 @@ python scripts/kifu_prepare_search.py disable
 
 `migrate` 默认 dry-run。只有明确 `--apply` 安装独立 MetaData 的六张派生表、默认 disabled singleton 和普通 DML/TRUNCATE 失效守卫；重复执行保留既有 checkpoint/开关。显式迁移外，Web startup 和 plan/prepare/verify/enable 均不建表。先核对迁移计划、全部输入表和守卫定义，再检查 `verify-schema` 实际结果，不能仅看表名存在。
 
+PostgreSQL `migrate --apply` 在同一迁移事务、首个 DDL 之前设置 `SET LOCAL lock_timeout='1000ms'`、`statement_timeout='30000ms'`。旧 collector 正在发布或源表锁忙时，迁移有限等待后整事务回滚，CLI 返回非零；不会留下半建表/守卫或半启用状态，也不 kill writer、自动重试。记录 busy 后保留现有服务，等待 writer 自然空闲，再显式重试迁移；不得把 DDL 无限排队当作 drain。首次安装仍默认 disabled，重复迁移失败保留此前已提交状态。
+
 `prepare` 的 state.phase/cursor 与该批结果在同一 Connection/事务提交，每批至多 500，单批最多 30 秒 statement timeout、1 秒 lock timeout；命令总截止 1800 秒不因换批重置。沿用名称 writer advisory lock `720220261002`，再取 publication lock `720220261003`，再锁源表、singleton 和目标；不得倒序或在已有 Session 内另开连接取锁。遇活跃 writer/锁超时立即让出并返回非零，保留最后成功 checkpoint，下次显式 `--resume`；没有后台自动重试、跨全库长快照或第二 collector。超时当前批回滚，已提交批保留。初次覆盖未完成时正常 writer 保留 dirty，最终闭包统一核对；不得半准备 enable。
 
 普通增量准备遇到 `input_key='*'`（如 TRUNCATE）的 collection invalidation 必须拒绝完成，操作入口是显式完整重建：

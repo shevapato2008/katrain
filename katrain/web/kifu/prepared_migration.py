@@ -286,6 +286,9 @@ def migration_plan(engine):
 
 def apply_migration(engine):
     with engine.begin() as conn:
+        if conn.dialect.name == "postgresql":
+            conn.exec_driver_sql("SET LOCAL lock_timeout = '1000ms'")
+            conn.exec_driver_sql("SET LOCAL statement_timeout = '30000ms'")
         _set_schema(conn)
         missing = set(INPUT_TABLES) - set(inspect(conn).get_table_names())
         if missing:

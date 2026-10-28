@@ -124,6 +124,97 @@ def _old_outputs(db, albums, lang):
     }
 
 
+def test_owner_dependency_union_keeps_every_language_alias_and_domain():
+    module = _prepare_module()
+    from katrain.web.kifu.identity import LANGUAGES
+
+    rows = [{"name_kind": "player", "owner_id": 17, "source_key": lang} for lang in LANGUAGES]
+    rows += [
+        {"name_kind": "player", "owner_id": 17, "source_key": "alias:1"},
+        {"name_kind": "player", "owner_id": 18, "source_key": "other"},
+        {"name_kind": "raw_event", "owner_id": 17, "source_key": "raw"},
+    ]
+    inputs = {lang: {("token", lang), ("kifu_albums", "11")} for lang in LANGUAGES}
+    inputs.update({"alias:1": {("alias", "1")}, "other": {("source", "18")}, "raw": {("source", "raw")}})
+    assert module._owner_dependency_inputs(rows, inputs) == {
+        ("player", 17): {("token", lang) for lang in LANGUAGES} | {("kifu_albums", "11"), ("alias", "1")},
+        ("player", 18): {("source", "18")},
+        ("raw_event", 17): {("source", "raw")},
+    }
+    assert module._owner_dependency_inputs([], {}) == {}
+
+
+def test_owner_dependency_representative_moves_then_clears_and_rebuilds_from_new_alias(engine, monkeypatch):
+    module = _prepare_module()
+    from katrain.web.core.models_db import KifuPlayerAlias
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert().values(id=18, canonical_name="Other"))
+        first = conn.execute(
+            KifuPlayerName.__table__.insert().values(player_id=17, lang="cn", display_name="First", status="verified")
+        ).inserted_primary_key[0]
+        second = conn.execute(
+            KifuPlayerName.__table__.insert().values(player_id=17, lang="ru", display_name="Rejected", status="review")
+        ).inserted_primary_key[0]
+        alias = conn.execute(
+            KifuPlayerAlias.__table__.insert().values(player_id=17, alias="Alias", normalized_alias="alias")
+        ).inserted_primary_key[0]
+    _install(engine)
+    with engine.begin() as conn:
+        module.prepare_all(conn)
+
+        def checked(owner_id):
+            rows = (
+                conn.execute(
+                    select(prepared.names).where(
+                        prepared.names.c.name_kind == "player", prepared.names.c.owner_id == owner_id
+                    )
+                )
+                .mappings()
+                .all()
+            )
+            ids = {str(row["id"]) for row in rows}
+            deps = (
+                conn.execute(
+                    select(prepared.dependencies).where(
+                        prepared.dependencies.c.target_kind == "name", prepared.dependencies.c.target_key.in_(ids)
+                    )
+                )
+                .mappings()
+                .all()
+            )
+            assert {row["target_key"] for row in deps} == ({str(min(row["id"] for row in rows))} if rows else set())
+            assert all(row["valid"] for row in rows)
+            return rows, {(row["input_kind"], row["input_key"]) for row in deps}
+
+        rows, inputs = checked(17)
+        old_rep = min(row["id"] for row in rows)
+        assert {
+            ("kifu_player_names", str(first)),
+            ("kifu_player_names", str(second)),
+            ("kifu_player_aliases", str(alias)),
+        } <= inputs
+        # A moved representative's source row must rebuild both old/new owners.
+        conn.execute(KifuPlayerName.__table__.update().where(KifuPlayerName.id == first).values(player_id=18))
+        module.prepare_changed(conn)
+        rows, inputs = checked(17)
+        assert str(old_rep) not in {str(row["id"]) for row in rows}
+        assert ("kifu_player_names", str(first)) not in inputs
+        assert ("kifu_player_names", str(first)) in checked(18)[1]
+        # Deleting the new representative leaves the alias as its successor.
+        conn.execute(KifuPlayerName.__table__.delete().where(KifuPlayerName.id == second))
+        module.prepare_changed(conn)
+        assert len(checked(17)[0]) == 1
+        conn.execute(KifuPlayerAlias.__table__.delete().where(KifuPlayerAlias.id == alias))
+        module.prepare_changed(conn)
+        assert checked(17) == ([], set())
+        conn.execute(KifuPlayerAlias.__table__.insert().values(player_id=17, alias="New", normalized_alias="new"))
+        module.prepare_changed(conn)
+        assert len(checked(17)[0]) == 1
+        assert module.verify_coverage(conn)["ready"]
+
+
 def test_prepares_five_languages_real_fallback_and_detail_only_albums(engine, monkeypatch):
     module = _prepare_module()
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
@@ -189,6 +280,22 @@ def test_prepares_five_languages_real_fallback_and_detail_only_albums(engine, mo
                 assert output["strict_outputs"]["sources"] == sources
                 assert output["valid"]
         assert outputs[12, "en"]["player_black"] == "Player name unverified"
+        names = conn.execute(select(prepared.names).where(prepared.names.c.name_kind == "player")).mappings().all()
+        dependencies = (
+            conn.execute(select(prepared.dependencies).where(prepared.dependencies.c.target_kind == "name"))
+            .mappings()
+            .all()
+        )
+        assert {row["target_key"] for row in dependencies} == {str(min(row["id"] for row in names))}
+        assert {(row["input_kind"], row["input_key"]) for row in dependencies} >= {
+            ("kifu_player_names", str(row["source_name_id"])) for row in names
+        }
+        assert not conn.execute(
+            select(prepared.dependencies).where(
+                prepared.dependencies.c.target_kind == "display",
+                prepared.dependencies.c.input_kind == "kifu_player_names",
+            )
+        ).first()
         assert conn.execute(select(prepared.state.c.ready)).scalar_one()
 
 

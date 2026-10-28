@@ -50,7 +50,19 @@ PostgreSQL `migrate --apply` 在同一迁移事务、首个 DDL 之前设置 `SE
 
 `prepare` 的 state.phase/cursor 与该批结果在同一 Connection/事务提交，每批至多 500，保留每 SQL statement 30 秒 timeout、lock timeout 1 秒和合作式耗时检查，不承诺 Python 构造或锁墙钟每批严格 30 秒释放。500 owner 的完整 finite closure 可能包含更多 album，不截断 proof。沿用名称 writer advisory lock `720220261002`，再取 publication lock `720220261003`，再锁源表、singleton 和目标；不得倒序或另开连接嵌套争锁。所有派生结果、cursor 与最终 reconcile 写完后，在该 Connection commit 前检查实际进程峰值、六关系含索引空间和截止时间；失败回滚本批，保留已提交 checkpoint。遇活跃 writer/锁超时立即让出，无自动重试或第二 collector。初次覆盖未完成时 writer 保留 dirty；覆盖完成后即使 disabled，正常 writer 仍维护派生结果，因此实际新包/hook 门禁不能省略。
 
-实际准备只在独立的一次性纯 CLI 容器中运行：不可变已发布镜像、512MiB 生效的 Docker memory 限制、memory-swap 等于 memory（无额外 swap）、无自动 restart、不启动 Web/cron/collector。不得在常驻 Web/cron 容器里执行这次准备。命令和外部容器总 wall 上限为本次验收累计 1800 秒；跨 `--resume` 必须扣除已消耗时间，不能通过重启重置预算。OOM、截止终止、连接丢失或未知 COMMIT 均算失败、不 enable。若终止发生在 COMMIT 附近，本批可能已完整提交；恢复只能读 DB durable phase/cursor，并确认自有后端事务和锁已释放，不能凭最后客户端日志重放。只终止自己的准备容器/连接，不触碰既有任务。
+实际准备只在独立的一次性纯 CLI 容器中运行：不可变已发布镜像、512MiB 生效的 Docker memory 限制、memory-swap 等于 memory（无额外 swap）、无自动 restart、不启动 Web/cron/collector。不得在常驻 Web/cron 容器里执行这次准备。原累计 1800 秒窗口已失败，后续累计 3600 秒窗口又在未全覆盖时触发2GiB门禁；本次必要新policy重建按下述明确批准的累计7200秒上限执行，每次 CLI 仍至多1800秒，跨 `--resume` 扣除全部既有耗时，不能通过重启重置预算。OOM、截止终止、连接丢失或未知 COMMIT 均算失败、不 enable。若终止发生在 COMMIT 附近，本批可能已完整提交；恢复只能读 DB durable phase/cursor，并确认自有后端事务和锁已释放，不能凭最后客户端日志重放。只终止自己的准备容器/连接，不触碰既有任务。
+
+2026-10-29（北京时间）主会话针对实际进展明确批准一次额外有界 1800 秒离线准备窗口，并经同一独立 Astra OPS 增量审核 Approved。原窗口实际累计 1802.618804684 秒，保持失败记录；累计上限修正为 3600 秒，旧耗时保留，余额 1797.381195316 秒。继续同 `c83ec948` policy 的原 `--resume --batch-size 500`（已进入 raw_event，仍至多500），不重建或改写 signature/cursor，不减数据或完整 proof。首次续跑 CLI/外部截止采用1792秒，为监督及停止保守预留约5秒；后续显式续跑只从累计余额扣取，不能再填1792或1800重置。预留不是清理时长保证，实际停止/事务释放仍如实计账，超过3600仍失败。512MiB/no-swap/no-restart、2GiB观测/完成门禁、原锁、statement30秒/lock1秒、disabled及TEST先于PROD全部保持。最终RSS未观察、覆盖/语义/SLO未通过的状态保留，不能把此运营窗口修正称为原1800秒门禁通过。
+
+500批续跑实际7批提交后触发合作式30秒限制，非OOM，峰值RSS279945216B；新增实际154.966459037秒计入，累计1957.585263721秒，余额1642.414736279秒。主会话明确授权同policy从durable cursor70023（实际19800/52229 raw_event owners）以200批继续；仅若200再次遇同一种合作式30秒错误，且无OOM/新异常、自有事务锁已释放，授权一次缩到100续跑。每次仍扣除全部实际用时和监督余量，没有无限自动重试；其它新风险先停止。
+
+200批实际171批提交后因六表物理空间2148065280B超过2GiB而停止，非OOM；已完整准备names303783/members811286，但display仅8000行、1600/176907个album。依赖5548474行占1581629440B，是本次已实证的主要空间成本。该次实际991.467373604秒计入，累计2949.052637325秒；空间/全覆盖门禁未通过，不启用、不推进PROD。
+
+主会话据上述事实保持2GiB/512MiB，授权两个最小存储收敛：全部非generic名称/alias输入按(kind,owner_id)取完整UNION，存于obsolete删除、upsert并重读current后仍存在的最小prepared_name.id；display只删除已由同owner watch覆盖的逐source_name附边，其余source/selection/album/negative inputs完整保留。代表行的立即invalid数量不再等于整个受影响cohort数量，HTTP仍由ready/dirty总闸阻断，完整owner重证后才能ready。没有新schema/targetkind、reader分支或弱化proof/hash。
+
+新policy必须按原guard完整重建。主会话为此必要重建再明确授权一次有界3600秒窗口，累计上限7200秒；旧2949.052637325秒完整保留，重建前余额4250.947362675秒，每次CLI仍≤1800秒，实际reclaim/停止/监督耗时也计账。普通相同合作式30秒原因的100/200参数选择只在原≤500范围基于事实处理，不无限重试。512MiB/no-swap/no-restart/2GiB、完整语义/writer/API SLO和TEST→PROD门禁均不变；本轮CODE/OPS增量审核通过后才执行。
+
+由于DELETE不缩物理页，重建前允许一次明确的TEST派生缓存reclaim：仅在disabled、未完成覆盖、自有CLI已停且持既有name+publication锁及有限SQL/lock timeout时，在同一Connection事务对members/dependencies/displays/names明确各写 `ONLY`，以 `CONTINUE IDENTITY RESTRICT` 截断四表。四表必须全部在明确列表中以满足内部FK；不用CASCADE/RESTART IDENTITY，不含继承子表，不动business、receipts、sources或schema。随后调用现有 `begin_full_prepare`，由原full协议转移已知collection `*`义务并记录consumed count，普通dirty全字段hash守恒；不手写signature/cursor。记录精确before/after，失败回滚，未知COMMIT先读durable状态和自有backend，不盲重跑。按[PostgreSQL 15官方语义](https://www.postgresql.org/docs/15/sql-truncate.html)，该操作可随事务回滚、会取目标表排他锁且不是MVCC-safe；不能声称旧prepared快照继续可读。它仅用于从未启用、原reader仍disabled的未验收派生缓存，不能称为清除超限后原算法已经达标。
 
 执行前 fresh 核对 PG 数据与 WAL 所在磁盘的充分余量、六关系现状及 reader disabled。512MiB 容器限制不涵盖 PG/WAL；2GiB 是执行中的观测停止阈值和完成/enable 验收上限，不是物理配额。回滚不会自动缩掉 relation EOF 残页；失败后仍按真实 `pg_total_relation_size` 和剩余磁盘记录，超限继续保持失败/disabled，不自动清理、重试或放宽。只有真实资源、完整覆盖、24 个实际语义比较和新 writer 验证通过，才进入既定 enable/API 验收流程。
 
@@ -130,12 +142,12 @@ python -c 'from katrain.web.kifu.prepared_read import current_policy_signature; 
 
 | 证据 | 实际结果 |
 | --- | --- |
-| feature / develop / 父 main 发布 SHA | 同名字面值授权复用修复已集成：`675b57d420eea974efbf7729529b8e6761b3f6e9` / `9a4ad612199a76291e82cc1b0cbd2b7334c4725f` / `dd2e491a272a66761e1272a4abb115ff2d871ea4`。后续内存修复尚未发布 |
-| TEST/PROD Web、TEST 唯一 cron、PROD receiver 实际 package/image/container/pin | TEST Web code `9a4ad612`、image `872a760a7ab6`、container `c4f51ef93ad7`；TEST cron code `9a4ad612`、image `36b07901f106`、container `aa575544482c`。Git runtime assets 实际 SHA 核验 Web14/14、cron13/13，historical exclusions=1752。PROD 未变更 |
-| 四入口实际 policy signature、strict、schema/guard/角色事实 | TEST 实际 Web HTTP进程、新 cron startup、准备 CLI signature 均 `9caffafd9b409238721e12bd9fc764e4aae88328f054b4473daab049782cfc68`，strict=false。显式迁移及 verify-schema 通过；保留原受信 DB owner。PROD receiver 尚未换版 |
-| plan 诊断、实际 RSS/耗时/六表 bytes、phase/cursor、覆盖/dirty | 原 30/120 秒诊断失败。batch500、batch100 首批均超时；一次 exact 首100 cProfile 最终 rollback，三次累计145.940s。`9a4ad612` 同100批实际14批 commit 后因RSS553545728B（527.90MiB）超过512而失败，非OOM；本次265.404s计入，总累计411.343687942s，1800s余1388.656312058s不重置。六关系含索引实际19169280B，durable phase=names/cursor={kind:0,owner:9855}，enabled/ready/coverage=false；自身 backend 已释放。后续 policy 修复按原机制从头覆盖，不手改旧signature/cursor继续 |
-| cron 原控制行/CAS 恢复、自然 drain/原锁、旧新实例证据 | 最终 v4 cutover-verified：旧实例自然 exit0，唯一新实例/完整配置/两个同process新鲜 heartbeat通过，8个interval controls精确恢复、helper exit0、pending0、new_bad_runs=[]。中间缺asset启动失败已补齐并真实重验，未关闭exclusions |
-| 实际发布/replay/undo 与新旧完整 JSON 对照 | 未执行 |
+| feature / develop / 父 main 发布 SHA | positive ledger内存修复已集成：`27664c0cc9755e038af2ea80660ccb3ed1589688` / `c83ec948417f188c5c22dd4aa2f1de860d9cf5ab` / `622feb457146eb0d9e65c9b0c1a87b01dc7391c8`。后续存储收敛尚未发布 |
+| TEST/PROD Web、TEST 唯一 cron、PROD receiver 实际 package/image/container/pin | TEST Web code `c83ec948`、image `e7af967a482c`、container `3dbcabaaddd8`；TEST cron code `c83ec948`、image `cdd7ee15f9bf`、container `65ceac5fe738`。Git runtime assets 实际 SHA 核验 Web14/14、cron13/13，historical exclusions=1752。PROD 未变更 |
+| 四入口实际 policy signature、strict、schema/guard/角色事实 | TEST 实际 Web HTTP进程、新 cron startup、准备 CLI signature 均 `34f60c6f6e84e096ebab20237edee2400ca9ba2e7e3afafcb6825c57e2d58dbb`，strict=false。显式迁移及 verify-schema 通过；保留原受信 DB owner。PROD receiver 尚未换版 |
+| plan 诊断、实际 RSS/耗时/六表 bytes、phase/cursor、覆盖/dirty | 原30/120秒诊断失败，原1800秒窗口失败，后续在累计2949.052637325秒时触发2GiB门禁而未覆盖全部display。最终六表2148065280B，durable phase=displays/cursor={album:1600}，names303783/members811286/deps5548474/display8000；enabled/ready/coverage=false，dirty0，自有backend=[]。最后200批进程RSS236285952B，非OOM；此前deadline进程最终RSS未知的失败记录保留。新policy按原guard完整重建，不手改signature/cursor |
+| cron 原控制行/CAS 恢复、自然 drain/原锁、旧新实例证据 | 最终 v5 cutover-verified：旧实例自然 exit0，唯一新实例/完整配置/两个同process新鲜 heartbeat通过，8个interval controls精确恢复、helper exit0、pending0、new_bad_runs=[]。中间缺asset启动失败已补齐并真实重验，未关闭exclusions |
+| 实际发布/replay/undo 与新旧完整 JSON 对照 | `c83ec948`既有catalog publish/replay/undo、receipt/artifact hash和ready断言在显式隔离PG自有schema实际通过，schema已drop。存储收敛另有真实PG两连接/名称writer及代表生命周期4项通过。业务数据24份完整JSON对照尚未执行 |
 | 1 QPS/100 QPS 完整响应、到达率、各类分位、错误/语义差异、资源 | 未执行 |
 | TEST/PROD 实际 Galaxy/kiosk 正确棋盘与公网复验 | 未执行 |
-| 回滚开关与残留阻塞 | TEST prepared 尚未启用，原读取继续；PROD 未变更。同名字面值授权局部复用已修复首批重复热点。下一未提交批含 normative JA packet590：完整artifact文本41117720B，另全batch ledger41131962B，而当前只需1个name/evidence；后续只收敛positive ledger SQL到当前目标完整行，保留重复拒绝、跨batch判别、source/live和原hash。尚无全量资源、覆盖、语义或 API SLO 通过声明 |
+| 回滚开关与残留阻塞 | TEST prepared 尚未启用，原读取继续；PROD 未变更。同名字面值授权复用和positive ledger限定读取已修复两个实际热点；当前阻塞为2GiB空间，采用上述owner-UNION及display重复边收敛，经本轮审核后新policy重建。尚无全量资源、覆盖、业务JSON语义或API SLO通过声明 |

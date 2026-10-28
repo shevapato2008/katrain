@@ -371,6 +371,15 @@ def _finite_members(db, kind, qualified):
     return result
 
 
+def _owner_dependency_inputs(rows, inputs_by_source):
+    """Keep every source input once per owner, independent of eligibility/language."""
+    grouped = {}
+    for row in rows:
+        key = row["name_kind"], row["owner_id"]
+        grouped.setdefault(key, set()).update(inputs_by_source[row["source_key"]])
+    return grouped
+
+
 def _prepare_owners(conn, db, targets, budget):
     """One proof read per domain/owner batch, including rejected verified rows."""
     prepared_count = 0
@@ -568,13 +577,24 @@ def _prepare_owners(conn, db, targets, budget):
             .mappings()
             .all()
         )
+        # An incoming source can retain its old owner's representative ID after
+        # upsert, while the receiving owner already has a smaller representative.
+        for ids in _chunks([str(row["id"]) for row in current]):
+            conn.execute(
+                delete(m.dependencies).where(
+                    m.dependencies.c.target_kind == "name", m.dependencies.c.target_key.in_(ids)
+                )
+            )
         member_values = []
-        dependency_values = {}
+        owner_inputs = _owner_dependency_inputs(current, inputs_by_source)
+        representatives = {}
         for row in current:
-            dependency_values[row["id"]] = inputs_by_source[row["source_key"]]
+            key = row["name_kind"], row["owner_id"]
+            representatives[key] = min(representatives.get(key, row["id"]), row["id"])
             member_values.extend(
                 dict(value, prepared_name_id=row["id"]) for value in finite_members.get(row["source_name_id"], ())
             )
+        dependency_values = {representatives[key]: inputs for key, inputs in owner_inputs.items()}
         _dependencies(conn, "name", dependency_values)
         _upsert(conn, m.members, member_values, ("prepared_name_id", "album_id", "slot"))
         prepared_count += len(values)
@@ -794,9 +814,6 @@ def _album_display_dependencies(album, rows, *, selected_event, selection, sourc
     # Raw scope watches belong to the name/selection proof that actually
     # reads a cohort. A new canonical game with the same literal must not
     # dirty every other display which merely falls back to that literal.
-    for row in rows:
-        if row["source_name_id"] is not None and row["owner_id"] in album_owners.get(row["name_kind"], ()):
-            inputs.add((_SPECS[row["name_kind"]][1].__tablename__, str(row["source_name_id"])))
     if selection is not None:
         inputs.add((business.KifuEventSelectionBatch.__tablename__, str(selection["batch_id"])))
         inputs |= selection_inputs

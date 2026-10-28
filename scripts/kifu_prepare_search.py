@@ -162,13 +162,19 @@ def _sample_proof(conn, albums, checkpoint):
             physical_by_kind[kind] = len(names)
             physical += len(names)
             name_widths.extend(len(json.dumps(list(row), ensure_ascii=False).encode()) for row in names)
+            # Each domain owns a cold bounded context; retaining it across domains
+            # would keep source snapshots alive for the whole sample transaction.
             if kind == "raw_player":
-                rows = identity._approved_raw_player_names(db, values=raws[kind])
+                rows = identity._approved_raw_player_names(db, values=raws[kind], orthographic_batch_contexts={})
             elif kind == "raw_event":
-                rows = identity._approved_raw_event_names(db, values=raws[kind])
+                rows = identity._approved_raw_event_names(db, values=raws[kind], orthographic_batch_contexts={})
             else:
                 rows = identity._qualified_name_rows(
-                    db, identity._approved_names(db, model, owner_column, ids), model, owner_column
+                    db,
+                    identity._approved_names(db, model, owner_column, ids),
+                    model,
+                    owner_column,
+                    orthographic_batch_contexts={},
                 )
             qualified += len(rows)
             if kind.startswith("raw_"):

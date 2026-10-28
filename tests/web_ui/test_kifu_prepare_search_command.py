@@ -84,6 +84,26 @@ def test_plan_samples_head_middle_and_tail_within_one_album_limit(engine, capsys
     assert result["relation_model"]["basis"].startswith("PostgreSQL 15.15")
 
 
+def test_plan_uses_fresh_bounded_proof_context_for_each_source_domain(engine, capsys, monkeypatch):
+    original = command.identity._qualified_name_rows
+    calls = []
+
+    def observe(db, query, model, owner_column, *entities, **kwargs):
+        context = kwargs.get("orthographic_batch_contexts")
+        calls.append((db, model, context, isinstance(context, dict) and not context))
+        return original(db, query, model, owner_column, *entities, **kwargs)
+
+    monkeypatch.setattr(command.identity, "_qualified_name_rows", observe)
+    code, result = invoke(engine, capsys, "plan", "--sample-albums", "1000")
+    assert code == 0, result
+    assert {model for _db, model, _context, _empty in calls} == {spec[1] for spec in command.SPECS.values()}
+    assert len(calls) == 4
+    assert all(empty for _db, _model, _context, empty in calls)
+    assert len({id(context) for _db, _model, context, _empty in calls}) == 4
+    assert len({id(db) for db, _model, _context, _empty in calls}) == 1
+    assert result["sample"]["proof_observed"] is True
+
+
 @pytest.mark.parametrize(
     "args",
     [

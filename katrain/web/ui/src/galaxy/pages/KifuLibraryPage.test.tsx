@@ -6,10 +6,12 @@ import type { KifuAlbumDetail, KifuAlbumListResponse } from '../../types/kifu';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import KifuLibraryPage from './KifuLibraryPage';
 
-const { getAlbums, getAlbum } = vi.hoisted(() => ({ getAlbums: vi.fn(), getAlbum: vi.fn() }));
+const { getAlbums, getAlbum, translation } = vi.hoisted(() => ({
+  getAlbums: vi.fn(), getAlbum: vi.fn(), translation: { lang: 'cn' },
+}));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums, getAlbum } }));
 vi.mock('../../hooks/useTranslation', () => ({ useTranslation: () => ({
-  lang: 'cn', t: (key: string, fallback?: string) => fallback ?? key,
+  lang: translation.lang, t: (key: string, fallback?: string) => fallback ?? key,
 }) }));
 vi.mock('../../hooks/useReplayStoneSound', () => ({ useReplayStoneSound: () => {} }));
 vi.mock('../../components/live/LiveBoard', () => ({
@@ -48,15 +50,18 @@ const search = (value: string) => {
   fireEvent.change(input, { target: { value } });
   fireEvent.keyDown(input, { key: 'Enter' });
 };
-const renderPage = () => render(
-  <ThemeProvider theme={createTheme()}><MemoryRouter><KifuLibraryPage /></MemoryRouter></ThemeProvider>,
+const pageView = () => (
+  <ThemeProvider theme={createTheme()}><MemoryRouter><KifuLibraryPage /></MemoryRouter></ThemeProvider>
 );
+const renderPage = () => render(pageView());
 const expectBoard = (detail: KifuAlbumDetail) => {
+  expect(screen.getByTestId('board')).toBeVisible();
   expect(screen.getByTestId('board')).toHaveTextContent(JSON.stringify(sgfToMoves(detail.sgf_content).moves));
   expect(screen.getByTestId('subtitle')).toHaveTextContent(`${detail.display_player_black} vs ${detail.display_player_white}`);
 };
 
 beforeEach(() => {
+  translation.lang = 'cn';
   getAlbums.mockReset();
   getAlbum.mockReset();
   getAlbums.mockResolvedValue(list(a));
@@ -70,19 +75,29 @@ describe('Galaxy 棋谱搜索请求一致性', () => {
     // The list preview must draw without waiting for a second detail request.
     getAlbum.mockReturnValue(new Promise(() => {}));
     renderPage();
-    await screen.findByTestId('board');
+    const board = await screen.findByTestId('board');
     expectBoard(a);
     expect(getAlbum).not.toHaveBeenCalled();
 
     search('王星昊');
     await waitFor(() => expect(getAlbums).toHaveBeenCalledTimes(2));
     expect(screen.queryByText('40 records · 第 1 / 2 页')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('board')).not.toBeInTheDocument();
+    expect(screen.getByTestId('board')).toBe(board);
+    expect(board).not.toBeVisible();
+    expect(board.closest('[aria-hidden]')).toHaveAttribute('aria-hidden', 'true');
+    expect(board.closest('[inert]')).toBeInTheDocument();
+    expect(screen.getByTestId('subtitle')).not.toHaveTextContent('A vs A-white');
+    expect(screen.queryByText('A-event')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '查看棋谱' })).toBeDisabled();
+    expect(screen.getByTestId('kifu-preview-spinner')).toBeVisible();
     await act(async () => { next.resolve({ ...list(b, 504), items: [b, a] }); });
 
     expect(await screen.findByText('王星昊-event')).toBeInTheDocument();
     expect(screen.getByText('504 records · 第 1 / 26 页')).toBeInTheDocument();
     expectBoard(b);
+    expect(screen.getByTestId('board')).toBe(board);
+    expect(board.closest('[aria-hidden]')).toHaveAttribute('aria-hidden', 'false');
+    expect(board.closest('[inert]')).toBeNull();
     expect(getAlbum).not.toHaveBeenCalled();
   });
 
@@ -130,6 +145,54 @@ describe('Galaxy 棋谱搜索请求一致性', () => {
     expectBoard(b);
   });
 
+  it('已有棋盘在详情加载期间保留实例但不可见，失败可重试', async () => {
+    const pending = deferred<KifuAlbumDetail>();
+    getAlbums.mockResolvedValue({ ...list(a), items: [a, b] });
+    getAlbum.mockReturnValueOnce(pending.promise).mockResolvedValueOnce(b);
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      renderPage();
+      const board = await screen.findByTestId('board');
+      fireEvent.click(screen.getByText('王星昊-event'));
+      await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(1));
+      expect(screen.getByTestId('board')).toBe(board);
+      expect(board).not.toBeVisible();
+      expect(board.closest('[aria-hidden]')).toHaveAttribute('aria-hidden', 'true');
+      expect(board.closest('[inert]')).toBeInTheDocument();
+      await act(async () => { pending.reject(new Error('offline')); });
+      expect(await screen.findByText('棋谱预览加载失败')).toBeVisible();
+      expect(board).not.toBeVisible();
+      fireEvent.click(screen.getByRole('button', { name: '重试' }));
+      await waitFor(() => expectBoard(b));
+      expect(screen.getByTestId('board')).toBe(board);
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it('连续搜索保留同一棋盘，取消中间请求且只显示最后一组结果', async () => {
+    const middle = deferred<KifuAlbumListResponse>();
+    const last = deferred<KifuAlbumListResponse>();
+    const c = album(3, 'C', 'pp');
+    getAlbums.mockResolvedValueOnce(list(a)).mockReturnValueOnce(middle.promise).mockReturnValueOnce(last.promise);
+    renderPage();
+    const board = await screen.findByTestId('board');
+    search('王星昊');
+    await waitFor(() => expect(getAlbums).toHaveBeenCalledTimes(2));
+    const middleSignal = getAlbums.mock.calls[1][0].signal as AbortSignal;
+    search('C');
+    await waitFor(() => expect(getAlbums).toHaveBeenCalledTimes(3));
+    expect(middleSignal.aborted).toBe(true);
+    expect(screen.getByTestId('board')).toBe(board);
+    expect(board).not.toBeVisible();
+    await act(async () => { last.resolve(list(c, 1)); });
+    expectBoard(c);
+    expect(screen.getByTestId('board')).toBe(board);
+    await act(async () => { middle.resolve(list(b, 504)); });
+    expectBoard(c);
+    expect(screen.queryByText('王星昊-event')).not.toBeInTheDocument();
+  });
+
   it('从其它卡片返回首条时仍复用本次列表preview', async () => {
     getAlbums.mockResolvedValue({ ...list(a), items: [a, b] });
     renderPage();
@@ -152,6 +215,27 @@ describe('Galaxy 棋谱搜索请求一致性', () => {
     await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(2));
     expect(getAlbum).toHaveBeenLastCalledWith(b.id, 'cn', expect.any(AbortSignal));
     expectBoard(b);
+  });
+
+  it('语言切换保留手动选择并从新语言详情更新原棋盘', async () => {
+    const translated = { ...b, display_player_black: 'Wang', display_player_white: 'White' };
+    const next = deferred<KifuAlbumListResponse>();
+    getAlbums.mockResolvedValueOnce({ ...list(a), items: [a, b] }).mockReturnValueOnce(next.promise);
+    getAlbum.mockResolvedValueOnce(b).mockResolvedValueOnce(translated);
+    const view = renderPage();
+    await screen.findByTestId('board');
+    fireEvent.click(screen.getByText('王星昊-event'));
+    await waitFor(() => expectBoard(b));
+    const board = screen.getByTestId('board');
+    translation.lang = 'en';
+    view.rerender(pageView());
+    await waitFor(() => expect(getAlbums).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId('board')).toBe(board);
+    expect(board).not.toBeVisible();
+    await act(async () => { next.resolve({ ...list(a), items: [a, translated] }); });
+    await waitFor(() => expectBoard(translated));
+    expect(getAlbum).toHaveBeenLastCalledWith(b.id, 'en', expect.any(AbortSignal));
+    expect(screen.getByTestId('board')).toBe(board);
   });
 
   it('无结果清空旧选择和棋盘，入口不可用', async () => {

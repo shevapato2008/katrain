@@ -147,21 +147,28 @@ def _global_proof_metadata(conn, checkpoint):
     """Count scalar proof references once, without fetching whole JSON payloads."""
     result = {}
     with Session(bind=conn) as db:
-        for kind, (_owner, model, owner_column, _alias) in SPECS.items():
+        for kind, (owner, model, owner_column, alias) in SPECS.items():
             checkpoint()
-            name_ids = [row_id for row_id, in db.query(model.id)]
+            name_owners = dict(db.query(model.id, getattr(model, owner_column)))
+            owner_ids = {row_id for row_id, in db.query(owner.id)} | set(name_owners.values())
+            if alias is not None:
+                owner_ids.update(row_id for row_id, in db.query(getattr(alias, owner_column)))
+            owner_pages = {owner_id: offset // 500 for offset, owner_id in enumerate(sorted(owner_ids))}
             value = {
                 "groups": 0,
-                "names": len(name_ids),
+                "group_page_calls": 0,
+                "owner_pages": math.ceil(len(owner_ids) / 500),
+                "names": len(name_owners),
                 "largest_group": 0,
-                "named_owners": db.query(getattr(model, owner_column)).distinct().count(),
+                "named_owners": len(set(name_owners.values())),
             }
-            for group in identity.iter_name_proof_groups(db, model, name_ids):
+            for group in identity.iter_name_proof_groups(db, model, name_owners):
                 value["groups"] += 1
+                value["group_page_calls"] += len({owner_pages[name_owners[row_id]] for row_id in group})
                 value["largest_group"] = max(value["largest_group"], len(group))
                 checkpoint()
             result[kind] = value
-            del name_ids
+            del name_owners, owner_ids, owner_pages
             db.expunge_all()
     return result
 
@@ -212,6 +219,9 @@ def _estimate_plan(counts, sample, peak_bytes):
     model["write_time_basis"] = (
         "PG EXPLAIN execution + planning plus Mac client process CPU proxy; excludes SSH wall; 2x time reserve"
     )
+    model["proof_time_basis"] = (
+        "max(complete-group calls across 500-owner pages, physical-name growth); 2x time reserve"
+    )
     storage, writes = 32768 + 24576 + 16384, 0
     relation_bytes = {}
     storage_known, writes_known = True, True
@@ -251,12 +261,13 @@ def _estimate_plan(counts, sample, peak_bytes):
     proof, construction = 0, 0
     for kind in SPECS:
         timing = sample.get("timings_by_kind", {}).get(kind, {})
-        full_groups = counts.get("proof_groups", {}).get(kind, {}).get("groups", 0)
+        metadata = counts.get("proof_groups", {}).get(kind, {})
+        full_groups = metadata.get("group_page_calls", metadata.get("groups", 0))
         groups = timing.get("groups", 0)
         if full_groups and not groups:
             unknown.append(kind + ":proof_time")
-        proof += timing.get("proof_seconds", 0) * full_groups / max(1, groups)
         name_scale = counts["names"][kind] / max(1, sample["physical_names_by_kind"].get(kind, 0))
+        proof += timing.get("proof_seconds", 0) * max(full_groups / max(1, groups), name_scale)
         construction += (
             timing.get("member_seconds", 0) + timing.get("dependency_seconds", 0) + timing.get("metadata_seconds", 0)
         ) * name_scale

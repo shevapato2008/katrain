@@ -255,6 +255,33 @@ def test_plan_member_projection_uses_sample_live_slots_not_full_scope():
     assert command._estimate_plan(counts, sample, 100 * command.MIB)[0]["dependencies"] == 403
 
 
+def test_plan_proof_time_covers_repeated_group_owner_pages_and_per_name_growth():
+    kinds = tuple(command.SPECS)
+    counts = {
+        "detail_albums": 1,
+        "names": dict.fromkeys(kinds, 0),
+        "aliases": dict.fromkeys(kinds, 0),
+        "generic_name_upper_bound": 0,
+        "proof_groups": {kind: {"groups": 0, "group_page_calls": 0} for kind in kinds},
+    }
+    counts["names"]["player"] = 5000
+    counts["proof_groups"]["player"] = {"groups": 1, "group_page_calls": 10}
+    sample = {
+        "albums": 1,
+        "physical_names_by_kind": dict.fromkeys(kinds, 0),
+        "member_slots": {},
+        "name_dependency_rows_by_kind": dict.fromkeys(kinds, 0),
+        "display_dependency_rows_sample": 0,
+        "row_widths": {},
+        "display_seconds": 0,
+        "timings_by_kind": {"player": {"groups": 1, "proof_seconds": 2, "owners": 500}},
+    }
+    sample["physical_names_by_kind"]["player"] = 1000
+    assert command._estimate_plan(counts, sample, 100 * command.MIB)[1]["proof_seconds"] == 20
+    sample["physical_names_by_kind"]["player"] = 250
+    assert command._estimate_plan(counts, sample, 100 * command.MIB)[1]["proof_seconds"] == 40
+
+
 def test_plan_does_not_invent_member_storage_or_write_time_when_uncalibrated(monkeypatch):
     kinds = tuple(command.SPECS)
     counts = {

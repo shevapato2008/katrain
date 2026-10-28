@@ -66,6 +66,12 @@ _SPECS = {
     "raw_player": (business.KifuRawPlayerValue, business.KifuRawPlayerName, "raw_player_id", None),
     "raw_event": (business.KifuRawEventValue, business.KifuRawEventName, "raw_event_id", None),
 }
+_CHANGE_REFS = (
+    business.KifuNameChange.id,
+    business.KifuNameChange.batch_id,
+    business.KifuNameChange.target_table,
+    business.KifuNameChange.target_row_id,
+)
 _OWNER_TABLES = {spec[0].__tablename__: kind for kind, spec in _SPECS.items()}
 _NAME_TABLES = {spec[1].__tablename__: kind for kind, spec in _SPECS.items()}
 _ALIAS_TABLES = {spec[3].__tablename__: kind for kind, spec in _SPECS.items() if spec[3]}
@@ -196,7 +202,7 @@ def _proof_inputs(db, kind, name, evidence, creation_changes, batch_cache):
     for row_id in missing:
         creation_changes[business.KifuNameResearchEvidence.__tablename__, row_id] = []
     if missing:
-        for change in db.query(business.KifuNameChange).filter(
+        for change in db.query(*_CHANGE_REFS).filter(
             business.KifuNameChange.target_table == business.KifuNameResearchEvidence.__tablename__,
             business.KifuNameChange.target_row_id.in_(missing),
         ):
@@ -371,116 +377,131 @@ def _prepare_owners(conn, db, targets, budget):
             for chunk in _chunks(owner_ids)
             for row in db.query(name_model).filter(getattr(name_model, owner_col).in_(chunk))
         ]
-        evidence_ids = {row.evidence_id for row in source_rows if row.evidence_id}
-        evidence = {row.id: row for row in _rows(db, business.KifuNameResearchEvidence, evidence_ids)}
-        creation_changes = {(name_model.__tablename__, row.id): [] for row in source_rows}
-        creation_changes.update(
-            {(business.KifuNameResearchEvidence.__tablename__, row_id): [] for row_id in evidence_ids}
-        )
-        clauses = [
-            and_(
-                business.KifuNameChange.target_table == name_model.__tablename__,
-                business.KifuNameChange.target_row_id.in_([row.id for row in source_rows]),
-            ),
-            and_(
-                business.KifuNameChange.target_table == business.KifuNameResearchEvidence.__tablename__,
-                business.KifuNameChange.target_row_id.in_(evidence_ids),
-            ),
-        ]
-        for change in db.query(business.KifuNameChange).filter(or_(*clauses)):
-            creation_changes[change.target_table, change.target_row_id].append(change)
-        batch_cache = {}
-        if kind == "raw_player":
-            qualified = identity._approved_raw_player_names(
-                db, values={row.raw_value for row in owners.values()}, orthographic_batch_contexts={}
+        values, inputs_by_source, finite_members = [], {}, {}
+        for group_ids in identity.iter_name_proof_groups(db, name_model, {row.id for row in source_rows}):
+            budget.check()
+            group_rows = [row for row in source_rows if row.id in group_ids]
+            evidence_ids = {row.evidence_id for row in group_rows if row.evidence_id}
+            evidence = {row.id: row for row in _rows(db, business.KifuNameResearchEvidence, evidence_ids)}
+            creation_changes = {(name_model.__tablename__, row.id): [] for row in group_rows}
+            creation_changes.update(
+                {(business.KifuNameResearchEvidence.__tablename__, row_id): [] for row_id in evidence_ids}
             )
-        elif kind == "raw_event":
-            qualified = identity._approved_raw_event_names(
-                db, values={row.raw_value for row in owners.values()}, orthographic_batch_contexts={}
-            )
-        else:
-            qualified = identity._qualified_name_rows(
-                db,
-                identity._approved_names(db, name_model, owner_col, set(owner_ids)),
-                name_model,
-                owner_col,
-                orthographic_batch_contexts={},
-            )
-        eligible = {row[0].id: row for row in qualified}
-        finite_members = _finite_members(db, kind, qualified) if kind.startswith("raw_") else {}
-        values, inputs_by_source = [], {}
-        for name in source_rows:
-            approved = name.id in eligible
-            semantic = {
-                "decision_kind": name.decision_kind,
-                "evidence_id": name.evidence_id,
-                "generation_rule_version": name.generation_rule_version,
-                "public_primary": bool(
-                    approved
-                    and getattr(name, owner_col) in owners
-                    and name.lang in identity.PRIMARY_NAME_LANGUAGES
-                    and name.decision_kind not in {"hidden", "error", "placeholder"}
-                    and name.display_name.strip()
+            clauses = [
+                and_(
+                    business.KifuNameChange.target_table == name_model.__tablename__,
+                    business.KifuNameChange.target_row_id.in_([row.id for row in group_rows]),
                 ),
-                "legacy_display": bool(
-                    name.status == "verified"
-                    and name.evidence_id is None
-                    and name.decision_kind is None
-                    and name.generation_rule_version is None
-                    and name.revision is None
+                and_(
+                    business.KifuNameChange.target_table == business.KifuNameResearchEvidence.__tablename__,
+                    business.KifuNameChange.target_row_id.in_(evidence_ids),
                 ),
-            }
+            ]
+            for change in db.query(*_CHANGE_REFS).filter(or_(*clauses)):
+                creation_changes[change.target_table, change.target_row_id].append(change)
+            batch_cache = {}
+            if kind == "raw_player":
+                qualified = identity._approved_raw_player_names(
+                    db, values={row.raw_value for row in owners.values()}, name_ids=group_ids
+                )
+            elif kind == "raw_event":
+                qualified = identity._approved_raw_event_names(
+                    db, values={row.raw_value for row in owners.values()}, name_ids=group_ids
+                )
+            else:
+                qualified = identity._qualified_name_rows(
+                    db,
+                    identity._approved_names(db, name_model, owner_col, set(owner_ids)).filter(
+                        name_model.id.in_(group_ids)
+                    ),
+                    name_model,
+                    owner_col,
+                )
+            eligible = {row[0].id: row for row in qualified}
             if kind.startswith("raw_"):
-                owner = owners.get(getattr(name, owner_col))
-                semantic["raw_value"] = owner.raw_value if owner else None
-                semantic.update(
-                    _raw_description(name, eligible[name.id][2])
-                    if approved
-                    else {"raw_type": "ineligible", "record_label": False, "linked_event_ids": []}
-                )
-            authorization = set()
-            if kind == "player" and approved:
-                # The SQL exact class remains distinct from normalize_alias. Most
-                # names have one owner and never need the finite-group proof.
-                query = identity._approved_names(db, name_model, owner_col).filter(
-                    or_(
-                        name_model.display_name == name.display_name,
-                        func.lower(name_model.display_name) == name.display_name.lower(),
-                    )
-                )
-                ids = {value for value, in query.with_entities(name_model.player_id)}
-                if len(ids) > 1:
-                    rows = identity._qualified_name_rows(
-                        db, query, name_model, owner_col, orthographic_batch_contexts={}
-                    )
-                    rows = [
-                        (row, proof)
-                        for row, proof in rows
-                        if identity.normalize_alias(row.display_name) == identity.normalize_alias(name.display_name)
-                    ]
-                    authorization = identity._finite_shared_player_ids(
-                        db, rows, identity.normalize_alias(name.display_name)
-                    )
-            values.append(
-                {
-                    "name_kind": kind,
-                    "source_key": str(name.id),
-                    "source_name_id": name.id,
-                    "lang": name.lang,
-                    "display_name": name.display_name,
-                    "normalized_term": identity.normalize_alias(name.display_name),
-                    "match_class": "approved_exact",
-                    "owner_id": getattr(name, owner_col),
-                    "eligible": approved,
-                    "exact_group_authorized_ids": sorted(authorization),
-                    "semantic": semantic,
-                    "valid": True,
-                    "policy_version": m.POLICY_VERSION,
+                finite_members.update(_finite_members(db, kind, qualified))
+            for name in group_rows:
+                approved = name.id in eligible
+                semantic = {
+                    "decision_kind": name.decision_kind,
+                    "evidence_id": name.evidence_id,
+                    "generation_rule_version": name.generation_rule_version,
+                    "public_primary": bool(
+                        approved
+                        and getattr(name, owner_col) in owners
+                        and name.lang in identity.PRIMARY_NAME_LANGUAGES
+                        and name.decision_kind not in {"hidden", "error", "placeholder"}
+                        and name.display_name.strip()
+                    ),
+                    "legacy_display": bool(
+                        name.status == "verified"
+                        and name.evidence_id is None
+                        and name.decision_kind is None
+                        and name.generation_rule_version is None
+                        and name.revision is None
+                    ),
                 }
-            )
-            inputs_by_source[str(name.id)] = _proof_inputs(
-                db, kind, name, evidence.get(name.evidence_id), creation_changes, batch_cache
-            )
+                if kind.startswith("raw_"):
+                    owner = owners.get(getattr(name, owner_col))
+                    semantic["raw_value"] = owner.raw_value if owner else None
+                    semantic.update(
+                        _raw_description(name, eligible[name.id][2])
+                        if approved
+                        else {"raw_type": "ineligible", "record_label": False, "linked_event_ids": []}
+                    )
+                authorization = set()
+                if kind == "player" and approved:
+                    # The SQL exact class remains distinct from normalize_alias. Most
+                    # names have one owner and never need the finite-group proof.
+                    query = identity._approved_names(db, name_model, owner_col).filter(
+                        or_(
+                            name_model.display_name == name.display_name,
+                            func.lower(name_model.display_name) == name.display_name.lower(),
+                        )
+                    )
+                    ids = {value for value, in query.with_entities(name_model.player_id)}
+                    if len(ids) > 1:
+                        rows = []
+                        matched_ids = {name_id for name_id, in query.with_entities(name_model.id)}
+                        for matching_group in identity.iter_name_proof_groups(db, name_model, matched_ids):
+                            rows.extend(
+                                identity._qualified_name_rows(
+                                    db, query.filter(name_model.id.in_(matching_group)), name_model, owner_col
+                                )
+                            )
+                        rows = [
+                            (row, proof)
+                            for row, proof in rows
+                            if identity.normalize_alias(row.display_name) == identity.normalize_alias(name.display_name)
+                        ]
+                        authorization = identity._finite_shared_player_ids(
+                            db, rows, identity.normalize_alias(name.display_name)
+                        )
+                        del rows
+                values.append(
+                    {
+                        "name_kind": kind,
+                        "source_key": str(name.id),
+                        "source_name_id": name.id,
+                        "lang": name.lang,
+                        "display_name": name.display_name,
+                        "normalized_term": identity.normalize_alias(name.display_name),
+                        "match_class": "approved_exact",
+                        "owner_id": getattr(name, owner_col),
+                        "eligible": approved,
+                        "exact_group_authorized_ids": sorted(authorization),
+                        "semantic": semantic,
+                        "valid": True,
+                        "policy_version": m.POLICY_VERSION,
+                    }
+                )
+                inputs_by_source[str(name.id)] = _proof_inputs(
+                    db, kind, name, evidence.get(name.evidence_id), creation_changes, batch_cache
+                )
+            # Derived values retain only semantic fields; do not carry research
+            # payloads or full ledger images into the next proof batch.
+            del qualified, eligible, evidence, creation_changes, group_rows
+            budget.check()
         if alias_model is not None:
             for chunk in _chunks(owner_ids):
                 for alias in db.query(alias_model).filter(getattr(alias_model, owner_col).in_(chunk)):

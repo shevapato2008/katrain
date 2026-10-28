@@ -46,7 +46,7 @@ def _prepare_module():
     return importlib.import_module("katrain.web.kifu.prepare_search")
 
 
-def test_preparer_uses_transaction_local_proof_context_and_scalar_batch_dependencies(engine, monkeypatch):
+def test_preparer_uses_uncached_proof_groups_and_scalar_batch_dependencies(engine, monkeypatch):
     module = _prepare_module()
     from katrain.web.kifu import identity
     from sqlalchemy import event
@@ -58,7 +58,7 @@ def test_preparer_uses_transaction_local_proof_context_and_scalar_batch_dependen
 
     def prove(*args, **kwargs):
         context = kwargs.get("orthographic_batch_contexts")
-        assert context is not None, "offline preparation must use fresh guarded compilation"
+        assert context is None, "offline preparation must not retain full snapshot contexts"
         contexts.append(context)
         return original(*args, **kwargs)
 
@@ -83,6 +83,10 @@ def test_preparer_uses_transaction_local_proof_context_and_scalar_batch_dependen
         assert ("kifu_name_batches", str(applied["batch_id"])) in inputs
         batch_reads = [statement for statement in statements if "from kifu_name_batches" in statement]
         assert batch_reads and all("reviewed_artifact" not in statement for statement in batch_reads)
+        change_reads = [statement for statement in statements if "from kifu_name_changes" in statement]
+        assert change_reads and all(
+            "after_image" not in statement and "before_image" not in statement for statement in change_reads
+        )
 
 
 def _install(engine):

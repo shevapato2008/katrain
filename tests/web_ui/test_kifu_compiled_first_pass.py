@@ -52,6 +52,25 @@ def test_first_pass_compiles_same_frozen_batch_once_across_fresh_requests(engine
     assert digests == {"bundle": 1, "member": 3}
 
 
+def test_clean_session_without_snapshot_context_still_uses_guarded_pure_compilation(engine, monkeypatch):
+    from katrain.web.kifu import compiled_first_pass, identity
+
+    inventory, bundle, research = bound_player_bundle(engine)
+    apply_bundle(engine, bundle, registry(), inventory, research)
+    original = compiled_first_pass.read_compiled_first_pass
+    calls = []
+
+    def compile_pure(db, ids):
+        calls.append(set(ids))
+        return original(db, ids)
+
+    monkeypatch.setattr(compiled_first_pass, "read_compiled_first_pass", compile_pure)
+    monkeypatch.setattr(identity, "deepcopy", lambda value: pytest.fail("snapshot copy in uncached proof"))
+    with Session(engine) as db:
+        assert len(read_player(db, None)) == 1
+    assert len(calls) == 1 and calls[0]
+
+
 @pytest.mark.parametrize("original, changed", [(17, 17.0), (True, 1), (0.0, -0.0)])
 def test_first_pass_cross_request_compilation_rejects_changed_json_types(engine, original, changed):
     inventory, bundle, research = bound_player_bundle(engine)

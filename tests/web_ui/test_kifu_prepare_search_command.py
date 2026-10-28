@@ -146,6 +146,11 @@ def test_plan_consumes_complete_proof_groups_and_releases_rows_before_next_group
 
     monkeypatch.setattr(command.identity, "iter_name_proof_groups", groups)
     monkeypatch.setattr(command.identity, "_qualified_name_rows", observe)
+    monkeypatch.setattr(
+        command,
+        "_global_proof_metadata",
+        lambda *_: {kind: {"groups": 2 if kind == "player" else 0} for kind in command.SPECS},
+    )
     code, result = invoke(engine, capsys, "plan", "--sample-albums", "1000")
     assert code == 0, result
     assert {model for model, _ids in observed} == {spec[1] for spec in command.SPECS.values()}
@@ -187,7 +192,7 @@ def test_plan_scopes_raw_helpers_to_complete_physical_groups_including_negative_
     "args",
     [
         ("plan", "--sample-albums", "1001"),
-        ("plan", "--max-seconds", "31"),
+        ("plan", "--max-seconds", "121"),
         ("prepare", "--batch-size", "501"),
         ("prepare", "--max-seconds", "1801"),
         ("prepare", "--max-memory-mib", "513"),
@@ -197,6 +202,142 @@ def test_cli_refuses_budget_escalation(engine, args):
     with pytest.raises(SystemExit) as caught:
         command.main(["--database-url", str(engine.url), *args])
     assert caught.value.code == 2
+
+
+def test_plan_accepts_explicit_120_second_sampling_window(engine, capsys):
+    code, result = invoke(engine, capsys, "plan", "--max-seconds", "120")
+    assert code in (0, 1)
+    assert result["sampling_seconds_limit"] == 120
+    assert result["limits"] == {"seconds": 1800, "relation_bytes": 2 * 1024**3, "rss_bytes": 512 * 1024**2}
+
+
+def test_plan_member_projection_uses_sample_live_slots_not_full_scope():
+    kinds = tuple(command.SPECS)
+    counts = {
+        "detail_albums": 100,
+        "names": dict.fromkeys(kinds, 0),
+        "aliases": dict.fromkeys(kinds, 0),
+        "generic_name_upper_bound": 0,
+        "proof_groups": {kind: {"groups": 0} for kind in kinds},
+    }
+    counts["names"]["player"] = 10
+    counts["aliases"]["player"] = 1
+    counts["proof_groups"]["player"]["groups"] = 2
+    sample = {
+        "albums": 10,
+        "physical_names_by_kind": dict.fromkeys(kinds, 0),
+        "member_rows_full_scope": 10000,
+        "member_slots": {"event": {"rows": 3, "bytes": 600}},
+        "name_dependency_rows_by_kind": dict.fromkeys(kinds, 0),
+        "display_dependency_rows_sample": 8,
+        "row_widths": {},
+        "timings_by_kind": {},
+        "display_seconds": 0.1,
+    }
+    sample["physical_names_by_kind"]["player"] = 2
+    sample["name_dependency_rows_by_kind"]["player"] = 4
+    sample["timings_by_kind"]["player"] = {
+        "groups": 1,
+        "proof_seconds": 0.1,
+        "member_seconds": 0,
+        "dependency_seconds": 0.01,
+        "metadata_seconds": 0.01,
+        "owners": 1,
+    }
+    rows, estimate, model, uncertainty = command._estimate_plan(counts, sample, 100 * command.MIB)
+    assert rows["members"] == 60
+    assert rows["dependencies"] == 203
+    sample["member_rows_full_scope"] *= 100
+    assert command._estimate_plan(counts, sample, 100 * command.MIB)[0] == rows
+    sample["name_dependency_scope_rows_full"] = 100
+    sample["name_dependency_scope_rows_sample"] = 2
+    # Existing complete scopes are a lower bound, never name-count multiplied.
+    assert command._estimate_plan(counts, sample, 100 * command.MIB)[0]["dependencies"] == 403
+
+
+def test_plan_does_not_invent_member_storage_or_write_time_when_uncalibrated(monkeypatch):
+    kinds = tuple(command.SPECS)
+    counts = {
+        "detail_albums": 1,
+        "names": dict.fromkeys(kinds, 0),
+        "aliases": dict.fromkeys(kinds, 0),
+        "generic_name_upper_bound": 0,
+        "proof_groups": {kind: {"groups": 0} for kind in kinds},
+    }
+    sample = {
+        "albums": 1,
+        "physical_names_by_kind": dict.fromkeys(kinds, 0),
+        "member_rows_full_scope": 100,
+        "member_slots": {"black": {"rows": 1, "bytes": 200}},
+        "name_dependency_rows_by_kind": dict.fromkeys(kinds, 0),
+        "display_dependency_rows_sample": 0,
+        "row_widths": {},
+        "timings_by_kind": {},
+        "display_seconds": 0.01,
+    }
+    monkeypatch.setattr(command, "PG_CALIBRATION", {})
+    rows, estimate, model, uncertainty = command._estimate_plan(counts, sample, 400 * command.MIB)
+    assert rows["members"] == 2
+    assert estimate["relation_bytes"] is None and estimate["seconds"] is None
+    assert "members:black:storage" in uncertainty and "displays:write_time" in uncertainty
+    assert estimate["rss_bytes"] == 408 * command.MIB
+
+
+def test_scope_dependency_projection_keeps_independent_anchors_fixed():
+    inputs = {
+        (kind, str(album_id))
+        for album_id in (11, 12)
+        for kind in ("kifu_albums", "album_sources", "kifu_album_event_selections")
+    }
+    inputs.add(("kifu_players", "17"))
+    payload = {
+        "research": {"raw_scope": {"slots": [{"album_id": 11}, {"album_id": 12}]}, "source_input": {"album_id": 11}}
+    }
+    fixed, scope = command._scope_dependency_inputs(inputs, {11, 12}, payload)
+    assert scope == {value for value in inputs if value[1] == "12"}
+    assert fixed | scope == inputs
+    assert command._scope_dependency_inputs(inputs, set(), payload) == (inputs, set())
+
+
+def test_measured_width_uses_connection_serializer_nullable_json_and_six_digit_targets(engine):
+    with engine.connect() as conn:
+        serializer = conn.dialect._json_serializer or json.dumps
+        row = {"display_name": "棋", "semantic": {"raw": "棋"}, "exact_group_authorized_ids": None}
+        expected = len("棋".encode()) + len(serializer({"raw": "棋"}).encode()) + len(serializer(None).encode())
+        assert command._body_bytes(conn, m.names, row) == expected
+        assert command._body_bytes(conn, m.displays, {"event_name_source": None}) == 0
+        short = {"target_kind": "name", "target_key": "1", "input_kind": "kifu_albums", "input_key": "11"}
+        assert command._dependency_bytes(conn, short) == command._dependency_bytes(
+            conn, dict(short, target_key="123456")
+        )
+
+
+def test_display_measurement_replaces_selected_rows_even_when_search_flags_false(engine, monkeypatch):
+    from katrain.web.kifu import prepare_search as core
+
+    key = (1, 11, "selected_event")
+    members = {key: {"prepared_name_id": 1, "album_id": 11, "slot": "selected_event", "semantic": {"display": True}}}
+    replacement = {
+        "prepared_name_id": 1,
+        "album_id": 11,
+        "slot": "selected_event",
+        "event_id": None,
+        "selection_id": 11,
+        "semantic": {"identity_search": False, "display": False},
+    }
+    called = []
+
+    def selected(album, rows, member_rows, **kwargs):
+        assert set(kwargs["approvals_by_lang"]) >= set(m.NAME_LANGUAGES)
+        called.append(album.id)
+        return [replacement]
+
+    monkeypatch.setattr(core, "_selected_event_members", selected)
+    widths = {}
+    with engine.connect() as conn, Session(bind=conn) as db:
+        command._sample_displays(conn, db, {11}, [], members, widths, lambda: None)
+    assert called == [11] and members == {key: replacement}
+    assert widths["displays"]["rows"] == 5
 
 
 def test_prepare_requires_migration_and_never_creates_tables(engine, capsys):

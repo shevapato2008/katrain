@@ -16,9 +16,9 @@ from types import SimpleNamespace
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sqlalchemy import create_engine, func, inspect, select, text
+from sqlalchemy import and_, create_engine, func, inspect, or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from katrain.web.core.config import settings
 from katrain.web.core import models_db as business
@@ -42,6 +42,243 @@ SPECS = {
     "raw_player": (business.KifuRawPlayerValue, business.KifuRawPlayerName, "raw_player_id", None),
     "raw_event": (business.KifuRawEventValue, business.KifuRawEventName, "raw_event_id", None),
 }
+
+# Actual isolated PostgreSQL relation + index measurements, never business density.
+# Write timing is PG EXPLAIN execution/planning plus a Mac client process-CPU proxy;
+# it excludes SSH wall time and is not a runtime performance promise.
+PG_CALIBRATION = {
+    "names": {
+        "bytes_per_row": 1908736 / 2942,
+        "body_bytes": 96.602,
+        "write_seconds_per_row": (0.076681 + 0.096801) / 1000,
+    },
+    "displays": {"bytes_per_row": 212.992, "body_bytes": 75.537, "write_seconds_per_row": (0.052127 + 0.087397) / 1000},
+    "dependencies": {
+        "bytes_per_row": 294.912,
+        "body_bytes": 35.345,
+        "write_seconds_per_row": (0.060038 + 0.027545) / 1000,
+    },
+    "members:black": {
+        "bytes_per_row": 557.056,
+        "body_bytes": 363,
+        "write_seconds_per_row": (0.096182 + 0.055897) / 1000,
+    },
+    "members:white": {
+        "bytes_per_row": 557.056,
+        "body_bytes": 363,
+        "write_seconds_per_row": (0.095011 + 0.052895) / 1000,
+    },
+    "members:event": {
+        "bytes_per_row": 245.760,
+        "body_bytes": 80,
+        "write_seconds_per_row": (0.082293 + 0.045093) / 1000,
+    },
+    "members:selected_event": {
+        "bytes_per_row": 262.144,
+        "body_bytes": 79,
+        "write_seconds_per_row": (0.081554 + 0.048633) / 1000,
+    },
+}
+
+
+def _json_bytes(conn, value):
+    encoded = (conn.dialect._json_serializer or json.dumps)(value)
+    return len(encoded if isinstance(encoded, bytes) else encoded.encode("utf-8"))
+
+
+def _body_bytes(conn, table, row):
+    from sqlalchemy import JSON
+
+    size = 0
+    for key, value in row.items():
+        if key not in table.c:
+            continue
+        kind = table.c[key].type
+        if isinstance(kind, JSON):
+            if value is not None or not kind.none_as_null:
+                size += _json_bytes(conn, value)
+        elif isinstance(value, str):
+            size += len(value.encode("utf-8"))
+    return size
+
+
+def _dependency_bytes(conn, row):
+    """Retain the six-digit target-key width used by the PG calibration."""
+    return _body_bytes(conn, m.dependencies, row) + max(0, 6 - len(row["target_key"].encode("utf-8")))
+
+
+def _scope_dependency_inputs(inputs, scope_ids, payload):
+    """Split accepted finite scopes only; independent source anchors stay fixed."""
+    anchors = set()
+
+    def visit(value, in_scope=False):
+        if isinstance(value, list):
+            for item in value:
+                visit(item, in_scope)
+        elif isinstance(value, dict):
+            if not in_scope:
+                if type(value.get("album_id")) is int:
+                    anchors.add(value["album_id"])
+                if isinstance(value.get("occurrence_album_ids"), list):
+                    anchors.update(item for item in value["occurrence_album_ids"] if type(item) is int)
+            for key, item in value.items():
+                visit(item, in_scope or key in {"raw_scope", "raw_display_scope", "scope", "declaration"})
+
+    visit(payload)
+    scope = {
+        (kind, str(key))
+        for kind, key in inputs
+        if kind in {business.KifuAlbum.__tablename__, "album_sources", business.KifuAlbumEventSelection.__tablename__}
+        and str(key).isdigit()
+        and int(key) in scope_ids
+        and int(key) not in anchors
+    }
+    return inputs - scope, scope
+
+
+def _width_add(widths, key, size):
+    value = widths.setdefault(key, {"rows": 0, "bytes": 0, "max": 0})
+    value["rows"] += 1
+    value["bytes"] += size
+    value["max"] = max(value["max"], size)
+
+
+def _global_proof_metadata(conn, checkpoint):
+    """Count scalar proof references once, without fetching whole JSON payloads."""
+    result = {}
+    with Session(bind=conn) as db:
+        for kind, (_owner, model, owner_column, _alias) in SPECS.items():
+            checkpoint()
+            name_ids = [row_id for row_id, in db.query(model.id)]
+            value = {
+                "groups": 0,
+                "names": len(name_ids),
+                "largest_group": 0,
+                "named_owners": db.query(getattr(model, owner_column)).distinct().count(),
+            }
+            for group in identity.iter_name_proof_groups(db, model, name_ids):
+                value["groups"] += 1
+                value["largest_group"] = max(value["largest_group"], len(group))
+                checkpoint()
+            result[kind] = value
+            del name_ids
+            db.expunge_all()
+    return result
+
+
+def _estimate_plan(counts, sample, peak_bytes):
+    """Keep source-name, complete-proof-group and album dimensions separate."""
+    scale = counts["detail_albums"] / max(1, sample["albums"])
+    names = sum(counts["names"].values()) + sum(counts["aliases"].values())
+    full_slots = sample.get("member_slots_full_scope", {})
+    slots = {
+        slot: 2 * max(full_slots.get(slot, 0), math.ceil(sample["member_slots"].get(slot, {}).get("rows", 0) * scale))
+        for slot in set(full_slots) | set(sample["member_slots"])
+    }
+    name_deps = sum(
+        math.ceil(
+            sample.get("name_dependency_fixed_rows_by_kind", sample["name_dependency_rows_by_kind"]).get(kind, 0)
+            * counts["names"][kind]
+            / max(1, sample["physical_names_by_kind"].get(kind, 0))
+            * 2
+        )
+        for kind in SPECS
+    )
+    scope_deps = 2 * max(
+        sample.get("name_dependency_scope_rows_full", 0),
+        math.ceil(sample.get("name_dependency_scope_rows_sample", 0) * scale),
+    )
+    rows = {
+        "names": names + counts["generic_name_upper_bound"],
+        "displays": counts["detail_albums"] * len(m.NAME_LANGUAGES),
+        "members": sum(slots.values()),
+        "dependencies": name_deps
+        + scope_deps
+        + 3 * sum(counts["aliases"].values())
+        + math.ceil(sample["display_dependency_rows_sample"] * scale * 2),
+        "state": 1,
+        "dirty": 0,
+    }
+    unknown, model = [], {
+        "basis": "PostgreSQL 15.15 isolated heap + all indexes; observed source widths; 2x density reserve",
+        "dependency_density_reserve": 2,
+        "member_density_reserve": 2,
+        "member_slots": slots,
+        "name_dependency_fixed_rows": name_deps,
+        "name_dependency_scope_rows": scope_deps,
+        "name_dependency_scope_basis": "Accepted finite scope album edges only; independent source anchors and unverified scopes remain fixed",
+        "rss_basis": "Observed full-process peak plus retained 8MiB buffer; no rescaling of an already observed peak",
+    }
+    model["write_time_basis"] = (
+        "PG EXPLAIN execution + planning plus Mac client process CPU proxy; excludes SSH wall; 2x time reserve"
+    )
+    storage, writes = 32768 + 24576 + 16384, 0
+    relation_bytes = {}
+    storage_known, writes_known = True, True
+    workloads = [
+        (key, rows[key], sample.get("row_widths", {}).get(key, {})) for key in ("names", "displays", "dependencies")
+    ]
+    workloads.extend(
+        (
+            "members:" + slot,
+            number,
+            sample["member_slots"].get(slot, sample.get("member_widths_full_scope", {}).get(slot, {})),
+        )
+        for slot, number in slots.items()
+    )
+    for key, number, width in workloads:
+        if not number:
+            continue
+        calibration = PG_CALIBRATION.get(key, {})
+        mean_width = width.get("bytes", 0) / max(1, width.get("rows", 0))
+        base = calibration.get("bytes_per_row")
+        if base is None:
+            storage_known = False
+            unknown.append(key + ":storage")
+        else:
+            coefficient = base + max(0, mean_width - calibration.get("body_bytes", 0))
+            if key == "displays":
+                coefficient += 192  # Retain the original metadata reserve.
+            model[key + "_bytes_per_row"] = coefficient
+            relation_bytes[key] = math.ceil(number * coefficient)
+            storage += relation_bytes[key]
+        seconds = calibration.get("write_seconds_per_row")
+        if seconds is None:
+            writes_known = False
+            unknown.append(key + ":write_time")
+        else:
+            writes += number * seconds * max(1, mean_width / max(1, calibration.get("body_bytes", 1)))
+    proof, construction = 0, 0
+    for kind in SPECS:
+        timing = sample.get("timings_by_kind", {}).get(kind, {})
+        full_groups = counts.get("proof_groups", {}).get(kind, {}).get("groups", 0)
+        groups = timing.get("groups", 0)
+        if full_groups and not groups:
+            unknown.append(kind + ":proof_time")
+        proof += timing.get("proof_seconds", 0) * full_groups / max(1, groups)
+        name_scale = counts["names"][kind] / max(1, sample["physical_names_by_kind"].get(kind, 0))
+        construction += (
+            timing.get("member_seconds", 0) + timing.get("dependency_seconds", 0) + timing.get("metadata_seconds", 0)
+        ) * name_scale
+    display = sample.get("display_seconds")
+    if display is None:
+        unknown.append("displays:construction_time")
+    known_time = writes_known and display is not None and not any(value.endswith(":proof_time") for value in unknown)
+    estimate = {
+        "seconds": (
+            2 * (proof + construction + (display or 0) * scale + writes + sample.get("global_metadata_seconds", 0))
+            if known_time
+            else None
+        ),
+        "relation_bytes": storage if storage_known else None,
+        "rss_bytes": peak_bytes + 8 * MIB,
+        "proof_seconds": proof,
+        "source_construction_seconds": construction,
+        "display_construction_seconds": display * scale if display is not None else None,
+        "write_seconds": writes if writes_known else None,
+    }
+    model["estimated_bytes_by_relation_or_slot"] = relation_bytes
+    return rows, estimate, model, unknown
 
 
 def _bounded_number(maximum, *, integer=False):
@@ -129,6 +366,9 @@ def _coverage(conn):
 
 def _sample_proof(conn, albums, checkpoint):
     """Exercise only source owners/raw values in the small-field album sample."""
+    from katrain.web.kifu import prepare_search as core
+
+    sample_ids = {album.id for album in albums}
     players = {value for album in albums for value in (album.black_player_id, album.white_player_id) if value}
     events = {album.event_id for album in albums if album.event_id}
     raws = {
@@ -142,17 +382,29 @@ def _sample_proof(conn, albums, checkpoint):
         raws["raw_event"].add(raw)
         if event_id is not None:
             events.add(event_id)
-    physical, qualified, finite_members, owners = 0, 0, 0, 0
-    physical_by_kind, name_widths = {}, []
+    physical, qualified, owners = 0, 0, 0
+    physical_by_kind, name_widths, widths, timings, dependency_counts, fixed_counts = {}, [], {}, {}, {}, {}
+    full_slot_widths = {}
+    full_scope_inputs, sampled_scope_inputs = set(), set()
+    derived_names, sample_members, full_member_keys, calibration_members = [], {}, set(), {}
+    proxy_ids = {}
     proof_started = monotonic()
     with Session(bind=conn) as db:
         for kind, (owner_model, model, owner_column, _alias) in SPECS.items():
             checkpoint()
+            kind_started = monotonic()
+            timing = {"groups": 0, "proof_seconds": 0, "member_seconds": 0, "dependency_seconds": 0}
+            dependency_counts[kind] = 0
+            fixed_counts[kind] = 0
             if kind.startswith("raw_"):
                 values = raws[kind]
-                ids = {row_id for row_id, in db.query(owner_model.id).filter(owner_model.raw_value.in_(values))}
+                raw_owners = dict(
+                    db.query(owner_model.id, owner_model.raw_value).filter(owner_model.raw_value.in_(values))
+                )
+                ids = set(raw_owners)
             else:
                 ids = players if kind == "player" else events
+            existing_owners = {row_id for row_id, in db.query(owner_model.id).filter(owner_model.id.in_(ids))}
             owners += len(ids)
             names = (
                 db.query(model.id, model.display_name, model.lang, model.decision_kind, model.generation_rule_version)
@@ -161,11 +413,13 @@ def _sample_proof(conn, albums, checkpoint):
             )
             physical_by_kind[kind] = len(names)
             physical += len(names)
-            name_widths.extend(len(json.dumps(list(row[1:]), ensure_ascii=False).encode()) for row in names)
+            name_widths.extend(_json_bytes(conn, list(row[1:])) for row in names)
             # Group complete proof batches using scalar IDs before loading payloads.
             # Count each original full proof, then release it before the next group.
             for group in identity.iter_name_proof_groups(db, model, {row.id for row in names}):
                 checkpoint()
+                timing["groups"] += 1
+                started = monotonic()
                 if kind == "raw_player":
                     rows = identity._approved_raw_player_names(db, values=raws[kind], name_ids=group)
                 elif kind == "raw_event":
@@ -178,19 +432,160 @@ def _sample_proof(conn, albums, checkpoint):
                         owner_column,
                     )
                 try:
+                    timing["proof_seconds"] += monotonic() - started
                     qualified += len(rows)
+                    eligible = {row[0].id: row for row in rows}
+                    source_rows = db.query(model).filter(model.id.in_(group)).all()
+                    evidence_ids = {name.evidence_id for name in source_rows if name.evidence_id}
+                    evidence_rows = {
+                        row.id: row
+                        for row in db.query(business.KifuNameResearchEvidence).filter(
+                            business.KifuNameResearchEvidence.id.in_(evidence_ids)
+                        )
+                    }
+                    creation_changes = {(model.__tablename__, name.id): [] for name in source_rows}
+                    creation_changes.update(
+                        {(business.KifuNameResearchEvidence.__tablename__, row_id): [] for row_id in evidence_ids}
+                    )
+                    changes = business.KifuNameChange
+                    for change in db.query(*core._CHANGE_REFS).filter(
+                        or_(
+                            and_(changes.target_table == model.__tablename__, changes.target_row_id.in_(group)),
+                            and_(
+                                changes.target_table == business.KifuNameResearchEvidence.__tablename__,
+                                changes.target_row_id.in_(evidence_ids),
+                            ),
+                        )
+                    ):
+                        creation_changes[change.target_table, change.target_row_id].append(change)
+                    batch_cache = {}
+                    started = monotonic()
+                    for name in source_rows:
+                        proxy = proxy_ids.setdefault((kind, name.id), len(proxy_ids) + 1)
+                        approved = name.id in eligible
+                        semantic = {
+                            "decision_kind": name.decision_kind,
+                            "evidence_id": name.evidence_id,
+                            "generation_rule_version": name.generation_rule_version,
+                            "public_primary": bool(
+                                approved
+                                and getattr(name, owner_column) in existing_owners
+                                and name.lang in identity.PRIMARY_NAME_LANGUAGES
+                                and name.decision_kind not in {"hidden", "error", "placeholder"}
+                                and name.display_name.strip()
+                            ),
+                            "legacy_display": bool(
+                                name.status == "verified"
+                                and name.evidence_id is None
+                                and name.decision_kind is None
+                                and name.generation_rule_version is None
+                                and name.revision is None
+                            ),
+                        }
+                        if kind.startswith("raw_"):
+                            semantic["raw_value"] = raw_owners[getattr(name, owner_column)]
+                            semantic.update(
+                                core._raw_description(name, eligible[name.id][2])
+                                if approved
+                                else {"raw_type": "ineligible", "record_label": False, "linked_event_ids": []}
+                            )
+                        ref = {
+                            "id": proxy,
+                            "name_kind": kind,
+                            "source_key": str(name.id),
+                            "source_name_id": name.id,
+                            "owner_id": getattr(name, owner_column),
+                            "match_class": "approved_exact",
+                            "eligible": approved,
+                            "lang": name.lang,
+                            "display_name": name.display_name,
+                            "normalized_term": identity.normalize_alias(name.display_name),
+                            "semantic": semantic,
+                            "exact_group_authorized_ids": [],
+                            "valid": True,
+                            "policy_version": m.POLICY_VERSION,
+                        }
+                        derived_names.append(ref)
+                        _width_add(widths, "names", _body_bytes(conn, m.names, ref))
+                        inputs = set(
+                            core._proof_inputs(
+                                db, kind, name, evidence_rows.get(name.evidence_id), creation_changes, batch_cache
+                            )
+                        )
+                        dependency_counts[kind] += len(inputs)
+                        scope_ids = (
+                            core._finite_album_ids(eligible[name.id][2])
+                            if kind.startswith("raw_") and approved
+                            else set()
+                        )
+                        fixed, scope = _scope_dependency_inputs(
+                            inputs,
+                            scope_ids,
+                            (
+                                evidence_rows[name.evidence_id].research_payload
+                                if name.evidence_id in evidence_rows
+                                else {}
+                            ),
+                        )
+                        fixed_counts[kind] += len(fixed)
+                        for input_kind, input_key in scope:
+                            key = proxy, input_kind, input_key
+                            full_scope_inputs.add(key)
+                            if int(input_key) in sample_ids:
+                                sampled_scope_inputs.add(key)
+                        for input_kind, input_key in inputs:
+                            dependency = {
+                                "target_kind": "name",
+                                "target_key": str(proxy),
+                                "input_kind": input_kind,
+                                "input_key": str(input_key),
+                            }
+                            _width_add(widths, "dependencies", _dependency_bytes(conn, dependency))
+                    timing["dependency_seconds"] += monotonic() - started
+                    started = monotonic()
                     if kind.startswith("raw_"):
-                        from katrain.web.kifu.prepare_search import _finite_album_ids
-
-                        # Signed scopes may include albums outside this sample.
-                        # Count their complete proof closure, never truncate it.
-                        finite_members += sum(len(_finite_album_ids(row[2])) * 2 for row in rows if row[2] is not None)
+                        members = core._finite_members(db, kind, rows)
+                        for name_id, values in members.items():
+                            proxy = proxy_ids[kind, name_id]
+                            for value in values:
+                                row = dict(value, prepared_name_id=proxy)
+                                key = proxy, row["album_id"], row["slot"]
+                                full_member_keys.add(key)
+                                _width_add(full_slot_widths, row["slot"], _body_bytes(conn, m.members, row))
+                                slot_rows = calibration_members.setdefault(row["slot"], [])
+                                if len(slot_rows) < 32 and row["slot"] != "selected_event":
+                                    slot_rows.append(row)
+                                if row["album_id"] in sample_ids:
+                                    sample_members[key] = row
+                        del members
+                    timing["member_seconds"] += monotonic() - started
                 finally:
                     del rows
+                    if "eligible" in locals():
+                        del eligible, source_rows, evidence_rows, creation_changes, batch_cache
                     db.expire_all()
                     db.expunge_all()
                 checkpoint()
+            timing["owners"] = len(ids)
+            timing["metadata_seconds"] = max(
+                0,
+                monotonic()
+                - kind_started
+                - timing["proof_seconds"]
+                - timing["member_seconds"]
+                - timing["dependency_seconds"],
+            )
+            timings[kind] = timing
             checkpoint()
+        display_started = monotonic()
+        display_dependencies = _sample_displays(conn, db, sample_ids, derived_names, sample_members, widths, checkpoint)
+        display_seconds = monotonic() - display_started
+    slots = {}
+    for row in sample_members.values():
+        _width_add(slots, row["slot"], _body_bytes(conn, m.members, row))
+        bucket = calibration_members.setdefault(row["slot"], [])
+        if len(bucket) < 32:
+            bucket.append(row)
     return {
         "albums": len(albums),
         "owners": owners,
@@ -203,11 +598,161 @@ def _sample_proof(conn, albums, checkpoint):
         )
         / max(1, len(albums)),
         "qualified_names": qualified,
-        "finite_member_upper_bound": finite_members,
-        "proof_seconds": monotonic() - proof_started,
+        "member_rows_full_scope": len(full_member_keys),
+        "member_slots_full_scope": {slot: value["rows"] for slot, value in full_slot_widths.items()},
+        "member_widths_full_scope": full_slot_widths,
+        "member_rows_sample": len(sample_members),
+        "member_slots": slots,
+        "name_dependency_rows_by_kind": dependency_counts,
+        "name_dependency_fixed_rows_by_kind": fixed_counts,
+        "name_dependency_scope_rows_full": len(full_scope_inputs),
+        "name_dependency_scope_rows_sample": len(sampled_scope_inputs),
+        "display_dependency_rows_sample": display_dependencies,
+        "row_widths": widths,
+        "timings_by_kind": timings,
+        "display_seconds": display_seconds,
+        "proof_seconds": sum(value["proof_seconds"] for value in timings.values()),
+        "source_measure_seconds": monotonic() - proof_started,
+        "_member_calibration_rows": [row for values in calibration_members.values() for row in values],
         "proof_observed": True,
         "scope": "sample owners/raw values; complete relevant finite proofs; unsampled closures are estimates",
+        "member_full_scope_phase": "name-phase rows; selected_event rows are replaced by the original display-stage helper within sampled albums",
     }
+
+
+def _sample_displays(conn, db, sample_ids, names, members, widths, checkpoint):
+    from katrain.web.kifu import prepare_search as core
+
+    dependency_count = 0
+    for chunk in core._chunks(sorted(sample_ids), 500):
+        checkpoint()
+        albums = (
+            db.query(business.KifuAlbum)
+            .options(
+                load_only(
+                    *(
+                        getattr(business.KifuAlbum, key)
+                        for key in (*core.CONTEXT_FIELDS, "id", "list_hidden_reason", "source_path", "event_edition_id")
+                    )
+                )
+            )
+            .filter(business.KifuAlbum.id.in_(chunk))
+            .all()
+        )
+        selections = {
+            row["album_id"]: row
+            for row in conn.execute(
+                select(business.KifuAlbumEventSelection.__table__).where(
+                    business.KifuAlbumEventSelection.album_id.in_(chunk)
+                )
+            ).mappings()
+        }
+        selected = identity.live_event_selections(db, albums, album_ids=set(selections))
+        obscured = identity.obscured_program_event_ids(db, albums, selected_events=selected)
+        event_ids = {album.event_id for album in albums if album.event_id} | {
+            event_id for _raw, event_id in selected.values() if event_id
+        }
+        canonical = dict(
+            db.query(business.KifuEvent.id, business.KifuEvent.canonical_name).filter(
+                business.KifuEvent.id.in_(event_ids)
+            )
+        )
+        players = dict(
+            db.query(business.KifuPlayer.id, business.KifuPlayer.canonical_name).filter(
+                business.KifuPlayer.id.in_(
+                    {value for album in albums for value in (album.black_player_id, album.white_player_id) if value}
+                )
+            )
+        )
+        sources, source_inputs = {album.id: set() for album in albums}, {album.id: set() for album in albums}
+        for link_id, album_id, source_id, source_key in (
+            db.query(
+                business.KifuAlbumSource.id,
+                business.KifuAlbumSource.album_id,
+                business.KifuSource.id,
+                business.KifuSource.source_key,
+            )
+            .join(business.KifuSource, business.KifuAlbumSource.source_id == business.KifuSource.id)
+            .filter(business.KifuAlbumSource.album_id.in_(chunk))
+        ):
+            sources[album_id].add(source_key)
+            source_inputs[album_id].update(
+                {
+                    (business.KifuAlbumSource.__tablename__, str(link_id)),
+                    (business.KifuSource.__tablename__, str(source_id)),
+                }
+            )
+        before_members = [row for row in members.values() if row["album_id"] in chunk]
+        approvals = {}
+        languages = set(m.NAME_LANGUAGES) | {
+            row["lang"]
+            for row in names
+            if row["name_kind"] == "raw_event" and row["eligible"] and row["lang"] in identity.LANGUAGES
+        }
+        for album in albums:
+            album._prepared_has_selection = album.id in selections
+        for lang in languages:
+            maps = core._display_maps(albums, names, before_members, lang, canonical, approvals=True)
+            approvals[lang] = {album.id: core._slot_approval(album, maps, obscured, selected) for album in albums}
+            if lang not in m.NAME_LANGUAGES:
+                continue
+            maps = core._display_maps(albums, names, before_members, lang, canonical)
+            hints = {}
+            if not identity.strict_names_enabled() and lang == "cn":
+                from katrain.web.kifu.first_pass_cn import event_hints
+
+                hints = event_hints(db, albums, canonical, selected_events=selected)
+            for album in albums:
+                fallback = (
+                    None
+                    if identity.strict_names_enabled()
+                    else core._legacy_names(db, album, lang, names, players, {}, canonical, hints)
+                )
+                black, white, event = identity.resolve_strict_display(
+                    album, lang, *maps, obscured_event_ids=obscured, selected_events=selected, fallback_names=fallback
+                )
+                approval = approvals[lang][album.id]
+                display = {
+                    "album_id": album.id,
+                    "name_lang": lang,
+                    "player_black": black,
+                    "player_white": white,
+                    "event": event,
+                    "black_name_source": list(approval[0]) if approval[0] else None,
+                    "white_name_source": list(approval[1]) if approval[1] else None,
+                    "event_name_source": list(approval[2]) if approval[2] else None,
+                    "strict_outputs": {"sources": sorted(sources[album.id])},
+                }
+                _width_add(widths, "displays", _body_bytes(conn, m.displays, display))
+        # Preserve production's whole <=500-album selection-history union.
+        selection_inputs = core._selection_inputs(conn, set(selections)) if selections else set()
+        for album in albums:
+            inputs = core._album_display_dependencies(
+                album,
+                names,
+                selected_event=selected.get(album.id),
+                selection=selections.get(album.id),
+                source_inputs=source_inputs[album.id],
+                selection_inputs=selection_inputs,
+            )
+            dependency_count += len(inputs)
+            for input_kind, input_key in inputs:
+                value = {
+                    "target_kind": "display",
+                    "target_key": str(album.id),
+                    "input_kind": input_kind,
+                    "input_key": str(input_key),
+                }
+                _width_add(widths, "dependencies", _dependency_bytes(conn, value))
+            for key in [key for key in members if key[1] == album.id and key[2] == "selected_event"]:
+                del members[key]
+            for row in core._selected_event_members(
+                album, names, before_members, selected_event=selected.get(album.id), approvals_by_lang=approvals
+            ):
+                members[row["prepared_name_id"], row["album_id"], row["slot"]] = row
+        db.expunge_all()
+        checkpoint()
+    return dependency_count
 
 
 def plan(engine, args):
@@ -277,7 +822,12 @@ def plan(engine, args):
                 albums.extend(SimpleNamespace(**row) for row in rows)
                 if rows:
                     ranges.append([rows[0]["id"], rows[-1]["id"]])
+            metadata_started = monotonic()
+            counts["proof_groups"] = _global_proof_metadata(conn, checkpoint)
+            metadata_seconds = monotonic() - metadata_started
             sample = _sample_proof(conn, albums, checkpoint)
+            sample.pop("_member_calibration_rows", None)  # Only a direct private Python caller may capture primitives.
+            sample["global_metadata_seconds"] = metadata_seconds
             sample.update(strategy="head/middle/tail by ordered album id", id_ranges=ranges)
             unobserved = [kind for kind in SPECS if name_counts[kind] and not sample["physical_names_by_kind"][kind]]
             sample["unobserved_name_families"] = unobserved
@@ -291,51 +841,11 @@ def plan(engine, args):
                 len(HISTORICAL_PLAYER_ALIASES) + len(hint_players) + len(hint_events) + len(hint_overrides)
             )
             counts["generic_name_upper_bound"] = generic_upper_bound
-            rows = {
-                "names": name_total + generic_upper_bound,
-                "displays": counts["detail_albums"] * len(m.NAME_LANGUAGES),
-            }
-            sample_scale = counts["detail_albums"] / max(1, sample["albums"])
-            rows["members"] = math.ceil(sample["finite_member_upper_bound"] * sample_scale * 2)
-            rows["dependencies"] = name_total * 24 + math.ceil(counts["detail_albums"] * 9.03 * 2)
-            rows.update(state=1, dirty=0)
-            # PostgreSQL 15.15 measured 1,000-album fixture: 5,000 displays=925,696B,
-            # 9,030 shared album dependencies=2,236,416B, 2,942 names=1,908,736B.
-            # These already include relation/index overhead. Adjust for sampled
-            # UTF-8 values, reserve metadata room, and double dependency density;
-            # do not multiply each album's shared dependencies by five languages.
-            relation_model = {
-                "basis": "PostgreSQL 15.15 isolated 1000-album mechanical canonical fixture; sampled UTF-8 widths; raw density uncalibrated",
-                "names_bytes_per_row": math.ceil(1908736 / 2942 + sample["mean_name_payload_bytes"] * 2),
-                "displays_bytes_per_row": math.ceil(
-                    925696 / 5000 + max(0, sample["mean_album_value_bytes"] - 64) + 192
-                ),
-                "dependencies_bytes_per_row": math.ceil(2236416 / 9030),
-                "members_bytes_per_row": 1024,
-                "dependency_density_reserve": 2,
-                "member_density_reserve": 2,
-            }
-            estimated_bytes = (
-                32768
-                + 24576
-                + 16384
-                + sum(
-                    rows[kind] * relation_model[kind + "_bytes_per_row"]
-                    for kind in ("names", "displays", "members", "dependencies")
-                )
-            )
-            estimated_seconds = max(
-                (monotonic() - started) * sample_scale * 2,
-                sample["proof_seconds"] * sum(owner_counts.values()) / max(1, sample["owners"]) * 2,
-            )
-            estimated_rss = _rss_bytes() + max(
-                8 * MIB, (_rss_bytes() - rss_before) * min(500, counts["detail_albums"]) // max(1, sample["albums"])
-            )
+            rows, estimate, relation_model, uncertainty = _estimate_plan(counts, sample, _rss_bytes())
             limits = {"seconds": 1800, "relation_bytes": MAX_RELATION_BYTES, "rss_bytes": 512 * MIB}
-            estimate = {"seconds": estimated_seconds, "relation_bytes": estimated_bytes, "rss_bytes": estimated_rss}
-            exceeded = [key for key, value in estimate.items() if value > limits[key]]
+            exceeded = [key for key, maximum in limits.items() if estimate[key] is not None and estimate[key] > maximum]
             return {
-                "ok": not exceeded and not unobserved,
+                "ok": not exceeded and not unobserved and not uncertainty,
                 "ready": False,
                 "read_only": True,
                 "counts": counts,
@@ -344,11 +854,13 @@ def plan(engine, args):
                 "estimate": estimate,
                 "relation_model": relation_model,
                 "limits": limits,
-                "member_universal_upper_bound": 2 * counts["detail_albums"] * sum(name_counts.values()),
+                "uncertainty": uncertainty,
+                "sampling_seconds_limit": args.max_seconds,
+                "sampling_window_basis": "Root explicitly changed 30s to 120s after a complete fresh 1000-album diagnostic took 51.149s; original 30s gate did not pass",
                 "exceeded": exceeded,
                 "elapsed_seconds": monotonic() - started,
                 "policy_signature": current_policy_signature(),
-                "estimate_basis": "bounded proof/UTF-8 sample with measured PG row/index overhead; unsampled finite closures remain estimates",
+                "estimate_basis": "Live member PK density within sampled albums; per-source-name and per-album dependency sets; complete proof-group counts; actual Connection JSON serializer; isolated PG storage/write calibration; unsampled density remains an estimate",
             }
         finally:
             transaction.rollback()
@@ -566,7 +1078,7 @@ def main(argv=None):
     mode.add_argument("--apply", action="store_true")
     sub.add_parser("verify-schema")
     planning = sub.add_parser("plan")
-    planning.add_argument("--max-seconds", type=_bounded_number(30), default=30)
+    planning.add_argument("--max-seconds", type=_bounded_number(120), default=120)
     planning.add_argument("--sample-albums", type=_bounded_number(1000, integer=True), default=1000)
     preparation = sub.add_parser("prepare")
     preparation.add_argument("--batch-size", type=_bounded_number(500, integer=True), default=500)

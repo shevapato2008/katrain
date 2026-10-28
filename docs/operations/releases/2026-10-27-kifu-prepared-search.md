@@ -130,12 +130,12 @@ python -c 'from katrain.web.kifu.prepared_read import current_policy_signature; 
 
 | 证据 | 实际结果 |
 | --- | --- |
-| feature / develop / 父 main 发布 SHA | 首次集成：`782348c2eb1560b84f79dfe186569783aa0afa67` / `2129acd4e67a7b98d72236a56be3352a0977602b` / `d07defd6049d0de421dead9136a28f330c10682c`。后续局部修复尚未发布 |
-| TEST/PROD Web、TEST 唯一 cron、PROD receiver 实际 package/image/container/pin | TEST Web code `2129acd4`、image `d17ed5ad041f`、container `361c6fa9d76c`；TEST cron code `2129acd4`、补齐原 Git runtime assets 的 image `ca2965ae00a7`、container `f689e6831350`。PROD 未变更 |
-| 四入口实际 policy signature、strict、schema/guard/角色事实 | TEST Web/新 cron/准备 CLI 实际 signature 均 `33f11ccbefd8290c1b27719afa338cc17ae64210f694c5ee655c48a721266b9b`，strict=false。显式迁移及 verify-schema 通过；保留原受信 DB owner。PROD receiver 尚未换版 |
-| plan 诊断、实际 RSS/耗时/六表 bytes、phase/cursor、覆盖/dirty | 原 30/120 秒诊断失败。实际 batch500：78.564s CLI / 385.85MiB；batch100：30.507s CLI / 366.41MiB，均首批合作式时间检查失败、0 批 commit。一次 exact 首100 cProfile 事务最终 rollback，额外计入32.841s；三次累计145.940s，1800s剩1654.060s，不因后续修复重置。六关系含索引实际172032B，durable phase=unprepared/cursor=NULL，enabled/ready/coverage=false；各自 backend 已释放 |
-| cron 原控制行/CAS 恢复、自然 drain/原锁、旧新实例证据 | 最终 v3 cutover-verified：旧实例自然 exit0，唯一新实例/完整配置/两个同process新鲜 heartbeat通过，8个interval controls精确恢复、helper exit0、pending0、new_bad_runs=[]。中间缺asset启动失败已补齐并真实重验，未关闭exclusions |
+| feature / develop / 父 main 发布 SHA | 同名字面值授权复用修复已集成：`675b57d420eea974efbf7729529b8e6761b3f6e9` / `9a4ad612199a76291e82cc1b0cbd2b7334c4725f` / `dd2e491a272a66761e1272a4abb115ff2d871ea4`。后续内存修复尚未发布 |
+| TEST/PROD Web、TEST 唯一 cron、PROD receiver 实际 package/image/container/pin | TEST Web code `9a4ad612`、image `872a760a7ab6`、container `c4f51ef93ad7`；TEST cron code `9a4ad612`、image `36b07901f106`、container `aa575544482c`。Git runtime assets 实际 SHA 核验 Web14/14、cron13/13，historical exclusions=1752。PROD 未变更 |
+| 四入口实际 policy signature、strict、schema/guard/角色事实 | TEST 实际 Web HTTP进程、新 cron startup、准备 CLI signature 均 `9caffafd9b409238721e12bd9fc764e4aae88328f054b4473daab049782cfc68`，strict=false。显式迁移及 verify-schema 通过；保留原受信 DB owner。PROD receiver 尚未换版 |
+| plan 诊断、实际 RSS/耗时/六表 bytes、phase/cursor、覆盖/dirty | 原 30/120 秒诊断失败。batch500、batch100 首批均超时；一次 exact 首100 cProfile 最终 rollback，三次累计145.940s。`9a4ad612` 同100批实际14批 commit 后因RSS553545728B（527.90MiB）超过512而失败，非OOM；本次265.404s计入，总累计411.343687942s，1800s余1388.656312058s不重置。六关系含索引实际19169280B，durable phase=names/cursor={kind:0,owner:9855}，enabled/ready/coverage=false；自身 backend 已释放。后续 policy 修复按原机制从头覆盖，不手改旧signature/cursor继续 |
+| cron 原控制行/CAS 恢复、自然 drain/原锁、旧新实例证据 | 最终 v4 cutover-verified：旧实例自然 exit0，唯一新实例/完整配置/两个同process新鲜 heartbeat通过，8个interval controls精确恢复、helper exit0、pending0、new_bad_runs=[]。中间缺asset启动失败已补齐并真实重验，未关闭exclusions |
 | 实际发布/replay/undo 与新旧完整 JSON 对照 | 未执行 |
 | 1 QPS/100 QPS 完整响应、到达率、各类分位、错误/语义差异、资源 | 未执行 |
 | TEST/PROD 实际 Galaxy/kiosk 正确棋盘与公网复验 | 未执行 |
-| 回滚开关与残留阻塞 | TEST prepared 尚未启用，原读取继续；PROD 未变更。首names阶段同名授权重复成本待局部修复：首100中 `_finite_shared_player_ids` 122次/12.227s、`_qualified_name_rows`286次/7.114s、exact/lower owner查询409次/5.936s。尚无覆盖、语义或 API SLO 通过声明 |
+| 回滚开关与残留阻塞 | TEST prepared 尚未启用，原读取继续；PROD 未变更。同名字面值授权局部复用已修复首批重复热点。下一未提交批含 normative JA packet590：完整artifact文本41117720B，另全batch ledger41131962B，而当前只需1个name/evidence；后续只收敛positive ledger SQL到当前目标完整行，保留重复拒绝、跨batch判别、source/live和原hash。尚无全量资源、覆盖、语义或 API SLO 通过声明 |

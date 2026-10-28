@@ -302,6 +302,41 @@ def test_raw_player_cache_hit_expires_held_old_artifact_before_scope_read(engine
         assert held.reviewed_artifact == artifact
 
 
+def test_raw_player_scope_checks_batch_bundle_once_per_invocation_for_all_locales(engine, monkeypatch):
+    from katrain.web.kifu.identity import _approved_raw_player_names
+
+    inventory, bundle, research = bound_raw_player_bundle(engine, five_languages=True)
+    apply_bundle(engine, bundle, registry(), inventory, research)
+    with Session(engine) as db:
+        assert len(_approved_raw_player_names(db, values={"李元赫九段"})) == 5
+    original = name_candidates.canonical_sha256
+    hashes = []
+
+    def count_bundle(value):
+        if (
+            isinstance(value, dict)
+            and "candidates" in value
+            and value.get("inventory_sha256") == bundle["inventory_sha256"]
+        ):
+            hashes.append(True)
+        return original(value)
+
+    monkeypatch.setattr(name_candidates, "canonical_sha256", count_bundle)
+    with engine.begin() as conn, Session(bind=conn) as db:
+        rows = _approved_raw_player_names(db, values={"李元赫九段"})
+        assert {name.lang for name, _raw, _scope in rows} == {"cn", "tw", "jp", "ko", "en"}
+        assert all(set(scope.members) == {(12, "black"), (15, "white")} for _name, _raw, scope in rows)
+        assert len(hashes) == 1
+        batch = db.query(KifuNameBatch).one()
+        artifact = deepcopy(batch.reviewed_artifact)
+        artifact["bundle"]["changed_after_invocation"] = True
+        conn.execute(
+            KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch.id).values(reviewed_artifact=artifact)
+        )
+        assert _approved_raw_player_names(db, values={"李元赫九段"}) == []
+        assert len(hashes) == 2
+
+
 def test_cold_batches_compile_serially_and_release_full_json_before_return(engine, monkeypatch):
     from katrain.web.kifu import compiled_first_pass
 

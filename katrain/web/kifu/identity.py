@@ -491,6 +491,9 @@ def _approved_raw_player_names(db, *, values=None, lang=None, display=None, name
             batch_ids.add(proof["batch_id"])
     batches = ({batch.id: batch for batch in db.query(KifuNameBatch).filter(KifuNameBatch.id.in_(batch_ids))}
                if batch_ids else {})
+    # All rows below use the same freshly loaded batch snapshot. Reuse only its
+    # complete-bundle integrity result within this invocation, never eligibility.
+    checked_bundles = {}
     result = []
     for name, evidence, raw in rows:
         payload = evidence.research_payload
@@ -505,8 +508,12 @@ def _approved_raw_player_names(db, *, values=None, lang=None, display=None, name
         batch = batches.get(proof.get("batch_id"))
         if batch is None or batch.status != "applied" or not isinstance(batch.reviewed_artifact, dict):
             continue
-        bundle = batch.reviewed_artifact.get("bundle")
-        if not isinstance(bundle, dict) or canonical_sha256(bundle) != batch.bundle_sha256:
+        if batch.id not in checked_bundles:
+            bundle = batch.reviewed_artifact.get("bundle")
+            checked_bundles[batch.id] = (bundle if isinstance(bundle, dict)
+                                       and canonical_sha256(bundle) == batch.bundle_sha256 else None)
+        bundle = checked_bundles[batch.id]
+        if bundle is None:
             continue
         if candidate not in bundle.get("candidates", ()):
             continue

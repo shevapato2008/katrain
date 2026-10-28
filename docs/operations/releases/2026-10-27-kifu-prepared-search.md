@@ -81,17 +81,17 @@ python -c 'from katrain.web.kifu.prepared_read import current_policy_signature; 
 
 2026-10-28 的 fresh 观察表明 TEST cron 不是隔离 collector：除 `KIFU_ANALYZE=false` 外，其它 interval 和 analyze/report 常驻 loop 均启用。08:33 UTC 时旧 `kifu_ingest` run `82639` 自 08:17 UTC 仍活动；当时 analyze/report 的 in-flight=0 不能证明整进程已 drain。必须重新观察，不能沿用这个历史快照。
 
-旧 scheduler 的 `shutdown(wait=False)` 会取消 interval task 和 loop，不能对活动 job 直接 stop/SIGTERM 后假称完成。采用以下有限操作；任一安全条件无法满足就报告实际 blocker，保留旧 writer/disabled，不 force-kill、不启动第二 collector。
+旧 scheduler 的 `shutdown(wait=False)` 会取消 interval task 和 loop，不能对活动 job 直接 stop/SIGTERM 后假称完成。TEST 采用自然全 idle 的短窗口作为观测维护边界，不扩建计费/Web admission gate，不持阻塞队列写入的锁。它不承诺防止未来恶意调用或持续 submit。采用以下有限操作；任一条件无法满足就报告实际 blocker，保留旧 writer/disabled，不 force-kill、不启动第二 collector。
 
 1. 私有保存全部既有 `cron_job_controls` interval 行的原像（含不存在的行）、命令队列及容器/进程配置。用现有 interval pause control 临时暂停启用的 interval jobs，按完整原像 CAS 写入；遇外部改动立即停止，不覆盖。记录临时变更的精确 postimage，恢复时仅在仍等于本次 postimage 时还原原行/删除本次新增行，保留此前已暂停状态。暂停不取消当前 run，也不暂停常驻 loop。
-2. 等待 controls poll 已实际观察暂停，所有既有 interval run 自然结束，fresh 检查 `cron_job_runs` 无活动 run、`cron_job_commands` 无待领取命令，结合进程/数据库活动确认没有尚存发布线程或事务。不要改 run 状态/receipt/heartbeat 来制造空闲；不手工终止旧 run `82639` 或后来实际活动 run。
-3. 在旧 run 自然释放后，从实际目标库、实际 stage 取得原 collector PostgreSQL session advisory lock（`kifu_ingest.LOCK_KEY`）及原 stage `staging_writer_lock`，由同一个维护进程持有到旧进程退出及新配置就绪。锁不可用则有限退出。它们防止新的 ingest/人工 stage writer，不能作为 analyze/report loop 的 fence。
-4. 对两个常驻 loop 观察真实、短暂的全部 idle 窗口：fresh heartbeat/process identity、in-flight=0，相关 analyze/report/live 队列无 queued/pending/running，数据库无在途 claim/写事务，确认窗口仍持续再正常停止旧进程。此组合是可信正常调用方下的实际空闲边界，不是阻止恶意或未来生产者新 claim 的完整 fence。若队列仍在流入、存在未观测 producer 或无法可靠保持窗口，则停止换版并报告，不能把一次零计数当保证。
-5. 不要为了 drain 对 loop 队列表持 `SHARE` 等阻塞写锁。旧 async loop 会同步执行 SQL，阻塞的 UPDATE 可能卡住事件循环，反而使 SIGTERM 无法完成。若正常停止未及时完成，保留现场、报告实际阻塞；不追加 SIGKILL、不取消活动写事务。
-6. fresh CAS 核对旧容器/进程精确 identity、env、mounts、stage/key/host pin/预算和完整配置，只将唯一 cron 切到已发布不可变新 image/代码 pin。保留原启动/调度设置，确认旧进程确实退出且无遗留写线程；新进程不得与旧 collector 并存。按新包实际启动需要有序释放维护锁，确认新进程沿用原锁且只有一个 collector，所有 interval 原控制行按 CAS 恢复；不得留下长期临时暂停或静默覆盖管理员新改动。
+2. 等待 controls poll 已实际观察暂停，旧 ingest 和所有既有 interval run 自然结束，fresh 检查 interval running=0、`cron_job_runs` 无活动 run、`cron_job_commands` 无待领取命令，结合进程/数据库活动确认没有尚存发布线程或事务。不要改 run 状态/receipt/heartbeat 来制造空闲；不手工终止旧 run `82639` 或后来实际活动 run。
+3. 对两个常驻 loop 观察真实、短暂的全部 idle 窗口：至少两轮新鲜 heartbeat 的 process identity 一致且 in-flight=0，相关 analyze/report/live 队列的 queued/pending/running/authorizing 均为 0，interval running 仍为 0，数据库无在途 claim/写事务。记录旧 cron full container ID、StartedAt 和各轮计数；一次零计数不构成窗口。出现新任务即放弃本次候选，不强停。
+4. 在旧 run 自然释放后，从实际目标库、实际 stage 取得原 collector PostgreSQL session advisory lock（`kifu_ingest.LOCK_KEY`）及原 stage `staging_writer_lock`，由同一个维护进程持有到旧进程退出及新配置就绪；锁不可用则有限退出。持锁后，在同一次远端操作中立即复核上述全部计数与旧 cron full ID/StartedAt，任一变化即放弃候选。仍满足窗口才仅向核对过的旧实例发送 SIGTERM，等待自然 exit 0 并确认没有遗留写线程；不用 `docker stop` 的默认超时 KILL 路径，不追加 SIGKILL。若退出未完成，保留现场、报告具体阻塞，不以超时升级信号。这两个原锁保护 ingest/stage writer，不能当作 loop 或未来 submit 的完整 fence。
+5. 不要为了 drain 对 loop 队列表持 `SHARE` 等阻塞写锁。旧 async loop 会同步执行 SQL，阻塞的 UPDATE 可能卡住事件循环，反而使 SIGTERM 无法完成。持续流入或无法可靠保持自然窗口时停止换版，不扩建产品准入 gate，也不取消活动写事务。
+6. 只有旧实例自然 exit 0 后，fresh CAS 核对原 env、mounts、stage/key/host pin/预算和完整配置，只将唯一 cron 切到已发布不可变新 image/代码 pin。保留原启动/调度设置，新进程不得与旧 collector 并存。按新包实际启动需要有序释放维护锁，确认新进程沿用原锁且只有一个 collector；核对业务任务无新增 cancel/fail/retry 异常。原配置及所有 interval 控制行前像按 CAS 精确恢复，不留下临时暂停，不覆盖管理员新改动。新 cron 原有 startup 首轮任务照实记录，预算保持原值，不额外发 run-now。
 7. 核对新进程实际加载的 hook、policy signature 和原 DB/连接边界，记录旧/新 ID/image/StartedAt/代码 SHA，以及确实保持的配置。不能把只更新 Web、只检查磁盘 SHA 或新 subprocess 导入成功视为常驻 collector 已换版。保留自然下一轮运行、心跳与唯一实例证据。
 
-具体 idle 边界和有限维护操作需经本轮最小 operational review 后执行；本 runbook 不声称已取得安全窗口。若现有 loop/队列状态无法让上述条件成立，主会话需报告真实阻塞，不能自行扩大成全站调度平台改造。
+本 runbook 不声称已取得安全窗口。主体代码完成后，最后一轮 Astra 整体 diff 审核包含本节 runbook，不为此增加产品 gate；若持续没有安全窗口或 Astra 拒绝该操作边界，主会话报告具体 blocker，保持 disabled，不伪称已建立完整 fence，也不自行扩大成全站调度平台改造。
 
 ## TEST 正确性、负载和真实页面
 

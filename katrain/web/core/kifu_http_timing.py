@@ -71,7 +71,10 @@ class KifuHTTPTimingMiddleware:
                         "status": status,
                         "bytes": body_bytes,
                     }
-                    if self.pool is not None:
+                    state = scope.get("state", {})
+                    if "kifu_reader_pool" in state:
+                        metric["reader_pool"] = state["kifu_reader_pool"]
+                    elif self.pool is not None:
                         metric["db_pool_at_scope_entry"] = pool_at_scope_entry
                         metric["db_pool_after_final_body"] = _pool_snapshot(self.pool)
                     _LOGGER.info(json.dumps(metric, separators=(",", ":")))

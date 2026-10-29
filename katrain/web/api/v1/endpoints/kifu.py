@@ -377,20 +377,24 @@ async def list_kifu_albums(
         if player_id is not None:
             params["player_id"] = player_id
         return await _from_dispatcher(lambda: dispatcher.kifu_list_albums(**params), "Kifu albums not found")
-    timings = {}
-    result = await run_in_threadpool(
-        read_in_owned_session,
-        session_factory,
-        submitted_at=perf_counter(),
-        timings=timings,
-        q=q,
-        player_id=player_id,
-        page=page,
-        page_size=page_size,
-        lang=lang,
-    )
-    # Handler ends before FastAPI serialization/ASGI sending. These explicit names
-    # must not be presented as complete HTTP or browser request measurements.
+    params = dict(q=q, player_id=player_id, page=page, page_size=page_size, lang=lang)
+    executor = getattr(request.app.state, "kifu_read_executor", None)
+    if executor is not None and session_factory is SessionLocal:
+        request.state.kifu_reader_pool = None  # Unknown if admission or the process pool fails.
+        packet = await executor.read(params)
+        timings = packet["timings"]
+        request.state.kifu_reader_pool = packet["reader_pool"]
+        if "error" in packet:
+            raise HTTPException(**packet["error"])
+        result = Response(content=packet["body"], media_type="application/json")
+        response = result
+    else:
+        timings = {}
+        result = await run_in_threadpool(
+            read_in_owned_session, session_factory, submitted_at=perf_counter(), timings=timings, **params
+        )
+    # Handler includes the process round trip when used; final ASGI sending is
+    # outside it. These names do not represent a complete HTTP/browser request.
     timings["kifu_handler"] = (perf_counter() - started) * 1000
     if response is not None:
         response.headers["Server-Timing"] = ", ".join(

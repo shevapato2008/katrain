@@ -2,15 +2,41 @@
 
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
+import gc
+import json
+import logging
 import multiprocessing
 from multiprocessing.util import Finalize
 import os
-from time import perf_counter
+from threading import get_ident
+from time import perf_counter, time
 
 from fastapi import HTTPException
 
 
 _engine = _factory = _startup_barrier = None
+_GC_LOGGER = logging.getLogger("katrain_web.kifu_gc_pause")
+
+
+def _gc_pause_observer():
+    started = {}
+
+    def observe(phase, info):
+        generation = info["generation"]
+        if phase == "start":
+            started[generation] = (perf_counter(), time(), get_ident())
+        elif phase == "stop":
+            timing = started.pop(generation, None)
+            if timing is None:
+                return
+            duration_ms = (perf_counter() - timing[0]) * 1000
+            if duration_ms >= 20:
+                metric = dict(event="kifu_gc_pause", pid=os.getpid(), thread_ident=timing[2])
+                metric.update(generation=generation, start_unix_s=timing[1], duration_ms=duration_ms)
+                metric.update(collected=info["collected"], uncollectable=info["uncollectable"])
+                _GC_LOGGER.info(json.dumps(metric, separators=(",", ":")))
+
+    return observe
 
 
 def _initialize(database_url, policy_signature, barrier):
@@ -89,8 +115,11 @@ class KifuReadExecutor:
         self.worker_pids = frozenset()
         self._closed = False
         self._slots = asyncio.Semaphore(32)
+        self._gc_observer = _gc_pause_observer()
 
     async def start(self):
+        if self._gc_observer not in gc.callbacks:
+            gc.callbacks.append(self._gc_observer)
         try:
             ready = [asyncio.wrap_future(self._pool.submit(_ready)) for _ in range(4)]
             self.worker_pids = frozenset(await asyncio.wait_for(asyncio.gather(*ready), timeout=40))
@@ -124,4 +153,8 @@ class KifuReadExecutor:
         self._closed = True
         # Finish submitted read-only jobs, then each child's finalizer disposes
         # its own engine. The web process and writer work remain untouched.
-        await asyncio.to_thread(self._pool.shutdown, wait=True)
+        try:
+            await asyncio.to_thread(self._pool.shutdown, wait=True)
+        finally:
+            if self._gc_observer in gc.callbacks:
+                gc.callbacks.remove(self._gc_observer)

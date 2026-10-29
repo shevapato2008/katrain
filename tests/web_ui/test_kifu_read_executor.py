@@ -3,6 +3,7 @@
 import asyncio
 import importlib
 import json
+import logging
 import os
 from time import monotonic
 
@@ -152,3 +153,78 @@ async def test_injected_factory_ignores_server_process_executor(tmp_path, monkey
             assert (await client.get("/kifu/albums")).status_code == 200
     finally:
         engine.dispose()
+
+
+def test_gc_observer_logs_only_slow_collections_for_each_generation(caplog, monkeypatch):
+    from katrain.web.core import kifu_read_executor as module
+
+    caplog.set_level(logging.INFO, logger="katrain_web.kifu_gc_pause")
+    clock = [10.0]
+    monkeypatch.setattr(module, "perf_counter", lambda: clock[0])
+    monkeypatch.setattr(module, "time", lambda: 1000 + clock[0])
+    monkeypatch.setattr(module, "get_ident", lambda: 123)
+    observe = module._gc_pause_observer()
+    for generation in range(3):
+        for duration in (0.019, 0.025):
+            info = {"generation": generation, "collected": 7, "uncollectable": 2}
+            started = clock[0]
+            observe("start", info)
+            clock[0] += duration
+            observe("stop", info)
+            if duration < 0.02:
+                assert len(caplog.records) == generation
+            else:
+                assert json.loads(caplog.records[-1].getMessage()) == {
+                    "event": "kifu_gc_pause",
+                    "pid": os.getpid(),
+                    "thread_ident": 123,
+                    "generation": generation,
+                    "start_unix_s": 1000 + started,
+                    "duration_ms": pytest.approx(25),
+                    "collected": 7,
+                    "uncollectable": 2,
+                }
+    assert len(caplog.records) == 3
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure", [False, True])
+async def test_gc_observer_lives_only_in_parent_executor_lifecycle(monkeypatch, failure):
+    import gc
+    from concurrent.futures import Future
+    from katrain.web.core import kifu_read_executor as module
+
+    original = tuple(gc.callbacks)
+
+    class Pool:
+        count = 0
+
+        def __init__(self, **kwargs):
+            pass
+
+        def submit(self, operation):
+            if failure:
+                raise RuntimeError("test startup failure")
+            self.count += 1
+            future = Future()
+            future.set_result(self.count)
+            return future
+
+        def shutdown(self, *, wait):
+            assert wait
+            assert gc.callbacks.count(executor._gc_observer) == 1
+
+    monkeypatch.setattr(module, "ProcessPoolExecutor", Pool)
+    executor = module.KifuReadExecutor("postgresql://unused")
+    assert tuple(gc.callbacks) == original
+    if failure:
+        with pytest.raises(RuntimeError, match="Kifu reader startup failed"):
+            await executor.start()
+    else:
+        try:
+            await executor.start()
+            await executor.start()
+            assert gc.callbacks.count(executor._gc_observer) == 1
+        finally:
+            await executor.close()
+    assert tuple(gc.callbacks) == original

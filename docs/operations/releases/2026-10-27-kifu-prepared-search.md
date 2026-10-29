@@ -4,6 +4,8 @@
 
 已批准的范围及语义见 [实施计划](../../superpowers/plans/2026-10-27-kifu-search-prepared-read-path.md)。本轮保留现有受信 DB owner/运维边界和业务 engine；不声称能防止持有 superuser/table-owner 身份的运维伪造派生行或关闭守卫。发现实际存在不应受信的调用方时，停止 enable 并报告具体权限事实。
 
+本文保留早期准备窗口及验收失败经过；当前性能合同与停点以“TEST 正确性、负载和真实页面”和“实际交付记录”为准。2026-10-29 用户已将 1 QPS 20ms 改为诊断参考，并要求在实际线上 8 核机器受控验证 100 QPS 每请求完整响应 ≤200ms；旧“低过才高”和“PROD 不做 100 QPS”不再作为当前执行限制。历史失败不删除，资源配额不得静默改变。
+
 ## 固定边界与发布顺序
 
 | 阶段 | 目标与必要结果 |
@@ -132,9 +134,13 @@ python -c 'from katrain.web.kifu.prepared_read import current_policy_signature; 
 
 冻结至少 24 个实际主查询、至少 12 个不同棋手，包含王/柯/张涛/一力辽的实际记录、姓名 q、原 `player_id`、合法别名、同名授权、未归并 raw、五语和页2。每个姓名保留完整同名/raw/碰撞结果，不能以 ID 快分支代替自由 q。主到达分布固定 50% 唯一姓名、25% player_id、15% 别名/同名、10% 含 raw 结果的姓名；兼容赛事/日期/模糊/无条件页/无结果另列结果/耗时，不稀释主 SLO。缺实际类别时报告缺口，不用捏造 fixture 冒充生产语义。
 
-在一个一致快照对照实际 legacy/prepared 完整 JSON，语义差异必须为 0。启用后重启一次 TEST Web，记录 ready 时间；不预热目标棋手，至少 12 个不同棋手先完成首次查询再重复。主低负载 120 次、1 QPS，p95≤20ms；通过正确性和低负载后只做一次有限 ramp：10/50 QPS 各 5 秒、100 固定到达 QPS 30 秒。高负载 p95≤200ms、完整响应错误率 0，按类别保留首次样本和尾延迟。
+在一个一致快照对照实际 legacy/prepared 完整 JSON，语义差异必须为 0。启用后重启一次 TEST Web，记录 ready 时间；不预热目标棋手，至少 12 个不同棋手先完成首次查询再重复。2026-10-29 用户明确更新合同：1 QPS 的 20ms 仅作诊断，不再拦截高负载/发布；保留既有 120 次低负载样本，不为此重复测量。正确性成立后，有限 ramp 10/50 QPS 各 5 秒、100 固定到达 QPS 30 秒。硬目标为实际线上 8 核机器（或明确认可的等效配置）本轮每个完整响应均 ≤200ms，错误率/语义差异 0；必须报告 p95/p99/max、>200ms 数、超时和所有慢样本，不能仅凭 p95 放行。
 
 100 QPS 稳态计划到达 3000 次，必须在这 30 秒内实际发出并被入口接收≥2970（≥99 QPS）；未发出/超时/失败/缺响应计入失败，不能丢弃慢请求。最多 32 in-flight，积压计排队；最多额外 2 秒排空不算窗口内 achieved QPS。分别记录调度→发出、入口→last-body、完整 JSON 收取 wall time、ASGI/server total、错误及语义核对。只测 handler 或 HTTP200 的快样本无效。错误/排队急升或 writer 健康异常即止测，保留已观察结果，不扩大样本寻找好数字。
+
+2026-10-29 的实际 fd62 ramp 证明单 Web Python 进程在 50 QPS 下饱和，因此局部增加固定 4 个 spawn 读进程，只服务默认 server/PostgreSQL 的 Kifu list。每个子进程自建同角色 Engine/Session、pool_size=1、max_overflow=0；执行原 `read_album_page`、只读 RR 及完整 report/rank/当前页 SGF 绑定，返回完整 JSON bytes。主 Web 仍唯一管理对局、lobby、matchmaker、engine，不改全应用 worker 数。总 admission 32，取消的 HTTP waiter 不会提前归还仍在运行的底层任务额度；满额/坏池明确 503，不切换到隐式慢路径。启动时四进程完成静态 mapper/policy 握手后才 ready，不预热目标查询；自然 shutdown 等待只读任务、释放自有连接。日志记录实际 reader pool 边界/PID，不能把父 Engine 的空池或边界采样当峰值/精确等待。
+
+该执行器、端点接缝及计时文件位于 `web/kifu` 之外；若实际 policy、writer 和 assets 字节不变，不重复准备数据或重启 TEST collector。本次所有旧失败与资源账保留。TEST 当前为 x86_64/amd64、192 逻辑 CPU，无 Web/PG quota；它仅作功能/吞吐定位，不能代表新 PROD。新 177 实际 8 CPU/64G，现有 Web 2 CPU/4GiB、PG 0.75 CPU/2GiB；四个读进程仍共享 Web 2 CPU。此处只记录事实，不修改配额或宣称达标。TEST 通过后再依据实际 CPU/队列证据，提交短时受控 8 核验收与必要资源 delta 给同一 OPS 审核；不得静默改 quota。
 
 记录实际 CPU/RSS、workers、DB pool/等待/连接、磁盘/网络、响应 bytes/压缩和 bytes×achieved QPS 带宽；本机持久连接、公网、浏览器分列，不把本机数字称全球网络体验。最终在真实 Galaxy/kiosk 搜索、翻页、切语种、打开一盘正确棋盘，核对 SGF、黑白、赛事、轮次、来源、rank/report。只有 API 快、棋盘错误不通过。若仍未达标，记录剩余成本和未通过门禁；不自动增加 Redis/全卡片投影/资源或保留在线 proof 掩盖。
 
@@ -144,18 +150,18 @@ python -c 'from katrain.web.kifu.prepared_read import current_policy_signature; 
 
 在无在途 receive/事务的自然边界检查受限 SSH/root wrapper、实际 exec 容器和 package pin。若指当前 Web，则新 Web 后的新 receive 应加载新包；若固定旧包，只更新该实际 pin，不另起 receiver 服务、不重启 PROD 无关 cron。原 `KIFU_INGEST_DATABASE_URL`、同连接写入、SSH/sudoers、producer 新 177 host pin 保持。使用合法已有包的幂等 replay 验证真实 receiver 新 hook、同签名、dirty/ready/receipt；正常发布及 undo 路径已由 TEST 同包验证，生产不随意撤销数据。观察自然下一轮合法发布；实际 writer 仍旧或无法验证时拒绝 enable。
 
-最终在 writer 锁下全覆盖/guard/dirty/policy 校验并原子 enable。PROD 仅做少量代表性正确性、读延迟、真实页面/正确棋盘复验，不重跑 100 QPS 压测。任一失败先 disable，明确恢复原完整 proof/慢延迟；再在相同自然空闲边界回退 collector/receiver pin 和 Web。绝不可先退旧 writer 而留下 enabled prepared reader。保留六表、守卫、checkpoint 和准备/负载证据，不急卸迁移、不修改审批事实或旧 receipts。若 Web 切换本身失败，结合 operator receipt 的真实旧/新 full ID 做受控恢复，不盲重跑 apply。
+最终在 writer 锁下全覆盖/guard/dirty/policy 校验并原子 enable，先做少量代表性正确性、读延迟、真实页面/正确棋盘复验。原“PROD 不做 100 QPS”保守边界已由 2026-10-29 用户的实际 8 核目标更新：只在 TEST 通过、同轮聚焦 OPS 审核实际资源/停止条件后执行短时受控验证；不盲直接压、不新购资源，公网 RTT/5Mbps 带宽另列。任一数据/readiness/writer 失败先 disable，再按自然安全边界回退相应 receiver/Web；单纯性能未过则保留真实结果并停止推广，不自动改资源。绝不可先退旧 writer 而留下 enabled prepared reader。保留六表、守卫、checkpoint 和证据，不急卸迁移、不修改审批事实或旧 receipts。Web 切换失败按 receipt 的真实旧/新 full ID 受控恢复，不盲重跑 apply。
 
 ## 实际交付记录（持续更新，尚未完成）
 
 | 证据 | 实际结果 |
 | --- | --- |
-| feature / develop / 父 main 发布 SHA | 已发布 `831be4980ad12b10ce23b26e859a95b090a7d46f` / `381a04397c88f31d967980d699861dcf01ff546a` / `f17cbf2cf418e1b3ee8156d3babeea197645a826`。其后SQL最小修复 `ebe35c967`、`6044b5318` 已获本轮Astra CODE/SPEC/QUALITY/OPS Approved，尚待集成发布 |
-| TEST/PROD Web、TEST 唯一 cron、PROD receiver 实际 package/image/container/pin | TEST Web code `381a0439`、image `3b6bcc0bf26a`、container `023f2540cb9c`；TEST cron code `381a0439`、image `44b0c4b5ebcd`、container `8dd08f505f8a`。Git runtime assets Web14/14、cron13/13实际SHA一致。新PROD仍e9b4d3ecc/f90b1526/17服务，无部署 |
-| 四入口实际 policy signature、strict、schema/guard/角色事实 | TEST Web HTTP进程、新cron startup、CLI实际signature `5eba414dba91c256808952888bbdaabf5597b746008f23766a0db61c4b7b6d25`，strict=false。迁移/verify-schema通过、保留原受信DB owner。PROD PG15.18、六表尚不存在、receiver实际exec当前命名Web、原URL来源不改 |
-| plan 诊断、实际 RSS/耗时/六表 bytes、phase/cursor、覆盖/dirty | 原30/120预测及原1800/3600窗口失败保留。381实际全覆盖/dirty0，六表1824768000B、names303783/members811286/deps3820974/display884535；累计6006.474458434秒、成功尾段RSS200044544B。曾enable供SLO验收，低失败后显式disabled，旧完整cache保留待本轮已disable+oldRR自然drain前提的reclaim审核 |
-| cron 原控制行/CAS 恢复、自然 drain/原锁、旧新实例证据 | v6c实际cutover-verified：旧65ce自然exit0→唯一新8dd08；完整配置/两个同process新鲜heartbeat通过，8个interval controls精确恢复、helper exit0/pending0/new_bad_runs=[]。v6a/b曾在STOP前拒绝并全部恢复，未kill任务。下一v7仅私有pins适配，尚无实际操作 |
-| 实际发布/replay/undo 与新旧完整 JSON 对照 | 381既有native catalog publish/replay/undo在显式隔离PG owned schema通过70.139秒，原receipt/artifact SHA与ready断言未减、schema已drop。24业务完整JSON同一RO RR快照全部相等，frozen manifest SHA4ed982c66b493086737d088f24266b968afef674e93fa843f02e1b27b75dafc2；完整期望及SGF私有保存 |
-| 1 QPS/100 QPS 完整响应、到达率、各类分位、错误/语义差异、资源 | 381正式1QPS/120：入口120/120，错误0/语义差0/完整JSON120；ASGI p95=513.011/p99=538.935ms，HTTP p95=515.809/p99=542.295ms，FAIL。低失败故ramp/100QPS未执行，不以SQL诊断或ID分支冒充主SLO |
+| feature / develop / 父 main 发布 SHA | 已发布 `4045a1534550f28a7c47783decc21f74c2a4f034` / `fd62f743ccc95d5fffcc3048ebe71517450441a2` / `e318c315c35f43130d60d0a440f8285882258f22`。四读进程实现 `a997a381f` 已本地提交、30聚焦检查通过，CODE/SPEC/QUALITY Approved，OPS/集成/部署仍待完成，不能称已发布 |
+| TEST/PROD Web、TEST 唯一 cron、PROD receiver 实际 package/image/container/pin | TEST Web code fd62、image d1ede6437ac4、container 3d4b5a5d931d；同容器冷重启08:24:34Z、natural exit0/restart0。唯一cron code fd62、image132f07fd8d92、container a59875bbc295。Web14/14、cron13/13 Git runtime assets实际SHA一致。新PROD仍e9b4d3ecc/f90b1526/17运行服务，无部署 |
+| 实际 policy、strict、schema/guard/角色事实 | TEST Web HTTP进程、cron startup和CLI实际signature `8ac2a746a86db0c0634adf0709227356f4ceafa24196c48853ae78f908d701f8`、strict=false，保留原受信DB owner。新executor不改此目录/资产。PROD PG15.18、六表不存在、receiver仍实际exec当前命名Web、原URL来源不改 |
+| plan 诊断、实际资源、覆盖/dirty | 原30/120预测及早期1800/3600窗口失败保留。fd62最终原Core完整闭包在授权单次300s窗口内133.182s完成（之前30/60s失败均回滚）；源176949、names303848/members811506/display884745、dirty0、ready/coverage true，六表1904730112B，最终进程RSS195129344B、nonOOM，仍受512MiB/noSwap约束。累计9347.50081090536/10800s，余1452.49918909464；未重置。准备后已正常enable |
+| cron 控制/CAS恢复、自然drain/原锁、唯一实例 | v7c实际cutover-verified：旧8dd08自然exit0→唯一a59875；实际startup fd62/8ac、两个同process新鲜heartbeat、完整配置和8个controls恢复，helper exit0/pending0/new_bad=[]。前v7/v7b无STOP安全拒绝并恢复；旧84397自然status errors含source91879992 quarantine，不漂白基线健康。新executor不要求重复换cron |
+| 实际发布/replay/undo与完整JSON | 381既有native publish/replay/undo隔离PG通过70.139s，receipt/artifact SHA及ready原断言保留、schema已drop；后续writer/preparer核心字节未变。fd62原24查询在RO RR快照完整JSON全等；高负载前再次同快照刷新，24/24全等，manifest9c774ffd82d01cba4d098add10092c6cfbcbf6ff6a1965465561e52c25a3486b。期望/SGF私有保存，未删字段/替换查询 |
+| 低负载及ramp实际结果 | 旧381低120 ASGI p95513.011ms的原合同失败完整保留。fd62低120入口120/完整JSON120、0错误/差异；ASGI p95/p9954.903/76.740ms、HTTP61.316/80.224，按新合同作诊断。fd62 ramp10QPS50次ASGI max52.560ms；50QPS250次ASGI p95/p99/max1039.627/1242.025/1298.088ms、>200=221，HTTP1252.662/1333.270/1346.904ms、>200=227。共300完整/0错差、10s实际入口264/发出278，maxinflight32，队列急升后未启动100QPS |
 | TEST/PROD 实际 Galaxy/kiosk 正确棋盘与公网复验 | 主SLO未过，尚未进行最终页面/公网验收；Chrome DevTools和TEST只读本地转发已就绪，未预热目标 |
-| 回滚开关与残留阻塞 | TEST已正常disable，legacy仍可读；PROD未变。当前真实阻塞为candidate无关扫描及raw OR COUNT，最小SQL修复待本轮Astra/集成/正常新policy完整重建。10800累计TEST窗口与后续条件授权PROD独立3600窗口分账；512MiB/2GiB和20ms/200ms不减 |
+| 回滚开关与残留阻塞 | TEST当前enabled且覆盖正确，PROD未变。当前瓶颈为单Web进程并发/GIL：ramp Web持续114–129% CPU、PG74–98%，pool边界checkedout max28<60，非限额throttle。四进程实现待OPS/发布/实际验收，不能称100QPS已过。PROD现Web2CPU/PG0.75CPU限制保持不变；必要资源delta另审。TEST10800账与条件授权PROD首次准备独立3600s分账，512MiB/2GiB不减；最新硬性能合同见上节 |

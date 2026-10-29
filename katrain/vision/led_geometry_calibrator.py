@@ -735,8 +735,8 @@ class FivePointLedGeometryCalibrator(LedGeometryCalibrator):
                         break
                     try:
                         roi = self.anchor_roi(row, col)
-                        if roi is None:
-                            raise CalibrationInterrupted("grid_not_visible")
+                        # Printed-grid localization is advisory. Without a trusted ROI,
+                        # use the existing full-frame LED difference and quality checks.
                         point = self._locate_anchor(row, col, attempts, roi=roi)
                     except LightingInterrupted as exc:
                         self.led.clear(strict=True)

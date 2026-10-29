@@ -8,8 +8,11 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import case, false, func, or_
+from sqlalchemy import case, false, func, or_, select, union
 from sqlalchemy.orm import Session, defer, load_only
+from sqlalchemy.sql import operators
+from sqlalchemy.sql.elements import BinaryExpression, BindParameter, BooleanClauseList
+from sqlalchemy.sql.selectable import ScalarSelect, Select
 from starlette.concurrency import run_in_threadpool
 from katrain.core.sgf_parser import SGF
 from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
@@ -45,6 +48,7 @@ from katrain.web.kifu.player_ranks import lookup_album_rank_snapshots
 from katrain.web.kifu.round_names import display_round_name
 from katrain.web.kifu.library import report_availability
 from katrain.web.kifu.library_search import HISTORICAL_PLAYER_ALIASES, public_player_id, unique_exact_player_id
+from katrain.web.kifu.prepared_models import members as prepared_members
 from katrain.web.kifu.prepared_read import (
     PreparedSearchNotReady,
     begin_read_snapshot,
@@ -422,6 +426,53 @@ def read_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="c
         raise _not_ready(exc) from exc
 
 
+def _prepared_count_query(db, predicate, visible):
+    """Keep finite player membership from forcing a full album scan for COUNT."""
+    fallback = db.query(func.count(KifuAlbum.id)).filter(*visible)
+    if predicate is None:
+        return fallback
+    fallback = fallback.filter(predicate)
+    if not isinstance(predicate, BooleanClauseList) or predicate.operator is not operators.or_:
+        return fallback
+    has_player, has_members = False, False
+    for branch in predicate.clauses:
+        if not isinstance(branch, BinaryExpression):
+            return fallback
+        if (
+            branch.operator in (operators.eq, operators.in_op)
+            and isinstance(branch.right, BindParameter)
+            and any(
+                branch.left.compare(column.expression)
+                for column in (KifuAlbum.black_player_id, KifuAlbum.white_player_id)
+            )
+        ):
+            has_player = True
+        elif (
+            branch.operator is operators.in_op
+            and branch.left.compare(KifuAlbum.id.expression)
+            and isinstance(branch.right, ScalarSelect)
+            and isinstance(branch.right.element, Select)
+        ):
+            member_select = branch.right.element
+            columns, sources = list(member_select.selected_columns), member_select.get_final_froms()
+            if (
+                len(columns) != 1
+                or not columns[0].compare(prepared_members.c.album_id)
+                or len(sources) != 1
+                or sources[0] is not prepared_members
+            ):
+                return fallback
+            has_members = True
+        else:
+            return fallback
+    if not (has_player and has_members):
+        return fallback
+    # UNION removes canonical black/white and raw-member overlap before counting;
+    # apply the same visibility constraints to every branch, as in the page query.
+    candidates = union(*(select(KifuAlbum.id).where(*visible, branch) for branch in predicate.clauses)).subquery()
+    return db.query(func.count()).select_from(candidates)
+
+
 def _read_prepared_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="cn", timings=None):
     """Forced prepared read after the caller verifies its snapshot's ready gate.
 
@@ -436,10 +487,9 @@ def _read_prepared_album_page(db, *, q=None, player_id=None, page=1, page_size=2
     timings["kifu_candidate"] = (perf_counter() - started) * 1000
     visible = (KifuAlbum.duplicate_of_id.is_(None), KifuAlbum.list_hidden_reason.is_(None))
     query = db.query(KifuAlbum).options(load_only(*_PREPARED_ALBUM_COLUMNS)).filter(*visible)
-    count_query = db.query(func.count(KifuAlbum.id)).filter(*visible)
+    count_query = _prepared_count_query(db, predicate, visible)
     if predicate is not None:
         query = query.filter(predicate)
-        count_query = count_query.filter(predicate)
     if priority is not None:
         query = query.order_by(case((priority, 0), else_=1))
     query = query.order_by(KifuAlbum.date_sort.desc().nulls_last(), KifuAlbum.id.desc())

@@ -140,6 +140,7 @@ def _alias_ids(db, query, *, exact, exact_rows=()):
     rows = _checked_names(
         db.execute(
             select(m.names).where(
+                m.names.c.name_kind.in_(("player", "event")),
                 m.names.c.match_class == "legacy_alias",
                 term == needle if exact else term.contains(needle, autoescape=True),
             )
@@ -245,6 +246,8 @@ def _selected_event_ids(db, query, raw_names, event_ids):
     if event_ids:
         clauses.append(KifuAlbumEventSelection.event_id.in_(event_ids))
     selected_raws = select(KifuAlbumEventSelection.selected_raw).where(or_(*clauses)).distinct()
+    if not db.execute(select(selected_raws.exists())).scalar_one():
+        return set()
     rows = _checked_names(
         db.execute(
             select(
@@ -402,7 +405,7 @@ def search_filter(db, *, query=None, player_id=None, lang="cn", strict=True):
     player_only = (exact_player or player_with_raw) and not selected
     shared = bool(shared_players) and not events and not raw_events
     priority = None
-    generic = _generic_rows(db, query) if not strict else []
+    generic = None
     if exact_player:
         owner = next(iter(players))
         predicate = or_(KifuAlbum.black_player_id == owner, KifuAlbum.white_player_id == owner)
@@ -423,6 +426,7 @@ def search_filter(db, *, query=None, player_id=None, lang="cn", strict=True):
         predicate = _raw_event_clause(raw_events)
     else:
         partial_players, partial_events = (set(), set()) if strict else _alias_ids(db, query, exact=False)
+        generic = _generic_rows(db, query) if not strict else []
         terms = [query.lower()]
         terms.extend(
             term for row in generic if row["name_kind"] == "historical_player" for term in row["semantic"]["terms"]
@@ -454,6 +458,8 @@ def search_filter(db, *, query=None, player_id=None, lang="cn", strict=True):
     if selected and not shared:
         predicate = or_(predicate, KifuAlbum.id.in_(selected))
     if not strict and lang == "cn" and not exact_raw_event and not shared and not player_only:
+        if generic is None:
+            generic = _generic_rows(db, query)
         provisional_players = {
             row["semantic"]["raw_value"] for row in generic if row["name_kind"] == "provisional_player"
         }

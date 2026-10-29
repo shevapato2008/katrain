@@ -162,6 +162,7 @@ class GeometryCalibrationService:
             "phase": "required",
             "progress": {"current": 0, "total": 5},
             "pause_reason": None,
+            "grid_warning": None,
             "session_calibrated": False,
             "last_valid": initial_lock is not None,
             "trigger": None,
@@ -200,6 +201,7 @@ class GeometryCalibrationService:
                 phase="waiting_empty",
                 progress={"current": 0, "total": 5},
                 pause_reason=None,
+                grid_warning=None,
                 trigger=trigger,
                 error=None,
                 stopped_phase=None,
@@ -831,10 +833,7 @@ class GeometryCalibrationService:
                 reason = whole_reason
                 continue
             _visible, grid_reason = gate.observe(frame)
-            if grid_reason == "board_occluded":
-                gate.reset()
-                return  # regular stable wait explains the occlusion after recheck
-            issue, _stats = check_grid_lighting(frame, gate.quad)
+            issue, _stats = check_grid_lighting(frame, gate.quad) if gate.grid_visible else (None, {})
             reason = issue
             if reason is None:
                 gate.reset()  # exposure changes require a complete new stable sequence
@@ -863,6 +862,8 @@ class GeometryCalibrationService:
                 gate.reset()
                 continue
             ready, reason = gate.observe(frame)
+            with self._lock:
+                self._status["grid_warning"] = None if gate.grid_visible else "grid_not_visible"
             if not ready:
                 now = time.monotonic()
                 if now - last_logged >= 2.0:
@@ -873,7 +874,7 @@ class GeometryCalibrationService:
                     self._status["phase"] = "obstructed" if reason == "board_occluded" else "waiting_stable"
                     self._status["pause_reason"] = reason
                 continue
-            issue, _stats = check_grid_lighting(frame, gate.quad)
+            issue, _stats = check_grid_lighting(frame, gate.quad) if gate.grid_visible else (None, {})
             if issue is not None:
                 self._wait_lighting(issue, gate)
                 gate.reset()
@@ -897,6 +898,10 @@ class GeometryCalibrationService:
             gate.reset()
             raise LightingInterrupted(whole_reason)
         reason = gate.capture_reason(frame)
+        with self._lock:
+            self._status["grid_warning"] = None if gate.grid_visible else "grid_not_visible"
+        if reason == "board_moved":
+            raise CalibrationBoardMoved("board_moved")
         if reason is not None:
             logger.info("geometry capture interrupted phase=%s point=%d reason=%s dark=%s",
                         self._status["phase"], self._status["progress"]["current"], reason, dark)
@@ -906,7 +911,7 @@ class GeometryCalibrationService:
                 self._status["pause_reason"] = reason
             raise CalibrationInterrupted(reason)
         # Assess lighting on dark frames. The LED is intentionally absent from this sample.
-        if dark:
+        if dark and gate.grid_visible:
             issue, _stats = check_grid_lighting(frame, gate.quad)
             if issue is not None:
                 gate.reset()
@@ -926,7 +931,7 @@ class GeometryCalibrationService:
             def observe_anchor(row, col, point, color):
                 self._anchor_observed(row, col, point, color)
                 if gate is not None:
-                    gate.confirm_anchor()
+                    gate.confirm_anchor(row, col, point)
 
             calibrator = self.calibrator_factory(
                 led=self.led,
@@ -1016,6 +1021,7 @@ class GeometryCalibrationService:
                     phase="ready",
                     progress={"current": 5, "total": 5},
                     pause_reason=None,
+                    grid_warning=None,
                     session_calibrated=True,
                     last_valid=True,
                     error=None,

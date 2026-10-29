@@ -16,6 +16,19 @@ def test_real_white_board_is_detected_without_wood_color():
     assert np.linalg.norm(result[3] - (168, 327)) < 18  # bottom-left grid intersection
 
 
+def test_real_reflection_is_advisory_and_still_requires_stable_frames():
+    frame = cv2.imread(str(Path(__file__).parents[1] / "data" / "rk3562_grid_reflection_20261029.png"))
+    assert find_visible_grid(frame) is None  # unchanged detector reproduces the field failure
+    gate = CalibrationStabilityGate()
+    observations = [gate.observe(frame) for _ in range(5)]
+    assert observations[-1] == (True, None)
+    assert all(not ready for ready, _reason in observations[:-1])
+    assert gate.grid_visible is False
+    assert gate.anchor_roi(0, 0) is None
+    assert gate.capture_reason(frame) is None
+    assert gate.capture_reason(np.roll(frame, 20, axis=1)) == "board_motion"
+
+
 def test_still_hand_covering_a_corner_or_center_blocks_grid():
     for center in ((170, 305), (100, 60), (315, 180)):
         covered = FRAME.copy()
@@ -54,7 +67,9 @@ def test_grid_roi_tracks_five_positions_and_a_lit_led_does_not_look_like_a_hand(
     assert gate.capture_reason(lit) is None
     hand = FRAME.copy()
     cv2.ellipse(hand, (170, 305), (55, 42), 20, 0, 360, (160, 175, 190), -1)
-    assert gate.capture_reason(hand) == "board_occluded"
+    # Missing lines alone are now advisory, even for a stationary covering.
+    assert gate.capture_reason(hand) is None
+    assert gate.grid_visible is False
 
 
 def test_motion_outside_the_board_does_not_pause_anchor_capture():

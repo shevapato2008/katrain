@@ -8,7 +8,7 @@
 
 **Tech Stack:** PostgreSQL 15、SQLAlchemy、FastAPI/ASGI、React/Vite；SQLite 保留本地兼容路径。无 Redis、HBase、消息平台或 MVCC 行版本推断。
 
-**本轮交付边界：** 仅计划。尚未实施、迁移、准备数据、压测或部署；下面所有性能验收均是待验证的建议，不能表示已经达标。新的独立 Astra Max 计划审核最多两轮，由主会话控制。
+**授权与版本说明：** 原计划于 2026-10-27 完成两轮独立 Astra Max 审核；用户于 2026-10-28 明确授权实施与发布。2026-10-29 用户进一步明确：1 QPS 的 20ms 仅作诊断，硬目标为实际线上 8 核机器在 100 QPS 下每个请求完整响应不超过 200ms。下述对应实现和验收段按这项最新指令更新，不重开整份计划审核。旧基线、失败样本和资源窗口调整继续保留，实际执行证据见运行手册。
 
 | 十步简述 | 现在具体做什么 | 后续怎么优化 |
 |---|---|---|
@@ -25,28 +25,28 @@
 
 ## Chunk 1: 目标、数据契约与安全边界
 
-### 1. 当前事实与待确认验收
+### 1. 规划时基线与当前验收合同
 
-- 计划基于 fresh `origin/develop=06d8e732f2c9cb956c76d9c9806f3f3584adcd43`；TEST 当前为该版本、三条搜索索引及纯 first-pass 编译缓存。新 PROD `117.50.177.254` 仍为 `e9b4d3ecce03b3269f12922a476fd6d6c6545547`，本计划不改变它们。
+- 下列基线保留 2026-10-27 规划时事实；当前实际发布以运行手册为准。当时 fresh `origin/develop=06d8e732f2c9cb956c76d9c9806f3f3584adcd43`，TEST 为该版本、三条搜索索引及纯 first-pass 编译缓存；新 PROD `117.50.177.254` 为 `e9b4d3ecce03b3269f12922a476fd6d6c6545547`。
 - 真实规模约 176,884 albums；现有 11 组契约结果已等价。TEST 王星昊暖 API 曾为 166–249ms，重复样本 237.8ms；该样本 candidate 79.530、display 134.255、count 2.370、page 4.063、report 3.159、rank 0.935ms。各数来自特定样本，不能混加不同请求的最小值。
 - 一力辽首次样本 display 3.06s；已有页面涉及 18 个 first-pass raw 赛事名与一个 orthographic 棋手名，未记录各缓存 hit/miss，不能把这段全部归为纯编译。
 - 11 批次完整 artifact SHA 单次只读探针约 59.5ms。只持久化 SHA 不能移除其它 proof、来源验证或冷编译，因而不是本方案的完成条件。
 - 原浏览器指标与新 API 指标分开：当前暖 response→首次 clearRect 69–85ms；之后两帧确认/校验 28–48ms。已有 349ms 样本未验卡片最终 opacity，不称作“全部列表完全显示”。
 - 证据沿用 `release/kifu-search-test-evidence-20261027@3ce0c1dd0a1ddeb0e38f394e406730cbe7d2f187` 中的 `docs/superpowers/reviews/2026-10-27-kifu-search-validation.md` 和对应 evidence；实施前不为计划重跑 profile/扫描 artifact。
 
-**建议验收合同，待用户确认百分位后冻结：**
+**当前验收合同（2026-10-29 用户明确更新）：**
 
 | 项目 | 建议执行口径 | 通过条件 |
 |---|---|---|
-| 棋手搜索：低负载主门禁 | 已 ready、已建连接，1 QPS；player_id、棋手姓名及合法别名，包含该 q 的完整同名/raw/碰撞语义；server ingress 收到请求至完整 JSON 最后 body 交付 | 建议 p95 ≤20ms；p50/p99/max、样本数实报，steady-state 错误率 0、语义差异 0 |
-| 棋手搜索：负载主门禁 | 同版本、数据、索引、有限连接池；100 QPS 固定到达率，包含服务端排队；使用同一棋手查询域 | 建议 p95 ≤200ms；p99/max 实报，错误率 0、语义差异 0；offered/achieved 未达约定到达率也不算通过 |
-| 主门禁精确清单 | 低负载 24 个冻结的棋手查询、至少 12 个不同棋手，覆盖 cn/tw/jp/ko/en、页2、合法别名、同名与 raw 未归并；负载建议 50% 唯一姓名、25% player_id、15% 别名/同名、10% 含 raw 结果的棋手姓名 | 清单/期望结果在 TEST 测前冻结并待用户确认；每个首次不同棋手均入样；逐类实报，不能用 player_id 替代原姓名 q 或靠混合 p95 隐藏慢族 |
+| 棋手搜索：低负载诊断 | 已 ready、已建连接，1 QPS；player_id、棋手姓名及合法别名，包含该 q 的完整同名/raw/碰撞语义；server ingress 收到请求至完整 JSON 最后 body 交付 | 20ms 为参考，不再拦截高负载或发布；p50/p95/p99/max、样本数实报，错误率 0、语义差异 0 |
+| 棋手搜索：负载主门禁 | 实际线上 8 核机器，或经主会话明确认可的等效配置；100 QPS 固定到达率，包含服务端排队；使用同一棋手查询域 | 本轮所有请求完整响应均 ≤200ms；实报 p50/p95/p99/max、>200ms 数、超时及其它错误；错误率 0、语义差异 0，30 秒入口与实际发出均 ≥2970；不能仅以 p95 达标放行 |
+| 主门禁精确清单 | 24 个冻结的棋手查询、至少 12 个不同棋手，覆盖 cn/tw/jp/ko/en、页2、合法别名、同名与 raw 未归并；固定 50% 唯一姓名、25% player_id、15% 别名/同名、10% 含 raw 结果的棋手姓名 | 按现有契约和代表数据，在同一快照核对 legacy/prepared 完整 JSON 后保存期望；已授权口径不重复确认。每个首次不同棋手均入样，不能用 ID 替代姓名 q、减少字段/结果或靠混合分位隐藏慢族 |
 | 通用兼容域 | 赛事、日期、任意模糊、无条件页及真实无结果查询，五语/翻页单独核对 | 保留原结果/排序/分页语义，性能与样本单列，不自动扩展为同一个 20ms/200ms 门禁，也不放入主负载比例稀释结果 |
 | 首次访问 | 重启后 ready，不预先请求目标棋手；准备结果已持久化 | 新棋手首查不触发 proof、纯编译、补数据或慢 fallback；不把冷 TLS 纳入 API 指标 |
 | 浏览器 | 固定 viewport，真实 20 条列表、当前首盘、正确标题/棋子；另测公网条件 | 单列请求、响应→实际可见列表、正确棋盘绘制；原完整 200ms 愿望单列实测，不由 API 20ms 推导 |
 | 未准备/失效 | 明确的 503 与错误码 | 从成功延迟统计外列出，但计入可用性/错误率，不能用它们或空结果“达标” |
 
-20ms 是完整请求目标，不能仅报 PostgreSQL 毫秒或现有 `kifu_handler`。ASGI 入口至最后 `http.response.body(more_body=False)` 计时包含线程池排队、DB、Python、Pydantic、JSON 和 send；入口代理已有 request_time/本机 keep-alive 探针用于补充 ASGI 之前的接收/代理排队。公网 RTT、TLS 首连、客户端 parse/paint 分列。若入口不能观测接受队列，则报告覆盖缺口，不宣称包含它。
+200ms 指完整请求，不能仅报 PostgreSQL 毫秒或现有 `kifu_handler`。ASGI 入口至最后 `http.response.body(more_body=False)` 计时包含执行器排队、IPC、DB、Python、Pydantic、JSON 和 send；完整 HTTP 请求补充 ASGI 之前的接收/代理排队。分别实报生成器排队、HTTP−ASGI 和 ASGI 内的逐请求差值，不混加不同请求的分位。公网 RTT、TLS 首连、5Mbps 带宽及客户端 parse/paint 分列。若入口不能观测接受队列，则报告覆盖缺口，不宣称包含它。TEST 当前 192 逻辑核且无 CPU 配额，不能直接代表线上 8 核；最新授权允许在 TEST 通过后，对新 177 做经聚焦 OPS 审核的短时受控 100 QPS 验证。
 
 ### 2. 旧→新请求流与明确移出的调用
 
@@ -202,6 +202,7 @@ mark_ready_if_initial_coverage_complete(conn)
 - Modify: `katrain/web/api/v1/endpoints/kifu.py`（`read_album_page()`、`get_kifu_album()`、summary）
 - Modify: `katrain/web/core/repository.py`、`config.py`（仅开关/转发需要的变化）
 - Create: `katrain/web/core/kifu_http_timing.py`
+- Create: `katrain/web/core/kifu_read_executor.py`（仅 Kifu 只读执行，2026-10-29 并发定位后的局部调整）
 - Modify: `katrain/web/server.py`（装入仅匹配 kifu 路由的 ASGI 计时/ready 状态）
 - Create: `tests/web_ui/test_kifu_prepared_read.py`
 - Extend: `tests/web_ui/test_kifu_library_search.py`、`test_kifu_library_worker.py`、`test_kifu_request_identity.py`
@@ -215,6 +216,8 @@ mark_ready_if_initial_coverage_complete(conn)
 - [ ] 相同谓词构造 COUNT/page；读取 page 的 20 行准备展示，校验每个 `(album_id,lang)` 完整且有效。批量保留当前 `report_availability()`/`lookup_album_rank_snapshots()` 与原内容绑定；不要把不完整分析或过期段位快照改为可用。
 - [ ] 原表只取 page 必需标量；仅第一行读取 SGF 供 preview。若现有 rank/report 检查需要其它行 SGF，则先保留正确行为并记录该成本，不以删检查完成“只首行 SGF”。
 - [ ] ASGI wrapper 在收到 scope 起计，最后 body 发送后记总耗时/状态/bytes/request ID；原 handler Server-Timing 保留分段名。最后发送时间不伪装成提前写入的响应头。日志不含查询姓名、SGF、密钥或完整结果。
+- [ ] 仅默认 server-mode/PostgreSQL 的 Kifu 列表使用固定 4 个 spawn 读进程；每进程自行创建同角色 Engine/Session，继续原只读 RR、完整查询/报告/段位/SGF 校验，返回完整 JSON bytes。全 Web 仍为单进程，对局、lobby、matchmaker、engine 单例不跨进程。启动时在 ready 边界核对进程/mapper/policy，不预热目标棋手；关闭自然等待只读任务并释放自己的连接。
+- [ ] 总 admission 最多 32；取消/超时后，额度须等底层真实任务完成或确实取消才归还，不能因父请求取消而让队列无界。worker 故障明确失败，不隐式慢 fallback；记录实际 worker pool 边界，不能拿父 Engine 的空 pool 代表读进程。SQLite、board/remote dispatcher、注入 factory 保持原行为。通过真实隔离 PG 验证进程连接所有权、完整 JSON/503、取消持额及关闭。
 - [ ] `python -m pytest tests/web_ui/test_kifu_prepared_read.py tests/web_ui/test_kifu_library_search.py tests/web_ui/test_kifu_library_worker.py tests/web_ui/test_kifu_request_identity.py -q`；计时测试必须含排队和人为序列化延迟，并验证 event loop 仍可响应。
 - [ ] Commit: `read prepared kifu results without request proof`。
 
@@ -273,16 +276,17 @@ python scripts/kifu_prepare_search.py disable
 - [ ] 实施结束前独立 Astra Max 审整体实际 diff，重点 prepared 权威写入、DB 失效、原子性、scope、旧镜像兼容；修到通过。计划本轮最多两次审核不自动授权额外计划循环。
 - [ ] 一次聚焦后端套件覆盖本计划新测试与直接修改的现有测试；前端相关测试/build 一次。已知旧失败给出 baseline，不重复全库回归或重构无关模块。
 - [ ] 负载脚本输出完整响应接收校验、状态/错误、精确 total/首盘 hash/ID 序列、offered/achieved QPS、排队和 server total 的 p50/p95/p99/max、连接数、实际 in-flight、样本与 elapsed；不能只对 HTTP200 快请求算成功率。100 QPS 是到达率，不是开 100 个并发循环。负载发生器限定最多 32 个 in-flight，超出仍计排队/失败，不丢弃慢样本；发生超预算/语义差异应标失败。
-- [ ] 冻结 §1 的主门禁棋手清单/分布：50% 唯一姓名、25% player_id、15% 别名/同名、10% 含 raw 结果的棋手姓名；五语与页2在适用查询内轮换。低负载先完成至少 12 个不同棋手的首次查询，再重复，不将首次新棋手排除。每个姓名 q 保留完整同名/raw/碰撞结果，不能仅保留“明确ID快分支”。该配比待用户确认，逐类实报。
+- [ ] 冻结 §1 已获授权的主门禁棋手清单/分布：50% 唯一姓名、25% player_id、15% 别名/同名、10% 含 raw 结果的棋手姓名；五语与页2在适用查询内轮换。低负载先完成至少 12 个不同棋手的首次查询，再重复，不将首次新棋手排除。每个姓名 q 保留完整同名/raw/碰撞结果，不能仅保留“明确ID快分支”；逐类实报。
 - [ ] 通用赛事/日期/模糊/无条件页/无结果用单独兼容清单核对结果和性能，不进入主负载百分位或比例；本次不为它们扩建全文搜索索引/平台。
-- [ ] TEST ready 后重启一次 web，记录 ready 时间，无请求预热目标棋手。主门禁低负载建议 120 请求、1 QPS，24 个已冻结棋手查询轮换且包含首次不同棋手，5语/翻页均入样；不能用缓存热身隐藏冷读取。
-- [ ] 仅在低负载与正确性成立后，单次有限 ramp 10/50 QPS 各 5 秒，再 100 QPS 30 秒；按类报告样本数/延迟。若错误/排队急升、writer 健康异常则止测，保存已取得证据；不无限扩样寻找好数字。
+- [ ] TEST ready 后重启一次 web，记录 ready 时间，无请求预热目标棋手。低负载 120 请求、1 QPS、24 查询/首次不同棋手/五语/翻页作为诊断，20ms 不再是放行门槛；保留已经取得的样本，不为新合同重复低负载或以热身隐藏冷读取。
+- [ ] 正确性成立后，有限 ramp 10/50 QPS 各 5 秒，再 100 QPS 30 秒；按类报告样本数/延迟。每次必要代码修复后才进行新的有界验收，不无限扩样寻找好数字。错误/排队急升、writer 健康异常即止测并保存证据。
 - [ ] 100 QPS 稳态窗口固定 30 秒、计划到达 3000 次；必须实际发出并被入口接收至少 2970 次（≥99 QPS，允许 1% 边界误差），否则本轮负载无效/未通过，不能声称承受 100 QPS。任意未发出、超时、失败、缺响应仍入总数及错误统计，错误率须为 0；排空可最多 2 秒但不计入 30 秒内 achieved QPS。分别记录调度→发出及入口→last-body，发生器排队不能代替服务端负载。
+- [ ] 新硬门槛按每个请求核对完整 ASGI/HTTP 响应，实报 p95/p99/max、>200ms 数、超时/错误和全部慢样本。TEST 未限额的 192 逻辑核数据仅用于定位；最终须在实际新 177 的 8 核机器或明确等效配置上受控验证。先核 Web/PG 实际 quota、内存和其它服务共享资源，不静默调整配额；若确需资源 delta，先交同一 OPS 审核明确范围。
 - [ ] 服务端入口/ASGI 指标与本机持久连接 HTTP 收全 JSON 的 wall time 关联；公网与浏览器另列。不以 handler 时间替代最后 body，不把本机结果称全球网络体验。
 - [ ] 同时记录当次 CPU/RSS、DB pool 上限与占用/等待、DB 连接数、磁盘/网络吞吐、响应 bytes 和压缩设置；不额外建设监控平台。带宽以实际 bytes×achieved QPS 计算并标明 TLS/压缩边界，资源规格/worker 数也必须列出，不能用“100QPS”省略硬件前提。
 - [ ] 如果移出 proof 后仍未达目标，按当前分段定位，只报告剩余成本及下一必要决策；不自动引入全卡片投影、Redis、额外写协议或提高资源掩盖。首个新棋手仍触发 proof 即实现未完成。
 
-### Task 7: 后续实施完成后的发布顺序（本轮不执行）
+### Task 7: 实施完成后的发布顺序（已获实施授权，逐项以真实门禁放行）
 
 - [ ] Feature fetch/merge 最新 develop，解冲突、聚焦验证，commit/push feature；确认包含所有最新教程/图标/排名改动。
 - [ ] merge/push develop；记录发布 SHA。不得以仅部署 feature 代替集成。
@@ -291,12 +295,12 @@ python scripts/kifu_prepare_search.py disable
 - [ ] TEST 完成旧数据有界准备；经真实新 cron/CLI 入口做一组已批准、有限的正常发布、replay、undo/恢复验证（不新增模型请求、不全库导入），确认业务 receipt/hash 等价，dirty 同事务消费、ready 能保持。使用隔离测试数据或明确获准的小范围 TEST 包；不得为验证撤销无关现有数据。确认下一次唯一 writer 仍用新包，再 enable 并做正确性/负载/真实棋盘验收。任一失败则不推广 PROD。
 - [ ] 新 PROD **ubuntu@117.50.177.254**：按实际 Engine inspect/operator 的 web-only 发布方式更新 Web，保持 prepared disabled；保留冻结迁移 manifest、原网络/媒体/SSO/host pin/单 V100 两 engines。迁移/新索引显式执行并检查定义/valid/ready；必要索引 CONCURRENTLY 使用 autocommit，不在 Web startup 建。
 - [ ] PROD receiver 在无在途 receive/事务的安全边界核对 wrapper、实际 `docker exec` 目标、包 SHA 和 `KIFU_INGEST_DATABASE_URL` 目标库；若执行当前 Web，新 Web 生效即提供新 receiver 包，验证后保持受限 SSH/sudoers 不变。若另有固定旧包/镜像 pin，只受控更新该 pin，不重启无关 cron，也不能继续运行旧 hook。TEST producer 仍是唯一一个，原 host pin 指向新 177。
-- [ ] PROD 受控准备后，使用合法已有包的幂等 replay 核对真实 receiver 新 hook；正常新发布/undo 的实际 writer 路径已由 TEST 同包验证，生产不为验收随意撤销数据。观察自然下一轮有正常发布时 dirty/ready 持续正确；若新 writer 无法验证或仍载旧包，拒绝 enable。完成全覆盖/策略/守卫/dirty 核对后原子 enable，只做少量代表性正确性/读延迟复验，不在生产重复 100 QPS 压测。
+- [ ] PROD 受控准备后，使用合法已有包的幂等 replay 核对真实 receiver 新 hook；正常新发布/undo 的实际 writer 路径已由 TEST 同包验证，生产不为验收随意撤销数据。观察自然合法发布后的 dirty/ready；无法验证新 writer 则拒绝 enable。全覆盖/策略/守卫/dirty 通过后原子 enable，先做少量正确性/读延迟/页面复验；再按最新用户目标与聚焦 OPS 审核的短时方案，在实际 8 核主机受控验证 100 QPS，不盲直接压测，不加购资源或静默改 quota。
 - [ ] 不操作旧 183 入口、不复活退役 producer。TEST 允许必要的**唯一** collector 安全换版，stage/key/budgets/pin/锁/单实例保持；不 kill 活动任务、不启动第二 collector。PROD 其它无关 cron、PG/GPU/MinIO 不动；不重启 RK、不改设备模式。预算或安全边界不合适则停在 disabled 可回滚状态。
 - [ ] 记录 feature/develop/父 main SHA、Web/collector/receiver 的 actual 代码 SHA/image/container（含必要变化）、schema/ready/policy/coverage、writer 单实例与配置保持证据、角色事实、真实 API 分位/网络条件、浏览器正确棋盘结果和回滚开关。目标未过必须明确报告，不能称已完成性能目标。
 
 ### 执行停止条件
 
-- 当前仅写计划；主会话返回两轮内审核意见后修文档，由主会话确认再 commit/push **docs 分支**，不 merge develop、不部署。
+- 原“仅计划/docs 分支”限制已由 2026-10-28 明确实施授权解除；当前按上述发布顺序与真实门禁执行，不重复请求该授权。
 - 实施后若准备结构/范围/权限显著超过本计划（例如要改全站角色或全库业务 images），先回主会话说明具体差异；不借本计划引入平台工程。
 - 若真实结果/来源语义不等价、readiness 无法诚实判定、唯一 writer 受阻，停止启用/推广并保留证据；继续正确旧 reader 仅作为显式回滚，性能目标记未过。

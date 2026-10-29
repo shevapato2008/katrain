@@ -437,6 +437,137 @@ def _compare_in_one_snapshot(engine, monkeypatch, queries, *, langs=("cn", "en")
                     assert actual == expected, (query, lang, page)
 
 
+def test_empty_selected_event_probe_skips_prepared_members(engine):
+    from katrain.web.kifu.prepared_read import _selected_event_ids
+
+    prepared.metadata.create_all(engine)
+    statements = []
+    event.listen(engine, "before_cursor_execute", lambda _, __, sql, *args: statements.append(sql))
+    with Session(engine) as db:
+        assert _selected_event_ids(db, "absent", [], set()) == set()
+    assert len(statements) == 1
+    assert "EXISTS" in statements[0]
+    assert prepared.members.name not in statements[0]
+
+
+@pytest.mark.parametrize("candidate", ["literal", "raw_alias", "event_id"])
+def test_rejected_physical_selection_still_reaches_prepared_member_candidates(engine, candidate):
+    from katrain.web.kifu.prepared_read import _selected_event_ids
+    from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
+
+    with Session(engine) as db:
+        album = db.get(business.KifuAlbum, 11)
+        album.source, album.source_path = "https://19x19.com", "data/kifu-album/19x19/one.sgf"
+        album.sgf_content = "(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[Other]GC[Other | 1手])"
+        db.add(business.KifuEvent(id=22, canonical_name="Other event"))
+        db.commit()
+    apply_reviewed_selection(engine, 11)
+    with engine.begin() as conn:
+        # The physical row remains a candidate after its pinned SGF is rejected.
+        conn.execute(update(business.KifuAlbum).where(business.KifuAlbum.id == 11).values(sgf_content="(;C[changed])"))
+        conn.execute(update(business.KifuAlbumEventSelection).values(event_id=22))
+    _prepare(engine)
+    statements = []
+    event.listen(engine, "before_cursor_execute", lambda _, __, sql, *args: statements.append(sql))
+    raw_names = [{"source_name_id": 8, "semantic": {"raw_value": "Other"}}] if candidate == "raw_alias" else []
+    with Session(engine) as db:
+        assert _selected_event_ids(
+            db, "Other" if candidate == "literal" else "absent", raw_names, {22} if candidate == "event_id" else set()
+        ) == set()
+    assert len(statements) == 2
+    assert "EXISTS" in statements[0]
+    assert prepared.members.name in statements[1]
+
+
+@pytest.mark.parametrize("exact,query", [(True, "ＳＴＲＡＳＳＥ %_"), (False, "%_")])
+def test_alias_candidates_use_canonical_kind_prefix_and_keep_normalized_literal_ids(engine, exact, query):
+    from katrain.web.kifu.prepared_read import _alias_ids
+
+    with Session(engine) as db:
+        db.add_all(
+            [business.KifuPlayer(id=18, canonical_name="Other"), business.KifuEvent(id=22, canonical_name="Other event")]
+        )
+        db.flush()
+        db.add_all(
+            [
+                business.KifuPlayerAlias(player_id=17, alias="Straße %_", normalized_alias="strasse %_"),
+                business.KifuEventAlias(event_id=22, alias="Straße %_", normalized_alias="strasse %_"),
+                business.KifuPlayerAlias(player_id=18, alias="Unrelated", normalized_alias="unrelated"),
+            ]
+        )
+        db.commit()
+    _prepare(engine)
+    statements = []
+    event.listen(engine, "before_cursor_execute", lambda _, __, sql, params, *args: statements.append((sql, params)))
+    with Session(engine) as db:
+        assert _alias_ids(db, query, exact=exact) == ({17}, {22})
+    assert len(statements) == 1
+    sql, params = statements[0]
+    assert "kifu_search_prepared_names.name_kind IN" in sql
+    assert "player" in params and "event" in params
+
+
+@pytest.mark.parametrize(
+    "query,lang,generic_reads",
+    [
+        ("吴清源", "cn", 0),
+        ("吴清源", "en", 0),
+        ("秀策", "en", 1),
+        ("秀策", "cn", 1),
+        ("Exact Cup", "en", 0),
+        ("Exact Cup", "cn", 1),
+    ],
+)
+def test_generic_candidates_load_only_when_consumed_and_once(catalog, monkeypatch, query, lang, generic_reads):
+    from katrain.web.kifu import first_pass_cn
+    from katrain.web.kifu.prepared_read import search_filter
+    from tests.web_ui.test_kifu_library_search import _name
+
+    engine, _ranked_id = catalog
+    monkeypatch.setattr(first_pass_cn, "_hints", lambda: ({"Mystery": "Exact Cup"}, {}, {}))
+    with Session(engine) as db:
+        tournament = business.KifuEvent(id=22, canonical_name="Raw formal")
+        db.add(tournament)
+        db.flush()
+        _name(db, "event", tournament, business.KifuEventName, display="Exact Cup")
+        for album_id, values in ((21, {"player_black": "HONINBO SHUSAKU"}), (22, {"event_id": 22})):
+            db.add(
+                business.KifuAlbum(
+                    **(
+                        {
+                            "id": album_id,
+                            "player_black": "X",
+                            "player_white": "Y",
+                            "sgf_content": "(;B[aa])",
+                            "source_path": f"generic-{album_id}.sgf",
+                        }
+                        | values
+                    )
+                )
+            )
+        db.commit()
+    _prepare(engine)
+    statements = []
+    event.listen(engine, "before_cursor_execute", lambda _, __, sql, params, *args: statements.append((sql, params)))
+    with Session(engine) as db:
+        predicate, _priority = search_filter(db, query=query, lang=lang, strict=False)
+        actual = set(db.scalars(select(business.KifuAlbum.id).where(predicate)))
+        if query == "吴清源":
+            expected = set(
+                db.scalars(
+                    select(business.KifuAlbum.id).where(
+                        (business.KifuAlbum.black_player_id == 17) | (business.KifuAlbum.white_player_id == 17)
+                    )
+                )
+            )
+        elif query == "秀策":
+            expected = {21}
+        else:
+            expected = {13, 22} if lang == "cn" else {22}
+    assert actual == expected
+    assert sum("generic" in params for _sql, params in statements) == generic_reads
+
+
 @pytest.mark.parametrize("strict", [False, True])
 def test_cross_domain_alias_unicode_exact_and_generic_search_keep_original_semantics(engine, monkeypatch, strict):
     from tests.web_ui.test_kifu_library_search import _name

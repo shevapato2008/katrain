@@ -51,6 +51,27 @@ def test_five_point_calibrator_only_flashes_five_positions():
     assert [coord for coord, _rgb in led.attempts] == list(FIVE_POINT_ANCHORS)
 
 
+@pytest.mark.parametrize("missing_led", [False, True])
+def test_five_point_without_grid_roi_uses_led_measurements_and_bounded_retries(missing_led):
+    led = FakeLed()
+    capture = FakeCapture(
+        led, _synthetic_camera_points(), green_missing_for=FIVE_POINT_ANCHORS[0] if missing_led else None,
+    )
+    calibrator = FivePointLedGeometryCalibrator(led=led, capture=capture)
+    calls = []
+
+    def before_capture(*args):
+        calls.append(args)
+        assert len(calls) <= 7, "missing printed grid must not create an infinite retry"
+
+    calibrator.before_capture = before_capture
+    result = calibrator.calibrate()
+    assert result.ok is not missing_led
+    assert result.reason == ("anchor_not_found:0,0" if missing_led else None)
+    assert len(led.attempts) == (2 if missing_led else 5)
+    assert led.current is None
+
+
 def test_five_point_baseline_waits_for_shared_hub_preview_without_reflashing():
     from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
 

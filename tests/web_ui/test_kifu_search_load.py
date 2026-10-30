@@ -251,7 +251,7 @@ def synthetic_high():
             "response_bytes": 12,
             "status": 200,
             "client_wall_ms": 250,
-            "http_ms": 240,
+            "http_ms": 180,
             "generator_queue_ms": 1,
             "dispatch_queue_ms": 10,
         }
@@ -271,7 +271,7 @@ def synthetic_high():
     return run, samples, metrics
 
 
-def test_gate_requires_server_ingress_and_asgi_last_body_not_client_or_handler_time(load):
+def test_gate_requires_server_ingress_and_complete_http_time(load):
     run, samples, metrics = synthetic_high()
     summary = load.summarize(run, samples)
     assert summary["sent_qps_within_window"] == 100
@@ -359,3 +359,26 @@ def test_cli_requires_observed_server_gate_and_never_overwrites_output(load, tmp
     previous = complete.read_bytes()
     assert load.main(["--summarize", str(client), "--output", str(complete)]) == 2
     assert complete.read_bytes() == previous
+
+
+def test_high_gate_fails_one_slow_http_even_when_p95_passes(load):
+    run, samples, metrics = synthetic_high()
+    samples[-1]["http_ms"] = 200.001
+    result = load.summarize(run, samples, metrics)
+    assert result["latency_ms"]["http"]["p95"] < 200
+    assert result["http_over_200ms"] == 1
+    assert result["gates"]["http_max"] == "fail"
+    assert result["gates"]["overall"] == "fail"
+
+
+def test_low_20ms_is_diagnostic_and_cannot_fail_acceptance(load):
+    run, samples, metrics = synthetic_high()
+    run.update(profile="low", scheduled_count=120, window_s=120)
+    samples, metrics = samples[:120], metrics[:120]
+    for row in samples:
+        row["http_ms"] = 35
+    for row in metrics:
+        row["asgi_total_ms"] = 30
+    result = load.summarize(run, samples, metrics)
+    assert result["gates"]["asgi_p95"] == "fail"
+    assert result["gates"]["overall"] == "not_observed"

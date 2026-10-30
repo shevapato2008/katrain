@@ -153,7 +153,7 @@ def iter_name_proof_groups(db, model, name_ids):
     yield from groups.values()
 
 
-def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic_batch_contexts=None):
+def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic_batch_contexts=None, checkpoint=None):
     """Validate persisted finite generation proofs with one batch read per name query."""
     from katrain.web.kifu.name_transliteration import persisted_batch_bindings, persisted_name_eligible
 
@@ -186,7 +186,11 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     use_contexts = orthographic_batch_contexts is not None and refresh_live
     if refresh_live:
         query = query.populate_existing()
+    if checkpoint is not None:
+        checkpoint()
     rows = query.with_entities(model, KifuNameResearchEvidence, *entities).all()
+    if checkpoint is not None:
+        checkpoint()
     # The creation ledger retains the original method even if every mutable
     # discriminator was removed. Bound this lookup to evidence already returned.
     evidence_ids = {evidence.id for _, evidence, *_ in rows}
@@ -316,6 +320,8 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
             orthographic_batch_contexts[cache_key] = (*deepcopy(snapshot), context)
         return context
 
+    if checkpoint is not None:
+        checkpoint()
     contexts = {key: batch_context(key, "transliteration", persisted_batch_bindings)
                 for key in transliteration_batch_ids if key in batches}
     orthographic_contexts = {key: batch_context(key, "orthographic", name_orthographic.persisted_batch_bindings)
@@ -410,7 +416,9 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
                 source_evidence_query = source_evidence_query.populate_existing()
             source_evidence = {item.id: image(item) for item in source_evidence_query}
     result = []
-    for row in rows:
+    for position, row in enumerate(rows):
+        if checkpoint is not None and position % 100 == 0:
+            checkpoint()
         name, evidence, *extra = row
         creation_changes = evidence_creation_changes.get(evidence.id, [])
         if evidence.id in first_pass_evidence_ids:
@@ -473,7 +481,8 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     return result
 
 
-def _approved_raw_player_names(db, *, values=None, lang=None, display=None, name_ids=None, orthographic_batch_contexts=None):
+def _approved_raw_player_names(db, *, values=None, lang=None, display=None, name_ids=None,
+                               orthographic_batch_contexts=None, checkpoint=None):
     """Return approved raw names with a verified finite scope when one was signed."""
     from katrain.web.kifu.name_candidates import canonical_sha256
 
@@ -493,7 +502,8 @@ def _approved_raw_player_names(db, *, values=None, lang=None, display=None, name
         query = query.filter(or_(KifuRawPlayerName.display_name == display,
                                  func.lower(KifuRawPlayerName.display_name) == display.lower()))
     rows = _qualified_name_rows(db, query, KifuRawPlayerName, "raw_player_id", KifuRawPlayerValue.raw_value,
-                                orthographic_batch_contexts=orthographic_batch_contexts)
+                                orthographic_batch_contexts=orthographic_batch_contexts,
+                                **({"checkpoint": checkpoint} if checkpoint is not None else {}))
     batch_ids = set()
     for _, evidence, _ in rows:
         payload = evidence.research_payload
@@ -506,7 +516,9 @@ def _approved_raw_player_names(db, *, values=None, lang=None, display=None, name
     # complete-bundle integrity result within this invocation, never eligibility.
     checked_bundles = {}
     result = []
-    for name, evidence, raw in rows:
+    for position, (name, evidence, raw) in enumerate(rows):
+        if checkpoint is not None and position % 100 == 0:
+            checkpoint()
         payload = evidence.research_payload
         candidate = payload.get("candidate") if isinstance(payload, dict) else None
         proof = payload.get("raw_display_scope") if isinstance(payload, dict) else None
@@ -596,7 +608,8 @@ def strict_raw_player_search_clause(db, raw_values: set[str], display: str, *, n
 
 
 def _approved_raw_event_names(
-    db: Session, *, values=None, lang=None, display=None, name_ids=None, orthographic_batch_contexts=None
+    db: Session, *, values=None, lang=None, display=None, name_ids=None, orthographic_batch_contexts=None,
+    qualified_event_names=None, checkpoint=None,
 ):
     """Read complete names and their live base dependencies in at most two queries.
 
@@ -632,6 +645,7 @@ def _approved_raw_event_names(
         for name, evidence, raw, raw_owner in _qualified_name_rows(
             db, query, KifuRawEventName, "raw_event_id", KifuRawEventValue.raw_value, KifuRawEventValue,
             orthographic_batch_contexts=orthographic_batch_contexts,
+            **({"checkpoint": checkpoint} if checkpoint is not None else {}),
         )
     ]
     composed = [row for row in rows if row[0].decision_kind == "composed"]
@@ -644,7 +658,11 @@ def _approved_raw_event_names(
             dependencies = composition.get("dependencies") if isinstance(composition, dict) else None
             if isinstance(dependencies, dict) and type(dependencies.get("base_name_id")) is int:
                 base_ids.add(dependencies["base_name_id"])
-        bases = {
+        # Offline projections already qualified each canonical event in this
+        # same snapshot. Reuse those decisions instead of rechecking the base
+        # evidence once for every composed raw-name language.
+        bases = ({name_id: qualified_event_names[name_id] for name_id in base_ids
+                  if name_id in qualified_event_names} if qualified_event_names is not None else {
             name.id: (name, evidence)
             for name, evidence in _qualified_name_rows(
                 db,
@@ -653,11 +671,13 @@ def _approved_raw_event_names(
                 "event_id",
                 orthographic_batch_contexts=orthographic_batch_contexts,
             )
-        }
+        })
     result = []
     first_pass_scopes = raw_scope_rows_many(db.connection(), {
         raw for name, raw, _evidence, _owner in rows if name.generation_rule_version == FIRST_PASS_VERSION})
-    for name, raw, evidence, raw_owner in rows:
+    for position, (name, raw, evidence, raw_owner) in enumerate(rows):
+        if checkpoint is not None and position % 100 == 0:
+            checkpoint()
         if name.generation_rule_version == FIRST_PASS_VERSION:
             payload = evidence.research_payload
             research = payload.get("research") if isinstance(payload, dict) else None

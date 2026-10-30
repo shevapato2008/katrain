@@ -37,6 +37,7 @@ from katrain.kifu_ingest.ranks import FORMAT_V2, freeze_game_ranks, merge_rank_f
 from katrain.kifu_ingest.state import StateStore
 from katrain.kifu_ingest.sync import IdentityCheckUnavailable, validate_test_verification
 from katrain.web.kifu.name_candidates import canonical_sha256
+from katrain.web.kifu.search_sync import SearchIndexPending
 from katrain.web.kifu.player_ranks import lookup_library_rank_facts, lookup_professional_identity_evidence
 
 
@@ -560,6 +561,9 @@ def main(argv=None):
         else:
             _output({"status": "ok", **StateStore(_engine()).snapshot_status()})
         return 0
+    except SearchIndexPending as exc:
+        _output({"status": "search_index_pending", "operation_ref": exc.operation_ref, "error": "search projection requires repair"})
+        return 3
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
         _output({"status": "error", "error": str(exc)})
         return 2

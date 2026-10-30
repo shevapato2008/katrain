@@ -741,7 +741,8 @@ def run(engine, plan, preimage, *, command, expected_plan_sha256, review=None, a
     if command == "apply":
         _fail(isinstance(actor_id, str) and actor_id.strip(), "apply actor attribution required")
     try:
-        with _locked_write(engine) as conn:
+        with _locked_write(engine, _search_maintenance=command == "dry-run",
+                           search_operation=("duplicate_apply", {"bundle_sha256": expected_plan_sha256})) as conn:
             _lock_audit(conn)
             previous = (
                 conn.execute(select(KifuNameBatch.__table__).where(KifuNameBatch.bundle_sha256 == expected_plan_sha256))
@@ -856,7 +857,7 @@ def verify(engine, batch_id):
 def undo(engine, batch_id):
     """Restore the deleted owner first; reject any later change before writing."""
     try:
-        with _locked_write(engine) as conn:
+        with _locked_write(engine, search_operation=("duplicate_undo", {"batch_id": batch_id})) as conn:
             _lock_audit(conn)
             batch = (
                 conn.execute(select(KifuNameBatch.__table__).where(KifuNameBatch.id == batch_id))

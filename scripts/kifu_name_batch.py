@@ -19,7 +19,7 @@ from sqlalchemy import create_engine
 from katrain.web.kifu.name_batch import (
     BatchError, apply_bundle, batch_status, dry_run_bundle, undo_batch,
 )
-from katrain.web.kifu.prepare_search import PreparationError
+from katrain.web.kifu.search_sync import SearchIndexPending
 from katrain.web.kifu.name_candidates import CandidateError, validate_bundle
 from katrain.web.kifu.name_evidence import EvidenceError, load_registry
 
@@ -85,7 +85,9 @@ def main(argv=None) -> int:
             engine = create_engine(args.database_url)
             result = (batch_status(engine, args.batch_id) if args.command == "status" else
                       undo_batch(engine, args.batch_id, emergency_invalidate_search=args.emergency_invalidate_search))
-    except (BatchError, CandidateError, EvidenceError, PreparationError, OSError, json.JSONDecodeError) as exc:
+    except SearchIndexPending as exc:
+        result = {"status": "search_index_pending", "operation_ref": exc.operation_ref, "error": str(exc)}
+    except (BatchError, CandidateError, EvidenceError, OSError, json.JSONDecodeError) as exc:
         result = {"ready": False, "error": str(exc)}
     finally:
         if engine is not None:

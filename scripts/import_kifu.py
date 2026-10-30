@@ -11,6 +11,10 @@ Usage:
 """
 
 import argparse
+from contextlib import contextmanager
+from hashlib import sha256
+import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -129,6 +133,21 @@ def parse_sgf_file(sgf_path: Path) -> dict:
     return data
 
 
+@contextmanager
+def _import_chunk(dry_run, search_ref):
+    if dry_run:
+        with Session(engine) as db:
+            yield db
+        return
+    from katrain.web.kifu.name_batch import _locked_write
+
+    operation = ("manual_import", search_ref) if search_ref is not None else None
+    with _locked_write(engine, search_operation=operation) as conn:
+        with Session(bind=conn) as db:
+            yield db
+            db.flush()
+
+
 def import_kifu(
     dry_run: bool = False, dedupe_content: bool = True, dedupe_mainline_years: tuple[int, int] | None = None
 ):
@@ -180,84 +199,110 @@ def import_kifu(
                     existing_mainlines.setdefault(signature, sgf_sha256(sgf_content))
             print(f"Existing main lines in {first_year}-{last_year}: {len(existing_mainlines)}")
 
-        for i, sgf_path in enumerate(sgf_files, 1):
-            rel_path = str(sgf_path.relative_to(DATA_DIR.parent.parent))
-            if rel_path in existing_paths:
-                stats["skipped"] += 1
-                if not dry_run and ensure_album_source(db, existing_paths[rel_path], rel_path, "source_path"):
-                    stats["source_links_added"] += 1
-            else:
-                try:
-                    data = parse_sgf_file(sgf_path)
-                    content_hash = sgf_sha256(data["sgf_content"]) if dedupe_content else None
-                    owner = None
-                    if dedupe_content:
-                        for candidate in existing_content_hashes.get(content_hash, []):
-                            content = (
-                                db.get(KifuAlbum, candidate).sgf_content if isinstance(candidate, int) else candidate
-                            )
-                            if content == data["sgf_content"]:
-                                owner = candidate
-                                break
-                    if owner is not None:
-                        stats["duplicate_content"] += 1
-                        if not dry_run and isinstance(owner, int):
-                            existing = db.get(KifuAlbum, owner)
-                            if existing.duplicate_of_id is not None:
-                                master = db.get(KifuAlbum, existing.duplicate_of_id)
-                                if master is None or master.sgf_content != data["sgf_content"]:
-                                    raise ValueError("existing duplicate pointer has different SGF content")
-                                owner = master.id
-                            if ensure_album_source(db, owner, rel_path, "exact_sgf"):
-                                stats["source_links_added"] += 1
-                    else:
-                        signature = mainline_signature(data["sgf_content"]) if dedupe_mainline_years else None
-                        if (
-                            signature
-                            and signature in existing_mainlines
-                            and existing_mainlines[signature] != sgf_sha256(data["sgf_content"])
-                        ):
-                            stats["mainline_candidates"] += 1
-                            if len(candidate_files) < 100:
-                                candidate_files.append(rel_path)
-                        if not dry_run:
-                            data["black_player_id"] = _audited_identity_id(
-                                approved_aliases, "player", data["player_black"]
-                            )
-                            data["white_player_id"] = _audited_identity_id(
-                                approved_aliases, "player", data["player_white"]
-                            )
-                            data["event_id"] = _audited_identity_id(approved_aliases, "event", data["event"])
-                            album = KifuAlbum(**data)
-                            db.add(album)
-                            db.flush()
-                            if ensure_album_source(db, album.id, rel_path, "source_path"):
-                                stats["source_links_added"] += 1
-                            existing_paths[rel_path] = album.id
-                        stats["inserted"] += 1
+    from katrain.web.kifu import search_sync
+
+    sync_enabled = not dry_run and search_sync.sync_mode() == "enabled"
+    record_path = Path(
+        os.getenv("KIFU_SEARCH_IMPORT_RECORD", str(Path.home() / ".local/state/katrain/manual-import.json"))
+    )
+    if sync_enabled:
+        search_sync.recover_pending(engine)
+        if record_path.exists():
+            prior = json.loads(record_path.read_text(encoding="utf-8"))
+            if prior.get("status") == "pending":
+                search_sync.repair_manual_import(engine, record_path)
+    for offset in range(0, total, COMMIT_EVERY):
+        chunk = sgf_files[offset : offset + COMMIT_EVERY]
+        search_ref = None
+        if sync_enabled:
+            keys = [
+                {
+                    "source_path": str(path.relative_to(DATA_DIR.parent.parent)),
+                    "old_album_id": existing_paths.get(str(path.relative_to(DATA_DIR.parent.parent))),
+                }
+                for path in chunk
+            ]
+            input_digest = sha256(
+                json.dumps(
+                    [[row["source_path"], sha256(path.read_bytes()).hexdigest()] for row, path in zip(keys, chunk)],
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+            search_ref = search_sync.prepare_manual_import(record_path, input_digest, keys)
+        with _import_chunk(dry_run, search_ref) as db:
+            for i, sgf_path in enumerate(chunk, offset + 1):
+                rel_path = str(sgf_path.relative_to(DATA_DIR.parent.parent))
+                if rel_path in existing_paths:
+                    stats["skipped"] += 1
+                    if not dry_run and ensure_album_source(db, existing_paths[rel_path], rel_path, "source_path"):
+                        stats["source_links_added"] += 1
+                else:
+                    try:
+                        data = parse_sgf_file(sgf_path)
+                        content_hash = sgf_sha256(data["sgf_content"]) if dedupe_content else None
+                        owner = None
                         if dedupe_content:
-                            existing_content_hashes.setdefault(content_hash, []).append(
-                                data["sgf_content"] if dry_run else album.id
-                            )
-                        if signature:
-                            existing_mainlines.setdefault(signature, sgf_sha256(data["sgf_content"]))
-                except Exception as e:
-                    stats["errors"] += 1
-                    error_files.append(f"{sgf_path.name}: {e}")
-
-            if i % COMMIT_EVERY == 0 or i == total:
-                if not dry_run:
-                    from katrain.web.kifu.prepare_search import maintain_after_write
-
-                    db.flush()
-                    maintain_after_write(db.connection())
-                    db.commit()
-                print(
-                    f"  Progress: {i}/{total} ({i * 100 // total}%)"
-                    f" | inserted={stats['inserted']} skipped={stats['skipped']}"
-                    f" duplicates={stats['duplicate_content']} candidates={stats['mainline_candidates']}"
-                    f" errors={stats['errors']}"
-                )
+                            for candidate in existing_content_hashes.get(content_hash, []):
+                                content = (
+                                    db.get(KifuAlbum, candidate).sgf_content
+                                    if isinstance(candidate, int)
+                                    else candidate
+                                )
+                                if content == data["sgf_content"]:
+                                    owner = candidate
+                                    break
+                        if owner is not None:
+                            stats["duplicate_content"] += 1
+                            if not dry_run and isinstance(owner, int):
+                                existing = db.get(KifuAlbum, owner)
+                                if existing.duplicate_of_id is not None:
+                                    master = db.get(KifuAlbum, existing.duplicate_of_id)
+                                    if master is None or master.sgf_content != data["sgf_content"]:
+                                        raise ValueError("existing duplicate pointer has different SGF content")
+                                    owner = master.id
+                                if ensure_album_source(db, owner, rel_path, "exact_sgf"):
+                                    stats["source_links_added"] += 1
+                        else:
+                            signature = mainline_signature(data["sgf_content"]) if dedupe_mainline_years else None
+                            if (
+                                signature
+                                and signature in existing_mainlines
+                                and existing_mainlines[signature] != sgf_sha256(data["sgf_content"])
+                            ):
+                                stats["mainline_candidates"] += 1
+                                if len(candidate_files) < 100:
+                                    candidate_files.append(rel_path)
+                            if not dry_run:
+                                data["black_player_id"] = _audited_identity_id(
+                                    approved_aliases, "player", data["player_black"]
+                                )
+                                data["white_player_id"] = _audited_identity_id(
+                                    approved_aliases, "player", data["player_white"]
+                                )
+                                data["event_id"] = _audited_identity_id(approved_aliases, "event", data["event"])
+                                album = KifuAlbum(**data)
+                                db.add(album)
+                                db.flush()
+                                if ensure_album_source(db, album.id, rel_path, "source_path"):
+                                    stats["source_links_added"] += 1
+                                existing_paths[rel_path] = album.id
+                            stats["inserted"] += 1
+                            if dedupe_content:
+                                existing_content_hashes.setdefault(content_hash, []).append(
+                                    data["sgf_content"] if dry_run else album.id
+                                )
+                            if signature:
+                                existing_mainlines.setdefault(signature, sgf_sha256(data["sgf_content"]))
+                    except Exception as e:
+                        stats["errors"] += 1
+                        error_files.append(f"{sgf_path.name}: {e}")
+        print(
+            f"  Progress: {i}/{total} ({i * 100 // total}%)"
+            f" | inserted={stats['inserted']} skipped={stats['skipped']}"
+            f" duplicates={stats['duplicate_content']} candidates={stats['mainline_candidates']}"
+            f" errors={stats['errors']}"
+        )
 
     mode = "(DRY RUN) " if dry_run else ""
     print(f"\nImport {mode}complete:")

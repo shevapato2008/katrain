@@ -1251,7 +1251,8 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
         KifuAlbumSource.__tablename__: KifuAlbumSource.__table__,
     }
     try:
-        with name_batch._locked_write(engine, lock_timeout_ms=lock_timeout_ms) as conn:
+        with name_batch._locked_write(engine, lock_timeout_ms=lock_timeout_ms,
+                                      search_operation=("catalog_undo", {"batch_id": batch_id})) as conn:
             batch = name_batch._image(conn, KifuNameBatch.__table__, batch_id)
             _require(batch is not None, "publication batch not found")
             artifact = batch["reviewed_artifact"]
@@ -1706,7 +1707,9 @@ def _rank_correction_sources(conn, manifest, *, check_cas):
 
 
 def _publish_rank_correction(engine, manifest, manifest_hash, lock_timeout_ms):
-    with name_batch._locked_write(engine, lock_timeout_ms=lock_timeout_ms) as conn:
+    with name_batch._locked_write(engine, lock_timeout_ms=lock_timeout_ms,
+                                  search_operation=("catalog_publish", {"manifest_sha256": manifest_hash,
+                                                                       "publication_key": manifest["publication_key"]})) as conn:
         previous = (
             conn.execute(select(KifuNameBatch.__table__).where(KifuNameBatch.bundle_sha256 == manifest_hash))
             .mappings()
@@ -1839,7 +1842,9 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
     if not sgf_cache and previous_id is None:
         warm_sgf_cache(engine, sgf_cache)
     try:
-        with name_batch._locked_write(engine, lock_timeout_ms=lock_timeout_ms) as conn:
+        with name_batch._locked_write(engine, lock_timeout_ms=lock_timeout_ms,
+                                  search_operation=("catalog_publish", {"manifest_sha256": manifest_hash,
+                                                                       "publication_key": manifest["publication_key"]})) as conn:
             if conn.dialect.name == "postgresql":
                 conn.execute(
                     text("SELECT set_config('statement_timeout', :timeout, true)"),

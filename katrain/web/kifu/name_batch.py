@@ -185,29 +185,37 @@ def approved_name_snapshot(engine) -> list[dict]:
 
 
 @contextmanager
-def _locked_write(engine, *, lock_timeout_ms=None, _emergency_undo=False):
+def _locked_write(engine, *, lock_timeout_ms=None, _emergency_undo=False,
+                  search_operation=None, _search_maintenance=False, _table_lock=None):
+    """Keep the original writer locks on this connection through ES refresh.
+
+    Session locks survive the real business commit; an uncertain unlock must
+    discard the connection instead of returning a possibly locked session.
+    """
+    from katrain.web.kifu import search_sync
+
     conn = engine.connect()
+    acquired = []
+    token = None
+    commit_started = False
+    committed = False
     try:
         if engine.dialect.name == "postgresql":
             conn = conn.execution_options(isolation_level="READ COMMITTED")
-            conn.begin()
             if lock_timeout_ms is not None:
                 _fail(type(lock_timeout_ms) is int and 0 < lock_timeout_ms <= 60000, "invalid lock timeout")
-                conn.execute(text("SELECT set_config('lock_timeout', :timeout, true)"),
+                conn.execute(text("SELECT set_config('lock_timeout', :timeout, false)"),
                              {"timeout": f"{lock_timeout_ms}ms"})
-            conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (_ADVISORY_LOCK_KEY,))
-            conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (720220261003,))
-            conn.exec_driver_sql(
-                "LOCK TABLE kifu_albums, kifu_album_sources, kifu_sources, "
-                "kifu_players, kifu_events, kifu_player_aliases, kifu_event_aliases, "
-                "kifu_raw_player_values, kifu_raw_event_values, "
-                "kifu_player_names, kifu_event_names, kifu_raw_player_names, kifu_raw_event_names, "
-                "kifu_name_research_evidence, kifu_name_source_registry, kifu_name_batches, kifu_name_changes, "
-                "kifu_album_event_selections, kifu_event_selection_batches IN SHARE ROW EXCLUSIVE MODE"
-            )
+            for key in (_ADVISORY_LOCK_KEY, 720220261003):
+                try:
+                    conn.exec_driver_sql("SELECT pg_advisory_lock(%s)", (key,))
+                except BaseException:
+                    # A lost response can mean that the server acquired the key.
+                    conn.invalidate()
+                    raise
+                acquired.append(key)
+            conn.commit()
         elif engine.dialect.name == "sqlite":
-            # CLI engines do not share the application's connect hook. Undo relies
-            # on FK rejection when a later edit still references batch evidence.
             conn.exec_driver_sql("PRAGMA foreign_keys=ON")
             if lock_timeout_ms is not None:
                 _fail(type(lock_timeout_ms) is int and 0 < lock_timeout_ms <= 60000, "invalid lock timeout")
@@ -217,17 +225,64 @@ def _locked_write(engine, *, lock_timeout_ms=None, _emergency_undo=False):
             conn.exec_driver_sql("BEGIN IMMEDIATE")
         else:
             raise BatchError("Only PostgreSQL and SQLite are supported")
+        if not _search_maintenance:
+            if search_operation is None:
+                _fail(search_sync.sync_mode() != "enabled", "search operation reference is required")
+                search_sync.begin_sync(conn, "bootstrap", {})
+            else:
+                token = search_sync.begin_sync(conn, *search_operation)
+        if engine.dialect.name == "postgresql":
+            # Finish only the lock/read transaction, before business table locks.
+            conn.commit()
+            conn.begin()
+            if lock_timeout_ms is not None:
+                conn.execute(text("SELECT set_config('lock_timeout', :timeout, true)"),
+                             {"timeout": f"{lock_timeout_ms}ms"})
+            conn.exec_driver_sql(_table_lock or (
+                "LOCK TABLE kifu_albums, kifu_album_sources, kifu_sources, "
+                "kifu_players, kifu_events, kifu_player_aliases, kifu_event_aliases, "
+                "kifu_raw_player_values, kifu_raw_event_values, "
+                "kifu_player_names, kifu_event_names, kifu_raw_player_names, kifu_raw_event_names, "
+                "kifu_name_research_evidence, kifu_name_source_registry, kifu_name_batches, kifu_name_changes, "
+                "kifu_album_event_selections, kifu_event_selection_batches IN SHARE ROW EXCLUSIVE MODE"
+            ))
         yield conn
-        from katrain.web.kifu.prepare_search import maintain_after_write
-
-        if not _emergency_undo:
-            maintain_after_write(conn)
+        commit_started = True
         conn.commit()
-    except Exception:
-        conn.rollback()
+        committed = True
+        search_sync.finish_sync(conn, token)
+        token = None
+    except BaseException as exc:
+        if not commit_started:
+            conn.rollback()
+            search_sync.cancel_sync(token)
+            token = None
+        elif not committed and token is not None:
+            # A failed COMMIT response is not proof of rollback. Original native
+            # receipt/journal resolves this pending operation on the next entry.
+            token.client.close()
+            token = None
+            raise search_sync.SearchIndexPending(search_operation[1], "database commit outcome is unknown") from exc
         raise
     finally:
-        conn.close()
+        try:
+            if acquired and not conn.invalidated:
+                # Projection SELECTs may have opened another read transaction.
+                conn.rollback()
+                for key in reversed(acquired):
+                    released = conn.exec_driver_sql("SELECT pg_advisory_unlock(%s)", (key,)).scalar_one()
+                    if released is not True:
+                        conn.invalidate()
+                        break
+                if not conn.invalidated:
+                    if lock_timeout_ms is not None:
+                        conn.exec_driver_sql("RESET lock_timeout")
+                    conn.commit()
+        except BaseException:
+            conn.invalidate()
+            raise
+        finally:
+            conn.close()
 
 
 def _primary_key(table):
@@ -1543,7 +1598,7 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                          for row in bundle["candidates"])
     normative_research = [record for record in evidence_records
                           if record.get("source_basis") in {"normative_ja_ko_v1", "normative_zh_ko_v1"}]
-    with _locked_write(engine) as conn:
+    with _locked_write(engine, search_operation=("name_apply", {"bundle_sha256": bundle_hash})) as conn:
         previous = conn.execute(select(KifuNameBatch).where(KifuNameBatch.bundle_sha256 == bundle_hash)).mappings().one_or_none()
         if previous is not None:
             _fail(previous["status"] == "applied", "bundle was previously undone; issue a new reviewed revision")
@@ -1755,7 +1810,7 @@ def _retained_composition_dependency(conn, table, row_id: int, before_image: dic
 def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = False) -> dict:
     """Undo each unchanged after-image in reverse order, retaining later edits."""
     _fail(type(emergency_invalidate_search) is bool, "emergency invalidation must be a boolean")
-    context = _locked_write(engine, _emergency_undo=True) if emergency_invalidate_search else _locked_write(engine)
+    context = _locked_write(engine, search_operation=("name_undo", {"batch_id": batch_id}))
     with context as conn:
         batch = conn.execute(select(KifuNameBatch).where(KifuNameBatch.id == batch_id)).mappings().one_or_none()
         _fail(batch is not None, f"batch {batch_id} not found")
@@ -1767,6 +1822,9 @@ def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = Fal
             KifuNameChange.target_table == KifuAlbumEventSelection.__tablename__).limit(1)).first()
         _fail(has_selection_change is None or bundle.get("bundle_format") == 4,
               "selected event artifact changed")
+        if batch["status"] == "undone":
+            return {"batch_id": batch_id, "status": "already_undone", "reverted": 0,
+                    "already_reverted": 0, "skipped": 0}
         if isinstance(bundle, dict) and bundle.get("bundle_format") == 4:
             _fail(batch["status"] == "applied", "v4 batch is not applied")
             _fail(canonical_sha256(bundle) == batch["bundle_sha256"], "v4 batch artifact changed")
@@ -1794,10 +1852,6 @@ def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = Fal
                          .values(status="undone"))
             result = {"batch_id": batch_id, "status": "undone", "reverted": len(changes),
                       "already_reverted": 0, "skipped": 0}
-            if emergency_invalidate_search:
-                from katrain.web.kifu.prepare_search import emergency_undo_status
-
-                result.update(emergency_undo_status(conn))
             return result
         _fail(batch["status"] in {"applied", "partial_undo"}, "batch is not applied")
         changes = conn.execute(select(KifuNameChange).where(KifuNameChange.batch_id == batch_id)
@@ -1833,8 +1887,4 @@ def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = Fal
         conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id).values(status=status))
         result = {"batch_id": batch_id, "status": status, "reverted": reverted,
                   "already_reverted": already_reverted, "skipped": skipped}
-        if emergency_invalidate_search:
-            from katrain.web.kifu.prepare_search import emergency_undo_status
-
-            result.update(emergency_undo_status(conn))
         return result

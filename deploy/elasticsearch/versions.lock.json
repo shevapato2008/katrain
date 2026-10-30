@@ -1,0 +1,11 @@
+{
+  "elasticsearch_version": "9.5.5",
+  "platform": "linux/amd64",
+  "base_image": "docker.elastic.co/elasticsearch/elasticsearch:9.5.5-amd64@sha256:c40a1fb2bc6976821e5625d2329992a1e9c29df576e5955fdcba02421abf0d3c",
+  "base_config_digest": "sha256:952a43cd5ab721f7032b2dfd4dcc86a76ba9a791b4c34a223292cf26a832e040",
+  "plugins": [
+    {"name": "analysis-ik", "filename": "elasticsearch-analysis-ik-9.5.5.zip", "url": "https://release.infinilabs.com/analysis-ik/stable/elasticsearch-analysis-ik-9.5.5.zip", "sha512": "445d685912e74756f595ae42c28bcd007dd77313e73a5677f37f521352c5658e3ea315113bc12c7db62834eaa3e46888da8959e9d2325c423e6abdf24e48f93a"},
+    {"name": "analysis-kuromoji", "filename": "analysis-kuromoji-9.5.5.zip", "url": "https://artifacts.elastic.co/downloads/elasticsearch-plugins/analysis-kuromoji/analysis-kuromoji-9.5.5.zip", "sha512": "9e0c523bd3a9d8516245d445145cd9cbfb19b5b1e5833038fd45884a76627c2f0036122918340027560303414aef23987c2b9861673e5db8d2e6bcf5b4233eba"},
+    {"name": "analysis-nori", "filename": "analysis-nori-9.5.5.zip", "url": "https://artifacts.elastic.co/downloads/elasticsearch-plugins/analysis-nori/analysis-nori-9.5.5.zip", "sha512": "dcdae2b17887c9ceeb408172be50d4c8ca26b01390ea2204c171c230c1de02a291ab9dc3530cb0797c65ebb7189edcf0e9a33968b017d1f7052686b905c53b6f"}
+  ]
+}

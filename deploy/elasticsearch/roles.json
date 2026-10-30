@@ -1,0 +1,5 @@
+{
+  "kifu_search_read": {"cluster": [], "indices": [{"names": ["kifu-search", "kifu-search-*"], "privileges": ["read", "view_index_metadata"]}]},
+  "kifu_search_writer": {"cluster": [], "indices": [{"names": ["kifu-search", "kifu-search-*"], "privileges": ["read", "index", "delete", "maintenance", "view_index_metadata"]}]},
+  "kifu_search_admin": {"cluster": ["monitor"], "indices": [{"names": ["kifu-search", "kifu-search-*"], "privileges": ["all"]}]}
+}

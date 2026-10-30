@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **执行状态（2026-10-30）：用户已明确恢复实施，并要求完成开发、部署与测试后在当前会话汇报。** 五语资料调研已完成，执行决策现合入第0.1节；资料核对不等于实际安装/切词/性能已通过，必须先在TEST做小样本，再建最终全量索引。原两轮Astra评审是基础方案记录，新增分析配置纳入实施后的独立Astra代码与发布审核，不冒称已获原评审背书。
+
 **Goal:** 用 Elasticsearch 文档索引提供职业棋谱库搜索，保持现有列表、总数、分页、段位与首盘棋谱预览，并删除被替代的 PostgreSQL 预计算方案及其磁盘产物。
 
-**Architecture:** PostgreSQL 保持业务主库，ES 每盘棋一个文档；同一物理索引另放有限词条分类/公开身份元数据及一个同步状态文档，不建立另一套关系表。名称、赛事显示内容在索引时整理，在线一次批量读取词条分类和状态，再执行相应检索及当前页必要的 PG 批量读取。复用小时导入的批次、幂等 receipt 和重试，不引入 Kafka、CDC 平台、新 outbox 表或通用依赖失效框架。ES 先在 TEST 验证，再发布到新的 PROD；旧方案停止扩充，切换验收后立即卸载。
+**Architecture:** PostgreSQL 保持业务主库，ES 每盘棋一个文档；同一物理索引另放有限词条分类/公开身份元数据及一个同步状态文档，不建立另一套关系表。姓名保留keyword精确路径，原子串保留，赛事新增五语text多词检索；同一原赛事值通过multi-fields建索引，不复制五份metadata。在线批量读取分类和状态，再检索及当前页必要的PG批读。复用小时批次、幂等receipt和重试，不引入Kafka、CDC、新outbox或通用依赖失效框架。先TEST后新PROD，旧方案停止扩充并在切换验收后卸载。
 
 **Tech Stack:** 现有 FastAPI / SQLAlchemy / PostgreSQL / httpx；固定版本和 digest 的 Elasticsearch Docker 镜像；pytest、现有固定到达率压测工具、现有 React 页面与浏览器测量。
 
@@ -12,7 +14,7 @@
 
 ## 0. 范围、真实现状与决策
 
-- 本文件是待用户批准的实施计划。本次仅编写计划、最多两轮独立 Astra Max 对抗性评审及修改；不部署 ES、不下载镜像、不建立新索引。
+- 本计划及开发/审核/四步发布已获用户明确执行授权。此前暂停已被后续“开始实施”“开发、部署、测试都完成以后通知我”撤销；执行包含本节并入的五语决策。此前资料调研没有下载镜像或建索引，不把执行授权当作已部署。
 - 数据是成熟职业棋谱库，以每小时新增为主。不建设假设中的改名、删除业务流程。若确有更名，只在查询前用小型显式映射将输入展开为多个精确词，一次 OR 查询。
 - 全量建立一次 ES 索引，后续按已有发布批次中的 album IDs 增量更新；不每小时扫描全库。
 - 基线代码为已发布 `origin/develop=07d1ddce9e8808fa6c7b840e1a0cd928048ac4bd`。当前对话工作区可能尚未合入它，执行前必须先同步，不可按旧工作区删除不存在的文件。
@@ -22,13 +24,36 @@
 - 实测公网“王星昊”801ms、“吴清源”11581ms，后者约10923ms在旧显示核验。TEST 100QPS 的 HTTP max199.347ms 不代表正式环境已达标。
 - 用户硬目标：实际 PROD 100QPS 的代表性姓名搜索，完整 HTTP 每请求≤200ms，错误及语义差异为0；1QPS 20ms只是诊断，不是硬门槛。公网及浏览器体验另外实测，不拿 ES `took` 替代完整请求。
 
+### 0.1 五语分词最终执行决策（资料完成，实际效果由TEST裁决）
+
+| 字段/语言 | 执行配置 | 保留的边界 |
+|---|---|---|
+| 全部语言的完整姓名/身份 | 继续keyword/ID精确匹配；姓名片段保留literal wildcard | 不拆姓名、不用BM25扩大身份集合；查询语言不由UI语言限制 |
+| 完整赛事名 | 继续keyword精确及既有literal子串 | 不因新增text删除原契约 |
+| 简体cn、繁体tw赛事组合词 | 同一套IK：索引ik_max_word、查询ik_smart；固定静态词典/插件版本 | 两种字形分别验真实样本；不自动改写原文，不宣称默认词典必然正确 |
+| 日语jp赛事组合词 | 官方Kuromoji；先用其明确的标准分析链 | 实测专名、全半角、届数、番勝負及默认过滤是否丢失有效赛事词 |
+| 韩语ko赛事组合词 | 官方Nori，索引mixed/查询discard复合词模式作为固定起点 | 实测复合词及人名混写，姓名仍exact保护 |
+| 英语en赛事组合词 | 内置standard，stopwords=_none_，不做词干化 | 保留赛事专名/缩写；不默认english stemming |
+
+组合语义确定为：**同一条已整理赛事名称内查询词AND，五语赛事字段间OR**；保留精确分类优先、授权scope和原日期/id排序，不额外增加自然句意图理解或相关性排序。跨UI语言输入必须可查；跨不同语言字段拼接一个混写句子的词项不在本次额外承诺。
+
+选择方案B（精确路径不变，新增赛事多词分析）。只把必要插件IK/Kuromoji/Nori构建进一个固定版本镜像；ICU、CJK、SmartCN和english保留作调研/小样本对照，不全部安装成长期生产分析链。ES/所选插件对应9.5.5发行包有官方或维护者资料证据，仍须校验实际下载/descriptor/安装及_analyze结果。
+
+字段复用`display.<cn|tw|jp|ko|en>.event`的原_source值，使用keyword主字段加`.words` text multi-field。对应display层改成显式dynamic:strict，不能仍以enabled:false遮住待索引子字段；不参与检索的姓名/来源显示字段保持不索引。不得另存完整event_search正文或全SGF。
+
+**先后顺序：**先固定镜像/插件并以真实五语短样本运行_analyze与命中/不命中测试，验证AND、原精确/子串不退化及繁体效果；同一候选1000盘统计额外store/CPU，再建最终全量索引。若上述固定起点未通过，先定位实际token/词典或过滤问题，限于修正现有分析链/最小静态词典；需要更换分析器家族或扩大语义时报告取舍，不能默默改变决定、自动扩盘或在17.7万盘上反复全量试错。
+
+正式环境100QPS验收必须在实际新117机器上，完整HTTP每次≤200ms、错误/超时/语义差异0；固定实际样本包含原姓名路径以及代表性新增多语赛事组合词，分类统计和到达率如实记录，不用TEST结果或ES took替代。分词样本预期与旧精确oracle区分保存，只更新新增多词能力的预期，不改旧oracle掩盖回归。稳定ready窗口与发布短时503的既定取舍不变。
+
+补充依据与具体样本：`2026-10-30-kifu-multilingual-analysis.md`及`../research/2026-10-30-kifu-multilingual-analyzers.md`。它们是本节实施细化；如有候选/暂停旧叙述，以本节恢复授权和固定起点为准。
+
 ### 现有步骤如何替换
 
 | 步骤 | 当前工作 | ES 后的处理 |
 |---|---|---|
 | 参数校验 | q、player_id、lang、页码、page_size | 保留轻量校验与原422行为 |
 | 名称处理 | 查审核历史、别名和名称资格 | 在线只做规范化和可选的显式词条展开；现有已确认名称在建索引时读取 |
-| 搜索 | PG 多表匹配或 prepared members | ES keyword 精确匹配；赛事/日期/原有子串模式按冻结契约覆盖 |
+| 搜索 | PG 多表匹配或 prepared members | 姓名keyword；原literal保留；赛事五语words按0.1节分析器与AND规则检索 |
 | 排序、总数、分页 | PG COUNT/排序 | ES `track_total_hits=true`，固定排序和页码 |
 | 显示名称 | 逐请求核验证据、整理五语名称 | 文档 `_source` 中读取已整理的名称 |
 | 段位、报告 | 当前页查询 | 复用当前页批量 PG 查询，保留真实来源和报告判定 |
@@ -112,7 +137,7 @@ def expand_legacy_terms(value: str, *, mode: str) -> list[str]:
 | generic / 混合分支 | 原允许的名称/赛事/日期/原文集合和literal wildcard；只有此类使用对应历史提示 |
 
 子串特殊字符按字面escape；玩家子串优先级用固定constant_score分组，随后原日期/id排序，不用BM25改变列表。term/public-player文档只存分类及owner/scope键，album文档存对应键；不复制逐词的album ID成员表。增量同步同时更新本次改变的这些有限分类文档。
-- [ ] **2.7** mapping为`dynamic=strict,date_detection=false`；doc_kind/player_terms/event_terms为keyword、album_id/player_ids为long、list_visible为boolean；date_sort必须keyword，允许`1926-00-00`。显示payload、分类plan和同步诊断对象设`enabled:false`，仅存_source；子串字段单独声明wildcard。具体索引版本在一次请求的元数据和album读取间固定，不跨alias切换混读。
+- [ ] **2.7** mapping为`dynamic=strict,date_detection=false`；doc_kind/player_terms/event_terms为keyword、album_id/player_ids为long、list_visible为boolean；date_sort为keyword，允许`1926-00-00`。五语display事件字段使用0.1节keyword+words multi-fields，对应层显式解析；其它不检索payload、分类plan和诊断对象仍enabled:false，子串独立wildcard。请求固定具体索引，不能跨alias混读。新增generic赛事组合词使用同字段AND/五语OR，精确分支不混入text命中。
 - [ ] **2.8** 测试Unicode、黑白、历史词条、五语、零月日及稳定排序，另加exact零盘不fallback、非公开player_id、授权/未授权同名、raw/selected scope、literal特殊字符和任意非空页preview。Run: `pytest tests/web_ui/test_kifu_search_documents.py tests/web_ui/test_kifu_es_contract.py -q`；先红后绿再提交。
 
 ### Task 3: 单实例ES与有界首次建索引
@@ -124,7 +149,7 @@ def expand_legacy_terms(value: str, *, mode: str) -> list[str]:
 - Create: `tests/web_ui/test_kifu_search_es.py`。
 - Modify: `docs/operations/kifu-elasticsearch.md`。
 
-- [ ] **3.1** 以官方当前示例9.5.5作为待核定patch，实施时核官方registry支持/架构、固定实际tag+digest并记录`ES_IMAGE`；不支持则先修文档，禁止latest。复用httpx REST，不先增加SDK、Kibana、Kafka、集群管理平台。
+- [ ] **3.1** 核定官方9.5.5架构/基镜像digest，验证同patch IK/Kuromoji/Nori包的校验和与descriptor，构建一个可复现固定插件镜像并记录实际digest，不用latest。先0.1节小语料_analyze，再1000盘，最终才全量；复用httpx REST，不加SDK/Kibana/Kafka。插件或样本不通过不静默改成无分词索引宣称完成。
 - [ ] **3.2** TEST/PROD各自一个单节点、一个primary、replica=0。它是可从PG重建的搜索副本，单节点不宣称ES高可用。初始ES容器2GiB RAM、1GiB heap、2CPU、禁swap；Docker日志10MiB×3，另显式覆盖JVM默认GC日志为8MiB×4、ES应用日志最多100MiB，禁用自动heap dump。用该固定版本的jvm.options.d/log4j2配置验证轮转，不把Docker日志轮转误当GC日志限制。不提高现有Web4CPU/PG2CPU；共享8CPU不等于预留核。
 - [ ] **3.3** 9200仅内部Docker网络或回环地址；关闭不需要的对外端口。使用ES鉴权及CA验证，Web只读凭据、导入/发布使用最小写权限凭据，凭据通过现有私有配置，不写代码、Git、kiosk包、公开日志。CLI建索引权限与在线读权限分离。
 - [ ] **3.4** `plan`先输出schema/mapping版本、源count、索引名、预计批次、磁盘余量、原backend与暂停范围，不创建资源。Readiness不足时仍保持当前legacy服务可用。
@@ -208,7 +233,7 @@ pending崩溃恢复先拿原writer锁确认上次写已结束。按manifest/bund
 
 - [ ] **6.1** 独立Astra做实施代码及实际发布边界审查，修复Critical/Important后才部署；本计划的最多两轮评审不等于将来代码已获批准。
 - [ ] **6.2** TEST先完成Task3–5：全量、24语义、本批发布与幂等重试、一次Web重启后ready。记录真实索引大小、镜像/RSS、CPU及PG当前页成本。
-- [ ] **6.3** 低负载记录至少12位不同棋手首次/重复，含王星昊/吴清源，不预热后冒称冷态；1QPS诊断。性能样本在索引稳定ready、无本次pending写入的可读窗口运行：10/50QPS短ramp再100QPS30秒，3000请求、窗口发出/入口≥2970、最多32inflight、排空≤2秒。不能将这个零错误结果宣称覆盖写入窗口；发布期间的短时503及故障后恢复另做功能验收，不丢弃其失败样本混入性能报告。
+- [ ] **6.3** 低负载至少12位不同棋手首次/重复，含王星昊/吴清源，并覆盖真实五语赛事组合词；不预热后冒称冷态，1QPS诊断。100QPS实际PROD固定样本需包含原姓名类别和新增多词赛事类别，先公开冻结分类/分布，不用只测姓名证明新增能力。稳定ready窗口下10/50QPS短ramp再100QPS30秒，3000请求、窗口发出/入口≥2970、最多32inflight、排空≤2秒。TEST同口径仅为部署前门槛。发布窗口的503/恢复另做功能验收，不混淆或丢弃失败样本。
 - [ ] **6.4** 明确修复现有负载工具的最终verdict，而不只改报告文字：旧脚本overall仍按ASGI p95/低负载20ms，不能复用它宣布达标。新最终gate为3000个不同样本全部完整返回、HTTP max≤200ms、错误/超时/未发出/缺响应/语义差异均0、窗口实际发出和入口≥2970；ASGI p95和low20ms仅诊断。添加“p95<200但一个HTTP>200仍失败”和“low>20不拦截high”的聚焦测试。逐项报告完整HTTP p50/p95/p99/max、>200计数，不拿ES took或handler替代；TEST过后仍须实际8CPU PROD同口径通过，保留所有失败轮。
 - [ ] **6.5** PROD实测前先核资源竞争：17个既有服务、Web/PG与新ES共享8CPU；观察100QPS下CPU、RSS、queue与错误，不自动扩大配额或买机器。深页/最大page_size另做低并发正确性及内存检查，单列延迟。
 - [ ] **6.6** 从用户实际公网HTTPS入口逐个测试王星昊、吴清源：浏览器提交→完整列表可见→正确棋盘画完，分列API、网络与绘制时间。记录首轮与复查结果、响应体bytes/压缩。现公网5Mbps，若传输成为限制则给实测带宽账，不能把本机100QPS宣称公网100QPS。

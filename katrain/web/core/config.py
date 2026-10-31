@@ -1,6 +1,7 @@
 import os
 import uuid as uuid_module
 from pydantic import BaseModel
+from typing import Literal
 
 # 仓库里跟着代码走的字面量默认值。**唯一真源**——生产装配（下方 env 装配处）与
 # 字段默认值都引用它，不得各自再抄一份，否则改一处漏一处（参见 assert_secret_key_is_safe）。
@@ -74,6 +75,7 @@ class Settings(BaseModel):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 90
 
     DEFAULT_LANG: str = "cn"
+    KIFU_SEARCH_BACKEND: Literal["legacy", "elasticsearch"] = "legacy"
 
     # Board mode settings (see design.md Section 4.2)
     KATRAIN_MODE: str = "server"  # "server" or "board"
@@ -164,6 +166,7 @@ class Settings(BaseModel):
 
         data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", INSECURE_DEFAULT_SECRET_KEY))
         data.setdefault("DEFAULT_LANG", os.getenv("KATRAIN_DEFAULT_LANG", "cn"))
+        data.setdefault("KIFU_SEARCH_BACKEND", os.getenv("KIFU_SEARCH_BACKEND", "legacy"))
 
         # Board mode settings
         data.setdefault("KATRAIN_MODE", os.getenv("KATRAIN_MODE", "server"))

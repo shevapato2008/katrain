@@ -207,9 +207,9 @@ async def lifespan(app: FastAPI):
     yield
 
     # ── Shutdown ──
-    kifu_reader = getattr(app.state, "kifu_read_executor", None)
-    if kifu_reader is not None:
-        await kifu_reader.close()
+    kifu_search = getattr(app.state, "kifu_search_client", None)
+    if kifu_search is not None:
+        await kifu_search.aclose()
     geometry_calibration = getattr(app.state, "geometry_calibration", None)
     if geometry_calibration:
         geometry_calibration.stop()
@@ -447,14 +447,10 @@ async def _lifespan_server(app: FastAPI, log):
     # ── Platform Manager (cross-platform online play) ─────────────────────
     _init_platform_manager(app, manager, log)
 
-    # Keep the live game/session managers in this one web process. Only the
-    # default server PostgreSQL kifu listing gets independent reader processes.
-    if session_factory is SessionLocal and kifu_db_engine.dialect.name == "postgresql":
-        from katrain.web.core.kifu_read_executor import KifuReadExecutor
+    if settings.KIFU_SEARCH_BACKEND == "elasticsearch":
+        from katrain.web.kifu.search_es import AsyncElasticsearchClient, SearchSettings
 
-        reader = KifuReadExecutor(kifu_db_engine.url.render_as_string(hide_password=False))
-        await reader.start()
-        app.state.kifu_read_executor = reader
+        app.state.kifu_search_client = AsyncElasticsearchClient(SearchSettings.from_env(role="read"))
 
     # Config-check verdicts and error collection for the admin console; server mode only. Started
     # last so that a failure earlier in startup cannot leave the handler attached to the root logger.

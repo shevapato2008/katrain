@@ -8,11 +8,8 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import case, false, func, or_, select, union
+from sqlalchemy import case, false, func, or_
 from sqlalchemy.orm import Session, defer, load_only
-from sqlalchemy.sql import operators
-from sqlalchemy.sql.elements import BinaryExpression, BindParameter, BooleanClauseList
-from sqlalchemy.sql.selectable import ScalarSelect, Select
 from starlette.concurrency import run_in_threadpool
 from katrain.core.sgf_parser import SGF
 from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
@@ -48,16 +45,14 @@ from katrain.web.kifu.player_ranks import lookup_album_rank_snapshots
 from katrain.web.kifu.round_names import display_round_name
 from katrain.web.kifu.library import report_availability
 from katrain.web.kifu.library_search import HISTORICAL_PLAYER_ALIASES, public_player_id, unique_exact_player_id
-from katrain.web.kifu.prepared_models import members as prepared_members
-from katrain.web.kifu.prepared_read import (
-    PreparedSearchNotReady,
-    begin_read_snapshot,
-    current_policy_signature,
-    read_displays,
-    read_state,
-    require_ready,
-    search_filter,
+from katrain.web.kifu.library import begin_read_snapshot
+from katrain.web.core.config import settings
+from katrain.web.kifu.search_documents import (
+    SCHEMA_VERSION, SYNC_STATE_DOCUMENT_ID, term_document_id,
+    alias_document_id, public_player_document_id,
 )
+from katrain.web.kifu.search_es import MAX_RESULT_WINDOW, SearchUnavailable
+from katrain.web.kifu.search_terms import compile_query, merge_classifications
 
 router = APIRouter()
 KIFU_MODEL_SHA256 = "93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871"
@@ -97,7 +92,7 @@ def _obscured_program_event_ids_loaded(db: Session, albums: list, selected_event
     return obscured
 
 
-def _cloud_prepared_not_ready(exc):
+def _cloud_search_unavailable(exc):
     if not isinstance(exc, httpx.HTTPStatusError) or exc.response.status_code != 503:
         return False
     try:
@@ -105,7 +100,7 @@ def _cloud_prepared_not_ready(exc):
     except ValueError:
         return False
     detail = payload.get("detail") if isinstance(payload, dict) else None
-    return isinstance(detail, dict) and detail.get("code") == PreparedSearchNotReady.code
+    return isinstance(detail, dict) and detail.get("code") in {"search_unavailable", "search_index_pending"}
 
 
 async def _from_dispatcher(call, not_found_detail: str):
@@ -113,13 +108,13 @@ async def _from_dispatcher(call, not_found_detail: str):
     try:
         return await call()
     except RemoteServiceUnavailableError as exc:
-        if _cloud_prepared_not_ready(exc.__cause__):
-            raise _not_ready(PreparedSearchNotReady("cloud")) from exc
+        if _cloud_search_unavailable(exc.__cause__):
+            raise _search_unavailable() from exc
         code = "kifu_cloud_error" if isinstance(exc.__cause__, httpx.HTTPStatusError) else "kifu_cloud_unreachable"
         raise HTTPException(status_code=503, detail={"code": code, "message": str(exc)}) from exc
     except httpx.HTTPStatusError as exc:
-        if _cloud_prepared_not_ready(exc):
-            raise _not_ready(PreparedSearchNotReady("cloud")) from exc
+        if _cloud_search_unavailable(exc):
+            raise _search_unavailable() from exc
         status = exc.response.status_code
         detail = not_found_detail if status == 404 else f"Remote kifu request failed ({status})"
         raise HTTPException(status_code=status, detail=detail) from exc
@@ -177,7 +172,7 @@ class KifuAlbumListResponse(BaseModel):
     preview: Optional[KifuAlbumDetail] = None
 
 
-_PREPARED_ALBUM_COLUMNS = (
+_PAGE_ALBUM_COLUMNS = (
     KifuAlbum.id,
     KifuAlbum.player_black,
     KifuAlbum.player_white,
@@ -197,6 +192,7 @@ _PREPARED_ALBUM_COLUMNS = (
     KifuAlbum.sgf_content,
     KifuAlbum.source_path,
     KifuAlbum.duplicate_of_id,
+    KifuAlbum.list_hidden_reason,
 )
 
 
@@ -321,29 +317,33 @@ def get_kifu_session_factory():
 
 
 @router.get("/search-ready")
-def kifu_search_ready(session_factory=Depends(get_kifu_session_factory)):
-    """Expose this web process's policy hash independently of generic health."""
-    with session_factory() as db:
-        begin_read_snapshot(db)
-        runtime_signature = current_policy_signature()
-        value, ready, unavailable = None, False, False
-        try:
-            value = read_state(db)
-            ready = require_ready(db) is not None
-        except PreparedSearchNotReady:
-            unavailable = True
-        return JSONResponse(
-            status_code=503 if unavailable else 200,
-            content={
-                "kifu_search_ready": ready,
-                "runtime_policy_signature": runtime_signature,
-                "policy_signature": value["policy_signature"] if value else None,
-                "enabled": bool(value and value["enabled"]),
-                "ready": bool(value and value["ready"]),
-                "initial_coverage_complete": bool(value and value["initial_coverage_complete"]),
-                "phase": value["phase"] if value else "unmigrated",
-            },
-        )
+async def kifu_search_ready(request: Request):
+    """Expose the active reader target and synchronization gate."""
+    backend = settings.KIFU_SEARCH_BACKEND
+    runtime_signature = hashlib.sha256(f"{SCHEMA_VERSION}:{strict_names_enabled()}".encode()).hexdigest()
+    value = {"backend": backend, "enabled": backend == "elasticsearch",
+             "runtime_policy_signature": runtime_signature, "policy_signature": None,
+             "kifu_search_ready": backend == "legacy", "ready": backend == "legacy",
+             "initial_coverage_complete": backend == "legacy", "phase": backend}
+    if backend == "legacy":
+        return JSONResponse(content=value)
+    try:
+        client = request.app.state.kifu_search_client
+        state = await client.get_document(SYNC_STATE_DOCUMENT_ID)
+        source = state.get("_source", {})
+        value.update(index=state.get("_index"), schema_version=source.get("schema_version"),
+                     strict_mode=source.get("strict_mode"),
+                     policy_signature=hashlib.sha256(
+                         f"{source.get('schema_version')}:{source.get('strict_mode')}".encode()).hexdigest(),
+                     sync_state={key: source.get(key) for key in ("status", "epoch", "operation_type", "target_index")},
+                     phase=source.get("status", "unavailable"))
+        _checked_search_state(state)
+        value.update(
+                     kifu_search_ready=True, ready=True, initial_coverage_complete=True, phase="ready")
+        return JSONResponse(content=value)
+    except (SearchUnavailable, AttributeError, KeyError, TypeError, ValueError):
+        value.update(kifu_search_ready=False, ready=False, initial_coverage_complete=False)
+        return JSONResponse(status_code=503, content=value)
 
 
 def read_in_owned_session(session_factory, *, submitted_at, timings, **params):
@@ -378,23 +378,18 @@ async def list_kifu_albums(
             params["player_id"] = player_id
         return await _from_dispatcher(lambda: dispatcher.kifu_list_albums(**params), "Kifu albums not found")
     params = dict(q=q, player_id=player_id, page=page, page_size=page_size, lang=lang)
-    executor = getattr(request.app.state, "kifu_read_executor", None)
-    if executor is not None and session_factory is SessionLocal:
-        request.state.kifu_reader_pool = None  # Unknown if admission or the process pool fails.
-        packet = await executor.read(params)
-        timings = packet["timings"]
-        request.state.kifu_reader_pool = packet["reader_pool"]
-        if "error" in packet:
-            raise HTTPException(**packet["error"])
-        result = Response(content=packet["body"], media_type="application/json")
-        response = result
+    timings = {}
+    if settings.KIFU_SEARCH_BACKEND == "elasticsearch":
+        client = getattr(request.app.state, "kifu_search_client", None)
+        if client is None:
+            raise _search_unavailable()
+        result = await read_album_page_elasticsearch(client, session_factory, timings=timings, **params)
     else:
-        timings = {}
         result = await run_in_threadpool(
             read_in_owned_session, session_factory, submitted_at=perf_counter(), timings=timings, **params
         )
-    # Handler includes the process round trip when used; final ASGI sending is
-    # outside it. These names do not represent a complete HTTP/browser request.
+    # Final ASGI sending is outside this handler; complete HTTP is measured by
+    # the fixed-arrival client and the existing lightweight timing middleware.
     timings["kifu_handler"] = (perf_counter() - started) * 1000
     if response is not None:
         response.headers["Server-Timing"] = ", ".join(
@@ -410,135 +405,128 @@ def _validate_list_params(q, player_id, lang):
         raise HTTPException(status_code=422, detail="player_id must be positive and cannot be combined with q")
 
 
-def _not_ready(exc):
-    return HTTPException(status_code=503, detail={"code": exc.code, "message": "Kifu search is not ready"})
+def _search_unavailable():
+    return HTTPException(status_code=503, detail={"code": "search_unavailable", "message": "Kifu search is unavailable"})
+
+
+def _checked_search_state(document):
+    value = document.get("_source", {})
+    if (document.get("found") is False or "error" in document
+            or value.get("doc_kind") != "sync_state"
+            or value.get("schema_version") != SCHEMA_VERSION
+            or value.get("strict_mode") is not strict_names_enabled()
+            or value.get("status") != "ready" or type(value.get("epoch")) is not int
+            or value["epoch"] < 0 or not document.get("_index")
+            or value.get("target_index") != document["_index"]):
+        raise SearchUnavailable("Search synchronization state is not ready")
+    return value
+
+
+async def read_album_page_elasticsearch(client, session_factory, *, q=None, player_id=None,
+                                        page=1, page_size=20, lang="cn", timings=None):
+    """Read one concrete index, enrich this PG page, then reject concurrent writes."""
+    _validate_list_params(q, player_id, lang)
+    timings = {} if timings is None else timings
+    try:
+        started = perf_counter()
+        ids = [SYNC_STATE_DOCUMENT_ID]
+        if player_id is not None:
+            ids.append(public_player_document_id(player_id))
+        elif q:
+            ids.append(term_document_id(q))
+            if not strict_names_enabled():
+                ids.append(alias_document_id(q))
+        result = await client.mget(ids)
+        docs = result.get("docs")
+        if not isinstance(docs, list) or len(docs) != len(ids):
+            raise SearchUnavailable("Incomplete search metadata")
+        for ident, doc in zip(ids, docs):
+            if (not isinstance(doc, dict) or doc.get("_id") != ident or "error" in doc
+                    or type(doc.get("found")) is not bool):
+                raise SearchUnavailable("Search metadata item failed")
+        state = _checked_search_state(docs[0])
+        index, epoch = docs[0]["_index"], state["epoch"]
+        if any(doc.get("_index") != index for doc in docs):
+            raise SearchUnavailable("Search metadata changed index")
+        payloads = [doc.get("_source", {}) if doc["found"] else {} for doc in docs[1:]]
+        if player_id is not None:
+            classification = payloads[0].get("classification", payloads[0])
+        else:
+            plans = [payload.get("classification", payload) for payload in payloads]
+            classification = merge_classifications(*plans) if plans else {}
+        classification = {"strict": strict_names_enabled(), **classification,
+                          "include_provisional": not strict_names_enabled() and name_display_language(lang) == "cn"}
+        compiled = compile_query(classification, q, player_id)
+        timings["kifu_term"] = (perf_counter() - started) * 1000
+        offset = (page - 1) * page_size
+        body = {**compiled, "track_total_hits": True, "size": page_size}
+        if offset + page_size > MAX_RESULT_WINDOW:
+            body["size"] = 0
+        else:
+            body["from"] = offset
+        started = perf_counter()
+        found = await client.search(body, index=index)
+        timings["kifu_es"] = (perf_counter() - started) * 1000
+        total = found.get("hits", {}).get("total", {})
+        hits = found.get("hits", {}).get("hits")
+        if (found.get("timed_out") is not False or found.get("_shards", {}).get("failed") != 0
+                or total.get("relation") != "eq" or type(total.get("value")) is not int
+                or total["value"] < 0 or not isinstance(hits, list)):
+            raise SearchUnavailable("Incomplete search response")
+        if body["size"] == 0 and offset < total["value"]:
+            raise SearchUnavailable("Search result window is too small")
+        expected = max(0, min(page_size, total["value"] - offset))
+        if len(hits) != expected:
+            raise SearchUnavailable("Incomplete search page")
+        started = perf_counter()
+        if hits:
+            page_result = await run_in_threadpool(
+                _enrich_elasticsearch_page, session_factory, hits, total["value"], page, page_size, lang
+            )
+        else:
+            page_result = KifuAlbumListResponse(items=[], total=total["value"], page=page, page_size=page_size)
+        timings["kifu_enrich"] = (perf_counter() - started) * 1000
+        started = perf_counter()
+        final = await client.get_document(SYNC_STATE_DOCUMENT_ID, index=index)
+        final_state = _checked_search_state(final)
+        if final["_index"] != index or final_state["epoch"] != epoch:
+            raise SearchUnavailable("Search changed during the request")
+        timings["kifu_state_final"] = (perf_counter() - started) * 1000
+        return page_result
+    except (SearchUnavailable, httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+        raise _search_unavailable() from exc
+
+
+def _enrich_elasticsearch_page(session_factory, hits, total, page, page_size, lang):
+    sources = [hit["_source"] for hit in hits]
+    ids = [source["album_id"] for source in sources]
+    if len(ids) != len(set(ids)) or any(type(ident) is not int for ident in ids):
+        raise SearchUnavailable("Invalid album search page")
+    with session_factory() as db:
+        begin_read_snapshot(db)
+        records = {record.id: record for record in db.query(KifuAlbum).options(load_only(*_PAGE_ALBUM_COLUMNS))
+                   .filter(KifuAlbum.id.in_(ids)).all()}
+        if records.keys() != set(ids):
+            raise SearchUnavailable("Search page no longer exists")
+        albums = [records[ident] for ident in ids]
+        if any(record.duplicate_of_id is not None or record.list_hidden_reason is not None for record in albums):
+            raise SearchUnavailable("Search page visibility changed")
+        availability = report_availability(db, albums, KIFU_MODEL_SHA256, KIFU_VISITS)
+        ranks = lookup_album_rank_snapshots(db.connection(), ids)
+        items = []
+        for record, source in zip(albums, sources):
+            display = source["display"][name_display_language(lang)]
+            items.append(_summary(record, (display["player_black"], display["player_white"], display["event"]),
+                                  source["metadata"]["sources"], lang, rank_snapshots=ranks)
+                         .model_copy(update={"has_analysis": availability[record.id]}))
+        preview = KifuAlbumDetail.model_validate({**items[0].model_dump(), "place": albums[0].place,
+                                                "source": albums[0].source, "sgf_content": albums[0].sgf_content})
+        return KifuAlbumListResponse(items=items, total=total, page=page, page_size=page_size, preview=preview)
 
 
 def read_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="cn", timings=None):
-    """Read prepared names and the complete page in the worker's one snapshot."""
-    _validate_list_params(q, player_id, lang)
-    begin_read_snapshot(db)
-    try:
-        if require_ready(db) is None:
-            return read_album_page_legacy(
-                db, q=q, player_id=player_id, page=page, page_size=page_size, lang=lang, timings=timings
-            )
-        return _read_prepared_album_page(
-            db, q=q, player_id=player_id, page=page, page_size=page_size, lang=lang, timings=timings
-        )
-    except PreparedSearchNotReady as exc:
-        raise _not_ready(exc) from exc
-
-
-def _prepared_count_query(db, predicate, visible):
-    """Keep finite player membership from forcing a full album scan for COUNT."""
-    fallback = db.query(func.count(KifuAlbum.id)).filter(*visible)
-    if predicate is None:
-        return fallback
-    fallback = fallback.filter(predicate)
-    if not isinstance(predicate, BooleanClauseList) or predicate.operator is not operators.or_:
-        return fallback
-    has_player, has_members = False, False
-    for branch in predicate.clauses:
-        if not isinstance(branch, BinaryExpression):
-            return fallback
-        if (
-            branch.operator in (operators.eq, operators.in_op)
-            and isinstance(branch.right, BindParameter)
-            and any(
-                branch.left.compare(column.expression)
-                for column in (KifuAlbum.black_player_id, KifuAlbum.white_player_id)
-            )
-        ):
-            has_player = True
-        elif (
-            branch.operator is operators.in_op
-            and branch.left.compare(KifuAlbum.id.expression)
-            and isinstance(branch.right, ScalarSelect)
-            and isinstance(branch.right.element, Select)
-        ):
-            member_select = branch.right.element
-            columns, sources = list(member_select.selected_columns), member_select.get_final_froms()
-            if (
-                len(columns) != 1
-                or not columns[0].compare(prepared_members.c.album_id)
-                or len(sources) != 1
-                or sources[0] is not prepared_members
-            ):
-                return fallback
-            has_members = True
-        else:
-            return fallback
-    if not (has_player and has_members):
-        return fallback
-    # UNION removes canonical black/white and raw-member overlap before counting;
-    # apply the same visibility constraints to every branch, as in the page query.
-    candidates = union(*(select(KifuAlbum.id).where(*visible, branch) for branch in predicate.clauses)).subquery()
-    return db.query(func.count()).select_from(candidates)
-
-
-def _read_prepared_album_page(db, *, q=None, player_id=None, page=1, page_size=20, lang="cn", timings=None):
-    """Forced prepared read after the caller verifies its snapshot's ready gate.
-
-    The explicit CLI comparison may use this while enabled is still false; it
-    checks coverage/policy/dirty in the same snapshot before calling this helper.
-    """
-    timings = {} if timings is None else timings
-    started = perf_counter()
-    predicate, priority = search_filter(
-        db, query=q, player_id=player_id, lang=name_display_language(lang), strict=strict_names_enabled()
-    )
-    timings["kifu_candidate"] = (perf_counter() - started) * 1000
-    visible = (KifuAlbum.duplicate_of_id.is_(None), KifuAlbum.list_hidden_reason.is_(None))
-    query = db.query(KifuAlbum).options(load_only(*_PREPARED_ALBUM_COLUMNS)).filter(*visible)
-    count_query = _prepared_count_query(db, predicate, visible)
-    if predicate is not None:
-        query = query.filter(predicate)
-    if priority is not None:
-        query = query.order_by(case((priority, 0), else_=1))
-    query = query.order_by(KifuAlbum.date_sort.desc().nulls_last(), KifuAlbum.id.desc())
-    started = perf_counter()
-    total = count_query.scalar() or 0
-    timings["kifu_count"] = (perf_counter() - started) * 1000
-    started = perf_counter()
-    # Current report/rank identity checks require every page row's SGF. Keep the
-    # bounded page read rather than weakening those checks to load only preview.
-    records = query.offset((page - 1) * page_size).limit(page_size).all()
-    timings["kifu_page"] = (perf_counter() - started) * 1000
-    started = perf_counter()
-    displays = read_displays(db, [record.id for record in records], name_display_language(lang))
-    timings["kifu_display"] = (perf_counter() - started) * 1000
-    started = perf_counter()
-    availability = report_availability(db, records, KIFU_MODEL_SHA256, KIFU_VISITS)
-    timings["kifu_report"] = (perf_counter() - started) * 1000
-    started = perf_counter()
-    ranks = lookup_album_rank_snapshots(db.connection(), [record.id for record in records])
-    timings["kifu_rank"] = (perf_counter() - started) * 1000
-    items = []
-    for record in records:
-        display = displays[record.id]
-        items.append(
-            _summary(
-                record,
-                (display["player_black"], display["player_white"], display["event"]),
-                display["strict_outputs"]["sources"],
-                lang,
-                rank_snapshots=ranks,
-            ).model_copy(update={"has_analysis": availability[record.id]})
-        )
-    preview = (
-        None
-        if not records
-        else KifuAlbumDetail.model_validate(
-            {
-                **items[0].model_dump(),
-                "place": records[0].place,
-                "source": records[0].source,
-                "sgf_content": records[0].sgf_content,
-            }
-        )
-    )
-    return KifuAlbumListResponse(items=items, total=total, page=page, page_size=page_size, preview=preview)
+    """The explicit legacy backend has no prepared-schema dependency."""
+    return read_album_page_legacy(db, q=q, player_id=player_id, page=page, page_size=page_size, lang=lang, timings=timings)
 
 
 def read_album_page_legacy(db, *, q=None, player_id=None, page=1, page_size=20, lang="cn", timings=None):
@@ -791,34 +779,7 @@ def read_detail_in_owned_session(session_factory, album_id, *, lang="cn"):
 
 
 def read_album_detail(db, album_id, *, lang="cn"):
-    if lang not in LANGUAGES:
-        raise HTTPException(status_code=422, detail="Unsupported language")
-    begin_read_snapshot(db)
-    record = db.query(KifuAlbum).filter(KifuAlbum.id == album_id).first()
-    if record is None:
-        raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
-    try:
-        if require_ready(db) is None:
-            return read_album_detail_legacy(db, album_id, lang=lang, _record=record)
-        display = read_displays(db, [record.id], name_display_language(lang))[record.id]
-        values = _summary(
-            record,
-            (display["player_black"], display["player_white"], display["event"]),
-            display["strict_outputs"]["sources"],
-            lang,
-            rank_snapshots=lookup_album_rank_snapshots(db.connection(), [record.id]),
-        ).model_dump()
-        values["has_analysis"] = report_availability(db, [record], KIFU_MODEL_SHA256, KIFU_VISITS)[record.id]
-        return KifuAlbumDetail.model_validate(
-            {
-                **values,
-                "place": record.place,
-                "source": record.source,
-                "sgf_content": record.sgf_content,
-            }
-        )
-    except PreparedSearchNotReady as exc:
-        raise _not_ready(exc) from exc
+    return read_album_detail_legacy(db, album_id, lang=lang)
 
 
 def read_album_detail_legacy(db, album_id, *, lang="cn", _record=None):

@@ -110,21 +110,6 @@ def test_uncached_proof_groups_do_not_load_two_orthographic_artifacts_together(m
             assert len(checked) == 2 and len(set(checked)) == 2
             # The second packet is fully checked, then rejected for its different owner.
             assert [name.player_id for name, _evidence in qualified] == [17]
-        from katrain.web.kifu.prepared_migration import apply_migration
-        from katrain.web.kifu import prepare_search
-
-        apply_migration(engine)
-        checked.clear()
-        with engine.begin() as conn, Session(bind=conn) as db:
-
-            def build_core(batch):
-                resident = [row for row in db.identity_map.values() if isinstance(row, KifuNameResearchEvidence)]
-                assert len(resident) == 1, "preparer must not retain the whole domain's research payloads"
-                return build(batch)
-
-            monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", build_core)
-            assert prepare_search._prepare_owners(conn, db, {"player": {17, 18}}, prepare_search._Budget()) == 2
-            assert len(checked) == 2
     finally:
         engine.dispose()
 

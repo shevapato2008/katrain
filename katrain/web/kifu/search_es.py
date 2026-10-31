@@ -42,16 +42,20 @@ INDEX_SETTINGS = {
             },
         },
         "analyzer": {
-            "event_en": {"type": "standard", "stopwords": "_none_"},
+            "event_en": {
+                "type": "custom",
+                "tokenizer": "standard",
+                "filter": ["cjk_width", "lowercase"],
+            },
             "event_ko_index": {
                 "type": "custom",
                 "tokenizer": "event_ko_mixed",
-                "filter": ["nori_part_of_speech", "nori_readingform", "lowercase"],
+                "filter": ["cjk_width", "nori_part_of_speech", "nori_readingform", "lowercase"],
             },
             "event_ko_query": {
                 "type": "custom",
                 "tokenizer": "event_ko_discard",
-                "filter": ["nori_part_of_speech", "nori_readingform", "lowercase"],
+                "filter": ["cjk_width", "nori_part_of_speech", "nori_readingform", "lowercase"],
             },
         },
     },

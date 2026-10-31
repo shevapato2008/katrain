@@ -184,7 +184,11 @@ def test_five_language_event_text_is_single_source_multi_field_and_names_are_uni
             "search_analyzer": search_analyzer,
         }
     analysis = INDEX_SETTINGS["analysis"]
-    assert analysis["analyzer"]["event_en"] == {"type": "standard", "stopwords": "_none_"}
+    assert analysis["analyzer"]["event_en"] == {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["cjk_width", "lowercase"],
+    }
     assert analysis["tokenizer"]["event_ko_mixed"]["decompound_mode"] == "mixed"
     assert analysis["tokenizer"]["event_ko_discard"]["decompound_mode"] == "discard"
 

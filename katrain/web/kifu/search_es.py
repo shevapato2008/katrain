@@ -30,8 +30,16 @@ INDEX_SETTINGS = {
     "refresh_interval": "-1",
     "analysis": {
         "tokenizer": {
-            "event_ko_mixed": {"type": "nori_tokenizer", "decompound_mode": "mixed"},
-            "event_ko_discard": {"type": "nori_tokenizer", "decompound_mode": "discard"},
+            "event_ko_mixed": {
+                "type": "nori_tokenizer",
+                "decompound_mode": "mixed",
+                "user_dictionary_rules": ["삼성화재배 삼성 화재 배"],
+            },
+            "event_ko_discard": {
+                "type": "nori_tokenizer",
+                "decompound_mode": "discard",
+                "user_dictionary_rules": ["삼성화재배 삼성 화재 배"],
+            },
         },
         "analyzer": {
             "event_en": {"type": "standard", "stopwords": "_none_"},

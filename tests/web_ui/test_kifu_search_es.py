@@ -154,10 +154,9 @@ def test_async_client_preserves_same_transport_checks_and_shared_lifecycle():
             )
         )
         shared = httpx.AsyncClient(transport=transport)
-        es = AsyncElasticsearchClient(settings(), client=shared)
-        await es.mget(["sync-state"])
-        await es.mget(["sync-state"])
-        await es.aclose()
+        async with AsyncElasticsearchClient(settings(), client=shared) as es:
+            await es.mget(["sync-state"])
+            await es.mget(["sync-state"])
         assert shared.is_closed
 
     asyncio.run(run())
@@ -350,3 +349,38 @@ def test_incomplete_index_stats_cannot_hide_storage_budget():
 
     with pytest.raises(RuntimeError, match="stats"):
         cli.index_stats(Fake(), "candidate")
+
+
+def test_empty_normalized_alias_does_not_generate_wildcard():
+    from katrain.web.kifu.search_terms import compile_query
+
+    # Non-strict classification with punctuation query
+    compiled = compile_query({"strict": False}, "---", None)
+    # Must not contain wildcard clause for aliases
+    query_str = json.dumps(compiled)
+    assert '{"value": "**"}' not in query_str
+
+
+def test_validate_list_params_bounds_query_length():
+    from fastapi import HTTPException
+    from katrain.web.api.v1.endpoints.kifu import _validate_list_params
+
+    # Allowed <= 200
+    _validate_list_params("a" * 200, None, "cn")
+
+    # Rejected > 200
+    with pytest.raises(HTTPException) as exc_info:
+        _validate_list_params("a" * 201, None, "cn")
+    assert exc_info.value.status_code == 422
+    assert "too long" in exc_info.value.detail
+
+
+def test_cli_disk_path_defaults_to_es_data_dir(monkeypatch):
+    import os
+    import argparse
+    monkeypatch.setenv("ES_DATA_DIR", "/mnt/es_data")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--disk-path", default=os.getenv("ES_DATA_DIR", "/"))
+    args = parser.parse_args([])
+    assert args.disk_path == "/mnt/es_data"
+

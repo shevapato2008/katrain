@@ -370,6 +370,10 @@ async def list_kifu_albums(
 ):
     """List records; local synchronous database work stays off the event loop."""
     started = perf_counter()
+    if q is not None:
+        q = q.strip()
+        if not q:
+            q = None
     _validate_list_params(q, player_id, lang)
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
@@ -401,6 +405,8 @@ async def list_kifu_albums(
 def _validate_list_params(q, player_id, lang):
     if lang not in LANGUAGES:
         raise HTTPException(status_code=422, detail="Unsupported language")
+    if q is not None and len(q) > 200:
+        raise HTTPException(status_code=422, detail="Search query too long")
     if player_id is not None and (player_id < 1 or q is not None):
         raise HTTPException(status_code=422, detail="player_id must be positive and cannot be combined with q")
 

@@ -477,7 +477,7 @@ def main(argv=None):
     parser.add_argument("command", choices=("plan", "build", "check", "refresh", "sync-ids", "sync-batch", "activate"))
     parser.add_argument("--database-url", default=settings.DATABASE_URL)
     parser.add_argument("--index")
-    parser.add_argument("--disk-path", default="/")
+    parser.add_argument("--disk-path", default=os.getenv("ES_DATA_DIR", "/"), help="Filesystem path to monitor free space (defaults to ES_DATA_DIR or '/')")
     parser.add_argument("--lock-deadline-epoch", type=float)
     parser.add_argument("--ids", type=int, nargs="+")
     parser.add_argument("--batch-id", type=int)

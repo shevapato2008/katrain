@@ -205,7 +205,9 @@ def compile_query(classification, q, player_id):
                     )
                 )
             if not classification.get("strict", True):
-                generic.extend(_contains(field, normalize_alias(q)) for field in ("player_aliases", "event_aliases"))
+                normalized_q = normalize_alias(q)
+                if normalized_q:
+                    generic.extend(_contains(field, normalized_q) for field in ("player_aliases", "event_aliases"))
             generic.extend(_provisional_clauses(classification, q))
             predicate = _any(generic)
     filters.append(predicate)

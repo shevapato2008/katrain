@@ -43,6 +43,11 @@ import json
 import math
 from pathlib import Path
 import re
+
+if hasattr(asyncio, "timeout"):
+    _async_timeout = asyncio.timeout
+else:
+    from async_timeout import timeout as _async_timeout
 import sys
 import time
 from urllib.parse import urlsplit
@@ -442,7 +447,7 @@ async def run_load(
                     sample["dispatch_queue_ms"] = sample["sent_offset_ms"] - sample["scheduled_offset_ms"]
 
             try:
-                async with asyncio.timeout(timeout_s):
+                async with _async_timeout(timeout_s):
                     async with client.stream(
                         "GET",
                         PATH,
@@ -512,7 +517,7 @@ async def run_load(
                 queue.put_nowait(index)
             await asyncio.sleep(max(0, start + plan["window_s"] - loop.time()))
             await asyncio.wait_for(queue.join(), timeout=max(0, start + plan["window_s"] + drain_s - loop.time()))
-        except TimeoutError:
+        except (TimeoutError, asyncio.TimeoutError):
             pass
         except asyncio.CancelledError:
             run["interrupted"] = True

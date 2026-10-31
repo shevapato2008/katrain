@@ -221,8 +221,8 @@ class SearchSettings:
             "timeout": httpx.Timeout(self.timeout_seconds),
             "limits": httpx.Limits(
                 max_connections=self.max_connections,
-                max_keepalive_connections=min(16, self.max_connections),
-                keepalive_expiry=30,
+                max_keepalive_connections=self.max_connections,
+                keepalive_expiry=60,
             ),
             "headers": {"Authorization": "ApiKey " + self.api_key} if self.api_key else {},
             "auth": httpx.BasicAuth(self.username, self.password) if self.username else None,

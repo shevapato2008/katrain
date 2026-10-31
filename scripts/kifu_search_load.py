@@ -203,9 +203,12 @@ def _server_timing(header):
 
 def read_server_metrics(path):
     metrics, seen = [], set()
-    for line in Path(path).read_text().splitlines():
-        if "kifu_http_timing" not in line:
+    for raw_line in Path(path).read_text().splitlines():
+        if "kifu_http_timing" not in raw_line:
             continue
+        line = raw_line
+        if '[{"event"' in line:
+            line = re.sub(r'\[\{"event"\s*\]\s*', '{"event": ', line)
         try:
             row = json.loads(line[line.index("{") :])
         except (ValueError, json.JSONDecodeError):
@@ -321,21 +324,33 @@ def summarize(run, samples, server_metrics=None):
     }
     high = run["profile"] == "high"
     http = result["latency_ms"]["http"]
-    gates["complete_http"] = "pass" if (
-        result["complete_bodies"] == count and result["complete_json"] == count
-        and http["count"] == count and result["semantic_differences"] == 0
-        and result["statuses"] == {"200": count}
-    ) else "fail"
+    gates["complete_http"] = (
+        "pass"
+        if (
+            result["complete_bodies"] == count
+            and result["complete_json"] == count
+            and http["count"] == count
+            and result["semantic_differences"] == 0
+            and result["statuses"] == {"200": count}
+        )
+        else "fail"
+    )
     gates["http_max"] = (
-        ("pass" if http["max"] is not None and http["max"] <= 200 else "fail")
-        if high else "not_observed"
+        ("pass" if http["max"] is not None and http["max"] <= 200 else "fail") if high else "not_observed"
     )
     gates["fixed_arrival"] = (
-        ("pass" if count == 3000 and run["window_s"] == 30
-         and 0 < (run.get("max_inflight_observed") or 0) <= 32
-         and run.get("max_inflight", 32) <= 32
-         and run.get("elapsed_s") is not None and run["elapsed_s"] <= 32 else "fail")
-        if high else "not_observed"
+        (
+            "pass"
+            if count == 3000
+            and run["window_s"] == 30
+            and 0 < (run.get("max_inflight_observed") or 0) <= 32
+            and run.get("max_inflight", 32) <= 32
+            and run.get("elapsed_s") is not None
+            and run["elapsed_s"] <= 32
+            else "fail"
+        )
+        if high
+        else "not_observed"
     )
     # ASGI p95 and low-profile 20ms are diagnostics. Acceptance uses every
     # complete HTTP response and requires the actual 100QPS arrival window.
@@ -343,9 +358,7 @@ def summarize(run, samples, server_metrics=None):
     if high:
         required += [gates["http_max"], gates["fixed_arrival"]]
     gates["overall"] = (
-        "fail" if "fail" in required
-        else "pass" if high and "not_observed" not in required
-        else "not_observed"
+        "fail" if "fail" in required else "pass" if high and "not_observed" not in required else "not_observed"
     )
     result["gates"] = gates
     return result

@@ -314,6 +314,10 @@ def test_offline_metrics_ignore_unrelated_events_and_reject_duplicate_request_id
     }
     path.write_text(json.dumps({"event": "other"}) + "\n2026-10-28 [INFO] " + json.dumps(metric) + "\n")
     assert load.read_server_metrics(path) == [metric]
+    kivy_line = f'[INFO   ] [{{"event"    ]"kifu_http_timing","request_id":"{"b"*32}","ingress_unix_s":1.5,"asgi_total_ms":10.2,"status":200,"bytes":100}}'
+    path.write_text(kivy_line + "\n")
+    parsed = load.read_server_metrics(path)
+    assert len(parsed) == 1 and parsed[0]["request_id"] == "b" * 32 and parsed[0]["asgi_total_ms"] == 10.2
     path.write_text(json.dumps(metric) + "\n" + json.dumps(metric) + "\n")
     with pytest.raises(ValueError, match="duplicate"):
         load.read_server_metrics(path)

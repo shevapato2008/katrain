@@ -220,7 +220,40 @@ def test_build_guard_requires_quiescence_and_real_window(monkeypatch):
     monkeypatch.setenv("KIFU_SEARCH_BOOTSTRAP_QUIESCENT", "1")
     with pytest.raises(ValueError, match="30 minutes"):
         cli.require_bootstrap(cli.time() + 100)
+    with pytest.raises(ValueError, match="60 minutes"):
+        cli.require_bootstrap(cli.time() + 3500, minimum_seconds=3600)
+    with pytest.raises(ValueError, match="10s"):
+        cli.require_bootstrap(cli.time() - 1, minimum_seconds=10)
     cli.require_bootstrap(cli.time() + 3600)
+    cli.require_bootstrap(cli.time() + 7200, minimum_seconds=3600)
+
+
+def test_checkpoint_honors_custom_max_seconds(monkeypatch):
+    cli = index_cli()
+
+    class FakeClient:
+        def request(self, method, path):
+            return {
+                "_shards": {"failed": 0},
+                "_all": {
+                    "total": {
+                        "store": {"size_in_bytes": 1000},
+                        "translog": {"size_in_bytes": 100},
+                        "docs": {"count": 10},
+                    }
+                },
+            }
+
+    fake_client = FakeClient()
+    monkeypatch.setattr(cli, "disk_free", lambda path: 50 * (1024**3))
+    # Started 2000s ago: exceeds 1800s default, but within 3600s
+    started = cli.monotonic() - 2000
+    with pytest.raises(RuntimeError, match="30 minute build limit exceeded"):
+        cli.checkpoint(fake_client, "idx", started, "/")
+    stats = cli.checkpoint(fake_client, "idx", started, "/", max_seconds=3600)
+    assert stats["docs"] == 10
+    with pytest.raises(RuntimeError, match="60 minute build limit exceeded"):
+        cli.checkpoint(fake_client, "idx", cli.monotonic() - 3700, "/", max_seconds=3600)
 
 
 def test_sample_ids_covers_all_small_sets_and_24_spread_points():
@@ -378,9 +411,9 @@ def test_validate_list_params_bounds_query_length():
 def test_cli_disk_path_defaults_to_es_data_dir(monkeypatch):
     import os
     import argparse
+
     monkeypatch.setenv("ES_DATA_DIR", "/mnt/es_data")
     parser = argparse.ArgumentParser()
     parser.add_argument("--disk-path", default=os.getenv("ES_DATA_DIR", "/"))
     args = parser.parse_args([])
     assert args.disk_path == "/mnt/es_data"
-

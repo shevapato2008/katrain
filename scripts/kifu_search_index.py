@@ -53,7 +53,8 @@ def require_bootstrap(deadline, *, minimum_seconds=MAX_BUILD_SECONDS):
     ):
         raise ValueError("build requires legacy reads, bootstrap mode and explicit quiescent writers")
     if deadline is None or deadline - time() < minimum_seconds:
-        raise ValueError("at least 30 minutes must remain in the existing writer maintenance window")
+        unit = f"{int(minimum_seconds // 60)} minutes" if minimum_seconds >= 60 else f"{int(minimum_seconds)}s"
+        raise ValueError(f"at least {unit} must remain in the existing writer maintenance window")
 
 
 def candidate_name(alias):
@@ -79,10 +80,10 @@ def index_stats(client, index):
     return result
 
 
-def checkpoint(client, index, started, disk_path):
+def checkpoint(client, index, started, disk_path, *, max_seconds=MAX_BUILD_SECONDS):
     stats = index_stats(client, index)
-    if monotonic() - started > MAX_BUILD_SECONDS:
-        raise RuntimeError("30 minute build limit exceeded")
+    if monotonic() - started > max_seconds:
+        raise RuntimeError(f"{int(max_seconds // 60)} minute build limit exceeded")
     if stats["store_bytes"] > MAX_STORE_BYTES:
         raise RuntimeError("2 GiB total index store limit exceeded")
     if disk_free(disk_path) < 15 * GIB:
@@ -91,7 +92,7 @@ def checkpoint(client, index, started, disk_path):
 
 
 @contextmanager
-def locked_snapshot(engine, *, deadline=None):
+def locked_snapshot(engine, *, deadline=None, max_seconds=MAX_BUILD_SECONDS):
     """Original writer lock plus one read-only repeatable-read PG snapshot."""
     from katrain.web.kifu.name_batch import _locked_write
 
@@ -101,7 +102,7 @@ def locked_snapshot(engine, *, deadline=None):
         with engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
             with conn.begin():
                 conn.execute(text("SET TRANSACTION READ ONLY"))
-                remaining = max(1, int((deadline or (time() + MAX_BUILD_SECONDS)) - time()))
+                remaining = max(1, int((deadline or (time() + max_seconds)) - time()))
                 conn.execute(text("SELECT set_config('statement_timeout', :value, true)"), {"value": f"{remaining}s"})
                 with Session(bind=conn, autoflush=False) as db:
                     yield db
@@ -213,6 +214,9 @@ def project_snapshot(db, *, check=None):
 
 
 def do_plan(engine, args):
+    max_seconds = getattr(args, "max_seconds", None) or MAX_BUILD_SECONDS
+    if max_seconds <= 0:
+        raise ValueError("--max-seconds must be a positive integer")
     with Session(engine) as db:
         ids, visible = source_counts(db)
     return {
@@ -229,13 +233,16 @@ def do_plan(engine, args):
         "required_start_free_bytes": 25 * GIB,
         "stop_free_bytes": 15 * GIB,
         "max_store_bytes": MAX_STORE_BYTES,
-        "max_seconds": MAX_BUILD_SECONDS,
+        "max_seconds": max_seconds,
         "pause_scope": "operator-controlled ingest admission; original publication/name locks",
     }
 
 
 def do_build(engine, client, args):
-    require_bootstrap(args.lock_deadline_epoch)
+    max_seconds = getattr(args, "max_seconds", None) or MAX_BUILD_SECONDS
+    if max_seconds <= 0:
+        raise ValueError("--max-seconds must be a positive integer")
+    require_bootstrap(args.lock_deadline_epoch, minimum_seconds=max_seconds)
     if client.alias_exists():
         raise RuntimeError("initial build requires an absent search alias")
     if engine.dialect.name != "postgresql":
@@ -249,12 +256,14 @@ def do_build(engine, client, args):
     try:
 
         def context_check():
-            if monotonic() - started > MAX_BUILD_SECONDS or time() >= args.lock_deadline_epoch:
-                raise RuntimeError("30 minute build/maintenance limit exceeded")
+            if monotonic() - started > max_seconds or time() >= args.lock_deadline_epoch:
+                raise RuntimeError(f"{int(max_seconds // 60)} minute build/maintenance limit exceeded")
             if disk_free(args.disk_path) < 15 * GIB:
                 raise RuntimeError("host free space crossed 15 GiB stop threshold")
 
-        with locked_snapshot(engine, deadline=min(args.lock_deadline_epoch, time() + MAX_BUILD_SECONDS)) as db:
+        with locked_snapshot(
+            engine, deadline=min(args.lock_deadline_epoch, time() + max_seconds), max_seconds=max_seconds
+        ) as db:
             ids, visible = source_counts(db)
             context_started = monotonic()
             context, project = project_snapshot(db, check=context_check)
@@ -270,7 +279,7 @@ def do_build(engine, client, args):
             for batch in iter_bulk_batches(classifications):
                 classification_bytes += len(encode_bulk(batch))
                 client.bulk(batch, index=index, retry_transient=True)
-                checkpoint(client, index, started, args.disk_path)
+                checkpoint(client, index, started, args.disk_path, max_seconds=max_seconds)
             album_bytes, album_count, after, projection_seconds = 0, 0, 0, 0.0
             samples, wanted_samples = [], _sample_ids(ids)
             sample_reported = False
@@ -288,10 +297,10 @@ def do_build(engine, client, args):
                 album_count += len(records)
                 after = records[-1].id
                 db.expunge_all()
-                stats = checkpoint(client, index, started, args.disk_path)
+                stats = checkpoint(client, index, started, args.disk_path, max_seconds=max_seconds)
                 if not sample_reported and (album_count >= 1000 or album_count == len(ids)):
                     client.refresh(index=index)
-                    stats = checkpoint(client, index, started, args.disk_path)
+                    stats = checkpoint(client, index, started, args.disk_path, max_seconds=max_seconds)
                     audit["first_sample"] = {
                         "albums": album_count,
                         "album_ndjson_bytes": album_bytes,
@@ -316,9 +325,9 @@ def do_build(engine, client, args):
                 visible,
                 classifications,
                 samples,
-                check=lambda: checkpoint(client, index, started, args.disk_path),
+                check=lambda: checkpoint(client, index, started, args.disk_path, max_seconds=max_seconds),
             )
-            audit["stats"] = checkpoint(client, index, started, args.disk_path)
+            audit["stats"] = checkpoint(client, index, started, args.disk_path, max_seconds=max_seconds)
             state = {
                 "doc_kind": "sync_state",
                 "schema_version": SCHEMA_VERSION,
@@ -477,7 +486,17 @@ def main(argv=None):
     parser.add_argument("command", choices=("plan", "build", "check", "refresh", "sync-ids", "sync-batch", "activate"))
     parser.add_argument("--database-url", default=settings.DATABASE_URL)
     parser.add_argument("--index")
-    parser.add_argument("--disk-path", default=os.getenv("ES_DATA_DIR", "/"), help="Filesystem path to monitor free space (defaults to ES_DATA_DIR or '/')")
+    parser.add_argument(
+        "--disk-path",
+        default=os.getenv("ES_DATA_DIR", "/"),
+        help="Filesystem path to monitor free space (defaults to ES_DATA_DIR or '/')",
+    )
+    parser.add_argument(
+        "--max-seconds",
+        type=int,
+        default=MAX_BUILD_SECONDS,
+        help="Maximum allowed elapsed seconds for build/maintenance (default 1800)",
+    )
     parser.add_argument("--lock-deadline-epoch", type=float)
     parser.add_argument("--ids", type=int, nargs="+")
     parser.add_argument("--batch-id", type=int)

@@ -154,6 +154,19 @@ def album_ids(client, index, *, check=None):
     return ids
 
 
+def canonical_mapping(obj):
+    if not isinstance(obj, dict):
+        return obj
+    res = {}
+    for k, v in obj.items():
+        if k == "type" and v == "object" and ("properties" in obj or "dynamic" in obj):
+            continue
+        if k == "search_analyzer" and obj.get("analyzer") == v:
+            continue
+        res[k] = canonical_mapping(v)
+    return res
+
+
 def validate_candidate(client, index, source_ids, visible_count, classifications, samples, *, check=None):
     if album_ids(client, index, check=check) != set(source_ids):
         raise RuntimeError("candidate album ID set differs from the source snapshot")
@@ -164,7 +177,7 @@ def validate_candidate(client, index, source_ids, visible_count, classifications
     if visible["hits"]["total"]["value"] != visible_count:
         raise RuntimeError("candidate visible count differs from the source snapshot")
     mapping = client.request("GET", f"/{index}/_mapping")
-    if mapping.get(index, {}).get("mappings") != INDEX_MAPPING:
+    if canonical_mapping(mapping.get(index, {}).get("mappings")) != canonical_mapping(INDEX_MAPPING):
         raise RuntimeError("candidate mapping differs from the approved schema")
     expected = [*classifications, *samples]
     for batch in iter_bulk_batches(expected):

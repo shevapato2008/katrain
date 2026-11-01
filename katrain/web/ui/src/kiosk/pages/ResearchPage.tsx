@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
@@ -15,7 +15,6 @@ import { isReplayStoneMove } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ruleNameOf } from '../utils/setupOptions';
 import { useAuth } from '../../context/AuthContext';
-import { movesToSGF } from '../../utils/sgfSerializer';
 import { whenLabel } from '../utils/whenLabel';
 import { KifuAPI } from '../../api/kifuApi';
 import { UserGamesAPI } from '../../api/userGamesApi';
@@ -92,13 +91,12 @@ const ResearchPage = () => {
   const [confirmClear, setConfirmClear] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [reportBusy, setReportBusy] = useState(false);
-  const positionSgf = useMemo(() => movesToSGF(board.moves.slice(0, board.currentMove), {
-    boardSize: board.boardSize, komi: board.komi, rules: board.rules, handicap: board.handicap, playerBlack: '', playerWhite: '',
-  }, board.stoneColors.slice(0, board.currentMove)).sgf, [board.moves, board.currentMove, board.boardSize, board.komi, board.rules, board.handicap, board.stoneColors]);
+  const positionSgf = board.serializeToSGF({ position: true }).sgf;
   const positionKey = positionSgf;
   const paid = usePaidPosition({ token, status, identityKey, snapshotKey: positionKey, input: { sgf: positionSgf } });
   const { createReport, pendingQuote: reportQuote, quoteBusy, confirmQuote, cancelQuote, error: reportError } = useReportTasks(token, isAuthenticated, identityKey, status);
-  const mover: 'B' | 'W' = board.currentMove > 0 && board.stoneColors[board.currentMove - 1] === 'B' ? 'W' : 'B';
+  const mover: 'B' | 'W' = board.currentMove <= board.handicapCount ? board.initialPlayer ?? 'B'
+    : board.stoneColors[board.currentMove - 1] === 'B' ? 'W' : 'B';
   const rows = paid.result ? toRows(paid.result.moves.map((move) => ({ ...move, winrate: move.winrate, scoreLead: move.score_lead })), mover) : null;
   const rowsError = paid.error;
   const showTerritory = paid.showOwnership && !!paid.result;
@@ -131,10 +129,10 @@ const ResearchPage = () => {
     if (board.handleIntersectionClick(x, y)) play('stone');
   }, [board, play]);
   const goToMove = useCallback((move: number) => {
-    const clamped = Math.max(0, Math.min(board.moves.length, move));
+    const clamped = Math.max(board.handicapCount, Math.min(board.moves.length, move));
     if (clamped === board.currentMove) return;
     board.handleMoveChange(clamped);
-    if (clamped > 0 && isReplayStoneMove(board.moves[clamped - 1], board.boardSize)) play('stone');
+    if (clamped > board.handicapCount && isReplayStoneMove(board.moves[clamped - 1], board.boardSize)) play('stone');
   }, [board, play]);
   // ── 出处与返回 ─────────────────────────────────────────────────────────────
   const [provenance, setProvenance] = useState<Provenance | null>(null);
@@ -334,6 +332,7 @@ const ResearchPage = () => {
       </div>
 
       <div className="kiosk-rail">
+        {board.editedSetup && <p className="kiosk-opthint">{t('research:new_setup_notice', '摆子编辑已建立新局面，原行棋历史已清除。')}</p>}
         {(saveError || reportError) && <p role="alert">{saveError || reportError}</p>}
         <KioskPagebar
           testId="research-pagebar"
@@ -397,11 +396,11 @@ const ResearchPage = () => {
         <div className="kiosk-movenav" data-testid="research-movenav">
           <button
             type="button" aria-label={t('kifu:to_start', '回到开局')}
-            disabled={board.currentMove === 0} onClick={() => goToMove(0)}
+            disabled={board.currentMove <= board.handicapCount} onClick={() => goToMove(0)}
           ><Icon name="caret-double-left" /></button>
           <button
             type="button" aria-label={t('kifu:prev_move', '上一手')}
-            disabled={board.currentMove === 0} onClick={() => goToMove(board.currentMove - 1)}
+            disabled={board.currentMove <= board.handicapCount} onClick={() => goToMove(board.currentMove - 1)}
           ><Icon name="caret-left" /></button>
           <button
             type="button" aria-label={t('kifu:next_move', '下一手')}

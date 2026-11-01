@@ -12,6 +12,21 @@ import httpx
 logger = logging.getLogger("katrain_web")
 
 
+def user_game_write_refusal_code(response: httpx.Response) -> Optional[str]:
+    """Distinguish explicit game write refusals from legacy duplicate 409s."""
+    if response.status_code != 409:
+        return None
+    try:
+        body = response.json()
+    except ValueError:
+        return None
+    detail = body.get("detail") if isinstance(body, dict) else None
+    code = detail.get("code") if isinstance(detail, dict) else None
+    if isinstance(code, str) and code in {"report_bound_game_immutable", "user_game_identity_conflict"}:
+        return code
+    return None
+
+
 class _CloudIdentity(NamedTuple):
     user_id: str
     generation: int

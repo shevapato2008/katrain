@@ -13,6 +13,8 @@ from katrain.web.core.user_game_repo import (
     ReservedAiLadderGameIdError,
     ActiveReportGameError,
     ProtectedReportAnalysisError,
+    ProtectedReportGameError,
+    UserGameOwnershipConflictError,
 )
 from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session, guard_user_has_no_pending_ranked_game
 
@@ -118,9 +120,8 @@ async def create_user_game(
     # Board mode: route through dispatcher (online → remote, offline → local + sync queue)
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await dispatcher.user_games_create(
-            user_id=current_user.id,
-            data=game_in.model_dump(),
+        return await _dispatch_remote_only(
+            lambda: dispatcher.user_games_create(user_id=current_user.id, data=game_in.model_dump())
         )
 
     try:
@@ -146,6 +147,14 @@ async def create_user_game(
             event=game_in.event,
             game_date=game_in.game_date,
         )
+    except ProtectedReportGameError as exc:
+        raise HTTPException(
+            status_code=409, detail={"code": "report_bound_game_immutable", "message": str(exc)}
+        ) from exc
+    except UserGameOwnershipConflictError as exc:
+        raise HTTPException(
+            status_code=409, detail={"code": "user_game_identity_conflict", "message": str(exc)}
+        ) from exc
     except ReservedAiLadderGameIdError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
@@ -193,6 +202,10 @@ async def update_user_game(
         )
     except ProtectedRankedGameError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ProtectedReportGameError as exc:
+        raise HTTPException(
+            status_code=409, detail={"code": "report_bound_game_immutable", "message": str(exc)}
+        ) from exc
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
     if not game:

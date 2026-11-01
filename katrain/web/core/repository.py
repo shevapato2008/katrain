@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 import httpx
 
-from katrain.web.core.remote_client import CloudIdentityChangedError, RemoteAPIClient
+from katrain.web.core.remote_client import CloudIdentityChangedError, RemoteAPIClient, user_game_write_refusal_code
 
 logger = logging.getLogger("katrain_web")
 
@@ -282,6 +282,8 @@ class RepositoryDispatcher:
             try:
                 return await self.remote_user_games.create_game(data)
             except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+                if isinstance(e, httpx.HTTPStatusError) and user_game_write_refusal_code(e.response):
+                    raise
                 logger.warning("user_games_create remote failed, falling back to local: %s", e)
         elif self.is_online:
             logger.info("user_games_create: cloud session is user %s, keeping user %s's game local", bound, user_id)

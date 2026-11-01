@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Alert, Box, Typography, Button } from '@mui/material';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
@@ -16,7 +16,6 @@ import GameLibraryModal from '../components/research/CloudSGFPanel';
 import { useAuth } from '../../context/AuthContext';
 import AuthRequiredDialog from '../components/auth/AuthRequiredDialog';
 import { accessAllowed } from '../../components/auth/accessPolicy';
-import { movesToSGF } from '../../utils/sgfSerializer';
 import { usePaidPosition } from '../../features/analysis/usePaidPosition';
 import { useReportTasks } from '../../features/report/useReportTasks';
 import { ConsumptionQuoteDialog } from '../../features/membership/ConsumptionQuoteDialog';
@@ -34,9 +33,7 @@ const ResearchPage = () => {
     const [reportBusy, setReportBusy] = useState(false);
     const [boardEdge, setBoardEdge] = useState(0);
     const coordinates = useBoardCoordinates(boardEdge);
-    const positionSgf = useMemo(() => movesToSGF(board.moves.slice(0, board.currentMove), {
-        boardSize: board.boardSize, komi: board.komi, rules: board.rules, handicap: board.handicap, playerBlack: '', playerWhite: '',
-    }, board.stoneColors.slice(0, board.currentMove)).sgf, [board.moves, board.currentMove, board.boardSize, board.komi, board.rules, board.handicap, board.stoneColors]);
+    const positionSgf = board.serializeToSGF({ position: true }).sgf;
     const paid = usePaidPosition({ token, status, identityKey, snapshotKey: positionSgf, input: { sgf: positionSgf } });
     const { createReport, pendingQuote: reportQuote, quoteBusy, confirmQuote, cancelQuote, error: reportError } = useReportTasks(token, isAuthenticated, identityKey, status);
     const l1ShowHints = paid.showHints && !!paid.result;
@@ -53,10 +50,10 @@ const ResearchPage = () => {
         if (board.handleIntersectionClick(x, y)) play('stone');
     }, [board, play]);
     const handleL1MoveChange = useCallback((move: number) => {
-        const target = Math.max(0, Math.min(board.moves.length, move));
+        const target = Math.max(board.handicapCount, Math.min(board.moves.length, move));
         if (target === board.currentMove) return;
         board.handleMoveChange(target);
-        if (target > 0 && isReplayStoneMove(board.moves[target - 1], board.boardSize)) play('stone');
+        if (target > board.handicapCount && isReplayStoneMove(board.moves[target - 1], board.boardSize)) play('stone');
     }, [board, play]);
     const liveIdentity = useRef(identityKey);
     liveIdentity.current = identityKey;
@@ -200,6 +197,7 @@ const ResearchPage = () => {
                 )}
                 railBody={(
                     <>
+                    {board.editedSetup && <Alert severity="info" sx={{ mb: 1 }}>{t('research:new_setup_notice', '摆子编辑已建立新局面，原行棋历史已清除。')}</Alert>}
                     {(paid.error || reportError || saveError) && <Alert severity="error" sx={{ mb: 1 }}>{paid.error || reportError || saveError}</Alert>}
                     <ResearchSetupPanel
                         playerBlack={board.playerBlack}
@@ -249,7 +247,7 @@ const ResearchPage = () => {
                         }}>
                             <Button
                                 size="small"
-                                disabled={board.currentMove === 0}
+                                disabled={board.currentMove <= board.handicapCount}
                                 onClick={() => handleL1MoveChange(0)}
                                 sx={{ minWidth: 32, color: 'text.secondary' }}
                             >
@@ -257,7 +255,7 @@ const ResearchPage = () => {
                             </Button>
                             <Button
                                 size="small"
-                                disabled={board.currentMove === 0}
+                                disabled={board.currentMove <= board.handicapCount}
                                 onClick={() => handleL1MoveChange(board.currentMove - 1)}
                                 sx={{ minWidth: 32, color: 'text.secondary' }}
                             >

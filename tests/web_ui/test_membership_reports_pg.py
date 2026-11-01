@@ -3,6 +3,9 @@
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event, current_thread
 
 import pytest
 from fastapi import FastAPI
@@ -723,3 +726,135 @@ async def test_real_ranked_pending_blocks_old_report_quotes_retry_and_private_mo
         assert (await client.get(f"/api/v1/reports/{owned['id']}")).status_code == 200
     with r.Session() as db:
         assert db.query(m.BillingOperation).count() == 2 and db.get(m.User, r.uid).credits == 97
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", ["reserved", "running", "committed"])
+async def test_paid_report_freezes_sgf_but_allows_ordinary_metadata_edits(reports, status):
+    r = reports
+    task = await create(r)
+    if status == "running":
+        with r.Session.begin() as db:
+            db.get(m.ReportTask, task["id"]).status = "running"
+            db.get(m.BillingOperation, task["operation_id"]).status = "running"
+    if status == "committed":
+        completed(r, task["id"])
+        with r.Session.begin() as db:
+            row = db.query(m.ReportTaskMove).filter_by(task_id=task["id"], move_number=1).one()
+            row.actual_move, row.actual_player = "A9", "B"
+    other_sgf = SGF.replace("B[aa];W[bb]", "B[cc];W[dd]")
+    async with AsyncClient(transport=ASGITransport(app=r.app), base_url="http://test") as client:
+        if status == "committed":
+            assert (await client.get(f"/reports/{task['id']}/moves")).status_code == 200
+        denied = await client.put(f"/games/{r.gid}", json={"sgf_content": other_sgf})
+        assert denied.status_code == 409, denied.text
+        assert denied.json()["detail"]["code"] == "report_bound_game_immutable"
+        assert "另存" in denied.json()["detail"]["message"]
+        unchanged = await client.put(
+            f"/games/{r.gid}", json={"sgf_content": SGF, "title": "renamed", "player_black": "new name"}
+        )
+        assert unchanged.status_code == 200, unchanged.text
+        assert unchanged.json()["sgf_content"] == SGF and unchanged.json()["title"] == "renamed"
+        assert (await client.get(f"/games/{r.gid}")).json()["sgf_content"] == SGF
+        if status == "committed":
+            for _ in range(2):
+                moves = await client.get(f"/reports/{task['id']}/moves")
+                assert moves.status_code == 200 and moves.json()[1]["actual_move"] == "A9"
+    with r.Session() as db:
+        assert db.get(m.BillingOperation, task["operation_id"]).status == status
+        assert db.get(m.User, r.uid).credits == 97
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("other_owned", [False, True])
+async def test_refunded_report_allows_edit_only_without_another_owned_asset(reports, other_owned):
+    r = reports
+    if other_owned:
+        owned = await create(r, key="owned")
+        completed(r, owned["id"])
+        async with AsyncClient(transport=ASGITransport(app=r.app), base_url="http://test") as client:
+            assert (await client.get(f"/reports/{owned['id']}/moves")).status_code == 200
+    failed = await create(r, key="failed", profile="advanced" if other_owned else "normal")
+    with r.Session.begin() as db:
+        db.get(m.ReportTask, failed["id"]).status = "failed"
+    async with AsyncClient(transport=ASGITransport(app=r.app), base_url="http://test") as client:
+        assert (await client.get(f"/reports/{failed['id']}/moves")).status_code == 409
+        response = await client.put(f"/games/{r.gid}", json={"sgf_content": SGF.replace("B[aa]", "B[cc]")})
+        assert response.status_code == (409 if other_owned else 200), response.text
+
+
+@pytest.mark.asyncio
+async def test_sync_create_cannot_change_a_paid_game_or_return_another_owners_record(reports):
+    r = reports
+    await create(r)
+    async with AsyncClient(transport=ASGITransport(app=r.app), base_url="http://test") as client:
+        body = {"id": r.gid, "source": "play_ai", "sgf_content": SGF}
+        assert (await client.post("/games/", json=body)).status_code == 200
+        response = await client.post("/games/", json={**body, "sgf_content": SGF.replace("B[aa]", "B[cc]")})
+        assert response.status_code == 409, response.text
+        assert response.json()["detail"]["code"] == "report_bound_game_immutable"
+        assert "另存" in response.json()["detail"]["message"]
+        with r.Session.begin() as db:
+            other = m.User(username="other-owner", hashed_password="x", credits=0)
+            db.add(other)
+            db.flush()
+            game = m.UserGame(user_id=other.id, source="import", sgf_content="(;SZ[9];B[dd])")
+            db.add(game)
+            db.flush()
+            other_game_id = game.id
+        response = await client.post("/games/", json={**body, "id": other_game_id})
+        assert response.status_code == 409, response.text
+        assert response.json()["detail"]["code"] == "user_game_identity_conflict"
+        assert "B[dd]" not in response.text
+
+
+def test_concurrent_authorization_holds_user_lock_against_sgf_update(reports):
+    from sqlalchemy import event
+    from katrain.web.api.v1.endpoints import reports as endpoint
+
+    r = reports
+    bound, release, user_lock_seen = Event(), Event(), Event()
+    original = endpoint._bind_paid_attempt
+
+    def pause_after_binding(*args, **kw):
+        original(*args, **kw)
+        bound.set()
+        assert release.wait(5)
+
+    r.monkeypatch.setattr(endpoint, "_bind_paid_attempt", pause_after_binding)
+
+    def saw_user_lock(connection, cursor, statement, parameters, context, executemany):
+        if current_thread().name.startswith("report-edit") and "FROM users" in statement and "FOR UPDATE" in statement:
+            user_lock_seen.set()
+
+    engine = r.Session.kw["bind"]
+    event.listen(engine, "before_cursor_execute", saw_user_lock)
+
+    async def request(method, path, body):
+        async with AsyncClient(transport=ASGITransport(app=r.app), base_url="http://test") as client:
+            return await client.request(method, path, json=body)
+
+    body = acceptance(r)
+    try:
+        with (
+            ThreadPoolExecutor(max_workers=1, thread_name_prefix="report-auth") as authorizer,
+            ThreadPoolExecutor(max_workers=1, thread_name_prefix="report-edit") as editor,
+        ):
+            admitted = authorizer.submit(lambda: asyncio.run(request("POST", "/reports/", body)))
+            assert bound.wait(5)
+            edited = editor.submit(
+                lambda: asyncio.run(request("PUT", f"/games/{r.gid}", {"sgf_content": SGF.replace("B[aa]", "B[cc]")}))
+            )
+            try:
+                assert user_lock_seen.wait(5), "SGF edits must acquire the same user lock as authorization"
+                assert not edited.done()
+            finally:
+                release.set()
+            assert admitted.result(5).status_code == 200
+            assert edited.result(5).status_code == 409
+    finally:
+        release.set()
+        event.remove(engine, "before_cursor_execute", saw_user_lock)
+    with r.Session() as db:
+        assert db.get(m.UserGame, r.gid).sgf_content == SGF
+        assert db.query(m.ReportTask).count() == 1 and db.get(m.User, r.uid).credits == 97

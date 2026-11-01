@@ -28,6 +28,14 @@ class ProtectedReportAnalysisError(ValueError):
     pass
 
 
+class ProtectedReportGameError(ValueError):
+    pass
+
+
+class UserGameOwnershipConflictError(ValueError):
+    pass
+
+
 class InvalidAuthoritativeRankedGameError(ValueError):
     pass
 
@@ -37,23 +45,61 @@ class InvalidAuthoritativeRankedGameError(ValueError):
 #: 前端同一口径在 `kiosk/components/report/reviewPresentation.ts` 的 `isPlaySource`;
 #: 以后新增一种来源,**默认不算**,要算就显式加进来。
 PLAYED_SOURCES = ("play_ai", "play_local", "play_human")
+ANALYSIS_GAME_FIELDS = frozenset({"sgf_content", "board_size", "rules", "komi", "move_count"})
 
 
 class UserGameRepository:
     def __init__(self, session_factory):
         self.session_factory = session_factory
 
+    @staticmethod
+    def _assert_report_content_editable(session, game, values):
+        if not any(getattr(game, key) != value for key, value in values.items()):
+            return
+        protected = (
+            session.query(models_db.ReportTask.id)
+            .join(models_db.BillingOperation, models_db.BillingOperation.id == models_db.ReportTask.operation_id)
+            .filter(
+                models_db.ReportTask.user_id == game.user_id,
+                models_db.ReportTask.user_game_id == game.id,
+                models_db.BillingOperation.user_id == game.user_id,
+                models_db.BillingOperation.kind == "report",
+                models_db.BillingOperation.status.in_(("reserved", "running", "committed")),
+            )
+            .first()
+        )
+        if protected:
+            # ReportDetail renders this game's SGF beside the report's frozen
+            # positions. Preserve that binding; editing needs a separate game.
+            raise ProtectedReportGameError("这份棋谱已有已授权或已保存的报告，请另存棋谱后编辑内容。")
+
     def create(
         self, user_id: int, sgf_content: str, source: str, game_id: Optional[str] = None, **kwargs
     ) -> Dict[str, Any]:
         session = self.session_factory()
         try:
+            if game_id:
+                session.query(models_db.User).filter_by(id=user_id).with_for_update().one_or_none()
             if game_id and self._is_ai_ladder_game_id_reserved(session, game_id):
                 raise ReservedAiLadderGameIdError("game_id is reserved for a ranked AI game")
             # Idempotent creation: if client provides an id that already exists, return existing record
             if game_id:
                 existing = session.query(models_db.UserGame).filter(models_db.UserGame.id == game_id).first()
                 if existing:
+                    if existing.user_id != user_id:
+                        raise UserGameOwnershipConflictError("game_id belongs to another user")
+                    self._assert_report_content_editable(
+                        session,
+                        existing,
+                        {
+                            "sgf_content": sgf_content,
+                            **{
+                                key: value
+                                for key, value in kwargs.items()
+                                if key in ANALYSIS_GAME_FIELDS and value is not None
+                            },
+                        },
+                    )
                     return self._to_dict(existing, include_sgf=True)
 
             sgf_hash = hashlib.sha256(sgf_content.encode()).hexdigest() if sgf_content else None
@@ -353,6 +399,11 @@ class UserGameRepository:
     ) -> Optional[Dict[str, Any]]:
         session = self.session_factory()
         try:
+            content = {key: value for key, value in kwargs.items() if key in ANALYSIS_GAME_FIELDS and value is not None}
+            if content:
+                # Same user lock as admission: a concurrent edit must observe
+                # the newly bound receipt after authorization commits.
+                session.query(models_db.User).filter_by(id=user_id).with_for_update().one_or_none()
             game = (
                 session.query(models_db.UserGame)
                 .filter(
@@ -365,6 +416,8 @@ class UserGameRepository:
                 return None
             if game.game_type == "ai_ladder_ranked":
                 raise ProtectedRankedGameError("authoritative ranked AI games are protected from generic updates")
+            if content:
+                self._assert_report_content_editable(session, game, content)
 
             # Optimistic lock: if updated_at provided, check it matches
             if updated_at and game.updated_at and str(game.updated_at) != updated_at:

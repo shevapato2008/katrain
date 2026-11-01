@@ -1,5 +1,7 @@
 """Pure exact-name classification and Elasticsearch query compilation."""
 
+import re
+
 from katrain.web.kifu.identity import normalize_alias
 from katrain.web.kifu.search_documents import NAME_LANGUAGES
 from katrain.web.kifu.library_search import HISTORICAL_PLAYER_ALIASES
@@ -97,15 +99,35 @@ def classify_qualified_names(player_rows, event_rows, raw_players, raw_events, *
     return value
 
 
-def merge_classifications(exact=None, alias=None):
-    """Combine one exact document with the legacy alias lookup from the same mget."""
-    value = dict(exact or {})
-    if alias and not value.get("strict", alias.get("strict", True)):
-        for key in ("player_ids", "event_ids"):
-            value[key] = sorted(set(value.get(key, ())) | set(alias.get(key, ())))
-        value["strict"] = False
-        value["has_exact_player_name"] = value.get("has_exact_player_name", False) or bool(alias.get("player_ids"))
-        value["mode"] = _mode(value)
+def merge_classifications(*plans):
+    """Combine exact documents with legacy alias lookups from the same mget."""
+    value = {}
+    for plan in plans:
+        if not plan:
+            continue
+        if not value:
+            value = dict(plan)
+            if "mode" not in value and (value.get("player_ids") or value.get("event_ids")):
+                value["mode"] = _mode(value)
+            continue
+        if not plan.get("strict", value.get("strict", True)):
+            for key in ("player_ids", "event_ids"):
+                value[key] = sorted(set(value.get(key, ())) | set(plan.get(key, ())))
+            value["strict"] = False
+            value["has_exact_player_name"] = value.get("has_exact_player_name", False) or bool(plan.get("player_ids"))
+            value["mode"] = _mode(value)
+        elif value.get("mode", "generic") == "generic" and plan.get("mode", "generic") != "generic":
+            for k in (
+                "mode",
+                "player_ids",
+                "event_ids",
+                "raw_player_name_ids",
+                "raw_event_name_ids",
+                "shared_player_ids",
+                "has_exact_player_name",
+            ):
+                if k in plan:
+                    value[k] = plan[k]
     return value
 
 
@@ -183,10 +205,24 @@ def compile_query(classification, q, player_id):
             terms = [q.lower()]
             if not classification.get("strict", True):
                 terms.extend(HISTORICAL_PLAYER_ALIASES.get(q.removeprefix("本因坊"), ()))
-            priority = _any(
-                [_contains(field, term) for field in ("player_black_lower", "player_white_lower") for term in terms]
-            )
+            player_clauses = [
+                _contains(field, term) for field in ("player_black_lower", "player_white_lower") for term in terms
+            ]
+            has_letters = bool(re.search(r"[a-zA-Z]", q))
+            if has_letters and not classification.get("has_exact_player_name"):
+                for lang in ("cn", "tw"):
+                    player_clauses.extend(
+                        [
+                            {"match": {f"display.{lang}.player_black.pinyin": {"query": q, "operator": "and"}}},
+                            {"match": {f"display.{lang}.player_white.pinyin": {"query": q, "operator": "and"}}},
+                        ]
+                    )
+            priority = _any(player_clauses)
             generic = [_contains("search_text", q.lower()), priority, *owners, *selected]
+            if has_letters and not classification.get("has_exact_player_name"):
+                generic.append({"match": {"search_text_pinyin": {"query": q, "operator": "and"}}})
+                for lang in ("cn", "tw"):
+                    generic.append({"match": {f"display.{lang}.event.pinyin": {"query": q, "operator": "and"}}})
             if not classification.get("has_exact_player_name"):
                 generic.append(
                     _any(

@@ -200,14 +200,12 @@ describe('闸：持有会话 WS 的 hook，调用方必须把 token 交进去', 
         expect(offenders, '会话 WS 拿不到凭据 ⇒ 服务端 close(1008) ⇒ 棋盘不再更新').toEqual([]);
     });
 
-    it('五个调用点一个都不少', () => {
-        // 同样是防「整项没了」：这五个页面/hook 必须都还在开会话 WS。
+    it('三个对局调用点一个都不少', () => {
+        // 对局继续使用认证WS；研究编辑器的付费结果现在只经本人HTTP返回。
         const expected: Array<[string, string]> = [
             ['galaxy/pages/GamePage.tsx', 'useGameSession'],
             ['galaxy/pages/GameRoomPage.tsx', 'useGameSession'],
             ['kiosk/pages/GamePage.tsx', 'useGameSession'],
-            ['galaxy/pages/ResearchPage.tsx', 'useResearchSession'],
-            ['kiosk/pages/ResearchPage.tsx', 'useResearchSession'],
         ];
         for (const [rel, hook] of expected) {
             const args = callArgs(readFileSync(join(SRC, rel), 'utf8'), hook);

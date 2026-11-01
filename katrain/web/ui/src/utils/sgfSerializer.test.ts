@@ -224,3 +224,21 @@ describe('复盘链要的那两样：RE[] 和摆子偏移', () => {
     expect(parsed.setupCount).toBe(0);
   });
 });
+
+it('round-trips explicit initial setup and player separately from the move history', () => {
+  const parsed = sgfToMoves('(;SZ[19]AB[dp][pd]AW[dd]PL[W];W[pp];B[qq])');
+  expect(parsed.metadata.initialPlayer).toBe('W');
+  expect(parsed.metadata.setupCount).toBe(3);
+  const output = movesToSGF(parsed.moves, { ...defaultMeta, ...parsed.metadata }, parsed.stoneColors);
+  expect(output.sgf).toContain('AB[dp][pd]AW[dd]PL[W]');
+  expect(output.sgf).toContain(';W[pp];B[qq]');
+  expect(output.moveCount).toBe(2);
+});
+
+it('preserves expanded initial setup and AE removals before the first move', () => {
+  const parsed = sgfToMoves('(;SZ[19]AB[aa:bb];AE[aa]AW[dd]PL[W];W[pp])');
+  expect(parsed.setupCount).toBe(4);
+  expect(parsed.moves).toEqual(['B19', 'A18', 'B18', 'D16', 'Q4']);
+  const exported = movesToSGF(parsed.moves, { ...defaultMeta, ...parsed.metadata }, parsed.stoneColors);
+  expect(exported.sgf).toContain('AB[ba][ab][bb]AW[dd]PL[W];W[pp]');
+});

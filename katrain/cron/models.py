@@ -208,7 +208,11 @@ class KifuAnalysisJobDB(Base):
     started_at = Column(DateTime(timezone=True))
     completed_at = Column(DateTime(timezone=True))
 
-    __table_args__ = (UniqueConstraint("album_id", "sgf_sha256", "model_sha256", "requested_visits", name="uq_kifu_analysis_identity"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "album_id", "sgf_sha256", "model_sha256", "requested_visits", name="uq_kifu_analysis_identity"
+        ),
+    )
 
 
 class KifuAnalysisMoveDB(Base):
@@ -260,7 +264,11 @@ class ReportTaskDB(Base):
     # 这一列 —— 只加在 web 模型会让这里永远读到 None、校验形同虚设(见
     # katrain/web/core/models_db.py:ReportTask 同名列的注释)。
     sgf_hash = Column(String(64), nullable=True)
+    analysis_sgf = Column(Text, nullable=True)
     model_sha256 = Column(String(64), nullable=True)
+    billing_version = Column(String(64), nullable=True)
+    operation_id = Column(Integer, nullable=True, index=True)
+    generation = Column(Integer, nullable=False, default=0, server_default="0")
     # 非 NULL = 这个任务不该被 web 侧结算器收费(如本文件 requeue_reports.py 重排)。
     # cron 侧要写这一列 —— 只加在 web 模型会让 requeue_reports.py 的赋值在 cron
     # 容器里抛 AttributeError(见 katrain/web/core/models_db.py:ReportTask 同名列的注释)。
@@ -275,6 +283,25 @@ class ReportTaskDB(Base):
         Index("ix_report_tasks_status_created", "status", "created_at"),
         {"extend_existing": True},
     )
+
+
+class BillingOperationDB(Base):
+    """Only the receipt fields needed to fence a paid report worker; never settles money."""
+
+    __tablename__ = "billing_operations"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, nullable=False)
+    kind = Column(String(24), nullable=False)
+    status = Column(String(24), nullable=False)
+    generation = Column(Integer, nullable=False)
+    task_id = Column(Integer, nullable=True)
+    game_id = Column(String(64), nullable=True)
+    profile = Column(String(24), nullable=False)
+    model_sha256 = Column(String(64), nullable=False)
+    units = Column(Integer, nullable=False)
+    catalog_version = Column(String(64), nullable=False)
+    lease_expires_at = Column(DateTime(timezone=True), nullable=True)
+    __table_args__ = {"extend_existing": True}
 
 
 class ReportTaskMoveDB(Base):
@@ -302,11 +329,11 @@ class ReportTaskMoveDB(Base):
     # grade 为 NULL 或 'unrated' 表示这手没有被评级（上一手没分析 / visits 不够），
     # 前端必须把它当作「不知道」，不能当作「没问题」。
     grade = Column(String(16), nullable=True)
-    points_lost = Column(Float, nullable=True)          # 对落子方而言亏的目数，>=0
+    points_lost = Column(Float, nullable=True)  # 对落子方而言亏的目数，>=0
     points_lost_source = Column(String(12), nullable=True)  # in_search | two_search | none
     is_top_move = Column(Boolean, nullable=True)
-    top_prior = Column(Float, nullable=True)            # 引擎首选的 policy 先验
-    brilliance = Column(Integer, nullable=True)         # 妙度 1-5，仅 grade='brilliant' 时有值
+    top_prior = Column(Float, nullable=True)  # 引擎首选的 policy 先验
+    brilliance = Column(Integer, nullable=True)  # 妙度 1-5，仅 grade='brilliant' 时有值
     # 注意：上面的 `visits` 列存的是**首选的 childVisits**，不是根搜索量
     # （report_analyze 取的是 move_infos[:1] 的 visits）。评级的「搜够了没有」闸
     # 必须看根搜索量，否则会静默压制妙手，所以单独存一列。
@@ -368,6 +395,7 @@ class UserGameDB(Base):
     __tablename__ = "user_games"
 
     id = Column(String(32), primary_key=True)
+    user_id = Column(Integer, nullable=False)
     sgf_content = Column(Text, nullable=True)
 
     __table_args__ = ({"extend_existing": True},)

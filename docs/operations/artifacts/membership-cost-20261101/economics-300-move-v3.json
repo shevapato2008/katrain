@@ -1,0 +1,611 @@
+{
+  "status": "review_round2_candidate_not_user_approved_or_sale_enabled",
+  "source": [
+    "engine-benchmark.json",
+    "full-report-result.json"
+  ],
+  "reference_moves": 300,
+  "reference_positions": 301,
+  "rent_yuan": 3500,
+  "seconds_30d": 2592000,
+  "fixed_reserve_example": 4200,
+  "point_yuan": 1,
+  "credits_per_point": 100,
+  "credits_per_standard_unit": 1,
+  "unit_point_price": 0.01,
+  "plans": [
+    {
+      "plan": "plus",
+      "price": 29,
+      "term_units": 9030,
+      "week_units": 2107,
+      "term_report_equivalent_300": 30.0,
+      "week_report_equivalent_300": 7.0,
+      "prepaid_point_equivalent": 90.3,
+      "fulluse_discount_fold": 3.2115171650055374,
+      "effective_price_per_unit": 0.003211517165005537,
+      "rent_breakeven_count": 121
+    },
+    {
+      "plan": "pro",
+      "price": 99,
+      "term_units": 36120,
+      "week_units": 8428,
+      "term_report_equivalent_300": 120.0,
+      "week_report_equivalent_300": 28.0,
+      "prepaid_point_equivalent": 361.2,
+      "fulluse_discount_fold": 2.7408637873754156,
+      "effective_price_per_unit": 0.0027408637873754154,
+      "rent_breakeven_count": 36
+    },
+    {
+      "plan": "max",
+      "price": 299,
+      "term_units": 117390,
+      "week_units": 27391,
+      "term_report_equivalent_300": 390.0,
+      "week_report_equivalent_300": 91.0,
+      "prepaid_point_equivalent": 1173.9,
+      "fulluse_discount_fold": 2.547065337763012,
+      "effective_price_per_unit": 0.0025470653377630123,
+      "rent_breakeven_count": 12
+    }
+  ],
+  "profiles": {
+    "full_report_serial": {
+      "rate": 0.7698423146391649,
+      "monthly_units_extrapolated": 1995431.2795447153,
+      "nominal_visits_extrapolated": 997715639.7723577,
+      "rent_unit_floor": 0.001754006783334865,
+      "rent_cost_per_report_301": 0.5279560417837944,
+      "scenarios": [
+        {
+          "kappa": 1,
+          "fixed_cost": 3500,
+          "unit_cost": 0.001754006783334865,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 15.838681253513831,
+              "margin_percent": 45.38385774650403
+            },
+            {
+              "plan": "pro",
+              "cost": 63.354725014055326,
+              "margin_percent": 36.00532826863098
+            },
+            {
+              "plan": "max",
+              "cost": 205.9028562956798,
+              "margin_percent": 31.136168462983342
+            }
+          ]
+        },
+        {
+          "kappa": 1,
+          "fixed_cost": 4200,
+          "unit_cost": 0.002104808140001838,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 19.006417504216596,
+              "margin_percent": 34.46062929580484
+            },
+            {
+              "plan": "pro",
+              "cost": 76.02567001686639,
+              "margin_percent": 23.206393922357186
+            },
+            {
+              "plan": "max",
+              "cost": 247.08342755481576,
+              "margin_percent": 17.363402155580015
+            }
+          ]
+        },
+        {
+          "kappa": 0.7,
+          "fixed_cost": 3500,
+          "unit_cost": 0.0025057239761926645,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 22.62668750501976,
+              "margin_percent": 21.9769396378629
+            },
+            {
+              "plan": "pro",
+              "cost": 90.50675002007904,
+              "margin_percent": 8.579040383758546
+            },
+            {
+              "plan": "max",
+              "cost": 294.1469375652569,
+              "margin_percent": 1.6230978042619044
+            }
+          ]
+        },
+        {
+          "kappa": 0.7,
+          "fixed_cost": 4200,
+          "unit_cost": 0.0030068687714311973,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 27.152025006023713,
+              "margin_percent": 6.372327565435472
+            },
+            {
+              "plan": "pro",
+              "cost": 108.60810002409485,
+              "margin_percent": -9.70515153948975
+            },
+            {
+              "plan": "max",
+              "cost": 352.97632507830826,
+              "margin_percent": -18.052282634885707
+            }
+          ]
+        },
+        {
+          "kappa": 0.5,
+          "fixed_cost": 3500,
+          "unit_cost": 0.00350801356666973,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 31.677362507027663,
+              "margin_percent": -9.232284506991942
+            },
+            {
+              "plan": "pro",
+              "cost": 126.70945002811065,
+              "margin_percent": -27.98934346273803
+            },
+            {
+              "plan": "max",
+              "cost": 411.8057125913596,
+              "margin_percent": -37.727663074033316
+            }
+          ]
+        },
+        {
+          "kappa": 0.5,
+          "fixed_cost": 4200,
+          "unit_cost": 0.004209616280003676,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 38.01283500843319,
+              "margin_percent": -31.07874140839032
+            },
+            {
+              "plan": "pro",
+              "cost": 152.05134003373277,
+              "margin_percent": -53.58721215528563
+            },
+            {
+              "plan": "max",
+              "cost": 494.1668551096315,
+              "margin_percent": -65.27319568883996
+            }
+          ]
+        },
+        {
+          "kappa": 0.3,
+          "fixed_cost": 3500,
+          "unit_cost": 0.005846689277782884,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 52.79560417837944,
+              "margin_percent": -82.05380751165325
+            },
+            {
+              "plan": "pro",
+              "cost": 211.18241671351777,
+              "margin_percent": -113.31557243789673
+            },
+            {
+              "plan": "max",
+              "cost": 686.3428543189327,
+              "margin_percent": -129.54610512338886
+            }
+          ]
+        },
+        {
+          "kappa": 0.3,
+          "fixed_cost": 4200,
+          "unit_cost": 0.007016027133339461,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 63.35472501405533,
+              "margin_percent": -118.4645690139839
+            },
+            {
+              "plan": "pro",
+              "cost": 253.41890005622133,
+              "margin_percent": -155.9786869254761
+            },
+            {
+              "plan": "max",
+              "cost": 823.6114251827194,
+              "margin_percent": -175.45532614806666
+            }
+          ]
+        }
+      ]
+    },
+    "sparse_serial": {
+      "rate": 0.42719592370598375,
+      "monthly_units_extrapolated": 1107291.83424591,
+      "nominal_visits_extrapolated": 553645917.122955,
+      "rent_unit_floor": 0.0031608649967003297,
+      "rent_cost_per_report_301": 0.9514203640067992,
+      "scenarios": [
+        {
+          "kappa": 1,
+          "fixed_cost": 3500,
+          "unit_cost": 0.0031608649967003297,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 28.542610920203977,
+              "margin_percent": 1.5772037234345626
+            },
+            {
+              "plan": "pro",
+              "cost": 114.17044368081591,
+              "margin_percent": -15.323680485672634
+            },
+            {
+              "plan": "max",
+              "cost": 371.0539419626517,
+              "margin_percent": -24.098308348712948
+            }
+          ]
+        },
+        {
+          "kappa": 1,
+          "fixed_cost": 4200,
+          "unit_cost": 0.0037930379960403955,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 34.25113310424477,
+              "margin_percent": -18.107355531878525
+            },
+            {
+              "plan": "pro",
+              "cost": 137.0045324169791,
+              "margin_percent": -38.38841658280716
+            },
+            {
+              "plan": "max",
+              "cost": 445.26473035518205,
+              "margin_percent": -48.917970018455534
+            }
+          ]
+        },
+        {
+          "kappa": 0.7,
+          "fixed_cost": 3500,
+          "unit_cost": 0.004515521423857614,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 40.77515845743425,
+              "margin_percent": -40.603994680807766
+            },
+            {
+              "plan": "pro",
+              "cost": 163.100633829737,
+              "margin_percent": -64.74811497953233
+            },
+            {
+              "plan": "max",
+              "cost": 530.0770599466452,
+              "margin_percent": -77.28329764101848
+            }
+          ]
+        },
+        {
+          "kappa": 0.7,
+          "fixed_cost": 4200,
+          "unit_cost": 0.005418625708629137,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 48.930190148921106,
+              "margin_percent": -68.72479361696932
+            },
+            {
+              "plan": "pro",
+              "cost": 195.72076059568442,
+              "margin_percent": -97.69773797543881
+            },
+            {
+              "plan": "max",
+              "cost": 636.0924719359743,
+              "margin_percent": -112.73995716922218
+            }
+          ]
+        },
+        {
+          "kappa": 0.5,
+          "fixed_cost": 3500,
+          "unit_cost": 0.006321729993400659,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 57.085221840407954,
+              "margin_percent": -96.84559255313087
+            },
+            {
+              "plan": "pro",
+              "cost": 228.34088736163181,
+              "margin_percent": -130.64736097134525
+            },
+            {
+              "plan": "max",
+              "cost": 742.1078839253034,
+              "margin_percent": -148.1966166974259
+            }
+          ]
+        },
+        {
+          "kappa": 0.5,
+          "fixed_cost": 4200,
+          "unit_cost": 0.007586075992080791,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 68.50226620848954,
+              "margin_percent": -136.21471106375705
+            },
+            {
+              "plan": "pro",
+              "cost": 274.0090648339582,
+              "margin_percent": -176.77683316561433
+            },
+            {
+              "plan": "max",
+              "cost": 890.5294607103641,
+              "margin_percent": -197.83594003691107
+            }
+          ]
+        },
+        {
+          "kappa": 0.3,
+          "fixed_cost": 3500,
+          "unit_cost": 0.010536216655667766,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 95.14203640067993,
+              "margin_percent": -228.07598758855144
+            },
+            {
+              "plan": "pro",
+              "cost": 380.5681456027197,
+              "margin_percent": -284.41226828557546
+            },
+            {
+              "plan": "max",
+              "cost": 1236.8464732088391,
+              "margin_percent": -313.6610278290432
+            }
+          ]
+        },
+        {
+          "kappa": 0.3,
+          "fixed_cost": 4200,
+          "unit_cost": 0.012643459986801319,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 114.17044368081591,
+              "margin_percent": -293.69118510626174
+            },
+            {
+              "plan": "pro",
+              "cost": 456.68177472326363,
+              "margin_percent": -361.2947219426905
+            },
+            {
+              "plan": "max",
+              "cost": 1484.2157678506069,
+              "margin_percent": -396.3932333948518
+            }
+          ]
+        }
+      ]
+    },
+    "sparse_parallel3": {
+      "rate": 0.7418711458366415,
+      "monthly_units_extrapolated": 1922930.0100085747,
+      "nominal_visits_extrapolated": 961465005.0042874,
+      "rent_unit_floor": 0.0018201390491505163,
+      "rent_cost_per_report_301": 0.5478618537943054,
+      "scenarios": [
+        {
+          "kappa": 1,
+          "fixed_cost": 3500,
+          "unit_cost": 0.0018201390491505163,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 16.435855613829162,
+              "margin_percent": 43.3246358143822
+            },
+            {
+              "plan": "pro",
+              "cost": 65.74342245531665,
+              "margin_percent": 33.592502570387225
+            },
+            {
+              "plan": "max",
+              "cost": 213.6661229797791,
+              "margin_percent": 28.53975820074278
+            }
+          ]
+        },
+        {
+          "kappa": 1,
+          "fixed_cost": 4200,
+          "unit_cost": 0.0021841668589806197,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 19.723026736594996,
+              "margin_percent": 31.989562977258636
+            },
+            {
+              "plan": "pro",
+              "cost": 78.89210694637998,
+              "margin_percent": 20.311003084464666
+            },
+            {
+              "plan": "max",
+              "cost": 256.39934757573496,
+              "margin_percent": 14.247709840891314
+            }
+          ]
+        },
+        {
+          "kappa": 0.7,
+          "fixed_cost": 3500,
+          "unit_cost": 0.002600198641643595,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 23.479793734041664,
+              "margin_percent": 19.035194020545987
+            },
+            {
+              "plan": "pro",
+              "cost": 93.91917493616666,
+              "margin_percent": 5.132146529124591
+            },
+            {
+              "plan": "max",
+              "cost": 305.23731854254163,
+              "margin_percent": -2.0860597132246252
+            }
+          ]
+        },
+        {
+          "kappa": 0.7,
+          "fixed_cost": 4200,
+          "unit_cost": 0.003120238369972314,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 28.175752480849997,
+              "margin_percent": 2.8422328246551816
+            },
+            {
+              "plan": "pro",
+              "cost": 112.70300992339999,
+              "margin_percent": -13.841424165050494
+            },
+            {
+              "plan": "max",
+              "cost": 366.28478225104993,
+              "margin_percent": -22.503271655869543
+            }
+          ]
+        },
+        {
+          "kappa": 0.5,
+          "fixed_cost": 3500,
+          "unit_cost": 0.0036402780983010325,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 32.871711227658324,
+              "margin_percent": -13.350728371235599
+            },
+            {
+              "plan": "pro",
+              "cost": 131.4868449106333,
+              "margin_percent": -32.81499485922555
+            },
+            {
+              "plan": "max",
+              "cost": 427.3322459595582,
+              "margin_percent": -42.920483598514444
+            }
+          ]
+        },
+        {
+          "kappa": 0.5,
+          "fixed_cost": 4200,
+          "unit_cost": 0.004368333717961239,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 39.44605347318999,
+              "margin_percent": -36.02087404548273
+            },
+            {
+              "plan": "pro",
+              "cost": 157.78421389275996,
+              "margin_percent": -59.377993831070675
+            },
+            {
+              "plan": "max",
+              "cost": 512.7986951514699,
+              "margin_percent": -71.50458031821736
+            }
+          ]
+        },
+        {
+          "kappa": 0.3,
+          "fixed_cost": 3500,
+          "unit_cost": 0.006067130163835055,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 54.78618537943055,
+              "margin_percent": -88.91788061872603
+            },
+            {
+              "plan": "pro",
+              "cost": 219.1447415177222,
+              "margin_percent": -121.35832476537595
+            },
+            {
+              "plan": "max",
+              "cost": 712.2204099325971,
+              "margin_percent": -138.20080599752413
+            }
+          ]
+        },
+        {
+          "kappa": 0.3,
+          "fixed_cost": 4200,
+          "unit_cost": 0.007280556196602066,
+          "plans": [
+            {
+              "plan": "plus",
+              "cost": 65.74342245531666,
+              "margin_percent": -126.70145674247124
+            },
+            {
+              "plan": "pro",
+              "cost": 262.97368982126665,
+              "margin_percent": -165.62998971845116
+            },
+            {
+              "plan": "max",
+              "cost": 854.6644919191165,
+              "margin_percent": -185.84096719702893
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

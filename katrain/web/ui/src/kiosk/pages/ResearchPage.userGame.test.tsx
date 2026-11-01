@@ -4,6 +4,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 
+vi.mock('../../features/report/useReportTasks', () => ({ useReportTasks: () => ({ pendingQuote: null, quoteBusy: false, error: null }) }));
+
 vi.mock('../../api', () => ({
   API: {
     quickAnalyze: vi.fn().mockResolvedValue({ turnInfos: [{ moveInfos: [], ownership: null }] }),

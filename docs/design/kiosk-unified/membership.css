@@ -1,0 +1,120 @@
+/* v3.1 membership fixture; existing Kiosk palette, Kai/Plex typography and soft keys. */
+.membership-demo-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0;color:#bed2c3;font:14px system-ui,sans-serif}
+.membership-demo-controls[hidden]{display:none}
+.membership-demo-controls button,.membership-demo-controls select{min-height:36px;padding:6px 10px;border:1px solid #49684f;border-radius:7px;background:#203327;color:#edf5ec;font:14px system-ui,sans-serif}
+.membership-demo-controls small{flex-basis:100%;font:13px system-ui,sans-serif;color:#b8c8bc}
+#stage .u-membership{--mem-bg:#0f1915;--mem-panel:#1a2922;--mem-line:#3a5543;--mem-sub:#bed0c1;--mem-green:#8dddab;--mem-amber:#edc07d;position:absolute;inset:56px 0 0;padding:14px 16px;color:#eef5ec;background:var(--mem-bg);font:22px "SmartBox Kai",serif;display:grid;grid-template-rows:48px 52px minmax(0,1fr);gap:12px}
+.u-membership *{box-sizing:border-box}
+.u-membership button{min-width:44px;min-height:44px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #4a6a52;border-radius:17px;color:#edf5ec;background-color:#21372a;font:inherit;font-size:22px;line-height:1.2;cursor:pointer}
+.u-membership button:disabled{color:#b4beb7;background-color:#26332b;border-color:#3c4d40;cursor:default}
+.u-membership button:focus-visible{outline:3px solid #a7edbe;outline-offset:3px}
+.u-membership svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.u-membership strong{font-weight:400}
+#stage .u-membership :is(h1,h2,h3){display:block;padding:0;margin:0;font-weight:400;line-height:1.25}
+#stage .u-membership h1{font-size:28px}
+#stage .u-membership :is(h2,h3){font-size:22px}
+.u-membership p{margin:0;line-height:1.35}
+.u-membership .mem-primary{color:#10291a;background-color:#79d59b;border-color:#a1e4b7}
+#stage .u-membership :is(.mem-info,.mem-close){width:44px;height:44px;flex:none;padding:0;border-radius:50%}
+.mem-head{display:flex;align-items:center;gap:16px}
+.mem-head>button{height:46px}
+.mem-head .mem-test{margin-left:auto;color:var(--mem-amber);font-size:18px;white-space:nowrap}
+.mem-tabs{display:flex;gap:2px;padding:3px;border:1px solid #46634d;border-radius:15px;background:#19291f;box-shadow:inset 0 2px 4px #07140bb3,0 1px 0 #486750}
+#stage .u-membership .mem-tabs button{flex:1;min-height:44px;border:0;border-radius:11px;background:transparent;box-shadow:none;translate:none}
+#stage .u-membership .mem-tabs button[aria-selected=true]{background:linear-gradient(#3d674b,#284936);color:#f0f7ee;box-shadow:inset 0 1px 0 #ffffff68,inset 0 -2px 0 #142f1b,0 3px 5px #0008}
+#stage .u-membership .mem-tabs button:active{translate:0 2px;box-shadow:inset 0 3px 6px #0008}
+.mem-body{min-height:0}
+.mem-section-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}
+.mem-footnote{font-size:18px;color:var(--mem-sub);line-height:1.4}
+.mem-usage{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;height:100%}
+.mem-resource{min-width:0;display:flex;flex-direction:column;gap:12px}
+.mem-available{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mem-source-badge{font-size:22px;line-height:1.35;color:var(--mem-green)}
+.mem-source-badge.is-notice{color:var(--mem-amber)}
+.mem-limit{padding:10px 14px;border:1px solid var(--mem-line);border-radius:12px;background:var(--mem-panel);display:flex;flex-direction:column;gap:6px}
+.mem-limit-heading,.mem-limit-detail{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mem-limit-heading{font-size:22px;line-height:1.2}
+.mem-limit-heading>span{font-size:18px;color:var(--mem-green);white-space:nowrap}
+.mem-limit-heading .mem-remaining{display:flex;align-items:baseline;gap:8px}
+.mem-remaining>strong{font-size:28px}
+.mem-progress{height:8px;border-radius:6px;background:#36493a;overflow:hidden;flex:none}
+.mem-progress i{height:100%;display:block;background:#76d49b;border-radius:6px}
+.mem-limit-detail{font-size:18px;color:var(--mem-sub);line-height:1.2}
+.mem-limit-reset{display:flex;gap:10px;font-size:18px;color:var(--mem-sub);line-height:1.2}
+.mem-limit-reset>span{margin-left:auto}
+.mem-resource>.mem-footnote{margin-top:auto}
+.mem-aside{padding:12px;border:1px solid var(--mem-line);border-radius:12px;background:var(--mem-panel);display:flex;flex-direction:column;gap:8px}
+.mem-account{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:22px}
+.mem-badge{font-size:18px;color:var(--mem-green)}
+.mem-aside p{font-size:18px;color:var(--mem-sub)}
+.mem-wallet{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:6px;padding:10px 0;border-top:1px solid var(--mem-line);border-bottom:1px solid var(--mem-line)}
+.mem-wallet>span{font-size:18px;color:var(--mem-sub)}
+.mem-wallet>span:last-child{grid-column:1/-1}
+.mem-wallet strong{font-size:28px}
+.mem-sync{display:flex;align-items:center;gap:8px;font-size:18px;color:var(--mem-sub);white-space:nowrap}
+.mem-sync>i{width:7px;height:7px;flex:none;background:var(--mem-green);border-radius:50%}
+.mem-sync.is-stale{color:var(--mem-amber)}
+.mem-sync.is-stale>i{background:var(--mem-amber)}
+.mem-account-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto}
+.mem-account-actions button{padding:0 6px}
+.mem-free,.mem-empty{flex:1;display:flex;flex-direction:column;gap:18px;padding:20px;border:1px solid var(--mem-line);border-radius:12px;background:var(--mem-panel)}
+.mem-empty{justify-content:center;align-items:flex-start}
+.mem-empty p,.mem-free p{font-size:18px;color:var(--mem-sub)}
+.mem-free .mem-free-count{font-size:28px;color:var(--mem-green)}
+.mem-free>.mem-footnote{margin-top:auto}
+.mem-plans{height:100%;display:flex;flex-direction:column;gap:12px}
+.mem-comparison-heading{display:flex;align-items:center;gap:12px;min-height:44px;font-size:18px;color:var(--mem-sub)}
+.mem-comparison-heading>span:nth-child(2){margin-left:auto}
+.mem-plan-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1fr);gap:12px}
+.mem-plan{padding:12px 16px;border:1px solid var(--mem-line);border-radius:12px;background:var(--mem-panel);display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0}
+.mem-plan.is-current{border-color:#77bd8d;background:#20352a}
+.mem-plan.is-unavailable{background:#1b2520}
+.mem-plan-head{height:26px;display:flex;align-items:center;justify-content:space-between;font-size:22px}
+.mem-plan-head>span{font-size:18px;color:var(--mem-sub)}
+.mem-plan.is-current .mem-plan-head>span{color:var(--mem-green)}
+.mem-plan-price{font-size:28px;line-height:1.15}
+.mem-plan-price small{font-size:18px;color:var(--mem-sub)}
+.mem-plan .mem-saving{font-size:22px;color:var(--mem-green);line-height:1.25}
+.mem-report-reference{display:flex;flex-direction:column;gap:4px;padding-top:2px}
+.mem-report-reference strong{font-size:22px;line-height:1.25}
+.mem-report-reference>span{font-size:18px;line-height:1.25;color:var(--mem-sub)}
+.mem-plan>button{margin-top:auto;width:100%;height:44px;flex:none}
+.mem-plan-footer{font-size:18px;color:var(--mem-sub);line-height:1.4;min-height:50px;display:flex;align-items:center}
+.mem-plan-footer p{line-height:1.4}
+.mem-topup{height:100%;display:grid;grid-template-columns:1.15fr 1fr;gap:16px}
+.mem-api-rates,.mem-recharge{padding:16px 18px;border:1px solid var(--mem-line);border-radius:12px;background:var(--mem-panel);display:flex;flex-direction:column;gap:10px;min-width:0}
+.mem-api-rates{background:#16271e}
+.mem-rate{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:22px}
+.mem-rate>span{color:var(--mem-sub);font-size:18px}
+.mem-rate strong{color:var(--mem-green);white-space:nowrap}
+.mem-report-quote{font-size:18px;color:var(--mem-sub);padding-top:12px;border-top:1px solid var(--mem-line);line-height:1.5!important}
+.mem-alternative{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:18px;color:var(--mem-sub)}
+.mem-alternative>button{padding:0 12px}
+.mem-recharge{border-color:#699a76;background:#20352a;gap:10px}
+.mem-recharge-balance{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.mem-recharge-balance>span{font-size:18px;color:var(--mem-sub)}
+.mem-recharge-balance strong{font-size:28px;white-space:nowrap}
+.mem-exchange{font-size:18px;color:var(--mem-sub)}
+.mem-amounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mem-amounts button{min-height:82px;flex-direction:column;gap:5px;padding:8px 4px}
+.mem-amounts button>strong{font-size:22px}
+.mem-amounts button>span{font-size:18px}
+.mem-amounts button[aria-pressed=true]{background-color:#355c40;border-color:#9ce1af;color:#f1f9ef}
+.mem-selected{font-size:22px;color:var(--mem-green)}
+.mem-recharge>.mem-primary{margin-top:auto;min-height:48px;width:100%;flex:none}
+.mem-recharge>.mem-footnote{text-align:center}
+.mem-dialog-backdrop{position:absolute;z-index:15;inset:0;background:#06100ce8;display:grid;place-items:center;padding:20px}
+.mem-dialog{width:860px;max-width:100%;max-height:498px;padding:20px 24px;border:1px solid #709b7c;border-radius:16px;background:#1b2c22;display:flex;flex-direction:column;gap:12px;box-shadow:0 16px 48px #0009}
+.mem-dialog-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mem-dialog-header h2{font-size:22px}
+.mem-order-summary{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:12px 0;border-top:1px solid var(--mem-line);border-bottom:1px solid var(--mem-line)}
+.mem-order-summary>div{display:flex;flex-direction:column;gap:8px}
+.mem-order-summary>strong{font-size:28px;color:var(--mem-green);white-space:nowrap}
+.mem-order-meta{font-size:18px;color:var(--mem-sub)}
+.mem-order-state{font-size:22px;color:var(--mem-amber)}
+.mem-dialog-note{font-size:18px;color:var(--mem-sub);line-height:1.45}
+.mem-dialog-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:auto}
+.mem-dialog-actions>button{min-height:44px}
+.mem-info-copy{display:flex;flex-direction:column;gap:12px;font-size:18px;color:#e1ebe0;line-height:1.45}
+.mem-info-copy p{line-height:1.45}
+@media(prefers-reduced-motion:reduce){#stage .u-membership button{transition:none}}

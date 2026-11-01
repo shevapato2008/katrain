@@ -209,7 +209,8 @@ def compile_query(classification, q, player_id):
                 _contains(field, term) for field in ("player_black_lower", "player_white_lower") for term in terms
             ]
             has_letters = bool(re.search(r"[a-zA-Z]", q))
-            if has_letters and not classification.get("has_exact_player_name"):
+            has_player_filter = bool(classification.get("player_ids") or classification.get("raw_player_name_ids"))
+            if has_letters and not has_player_filter:
                 for lang in ("cn", "tw"):
                     player_clauses.extend(
                         [
@@ -219,11 +220,12 @@ def compile_query(classification, q, player_id):
                     )
             priority = _any(player_clauses)
             generic = [_contains("search_text", q.lower()), priority, *owners, *selected]
-            if has_letters and not classification.get("has_exact_player_name"):
+            if has_letters and not has_player_filter:
                 generic.append({"match": {"search_text_pinyin": {"query": q, "operator": "and"}}})
-                for lang in ("cn", "tw"):
-                    generic.append({"match": {f"display.{lang}.event.pinyin": {"query": q, "operator": "and"}}})
             if not classification.get("has_exact_player_name"):
+                if has_letters:
+                    for lang in ("cn", "tw"):
+                        generic.append({"match": {f"display.{lang}.event.pinyin": {"query": q, "operator": "and"}}})
                 generic.append(
                     _any(
                         [

@@ -389,6 +389,25 @@ def test_qualified_raw_player_only_generic_branch_does_not_analyze_event_words()
     assert '"match"' not in json.dumps(compile_query(classification, "Complete Name", None))
 
 
+def test_colliding_player_generic_branch_enables_player_pinyin_without_event_words():
+    from types import SimpleNamespace
+    from katrain.web.kifu.search_terms import classify_qualified_names, compile_query
+
+    p1 = SimpleNamespace(player_id=25)
+    p2 = SimpleNamespace(player_id=903)
+    classification = classify_qualified_names([(p1, "p1"), (p2, "p2")], [], [], [])
+    assert classification["mode"] == "generic"
+    assert classification["has_exact_player_name"] is True
+    assert classification["player_ids"] == []
+
+    body = compile_query(classification, "wxh", None)
+    rendered = json.dumps(body)
+    assert "display.cn.player_black.pinyin" in rendered
+    assert "search_text_pinyin" in rendered
+    assert "display.cn.event.pinyin" not in rendered
+    assert "event.words" not in rendered
+
+
 def test_provisional_event_cap_is_based_on_raw_definitions_and_is_case_sensitive(db, monkeypatch):
     from katrain.web.kifu import first_pass_cn
     from katrain.web.kifu.search_terms import compile_query

@@ -1,5 +1,7 @@
 # 会员、实时额度与按次充值：实施记录
 
+> **2026-11-02 软件实施与验证：** 最新代码检查点 `952580756fae2c64d2ce05695c98c3e3313c5ac8`。分包已独立规格→质量闭环；[全功能Astra终审](../superpowers/reviews/2026-11-02-membership-final-astra-r1.md)已批准，0未解决Critical/Important，研究setup/PL与报告改谱/同步冲突均闭环。组合后端571通过／1个历史PG变量未设跳过（新PG均实际执行），修复后前端212通过、相关后端97通过；普通与严格Kiosk构建均通过。真实完整API/JWT/HMAC/mock引擎HTTP＋worker旅程4通过。尚未push／合并／部署；下方v2/v3与早期未开发记录为历史。
+
 > **当前简单方案与自主执行：** [2026-11-02新计划](../superpowers/plans/2026-11-02-membership-simple-implementation.md)及[最终设计](../superpowers/specs/2026-11-02-membership-simple-final-design.md)优先于下方历史。用户授权Astra决策后直接开发；39/99/199、本期30/90/240、周最多约10/30/80已由Astra首轮裁定，计划第二轮最终审核已通过（0未解决问题），已进入SDD开发。不再等待人工视觉确认，仍做真实预览及独立代码/视觉审核。软件、真实收款与Max实际可售分别验收，不混称完成。
 
 > **最新v3.1：** 用户反馈后的[展示/自动回退修订](../superpowers/specs/2026-11-02-membership-presentation-and-fallback-amendment.md)优先。UI隐藏标准单位、独立百分比、日均普通报告1/4/13盘，候选39/99/279；会员优先、不足时自动使用已有API积分，完整operation单来源。双端Fixture与Astra增量复核通过，待用户视觉确认；真实后端未实现。下文29/99/299及不自动回退等为历史记录。
@@ -12,6 +14,10 @@ v3设计已完成两轮Astra Max审核：[最终Approved报告](../superpowers/r
 另有独立[单引擎与多服务调研](katago-single-vs-multi-service-2026-11-01.md)和[阿里／腾讯GPU价格核查](cloud-gpu-pricing-2026-11-01.md)。同卡多进程未做公平A/B，不能假定提速。腾讯V100官方公开价格索引包月5190/5750元、盘网另计，三年预付均摊2595/2875元但不是月付；用户已补充阿里官方页截图：V100限1件3817元/月起、旁列官网折扣价4579元；A10限1件3203.99元，续费、盘网及重复扩容未核实。主稿3500元仍是用户指定假设，迁移须按真实配置单重算，不能预支降租或开售。按同速及满载假设，阿里3817/4579情景下Plus纯租金为17.27/20.72元，见[补算](aliyun-gpu-cost-sensitivity-2026-11-02.md)。
 
 ## 当前阶段
+
+2026-11-02 01:55：新简单计划两轮Astra Max已批准（0未解决问题），开发按SDD进行。设计证据检查点55cbbccb8；严格引擎请求合同cc4e132c1已经独立规格→质量审核通过，复验49项通过（实现者相关回归60项通过），尚非整功能终审。专用本地PG及独立TEST身份标记已就绪；基础schema/模式隔离、原子账务、不可变云身份、共享UI及Galaxy页面正在并行实施。无推送、合并或部署，正式支付/Free可信身份/Max容量仍待实际前置核查。
+
+### 历史阶段记录
 
 2026-11-01，Task 1.2 现状核查完成。权威实施依据为[已通过两轮评审的计划](../superpowers/plans/2026-11-01-membership-usage-and-payments.md)及[Codex 交接](../superpowers/handoffs/2026-11-01-membership-recharge-codex.md)。本记录是源码基线核查，不是业务实现、代码审核通过、TEST 验收或正式收费完成的证明。
 
@@ -89,3 +95,11 @@ v3设计已完成两轮Astra Max审核：[最终Approved报告](../superpowers/r
 - 双端真实浏览器代表预览、截图与旧稿同尺寸并排／叠加／差异已经保存；聚焦交互和语法检查见设计说明。此处没有接真实业务服务或模拟支付服务，不是阶段 A 完成。
 - 独立 Fixture 规格复核通过；[Astra Max 设计代码与视觉审核](../superpowers/reviews/2026-11-01-membership-fixture-astra.md)已 Approved，无未解决问题。用户视觉确认待取得；不等同于后续完整业务代码审核已通过。
 - 当前不推送、不部署，不进入会员购买／用量后端切片。确认后从 Task 1.3 的目录规则及 Task 3 持久化继续，后续完整代码审核、真实 PostgreSQL、TEST 和发布要求仍须执行。
+
+## 管理端与发布边界
+
+前台1显示积分＝100原整数credits。既有admin/users余额、调账与兑换码工具历史“积分”文案仍指整数credits；运营输入和流水必须按credits处理，不能把前台显示积分原数直接调账，也不能缩放已存本金或账本。本期不扩大为重建独立admin服务。
+
+主TEST现有katrain_db为superuser连接且没有独立TEST标记，不直接启用mock。受控模拟收银使用专用数据库、非superuser业务角色、独立owner的只读control标记，必要时临时独立app端口；主TEST和PROD软件以paused/disabled发布，不改既有TEST数据、ES、媒体、SSO或数据库服务。正式商户adapter、真实验签查单/试付退款、Free可信身份/注册限流与Max容量仍未完成。
+
+首次财务发布不得自动启动旧f43 Web/Cron回退镜像。失败停止本次candidate、保留原stopped backup和私有manifest、向前修复；不得清activation或切legacy恢复免费私有分析。实际发布版本和服务回执待后续记录。

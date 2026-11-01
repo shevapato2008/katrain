@@ -41,9 +41,10 @@ function useMinuteClock(): Date {
  * 底部那三格(围棋在 `SmartBoardConsole` 里已经有了),L3 走 `VisionSyncOverlay` +
  * `PhysicalPlayStatusChip`。设置的入口在 Dock 里,顶栏再放一个是两个入口。
  */
-export function KioskTopbar({ identity, onHome, homeBusy = false }: {
+export function KioskTopbar({ identity, onHome, onAccount, homeBusy = false }: {
   identity: ShellIdentity;
   onHome?: () => void;
+  onAccount?: () => void;
   homeBusy?: boolean;
 }) {
   const clock = clockText(useMinuteClock());
@@ -76,8 +77,19 @@ export function KioskTopbar({ identity, onHome, homeBusy = false }: {
             <span>主页</span>
           </button>
         )}
-        <span className="kiosk-topbar__avatar" aria-hidden="true">{presented.avatar}</span>
-        <span className="kiosk-topbar__user" data-testid="header-username">{presented.label}</span>
+        {onAccount ? <button
+          type="button"
+          className="kiosk-topbar__account"
+          aria-label="账户、会员与充值"
+          onClick={onAccount}
+          style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: 0, border: 0, background: 'transparent', color: 'inherit', font: 'inherit', cursor: 'pointer' }}
+        >
+          <span className="kiosk-topbar__avatar" aria-hidden="true">{presented.avatar}</span>
+          <span className="kiosk-topbar__user" data-testid="header-username">{presented.label}</span>
+        </button> : <>
+          <span className="kiosk-topbar__avatar" aria-hidden="true">{presented.avatar}</span>
+          <span className="kiosk-topbar__user" data-testid="header-username">{presented.label}</span>
+        </>}
         {/* dateTime 和正文复用同一份格式化结果 —— 各写一套会独立漂移。 */}
         <time className="kiosk-topbar__clock" data-testid="clock" dateTime={clock}>{clock}</time>
       </div>

@@ -68,6 +68,7 @@ const BaipuSessionRoute = lazy(() => import('./pages/BaipuSessionRoute'));
 const LobbyPage = lazy(() => import('./pages/LobbyPage'));
 const PvpSpectatorPage = lazy(() => import('./pages/PvpSpectatorPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const MembershipPage = lazy(() => import('./pages/membership/MembershipPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const ReportDetailPage = lazy(() => import('./pages/ReportDetailPage'));
 const VisionSetupPage = lazy(() => import('./pages/VisionSetupPage'));
@@ -205,6 +206,7 @@ export const KioskRoutes = () => {
           <Route path="tutorial/section/:sectionId" element={<TutorialSectionPage />} />
           <Route path="vision/setup" element={<VisionSetupPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="membership" element={<MembershipPage />} />
         </Route>
 
         {/* 兜底在守卫**外面**:留在里面的话,游客输一个不存在的路径连它都匹配不到

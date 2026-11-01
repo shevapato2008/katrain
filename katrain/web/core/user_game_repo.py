@@ -4,6 +4,7 @@ import hashlib
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
+from sqlalchemy import or_
 from katrain.web.core import models_db
 
 
@@ -16,6 +17,14 @@ class ProtectedRankedGameError(ValueError):
 
 
 class ProtectedLibraryGameError(ValueError):
+    pass
+
+
+class ActiveReportGameError(ValueError):
+    pass
+
+
+class ProtectedReportAnalysisError(ValueError):
     pass
 
 
@@ -377,6 +386,7 @@ class UserGameRepository:
     def delete(self, game_id: str, user_id: int, *, remote_confirmed: bool = False) -> bool:
         session = self.session_factory()
         try:
+            session.query(models_db.User).filter_by(id=user_id).with_for_update().one_or_none()
             game = (
                 session.query(models_db.UserGame)
                 .filter(
@@ -387,13 +397,33 @@ class UserGameRepository:
             )
             if not game:
                 return False
+            active_operation = (
+                session.query(models_db.BillingOperation.id)
+                .filter(
+                    models_db.BillingOperation.user_id == user_id,
+                    models_db.BillingOperation.kind == "report",
+                    models_db.BillingOperation.game_id == game_id,
+                    models_db.BillingOperation.status.in_(("reserved", "running")),
+                )
+                .first()
+            )
+            active_task = (
+                session.query(models_db.ReportTask.id)
+                .filter(
+                    models_db.ReportTask.user_id == user_id,
+                    models_db.ReportTask.user_game_id == game_id,
+                    models_db.ReportTask.operation_id.isnot(None),
+                    models_db.ReportTask.status.in_(("authorizing", "pending", "running")),
+                )
+                .first()
+            )
+            if active_operation or active_task:
+                raise ActiveReportGameError("report is active or awaiting settlement")
             if game.source == "kifu_library":
                 raise ProtectedLibraryGameError("games imported from the kifu library cannot be deleted")
             if game.game_type == "ai_ladder_ranked" and not remote_confirmed:
                 settled = (
-                    session.query(models_db.AiLadderGameLedger.id)
-                    .filter_by(game_id=game_id, user_id=user_id)
-                    .first()
+                    session.query(models_db.AiLadderGameLedger.id).filter_by(game_id=game_id, user_id=user_id).first()
                 )
                 if settled is None and (
                     session.get(models_db.AiLadderPendingGame, game_id) is not None
@@ -440,9 +470,90 @@ class UserGameAnalysisRepository:
     def __init__(self, session_factory):
         self.session_factory = session_factory
 
+    @staticmethod
+    def _owned_report(session, game_id):
+        from .report_settlement import reconcile_membership_report_in_transaction, membership_report_readable
+        from .billing_operations import MembershipError
+
+        tasks = (
+            session.query(models_db.ReportTask)
+            .filter(
+                models_db.ReportTask.user_game_id == game_id,
+                or_(models_db.ReportTask.billing_version.isnot(None), models_db.ReportTask.operation_id.isnot(None)),
+            )
+            .order_by(models_db.ReportTask.id.desc())
+            .all()
+        )
+        if not tasks:
+            return False, None
+        for task in tasks:
+            try:
+                task, op = reconcile_membership_report_in_transaction(session, task_id=task.id, user_id=task.user_id)
+            except MembershipError:
+                continue
+            if membership_report_readable(session, task, op):
+                return True, task
+        return True, None
+
+    @staticmethod
+    def _report_move_dict(record, game_id):
+        return {
+            "id": record.id,
+            "game_id": game_id,
+            "move_number": record.move_number,
+            "status": record.status,
+            "winrate": record.winrate,
+            "score_lead": record.score_lead,
+            "visits": record.root_visits,
+            "top_moves": record.top_moves,
+            "ownership": record.ownership,
+            "move": record.actual_move,
+            "actual_player": record.actual_player,
+            "delta_score": record.delta_score,
+            "delta_winrate": record.delta_winrate,
+            "is_brilliant": record.grade == "brilliant",
+            "is_mistake": record.grade == "mistake",
+            "is_questionable": record.grade == "questionable",
+        }
+
+    @staticmethod
+    def assert_generic_analysis_allowed(session, game_id):
+        from .paid_analysis import legacy_analysis_allowed
+
+        game = session.query(models_db.UserGame).filter_by(id=game_id).one_or_none()
+        if game is None:
+            return
+        user = session.query(models_db.User).filter_by(id=game.user_id).with_for_update().one()
+        has_paid = (
+            session.query(models_db.ReportTask.id)
+            .filter(
+                models_db.ReportTask.user_game_id == game_id,
+                or_(models_db.ReportTask.billing_version.isnot(None), models_db.ReportTask.operation_id.isnot(None)),
+            )
+            .first()
+        )
+        if has_paid or not legacy_analysis_allowed(user=user):
+            raise ProtectedReportAnalysisError("saved analysis requires a committed report receipt")
+
     def get_analysis(self, game_id: str, start_move: int = 0, limit: int = 400) -> List[Dict[str, Any]]:
         session = self.session_factory()
         try:
+            paid, task = self._owned_report(session, game_id)
+            if paid:
+                rows = (
+                    []
+                    if task is None
+                    else session.query(models_db.ReportTaskMove)
+                    .filter(
+                        models_db.ReportTaskMove.task_id == task.id, models_db.ReportTaskMove.move_number >= start_move
+                    )
+                    .order_by(models_db.ReportTaskMove.move_number)
+                    .limit(limit)
+                    .all()
+                )
+                result = [self._report_move_dict(row, game_id) for row in rows]
+                session.commit()
+                return result
             records = (
                 session.query(models_db.UserGameAnalysis)
                 .filter(
@@ -460,6 +571,18 @@ class UserGameAnalysisRepository:
     def get_move_analysis(self, game_id: str, move_number: int) -> Optional[Dict[str, Any]]:
         session = self.session_factory()
         try:
+            paid, task = self._owned_report(session, game_id)
+            if paid:
+                row = (
+                    session.query(models_db.ReportTaskMove)
+                    .filter_by(task_id=task.id, move_number=move_number)
+                    .one_or_none()
+                    if task
+                    else None
+                )
+                result = self._report_move_dict(row, game_id) if row else None
+                session.commit()
+                return result
             record = (
                 session.query(models_db.UserGameAnalysis)
                 .filter(
@@ -477,6 +600,7 @@ class UserGameAnalysisRepository:
     def upsert(self, game_id: str, move_number: int, **kwargs) -> Dict[str, Any]:
         session = self.session_factory()
         try:
+            self.assert_generic_analysis_allowed(session, game_id)
             record = (
                 session.query(models_db.UserGameAnalysis)
                 .filter(

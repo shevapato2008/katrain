@@ -11,6 +11,8 @@ from katrain.web.core.user_game_repo import (
     ProtectedLibraryGameError,
     ProtectedRankedGameError,
     ReservedAiLadderGameIdError,
+    ActiveReportGameError,
+    ProtectedReportAnalysisError,
 )
 from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session, guard_user_has_no_pending_ranked_game
 
@@ -211,6 +213,8 @@ async def delete_user_game(
     repo = request.app.state.user_game_repo
     try:
         deleted = repo.delete(game_id, current_user.id)
+    except ActiveReportGameError as exc:
+        raise HTTPException(status_code=409, detail={"code": "report_in_progress", "message": str(exc)}) from exc
     except (ProtectedLibraryGameError, ProtectedRankedGameError) as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     if not deleted:
@@ -290,12 +294,20 @@ async def save_analysis_from_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     guard_ai_ladder_ranked_session(session, "save-session-analysis")
+    from katrain.web.core.paid_analysis import require_legacy_analysis
+
+    require_legacy_analysis(app=request.app, runtime=session.katrain, user=current_user)
 
     with session.lock:
         analysis_data = session.katrain._do_extract_analysis()
 
     # Persist each node's analysis
     analysis_repo = request.app.state.user_game_analysis_repo
+    with analysis_repo.session_factory() as db:
+        try:
+            analysis_repo.assert_generic_analysis_allowed(db, game_id)
+        except ProtectedReportAnalysisError as exc:
+            raise HTTPException(status_code=409, detail={"code": "analysis_requires_paid_report"}) from exc
     saved_count = 0
     for entry in analysis_data:
         if entry.get("status") != "complete":

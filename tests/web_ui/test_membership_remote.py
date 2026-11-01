@@ -265,3 +265,56 @@ async def test_paid_report_writes_reject_changed_cloud_identity(cloud, dispatche
         assert error.value.response.status_code == 401
         assert error.value.response.json()["detail"]["code"] == "cloud_identity_changed"
     assert cloud.calls == [] and cloud.local.mock_calls == []
+
+
+REPORT_READS = [
+    ("reports_list", "list_reports", (), "/api/v1/reports/"),
+    ("reports_summary", "get_report_summary", (), "/api/v1/reports/summary"),
+    ("reports_get", "get_report", (7,), "/api/v1/reports/7"),
+    ("reports_moves", "get_report_moves", (7,), "/api/v1/reports/7/moves"),
+]
+
+
+@pytest.mark.parametrize("dispatcher_method,remote_method,args,path", REPORT_READS)
+async def test_report_reads_reject_local_user_when_cloud_is_bound_to_someone_else(
+    cloud, dispatcher_method, remote_method, args, path
+):
+    cloud.remote.set_tokens("token-b", "refresh-b", user_id=8)
+
+    for client, name in ((cloud.dispatcher, dispatcher_method), (cloud.remote, remote_method)):
+        with pytest.raises(httpx.HTTPStatusError) as error:
+            await getattr(client, name)(*args, expected_user_id=7)
+        assert error.value.response.status_code == 401
+        assert error.value.response.json()["detail"]["code"] == "cloud_identity_changed"
+    assert cloud.calls == [] and cloud.local.mock_calls == []
+
+
+@pytest.mark.parametrize("dispatcher_method,remote_method,args,path", REPORT_READS)
+async def test_report_reads_discard_late_previous_users_data(cloud, dispatcher_method, remote_method, args, path):
+    entered, release = asyncio.Event(), asyncio.Event()
+    requests = []
+
+    async def handle(request):
+        requests.append(request)
+        entered.set()
+        await release.wait()
+        return httpx.Response(200, json={"owner": "a", "reports": [{"id": 7}]})
+
+    cloud.remote._client._transport = httpx.MockTransport(handle)
+    pending = asyncio.create_task(getattr(cloud.dispatcher, dispatcher_method)(*args, expected_user_id=7))
+    try:
+        await asyncio.wait_for(entered.wait(), timeout=2)
+        cloud.remote.set_tokens("token-b", "refresh-b", user_id=8)
+        release.set()
+        with pytest.raises(httpx.HTTPStatusError) as error:
+            await pending
+        assert error.value.response.status_code == 401
+        assert len(requests) == 1
+        assert (requests[0].method, requests[0].url.path) == ("GET", path)
+        assert requests[0].headers["authorization"] == "Bearer token-a"
+        assert cloud.local.mock_calls == []
+    finally:
+        release.set()
+        if not pending.done():
+            pending.cancel()
+        await asyncio.gather(pending, return_exceptions=True)

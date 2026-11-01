@@ -208,7 +208,7 @@ class RemoteAPIClient:
         self._auth_required = False
         return True
 
-    async def _identity_bound_request(self, method: str, path: str, *, expected_user_id, json=None) -> Dict:
+    async def _identity_bound_request(self, method: str, path: str, *, expected_user_id, json=None) -> Any:
         if not self.is_authenticated or self._bound_user_id is None or self._bound_user_id != str(expected_user_id):
             raise CloudIdentityChangedError()
         identity = _CloudIdentity(
@@ -490,17 +490,27 @@ class RemoteAPIClient:
 
     # ── Reports (remote-only in board mode) ──
 
-    async def list_reports(self) -> List[Dict]:
+    async def list_reports(self, *, expected_user_id=None) -> List[Dict]:
+        if expected_user_id is not None:
+            return await self._identity_bound_request("GET", "/api/v1/reports/", expected_user_id=expected_user_id)
         resp = await self._request("GET", "/api/v1/reports/")
         resp.raise_for_status()
         return resp.json()
 
-    async def get_report_summary(self) -> Dict:
+    async def get_report_summary(self, *, expected_user_id=None) -> Dict:
+        if expected_user_id is not None:
+            return await self._identity_bound_request(
+                "GET", "/api/v1/reports/summary", expected_user_id=expected_user_id
+            )
         resp = await self._request("GET", "/api/v1/reports/summary")
         resp.raise_for_status()
         return resp.json()
 
-    async def get_report(self, task_id: int) -> Dict:
+    async def get_report(self, task_id: int, *, expected_user_id=None) -> Dict:
+        if expected_user_id is not None:
+            return await self._identity_bound_request(
+                "GET", f"/api/v1/reports/{task_id}", expected_user_id=expected_user_id
+            )
         resp = await self._request("GET", f"/api/v1/reports/{task_id}")
         resp.raise_for_status()
         return resp.json()
@@ -524,7 +534,11 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
-    async def get_report_moves(self, task_id: int) -> List[Dict]:
+    async def get_report_moves(self, task_id: int, *, expected_user_id=None) -> List[Dict]:
+        if expected_user_id is not None:
+            return await self._identity_bound_request(
+                "GET", f"/api/v1/reports/{task_id}/moves", expected_user_id=expected_user_id
+            )
         resp = await self._request("GET", f"/api/v1/reports/{task_id}/moves")
         resp.raise_for_status()
         return resp.json()

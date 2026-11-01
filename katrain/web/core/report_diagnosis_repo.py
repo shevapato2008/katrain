@@ -10,6 +10,12 @@ from typing import Any, Dict
 from sqlalchemy.sql import func
 
 from katrain.web.core import models_db
+from katrain.web.core.billing_operations import MembershipError
+from katrain.web.core.report_settlement import (
+    is_membership_report,
+    membership_report_readable,
+    reconcile_membership_report_in_transaction,
+)
 
 
 class ReportDiagnosisRepository:
@@ -31,7 +37,7 @@ class ReportDiagnosisRepository:
         session = self.session_factory()
         try:
             tasks = (
-                session.query(T.id, T.user_game_id, func.coalesce(G.user_color, L.user_color))
+                session.query(T, func.coalesce(G.user_color, L.user_color))
                 .join(G, G.id == T.user_game_id)
                 .outerjoin(L, (L.game_id == G.id) & (L.user_id == G.user_id))
                 .filter(T.user_id == user_id, G.user_id == user_id, T.status == "completed", G.created_at >= since)
@@ -39,7 +45,17 @@ class ReportDiagnosisRepository:
                 .all()
             )
             picked, seen = [], set()
-            for task_id, game_id, color in tasks:
+            reconciled = False
+            for task, color in tasks:
+                if is_membership_report(task):
+                    try:
+                        task, op = reconcile_membership_report_in_transaction(session, task_id=task.id, user_id=user_id)
+                    except MembershipError:
+                        continue
+                    reconciled = True
+                    if not membership_report_readable(session, task, op):
+                        continue
+                task_id, game_id = task.id, task.user_game_id
                 if game_id in seen:
                     continue
                 seen.add(game_id)
@@ -56,6 +72,9 @@ class ReportDiagnosisRepository:
                     .all()
                 )
                 moves.extend({"move_number": n, "grade": g} for n, g in rows)
-            return {"reports": len(usable), "skipped_without_color": len(picked) - len(usable), "moves": moves}
+            result = {"reports": len(usable), "skipped_without_color": len(picked) - len(usable), "moves": moves}
+            if reconciled:
+                session.commit()
+            return result
         finally:
             session.close()

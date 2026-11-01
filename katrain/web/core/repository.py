@@ -471,17 +471,28 @@ class RepositoryDispatcher:
     async def paid_position_get(self, position_id: str, *, expected_user_id):
         return await self._membership_remote_only("paid_position_get", position_id, expected_user_id=expected_user_id)
 
-    async def reports_list(self):
-        return await self._remote_only(lambda: self._remote_client.list_reports(), "Remote report service unavailable")
-
-    async def reports_summary(self):
+    async def reports_list(self, *, expected_user_id=None):
+        if expected_user_id is not None and not self.cloud_session_is(expected_user_id):
+            raise CloudIdentityChangedError()
+        kwargs = {} if expected_user_id is None else {"expected_user_id": expected_user_id}
         return await self._remote_only(
-            lambda: self._remote_client.get_report_summary(), "Remote report service unavailable"
+            lambda: self._remote_client.list_reports(**kwargs), "Remote report service unavailable"
         )
 
-    async def reports_get(self, task_id: int):
+    async def reports_summary(self, *, expected_user_id=None):
+        if expected_user_id is not None and not self.cloud_session_is(expected_user_id):
+            raise CloudIdentityChangedError()
+        kwargs = {} if expected_user_id is None else {"expected_user_id": expected_user_id}
         return await self._remote_only(
-            lambda: self._remote_client.get_report(task_id), "Remote report service unavailable"
+            lambda: self._remote_client.get_report_summary(**kwargs), "Remote report service unavailable"
+        )
+
+    async def reports_get(self, task_id: int, *, expected_user_id=None):
+        if expected_user_id is not None and not self.cloud_session_is(expected_user_id):
+            raise CloudIdentityChangedError()
+        kwargs = {} if expected_user_id is None else {"expected_user_id": expected_user_id}
+        return await self._remote_only(
+            lambda: self._remote_client.get_report(task_id, **kwargs), "Remote report service unavailable"
         )
 
     async def reports_create(self, data: Dict, *, expected_user_id=None):
@@ -501,9 +512,12 @@ class RepositoryDispatcher:
             lambda: self._remote_client.retry_report(*args, **kwargs), "Remote report service unavailable"
         )
 
-    async def reports_moves(self, task_id: int):
+    async def reports_moves(self, task_id: int, *, expected_user_id=None):
+        if expected_user_id is not None and not self.cloud_session_is(expected_user_id):
+            raise CloudIdentityChangedError()
+        kwargs = {} if expected_user_id is None else {"expected_user_id": expected_user_id}
         return await self._remote_only(
-            lambda: self._remote_client.get_report_moves(task_id), "Remote report service unavailable"
+            lambda: self._remote_client.get_report_moves(task_id, **kwargs), "Remote report service unavailable"
         )
 
 

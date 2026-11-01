@@ -135,6 +135,7 @@ class Settings(BaseModel):
         data.setdefault("PAYMENTS_MODE", os.getenv("PAYMENTS_MODE", "disabled"))
         data.setdefault("MEMBERSHIP_MODE", os.getenv("MEMBERSHIP_MODE", "legacy"))
         data.setdefault("BILLING_ENFORCED", os.getenv("BILLING_ENFORCED", "false").lower() in ("1", "true", "yes"))
+        data.setdefault("FREE_WEEKLY_REPORTS", int(os.getenv("FREE_WEEKLY_REPORTS", "1")))
         for key, default in (
             ("MEMBERSHIP_REPORT_QUEUE_LIMIT", 8),
             ("MEMBERSHIP_POSITION_QUEUE_LIMIT", 4),

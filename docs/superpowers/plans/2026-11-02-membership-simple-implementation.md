@@ -176,13 +176,13 @@ PLANS = {
 
 **Files:** `docs/operations/membership-recharge.md`、`core/health_report.py`、必要部署配置；父仓库submodulepointer。
 
-- [ ] 11.1 读取server-deploy技能，核实真实P3身份/注册限流与官方支付能力，仅输出布尔摘要、不泄露env/密钥。缺官方商户/验签/查单/小额支付退款时支付保持disabled，PROD不注册mock；缺P3不开放正式Free领取。TEST用受控测试依赖，非生产后门。
-- [ ] 11.2 多棋局真实端到端容量未验证前Max仍不可售；既有306位置预热引擎样本不当作生产SLA。可先完成软件TEST，不新增生产负载实验去装作容量通过。
-- [ ] 11.3 fetch最新develop→合并入功能分支→解决冲突并核验组合→显式提交push功能分支。再合并推develop，记录SHA；不把仅部署feature视作已集成。
-- [ ] 11.4 更新`smartbox-software/vendor/katrain`到公开developSHA，保留父仓库无关改动，提交并推main；不进入ES worktree。
-- [ ] 11.5 先部署TEST home-ubuntu，验证版本/健康、真实账务＋隔离mock与代表性两端页面，再部署新PROD ucloud-v100 117.50.177.254。发布仅重建本次所需服务，不触旧IP/无关MinIO等。PROD缺收费前置时部署软件但禁销售/新授权，显示实际不可用状态，不导入TEST数据或凭据。
-- [ ] 11.6 上线后安全暂停只能用MEMBERSHIP_MODE=paused，不用legacy关计费恢复免费。保留账本、已预留任务结算/退款、结果门和兼容读；不清资产、不回滚到会免费复活新任务的旧worker。测新任务在途→paused旧API不能新增GPU、原任务只结一次、refunded仍不可读且retry拒新授权；首次启用前legacy只作必要兼容验证。
-- [ ] 11.7 报告阶段A软件/TEST、阶段B真实支付分别状态、已发布commit/实际部署版本、测试和审核结果、必要前置未完成项。阶段开始/完成及每30分钟报告进展/阻塞/当前步骤ETA，汇报不暂停工作。测试结束停止本任务临时PG容器，保留现有服务。
+- [x] 11.1 读取server-deploy技能，核实真实P3身份/注册限流与官方支付能力，仅输出布尔摘要、不泄露env/密钥。缺官方商户/验签/查单/小额支付退款时支付保持disabled，PROD不注册mock；缺P3不开放正式Free领取。TEST用受控测试依赖，非生产后门。
+- [x] 11.2 多棋局真实端到端容量未验证前Max仍不可售；既有306位置预热引擎样本不当作生产SLA。可先完成软件TEST，不新增生产负载实验去装作容量通过。
+- [x] 11.3 fetch最新develop→合并入功能分支→解决冲突并核验组合→显式提交push功能分支。再合并推develop，记录SHA；不把仅部署feature视作已集成。
+- [x] 11.4 更新`smartbox-software/vendor/katrain`到公开developSHA，保留父仓库无关改动，提交并推main；不进入ES worktree。
+- [x] 11.5 先部署TEST home-ubuntu，验证版本/健康、真实账务＋隔离mock与代表性两端页面，再部署新PROD ucloud-v100 117.50.177.254。发布仅重建本次所需服务，不触旧IP/无关MinIO等。PROD缺收费前置时部署软件但禁销售/新授权，显示实际不可用状态，不导入TEST数据或凭据。
+- [x] 11.6 上线后安全暂停只能用MEMBERSHIP_MODE=paused，不用legacy关计费恢复免费。保留账本、已预留任务结算/退款、结果门和兼容读；不清资产、不回滚到会免费复活新任务的旧worker。测新任务在途→paused旧API不能新增GPU、原任务只结一次、refunded仍不可读且retry拒新授权；首次启用前legacy只作必要兼容验证。
+- [x] 11.7 报告阶段A软件/TEST、阶段B真实支付分别状态、已发布commit/实际部署版本、测试和审核结果、必要前置未完成项。阶段开始/完成及每30分钟报告进展/阻塞/当前步骤ETA，汇报不暂停工作。测试结束停止本任务临时PG容器，保留现有服务。
 
 ## 并行与依赖（不能跳过稳定基础）
 
@@ -199,3 +199,5 @@ PLANS = {
 **实施进度（2026-11-02 02:35）：** 基础、共享客户端、原子账务及Task5/8已独立规格→质量通过；真实双端会员页面预览通过。实际发现的Free权限回退/ORM缓存/autoflush、冻结权益、SGF分析出口已修复并复核。报告Task7最后ownedretry与ranked出口修复30PG绿，待Astra复核；Task9消费接线与真实组合API旅程收尾。所有提交仍在功能分支，尚未push/merge/deploy。
 
 **最终开发审查（2026-11-02）：** 独立Astra Max对`952580756fae2c64d2ce05695c98c3e3313c5ac8`给出Task9 Spec → Integrated Quality Approved，0未解决Critical/Important，见[终审](../reviews/2026-11-02-membership-final-astra-r1.md)。额外摆子提示图单次fixture定位超时未取得，已记录非阻塞限制；代表性双端/375及quote视觉均通过。进入四步集成发布，发布尚未完成。
+
+**完成状态（2026-11-02，取代上述历史进度）：** Task 11 四步集成与 TEST→新 PROD 软件发布完成，阶段 A 完成；feature `10f29db703783a00602038587c09235ac33011d3`，develop/实际部署软件 R `7fb94dce9f3d4e36835843cc8b828eb59245f6f1`，父 main `aa84764f1b73a8fadb9c6e4d46c26b77f07f208b` 的 submodule 指向 R。两端主服务均 paused/disabled/enforced/free0/Max false，实际隔离 TEST HTTP+四次 8002 查询及真实 Galaxy/Kiosk 页面已验收。阶段 B 正式商户收款、可信 Free 身份/注册限流和 Max 容量前置未完成，保持关闭；非 RK 实物验收。完整 ID/image、保持项、有限 translate 中断和清理状态见[实际发布回执](../../operations/membership-release-2026-11-02.md)。后续仅 docs 提交不冒称镜像软件版本变化。

@@ -5,4 +5,5 @@ RUN cd /tmp/kifu-es-plugins && sha512sum --check plugins.sha512 \
     && /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch file:///tmp/kifu-es-plugins/elasticsearch-analysis-ik-9.5.5.zip \
     && /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch file:///tmp/kifu-es-plugins/analysis-kuromoji-9.5.5.zip \
     && /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch file:///tmp/kifu-es-plugins/analysis-nori-9.5.5.zip \
+    && /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch file:///tmp/kifu-es-plugins/elasticsearch-analysis-pinyin-9.5.5.zip \
     && rm -rf /tmp/kifu-es-plugins

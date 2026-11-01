@@ -417,3 +417,28 @@ def test_cli_disk_path_defaults_to_es_data_dir(monkeypatch):
     parser.add_argument("--disk-path", default=os.getenv("ES_DATA_DIR", "/"))
     args = parser.parse_args([])
     assert args.disk_path == "/mnt/es_data"
+
+
+def test_elasticsearch_manifest_pins_analysis_pinyin():
+    from pathlib import Path
+
+    lock_file = Path(__file__).resolve().parents[2] / "deploy" / "elasticsearch" / "versions.lock.json"
+    assert lock_file.exists(), f"Missing lockfile: {lock_file}"
+    lock = json.loads(lock_file.read_text(encoding="utf-8"))
+
+    plugins_by_name = {p["name"]: p for p in lock.get("plugins", [])}
+    assert "analysis-pinyin" in plugins_by_name
+
+    pinyin = plugins_by_name["analysis-pinyin"]
+    assert pinyin["filename"] == "elasticsearch-analysis-pinyin-9.5.5.zip"
+    assert (
+        pinyin["sha512"]
+        == "b39c1bc05544b44a5dcee493c2072bde456a790a1745cd022a8f57d466a90607940ede5ccbd482c89efae8c3969ffeaeeee6a8a93a776b76fec3bd45d52116b9"
+    )
+    assert (
+        pinyin["url"] == "https://release.infinilabs.com/analysis-pinyin/stable/elasticsearch-analysis-pinyin-9.5.5.zip"
+    )
+
+    dockerfile = Path(__file__).resolve().parents[2] / "deploy" / "elasticsearch" / "Dockerfile"
+    dockerfile_text = dockerfile.read_text(encoding="utf-8")
+    assert "elasticsearch-analysis-pinyin-9.5.5.zip" in dockerfile_text

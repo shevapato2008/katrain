@@ -31,7 +31,8 @@
  */
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { movesToSGF, sgfToMoves } from '../../utils/sgfSerializer';
-import type { SGFMetadata, SerializedSGF } from '../../utils/sgfSerializer';
+import { researchSetupAtCursor, researchPlayerAtCursor } from '../../utils/researchBoardReplay';
+import type { SGFMetadata, SerializedSGF, ResearchSerializationOptions } from '../../utils/sgfSerializer';
 
 /** 屏 21 那个四段分段控件的四段。**互斥** —— 同一根手指点在盘上只能是其中一个意思。 */
 export type BoardTool = 'alternate' | 'black' | 'white' | 'delete';
@@ -41,6 +42,9 @@ export interface ResearchBoardState {
   moves: string[];
   stoneColors: ('B' | 'W')[];
   currentMove: number;
+  setupCount: number;
+  initialPlayer: 'B' | 'W';
+  editedSetup: boolean;
   boardSize: number;
 
   // 落子/删除工具(四选一,永远有一个选中)
@@ -80,7 +84,7 @@ export interface UseResearchBoardReturn extends ResearchBoardState {
   setPlayerWhite: (name: string) => void;
 
   // SGF operations
-  serializeToSGF: () => SerializedSGF;
+  serializeToSGF: (options?: ResearchSerializationOptions) => SerializedSGF;
   loadFromSGF: (sgfContent: string) => { success: boolean; error?: string };
   openLocalSGF: () => void;
   saveLocalSGF: () => void;
@@ -96,6 +100,9 @@ export function useResearchBoard(): UseResearchBoardReturn {
   const [moves, setMoves] = useState<string[]>([]);
   const [stoneColors, setStoneColors] = useState<('B' | 'W')[]>([]);
   const [currentMove, setCurrentMove] = useState(0);
+  const [setupCount, setSetupCount] = useState(0);
+  const [initialPlayer, setInitialPlayer] = useState<'B' | 'W'>('B');
+  const [editedSetup, setEditedSetup] = useState(false);
   const [boardSize, setBoardSize] = useState(19);
   const [boardTool, setBoardTool] = useState<BoardTool>('alternate');
   const [rules, setRules] = useState('chinese');
@@ -111,8 +118,15 @@ export function useResearchBoard(): UseResearchBoardReturn {
   const rawSgfRef = useRef<string | null>(null);
 
   const getMetadata = useCallback((): SGFMetadata => ({
-    boardSize, komi, handicap, rules, playerBlack, playerWhite,
-  }), [boardSize, komi, handicap, rules, playerBlack, playerWhite]);
+    boardSize, komi, handicap, rules, playerBlack, playerWhite, setupCount, initialPlayer,
+  }), [boardSize, komi, handicap, rules, playerBlack, playerWhite, setupCount, initialPlayer]);
+
+  const commitSetup = useCallback((setupMoves: string[], setupColors: ('B' | 'W')[]) => {
+    const toPlay = researchPlayerAtCursor(stoneColors, currentMove, setupCount, initialPlayer);
+    setMoves(setupMoves); setStoneColors(setupColors); setCurrentMove(setupMoves.length);
+    setSetupCount(setupMoves.length); setInitialPlayer(toPlay); setEditedSetup(true); setHandicap(0);
+    rawSgfRef.current = null;
+  }, [currentMove, initialPlayer, setupCount, stoneColors]);
 
   // ── Board actions ──
 
@@ -126,19 +140,9 @@ export function useResearchBoard(): UseResearchBoardReturn {
     const moveStr = `${col}${row}`;
 
     if (boardTool === 'delete') {
-      const newMoves = [...moves];
-      const newColors = [...stoneColors];
-      for (let i = newMoves.length - 1; i >= 0; i--) {
-        if (newMoves[i] === moveStr) {
-          newMoves.splice(i, 1);
-          newColors.splice(i, 1);
-          break;
-        }
-      }
-      setMoves(newMoves);
-      setStoneColors(newColors);
-      setCurrentMove(newMoves.length);
-      rawSgfRef.current = null;
+      const setup = researchSetupAtCursor(moves, stoneColors, currentMove, boardSize, setupCount);
+      const index = setup.moves.indexOf(moveStr);
+      if (index >= 0) { setup.moves.splice(index, 1); setup.stoneColors.splice(index, 1); commitSetup(setup.moves, setup.stoneColors); }
       return false;
     }
 
@@ -149,10 +153,16 @@ export function useResearchBoard(): UseResearchBoardReturn {
     } else if (boardTool === 'white') {
       color = 'W';
     } else {
-      // alternate: based on the last stone color in the truncated sequence
-      const truncatedColors = stoneColors.slice(0, currentMove);
-      const lastColor = truncatedColors.length > 0 ? truncatedColors[truncatedColors.length - 1] : 'W';
-      color = lastColor === 'B' ? 'W' : 'B';
+      color = researchPlayerAtCursor(stoneColors, currentMove, setupCount, initialPlayer);
+    }
+
+    if (boardTool === 'black' || boardTool === 'white') {
+      const setup = researchSetupAtCursor(moves, stoneColors, currentMove, boardSize, setupCount);
+      const index = setup.moves.indexOf(moveStr);
+      if (index >= 0) return false;
+      setup.moves.push(moveStr); setup.stoneColors.push(color);
+      commitSetup(setup.moves, setup.stoneColors);
+      return true;
     }
 
     // Place stone (truncate forward moves)
@@ -165,48 +175,49 @@ export function useResearchBoard(): UseResearchBoardReturn {
     setCurrentMove(newMoves.length);
     rawSgfRef.current = null;
     return true;
-  }, [moves, stoneColors, currentMove, boardSize, boardTool]);
+  }, [moves, stoneColors, currentMove, boardSize, boardTool, setupCount, initialPlayer, commitSetup]);
 
   const handlePass = useCallback(() => {
     const newMoves = moves.slice(0, currentMove);
     const newColors = stoneColors.slice(0, currentMove);
-    // Pass uses alternate color logic
-    const lastColor = newColors.length > 0 ? newColors[newColors.length - 1] : 'W';
     newMoves.push('pass');
-    newColors.push(lastColor === 'B' ? 'W' : 'B');
+    newColors.push(researchPlayerAtCursor(stoneColors, currentMove, setupCount, initialPlayer));
     setMoves(newMoves);
     setStoneColors(newColors);
     setCurrentMove(newMoves.length);
     rawSgfRef.current = null;
-  }, [moves, stoneColors, currentMove]);
+  }, [moves, stoneColors, currentMove, setupCount, initialPlayer]);
 
   const handleClear = useCallback(() => {
     setMoves([]);
     setStoneColors([]);
     setCurrentMove(0);
+    setSetupCount(0); setInitialPlayer('B'); setEditedSetup(false); setHandicap(0);
     rawSgfRef.current = null;
   }, []);
 
   const handleMoveChange = useCallback((move: number) => {
-    setCurrentMove(Math.max(0, Math.min(moves.length, move)));
-  }, [moves.length]);
+    setCurrentMove(Math.max(setupCount, Math.min(moves.length, move)));
+  }, [moves.length, setupCount]);
 
   // ── SGF operations ──
 
-  const serializeToSGF = useCallback((): SerializedSGF => {
-    // Re-serialize from moves[]. When handicap > 0, movesToSGF emits the first
-    // N black stones as AB[] setup (per SGF standard), keeping the backend's
-    // game tree consistent with convention (move 1 = White in handicap games).
-    return movesToSGF(moves, getMetadata(), stoneColors);
-  }, [moves, stoneColors, getMetadata]);
+  const serializeToSGF = useCallback((options: ResearchSerializationOptions = {}): SerializedSGF => {
+    const metadata = getMetadata();
+    if (options.position) { metadata.playerBlack = ''; metadata.playerWhite = ''; }
+    const cursor = options.position ? currentMove : moves.length;
+    return movesToSGF(moves.slice(0, cursor), metadata, stoneColors.slice(0, cursor));
+  }, [moves, stoneColors, currentMove, getMetadata]);
 
   const loadFromSGF = useCallback((sgfContent: string): { success: boolean; error?: string } => {
     try {
-      const { moves: parsedMoves, stoneColors: parsedColors, metadata } = sgfToMoves(sgfContent);
+      const { moves: parsedMoves, stoneColors: parsedColors, metadata, setupCount: parsedSetupCount, unsupportedSetup } = sgfToMoves(sgfContent);
+      if (unsupportedSetup) throw new Error('棋谱含不支持的局面编辑或无效坐标，请先建立新的摆子局面');
 
       setMoves(parsedMoves);
       setStoneColors(parsedColors);
       setCurrentMove(parsedMoves.length);
+      setSetupCount(parsedSetupCount); setInitialPlayer(metadata.initialPlayer ?? 'B'); setEditedSetup(false);
       rawSgfRef.current = sgfContent;  // Preserve original for backend
 
       // Kiosk 19-only clamp: board size never leaves 19, regardless of what
@@ -219,11 +230,11 @@ export function useResearchBoard(): UseResearchBoardReturn {
         setLastLoadedSize(null);
         setLastLoadClamped(false);
       }
-      if (metadata.komi !== undefined) setKomi(metadata.komi);
-      if (metadata.handicap !== undefined) setHandicap(metadata.handicap);
-      if (metadata.rules) setRules(metadata.rules);
-      if (metadata.playerBlack) setPlayerBlack(metadata.playerBlack);
-      if (metadata.playerWhite) setPlayerWhite(metadata.playerWhite);
+      setKomi(metadata.komi ?? 7.5);
+      setHandicap(metadata.handicap ?? 0);
+      setRules(metadata.rules ?? 'chinese');
+      setPlayerBlack(metadata.playerBlack ?? '');
+      setPlayerWhite(metadata.playerWhite ?? '');
 
       return { success: true };
     } catch (e) {
@@ -274,35 +285,20 @@ export function useResearchBoard(): UseResearchBoardReturn {
   }, [serializeToSGF, playerBlack, playerWhite]);
 
 
-  // Compute handicap setup count: number of leading consecutive B stones
-  // that correspond to the handicap metadata (these are AB[] setup, not game moves)
-  const handicapCount = useMemo((): number => {
-    if (handicap <= 0) return 0;
-    let count = 0;
-    for (let i = 0; i < Math.min(handicap, moves.length); i++) {
-      if (stoneColors[i] === 'B' && moves[i].toLowerCase() !== 'pass') {
-        count++;
-      } else {
-        break;
-      }
-    }
-    return count;
-  }, [handicap, moves, stoneColors]);
+  // Existing board components call this offset handicapCount; it includes every initial AB/AW stone.
+  const handicapCount = setupCount;
 
   // Compute the next stone color for hover preview
   const nextColor = useMemo((): 'B' | 'W' | null => {
     if (boardTool === 'delete') return null; // 删除工具没有落子预览
     if (boardTool === 'black') return 'B';
     if (boardTool === 'white') return 'W';
-    // alternate: based on last stone color in truncated sequence
-    const truncated = stoneColors.slice(0, currentMove);
-    const lastColor = truncated.length > 0 ? truncated[truncated.length - 1] : 'W';
-    return lastColor === 'B' ? 'W' : 'B';
-  }, [boardTool, stoneColors, currentMove]);
+    return researchPlayerAtCursor(stoneColors, currentMove, setupCount, initialPlayer);
+  }, [boardTool, stoneColors, currentMove, setupCount, initialPlayer]);
 
   return {
     // State
-    moves, stoneColors, currentMove, boardSize, boardTool,
+    moves, stoneColors, currentMove, setupCount, initialPlayer, editedSetup, boardSize, boardTool,
     rules, komi, handicap, playerBlack, playerWhite,
     // Computed
     nextColor,

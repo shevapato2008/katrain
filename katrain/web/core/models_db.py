@@ -84,10 +84,14 @@ class User(Base):
     )  # integer credit balance (single pool); server-authoritative. New accounts start at 0 —
     # any signup grant is a real, auditable ledger row (settings.BILLING_SIGNUP_GRANT), not a
     # column default nobody can trace.
+    membership_revision = Column(Integer, nullable=False, default=0, server_default="0")
+    membership_migrated_at = Column(DateTime(timezone=True), nullable=True)
     is_admin = Column(Boolean, default=False, nullable=False)
     avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (CheckConstraint("membership_revision >= 0", name="ck_user_membership_revision"),)
 
     followers = relationship("Relationship", foreign_keys="[Relationship.following_id]", back_populates="following")
     following = relationship("Relationship", foreign_keys="[Relationship.follower_id]", back_populates="follower")
@@ -1428,7 +1432,11 @@ class ReportTask(Base):
     # 授权那一刻棋谱内容的指纹。cron 认领时比对，不一致就失败而不是拼一份
     # 「旧棋谱前缀 + 新棋谱后缀」的报告出来。
     sgf_hash = Column(String(64), nullable=True)
+    analysis_sgf = Column(Text, nullable=True)
     model_sha256 = Column(String(64), nullable=True)
+    billing_version = Column(String(64), nullable=True)
+    operation_id = Column(Integer, nullable=True, index=True)
+    generation = Column(Integer, nullable=False, default=0, server_default="0")
     # 已经结算过的手数水位。结算按**增量**收费：actual = cost(analyzed_moves - settled_moves)。
     # 不记水位的话，/retry 之后的第二次结算会把第一次已结清的前缀再收一遍 ——
     # retry 的预扣只覆盖增量（total_moves - analyzed_moves），而 analyzed_moves 是累计值，
@@ -1460,6 +1468,7 @@ class ReportTask(Base):
     moves = relationship("ReportTaskMove", back_populates="task", cascade="all, delete-orphan")
 
     __table_args__ = (
+        CheckConstraint("generation >= 0", name="ck_report_task_generation"),
         Index("ix_report_tasks_user_created", "user_id", "created_at"),
         Index("ix_report_tasks_game_type_created", "user_game_id", "report_type", "created_at"),
         Index("ix_report_tasks_status_created", "status", "created_at"),
@@ -1658,6 +1667,95 @@ class RechargeOrder(Base):
     confirm_note = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     settled_at = Column(DateTime(timezone=True), nullable=True)
+    # Nullable distinguishes historical orders, whose original snapshots remain authoritative.
+    catalog_version = Column(String(64), nullable=True)
+    sku_snapshot = Column(JSON(none_as_null=True), nullable=True)
+    environment = Column(String(24), nullable=True)
+    provider_tx_id = Column(String(128), nullable=True)
+    idempotency_key = Column(String(128), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    fulfilled_at = Column(DateTime(timezone=True), nullable=True)
+    refunded_at = Column(DateTime(timezone=True), nullable=True)
+    refund_ref = Column(String(160), nullable=True)
+
+    __table_args__ = (
+        Index("uq_recharge_order_user_key", "user_id", "idempotency_key", unique=True),
+        Index("uq_recharge_order_provider_tx", "environment", "provider", "provider_tx_id", unique=True),
+        Index("uq_recharge_order_refund_ref", "refund_ref", unique=True),
+    )
+
+
+class MembershipTerm(Base):
+    """One paid, non-overlapping 30-day entitlement; never a second wallet."""
+
+    __tablename__ = "membership_terms"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    plan_id = Column(String(24), nullable=False)
+    starts_at = Column(DateTime(timezone=True), nullable=False)
+    ends_at = Column(DateTime(timezone=True), nullable=False)
+    limit = Column(Integer, nullable=False)
+    used = Column(Integer, nullable=False, default=0, server_default="0")
+    reserved = Column(Integer, nullable=False, default=0, server_default="0")
+    order_id = Column(Integer, ForeignKey("recharge_orders.id"), nullable=False, unique=True)
+    catalog_version = Column(String(64), nullable=False)
+    status = Column(String(24), nullable=False, default="active")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            '"limit" >= 0 AND used >= 0 AND reserved >= 0 AND used + reserved <= "limit"',
+            name="ck_membership_term_budget",
+        ),
+        CheckConstraint("ends_at > starts_at", name="ck_membership_term_window"),
+        Index("ix_membership_term_user_window", "user_id", "starts_at", "ends_at"),
+    )
+
+
+class BillingOperation(Base):
+    """Durable authorization receipt, retained when a game/task is deleted.
+
+    Mutable product-content references intentionally have no foreign keys or
+    ORM cascades. A receipt keeps its identity after its bounded result expires.
+    """
+
+    __tablename__ = "billing_operations"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    kind = Column(String(24), nullable=False)
+    idempotency_key = Column(String(128), nullable=False)
+    fingerprint = Column(String(64), nullable=False)
+    source = Column(String(24), nullable=False)
+    profile = Column(String(24), nullable=False)
+    model_sha256 = Column(String(64), nullable=False)
+    units = Column(Integer, nullable=False)
+    wallet_ref = Column(String(160), nullable=True)
+    term_id = Column(Integer, ForeignKey("membership_terms.id"), nullable=True)
+    week_bucket_id = Column(Integer, ForeignKey("quota_buckets.id"), nullable=True)
+    status = Column(String(24), nullable=False, default="reserved")
+    generation = Column(Integer, nullable=False, default=0, server_default="0")
+    lease_expires_at = Column(DateTime(timezone=True), nullable=True)
+    task_id = Column(Integer, nullable=True, index=True)
+    game_id = Column(String(64), nullable=True, index=True)
+    result = Column(JSON(none_as_null=True), nullable=True)
+    result_expires_at = Column(DateTime(timezone=True), nullable=True)
+    catalog_version = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "kind", "idempotency_key", name="uq_billing_operation_identity"),
+        CheckConstraint("units >= 0 AND generation >= 0", name="ck_billing_operation_nonnegative"),
+        CheckConstraint(
+            "result IS NULL OR octet_length(CAST(result AS TEXT)) <= 65536", name="ck_billing_operation_result_bytes"
+        ).ddl_if(dialect="postgresql"),
+        CheckConstraint(
+            "result IS NULL OR length(CAST(result AS BLOB)) <= 65536", name="ck_billing_operation_result_bytes_sqlite"
+        ).ddl_if(dialect="sqlite"),
+        Index("ix_billing_operation_status_lease", "kind", "status", "lease_expires_at"),
+    )
 
 
 class QuotaBucket(Base):
@@ -1676,9 +1774,14 @@ class QuotaBucket(Base):
     period_key = Column(String(32), nullable=False)
     allowance = Column(Integer, nullable=False)
     used = Column(Integer, nullable=False, default=0)
+    reserved = Column(Integer, nullable=False, default=0, server_default="0")
+    starts_at = Column(DateTime(timezone=True), nullable=True)
+    ends_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
+        CheckConstraint("allowance >= 0 AND used >= 0 AND reserved >= 0", name="ck_quota_bucket_nonnegative"),
+        CheckConstraint("starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at", name="ck_quota_bucket_window"),
         UniqueConstraint("user_id", "kind", "period_key", name="uq_quota_bucket"),
         Index("ix_quota_bucket_lookup", "user_id", "kind", "period_key"),
     )

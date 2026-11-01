@@ -1,0 +1,77 @@
+{
+  "status": "design_fixture_pending_visual_confirmation",
+  "authority": "../../superpowers/plans/2026-11-01-membership-usage-and-payments.md",
+  "fixture_only": true,
+  "clock": {
+    "server_now": "2026-11-01T04:00:00Z",
+    "elapsed_source": "performance.now",
+    "local_tick_seconds": 1,
+    "visible_refresh_seconds": 15,
+    "timezone_label": "北京时间",
+    "boundary_behavior": "等待新的权威快照；本地倒计时归零不发放额度",
+    "h24": "同账号双资源共用首次有效预留锚点；无消费不开始；换设备和续费不重置",
+    "week": "Asia/Shanghai 周一 00:00 至下一周一 00:00"
+  },
+  "catalog": {
+    "price_version": "membership_v2",
+    "currency": "CNY",
+    "term_days": 30,
+    "plans": {
+      "free": { "amount_fen": 0, "reports_h24": 1, "reports_week": 1, "interactive_h24": 0, "interactive_week": 0 },
+      "plus": { "amount_fen": 2900, "reports_h24": 1, "reports_week": 7, "interactive_h24": 10, "interactive_week": 70 },
+      "pro": { "amount_fen": 9900, "reports_h24": 5, "reports_week": 35, "interactive_h24": 50, "interactive_week": 350 },
+      "max": { "amount_fen": 29900, "reports_h24": 20, "reports_week": 140, "interactive_h24": 200, "interactive_week": 1400 }
+    },
+    "pack": { "sku": "analysis_100_v1", "amount_fen": 2900, "credits": 1000 },
+    "profiles": {
+      "interactive_500_v1": { "visits": 500, "standard_units": 1, "credits": 10 },
+      "interactive_2000_v1": { "visits": 2000, "standard_units": 4, "credits": 40 }
+    },
+    "report_wallet_standard": "max(10, ceil(server_validated_mainline_moves / 2)) credits; 1..500 moves; complete positions 0..N",
+    "report_wallet_deep": "max(40, report_cost(server_validated_mainline_moves, 2000)) credits",
+    "report_example": { "moves": 250, "visits": 500, "credits": 125, "amount_yuan": "3.625" },
+    "membership_reference_yuan_per_standard_interaction": { "plus": "0.0967", "pro": "0.0660", "max": "0.0498" },
+    "reference_caveat": "用满30天，将整笔会费分摊给互动；报告权益未分摊。偶尔使用者按次包可能总支出更低。",
+    "new_order_retired_skus": ["p6", "p30", "p98"],
+    "legacy_assets": "历史余额、账本及合法已付订单按原快照保护；不追溯改价",
+    "sales_capability": "来自服务端 catalog；Max 容量及正式支付未核验，设计不证明实际可售"
+  },
+  "usage_sample": {
+    "server_now": "2026-11-01T04:00:00Z",
+    "revision": 18,
+    "plan": { "code": "pro", "ends_at": "2026-12-01T04:00:00Z" },
+    "resources": {
+      "reports": {
+        "h24": { "state": "active", "limit": 5, "used": 1, "reserved": 1, "remaining": 3, "remaining_percent": 60, "starts_at": "2026-11-01T02:00:00Z", "resets_at": "2026-11-02T02:00:00Z" },
+        "week": { "state": "active", "limit": 35, "used": 8, "reserved": 1, "remaining": 26, "remaining_percent": 74.2857, "resets_at": "2026-11-01T16:00:00Z" }
+      },
+      "interactive": {
+        "h24": { "state": "active", "limit": 50, "used": 2, "reserved": 0, "remaining": 48, "remaining_percent": 96, "starts_at": "2026-11-01T02:00:00Z", "resets_at": "2026-11-02T02:00:00Z" },
+        "week": { "state": "active", "limit": 350, "used": 12, "reserved": 0, "remaining": 338, "remaining_percent": 96.5714, "resets_at": "2026-11-01T16:00:00Z" }
+      }
+    },
+    "wallet": { "available_credits": 1000, "standard_analysis_estimate": 100 },
+    "payment_mode": "mock",
+    "observed_at": "2026-11-01T04:00:00Z"
+  },
+  "display_rules": {
+    "remaining": "max(0, limit - used - reserved)",
+    "zero_limit": { "remaining_percent": null, "resets_at": null, "state": "not_included", "copy": "未包含，可购买次数包" },
+    "not_started": { "starts_at": null, "resets_at": null, "copy": "首次使用后起计" },
+    "free": "每自然周1份普通报告；24h恢复不额外发一份；无独立互动赠送；PROD资格须可信身份事实",
+    "offline": "显示上次同步时间和数据待刷新；不把缓存称为实时余额",
+    "reservation": "预留计入不可用，成功转已用，失败归还原周期",
+    "wallet": "仅用户明确确认准确报价后扣款；不自动回退",
+    "repeat_view": "同一已成功operation的领地、支招、重试和重复查看不再收费",
+    "renewal": "同档延长30天；跨档当前期限到期后生效，付款前显示准确生效日"
+  },
+  "request_authority": {
+    "usage": "GET /api/v1/billing/usage; Cache-Control: no-store",
+    "quote": "服务端固定SKU、金额、profile、份数/credits、fingerprint、失效时间和扣费来源",
+    "account": "按账号+环境隔离缓存；登出清理、取消旧请求、忽略旧revision/旧账号响应",
+    "kiosk": "捕获不可变cloud账号/token/generation；发送及refresh前复核；有界完整SGF快照，local session仅回显",
+    "loading_error": "不能把加载失败、断网或未知余额画成0或付款成功",
+    "mock": "仅TEST/development显式URL且实际数据库身份只读核验通过；production+mock拒启；当前HTML不注册支付接口"
+  },
+  "fixture_exit": "当前只位于docs隔离预览，无生产导入。真实业务接入并通过验收后删除生产路径的Fixture和模拟控制；docs可作为标注清楚的设计资料保留。"
+}

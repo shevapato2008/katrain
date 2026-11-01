@@ -84,6 +84,15 @@ class Settings(BaseModel):
     KATRAIN_BOX_SSO: bool = False
     KATRAIN_BOX_SSO_BRIDGE_KEY_PATH: str = "/etc/smartbox/box-sso-bridge.key"
 
+    KATRAIN_ENVIRONMENT: Literal["production", "development", "test"] = "production"
+    PAYMENTS_MODE: Literal["disabled", "mock"] = "disabled"
+    MEMBERSHIP_MODE: Literal["legacy", "enabled", "paused"] = "legacy"
+    MEMBERSHIP_REPORT_QUEUE_LIMIT: int = 8
+    MEMBERSHIP_POSITION_QUEUE_LIMIT: int = 4
+    MEMBERSHIP_POSITION_LEASE_SECONDS: int = 90
+    MEMBERSHIP_MAX_SALE_ENABLED: bool = False
+    PAYMENT_MOCK_EVENT_SECRET: str = ""
+
     # Billing / paid-analysis (single-pool integer credits). Prices are per analysis action.
     BILLING_PRICES: dict = {"territory": 10, "hints": 10, "variations": 10}
     BILLING_PACKAGES: list = [
@@ -121,6 +130,28 @@ class Settings(BaseModel):
         data.setdefault("LOCAL_KATAGO_URL", os.getenv("LOCAL_KATAGO_URL", "http://127.0.0.1:8000"))
         data.setdefault("CLOUD_KATAGO_URL", os.getenv("CLOUD_KATAGO_URL", ""))
         data.setdefault("DATABASE_PATH", os.getenv("KATRAIN_DATABASE_PATH", "db.sqlite3"))
+
+        data.setdefault("KATRAIN_ENVIRONMENT", os.getenv("KATRAIN_ENVIRONMENT", "production"))
+        data.setdefault("PAYMENTS_MODE", os.getenv("PAYMENTS_MODE", "disabled"))
+        data.setdefault("MEMBERSHIP_MODE", os.getenv("MEMBERSHIP_MODE", "legacy"))
+        data.setdefault("BILLING_ENFORCED", os.getenv("BILLING_ENFORCED", "false").lower() in ("1", "true", "yes"))
+        data.setdefault("FREE_WEEKLY_REPORTS", int(os.getenv("FREE_WEEKLY_REPORTS", "1")))
+        for key, default in (
+            ("MEMBERSHIP_REPORT_QUEUE_LIMIT", 8),
+            ("MEMBERSHIP_POSITION_QUEUE_LIMIT", 4),
+            ("MEMBERSHIP_POSITION_LEASE_SECONDS", 90),
+        ):
+            data.setdefault(key, int(os.getenv(key, default)))
+        data.setdefault(
+            "MEMBERSHIP_MAX_SALE_ENABLED",
+            os.getenv("MEMBERSHIP_MAX_SALE_ENABLED", "false").lower() in ("1", "true", "yes"),
+        )
+        data.setdefault("PAYMENT_MOCK_EVENT_SECRET", os.getenv("PAYMENT_MOCK_EVENT_SECRET", ""))
+        if data["PAYMENTS_MODE"] == "mock":
+            if data["KATRAIN_ENVIRONMENT"] == "production":
+                raise ValueError("Mock payments are forbidden in production")
+            if not os.getenv("KATRAIN_DATABASE_URL"):
+                raise ValueError("Mock payments require explicit KATRAIN_DATABASE_URL; config fallback is forbidden")
 
         # New DATABASE_URL support
         env_db_url = os.getenv("KATRAIN_DATABASE_URL")
@@ -194,6 +225,17 @@ class Settings(BaseModel):
             data["DATABASE_URL"] = f"sqlite:///./{db_path}"
 
         super().__init__(**data)
+        if self.MEMBERSHIP_MODE != "legacy" and not self.BILLING_ENFORCED:
+            raise ValueError("MEMBERSHIP_MODE enabled/paused requires BILLING_ENFORCED=true")
+        if (
+            min(
+                self.MEMBERSHIP_REPORT_QUEUE_LIMIT,
+                self.MEMBERSHIP_POSITION_QUEUE_LIMIT,
+                self.MEMBERSHIP_POSITION_LEASE_SECONDS,
+            )
+            < 1
+        ):
+            raise ValueError("Membership queue limits and lease must be positive")
 
 
 settings = Settings()

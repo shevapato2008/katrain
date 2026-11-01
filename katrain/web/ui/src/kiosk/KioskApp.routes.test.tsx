@@ -11,6 +11,7 @@ vi.mock('../hooks/useTranslation', () => ({ useTranslation: () => ({ t: (_key: s
 vi.mock('./components/layout/KioskLayout', () => ({ default: Outlet }));
 vi.mock('./components/vision/PlayInputGuard', () => ({ default: ({ children }: { children: React.ReactNode }) => <div data-testid="play-input-guard">{children}</div> }));
 vi.mock('./pages/PlayPage', () => ({ default: () => <div data-testid="play-page" /> }));
+vi.mock('./pages/membership/MembershipPage', () => ({ default: () => <div data-testid="membership-page" /> }));
 vi.mock('./pages/PlatformLobbyPage', () => ({ default: () => <div data-testid="ogs-home-page" /> }));
 vi.mock('./pages/GolaxyPregameSetupPage', () => ({ default: () => <div data-testid="golaxy-pregame-page" /> }));
 vi.mock('./pages/GolaxySpectatorPage', () => ({ default: () => <div data-testid="golaxy-spectator-page" /> }));
@@ -64,6 +65,13 @@ describe('dedicated platform routes', () => {
     open('/kiosk/play/cross-platform/game/ogs-session');
     expect(await screen.findByTestId('platform-game')).toHaveAttribute('data-engine-mode', 'false');
   });
+});
+
+it('opens membership as a dedicated authenticated route', async () => {
+  auth.authenticated = true;
+  open('/kiosk/membership');
+  expect(await screen.findByTestId('membership-page')).toBeInTheDocument();
+  expect(screen.getByTestId('route-location')).toHaveTextContent('/kiosk/membership');
 });
 
 

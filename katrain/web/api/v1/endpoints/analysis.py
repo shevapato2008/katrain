@@ -8,18 +8,23 @@ from katrain.web.core.ranked_session_guard import (
     temporary_analysis_lease,
 )
 from katrain.web.models import User, AnalyzeRequest
+from katrain.web.core.paid_analysis import require_legacy_analysis
 
 router = APIRouter()
 
 
 @router.post("/analyze")
 async def analyze(request: Request, data: AnalyzeRequest, current_user: User = Depends(get_current_user)) -> Any:
+    require_legacy_analysis(user=current_user, app=request.app)
     guard_user_has_no_pending_ranked_game(request.app, current_user, "analysis")
     manager = request.app.state.session_manager
     try:
         session = manager.get_session(data.session_id)
     except KeyError:
         raise HTTPException(status_code=404, detail="Session not found")
+    from katrain.web.core.paid_analysis import session_position_sgf
+
+    session_position_sgf(session, current_user)
     guard_ai_ladder_ranked_session(session, "routed-analysis")
 
     router_instance = getattr(request.app.state, "router", None)
@@ -50,6 +55,7 @@ async def quick_analyze(
     request: Request, data: QuickAnalyzeRequest, current_user: User = Depends(get_current_user)
 ) -> Any:
     """Lightweight position analysis without a session — returns top moves + ownership."""
+    require_legacy_analysis(user=current_user, app=request.app)
     guard_user_has_no_pending_ranked_game(request.app, current_user, "analysis")
     router_instance = getattr(request.app.state, "router", None)
     if not router_instance:

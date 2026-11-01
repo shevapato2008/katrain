@@ -69,6 +69,15 @@ describe('KioskTopbar', () => {
     expect(screen.getByRole('button', { name: '返回智星盒主页' })).toBeDisabled();
   });
 
+  it('keeps the existing identity slot as the account entry when connected', () => {
+    const onAccount = vi.fn();
+    render(<KioskTopbar identity={{ username: '张三' }} onAccount={onAccount} />);
+    const account = screen.getByRole('button', { name: '账户、会员与充值' });
+    expect(account).toContainElement(screen.getByTestId('header-username'));
+    fireEvent.click(account);
+    expect(onAccount).toHaveBeenCalledOnce();
+  });
+
   it('顶栏上一个按钮都不许多出来 —— 齿轮/摄像头/标定/引擎点全拆(D9)', () => {
     // 这条锁的是**裁定**,不是样式:规范 §1「顶栏只放这些」,而三家顶栏都零指示器。
     // 只断言「没有齿轮」挡不住下一个人再挂一个别的,所以按钮总数一起钉死。

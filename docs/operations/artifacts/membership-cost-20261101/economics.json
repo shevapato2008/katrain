@@ -1,0 +1,504 @@
+{
+  "kind": "derived_economics_not_raw_benchmark",
+  "date": "2026-11-01",
+  "scope": "Computed from parent-agent provided V100 TF3 throughput summaries; no GPU/DB access by this calculation.",
+  "assumptions": {
+    "calendar_month_days": 30,
+    "seconds_per_month": 2592000,
+    "rent_yuan_per_month": 3500,
+    "non_gpu_reserve_model": "20% added to fixed rental cost, not a 20%-of-revenue fee",
+    "fixed_cost_with_reserve_yuan": 4200,
+    "canonical_profile": "Pinned TF3 model, 500 visits, ownership and candidate result in one analysis",
+    "visits_per_standard_unit": 500,
+    "credits_per_standard_unit": 1,
+    "credits_per_display_point": 100,
+    "display_points_per_new_prepaid_yuan": 1,
+    "prepaid_yuan_per_standard_unit": 0.01,
+    "report_reference_moves": 250,
+    "report_reference_positions": 251,
+    "kappa_meaning": "Illustrative productive/saleable fraction of measured 24x30 throughput. Cost allocation assumes that fraction is actually sold and consumed; it is not an observed utilisation measurement.",
+    "one_gpu": "The two engine ports share the same V100. Never sum standalone engine throughputs as if independent GPUs."
+  },
+  "formulas": {
+    "throughput": "requests / elapsed_batch_wall_seconds",
+    "Q30": "throughput * 2592000",
+    "visits30": "Q30 * 500 (nominal canonical visits; actual root visits may exceed 500)",
+    "capacity": "kappa * Q30",
+    "unit_cost": "fixed_cost / capacity",
+    "plan_allocated_cost": "term_standard_units * unit_cost",
+    "allocated_gross_margin": "(price - plan_allocated_cost) / price",
+    "break_even_cohort": "ceil(fixed_cost / price)",
+    "monthly_units_only_capacity_cohort": "floor(capacity / term_standard_units)",
+    "weekly_stress_cohort": "floor(capacity * 7 / 30 / week_standard_units)",
+    "minimum_kappa_for_continuous_full_use_profit": "fixed_cost * term_standard_units / (price * Q30)"
+  },
+  "plans": {
+    "plus": {
+      "term_price_yuan": 29.0,
+      "term_point_equivalent_not_wallet_grant": 50.0,
+      "term_standard_units": 5000,
+      "week_standard_units_ceiling": 1757,
+      "discount_fold_of_prepaid": 5.8,
+      "savings_percent_against_prepaid_full_term_equivalent": 42.0,
+      "effective_yuan_per_standard_unit_at_full_term_use": 0.0058,
+      "term_reference_report_equivalents": 19.9203187250996,
+      "exact_whole_250_move_reports_affordable": 19,
+      "weekly_reference_report_ceiling": 7.0,
+      "break_even_members_rent3500": 121,
+      "break_even_members_fixed4200": 145
+    },
+    "pro": {
+      "term_price_yuan": 99.0,
+      "term_point_equivalent_not_wallet_grant": 180.0,
+      "term_standard_units": 18000,
+      "week_standard_units_ceiling": 6275,
+      "discount_fold_of_prepaid": 5.5,
+      "savings_percent_against_prepaid_full_term_equivalent": 45.0,
+      "effective_yuan_per_standard_unit_at_full_term_use": 0.0055,
+      "term_reference_report_equivalents": 71.71314741035856,
+      "exact_whole_250_move_reports_affordable": 71,
+      "weekly_reference_report_ceiling": 25.0,
+      "break_even_members_rent3500": 36,
+      "break_even_members_fixed4200": 43
+    },
+    "max": {
+      "term_price_yuan": 299.0,
+      "term_point_equivalent_not_wallet_grant": 600.0,
+      "term_standard_units": 60000,
+      "week_standard_units_ceiling": 20080,
+      "discount_fold_of_prepaid": 4.983333333333333,
+      "savings_percent_against_prepaid_full_term_equivalent": 50.166666666666664,
+      "effective_yuan_per_standard_unit_at_full_term_use": 0.0049833333333333335,
+      "term_reference_report_equivalents": 239.0438247011952,
+      "exact_whole_250_move_reports_affordable": 239,
+      "weekly_reference_report_ceiling": 80.0,
+      "break_even_members_rent3500": 12,
+      "break_even_members_fixed4200": 15
+    }
+  },
+  "profiles": {
+    "tf3_serial": {
+      "derived_requests_per_second": 0.4271959237064924,
+      "derived_seconds_per_request": 2.340846306125,
+      "uninterrupted_30day_standard_units": 1107291.8342472282,
+      "uninterrupted_30day_nominal_visits": 553645917.1236141,
+      "scenarios": [
+        {
+          "kappa": 0.3,
+          "standard_units_per_30days": 332187.5502741685,
+          "nominal_visits_per_30days": 166093775.13708425,
+          "average_standard_units_per_week": 77510.42839730598,
+          "rent_unit_cost_yuan": 0.01053621665565522,
+          "prepaid_allocated_gross_margin_percent": -5.362166556552212,
+          "plans": {
+            "plus": {
+              "allocated_cost_yuan": 52.681083278276105,
+              "gross_profit_yuan": -23.681083278276105,
+              "allocated_gross_margin_percent": -81.6589078561245,
+              "rent_or_fixed_cost_break_even_members": 121,
+              "monthly_units_only_capacity_members": 66,
+              "full_weekly_burst_stress_capacity_members": 44,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+            },
+            "pro": {
+              "allocated_cost_yuan": 189.65189980179397,
+              "gross_profit_yuan": -90.65189980179399,
+              "allocated_gross_margin_percent": -91.56757555736766,
+              "rent_or_fixed_cost_break_even_members": 36,
+              "monthly_units_only_capacity_members": 18,
+              "full_weekly_burst_stress_capacity_members": 12,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+            },
+            "max": {
+              "allocated_cost_yuan": 632.1729993393133,
+              "gross_profit_yuan": -333.17299933931326,
+              "allocated_gross_margin_percent": -111.42909676900109,
+              "rent_or_fixed_cost_break_even_members": 12,
+              "monthly_units_only_capacity_members": 5,
+              "full_weekly_burst_stress_capacity_members": 3,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+            }
+          }
+        },
+        {
+          "kappa": 0.5,
+          "standard_units_per_30days": 553645.9171236141,
+          "nominal_visits_per_30days": 276822958.56180704,
+          "average_standard_units_per_week": 129184.0473288433,
+          "rent_unit_cost_yuan": 0.006321729993393132,
+          "prepaid_allocated_gross_margin_percent": 36.78270006606867,
+          "plans": {
+            "plus": {
+              "allocated_cost_yuan": 31.608649966965665,
+              "gross_profit_yuan": -2.6086499669656638,
+              "allocated_gross_margin_percent": -8.995344713674703,
+              "rent_or_fixed_cost_break_even_members": 121,
+              "monthly_units_only_capacity_members": 110,
+              "full_weekly_burst_stress_capacity_members": 73,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+            },
+            "pro": {
+              "allocated_cost_yuan": 113.79113988107639,
+              "gross_profit_yuan": -14.791139881076388,
+              "allocated_gross_margin_percent": -14.940545334420595,
+              "rent_or_fixed_cost_break_even_members": 36,
+              "monthly_units_only_capacity_members": 30,
+              "full_weekly_burst_stress_capacity_members": 20,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+            },
+            "max": {
+              "allocated_cost_yuan": 379.30379960358795,
+              "gross_profit_yuan": -80.30379960358796,
+              "allocated_gross_margin_percent": -26.857458061400656,
+              "rent_or_fixed_cost_break_even_members": 12,
+              "monthly_units_only_capacity_members": 9,
+              "full_weekly_burst_stress_capacity_members": 6,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+            }
+          }
+        },
+        {
+          "kappa": 0.7,
+          "standard_units_per_30days": 775104.2839730597,
+          "nominal_visits_per_30days": 387552141.9865299,
+          "average_standard_units_per_week": 180857.66626038062,
+          "rent_unit_cost_yuan": 0.004515521423852238,
+          "prepaid_allocated_gross_margin_percent": 54.844785761477624,
+          "plans": {
+            "plus": {
+              "allocated_cost_yuan": 22.577607119261188,
+              "gross_profit_yuan": 6.422392880738812,
+              "allocated_gross_margin_percent": 22.146182347375213,
+              "rent_or_fixed_cost_break_even_members": 121,
+              "monthly_units_only_capacity_members": 155,
+              "full_weekly_burst_stress_capacity_members": 102,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            },
+            "pro": {
+              "allocated_cost_yuan": 81.27938562934028,
+              "gross_profit_yuan": 17.72061437065972,
+              "allocated_gross_margin_percent": 17.899610475413862,
+              "rent_or_fixed_cost_break_even_members": 36,
+              "monthly_units_only_capacity_members": 43,
+              "full_weekly_burst_stress_capacity_members": 28,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            },
+            "max": {
+              "allocated_cost_yuan": 270.93128543113426,
+              "gross_profit_yuan": 28.06871456886574,
+              "allocated_gross_margin_percent": 9.387529956142389,
+              "rent_or_fixed_cost_break_even_members": 12,
+              "monthly_units_only_capacity_members": 12,
+              "full_weekly_burst_stress_capacity_members": 9,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            }
+          }
+        },
+        {
+          "kappa": 1.0,
+          "standard_units_per_30days": 1107291.8342472282,
+          "nominal_visits_per_30days": 553645917.1236141,
+          "average_standard_units_per_week": 258368.0946576866,
+          "rent_unit_cost_yuan": 0.003160864996696566,
+          "prepaid_allocated_gross_margin_percent": 68.39135003303434,
+          "plans": {
+            "plus": {
+              "allocated_cost_yuan": 15.804324983482832,
+              "gross_profit_yuan": 13.195675016517168,
+              "allocated_gross_margin_percent": 45.50232764316265,
+              "rent_or_fixed_cost_break_even_members": 121,
+              "monthly_units_only_capacity_members": 221,
+              "full_weekly_burst_stress_capacity_members": 147,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            },
+            "pro": {
+              "allocated_cost_yuan": 56.895569940538195,
+              "gross_profit_yuan": 42.104430059461805,
+              "allocated_gross_margin_percent": 42.529727332789705,
+              "rent_or_fixed_cost_break_even_members": 36,
+              "monthly_units_only_capacity_members": 61,
+              "full_weekly_burst_stress_capacity_members": 41,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            },
+            "max": {
+              "allocated_cost_yuan": 189.65189980179397,
+              "gross_profit_yuan": 109.34810019820601,
+              "allocated_gross_margin_percent": 36.57127096929967,
+              "rent_or_fixed_cost_break_even_members": 12,
+              "monthly_units_only_capacity_members": 18,
+              "full_weekly_burst_stress_capacity_members": 12,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            }
+          }
+        }
+      ],
+      "fixed4200_kappa05": {
+        "kappa": 0.5,
+        "fixed_cost_yuan": 4200,
+        "unit_cost_yuan": 0.007586075992071759,
+        "prepaid_allocated_gross_margin_percent": 24.13924007928241,
+        "plans": {
+          "plus": {
+            "allocated_cost_yuan": 37.9303799603588,
+            "gross_profit_yuan": -8.930379960358795,
+            "allocated_gross_margin_percent": -30.794413656409642,
+            "rent_or_fixed_cost_break_even_members": 145,
+            "monthly_units_only_capacity_members": 110,
+            "full_weekly_burst_stress_capacity_members": 73,
+            "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+          },
+          "pro": {
+            "allocated_cost_yuan": 136.54936785729166,
+            "gross_profit_yuan": -37.549367857291664,
+            "allocated_gross_margin_percent": -37.92865440130471,
+            "rent_or_fixed_cost_break_even_members": 43,
+            "monthly_units_only_capacity_members": 30,
+            "full_weekly_burst_stress_capacity_members": 20,
+            "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+          },
+          "max": {
+            "allocated_cost_yuan": 455.16455952430556,
+            "gross_profit_yuan": -156.16455952430556,
+            "allocated_gross_margin_percent": -52.22894967368079,
+            "rent_or_fixed_cost_break_even_members": 15,
+            "monthly_units_only_capacity_members": 9,
+            "full_weekly_burst_stress_capacity_members": 6,
+            "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+          }
+        }
+      },
+      "minimum_kappa_at_full_term_use": {
+        "plus": {
+          "rent3500": 0.5449767235683735,
+          "fixed4200": 0.6539720682820482
+        },
+        "pro": {
+          "rent3500": 0.574702726672103,
+          "fixed4200": 0.6896432720065235
+        },
+        "max": {
+          "rent3500": 0.6342872903070033,
+          "fixed4200": 0.761144748368404
+        }
+      }
+    },
+    "tf3_parallel3": {
+      "derived_requests_per_second": 0.7418711458377161,
+      "derived_seconds_per_request": 1.347942975826087,
+      "uninterrupted_30day_standard_units": 1922930.01001136,
+      "uninterrupted_30day_nominal_visits": 961465005.0056801,
+      "scenarios": [
+        {
+          "kappa": 0.3,
+          "standard_units_per_30days": 576879.0030034081,
+          "nominal_visits_per_30days": 288439501.50170404,
+          "average_standard_units_per_week": 134605.1007007952,
+          "rent_unit_cost_yuan": 0.0060671301638262655,
+          "prepaid_allocated_gross_margin_percent": 39.32869836173734,
+          "plans": {
+            "plus": {
+              "allocated_cost_yuan": 30.33565081913133,
+              "gross_profit_yuan": -1.3356508191313294,
+              "allocated_gross_margin_percent": -4.605692479763205,
+              "rent_or_fixed_cost_break_even_members": 121,
+              "monthly_units_only_capacity_members": 115,
+              "full_weekly_burst_stress_capacity_members": 76,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+            },
+            "pro": {
+              "allocated_cost_yuan": 109.20834294887278,
+              "gross_profit_yuan": -10.208342948872787,
+              "allocated_gross_margin_percent": -10.311457524113925,
+              "rent_or_fixed_cost_break_even_members": 36,
+              "monthly_units_only_capacity_members": 32,
+              "full_weekly_burst_stress_capacity_members": 21,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+            },
+            "max": {
+              "allocated_cost_yuan": 364.027809829576,
+              "gross_profit_yuan": -65.02780982957596,
+              "allocated_gross_margin_percent": -21.74843138112908,
+              "rent_or_fixed_cost_break_even_members": 12,
+              "monthly_units_only_capacity_members": 9,
+              "full_weekly_burst_stress_capacity_members": 6,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": false
+            }
+          }
+        },
+        {
+          "kappa": 0.5,
+          "standard_units_per_30days": 961465.00500568,
+          "nominal_visits_per_30days": 480732502.50284004,
+          "average_standard_units_per_week": 224341.83450132536,
+          "rent_unit_cost_yuan": 0.0036402780982957594,
+          "prepaid_allocated_gross_margin_percent": 63.597219017042406,
+          "plans": {
+            "plus": {
+              "allocated_cost_yuan": 18.201390491478797,
+              "gross_profit_yuan": 10.798609508521203,
+              "allocated_gross_margin_percent": 37.23658451214208,
+              "rent_or_fixed_cost_break_even_members": 121,
+              "monthly_units_only_capacity_members": 192,
+              "full_weekly_burst_stress_capacity_members": 127,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            },
+            "pro": {
+              "allocated_cost_yuan": 65.52500576932367,
+              "gross_profit_yuan": 33.47499423067633,
+              "allocated_gross_margin_percent": 33.81312548553164,
+              "rent_or_fixed_cost_break_even_members": 36,
+              "monthly_units_only_capacity_members": 53,
+              "full_weekly_burst_stress_capacity_members": 35,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            },
+            "max": {
+              "allocated_cost_yuan": 218.41668589774557,
+              "gross_profit_yuan": 80.58331410225443,
+              "allocated_gross_margin_percent": 26.95094117132255,
+              "rent_or_fixed_cost_break_even_members": 12,
+              "monthly_units_only_capacity_members": 16,
+              "full_weekly_burst_stress_capacity_members": 11,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            }
+          }
+        },
+        {
+          "kappa": 0.7,
+          "standard_units_per_30days": 1346051.007007952,
+          "nominal_visits_per_30days": 673025503.5039761,
+          "average_standard_units_per_week": 314078.56830185547,
+          "rent_unit_cost_yuan": 0.0026001986416398283,
+          "prepaid_allocated_gross_margin_percent": 73.99801358360172,
+          "plans": {
+            "plus": {
+              "allocated_cost_yuan": 13.00099320819914,
+              "gross_profit_yuan": 15.99900679180086,
+              "allocated_gross_margin_percent": 55.16898893724434,
+              "rent_or_fixed_cost_break_even_members": 121,
+              "monthly_units_only_capacity_members": 269,
+              "full_weekly_burst_stress_capacity_members": 178,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            },
+            "pro": {
+              "allocated_cost_yuan": 46.80357554951691,
+              "gross_profit_yuan": 52.19642445048309,
+              "allocated_gross_margin_percent": 52.723661061094035,
+              "rent_or_fixed_cost_break_even_members": 36,
+              "monthly_units_only_capacity_members": 74,
+              "full_weekly_burst_stress_capacity_members": 50,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            },
+            "max": {
+              "allocated_cost_yuan": 156.0119184983897,
+              "gross_profit_yuan": 142.9880815016103,
+              "allocated_gross_margin_percent": 47.82210083665897,
+              "rent_or_fixed_cost_break_even_members": 12,
+              "monthly_units_only_capacity_members": 22,
+              "full_weekly_burst_stress_capacity_members": 15,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            }
+          }
+        },
+        {
+          "kappa": 1.0,
+          "standard_units_per_30days": 1922930.01001136,
+          "nominal_visits_per_30days": 961465005.0056801,
+          "average_standard_units_per_week": 448683.6690026507,
+          "rent_unit_cost_yuan": 0.0018201390491478797,
+          "prepaid_allocated_gross_margin_percent": 81.7986095085212,
+          "plans": {
+            "plus": {
+              "allocated_cost_yuan": 9.100695245739399,
+              "gross_profit_yuan": 19.8993047542606,
+              "allocated_gross_margin_percent": 68.61829225607104,
+              "rent_or_fixed_cost_break_even_members": 121,
+              "monthly_units_only_capacity_members": 384,
+              "full_weekly_burst_stress_capacity_members": 255,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            },
+            "pro": {
+              "allocated_cost_yuan": 32.762502884661835,
+              "gross_profit_yuan": 66.23749711533816,
+              "allocated_gross_margin_percent": 66.90656274276583,
+              "rent_or_fixed_cost_break_even_members": 36,
+              "monthly_units_only_capacity_members": 106,
+              "full_weekly_burst_stress_capacity_members": 71,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            },
+            "max": {
+              "allocated_cost_yuan": 109.20834294887278,
+              "gross_profit_yuan": 189.7916570511272,
+              "allocated_gross_margin_percent": 63.47547058566128,
+              "rent_or_fixed_cost_break_even_members": 12,
+              "monthly_units_only_capacity_members": 32,
+              "full_weekly_burst_stress_capacity_members": 22,
+              "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+            }
+          }
+        }
+      ],
+      "fixed4200_kappa05": {
+        "kappa": 0.5,
+        "fixed_cost_yuan": 4200,
+        "unit_cost_yuan": 0.004368333717954911,
+        "prepaid_allocated_gross_margin_percent": 56.31666282045089,
+        "plans": {
+          "plus": {
+            "allocated_cost_yuan": 21.841668589774557,
+            "gross_profit_yuan": 7.1583314102254425,
+            "allocated_gross_margin_percent": 24.683901414570492,
+            "rent_or_fixed_cost_break_even_members": 145,
+            "monthly_units_only_capacity_members": 192,
+            "full_weekly_burst_stress_capacity_members": 127,
+            "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+          },
+          "pro": {
+            "allocated_cost_yuan": 78.6300069231884,
+            "gross_profit_yuan": 20.369993076811593,
+            "allocated_gross_margin_percent": 20.575750582637973,
+            "rent_or_fixed_cost_break_even_members": 43,
+            "monthly_units_only_capacity_members": 53,
+            "full_weekly_burst_stress_capacity_members": 35,
+            "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+          },
+          "max": {
+            "allocated_cost_yuan": 262.1000230772947,
+            "gross_profit_yuan": 36.899976922705314,
+            "allocated_gross_margin_percent": 12.341129405587061,
+            "rent_or_fixed_cost_break_even_members": 15,
+            "monthly_units_only_capacity_members": 16,
+            "full_weekly_burst_stress_capacity_members": 11,
+            "monthly_capacity_can_cover_fixed_cost_with_homogeneous_full_use_cohort": true
+          }
+        }
+      },
+      "minimum_kappa_at_full_term_use": {
+        "plus": {
+          "rent3500": 0.3138170774392896,
+          "fixed4200": 0.3765804929271475
+        },
+        "pro": {
+          "rent3500": 0.33093437257234176,
+          "fixed4200": 0.3971212470868101
+        },
+        "max": {
+          "rent3500": 0.36524529414338724,
+          "fixed4200": 0.4382943529720647
+        }
+      }
+    }
+  },
+  "pitfalls": [
+    "The standalone serial rate and parallel batch rate are separate observed schedules; use one at a time. Parallel efficiency is not established for all future mixes.",
+    "A 30-day theoretical extrapolation is not a sustained 30-day test or a worst-case 500-move report guarantee.",
+    "An N-move complete report consumes N+1 positions; a 250-move reference therefore consumes 251 units.",
+    "Report equivalents are estimates, not report-count entitlements. Floor exact affordable reports; do not round estimates upward as a promise.",
+    "Week caps are ceilings, not grants. Term quotas prevent consuming a fresh full grant for every natural week crossed by a 30-day term.",
+    "Monthly-only cohort ceilings do not prove burst handling or service latency. Weekly stress bounds are illustrative synchronous-burst diagnostics, not a separate unlimited weekly entitlement.",
+    "3500-yuan full-use cost allocations exclude payment fees, tax, bandwidth, storage, refund loss and support unless explicitly represented; the 4200 scenario adds only a fixed700-yuan reserve.",
+    "Negative allocated gross margins mean fixed cost cannot be recovered at that assumed consumed-capacity level, even when raw one-request marginal GPU energy is small.",
+    "Only new order pricing is modelled. Existing credit balances and historic receipts must retain their original accounting facts; a new display conversion does not authorise retroactive repricing."
+  ],
+  "status": "superseded_250_move_exploration_do_not_use_as_current_catalog",
+  "superseded_by": "economics-300-move-v3.json"
+}

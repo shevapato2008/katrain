@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ResearchPage from './ResearchPage';
+vi.mock('../../api/membershipApi', () => ({ membershipApi: paidApi }));
+vi.mock('../../features/report/useReportTasks', () => ({ useReportTasks: () => ({ createReport, pendingQuote: null, quoteBusy: false, error: null }) }));
 import { useAuth } from '../../context/AuthContext';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
@@ -20,13 +22,14 @@ vi.mock('../../api', () => ({ API: {
 /* 「进入研究室」深链（`?user_game_id=`）走的是个人对局接口，与 `?kifu_id=` 的棋谱库
    不是同一个 id 空间。这里桩掉它，用例只关心 token/id 有没有原样传下去、
    取回来的 SGF 有没有装进棋盘。 */
-const { getUserGame } = vi.hoisted(() => ({
+const { getUserGame, saveUserGame, createReport, paidApi } = vi.hoisted(() => ({
+  createReport: vi.fn(), saveUserGame: vi.fn(), paidApi: { getCatalog: vi.fn(), createQuote: vi.fn(), createPosition: vi.fn() },
   getUserGame: vi.fn().mockResolvedValue({
     id: 'g1',
     sgf_content: '(;FF[4]GM[1]SZ[19];B[pd];W[dp])',
   }),
 }));
-vi.mock('../api/userGamesApi', () => ({ UserGamesAPI: { get: getUserGame } }));
+vi.mock('../api/userGamesApi', () => ({ UserGamesAPI: { get: getUserGame, create: saveUserGame } }));
 
 /* `?kifu_id=` 那条深链走棋谱库（`KifuAPI.getAlbum`），与上面那条是两个 id 空间。
    `useResearchSession` 也要桩掉：这条用例要看的正是**递给 `createSession` 的那份 SGF**，
@@ -128,6 +131,11 @@ describe('ResearchPage', () => {
     vi.clearAllMocks();
     language.current = 'cn';
     writeAudioPref('sfx', true);
+    paidApi.getCatalog.mockResolvedValue({ membership_mode: 'enabled', capabilities: { quotes: true, positions: true } });
+    paidApi.createQuote.mockResolvedValue({ token: 'signed', kind: 'position', source: 'membership', profile: 'normal', wallet_max_display_points: '0.01' });
+    paidApi.createPosition.mockResolvedValue({ state: 'succeeded', operation_id: 'op1', result: { ownership: Array(361).fill(0.2), moves: [{ move: 'D4', visits: 500, winrate: 0.6, score_lead: 2 }] } });
+    saveUserGame.mockResolvedValue({ id: 'owned-game', move_count: 1 });
+    createReport.mockResolvedValue(null);
     createSession.mockResolvedValue('sess-1');
     getUserGame.mockReset().mockResolvedValue({ id: 'g1', sgf_content: USER_GAME_SGF });
     getAlbum.mockResolvedValue({
@@ -202,46 +210,24 @@ describe('ResearchPage', () => {
     expect(screen.getByTestId('mock-setup-panel')).toBeInTheDocument();
   });
 
-  it('passes the Galaxy access token to quick analysis', async () => {
+  it('passes the confirmed identity credential to a quote without running raw analysis', async () => {
     (useAuth as Mock).mockReturnValue(confirmedAuth);
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: '支招' }));
-    await waitFor(() => expect(API.quickAnalyze).toHaveBeenCalledWith(expect.any(Object), 'test-token'));
+    await waitFor(() => expect(paidApi.createQuote).toHaveBeenCalledWith(expect.objectContaining({ kind: 'position', sgf: expect.any(String) }), 'test-token'));
+    expect(API.quickAnalyze).not.toHaveBeenCalled();
+    expect(paidApi.createPosition).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '确认并开始' }));
+    await waitFor(() => expect(paidApi.createPosition).toHaveBeenCalledTimes(1));
   });
 
-  /**
-   * `?kifu_id=<id>&analyze=1` 必须拿**这局棋**去开分析会话，不是拿一张空棋盘。
-   *
-   * 改之前这条深链是 `setTimeout(() => handleStartAnalysis(), 100)`。它闭包捕获的是
-   * **effect 那一帧**的 `handleStartAnalysis`，而那一帧的 `board.moves` 还是空的
-   * （`loadFromSGF` 走的是 `useState`，同一段 async 续体里还没冲刷）。于是
-   * `handleStartAnalysis` 里那行 `board.moves.length > 0 ? sgf : undefined` 取到
-   * `undefined`，会话建成一张**空棋盘**，紧跟着的 `analysisScan(500)` 扫的也是空棋盘 ——
-   * 用户点「在研究中打开并分析」，等来的是一局空的。100ms 不够长不是重点：
-   * 再长也没用，**闭包捕获的那个函数本身就是旧的**。
-   *
-   * 判据落在「递给 `createSession` 的第一个参数是不是这局的 SGF」上，
-   * 不落在「`loadFromSGF` 调过没有」——后者两种实现下都绿。
-   *
-   * 变异实跑（2026-08-22）：把这一处改回 `setTimeout(() => handleStartAnalysis(), 100)`
-   * → 本条红，实得 `createSession(undefined, …)`。
-   */
-  it('analyzes the deep-linked kifu itself, not a blank board', async () => {
+  it('loads analyze=1 deep links without automatically authorizing consumption', async () => {
     (useAuth as Mock).mockReturnValue(confirmedAuth);
-
     renderPage('/galaxy/research?kifu_id=42&analyze=1');
-
-    await waitFor(() => expect(createSession).toHaveBeenCalled());
-
-    const [sgfArg, opts] = createSession.mock.calls[0];
-    expect(sgfArg).toBeTypeOf('string');
-    expect(sgfArg).toContain('B[pd]');
-    expect(sgfArg).toContain('W[dd]');
-    expect(opts).toMatchObject({ skipAnalysis: true });
-
-    // 棋子也确实进了棋盘（不是「只把 SGF 转手递出去」）。
-    await waitFor(() =>
-      expect(screen.getByTestId('mock-live-board').getAttribute('data-moves')).toBe('4'));
+    await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '4'));
+    expect(createSession).not.toHaveBeenCalled();
+    expect(API.analysisScan).not.toHaveBeenCalled();
+    expect(paidApi.createPosition).not.toHaveBeenCalled();
   });
 
   /** 不带 `analyze=1` 时只装棋盘、不开会话 —— 全盘扫描是计费动作。 */
@@ -340,37 +326,20 @@ describe('ResearchPage', () => {
     expect(API.analysisScan).not.toHaveBeenCalled();
   });
 
-  // 未登录点「开始研究」——全盘分析要登录（`/api/analysis/scan` 与 `/progress` 都是
-  // 必需的 `get_current_user`）。闸必须在**进 L2 之前**：一旦进去，屏上会是「正在分析
-  // 棋局」加一个永远不会成功的「重试」，而且还会在服务端留下一个白建的会话壳。
-  it('未登录点开始研究：说需要登录，且一个会话壳都不建', async () => {
+  it('requires login before creating a report', async () => {
     (useAuth as Mock).mockReturnValue(anonymousAuth);
-
     renderPage();
-    fireEvent.click(screen.getByTestId('mock-start-analysis'));
-
-    expect(await screen.findByTestId('login-required-message')).toHaveTextContent('全盘分析');
-    expect(createSession).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '创建复盘报告' }));
+    expect(await screen.findByTestId('login-required-message')).toBeVisible();
+    expect(saveUserGame).not.toHaveBeenCalled();
+  });
+  it('saves an owned SGF and starts the report quote journey instead of a scan', async () => {
+    (useAuth as Mock).mockReturnValue(confirmedAuth);
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '摆 D4' }));
+    fireEvent.click(screen.getByRole('button', { name: '创建复盘报告' }));
+    await waitFor(() => expect(createReport).toHaveBeenCalledWith({ userGameId: 'owned-game', totalMoves: 1 }));
+    expect(saveUserGame.mock.calls[0][1].sgf_content).toContain('B[dp]');
     expect(API.analysisScan).not.toHaveBeenCalled();
-  });
-
-  it('/me 探针还没回来时不误挡：不弹「需要登录」', async () => {
-    (useAuth as Mock).mockReturnValue({ ...anonymousAuth, status: 'checking', isLoading: true });
-
-    renderPage();
-    fireEvent.click(screen.getByTestId('mock-start-analysis'));
-
-    await waitFor(() => expect(createSession).toHaveBeenCalled());
-    expect(screen.queryByTestId('login-required-message')).not.toBeInTheDocument();
-  });
-
-  it('已登录照常进 L2', async () => {
-    (useAuth as Mock).mockReturnValue({ ...confirmedAuth, token: 'tok' });
-
-    renderPage();
-    fireEvent.click(screen.getByTestId('mock-start-analysis'));
-
-    await waitFor(() => expect(createSession).toHaveBeenCalled());
-    expect(screen.queryByTestId('login-required-message')).not.toBeInTheDocument();
   });
 });

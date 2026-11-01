@@ -35,6 +35,10 @@ class DefaultHintGate:
         self._engine = hint_engine
 
     def check(self, *, game_type: str, user_id: Optional[int] = None) -> HintDecision:
+        from katrain.web.core.paid_analysis import legacy_analysis_allowed
+
+        if not legacy_analysis_allowed():
+            return HintDecision(allowed=False, reason="paid_position_required")
         if game_type != "free":
             return HintDecision(allowed=False, reason="ranked_forbidden")
         if self._engine == "off":

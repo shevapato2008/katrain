@@ -101,6 +101,7 @@ class SessionManager:
             # Engine UUID and authenticated account identity are unrelated. Set
             # eligibility before start() can publish its very first state.
             katrain.account_user_id = user_id
+            katrain.membership_guard_active = getattr(self, "membership_guard_active", False)
             katrain._rank_owner_session_eligible = _rank_owner_eligible and initial_game_type in (
                 "free",
                 "ranked",

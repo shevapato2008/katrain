@@ -830,3 +830,85 @@ def test_reconcile_persists_generation_with_runtime_autoflush_disabled(membershi
         op = db.get(m.BillingOperation, ident)
         assert op.status == "refunded" and db.get(m.User, uid).credits == 10
         assert op.generation == 1
+
+
+def frozen_plus_snapshot():
+    return {
+        "sku": "membership_plus",
+        "kind": "membership",
+        "plan_code": "plus",
+        "amount_fen": 3900,
+        "credits": 0,
+        "term_days": 30,
+        "term_units": 9030,
+        "week_units": 3010,
+    }
+
+
+def test_frozen_pending_membership_fulfills_after_plan_is_retired(membership_pg_engine, monkeypatch):
+    from katrain.web.core.billing_catalog import CATALOG_VERSION, PLANS
+
+    ops, membership = services()
+    uid = seed(membership_pg_engine)
+    Session = sessionmaker(bind=membership_pg_engine)
+    with Session.begin() as db:
+        order = m.RechargeOrder(
+            user_id=uid,
+            out_trade_no="frozen-pending",
+            package_id="membership_plus",
+            amount_fen=3900,
+            credits=0,
+            provider="mock",
+            status="pending",
+            catalog_version=CATALOG_VERSION,
+            sku_snapshot=frozen_plus_snapshot(),
+            environment="test",
+        )
+        db.add(order)
+        db.flush()
+        order_id = order.id
+    monkeypatch.setitem(PLANS, "plus", {**PLANS["plus"], "sellable": False, "term_units": 1})
+    with Session.begin() as db:
+        ops._user(db, uid)
+        db.query(m.RechargeOrder).filter_by(id=order_id, user_id=uid).with_for_update().populate_existing().one()
+        term = membership.create_term_in_transaction(db, user_id=uid, plan_id="plus", order_id=order_id, now=NOW)
+        assert term.limit == 9030 and term.ends_at - term.starts_at == timedelta(days=30)
+        assert term.catalog_version == CATALOG_VERSION
+
+
+def test_frozen_week_units_drive_usage_quote_and_reservation_after_catalog_change(membership_pg_engine, monkeypatch):
+    from katrain.web.core.billing_catalog import CATALOG_VERSION, PLANS
+
+    _, membership = services()
+    uid = seed(membership_pg_engine, member=True, remaining=10, credits=10)
+    Session = sessionmaker(bind=membership_pg_engine)
+    with Session.begin() as db:
+        order = db.query(m.RechargeOrder).filter_by(user_id=uid).one()
+        order.catalog_version, order.sku_snapshot, order.package_id = (
+            CATALOG_VERSION,
+            frozen_plus_snapshot(),
+            "membership_plus",
+        )
+    monkeypatch.setitem(PLANS, "plus", {**PLANS["plus"], "week_units": 1})
+    with Session.begin() as db:
+        usage = membership.usage_snapshot(db, user_id=uid, now=NOW, environment="test", payments_mode="mock")
+        assert usage["week"]["limit"] == 3010
+        q = quote(db, uid, units=4, profile="advanced")
+        assert q["source"] == "membership"
+        op = reserve(db, uid, q["token"], units=4, profile="advanced")
+        assert op.source == "membership" and db.get(m.User, uid).credits == 10
+        assert db.query(m.QuotaBucket).one().allowance == 3010
+
+
+def test_versioned_term_missing_frozen_snapshot_never_uses_current_catalog(membership_pg_engine):
+    from katrain.web.core.billing_catalog import CATALOG_VERSION
+
+    _, membership = services()
+    uid = seed(membership_pg_engine, member=True, remaining=10, credits=10)
+    Session = sessionmaker(bind=membership_pg_engine)
+    with Session.begin() as db:
+        db.query(m.RechargeOrder).filter_by(user_id=uid).one().catalog_version = CATALOG_VERSION
+    with Session() as db:
+        with pytest.raises(ValueError, match="invalid_membership_order_snapshot"):
+            membership.usage_snapshot(db, user_id=uid, now=NOW, environment="test", payments_mode="mock")
+        assert db.get(m.User, uid).credits == 10

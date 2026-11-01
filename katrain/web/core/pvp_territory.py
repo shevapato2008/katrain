@@ -12,6 +12,7 @@ from katrain.core.engine import KataGoEngine
 from katrain.web.core.game_end_rules import is_awaiting_count
 from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
 from katrain.web.core.ranked_session_guard import temporary_analysis_lease
+from katrain.web.core.paid_analysis import require_legacy_analysis
 
 
 def guard_lobby_territory(app, session, current_user):
@@ -113,6 +114,7 @@ def _box_territory_result(payload):
 
 async def forward_lobby_territory(app, session, current_user):
     """Forward without applying a state response or broadcasting private engine output."""
+    require_legacy_analysis(runtime=session.katrain, user=current_user, app=app)
     bridge = getattr(app.state, "pvp_box_bridge", None)
     if bridge is None:
         raise HTTPException(status_code=503, detail="Central lobby unavailable")
@@ -147,6 +149,7 @@ async def forward_lobby_territory(app, session, current_user):
 
 
 async def analyze_lobby_territory(app, session, current_user):
+    require_legacy_analysis(runtime=session.katrain, user=current_user, app=app)
     with session.lock:
         guard_lobby_territory(app, session, current_user)
         if getattr(session, "_pvp_territory_in_flight", False):

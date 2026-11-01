@@ -120,10 +120,57 @@ def ensure_week_bucket_in_transaction(db, *, user_id, now, allowance):
     return row
 
 
+def _order_entitlement(db, *, user_id, plan_id, order_id, for_new_term=False, term_catalog_version=None):
+    """Use a server-frozen order; only unversioned legacy rows may use today's catalog."""
+    order = db.query(m.RechargeOrder).filter_by(id=order_id, user_id=user_id).populate_existing().one_or_none()
+    if order is None:
+        raise ValueError("invalid_membership_order_snapshot")
+    if order.catalog_version is not None:
+        snapshot = order.sku_snapshot
+        if (
+            not order.catalog_version
+            or not isinstance(snapshot, dict)
+            or snapshot.get("kind") != "membership"
+            or snapshot.get("plan_code") != plan_id
+            or snapshot.get("sku") != f"membership_{plan_id}"
+            or order.package_id != snapshot.get("sku")
+            or type(snapshot.get("amount_fen")) is not int
+            or snapshot["amount_fen"] <= 0
+            or snapshot["amount_fen"] != order.amount_fen
+            or type(snapshot.get("credits")) is not int
+            or snapshot["credits"] != 0
+            or order.credits != 0
+            or any(
+                type(snapshot.get(key)) is not int or snapshot[key] <= 0
+                for key in ("term_days", "term_units", "week_units")
+            )
+            or snapshot["week_units"] > snapshot["term_units"]
+            or (term_catalog_version is not None and term_catalog_version != order.catalog_version)
+        ):
+            raise ValueError("invalid_membership_order_snapshot")
+        return {**snapshot, "catalog_version": order.catalog_version}
+    # Legacy compatibility is deliberately bounded to this catalog. Missing frozen
+    # facts on a versioned order never silently acquire current prices or benefits.
+    if order.sku_snapshot is not None or term_catalog_version not in (None, CATALOG_VERSION) or plan_id not in PLANS:
+        raise ValueError("invalid_membership_order_snapshot")
+    if for_new_term and not PLANS[plan_id]["sellable"]:
+        raise ValueError("plan_not_sellable")
+    return {**PLANS[plan_id], "term_days": TERM_DAYS, "catalog_version": CATALOG_VERSION}
+
+
+def term_week_units(db, term):
+    return _order_entitlement(
+        db,
+        user_id=term.user_id,
+        plan_id=term.plan_id,
+        order_id=term.order_id,
+        term_catalog_version=term.catalog_version,
+    )["week_units"]
+
+
 def create_term_in_transaction(db, *, user_id, plan_id, order_id, now):
     """The caller holds the user lock; same order replays its immutable term."""
-    if plan_id not in PLANS or not PLANS[plan_id]["sellable"]:
-        raise ValueError("plan_not_sellable")
+    entitlement = _order_entitlement(db, user_id=user_id, plan_id=plan_id, order_id=order_id, for_new_term=True)
     existing = db.query(m.MembershipTerm).filter_by(order_id=order_id).populate_existing().one_or_none()
     if existing:
         if existing.user_id != user_id or existing.plan_id != plan_id:
@@ -141,12 +188,12 @@ def create_term_in_transaction(db, *, user_id, plan_id, order_id, now):
         user_id=user_id,
         plan_id=plan_id,
         starts_at=start,
-        ends_at=start + timedelta(days=TERM_DAYS),
-        limit=PLANS[plan_id]["term_units"],
+        ends_at=start + timedelta(days=entitlement["term_days"]),
+        limit=entitlement["term_units"],
         used=0,
         reserved=0,
         order_id=order_id,
-        catalog_version=CATALOG_VERSION,
+        catalog_version=entitlement["catalog_version"],
         status="active",
     )
     db.add(term)
@@ -216,7 +263,7 @@ def usage_snapshot(
         "plan": {"current": plan(term), "next": plan(upcoming)},
         "term": _window(term.limit, term.used, term.reserved, term.ends_at) if term else None,
         "week": (
-            _window(PLANS[term.plan_id]["week_units"], week_used, int(bucket.reserved or 0) if bucket else 0, week_end)
+            _window(term_week_units(db, term), week_used, int(bucket.reserved or 0) if bucket else 0, week_end)
             if term
             else None
         ),

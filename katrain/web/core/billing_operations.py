@@ -10,7 +10,7 @@ from datetime import timedelta
 from sqlalchemy import text, or_
 
 from . import billing, membership as ms, models_db as m
-from .billing_catalog import CATALOG_VERSION, PLANS, get_profile, wallet_display_points
+from .billing_catalog import CATALOG_VERSION, get_profile, wallet_display_points
 from .billing_quotes import FREE_ELIGIBILITY_POLICY, sign_quote, verify_quote, QuoteError
 
 
@@ -55,11 +55,8 @@ def _source(db, *, user_id, now, kind, profile, units, trusted_free_eligible, lo
     bucket = ms.week_bucket(db, user_id=user_id, now=now, lock=lock)
     used = int(bucket.used) if bucket else ms.legacy_free_facts(db, user_id=user_id, now=now)[1]
     reserved = int(bucket.reserved or 0) if bucket else 0
-    if (
-        term
-        and term.limit - term.used - term.reserved >= units
-        and PLANS[term.plan_id]["week_units"] - used - reserved >= units
-    ):
+    week_limit = ms.term_week_units(db, term) if term else 0
+    if term and term.limit - term.used - term.reserved >= units and week_limit - used - reserved >= units:
         return "membership", term
     if (
         term is None
@@ -400,7 +397,7 @@ def reserve_operation_in_transaction(
             op.term_id = term.id
             term.reserved += units
         bucket = ms.ensure_week_bucket_in_transaction(
-            db, user_id=user_id, now=now, allowance=PLANS[term.plan_id]["week_units"] if term else 0
+            db, user_id=user_id, now=now, allowance=ms.term_week_units(db, term) if term else 0
         )
         bucket.reserved += units
         op.week_bucket_id = bucket.id

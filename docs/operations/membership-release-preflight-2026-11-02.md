@@ -44,7 +44,7 @@ TEST Web 仍带 `com.docker.compose.project=katrain` 和 **20 文件历史链** 
 
 ### 本次本地 helper（待审核，未部署）
 
-文件：`/tmp/membership-native-release-20261102.py`；SHA256 `7adb6da7e278e395b9730f6b29d659002ac863966e420e7a5ef1d9813b8c1597`。单文件、仅 Python 标准库；只接受两端明确的四个 Web/Cron 名称，绑定实际 hostname/daemon ID，不读取 stale compose 链，不 build/pull、不访问 SQL、不修改 DB URL 或 mock secret。未 commit 此 `/tmp` 工具。
+文件：`/tmp/membership-native-release-20261102.py`；SHA256 `a26d7c83c1b302c5f042d5e4f5a1fe7426446ecac174f0ebeb12cc55c1ceaa39`。单文件、仅 Python 标准库；只接受两端明确的四个 Web/Cron 名称，绑定实际 hostname/daemon ID，不读取 stale compose 链，不 build/pull、不访问 SQL、不修改 DB URL 或 mock secret。未 commit 此 `/tmp` 工具。
 
 `prepare` 仅 GET fresh Docker inspect/image/info，并向已存在的当前执行用户 mode0700 私有目录新建一个 mode0600 manifest；其中保存旧 inspect、新 create payload 和 hashes。stdout 只列 image/ID/SHA、变更字段名和 manifest byte SHA，不打印 env 值。允许的 env 只有 build SHA、明确环境/会员/支付/收费/Free/Max、paid engine URL，以及三个实际 queue/lease 配置；本次主服务强制 paused/disabled/enforced/free0/maxfalse。禁止 DB URL 与 mock event secret delta。
 
@@ -52,7 +52,7 @@ TEST Web 仍带 `com.docker.compose.project=katrain` 和 **20 文件历史链** 
 
 默认 `safeFailurePolicy=stop;oldBackupRetained`：candidate 失败后只在 full ID/name/operation ownership 仍匹配时正常停止并保留为 failed 名称，旧容器保留 stopped backup，**不启动不懂 v3 的 f43 旧镜像**。不删除任何容器/镜像，不清 activation、不改 legacy。只有操作者已证明旧镜像支持会员 activation/v3，且 prepare/apply 两次都显式 `--rollback-compatible`、manifest 绑定该事实时，才允许恢复兼容旧软件；本次首次财务发布不传此参数。外部并发变化或安全恢复不完整时拒绝进一步动作并保留 private receipt。
 
-本机验证：`py_compile`、CLI help 通过；3 个小 fake inspect 用例验证配置/网络保留与危险 env 拒绝、stale ID/配置 CAS 拒绝且无 mutation、首次财务失败无旧镜像 start 且无 DELETE；另一次完整 fake prepare 证明 Docker mutation=0、manifest mode0600、stdout 无 dummy secret，默认失败策略正确。这些不等于实际 Docker/runtime 已验收，实际只读 prepare 与独立审核由主任务在执行前完成。
+本机验证：`py_compile`、CLI help 通过；5 个小 fake inspect 用例验证配置/网络保留与危险 env 拒绝、stale ID/配置 CAS 拒绝且无 mutation、首次财务失败无旧镜像 start 且无 DELETE，以及小写强杀信号拒绝、Healthcheck.Test=['NONE'] 不等待 healthy；另一次完整 fake prepare 证明 Docker mutation=0、manifest mode0600、stdout 无 dummy secret，默认失败策略正确。这些不等于实际 Docker/runtime 已验收，实际只读 prepare 与独立审核由主任务在执行前完成。
 
 在选定目标机完成文件传输/审核、候选 image 已构建、原服务已取得自然安全窗口后，可用下面的占位符命令。private env JSON 与 manifest/receipt 目录必须分别为执行用户拥有的 mode0600 / mode0700；PROD 由 root 拥有并用 `sudo -n python3`。示例不含凭据：
 

@@ -66,6 +66,11 @@ async def test_usage_and_catalog_have_frozen_shapes_and_no_store(api):
         "display_points_per_position": "0.04",
     }
     assert next(p for p in catalog.json()["plans"] if p["code"] == "max")["sale_enabled"] is False
+    assert {p["code"]: p["full_use_savings_percent"] for p in catalog.json()["plans"]} == {
+        "plus": 56.8,
+        "pro": 63.5,
+        "max": 72.5,
+    }
     assert data["capabilities"]["orders"] is False
 
 

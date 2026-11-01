@@ -298,7 +298,7 @@ async def get_catalog(request: Request, response: Response, current_user: User =
                 "week_units": spec["week_units"],
                 "term_report_reference": spec["term_units"] // 301,
                 "week_report_reference": spec["week_units"] // 301,
-                "full_use_savings_percent": round((1 - spec["amount_fen"] / spec["term_units"]) * 100),
+                "full_use_savings_percent": round((1 - spec["amount_fen"] / spec["term_units"]) * 100, 1),
                 "sale_enabled": enabled and spec["sellable"],
             }
             for code, spec in catalog.PLANS.items()

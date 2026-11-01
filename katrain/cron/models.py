@@ -260,7 +260,11 @@ class ReportTaskDB(Base):
     # 这一列 —— 只加在 web 模型会让这里永远读到 None、校验形同虚设(见
     # katrain/web/core/models_db.py:ReportTask 同名列的注释)。
     sgf_hash = Column(String(64), nullable=True)
+    analysis_sgf = Column(Text, nullable=True)
     model_sha256 = Column(String(64), nullable=True)
+    billing_version = Column(String(64), nullable=True)
+    operation_id = Column(Integer, nullable=True, index=True)
+    generation = Column(Integer, nullable=False, default=0, server_default="0")
     # 非 NULL = 这个任务不该被 web 侧结算器收费(如本文件 requeue_reports.py 重排)。
     # cron 侧要写这一列 —— 只加在 web 模型会让 requeue_reports.py 的赋值在 cron
     # 容器里抛 AttributeError(见 katrain/web/core/models_db.py:ReportTask 同名列的注释)。

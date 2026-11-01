@@ -1,4 +1,4 @@
-/* v3.1 membership fixture; existing Kiosk palette, Kai/Plex typography and soft keys. */
+/* Final weekly membership fixture; existing Kiosk palette, Kai/Plex typography and soft keys. */
 .membership-demo-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0;color:#bed2c3;font:14px system-ui,sans-serif}
 .membership-demo-controls[hidden]{display:none}
 .membership-demo-controls button,.membership-demo-controls select{min-height:36px;padding:6px 10px;border:1px solid #49684f;border-radius:7px;background:#203327;color:#edf5ec;font:14px system-ui,sans-serif}

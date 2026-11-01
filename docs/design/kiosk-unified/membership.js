@@ -1,4 +1,4 @@
-/* v3.1 isolated design fixture: in-memory only, without API, payment or device calls. */
+/* Final weekly membership isolated design fixture: in-memory only, without API, payment or device calls. */
 (() => {
   'use strict';
   const families = window.KioskDesignFamilies = window.KioskDesignFamilies || {};
@@ -10,9 +10,9 @@
   const weekEnd = Date.parse('2026-11-01T16:00:00Z');
   const catalog = {
     free:{name:'Free'},
-    plus:{name:'Plus',amount:39,term:9030,week:2107,dailyReports:1,saving:57},
-    pro:{name:'Pro',amount:99,term:36120,week:8428,dailyReports:4,saving:73},
-    max:{name:'Max',amount:279,term:117390,week:27391,dailyReports:13,saving:76},
+    plus:{name:'Plus',amount:39,term:9030,week:3010,weeklyReports:10,saving:56.8},
+    pro:{name:'Pro',amount:99,term:27090,week:9030,weeklyReports:30,saving:63.5},
+    max:{name:'Max',amount:199,term:72240,week:24080,weeklyReports:80,saving:72.5},
   };
   const planCodes = ['plus','pro','max'];
   const scenarios = [['pro','Pro 会员'],['free','Free 周报告'],['exhausted','周额度耗尽'],['not-started','新周期未使用'],['reserved','分析已预留'],['offline','离线旧数据'],['boundary','周界待重取'],['loading','加载中'],['error','同步失败']];
@@ -90,10 +90,10 @@
     return `<div class="mem-usage"><section class="mem-resource">${content}</section>${account()}</div>`;
   }
   function plans() {
-    return `<section class="mem-plans"><div class="mem-comparison-heading"><span>会员 · ${numeric(30)}天 · 候选价格</span><span>额度用满时，比API更省</span>${infoButton('quota')}</div><div class="mem-plan-grid">${planCodes.map(code=>{
+    return `<section class="mem-plans"><div class="mem-comparison-heading"><span>会员 · ${numeric(30)}天 · 配置价格</span><span>额度用满时，比API更省</span>${infoButton('quota')}</div><div class="mem-plan-grid">${planCodes.map(code=>{
       const p=catalog[code],current=accountReady()&&code===state.currentPlan;
-      return `<article class="mem-plan ${current?'is-current':''} ${code==='max'?'is-unavailable':''}"><div class="mem-plan-head"><strong>${p.name}</strong><span>${code==='max'?'暂未开放':current?'当前会员':''}</span></div><div class="mem-plan-price">¥${numeric(p.amount)} <small>/ ${numeric(30)}天</small></div><p class="mem-saving">比API约省 ${numeric(p.saving)}%</p><div class="mem-report-reference"><span>普通报告</span><strong>日均约 ${numeric(p.dailyReports)} 盘</strong></div>${button(code==='max'?'暂未开放':current?'续费 '+p.name:'选择 '+p.name,`data-mem-buy="${code}" ${code==='max'||!purchasable()?'disabled':''}`,code==='pro')}</article>`;
-    }).join('')}</div><div class="mem-plan-footer"><p>按${numeric(300)}手普通报告估算；日均不是每日限额，仍受本周与本期剩余限制<br>优惠按${numeric(30)}天额度用满计算；未用满时，实际优惠随用量变化</p></div></section>`;
+      return `<article class="mem-plan ${current?'is-current':''} ${code==='max'?'is-unavailable':''}"><div class="mem-plan-head"><strong>${p.name}</strong><span>${code==='max'?'暂未开放':current?'当前会员':''}</span></div><div class="mem-plan-price">¥${numeric(p.amount)} <small>/ ${numeric(30)}天</small></div><p class="mem-saving">比API约省 ${numeric(p.saving)}%</p><div class="mem-report-reference"><span>普通报告</span><strong>每周最多约 ${numeric(p.weeklyReports)} 盘</strong></div>${button(code==='max'?'暂未开放':current?'续费 '+p.name:'选择 '+p.name,`data-mem-buy="${code}" ${code==='max'||!purchasable()?'disabled':''}`,code==='pro')}</article>`;
+    }).join('')}</div><div class="mem-plan-footer"><p>按${numeric(300)}手估算，受本期剩余限制；高级报告约${numeric(4)}倍消耗<br>优惠按${numeric(30)}天额度用满计算；未用满时，实际优惠随用量变化</p></div></section>`;
   }
   function topup() {
     return `<section class="mem-topup"><article class="mem-api-rates"><div class="mem-section-heading"><h2>API充值 · 按用量付费</h2>${infoButton('pricing')}</div><div class="mem-rate"><span>普通分析</span><strong>约 ${numeric('0.01')} 积分 / 手</strong></div><div class="mem-rate"><span>高级分析</span><strong>约 ${numeric('0.04')} 积分 / 手</strong></div><p class="mem-report-quote">${numeric(300)}手报告 · 普通 ${numeric('3.01')} 积分<br>高级 ${numeric('12.04')} 积分，均含初始局面</p><p class="mem-footnote">优先使用会员额度，用尽后使用API积分。<br>分析前确认扣费来源与报价，不自动充值。</p><div class="mem-alternative"><span>经常使用，会员可更省</span>${button('比较会员','data-mem-go="membership-plans"')}</div></article><aside class="mem-recharge"><div class="mem-recharge-balance"><span>当前API余额</span><strong>${accountReady()?points(state.balance):'—'} 积分</strong></div><p class="mem-exchange">${numeric(1)}元 = ${numeric(1)}积分</p><div class="mem-amounts" role="group" aria-label="选择API充值金额">${[10,30,100].map(amount=>`<button type="button" data-mem-amount="${amount}" aria-pressed="${state.amount===amount}"><strong>¥${numeric(amount)}</strong><span>${numeric(amount)}积分</span></button>`).join('')}</div><p class="mem-selected">到账 ${numeric(state.amount.toFixed(2))} 积分</p>${button('预览充值 ¥'+numeric(state.amount),`data-mem-buy="wallet" ${!purchasable()?'disabled':''}`,true)}<p class="mem-footnote">TEST设计示意 · 不会真实收款</p></aside></section>`;
@@ -108,10 +108,10 @@
     ]],
     quota:['会员额度与优惠说明',[
       '同一结果包含领地与支招；重复查看不重复扣费。高级分析消耗普通分析的4倍额度。',
-      '日均盘数按300手普通报告估算，不是每日限额；实际按棋谱及初始局面计算，仍受本周与本期剩余限制。',
+      '每周最多盘数按300手普通报告估算，受本期剩余限制；高级约4倍。本期普通报告参考Plus30盘、Pro90盘、Max240盘，不保证最后一周能用完本期额度。',
       '本期30天，到期不恢复；每周按北京时间周一零点重置。两项百分比基数不同，分别显示；分析中的用量已计入。',
       '优先使用会员额度，用尽后使用API积分。本期或本周任一剩余不足以覆盖整次分析时，整次使用API积分；开始前确认来源与报价。',
-      '优惠与API普通分析相比，按30天额度用满计算；未用满时实际优惠随用量变化。价格为候选预览，Max暂未开放。Free每周仅1份普通报告资格，不赠通用分析额度。',
+      '优惠与API普通分析相比，按30天额度用满计算；未用满时实际优惠随用量变化。配置价格仅作TEST预览，Max暂未开放。Free每周仅1份普通报告资格，不赠通用分析额度。',
     ]],
   };
   function openOrder(code,trigger) {
@@ -126,7 +126,7 @@
     if(!order)return `<div class="mem-dialog-backdrop"><section class="mem-dialog" role="dialog" aria-modal="true" aria-labelledby="mem-checkout-title"><header class="mem-dialog-header"><h2 id="mem-checkout-title">购买预览 · TEST</h2>${button(icon('close'),'class="mem-close" data-mem-close-order aria-label="关闭预览"')}</header><p>先选择API充值金额或会员套餐。</p><p class="mem-dialog-note">账号和额度确认后才能创建测试预览。</p><footer class="mem-dialog-actions">${button('返回选择','data-mem-close-order',true)}</footer></section></div>`;
     const wallet=order.code==='wallet';
     const statuses={pending:'等待TEST模拟确认',paid:'TEST预览已确认',failed:'TEST未完成，可重新预览',expired:'TEST预览已过期'};
-    const detail=wallet?`到账 ${numeric(order.amount.toFixed(2))} 积分`:`${catalog[order.code].name}会员 · ${numeric(30)}天<br><span class="mem-order-meta">普通报告 · 日均约 ${numeric(catalog[order.code].dailyReports)} 盘</span>`;
+    const detail=wallet?`到账 ${numeric(order.amount.toFixed(2))} 积分`:`${catalog[order.code].name}会员 · ${numeric(30)}天<br><span class="mem-order-meta">普通报告 · 每周最多约 ${numeric(catalog[order.code].weeklyReports)} 盘</span>`;
     return `<div class="mem-dialog-backdrop"><section class="mem-dialog" role="dialog" aria-modal="true" aria-labelledby="mem-checkout-title"><header class="mem-dialog-header"><h2 id="mem-checkout-title">${wallet?'充值':'会员'}确认 · TEST</h2>${button(icon('close'),'class="mem-close" data-mem-close-order aria-label="关闭预览"')}</header><div class="mem-order-summary"><div><p>${detail}</p><p class="mem-order-meta">${wallet?'API余额按用量扣费':order.startsImmediately?'确认后模拟开通，本周已用保留':'当前会员到期后生效，现有用量保留'}</p></div><strong>¥${numeric(order.amount.toFixed(2))}</strong></div>${!wallet?`<p class="mem-order-meta">${numeric(formatDay(order.startsAt))} 至 ${numeric(formatDay(order.endsAt))} · 北京时间</p>`:''}<p class="mem-order-state" role="status">${!accountReady()?'账号信息待同步，暂不可确认':!online()?'当前离线，恢复同步后再确认':statuses[order.status]}</p><p class="mem-dialog-note">仅用于检查购买流程，不会真实付款、充值或改变账号权益。</p><footer class="mem-dialog-actions">${button(order.status==='paid'?'返回用量':'返回选择','data-mem-close-order')}${order.status==='pending'?button('TEST确认预览',`data-mem-confirm ${!purchasable()?'disabled':''}`,true):['failed','expired'].includes(order.status)?button('重新预览',`data-mem-new-order ${!purchasable()?'disabled':''}`,true):''}</footer></section></div>`;
   }
   function message() {

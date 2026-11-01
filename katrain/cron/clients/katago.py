@@ -2,6 +2,7 @@
 
 import logging
 import math
+import re
 from typing import Optional
 
 import httpx
@@ -41,6 +42,7 @@ class KataGoClient:
         initial_stones: list[list[str]] | None = None,
         initial_player: str = "B",
         extra_override: dict | None = None,
+        expected_model_sha256: str | None = None,
     ) -> dict:
         """Send a single analysis request to KataGo.
 
@@ -55,6 +57,7 @@ class KataGoClient:
             include_ownership: Include territory ownership map.
             include_policy: Include policy priors.
             priority: KataGo-side priority.
+            expected_model_sha256: Frozen model identity for this request; falls back to config when omitted.
 
         Returns:
             Raw KataGo JSON response dict.
@@ -95,9 +98,10 @@ class KataGoClient:
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
             result = resp.json()
-            if config.KATAGO_EXPECTED_MODEL_SHA256:
+            model_sha256 = expected_model_sha256 or config.KATAGO_EXPECTED_MODEL_SHA256
+            if model_sha256:
                 self.validate_result(
-                    result, request_id, analyze_turns[-1], board_size, config.KATAGO_EXPECTED_MODEL_SHA256
+                    result, request_id, analyze_turns[-1], board_size, model_sha256, min_visits=max_visits
                 )
             return result
 
@@ -108,38 +112,58 @@ class KataGoClient:
         """Fail closed before a model response can enter a report or live record."""
         if not isinstance(result, dict) or result.get("error"):
             raise ValueError(f"KataGo rejected analysis: {result.get('error') if isinstance(result, dict) else result}")
-        if result.get("id") != request_id or result.get("turnNumber") != turn:
+        if result.get("id") != request_id or type(result.get("turnNumber")) is not int or result["turnNumber"] != turn:
             raise ValueError("KataGo returned a different request or turn")
         if result.get("isDuringSearch") is not False:
             raise ValueError("KataGo did not return a final result")
         wrapper = result.get("_wrapper")
         if not isinstance(wrapper, dict) or wrapper.get("model_sha256") != model_sha256:
             raise ValueError("KataGo model SHA does not match the configured model")
-        if wrapper.get("model_sha256_verified") is not True or not wrapper.get("selected_model"):
+        selected_model = wrapper.get("selected_model")
+        if (
+            wrapper.get("model_sha256_verified") is not True
+            or not isinstance(selected_model, str)
+            or not selected_model.strip()
+        ):
             raise ValueError("KataGo model identity is unverified")
         root = result.get("rootInfo")
-        if not isinstance(root, dict) or not isinstance(root.get("visits"), int) or root["visits"] < min_visits:
+        if not isinstance(root, dict) or type(root.get("visits")) is not int or root["visits"] < min_visits:
             raise ValueError("KataGo root visits are below the required depth")
         for field in ("winrate", "scoreLead"):
             value = root.get(field)
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
                 raise ValueError(f"KataGo root {field} is invalid")
+        if not 0 <= root["winrate"] <= 1:
+            raise ValueError("KataGo root winrate is invalid")
         move_infos = result.get("moveInfos")
         if not isinstance(move_infos, list) or not move_infos:
             raise ValueError("KataGo returned no candidate moves")
         for move in move_infos:
             if not isinstance(move, dict) or not isinstance(move.get("move"), str):
                 raise ValueError("KataGo candidate move is invalid")
-            if not isinstance(move.get("visits"), int) or move["visits"] < 0:
+            if move["move"].lower() != "pass":
+                coord = re.fullmatch(r"([A-HJ-Z])([1-9][0-9]*)", move["move"])
+                if (
+                    coord is None
+                    or "ABCDEFGHJKLMNOPQRSTUVWXYZ".index(coord[1]) >= board_size
+                    or int(coord[2]) > board_size
+                ):
+                    raise ValueError("KataGo candidate move is invalid")
+            if type(move.get("visits")) is not int or move["visits"] < 0:
                 raise ValueError("KataGo candidate visits are invalid")
             for field in ("winrate", "scoreLead", "prior"):
                 value = move.get(field)
                 if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
                     raise ValueError(f"KataGo candidate {field} is invalid")
+            if not 0 <= move["winrate"] <= 1 or not 0 <= move["prior"] <= 1:
+                raise ValueError("KataGo candidate probability is invalid")
         ownership = result.get("ownership")
         if not isinstance(ownership, list) or len(ownership) != board_size * board_size:
             raise ValueError("KataGo ownership has the wrong board size")
-        if any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) for v in ownership):
+        if any(
+            isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or not -1 <= v <= 1
+            for v in ownership
+        ):
             raise ValueError("KataGo ownership contains invalid values")
 
     async def health_check(self) -> bool:

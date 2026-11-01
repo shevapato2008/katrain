@@ -174,7 +174,26 @@ def test_five_language_event_text_is_single_source_multi_field_and_names_are_uni
         ("ko", "event_ko_index", "event_ko_query"),
     ):
         properties = fields["display"]["properties"][language]["properties"]
-        assert properties["player_black"] == {"type": "keyword", "index": False, "doc_values": False}
+        if language in ("cn", "tw"):
+            assert properties["player_black"] == {
+                "type": "keyword",
+                "index": False,
+                "doc_values": False,
+                "fields": {
+                    "pinyin": {
+                        "type": "text",
+                        "analyzer": "player_pinyin_analyzer",
+                        "search_analyzer": "pinyin_search_analyzer",
+                    }
+                },
+            }
+            assert properties["event"]["fields"]["pinyin"] == {
+                "type": "text",
+                "analyzer": "text_pinyin_analyzer",
+                "search_analyzer": "pinyin_search_analyzer",
+            }
+        else:
+            assert properties["player_black"] == {"type": "keyword", "index": False, "doc_values": False}
         assert properties["player_white"] == properties["player_black"]
         assert properties["event"]["type"] == "keyword"
         assert properties["event"]["fields"]["words"] == {

@@ -463,3 +463,65 @@ def test_empty_legacy_name_keeps_original_progressive_source_fallback(db, monkey
     _, docs = projected(db, [row], strict=False)
     assert docs[0]["display"]["cn"]["player_black"] == "Source Player"
     assert docs[0]["display"]["cn"]["event"] == "Raw Cup"
+
+
+def test_pinyin_index_settings_and_analyzers_configured():
+    from katrain.web.kifu.search_es import INDEX_SETTINGS
+
+    analysis = INDEX_SETTINGS["analysis"]
+    assert "pinyin_filter" in analysis["filter"]
+    assert analysis["filter"]["pinyin_filter"] == {
+        "type": "pinyin",
+        "keep_first_letter": True,
+        "keep_separate_first_letter": False,
+        "keep_full_pinyin": True,
+        "keep_joined_full_pinyin": True,
+        "keep_none_chinese": True,
+        "keep_none_chinese_together": True,
+        "keep_original": True,
+        "limit_first_letter_length": 16,
+        "lowercase": True,
+        "trim_whitespace": True,
+        "remove_duplicated_term": True,
+    }
+    analyzers = analysis["analyzer"]
+    assert analyzers["player_pinyin_analyzer"] == {
+        "type": "custom",
+        "tokenizer": "keyword",
+        "filter": ["pinyin_filter", "lowercase"],
+    }
+    assert analyzers["text_pinyin_analyzer"] == {
+        "type": "custom",
+        "tokenizer": "ik_smart",
+        "filter": ["pinyin_filter", "lowercase"],
+    }
+    assert analyzers["pinyin_search_analyzer"] == {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["lowercase"],
+    }
+
+
+def test_pinyin_multi_field_mapping_configured():
+    from katrain.web.kifu.search_es import INDEX_MAPPING
+
+    properties = INDEX_MAPPING["properties"]
+    assert properties["search_text_pinyin"] == {
+        "type": "text",
+        "analyzer": "text_pinyin_analyzer",
+        "search_analyzer": "pinyin_search_analyzer",
+    }
+    display = properties["display"]["properties"]
+    for lang in ("cn", "tw"):
+        player_pinyin = {
+            "type": "text",
+            "analyzer": "player_pinyin_analyzer",
+            "search_analyzer": "pinyin_search_analyzer",
+        }
+        assert display[lang]["properties"]["player_black"]["fields"]["pinyin"] == player_pinyin
+        assert display[lang]["properties"]["player_white"]["fields"]["pinyin"] == player_pinyin
+        assert display[lang]["properties"]["event"]["fields"]["pinyin"] == {
+            "type": "text",
+            "analyzer": "text_pinyin_analyzer",
+            "search_analyzer": "pinyin_search_analyzer",
+        }

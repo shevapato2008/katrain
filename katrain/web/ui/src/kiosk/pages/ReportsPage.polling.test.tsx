@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   reportMoves: vi.fn(), gameList: vi.fn(), gameGet: vi.fn(), baipuLoad: vi.fn(),
 }));
 
+vi.mock('../../api/membershipApi', () => ({ membershipApi: { getCatalog: vi.fn().mockResolvedValue({ membership_mode: 'legacy', capabilities: { quotes: false } }) } }));
+
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'token', isAuthenticated: true, user: { username: '阿福' } }),
 }));

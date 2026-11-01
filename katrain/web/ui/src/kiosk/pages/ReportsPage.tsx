@@ -1,3 +1,4 @@
+import { ConsumptionQuoteDialog } from '../../features/membership/ConsumptionQuoteDialog';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -81,7 +82,7 @@ const savedAt = (game: UserGameSummary): number | null => {
 export default function ReportsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token, isAuthenticated, user } = useAuth();
+  const { token, isAuthenticated, user, identityKey, status } = useAuth();
   const { t, lang } = useTranslation();
   const translationRef = useRef(t);
   translationRef.current = t;
@@ -128,7 +129,8 @@ export default function ReportsPage() {
   const {
     reportStatesByGame, error: tasksError, errorKind: tasksErrorKind, clearError: clearTasksError,
     refresh: refreshTasks, createReport, retryReport,
-  } = useReportTasks(token, isAuthenticated);
+    pendingQuote, quoteBusy, confirmQuote, cancelQuote,
+  } = useReportTasks(token, isAuthenticated, identityKey, status);
 
   // 屏上只说分出来的类别,原文不印 —— 但排障时总得有个地方能看见它。
   useEffect(() => {
@@ -565,6 +567,8 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      <ConsumptionQuoteDialog kiosk quote={pendingQuote?.quote ?? null} busy={quoteBusy} error={tasksError ? (tasksErrorKind === 'no_credits' ? '会员额度和API积分不足，请前往会员页查看' : '操作失败，请重试') : null} onCancel={cancelQuote}
+        onConfirm={() => { void confirmQuote().catch(() => undefined); }} />
       <ReportLibraryImportDialog
         open={libraryImportOpen}
         loading={libraryImporting !== null}

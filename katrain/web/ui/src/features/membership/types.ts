@@ -75,6 +75,7 @@ export interface BillingQuoteRequest {
   profile: MembershipProfile;
   sgf?: string;
   game_id?: string;
+  session_id?: string;
 }
 
 export interface BillingQuote {
@@ -121,19 +122,20 @@ export interface CreatePositionAnalysis {
   profile: MembershipProfile;
   sgf?: string;
   game_id?: string;
+  session_id?: string;
   quote_token: string;
   idempotency_key: string;
 }
 
 export interface PositionAnalysis {
-  operation_id: string;
+  operation_id: string | number;
   state: 'reserved' | 'running' | 'succeeded' | 'failed' | 'refunded' | 'result_expired';
   source: BillingSource;
   profile: MembershipProfile;
   units: number;
   wallet_credits: number;
   catalog_version: string;
-  result?: { ownership: number[]; moves: Array<{ move: string; visits: number; winrate?: number; score_lead?: number }> };
+  result?: { ownership: number[]; moves: Array<{ move: string; visits: number; winrate: number; score_lead: number; pv?: string[] }>; rootInfo?: { visits: number; winrate: number; scoreLead: number } };
   error?: { code: string; message: string };
   revision?: number;
 }

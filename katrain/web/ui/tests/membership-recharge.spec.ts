@@ -35,6 +35,7 @@ async function boot(page: Page) {
   let order: BillingOrder | null = null;
   let polls = 0;
   const requests: Array<Record<string, unknown>> = [];
+  await page.route('**/assets/sounds/**', route => route.fulfill({ status: 204, body: '' }));
   await freezeClock(page, NOW);
   await page.addInitScript(() => { localStorage.setItem('token', 'membership-runtime-fixture'); localStorage.setItem('katrain_language', 'cn'); });
   // Fail closed for endpoints outside this focused, isolated UI preview.
@@ -182,3 +183,74 @@ test('Galaxy 375: main membership page has no horizontal overflow', async ({ pag
   await expect(page.getByRole('button', { name: 'Max 暂未开放' })).toBeDisabled();
   await noHorizontalOverflow(page);
 });
+
+async function consumptionBackend(page: Page) {
+  const positionRequests: Array<Record<string, unknown>> = [];
+  const reportRequests: Array<Record<string, unknown>> = [];
+  const quoteRequests: Array<Record<string, unknown>> = [];
+  let report: Record<string, unknown> | null = null;
+  const game = { id: 'runtime-game', user_id: 1, title: '研究测试对局', player_black: '黑方', player_white: '白方',
+    board_size: 19, komi: 7.5, rules: 'chinese', move_count: 2, source: 'research', category: 'game', game_type: 'free',
+    created_at: NOW, sgf_content: '(;FF[4]GM[1]SZ[19]KM[7.5]RU[chinese];B[pd];W[dp])' };
+  await page.route('**/api/v1/user-games/**', route => route.fulfill({ json: game }));
+  await page.route('**/api/v1/user-games', route => route.fulfill({ json: route.request().method() === 'POST' ? game : { items: [game], total: 1, page: 1, page_size: 20, authority: 'cloud' } }));
+  await page.route('**/api/v1/billing/quotes', route => {
+    const payload = route.request().postDataJSON();
+    quoteRequests.push(payload);
+    return route.fulfill({ json: { token: `signed-${payload.kind}-${quoteRequests.length}`, catalog_version: catalog.catalog_version,
+      environment: 'TEST', kind: payload.kind, profile: payload.profile, units: payload.kind === 'report' ? 3 : 1,
+      wallet_max_credits: payload.kind === 'report' ? 301 : 1, wallet_max_display_points: payload.kind === 'report' ? '3.01' : '0.01',
+      source_policy: 'membership_then_wallet', source: 'membership', expires_at: '2026-11-01T04:15:00Z', server_now: NOW, fingerprint: 'full-history-position' } });
+  });
+  await page.route('**/api/v1/analysis/positions', route => {
+    positionRequests.push(route.request().postDataJSON());
+    return route.fulfill({ json: { operation_id: 'runtime-position', state: 'succeeded', source: 'membership', profile: 'normal', units: 1,
+      wallet_credits: 0, catalog_version: catalog.catalog_version, result: { ownership: Array(361).fill(0.2),
+        moves: [{ move: 'D4', visits: 500, winrate: 0.61, score_lead: 2.3, pv: ['D4'] }], rootInfo: { visits: 500, winrate: 0.61, scoreLead: 2.3 } } } });
+  });
+  await page.route('**/api/v1/reports/**', route => {
+    if (route.request().url().endsWith('/summary')) return route.fulfill({ json: { pending: report ? 1 : 0, running: 0, completed: 0, failed: 0 } });
+    if (route.request().method() === 'POST') {
+      reportRequests.push(route.request().postDataJSON());
+      report = { id: 77, user_game_id: game.id, status: 'pending', report_type: 'normal', total_moves: 2, analyzed_moves: 0,
+        requested_visits: 500, started_at: null, completed_at: null, operation_id: 'runtime-report', source: 'membership', wallet_credits: 0 };
+      return route.fulfill({ json: report });
+    }
+    return route.fulfill({ json: report ? [report] : [] });
+  });
+  return { positionRequests, reportRequests, quoteRequests };
+}
+
+for (const surface of ['galaxy', 'kiosk'] as const) {
+  test(`${surface}: explicit consumption quote, cancellation, shared position result and report authorization`, async ({ page }) => {
+    await page.setViewportSize(surface === 'kiosk' ? { width: 1024, height: 600 } : { width: 1440, height: 900 });
+    await boot(page);
+    const backend = await consumptionBackend(page);
+    const rawRequests: string[] = [];
+    page.on('request', request => { if (/\/api\/(analysis\/(quick|scan|current)|hint)(?:[/?]|$)/.test(request.url())) rawRequests.push(request.url()); });
+    await page.goto(`/${surface}/research?user_game_id=runtime-game&analyze=1`);
+    await page.getByRole('button', { name: '领地', exact: true }).click();
+    const dialog = page.getByTestId('consumption-quote');
+    await expect(dialog).toContainText('最多 0.01 积分');
+    expect(backend.positionRequests).toHaveLength(0);
+    if (surface === 'kiosk') expect(await dialog.evaluate(element => !!element.closest('.kiosk-screen'))).toBe(true);
+    await shot(page, `${surface}-consumption-quote.png`);
+    await dialog.getByRole('button', { name: '取消', exact: true }).click();
+    expect(backend.positionRequests).toHaveLength(0);
+    await page.getByRole('button', { name: '支招', exact: true }).click();
+    await dialog.getByRole('button', { name: '确认并开始', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(backend.positionRequests).toHaveLength(1);
+    expect(backend.positionRequests[0]).toMatchObject({ quote_token: expect.stringMatching(/^signed-position/), idempotency_key: expect.any(String), sgf: expect.stringContaining('B[pd]') });
+    await page.getByRole('button', { name: '领地', exact: true }).click();
+    expect(backend.positionRequests).toHaveLength(1);
+    await page.getByRole('button', { name: '创建复盘报告', exact: true }).click();
+    await expect(dialog).toContainText('最多 3.01 积分');
+    expect(backend.reportRequests).toHaveLength(0);
+    await dialog.getByRole('button', { name: '确认并开始', exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/${surface}/report$`));
+    expect(backend.reportRequests).toHaveLength(1);
+    expect(backend.reportRequests[0]).toMatchObject({ user_game_id: 'runtime-game', quote_token: expect.stringMatching(/^signed-report/), idempotency_key: expect.any(String) });
+    expect(rawRequests).toEqual([]);
+  });
+}

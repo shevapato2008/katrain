@@ -1,3 +1,4 @@
+import { ConsumptionQuoteDialog } from '../../../features/membership/ConsumptionQuoteDialog';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
@@ -57,7 +58,7 @@ type ImportAction = 'save' | 'normal' | 'deep' | null;
 export default function ReportsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, identityKey, status } = useAuth();
   const { t } = useTranslation();
   const translationRef = useRef(t);
   translationRef.current = t;
@@ -80,7 +81,8 @@ export default function ReportsPage() {
     refresh: refreshTasks,
     createReport,
     retryReport,
-  } = useReportTasks(token, isAuthenticated);
+    pendingQuote, quoteBusy, confirmQuote, cancelQuote,
+  } = useReportTasks(token, isAuthenticated, identityKey, status);
 
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<UserGameDetail | null>(null);
@@ -598,6 +600,8 @@ export default function ReportsPage() {
         onSubmit={handleLocalImport}
       />
 
+      <ConsumptionQuoteDialog quote={pendingQuote?.quote ?? null} busy={quoteBusy} error={reportTasksError} onCancel={cancelQuote}
+        onConfirm={() => { void confirmQuote().catch(() => undefined); }} />
       <ReportLibraryImportDialog
         open={libraryImportOpen}
         loading={libraryImporting !== null}

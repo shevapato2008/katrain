@@ -243,7 +243,7 @@ def do_build(engine, client, args):
     if max_seconds <= 0:
         raise ValueError("--max-seconds must be a positive integer")
     require_bootstrap(args.lock_deadline_epoch, minimum_seconds=max_seconds)
-    if client.alias_exists():
+    if client.alias_exists() and not getattr(args, "replace", False):
         raise RuntimeError("initial build requires an absent search alias")
     if engine.dialect.name != "postgresql":
         raise ValueError("initial build requires PostgreSQL read-only snapshot")
@@ -389,7 +389,7 @@ def do_activate(client, args):
         or not state.get("diagnostics", {}).get("language_probe")
     ):
         raise RuntimeError("candidate lacks complete readiness verification")
-    if client.alias_exists() and client.resolve_index() != args.index:
+    if client.alias_exists() and client.resolve_index() != args.index and not getattr(args, "replace", False):
         raise RuntimeError("initial activation cannot replace an active search index")
     client.activate(args.index)
     if client.resolve_index() != args.index:
@@ -501,6 +501,11 @@ def main(argv=None):
     parser.add_argument("--ids", type=int, nargs="+")
     parser.add_argument("--batch-id", type=int)
     parser.add_argument("--batch-type", choices=("name", "event"), default="name")
+    parser.add_argument(
+        "--replace",
+        action="store_true",
+        help="Allow building and activating a replacement index when alias exists",
+    )
     args = parser.parse_args(argv)
     engine = create_engine(args.database_url, pool_pre_ping=True)
     try:

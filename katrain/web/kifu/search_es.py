@@ -29,6 +29,22 @@ INDEX_SETTINGS = {
     "max_result_window": MAX_RESULT_WINDOW,
     "refresh_interval": "-1",
     "analysis": {
+        "filter": {
+            "pinyin_filter": {
+                "type": "pinyin",
+                "keep_first_letter": True,
+                "keep_separate_first_letter": False,
+                "keep_full_pinyin": True,
+                "keep_joined_full_pinyin": True,
+                "keep_none_chinese": True,
+                "keep_none_chinese_together": True,
+                "keep_original": True,
+                "limit_first_letter_length": 16,
+                "lowercase": True,
+                "trim_whitespace": True,
+                "remove_duplicated_term": True,
+            },
+        },
         "tokenizer": {
             "event_ko_mixed": {
                 "type": "nori_tokenizer",
@@ -56,6 +72,21 @@ INDEX_SETTINGS = {
                 "type": "custom",
                 "tokenizer": "event_ko_discard",
                 "filter": ["cjk_width", "nori_part_of_speech", "nori_readingform", "lowercase"],
+            },
+            "player_pinyin_analyzer": {
+                "type": "custom",
+                "tokenizer": "keyword",
+                "filter": ["pinyin_filter", "lowercase"],
+            },
+            "text_pinyin_analyzer": {
+                "type": "custom",
+                "tokenizer": "ik_smart",
+                "filter": ["pinyin_filter", "lowercase"],
+            },
+            "pinyin_search_analyzer": {
+                "type": "custom",
+                "tokenizer": "standard",
+                "filter": ["lowercase"],
             },
         },
     },
@@ -107,6 +138,11 @@ INDEX_MAPPING = {
             key: {"type": "wildcard"}
             for key in ("search_text", "player_black_lower", "player_white_lower", "selected_event_raw_lower")
         },
+        "search_text_pinyin": {
+            "type": "text",
+            "analyzer": "text_pinyin_analyzer",
+            "search_analyzer": "pinyin_search_analyzer",
+        },
         "display": {
             "type": "object",
             "dynamic": "strict",
@@ -115,12 +151,57 @@ INDEX_MAPPING = {
                     "type": "object",
                     "dynamic": "strict",
                     "properties": {
-                        "player_black": {"type": "keyword", "index": False, "doc_values": False},
-                        "player_white": {"type": "keyword", "index": False, "doc_values": False},
+                        "player_black": {
+                            "type": "keyword",
+                            "index": False,
+                            "doc_values": False,
+                            **(
+                                {
+                                    "fields": {
+                                        "pinyin": {
+                                            "type": "text",
+                                            "analyzer": "player_pinyin_analyzer",
+                                            "search_analyzer": "pinyin_search_analyzer",
+                                        }
+                                    }
+                                }
+                                if language in ("cn", "tw")
+                                else {}
+                            ),
+                        },
+                        "player_white": {
+                            "type": "keyword",
+                            "index": False,
+                            "doc_values": False,
+                            **(
+                                {
+                                    "fields": {
+                                        "pinyin": {
+                                            "type": "text",
+                                            "analyzer": "player_pinyin_analyzer",
+                                            "search_analyzer": "pinyin_search_analyzer",
+                                        }
+                                    }
+                                }
+                                if language in ("cn", "tw")
+                                else {}
+                            ),
+                        },
                         "event": {
                             "type": "keyword",
                             "fields": {
-                                "words": {"type": "text", "analyzer": analyzer, "search_analyzer": search_analyzer}
+                                "words": {"type": "text", "analyzer": analyzer, "search_analyzer": search_analyzer},
+                                **(
+                                    {
+                                        "pinyin": {
+                                            "type": "text",
+                                            "analyzer": "text_pinyin_analyzer",
+                                            "search_analyzer": "pinyin_search_analyzer",
+                                        }
+                                    }
+                                    if language in ("cn", "tw")
+                                    else {}
+                                ),
                             },
                         },
                     },

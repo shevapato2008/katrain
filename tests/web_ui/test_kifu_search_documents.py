@@ -463,3 +463,181 @@ def test_empty_legacy_name_keeps_original_progressive_source_fallback(db, monkey
     _, docs = projected(db, [row], strict=False)
     assert docs[0]["display"]["cn"]["player_black"] == "Source Player"
     assert docs[0]["display"]["cn"]["event"] == "Raw Cup"
+
+
+def test_pinyin_index_settings_and_analyzers_configured():
+    from katrain.web.kifu.search_es import INDEX_SETTINGS
+
+    analysis = INDEX_SETTINGS["analysis"]
+    assert "pinyin_filter" in analysis["filter"]
+    assert analysis["filter"]["pinyin_filter"] == {
+        "type": "pinyin",
+        "keep_first_letter": True,
+        "keep_separate_first_letter": False,
+        "keep_full_pinyin": True,
+        "keep_joined_full_pinyin": True,
+        "keep_none_chinese": True,
+        "keep_none_chinese_together": True,
+        "keep_original": True,
+        "limit_first_letter_length": 16,
+        "lowercase": True,
+        "trim_whitespace": True,
+        "remove_duplicated_term": True,
+    }
+    analyzers = analysis["analyzer"]
+    assert analyzers["player_pinyin_analyzer"] == {
+        "type": "custom",
+        "tokenizer": "keyword",
+        "filter": ["pinyin_filter", "lowercase"],
+    }
+    assert analyzers["text_pinyin_analyzer"] == {
+        "type": "custom",
+        "tokenizer": "ik_smart",
+        "filter": ["pinyin_filter", "lowercase"],
+    }
+    assert analyzers["pinyin_search_analyzer"] == {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["lowercase"],
+    }
+
+
+def test_pinyin_multi_field_mapping_configured():
+    from katrain.web.kifu.search_es import INDEX_MAPPING
+
+    properties = INDEX_MAPPING["properties"]
+    assert properties["search_text_pinyin"] == {
+        "type": "text",
+        "analyzer": "text_pinyin_analyzer",
+        "search_analyzer": "pinyin_search_analyzer",
+    }
+    display = properties["display"]["properties"]
+    for lang in ("cn", "tw"):
+        player_pinyin = {
+            "type": "text",
+            "analyzer": "player_pinyin_analyzer",
+            "search_analyzer": "pinyin_search_analyzer",
+        }
+        assert display[lang]["properties"]["player_black"]["fields"]["pinyin"] == player_pinyin
+        assert display[lang]["properties"]["player_white"]["fields"]["pinyin"] == player_pinyin
+        assert display[lang]["properties"]["event"]["fields"]["pinyin"] == {
+            "type": "text",
+            "analyzer": "text_pinyin_analyzer",
+            "search_analyzer": "pinyin_search_analyzer",
+        }
+
+
+def test_chinese_pinyin_variants_with_polyphones():
+    from katrain.web.kifu.search_projection import _chinese_pinyin_variants
+
+    # Polyphones and initials
+    assert _chinese_pinyin_variants("朴文垚") == {"piaowenyao", "puwenyao", "pwy"}
+    assert _chinese_pinyin_variants("王星昊") == {"wangxinghao", "wxh"}
+    assert _chinese_pinyin_variants("仇丹云") == {"qiudanyun", "choudanyun", "qdy", "cdy"}
+    assert _chinese_pinyin_variants("单子腾") == {"shanziteng", "danziteng", "szt", "dzt"}
+    assert _chinese_pinyin_variants("解学斌") == {"xiexuebin", "jiexuebin", "xxb", "jxb"}
+    assert _chinese_pinyin_variants("查树德") == {"zhashude", "chashude", "zsd", "csd"}
+    assert _chinese_pinyin_variants("春兰杯") == {"chunlanbei", "clb"}
+
+    # Non-CJK or empty strings
+    assert _chinese_pinyin_variants("John Doe") == set()
+    assert _chinese_pinyin_variants("") == set()
+
+
+def test_pinyin_term_documents_projection_and_collision_safety(db):
+    from katrain.web.kifu.search_projection import build_projection_context, project_album_batch
+    from katrain.web.kifu.search_documents import term_document_id
+
+    p1 = _player(db)
+    _name(db, "player", p1, KifuPlayerName, display="王星昊", lang="cn")
+
+    p2 = _player(db)
+    _name(db, "player", p2, KifuPlayerName, display="朴文垚", lang="cn")
+
+    ev = KifuEvent(canonical_name="Chunlan Cup")
+    db.add(ev)
+    db.flush()
+    _name(db, "event", ev, KifuEventName, display="春兰杯", lang="cn")
+
+    row = album(
+        db,
+        black_player_id=p1.id,
+        white_player_id=p2.id,
+        event_id=ev.id,
+        search_text="test game search text",
+    )
+
+    context = build_projection_context(db, True)
+    docs = {doc["_id"]: doc["_source"] for doc in context.classification_documents()}
+
+    # Verify 王星昊 projections
+    assert docs[term_document_id("王星昊")]["classification"]["mode"] == "exact_player"
+    assert docs[term_document_id("wangxinghao")]["classification"]["mode"] == "exact_player"
+    assert docs[term_document_id("wangxinghao")]["classification"]["player_ids"] == [p1.id]
+    assert docs[term_document_id("wxh")]["classification"]["mode"] == "exact_player"
+    assert docs[term_document_id("wxh")]["classification"]["player_ids"] == [p1.id]
+
+    # Verify 朴文垚 projections with polyphones
+    assert docs[term_document_id("朴文垚")]["classification"]["mode"] == "exact_player"
+    assert docs[term_document_id("piaowenyao")]["classification"]["mode"] == "exact_player"
+    assert docs[term_document_id("piaowenyao")]["classification"]["player_ids"] == [p2.id]
+    assert docs[term_document_id("puwenyao")]["classification"]["mode"] == "exact_player"
+    assert docs[term_document_id("puwenyao")]["classification"]["player_ids"] == [p2.id]
+    assert docs[term_document_id("pwy")]["classification"]["mode"] == "exact_player"
+    assert docs[term_document_id("pwy")]["classification"]["player_ids"] == [p2.id]
+
+    # Verify 春兰杯 projections
+    assert docs[term_document_id("春兰杯")]["classification"]["mode"] == "exact_event"
+    assert docs[term_document_id("chunlanbei")]["classification"]["mode"] == "exact_event"
+    assert docs[term_document_id("chunlanbei")]["classification"]["event_ids"] == [ev.id]
+    assert docs[term_document_id("clb")]["classification"]["mode"] == "exact_event"
+    assert docs[term_document_id("clb")]["classification"]["event_ids"] == [ev.id]
+
+    # Verify album doc search_text_pinyin
+    album_docs = project_album_batch(context, [row])
+    assert album_docs[0]["_source"]["search_text_pinyin"] == "test game search text"
+
+    # Collision test: add a second player with initials wxh (王孝华)
+    p3 = _player(db)
+    _name(db, "player", p3, KifuPlayerName, display="王孝华", lang="cn")
+
+    context2 = build_projection_context(db, True)
+    docs2 = {doc["_id"]: doc["_source"] for doc in context2.classification_documents()}
+    # wxh collision safely drops to generic
+    assert docs2[term_document_id("wxh")]["classification"]["mode"] == "generic"
+    # full joined names remain unambiguous exact_player
+    assert docs2[term_document_id("wangxinghao")]["classification"]["mode"] == "exact_player"
+    assert docs2[term_document_id("wangxiaohua")]["classification"]["mode"] == "exact_player"
+
+
+def test_generic_query_compilation_with_pinyin_clauses():
+    from katrain.web.kifu.search_terms import compile_query
+
+    def matches(value):
+        if isinstance(value, dict):
+            yield from value.get("match", {}).items()
+            for child in value.values():
+                yield from matches(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from matches(child)
+
+    # 1. Pinyin query in generic mode
+    body = compile_query({"mode": "generic"}, "chunlan", None)
+    clauses = dict(matches(body))
+    assert "search_text_pinyin" in clauses
+    assert "display.cn.event.pinyin" in clauses
+    assert "display.cn.player_black.pinyin" in clauses
+    assert "display.cn.player_white.pinyin" in clauses
+    assert clauses["display.cn.event.pinyin"] == {"query": "chunlan", "operator": "and"}
+
+    # 2. Spaced pinyin query in generic mode
+    body_spaced = compile_query({"mode": "generic"}, "wang xing hao", None)
+    clauses_spaced = dict(matches(body_spaced))
+    assert "search_text_pinyin" in clauses_spaced
+    assert clauses_spaced["search_text_pinyin"] == {"query": "wang xing hao", "operator": "and"}
+
+    # 3. Pure CJK non-Latin query should not trigger pinyin clauses (zero regression)
+    body_cjk = compile_query({"mode": "generic"}, "天元戦 挑戦手合", None)
+    clauses_cjk = dict(matches(body_cjk))
+    assert set(clauses_cjk) == {f"display.{lang}.event.words" for lang in ("cn", "tw", "en", "jp", "ko")}

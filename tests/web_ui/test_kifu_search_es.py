@@ -174,7 +174,26 @@ def test_five_language_event_text_is_single_source_multi_field_and_names_are_uni
         ("ko", "event_ko_index", "event_ko_query"),
     ):
         properties = fields["display"]["properties"][language]["properties"]
-        assert properties["player_black"] == {"type": "keyword", "index": False, "doc_values": False}
+        if language in ("cn", "tw"):
+            assert properties["player_black"] == {
+                "type": "keyword",
+                "index": False,
+                "doc_values": False,
+                "fields": {
+                    "pinyin": {
+                        "type": "text",
+                        "analyzer": "player_pinyin_analyzer",
+                        "search_analyzer": "pinyin_search_analyzer",
+                    }
+                },
+            }
+            assert properties["event"]["fields"]["pinyin"] == {
+                "type": "text",
+                "analyzer": "text_pinyin_analyzer",
+                "search_analyzer": "pinyin_search_analyzer",
+            }
+        else:
+            assert properties["player_black"] == {"type": "keyword", "index": False, "doc_values": False}
         assert properties["player_white"] == properties["player_black"]
         assert properties["event"]["type"] == "keyword"
         assert properties["event"]["fields"]["words"] == {
@@ -417,3 +436,230 @@ def test_cli_disk_path_defaults_to_es_data_dir(monkeypatch):
     parser.add_argument("--disk-path", default=os.getenv("ES_DATA_DIR", "/"))
     args = parser.parse_args([])
     assert args.disk_path == "/mnt/es_data"
+
+
+def test_elasticsearch_manifest_pins_analysis_pinyin():
+    from pathlib import Path
+
+    lock_file = Path(__file__).resolve().parents[2] / "deploy" / "elasticsearch" / "versions.lock.json"
+    assert lock_file.exists(), f"Missing lockfile: {lock_file}"
+    lock = json.loads(lock_file.read_text(encoding="utf-8"))
+
+    plugins_by_name = {p["name"]: p for p in lock.get("plugins", [])}
+    assert "analysis-pinyin" in plugins_by_name
+
+    pinyin = plugins_by_name["analysis-pinyin"]
+    assert pinyin["filename"] == "elasticsearch-analysis-pinyin-9.5.5.zip"
+    assert (
+        pinyin["sha512"]
+        == "b39c1bc05544b44a5dcee493c2072bde456a790a1745cd022a8f57d466a90607940ede5ccbd482c89efae8c3969ffeaeeee6a8a93a776b76fec3bd45d52116b9"
+    )
+    assert (
+        pinyin["url"] == "https://release.infinilabs.com/analysis-pinyin/stable/elasticsearch-analysis-pinyin-9.5.5.zip"
+    )
+
+    dockerfile = Path(__file__).resolve().parents[2] / "deploy" / "elasticsearch" / "Dockerfile"
+    dockerfile_text = dockerfile.read_text(encoding="utf-8")
+    assert "elasticsearch-analysis-pinyin-9.5.5.zip" in dockerfile_text
+
+
+@pytest.mark.asyncio
+async def test_spaced_and_case_insensitive_pinyin_query_probe():
+    from copy import deepcopy
+    from katrain.web.api.v1.endpoints import kifu
+    from katrain.web.kifu.search_documents import alias_document_id, term_document_id
+
+    class FakeProbeSearch:
+        def __init__(self):
+            self.state = {
+                "doc_kind": "sync_state",
+                "schema_version": "kifu-search-v1",
+                "strict_mode": False,
+                "status": "ready",
+                "epoch": 1,
+                "target_index": "test-v1",
+            }
+            self.calls = []
+
+        async def mget(self, ids, *, index=None):
+            self.calls.append(("mget", ids, index))
+            return {
+                "docs": [
+                    {
+                        "_id": ident,
+                        "_index": "test-v1",
+                        "found": ident == "sync-state",
+                        **({"_source": deepcopy(self.state)} if ident == "sync-state" else {}),
+                    }
+                    for ident in ids
+                ]
+            }
+
+        async def search(self, body, *, index):
+            self.calls.append(("search", body, index))
+            return {
+                "timed_out": False,
+                "_shards": {"failed": 0},
+                "hits": {"total": {"value": 0, "relation": "eq"}, "hits": []},
+            }
+
+        async def get_document(self, ident, *, index):
+            self.calls.append(("get", ident, index))
+            return {"_id": ident, "_index": index, "found": True, "_source": {**self.state, "epoch": 1}}
+
+    # Spaced query probes both raw and condensed terms
+    client = FakeProbeSearch()
+    await kifu.read_album_page_elasticsearch(client, None, q="wang xing hao")
+    mget_ids = client.calls[0][1]
+    assert term_document_id("wang xing hao") in mget_ids
+    assert term_document_id("wangxinghao") in mget_ids
+    assert alias_document_id("wang xing hao") in mget_ids
+    assert alias_document_id("wangxinghao") in mget_ids
+
+    # Mixed case query
+    client2 = FakeProbeSearch()
+    await kifu.read_album_page_elasticsearch(client2, None, q="Wang Xing Hao")
+    mget_ids2 = client2.calls[0][1]
+    assert term_document_id("Wang Xing Hao") in mget_ids2
+    assert term_document_id("wangxinghao") in mget_ids2
+
+    # Condensed single-word query should not duplicate term
+    client3 = FakeProbeSearch()
+    await kifu.read_album_page_elasticsearch(client3, None, q="wangxinghao")
+    mget_ids3 = client3.calls[0][1]
+    assert mget_ids3.count(term_document_id("wangxinghao")) == 1
+
+
+@pytest.mark.asyncio
+async def test_pinyin_search_full_cycle_and_regression(tmp_path):
+    from copy import deepcopy
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session, sessionmaker
+    from katrain.web.core.db import Base
+    from katrain.web.core.models_db import KifuAlbum, KifuPlayer, KifuPlayerName
+    from katrain.web.kifu.search_projection import build_projection_context, project_album_batch
+    from tests.web_ui.test_kifu_name_api import _evidence
+    from katrain.web.api.v1.endpoints import kifu
+
+    class MockSearchES:
+        def __init__(self, term_docs, album_hits):
+            self.term_docs = term_docs
+            self.album_hits = album_hits
+            self.state = {
+                "doc_kind": "sync_state",
+                "schema_version": "kifu-search-v1",
+                "strict_mode": False,
+                "status": "ready",
+                "epoch": 1,
+                "target_index": "test-v1",
+            }
+
+        async def mget(self, ids, *, index=None):
+            docs = []
+            for ident in ids:
+                if ident == "sync-state":
+                    docs.append({"_id": ident, "_index": "test-v1", "found": True, "_source": deepcopy(self.state)})
+                elif ident in self.term_docs:
+                    docs.append(
+                        {
+                            "_id": ident,
+                            "_index": "test-v1",
+                            "found": True,
+                            "_source": deepcopy(self.term_docs[ident]),
+                        }
+                    )
+                else:
+                    docs.append({"_id": ident, "_index": "test-v1", "found": False})
+            return {"docs": docs}
+
+        async def search(self, body, *, index):
+            return {
+                "timed_out": False,
+                "_shards": {"failed": 0},
+                "hits": {"total": {"value": len(self.album_hits), "relation": "eq"}, "hits": self.album_hits},
+            }
+
+        async def get_document(self, ident, *, index):
+            return {"_id": ident, "_index": index, "found": True, "_source": deepcopy(self.state)}
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'kifu_test.db'}")
+    Base.metadata.create_all(engine)
+    with Session(engine) as db:
+        p1 = KifuPlayer(id=1, canonical_name="王星昊")
+        p2 = KifuPlayer(id=2, canonical_name="朴文垚")
+        db.add_all([p1, p2])
+        db.flush()
+
+        for lang, display in (
+            ("cn", "王星昊"),
+            ("en", "Wang Xinghao"),
+            ("jp", "王星昊"),
+            ("ko", "왕싱하오"),
+        ):
+            ev = _evidence(db, "player", 1, lang, display)
+            db.add(
+                KifuPlayerName(
+                    player_id=1,
+                    lang=lang,
+                    display_name=display,
+                    status="verified",
+                    decision_kind="conventional",
+                    generation_rule_version="v1",
+                    revision=1,
+                    evidence_id=ev.id,
+                )
+            )
+
+        ev_p2 = _evidence(db, "player", 2, "cn", "朴文垚")
+        db.add(
+            KifuPlayerName(
+                player_id=2,
+                lang="cn",
+                display_name="朴文垚",
+                status="verified",
+                decision_kind="conventional",
+                generation_rule_version="v1",
+                revision=1,
+                evidence_id=ev_p2.id,
+            )
+        )
+
+        row = KifuAlbum(
+            id=10,
+            black_player_id=1,
+            white_player_id=2,
+            player_black="Wang Xinghao",
+            player_white="Park",
+            date_sort="2024-05-01",
+            sgf_content="(;SZ[19];B[qd])",
+            source_path="test1.sgf",
+        )
+        db.add(row)
+        db.commit()
+
+        context = build_projection_context(db, False)
+        term_docs = {doc["_id"]: doc["_source"] for doc in context.classification_documents()}
+        album_hits = project_album_batch(context, [row])
+        factory = sessionmaker(bind=engine)
+
+        queries = [
+            "wangxinghao",
+            "wxh",
+            "wang xing hao",
+            "WangXingHao",
+            "WxH",
+            "piaowenyao",
+            "puwenyao",
+            "pwy",
+            "王星昊",
+            "Wang Xinghao",
+            "왕싱하오",
+        ]
+        for q in queries:
+            es = MockSearchES(term_docs, album_hits)
+            res = await kifu.read_album_page_elasticsearch(es, factory, q=q, page_size=20)
+            assert res.total == 1
+            assert res.items[0].id == row.id
+            assert res.preview is not None
+            assert res.preview.id == row.id
+            assert res.preview.sgf_content == "(;SZ[19];B[qd])"

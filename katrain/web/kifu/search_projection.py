@@ -7,8 +7,10 @@ imports an HTTP endpoint, and no prepared relation is used.
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+import re
 from time import monotonic
 
+from pypinyin import lazy_pinyin
 from sqlalchemy import func, or_
 
 from katrain.web.core.models_db import (
@@ -50,6 +52,51 @@ _METADATA_FIELDS = tuple(
     for column in KifuAlbum.__table__.columns
     if column.name not in {"sgf_content", "search_text", "source_path", "created_at"}
 )
+
+
+BADUK_SURNAME_POLYPHONES = {
+    "朴": ["piao", "pu"],
+    "仇": ["qiu"],
+    "单": ["shan"],
+    "解": ["xie"],
+    "查": ["zha"],
+}
+
+
+def _chinese_pinyin_variants(display_name: str) -> set[str]:
+    if not display_name or not any("\u3400" <= char <= "\u9fff" for char in display_name):
+        return set()
+    clean_name = display_name.strip()
+    if not clean_name:
+        return set()
+    standard_syllables = lazy_pinyin(clean_name)
+    if not standard_syllables:
+        return set()
+    first_char = clean_name[0]
+    first_syllables = []
+    if first_char in BADUK_SURNAME_POLYPHONES:
+        for py in BADUK_SURNAME_POLYPHONES[first_char]:
+            if py not in first_syllables:
+                first_syllables.append(py.lower())
+        std_first = standard_syllables[0].lower()
+        if std_first not in first_syllables:
+            first_syllables.append(std_first)
+    else:
+        first_syllables = [standard_syllables[0].lower()]
+
+    rest_syllables = [s.lower() for s in standard_syllables[1:]]
+
+    variants = set()
+    for first in first_syllables:
+        syllables = [first] + rest_syllables
+        joined = "".join(re.findall(r"[a-z0-9]+", "".join(syllables).lower()))
+        if joined:
+            variants.add(joined)
+        initial_chars = [s[0].lower() for s in syllables if s and s[0].isalnum()]
+        if len(initial_chars) > 1:
+            variants.add("".join(initial_chars))
+
+    return variants
 
 
 def _group(rows, key):
@@ -162,14 +209,18 @@ def _classification_documents(context, checkpoint=None):
     ):
         for row in rows:
             name = row[0]
-            if (
-                not identity.normalize_alias(name.display_name)
-                or self_terms is not None
-                and name.display_name.lower() not in self_terms
-            ):
+            if not identity.normalize_alias(name.display_name):
                 continue
-            group = groups.setdefault(name.display_name.lower(), defaultdict(list))
-            group[kind].append(row)
+            lower_name = name.display_name.lower()
+            if self_terms is None or lower_name in self_terms:
+                group = groups.setdefault(lower_name, defaultdict(list))
+                group[kind].append(row)
+            if kind in ("player", "event") and getattr(name, "lang", None) in ("cn", "tw"):
+                variants = _chinese_pinyin_variants(name.display_name)
+                for v in variants:
+                    if self_terms is not None and v not in self_terms:
+                        continue
+                    groups.setdefault(v, defaultdict(list))[kind].append(row)
     docs = {}
     for position, (term, rows) in enumerate(groups.items()):
         if checkpoint is not None and position % 100 == 0:
@@ -680,6 +731,7 @@ def project_album_batch(context, records):
             "player_black_lower": (album.player_black or "").lower(),
             "player_white_lower": (album.player_white or "").lower(),
             "search_text": album.search_text or "",
+            "search_text_pinyin": album.search_text or "",
             "player_aliases": sorted(
                 {
                     alias

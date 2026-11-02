@@ -6,6 +6,7 @@ import KifuDetailPage from './KifuDetailPage';
 import sgf140859 from '../../utils/__fixtures__/kifu-140859.sgf?raw';
 import sgf124442 from '../../utils/__fixtures__/kifu-124442.sgf?raw';
 import sgf118394 from '../../utils/__fixtures__/kifu-118394.sgf?raw';
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ isLoading: false, isGuest: true, identityKey: null, token: null, status: 'guest' }) }));
 vi.mock('../../hooks/useReplayStoneSound', () => ({ useReplayStoneSound: () => undefined }));
 
 const api = vi.hoisted(() => ({ list: vi.fn(), get: vi.fn(), load: vi.fn() }));

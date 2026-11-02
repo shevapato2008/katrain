@@ -8,6 +8,7 @@ import KifuDetailPage from '../pages/KifuDetailPage';
 const { getAlbum, baipuLoad, cacheSgf, language } = vi.hoisted(() => ({
   getAlbum: vi.fn(), baipuLoad: vi.fn(), cacheSgf: vi.fn(), language: { current: 'cn' },
 }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ isLoading: false, isGuest: false, identityKey: 'kifu-detail-owner', token: 'test-token', isAuthenticated: true }) }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbum } }));
 vi.mock('../../api/baipuApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api/baipuApi')>();
@@ -50,6 +51,16 @@ beforeEach(() => {
 });
 
 describe('kiosk 棋谱详情语言展示', () => {
+  it('uses the same normalized professional ranks and bare winner as the list', async () => {
+    getAlbum.mockResolvedValue({ ...detail('cn'), black_rank: '7d', white_rank: '9d', display_black_rank: '7p', display_white_rank: '9p', result: 'b+' });
+    render(page());
+    const hero = await screen.findByTestId('kifu-detail-hero');
+    expect(hero).toHaveTextContent('职业七段');
+    expect(hero).toHaveTextContent('职业九段');
+    expect(hero).toHaveTextContent('黑胜');
+    expect(hero).not.toHaveTextContent('中盘');
+  });
+
   it('cn→en→jp 重取详情，题头和段位/结果同步变化，逐手读取原始 SGF', async () => {
     const view = render(page());
     for (const lang of ['cn', 'en', 'jp']) {
@@ -68,7 +79,7 @@ describe('kiosk 棋谱详情语言展示', () => {
     }
     expect(baipuLoad).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
-    expect(cacheSgf).toHaveBeenCalledWith('kifu_7', expect.any(String), RAW_SGF);
+    expect(cacheSgf).toHaveBeenCalledWith('kifu_7', expect.any(String), RAW_SGF, expect.objectContaining({ getItem: expect.any(Function), setItem: expect.any(Function), removeItem: expect.any(Function) }));
   });
 
   it('旧语言慢响应不能覆盖新语言详情', async () => {

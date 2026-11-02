@@ -7,7 +7,7 @@ import { KifuAPI } from '../../api/kifuApi';
 import { buildReplayPosition } from '../../utils/goReplay';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { translateResult } from '../../utils/resultTranslation';
-import { formatRank } from '../../utils/rank';
+import { formatKifuRank } from '../../utils/rank';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { KioskPagebar } from '../shell/KioskPagebar';
@@ -112,6 +112,8 @@ const KifuDetailPage = () => {
   const title = album
     ? [album.display_event ?? album.event, album.display_round_name ?? album.round_name].filter(Boolean).join(' · ') || t('kifu:untitled_game', '无题名的一局')
     : t('kifu:back_kifu', '棋谱');
+  const blackRank = formatKifuRank(album?.display_black_rank, album?.black_rank, t, lang);
+  const whiteRank = formatKifuRank(album?.display_white_rank, album?.white_rank, t, lang);
 
   const meta = album
     ? [
@@ -198,9 +200,9 @@ const KifuDetailPage = () => {
             <section className="kifu-replay-match" data-testid="kifu-detail-hero" title={meta}>
               <strong>{title}</strong>
               <div className="kifu-replay-players">
-                <span><i className="kifu-record__stone kifu-record__stone--black" />{album.display_player_black ?? album.player_black ?? t('game:black_side', '黑方')}{album.display_black_rank && <small>{formatRank(album.display_black_rank, t)}</small>}</span>
+                <span><i className="kifu-record__stone kifu-record__stone--black" />{album.display_player_black ?? album.player_black ?? t('game:black_side', '黑方')}{blackRank && <small>{blackRank}</small>}</span>
                 <em>{t('kifu:versus', '对')}</em>
-                <span>{album.display_player_white ?? album.player_white ?? t('game:white_side', '白方')}{album.display_white_rank && <small>{formatRank(album.display_white_rank, t)}</small>}<i className="kifu-record__stone kifu-record__stone--white" /></span>
+                <span>{album.display_player_white ?? album.player_white ?? t('game:white_side', '白方')}{whiteRank && <small>{whiteRank}</small>}<i className="kifu-record__stone kifu-record__stone--white" /></span>
               </div>
               <small>{[album.date_played, `${total} ${t('kifu:moves_unit', '手')}`, translateResult(album.result, t, album.rules)].filter(Boolean).join(' · ')}</small>
             </section>

@@ -17,6 +17,7 @@ from katrain.web.api.v1.endpoints import (
     reports,
     billing,
     baipu,
+    baipu_history,
     led,
     geometry,
     hint,
@@ -43,6 +44,7 @@ api_router.include_router(platforms.router, prefix="/platforms", tags=["platform
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(billing.router, prefix="/billing", tags=["billing"])
 api_router.include_router(baipu.router, prefix="/baipu", tags=["baipu"])
+api_router.include_router(baipu_history.router, prefix="/baipu/history", tags=["baipu-history"])
 api_router.include_router(led.router, prefix="/led", tags=["led"])
 api_router.include_router(geometry.router, prefix="/geometry", tags=["geometry"])
 api_router.include_router(hint.router, prefix="/hint", tags=["hint"])

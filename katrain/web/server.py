@@ -296,8 +296,17 @@ async def _lifespan_server(app: FastAPI, log):
     session_factory = getattr(app.state, "session_factory", None) or SessionLocal
     app.state.session_factory = session_factory
 
+    from katrain.web.core.baipu_history import BaipuHistoryRepository
+    from katrain.web.core.baipu_history_sync import BaipuHistoryService
+
+    history_repo = getattr(app.state, "baipu_history_repo", None) or BaipuHistoryRepository(session_factory)
+    app.state.baipu_history_repo = history_repo
+
     repo = SQLAlchemyUserRepository(session_factory)
     repo.init_db()
+
+    if getattr(app.state, "baipu_history_service", None) is None:
+        app.state.baipu_history_service = BaipuHistoryService(history_repo)
 
     game_repo = GameRepository(session_factory)
     user_game_repo = UserGameRepository(session_factory)
@@ -537,6 +546,12 @@ async def _lifespan_board(app: FastAPI, log):
     session_factory = getattr(app.state, "session_factory", None) or SessionLocal
     app.state.session_factory = session_factory
 
+    from katrain.web.core.baipu_history import BaipuHistoryRepository
+    from katrain.web.core.baipu_history_sync import BaipuHistoryService
+
+    history_repo = getattr(app.state, "baipu_history_repo", None) or BaipuHistoryRepository(session_factory)
+    app.state.baipu_history_repo = history_repo
+
     # Local SQLite — create only the core tables needed for offline
     repo = SQLAlchemyUserRepository(session_factory)
     repo.init_db()
@@ -587,14 +602,25 @@ async def _lifespan_board(app: FastAPI, log):
         except Exception as e:
             log.debug(f"No saved credentials: {e}")
 
+    # Replay rows are their own durable outbox and share the existing worker lock.
+    history_service = getattr(app.state, "baipu_history_service", None)
+    if history_service is None:
+        history_service = BaipuHistoryService(history_repo, remote_client=remote_client)
+        app.state.baipu_history_service = history_service
+
     # Sync worker
-    sync_worker = SyncWorker(session_factory, remote_client, ai_ladder_repo=app.state.ai_ladder_repo)
+    sync_worker = SyncWorker(
+        session_factory, remote_client, ai_ladder_repo=app.state.ai_ladder_repo,
+        baipu_sync=history_service.sync_pending,
+    )
+    history_service.wake_sync = sync_worker.run_sync
     sync_worker.recover_stale_leases()
     app.state.sync_worker = sync_worker
 
     # Connectivity manager
     connectivity = ConnectivityManager(remote_client, sync_worker)
     app.state.connectivity_manager = connectivity
+    history_service.connectivity = connectivity
 
     # Repository dispatcher
     sync_fn = partial(enqueue_sync_item, session_factory, device_id=settings.DEVICE_ID)

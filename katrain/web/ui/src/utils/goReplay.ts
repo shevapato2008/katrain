@@ -119,6 +119,16 @@ function removeCaptures(
       }
     }
   }
+  // SGF records also execute suicidal moves: remove the placed stone's group
+  // only after opponent captures have had the chance to give it liberties.
+  const ownGroup = findGroup(board, lastX, lastY, size);
+  if (countLiberties(board, ownGroup, size) === 0) {
+    for (const key of ownGroup) {
+      const [gx, gy] = key.split(',').map(Number);
+      board[gy][gx] = null;
+      captured.push([gx, gy]);
+    }
+  }
   return captured;
 }
 
@@ -128,14 +138,17 @@ export function buildReplayBoardState(moves: string[], currentMove: number, boar
   let lastMove: [number, number] | null = null;
   let lastPlayer: 'B' | 'W' = 'B';
   for (let i = 0; i < Math.min(currentMove, moves.length); i++) {
+    const player = stoneColors?.[i] ?? (i % 2 === 0 ? 'B' : 'W');
     const coords = parseMove(moves[i]);
-    if (!coords) continue;
+    if (!coords) {
+      if (moves[i].toLowerCase() === 'pass') lastPlayer = player;
+      continue;
+    }
     const [x, y] = coords;
     if (x >= boardSize || y >= boardSize) continue;
-    const player = stoneColors?.[i] ?? (i % 2 === 0 ? 'B' : 'W');
     board[y][x] = player;
     moveNumbers[y][x] = i < handicapCount ? null : i + 1 - handicapCount;
-    const captured = removeCaptures(board, x, y, boardSize);
+    const captured = i < handicapCount ? [] : removeCaptures(board, x, y, boardSize);
     for (const [cx, cy] of captured) moveNumbers[cy][cx] = null;
     if (i >= handicapCount) lastMove = coords;
     lastPlayer = player;

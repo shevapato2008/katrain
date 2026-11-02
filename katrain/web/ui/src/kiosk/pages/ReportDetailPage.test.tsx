@@ -18,7 +18,7 @@ const getMoves = vi.fn();
 const getGame = vi.fn();
 const setCurrentMove = vi.fn();
 const playSound = vi.fn();
-let auth = { token: 'token', isAuthenticated: true };
+let auth: { token: string | null; isAuthenticated: boolean; isLoading: boolean; isGuest: boolean; identityKey: string | null } = { token: 'token', isAuthenticated: true, isLoading: false, isGuest: false, identityKey: 'report-owner' };
 let detail: ReturnType<typeof baseDetail>;
 let boardProps: Record<string, unknown> = {};
 const realHook = vi.hoisted(() => ({ enabled: false }));
@@ -187,7 +187,7 @@ import ReportDetailPage from './ReportDetailPage';
 describe('屏 20 · 题头与状态', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    auth = { token: 'token', isAuthenticated: true };
+    auth = { token: 'token', isAuthenticated: true, isLoading: false, isGuest: false, identityKey: 'report-owner' };
     detail = baseDetail();
     boardProps = {};
     realHook.enabled = false;
@@ -300,7 +300,7 @@ describe('屏 20 · 题头与状态', () => {
 describe('屏 20 · 推荐与着手评价的六个内联 tab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    auth = { token: 'token', isAuthenticated: true };
+    auth = { token: 'token', isAuthenticated: true, isLoading: false, isGuest: false, identityKey: 'report-owner' };
     detail = baseDetail();
     boardProps = {};
     realHook.enabled = false;
@@ -482,7 +482,7 @@ describe('屏 20 · 推荐与着手评价的六个内联 tab', () => {
 describe('屏 20 · 盘上的交互', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    auth = { token: 'token', isAuthenticated: true };
+    auth = { token: 'token', isAuthenticated: true, isLoading: false, isGuest: false, identityKey: 'report-owner' };
     detail = baseDetail();
     boardProps = {};
     realHook.enabled = false;
@@ -681,7 +681,7 @@ describe('屏 20 · 盘上的交互', () => {
 describe('屏 20 · 翻手、出口与出错', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    auth = { token: 'token', isAuthenticated: true };
+    auth = { token: 'token', isAuthenticated: true, isLoading: false, isGuest: false, identityKey: 'report-owner' };
     detail = baseDetail();
     boardProps = {};
     realHook.enabled = false;
@@ -812,7 +812,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
   });
 
   it('没登录时只给一条路:回复盘列表', () => {
-    auth = { token: null, isAuthenticated: false };
+    auth = { token: null, isAuthenticated: false, isLoading: false, isGuest: true, identityKey: null };
     renderPage();
     expect(screen.getByText('请先登录后查看报告详情。')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /复盘/ }));
@@ -896,7 +896,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
 describe('屏 20 · 接真钩子的轮询', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    auth = { token: 'token', isAuthenticated: true };
+    auth = { token: 'token', isAuthenticated: true, isLoading: false, isGuest: false, identityKey: 'report-owner' };
     detail = baseDetail();
     realHook.enabled = true;
     retry.mockReset().mockResolvedValue(undefined);
@@ -971,7 +971,7 @@ describe('屏 20 · 让子局的下标要对得上', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    auth = { token: 'token', isAuthenticated: true };
+    auth = { token: 'token', isAuthenticated: true, isLoading: false, isGuest: false, identityKey: 'report-owner' };
     boardProps = {};
     realHook.enabled = false;
   });

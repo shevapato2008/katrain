@@ -95,6 +95,55 @@ class User(Base):
     ai_ladder_profile = relationship("AiLadderProfile", back_populates="user", uselist=False)
 
 
+def _hex64_check(column):
+    # Portable to both SQLite and PostgreSQL; no dialect-specific regex operator.
+    remaining = column
+    for char in "0123456789abcdef":
+        remaining = f"replace({remaining}, '{char}', '')"
+    return f"length({column}) = 64 AND length({remaining}) = 0"
+
+
+class BaipuHistory(Base):
+    """One account cursor per exact, versioned replay snapshot; also the board outbox."""
+
+    __tablename__ = "baipu_history"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    record_id = Column(String(64), primary_key=True)
+    source_id = Column(String(128), nullable=False, default="")
+    name = Column(String(512), nullable=False, default="")
+    sgf_content = Column(Text, nullable=False)
+    sgf_sha256 = Column(String(64), nullable=False)
+    replay_version = Column(Integer, nullable=False)
+    total = Column(Integer, nullable=False)
+    k = Column(Integer, nullable=False, default=0)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+    local_revision = Column(Integer, nullable=False, default=0)
+    writer_id = Column(String(128), nullable=False)
+    writer_seq = Column(Integer, nullable=False, default=0)
+    cloud_revision = Column(Integer, nullable=False, default=0)
+    pending_base_revision = Column(Integer, nullable=True)
+    sync_state = Column(String(16), nullable=False, default="synced")
+    conflict_remote = Column(JSON(none_as_null=True), nullable=True)
+    last_mutation_id = Column(String(128), nullable=True)
+    last_mutation_payload = Column(JSON(none_as_null=True), nullable=True)
+    last_sync_expected_revision = Column(Integer, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "sgf_sha256", "replay_version", name="uq_baipu_history_identity"),
+        Index("ix_baipu_history_owner_updated", "user_id", "updated_at"),
+        CheckConstraint(_hex64_check("record_id"), name="ck_baipu_history_id"),
+        CheckConstraint(_hex64_check("sgf_sha256"), name="ck_baipu_history_hash"),
+        CheckConstraint("length(source_id) <= 128 AND length(name) <= 512", name="ck_baipu_history_labels"),
+        CheckConstraint("length(sgf_content) BETWEEN 1 AND 1048576", name="ck_baipu_history_sgf"),
+        CheckConstraint("replay_version > 0 AND total > 0 AND k BETWEEN 0 AND total", name="ck_baipu_history_cursor"),
+        CheckConstraint("local_revision >= 0 AND writer_seq >= 0 AND cloud_revision >= 0", name="ck_baipu_history_revisions"),
+        CheckConstraint("pending_base_revision IS NULL OR pending_base_revision >= 0", name="ck_baipu_history_base"),
+        CheckConstraint("sync_state IN ('synced', 'pending', 'conflict', 'refused')", name="ck_baipu_history_state"),
+        CheckConstraint("length(writer_id) BETWEEN 1 AND 128", name="ck_baipu_history_writer"),
+    )
+
+
 class Relationship(Base):
     __tablename__ = "relationships"
 

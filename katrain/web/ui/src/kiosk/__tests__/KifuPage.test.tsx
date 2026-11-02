@@ -9,7 +9,7 @@ import { ApiError } from '../../api';
 import { i18n } from '../../i18n';
 import {
   __resetKioskActivityStorageForTests,
-  setKioskIdentity,
+  kioskActivityStorage,
 } from '../storage/kioskActivityStorage';
 
 /**
@@ -26,15 +26,15 @@ import {
  *    旧进度里没有 `total`,读到 `undefined` 的正确反应是不下结论。
  */
 
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ isLoading: false, isGuest: true, identityKey: null, token: null, status: 'guest' }) }));
 const mockNavigate = vi.fn();
-const TEST_UUID = 'kifu-page-test-user';
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
 const { getAlbums } = vi.hoisted(() => ({ getAlbums: vi.fn() }));
-vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums } }));
+vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums, getAlbum: () => Promise.resolve({ sgf_content: '(;SZ[19];B[dd])', board_size: 19 }) } }));
 
 const album = (id: number, over: Partial<KifuAlbumSummary> = {}): KifuAlbumSummary => ({
   id,
@@ -65,12 +65,13 @@ const seedRecent = (
   progress: Record<string, { k: number; frames: number; updatedAt: number; total?: number }> = {},
   sgfFor: string[] = [],
 ) => {
-  localStorage.setItem(`baipu:recent:${TEST_UUID}`, JSON.stringify(entries));
+  const store = kioskActivityStorage(null, true);
+  store.setItem('baipu:recent', JSON.stringify(entries));
   for (const [id, p] of Object.entries(progress)) {
-    localStorage.setItem(`baipu:progress:${id}:${TEST_UUID}`, JSON.stringify(p));
+    store.setItem(`baipu:progress:${id}`, JSON.stringify(p));
   }
   for (const id of sgfFor) {
-    localStorage.setItem(`baipu:sgf:${id}:${TEST_UUID}`, JSON.stringify({
+    store.setItem(`baipu:sgf:${id}`, JSON.stringify({
       id, name: id, sgf: '(;FF[4]GM[1]SZ[19];B[pd])', savedAt: 1,
     }));
   }
@@ -81,17 +82,15 @@ beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
   __resetKioskActivityStorageForTests();
-  setKioskIdentity(TEST_UUID, false);
   getAlbums.mockResolvedValue({ items: [album(1), album(2)], total: 2, page: 1, page_size: 20 });
 });
 
 describe('屏 15 棋谱 · 问候与列表头', () => {
   // 副标去掉了稿子里的「职业直播」:Fan 2026-09-22 裁定 kiosk 端不做直播,屏上不许许诺没有的东西。
-  it('问候行照稿子写「看别人的棋」,副标不提直播', () => {
+  it('显示职业棋谱标题，不承诺直播', () => {
     renderPage();
-    expect(screen.getByText('看别人的')).toBeInTheDocument();
-    expect(screen.getByText('棋')).toBeInTheDocument();
-    expect(screen.getByText('名局，以及把谱摆到实体盘上')).toBeInTheDocument();
+    expect(screen.getByText('职业棋谱')).toBeInTheDocument();
+    expect(screen.queryByText('职业直播')).toBeNull();
   });
 
   it('搜索框常驻，删除导入 SGF 及其文件输入入口', () => {
@@ -111,7 +110,7 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     expect(rows[0]).toHaveClass('kifu-record');
     expect(rows[0]).toHaveTextContent('2026-06-30');
     expect(rows[0]).toHaveTextContent('241 手');
-    expect(rows[0]).toHaveTextContent('B+R');
+    expect(rows[0]).toHaveTextContent('黑中盘胜');
     // 判据落在请求形状上:只有一发,就是列表本身。旧写法挂载时先发一发 page_size: 1 探总数。
     expect(getAlbums).toHaveBeenCalledTimes(1);
     expect(getAlbums).toHaveBeenCalledWith({ q: undefined, page: 1, page_size: 20, lang: i18n.lang });
@@ -124,10 +123,12 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     expect(screen.queryByText('按棋手 / 赛事 / 日期搜')).not.toBeInTheDocument();
   });
 
-  it('点一行进屏 16 的详情', async () => {
+  it('选中一行后通过查看棋谱进入屏 16', async () => {
     renderPage();
     const rows = await screen.findAllByRole('button', { name: /第 29 届三星杯.*柯洁.*申真谞/ });
     fireEvent.click(rows[0]);
+    await waitFor(() => expect(screen.getByRole('button', { name: '查看棋谱', exact: true })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '查看棋谱', exact: true }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu/1/replay');
   });
 
@@ -143,6 +144,8 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     getAlbums.mockResolvedValue({ items: [album(1, { has_analysis: true })], total: 1, page: 1, page_size: 20 });
     renderPage();
     fireEvent.click((await screen.findAllByRole('button', { name: /第 29 届三星杯/ }))[0]);
+    await waitFor(() => expect(screen.getByRole('button', { name: '查看分析', exact: true })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '查看分析', exact: true }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu/1');
   });
 
@@ -155,6 +158,9 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     expect(within(row).getByLabelText(has_analysis ? '查看分析报告' : '查看棋谱')).toBeInTheDocument();
     expect(row).not.toHaveTextContent(/来源|19x19|CWI/i);
     fireEvent.click(row);
+    const action = screen.getByRole('button', { name: has_analysis ? '查看分析' : '查看棋谱', exact: true });
+    await waitFor(() => expect(action).toBeEnabled());
+    fireEvent.click(action);
     expect(mockNavigate).toHaveBeenCalledWith(`/kiosk/kifu/1${has_analysis ? '' : '/replay'}`);
     expect(screen.getByRole('button', { name: '上一页' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled();
@@ -261,7 +267,7 @@ describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
     expect(screen.getByRole('button', { name: '最近摆过' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('本地对局')).toBeInTheDocument();
     expect(screen.queryByTestId('kifu-records')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '最近摆过' }));
+    fireEvent.click(screen.getByRole('button', { name: '名局棋谱' }));
     expect(screen.getByTestId('kifu-records')).toBeInTheDocument();
     expect(screen.getByRole('searchbox')).toHaveValue('柯洁');
     expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('2');

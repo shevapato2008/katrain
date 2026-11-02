@@ -379,6 +379,57 @@ def _require_public(conn, ids):
     _require(public == set(ids), "requested album is missing, hidden or duplicate; publication requires public albums")
 
 
+def _require_source_publication(conn, ids):
+    """Original receipts remain exact; only proved display dedup may hide them."""
+    from katrain.web.kifu.catalog_standardization import verified_display_duplicate
+
+    for album_id in ids:
+        album = name_batch._image(conn, KifuAlbum.__table__, album_id)
+        _require(
+            album is not None and album["list_hidden_reason"] is None,
+            "requested album is missing, hidden or duplicate; publication requires public albums",
+        )
+        if album["duplicate_of_id"] is not None:
+            try:
+                proof = verified_display_duplicate(conn, album_id)
+            except ValueError as exc:
+                raise PublicationError("duplicate album has no verified same-game dedup journal") from exc
+            _require_public(conn, {proof["canonical_album_id"]})
+
+
+def _select_source_owner(conn, game, matches, origin_owners):
+    """An aggregated provenance link cannot replace the original SGF owner."""
+    from katrain.web.kifu.catalog_standardization import verified_display_duplicate
+
+    direct = set(
+        conn.scalars(
+            select(KifuAlbum.id).where(KifuAlbum.id.in_(matches), KifuAlbum.source_path == game["origin_path"])
+        )
+    )
+    original = set(
+        conn.scalars(
+            select(KifuAlbumSource.album_id).where(
+                KifuAlbumSource.album_id.in_(matches),
+                KifuAlbumSource.origin_path == game["origin_path"],
+                KifuAlbumSource.match_method != "reviewed_same_game",
+            )
+        )
+    )
+    owners = direct or original or matches
+    _require(len(owners) <= 1, "multiple exact SGFs require explicit duplicate resolution")
+    chosen = next(iter(owners), None)
+    for owner in origin_owners:
+        if owner in matches:
+            continue
+        _require(chosen is not None, "existing source path content changed")
+        try:
+            proof = verified_display_duplicate(conn, chosen)
+        except ValueError as exc:
+            raise PublicationError("existing source path content changed") from exc
+        _require(proof and proof["canonical_album_id"] == owner, "existing source path content changed")
+    return chosen
+
+
 def _check_reused_identity_instructions(conn, game, album_id, indexes):
     instructions = game.get("identities", {})
     if not instructions:
@@ -399,11 +450,20 @@ def _coverage(conn, ids):
     if not ids:
         return
     with Session(bind=conn) as db:
-        albums = (
-            db.query(KifuAlbum)
-            .filter(KifuAlbum.id.in_(ids), KifuAlbum.duplicate_of_id.is_(None), KifuAlbum.list_hidden_reason.is_(None))
-            .all()
-        )
+        albums = db.query(KifuAlbum).filter(KifuAlbum.id.in_(ids)).all()
+        from katrain.web.kifu.catalog_standardization import verified_display_duplicate
+
+        retained = []
+        for album in albums:
+            if album.list_hidden_reason is not None:
+                continue
+            if album.duplicate_of_id is not None:
+                try:
+                    verified_display_duplicate(conn, album.id)
+                except ValueError:
+                    continue
+            retained.append(album)
+        albums = retained
         selected = live_event_selections(db, albums)
         for lang in LANGUAGES:
             approvals = strict_slot_approvals(db, albums, lang, selected_events=selected)
@@ -1870,7 +1930,7 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                     requested_ids == {source["album_id"] for source in artifact["sources"]},
                     "publication receipt album membership changed",
                 )
-                _require_public(conn, requested_ids)
+                _require_source_publication(conn, requested_ids)
                 for key, game in games_by_source.items():
                     _check_reused_identity_instructions(conn, game, sources_by_key[key]["album_id"], identity_indexes)
                 _check_rank_replay(
@@ -1960,10 +2020,9 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                         conn.scalars(select(KifuAlbum.id).where(KifuAlbum.source_path == game["origin_path"]))
                     )
                     matches = set(exact.get(canonical, ()))
-                    _require(not origin_owners or origin_owners <= matches, "existing source path content changed")
-                    _require(len(matches) <= 1, "multiple exact SGFs require explicit duplicate resolution")
-                    if matches:
-                        album_id, action = next(iter(matches)), "reused"
+                    source_owner = _select_source_owner(conn, game, matches, origin_owners)
+                    if source_owner is not None:
+                        album_id, action = source_owner, "reused"
                     else:
                         identities = game.get("identities", {})
                         metadata = derive_metadata(game["sgf_content"], game.get("source_metadata"), game["source_key"])
@@ -1986,7 +2045,7 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                         action = "inserted"
                         if metadata.get("event"):
                             new_raws.add(metadata["event"])
-                _require_public(conn, {album_id})
+                _require_source_publication(conn, {album_id})
                 if action == "reused":
                     _check_reused_identity_instructions(conn, game, album_id, identity_indexes)
                 source_id = conn.scalar(select(KifuSource.id).where(KifuSource.source_key == game["source_key"]))
@@ -2014,6 +2073,32 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                     )
                     name_batch._record_change(conn, batch_id, sequence, KifuAlbumSource, link_id, None, after)
                     sequence += 1
+                original = name_batch._image(conn, KifuAlbum.__table__, album_id)
+                if original["duplicate_of_id"] is not None:
+                    from katrain.web.kifu.catalog_standardization import verified_display_duplicate
+
+                    canonical_id = verified_display_duplicate(conn, album_id)["canonical_album_id"]
+                    aggregate = conn.scalar(
+                        select(KifuAlbumSource.id).where(
+                            KifuAlbumSource.album_id == canonical_id,
+                            KifuAlbumSource.source_id == source_id,
+                            KifuAlbumSource.origin_path == game["origin_path"],
+                        )
+                    )
+                    if aggregate is None:
+                        aggregate_id, after = name_batch._insert(
+                            conn,
+                            KifuAlbumSource,
+                            {
+                                "album_id": canonical_id,
+                                "source_id": source_id,
+                                "origin_path": game["origin_path"],
+                                "match_method": "reviewed_same_game",
+                            },
+                        )
+                        name_batch._record_change(conn, batch_id, sequence, KifuAlbumSource, aggregate_id, None, after)
+                        sequence += 1
+                    affected.add(canonical_id)
                 affected.add(album_id)
                 results.append(
                     {

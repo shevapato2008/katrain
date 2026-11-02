@@ -282,8 +282,59 @@ def _detail_evidence(detail, game, album_id, lang, decisions, rank_aware=False, 
     return evidence
 
 
+def _validate_display_duplicate(proof, game, album_id, *, stored_sgf_sha256):
+    from katrain.web.kifu.catalog_standardization import full_operation_fingerprint
+
+    fields = {
+        "version",
+        "album_id",
+        "canonical_album_id",
+        "sgf_sha256",
+        "canonical_sgf_sha256",
+        "operation_sha256",
+        "batch_key",
+        "manifest_sha256",
+    }
+    if (
+        not isinstance(proof, dict)
+        or set(proof) != fields
+        or proof.get("version") != "reviewed-same-game-v1"
+        or type(proof.get("album_id")) is not int
+        or proof["album_id"] != album_id
+        or type(proof.get("canonical_album_id")) is not int
+        or proof["canonical_album_id"] <= 0
+        or proof["canonical_album_id"] == album_id
+        or any(
+            not isinstance(proof.get(key), str) or not re.fullmatch(r"[0-9a-f]{64}", proof[key])
+            for key in ("sgf_sha256", "canonical_sgf_sha256", "operation_sha256", "manifest_sha256")
+        )
+        or proof["batch_key"] != "reviewed-same-game:" + proof["manifest_sha256"]
+        or proof["sgf_sha256"] != stored_sgf_sha256
+        or proof["operation_sha256"] != full_operation_fingerprint(game["sgf_content"])
+    ):
+        raise ValueError("album display duplicate proof is invalid")
+    return proof
+
+
 def _validate_public_card(card, game, album_id, cn_detail, decisions, rank_aware=False):
     fields = {"album_id", "lang", "query", "page", "page_size", "displays"}
+    duplicate = isinstance(card, dict) and "display_duplicate" in card
+    if duplicate:
+        fields |= {"display_duplicate", "canonical_card", "original_sgf_sha256"}
+        proof = _validate_display_duplicate(
+            card["display_duplicate"], game, album_id, stored_sgf_sha256=card.get("original_sgf_sha256")
+        )
+        canonical = card.get("canonical_card")
+        if (
+            not isinstance(canonical, dict)
+            or set(canonical) != {"album_id", "sgf_sha256", "displays"}
+            or canonical["album_id"] != proof["canonical_album_id"]
+            or canonical["sgf_sha256"] != proof["canonical_sgf_sha256"]
+            or not isinstance(canonical["displays"], dict)
+            or set(canonical["displays"]) != set(_DISPLAY_FIELDS)
+            or any(not isinstance(v, str) or not v.strip() for v in canonical["displays"].values())
+        ):
+            raise ValueError("album display duplicate canonical card is invalid")
     if rank_aware:
         fields |= {"source_key", "source_item_id", "sgf_sha256", "metadata", "ranks"}
     if (
@@ -302,7 +353,11 @@ def _validate_public_card(card, game, album_id, cn_detail, decisions, rank_aware
     ):
         raise ValueError("checkpoint public card is invalid")
     if rank_aware:
-        evidence = {key: value for key, value in card.items() if key not in {"query", "page", "page_size"}}
+        evidence = {
+            key: value
+            for key, value in card.items()
+            if key not in {"query", "page", "page_size", "display_duplicate", "canonical_card", "original_sgf_sha256"}
+        }
         _validate_detail_evidence(evidence, game, album_id, "cn", decisions, True)
         if evidence != cn_detail:
             raise ValueError("album public list card differs from verified detail")
@@ -475,13 +530,47 @@ async def verify_album_api(
         completed = checkpoint.get(key)
         if completed is None:
             details = []
+            duplicate_proof = None
             for lang in LANGUAGES:
                 response = await get.get(f"{target}/api/v1/kifu/albums/{album_id}", {"lang": lang})
                 if response.status_code != 200:
                     raise ValueError(f"album API {album_id}/{lang} returned {response.status_code}")
-                details.append(_detail_evidence(response.json(), game, album_id, lang, decisions, rank_aware))
+                payload = response.json()
+                observed = payload.get("display_duplicate")
+                if observed is not None:
+                    if not isinstance(payload.get("sgf_content"), str):
+                        raise ValueError("album original SGF is missing")
+                    _validate_display_duplicate(
+                        observed, game, album_id, stored_sgf_sha256=sha256(payload["sgf_content"].encode()).hexdigest()
+                    )
+                if lang == LANGUAGES[0]:
+                    duplicate_proof = observed
+                elif observed != duplicate_proof:
+                    raise ValueError("album display duplicate proof changed between languages")
+                details.append(_detail_evidence(payload, game, album_id, lang, decisions, rank_aware))
             cn_detail = next(detail for detail in details if detail["lang"] == "cn")
             cn_card = cn_detail["displays"]
+            public_album_id = album_id
+            canonical_card = None
+            if duplicate_proof is not None:
+                public_album_id = duplicate_proof["canonical_album_id"]
+                response = await get.get(f"{target}/api/v1/kifu/albums/{public_album_id}", {"lang": "cn"})
+                canonical_detail = response.json() if response.status_code == 200 else None
+                if (
+                    not isinstance(canonical_detail, dict)
+                    or canonical_detail.get("id") != public_album_id
+                    or not isinstance(canonical_detail.get("sgf_content"), str)
+                    or sha256(canonical_detail["sgf_content"].encode()).hexdigest()
+                    != duplicate_proof["canonical_sgf_sha256"]
+                    or canonical_detail.get("display_duplicate") is not None
+                ):
+                    raise ValueError("album display duplicate canonical detail differs from journal")
+                cn_card = {field: canonical_detail.get(field) for field in _DISPLAY_FIELDS}
+                canonical_card = {
+                    "album_id": public_album_id,
+                    "sgf_sha256": duplicate_proof["canonical_sgf_sha256"],
+                    "displays": cn_card,
+                }
             queries = [game["metadata"].get("date_played"), game["metadata"]["player_black"]]
             public_card = None
             for query in dict.fromkeys(value for value in queries if value):
@@ -509,7 +598,7 @@ async def verify_album_api(
                         listings[cache_key] = listing
                     listing = listings[cache_key]
                     for row in listing["items"]:
-                        if row["id"] == album_id:
+                        if row["id"] == public_album_id:
                             if any(row.get(field) != value for field, value in cn_card.items()):
                                 raise ValueError("album public list card differs from verified detail")
                             public_card = {
@@ -518,16 +607,27 @@ async def verify_album_api(
                                 "query": query,
                                 "page": page,
                                 "page_size": 100,
-                                "displays": {field: row[field] for field in _DISPLAY_FIELDS},
+                                "displays": cn_detail["displays"],
                             }
+                            if duplicate_proof is not None:
+                                public_card.update(
+                                    display_duplicate=duplicate_proof,
+                                    canonical_card=canonical_card,
+                                    original_sgf_sha256=duplicate_proof["sgf_sha256"],
+                                )
                             if rank_aware:
                                 try:
                                     public_card.update(
-                                        _detail_evidence(row, game, album_id, "cn", decisions, True, include_sgf=False)
+                                        cn_detail
+                                        if duplicate_proof is not None
+                                        else _detail_evidence(
+                                            row, game, album_id, "cn", decisions, True, include_sgf=False
+                                        )
                                     )
                                     _validate_public_card(public_card, game, album_id, cn_detail, decisions, True)
                                 except ValueError as exc:
                                     raise ValueError("album public list card rank or snapshot mismatch") from exc
+                            _validate_public_card(public_card, game, album_id, cn_detail, decisions, rank_aware)
                             break
                     if public_card is not None or page * 100 >= listing["total"]:
                         break

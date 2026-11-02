@@ -68,7 +68,7 @@ PROTECTED_TABLES = (
     | QUOTA_TABLES
     | KIFU_CATALOG_TABLES
     | KIFU_RANK_TABLES
-    | {AI_LADDER_LEGACY_TABLE, "tutorial_media_tasks", "tutorial_figures"}
+    | {AI_LADDER_LEGACY_TABLE, "tutorial_media_tasks", "tutorial_figures", "baipu_history"}
 )
 
 KIFU_ALBUM_FKS = {

@@ -165,6 +165,7 @@ class KifuAlbumDetail(KifuAlbumSummary):
     rules: Optional[str]
     source: Optional[str]
     sgf_content: str
+    display_duplicate: Optional[dict] = None
 
 
 class KifuAlbumListResponse(BaseModel):
@@ -180,6 +181,8 @@ class KifuAlbumListResponse(BaseModel):
 _PREPARED_ALBUM_COLUMNS = (
     KifuAlbum.id,
     KifuAlbum.player_black,
+    KifuAlbum.black_player_id,
+    KifuAlbum.white_player_id,
     KifuAlbum.player_white,
     KifuAlbum.black_rank,
     KifuAlbum.white_rank,
@@ -815,6 +818,7 @@ def read_album_detail(db, album_id, *, lang="cn"):
                 "place": record.place,
                 "source": record.source,
                 "sgf_content": record.sgf_content,
+                "display_duplicate": _display_duplicate(db, record.id),
             }
         )
     except PreparedSearchNotReady as exc:
@@ -857,7 +861,13 @@ def read_album_detail_legacy(db, album_id, *, lang="cn", _record=None):
     ).model_dump()
     values["has_analysis"] = report_availability(db, [record], KIFU_MODEL_SHA256, KIFU_VISITS)[record.id]
     return KifuAlbumDetail.model_validate(
-        {**values, "place": record.place, "source": record.source, "sgf_content": record.sgf_content}
+        {
+            **values,
+            "place": record.place,
+            "source": record.source,
+            "sgf_content": record.sgf_content,
+            "display_duplicate": _display_duplicate(db, record.id),
+        }
     )
 
 
@@ -955,32 +965,94 @@ def _summary(record, names, sources, round_lang, *, rank_snapshots=None):
     )
 
 
+def _display_duplicate(db, album_id):
+    from katrain.web.kifu.catalog_standardization import verified_display_duplicate
+
+    try:
+        return verified_display_duplicate(db.connection(), album_id)
+    except ValueError:
+        return None
+
+
 def _rank_displays(record, black, white, snapshots):
-    """Render only exact-bound frozen overlays; malformed rows keep raw display."""
+    """Use exact-bound overlays; fallback preserves the known source convention."""
+    from katrain.web.kifu.source_rank_normalization import (
+        SNAPSHOT_VERSION,
+        normalize_source_rank,
+        trusted_source_link,
+        validate_source_snapshot,
+    )
+
+    album = {
+        key: getattr(record, key, None)
+        for key in (
+            "id",
+            "source_path",
+            "sgf_content",
+            "black_rank",
+            "white_rank",
+            "black_player_id",
+            "white_player_id",
+        )
+    }
+    source_links = snapshots.get((record.id, "sources"), [])
+    source = trusted_source_link(album, source_links)
     values = {}
     sgf_sha256 = None
     for side, parsed in (("black", black), ("white", white)):
         raw = getattr(record, f"{side}_rank")
-        rendered = display_rank_for_game_slot(None, parsed.display_rank)
+        decision = normalize_source_rank(
+            raw or parsed.display_rank, source_key=source["source_key"] if source else None
+        )
+        fallback = decision["display_rank"] if decision else parsed.display_rank
+        rendered = display_rank_for_game_slot(None, fallback)
         if raw:
             rendered["rank_origin"] = "source"
         row = snapshots.get((record.id, side))
         if row is not None:
             try:
                 snapshot = row["snapshot"]
-                ref = snapshot["source_ref"]
-                if sgf_sha256 is None:
-                    sgf_sha256 = hashlib.sha256(record.sgf_content.encode("utf-8")).hexdigest()
-                if (
-                    row["album_id"] == record.id
-                    and row["side"] == side
-                    and row["snapshot_sha256"] == snapshot["content_sha256"]
-                    and ref["slot"] == side
-                    and ref["sgf_sha256"] == sgf_sha256
-                    and record.source_path == f"data/kifu-album/{ref['source_key']}/{ref['source_item_id']}.sgf"
-                    and snapshot["raw_rank"] == (raw or parsed.display_rank or "")
-                ):
-                    rendered = display_rank_for_game_slot(snapshot, parsed.display_rank)
+                if snapshot.get("version") == SNAPSHOT_VERSION:
+                    validate_source_snapshot(snapshot, album=album, side=side, source_links=source_links)
+                    journal = row.get("_journal_after") or {}
+                    if (
+                        row["album_id"] == record.id
+                        and row["side"] == side
+                        and row["snapshot_sha256"] == snapshot["content_sha256"]
+                        and row["rank_fact_id"] is None
+                        and row.get("_batch_status") == "applied"
+                        and row["publication_key"] == "source-rank:" + (row.get("_batch_sha256") or "")
+                        and journal.get("snapshot") == snapshot
+                        and journal.get("id") == row["id"]
+                        and journal.get("publication_key") == row["publication_key"]
+                        and journal.get("native_batch_id") == row["native_batch_id"]
+                    ):
+                        rendered = {
+                            "rank": snapshot["display_rank"],
+                            "rank_origin": "source",
+                            "rank_source": {
+                                "policy_version": snapshot["policy_version"],
+                                "snapshot_sha256": snapshot["content_sha256"],
+                                "rank_system": snapshot["rank_system"],
+                                "source_ref": snapshot["source_ref"],
+                                "source_kind": snapshot["evidence"]["kind"],
+                            },
+                        }
+                else:
+                    # Keep historical v1 numeric native receipt validation unchanged.
+                    ref = snapshot["source_ref"]
+                    if sgf_sha256 is None:
+                        sgf_sha256 = hashlib.sha256(record.sgf_content.encode("utf-8")).hexdigest()
+                    if (
+                        row["album_id"] == record.id
+                        and row["side"] == side
+                        and row["snapshot_sha256"] == snapshot["content_sha256"]
+                        and ref["slot"] == side
+                        and ref["sgf_sha256"] == sgf_sha256
+                        and record.source_path == f"data/kifu-album/{ref['source_key']}/{ref['source_item_id']}.sgf"
+                        and snapshot["raw_rank"] == (raw or parsed.display_rank or "")
+                    ):
+                        rendered = display_rank_for_game_slot(snapshot, parsed.display_rank)
             except (ValueError, TypeError, KeyError, AttributeError):
                 pass
         values.update(

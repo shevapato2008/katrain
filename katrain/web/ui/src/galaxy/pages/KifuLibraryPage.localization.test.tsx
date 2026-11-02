@@ -16,6 +16,7 @@ vi.mock('../../hooks/useTranslation', () => ({
       'kifu:source': { cn: '来源', en: 'Source', jp: '出典' },
       'kifu:source_golaxy': { cn: '星阵', en: 'GoLaxy', jp: 'GoLaxy' },
       'kifu:source_unknown': { cn: '来源待核实', en: 'Source unverified', jp: '出典未確認' },
+      'result:black_win': { cn: '黑胜', en: 'B+', jp: '黒勝' },
     } as Record<string, Record<string, string>>)[key]?.[language.current] ?? fallback ?? key,
   }),
 }));
@@ -55,6 +56,18 @@ beforeEach(() => {
 });
 
 describe('Galaxy 棋谱库语言展示', () => {
+  it('uses normalized historical professional ranks and a bare winner in the card and preview', async () => {
+    const normalized = { black_rank: '7d', white_rank: '9d', display_black_rank: '7p', display_white_rank: '9p', result: 'b+' };
+    getAlbums.mockResolvedValue({ items: [{ ...record('cn'), ...normalized }], total: 1, page: 2, page_size: 20 });
+    getAlbum.mockResolvedValue({ ...detail('cn'), ...normalized });
+    render(page());
+    await screen.findByTestId('board');
+    expect(screen.getByText('职业七段')).toBeInTheDocument();
+    expect(screen.getByText('职业九段')).toBeInTheDocument();
+    expect(screen.getAllByText('黑胜')).toHaveLength(2);
+    expect(getComputedStyle(screen.getByText('cn-black')).fontWeight).toBe('700');
+  });
+
   it('首屏自动打开当前页首局，按真实报告可用性命名入口', async () => {
     const view = render(page());
     expect(await screen.findByTestId('board')).toBeInTheDocument();

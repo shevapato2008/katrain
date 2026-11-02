@@ -206,7 +206,13 @@ def _make_game(tmp_path, gid, frames, sgf="(;SZ[19];B[pd];W[dp];B[pp])"):
         baseline=np.zeros((19, 19, 3), np.float32),
     )
     save_geometry_lock(lock, gd / "geometry.npz")
+    from katrain.core.baipu import build_steps_from_sgf
+
+    steps = build_steps_from_sgf(sgf)["steps"]
     for fr in frames:
+        index = fr["applied_move_index"]
+        if 0 <= index < len(steps):
+            fr.setdefault("board_hash", steps[index]["board_hash"])
         cv2.imwrite(str(gd / fr["file"]), np.zeros((950, 950, 3), np.uint8))
     manifest = {
         "game_id": gid,
@@ -525,3 +531,30 @@ def test_refine_stone_box_accepts_precomputed_gray():
     out_g = bal.refine_stone_box(img, gx, gy, "B", spacing, gray=gray)
     out_n = bal.refine_stone_box(img, gx, gy, "B", spacing)
     assert out_g is not None and out_g == out_n
+
+
+@pytest.mark.parametrize("corruption", ["missing_hash", "changed_setup", "version", "sgf_pin", "index"])
+def test_autolabel_rejects_incompatible_archive_before_output(tmp_path, corruption):
+    import hashlib
+
+    sgf = "(;SZ[19]AB[aa];AW[ba][ab])"
+    frames = [{"file": "frame_000.jpg", "applied_move_index": 2, "led_point": None}]
+    gd = _make_game(tmp_path, "guard", frames, sgf=sgf)
+    path = gd / "manifest.json"
+    manifest = json.loads(path.read_text())
+    if corruption == "missing_hash":
+        manifest["frames"][0].pop("board_hash", None)
+    elif corruption == "changed_setup":
+        manifest["frames"][0]["board_hash"] = hashlib.sha1(repr([(0, 17, "W"), (1, 18, "W")]).encode()).hexdigest()[:16]
+    elif corruption == "version":
+        manifest["replay_version"] = 100
+    elif corruption == "sgf_pin":
+        manifest["sgf_sha256"] = "changed"
+    elif corruption == "index":
+        manifest["frames"][0]["applied_move_index"] = 99
+    path.write_text(json.dumps(manifest))
+    before = {str(p.relative_to(gd)): p.read_bytes() for p in gd.rglob("*") if p.is_file()}
+    with pytest.raises(ValueError, match="archive"):
+        bal.process_game(gd, tmp_path / "img", tmp_path / "lbl", verify_dir=tmp_path / "verify")
+    assert {str(p.relative_to(gd)): p.read_bytes() for p in gd.rglob("*") if p.is_file()} == before
+    assert not (tmp_path / "img").exists() and not (tmp_path / "lbl").exists()

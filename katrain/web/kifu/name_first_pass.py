@@ -204,6 +204,20 @@ def raw_scope_rows(conn, raw):
     return raw_scope_rows_many(conn, {raw})[raw]
 
 
+def _retained_source_pointer(conn, row):
+    """Only a verified display-dedup journal preserves the prior name scope."""
+    pointer = row["duplicate_of_id"]
+    if pointer is None or row["list_hidden_reason"] is not None:
+        return pointer
+    from katrain.web.kifu.catalog_standardization import verified_display_duplicate
+
+    try:
+        proof = verified_display_duplicate(conn, row["id"])
+    except ValueError:
+        return pointer
+    return None if proof is not None else pointer
+
+
 def raw_scope_rows_many(conn, raws):
     """Capture a page or batch of literal scopes with shared database reads."""
     from sqlalchemy import bindparam, select, text
@@ -229,7 +243,7 @@ def raw_scope_rows_many(conn, raws):
     for row in direct:
         result[row["event"]].append({"album_id": row["id"], "slot": "event", "raw_value": row["event"],
                        "event_id": row["event_id"], "event_edition_id": row["event_edition_id"],
-                       "duplicate_of_id": row["duplicate_of_id"],
+                       "duplicate_of_id": _retained_source_pointer(conn, row),
                        "list_hidden_reason": row["list_hidden_reason"], "source_path": row["source_path"],
                        "approved": True})
     for selection in selected:
@@ -241,7 +255,7 @@ def raw_scope_rows_many(conn, raws):
         result[raw].append({"album_id": row["id"], "slot": "selected_event", "raw_value": raw,
                        "event_id": proof["event_id"] if proof else selection["event_id"],
                        "event_edition_id": row["event_edition_id"],
-                       "duplicate_of_id": row["duplicate_of_id"],
+                       "duplicate_of_id": _retained_source_pointer(conn, row),
                        "list_hidden_reason": row["list_hidden_reason"], "source_path": row["source_path"],
                        "approved": proof is not None})
     return {raw: sorted(rows, key=lambda item: (item["album_id"], item["slot"]))
@@ -261,7 +275,7 @@ def raw_player_scope_live(conn, scope):
     columns = ", ".join(("id", *CONTEXT_FIELDS, "list_hidden_reason"))
     rows = conn.execute(text(f"SELECT {columns} FROM kifu_albums WHERE id IN :ids").bindparams(
         bindparam("ids", expanding=True)), {"ids": ids}).mappings()
-    live = {row["id"]: row for row in rows}
+    live = {row["id"]: {**row, "duplicate_of_id": _retained_source_pointer(conn, row)} for row in rows}
     return all(
         (row := live.get(album_id)) is not None
         and row["duplicate_of_id"] is None and row["list_hidden_reason"] is None

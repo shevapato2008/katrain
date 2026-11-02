@@ -42,7 +42,7 @@ import BoardPageShell from '../components/board/BoardPageShell';
 import ModulePlate from '../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import { RAIL_TIGHT, railBadgeSx, railBodySx, railMetaSx, railPlayerSx } from '../../components/railStyles';
-import { formatRank } from '../../utils/rank';
+import { formatKifuRank } from '../../utils/rank';
 import CompactPagination from '../../components/CompactPagination';
 
 /* 右栏窄档（320 / 340）下的卡片压缩。整块列表从 520 搬进 320，卡片必须自己收 ——
@@ -56,7 +56,7 @@ const PAGE_SIZE = 20;
 
 /* ── Result badge (inline) ── */
 function ResultBadge({ result, rules, t }: { result: string | null; rules?: string | null; t: (key: string, fallback?: string) => string }) {
-  const raw = result || '?';
+  const raw = (result || '?').trim().toUpperCase();
   const isBlack = raw.startsWith('B') || raw.startsWith('黑');
   const label = translateResult(result, t, rules);
 
@@ -119,16 +119,20 @@ function GameRecordCard({
   onClick,
   tMovesUnit,
   t,
+  lang,
   selected,
 }: {
   album: KifuAlbumSummary;
   onClick: () => void;
   tMovesUnit: string;
   t: (key: string, fallback?: string) => string;
+  lang: string;
   selected?: boolean;
 }) {
-  const r = album.result || '';
+  const r = (album.result || '').trim().toUpperCase();
   const blackWins = r.startsWith('B') || r.startsWith('黑');
+  const blackRank = formatKifuRank(album.display_black_rank, album.black_rank, t, lang);
+  const whiteRank = formatKifuRank(album.display_white_rank, album.white_rank, t, lang);
 
   return (
     <Card
@@ -192,9 +196,9 @@ function GameRecordCard({
             >
               {album.display_player_black ?? t('game:black_side', '黑方')}
             </Typography>
-            {album.display_black_rank && (
+            {blackRank && (
               <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, ml: 0.5, flexShrink: 0 }}>
-                {formatRank(album.display_black_rank, t)}
+                {blackRank}
               </Typography>
             )}
           </Box>
@@ -204,9 +208,9 @@ function GameRecordCard({
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
-            {album.display_white_rank && (
+            {whiteRank && (
               <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, mr: 0.5, flexShrink: 0 }}>
-                {formatRank(album.display_white_rank, t)}
+                {whiteRank}
               </Typography>
             )}
             <Typography
@@ -577,6 +581,7 @@ export default function KifuLibraryPage() {
                     onClick={() => handleCardClick(album)}
                     tMovesUnit={movesUnit}
                     t={t}
+                    lang={lang}
                     selected={selectedId === album.id}
                   />
                 ))}

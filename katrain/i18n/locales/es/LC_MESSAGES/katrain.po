@@ -7139,3 +7139,99 @@ msgstr "No es una piedra"
 
 msgid "report:score_difference"
 msgstr "Diferencia de puntos"
+
+msgid "kifu:history_guest"
+msgstr "Solo durante esta sesión de invitado"
+
+msgid "kifu:history_local_cache"
+msgstr "Caché de la cuenta en este dispositivo"
+
+msgid "kifu:history_this_node"
+msgstr "Guardado en este dispositivo"
+
+msgid "kifu:history_cloud"
+msgstr "Historial de la cuenta en la nube"
+
+msgid "kifu:history_loading"
+msgstr "Cargando el historial de reproducción"
+
+msgid "kifu:history_error"
+msgstr "El historial de reproducción no está disponible"
+
+msgid "kifu:history_cache_empty"
+msgstr "No hay historial de la cuenta en la caché de este dispositivo"
+
+msgid "kifu:history_empty"
+msgstr "Aún no hay historial de reproducción"
+
+msgid "kifu:history_guest_hint"
+msgstr "El historial de invitado se borra al finalizar la sesión."
+
+msgid "kifu:history_account_hint"
+msgstr ""
+"Al iniciar la reproducción en el tablero físico, el progreso se guarda en la"
+" cuenta actual."
+
+msgid "kifu:history_pending"
+msgstr "Guardado en este dispositivo; pendiente de sincronización"
+
+msgid "kifu:history_conflict"
+msgstr "Conflicto de progreso; elige qué copia conservar"
+
+msgid "kifu:history_refused"
+msgstr "Guardado en este dispositivo; sincronización rechazada"
+
+msgid "kifu:history_saving"
+msgstr "Guardando el progreso"
+
+msgid "kifu:history_save_error"
+msgstr "No se guardó el progreso; vuelve a intentarlo"
+
+msgid "kifu:history_saved"
+msgstr "Progreso guardado"
+
+msgid "kifu:history_use_cloud"
+msgstr "Usar el progreso de la nube"
+
+msgid "kifu:history_keep_local"
+msgstr "Conservar el progreso del dispositivo"
+
+msgid "kifu:history_resolve_error"
+msgstr "No se pudo resolver el conflicto; revisa el progreso de nuevo"
+
+msgid "baipu:operator_manual"
+msgstr "Se ha cambiado a confirmación manual"
+
+msgid "baipu:pre_remove_title"
+msgstr "Retira primero la piedra que ocupa el punto de destino"
+
+msgid "baipu:pre_remove_hint"
+msgstr ""
+"Retira las piedras de las luces azules y coloca las del color indicado en el"
+" registro"
+
+msgid "baipu:pre_remove_done"
+msgstr "Piedras anteriores retiradas"
+
+msgid "baipu:entry_confirm"
+msgstr "El tablero coincide"
+
+msgid "baipu:manual_entry_hint"
+msgstr "Coloca las piedras como en la pantalla y pulsa «El tablero coincide»"
+
+msgid "baipu:recheck"
+msgstr "Volver a reconocer el tablero"
+
+msgid "baipu:switch_manual"
+msgstr "Usar confirmación manual"
+
+msgid "baipu:done_hint_saved"
+msgstr "{n} pasos completados · Usa el botón superior izquierdo para volver"
+
+msgid "baipu:exit_body_neutral"
+msgstr ""
+"Después de salir, puedes volver a abrir esta partida desde la página de "
+"registros."
+
+msgid "baipu:exit_anyway"
+msgstr "Salir de todos modos"

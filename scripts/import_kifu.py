@@ -205,9 +205,15 @@ def import_kifu(
                             existing = db.get(KifuAlbum, owner)
                             if existing.duplicate_of_id is not None:
                                 master = db.get(KifuAlbum, existing.duplicate_of_id)
-                                if master is None or master.sgf_content != data["sgf_content"]:
-                                    raise ValueError("existing duplicate pointer has different SGF content")
-                                owner = master.id
+                                from katrain.web.kifu.catalog_standardization import validate_existing_pointer
+
+                                validate_existing_pointer(db.connection(), existing.id)
+                                if master.sgf_content == data["sgf_content"]:
+                                    owner = master.id
+                                elif ensure_album_source(db, master.id, rel_path, "reviewed_same_game"):
+                                    stats["source_links_added"] += 1
+                            # A semantic display master never owns another
+                            # source's exact SGF bytes.
                             if ensure_album_source(db, owner, rel_path, "exact_sgf"):
                                 stats["source_links_added"] += 1
                     else:

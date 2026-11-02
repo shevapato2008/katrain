@@ -18,6 +18,7 @@ from katrain.web.kifu.player_ranks import build_source_rank_fact, normalize_rank
 FORMAT_V2 = "kifu-incremental-manifest-v2"
 SNAPSHOT_VERSION = "kifu-rank-snapshot-v1"
 POLICY_VERSION = "source-library-current-v1"
+SOURCE_POLICY_VERSION = "source-library-current-starpoint-v2"
 # The unchanged 16 MiB transport also carries the bounded <=4 MiB v2 report.
 MAX_MANIFEST_BYTES = 12 * 1024 * 1024
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
@@ -108,10 +109,17 @@ def _display(fact):
     return str(fact["rank_value"]) + suffix[fact["rank_system"]]
 
 
-def _raw_rank(game, side):
+def _raw_rank(game, side, *, source_policy=False):
     raw = game["metadata"].get(f"{side}_rank") or ""
     parsed = parse_player(game["metadata"].get(f"player_{side}"), raw)
-    return raw or parsed.display_rank or "", parsed.display_rank or ""
+    display = parsed.display_rank or ""
+    if source_policy and game["source_key"] == "19x19" and raw and not display:
+        from katrain.web.kifu.source_rank_normalization import normalize_source_rank
+
+        decision = normalize_source_rank(raw, source_key="19x19")
+        if decision:
+            display = decision["display_rank"]
+    return raw or parsed.display_rank or "", display
 
 
 def freeze_game_ranks(game, *, library_facts=None, identity_evidence=None, matched_at=None):
@@ -121,7 +129,9 @@ def freeze_game_ranks(game, *, library_facts=None, identity_evidence=None, match
     facts, snapshots, observations = {}, {}, {}
     for side in ("black", "white"):
         owner = game.get("identities", {}).get(side)
-        raw, original_display = _raw_rank(game, side)
+        _, legacy_display = _raw_rank(game, side)
+        raw, original_display = _raw_rank(game, side, source_policy=True)
+        policy = SOURCE_POLICY_VERSION if original_display != legacy_display else POLICY_VERSION
         source_fact = None
         if owner is not None and raw:
             try:
@@ -154,6 +164,10 @@ def freeze_game_ranks(game, *, library_facts=None, identity_evidence=None, match
         if raw:
             origin, display = "source", original_display
             parsed = normalize_rank(raw)
+            if policy == SOURCE_POLICY_VERSION:
+                from katrain.web.kifu.source_rank_normalization import normalize_source_rank
+
+                parsed = normalize_source_rank(raw, source_key="19x19")
         else:
             candidate = library_facts.get(owner["canonical_name"]) if owner else None
             try:
@@ -172,7 +186,7 @@ def freeze_game_ranks(game, *, library_facts=None, identity_evidence=None, match
             parsed = used
         snapshot = {
             "version": SNAPSHOT_VERSION,
-            "policy_version": POLICY_VERSION,
+            "policy_version": policy,
             "source_ref": {
                 "source_key": game["source_key"],
                 "source_item_id": game["source_item_id"],
@@ -201,11 +215,14 @@ def validate_rank_snapshot(snapshot):
     """Validate standalone snapshot shape and self hash (not its DB authority)."""
     _require(isinstance(snapshot, dict) and set(snapshot) == _FIELDS, "rank snapshot shape invalid")
     _require(
-        snapshot["version"] == SNAPSHOT_VERSION and snapshot["policy_version"] == POLICY_VERSION,
+        snapshot["version"] == SNAPSHOT_VERSION
+        and snapshot["policy_version"] in {POLICY_VERSION, SOURCE_POLICY_VERSION},
         "rank snapshot policy invalid",
     )
     _require(snapshot["content_sha256"] == snapshot_sha256(snapshot), "rank snapshot hash mismatch")
     ref, owner = snapshot["source_ref"], snapshot["player_ref"]
+    if snapshot["policy_version"] == SOURCE_POLICY_VERSION:
+        _require(isinstance(ref, dict) and ref.get("source_key") == "19x19", "starpoint rank policy source invalid")
     _require(
         isinstance(ref, dict)
         and set(ref) == {"source_key", "source_item_id", "sgf_sha256", "slot"}
@@ -269,6 +286,16 @@ def validate_rank_snapshot(snapshot):
         and 1 <= snapshot["rank_value"] <= (30 if snapshot["rank_system"] == "kyu" else 9),
         "rank snapshot grade/system invalid",
     )
+    if snapshot["policy_version"] == SOURCE_POLICY_VERSION:
+        from katrain.web.kifu.source_rank_normalization import normalize_source_rank
+
+        decision = normalize_source_rank(snapshot["raw_rank"], source_key="19x19")
+        _require(
+            snapshot["origin"] == "source"
+            and decision is not None
+            and all(snapshot[key] == decision[key] for key in ("display_rank", "rank_value", "rank_system")),
+            "starpoint source rank decision mismatch",
+        )
     digest = snapshot["rank_fact_sha256"]
     proof = snapshot["source_proof"]
     _require(digest is None or isinstance(digest, str) and _SHA.fullmatch(digest), "rank fact digest invalid")
@@ -339,7 +366,9 @@ def validate_manifest_ranks(manifest):
         for side, snapshot in snapshots.items():
             validate_rank_snapshot(snapshot)
             owner = game.get("identities", {}).get(side)
-            raw, original_display = _raw_rank(game, side)
+            raw, original_display = _raw_rank(
+                game, side, source_policy=snapshot["policy_version"] == SOURCE_POLICY_VERSION
+            )
             _require(
                 snapshot["source_ref"]
                 == {
@@ -379,6 +408,10 @@ def validate_manifest_ranks(manifest):
                     "original source rank assertion changed",
                 )
                 parsed = normalize_rank(raw)
+                if snapshot["policy_version"] == SOURCE_POLICY_VERSION:
+                    from katrain.web.kifu.source_rank_normalization import normalize_source_rank
+
+                    parsed = normalize_source_rank(raw, source_key="19x19")
                 if owner and observation is None:
                     try:
                         expected_source = build_source_rank_fact(
@@ -476,7 +509,11 @@ def display_rank_for_game_slot(snapshot, raw_rank=""):
     if proof.get("source_ref"):
         source["fact_source_ref"] = proof["source_ref"]
     return {
-        "rank": raw_rank or (snapshot["display_rank"] if snapshot["origin"] == "library_current" else ""),
+        "rank": (
+            snapshot["display_rank"]
+            if snapshot["policy_version"] == SOURCE_POLICY_VERSION
+            else raw_rank or (snapshot["display_rank"] if snapshot["origin"] == "library_current" else "")
+        ),
         "rank_origin": "source" if raw_rank else snapshot["origin"],
         "rank_source": deepcopy(source),
     }

@@ -23,6 +23,7 @@ vi.mock('react-router-dom', async () => {
 
 const { getAlbum, play } = vi.hoisted(() => ({ getAlbum: vi.fn(), play: vi.fn() }));
 vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play }) }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ isLoading: false, isGuest: false, identityKey: 'kifu-detail-owner', token: 'test-token', isAuthenticated: true }) }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbum } }));
 
 const { baipuLoad, cacheSgfMock } = vi.hoisted(() => ({ baipuLoad: vi.fn(), cacheSgfMock: vi.fn() }));
@@ -226,7 +227,7 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
     renderPage();
     await waitLoaded();
     fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
-    expect(cacheSgfMock).toHaveBeenCalledWith('kifu_7', '第 29 届三星杯 · 半决赛', ALBUM.sgf_content);
+    expect(cacheSgfMock).toHaveBeenCalledWith('kifu_7', '第 29 届三星杯 · 半决赛', ALBUM.sgf_content, expect.objectContaining({ getItem: expect.any(Function), setItem: expect.any(Function), removeItem: expect.any(Function) }));
     expect(mockNavigate).toHaveBeenCalledWith(
       '/kiosk/baipu/session/kifu_7',
       // backTo:摆谱会话的返回键回这一局的详情页(2026-09-22),不是一律回摆谱列表

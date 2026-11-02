@@ -1,5 +1,7 @@
 # Codex 开发入口：会员、实时额度与按次充值
 
+> **2026-11-02 最新 Max 修订：** Max 独立配置/运行时可售判定已按用户授权开放，双端 30 天总量与钱包最高扣费提示已随 Web 软件 `7f2ff0c65381250e41a9dc959d8cac9201c3a86b` 先 TEST 后新 PROD 发布，Cron 未改。此决定取代下方旧 Max停售状态；整体 paused/disabled 及正式商户阶段 B 未完成边界仍保持，不能声称现在可真实付款。以[本轮实际发布回执](../../operations/membership-max-release-2026-11-02.md)为当前权威；后续仅 docs 提交不改变镜像软件版本。
+
 > **2026-11-02 发布完成：** 阶段 A 开发、隔离 TEST 与 TEST→新 PROD 软件发布已完成；实际部署软件 R 为 `7fb94dce9f3d4e36835843cc8b828eb59245f6f1`，feature/develop/父 main 四步集成已完成。两端主服务保持 paused/disabled，阶段 B 正式收款、可信 Free 身份/注册限流及 Max 容量前置仍未完成并保持关闭。以下“未开发/待确认/尚未发布”均为历史；以[实际发布回执](../../operations/membership-release-2026-11-02.md)为当前权威。后续仅文档的提交不改变此处镜像软件版本。
 
 > **2026-11-02开发收尾：** `952580756fae2c64d2ce05695c98c3e3313c5ac8`已通过独立Astra Max全功能规格/代码/代表性视觉终审，0未解决Critical/Important。组合后端571通过/1历史跳过，修复后前端212与相关后端97通过，普通/严格Kiosk构建通过；真实完整API+JWT/HMAC/worker旅程4通过。当前进入已授权四步集成，尚未推送合并或部署。正式支付、Free可信身份和Max销售前置保持关闭；以operations后续发布回执为实际进度。

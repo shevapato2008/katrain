@@ -1,5 +1,7 @@
 # 会员、实时额度与按次充值：实施记录
 
+> **2026-11-02 Max 与提示修订已发布：** 用户授权开放 Max，双端增加 30 天总量与钱包最高扣费确认；实际新 Web 软件为 `7f2ff0c65381250e41a9dc959d8cac9201c3a86b`。Max 独立开关及运行时可售判定已为 true，价格/预算不变，优先于下方旧停售记录；主服务仍 paused/disabled，真实商户收款仍属未完成的阶段 B。清理最终状态与实际版本以[本轮发布回执](membership-max-release-2026-11-02.md)为准，后续 docs 提交不冒称镜像版本变化。
+
 > **2026-11-02 软件实施与验证：** 最新代码检查点 `952580756fae2c64d2ce05695c98c3e3313c5ac8`。分包已独立规格→质量闭环；[全功能Astra终审](../superpowers/reviews/2026-11-02-membership-final-astra-r1.md)已批准，0未解决Critical/Important，研究setup/PL与报告改谱/同步冲突均闭环。组合后端571通过／1个历史PG变量未设跳过（新PG均实际执行），修复后前端212通过、相关后端97通过；普通与严格Kiosk构建均通过。真实完整API/JWT/HMAC/mock引擎HTTP＋worker旅程4通过。尚未push／合并／部署；下方v2/v3与早期未开发记录为历史。
 
 > **当前简单方案与自主执行：** [2026-11-02新计划](../superpowers/plans/2026-11-02-membership-simple-implementation.md)及[最终设计](../superpowers/specs/2026-11-02-membership-simple-final-design.md)优先于下方历史。用户授权Astra决策后直接开发；39/99/199、本期30/90/240、周最多约10/30/80已由Astra首轮裁定，计划第二轮最终审核已通过（0未解决问题），已进入SDD开发。不再等待人工视觉确认，仍做真实预览及独立代码/视觉审核。软件、真实收款与Max实际可售分别验收，不混称完成。

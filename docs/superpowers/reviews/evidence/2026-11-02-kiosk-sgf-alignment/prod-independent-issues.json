@@ -1,0 +1,162 @@
+[
+  {
+    "id": 5543,
+    "source_path": "data/kifu-album/19x19/41287013.sgf",
+    "sha256": "06be59163086754217672266d144db7de87169d8e65a2400aa60dcd03bb66bb3",
+    "visible": true,
+    "issues": [
+      "ValueError: "
+    ],
+    "strict_rejects": true
+  },
+  {
+    "id": 6025,
+    "source_path": "data/kifu-album/19x19/41303687.sgf",
+    "sha256": "71d02b305f50d3a26380fd66ec1c0057b09c0e282f56ec00bbd37e66f9fe587e",
+    "visible": true,
+    "issues": [
+      "ValueError: "
+    ],
+    "strict_rejects": true
+  },
+  {
+    "id": 8691,
+    "source_path": "data/kifu-album/19x19/41388089.sgf",
+    "sha256": "4305c4477a2c77c5a4f5d3ed876fb38b2352cf4daacc5d62dfb2332c72cbe2b1",
+    "visible": true,
+    "issues": [
+      "ValueError: "
+    ],
+    "strict_rejects": true
+  },
+  {
+    "id": 26580,
+    "source_path": "data/kifu-album/19x19/2195780.sgf",
+    "sha256": "848b30b4349e0f6f1ebc4211e495df35725fc40c8b48f9042dff1a00c2e06ebe",
+    "visible": true,
+    "issues": [
+      "ValueError: unexpected end of SGF data"
+    ],
+    "strict_rejects": false
+  },
+  {
+    "id": 26581,
+    "source_path": "data/kifu-album/19x19/2195781.sgf",
+    "sha256": "bc9c746790da3468db93afc301a0103b908320fce6d86f4aa5ce5720e21ba2b7",
+    "visible": true,
+    "issues": [
+      "ValueError: unexpected end of SGF data"
+    ],
+    "strict_rejects": false
+  },
+  {
+    "id": 26582,
+    "source_path": "data/kifu-album/19x19/2195782.sgf",
+    "sha256": "986ab6fc3f3f9caf627a26045a7b7e7cad143a30e2ee9a74d9bbe4f048c274b4",
+    "visible": true,
+    "issues": [
+      "ValueError: unexpected end of SGF data"
+    ],
+    "strict_rejects": false
+  },
+  {
+    "id": 26583,
+    "source_path": "data/kifu-album/19x19/2195783.sgf",
+    "sha256": "d9ff70eabe4f5e4f9d1fa1c3e6c25d1599a197341dcf67fedd0a0c980e6b426a",
+    "visible": true,
+    "issues": [
+      "ValueError: unexpected end of SGF data"
+    ],
+    "strict_rejects": false
+  },
+  {
+    "id": 26584,
+    "source_path": "data/kifu-album/19x19/2195784.sgf",
+    "sha256": "efbcaeec4d3d34882cbda44d510991732018092e88a4c339307ed238398ec85e",
+    "visible": true,
+    "issues": [
+      "ValueError: unexpected end of SGF data"
+    ],
+    "strict_rejects": false
+  },
+  {
+    "id": 26608,
+    "source_path": "data/kifu-album/19x19/2195809.sgf",
+    "sha256": "9d3c2440e11e77c09740bfaffb7d048c757e7993d34752a2d076024fcf454583",
+    "visible": true,
+    "issues": [
+      "ValueError: unexpected end of SGF data"
+    ],
+    "strict_rejects": false
+  },
+  {
+    "id": 28896,
+    "source_path": "data/kifu-album/19x19/41290494.sgf",
+    "sha256": "164afdca8bed70f4097f2bbf7d53abb78352425b5b5cd82a429020520664eddb",
+    "visible": true,
+    "issues": [
+      "ValueError: too many values to unpack (expected 2)"
+    ],
+    "strict_rejects": false
+  },
+  {
+    "id": 32937,
+    "source_path": "data/kifu-album/19x19/41296086.sgf",
+    "sha256": "1bd7c7018bcd71991ed9ec86c61f1856d0d113f943520782bdc446eca2b971fb",
+    "visible": true,
+    "issues": [
+      "overlapping_setup_properties"
+    ],
+    "strict_rejects": true
+  },
+  {
+    "id": 32938,
+    "source_path": "data/kifu-album/19x19/41296087.sgf",
+    "sha256": "ed9ebe624279068b5e37da5cec5ba85dad03168759c965e9ab5ab74ab9fbc78b",
+    "visible": true,
+    "issues": [
+      "overlapping_setup_properties"
+    ],
+    "strict_rejects": true
+  },
+  {
+    "id": 32939,
+    "source_path": "data/kifu-album/19x19/41296088.sgf",
+    "sha256": "d4fbcaf89c4747191220661869d87f51a66b7e722a8de4f79eafe2b62519a302",
+    "visible": true,
+    "issues": [
+      "overlapping_setup_properties"
+    ],
+    "strict_rejects": true
+  },
+  {
+    "id": 32940,
+    "source_path": "data/kifu-album/19x19/41296089.sgf",
+    "sha256": "13172d917f3be2dcd4e03f5d122554f6684581604f946e4456c36d9e46eaaae2",
+    "visible": true,
+    "issues": [
+      "overlapping_setup_properties"
+    ],
+    "strict_rejects": true
+  },
+  {
+    "id": 39308,
+    "source_path": "data/kifu-album/19x19/41303644.sgf",
+    "sha256": "4012dd90c7db427fd2d92822910b8bb8c1627ef72178f28a62aa3d2236c9373a",
+    "visible": true,
+    "issues": [
+      "ValueError: "
+    ],
+    "strict_rejects": true
+  },
+  {
+    "id": 49301,
+    "source_path": "data/kifu-album/19x19/41331119.sgf",
+    "sha256": "3316d9cd4b2c620b68b97fce4ff06d2de85566bc1444de1447036ad7a55a78cf",
+    "visible": true,
+    "issues": [
+      "ValueError: "
+    ],
+    "strict_rejects": true
+  }
+]

@@ -9,7 +9,8 @@ export interface BoardState {
 /**
  * 把 `/api/v1/baipu/load` 给的前 `stepCount` 步**原样播一遍**,得到那一刻的盘面。
  *
- * 放子用 `(row, col, color)`,拿子用后端给的 `removed[]` —— **两样都是数据,不是规则**。
+ * 先拿 `pre_removed[]`,再照 `(row, col, color)` 赋值,最后拿 `removed[]` —— 都是数据,不是规则。
+ * `requires_placement` 只描述实体动作;同色重放仍执行赋值。
  * 前端不算气、不判提子:那是 `baipuApi.ts` 决定 ② 定下的分工(前端是 `steps[]` 的笨播放器)。
  *
  * ## `clear`(SGF 的 AE)**不清盘** —— 2026-08-24 修
@@ -39,6 +40,7 @@ export function replayBaipuSteps(
   let last: string | undefined;
   for (let i = 0; i < stepCount && i < steps.length; i += 1) {
     const s = steps[i];
+    for (const p of s.pre_removed ?? []) stones.delete(canonToGtp(p.row, p.col, size));
     if (s.row != null && s.col != null && s.color) {
       const coord = canonToGtp(s.row, s.col, size);
       stones.set(coord, s.color);
@@ -55,12 +57,13 @@ export function replayBaipuSteps(
 /**
  * 与 `replayBaipuSteps` 同一播放规则,输出**识别坐标矩阵**(row 0 在上;0 空 / 1 黑 / 2 白)——
  * 摆谱摄像头推进要把「屏上这一手的局面」推给识别层(`visionSetupMode` / `visionExpectedBoard`),
- * 那两个接口收的是这种矩阵。规则逐行同上:放子照 `(row,col,color)`,拿子照 `removed[]`。
+ * 那两个接口收的是这种矩阵。规则逐行同上:前置拿子、赋值、后置拿子。
  */
 export function replayBaipuMatrix(steps: readonly BaipuStep[], stepCount: number, size: number): number[][] {
   const b = Array.from({ length: size }, () => Array<number>(size).fill(0));
   for (let i = 0; i < stepCount && i < steps.length; i += 1) {
     const s = steps[i];
+    for (const p of s.pre_removed ?? []) b[p.row][p.col] = 0;
     if (s.row != null && s.col != null && s.color) b[s.row][s.col] = s.color === 'B' ? 1 : 2;
     for (const p of s.removed) b[p.row][p.col] = 0;
   }

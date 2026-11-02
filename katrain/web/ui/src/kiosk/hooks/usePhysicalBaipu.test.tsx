@@ -1,166 +1,82 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VisionSyncEvent } from './useVisionSync';
-
-/**
- * 摆谱识别的 IO 层:命令**串行**执行(识别层约束 5)、生命周期清场(约束 6)、事件消费、卡住计时。
- * 状态机规则本身由 `physicalBaipuMachine.test.ts` 管,这里只量「命令真的按那个顺序打到接口上」。
- *
- * 变异记录(2026-09-23):把命令队列改回 fire-and-forget(`commands.forEach(run)`)⇒
- * 「试下结束」那条红 —— mock 的 setupMode 故意慢 10 ms,乱序才看得见(不慢的话两种写法记录顺序相同,测不出)。
- */
-
+import type { BaipuStep } from '../../api/baipuApi';
 const calls: string[] = [];
-const slow = (ms: number) => new Promise((r) => setTimeout(r, ms));
-vi.mock('../../api', () => {
-  const rec = (name: string, delay = 0) => vi.fn(async () => { if (delay) await slow(delay); calls.push(name); });
-  return {
-    API: {
-      visionMonitor: rec('monitor'),
-      visionSetupMode: rec('setup', 10),
-      visionExpectedBoard: rec('expected'),
-      visionMoveDetection: rec('arm'),
-      visionPause: rec('pause'),
-      visionDetectedBoard: vi.fn(async () => ({ board: Array.from({ length: 19 }, () => Array(19).fill(0)) })),
-    },
-  };
-});
-const { ledPoints, ledClear } = vi.hoisted(() => ({
-  ledPoints: vi.fn(async () => ({ ok: true, connected: true })),
-  ledClear: vi.fn(async () => ({ ok: true, connected: true })),
-}));
+const slow = (ms: number) => new Promise(r => setTimeout(r, ms));
+const { setup, detected, arm, monitor } = vi.hoisted(() => ({ setup: vi.fn(), detected: vi.fn(), arm: vi.fn(), monitor: vi.fn() }));
+vi.mock('../../api', () => ({ API: {
+  visionMonitor: monitor, visionSetupMode: setup, visionMoveDetection: arm,
+  visionExpectedBoard: vi.fn(async () => { calls.push('expected'); }),
+  visionPause: vi.fn(async () => { calls.push('pause'); }), visionDetectedBoard: detected,
+} }));
+const { ledPoints, ledClear } = vi.hoisted(() => ({ ledPoints: vi.fn(), ledClear: vi.fn() }));
 vi.mock('../../api/ledApi', () => ({ LedAPI: { points: ledPoints, clear: ledClear } }));
-
 import { usePhysicalBaipu, type PhysicalBaipuOptions } from './usePhysicalBaipu';
-
-const empty = () => Array.from({ length: 19 }, () => Array<number>(19).fill(0));
-const settle = () => act(async () => { await slow(60); });
+const empty = () => Array.from({ length: 3 }, () => Array(3).fill(0));
+const step: BaipuStep = { kind: 'move', move_index: 0, property: 'B', row: 1, col: 1, color: 'B', removed: [], board_hash: 'h' };
 const ev = (seq: number, type: string, data: Record<string, unknown> = {}) => ({ seq, type, data }) as VisionSyncEvent;
-const base: PhysicalBaipuOptions = {
-  enabled: true, visionConnected: true, syncEvents: [], k: 0, board: empty(),
-  next: { row: 3, col: 15, color: 1 }, paused: false, hintLeds: [], onMatched: () => {},
-};
-
-beforeEach(() => { calls.length = 0; vi.useRealTimers(); ledPoints.mockClear(); ledClear.mockClear(); });
-
-describe('usePhysicalBaipu', () => {
-  it('进入整盘校对前先等灭灯完成，留给识别层干净的参考帧', async () => {
-    let finishClear!: (value: { ok: boolean; connected: boolean }) => void;
-    ledClear.mockImplementationOnce(() => new Promise((resolve) => { finishClear = resolve; }));
-    renderHook(() => usePhysicalBaipu(base));
-    await settle();
-    expect(calls).toEqual(['monitor', 'arm']);
-    await act(async () => { finishClear({ ok: true, connected: true }); });
-    await settle();
+const settle = () => act(async () => { await slow(40); });
+const setupId = () => setup.mock.calls.at(-1)![1] as string;
+const base = (): PhysicalBaipuOptions => ({ enabled: true, visionConnected: true, syncEvents: [], identity: 'u1:g1', k: 0,
+  board: empty(), step, next: { row: 1, col: 1, color: 1 }, paused: false, hintLeds: [], onMatched: vi.fn() });
+beforeEach(() => {
+  vi.clearAllMocks(); calls.length = 0; vi.useRealTimers();
+  setup.mockImplementation(async () => { await slow(5); calls.push('setup'); });
+  arm.mockImplementation(async () => { calls.push('arm'); });
+  monitor.mockImplementation(async () => { calls.push('monitor'); });
+  ledPoints.mockResolvedValue({ connected: true }); ledClear.mockResolvedValue({ connected: true });
+});
+describe('physical transaction IO', () => {
+  it('waits for websocket and serializes clear before setup with a fresh ID', async () => {
+    const opts = base();
+    const { rerender } = renderHook(p => usePhysicalBaipu(p), { initialProps: { ...opts, visionConnected: false } });
+    await settle(); expect(calls).toEqual([]);
+    let finish!: (v: { connected: boolean }) => void;
+    ledClear.mockImplementationOnce(() => new Promise(r => { finish = r; }));
+    rerender(opts); await settle(); expect(calls).toEqual(['monitor', 'arm']);
+    await act(async () => { finish({ connected: true }); }); await settle();
     expect(calls).toEqual(['monitor', 'arm', 'setup']);
+    expect(setupId()).toContain(':0:entry:');
   });
-
-  it('进场:先开监视模式,再撤臂、setup —— 一次都不许倒过来', async () => {
-    renderHook(() => usePhysicalBaipu(base));
-    await settle();
-    expect(calls).toEqual(['monitor', 'arm', 'setup']);
+  it('ignores stale setup completion and commits a placement only once', async () => {
+    const opts = base(); const { rerender, result } = renderHook(p => usePhysicalBaipu(p), { initialProps: opts });
+    await settle(); const id = setupId();
+    rerender({ ...opts, syncEvents: [ev(0, 'setup_complete', { setup_id: 'old' })] }); await settle();
+    expect(result.current.phase).toBe('setup');
+    rerender({ ...opts, syncEvents: [ev(1, 'setup_complete', { setup_id: id }), ev(2, 'move_confirmed', { row: 1, col: 1, color: 1 }), ev(3, 'move_confirmed', { row: 1, col: 1, color: 1 })] });
+    await settle(); expect(opts.onMatched).toHaveBeenCalledTimes(1);
   });
-
-  it('WS 没连上之前什么都不发(否则空盘的 setup_complete 会丢)', async () => {
-    renderHook(() => usePhysicalBaipu({ ...base, visionConnected: false }));
-    await settle();
-    expect(calls).toEqual([]);
+  it('final self-removal keeps k uncommitted until its new setup target is confirmed', async () => {
+    const opts = { ...base(), step: { ...step, removed: [{ row: 1, col: 1 }] } };
+    const { rerender, result } = renderHook(p => usePhysicalBaipu(p), { initialProps: opts });
+    await settle(); const entryId = setupId();
+    rerender({ ...opts, syncEvents: [ev(0, 'setup_complete', { setup_id: entryId }), ev(1, 'move_confirmed', { row: 1, col: 1, color: 1 })] });
+    await settle(); expect(result.current.stage).toBe('post'); expect(opts.onMatched).not.toHaveBeenCalled();
+    const postId = setupId(); expect(postId).not.toBe(entryId);
+    rerender({ ...opts, syncEvents: [ev(2, 'setup_complete', { setup_id: entryId })] }); await settle();
+    expect(opts.onMatched).not.toHaveBeenCalled();
+    rerender({ ...opts, syncEvents: [ev(3, 'setup_complete', { setup_id: postId })] }); await settle();
+    expect(opts.onMatched).toHaveBeenCalledTimes(1);
   });
-
-  it('setup_complete 之后推期望盘面并布臂;认到正确的下一手 → onMatched 一次', async () => {
-    const onMatched = vi.fn();
-    const { rerender } = renderHook((p: PhysicalBaipuOptions) => usePhysicalBaipu(p), { initialProps: { ...base, onMatched } });
-    await settle();
-    rerender({ ...base, onMatched, syncEvents: [ev(0, 'setup_complete')] });
-    await settle();
-    expect(calls.slice(3)).toEqual(['arm', 'expected', 'arm']);
-    rerender({ ...base, onMatched, syncEvents: [ev(0, 'setup_complete'), ev(1, 'move_confirmed', { row: 3, col: 15, color: 1 })] });
-    await settle();
-    expect(onMatched).toHaveBeenCalledTimes(1);
+  it('rechecks authoritative target without reading or adopting the observed board', async () => {
+    const opts = base(); const { result } = renderHook(() => usePhysicalBaipu(opts)); await settle();
+    const id = setupId(); act(() => result.current.recheck()); await settle();
+    expect(setup.mock.calls.at(-1)![0]).toEqual(opts.board); expect(setupId()).not.toBe(id);
+    expect(detected).not.toHaveBeenCalled();
   });
-
-  it('放错(颜色不对)→ 不调 onMatched,回到 setup', async () => {
-    const onMatched = vi.fn();
-    const { rerender, result } = renderHook((p: PhysicalBaipuOptions) => usePhysicalBaipu(p), { initialProps: { ...base, onMatched } });
-    await settle();
-    rerender({ ...base, onMatched, syncEvents: [ev(0, 'setup_complete'), ev(1, 'move_confirmed', { row: 3, col: 15, color: 2 })] });
-    await settle();
-    expect(onMatched).not.toHaveBeenCalled();
-    expect(result.current).toMatchObject({ phase: 'setup', reason: 'wrong', wrong: [3, 15] });
+  it('pause cancels pending completion and resume establishes entry before unpausing', async () => {
+    const opts = base(); const { rerender } = renderHook(p => usePhysicalBaipu(p), { initialProps: opts });
+    await settle(); const id = setupId();
+    rerender({ ...opts, paused: true, syncEvents: [ev(0, 'setup_complete', { setup_id: id }), ev(1, 'move_confirmed', { row: 1, col: 1, color: 1 })] });
+    await settle(); expect(opts.onMatched).not.toHaveBeenCalled(); calls.length = 0;
+    rerender(opts); await settle(); expect(calls).toEqual(['arm', 'setup', 'pause']);
+    expect(setupId()).not.toBe(id);
   });
-
-  it('推进一手(无提子)→ 直接 AWAIT 新盘面,不走 setup', async () => {
-    const onMatched = vi.fn();
-    const { rerender, result } = renderHook((p: PhysicalBaipuOptions) => usePhysicalBaipu(p), { initialProps: { ...base, onMatched } });
-    const evs = [ev(0, 'setup_complete'), ev(1, 'move_confirmed', { row: 3, col: 15, color: 1 })];
-    rerender({ ...base, onMatched, syncEvents: evs });
-    await settle();
-    calls.length = 0;
-    const b1 = empty(); b1[3][15] = 1;
-    rerender({ ...base, onMatched, syncEvents: evs, k: 1, board: b1, next: { row: 15, col: 3, color: 2 } });
-    await settle();
-    expect(result.current.phase).toBe('await');
-    expect(calls).toEqual(['arm', 'expected', 'arm']);
-  });
-
-  it('撤回(k 变小)→ setup(undo)', async () => {
-    const b1 = empty(); b1[3][15] = 1;
-    const { rerender, result } = renderHook((p: PhysicalBaipuOptions) => usePhysicalBaipu(p),
-      { initialProps: { ...base, k: 1, board: b1, next: { row: 15, col: 3, color: 2 } } });
-    await settle();
-    rerender({ ...base, k: 0, board: empty() });
-    await settle();
-    expect(result.current).toMatchObject({ phase: 'setup', reason: 'undo' });
-  });
-
-  it('setup 没对上时下一步是虚手、页面自己跳过 → 仍留在 setup(被提的子还没拿走)', async () => {
-    const { rerender, result } = renderHook((p: PhysicalBaipuOptions) => usePhysicalBaipu(p), { initialProps: base });
-    await settle();
-    rerender({ ...base, k: 1, next: null });
-    await settle();
-    expect(result.current).toMatchObject({ phase: 'setup', reason: 'entry' });
-  });
-
-  it('试下结束:撤臂 → setupMode → 解除暂停,依次 await(setupMode 慢也不许被解除暂停抢先)', async () => {
-    const { rerender } = renderHook((p: PhysicalBaipuOptions) => usePhysicalBaipu(p), { initialProps: base });
-    await settle();
-    rerender({ ...base, paused: true });
-    await settle();
-    calls.length = 0;
-    rerender({ ...base, paused: false });
-    await settle();
-    expect(calls).toEqual(['arm', 'setup', 'pause']);
-  });
-
-  it('暂停时的事件一律跳过', async () => {
-    const onMatched = vi.fn();
-    const { rerender } = renderHook((p: PhysicalBaipuOptions) => usePhysicalBaipu(p), { initialProps: { ...base, onMatched } });
-    rerender({ ...base, onMatched, syncEvents: [ev(0, 'setup_complete')] });
-    await settle();
-    rerender({ ...base, onMatched, paused: true, syncEvents: [ev(0, 'setup_complete'), ev(1, 'move_confirmed', { row: 3, col: 15, color: 1 })] });
-    await settle();
-    expect(onMatched).not.toHaveBeenCalled();
-  });
-
-  it('卸载清场:撤臂、解除暂停、关监视,灯全灭', async () => {
-    const { unmount } = renderHook(() => usePhysicalBaipu(base));
-    await settle();
-    calls.length = 0;
-    ledClear.mockClear();
-    unmount();
-    await settle();
-    expect(calls).toEqual(['arm', 'pause', 'monitor']);
-    expect(ledClear).toHaveBeenCalled();
-  });
-
-  it('setup 10 秒没对上 → stuck;adopt 按摄像头现在看到的盘面重新 setup', async () => {
-    vi.useFakeTimers();
-    const { result } = renderHook(() => usePhysicalBaipu(base));
-    await act(async () => { await vi.advanceTimersByTimeAsync(9_900); });
-    expect(result.current.stuck).toBe(false);
-    await act(async () => { await vi.advanceTimersByTimeAsync(200); });
-    expect(result.current.stuck).toBe(true);
-    await act(async () => { result.current.adopt(); await vi.advanceTimersByTimeAsync(50); });
-    expect(result.current).toMatchObject({ phase: 'setup', reason: 'adopt', stuck: false });
+  it('identity change and unmount disarm, unpause, stop monitor and clear lights', async () => {
+    const opts = base(); const { rerender, unmount } = renderHook(p => usePhysicalBaipu(p), { initialProps: opts });
+    await settle(); const id = setupId(); rerender({ ...opts, identity: 'u2:g1' }); await settle();
+    expect(setupId()).not.toBe(id); calls.length = 0; unmount(); await settle();
+    expect(calls).toEqual(['arm', 'pause', 'monitor']); expect(ledClear).toHaveBeenCalled();
   });
 });

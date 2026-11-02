@@ -24,7 +24,7 @@ const cn = tFor('cn');
 describe('getListRank', () => {
   it('prefers the display rank and falls back only to the same record raw rank', () => {
     expect(getListRank(' 9p ', '6k', cn)).toBe('职业九段');
-    expect(getListRank(' ', '9d', cn)).toBe('业余9段');
+    expect(getListRank(' ', '9d', cn)).toBe('9段');
     expect(getListRank('unknown', '6k', cn)).toBe('6级');
   });
 
@@ -34,7 +34,8 @@ describe('getListRank', () => {
     expect(getListRank(null, '6k', cn, 'cn')).toBe('6级');
     expect(getListRank('职业9段', null, cn, 'tw')).toBe('職業九段');
     expect(getListRank('業餘六段', null, cn, 'tw')).toBe('業餘6段');
-    expect(getListRank('九段', '9p', cn, 'cn')).toBe('职业九段');
+    expect(getListRank('九段', '9p', cn, 'cn')).toBe('九段');
+    expect(getListRank('9段', '9d', cn, 'cn')).toBe('九段');
     expect(getListRank('九段', null, cn, 'cn')).toBe('九段');
     expect(getListRank('九段', '6p', cn, 'cn')).toBe('九段');
     expect(getListRank('9p', null, tFor('en'), 'en')).toBe('Professional 9 dan');
@@ -57,6 +58,11 @@ describe('getListRank', () => {
 });
 
 describe('listResult', () => {
+  it('styles bare wins as known winners without a resignation claim', () => {
+    expect(listResult(' B+ ', cn, 'chinese', 'cn')).toEqual({ label: '黑胜', winner: 'B' });
+    expect(listResult('w+', tFor('tw'), undefined, 'tw')).toEqual({ label: '白勝', winner: 'W' });
+    expect(listResult('W+11.5?', cn, undefined, 'cn')).toEqual({ label: 'W+11.5?', winner: null });
+  });
   it('puts the method before 胜 only for explicit Chinese resignation results', () => {
     expect(listResult('W+R', cn, undefined, 'cn')).toEqual({ label: '白中盘胜', winner: 'W' });
     expect(listResult('B+Resignation', cn, undefined, 'cn')).toEqual({ label: '黑中盘胜', winner: 'B' });

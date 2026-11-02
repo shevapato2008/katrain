@@ -47,6 +47,10 @@ class CloudIdentityChangedError(httpx.HTTPStatusError):
         super().__init__("Cloud session changed; sign in again", request=request, response=response)
 
 
+class RemoteHistoryIdentityChanged(RuntimeError):
+    """The shared board cloud session no longer belongs to the captured owner."""
+
+
 class RemoteAPIClient:
     """Async HTTP client wrapping calls to the remote KaTrain server.
 
@@ -130,6 +134,19 @@ class RemoteAPIClient:
     def auth_required(self) -> bool:
         return self._auth_required
 
+    def cloud_session_is(self, user_id) -> bool:
+        """A token without an explicit matching local binding proves no owner."""
+        return (
+            user_id is not None
+            and self._bound_user_id is not None
+            and str(user_id) == self._bound_user_id
+            and self.is_authenticated
+        )
+
+    def _check_history_owner(self, user_id, generation):
+        if not self.cloud_session_is(user_id) or self._identity_generation != generation:
+            raise RemoteHistoryIdentityChanged("Cloud history identity changed")
+
     def _auth_headers(self) -> Dict[str, str]:
         headers = {"X-StellaBox-Device-ID": self.device_id}
         if self._access_token:
@@ -177,16 +194,25 @@ class RemoteAPIClient:
         json: Any = None,
         params: Optional[Dict] = None,
         auth: bool = True,
+        history_owner=None,
+        history_generation=None,
     ) -> httpx.Response:
         """Make an HTTP request with automatic token refresh on 401."""
+        if history_owner is not None:
+            self._check_history_owner(history_owner, history_generation)
         session = (self._refresh_token, self._bound_user_id, self._identity_generation)
         headers = self._auth_headers() if auth else {}
         resp = await self._client.request(method, path, json=json, params=params, headers=headers)
+
+        if history_owner is not None:
+            self._check_history_owner(history_owner, history_generation)
 
         if resp.status_code == 401 and auth and session[0]:
             if (self._refresh_token, self._bound_user_id, self._identity_generation) != session:
                 return resp
             refreshed = await self._refresh_access_token()
+            if history_owner is not None:
+                self._check_history_owner(history_owner, history_generation)
             if (self._refresh_token, self._bound_user_id, self._identity_generation) != session:
                 return resp
             if refreshed:
@@ -196,7 +222,29 @@ class RemoteAPIClient:
                 self._auth_required = True
                 logger.warning("Auth required: both access and refresh tokens invalid")
 
+        if history_owner is not None:
+            self._check_history_owner(history_owner, history_generation)
         return resp
+
+    async def _history_json(self, user_id, method, path, **kwargs):
+        generation = self._identity_generation
+        self._check_history_owner(user_id, generation)
+        response = await self._request(method, path, history_owner=user_id, history_generation=generation, **kwargs)
+        self._check_history_owner(user_id, generation)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise httpx.DecodingError("Malformed cloud history response", request=response.request) from exc
+
+    async def baipu_history_list(self, user_id, limit=30):
+        return await self._history_json(user_id, "GET", "/api/v1/baipu/history", params={"limit": limit})
+
+    async def baipu_history_get(self, user_id, record_id):
+        return await self._history_json(user_id, "GET", f"/api/v1/baipu/history/{record_id}")
+
+    async def baipu_history_sync(self, user_id, record_id, data):
+        return await self._history_json(user_id, "PUT", f"/api/v1/baipu/history/{record_id}/sync", json=data)
 
     def _assert_cloud_identity(self, identity: _CloudIdentity) -> None:
         if (self._bound_user_id, self._identity_generation) != (identity.user_id, identity.generation):

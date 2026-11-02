@@ -7177,3 +7177,98 @@ msgstr "Это не камень"
 
 msgid "report:score_difference"
 msgstr "Разница в очках"
+
+msgid "kifu:history_guest"
+msgstr "Только в текущем гостевом сеансе"
+
+msgid "kifu:history_local_cache"
+msgstr "Кэш аккаунта на этом устройстве"
+
+msgid "kifu:history_this_node"
+msgstr "Сохранено на этом устройстве"
+
+msgid "kifu:history_cloud"
+msgstr "История аккаунта в облаке"
+
+msgid "kifu:history_loading"
+msgstr "Загрузка истории воспроизведения"
+
+msgid "kifu:history_error"
+msgstr "История воспроизведения недоступна"
+
+msgid "kifu:history_cache_empty"
+msgstr "На этом устройстве нет кэша истории аккаунта"
+
+msgid "kifu:history_empty"
+msgstr "Истории воспроизведения пока нет"
+
+msgid "kifu:history_guest_hint"
+msgstr "Гостевая история удаляется после завершения сеанса."
+
+msgid "kifu:history_account_hint"
+msgstr ""
+"При запуске воспроизведения на физической доске прогресс сохраняется в "
+"текущем аккаунте."
+
+msgid "kifu:history_pending"
+msgstr "Сохранено на устройстве; ожидает синхронизации"
+
+msgid "kifu:history_conflict"
+msgstr "Конфликт прогресса; выберите копию для сохранения"
+
+msgid "kifu:history_refused"
+msgstr "Сохранено на устройстве; синхронизация отклонена"
+
+msgid "kifu:history_saving"
+msgstr "Сохранение прогресса"
+
+msgid "kifu:history_save_error"
+msgstr "Прогресс не сохранён; повторите попытку"
+
+msgid "kifu:history_saved"
+msgstr "Прогресс сохранён"
+
+msgid "kifu:history_use_cloud"
+msgstr "Использовать прогресс из облака"
+
+msgid "kifu:history_keep_local"
+msgstr "Оставить прогресс устройства"
+
+msgid "kifu:history_resolve_error"
+msgstr "Не удалось разрешить конфликт; проверьте прогресс ещё раз"
+
+msgid "baipu:operator_manual"
+msgstr "Включено ручное подтверждение"
+
+msgid "baipu:pre_remove_title"
+msgstr "Сначала уберите камень с точки постановки"
+
+msgid "baipu:pre_remove_hint"
+msgstr ""
+"Уберите камни у синих огней, затем поставьте камни цвета, указанного в "
+"записи"
+
+msgid "baipu:pre_remove_done"
+msgstr "Прежние камни убраны"
+
+msgid "baipu:entry_confirm"
+msgstr "Позиция совпадает"
+
+msgid "baipu:manual_entry_hint"
+msgstr "Расставьте камни как на экране, затем нажмите «Позиция совпадает»"
+
+msgid "baipu:recheck"
+msgstr "Распознать доску заново"
+
+msgid "baipu:switch_manual"
+msgstr "Перейти к ручному подтверждению"
+
+msgid "baipu:done_hint_saved"
+msgstr "Выполнено шагов: {n} · Для возврата нажмите кнопку вверху слева"
+
+msgid "baipu:exit_body_neutral"
+msgstr ""
+"После выхода эту запись можно снова открыть на странице записей партий."
+
+msgid "baipu:exit_anyway"
+msgstr "Всё равно выйти"

@@ -245,8 +245,14 @@ def _ident_geometry():
         for c in range(19):
             pts[r][c] = (xs[c], ys[r])
     return GeometryLock(
-        corners=np.zeros((4, 2), np.float32), points=pts, xs=xs, ys=ys,
-        M=np.eye(3), Minv=np.eye(3), out_size=950, baseline=np.zeros((19, 19, 3), np.float32),
+        corners=np.zeros((4, 2), np.float32),
+        points=pts,
+        xs=xs,
+        ys=ys,
+        M=np.eye(3),
+        Minv=np.eye(3),
+        out_size=950,
+        baseline=np.zeros((19, 19, 3), np.float32),
     )
 
 
@@ -296,9 +302,17 @@ class FiducialCapture:
 
 def _capture_fid(tmp_path, steps, bs, k, led, cap, geom, **kw):
     return run_capture(
-        led=led, capture=cap, geometry=geom, steps=steps, board_size=bs,
-        out_dir=str(tmp_path), game_id=kw.pop("game_id", "gf"), move_index=k,
-        sgf="(;SZ[19];B[pd];W[dp])", fiducial_mode=kw.pop("fiducial_mode", "every-move"), **kw,
+        led=led,
+        capture=cap,
+        geometry=geom,
+        steps=steps,
+        board_size=bs,
+        out_dir=str(tmp_path),
+        game_id=kw.pop("game_id", "gf"),
+        move_index=k,
+        sgf="(;SZ[19];B[pd];W[dp])",
+        fiducial_mode=kw.pop("fiducial_mode", "every-move"),
+        **kw,
     )
 
 
@@ -442,3 +456,174 @@ class TestFiducialAuto:
         fr = json.loads((gd / "manifest.json").read_text())["frames"][-1]
         assert (gd / fr["artifacts"]["warped"]).is_file()
         assert "fiducial" not in fr["artifacts"]  # no fiducial image in auto mode
+
+
+class TestVersionedArchiveAndGuidance:
+    @staticmethod
+    def capture(tmp_path, sgf, k, *, overwrite=False, game_id="archive", led=None, cap=None):
+        data = build_steps_from_sgf(sgf)
+        return run_capture(
+            led=led or FakeLed(),
+            capture=cap or FakeCapture(tmp_path),
+            geometry=_geometry(),
+            steps=data["steps"],
+            board_size=data["board_size"],
+            out_dir=str(tmp_path),
+            game_id=game_id,
+            move_index=k,
+            sgf=sgf,
+            overwrite_existing=overwrite,
+        )
+
+    @staticmethod
+    def snapshot(path):
+        return {str(p.relative_to(path)): p.read_bytes() for p in path.rglob("*") if p.is_file()}
+
+    @pytest.mark.parametrize(
+        "sgf,k",
+        [
+            ("(;SZ[19];B[aa];W[aa];B[dd])", 0),  # replacement
+            ("(;SZ[19];B[aa];AE[aa];B[dd])", 0),  # clear
+            ("(;SZ[19];W[aa];B[ba];B[ab];W[dd])", 1),  # upcoming capture
+        ],
+    )
+    def test_removal_operation_blocks_later_guidance_and_is_not_final(self, tmp_path, sgf, k):
+        led, cap = FakeLed(), FakeCapture(tmp_path)
+        result = self.capture(tmp_path, sgf, k, led=led, cap=cap)
+        manifest = json.loads((tmp_path / "archive" / "manifest.json").read_text())
+        frame = manifest["frames"][-1]
+        assert result["next_guided_move_index"] is None
+        assert frame["led_point"] is None and frame["frame_kind"] == "after_move_no_led"
+        assert led.shown == [] and led.cleared == 1
+        assert cap.capture_calls[-1]["after_ts"] is None
+
+    def test_repeat_and_pass_without_removals_can_be_skipped_for_guidance(self, tmp_path):
+        result = self.capture(tmp_path, "(;SZ[19];B[aa];B[aa];W[];B[dd])", 0)
+        assert result["next_guided_move_index"] == 3
+
+    def test_new_manifest_pins_exact_sgf_and_replay_version(self, tmp_path):
+        from katrain.core.baipu_identity import sgf_sha256
+
+        sgf = "(;SZ[19]\r\n;B[aa])"
+        self.capture(tmp_path, sgf, -1)
+        self.capture(tmp_path, sgf, 0)
+        manifest = json.loads((tmp_path / "archive" / "manifest.json").read_text())
+        assert manifest["replay_version"] == 2
+        assert manifest["sgf_sha256"] == sgf_sha256(sgf)
+        assert manifest["total_steps"] == 1
+        assert (tmp_path / "archive" / "game.sgf").read_bytes() == sgf.encode()
+
+    @pytest.mark.parametrize("overwrite,k", [(False, -1), (True, -1), (False, 1)])
+    @pytest.mark.parametrize(
+        "corruption", ["sgf", "hash", "missing_hash", "version", "size", "index", "through", "pin"]
+    )
+    def test_incompatible_archive_rejected_before_reuse_overwrite_or_append(self, tmp_path, overwrite, k, corruption):
+        sgf = "(;SZ[19];B[aa];W[dd])"
+        self.capture(tmp_path, sgf, -1)
+        self.capture(tmp_path, sgf, 0)
+        gd = tmp_path / "archive"
+        manifest = json.loads((gd / "manifest.json").read_text())
+        if corruption == "sgf":
+            (gd / "game.sgf").write_text(sgf + "\n")
+        elif corruption == "hash":
+            manifest["frames"][1]["board_hash"] = "incompatible"
+        elif corruption == "missing_hash":
+            manifest["frames"][1].pop("board_hash")
+        elif corruption == "version":
+            manifest["replay_version"] = 999
+        elif corruption == "size":
+            manifest["board_size"] = 9
+        elif corruption == "index":
+            manifest["frames"][1]["applied_move_index"] = 99
+        elif corruption == "through":
+            manifest["frames"][1]["board_through_index"] = 1
+        elif corruption == "pin":
+            manifest["sgf_sha256"] = "bad"
+        (gd / "manifest.json").write_text(json.dumps(manifest))
+        before = self.snapshot(gd)
+        led, cap = FakeLed(), FakeCapture(tmp_path)
+        with pytest.raises(ValueError, match="archive"):
+            self.capture(tmp_path, sgf, k, overwrite=overwrite, led=led, cap=cap)
+        assert self.snapshot(gd) == before
+        assert led.shown == [] and led.cleared == 0 and cap.capture_calls == []
+
+    def test_compatible_legacy_archive_proven_by_real_frame_hash_continues(self, tmp_path):
+        sgf = "(;SZ[19];B[aa];W[dd])"
+        self.capture(tmp_path, sgf, -1)
+        self.capture(tmp_path, sgf, 0)
+        path = tmp_path / "archive" / "manifest.json"
+        manifest = json.loads(path.read_text())
+        for field in ("replay_version", "sgf_sha256", "total_steps"):
+            manifest.pop(field, None)
+        manifest["frames"][0]["board_hash"] = None  # historical initial empty frame
+        path.write_text(json.dumps(manifest))
+        assert self.capture(tmp_path, sgf, 0)["idempotent"] is True
+        assert self.capture(tmp_path, sgf, 1)["frame_kind"] == "final_no_led"
+
+    def test_legacy_setup_capture_semantic_change_is_rejected_and_preserved(self, tmp_path):
+        import hashlib
+
+        sgf = "(;SZ[19]AB[aa];AW[ba][ab])"
+        self.capture(tmp_path, sgf, 2)
+        gd = tmp_path / "archive"
+        manifest = json.loads((gd / "manifest.json").read_text())
+        manifest.pop("replay_version", None)
+        manifest.pop("sgf_sha256", None)
+        # v1 incorrectly captured AB[aa] while applying the final AW setup.
+        manifest["frames"][0]["board_hash"] = hashlib.sha1(repr([(0, 17, "W"), (1, 18, "W")]).encode()).hexdigest()[:16]
+        (gd / "manifest.json").write_text(json.dumps(manifest))
+        before = self.snapshot(gd)
+        with pytest.raises(ValueError, match="archive"):
+            self.capture(tmp_path, sgf, 2, overwrite=True)
+        assert self.snapshot(gd) == before
+
+    def test_malformed_manifest_is_never_silently_replaced(self, tmp_path):
+        sgf = "(;SZ[19];B[aa])"
+        self.capture(tmp_path, sgf, -1)
+        gd = tmp_path / "archive"
+        (gd / "manifest.json").write_text("{broken")
+        before = self.snapshot(gd)
+        with pytest.raises(ValueError, match="archive"):
+            self.capture(tmp_path, sgf, -1, overwrite=True)
+        assert self.snapshot(gd) == before
+
+
+@pytest.mark.parametrize("k", [0, 1])
+def test_no_led_frame_requires_confirmed_blackout_and_barrier(tmp_path, k):
+    from katrain.web.core.baipu_capture import LedUnavailable
+
+    sgf = "(;SZ[19];B[aa];AE[aa])"
+    data = build_steps_from_sgf(sgf)
+
+    class BlackoutLed(FakeLed):
+        ok = False
+
+        def clear(self, *, strict=False):
+            assert strict is True
+            return {"ok": self.ok, "shown_at": 456.0, "errors": ["unavailable"] if not self.ok else []}
+
+    led, cap = BlackoutLed(), FakeCapture(tmp_path)
+    kwargs = dict(
+        led=led,
+        capture=cap,
+        geometry=_geometry(),
+        steps=data["steps"],
+        board_size=19,
+        out_dir=str(tmp_path),
+        game_id="blackout",
+        move_index=k,
+        sgf=sgf,
+    )
+    with pytest.raises(LedUnavailable):
+        run_capture(**kwargs)
+    assert cap.capture_calls == [] and not (tmp_path / "blackout").exists()
+    led.ok = True
+    run_capture(**kwargs)
+    assert cap.capture_calls[-1]["after_ts"] == 456.0
+
+
+def test_trailing_pass_is_nonfinal_dark_frame_until_pass_completed(tmp_path):
+    first = TestVersionedArchiveAndGuidance.capture(tmp_path, "(;SZ[19];B[aa];W[])", 0)
+    assert first["frame_kind"] == "after_move_no_led"
+    last = TestVersionedArchiveAndGuidance.capture(tmp_path, "(;SZ[19];B[aa];W[])", 1)
+    assert last["frame_kind"] == "final_no_led"

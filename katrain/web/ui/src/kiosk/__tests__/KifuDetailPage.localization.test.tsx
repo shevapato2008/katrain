@@ -8,6 +8,7 @@ import KifuDetailPage from '../pages/KifuDetailPage';
 const { getAlbum, baipuLoad, cacheSgf, language } = vi.hoisted(() => ({
   getAlbum: vi.fn(), baipuLoad: vi.fn(), cacheSgf: vi.fn(), language: { current: 'cn' },
 }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ isLoading: false, isGuest: false, identityKey: 'kifu-detail-owner', token: 'test-token', isAuthenticated: true }) }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbum } }));
 vi.mock('../../api/baipuApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api/baipuApi')>();
@@ -46,10 +47,20 @@ beforeEach(() => {
   language.current = 'cn';
   Element.prototype.scrollIntoView = vi.fn();
   getAlbum.mockImplementation((_id: number, lang: string) => Promise.resolve(detail(lang)));
-  baipuLoad.mockResolvedValue({ board_size: 19, steps: [], meta: {} });
+  baipuLoad.mockRejectedValue(new Error('screen replay must not load physical steps'));
 });
 
 describe('kiosk 棋谱详情语言展示', () => {
+  it('uses the same normalized professional ranks and bare winner as the list', async () => {
+    getAlbum.mockResolvedValue({ ...detail('cn'), black_rank: '7d', white_rank: '9d', display_black_rank: '7p', display_white_rank: '9p', result: 'b+' });
+    render(page());
+    const hero = await screen.findByTestId('kifu-detail-hero');
+    expect(hero).toHaveTextContent('职业七段');
+    expect(hero).toHaveTextContent('职业九段');
+    expect(hero).toHaveTextContent('黑胜');
+    expect(hero).not.toHaveTextContent('中盘');
+  });
+
   it('cn→en→jp 重取详情，题头和段位/结果同步变化，逐手读取原始 SGF', async () => {
     const view = render(page());
     for (const lang of ['cn', 'en', 'jp']) {
@@ -66,9 +77,9 @@ describe('kiosk 棋谱详情语言展示', () => {
       expect(hero).toHaveTextContent(`${lang}-event · ${lang}-round`);
       expect(screen.getByTestId('kifu-detail-pagebar')).toHaveTextContent('职业棋谱');
     }
-    expect(baipuLoad).toHaveBeenLastCalledWith({ sgf: RAW_SGF });
+    expect(baipuLoad).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
-    expect(cacheSgf).toHaveBeenCalledWith('kifu_7', expect.any(String), RAW_SGF);
+    expect(cacheSgf).toHaveBeenCalledWith('kifu_7', expect.any(String), RAW_SGF, expect.objectContaining({ getItem: expect.any(Function), setItem: expect.any(Function), removeItem: expect.any(Function) }));
   });
 
   it('旧语言慢响应不能覆盖新语言详情', async () => {
@@ -80,5 +91,20 @@ describe('kiosk 棋谱详情语言展示', () => {
     expect(await screen.findByTestId('kifu-detail-hero')).toHaveTextContent('en-black');
     await act(async () => { old.resolve(detail('cn')); });
     expect(screen.getByTestId('kifu-detail-hero')).toHaveTextContent('en-black');
+  });
+
+  it('新语言还在加载时不显示旧语言的棋手和盘面', async () => {
+    const next = deferred<ReturnType<typeof detail>>();
+    const view = render(page());
+    await screen.findByTestId('kifu-detail-hero');
+    expect(document.querySelectorAll('[data-stone]')).toHaveLength(1);
+    getAlbum.mockReturnValueOnce(next.promise);
+    language.current = 'en';
+    view.rerender(page());
+    expect(screen.getByTestId('kifu-detail-loading')).toBeInTheDocument();
+    expect(screen.queryByText('cn-black')).toBeNull();
+    expect(document.querySelectorAll('[data-stone]')).toHaveLength(0);
+    await act(async () => { next.resolve(detail('en')); });
+    expect(await screen.findByTestId('kifu-detail-hero')).toHaveTextContent('en-black');
   });
 });

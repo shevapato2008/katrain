@@ -1,4 +1,3 @@
-import { parseMove, buildReplayBoardState } from '../../utils/researchBoardReplay';
 import { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import {
@@ -13,6 +12,11 @@ import {
   drawStone,
   drawLastMoveMarker,
 } from '../board/boardUtils';
+import { buildReplayBoardState, parseMove } from '../../utils/goReplay';
+
+// Preserve the replay helpers used by existing 2D and 3D callers.
+// eslint-disable-next-line react-refresh/only-export-components
+export { buildReplayBoardState, parseMove } from '../../utils/goReplay';
 
 // AI move marker for display on board
 export interface AiMoveMarker {
@@ -55,11 +59,6 @@ export interface LiveBoardProps {
   minContainerHeight?: number;
   minimumCanvasSize?: number; // Defaults to 400; responsive Galaxy pages can opt in to full scaling.
 }
-
-// Convert display coordinate (e.g., "Q16") to board indices
-// Shared with the 3D replay adapter; pure board logic does not retain component state.
-// eslint-disable-next-line react-refresh/only-export-components
-export { parseMove, buildReplayBoardState } from '../../utils/researchBoardReplay';
 
 // Jade green color for AI markers (matching play module style)
 const AI_MARKER_COLOR = 'rgba(74, 107, 92, 0.85)';

@@ -20,6 +20,10 @@ from katrain.web.core.models_db import (
     KifuAlbum,
     KifuAlbumRankSnapshot,
     KifuNameResearchEvidence,
+    KifuNameBatch,
+    KifuNameChange,
+    KifuAlbumSource,
+    KifuSource,
     KifuPlayer,
     KifuPlayerAlias,
     KifuPlayerName,
@@ -994,12 +998,56 @@ def lookup_library_rank_facts(engine, resolved_players, *, observed_at=None):
 
 
 def lookup_album_rank_snapshots(conn, album_ids):
-    """Read frozen overlays for one bounded API page in a single query."""
+    """Read one bounded page's overlays, audit authority and trusted source links."""
     _require(isinstance(album_ids, (list, tuple, set)) and len(album_ids) <= 200, "album snapshot limit exceeded")
     if not album_ids:
         return {}
-    t = KifuAlbumRankSnapshot.__table__
-    return {
+    t, batch, journal = KifuAlbumRankSnapshot.__table__, KifuNameBatch.__table__, KifuNameChange.__table__
+    result = {
         (row["album_id"], row["side"]): dict(row)
         for row in conn.execute(select(t).where(t.c.album_id.in_(album_ids))).mappings()
     }
+    from katrain.web.kifu.source_rank_normalization import SNAPSHOT_VERSION as SOURCE_SNAPSHOT_VERSION
+
+    source_rows = {
+        row["id"]: row
+        for row in result.values()
+        if isinstance(row["snapshot"], dict) and row["snapshot"].get("version") == SOURCE_SNAPSHOT_VERSION
+    }
+    if source_rows:
+        # Existing native v1 pages retain their original proof-free read path.
+        query = (
+            select(
+                t.c.id,
+                batch.c.bundle_sha256.label("_batch_sha256"),
+                batch.c.status.label("_batch_status"),
+                journal.c.after_image.label("_journal_after"),
+            )
+            .outerjoin(batch, batch.c.id == t.c.native_batch_id)
+            .outerjoin(
+                journal,
+                and_(
+                    journal.c.batch_id == batch.c.id,
+                    journal.c.target_table == t.name,
+                    journal.c.target_row_id == t.c.id,
+                ),
+            )
+            .where(t.c.id.in_(source_rows))
+        )
+        for row in conn.execute(query).mappings():
+            source_rows[row["id"]].update(dict(row))
+    links, sources = KifuAlbumSource.__table__, KifuSource.__table__
+    for row in conn.execute(
+        select(
+            links.c.id,
+            links.c.album_id,
+            links.c.source_id,
+            links.c.origin_path,
+            links.c.match_method,
+            sources.c.source_key,
+        )
+        .join(sources, sources.c.id == links.c.source_id)
+        .where(links.c.album_id.in_(album_ids))
+    ).mappings():
+        result.setdefault((row["album_id"], "sources"), []).append(dict(row))
+    return result

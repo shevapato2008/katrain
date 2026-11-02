@@ -28,22 +28,45 @@ const NO_ROWS: HintRow[] = [];
 const GTP_COLS = 'ABCDEFGHJKLMNOPQRST';
 type Color = 'B' | 'W';
 const other = (c: Color): Color => (c === 'B' ? 'W' : 'B');
-const played = (s: BaipuStep) => (s.kind === 'move' || s.kind === 'pass') && !!s.color;
+const recordedColor = (s: BaipuStep): Color | null => s.color
+  ?? (s.kind === 'pass' && (s.property === 'B' || s.property === 'W') ? s.property : null);
+const played = (s: BaipuStep) => (s.kind === 'move' || s.kind === 'pass') && !!recordedColor(s);
 
 /** 轮谁走:从第 k 步往后第一手的颜色;摆到最后就取最后一手的反色;一手都没有取黑。 */
 export function hintMover(steps: readonly BaipuStep[], k: number): Color {
   const ahead = steps.slice(k).find(played);
-  if (ahead) return ahead.color as Color;
+  if (ahead) return recordedColor(ahead) as Color;
   const behind = steps.slice(0, k).reverse().find(played);
-  return behind ? other(behind.color as Color) : 'B';
+  return behind ? other(recordedColor(behind) as Color) : 'B';
+}
+
+/** Detect record operations that KataGo's legal move list cannot reproduce. */
+function needsPositionSnapshot(head: readonly BaipuStep[]): boolean {
+  const occupied = new Set<string>();
+  let sawPlayedMove = false;
+  const key = (p: { row: number; col: number }) => `${p.row},${p.col}`;
+  for (const s of head) {
+    if (s.kind === 'clear' || s.pre_removed?.length) return true;
+    if (s.kind === 'setup' && sawPlayedMove) return true;
+    if (played(s)) sawPlayedMove = true;
+    if (s.row != null && s.col != null && s.color) {
+      const point = key({ row: s.row, col: s.col });
+      if (occupied.has(point) || s.requires_placement === false
+        || s.removed.some(p => key(p) === point)) return true;
+      occupied.add(point);
+    }
+    for (const p of s.removed) occupied.delete(key(p));
+  }
+  return false;
 }
 
 export function buildHintRequest(steps: readonly BaipuStep[], k: number, size: number, meta: BaipuMeta | null) {
   const head = steps.slice(0, k);
   let moves: string[][];
   let initial_stones: string[][];
-  if (head.some((s) => s.kind === 'clear')) {
-    // AE(擦掉几颗)在 quick-analyze 里无从表达 —— 退化成把第 k 手的整盘当初始子、不带手顺。罕见。
+  if (needsPositionSnapshot(head)) {
+    // Record operations and setup after play cannot be reordered into legal
+    // history. Analyze the authoritative current board instead.
     const b = replayBaipuSteps(steps, k, size);
     initial_stones = [...b.black.map((p) => ['B', p]), ...b.white.map((p) => ['W', p])];
     moves = [];
@@ -52,7 +75,7 @@ export function buildHintRequest(steps: readonly BaipuStep[], k: number, size: n
       .filter((s) => s.kind === 'setup' && s.color && s.row != null && s.col != null)
       .map((s) => [s.color as string, canonToGtp(s.row as number, s.col as number, size)]);
     moves = head.filter(played).map((s) => [
-      s.color as string,
+      recordedColor(s) as string,
       s.kind === 'pass' || s.row == null || s.col == null ? 'pass' : canonToGtp(s.row, s.col, size),
     ]);
   }
@@ -80,20 +103,29 @@ function toLed(move: string, size: number): LedPoint | null {
 
 interface RawMove { move: string; winrate: number; scoreLead?: number }
 
-export function useBaipuHint(o: { steps: BaipuStep[]; k: number; boardSize: number; meta: BaipuMeta | null }): BaipuHint {
+export function useBaipuHint(o: {
+  steps: BaipuStep[];
+  k: number;
+  boardSize: number;
+  meta: BaipuMeta | null;
+  sessionKey?: string;
+}): BaipuHint {
   const { token } = useAuth();
-  const { steps, k, boardSize, meta } = o;
-  // 记下「为第几手开的」,`open` 由它推出 —— 换了一手就自然收起,不用在 effect 里 setState
-  // (仓里 `react-hooks/set-state-in-effect` 开着,`useAutoCount.ts:38` 同一个做法)。
-  const [forK, setForK] = useState<number | null>(null);
+  const { steps, k, boardSize, meta, sessionKey } = o;
+  // Bind hints to this exact position/session. A source/account reload can keep
+  // the same k, and returning to an earlier k must not reopen an old request.
+  const position = useMemo(() => ({ steps, k, boardSize, token, sessionKey }), [steps, k, boardSize, token, sessionKey]);
+  const [forPosition, setForPosition] = useState<typeof position | null>(null);
   const [status, setStatus] = useState<HintStatus>('idle');
   const [rows, setRows] = useState<HintRow[]>([]);
   const reqRef = useRef(0);
-  const open = forK === k;
+  const open = forPosition === position;
+
+  useEffect(() => () => { reqRef.current += 1; }, [position]);
 
   const close = useCallback(() => {
     reqRef.current += 1; // 晚到的响应不回填
-    setForK(null);
+    setForPosition(null);
     setStatus('idle');
     setRows([]);
   }, []);
@@ -102,7 +134,7 @@ export function useBaipuHint(o: { steps: BaipuStep[]; k: number; boardSize: numb
     if (open) { close(); return; }
     const id = ++reqRef.current;
     const mover = hintMover(steps, k);
-    setForK(k);
+    setForPosition(position);
     setStatus('loading');
     setRows([]);
     API.quickAnalyze(buildHintRequest(steps, k, boardSize, meta), token ?? undefined)
@@ -121,7 +153,7 @@ export function useBaipuHint(o: { steps: BaipuStep[]; k: number; boardSize: numb
         if (reqRef.current !== id) return;
         setStatus('error'); // 算不出来就说算不出来,不留假数
       });
-  }, [open, close, token, steps, k, boardSize, meta]);
+  }, [open, close, token, steps, k, boardSize, meta, position]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -133,6 +165,6 @@ export function useBaipuHint(o: { steps: BaipuStep[]; k: number; boardSize: numb
     () => (open ? rows.map((r) => toLed(r.move, boardSize)).filter((p): p is LedPoint => p !== null) : []),
     [open, rows, boardSize],
   );
-  // 换了一手之后 forK 对不上:旧那一手的行即使晚到落进了 state,也不往外给。
+  // Old position/session responses cannot expose rows or LEDs in the new scope.
   return open ? { open, status, rows, leds, toggle, close } : { open, status: 'idle', rows: NO_ROWS, leds, toggle, close };
 }

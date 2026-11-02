@@ -93,10 +93,7 @@ def seed_coverage(seed: dict, raw_names: set[tuple[str, str]], review_map: dict[
     result = {}
     for kind in ("player", "event"):
         names = {name for item_kind, name in raw_names if item_kind == kind and name.strip()}
-        matches = {
-            name: aliases[kind].get(normalize_alias(identity_lookup_name(kind, name)), [])
-            for name in names
-        }
+        matches = {name: aliases[kind].get(normalize_alias(identity_lookup_name(kind, name)), []) for name in names}
         linked = sum(len(found) == 1 for found in matches.values())
         ambiguous = sum(len(found) > 1 for found in matches.values())
         languages = {}
@@ -366,9 +363,7 @@ def _aggregate_duplicate_sources(db: Session, master: KifuAlbum, duplicate: Kifu
     master_before = source_links_snapshot(db, master.id)
     duplicate_links = source_links_snapshot(db, duplicate.id)
     if not any(link["origin_path"] == duplicate.source_path for link in duplicate_links):
-        duplicate_links.append(
-            {"source_id": None, "origin_path": duplicate.source_path, "match_method": "source_path"}
-        )
+        duplicate_links.append({"source_id": None, "origin_path": duplicate.source_path, "match_method": "source_path"})
     existing = {(link["source_id"], link["origin_path"]) for link in master_before}
     added = 0
     for link in duplicate_links:
@@ -520,12 +515,16 @@ def backfill_catalog(
             digest = sgf_sha256(album.sgf_content)
             if album.duplicate_of_id is not None:
                 existing_master = db.get(KifuAlbum, album.duplicate_of_id)
-                if (
-                    existing_master is None
-                    or existing_master.duplicate_of_id is not None
-                    or existing_master.sgf_content != album.sgf_content
-                ):
+                from katrain.web.kifu.catalog_standardization import validate_existing_pointer
+
+                try:
+                    validate_existing_pointer(db.connection(), album.id)
+                except ValueError:
                     report["pointer_conflicts"] += 1
+                    continue
+                if existing_master.sgf_content != album.sgf_content:
+                    # Reviewed display pointers do not authorize exact-content
+                    # ownership or another batch's journal to change.
                     continue
                 seen_content.setdefault(digest, existing_master.id)
                 added, before = _aggregate_duplicate_sources(db, existing_master, album, dry_run)

@@ -15,28 +15,29 @@ type TFn = (key: string, fallback?: string) => string;
 
 /** Parse Chinese fractional notation like "2又3/4" → 2.75, "1/4" → 0.25 */
 function parseChinese(numStr: string): number | null {
+  const score = numStr.replace(/\\\//g, '/').replace(/[子目点]$/, '');
   // "2又3/4" style
-  const mixedFrac = numStr.match(/^(\d+)又(\d+)\/(\d+)/);
+  const mixedFrac = score.match(/^(\d+)又(\d+)\/(\d+)$/);
   if (mixedFrac) {
-    return Number(mixedFrac[1]) + Number(mixedFrac[2]) / Number(mixedFrac[3]);
+    return Number(mixedFrac[3]) > 0 ? Number(mixedFrac[1]) + Number(mixedFrac[2]) / Number(mixedFrac[3]) : null;
   }
 
   // Pure fraction "3/4"
-  const frac = numStr.match(/^(\d+)\/(\d+)/);
+  const frac = score.match(/^(\d+)\/(\d+)$/);
   if (frac) {
-    return Number(frac[1]) / Number(frac[2]);
+    return Number(frac[2]) > 0 ? Number(frac[1]) / Number(frac[2]) : null;
   }
 
-  // Chinese full-text fraction "四分之一"
-  const zhFrac = numStr.match(/^([一二三四五六七八九十]+)分之([一二三四五六七八九十]+)/);
+  // Denominator-first fractions "四分之一" / "4分之1"
+  const zhFrac = score.match(/^([一二三四五六七八九十]+|\d+)分之([一二三四五六七八九十]+|\d+)$/);
   if (zhFrac) {
-    const denom = zhDigit(zhFrac[1]);
-    const numer = zhDigit(zhFrac[2]);
-    if (denom && numer) return numer / denom;
+    const denom = zhDigit(zhFrac[1]) ?? Number(zhFrac[1]);
+    const numer = zhDigit(zhFrac[2]) ?? Number(zhFrac[2]);
+    return denom > 0 ? numer / denom : null;
   }
 
   // Mixed "二又四分之一"
-  const zhMixed = numStr.match(/^([一二三四五六七八九十]+)又([一二三四五六七八九十]+)分之([一二三四五六七八九十]+)/);
+  const zhMixed = score.match(/^([一二三四五六七八九十]+)又([一二三四五六七八九十]+)分之([一二三四五六七八九十]+)$/);
   if (zhMixed) {
     const whole = zhDigit(zhMixed[1]);
     const denom = zhDigit(zhMixed[2]);
@@ -45,13 +46,13 @@ function parseChinese(numStr: string): number | null {
   }
 
   // "3目半" → 3.5
-  const moban = numStr.match(/^(\d+)目半/);
+  const moban = score.match(/^(\d+)目半$/);
   if (moban) {
     return Number(moban[1]) + 0.5;
   }
 
   // Decimal "2.5"
-  const decimal = numStr.match(/^(\d+(?:\.\d+)?)/);
+  const decimal = score.match(/^(\d+(?:\.\d+)?)$/);
   if (decimal) {
     return Number(decimal[1]);
   }
@@ -111,18 +112,19 @@ export function translateResult(
   const r = result.trim();
 
   // ── Standard SGF format: "B+R", "W+2.5", etc. ──
-  const sgfMatch = r.match(/^([BW])\+(.+)$/i);
+  const sgfMatch = r.match(/^([BW])\+(.*)$/i);
   if (sgfMatch) {
     const side = sgfMatch[1].toUpperCase();
     const detail = sgfMatch[2];
     const winner = side === 'B' ? t('result:black_win', 'B+') : t('result:white_win', 'W+');
 
+    if (!detail) return winner;
     if (/^R(esign(ation)?)?$/i.test(detail)) return `${winner}${t('result:resign', 'R')}`;
     if (/^T(ime)?$/i.test(detail)) return `${winner}${t('result:time', 'T')}`;
     if (/^F(orfeit)?$/i.test(detail)) return `${winner}${t('result:forfeit', 'F')}`;
 
-    const pts = parseFloat(detail);
-    if (!isNaN(pts)) {
+    const pts = /^\d+(?:\.\d+)?$/.test(detail) ? Number(detail) : null;
+    if (pts != null && Number.isFinite(pts)) {
       const unit = pointsUnit(t, rules, null);
       return `${winner}${pts}${unit}`;
     }
@@ -156,7 +158,7 @@ export function translateResult(
     const winner = zhPoints[1] === '黑' ? t('result:black_win', 'B+') : t('result:white_win', 'W+');
     const originalUnit = detectChineseUnit(zhPoints[2]);
     const pts = parseChinese(zhPoints[2]);
-    if (pts != null) {
+    if (pts != null && Number.isFinite(pts)) {
       const unit = pointsUnit(t, rules, originalUnit);
       return `${winner}${pts}${unit}`;
     }

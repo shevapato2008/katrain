@@ -1,0 +1,11 @@
+{
+  "current_browser_storage_has_baipu_records": false,
+  "recent_tab_empty_confirmed": true,
+  "storage": "browser localStorage, scoped by user.uuid; guests in JS memory",
+  "history_api_connected": false,
+  "browser_incognito_confirmed": true,
+  "browser_start_local": "2026-11-02 22:16:35 Asia/Shanghai",
+  "record_trigger": "cacheSgf on entering physical-board replay or imported SGF session",
+  "identity_refresh_issue": "KifuPage reads recent only in useState initializer and does not refresh on resolved identity; code finding, not reproduced in this session",
+  "changes": "No application code, stored progress, database or service changes"
+}

@@ -10,6 +10,7 @@ import { gradedMoves, isBad } from '../../features/analysis/moveGrade';
 import type { WinratePoint } from '../../features/report/reportStats';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { translateResult } from '../../utils/resultTranslation';
+import { formatKifuRank } from '../../utils/rank';
 import { useSound } from '../../hooks/useSound';
 import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -174,8 +175,8 @@ export default function KifuReportDetailPage() {
             <span>{kifuRulesLabel(eventRules, t, analysisParameters)}</span><span>{t('report:komi_label', '贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
           </div>)}
           details={[
-            [t('review:black', '黑'), [album.display_player_black ?? album.player_black, album.display_black_rank ?? album.black_rank].filter(Boolean).join(' · ')],
-            [t('review:white', '白'), [album.display_player_white ?? album.player_white, album.display_white_rank ?? album.white_rank].filter(Boolean).join(' · ')],
+            [t('review:black', '黑'), [album.display_player_black ?? album.player_black, formatKifuRank(album.display_black_rank, album.black_rank, t, lang)].filter(Boolean).join(' · ')],
+            [t('review:white', '白'), [album.display_player_white ?? album.player_white, formatKifuRank(album.display_white_rank, album.white_rank, t, lang)].filter(Boolean).join(' · ')],
             [t('report:event', '赛事'), [album.display_event ?? album.event, album.display_round_name ?? album.round_name].filter(Boolean).join(' · ')],
             [t('report:date', '日期'), album.date_played],
             [t('report:result', '结果'), album.result],

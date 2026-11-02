@@ -7255,3 +7255,98 @@ msgstr "Це не камінь"
 
 msgid "report:score_difference"
 msgstr "Різниця в очках"
+
+msgid "kifu:history_guest"
+msgstr "Лише в поточному гостьовому сеансі"
+
+msgid "kifu:history_local_cache"
+msgstr "Кеш облікового запису на цьому пристрої"
+
+msgid "kifu:history_this_node"
+msgstr "Збережено на цьому пристрої"
+
+msgid "kifu:history_cloud"
+msgstr "Історія облікового запису в хмарі"
+
+msgid "kifu:history_loading"
+msgstr "Завантаження історії відтворення"
+
+msgid "kifu:history_error"
+msgstr "Історія відтворення недоступна"
+
+msgid "kifu:history_cache_empty"
+msgstr "На цьому пристрої немає кешу історії облікового запису"
+
+msgid "kifu:history_empty"
+msgstr "Історії відтворення ще немає"
+
+msgid "kifu:history_guest_hint"
+msgstr "Гостьова історія видаляється після завершення сеансу."
+
+msgid "kifu:history_account_hint"
+msgstr ""
+"Після запуску відтворення на фізичній дошці поступ зберігається в поточному "
+"обліковому записі."
+
+msgid "kifu:history_pending"
+msgstr "Збережено на пристрої; очікує синхронізації"
+
+msgid "kifu:history_conflict"
+msgstr "Конфлікт поступу; виберіть копію для збереження"
+
+msgid "kifu:history_refused"
+msgstr "Збережено на пристрої; синхронізацію відхилено"
+
+msgid "kifu:history_saving"
+msgstr "Збереження поступу"
+
+msgid "kifu:history_save_error"
+msgstr "Поступ не збережено; спробуйте ще раз"
+
+msgid "kifu:history_saved"
+msgstr "Поступ збережено"
+
+msgid "kifu:history_use_cloud"
+msgstr "Використати поступ із хмари"
+
+msgid "kifu:history_keep_local"
+msgstr "Залишити поступ пристрою"
+
+msgid "kifu:history_resolve_error"
+msgstr "Не вдалося вирішити конфлікт; перевірте поступ ще раз"
+
+msgid "baipu:operator_manual"
+msgstr "Увімкнено ручне підтвердження"
+
+msgid "baipu:pre_remove_title"
+msgstr "Спочатку приберіть камінь із точки встановлення"
+
+msgid "baipu:pre_remove_hint"
+msgstr ""
+"Приберіть камені біля синіх вогнів, потім поставте камені кольору, вказаного"
+" в записі"
+
+msgid "baipu:pre_remove_done"
+msgstr "Попередні камені прибрано"
+
+msgid "baipu:entry_confirm"
+msgstr "Позиція збігається"
+
+msgid "baipu:manual_entry_hint"
+msgstr "Розставте камені як на екрані, потім натисніть «Позиція збігається»"
+
+msgid "baipu:recheck"
+msgstr "Розпізнати дошку знову"
+
+msgid "baipu:switch_manual"
+msgstr "Перейти до ручного підтвердження"
+
+msgid "baipu:done_hint_saved"
+msgstr "Виконано кроків: {n} · Для повернення натисніть кнопку вгорі ліворуч"
+
+msgid "baipu:exit_body_neutral"
+msgstr ""
+"Після виходу цей запис можна знову відкрити на сторінці записів партій."
+
+msgid "baipu:exit_anyway"
+msgstr "Усе одно вийти"

@@ -731,3 +731,16 @@ async def test_register_and_login_reject_reserved_guest_username(server_mode_app
 
     assert register_response.status_code == 400
     assert login_response.status_code == 400
+
+
+def test_existing_guest_with_baipu_history_is_not_pristine(strict_app):
+    from katrain.web.api.v1.endpoints.auth import _guest_row_has_data
+    from katrain.web.core.baipu_history import BaipuHistoryRepository
+    repo = strict_app.state.user_repo
+    guest = repo.create_user(username=GUEST_USERNAME, hashed_password=SHADOW_USER_NO_LOCAL_AUTH)
+    # Isolate the owned-table guard from the historical credits-default mismatch.
+    with repo.session_factory.begin() as db:
+        db.query(models_db.User).filter_by(id=guest['id']).update({'credits': 10000})
+    assert not _guest_row_has_data(repo, guest['id'])
+    BaipuHistoryRepository(repo.session_factory).open(guest['id'], {'sgf_content': '(;SZ[19];B[aa])'})
+    assert _guest_row_has_data(repo, guest['id'])

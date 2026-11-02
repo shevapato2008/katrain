@@ -6979,3 +6979,93 @@ msgstr "石ではない"
 
 msgid "report:score_difference"
 msgstr "目差"
+
+msgid "kifu:history_guest"
+msgstr "今回のゲスト利用中のみ"
+
+msgid "kifu:history_local_cache"
+msgstr "この端末のアカウントキャッシュ"
+
+msgid "kifu:history_this_node"
+msgstr "この端末に保存済み"
+
+msgid "kifu:history_cloud"
+msgstr "アカウントのクラウド履歴"
+
+msgid "kifu:history_loading"
+msgstr "棋譜並べの履歴を読み込み中"
+
+msgid "kifu:history_error"
+msgstr "棋譜並べの履歴を利用できません"
+
+msgid "kifu:history_cache_empty"
+msgstr "この端末にはアカウントの履歴が未保存です"
+
+msgid "kifu:history_empty"
+msgstr "棋譜並べの履歴はまだありません"
+
+msgid "kifu:history_guest_hint"
+msgstr "ゲストの履歴は利用終了時に消去されます。"
+
+msgid "kifu:history_account_hint"
+msgstr "実物の碁盤で棋譜並べを始めると、現在のアカウントに進捗が保存されます。"
+
+msgid "kifu:history_pending"
+msgstr "この端末に保存済み・同期待ち"
+
+msgid "kifu:history_conflict"
+msgstr "進捗が競合しています。残す進捗を選んでください"
+
+msgid "kifu:history_refused"
+msgstr "この端末に保存済み・同期が拒否されました"
+
+msgid "kifu:history_saving"
+msgstr "進捗を保存中"
+
+msgid "kifu:history_save_error"
+msgstr "進捗を保存できませんでした。再試行してください"
+
+msgid "kifu:history_saved"
+msgstr "進捗を保存しました"
+
+msgid "kifu:history_use_cloud"
+msgstr "クラウドの進捗を使う"
+
+msgid "kifu:history_keep_local"
+msgstr "端末の進捗を残す"
+
+msgid "kifu:history_resolve_error"
+msgstr "競合を解決できませんでした。進捗を再確認してください"
+
+msgid "baipu:operator_manual"
+msgstr "手動確認に切り替えました"
+
+msgid "baipu:pre_remove_title"
+msgstr "まず着点にある石を取り除いてください"
+
+msgid "baipu:pre_remove_hint"
+msgstr "青いライトの位置の石を取り除き、棋譜の色の石を置いてください"
+
+msgid "baipu:pre_remove_done"
+msgstr "元の石を取り除きました"
+
+msgid "baipu:entry_confirm"
+msgstr "盤面を合わせました"
+
+msgid "baipu:manual_entry_hint"
+msgstr "画面どおりに石を並べてから「盤面を合わせました」を押してください"
+
+msgid "baipu:recheck"
+msgstr "盤面を再認識"
+
+msgid "baipu:switch_manual"
+msgstr "手動確認に切り替え"
+
+msgid "baipu:done_hint_saved"
+msgstr "全 {n} 手 · 左上のボタンで戻ります"
+
+msgid "baipu:exit_body_neutral"
+msgstr "終了後、棋譜ページからこの棋譜を再度開けます。"
+
+msgid "baipu:exit_anyway"
+msgstr "そのまま終了"

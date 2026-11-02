@@ -6951,3 +6951,93 @@ msgstr "不是落子"
 
 msgid "report:score_difference"
 msgstr "目差"
+
+msgid "kifu:history_guest"
+msgstr "僅限本次訪客工作階段"
+
+msgid "kifu:history_local_cache"
+msgstr "帳戶的本機快取"
+
+msgid "kifu:history_this_node"
+msgstr "儲存在此裝置"
+
+msgid "kifu:history_cloud"
+msgstr "帳戶雲端紀錄"
+
+msgid "kifu:history_loading"
+msgstr "正在讀取擺譜紀錄"
+
+msgid "kifu:history_error"
+msgstr "擺譜紀錄暫時無法使用"
+
+msgid "kifu:history_cache_empty"
+msgstr "此裝置尚無快取的帳戶紀錄"
+
+msgid "kifu:history_empty"
+msgstr "尚無擺譜紀錄"
+
+msgid "kifu:history_guest_hint"
+msgstr "訪客紀錄會在工作階段結束後清除。"
+
+msgid "kifu:history_account_hint"
+msgstr "進入實體盤擺譜後，進度會儲存在目前帳戶。"
+
+msgid "kifu:history_pending"
+msgstr "已儲存至本機，等待同步"
+
+msgid "kifu:history_conflict"
+msgstr "進度衝突，請選擇保留哪份"
+
+msgid "kifu:history_refused"
+msgstr "本機已儲存，同步遭拒"
+
+msgid "kifu:history_saving"
+msgstr "正在儲存進度"
+
+msgid "kifu:history_save_error"
+msgstr "進度尚未儲存，請重試"
+
+msgid "kifu:history_saved"
+msgstr "進度已儲存"
+
+msgid "kifu:history_use_cloud"
+msgstr "使用雲端進度"
+
+msgid "kifu:history_keep_local"
+msgstr "保留本機進度"
+
+msgid "kifu:history_resolve_error"
+msgstr "無法解決衝突，請重新確認進度"
+
+msgid "baipu:operator_manual"
+msgstr "已切換為手動確認"
+
+msgid "baipu:pre_remove_title"
+msgstr "先拿走落點上的舊子"
+
+msgid "baipu:pre_remove_hint"
+msgstr "先拿走藍燈處的棋子，再依棋譜上的顏色放回"
+
+msgid "baipu:pre_remove_done"
+msgstr "已拿走舊子"
+
+msgid "baipu:entry_confirm"
+msgstr "盤面已擺對"
+
+msgid "baipu:manual_entry_hint"
+msgstr "依螢幕上的盤面擺好，再按「盤面已擺對」"
+
+msgid "baipu:recheck"
+msgstr "重新辨識盤面"
+
+msgid "baipu:switch_manual"
+msgstr "改用手動確認"
+
+msgid "baipu:done_hint_saved"
+msgstr "一共 {n} 手 · 按左上角返回"
+
+msgid "baipu:exit_body_neutral"
+msgstr "退出後，可從棋譜頁重新開啟這份棋譜。"
+
+msgid "baipu:exit_anyway"
+msgstr "仍要退出"

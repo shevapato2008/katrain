@@ -7272,3 +7272,100 @@ msgstr "Bu bir taş değil"
 
 msgid "report:score_difference"
 msgstr "Puan farkı"
+
+msgid "kifu:history_guest"
+msgstr "Yalnızca bu misafir oturumu için"
+
+msgid "kifu:history_local_cache"
+msgstr "Bu cihazdaki hesap önbelleği"
+
+msgid "kifu:history_this_node"
+msgstr "Bu cihaza kaydedildi"
+
+msgid "kifu:history_cloud"
+msgstr "Hesabın bulut geçmişi"
+
+msgid "kifu:history_loading"
+msgstr "Tekrar oynatma geçmişi yükleniyor"
+
+msgid "kifu:history_error"
+msgstr "Tekrar oynatma geçmişi kullanılamıyor"
+
+msgid "kifu:history_cache_empty"
+msgstr "Bu cihazda önbelleğe alınmış hesap geçmişi yok"
+
+msgid "kifu:history_empty"
+msgstr "Henüz tekrar oynatma geçmişi yok"
+
+msgid "kifu:history_guest_hint"
+msgstr "Misafir geçmişi oturum sona erdiğinde silinir."
+
+msgid "kifu:history_account_hint"
+msgstr ""
+"Fiziksel tahtada tekrar oynatma başladığında ilerleme geçerli hesaba "
+"kaydedilir."
+
+msgid "kifu:history_pending"
+msgstr "Bu cihaza kaydedildi; eşitleme bekleniyor"
+
+msgid "kifu:history_conflict"
+msgstr "İlerleme çakışması; hangi kopyanın korunacağını seçin"
+
+msgid "kifu:history_refused"
+msgstr "Bu cihaza kaydedildi; eşitleme reddedildi"
+
+msgid "kifu:history_saving"
+msgstr "İlerleme kaydediliyor"
+
+msgid "kifu:history_save_error"
+msgstr "İlerleme kaydedilemedi; lütfen yeniden deneyin"
+
+msgid "kifu:history_saved"
+msgstr "İlerleme kaydedildi"
+
+msgid "kifu:history_use_cloud"
+msgstr "Buluttaki ilerlemeyi kullan"
+
+msgid "kifu:history_keep_local"
+msgstr "Cihazdaki ilerlemeyi koru"
+
+msgid "kifu:history_resolve_error"
+msgstr "Çakışma çözülemedi; ilerlemeyi yeniden kontrol edin"
+
+msgid "baipu:operator_manual"
+msgstr "Elle onaylamaya geçildi"
+
+msgid "baipu:pre_remove_title"
+msgstr "Önce hedef noktadaki eski taşı kaldırın"
+
+msgid "baipu:pre_remove_hint"
+msgstr ""
+"Mavi ışıklardaki taşları kaldırın, ardından kayıtta belirtilen renkleri "
+"yerleştirin"
+
+msgid "baipu:pre_remove_done"
+msgstr "Eski taşlar kaldırıldı"
+
+msgid "baipu:entry_confirm"
+msgstr "Tahta düzeni doğru"
+
+msgid "baipu:manual_entry_hint"
+msgstr ""
+"Taşları ekrandaki gibi yerleştirin, ardından “Tahta düzeni doğru” düğmesine "
+"basın"
+
+msgid "baipu:recheck"
+msgstr "Tahtayı yeniden tanı"
+
+msgid "baipu:switch_manual"
+msgstr "Elle onaylamaya geç"
+
+msgid "baipu:done_hint_saved"
+msgstr "{n} adım tamamlandı · Geri dönmek için sol üstteki düğmeyi kullanın"
+
+msgid "baipu:exit_body_neutral"
+msgstr ""
+"Çıktıktan sonra bu kaydı oyun kayıtları sayfasından yeniden açabilirsiniz."
+
+msgid "baipu:exit_anyway"
+msgstr "Yine de çık"

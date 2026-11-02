@@ -1,0 +1,8 @@
+{
+  "prod_rows": 176949,
+  "test_rows": 176949,
+  "unique_prod_sgf": 176940,
+  "unique_test_sgf": 176940,
+  "test_content_not_in_prod": 0,
+  "prod_content_not_in_test": 0
+}

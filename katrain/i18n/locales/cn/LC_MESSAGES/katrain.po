@@ -6876,3 +6876,93 @@ msgstr "实体棋盘"
 
 msgid "report:back_report"
 msgstr "报告"
+
+msgid "kifu:history_guest"
+msgstr "仅本次访客会话"
+
+msgid "kifu:history_local_cache"
+msgstr "账户的本机缓存"
+
+msgid "kifu:history_this_node"
+msgstr "保存在此设备"
+
+msgid "kifu:history_cloud"
+msgstr "账户云端记录"
+
+msgid "kifu:history_loading"
+msgstr "正在读取摆谱记录"
+
+msgid "kifu:history_error"
+msgstr "摆谱记录暂时不可用"
+
+msgid "kifu:history_cache_empty"
+msgstr "此设备还没有缓存的账户记录"
+
+msgid "kifu:history_empty"
+msgstr "还没有摆谱记录"
+
+msgid "kifu:history_guest_hint"
+msgstr "访客记录会在会话结束后清除。"
+
+msgid "kifu:history_account_hint"
+msgstr "进入实体盘摆谱后，进度会保存在当前账户。"
+
+msgid "kifu:history_pending"
+msgstr "已保存到本机，等待同步"
+
+msgid "kifu:history_conflict"
+msgstr "进度冲突，请选择保留哪份"
+
+msgid "kifu:history_refused"
+msgstr "本机已保存，同步被拒绝"
+
+msgid "kifu:history_saving"
+msgstr "正在保存进度"
+
+msgid "kifu:history_save_error"
+msgstr "进度未保存，请重试"
+
+msgid "kifu:history_saved"
+msgstr "进度已保存"
+
+msgid "kifu:history_use_cloud"
+msgstr "使用云端进度"
+
+msgid "kifu:history_keep_local"
+msgstr "保留本机进度"
+
+msgid "kifu:history_resolve_error"
+msgstr "未能解决冲突，请重新确认进度"
+
+msgid "baipu:operator_manual"
+msgstr "已切换为手动确认"
+
+msgid "baipu:pre_remove_title"
+msgstr "先拿走落点上的旧子"
+
+msgid "baipu:pre_remove_hint"
+msgstr "蓝灯处先拿走，再按谱上的颜色放回"
+
+msgid "baipu:pre_remove_done"
+msgstr "已拿走旧子"
+
+msgid "baipu:entry_confirm"
+msgstr "盘面已摆对"
+
+msgid "baipu:manual_entry_hint"
+msgstr "照屏上的盘面摆好，再按「盘面已摆对」"
+
+msgid "baipu:recheck"
+msgstr "重新识别盘面"
+
+msgid "baipu:switch_manual"
+msgstr "改用手动确认"
+
+msgid "baipu:done_hint_saved"
+msgstr "一共 {n} 手 · 按左上角返回"
+
+msgid "baipu:exit_body_neutral"
+msgstr "退出后，可从棋谱页重新打开这份谱。"
+
+msgid "baipu:exit_anyway"
+msgstr "仍然退出"

@@ -3,9 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../api';
-import { BaipuAPI } from '../../api/baipuApi';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
-import { replayBaipuSteps, type BoardState } from '../../utils/baipuReplay';
+import { buildReplayPosition } from '../../utils/goReplay';
+import { sgfToMoves } from '../../utils/sgfSerializer';
 import { KifuAPI } from '../../api/kifuApi';
 import {
   cacheSgf, getCachedSgf, getProgress, listRecent,
@@ -52,7 +52,7 @@ const KifuPage = () => {
   const { t, lang } = useTranslation();
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [preview, setPreview] = useState<{ id: number; board: BoardState; size: number } | null>(null);
+  const [preview, setPreview] = useState<{ id: number; board: ReturnType<typeof buildReplayPosition>; size: number } | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentItem[]>(readRecent);
   const [showRecent, setShowRecent] = useState(false);
@@ -122,11 +122,13 @@ const KifuPage = () => {
     setPreview(null);
     setPreviewError(null);
     if (selectedId == null) return;
-    KifuAPI.getAlbum(selectedId, lang).then(async (album) => {
-      if (!album.sgf_content) throw new Error('没有可用棋谱');
-      const loaded = await BaipuAPI.load({ sgf: album.sgf_content });
-      if (!cancelled) setPreview({ id: selectedId, size: loaded.board_size || album.board_size || 19,
-        board: replayBaipuSteps(loaded.steps, loaded.steps.length, loaded.board_size || album.board_size || 19) });
+    KifuAPI.getAlbum(selectedId, lang).then((album) => {
+      if (!album.sgf_content?.trim()) throw new Error('没有可用棋谱');
+      const parsed = sgfToMoves(album.sgf_content);
+      if (!parsed.moves.length) throw new Error('没有可用棋谱');
+      const size = parsed.metadata.boardSize || album.board_size || 19;
+      if (!cancelled) setPreview({ id: selectedId, size,
+        board: buildReplayPosition(parsed.moves, parsed.moves.length, size, parsed.stoneColors, parsed.setupCount) });
     }).catch(() => { if (!cancelled) setPreviewError(t('kifu:preview_failed', '棋谱预览加载失败')); });
     return () => { cancelled = true; };
   }, [selectedId, lang]);

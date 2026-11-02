@@ -46,7 +46,7 @@ beforeEach(() => {
   language.current = 'cn';
   Element.prototype.scrollIntoView = vi.fn();
   getAlbum.mockImplementation((_id: number, lang: string) => Promise.resolve(detail(lang)));
-  baipuLoad.mockResolvedValue({ board_size: 19, steps: [], meta: {} });
+  baipuLoad.mockRejectedValue(new Error('screen replay must not load physical steps'));
 });
 
 describe('kiosk 棋谱详情语言展示', () => {
@@ -66,7 +66,7 @@ describe('kiosk 棋谱详情语言展示', () => {
       expect(hero).toHaveTextContent(`${lang}-event · ${lang}-round`);
       expect(screen.getByTestId('kifu-detail-pagebar')).toHaveTextContent('职业棋谱');
     }
-    expect(baipuLoad).toHaveBeenLastCalledWith({ sgf: RAW_SGF });
+    expect(baipuLoad).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
     expect(cacheSgf).toHaveBeenCalledWith('kifu_7', expect.any(String), RAW_SGF);
   });
@@ -80,5 +80,20 @@ describe('kiosk 棋谱详情语言展示', () => {
     expect(await screen.findByTestId('kifu-detail-hero')).toHaveTextContent('en-black');
     await act(async () => { old.resolve(detail('cn')); });
     expect(screen.getByTestId('kifu-detail-hero')).toHaveTextContent('en-black');
+  });
+
+  it('新语言还在加载时不显示旧语言的棋手和盘面', async () => {
+    const next = deferred<ReturnType<typeof detail>>();
+    const view = render(page());
+    await screen.findByTestId('kifu-detail-hero');
+    expect(document.querySelectorAll('[data-stone]')).toHaveLength(1);
+    getAlbum.mockReturnValueOnce(next.promise);
+    language.current = 'en';
+    view.rerender(page());
+    expect(screen.getByTestId('kifu-detail-loading')).toBeInTheDocument();
+    expect(screen.queryByText('cn-black')).toBeNull();
+    expect(document.querySelectorAll('[data-stone]')).toHaveLength(0);
+    await act(async () => { next.resolve(detail('en')); });
+    expect(await screen.findByTestId('kifu-detail-hero')).toHaveTextContent('en-black');
   });
 });

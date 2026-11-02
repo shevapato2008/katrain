@@ -1,0 +1,58 @@
+[
+  {
+    "id": 140859,
+    "steps": 347,
+    "setupCount": 2,
+    "collision": {
+      "step_index": 225,
+      "move_number": 224,
+      "move": "A5",
+      "color": "B",
+      "occupant": "W",
+      "occupant_move": 163
+    },
+    "final_stones": 233
+  },
+  {
+    "id": 124442,
+    "steps": 488,
+    "setupCount": 0,
+    "collision": {
+      "step_index": 249,
+      "move_number": 250,
+      "move": "T10",
+      "color": "W",
+      "occupant": "B",
+      "occupant_move": 245
+    },
+    "final_stones": 259
+  },
+  {
+    "id": 118394,
+    "steps": 304,
+    "setupCount": 0,
+    "collision": {
+      "step_index": 190,
+      "move_number": 191,
+      "move": "C9",
+      "color": "B",
+      "occupant": "W",
+      "occupant_move": 132
+    },
+    "final_stones": 202
+  },
+  {
+    "id": 140858,
+    "steps": 173,
+    "setupCount": 0,
+    "collision": null,
+    "final_stones": 170
+  },
+  {
+    "id": 25055,
+    "steps": 173,
+    "setupCount": 0,
+    "collision": null,
+    "final_stones": 170
+  }
+]

@@ -1,0 +1,46 @@
+{
+  "prod": {
+    "total": 176949,
+    "visible": 176690,
+    "strict_failed_total": 718,
+    "strict_failed_visible": 718,
+    "strict_failed_total_pct": 0.405767,
+    "strict_failed_visible_pct": 0.406361,
+    "errors": {
+      "Space occupied": 686,
+      "Single stone suicide": 24,
+      "Unexpected illegal move (Space occupied)": 4,
+      "Suicide": 4
+    },
+    "failed_sources": {
+      "19x19": 718
+    },
+    "wu_visible": 1231,
+    "wu_failed": 32,
+    "independent_mainline_issue_total": 16,
+    "independent_mainline_issue_visible": 16,
+    "independent_issues_also_strict_rejected": 9
+  },
+  "test": {
+    "total": 176949,
+    "visible": 176690,
+    "strict_failed_total": 718,
+    "strict_failed_visible": 718,
+    "strict_failed_total_pct": 0.405767,
+    "strict_failed_visible_pct": 0.406361,
+    "errors": {
+      "Space occupied": 686,
+      "Single stone suicide": 24,
+      "Unexpected illegal move (Space occupied)": 4,
+      "Suicide": 4
+    },
+    "failed_sources": {
+      "19x19": 718
+    },
+    "wu_visible": 1023,
+    "wu_failed": 30,
+    "independent_mainline_issue_total": 16,
+    "independent_mainline_issue_visible": 16,
+    "independent_issues_also_strict_rejected": 9
+  }
+}

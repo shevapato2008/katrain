@@ -1,0 +1,94 @@
+{
+  "source": "Actual RK3562 SVG versus unmodified HEAD Galaxy matrix algorithm",
+  "viewport": "1024x600",
+  "checked_frames": 17,
+  "frames": [
+    {
+      "id": 140859,
+      "cursor": 345,
+      "stones": 233
+    },
+    {
+      "id": 140859,
+      "cursor": 223,
+      "stones": 221
+    },
+    {
+      "id": 140859,
+      "cursor": 224,
+      "stones": 221
+    },
+    {
+      "id": 140859,
+      "cursor": 0,
+      "stones": 2
+    },
+    {
+      "id": 140859,
+      "cursor": 345,
+      "stones": 233
+    },
+    {
+      "id": 124442,
+      "cursor": 488,
+      "stones": 259
+    },
+    {
+      "id": 124442,
+      "cursor": 249,
+      "stones": 239
+    },
+    {
+      "id": 124442,
+      "cursor": 250,
+      "stones": 239
+    },
+    {
+      "id": 124442,
+      "cursor": 0,
+      "stones": 0
+    },
+    {
+      "id": 124442,
+      "cursor": 488,
+      "stones": 259
+    },
+    {
+      "id": 118394,
+      "cursor": 304,
+      "stones": 202
+    },
+    {
+      "id": 118394,
+      "cursor": 190,
+      "stones": 188
+    },
+    {
+      "id": 118394,
+      "cursor": 191,
+      "stones": 188
+    },
+    {
+      "id": 118394,
+      "cursor": 0,
+      "stones": 0
+    },
+    {
+      "id": 118394,
+      "cursor": 304,
+      "stones": 202
+    },
+    {
+      "id": 124442,
+      "preview": true,
+      "stones": 259
+    },
+    {
+      "id": 118394,
+      "preview": true,
+      "stones": 202
+    }
+  ],
+  "all_match": true,
+  "screen_baipu_loads": 0
+}

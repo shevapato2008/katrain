@@ -38,8 +38,10 @@
 
 - [x] 独立 Astra Max 对本计划一次定向审核 Approved、无重要缺口；A/B 已按文件所有权并行。
 - [x] 独立 Astra Max 顺序检查规格、实现质量与代表性视觉；资金相关只覆盖本次开关与历史快照边界，修复至无未解决重要问题。
-- [ ] 文档注明本修订优先于旧 Max停售决策。同步并推功能分支→合并推develop→更新并推父 main submodule；保留无关工作区变化。
-- [ ] 基于实际已运行镜像做必要换包：本轮只更换 Web，Cron 报告合同未改且保持原进程。native发布仅将Max开关改true，保留主环境paused／disabled等其余边界；先TEST后新PROD，核对真实catalog／版本／健康及双端页面，记录回执。
-- [ ] 停止本轮临时PG／预览进程；如正式支付前置仍缺，明确报告，不能用模拟履约替代正式收款。
+- [x] 文档注明本修订优先于旧 Max停售决策。同步并推功能分支→合并推develop→更新并推父 main submodule；保留无关工作区变化。
+- [x] 基于实际已运行镜像做必要换包：本轮只更换 Web，Cron 报告合同未改且保持原进程。native发布仅将Max开关改true，保留主环境paused／disabled等其余边界；先TEST后新PROD，核对真实catalog／版本／健康及双端页面，记录回执。
+- [x] 停止本轮临时PG／预览进程；如正式支付前置仍缺，明确报告，不能用模拟履约替代正式收款。
 
 **开发检查点：** 两个任务已完成，独立 Astra Max 规格／质量／四图视觉审核 Approved，无未解决重要问题。根代理69项后端检查通过，前端36项及两个真实Vite代表用例通过；普通／严格Kiosk构建通过。没有重新核算成本。集成与实际发布待下方执行回执。
+
+**完成状态（2026-11-02，约 11:54）：** feature `f23b013055aa6580e8494037416df4e91efff4b1`、develop/实际新 Web 软件 `7f2ff0c65381250e41a9dc959d8cac9201c3a86b`、父 main `daef1180ddfeb4780782ec7db0f4fd278897a6c1` 已发布。先 TEST 后新 PROD Web-only 换版、Max true 与全局 paused/disabled 边界已核对，Cron 未改；真实 TEST Galaxy / PROD Kiosk paused 页面与本轮清理已确认，钱包确认仅由隔离 Vite 预览验收，无真实消费。阶段 A 本修订完成；见[本轮回执](../../operations/membership-max-release-2026-11-02.md)，真实收款仍属阶段 B 未完成，后续 docs 提交不改变实际镜像软件 SHA。

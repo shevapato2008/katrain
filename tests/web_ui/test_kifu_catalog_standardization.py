@@ -652,3 +652,174 @@ def test_verified_display_without_source_cannot_grant_missing_player_identity(en
             )
         )
     assert prepare(engine)["groups"] == []
+
+
+def _search_repair_fixture(engine, monkeypatch):
+    from scripts import standardize_kifu_catalog as cli
+    from tests.web_ui.test_kifu_search_publication import ES
+    from katrain.web.kifu import search_sync
+
+    with engine.begin() as conn:
+        for album_id, family, rank in [(25055, "Go_Seigen", "7d"), (140858, "19x19", "7p")]:
+            path = f"data/kifu-album/{family}/{album_id}.sgf"
+            conn.execute(
+                update(KifuAlbum)
+                .where(KifuAlbum.id == album_id)
+                .values(source_path=path, black_rank=rank, sgf_content=sgf(f"BR[{rank}]", comment=str(album_id)))
+            )
+            conn.execute(update(KifuAlbumSource).where(KifuAlbumSource.album_id == album_id).values(origin_path=path))
+        path = "data/kifu-album/Go_Seigen/160000.sgf"
+        conn.execute(
+            KifuAlbum.__table__.insert().values(
+                id=160000,
+                player_black="Black",
+                player_white="White",
+                black_player_id=1,
+                white_player_id=2,
+                black_rank="5d",
+                date_played="1989-01-18",
+                result="B+R",
+                source_path=path,
+                sgf_content=sgf("BR[5d]").replace("DT[1989-01-17]", "DT[1989-01-18]"),
+            )
+        )
+        conn.execute(
+            KifuAlbumSource.__table__.insert().values(
+                album_id=160000, source_id=1, origin_path=path, match_method="source_path"
+            )
+        )
+    with engine.connect() as conn:
+        manifest = cli.prepare_manifest(conn)
+    assert len(manifest["ranks"]["changes"]) == 2
+    es = ES()
+    monkeypatch.setenv("KIFU_SEARCH_SYNC_MODE", "enabled")
+    monkeypatch.setenv("KIFU_SEARCH_BACKEND", "elasticsearch")
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "0")
+    monkeypatch.setattr(search_sync, "_writer_client", lambda: es)
+    return cli, manifest, search_sync, es
+
+
+def test_catalog_repair_es_gate_precedes_sql_and_refreshes_exact_changed_ids(engine, monkeypatch):
+    from katrain.web.core.models_db import KifuAlbumRankSnapshot
+
+    cli, manifest, sync, es = _search_repair_fixture(engine, monkeypatch)
+    assert hasattr(cli, "write_manifest"), "repair needs the current post-commit search coordinator"
+    original = cli.apply_rank_manifest
+
+    def ranks(conn, *args, **kwargs):
+        assert es.state["status"] == "pending"
+        assert es.state["operation_type"] == "sync_ids"
+        assert es.state["operation_ref"] == {"album_ids": [25055, 140858, 160000]}
+        return original(conn, *args, **kwargs)
+
+    monkeypatch.setattr(cli, "apply_rank_manifest", ranks)
+    project = sync._project_actions
+
+    def committed_projection(conn, scope):
+        assert scope.album_ids == {25055, 140858, 160000}
+        assert es.state["status"] == "pending"
+        with engine.connect() as observer:
+            assert observer.scalar(select(KifuAlbum.duplicate_of_id).where(KifuAlbum.id == 25055)) == 140858
+            assert len(observer.scalars(select(KifuAlbumRankSnapshot.id)).all()) == 2
+        return project(conn, scope)
+
+    monkeypatch.setattr(sync, "_project_actions", committed_projection)
+    result = cli.write_manifest(engine, manifest, mode="apply", expected_sha256=cli.manifest_sha256(manifest))
+    assert result["search"] == {"status": "synced", "album_ids": [25055, 140858, 160000]}
+    assert es.events == ["pending", "refresh", "ready"]
+    docs = {a["_id"]: a["_source"] for a in es.actions if a["_id"].startswith("album:")}
+    assert docs["album:25055"]["list_visible"] is False
+    assert docs["album:140858"]["list_visible"] is True
+    assert docs["album:140858"]["metadata"]["sources"] == ["19x19", "CWI"]
+    assert "album:160000" in docs
+
+
+def test_catalog_repair_es_failure_blocks_stale_hits_and_original_retry_recovers(engine, monkeypatch):
+    from katrain.web.api.v1.endpoints.kifu import _checked_search_state
+    from katrain.web.kifu.search_es import SearchUnavailable
+
+    cli, manifest, sync, es = _search_repair_fixture(engine, monkeypatch)
+    assert hasattr(cli, "write_manifest"), "repair needs the current post-commit search coordinator"
+    es.fail_bulk = True
+    with pytest.raises(sync.SearchIndexPending) as raised:
+        cli.write_manifest(engine, manifest, mode="apply", expected_sha256=cli.manifest_sha256(manifest))
+    assert raised.value.operation_ref == {"album_ids": [25055, 140858, 160000]}
+    assert es.state["status"] == "pending"
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.duplicate_of_id).where(KifuAlbum.id == 25055)) == 140858
+    with pytest.raises(SearchUnavailable):
+        _checked_search_state({"found": True, "_index": "kifu-test-1", "_source": deepcopy(es.state)})
+    es.fail_bulk = False
+    assert cli.write_manifest(engine, manifest, mode="apply", expected_sha256=cli.manifest_sha256(manifest))["dedup"][
+        "idempotent"
+    ]
+    assert es.state["status"] == "ready"
+    assert (
+        _checked_search_state({"found": True, "_index": "kifu-test-1", "_source": deepcopy(es.state)})["status"]
+        == "ready"
+    )
+    docs = {a["_id"]: a["_source"] for a in es.actions if a["_id"].startswith("album:")}
+    assert docs["album:25055"]["list_visible"] is False
+    cli.write_manifest(engine, manifest, mode="undo", expected_sha256=cli.manifest_sha256(manifest))
+    assert es.state["status"] == "ready"
+    docs = {a["_id"]: a["_source"] for a in es.actions if a["_id"].startswith("album:")}
+    assert docs["album:25055"]["list_visible"] is True
+    assert docs["album:140858"]["metadata"]["sources"] == ["19x19"]
+
+
+def test_catalog_repair_preimage_refusal_restores_es_gate_and_rolls_back_sql(engine, monkeypatch):
+    from katrain.web.core.models_db import KifuAlbumRankSnapshot
+
+    cli, manifest, sync, es = _search_repair_fixture(engine, monkeypatch)
+    assert hasattr(cli, "write_manifest"), "repair needs the current post-commit search coordinator"
+    with engine.begin() as conn:
+        conn.execute(update(KifuAlbum).where(KifuAlbum.id == 140858).values(event="independent change"))
+    with pytest.raises(ValueError, match="preimage"):
+        cli.write_manifest(engine, manifest, mode="apply", expected_sha256=cli.manifest_sha256(manifest))
+    assert es.state["status"] == "ready"
+    assert es.events == ["pending", "ready"]
+    assert es.actions == []
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.duplicate_of_id).where(KifuAlbum.id == 25055)) is None
+        assert conn.scalar(select(KifuAlbumRankSnapshot.id)) is None
+
+
+def test_production_cli_uses_es_coordinator_for_apply_and_undo(engine, monkeypatch, tmp_path):
+    from datetime import datetime, timezone
+    import json
+
+    cli, manifest, sync, es = _search_repair_fixture(engine, monkeypatch)
+    path = tmp_path / "reviewed.json"
+    cli.export_manifest(manifest, path)
+    digest = cli.manifest_sha256(manifest)
+    preflight = tmp_path / "preflight.json"
+    preflight.write_text(
+        json.dumps(
+            {
+                "format": "kifu-deployed-writer-preflight-v1",
+                "database_identity": manifest["database_identity"],
+                "manifest_sha256": digest,
+                "status": "compatible",
+                "verified_contracts": list(cli.CONTRACTS),
+                "deployed_build_sha": "a" * 40,
+                "checked_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+    )
+    common = [
+        "--database-url",
+        str(engine.url),
+        "--manifest",
+        str(path),
+        "--sha256",
+        digest,
+        "--audit-dir",
+        str(tmp_path / "audit"),
+    ]
+    assert cli.main(["apply", *common, "--writer-preflight", str(preflight)]) == 0
+    assert es.events == ["pending", "refresh", "ready"]
+    assert cli.main(["apply", *common, "--writer-preflight", str(preflight)]) == 0
+    assert cli.main(["undo", *common]) == 0
+    assert es.events == ["pending", "refresh", "ready"] * 3
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.duplicate_of_id).where(KifuAlbum.id == 25055)) is None

@@ -66,6 +66,7 @@ const KioskShell = ({ username, accessBlocked = false }: KioskLayoutProps) => {
           // 主页键只在一级页出现(规范 §6「一级页面可在固定系统动作区显示主页入口」)。
           // 二/三级页要退的是**这一屏**,那是页控条上的返回,不是回智星盒主页。
           onHome={level === 1 ? () => leaveToLauncher() : undefined}
+          onAccount={() => navigate('/kiosk/membership')}
         />
       )}
       dock={level === 1 ? (

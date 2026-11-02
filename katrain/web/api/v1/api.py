@@ -1,4 +1,6 @@
 from fastapi import APIRouter
+from katrain.web.api.v1.endpoints.payment_test import register_test_payment_routes
+from katrain.web.core.config import settings
 from katrain.web.api.v1.endpoints import (
     health,
     auth,
@@ -16,6 +18,7 @@ from katrain.web.api.v1.endpoints import (
     platforms,
     reports,
     billing,
+    paid_analysis,
     baipu,
     baipu_history,
     led,
@@ -51,3 +54,10 @@ api_router.include_router(hint.router, prefix="/hint", tags=["hint"])
 api_router.include_router(ai_ladder.router, prefix="/ai-ladder", tags=["ai-ladder"])
 api_router.include_router(growth.router, prefix="/growth", tags=["growth"])
 api_router.include_router(kiosk_preferences.router, prefix="/kiosk-preferences", tags=["kiosk-preferences"])
+
+# Registration is configuration-gated; every mock write additionally verifies the actual TEST database.
+
+register_test_payment_routes(api_router, runtime_settings=settings)
+
+
+api_router.include_router(paid_analysis.router, prefix="/analysis", tags=["paid-analysis"])

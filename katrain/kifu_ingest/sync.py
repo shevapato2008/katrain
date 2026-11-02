@@ -163,6 +163,17 @@ def send_verified_manifest(manifest, manifest_sha256, test_verification, *, host
     if len(payload.encode("utf-8")) > _MAX_RECEIVER_BYTES:
         raise ValueError("manifest and verification exceed receiver payload budget")
     process = subprocess.run(command, input=payload, text=True, capture_output=True, timeout=timeout, check=False)
+    if process.returncode == 3:
+        from katrain.web.kifu.search_sync import SearchIndexPending
+        try:
+            pending = json.loads(process.stdout)
+            valid = (isinstance(pending, dict) and pending.get("status") == "search_index_pending"
+                     and pending.get("operation_ref") == {"manifest_sha256": manifest_sha256,
+                                                          "publication_key": manifest["publication_key"]})
+        except (ValueError, TypeError):
+            valid = False
+        if valid:
+            raise SearchIndexPending(pending["operation_ref"])
     if process.returncode:
         reason = _safe_receiver_error(process.stdout) if process.returncode == 2 else None
         message = f"receiver exited with status {process.returncode}"

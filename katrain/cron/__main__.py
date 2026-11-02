@@ -21,12 +21,13 @@ def _setup_logging():
 async def _main():
     logger = logging.getLogger("katrain_cron")
     logger.info("katrain-cron starting")
-    from katrain.web.kifu.prepared_read import current_policy_signature
+    from katrain.web.kifu.search_documents import SCHEMA_VERSION
 
     logger.info(
         "kifu_search_writer_runtime %s",
         json.dumps(
-            {"policy_signature": current_policy_signature(), "build_sha": os.getenv("KATRAIN_BUILD_SHA", "unknown")},
+            {"search_schema": SCHEMA_VERSION, "sync_mode": os.getenv("KIFU_SEARCH_SYNC_MODE", "disabled"),
+             "build_sha": os.getenv("KATRAIN_BUILD_SHA", "unknown")},
             separators=(",", ":"),
         ),
     )

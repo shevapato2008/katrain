@@ -66,6 +66,88 @@ def _existing_tx(db: Session, ref_id: str) -> Optional[models_db.CreditTransacti
     return db.query(models_db.CreditTransaction).filter(models_db.CreditTransaction.ref_id == ref_id).one_or_none()
 
 
+def reserve_in_transaction(db: Session, *, user_id: int, amount: int, reason: str, ref_id: str, now=None) -> int:
+    """Flush-only wallet reservation. Caller locks user before credit rows."""
+    if type(amount) is not int or amount < 0:
+        raise BillingError("reserve amount must be a nonnegative integer")
+    existing = (
+        db.query(models_db.CreditTransaction)
+        .filter_by(ref_id=ref_id)
+        .with_for_update()
+        .populate_existing()
+        .one_or_none()
+    )
+    if existing:
+        if existing.user_id != user_id or existing.delta != -amount or existing.reason != reason:
+            raise BillingError("wallet_reference_conflict")
+        return int(existing.balance_after)
+    result = db.execute(
+        text("UPDATE users SET credits = credits - :amt WHERE id = :uid AND credits >= :amt"),
+        {"amt": amount, "uid": user_id},
+    )
+    if result.rowcount != 1:
+        raise InsufficientCredits("insufficient_credits")
+    user = db.get(models_db.User, user_id)
+    if user is not None:
+        db.expire(user, ["credits"])
+    balance = get_balance(db, user_id)
+    tx = models_db.CreditTransaction(
+        user_id=user_id, delta=-amount, reason=reason, ref_id=ref_id, status="reserved", balance_after=balance
+    )
+    if now is not None:
+        tx.created_at = tx.updated_at = now
+    db.add(tx)
+    db.flush()
+    return balance
+
+
+def commit_in_transaction(db: Session, *, user_id: int, ref_id: str, now=None) -> int:
+    tx = (
+        db.query(models_db.CreditTransaction)
+        .filter_by(ref_id=ref_id, user_id=user_id)
+        .with_for_update()
+        .populate_existing()
+        .one()
+    )
+    if tx.status == "reserved":
+        tx.status, tx.updated_at = "committed", now or _now()
+    db.flush()
+    return get_balance(db, user_id)
+
+
+def refund_in_transaction(db: Session, *, user_id: int, ref_id: str, now=None) -> int:
+    tx = (
+        db.query(models_db.CreditTransaction)
+        .filter_by(ref_id=ref_id, user_id=user_id)
+        .with_for_update()
+        .populate_existing()
+        .one()
+    )
+    if tx.status != "reserved":
+        return get_balance(db, user_id)
+    amount = -int(tx.delta)
+    db.execute(text("UPDATE users SET credits = credits + :amt WHERE id = :uid"), {"amt": amount, "uid": user_id})
+    tx.status, tx.updated_at = "refunded", now or _now()
+    balance = get_balance(db, user_id)
+    db.add(
+        models_db.CreditTransaction(
+            user_id=user_id,
+            delta=amount,
+            reason=f"refund:{tx.reason}",
+            ref_id=f"refund:{ref_id}",
+            status="committed",
+            balance_after=balance,
+            created_at=now or _now(),
+            updated_at=now or _now(),
+        )
+    )
+    db.flush()
+    user = db.get(models_db.User, user_id)
+    if user is not None:
+        db.expire(user, ["credits"])
+    return balance
+
+
 def reserve(db: Session, user_id: int, amount: int, reason: str, ref_id: str) -> int:
     """Atomically reserve (debit) `amount` credits, writing a status='reserved' row.
 
@@ -278,6 +360,8 @@ def settle_order(db: Session, out_trade_no: str) -> int:
     order = db.query(models_db.RechargeOrder).filter(models_db.RechargeOrder.out_trade_no == out_trade_no).one_or_none()
     if order is None:
         raise BillingError(f"order {out_trade_no} not found")
+    if order.catalog_version is not None:
+        raise BillingError("versioned_order_requires_payment_service")
     if order.status == "paid":
         return get_balance(db, order.user_id)
     if order.status == "cancelled":
@@ -294,7 +378,9 @@ def settle_order(db: Session, out_trade_no: str) -> int:
 # 让通用回收器碰它 = 每次 web 重启把在跑的复盘全额退掉，之后结算再对一个
 # 已 refunded 的行 commit（无效）并补一笔"估多退款" —— 白嫖 + 凭空生钱。
 # 复盘预扣改由 report_settlement.settle_finished_reports 按任务终态回收。
-LONG_RUNNING_REASONS = frozenset({"report"})
+# Membership operations have their own source-aware, fenced reconciler. A generic
+# credit-only refund would leave the operation alive and could deliver it for free.
+LONG_RUNNING_REASONS = frozenset({"report", "membership_report", "membership_position"})
 
 
 def reconcile_stale_reservations(db: Session, ttl_seconds: int) -> int:

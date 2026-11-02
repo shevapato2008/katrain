@@ -5,11 +5,46 @@ See design.md Section 4.7 for the full API surface.
 
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 import httpx
 
 logger = logging.getLogger("katrain_web")
+
+
+def user_game_write_refusal_code(response: httpx.Response) -> Optional[str]:
+    """Distinguish explicit game write refusals from legacy duplicate 409s."""
+    if response.status_code != 409:
+        return None
+    try:
+        body = response.json()
+    except ValueError:
+        return None
+    detail = body.get("detail") if isinstance(body, dict) else None
+    code = detail.get("code") if isinstance(detail, dict) else None
+    if isinstance(code, str) and code in {"report_bound_game_immutable", "user_game_identity_conflict"}:
+        return code
+    return None
+
+
+class _CloudIdentity(NamedTuple):
+    user_id: str
+    generation: int
+    access_token: str
+    refresh_token: Optional[str]
+
+
+class CloudIdentityChangedError(httpx.HTTPStatusError):
+    """A private cloud request no longer belongs to the active local user."""
+
+    def __init__(self):
+        request = httpx.Request("GET", "http://cloud-session.invalid/")
+        response = httpx.Response(
+            401,
+            request=request,
+            json={"detail": {"code": "cloud_identity_changed", "message": "Cloud session changed; sign in again"}},
+        )
+        super().__init__("Cloud session changed; sign in again", request=request, response=response)
 
 
 class RemoteHistoryIdentityChanged(RuntimeError):
@@ -46,7 +81,7 @@ class RemoteAPIClient:
         # per-user work (a rank event) has to be able to tell "my session is up" from
         # "somebody's session is up" before it posts anything.
         self._bound_user_id: Optional[str] = None
-        self._session_generation = 0
+        self._identity_generation = 0
         self._client = httpx.AsyncClient(
             base_url=self.base_url,
             timeout=timeout,
@@ -56,22 +91,24 @@ class RemoteAPIClient:
     # ── Token Management ──
 
     def set_tokens(self, access_token: str, refresh_token: Optional[str] = None, user_id=None):
-        self._session_generation += 1
+        self._identity_generation += 1
         self._access_token = access_token
-        if refresh_token:
-            self._refresh_token = refresh_token
+        self._refresh_token = refresh_token
         self._auth_required = False
-        if user_id is not None:
-            self._bound_user_id = str(user_id)
+        # login and box-sso both install tokens first and then bind the local
+        # shadow user. Never carry the previous account's binding into that gap.
+        self._bound_user_id = None if user_id is None else str(user_id)
 
     def set_refresh_token(self, refresh_token: str):
-        self._session_generation += 1
+        self._identity_generation += 1
+        self._bound_user_id = None
+        self._access_token = None
         self._refresh_token = refresh_token
         self._auth_required = False
 
     def bind_user(self, user_id) -> None:
         """Say which local user the current cloud session speaks for."""
-        self._session_generation += 1
+        self._identity_generation += 1
         self._bound_user_id = None if user_id is None else str(user_id)
 
     @property
@@ -80,7 +117,7 @@ class RemoteAPIClient:
 
     def clear_tokens(self):
         """Clear all tokens and mark auth as required (used on logout)."""
-        self._session_generation += 1
+        self._identity_generation += 1
         self._access_token = None
         self._refresh_token = None
         self._auth_required = True
@@ -107,7 +144,7 @@ class RemoteAPIClient:
         )
 
     def _check_history_owner(self, user_id, generation):
-        if not self.cloud_session_is(user_id) or self._session_generation != generation:
+        if not self.cloud_session_is(user_id) or self._identity_generation != generation:
             raise RemoteHistoryIdentityChanged("Cloud history identity changed")
 
     def _auth_headers(self) -> Dict[str, str]:
@@ -118,7 +155,11 @@ class RemoteAPIClient:
 
     async def _refresh_access_token(self) -> bool:
         """Attempt to refresh the access token. Returns True on success."""
-        refresh_token, bound_user_id = self._refresh_token, self._bound_user_id
+        refresh_token, bound_user_id, generation = (
+            self._refresh_token,
+            self._bound_user_id,
+            self._identity_generation,
+        )
         if not refresh_token:
             return False
         try:
@@ -127,7 +168,11 @@ class RemoteAPIClient:
                 json={"refresh_token": refresh_token},
             )
             if resp.status_code == 200:
-                if (self._refresh_token, self._bound_user_id) != (refresh_token, bound_user_id):
+                if (self._refresh_token, self._bound_user_id, self._identity_generation) != (
+                    refresh_token,
+                    bound_user_id,
+                    generation,
+                ):
                     return False
                 data = resp.json()
                 self._access_token = data["access_token"]
@@ -155,7 +200,7 @@ class RemoteAPIClient:
         """Make an HTTP request with automatic token refresh on 401."""
         if history_owner is not None:
             self._check_history_owner(history_owner, history_generation)
-        session = (self._refresh_token, self._bound_user_id)
+        session = (self._refresh_token, self._bound_user_id, self._identity_generation)
         headers = self._auth_headers() if auth else {}
         resp = await self._client.request(method, path, json=json, params=params, headers=headers)
 
@@ -163,12 +208,12 @@ class RemoteAPIClient:
             self._check_history_owner(history_owner, history_generation)
 
         if resp.status_code == 401 and auth and session[0]:
-            if (self._refresh_token, self._bound_user_id) != session:
+            if (self._refresh_token, self._bound_user_id, self._identity_generation) != session:
                 return resp
             refreshed = await self._refresh_access_token()
             if history_owner is not None:
                 self._check_history_owner(history_owner, history_generation)
-            if (self._refresh_token, self._bound_user_id) != session:
+            if (self._refresh_token, self._bound_user_id, self._identity_generation) != session:
                 return resp
             if refreshed:
                 headers = self._auth_headers()
@@ -182,7 +227,7 @@ class RemoteAPIClient:
         return resp
 
     async def _history_json(self, user_id, method, path, **kwargs):
-        generation = self._session_generation
+        generation = self._identity_generation
         self._check_history_owner(user_id, generation)
         response = await self._request(method, path, history_owner=user_id, history_generation=generation, **kwargs)
         self._check_history_owner(user_id, generation)
@@ -200,6 +245,108 @@ class RemoteAPIClient:
 
     async def baipu_history_sync(self, user_id, record_id, data):
         return await self._history_json(user_id, "PUT", f"/api/v1/baipu/history/{record_id}/sync", json=data)
+
+    def _assert_cloud_identity(self, identity: _CloudIdentity) -> None:
+        if (self._bound_user_id, self._identity_generation) != (identity.user_id, identity.generation):
+            raise CloudIdentityChangedError()
+
+    async def _identity_bound_refresh(self, identity: _CloudIdentity) -> bool:
+        """Refresh only this session; outages stay retryable rather than logging it out."""
+        self._assert_cloud_identity(identity)
+        if not identity.refresh_token:
+            return False
+        try:
+            response = await self._client.post("/api/v1/auth/refresh", json={"refresh_token": identity.refresh_token})
+        except httpx.TransportError:
+            self._assert_cloud_identity(identity)
+            raise
+        self._assert_cloud_identity(identity)
+        if response.status_code >= 500:
+            response.raise_for_status()
+        if response.status_code != 200:
+            return False
+        access_token = response.json()["access_token"]
+        self._assert_cloud_identity(identity)
+        self._access_token = access_token
+        self._auth_required = False
+        return True
+
+    async def _identity_bound_request(self, method: str, path: str, *, expected_user_id, json=None) -> Any:
+        if not self.is_authenticated or self._bound_user_id is None or self._bound_user_id != str(expected_user_id):
+            raise CloudIdentityChangedError()
+        identity = _CloudIdentity(
+            self._bound_user_id, self._identity_generation, self._access_token, self._refresh_token
+        )
+
+        async def send(access_token):
+            # No mutable singleton token reads after the snapshot check. A request
+            # already sent with A's bearer may finish for A, but can never become B's.
+            self._assert_cloud_identity(identity)
+            try:
+                response = await self._client.request(
+                    method,
+                    path,
+                    json=json,
+                    headers={
+                        "X-StellaBox-Device-ID": self.device_id,
+                        "Authorization": f"Bearer {access_token}",
+                    },
+                )
+            except httpx.TransportError:
+                self._assert_cloud_identity(identity)
+                raise
+            self._assert_cloud_identity(identity)
+            return response
+
+        response = await send(identity.access_token)
+        if response.status_code == 401 and identity.refresh_token:
+            refreshed = await self._identity_bound_refresh(identity)
+            self._assert_cloud_identity(identity)
+            if refreshed:
+                response = await send(self._access_token)
+            else:
+                self._auth_required = True
+        self._assert_cloud_identity(identity)
+        response.raise_for_status()
+        result = response.json()
+        self._assert_cloud_identity(identity)
+        return result
+
+    # ── Membership and paid analysis (cloud authority only) ──
+
+    async def billing_catalog(self, *, expected_user_id) -> Dict:
+        return await self._identity_bound_request("GET", "/api/v1/billing/catalog", expected_user_id=expected_user_id)
+
+    async def billing_usage(self, *, expected_user_id) -> Dict:
+        return await self._identity_bound_request("GET", "/api/v1/billing/usage", expected_user_id=expected_user_id)
+
+    async def billing_quote(self, data: Dict, *, expected_user_id) -> Dict:
+        return await self._identity_bound_request(
+            "POST", "/api/v1/billing/quotes", json=data, expected_user_id=expected_user_id
+        )
+
+    async def billing_create_order(self, data: Dict, *, expected_user_id) -> Dict:
+        return await self._identity_bound_request(
+            "POST", "/api/v1/billing/orders", json=data, expected_user_id=expected_user_id
+        )
+
+    async def billing_list_orders(self, *, expected_user_id) -> Dict:
+        return await self._identity_bound_request("GET", "/api/v1/billing/orders", expected_user_id=expected_user_id)
+
+    async def billing_get_order(self, order_id: str, *, expected_user_id) -> Dict:
+        return await self._identity_bound_request(
+            "GET", f"/api/v1/billing/orders/{order_id}", expected_user_id=expected_user_id
+        )
+
+    async def paid_position(self, data: Dict, *, expected_user_id) -> Dict:
+        return await self._identity_bound_request(
+            "POST", "/api/v1/analysis/positions", json=data, expected_user_id=expected_user_id
+        )
+
+    async def paid_position_get(self, position_id: str, *, expected_user_id) -> Dict:
+        return await self._identity_bound_request(
+            "GET", f"/api/v1/analysis/positions/{position_id}", expected_user_id=expected_user_id
+        )
 
     # ── Auth ──
 
@@ -406,32 +553,55 @@ class RemoteAPIClient:
 
     # ── Reports (remote-only in board mode) ──
 
-    async def list_reports(self) -> List[Dict]:
+    async def list_reports(self, *, expected_user_id=None) -> List[Dict]:
+        if expected_user_id is not None:
+            return await self._identity_bound_request("GET", "/api/v1/reports/", expected_user_id=expected_user_id)
         resp = await self._request("GET", "/api/v1/reports/")
         resp.raise_for_status()
         return resp.json()
 
-    async def get_report_summary(self) -> Dict:
+    async def get_report_summary(self, *, expected_user_id=None) -> Dict:
+        if expected_user_id is not None:
+            return await self._identity_bound_request(
+                "GET", "/api/v1/reports/summary", expected_user_id=expected_user_id
+            )
         resp = await self._request("GET", "/api/v1/reports/summary")
         resp.raise_for_status()
         return resp.json()
 
-    async def get_report(self, task_id: int) -> Dict:
+    async def get_report(self, task_id: int, *, expected_user_id=None) -> Dict:
+        if expected_user_id is not None:
+            return await self._identity_bound_request(
+                "GET", f"/api/v1/reports/{task_id}", expected_user_id=expected_user_id
+            )
         resp = await self._request("GET", f"/api/v1/reports/{task_id}")
         resp.raise_for_status()
         return resp.json()
 
-    async def create_report(self, data: Dict) -> Dict:
+    async def create_report(self, data: Dict, *, expected_user_id=None) -> Dict:
+        if expected_user_id is not None:
+            return await self._identity_bound_request(
+                "POST", "/api/v1/reports/", json=data, expected_user_id=expected_user_id
+            )
         resp = await self._request("POST", "/api/v1/reports/", json=data)
         resp.raise_for_status()
         return resp.json()
 
-    async def retry_report(self, task_id: int) -> Dict:
-        resp = await self._request("POST", f"/api/v1/reports/{task_id}/retry")
+    async def retry_report(self, task_id: int, data: Optional[Dict] = None, *, expected_user_id=None) -> Dict:
+        if expected_user_id is not None:
+            return await self._identity_bound_request(
+                "POST", f"/api/v1/reports/{task_id}/retry", json=data, expected_user_id=expected_user_id
+            )
+        kwargs = {} if data is None else {"json": data}
+        resp = await self._request("POST", f"/api/v1/reports/{task_id}/retry", **kwargs)
         resp.raise_for_status()
         return resp.json()
 
-    async def get_report_moves(self, task_id: int) -> List[Dict]:
+    async def get_report_moves(self, task_id: int, *, expected_user_id=None) -> List[Dict]:
+        if expected_user_id is not None:
+            return await self._identity_bound_request(
+                "GET", f"/api/v1/reports/{task_id}/moves", expected_user_id=expected_user_id
+            )
         resp = await self._request("GET", f"/api/v1/reports/{task_id}/moves")
         resp.raise_for_status()
         return resp.json()

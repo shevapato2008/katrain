@@ -78,7 +78,12 @@ async def _login_headers(app):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/api/v1/auth/login", json={"username": username, "password": "password"})
     assert response.status_code == 200
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+    headers = {"Authorization": f"Bearer {response.json()['access_token']}"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        user_id = (await client.get("/api/v1/auth/me", headers=headers)).json()["id"]
+    # Paid writes use the same cloud shadow-user binding as box SSO.
+    app.state._test_remote.bound_user_id = str(user_id)
+    return headers
 
 
 @pytest.mark.asyncio
@@ -98,14 +103,23 @@ async def test_board_report_endpoints_forward_to_remote_without_local_report_wri
         assert (await client.post("/api/v1/reports/41/retry", headers=headers)).status_code == 200
 
     remote = board_app.state._test_remote
-    remote.list_reports.assert_awaited_once_with()
-    remote.get_report_summary.assert_awaited_once_with()
-    remote.get_report.assert_awaited_once_with(41)
-    remote.get_report_moves.assert_awaited_once_with(41)
+    remote.list_reports.assert_awaited_once_with(expected_user_id=int(remote.bound_user_id))
+    remote.get_report_summary.assert_awaited_once_with(expected_user_id=int(remote.bound_user_id))
+    remote.get_report.assert_awaited_once_with(41, expected_user_id=int(remote.bound_user_id))
+    remote.get_report_moves.assert_awaited_once_with(41, expected_user_id=int(remote.bound_user_id))
     remote.create_report.assert_awaited_once_with(
-        {"user_game_id": "remote-game", "report_type": "normal", "force": True}
+        {
+            "user_game_id": "remote-game",
+            "report_type": "normal",
+            "force": True,
+            "quote_token": None,
+            "idempotency_key": None,
+        },
+        expected_user_id=int(remote.bound_user_id),
     )
-    remote.retry_report.assert_awaited_once_with(41)
+    remote.retry_report.assert_awaited_once_with(
+        41, {"quote_token": None, "idempotency_key": None}, expected_user_id=int(remote.bound_user_id)
+    )
 
     db = board_app.state.report_session_factory()
     try:
@@ -113,6 +127,18 @@ async def test_board_report_endpoints_forward_to_remote_without_local_report_wri
         assert db.query(models_db.ReportTaskMove).count() == 0
     finally:
         db.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "path", ["/api/v1/reports/", "/api/v1/reports/summary", "/api/v1/reports/41", "/api/v1/reports/41/moves"]
+)
+async def test_board_private_report_reads_require_the_same_cloud_user(board_app, path):
+    headers = await _login_headers(board_app)
+    board_app.state._test_remote.bound_user_id = "different-user"
+    async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://test") as client:
+        response = await client.get(path, headers=headers)
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio

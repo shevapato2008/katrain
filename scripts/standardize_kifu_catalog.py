@@ -107,10 +107,11 @@ def apply_manifest(conn, manifest, *, expected_sha256):
         # Ranks pin original source links. Dedup then aggregates display provenance.
         ranks = apply_rank_manifest(conn, manifest["ranks"], expected_sha256=rank_manifest_sha256(manifest["ranks"]))
         dedup = apply_dedup_manifest(conn, manifest["dedup"], expected_sha256=dedup_manifest_sha256(manifest["dedup"]))
-        from katrain.web.kifu.prepare_search import maintain_after_write
-
-        search = maintain_after_write(conn)
-        return {"ranks": ranks, "dedup": dedup, "search": search}
+        return {
+            "ranks": ranks,
+            "dedup": dedup,
+            "search": {"status": "caller_managed", "album_ids": _affected_album_ids(manifest)},
+        }
 
 
 def undo_manifest(conn, manifest, *, expected_sha256):
@@ -121,9 +122,38 @@ def undo_manifest(conn, manifest, *, expected_sha256):
         _lock(conn, [member["album"]["id"] for group in manifest["dedup"]["groups"] for member in group["members"]])
         dedup = undo_dedup_manifest(conn, manifest["dedup"], expected_sha256=dedup_manifest_sha256(manifest["dedup"]))
         ranks = undo_rank_manifest(conn, manifest["ranks"], expected_sha256=rank_manifest_sha256(manifest["ranks"]))
-        from katrain.web.kifu.prepare_search import maintain_after_write
+        return {
+            "ranks": ranks,
+            "dedup": dedup,
+            "search": {"status": "caller_managed", "album_ids": _affected_album_ids(manifest)},
+        }
 
-        return {"ranks": ranks, "dedup": dedup, "search": maintain_after_write(conn)}
+
+def _affected_album_ids(manifest):
+    ids = {member["album"]["id"] for group in manifest["dedup"]["groups"] for member in group["members"]}
+    ids.update(change["album_id"] for change in manifest["ranks"]["changes"])
+    if any(type(album_id) is not int or album_id <= 0 for album_id in ids):
+        raise ValueError("finite positive album IDs required for catalog search sync")
+    return sorted(ids)
+
+
+def write_manifest(engine, manifest, *, mode, expected_sha256):
+    """Own the real SQL commit and existing ES pending/refresh/ready protocol.
+
+    The connection helpers above deliberately leave transaction and search
+    coordination to their caller. Production CLI writes use this coordinator;
+    a post-commit ES failure retains the existing repairable finite-ID gate.
+    """
+    from katrain.web.kifu import name_batch, search_sync
+
+    _validate(manifest, expected_sha256)
+    if mode not in {"apply", "undo"}:
+        raise ValueError("catalog write mode must be apply or undo")
+    ids = _affected_album_ids(manifest)
+    with name_batch._locked_write(engine, search_operation=("sync_ids", {"album_ids": ids})) as conn:
+        result = (apply_manifest if mode == "apply" else undo_manifest)(conn, manifest, expected_sha256=expected_sha256)
+    result["search"] = {"status": "synced" if search_sync.sync_mode() == "enabled" else "disabled", "album_ids": ids}
+    return result
 
 
 def validate_writer_preflight(preflight, manifest):
@@ -191,10 +221,7 @@ def main(argv=None):
             parser.error("apply requires --writer-preflight from the deployed compatible runtime")
         validate_writer_preflight(json.loads(args.writer_preflight.read_text()), manifest)
     export_manifest(manifest, args.audit_dir / (args.mode + "-" + args.sha256 + ".json"))
-    with engine.begin() as conn:
-        result = (apply_manifest if args.mode == "apply" else undo_manifest)(
-            conn, manifest, expected_sha256=args.sha256
-        )
+    result = write_manifest(engine, manifest, mode=args.mode, expected_sha256=args.sha256)
     print(json.dumps({"status": args.mode, **result}, ensure_ascii=False))
     return 0
 

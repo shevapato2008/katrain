@@ -11,7 +11,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import SyncQueueEntry
-from katrain.web.core.remote_client import RemoteAPIClient
+from katrain.web.core.remote_client import RemoteAPIClient, user_game_write_refusal_code
 
 logger = logging.getLogger("katrain_web")
 
@@ -186,6 +186,10 @@ class SyncWorker:
                 self._absorb_response(item, resp)
                 return  # Success
             elif resp.status_code == 409:
+                if item.operation == "create_user_game":
+                    refusal_code = user_game_write_refusal_code(resp)
+                    if refusal_code:
+                        raise PermanentError(f"HTTP 409 {refusal_code}: {resp.text[:200]}")
                 if item.operation == "settle_ai_ladder_ranked":
                     try:
                         body = resp.json()

@@ -207,9 +207,9 @@ async def lifespan(app: FastAPI):
     yield
 
     # ── Shutdown ──
-    kifu_reader = getattr(app.state, "kifu_read_executor", None)
-    if kifu_reader is not None:
-        await kifu_reader.close()
+    kifu_search = getattr(app.state, "kifu_search_client", None)
+    if kifu_search is not None:
+        await kifu_search.aclose()
     geometry_calibration = getattr(app.state, "geometry_calibration", None)
     if geometry_calibration:
         geometry_calibration.stop()
@@ -312,6 +312,8 @@ async def _lifespan_server(app: FastAPI, log):
     user_game_repo = UserGameRepository(session_factory)
     user_game_analysis_repo = UserGameAnalysisRepository(session_factory)
     ai_ladder_repo = AiLadderRankedRepository(session_factory)
+
+    _reconcile_membership_reservations(session_factory)
 
     # Reconcile any credit reservations stuck after a previous crash.
     try:
@@ -456,14 +458,10 @@ async def _lifespan_server(app: FastAPI, log):
     # ── Platform Manager (cross-platform online play) ─────────────────────
     _init_platform_manager(app, manager, log)
 
-    # Keep the live game/session managers in this one web process. Only the
-    # default server PostgreSQL kifu listing gets independent reader processes.
-    if session_factory is SessionLocal and kifu_db_engine.dialect.name == "postgresql":
-        from katrain.web.core.kifu_read_executor import KifuReadExecutor
+    if settings.KIFU_SEARCH_BACKEND == "elasticsearch":
+        from katrain.web.kifu.search_es import AsyncElasticsearchClient, SearchSettings
 
-        reader = KifuReadExecutor(kifu_db_engine.url.render_as_string(hide_password=False))
-        await reader.start()
-        app.state.kifu_read_executor = reader
+        app.state.kifu_search_client = AsyncElasticsearchClient(SearchSettings.from_env(role="read"))
 
     # Config-check verdicts and error collection for the admin console; server mode only. Started
     # last so that a failure earlier in startup cannot leave the handler attached to the root logger.
@@ -792,8 +790,11 @@ async def _lifespan_board(app: FastAPI, log):
                 device_id=capture_config.camera_device,
                 width=capture_config.width,
                 height=capture_config.height,
-                lock_exposure=(persisted_lock_exposure and not runtime_hardware_ae
-                               if hardware_vision_dir else capture_config.lock_exposure),
+                lock_exposure=(
+                    persisted_lock_exposure and not runtime_hardware_ae
+                    if hardware_vision_dir
+                    else capture_config.lock_exposure
+                ),
                 exposure=(None if hardware_vision_dir else capture_config.exposure),
                 lock_awb=capture_config.lock_awb,
             )
@@ -1023,6 +1024,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     app = FastAPI(lifespan=lifespan)
     app.state.ranked_analysis_activity = RankedAnalysisActivity()
+    app.state.membership_guard_active = settings.MEMBERSHIP_MODE != "legacy"
 
     @app.exception_handler(EndgameConflict)
     async def endgame_conflict_to_409(request: Request, exc: EndgameConflict):
@@ -1158,6 +1160,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 if not session.game_ended:
                     session.last_state = session.katrain.get_state()
         state = session.last_state or session.katrain.get_state()
+        from katrain.web.core.paid_analysis import legacy_analysis_allowed, strip_private_analysis
+
+        if not legacy_analysis_allowed(runtime=session.katrain, app=app):
+            state = strip_private_analysis(state)
+            session.last_state = state
         state["sockets_count"] = len(session.sockets)
         if not strict_box_sso_enabled():
             state["spectator_count"] = session.spectator_presence.count(
@@ -1191,6 +1198,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         max_sessions=max_sessions,
         enable_engine=enable_engine,
     )
+    manager.membership_guard_active = app.state.membership_guard_active
     app.state.session_manager = manager
 
     @app.get("/api/pvp/identity")
@@ -2002,6 +2010,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/continuous")
     def toggle_continuous_analysis(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "toggle continuous analysis")
         guard_bot_mutation(session)
@@ -2023,6 +2034,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/current")
     def analyze_current(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         """On-demand analysis of the current position (kiosk 领地/图表). Free games only —
         the interface chokepoint (ANALYSIS_ACTIONS) makes this a no-op in rated/ranked. The
         analysis itself streams back asynchronously over the game WebSocket, so this returns
@@ -2040,6 +2054,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/extra")
     def analyze_extra(request: AnalyzeExtraRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "analyze extra")
         guard_bot_mutation(session)
@@ -2054,6 +2071,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/show-pv")
     def show_pv(request: PVRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis PV")
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "show pv")
@@ -2101,6 +2121,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/nav/mistake")
     def find_mistake(request: FindMistakeRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "find mistake")
         guard_bot_mutation(session)
@@ -2129,6 +2152,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/tsumego")
     def tsumego_frame(request: TsumegoRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "tsumego frame")
         guard_bot_mutation(session)
@@ -2142,6 +2168,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/selfplay")
     def selfplay(request: SelfPlayRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "selfplay")
         guard_bot_mutation(session)
@@ -2157,6 +2186,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/region")
     def set_region(request: SelectBoxRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "set region")
         guard_bot_mutation(session)
@@ -3570,6 +3602,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/game")
     def analyze_game(request: GameAnalysisRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "analyze game")
         guard_bot_mutation(session)
@@ -3590,6 +3625,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/scan")
     def analysis_scan(request: AnalysisScanRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "analysis scan")
         guard_bot_mutation(session)
@@ -3603,6 +3641,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.get("/api/analysis/progress")
     def analysis_progress(session_id: str, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis progress")
         session = _get_session_or_404(manager, session_id)
         guard_session_reader(session, current_user, "analysis progress")
@@ -3614,6 +3655,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/report")
     def get_game_report(request: GameReportRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis report")
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "get game report")
@@ -4262,7 +4306,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 if payload.get("type") == "game_end" and isinstance(payload.get("data"), dict):
                     result = payload["data"].get("result")
                     if isinstance(result, str) and result:
-                        state = session.last_state or session.katrain.get_state()
+                        state = session_state_for_read(session)
                         state = {**state, "end_result": result, "awaiting_count": False, "degraded": False}
                         session.game_ended = True
                         apply_pvp_box_state(session_id, state)
@@ -4454,6 +4498,24 @@ async def _cleanup_loop(manager: SessionManager):
 REPORT_SETTLEMENT_INTERVAL_SECONDS = 60
 
 
+def _reconcile_membership_reservations(session_factory):
+    """Cloud authority only; both services flush and this boundary commits once."""
+    from datetime import datetime, timezone
+    from katrain.web.core import billing_operations, payments
+
+    db = session_factory()
+    try:
+        instant = datetime.now(timezone.utc)
+        billing_operations.reconcile_expired_positions(db, now=instant)
+        payments.reconcile_pending_orders(db, now=instant, settings=settings, limit=100)
+        db.commit()
+    except Exception:
+        db.rollback()
+        logging.getLogger("katrain_web").warning("Membership reservation sweep failed", exc_info=True)
+    finally:
+        db.close()
+
+
 async def _report_settlement_loop(session_factory):
     """定时对账：把终态但仍持预扣的复盘任务结清。
 
@@ -4467,6 +4529,7 @@ async def _report_settlement_loop(session_factory):
     """
     while True:
         await asyncio.sleep(REPORT_SETTLEMENT_INTERVAL_SECONDS)
+        await asyncio.to_thread(_reconcile_membership_reservations, session_factory)
         try:
             from katrain.web.core import report_settlement
 

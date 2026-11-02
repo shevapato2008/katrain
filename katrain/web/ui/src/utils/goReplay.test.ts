@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildReplayBoardState, buildReplayPosition, parseMove } from './goReplay';
+import { buildReplayBoardState as buildResearchReplayBoardState } from './researchBoardReplay';
 import { sgfToMoves } from './sgfSerializer';
 import kifu140859 from './__fixtures__/kifu-140859.sgf?raw';
 import kifu124442 from './__fixtures__/kifu-124442.sgf?raw';
@@ -72,12 +73,15 @@ describe('Galaxy SGF replay compatibility', () => {
       const stateAt = (cursor: number) => buildReplayBoardState(moves, setupCount + cursor, size, stoneColors, setupCount);
       const positionAt = (cursor: number) => buildReplayPosition(moves, setupCount + cursor, size, stoneColors, setupCount);
 
-      it('matches the independent FF4 oracle at every original dense step', () => {
+      it.each([
+        ['shared', buildReplayBoardState],
+        ['research', buildResearchReplayBoardState],
+      ] as const)('%s replay matches the independent FF4 oracle at every original dense step', (_surface, buildState) => {
         const reference = golden.games.find(game => game.id === record.id)!;
         expect(createHash('sha256').update(record.sgf).digest('hex')).toBe(reference.sgf_sha256);
         expect(moves).toHaveLength(reference.steps);
         for (let k = 0; k <= moves.length; k += 1) {
-          const position = matrixPosition(buildReplayBoardState(moves, k, size, stoneColors, setupCount));
+          const position = matrixPosition(buildState(moves, k, size, stoneColors, setupCount));
           const stones = [...position.black.map(point => `B:${point}`), ...position.white.map(point => `W:${point}`)].sort();
           expect(createHash('sha256').update(stones.join('\n')).digest('hex'), `record ${record.id}, dense step ${k}`)
             .toBe(reference.hashes[k]);

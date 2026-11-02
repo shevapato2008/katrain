@@ -313,32 +313,3 @@ async def test_unknown_or_failing_pool_observation_does_not_affect_response(capl
     assert metric["db_pool_after_final_body"] is None
     assert sent[-1]["body"] == b"ok"
     assert metric["status"] == 200 and metric["bytes"] == 2
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("observed", [False, True])
-async def test_process_reader_boundaries_replace_unrelated_parent_pool(caplog, observed):
-    from katrain.web.core.kifu_http_timing import KifuHTTPTimingMiddleware
-
-    caplog.set_level(logging.INFO, logger=LOGGER)
-    reader_pool = {
-        "worker_pid": 123,
-        "before_read": {"size": 1, "checkedout": 0, "overflow": -1},
-        "after_read": {"size": 1, "checkedout": 0, "overflow": 0},
-    }
-    if not observed:
-        reader_pool = None  # A rejected or broken pool has no child boundary.
-
-    async def app(scope, receive, send):
-        scope.setdefault("state", {})["kifu_reader_pool"] = reader_pool
-        await send({"type": "http.response.start", "status": 200, "headers": []})
-        await send({"type": "http.response.body", "body": b"{}"})
-
-    async def send(message):
-        pass
-
-    await KifuHTTPTimingMiddleware(app, pool=object())(_scope(), _receive, send)
-    (metric,) = _metrics(caplog)
-    assert metric["reader_pool"] == reader_pool
-    assert "db_pool_at_scope_entry" not in metric
-    assert "db_pool_after_final_body" not in metric

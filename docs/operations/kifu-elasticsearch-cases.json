@@ -1,0 +1,346 @@
+{
+  "version": 1,
+  "snapshot_casefile_sha256": "db5d71fb4563aeff580956509e9b60fee5378e13d96b9355f03a597b972051a5",
+  "note": "Case definitions and counts only. Full response oracle remains private0600 and must be recaptured in the build snapshot if source data changed. New multilingual combination queries have separate expectations.",
+  "cases": [
+    {
+      "id": "name-01",
+      "category": "unique_name",
+      "params": {
+        "q": "王星昊",
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 506
+    },
+    {
+      "id": "name-02",
+      "category": "unique_name",
+      "params": {
+        "q": "柯洁",
+        "lang": "tw",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 1043
+    },
+    {
+      "id": "name-03",
+      "category": "unique_name",
+      "params": {
+        "q": "申真谞",
+        "lang": "ko",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 1150
+    },
+    {
+      "id": "name-04",
+      "category": "unique_name",
+      "params": {
+        "q": "朴廷桓",
+        "lang": "ko",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 1587
+    },
+    {
+      "id": "name-05",
+      "category": "unique_name",
+      "params": {
+        "q": "辜梓豪",
+        "lang": "en",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 749
+    },
+    {
+      "id": "name-06",
+      "category": "unique_name",
+      "params": {
+        "q": "丁浩",
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 635
+    },
+    {
+      "id": "name-07",
+      "category": "unique_name",
+      "params": {
+        "q": "井山裕太",
+        "lang": "jp",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 1327
+    },
+    {
+      "id": "name-08",
+      "category": "unique_name",
+      "params": {
+        "q": "一力辽",
+        "lang": "jp",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 1041
+    },
+    {
+      "id": "name-09",
+      "category": "unique_name",
+      "params": {
+        "q": "李轩豪",
+        "lang": "en",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 787
+    },
+    {
+      "id": "name-10",
+      "category": "unique_name",
+      "params": {
+        "q": "芈昱廷",
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 1040
+    },
+    {
+      "id": "name-11",
+      "category": "unique_name",
+      "params": {
+        "q": "连笑",
+        "lang": "tw",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 881
+    },
+    {
+      "id": "name-12",
+      "category": "unique_name",
+      "params": {
+        "q": "许嘉阳",
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 621
+    },
+    {
+      "id": "wang-tw",
+      "category": "unique_name",
+      "params": {
+        "q": "王星昊",
+        "lang": "tw",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 506
+    },
+    {
+      "id": "wang-jp",
+      "category": "unique_name",
+      "params": {
+        "q": "王星昊",
+        "lang": "jp",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 506
+    },
+    {
+      "id": "wang-ko",
+      "category": "unique_name",
+      "params": {
+        "q": "王星昊",
+        "lang": "ko",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 506
+    },
+    {
+      "id": "wang-en",
+      "category": "unique_name",
+      "params": {
+        "q": "王星昊",
+        "lang": "en",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 506
+    },
+    {
+      "id": "wang-page2",
+      "category": "unique_name",
+      "params": {
+        "q": "王星昊",
+        "lang": "cn",
+        "page": 2,
+        "page_size": 20
+      },
+      "snapshot_total": 506
+    },
+    {
+      "id": "alias-latin",
+      "category": "alias_shared",
+      "params": {
+        "q": "Wang Xinghao",
+        "lang": "en",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 506
+    },
+    {
+      "id": "shared-zhang",
+      "category": "alias_shared",
+      "params": {
+        "q": "张涛",
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 488
+    },
+    {
+      "id": "raw-zhang",
+      "category": "raw",
+      "params": {
+        "q": "张涛",
+        "lang": "ko",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 488
+    },
+    {
+      "id": "main-id-1",
+      "category": "player_id",
+      "params": {
+        "player_id": 25,
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 506
+    },
+    {
+      "id": "main-id-2",
+      "category": "player_id",
+      "params": {
+        "player_id": 612,
+        "lang": "en",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 1043
+    },
+    {
+      "id": "main-id-3",
+      "category": "player_id",
+      "params": {
+        "player_id": 54,
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 1586
+    },
+    {
+      "id": "main-id-4",
+      "category": "player_id",
+      "params": {
+        "player_id": 37,
+        "lang": "en",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 749
+    },
+    {
+      "id": "wu-historical",
+      "category": "alias_shared",
+      "params": {
+        "q": "吴清源",
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 1231
+    },
+    {
+      "id": "no-match",
+      "category": "compat",
+      "params": {
+        "q": "kifu-no-match-20261030-opaque",
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 0
+    },
+    {
+      "id": "empty-query",
+      "category": "compat",
+      "params": {
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 176690
+    },
+    {
+      "id": "exact-event",
+      "category": "compat",
+      "params": {
+        "q": "第12届国手山脉杯世界赛半决赛",
+        "lang": "cn",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 2
+    },
+    {
+      "id": "date-query",
+      "category": "compat",
+      "params": {
+        "q": "2026-10-24",
+        "lang": "en",
+        "page": 1,
+        "page_size": 20
+      },
+      "snapshot_total": 20
+    },
+    {
+      "id": "past-end",
+      "category": "compat",
+      "params": {
+        "q": "王星昊",
+        "lang": "cn",
+        "page": 100000,
+        "page_size": 20
+      },
+      "snapshot_total": 506
+    },
+    {
+      "id": "last-page",
+      "category": "compat",
+      "params": {
+        "lang": "cn",
+        "page": 8835,
+        "page_size": 20
+      },
+      "snapshot_total": 176690
+    }
+  ]
+}

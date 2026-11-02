@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>智星盒 Galaxy · 会员与用量设计预览</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../../katrain/web/ui/src/kiosk-shell/fonts.css">
+<style>
+:root{color-scheme:dark;--bg:#0f1416;--surface:#18211f;--raised:#1d2924;--line:#34483f;--quiet-line:#2a3b33;--text:#eef3f1;--sub:#b2c1ba;--accent:#72c792;--accent-bg:#294a38;--amber:#e0b16b;--error:#ef9b91;--font:"SmartBox Sans","SmartBox Kai",serif;color:var(--text);background:var(--bg);font-family:var(--font);font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}button,select,a{font:inherit}button,select{min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--text);padding:8px 16px}button{cursor:pointer;transition:background 150ms,border-color 150ms}button:hover:not(:disabled){background:#2a3f31;border-color:#72a887}button:active:not(:disabled){background:#21372a}button:disabled{opacity:.48;cursor:not-allowed}button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #a8deb9;outline-offset:3px}a{color:var(--accent);text-underline-offset:4px}.primary{background:var(--accent);border-color:var(--accent);color:#12291b}.primary:hover:not(:disabled){background:#91d9aa;color:#12291b}.muted{color:var(--sub)}.mono{font-family:"SmartBox IBM Plex Mono","SmartBox Mono",monospace;font-variant-numeric:tabular-nums}.workbench{position:relative;z-index:50;padding:12px 18px;background:#203025;border-bottom:1px solid #506649;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font:14px system-ui}.workbench strong{margin-right:8px}.workbench select{font:14px system-ui;max-width:180px}.workbench button{font:14px system-ui}.workbench a{margin-left:8px}.notice{padding:8px 18px;font:14px/1.6 system-ui;color:#e4ca9b;background:#272217}.capture .workbench,.capture .notice{display:none}.shell{min-height:900px;display:grid;grid-template-columns:204px minmax(0,1fr)}.sidebar{background:#141e19;border-right:1px solid var(--quiet-line);padding:28px 16px 20px;display:flex;flex-direction:column;gap:28px}.brand{display:flex;flex-direction:column;gap:4px;padding:0 12px}.brand-zh{font-size:32px;line-height:1.3}.brand-en{font-family:"SmartBox Serif",serif;font-style:italic;font-size:22px;color:#bad0c1}.side-nav{display:flex;flex-direction:column;gap:8px}.nav-item{display:flex;align-items:center;gap:12px;padding:12px;min-height:48px;font-size:19px;color:var(--sub);border-radius:8px}.nav-item svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;flex:none}.nav-item.current{color:#e1f3e7;background:var(--accent-bg)}.account{margin-top:auto;border-top:1px solid var(--line);padding:22px 10px 0;display:flex;gap:12px;align-items:center}.avatar{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#3d6550;color:#e8f6e8}.account strong{display:block;font-size:18px;font-weight:500}.account small{display:block;color:var(--sub);font-size:14px;margin-top:3px}.workspace{min-width:0}.topbar{height:56px;border-bottom:1px solid var(--quiet-line);padding:0 42px;display:flex;align-items:center;justify-content:space-between;color:var(--sub);font-size:17px}.topbar span:last-child{display:flex;gap:8px;align-items:center}.online-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block}.offline-dot{background:var(--amber)}.content{padding:26px 42px 20px;max-width:1400px;margin:0 auto}.heading{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:18px}h1{font-size:32px;font-weight:500;line-height:1.3;margin:0 0 10px}.heading p{font-size:18px;color:var(--sub);margin:0;line-height:1.6}.sync-info{text-align:right;font-size:15px;line-height:1.7;color:var(--sub);padding-top:2px}.sync-info strong{display:block;font-weight:400;color:var(--accent)}.sync-info.stale strong{color:var(--amber)}.page-tabs{display:flex;gap:28px;border-bottom:1px solid var(--line);margin-bottom:20px}.page-tabs button{background:none;border:0;border-radius:0;padding:10px 4px 14px;font-size:20px;color:var(--sub);position:relative;min-width:80px}.page-tabs button[aria-current=page]{color:#c8ebd3}.page-tabs button[aria-current=page]:after{content:"";height:3px;position:absolute;left:0;right:0;bottom:-1px;background:var(--accent)}.usage-grid{display:grid;grid-template-columns:minmax(0,1fr) 284px;gap:24px;align-items:start}.section-title{margin:0;font-size:22px;font-weight:500}.section-note{font-size:16px;color:var(--sub);margin:7px 0 0;line-height:1.65}.usage-main{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px 24px}.resource-tabs{display:flex;gap:8px;background:#101b16;border:1px solid var(--quiet-line);padding:5px;border-radius:9px;margin-bottom:16px}.resource-tabs button{flex:1;border:1px solid transparent;background:none;font-size:19px;padding:9px 12px}.resource-tabs button[aria-pressed=true]{background:#294536;border-color:#446d52;color:#dbf1e2}.resource-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}.profile{font-size:15px;color:#bbd9c6;border:1px solid #3d5b46;border-radius:5px;padding:5px 9px;white-space:nowrap}.quota-row{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;padding:14px 0;border-top:1px solid var(--line)}.quota-top{display:flex;align-items:center;justify-content:flex-start;gap:14px}.quota-top h3{font-size:19px;font-weight:500;margin:0}.quota-top .percentage{font-size:17px;color:var(--accent)}.quota-value{grid-column:2;grid-row:1;margin-top:0;display:flex;align-items:baseline;gap:9px}.quota-value strong{font-size:34px;font-weight:500;line-height:1.3}.quota-value span{font-size:18px;color:var(--sub)}.quota-value .unavailable{font:22px var(--font);color:var(--sub)}.bar{grid-column:1/-1;margin:10px 0 10px;background:#33463b;border-radius:6px;height:8px;overflow:hidden}.bar i{display:block;height:100%;border-radius:6px;background:var(--accent);width:var(--remaining)}.bar.empty i{background:var(--amber)}.reset-row{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px;line-height:1.6}.reset-row time{color:var(--sub);white-space:nowrap}.countdown{font-size:17px;color:#d8e9df}.reserved{grid-column:1/-1;font-size:15px;margin-top:4px;color:var(--sub)}.usage-footnote{padding-top:1px;color:var(--sub);font-size:16px;line-height:1.7;margin:0}.usage-aside{display:flex;flex-direction:column;gap:18px}.account-panel{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:22px}.account-panel .caption{font-size:16px;color:var(--sub)}.plan-name{display:flex;align-items:center;justify-content:space-between;margin:11px 0 12px}.plan-name strong{font:30px "SmartBox Serif","SmartBox Kai",serif;font-weight:500}.status-tag{border:1px solid #456b51;color:#b8dfc6;font-size:14px;padding:4px 8px;border-radius:5px}.account-panel p{font-size:16px;color:var(--sub);line-height:1.7;margin:7px 0 16px}.account-panel button{width:100%;font-size:17px}.wallet-number{font-size:28px;font-weight:500;margin:10px 0}.wallet-number small{font-size:17px;color:var(--sub);font-weight:400}.aside-note{font-size:15px;color:var(--sub);line-height:1.8;padding:0 2px}.info-line{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px 0;border-bottom:1px solid var(--quiet-line);font-size:17px;color:var(--sub)}.info-line button{flex:none;padding:4px 12px;font-size:16px}.explain-bottom{margin-top:22px;font-size:16px;line-height:1.7;color:var(--sub)}.explain-bottom p{margin:3px 0}.banner{border:1px solid #81683d;background:#2c281b;color:#edd2a5;border-radius:8px;padding:12px 16px;font-size:17px;line-height:1.6;margin-bottom:20px}.empty-state{min-height:350px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:14px;padding:36px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}.empty-state strong{font-size:24px;font-weight:500}.empty-state p{font-size:18px;color:var(--sub);margin:0}.plan-intro{display:flex;justify-content:space-between;gap:24px;margin-bottom:22px;font-size:18px;line-height:1.65}.plan-intro p{margin:0;color:var(--sub)}.plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.plan-card{border:1px solid var(--line);border-radius:12px;padding:24px;background:var(--surface);display:flex;flex-direction:column;gap:18px}.plan-card.selected{border-color:#66977a;background:#1d2c24}.plan-tier{display:flex;align-items:center;justify-content:space-between}.plan-tier h2{margin:0;font-family:"SmartBox Serif",serif;font-size:29px;font-weight:500}.price{font-size:34px;line-height:1.3;font-weight:500}.price small{font-size:17px;color:var(--sub);font-weight:400}.plan-rule{display:flex;flex-direction:column;gap:12px;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:17px}.plan-rule div{display:flex;justify-content:space-between;gap:8px}.plan-rule b{font-weight:500;color:#d9eee0}.plan-card p{font-size:16px;color:var(--sub);line-height:1.65;margin:0}.plan-card button{margin-top:auto;min-height:48px;font-size:18px}.comparison{font-size:17px;line-height:1.7;padding:20px 0;color:var(--sub)}.comparison p{margin:4px 0}.topup-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px}.pack{padding:28px;background:var(--surface);border:1px solid #5b8067;border-radius:12px}.pack-head{display:flex;align-items:center;justify-content:space-between}.pack h2{font-size:26px;font-weight:500;margin:0}.pack .subtitle{font-size:17px;color:var(--sub);margin:8px 0 24px}.pack-price{display:flex;align-items:baseline;gap:12px}.pack-price strong{font-size:38px;font-weight:500}.pack-price span{color:var(--sub);font-size:18px}.pack-unit{font-size:23px;color:#c9ead4;padding:18px 0;border-bottom:1px solid var(--line)}.pack ul{font-size:18px;line-height:1.9;color:var(--sub);padding-left:24px;margin:20px 0 26px}.pack button{width:100%;font-size:20px;min-height:48px}.pack-notes{font-size:17px;line-height:1.8}.pack-notes h3{font-size:22px;font-weight:500;margin:0 0 14px}.pack-notes p{margin:0 0 18px;color:var(--sub)}.pack-notes .wallet-strip{padding:18px 20px;border:1px solid var(--line);border-radius:8px;margin-bottom:26px}.wallet-strip strong{color:var(--text);font-size:23px;font-weight:500}.dialog-backdrop{position:fixed;inset:0;background:#030806cc;z-index:40;padding:24px;display:grid;place-items:center}.dialog-backdrop[hidden]{display:none}.dialog{width:790px;max-width:100%;max-height:calc(100vh - 48px);overflow:auto;border:1px solid #4e6c57;border-radius:14px;background:#1a2620;box-shadow:0 24px 80px #0008;padding:28px}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.dialog h2{font-size:26px;font-weight:500;margin:0}.close{width:44px;padding:0;font-size:26px}.test-badge{display:inline-block;font-size:15px;border:1px solid #7e714a;color:#edd19b;background:#2d291a;padding:5px 10px;border-radius:5px;margin-bottom:18px}.checkout-body{display:grid;grid-template-columns:228px 1fr;gap:26px;align-items:start}.no-qr{width:228px;height:228px;border:1px dashed #6f8977;border-radius:8px;background:#15221b;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;color:#c6dccd;padding:24px;font-size:22px}.no-qr svg{width:44px;height:44px;stroke:#8eb69b;fill:none;stroke-width:1.6}.no-qr small{font-size:16px;color:var(--sub);line-height:1.6}.checkout-info p{margin:0 0 10px;font-size:18px;line-height:1.6}.checkout-info .amount{font-size:34px;margin-bottom:14px}.checkout-info .effective{font-size:17px;color:#d3e9da}.payment-state{padding:12px 0;font-size:21px;color:#bbdfc6}.payment-state.error{color:var(--error)}.order-id{font-size:15px!important;color:var(--sub)}.dialog-footer{border-top:1px solid var(--line);padding-top:16px;margin:22px 0 0;color:var(--sub);font-size:16px;line-height:1.75}.dialog-footer p{margin:0 0 10px}.dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.dialog-actions button{min-width:110px;font-size:18px}.explanation{font-size:18px;line-height:1.85;color:var(--sub)}.explanation p{margin:0 0 14px}.explanation strong{font-weight:500;color:var(--text)}.toast{position:fixed;z-index:60;left:50%;bottom:24px;transform:translateX(-50%);background:#294535;border:1px solid #6f9579;border-radius:8px;padding:12px 20px;color:var(--text);font-size:18px;max-width:90%;text-align:center}.toast:empty{display:none}
+@media(max-width:1150px){.shell{grid-template-columns:170px minmax(0,1fr)}.content{padding:28px 24px}.topbar{padding:0 24px}.usage-grid{grid-template-columns:minmax(0,1fr) 240px;gap:18px}.account-panel{padding:18px}.usage-main{padding:20px}.plans{gap:12px}.plan-card{padding:20px}.plan-rule{font-size:16px}.reset-row{flex-wrap:wrap;gap:4px}}
+@media(max-width:850px){.shell{grid-template-columns:1fr;min-height:100vh}.sidebar{display:none}.usage-grid,.topup-grid{grid-template-columns:1fr}.usage-aside{display:grid;grid-template-columns:1fr 1fr}.aside-note{grid-column:1/-1}.plans{grid-template-columns:1fr}.heading{flex-wrap:wrap}.sync-info{text-align:left}.checkout-body{grid-template-columns:1fr}.no-qr{width:100%;height:150px}.plan-intro{flex-wrap:wrap}.content{padding:24px 18px}.topbar{padding:0 18px}.resource-tabs button{font-size:18px}.usage-aside{grid-template-columns:1fr}.dialog{padding:22px}.dialog-backdrop{padding:12px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body data-fixture-only="true">
+<div class="workbench" aria-label="设计预览控制，不进入产品">
+<strong>Galaxy · 设计示意</strong>
+<label for="scenario">状态</label><select id="scenario"><option value="pro">Pro 会员</option><option value="free">Free · 本周已使用</option><option value="exhausted">额度已耗尽</option><option value="not-started">24 小时尚未开始</option><option value="reserved">正在预留</option><option value="offline">离线旧数据</option><option value="boundary">倒计时跨零</option><option value="loading">加载中</option><option value="error">加载失败</option></select>
+<button id="network">模拟断网</button><button id="refresh-demo">模拟同步</button><button id="success">模拟到账 / 重放</button><button id="failure">模拟失败</button><button id="expiry">模拟过期</button><button id="reset-demo">重置</button>
+<a href="../kiosk-current-based-redesign-2026-10-14.html#membership-usage">打开 Kiosk 设计合集</a>
+</div>
+<div class="notice">所有账号、用量和订单均为内存 Fixture，仅用于视觉确认。固定示意时钟 2026-11-01 12:00 北京时间；不连接业务 API、不写数据库、不收款。</div>
+<div class="shell" id="frame">
+<aside class="sidebar"><div class="brand"><span class="brand-zh">智星盒</span><span class="brand-en">StellaBox · Galaxy</span></div><nav class="side-nav" aria-label="应用导航示意"><div class="nav-item"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3z"/></svg>首页</div><div class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 4v16"/></svg>对弈</div><div class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 4h8v17H3zM13 4h8v17h-8zM6 9h2M16 9h2"/></svg>棋谱库</div><div class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 19V5h16v14zM4 10h16M9 5v14M15 5v14"/></svg>复盘</div><div class="nav-item current" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 8h18v12H3zM3 8l4-5h10l4 5M3 13h18"/><circle cx="16" cy="16" r="1"/></svg>会员与用量</div></nav><div class="account"><span class="avatar">F</span><div><strong>fan</strong><small>设计演示账号</small></div></div></aside>
+<div class="workspace"><header class="topbar"><span>账户 / 会员与用量</span><span><i id="connection-dot" class="online-dot"></i><span id="connection">云端账户 · 设计示意</span></span></header><main class="content" id="content">
+<div class="heading"><div><h1>会员与用量</h1><p>网页与盒子，共用一份会员额度和充值余额。</p></div><div class="sync-info" id="sync-info"><strong id="sync-status">已同步 · 设计示意</strong><span id="last-sync">上次同步 12:00:00</span></div></div>
+<nav class="page-tabs" aria-label="会员页面"><button data-tab="usage">用量</button><button data-tab="plans">订阅</button><button data-tab="topup">按次充值</button></nav>
+<div id="page-content"></div>
+</main></div>
+</div>
+<div id="modal" class="dialog-backdrop" hidden><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="dialog-head"><h2 id="dialog-title"></h2><button class="close" id="close-dialog" aria-label="关闭弹窗">×</button></div><div id="dialog-content"></div></section></div>
+<div id="toast" class="toast" role="status"></div>
+<script>
+(() => {
+'use strict';
+const params = new URLSearchParams(location.search);
+if(params.get('surface')==='kiosk'){location.replace('../kiosk-current-based-redesign-2026-10-14.html#membership-usage');return;}
+const $=id=>document.getElementById(id);
+const plans=Object.freeze({free:{name:'Free',price:0,reports:[1,1],interactive:[0,0]},plus:{name:'Plus',price:29,reports:[1,7],interactive:[10,70]},pro:{name:'Pro',price:99,reports:[5,35],interactive:[50,350]},max:{name:'Max',price:299,reports:[20,140],interactive:[200,1400]}});
+const fixedNow=Date.parse('2026-11-01T04:00:00Z');
+const endAt='2026-12-01T04:00:00Z';
+const started=performance.now();
+const validStates=new Set([...$('scenario').options].map(o=>o.value));
+const state={scenario:validStates.has(params.get('state'))?params.get('state'):'pro',tab:['usage','plans','topup'].includes(params.get('tab'))?params.get('tab'):'usage',resource:params.get('resource')==='interactive'?'interactive':'reports',online:true,plan:'pro',balance:1000,revision:18,lastSync:fixedNow,order:null,seq:0,fulfilled:new Set(),pendingTerms:[],endsAt:endAt,preservedFreeUse:false,boundaryFresh:false};
+let returnFocus=null,dialogKind=null,toastTimer=null;
+const now=()=>fixedNow+performance.now()-started;
+const accountReady=()=>!['loading','error'].includes(state.scenario);
+const bj=(date,seconds=false)=>new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',...(seconds?{second:'2-digit'}:{}),hour12:false}).format(new Date(date));
+const timeOnly=date=>new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(date));
+const tell=message=>{$('toast').textContent=message;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{$('toast').textContent='';},3200);};
+function setScenario(value){state.scenario=value;state.plan=value==='free'?'free':'pro';state.online=value!=='offline';state.balance=value==='free'?0:1000;state.boundaryFresh=false;state.lastSync=now();state.order=null;state.pendingTerms=[];state.endsAt=endAt;state.preservedFreeUse=false;closeDialog();render();}
+function snapshot(resource){
+  const plan=plans[state.plan];const limits=plan[resource];
+  const free=state.plan==='free',notIncluded=free&&resource==='interactive';
+  const exhausted=state.scenario==='exhausted'||(free&&resource==='reports');
+  const reserved=state.scenario==='reserved';
+  // Upgrading keeps the consumed Free report; it does not replace usage with the Pro demo.
+  const base=state.preservedFreeUse?(resource==='reports'?[[1,0],[1,0]]:[[0,0],[0,0]]):(resource==='reports'?[[1,1],[8,1]]:[[2,0],[12,0]]);
+  return limits.map((limit,i)=>{
+    const notStarted=state.scenario==='not-started'&&i===0;
+    const boundary=state.scenario==='boundary'&&i===0&&!state.boundaryFresh;
+    const used=notStarted?0:exhausted?limit:Math.min(limit,base[i][0]);
+    const held=notStarted||exhausted||notIncluded?0:Math.min(limit-used,reserved?(resource==='reports'?2:4):base[i][1]);
+    const reset=notIncluded||notStarted?null:boundary?new Date(fixedNow+8000).toISOString():i===0?'2026-11-02T02:00:00Z':'2026-11-01T16:00:00Z';
+    const left=Math.max(0,limit-used-held);
+    return {limit,used,reserved:held,remaining:left,percent:limit?left/limit*100:null,state:notIncluded?'not_included':notStarted?'not_started':'active',reset};
+  });
+}
+function countdown(date){
+  const seconds=Math.max(0,Math.ceil((new Date(date).getTime()-now())/1000));
+  if(seconds===0)return state.online?'已到重置时间 · 等待同步':'已到重置时间 · 数据待刷新';
+  const days=Math.floor(seconds/86400),hours=Math.floor(seconds%86400/3600),minutes=Math.floor(seconds%3600/60),secs=seconds%60;
+  return `${days?days+'天 ':''}${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(secs).padStart(2,'0')} 后恢复`;
+}
+function quotaRow(q,i){
+  const label=i?'本周':'24 小时';const unit=state.resource==='reports'?'份':'次';
+  const resetText=q.state==='not_included'?'此套餐未包含独立互动额度':q.state==='not_started'?'首次使用后起计':countdown(q.reset);
+  return `<section class="quota-row"><div class="quota-top"><h3>${label}</h3><span class="percentage">${q.percent===null?'未包含':`剩余 <span class="mono">${Math.round(q.percent)}%</span>`}</span></div><div class="quota-value">${q.state==='not_included'?'<strong class="unavailable">未包含</strong>':`<strong class="mono">${q.remaining}</strong><span>/ <span class="mono">${q.limit}</span> ${unit}可用</span>`}</div><div class="bar ${q.remaining===0?'empty':''}" ${q.limit?`role="progressbar" aria-label="${label}剩余额度" aria-valuemin="0" aria-valuemax="${q.limit}" aria-valuenow="${q.remaining}"`:''}><i style="--remaining:${q.percent??0}%"></i></div><div class="reset-row"><span class="countdown" ${q.reset?`data-countdown="${q.reset}"`:''}>${resetText}</span>${q.reset?`<time datetime="${new Date(q.reset).toISOString()}">${bj(q.reset)} 北京时间</time>`:''}</div>${q.reserved?`<div class="reserved">已用 <span class="mono">${q.used}</span> · 预留中 <span class="mono">${q.reserved}</span> ${unit}，已从可用量扣除</div>`:''}</section>`;
+}
+function usage(){
+  if(state.scenario==='loading')return '<section class="empty-state" role="status"><strong>正在读取云端用量…</strong><p>额度确认前暂不显示可用数量。</p></section>';
+  if(state.scenario==='error')return '<section class="empty-state" role="alert"><strong>暂时无法读取用量</strong><p>请重新连接后再试，当前不能确认可用额度。</p><button data-retry-usage>重新读取</button></section>';
+  const isReport=state.resource==='reports';const qs=snapshot(state.resource);const free=state.plan==='free';
+  return `${!state.online?'<div class="banner" role="status">当前离线，显示上次同步的数据。恢复联网后更新额度与订单状态。</div>':''}<div class="usage-grid"><section class="usage-main"><div class="resource-tabs" role="group" aria-label="查看资源"><button data-resource="reports" aria-pressed="${isReport}">复盘报告</button><button data-resource="interactive" aria-pressed="${!isReport}">领地与支招</button></div><div class="resource-heading"><div><h2 class="section-title">${isReport?'复盘报告额度':'领地与支招额度'}</h2><p class="section-note">${isReport?'完整报告生成后结算，失败归还预留。':'单个局面分析，同时获得领地与候选着法。'}</p></div><span class="profile">${isReport?'普通 500':'标准 500'}</span></div>${qs.map(quotaRow).join('')}<p class="usage-footnote">${free?(isReport?'Free 每自然周 1 份；24 小时恢复不会额外赠送。本周额度用完后，请等待周一恢复。':'Free 不赠送独立领地与支招。已拥有报告内的结果可免费查看。'):'24 小时与本周上限同时生效，周额度不是额外赠送。'}</p></section><aside class="usage-aside"><section class="account-panel"><span class="caption">当前会员</span><div class="plan-name"><strong>${plans[state.plan].name}</strong><span class="status-tag">${free?'基础权益':'使用中'}</span></div><p>${free?'每自然周 1 份普通报告<br>完成身份验证后可领取':`有效期至 ${bj(state.endsAt)}<br>换设备、续费不重置用量`}</p>${state.pendingTerms.length?`<p class="scheduled-plan">已排期 ${plans[state.pendingTerms[0].sku].name}<br>${bj(state.pendingTerms[0].startsAt)} 生效</p>`:''}<button data-tab="plans">${free?'查看订阅':'管理订阅'}</button></section><section class="account-panel"><span class="caption">已购算力余额</span><div class="wallet-number"><span class="mono">${state.balance.toLocaleString('en-US')}</span> <small>credits</small></div><p>约可分析 <span class="mono">${Math.floor(state.balance/10)}</span> 个标准局面<br>按每次 <span class="mono">10</span> credits 估算</p><button data-tab="topup">按次充值</button></section><div class="aside-note">同一账号在 Galaxy 与盒子共用额度。页面可见时约每 15 秒同步一次。</div></aside></div><div class="info-line"><span>重复查看、切换领地与支招，不重复收费。</span><button data-explain="rules">计费与恢复规则</button></div><div class="explain-bottom"><p>会员额度不足时，你可以选择等待恢复或确认使用充值余额；不会自动扣钱包。</p></div>`;
+}
+function subscription(){
+  const current=accountReady()?plans[state.plan]:null;
+  return `<div class="plan-intro"><p>${current?`当前 <strong>${current.name}</strong> · ${state.plan==='free'?'每自然周 1 份普通报告，不含独立互动。':`有效期至 ${bj(state.endsAt)} 北京时间。`}${state.pendingTerms.length?`<br>已排期 ${plans[state.pendingTerms[0].sku].name} · ${bj(state.pendingTerms[0].startsAt)} 生效。`:''}`:'当前会员待确认 · 同步账户后可购买或续费。'}</p><button data-explain="renewal">续费与换档规则</button></div><div class="plans">${['plus','pro','max'].map(code=>{const p=plans[code];return `<article class="plan-card ${accountReady()&&code===state.plan?'selected':''}"><div class="plan-tier"><h2>${p.name}</h2>${accountReady()&&code===state.plan?'<span class="status-tag">当前套餐</span>':''}</div><div class="price">¥${p.price}<small> / 30 天</small></div><div class="plan-rule"><div><span>普通报告 / 24h</span><b>${p.reports[0]} 份</b></div><div><span>普通报告 / 本周</span><b>${p.reports[1]} 份</b></div><div><span>标准互动 / 24h</span><b>${p.interactive[0]} 次</b></div><div><span>标准互动 / 本周</span><b>${p.interactive[1]} 次</b></div></div><p>${code==='plus'?'普通报告为主；深度报告需另付费。':code==='pro'?'深度报告扣 4 份，可选 1 份深度＋1 份普通。':'深度报告扣 4 份，可选 5 份深度。'}</p><p>${code==='max'?'正式开售前需完成容量验证；此处仅预览。':'单份报告最多 500 手，已拥有结果可反复查看。'}</p><button data-buy="${code}" class="${accountReady()&&code===state.plan?'primary':''}" ${!state.online||!accountReady()?'disabled':''}>${accountReady()&&code===state.plan?'续费 '+p.name:'选择 '+p.name}</button></article>`;}).join('')}</div><div class="comparison"><p>互动满额使用参考：Plus <span class="mono">0.0967</span> / Pro <span class="mono">0.066</span> / Max <span class="mono">0.0498</span> 元/标准次。</p><p>按 30 天用满、整笔会费分摊至互动计算；报告权益尚未分摊。低频使用按次包可能总支出更低。</p><p>各项权益独立计数，付费会员不再叠加额外 Free 报告。</p></div>`;
+}
+function topup(){return `<div class="topup-grid"><section class="pack"><div class="pack-head"><h2>领地与支招 · 按次包</h2><span class="status-tag">无需会员</span></div><p class="subtitle">按需使用，不改变会员额度上限。</p><div class="pack-price"><strong>¥29</strong><span>/ 1,000 credits</span></div><div class="pack-unit"><span class="mono">100</span> 次标准分析 · <span class="mono">0.29</span> 元/次</div><ul><li>标准 500 visits：每个局面 10 credits</li><li>增强 2000 visits：消耗 4 次标准量<br>每次 40 credits，约 1.16 元</li><li>一次结果同时包含领地与支招</li></ul><button class="primary" data-buy="analysis_100_v1" ${!state.online||!accountReady()?'disabled':''}>购买 ¥29 按次包</button></section><section class="pack-notes"><div class="wallet-strip">${accountReady()?`<span class="muted">当前可用余额</span><br><strong class="mono">${state.balance.toLocaleString('en-US')}</strong> credits · 约 ${Math.floor(state.balance/10)} 次标准分析`:'<strong>余额待确认</strong><br><span class="muted">同步账户后可查看可用次数</span>'}</div><h3>偶尔用一次，也可以。</h3><p>次数包存入同一个 credits 余额。除独立互动，也可支付另行明确报价的服务；可用标准次数随余额变化。</p><p>整盘复盘按批量报告计价，与独立互动不同。普通 250 手示例为 125 credits，约 3.625 元/盘。</p><p>会员额度用完后，只有在你确认价格和扣费来源后才会使用余额。</p><button data-explain="price">查看价格口径</button></section></div>`;}
+function render(){
+  document.body.classList.toggle('capture',params.get('capture')==='1');$('scenario').value=state.scenario;
+  $('network').textContent=state.online?'模拟断网':'恢复联网';
+  $('connection').textContent=state.online?'云端账户 · 设计示意':'当前离线 · 数据待刷新';
+  $('connection-dot').classList.toggle('offline-dot',!state.online);
+  $('sync-info').classList.toggle('stale',!state.online);
+  $('sync-status').textContent=state.scenario==='loading'?'等待同步':state.scenario==='error'?'同步失败':state.online?'已同步 · 设计示意':'数据待刷新';
+  $('last-sync').textContent=['loading','error'].includes(state.scenario)?'尚未完成本次同步':'上次同步 '+timeOnly(state.lastSync);
+  document.querySelectorAll('[data-tab]').forEach(button=>{if(button.closest('.page-tabs'))button.setAttribute('aria-current',button.dataset.tab===state.tab?'page':'false');});
+  $('page-content').innerHTML=state.tab==='usage'?usage():state.tab==='plans'?subscription():topup();
+  params.set('tab',state.tab);params.set('state',state.scenario);params.set('resource',state.resource);history.replaceState(null,'','?'+params);
+  renderCheckout();
+}
+function openDialog(title,body,kind){returnFocus=document.activeElement;dialogKind=kind;$('dialog-title').textContent=title;$('dialog-content').innerHTML=body;$('modal').hidden=false;$('frame').inert=true;$('close-dialog').focus();}
+function closeDialog(){if($('modal').hidden)return;$('modal').hidden=true;$('frame').inert=false;dialogKind=null;if(returnFocus?.isConnected)returnFocus.focus();else document.querySelector('.page-tabs [aria-current=page]')?.focus();}
+const explain={rules:['计费与恢复规则','<p><strong>24 小时：</strong>首次有效使用后起计，同账号的报告与互动共用窗口锚点。未开始时不倒计时；换设备与续费不重置。</p><p><strong>本周：</strong>北京时间周一 00:00 恢复。24 小时与本周都要有额度才可使用；Free 每自然周只赠 1 份普通报告。</p><p><strong>一次分析，两种显示：</strong>同一已授权结果的重试、领地与支招切换、重复查看不重复扣量。深度 2000 消耗 4 个标准单位。</p><p>报告按完整交付结算；失败全额归还原预留。钱包仅在你确认后使用，不自动兜底。</p>'],renewal:['续费与换档','<p><strong>同档续费：</strong>当前期限延长 30 天，已使用与预留额度不会清零。</p><p><strong>跨档购买：</strong>在当前会员到期后切换。付款前显示准确生效日，新旧会员不叠加额度。</p><p>会员到期后按 Free 权益处理，仍需满足可信身份验证前置。</p>'],price:['价格口径','<p><strong>独立互动：</strong>标准 500 visits / 局面，10 credits（0.29 元）；增强 2000 visits 消耗 4 标准次，40 credits（1.16 元）。</p><p><strong>整盘批量报告：</strong>普通每手 500 visits，费用为 max(10, ceil(有效手数 / 2)) credits。250 手为 125 credits，约 3.625 元/盘、0.0145 元/手。最多 500 手，超限不截断。</p><p><strong>会员满额参考：</strong>以 30 天完整用满互动上限，将整笔会费分摊，仅用于同单位比较，并非保证每次使用的实际成本。报告权益尚未分摊。</p><p>按次包发放通用余额，不承诺余额始终只能兑换 100 次互动。</p>']};
+function buy(sku){
+  if(!accountReady()){tell('请先同步账户用量，再创建订单');return;}
+  if(!state.online){tell('请恢复联网后创建订单');return;}
+  const pack=sku==='analysis_100_v1',p=pack?{name:'领地与支招 · 100 次标准包',price:29}:plans[sku];
+  state.order={id:'TEST-DEMO-'+String(++state.seq).padStart(5,'0'),sku,name:p.name,price:p.price,status:'pending',immediate:!pack&&state.plan==='free',renewCurrent:!pack&&sku===state.plan&&!state.pendingTerms.length,effective:pack?null:state.plan==='free'?now():(state.pendingTerms.at(-1)?.endsAt||state.endsAt)};
+  openDialog('确认购买',checkoutContent(),'checkout');
+}
+function checkoutContent(){
+  const o=state.order;if(!o)return '';
+  const pack=o.sku==='analysis_100_v1',same=o.renewCurrent;
+  const labels={pending:'待确认 · 未收款',paid:'模拟已确认 · 非真实付款',failed:'付款失败 · 未发放权益',expired:'订单过期 · 未发放权益'};
+  const active=state.online?labels[o.status]:'当前离线 · 付款状态待查询';
+  return `<span class="test-badge">TEST 模拟支付 · 设计预览</span><div class="checkout-body"><div class="no-qr"><svg viewBox="0 0 48 48"><rect x="7" y="8" width="34" height="32" rx="3"/><path d="M7 17h34M17 29h14M24 22v14"/></svg><span>无真实付款码</span><small>仅用页面外的模拟控制<br>演示付款结果</small></div><div class="checkout-info"><p>${o.name}${pack?'':' 会员 · 30 天'}</p><p class="amount">¥${o.price.toFixed(2)}</p><p class="muted">充值账号：fan · 演示账号</p><p class="effective">${pack?'到账 1,000 credits · 标准 100 次':same?`当前期限顺延 30 天<br>原有效期 ${bj(o.effective)}`:`生效时间 ${bj(o.effective)} 北京时间${o.immediate?'':'<br>当前及已排期期限结束后切换'}`}</p><div class="payment-state ${['failed','expired'].includes(o.status)?'error':''}" role="status">${active}</div><p class="order-id mono">${o.id}</p>${['failed','expired'].includes(o.status)?`<button data-retry-order ${!state.online||!accountReady()?'disabled':''}>重新创建订单</button>`:''}</div></div><div class="dialog-footer"><p>${pack?'增强 2000 visits 按 4 标准次消耗；余额也可用于其他明确报价的服务。':'续费或换档不重置已有用量；正式价格与生效期以服务端订单为准。'}</p><p>模拟付款不代表已接入微信或支付宝。关闭弹窗不修改订单状态，恢复联网后应查询服务端确认结果。</p></div>`;
+}
+function renderCheckout(){if(dialogKind==='checkout')$('dialog-content').innerHTML=checkoutContent();}
+function simulate(status){
+  const o=state.order;if(!o){tell('先选择订阅或按次包，再模拟付款结果');return;}
+  if(o.status==='paid'){tell('重复通知已忽略，演示权益不会重复发放');return;}
+  if(o.status!=='pending'){tell('此订单已结束，请重新创建');return;}
+  if(o.awaitingPaid&&status!=='paid'){tell('模拟渠道已付款，不能改为失败状态');return;}
+  if(status==='paid'&&!state.online){o.awaitingPaid=true;tell('模拟渠道已付款；恢复联网后查询到账');renderCheckout();return;}
+  o.status=status;o.awaitingPaid=false;
+  if(status==='paid'&&!state.fulfilled.has(o.id)){
+    state.fulfilled.add(o.id);
+    if(o.sku==='analysis_100_v1')state.balance+=1000;
+    else if(state.plan==='free'){
+      state.preservedFreeUse=true;state.plan=o.sku;
+      state.endsAt=new Date(new Date(o.effective).getTime()+30*86400000).toISOString();
+    }
+    else if(o.sku===state.plan&&!state.pendingTerms.length)state.endsAt=new Date(new Date(state.endsAt).getTime()+30*86400000).toISOString();
+    else state.pendingTerms.push({sku:o.sku,startsAt:o.effective,endsAt:new Date(new Date(o.effective).getTime()+30*86400000).toISOString()});
+    state.revision++;state.lastSync=now();
+    tell(o.sku==='analysis_100_v1'?'模拟到账 1,000 credits':state.plan===o.sku?'模拟会员订单已确认':'模拟订单已确认，到期后切换');
+  }
+  render();
+}
+function refreshSnapshot(repaint=true){
+  if(!state.online){tell('当前离线，保留上次同步数据');return;}
+  if(['error','loading'].includes(state.scenario))state.scenario='pro';
+  const boundaryChanged=state.scenario==='boundary'&&!state.boundaryFresh&&now()>=fixedNow+8000;
+  if(boundaryChanged)state.boundaryFresh=true;
+  state.lastSync=now();state.revision++;
+  if(repaint||boundaryChanged)render();
+  else $('last-sync').textContent='上次同步 '+timeOnly(state.lastSync);
+}
+$('scenario').addEventListener('change',e=>setScenario(e.target.value));
+$('network').addEventListener('click',()=>{state.online=!state.online;if(state.online&&state.order?.awaitingPaid)simulate('paid');else{if(state.online)state.lastSync=now();render();}});
+$('refresh-demo').addEventListener('click',refreshSnapshot);
+$('success').addEventListener('click',()=>simulate('paid'));$('failure').addEventListener('click',()=>simulate('failed'));$('expiry').addEventListener('click',()=>simulate('expired'));
+$('reset-demo').addEventListener('click',()=>{state.order=null;state.seq=0;state.fulfilled.clear();state.pendingTerms=[];setScenario('pro');});
+$('close-dialog').addEventListener('click',closeDialog);
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeDialog();});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.dataset.tab){state.tab=b.dataset.tab;render();}
+  else if(b.dataset.resource){state.resource=b.dataset.resource;render();}
+  else if(b.dataset.buy)buy(b.dataset.buy);
+  else if(b.dataset.explain){const [title,body]=explain[b.dataset.explain];openDialog(title,`<div class="explanation">${body}</div><div class="dialog-actions"><button class="primary" data-close-explain>知道了</button></div>`,'explanation');}
+  else if(b.hasAttribute('data-close-explain'))closeDialog();
+  else if(b.hasAttribute('data-retry-order')){const sku=state.order.sku;closeDialog();buy(sku);}
+  else if(b.hasAttribute('data-retry-usage'))refreshSnapshot();
+});
+document.addEventListener('keydown',e=>{
+  if($('modal').hidden)return;
+  if(e.key==='Escape'){e.preventDefault();closeDialog();return;}
+  if(e.key==='Tab'){
+    const buttons=[...$('modal').querySelectorAll('button:not([disabled])')].filter(b=>b.getClientRects().length);const first=buttons[0],last=buttons.at(-1);
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+});
+let lastPoll=performance.now(),boundaryRequestPending=false;
+setInterval(()=>{
+  if(document.hidden)return;
+  document.querySelectorAll('[data-countdown]').forEach(el=>{el.textContent=countdown(el.dataset.countdown);});
+  if(state.scenario==='boundary'&&!state.boundaryFresh&&state.online&&now()>=fixedNow+8000&&!boundaryRequestPending){
+    boundaryRequestPending=true;
+    setTimeout(()=>{boundaryRequestPending=false;if(state.scenario==='boundary'&&state.online)refreshSnapshot();},700);
+  }
+  if(performance.now()-lastPoll>=15000){lastPoll=performance.now();if(state.online&&!['loading','error'].includes(state.scenario))refreshSnapshot(false);}
+},1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.online)refreshSnapshot();});
+setScenario(state.scenario);
+})();
+</script>
+</body>
+</html>

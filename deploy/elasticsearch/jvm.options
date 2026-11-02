@@ -1,0 +1,6 @@
+-Xms1g
+-Xmx1g
+-XX:-HeapDumpOnOutOfMemoryError
+# Remove the image default before installing the bounded replacement.
+-Xlog:disable
+-Xlog:gc*,gc+age=trace,safepoint:file=/usr/share/elasticsearch/logs/gc.log:utctime,level,pid,tags:filecount=4,filesize=8m

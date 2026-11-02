@@ -7,6 +7,7 @@ protects authoritative tables from the SQLite schema-drift rebuild fallback.
 """
 
 import logging
+import re
 from time import monotonic
 
 from sqlalchemy import CheckConstraint, UniqueConstraint, bindparam, inspect, text
@@ -17,7 +18,7 @@ from katrain.web.core import models_db
 logger = logging.getLogger("katrain_web")
 
 # Tables holding financial/asset data — never drop these to "fix" schema drift.
-BILLING_TABLES = {"credit_transactions", "redeem_codes", "recharge_orders"}
+BILLING_TABLES = {"credit_transactions", "redeem_codes", "recharge_orders", "membership_terms", "billing_operations"}
 
 # These tables hold authoritative player rank state and its immutable
 # idempotency ledger. Like billing data, schema drift must never rebuild them.
@@ -68,7 +69,7 @@ PROTECTED_TABLES = (
     | QUOTA_TABLES
     | KIFU_CATALOG_TABLES
     | KIFU_RANK_TABLES
-    | {AI_LADDER_LEGACY_TABLE, "tutorial_media_tasks", "tutorial_figures", "baipu_history"}
+    | {AI_LADDER_LEGACY_TABLE, "tutorial_media_tasks", "tutorial_figures", "users", "report_tasks", "baipu_history"}
 )
 
 KIFU_ALBUM_FKS = {
@@ -1377,3 +1378,108 @@ def backfill_ai_ladder_decisions(engine) -> None:
         )
         if result.rowcount:
             logger.info("migrate: marked %s legacy AI ladder decisions counted", result.rowcount)
+
+
+# Explicit, additive migration for the membership billing version. Nullable
+# snapshots leave all historical order/task semantics intact.
+MEMBERSHIP_COLUMNS = {
+    "users": {
+        "membership_revision": "INTEGER NOT NULL DEFAULT 0",
+        "membership_migrated_at": "TIMESTAMP",
+    },
+    "quota_buckets": {
+        "reserved": "INTEGER NOT NULL DEFAULT 0",
+        "starts_at": "TIMESTAMP",
+        "ends_at": "TIMESTAMP",
+    },
+    "report_tasks": {
+        "analysis_sgf": "TEXT",
+        "billing_version": "VARCHAR(64)",
+        "operation_id": "INTEGER",
+        "generation": "INTEGER NOT NULL DEFAULT 0",
+        "model_sha256": "VARCHAR(64)",
+    },
+    "recharge_orders": {
+        "catalog_version": "VARCHAR(64)",
+        "sku_snapshot": "JSON",
+        "environment": "VARCHAR(24)",
+        "provider_tx_id": "VARCHAR(128)",
+        "idempotency_key": "VARCHAR(128)",
+        "expires_at": "TIMESTAMP",
+        "fulfilled_at": "TIMESTAMP",
+        "refunded_at": "TIMESTAMP",
+        "refund_ref": "VARCHAR(160)",
+    },
+}
+MEMBERSHIP_CHECKS = {
+    "users": {"ck_user_membership_revision": "membership_revision IS NOT NULL AND membership_revision >= 0"},
+    "quota_buckets": {
+        "ck_quota_bucket_nonnegative": "reserved IS NOT NULL AND allowance >= 0 AND used >= 0 AND reserved >= 0",
+        "ck_quota_bucket_window": "starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at",
+    },
+    "report_tasks": {"ck_report_task_generation": "generation IS NOT NULL AND generation >= 0"},
+}
+
+
+def migrate_membership_schema(engine) -> None:
+    """Idempotently add membership fields/constraints; never rebuild assets.
+
+    Application base tables must already exist (as in init_db). PostgreSQL uses
+    real constraints; SQLite adds equivalent write guards on preexisting tables
+    because ALTER TABLE cannot attach a table CHECK without rewriting data.
+    """
+    if engine.dialect.name not in {"postgresql", "sqlite"}:
+        raise RuntimeError("Membership migration requires PostgreSQL or SQLite")
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        inspector = inspect(conn)
+        for table, additions in MEMBERSHIP_COLUMNS.items():
+            if table not in tables:
+                continue
+            columns = {column["name"] for column in inspector.get_columns(table)}
+            for name, definition in additions.items():
+                if name not in columns:
+                    # Store all instants as UTC; PostgreSQL keeps timezone-aware types.
+                    if engine.dialect.name == "postgresql":
+                        definition = definition.replace("TIMESTAMP", "TIMESTAMP WITH TIME ZONE")
+                    conn.execute(text(f'ALTER TABLE "{table}" ADD COLUMN "{name}" {definition}'))
+        if engine.dialect.name == "postgresql":
+            # Generic add_missing_columns predates NOT NULL preservation. Tighten
+            # these new counters in place after its safe zero-default backfill.
+            for table, column in (("users", "membership_revision"), ("quota_buckets", "reserved"), ("report_tasks", "generation")):
+                if table in tables:
+                    current = next(c for c in inspect(conn).get_columns(table) if c["name"] == column)
+                    if current.get("default") != "0":
+                        conn.execute(text(f'ALTER TABLE "{table}" ALTER COLUMN "{column}" SET DEFAULT 0'))
+                    if current["nullable"]:
+                        conn.execute(text(f'ALTER TABLE "{table}" ALTER COLUMN "{column}" SET NOT NULL'))
+        for table in (models_db.MembershipTerm.__table__, models_db.BillingOperation.__table__):
+            table.create(bind=conn, checkfirst=True)
+        for table, checks in MEMBERSHIP_CHECKS.items():
+            if table not in tables:
+                continue
+            existing_checks = {check["name"] for check in inspector.get_check_constraints(table)}
+            for name, expression in checks.items():
+                if name in existing_checks:
+                    continue
+                if engine.dialect.name == "postgresql":
+                    conn.execute(text(f'ALTER TABLE "{table}" ADD CONSTRAINT "{name}" CHECK ({expression})'))
+                else:
+                    # Refuse invalid legacy rows rather than silently repairing money.
+                    invalid = conn.execute(text(f'SELECT 1 FROM "{table}" WHERE NOT ({expression}) LIMIT 1')).first()
+                    if invalid:
+                        raise RuntimeError(f"Invalid legacy membership asset: {table}.{name}")
+                    new_expression = expression
+                    for column in sorted(models_db.Base.metadata.tables[table].columns, key=lambda col: -len(col.name)):
+                        new_expression = re.sub(rf'\b{re.escape(column.name)}\b', f'NEW."{column.name}"', new_expression)
+                    for event in ("INSERT", "UPDATE"):
+                        trigger = f"{name}_{event.lower()}"
+                        conn.execute(text(
+                            f'CREATE TRIGGER IF NOT EXISTS "{trigger}" BEFORE {event} ON "{table}" '
+                            f'WHEN NOT ({new_expression}) BEGIN SELECT RAISE(ABORT, \'{name}\'); END'
+                        ))
+        for table_name in {"recharge_orders", "report_tasks"} & tables:
+            for index in models_db.Base.metadata.tables[table_name].indexes:
+                if index.name.startswith("uq_recharge_order_") or index.name == "ix_report_tasks_operation_id":
+                    index.create(bind=conn, checkfirst=True)

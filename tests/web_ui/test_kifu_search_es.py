@@ -1,0 +1,665 @@
+"""Focused REST boundary tests; real isolated ES is an explicit opt-in."""
+
+import asyncio
+import json
+
+import httpx
+import pytest
+
+from katrain.web.kifu.search_es import (
+    AsyncElasticsearchClient,
+    ElasticsearchClient,
+    INDEX_MAPPING,
+    INDEX_SETTINGS,
+    SearchSettings,
+    SearchUnavailable,
+    encode_bulk,
+    iter_bulk_batches,
+)
+
+
+def settings(role="read"):
+    return SearchSettings(url="http://127.0.0.1:9200", index_alias="kifu-search", role=role, api_key="private")
+
+
+def client(handler, role="read"):
+    return ElasticsearchClient(settings(role), client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+
+def test_settings_refuses_unverified_remote_http_and_separates_credentials(monkeypatch):
+    monkeypatch.setenv("KIFU_ES_URL", "http://remote:9200")
+    monkeypatch.setenv("KIFU_ES_READ_API_KEY", "read-key")
+    monkeypatch.setenv("KIFU_ES_WRITER_API_KEY", "write-key")
+    with pytest.raises(ValueError, match="HTTPS"):
+        SearchSettings.from_env()
+    monkeypatch.setenv("KIFU_ES_URL", "https://es.internal:9200")
+    assert SearchSettings.from_env().api_key == "read-key"
+    assert SearchSettings.from_env(role="writer").api_key == "write-key"
+    monkeypatch.delenv("KIFU_ES_WRITER_API_KEY")
+    with pytest.raises(ValueError, match="credentials"):
+        SearchSettings.from_env(role="writer")
+
+
+def test_mget_preserves_missing_and_concrete_index_but_rejects_item_error():
+    response = {
+        "docs": [
+            {"_index": "kifu-v1", "_id": "sync-state", "found": True, "_source": {"status": "ready"}},
+            {"_index": "kifu-v1", "_id": "term:a", "found": False},
+        ]
+    }
+    es = client(lambda req: httpx.Response(200, json=response))
+    assert es.mget(["sync-state", "term:a"]) == response
+    response["docs"][1] = {"_id": "term:a", "error": {"type": "unavailable_shards_exception"}}
+    with pytest.raises(SearchUnavailable):
+        es.mget(["sync-state", "term:a"])
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"timed_out": True},
+        {"_shards": {"failed": 1}},
+        {"hits": {"total": {"value": 10000, "relation": "gte"}, "hits": []}},
+    ],
+)
+def test_search_rejects_partial_response(extra):
+    payload = {
+        "timed_out": False,
+        "_shards": {"failed": 0},
+        "hits": {"total": {"value": 0, "relation": "eq"}, "hits": []},
+    }
+    payload.update(extra)
+    es = client(lambda req: httpx.Response(200, json=payload))
+    with pytest.raises(SearchUnavailable):
+        es.search({"query": {"match_all": {}}}, index="kifu-v1")
+
+
+def test_search_sets_exact_total_and_disallows_partial_without_retry():
+    requests = []
+
+    def handler(req):
+        requests.append(req)
+        assert req.url.params["allow_partial_search_results"] == "false"
+        assert json.loads(req.content)["track_total_hits"] is True
+        return httpx.Response(503, json={"error": "private detail"})
+
+    es = client(handler)
+    with pytest.raises(SearchUnavailable) as error:
+        es.search({}, index="kifu-v1")
+    assert "private detail" not in str(error.value)
+    assert len(requests) == 1
+
+
+def test_bulk_retries_only_transient_failed_items_and_checks_every_item():
+    calls = []
+
+    def handler(req):
+        calls.append(req.content)
+        statuses = [201, 429] if len(calls) == 1 else [201]
+        return httpx.Response(
+            200, json={"errors": len(calls) == 1, "items": [{"index": {"status": status}} for status in statuses]}
+        )
+
+    actions = [{"_id": "album:1", "_source": {"id": 1}}, {"_id": "album:2", "_source": {"id": 2}}]
+    es = client(handler, "writer")
+    es.bulk(actions, retry_transient=True)
+    assert len(calls) == 2
+    assert b"album:1" not in calls[1]
+    assert b"album:2" in calls[1]
+    bad = client(
+        lambda req: httpx.Response(200, json={"errors": True, "items": [{"index": {"status": 400}}]}), "writer"
+    )
+    with pytest.raises(SearchUnavailable):
+        bad.bulk(actions[:1], retry_transient=True)
+
+
+def test_read_credentials_cannot_mutate_and_bulk_has_byte_and_count_bounds():
+    es = client(lambda req: pytest.fail("read client sent a mutation"))
+    with pytest.raises(SearchUnavailable):
+        es.put_document("sync-state", {})
+    with pytest.raises(SearchUnavailable):
+        es.delete_document("album:1")
+    actions = [{"_id": f"album:{i}", "_source": {"id": i}} for i in range(501)]
+    batches = list(iter_bulk_batches(actions))
+    assert [len(batch) for batch in batches] == [500, 1]
+    assert encode_bulk(batches[0]).endswith(b"\n")
+    with pytest.raises(ValueError, match="2 MiB"):
+        list(iter_bulk_batches([{"_id": "large", "_source": {"value": "x" * (2 * 1024 * 1024)}}]))
+
+
+def test_mapping_is_explicit_and_opaque_payloads_are_not_indexed():
+    assert INDEX_SETTINGS["number_of_shards"] == 1
+    assert INDEX_SETTINGS["number_of_replicas"] == 0
+    assert INDEX_SETTINGS["max_result_window"] == 200000
+    assert INDEX_MAPPING["dynamic"] == "strict"
+    assert INDEX_MAPPING["date_detection"] is False
+    fields = INDEX_MAPPING["properties"]
+    assert fields["date_sort"]["type"] == "keyword"
+    assert fields["search_text"]["type"] == "wildcard"
+    for field in ("metadata", "classification", "diagnostics"):
+        assert fields[field] == {"type": "object", "enabled": False}
+
+
+def test_async_client_preserves_same_transport_checks_and_shared_lifecycle():
+    requests = []
+
+    async def run():
+        transport = httpx.MockTransport(
+            lambda req: requests.append(req)
+            or httpx.Response(
+                200,
+                json={
+                    "docs": [{"_id": "sync-state", "_index": "kifu-v1", "found": True, "_source": {"status": "ready"}}]
+                },
+            )
+        )
+        shared = httpx.AsyncClient(transport=transport)
+        async with AsyncElasticsearchClient(settings(), client=shared) as es:
+            await es.mget(["sync-state"])
+            await es.mget(["sync-state"])
+        assert shared.is_closed
+
+    asyncio.run(run())
+    assert len(requests) == 2
+
+
+def test_five_language_event_text_is_single_source_multi_field_and_names_are_unindexed():
+    fields = INDEX_MAPPING["properties"]
+    assert "displays" not in fields
+    for language, analyzer, search_analyzer in (
+        ("cn", "ik_max_word", "ik_smart"),
+        ("tw", "ik_max_word", "ik_smart"),
+        ("en", "event_en", "event_en"),
+        ("jp", "kuromoji", "kuromoji"),
+        ("ko", "event_ko_index", "event_ko_query"),
+    ):
+        properties = fields["display"]["properties"][language]["properties"]
+        if language in ("cn", "tw"):
+            assert properties["player_black"] == {
+                "type": "keyword",
+                "index": False,
+                "doc_values": False,
+                "fields": {
+                    "pinyin": {
+                        "type": "text",
+                        "analyzer": "player_pinyin_analyzer",
+                        "search_analyzer": "pinyin_search_analyzer",
+                    }
+                },
+            }
+            assert properties["event"]["fields"]["pinyin"] == {
+                "type": "text",
+                "analyzer": "text_pinyin_analyzer",
+                "search_analyzer": "pinyin_search_analyzer",
+            }
+        else:
+            assert properties["player_black"] == {"type": "keyword", "index": False, "doc_values": False}
+        assert properties["player_white"] == properties["player_black"]
+        assert properties["event"]["type"] == "keyword"
+        assert properties["event"]["fields"]["words"] == {
+            "type": "text",
+            "analyzer": analyzer,
+            "search_analyzer": search_analyzer,
+        }
+    analysis = INDEX_SETTINGS["analysis"]
+    assert analysis["analyzer"]["event_en"] == {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["cjk_width", "lowercase"],
+    }
+    assert analysis["tokenizer"]["event_ko_mixed"]["decompound_mode"] == "mixed"
+    assert analysis["tokenizer"]["event_ko_discard"]["decompound_mode"] == "discard"
+
+
+def test_non_object_json_is_service_failure():
+    es = client(lambda req: httpx.Response(404, json=[]))
+    with pytest.raises(SearchUnavailable):
+        es.get_document("sync-state")
+
+
+def index_cli():
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.spec_from_file_location(
+        "kifu_search_index_test", Path(__file__).parents[2] / "scripts/kifu_search_index.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_build_guard_requires_quiescence_and_real_window(monkeypatch):
+    cli = index_cli()
+    monkeypatch.setenv("KIFU_SEARCH_BACKEND", "legacy")
+    monkeypatch.setenv("KIFU_SEARCH_SYNC_MODE", "bootstrap")
+    monkeypatch.delenv("KIFU_SEARCH_BOOTSTRAP_QUIESCENT", raising=False)
+    with pytest.raises(ValueError, match="quiescent"):
+        cli.require_bootstrap(cli.time() + 3600)
+    monkeypatch.setenv("KIFU_SEARCH_BOOTSTRAP_QUIESCENT", "1")
+    with pytest.raises(ValueError, match="30 minutes"):
+        cli.require_bootstrap(cli.time() + 100)
+    with pytest.raises(ValueError, match="60 minutes"):
+        cli.require_bootstrap(cli.time() + 3500, minimum_seconds=3600)
+    with pytest.raises(ValueError, match="10s"):
+        cli.require_bootstrap(cli.time() - 1, minimum_seconds=10)
+    cli.require_bootstrap(cli.time() + 3600)
+    cli.require_bootstrap(cli.time() + 7200, minimum_seconds=3600)
+
+
+def test_checkpoint_honors_custom_max_seconds(monkeypatch):
+    cli = index_cli()
+
+    class FakeClient:
+        def request(self, method, path):
+            return {
+                "_shards": {"failed": 0},
+                "_all": {
+                    "total": {
+                        "store": {"size_in_bytes": 1000},
+                        "translog": {"size_in_bytes": 100},
+                        "docs": {"count": 10},
+                    }
+                },
+            }
+
+    fake_client = FakeClient()
+    monkeypatch.setattr(cli, "disk_free", lambda path: 50 * (1024**3))
+    # Started 2000s ago: exceeds 1800s default, but within 3600s
+    started = cli.monotonic() - 2000
+    with pytest.raises(RuntimeError, match="30 minute build limit exceeded"):
+        cli.checkpoint(fake_client, "idx", started, "/")
+    stats = cli.checkpoint(fake_client, "idx", started, "/", max_seconds=3600)
+    assert stats["docs"] == 10
+    with pytest.raises(RuntimeError, match="60 minute build limit exceeded"):
+        cli.checkpoint(fake_client, "idx", cli.monotonic() - 3700, "/", max_seconds=3600)
+
+
+def test_sample_ids_covers_all_small_sets_and_24_spread_points():
+    cli = index_cli()
+    assert cli._sample_ids([1, 2, 3]) == {1, 2, 3}
+    sampled = cli._sample_ids(list(range(1, 1001)))
+    assert len(sampled) == 24 and 1 in sampled and 1000 in sampled
+
+
+def test_language_probe_uses_same_index_and_removes_every_probe_document_on_failure():
+    cli = index_cli()
+
+    class Fake:
+        def __init__(self):
+            self.indexes = []
+            self.deleted = []
+
+        def request(self, method, path, **kwargs):
+            return {"tokens": [{"token": "a"}]}
+
+        def bulk(self, actions, *, index, **kwargs):
+            self.indexes.append(index)
+            self.deleted.extend(a["_id"] for a in actions if a.get("_op_type") == "delete")
+
+        def refresh(self, *, index):
+            self.indexes.append(index)
+
+        def search(self, body, *, index):
+            self.indexes.append(index)
+            return {"hits": {"total": {"value": 0, "relation": "eq"}, "hits": []}}
+
+    fake = Fake()
+    with pytest.raises(RuntimeError, match="language"):
+        cli.verify_language_probe(fake, "kifu-candidate")
+    assert set(fake.indexes) == {"kifu-candidate"}
+    assert set(fake.deleted) == {f"language-probe:{lang}" for lang in ("cn", "tw", "jp", "ko", "en")}
+
+
+def test_bulk_can_retry_transient_http_failure_without_retrying_reads():
+    calls = []
+
+    def handler(req):
+        calls.append(req)
+        return (
+            httpx.Response(503, json={"error": "temporarily unavailable"})
+            if len(calls) == 1
+            else httpx.Response(200, json={"errors": False, "items": [{"index": {"status": 201}}]})
+        )
+
+    es = client(handler, "writer")
+    es.bulk([{"_id": "album:1", "_source": {"id": 1}}], retry_transient=True)
+    assert len(calls) == 2
+
+
+def test_alias_exists_distinguishes_missing_from_transport_failure():
+    es = client(lambda req: httpx.Response(404, json={"error": "alias [kifu-search] missing", "status": 404}), "writer")
+    assert es.alias_exists() is False
+    es = client(lambda req: httpx.Response(503, json={"error": "unavailable"}), "writer")
+    with pytest.raises(SearchUnavailable):
+        es.alias_exists()
+
+
+def test_bulk_malformed_item_is_service_failure():
+    es = client(lambda req: httpx.Response(200, json={"errors": False, "items": [None]}), "writer")
+    with pytest.raises(SearchUnavailable):
+        es.bulk([{"_id": "album:1", "_source": {"id": 1}}])
+
+
+def test_plugin_verifier_checks_plugin_own_patch_as_well_as_es_patch(tmp_path):
+    import hashlib
+    import importlib.util
+    import zipfile
+    from pathlib import Path
+
+    path = Path(__file__).parents[2] / "deploy/elasticsearch/prepare_plugins.py"
+    spec = importlib.util.spec_from_file_location("plugin_verifier_test", path)
+    verifier = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(verifier)
+    archive = tmp_path / "plugin.zip"
+    with zipfile.ZipFile(archive, "w") as output:
+        output.writestr(
+            "plugin-descriptor.properties", "name=analysis-ik\nversion=9.5.4\nelasticsearch.version=9.5.5\n"
+        )
+    plugin = {"name": "analysis-ik", "sha512": hashlib.sha512(archive.read_bytes()).hexdigest()}
+    with pytest.raises(ValueError, match="patch"):
+        verifier.verify_plugin(archive, plugin, "9.5.5")
+
+
+def test_bulk_error_field_cannot_be_reported_success_even_with_success_status():
+    es = client(
+        lambda req: httpx.Response(
+            200, json={"errors": True, "items": [{"index": {"status": 201, "error": {"type": "failure"}}}]}
+        ),
+        "writer",
+    )
+    with pytest.raises(SearchUnavailable):
+        es.bulk([{"_id": "album:1", "_source": {"id": 1}}])
+
+
+def test_initial_activate_never_uses_all_indices_wildcard():
+    sent = []
+
+    def handler(req):
+        if req.method == "GET":
+            return httpx.Response(404, json={"error": "alias missing"})
+        sent.append(json.loads(req.content))
+        return httpx.Response(200, json={"acknowledged": True})
+
+    es = client(handler, "admin")
+    es.activate("kifu-search-candidate")
+    assert sent == [{"actions": [{"add": {"index": "kifu-search-candidate", "alias": "kifu-search"}}]}]
+
+
+def test_create_index_requires_acknowledged_shards():
+    es = client(lambda req: httpx.Response(200, json={"acknowledged": True, "shards_acknowledged": False}), "admin")
+    with pytest.raises(SearchUnavailable):
+        es.create_index("kifu-search-candidate")
+
+
+def test_incomplete_index_stats_cannot_hide_storage_budget():
+    cli = index_cli()
+
+    class Fake:
+        def request(self, *args, **kwargs):
+            return {}
+
+    with pytest.raises(RuntimeError, match="stats"):
+        cli.index_stats(Fake(), "candidate")
+
+
+def test_empty_normalized_alias_does_not_generate_wildcard():
+    from katrain.web.kifu.search_terms import compile_query
+
+    # Non-strict classification with punctuation query
+    compiled = compile_query({"strict": False}, "---", None)
+    # Must not contain wildcard clause for aliases
+    query_str = json.dumps(compiled)
+    assert '{"value": "**"}' not in query_str
+
+
+def test_validate_list_params_bounds_query_length():
+    from fastapi import HTTPException
+    from katrain.web.api.v1.endpoints.kifu import _validate_list_params
+
+    # Allowed <= 200
+    _validate_list_params("a" * 200, None, "cn")
+
+    # Rejected > 200
+    with pytest.raises(HTTPException) as exc_info:
+        _validate_list_params("a" * 201, None, "cn")
+    assert exc_info.value.status_code == 422
+    assert "too long" in exc_info.value.detail
+
+
+def test_cli_disk_path_defaults_to_es_data_dir(monkeypatch):
+    import os
+    import argparse
+
+    monkeypatch.setenv("ES_DATA_DIR", "/mnt/es_data")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--disk-path", default=os.getenv("ES_DATA_DIR", "/"))
+    args = parser.parse_args([])
+    assert args.disk_path == "/mnt/es_data"
+
+
+def test_elasticsearch_manifest_pins_analysis_pinyin():
+    from pathlib import Path
+
+    lock_file = Path(__file__).resolve().parents[2] / "deploy" / "elasticsearch" / "versions.lock.json"
+    assert lock_file.exists(), f"Missing lockfile: {lock_file}"
+    lock = json.loads(lock_file.read_text(encoding="utf-8"))
+
+    plugins_by_name = {p["name"]: p for p in lock.get("plugins", [])}
+    assert "analysis-pinyin" in plugins_by_name
+
+    pinyin = plugins_by_name["analysis-pinyin"]
+    assert pinyin["filename"] == "elasticsearch-analysis-pinyin-9.5.5.zip"
+    assert (
+        pinyin["sha512"]
+        == "b39c1bc05544b44a5dcee493c2072bde456a790a1745cd022a8f57d466a90607940ede5ccbd482c89efae8c3969ffeaeeee6a8a93a776b76fec3bd45d52116b9"
+    )
+    assert (
+        pinyin["url"] == "https://release.infinilabs.com/analysis-pinyin/stable/elasticsearch-analysis-pinyin-9.5.5.zip"
+    )
+
+    dockerfile = Path(__file__).resolve().parents[2] / "deploy" / "elasticsearch" / "Dockerfile"
+    dockerfile_text = dockerfile.read_text(encoding="utf-8")
+    assert "elasticsearch-analysis-pinyin-9.5.5.zip" in dockerfile_text
+
+
+@pytest.mark.asyncio
+async def test_spaced_and_case_insensitive_pinyin_query_probe():
+    from copy import deepcopy
+    from katrain.web.api.v1.endpoints import kifu
+    from katrain.web.kifu.search_documents import alias_document_id, term_document_id
+
+    class FakeProbeSearch:
+        def __init__(self):
+            self.state = {
+                "doc_kind": "sync_state",
+                "schema_version": "kifu-search-v1",
+                "strict_mode": False,
+                "status": "ready",
+                "epoch": 1,
+                "target_index": "test-v1",
+            }
+            self.calls = []
+
+        async def mget(self, ids, *, index=None):
+            self.calls.append(("mget", ids, index))
+            return {
+                "docs": [
+                    {
+                        "_id": ident,
+                        "_index": "test-v1",
+                        "found": ident == "sync-state",
+                        **({"_source": deepcopy(self.state)} if ident == "sync-state" else {}),
+                    }
+                    for ident in ids
+                ]
+            }
+
+        async def search(self, body, *, index):
+            self.calls.append(("search", body, index))
+            return {
+                "timed_out": False,
+                "_shards": {"failed": 0},
+                "hits": {"total": {"value": 0, "relation": "eq"}, "hits": []},
+            }
+
+        async def get_document(self, ident, *, index):
+            self.calls.append(("get", ident, index))
+            return {"_id": ident, "_index": index, "found": True, "_source": {**self.state, "epoch": 1}}
+
+    # Spaced query probes both raw and condensed terms
+    client = FakeProbeSearch()
+    await kifu.read_album_page_elasticsearch(client, None, q="wang xing hao")
+    mget_ids = client.calls[0][1]
+    assert term_document_id("wang xing hao") in mget_ids
+    assert term_document_id("wangxinghao") in mget_ids
+    assert alias_document_id("wang xing hao") in mget_ids
+    assert alias_document_id("wangxinghao") in mget_ids
+
+    # Mixed case query
+    client2 = FakeProbeSearch()
+    await kifu.read_album_page_elasticsearch(client2, None, q="Wang Xing Hao")
+    mget_ids2 = client2.calls[0][1]
+    assert term_document_id("Wang Xing Hao") in mget_ids2
+    assert term_document_id("wangxinghao") in mget_ids2
+
+    # Condensed single-word query should not duplicate term
+    client3 = FakeProbeSearch()
+    await kifu.read_album_page_elasticsearch(client3, None, q="wangxinghao")
+    mget_ids3 = client3.calls[0][1]
+    assert mget_ids3.count(term_document_id("wangxinghao")) == 1
+
+
+@pytest.mark.asyncio
+async def test_pinyin_search_full_cycle_and_regression(tmp_path):
+    from copy import deepcopy
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session, sessionmaker
+    from katrain.web.core.db import Base
+    from katrain.web.core.models_db import KifuAlbum, KifuPlayer, KifuPlayerName
+    from katrain.web.kifu.search_projection import build_projection_context, project_album_batch
+    from tests.web_ui.test_kifu_name_api import _evidence
+    from katrain.web.api.v1.endpoints import kifu
+
+    class MockSearchES:
+        def __init__(self, term_docs, album_hits):
+            self.term_docs = term_docs
+            self.album_hits = album_hits
+            self.state = {
+                "doc_kind": "sync_state",
+                "schema_version": "kifu-search-v1",
+                "strict_mode": False,
+                "status": "ready",
+                "epoch": 1,
+                "target_index": "test-v1",
+            }
+
+        async def mget(self, ids, *, index=None):
+            docs = []
+            for ident in ids:
+                if ident == "sync-state":
+                    docs.append({"_id": ident, "_index": "test-v1", "found": True, "_source": deepcopy(self.state)})
+                elif ident in self.term_docs:
+                    docs.append(
+                        {
+                            "_id": ident,
+                            "_index": "test-v1",
+                            "found": True,
+                            "_source": deepcopy(self.term_docs[ident]),
+                        }
+                    )
+                else:
+                    docs.append({"_id": ident, "_index": "test-v1", "found": False})
+            return {"docs": docs}
+
+        async def search(self, body, *, index):
+            return {
+                "timed_out": False,
+                "_shards": {"failed": 0},
+                "hits": {"total": {"value": len(self.album_hits), "relation": "eq"}, "hits": self.album_hits},
+            }
+
+        async def get_document(self, ident, *, index):
+            return {"_id": ident, "_index": index, "found": True, "_source": deepcopy(self.state)}
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'kifu_test.db'}")
+    Base.metadata.create_all(engine)
+    with Session(engine) as db:
+        p1 = KifuPlayer(id=1, canonical_name="王星昊")
+        p2 = KifuPlayer(id=2, canonical_name="朴文垚")
+        db.add_all([p1, p2])
+        db.flush()
+
+        for lang, display in (
+            ("cn", "王星昊"),
+            ("en", "Wang Xinghao"),
+            ("jp", "王星昊"),
+            ("ko", "왕싱하오"),
+        ):
+            ev = _evidence(db, "player", 1, lang, display)
+            db.add(
+                KifuPlayerName(
+                    player_id=1,
+                    lang=lang,
+                    display_name=display,
+                    status="verified",
+                    decision_kind="conventional",
+                    generation_rule_version="v1",
+                    revision=1,
+                    evidence_id=ev.id,
+                )
+            )
+
+        ev_p2 = _evidence(db, "player", 2, "cn", "朴文垚")
+        db.add(
+            KifuPlayerName(
+                player_id=2,
+                lang="cn",
+                display_name="朴文垚",
+                status="verified",
+                decision_kind="conventional",
+                generation_rule_version="v1",
+                revision=1,
+                evidence_id=ev_p2.id,
+            )
+        )
+
+        row = KifuAlbum(
+            id=10,
+            black_player_id=1,
+            white_player_id=2,
+            player_black="Wang Xinghao",
+            player_white="Park",
+            date_sort="2024-05-01",
+            sgf_content="(;SZ[19];B[qd])",
+            source_path="test1.sgf",
+        )
+        db.add(row)
+        db.commit()
+
+        context = build_projection_context(db, False)
+        term_docs = {doc["_id"]: doc["_source"] for doc in context.classification_documents()}
+        album_hits = project_album_batch(context, [row])
+        factory = sessionmaker(bind=engine)
+
+        queries = [
+            "wangxinghao",
+            "wxh",
+            "wang xing hao",
+            "WangXingHao",
+            "WxH",
+            "piaowenyao",
+            "puwenyao",
+            "pwy",
+            "王星昊",
+            "Wang Xinghao",
+            "왕싱하오",
+        ]
+        for q in queries:
+            es = MockSearchES(term_docs, album_hits)
+            res = await kifu.read_album_page_elasticsearch(es, factory, q=q, page_size=20)
+            assert res.total == 1
+            assert res.items[0].id == row.id
+            assert res.preview is not None
+            assert res.preview.id == row.id
+            assert res.preview.sgf_content == "(;SZ[19];B[qd])"

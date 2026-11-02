@@ -1,8 +1,9 @@
 import type { AuthStatus } from '../../context/AuthContext';
 
-export type AccessFeature = 'hall' | 'rated' | 'reports' | 'cross' | 'analysis' | 'growth' | 'local' | 'kifu' | 'tutorial' | 'tsumego' | 'research' | 'settings' | 'vision' | 'cloud' | 'play';
+export type AccessFeature = 'hall' | 'rated' | 'reports' | 'cross' | 'analysis' | 'growth' | 'local' | 'kifu' | 'tutorial' | 'tsumego' | 'research' | 'settings' | 'vision' | 'cloud' | 'play' | 'membership';
 export interface AccessMetadata { label: string; description: string; backLabel: string; backPath: string }
 export const accessMetadata: Record<AccessFeature, AccessMetadata> = {
+  membership: { label: '会员与用量', description: '登录后查看会员用量、API 积分与订单。', backLabel: '返回对弈', backPath: '/play' },
   cloud: { label: '个人棋谱', description: '登录后查看自己的云端棋谱与分组。', backLabel: '继续浏览', backPath: '/research' },
   play: { label: '自由对弈', description: '登录后可继续当前对弈设置。', backLabel: '继续浏览', backPath: '/play' },
   hall: { label: '对战大厅', description: '查看正在进行的对局，邀请棋友或匹配对手。', backLabel: '返回对弈', backPath: '/play' },
@@ -22,6 +23,7 @@ export const accessMetadata: Record<AccessFeature, AccessMetadata> = {
 
 // Existing kiosk policy remains strict except for the explicitly public free-play chain.
 export function kioskAccessPolicy(path: string): { feature: AccessFeature; realAccount: boolean } | null {
+  if (path.startsWith('/kiosk/membership')) return { feature: 'membership', realAccount: true };
   if (path === '/kiosk/play' || path === '/kiosk' || path === '/kiosk/' || path === '/kiosk/login'
     || path === '/kiosk/play/cross-platform' || path.startsWith('/kiosk/play/ai/game/')) return null;
   if (path.startsWith('/kiosk/play/ai/setup/')) return path.endsWith('/ranked') ? { feature: 'rated', realAccount: true } : null;

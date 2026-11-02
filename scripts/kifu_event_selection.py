@@ -24,7 +24,7 @@ from katrain.web.kifu.event_selection import (
     undo_batch,
     validate_bundle,
 )
-from katrain.web.kifu.prepare_search import PreparationError
+from katrain.web.kifu.search_sync import SearchIndexPending
 
 
 def main(argv=None) -> int:
@@ -60,7 +60,9 @@ def main(argv=None) -> int:
             engine = create_engine(args.database_url)
             result = (batch_status(engine, args.batch_id) if args.command == "status" else
                       undo_batch(engine, args.batch_id, emergency_invalidate_search=args.emergency_invalidate_search))
-    except (EventSelectionError, PreparationError, OSError, json.JSONDecodeError) as exc:
+    except SearchIndexPending as exc:
+        result = {"status": "search_index_pending", "operation_ref": exc.operation_ref, "error": str(exc)}
+    except (EventSelectionError, OSError, json.JSONDecodeError) as exc:
         result = {"ready": False, "error": str(exc)}
     finally:
         if engine is not None:

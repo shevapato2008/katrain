@@ -1,0 +1,196 @@
+{
+  "status": "final_weekly_catalog_approved_direct_implementation",
+  "authority": "../../superpowers/specs/2026-11-02-membership-simple-final-design.md",
+  "fixture_only": true,
+  "surfaces": {
+    "primary_purchase": "Compare",
+    "usage": "Monitor",
+    "kiosk_viewport": [
+      1024,
+      600
+    ],
+    "galaxy_viewport": [
+      1440,
+      900
+    ],
+    "navigation": [
+      "用量",
+      "API充值",
+      "会员"
+    ]
+  },
+  "clock": {
+    "server_now": "2026-11-01T04:00:00Z",
+    "elapsed_source": "performance.now",
+    "local_tick_seconds": 1,
+    "visible_refresh_seconds": 15,
+    "week": "Asia/Shanghai 周一00:00",
+    "boundary_behavior": "本地倒计时归零只等待新快照；不得自行增加可用量",
+    "term": "独立30天权益；到期失效，不把term剩余恢复成新额度"
+  },
+  "catalog": {
+    "currency": "CNY",
+    "term_days": 30,
+    "points_per_yuan": 1,
+    "credits_per_display_point": 100,
+    "plans": {
+      "plus": {
+        "amount_fen": 3900,
+        "term_standard_units": 9030,
+        "week_standard_units": 3010,
+        "report_300_moves_reference": {
+          "term": 30,
+          "week": 10
+        },
+        "full_use_savings_percent": 56.8,
+        "display_savings_percent": 56.8,
+        "price_ratio_zhe": 4.32,
+        "available_in_preview": true,
+        "production_sales_approved": false
+      },
+      "pro": {
+        "amount_fen": 9900,
+        "term_standard_units": 27090,
+        "week_standard_units": 9030,
+        "report_300_moves_reference": {
+          "term": 90,
+          "week": 30
+        },
+        "full_use_savings_percent": 63.5,
+        "display_savings_percent": 63.5,
+        "price_ratio_zhe": 3.65,
+        "available_in_preview": true,
+        "production_sales_approved": false
+      },
+      "max": {
+        "amount_fen": 19900,
+        "term_standard_units": 72240,
+        "week_standard_units": 24080,
+        "report_300_moves_reference": {
+          "term": 240,
+          "week": 80
+        },
+        "full_use_savings_percent": 72.5,
+        "display_savings_percent": 72.5,
+        "price_ratio_zhe": 2.75,
+        "available_in_preview": false,
+        "production_sales_approved": false
+      }
+    },
+    "topup_amounts_yuan": [
+      10,
+      30,
+      100
+    ],
+    "topup_rule": "金额乘100发放原整数credits；显示积分等于金额，不添加赠送",
+    "profiles": {
+      "advanced": {
+        "visits": 2000,
+        "standard_units": 4,
+        "credits": 4,
+        "points": "0.04"
+      },
+      "normal": {
+        "visits": 500,
+        "standard_units": 1,
+        "credits": 1,
+        "points": "0.01"
+      }
+    },
+    "report_rule": "N手报告包含初始局面，总计N+1位置；标准N+1整数credits，高级4*(N+1)",
+    "report_example": {
+      "moves": 300,
+      "positions": 301,
+      "advanced_points": "12.04",
+      "normal_points": "3.01"
+    },
+    "member_point_equivalent_visible": false,
+    "discount_basis": "相同普通分析量对比API；按30天额度用满计算，实际优惠随用量变化。用户界面不显示标准单位或内部等值积分。",
+    "report_reference_caveat": "普通报告，每周最多约10/30/80盘；按每盘300手估算，受本期剩余限制，高级约4倍。本期普通报告参考30/90/240盘。",
+    "advanced_caveat": "每位置2000visits消耗4倍，周限也按4倍占用；不能将30天等值预算当作保证高级报告盘数。",
+    "max": "默认暂未开放，199元配置不是容量和成本验收结论",
+    "legacy_assets": "仅显示C/100积分；原整数余额、账本、旧订单及在途计价快照不缩放、不追溯改价",
+    "catalog_version": "membership_20261102_v1"
+  },
+  "usage_sample": {
+    "catalog_version": "membership_20261102_v1",
+    "environment": "TEST",
+    "server_now": "2026-11-01T04:00:00Z",
+    "revision": 1,
+    "capabilities": {
+      "membership": true,
+      "usage": true,
+      "quotes": true,
+      "positions": true,
+      "orders": true,
+      "can_claim_free_report": false,
+      "reason": "TEST fixture only"
+    },
+    "payments_mode": "mock",
+    "plan": {
+      "current": {
+        "code": "pro",
+        "name": "Pro",
+        "starts_at": "2026-11-01T04:00:00Z",
+        "ends_at": "2026-12-01T04:00:00Z"
+      },
+      "next": null
+    },
+    "term": {
+      "limit": 27090,
+      "used": 9030,
+      "reserved": 301,
+      "remaining": 17759,
+      "percent": 65.5555555556,
+      "reset_at": "2026-12-01T04:00:00Z"
+    },
+    "week": {
+      "limit": 9030,
+      "used": 1505,
+      "reserved": 301,
+      "remaining": 7224,
+      "percent": 80,
+      "reset_at": "2026-11-01T16:00:00Z"
+    },
+    "wallet": {
+      "credits": 1000,
+      "display_points": "10.00"
+    },
+    "free": {
+      "eligible": false,
+      "remaining": 0,
+      "limit": 1,
+      "reset_at": "2026-11-01T16:00:00Z",
+      "reason": "paid_membership"
+    }
+  },
+  "display_rules": {
+    "available": "底层仍按min(term.remaining,week.remaining)授权；界面分别显示本期/本周剩余百分比，不取两者百分比的min冒充总体剩余",
+    "remaining": "percent直接使用服务端对应period的percent；limit/used/reserved/remaining仅API内部，产品不显示；未知、能力关闭与服务异常不假0",
+    "free": "Free仍保留原每周普通报告领取资格；本次会员优先规则不改变其资格或P3前置",
+    "source": "用户已授权会员优先、会员不足时自动使用已购API积分；一次operation全额选一个来源，不混扣、不自动购买积分",
+    "same_result": "领地、支招、重复查看同一已拥有结果不双扣",
+    "unknown_account": "账号、权限、服务或余额未确认时不得将其当成会员用尽后扣钱包；离线/失败显示待确认",
+    "renewal": "同档或跨档均排非重叠30天term；本周历史不重置，付款前显示生效时间",
+    "quote": "开始前确认会员优先，会员不足时本次API最大回退积分；quote_token绑定用户、环境、棋谱、深度、价版与过期，超上限重新报价，不混扣",
+    "wallet_exhausted": "会员不足且API积分也不足，阻止分析并提供充值/等待恢复；不发生人民币自动充值",
+    "member_remaining_presentation": "本期与本周仅显示剩余百分比及恢复/到期时间，不显示原整数标准单位。Free仍可显示0/1份报告，钱包仍显示实际积分。"
+  },
+  "isolation": {
+    "runtime": "仅docs内存示意；不调用业务API、数据库、GPU或支付渠道",
+    "payment": "TEST模拟标记常显，不生成真实付款二维码；重复模拟确认不重复发放示意权益",
+    "fixtures_exit": "真实业务接入并通过验收后，生产路径不得保留Fixture或模拟余额；docs历史可保留"
+  },
+  "review_scope": "Astra Max两轮最终计划通过，用户已授权决策后直接实施；保留真实运行时预览，不再等待用户逐页视觉确认。本docs仍为隔离示意，不是已部署业务。",
+  "api_types": "../../../katrain/web/ui/src/features/membership/types.ts",
+  "api_routes": [
+    "GET /api/v1/billing/catalog",
+    "GET /api/v1/billing/usage",
+    "POST /api/v1/billing/quotes",
+    "POST /api/v1/billing/orders",
+    "GET /api/v1/billing/orders",
+    "GET /api/v1/billing/orders/{id}",
+    "POST /api/v1/analysis/positions",
+    "GET /api/v1/analysis/positions/{id}"
+  ]
+}

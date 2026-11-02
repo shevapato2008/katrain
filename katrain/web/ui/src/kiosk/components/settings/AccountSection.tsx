@@ -95,6 +95,11 @@ export default function AccountSection() {
         </span>
       </div>
 
+      {user && !isGuest && <div className="kiosk-row">
+        <span className="kiosk-row__t"><b>{t('membership:title', '会员与充值')}</b><em>{t('membership:account_entry', '用量、API积分与会员权益')}</em></span>
+        <span className="kiosk-row__end"><button type="button" className="kiosk-btn kiosk-btn--secondary" onClick={() => navigate('/kiosk/membership')}>{t('membership:open', '查看')}</button></span>
+      </div>}
+
       {/* 游客 / 未登录不请求段位(`useAiLadderStatus` 第二个参数),这里也不画。 */}
       {user && !isGuest && <KioskAiLadderRows status={status} onRetry={retry} />}
     </>

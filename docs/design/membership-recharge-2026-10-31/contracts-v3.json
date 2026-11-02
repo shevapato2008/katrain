@@ -1,0 +1,152 @@
+{
+  "status": "v3_design_fixture_pending_user_visual_confirmation",
+  "authority": "../../superpowers/specs/2026-11-01-membership-points-and-request-budget-v3.md",
+  "fixture_only": true,
+  "surfaces": {
+    "primary_purchase": "Compare",
+    "usage": "Monitor",
+    "kiosk_viewport": [
+      1024,
+      600
+    ],
+    "galaxy_viewport": [
+      1440,
+      900
+    ],
+    "navigation": [
+      "用量",
+      "API充值",
+      "会员"
+    ]
+  },
+  "clock": {
+    "server_now": "2026-11-01T04:00:00Z",
+    "elapsed_source": "performance.now",
+    "local_tick_seconds": 1,
+    "visible_refresh_seconds": 15,
+    "week": "Asia/Shanghai 周一00:00",
+    "boundary_behavior": "本地倒计时归零只等待新快照；不得自行增加可用量",
+    "term": "独立30天权益；到期失效，不把term剩余恢复成新额度"
+  },
+  "catalog": {
+    "price_version": "membership_request_v3_candidate",
+    "currency": "CNY",
+    "term_days": 30,
+    "points_per_yuan": 1,
+    "credits_per_display_point": 100,
+    "plans": {
+      "plus": {
+        "amount_fen": 2900,
+        "term_standard_units": 9030,
+        "week_standard_units": 2107,
+        "report_300_moves_reference": {
+          "term": 30,
+          "week": 7
+        },
+        "full_use_savings_percent": 67.884828,
+        "display_savings_percent": 68,
+        "price_ratio_zhe": 3.21,
+        "available_in_preview": true,
+        "production_sales_approved": false
+      },
+      "pro": {
+        "amount_fen": 9900,
+        "term_standard_units": 36120,
+        "week_standard_units": 8428,
+        "report_300_moves_reference": {
+          "term": 120,
+          "week": 28
+        },
+        "full_use_savings_percent": 72.591362,
+        "display_savings_percent": 73,
+        "price_ratio_zhe": 2.74,
+        "available_in_preview": true,
+        "production_sales_approved": false
+      },
+      "max": {
+        "amount_fen": 29900,
+        "term_standard_units": 117390,
+        "week_standard_units": 27391,
+        "report_300_moves_reference": {
+          "term": 390,
+          "week": 91
+        },
+        "full_use_savings_percent": 74.529347,
+        "display_savings_percent": 75,
+        "price_ratio_zhe": 2.55,
+        "available_in_preview": false,
+        "production_sales_approved": false
+      }
+    },
+    "topup_amounts_yuan": [
+      10,
+      30,
+      100
+    ],
+    "topup_rule": "金额乘100发放原整数credits；显示积分等于金额，不添加赠送",
+    "profiles": {
+      "standard": {
+        "visits": 500,
+        "standard_units": 1,
+        "credits": 1,
+        "points": "0.01"
+      },
+      "advanced": {
+        "visits": 2000,
+        "standard_units": 4,
+        "credits": 4,
+        "points": "0.04"
+      }
+    },
+    "report_rule": "N手报告包含初始局面，总计N+1位置；标准N+1整数credits，高级4*(N+1)",
+    "report_example": {
+      "moves": 300,
+      "positions": 301,
+      "standard_points": "3.01",
+      "advanced_points": "12.04"
+    },
+    "member_point_equivalent_visible": false,
+    "discount_basis": "相同500visits标准单位：1 - 会费/(30天总单位*0.01元)。按30天额度用满计算，实际优惠随用量变化。",
+    "report_reference_caveat": "按300手估算，受本周与本期剩余共同限制；盘数是预算换算，不保证所有续费排期均能使用该盘数。",
+    "advanced_caveat": "每位置2000visits消耗4倍，周限也按4倍占用；不能将30天等值预算当作保证高级报告盘数。",
+    "max": "默认暂未开放；价格、倍数与容量验证未获批准",
+    "legacy_assets": "仅显示C/100积分；原整数余额、账本、旧订单及在途计价快照不缩放、不追溯改价"
+  },
+  "usage_sample": {
+    "plan": "pro",
+    "term": {
+      "limit": 36120,
+      "used": 9030,
+      "reserved": 301,
+      "remaining": 26789,
+      "ends_at": "2026-12-01T04:00:00Z"
+    },
+    "week": {
+      "limit": 8428,
+      "used": 1505,
+      "reserved": 301,
+      "remaining": 6622,
+      "resets_at": "2026-11-01T16:00:00Z"
+    },
+    "current_available_standard_units": 6622,
+    "wallet": {
+      "credits": 1000,
+      "display_points": "10.00"
+    }
+  },
+  "display_rules": {
+    "available": "min(term.remaining, week.remaining)，不能相加",
+    "remaining": "max(0, limit-used-reserved)",
+    "free": "单独每自然周1份普通报告的资格，不赠通用请求单位；有效会员期不再叠加Free",
+    "source": "会员不足不自动扣积分；一次operation全额选一个来源",
+    "same_result": "领地、支招、重复查看同一已拥有结果不双扣",
+    "unknown_account": "加载与同步失败均标未确认，所有页禁用购买；离线显示旧数据与同步时间",
+    "renewal": "同档或跨档均排非重叠30天term；本周历史不重置，付款前显示生效时间"
+  },
+  "isolation": {
+    "runtime": "仅docs内存示意；不调用业务API、数据库、GPU或支付渠道",
+    "payment": "TEST模拟标记常显，不生成真实付款二维码；重复模拟确认不重复发放示意权益",
+    "fixtures_exit": "真实业务接入并通过验收后，生产路径不得保留Fixture或模拟余额；docs历史可保留"
+  },
+  "review_scope": "旧v2视觉审核不覆盖本v3。当前待新预览与用户视觉确认；不是实际收款或可售商品。"
+}

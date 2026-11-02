@@ -1214,37 +1214,14 @@ def dry_run_bundle(engine, bundle: dict) -> dict:
 
 
 @contextmanager
-def _locked_write(engine, *, _emergency_undo=False):
-    conn = engine.connect()
-    try:
-        if engine.dialect.name == "postgresql":
-            conn = conn.execution_options(isolation_level="READ COMMITTED")
-            conn.begin()
-            conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (720220261002,))
-            conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (720220261003,))
-            conn.exec_driver_sql(
-                "LOCK TABLE kifu_albums, kifu_album_event_selections, "
-                "kifu_event_selection_batches IN SHARE ROW EXCLUSIVE MODE"
-            )
-        elif engine.dialect.name == "sqlite":
-            conn.exec_driver_sql("PRAGMA foreign_keys=ON")
-            _require(
-                conn.exec_driver_sql("PRAGMA foreign_keys").scalar_one() == 1, "SQLite foreign keys must be enabled"
-            )
-            conn.exec_driver_sql("BEGIN IMMEDIATE")
-        else:
-            raise EventSelectionError("Only PostgreSQL and SQLite are supported")
-        yield conn
-        from katrain.web.kifu.prepare_search import maintain_after_write
+def _locked_write(engine, *, _emergency_undo=False, search_operation=None):
+    from katrain.web.kifu.name_batch import _locked_write as locked_write
 
-        if not _emergency_undo:
-            maintain_after_write(conn)
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+    with locked_write(engine, search_operation=search_operation, _table_lock=(
+        "LOCK TABLE kifu_albums, kifu_album_event_selections, "
+        "kifu_event_selection_batches IN SHARE ROW EXCLUSIVE MODE"
+    )) as conn:
+        yield conn
 
 
 def apply_bundle(engine, bundle: dict, *, expected_bundle_sha256: str | None = None) -> dict:
@@ -1259,7 +1236,7 @@ def apply_bundle(engine, bundle: dict, *, expected_bundle_sha256: str | None = N
     )
     batches = KifuEventSelectionBatch.__table__
     selections = KifuAlbumEventSelection.__table__
-    with _locked_write(engine) as conn:
+    with _locked_write(engine, search_operation=("event_apply", {"bundle_sha256": report["bundle_sha256"]})) as conn:
         prior = (
             conn.execute(select(batches).where(batches.c.bundle_sha256 == report["bundle_sha256"]))
             .mappings()
@@ -1366,15 +1343,17 @@ def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = Fal
     selections = KifuAlbumEventSelection.__table__
     albums = KifuAlbum.__table__
     _require(type(emergency_invalidate_search) is bool, "emergency invalidation must be a boolean")
-    context = _locked_write(engine, _emergency_undo=True) if emergency_invalidate_search else _locked_write(engine)
+    context = _locked_write(engine, search_operation=("event_undo", {"batch_id": batch_id}))
     with context as conn:
         batch = conn.execute(select(batches).where(batches.c.id == batch_id)).mappings().one_or_none()
         _require(batch is not None, f"batch {batch_id} not found")
-        _require(batch["status"] == "applied", "batch is not applied")
+        _require(batch["status"] in {"applied", "undone"}, "batch is not applied")
         artifact = batch["reviewed_artifact"]
         before = artifact["before_images"]
         after = artifact["after_images"]
         _require(_audit_images_match_review(batch), "batch audit images changed")
+        if batch["status"] == "undone":
+            return {"status": "already_undone", "batch_id": batch_id, "reverted": 0}
         album_ids = [member["album_id"] for member in before]
         active_name_link = conn.execute(select(KifuNameChange.id).join(
             KifuNameBatch, KifuNameChange.batch_id == KifuNameBatch.id).where(
@@ -1406,8 +1385,4 @@ def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = Fal
             .values(status="undone", undone_at=datetime.now(timezone.utc))
         )
         result = {"status": "undone", "batch_id": batch_id, "reverted": len(before)}
-        if emergency_invalidate_search:
-            from katrain.web.kifu.prepare_search import emergency_undo_status
-
-            result.update(emergency_undo_status(conn))
         return result

@@ -73,8 +73,21 @@ services:
       - "8001:8001"
     environment:
       - KATRAIN_SECRET_KEY=${KATRAIN_SECRET_KEY:?KATRAIN_SECRET_KEY 必须在 .env 里设置}
-      - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
+      - KATRAIN_DATABASE_URL=${KATRAIN_DATABASE_URL:-postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db}
       - LOCAL_KATAGO_URL=http://host.docker.internal:8000
+      # Paid profiles use the pinned tf3 model on the analysis engine.
+      - CLOUD_KATAGO_URL=${CLOUD_KATAGO_URL:-http://host.docker.internal:8002}
+      # Membership remains legacy/disabled until this deployment explicitly enables it.
+      - KATRAIN_ENVIRONMENT=${KATRAIN_ENVIRONMENT:-production}
+      - MEMBERSHIP_MODE=${MEMBERSHIP_MODE:-legacy}
+      - BILLING_ENFORCED=${BILLING_ENFORCED:-false}
+      - FREE_WEEKLY_REPORTS=${FREE_WEEKLY_REPORTS:-0}
+      - PAYMENTS_MODE=${PAYMENTS_MODE:-disabled}
+      - PAYMENT_MOCK_EVENT_SECRET=${PAYMENT_MOCK_EVENT_SECRET:-}
+      - MEMBERSHIP_MAX_SALE_ENABLED=${MEMBERSHIP_MAX_SALE_ENABLED:-true}
+      - MEMBERSHIP_REPORT_QUEUE_LIMIT=${MEMBERSHIP_REPORT_QUEUE_LIMIT:-8}
+      - MEMBERSHIP_POSITION_QUEUE_LIMIT=${MEMBERSHIP_POSITION_QUEUE_LIMIT:-4}
+      - MEMBERSHIP_POSITION_LEASE_SECONDS=${MEMBERSHIP_POSITION_LEASE_SECONDS:-90}
       # Media storage → MinIO (S3). Swap these for Aliyun OSS values in phase 2 (no code change).
       - KATRAIN_STORAGE_BACKEND=${KATRAIN_STORAGE_BACKEND:-s3}
       - KATRAIN_S3_ENDPOINT_URL=${KATRAIN_S3_ENDPOINT_URL:-http://minio:9000}
@@ -109,8 +122,19 @@ services:
       - KATRAIN_ADMIN_SERVICE_SECRET=${KATRAIN_ADMIN_SERVICE_SECRET:-}
       - KATRAIN_ADMIN_PROVIDER_ONLY=${KATRAIN_ADMIN_PROVIDER_ONLY:-0}
       - KATRAIN_ADMIN_ENV=${KATRAIN_ADMIN_ENV:-local}
+      # Membership remains legacy/disabled until this deployment explicitly enables it.
+      - KATRAIN_ENVIRONMENT=${KATRAIN_ENVIRONMENT:-production}
+      - MEMBERSHIP_MODE=${MEMBERSHIP_MODE:-legacy}
+      - BILLING_ENFORCED=${BILLING_ENFORCED:-false}
+      - FREE_WEEKLY_REPORTS=${FREE_WEEKLY_REPORTS:-0}
+      - PAYMENTS_MODE=${PAYMENTS_MODE:-disabled}
+      - PAYMENT_MOCK_EVENT_SECRET=${PAYMENT_MOCK_EVENT_SECRET:-}
+      - MEMBERSHIP_MAX_SALE_ENABLED=${MEMBERSHIP_MAX_SALE_ENABLED:-true}
+      - MEMBERSHIP_REPORT_QUEUE_LIMIT=${MEMBERSHIP_REPORT_QUEUE_LIMIT:-8}
+      - MEMBERSHIP_POSITION_QUEUE_LIMIT=${MEMBERSHIP_POSITION_QUEUE_LIMIT:-4}
+      - MEMBERSHIP_POSITION_LEASE_SECONDS=${MEMBERSHIP_POSITION_LEASE_SECONDS:-90}
       - KATRAIN_SECRET_KEY=${KATRAIN_SECRET_KEY:?KATRAIN_SECRET_KEY 必须在 .env 里设置}
-      - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
+      - KATRAIN_DATABASE_URL=${KATRAIN_DATABASE_URL:-postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db}
       - KATRAIN_STORAGE_BACKEND=${KATRAIN_STORAGE_BACKEND:-s3}
       - KATRAIN_S3_ENDPOINT_URL=${KATRAIN_S3_ENDPOINT_URL:-http://minio:9000}
       - KATRAIN_S3_BUCKET=${S3_BUCKET:-tutorial-assets}
@@ -134,7 +158,7 @@ services:
       - ./data/tutorial_backups:/app/data/tutorial_backups
     environment:
       - KATRAIN_SECRET_KEY=${KATRAIN_SECRET_KEY:?KATRAIN_SECRET_KEY 必须在 .env 里设置}
-      - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
+      - KATRAIN_DATABASE_URL=${KATRAIN_DATABASE_URL:-postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db}
       - KATAGO_URL=http://host.docker.internal:8002
       - KATAGO_EXPECTED_MODEL_SHA256=${KATAGO_EXPECTED_MODEL_SHA256:-}
       - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}

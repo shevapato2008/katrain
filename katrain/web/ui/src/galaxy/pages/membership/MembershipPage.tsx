@@ -331,6 +331,9 @@ function PlanCards({
             <Typography sx={{ fontSize: 17 }}>
               {planReportCopy(plan.week_report_reference)}
             </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {plan.term_days}天共约{plan.term_report_reference}盘
+            </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               按每盘 300 手估算，受本期剩余限制。{depthCopy(catalog)}
             </Typography>

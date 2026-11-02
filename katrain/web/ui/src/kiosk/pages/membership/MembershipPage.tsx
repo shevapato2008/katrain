@@ -183,7 +183,7 @@ export default function MembershipPage() {
               <div className="km-plan-head"><strong>{plan.name}</strong><span>{unavailable ? '暂未开放' : current ? '当前会员' : ''}</span></div>
               <div className="km-plan-price">¥<Num>{money(plan.amount_fen)}</Num> <small>/ <Num>{plan.term_days}</Num>天</small></div>
               <p className="km-saving">比API约省 <Num>{formatSavings(plan.full_use_savings_percent)}</Num></p>
-              <div className="km-report-reference"><span>普通报告</span><strong>每周最多约 <Num>{plan.week_report_reference}</Num> 盘</strong></div>
+              <div className="km-report-reference"><span>普通报告 · <Num>{plan.term_days}</Num>天共约<Num>{plan.term_report_reference}</Num>盘</span><strong>每周最多约 <Num>{plan.week_report_reference}</Num> 盘</strong></div>
               <button type="button" className={plan.code === 'pro' ? 'km-primary' : ''} disabled={!enabled || checkout.creating} onClick={() => buy(`membership_${plan.code}`, true)}>{unavailable ? '暂未开放' : `${current ? '续费' : '选择'} ${plan.name}`}</button>
             </article>;
           })}</div> : <div className="km-empty"><h2>会员目录待同步</h2><p>目录确认后显示价格与权益。</p><button type="button" onClick={() => void refresh()}>重新同步</button></div>}

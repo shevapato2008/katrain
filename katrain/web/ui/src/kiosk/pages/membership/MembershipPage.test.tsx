@@ -85,15 +85,17 @@ describe('Kiosk membership', () => {
     expect(screen.queryByText(/剩余\s*0\s*\//)).not.toBeInTheDocument();
   });
 
-  it('honors disabled payments and sale-disabled plans without creating an order', async () => {
-    api.getCatalog.mockResolvedValue({ ...catalog(), payments_mode: 'disabled' });
+  it('honors disabled payments even when Max is sale-enabled, without creating an order', async () => {
+    const disabled = catalog();
+    disabled.plans[2].sale_enabled = true;
+    api.getCatalog.mockResolvedValue({ ...disabled, payments_mode: 'disabled' });
     api.getUsage.mockResolvedValue({ ...usage(), payments_mode: 'disabled' });
     mount();
     await flush();
     fireEvent.click(screen.getByRole('tab', { name: '会员' }));
     expect(screen.getByRole('button', { name: '选择 Plus' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '续费 Pro' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '暂未开放' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '选择 Max' })).toBeDisabled();
     expect(screen.getByText('支付暂未开放')).toBeInTheDocument();
     openTopup();
     expect(screen.getByRole('button', { name: /^充值/ })).toBeDisabled();
@@ -101,11 +103,31 @@ describe('Kiosk membership', () => {
   });
 
   it('keeps Max unavailable while a catalog-approved TEST plan is purchasable', async () => {
+    const serviceCatalog = catalog();
+    serviceCatalog.plans[0].term_days = 28;
+    serviceCatalog.plans[0].term_report_reference = 37;
+    api.getCatalog.mockResolvedValue(serviceCatalog);
     mount();
     await flush();
     fireEvent.click(screen.getByRole('tab', { name: '会员' }));
     expect(screen.getByRole('button', { name: '选择 Plus' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '暂未开放' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '选择 Plus' }).closest('.km-plan')).toHaveTextContent('28天共约37盘');
+    expect(screen.getByTestId('kiosk-membership-page')).not.toHaveTextContent(/标准单位|9030|72240/);
+  });
+
+  it('selects sale-enabled Max and previews its catalog-priced 199 yuan order', async () => {
+    const serviceCatalog = catalog();
+    serviceCatalog.plans[2].sale_enabled = true;
+    api.getCatalog.mockResolvedValue(serviceCatalog);
+    api.createOrder.mockResolvedValue({ ...order(), sku: 'membership_max', kind: 'membership', amount_fen: 19900 });
+    mount();
+    await flush();
+    fireEvent.click(screen.getByRole('tab', { name: '会员' }));
+    fireEvent.click(screen.getByRole('button', { name: '选择 Max' }));
+    await flush();
+    expect(api.createOrder).toHaveBeenCalledWith({ sku: 'membership_max', provider: 'mock', idempotency_key: expect.any(String) }, null, expect.any(AbortSignal));
+    expect(screen.getByRole('dialog')).toHaveTextContent('¥199.00');
   });
 
   it('blocks a live or production mock checkout in this TEST-only release', async () => {

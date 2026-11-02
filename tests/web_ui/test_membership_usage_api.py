@@ -24,6 +24,7 @@ def api(membership_pg_engine, monkeypatch):
     monkeypatch.setattr(settings, "PAYMENTS_MODE", "disabled")
     monkeypatch.setattr(settings, "KATRAIN_ENVIRONMENT", "test")
     monkeypatch.setattr(settings, "BILLING_ENFORCED", True)
+    monkeypatch.setattr(settings, "MEMBERSHIP_MAX_SALE_ENABLED", True)
     Session = sessionmaker(bind=membership_pg_engine, expire_on_commit=False, autoflush=False)
     with Session.begin() as db:
         user = m.User(username="api-buyer", hashed_password="x", credits=1000)
@@ -65,7 +66,7 @@ async def test_usage_and_catalog_have_frozen_shapes_and_no_store(api):
         "credits_per_position": 4,
         "display_points_per_position": "0.04",
     }
-    assert next(p for p in catalog.json()["plans"] if p["code"] == "max")["sale_enabled"] is False
+    assert next(p for p in catalog.json()["plans"] if p["code"] == "max")["sale_enabled"] is True
     assert {p["code"]: p["full_use_savings_percent"] for p in catalog.json()["plans"]} == {
         "plus": 56.8,
         "pro": 63.5,
@@ -140,15 +141,12 @@ async def test_checkout_is_server_priced_idempotent_and_receipts_are_owned(api, 
         first = await ac.post("/api/v1/billing/orders", json=data)
         replay = await ac.post("/api/v1/billing/orders", json=data)
         conflict = await ac.post("/api/v1/billing/orders", json={**data, "sku": "membership_pro"})
-        maxplan = await ac.post(
-            "/api/v1/billing/orders", json={**data, "sku": "membership_max", "idempotency_key": "max"}
-        )
         forged = await ac.post("/api/v1/billing/orders", json={**data, "amount_fen": 1})
         assert first.status_code == replay.status_code == 200
         assert first.json()["id"] == replay.json()["id"]
         assert first.json()["amount_fen"] == 3900 and first.json()["payment_url"] is None
         assert first.json()["fulfillment"] is None and first.json()["estimated_starts_at"]
-        assert conflict.status_code == 409 and maxplan.status_code == 422 and forged.status_code == 422
+        assert conflict.status_code == 409 and forged.status_code == 422
         oid = first.json()["id"]
         mine = await ac.get("/api/v1/billing/orders")
         assert [r["id"] for r in mine.json()["orders"]] == [oid]
@@ -156,6 +154,41 @@ async def test_checkout_is_server_priced_idempotent_and_receipts_are_owned(api, 
         hidden = await ac.get(f"/api/v1/billing/orders/{oid}")
         otherlist = await ac.get("/api/v1/billing/orders")
         assert hidden.status_code == 404 and otherlist.json() == {"orders": []}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "max_sale_enabled,membership_mode,payments_mode,sale_enabled,status",
+    [
+        (True, "enabled", "mock", True, 200),
+        (False, "enabled", "mock", False, 422),
+        (True, "paused", "mock", False, 503),
+        (True, "enabled", "disabled", True, 503),
+    ],
+)
+async def test_max_catalog_and_new_order_share_sale_gates(
+    api, monkeypatch, max_sale_enabled, membership_mode, payments_mode, sale_enabled, status
+):
+    import os
+
+    monkeypatch.setenv("KATRAIN_DATABASE_URL", os.environ["TEST_DATABASE_URL"])
+    monkeypatch.setattr(settings, "MEMBERSHIP_MAX_SALE_ENABLED", max_sale_enabled)
+    monkeypatch.setattr(settings, "MEMBERSHIP_MODE", membership_mode)
+    monkeypatch.setattr(settings, "PAYMENTS_MODE", payments_mode)
+    monkeypatch.setattr(settings, "PAYMENT_MOCK_EVENT_SECRET", "test-admin-event-key")
+    async with AsyncClient(transport=ASGITransport(app=api), base_url="http://test") as ac:
+        response = await ac.get("/api/v1/billing/catalog")
+        plans = {p["code"]: p for p in response.json()["plans"]}
+        assert plans["max"]["sale_enabled"] is sale_enabled
+        assert plans["plus"]["sale_enabled"] is plans["pro"]["sale_enabled"] is (membership_mode == "enabled")
+        assert response.json()["capabilities"]["orders"] is (membership_mode == "enabled" and payments_mode == "mock")
+        order = await ac.post("/api/v1/billing/orders", json={"sku": "membership_max", "idempotency_key": "max-sale"})
+    assert order.status_code == status, order.text
+    with api.state.test_session() as db:
+        assert db.query(m.RechargeOrder).count() == (1 if status == 200 else 0)
+    if status == 200:
+        assert order.json()["amount_fen"] == 19900
+        assert order.json()["payment_url"] is None and order.json()["fulfillment"] is None
 
 
 @pytest.mark.asyncio

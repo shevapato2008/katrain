@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import uuid
 
 from . import billing, membership as ms, models_db as m
-from .billing_catalog import CATALOG_VERSION, PLANS, TOPUPS, TERM_DAYS, wallet_display_points
+from .billing_catalog import CATALOG_VERSION, PLANS, TOPUPS, TERM_DAYS, is_plan_sellable, wallet_display_points
 from .billing_environment import validate_runtime_environment
 from .billing_operations import MembershipError
 
@@ -48,12 +48,12 @@ def _order(db, user_id, order_id):
     return order
 
 
-def _snapshot(sku):
+def _snapshot(sku, *, max_sale_enabled):
     if sku in TOPUPS:
         return {"sku": sku, "kind": "topup", **TOPUPS[sku]}
     if isinstance(sku, str) and sku.startswith("membership_"):
         code = sku[len("membership_") :]
-        if code in PLANS and PLANS[code]["sellable"]:
+        if is_plan_sellable(code, max_sale_enabled=max_sale_enabled):
             return {
                 "sku": sku,
                 "kind": "membership",
@@ -88,7 +88,7 @@ def create_order_in_transaction(db, *, user_id, sku, provider, idempotency_key, 
         raise PaymentError(f"membership_{settings.MEMBERSHIP_MODE}", 503)
     if provider != "mock":
         raise PaymentError("provider_unavailable", 503)
-    frozen = _snapshot(sku)
+    frozen = _snapshot(sku, max_sale_enabled=settings.MEMBERSHIP_MAX_SALE_ENABLED)
     order = m.RechargeOrder(
         user_id=user.id,
         out_trade_no="membership_" + uuid.uuid4().hex,

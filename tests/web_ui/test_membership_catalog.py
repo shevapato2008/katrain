@@ -15,7 +15,7 @@ def test_catalog_prices_and_three_week_reference_budget():
         "max": (19900, 72240, 24080),
     }
     assert all(plan["week_units"] * 3 == plan["term_units"] for plan in catalog.PLANS.values())
-    assert catalog.PLANS["max"]["sellable"] is False
+    assert catalog.PLANS["max"]["sellable"] is True
     assert catalog.MODEL_SHA256 == "93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871"
 
 

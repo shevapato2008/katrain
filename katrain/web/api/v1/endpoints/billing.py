@@ -299,7 +299,8 @@ async def get_catalog(request: Request, response: Response, current_user: User =
                 "term_report_reference": spec["term_units"] // 301,
                 "week_report_reference": spec["week_units"] // 301,
                 "full_use_savings_percent": round((1 - spec["amount_fen"] / spec["term_units"]) * 100, 1),
-                "sale_enabled": enabled and spec["sellable"],
+                "sale_enabled": enabled
+                and catalog.is_plan_sellable(code, max_sale_enabled=settings.MEMBERSHIP_MAX_SALE_ENABLED),
             }
             for code, spec in catalog.PLANS.items()
         ],

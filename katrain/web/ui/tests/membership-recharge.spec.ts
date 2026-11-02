@@ -6,7 +6,7 @@ import { freezeClock, stubBackendStatics } from './helpers/fourup';
 import { kioskMeJson } from './helpers/kioskIdentity';
 
 // Browser-only fixtures: no production module imports or real billing/payment/GPU calls.
-const OUT = resolve(process.cwd(), '../../../output/playwright/membership-runtime-20261102');
+const OUT = resolve(process.cwd(), '../../../output/playwright/membership-max-clarity-20261102');
 const NOW = '2026-11-01T04:00:00Z';
 const capabilities = { membership: true, usage: true, quotes: true, positions: true, orders: true, can_claim_free_report: false };
 const catalog: MembershipCatalog = {
@@ -15,7 +15,7 @@ const catalog: MembershipCatalog = {
   plans: [
     { code: 'plus', name: 'Plus', amount_fen: 3900, term_days: 30, term_units: 9030, week_units: 3010, term_report_reference: 30, week_report_reference: 10, full_use_savings_percent: 56.8, sale_enabled: true },
     { code: 'pro', name: 'Pro', amount_fen: 9900, term_days: 30, term_units: 27090, week_units: 9030, term_report_reference: 90, week_report_reference: 30, full_use_savings_percent: 63.5, sale_enabled: true },
-    { code: 'max', name: 'Max', amount_fen: 19900, term_days: 30, term_units: 72240, week_units: 24080, term_report_reference: 240, week_report_reference: 80, full_use_savings_percent: 72.5, sale_enabled: false },
+    { code: 'max', name: 'Max', amount_fen: 19900, term_days: 30, term_units: 72240, week_units: 24080, term_report_reference: 240, week_report_reference: 80, full_use_savings_percent: 72.5, sale_enabled: true },
   ],
   topups: [10, 30, 100].map(amount => ({ sku: `topup_${amount}`, amount_fen: amount * 100, credits: amount * 100, display_points: amount.toFixed(2) })),
   profiles: { normal: { visits: 500, credits_per_position: 1, display_points_per_position: '0.01' }, advanced: { visits: 2000, credits_per_position: 4, display_points_per_position: '0.04' } },
@@ -52,7 +52,8 @@ async function boot(page: Page) {
     const payload = route.request().postDataJSON();
     requests.push(payload);
     const topup = catalog.topups.find(item => item.sku === payload.sku);
-    order = { id: 'UI-TEST-ORDER-001', sku: payload.sku, kind: topup ? 'topup' : 'membership', status: 'pending', amount_fen: topup?.amount_fen ?? 9900, currency: 'CNY', payments_mode: 'mock', provider: 'mock', created_at: NOW, expires_at: '2026-11-01T04:15:00Z', paid_at: null, fulfillment: null };
+    const plan = catalog.plans.find(item => `membership_${item.code}` === payload.sku);
+    order = { id: 'UI-TEST-ORDER-001', sku: payload.sku, kind: topup ? 'topup' : 'membership', status: 'pending', amount_fen: topup?.amount_fen ?? plan!.amount_fen, currency: 'CNY', payments_mode: 'mock', provider: 'mock', created_at: NOW, expires_at: '2026-11-01T04:15:00Z', paid_at: null, fulfillment: null };
     return route.fulfill({ json: order });
   });
   await page.route('**/api/v1/billing/orders/UI-TEST-ORDER-001', route => {
@@ -103,7 +104,7 @@ test('Galaxy 1440: usage, plans, recharge and server-confirmed order refresh', a
   await shot(page, 'galaxy-usage-1440.png');
   await galaxyReference(page, 'usage', 'galaxy-usage-reference-1440.png');
   await page.getByRole('tab', { name: '会员', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Max 暂未开放' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '选择 Max' })).toBeEnabled();
   for (const n of [10, 30, 80]) await expect(page.getByText(`普通报告，每周最多约${n}盘`)).toBeVisible();
   await shot(page, 'galaxy-plans-1440.png');
   await galaxyReference(page, 'plans', 'galaxy-plans-reference-1440.png');
@@ -146,7 +147,7 @@ test('Kiosk 1024×600: usage, plans, pricing and in-canvas order/dialog', async 
     await expect.poll(() => usageScroll.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
   }
   await page.getByRole('tab', { name: '会员', exact: true }).click();
-  await expect(page.locator('.km-plan').last().getByRole('button')).toBeDisabled();
+  await expect(page.getByRole('button', { name: '选择 Max' })).toBeEnabled();
   await shot(page, 'kiosk-plans-1024.png');
   await kioskReference(page, 'plans', 'kiosk-plans-reference-1024.png');
   await page.getByRole('button', { name: '会员额度与优惠说明' }).click();
@@ -179,12 +180,12 @@ test('Galaxy 375: main membership page has no horizontal overflow', async ({ pag
   await noHorizontalOverflow(page); await noInternalUnits(page);
   await shot(page, 'galaxy-plans-375.png');
   await galaxyReference(page, 'plans', 'galaxy-plans-reference-375.png');
-  await page.getByRole('button', { name: 'Max 暂未开放' }).scrollIntoViewIfNeeded();
-  await expect(page.getByRole('button', { name: 'Max 暂未开放' })).toBeDisabled();
+  await page.getByRole('button', { name: '选择 Max' }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole('button', { name: '选择 Max' })).toBeEnabled();
   await noHorizontalOverflow(page);
 });
 
-async function consumptionBackend(page: Page) {
+async function consumptionBackend(page: Page, source: 'membership' | 'wallet' = 'membership') {
   const positionRequests: Array<Record<string, unknown>> = [];
   const reportRequests: Array<Record<string, unknown>> = [];
   const quoteRequests: Array<Record<string, unknown>> = [];
@@ -200,7 +201,7 @@ async function consumptionBackend(page: Page) {
     return route.fulfill({ json: { token: `signed-${payload.kind}-${quoteRequests.length}`, catalog_version: catalog.catalog_version,
       environment: 'TEST', kind: payload.kind, profile: payload.profile, units: payload.kind === 'report' ? 3 : 1,
       wallet_max_credits: payload.kind === 'report' ? 301 : 1, wallet_max_display_points: payload.kind === 'report' ? '3.01' : '0.01',
-      source_policy: 'membership_then_wallet', source: 'membership', expires_at: '2026-11-01T04:15:00Z', server_now: NOW, fingerprint: 'full-history-position' } });
+      source_policy: 'membership_then_wallet', source, expires_at: '2026-11-01T04:15:00Z', server_now: NOW, fingerprint: 'full-history-position' } });
   });
   await page.route('**/api/v1/analysis/positions', route => {
     positionRequests.push(route.request().postDataJSON());
@@ -219,6 +220,48 @@ async function consumptionBackend(page: Page) {
     return route.fulfill({ json: report ? [report] : [] });
   });
   return { positionRequests, reportRequests, quoteRequests };
+}
+
+for (const surface of ['galaxy', 'kiosk'] as const) {
+  test(`Max and clarity: ${surface} catalog plans and wallet confirmation`, async ({ page }) => {
+    await page.setViewportSize(surface === 'kiosk' ? { width: 1024, height: 600 } : { width: 1440, height: 900 });
+    const backend = await boot(page);
+    const consumption = await consumptionBackend(page, 'wallet');
+    await page.goto(`/${surface}/membership?tab=plans`);
+    if (surface === 'kiosk') await page.getByRole('tab', { name: '会员', exact: true }).click();
+    const membershipPage = page.getByTestId(surface === 'kiosk' ? 'kiosk-membership-page' : 'membership-page');
+    for (const count of [30, 90, 240]) await expect(membershipPage).toContainText(`30天共约${count}盘`);
+    await expect(page.getByRole('button', { name: '选择 Max', exact: true })).toBeEnabled();
+    await noInternalUnits(page); await noHorizontalOverflow(page);
+    if (surface === 'kiosk') {
+      expect(await page.locator('.km-scroll > .kiosk-side__scroll').evaluate(el => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+      expect(await page.locator('.km-plan').evaluateAll(plans => plans.every(plan => {
+        const card = plan.getBoundingClientRect(), button = plan.querySelector('button')!.getBoundingClientRect();
+        return button.bottom <= card.bottom && button.top >= card.top;
+      }))).toBe(true);
+    }
+    await shot(page, `${surface}-max-plans.png`);
+    await page.getByRole('button', { name: '选择 Max', exact: true }).click();
+    await expect(page.getByRole('dialog')).toContainText(surface === 'kiosk' ? '199.00' : '¥199');
+    if (surface === 'kiosk') {
+      expect(backend.requests[0]).toMatchObject({ sku: 'membership_max', provider: 'mock' });
+    } else {
+      expect(backend.requests).toHaveLength(0);
+    }
+    await page.goto(`/${surface}/research?user_game_id=runtime-game&analyze=1`);
+    await page.getByRole('button', { name: '领地', exact: true }).click();
+    const dialog = page.getByTestId('consumption-quote');
+    const confirm = dialog.getByRole('button', { name: '使用API积分，最多扣0.01', exact: true });
+    await expect(confirm).toBeVisible();
+    expect(consumption.positionRequests).toHaveLength(0);
+    const bounds = (await confirm.boundingBox())!;
+    expect(bounds.x).toBeGreaterThanOrEqual(0); expect(bounds.y).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+    await shot(page, `${surface}-wallet-confirmation.png`);
+    await dialog.getByRole('button', { name: '取消', exact: true }).click();
+    expect(consumption.positionRequests).toHaveLength(0);
+  });
 }
 
 for (const surface of ['galaxy', 'kiosk'] as const) {

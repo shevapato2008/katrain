@@ -25,7 +25,7 @@ def cfg(monkeypatch):
         MEMBERSHIP_MODE="enabled",
         BILLING_ENFORCED=True,
         PAYMENT_MOCK_EVENT_SECRET="test-event-signing-key",
-        MEMBERSHIP_MAX_SALE_ENABLED=False,
+        MEMBERSHIP_MAX_SALE_ENABLED=True,
     )
 
 
@@ -67,16 +67,30 @@ def deliver(db, payload, cfg, *, now=NOW):
     return pay.apply_provider_event_in_transaction(db, event=payload, now=now, settings=cfg)
 
 
-def test_create_snapshot_replay_and_conflict(membership_pg_engine, cfg):
+@pytest.mark.parametrize("sku", ["topup_10", "membership_max"])
+def test_create_snapshot_replay_and_conflict(membership_pg_engine, cfg, sku):
     pay, _ = services()
     uid = seed(membership_pg_engine)
     Session = sessionmaker(bind=membership_pg_engine, expire_on_commit=False, autoflush=False)
     with Session.begin() as db:
-        order = create(db, uid, cfg)
-        assert order.amount_fen == 1000 and order.credits == 1000
-        assert order.sku_snapshot["sku"] == "topup_10"
+        order = create(db, uid, cfg, sku=sku)
+        if sku == "membership_max":
+            assert order.amount_fen == 19900 and order.credits == 0
+            assert order.sku_snapshot == {
+                "sku": "membership_max",
+                "kind": "membership",
+                "plan_code": "max",
+                "amount_fen": 19900,
+                "credits": 0,
+                "term_days": 30,
+                "term_units": 72240,
+                "week_units": 24080,
+            }
+        else:
+            assert order.amount_fen == 1000 and order.credits == 1000
+            assert order.sku_snapshot["sku"] == "topup_10"
         assert order.expires_at == NOW + timedelta(minutes=15)
-        assert create(db, uid, cfg).id == order.id
+        assert create(db, uid, cfg, sku=sku).id == order.id
         with pytest.raises(pay.PaymentError, match="idempotency_conflict"):
             create(db, uid, cfg, sku="topup_30")
     with Session() as db:
@@ -84,11 +98,12 @@ def test_create_snapshot_replay_and_conflict(membership_pg_engine, cfg):
         assert db.get(m.User, uid).credits == 0
 
 
-def test_duplicate_paid_events_grant_exactly_once_and_ignore_late_failure(membership_pg_engine, cfg):
+@pytest.mark.parametrize("sku", ["topup_10", "membership_max"])
+def test_duplicate_paid_events_grant_exactly_once_and_ignore_late_failure(membership_pg_engine, cfg, sku):
     uid = seed(membership_pg_engine)
     Session = sessionmaker(bind=membership_pg_engine, expire_on_commit=False, autoflush=False)
     with Session.begin() as db:
-        order = create(db, uid, cfg)
+        order = create(db, uid, cfg, sku=sku)
         payload = event(order, uid)
     barrier = Barrier(2)
 
@@ -102,8 +117,15 @@ def test_duplicate_paid_events_grant_exactly_once_and_ignore_late_failure(member
     with Session.begin() as db:
         deliver(db, {**payload, "status": "failed"}, cfg)
     with Session() as db:
-        assert db.get(m.User, uid).credits == 1000
-        assert db.query(m.CreditTransaction).count() == 1
+        if sku == "membership_max":
+            term = db.query(m.MembershipTerm).one()
+            assert term.plan_id == "max" and term.limit == 72240
+            assert term.ends_at - term.starts_at == timedelta(days=30)
+            assert db.get(m.User, uid).credits == 0
+            assert db.query(m.CreditTransaction).count() == 0
+        else:
+            assert db.get(m.User, uid).credits == 1000
+            assert db.query(m.CreditTransaction).count() == 1
         assert db.query(m.RechargeOrder).one().status == "paid"
 
 
@@ -315,7 +337,10 @@ def test_refund_refreshes_term_previously_loaded_before_another_transaction_spen
         assert db.get(m.MembershipTerm, tid).used == 1
 
 
-def test_created_membership_order_fulfills_frozen_entitlement_after_sale_stops(membership_pg_engine, cfg, monkeypatch):
+@pytest.mark.parametrize("plan_code,term_units,week_units", [("plus", 9030, 3010), ("max", 72240, 24080)])
+def test_created_membership_order_fulfills_frozen_entitlement_after_sale_stops(
+    membership_pg_engine, cfg, monkeypatch, plan_code, term_units, week_units
+):
     pay, _ = services()
     from katrain.web.core.billing_catalog import PLANS
     from katrain.web.core import membership
@@ -323,24 +348,27 @@ def test_created_membership_order_fulfills_frozen_entitlement_after_sale_stops(m
     uid = seed(membership_pg_engine)
     Session = sessionmaker(bind=membership_pg_engine, expire_on_commit=False, autoflush=False)
     with Session.begin() as db:
-        order = create(db, uid, cfg, sku="membership_plus")
+        order = create(db, uid, cfg, sku=f"membership_{plan_code}")
         oid = order.id
         version = order.catalog_version
         payload = event(order, uid)
-    monkeypatch.setitem(PLANS, "plus", {**PLANS["plus"], "sellable": False, "term_units": 1, "week_units": 1})
+    cfg.MEMBERSHIP_MAX_SALE_ENABLED = False
+    monkeypatch.setitem(PLANS, plan_code, {**PLANS[plan_code], "sellable": False, "term_units": 1, "week_units": 1})
     monkeypatch.setattr(membership, "TERM_DAYS", 1)
     monkeypatch.setattr(membership, "CATALOG_VERSION", "future_catalog")
     with Session.begin() as db:
-        assert create(db, uid, cfg, sku="membership_plus").id == oid
+        assert create(db, uid, cfg, sku=f"membership_{plan_code}").id == oid
         with pytest.raises(pay.PaymentError, match="sku_not_sellable"):
-            create(db, uid, cfg, sku="membership_plus", key="after-sale-stopped")
+            create(db, uid, cfg, sku=f"membership_{plan_code}", key="after-sale-stopped")
         paid = deliver(db, payload, cfg)
         assert paid.status == "paid"
     with Session() as db:
         term = db.query(m.MembershipTerm).filter_by(order_id=oid).one()
-        assert term.plan_id == "plus" and term.limit == 9030 and term.catalog_version == version
+        assert term.plan_id == plan_code and term.limit == term_units and term.catalog_version == version
         assert term.ends_at - term.starts_at == timedelta(days=30)
         assert db.get(m.User, uid).credits == 0
+        usage = membership.usage_snapshot(db, user_id=uid, now=NOW, environment="test", payments_mode="mock")
+        assert usage["week"]["limit"] == week_units
 
 
 def test_paid_membership_week_budget_and_quote_use_frozen_order_snapshot(membership_pg_engine, cfg, monkeypatch):

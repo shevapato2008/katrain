@@ -12,7 +12,9 @@ export function ConsumptionQuoteDialog({ kiosk = false, quote, busy = false, err
     : quote.source === 'wallet' ? t('membership:source_wallet', '当前预计使用API积分')
       : quote.source === 'free_report' ? t('membership:source_free', '当前预计使用每周免费报告资格')
         : t('membership:source_owned', '本次结果已拥有');
-  const confirmLabel = busy ? t('membership:processing', '处理中…') : t('membership:confirm_consumption', '确认并开始');
+  const confirmLabel = busy ? t('membership:processing', '处理中…')
+    : quote.source === 'wallet' ? t('membership:confirm_wallet_consumption', '使用API积分，最多扣{points}').replace('{points}', quote.wallet_max_display_points)
+      : t('membership:confirm_consumption', '确认并开始');
   if (kiosk) return <div className="cdlg" role="dialog" aria-modal="true" aria-labelledby="consumption-quote-title" data-testid="consumption-quote">
     <div className="cdlg__box"><h3 id="consumption-quote-title">{title}</h3><p>{policy}</p><p>{source}</p>
       {error && <p role="alert">{error}</p>}

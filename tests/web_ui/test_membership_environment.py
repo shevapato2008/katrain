@@ -17,12 +17,14 @@ def test_settings_defaults_and_membership_requires_billing(monkeypatch):
     monkeypatch.delenv("MEMBERSHIP_MODE", raising=False)
     monkeypatch.delenv("PAYMENTS_MODE", raising=False)
     monkeypatch.delenv("KATRAIN_ENVIRONMENT", raising=False)
+    monkeypatch.delenv("MEMBERSHIP_MAX_SALE_ENABLED", raising=False)
     settings = Settings()
     assert (settings.KATRAIN_ENVIRONMENT, settings.PAYMENTS_MODE, settings.MEMBERSHIP_MODE) == (
         "production",
         "disabled",
         "legacy",
     )
+    assert settings.MEMBERSHIP_MAX_SALE_ENABLED is True
     for mode in ("enabled", "paused"):
         with pytest.raises(ValueError, match="BILLING_ENFORCED"):
             Settings(MEMBERSHIP_MODE=mode, BILLING_ENFORCED=False)
@@ -58,6 +60,11 @@ def test_environment_variables_load_mode_and_minimal_runtime_limits(monkeypatch)
     ) == (9, 3, 88)
     assert settings.MEMBERSHIP_MAX_SALE_ENABLED
     assert settings.PAYMENT_MOCK_EVENT_SECRET == "unit-test-event-secret"
+
+
+def test_max_sale_can_be_explicitly_disabled(monkeypatch):
+    monkeypatch.setenv("MEMBERSHIP_MAX_SALE_ENABLED", "false")
+    assert Settings().MEMBERSHIP_MAX_SALE_ENABLED is False
 
 
 def _config(**kwargs):

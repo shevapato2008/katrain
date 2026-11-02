@@ -90,7 +90,7 @@ class Settings(BaseModel):
     MEMBERSHIP_REPORT_QUEUE_LIMIT: int = 8
     MEMBERSHIP_POSITION_QUEUE_LIMIT: int = 4
     MEMBERSHIP_POSITION_LEASE_SECONDS: int = 90
-    MEMBERSHIP_MAX_SALE_ENABLED: bool = False
+    MEMBERSHIP_MAX_SALE_ENABLED: bool = True
     PAYMENT_MOCK_EVENT_SECRET: str = ""
 
     # Billing / paid-analysis (single-pool integer credits). Prices are per analysis action.
@@ -144,7 +144,7 @@ class Settings(BaseModel):
             data.setdefault(key, int(os.getenv(key, default)))
         data.setdefault(
             "MEMBERSHIP_MAX_SALE_ENABLED",
-            os.getenv("MEMBERSHIP_MAX_SALE_ENABLED", "false").lower() in ("1", "true", "yes"),
+            os.getenv("MEMBERSHIP_MAX_SALE_ENABLED", "true").lower() in ("1", "true", "yes"),
         )
         data.setdefault("PAYMENT_MOCK_EVENT_SECRET", os.getenv("PAYMENT_MOCK_EVENT_SECRET", ""))
         if data["PAYMENTS_MODE"] == "mock":

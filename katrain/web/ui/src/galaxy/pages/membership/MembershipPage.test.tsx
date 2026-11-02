@@ -238,15 +238,29 @@ describe("Galaxy membership", () => {
     const catalog = makeCatalog();
     catalog.plans[0].amount_fen = 4200;
     catalog.plans[0].week_report_reference = 12;
+    catalog.plans[0].term_days = 28;
+    catalog.plans[0].term_report_reference = 37;
     mocks.membership.catalog = catalog;
     show("plans");
     expect(screen.getByText("¥42")).toBeInTheDocument();
     expect(screen.getByText("普通报告，每周最多约12盘")).toBeInTheDocument();
+    expect(screen.getByText("28天共约37盘")).toBeInTheDocument();
     expect(screen.getByText(/56.8%/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Max 暂未开放" })).toBeDisabled();
     expect(
       screen.getAllByText(/按每盘 300 手估算，受本期剩余限制/).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("allows a sale-enabled Max selection with the catalog's 199 yuan preview", () => {
+    const catalog = makeCatalog();
+    catalog.plans[2].sale_enabled = true;
+    mocks.membership.catalog = catalog;
+    show("plans");
+    fireEvent.click(screen.getByRole("button", { name: "选择 Max" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("¥199");
+    expect(screen.getByRole("button", { name: "创建订单" })).toBeEnabled();
+    expect(mocks.createOrder).not.toHaveBeenCalled();
   });
 
   it("shows API prices and topups from catalog, with 301-position report example", () => {
@@ -298,11 +312,13 @@ describe("Galaxy membership", () => {
 
   it("does not create an order when payments or order capability are disabled", () => {
     const catalog = makeCatalog();
+    catalog.plans[2].sale_enabled = true;
     catalog.payments_mode = "disabled";
     mocks.membership.catalog = catalog;
     show("plans");
     expect(screen.getByText(/支付暂未开放/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "选择 Plus" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "选择 Max" })).toBeDisabled();
     expect(mocks.createOrder).not.toHaveBeenCalled();
   });
 

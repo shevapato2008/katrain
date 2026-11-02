@@ -14,7 +14,7 @@ MAX_REPORT_MOVES = 500
 PLANS = {
     "plus": {"amount_fen": 3900, "term_units": 9030, "week_units": 3010, "sellable": True},
     "pro": {"amount_fen": 9900, "term_units": 27090, "week_units": 9030, "sellable": True},
-    "max": {"amount_fen": 19900, "term_units": 72240, "week_units": 24080, "sellable": False},
+    "max": {"amount_fen": 19900, "term_units": 72240, "week_units": 24080, "sellable": True},
 }
 TOPUPS = {
     "topup_10": {"amount_fen": 1000, "credits": 1000},
@@ -25,6 +25,10 @@ PROFILES = {
     "normal": {"visits": 500, "units_per_position": 1, "model_sha256": MODEL_SHA256},
     "advanced": {"visits": 2000, "units_per_position": 4, "model_sha256": MODEL_SHA256},
 }
+
+
+def is_plan_sellable(code: str, *, max_sale_enabled: bool) -> bool:
+    return code in PLANS and PLANS[code]["sellable"] and (code != "max" or max_sale_enabled)
 
 
 def get_profile(profile: str) -> dict:

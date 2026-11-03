@@ -105,6 +105,115 @@ def test_census_does_not_assume_album_primary_keys_start_at_one(engine):
         assert prepare(conn)["census"]["albums"] == 5
 
 
+def test_public_apply_shares_large_original_body_across_all_slots_and_verification(engine):
+    """A reviewed legal part must not fetch one 128 KiB basis 100 times."""
+    from sqlalchemy import event
+    from katrain.web.kifu.historical_ranks import MAX_BODY_BYTES
+
+    with engine.begin() as conn:
+        conn.execute(m.KifuAlbumSource.__table__.delete().where(m.KifuAlbumSource.album_id != 1))
+        conn.execute(m.KifuAlbum.__table__.delete().where(m.KifuAlbum.id != 1))
+        body = conn.execute(select(m.KifuAlbum.sgf_content).where(m.KifuAlbum.id == 1)).scalar_one()
+        body = body.replace("(;", "(;C[" + "x" * (131142 - len(body.encode()) - 3) + "]", 1)
+        assert len(body.encode()) == 131142
+        conn.execute(update(m.KifuAlbum).where(m.KifuAlbum.id == 1).values(sgf_content=body))
+        for ident in range(2, 102):
+            game(conn, ident, "1968-08-01", "", family="CWI")
+        reads = []
+
+        def observe_body(conn, cursor, statement, parameters, context, executemany):
+            if statement.lstrip().splitlines()[0].strip() == "SELECT kifu_albums.sgf_content" and parameters[0] == 1:
+                reads.append(len(body.encode()))
+
+        event.listen(engine, "before_cursor_execute", observe_body)
+        try:
+            manifest = prepare(conn)
+            assert reads == [131142, 131142]  # One original read in each finite preparation part.
+            reads.clear()
+            part = manifest["parts"][0]
+            assert len(part["changes"]) == 99
+            apply(conn, part)
+            assert sum(reads) <= MAX_BODY_BYTES
+            assert reads == [131142]
+            assert len(list(conn.execute(select(m.KifuAlbumRankSnapshot.id)))) == 99
+            reads.clear()
+            assert apply(conn, part)["status"] == "already_applied"
+            assert reads == [131142]
+            reads.clear()
+            undo(conn, part)
+            assert reads == [131142]
+        finally:
+            event.remove(engine, "before_cursor_execute", observe_body)
+
+
+def test_public_apply_rejects_combined_reviewed_unique_evidence_over_part_budget(engine):
+    """Individually valid frozen decisions still share one finite apply budget."""
+    from katrain.web.kifu.historical_rank_repair import MAX_PART_CHANGES
+    from katrain.web.kifu.historical_ranks import MAX_BODY_BYTES
+    from sqlalchemy import event
+
+    with engine.begin() as conn:
+        target_ids = []
+        for number in range(34):
+            name, player_id = f"Owner {number}", 1000 + number
+            conn.execute(m.KifuPlayer.__table__.insert().values(id=player_id, canonical_name=name))
+            for offset, day, rank in ((0, "1960-01-01", "8p"), (1, "1968-08-01", "")):
+                ident = 100 + 2 * number + offset
+                path = f"data/kifu-album/19x19/{ident}.sgf"
+                body = f"(;PB[{name}]PW[棋手乙]BR[{rank}]WR[1p]DT[{day}];B[aa])"
+                if offset == 0:
+                    body = body.replace("(;", "(;C[" + "x" * (250000 - len(body.encode()) - 3) + "]", 1)
+                else:
+                    target_ids.append(ident)
+                conn.execute(
+                    m.KifuAlbum.__table__.insert().values(
+                        id=ident,
+                        source_path=path,
+                        sgf_content=body,
+                        player_black=name,
+                        player_white="棋手乙",
+                        black_player_id=player_id,
+                        white_player_id=12,
+                        black_rank=rank,
+                        white_rank="1p",
+                        date_played=day,
+                        date_sort=day,
+                    )
+                )
+                conn.execute(
+                    m.KifuAlbumSource.__table__.insert().values(
+                        album_id=ident,
+                        source_id=4,
+                        origin_path=path,
+                        match_method="source_path",
+                    )
+                )
+        pieces = [prepare(conn, album_ids=[ident])["parts"][0] for ident in target_ids]
+        part = deepcopy(pieces[0])
+        part["changes"] = [change for piece in pieces for change in piece["changes"]]
+        part["basis_bindings"] = [change["basis_binding"] for change in part["changes"]]
+        assert len(part["changes"]) == 34 <= MAX_PART_CHANGES
+        assert 34 * 250000 > MAX_BODY_BYTES
+        reads = []
+
+        def observe_body(conn, cursor, statement, parameters, context, executemany):
+            if statement.lstrip().splitlines()[0].strip() == "SELECT kifu_albums.sgf_content" and parameters[
+                0
+            ] in range(100, 168, 2):
+                reads.append(250000)
+
+        event.listen(engine, "before_cursor_execute", observe_body)
+        try:
+            with pytest.raises(ValueError, match="resource|budget|limit"):
+                apply(conn, part)
+        finally:
+            event.remove(engine, "before_cursor_execute", observe_body)
+        assert sum(reads) <= MAX_BODY_BYTES
+        assert len(reads) < 34
+        assert not list(conn.execute(select(m.KifuAlbumRankSnapshot.id)))
+        assert not list(conn.execute(select(m.KifuNameBatch.id)))
+
+
 def test_apply_retry_and_undo_restore_exact_rows_and_leave_raw_and_journals(engine):
     with engine.begin() as conn:
         raw = [dict(r) for r in conn.execute(select(m.KifuAlbum.__table__)).mappings()]

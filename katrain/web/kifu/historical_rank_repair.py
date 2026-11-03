@@ -228,13 +228,16 @@ def prepare_manifest(conn, *, matched_at, album_ids=None):
     )
     refusals, sources, systems, parts = Counter(), Counter(), Counter(), []
     inventory, pending, pending_bytes = sha256(), [], 0
+    pending_resource = ranks.EvidenceBudget()
 
     def flush():
-        nonlocal pending, pending_bytes
+        nonlocal pending, pending_bytes, pending_resource
         if not pending:
             return
         try:
-            decisions = ranks.prepare_rank_decisions(conn, pending, matched_at=matched_at)["decisions"]
+            decisions = ranks.prepare_rank_decisions(conn, pending, matched_at=matched_at, resource=pending_resource)[
+                "decisions"
+            ]
         except ValueError:
             # An invalid original refuses that target; it does not abort the
             # complete census or weaken the remaining targets' qualification.
@@ -242,7 +245,9 @@ def prepare_manifest(conn, *, matched_at, album_ids=None):
             for target in pending:
                 try:
                     decisions.append(
-                        ranks.prepare_rank_decisions(conn, [target], matched_at=matched_at)["decisions"][0]
+                        ranks.prepare_rank_decisions(conn, [target], matched_at=matched_at, resource=pending_resource)[
+                            "decisions"
+                        ][0]
                     )
                 except ValueError:
                     decisions.append(None)
@@ -259,7 +264,7 @@ def prepare_manifest(conn, *, matched_at, album_ids=None):
                 census["unchanged_source_slots"] += int(decision["origin"] == "source")
                 continue
             try:
-                binding = ranks.bind_rank_decision(conn, target, decision, lock=False)
+                binding = ranks.bind_rank_decision(conn, target, decision, lock=False, resource=pending_resource)
             except ValueError:
                 refusals["invalid_local_basis_binding"] += 1
                 continue
@@ -283,7 +288,7 @@ def prepare_manifest(conn, *, matched_at, album_ids=None):
             ] += 1
         if changes:
             parts.append(_new_part(common, changes))
-        pending, pending_bytes = [], 0
+        pending, pending_bytes, pending_resource = [], 0, ranks.EvidenceBudget()
 
     a, last_id = m.KifuAlbum.__table__, None
     columns = [col for col in a.c if col.name != "sgf_content"]
@@ -358,7 +363,9 @@ def prepare_manifest(conn, *, matched_at, album_ids=None):
                 or pending_bytes + cost > TARGET_BODY_BYTES
             ):
                 flush()
+            pending_resource.reserve(album["sgf_bytes"])
             album["sgf_content"] = conn.execute(select(a.c.sgf_content).where(a.c.id == last_id)).scalar_one()
+            pending_resource.remember_body(album["sgf_content"], album_id=last_id, reserved=True)
             for side, before in needed:
                 pending.append(
                     {"album": album, "side": side, "source_links": links[last_id], "snapshot_before": before}
@@ -484,6 +491,7 @@ def _lock_writer(conn):
 
 
 def _targets_preflight(conn, part, *, initial):
+    resource = ranks.EvidenceBudget()
     ids = sorted({c["album_id"] for c in part["changes"]})
     table = m.KifuAlbum.__table__
     lengths = dict(
@@ -500,12 +508,15 @@ def _targets_preflight(conn, part, *, initial):
         and sum(lengths.values()) <= ranks.MAX_BODY_BYTES,
         "historical rank target body preimage/resource changed",
     )
+    resource.reserve(sum(lengths.values()))
     albums = {
         r["id"]: dict(r)
         for r in conn.execute(
             select(table).where(table.c.id.in_(ids)).order_by(table.c.id).with_for_update()
         ).mappings()
     }
+    for ident, album in albums.items():
+        resource.remember_body(album["sgf_content"], album_id=ident, reserved=True)
     links, snapshots = _links(conn, ids, lock=True), _snapshots(conn, ids, lock=True)
     targets = []
     for change in part["changes"]:
@@ -525,12 +536,15 @@ def _targets_preflight(conn, part, *, initial):
             )
         target = {"album": album, "side": side, "source_links": links[ident]}
         require(
-            ranks.bind_rank_decision(conn, target, change["snapshot_after"]) == change["basis_binding"],
+            ranks.bind_rank_decision(conn, target, change["snapshot_after"], resource=resource)
+            == change["basis_binding"],
             "historical rank exact target/basis binding changed",
         )
         targets.append(target)
     if initial:
-        ranks.verify_initial_rank_decisions(conn, targets, [c["snapshot_after"] for c in part["changes"]])
+        ranks.verify_initial_rank_decisions(
+            conn, targets, [c["snapshot_after"] for c in part["changes"]], resource=resource
+        )
     return targets
 
 

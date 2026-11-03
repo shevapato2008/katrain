@@ -942,7 +942,9 @@ async def verify_album_api(
     if rank_aware:
         validate_manifest_ranks(manifest_or_games)
         rank_outcomes = validate_rank_outcomes(manifest_or_games, receipt)
-        if rank_context_loader is not None and any(
+        # The compatibility resolver accepts only wholly legacy publications.
+        # Mixed cached V1/new V3 requests retain their existing outcome checks.
+        if rank_context_loader is not None and all(
             snapshot.get("version") == "kifu-rank-snapshot-v1"
             for game in manifest_or_games["games"]
             for snapshot in game["rank_snapshots"].values()

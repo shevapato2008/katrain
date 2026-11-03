@@ -463,6 +463,59 @@ async def test_current_rank_context_new_v3_never_loads_compatibility_context():
 
 
 @pytest.mark.asyncio
+async def test_current_rank_context_mixed_v1_v3_publication_keeps_original_no_rpc_verification(tmp_path, monkeypatch):
+    from sqlalchemy.orm import Session
+
+    from katrain.kifu_ingest import ranks
+    from katrain.web.api.v1.endpoints import kifu
+    from tests.web_ui.test_kifu_historical_rank_native import WHEN, make_engine, prepared, publish
+
+    engine = make_engine(tmp_path / "mixed-ranks.db")
+    old = prepared(engine, item="99701", raw="7p", day="2026-01-01")
+    game = old["games"][0]
+    frozen = ranks.freeze_game_ranks(game, matched_at=WHEN)
+    game.update({key: frozen[key] for key in ("rank_snapshots", "rank_observations")})
+    new = prepared(engine, item="99702", raw="8p", day="2026-02-01")
+    manifest = {
+        **old,
+        "publication_key": "mixed-replay-review",
+        "games": [game, *new["games"]],
+        "rank_facts": ranks.merge_rank_facts(frozen["rank_facts"], new["rank_facts"]),
+    }
+    receipt = publish(engine, manifest)
+    assert publish(engine, manifest) == receipt
+    monkeypatch.setattr(kifu.settings, "KIFU_SEARCH_BACKEND", "legacy")
+
+    async def handle(request):
+        with Session(engine) as db:
+            if request.url.path.endswith("/albums"):
+                value = kifu.read_album_page(
+                    db,
+                    q=request.url.params.get("q"),
+                    lang=request.url.params.get("lang", "cn"),
+                    page=int(request.url.params.get("page", 1)),
+                    page_size=int(request.url.params.get("page_size", 100)),
+                )
+            else:
+                value = kifu.read_album_detail(
+                    db, int(request.url.path.rsplit("/", 1)[1]), lang=request.url.params.get("lang", "cn")
+                )
+            return httpx.Response(200, json=value.model_dump(mode="json"))
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("mixed V1/V3 must not load legacy authority")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+        original = await sync.verify_album_api(client, "https://example", manifest, receipt)
+        current = await sync.verify_album_api(
+            client, "https://example", manifest, receipt, rank_context_loader=forbidden
+        )
+    assert current == original
+    assert current["status"] == "verified" and current["algorithm"] == sync.RANK_ALGORITHM_VERSION
+    assert len(current["checks"]) == 10 and len(current["public_cards"]) == 2
+
+
+@pytest.mark.asyncio
 async def test_current_rank_context_is_not_accepted_as_caller_data_or_unbounded_loader():
     api = rank_api(raw="9段")
     context = supersession_context(api)

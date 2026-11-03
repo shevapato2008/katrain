@@ -860,7 +860,7 @@ def test_publication_context_disposable_postgresql_repeatable_read_only_snapshot
         control.dispose()
 
 
-@pytest.mark.parametrize("damage", ["oversized", "owner"])
+@pytest.mark.parametrize("damage", ["oversized", "owner", "scalar"])
 def test_publication_context_external_library_fact_preflights_before_legacy_body_read(tmp_path, monkeypatch, damage):
     from katrain.kifu_ingest import catalog
     from katrain.web.kifu import historical_ranks, player_ranks
@@ -882,6 +882,13 @@ def test_publication_context_external_library_fact_preflights_before_legacy_body
                 .where(m.KifuAlbum.id == source_receipt["games"][0]["album_id"])
                 .values(sgf_content="x" * (historical_ranks.MAX_SGF_BYTES + 1))
             )
+        elif damage == "scalar":
+            conn.execute(
+                m.KifuAlbum.__table__.update()
+                .where(m.KifuAlbum.id == source_receipt["games"][0]["album_id"])
+                .values(search_text="x" * (1024 * 1024))
+            )
+            monkeypatch.setattr(historical_ranks, "MAX_SCALAR_BYTES", 64 * 1024)
         else:
             conn.execute(
                 m.KifuAlbum.__table__.update()
@@ -891,7 +898,7 @@ def test_publication_context_external_library_fact_preflights_before_legacy_body
     monkeypatch.setattr(
         player_ranks,
         "verify_rank_fact_for_player",
-        lambda *a, **kw: pytest.fail("legacy full-body read called before finite source preflight"),
+        lambda *a, **kw: pytest.fail("legacy full-row read called before finite source preflight"),
     )
     with pytest.raises(ValueError, match="resource|source"):
         catalog.resolve_rank_publication_context(engine, canonical_sha256(value), canonical_sha256(receipt))

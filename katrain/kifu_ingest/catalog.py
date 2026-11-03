@@ -2706,10 +2706,9 @@ class _RankPublicationProof:
             a.c.source_path == player_ranks._source_path(ref),
             limit=1,
             columns=[
-                a.c.id,
-                a.c[side + "_player_id"],
-                a.c[side + "_rank"],
-                a.c.date_sort,
+                # The unchanged guard uses select(a), so budget every scalar
+                # it will return, including non-rank Text such as search_text.
+                *[column for column in a.c if column.name != "sgf_content"],
                 historical_ranks._body_length(self.conn, a.c.sgf_content).label("sgf_bytes"),
             ],
         )

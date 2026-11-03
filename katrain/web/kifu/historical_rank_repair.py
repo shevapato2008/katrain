@@ -237,23 +237,22 @@ def prepare_manifest(conn, *, matched_at, album_ids=None):
         nonlocal pending, pending_bytes, pending_resource
         if not pending:
             return
-        try:
-            decisions = ranks.prepare_rank_decisions(conn, pending, matched_at=matched_at, resource=pending_resource)[
-                "decisions"
-            ]
-        except ValueError:
-            # An invalid original refuses that target; it does not abort the
-            # complete census or weaken the remaining targets' qualification.
-            decisions = []
-            for target in pending:
-                try:
-                    decisions.append(
-                        ranks.prepare_rank_decisions(conn, [target], matched_at=matched_at, resource=pending_resource)[
-                            "decisions"
-                        ][0]
-                    )
-                except ValueError:
-                    decisions.append(None)
+
+        def resolve(group):
+            try:
+                return ranks.prepare_rank_decisions(conn, group, matched_at=matched_at, resource=pending_resource)[
+                    "decisions"
+                ]
+            except ValueError:
+                # Isolate invalid originals without replaying every valid
+                # player's cohort. Resource-deferred decisions are returned
+                # intact; they never trigger smaller, less bounded inference.
+                if len(group) == 1:
+                    return [None]
+                middle = len(group) // 2
+                return resolve(group[:middle]) + resolve(group[middle:])
+
+        decisions = resolve(pending)
         changes = []
         for target, decision in zip(pending, decisions):
             album, side = target["album"], target["side"]

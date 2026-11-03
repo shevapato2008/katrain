@@ -214,6 +214,79 @@ def test_public_apply_rejects_combined_reviewed_unique_evidence_over_part_budget
         assert not list(conn.execute(select(m.KifuNameBatch.id)))
 
 
+def test_invalid_targets_do_not_repeat_every_valid_players_cohort(engine, monkeypatch):
+    from collections import Counter
+    from katrain.web.kifu import historical_ranks as ranks
+    from tests.web_ui.test_kifu_historical_ranks import target
+
+    with engine.begin() as conn:
+        ids = list(range(10, 110))
+        for ident in ids:
+            game(conn, ident, "1968-08-01", "", family="CWI")
+        bad_ids = {40, 80}
+        conn.execute(update(m.KifuAlbum).where(m.KifuAlbum.id.in_(bad_ids)).values(black_player_id=12))
+        # The old single-target fallback remains an independent public decision reference.
+        reference, refused = [], Counter()
+        for ident in ids:
+            try:
+                reference.extend(
+                    ranks.prepare_rank_decisions(conn, [target(conn, ident)], matched_at=MATCHED)["decisions"]
+                )
+            except ValueError:
+                assert ident in bad_ids
+                refused["invalid_original_binding"] += 1
+        cohort_calls = []
+        original = ranks._cohort
+
+        def observe(c, owner_dates):
+            cohort_calls.append(len(owner_dates))
+            return original(c, owner_dates)
+
+        monkeypatch.setattr(ranks, "_cohort", observe)
+        manifest = prepare(conn, album_ids=ids)
+        actual = [change["snapshot_after"] for part in manifest["parts"] for change in part["changes"]]
+        assert actual == reference
+        assert manifest["refusals"] == dict(refused)
+        assert manifest["census"]["qualified_missing_slots"] == 98
+        assert len(cohort_calls) <= 24
+        assert not list(conn.execute(select(m.KifuAlbumRankSnapshot.id)))
+
+
+def test_valid_subgroup_resource_overflow_is_reported_without_single_target_upgrade(engine, monkeypatch):
+    from katrain.web.kifu import historical_ranks as ranks
+    from tests.web_ui.test_kifu_historical_ranks import target
+
+    with engine.begin() as conn:
+        conn.execute(m.KifuPlayer.__table__.insert().values(id=13, canonical_name="棋手丙"))
+        game(conn, 5, "1959-01-01", "6p")
+        for ident in range(10, 14):
+            game(conn, ident, "1968-08-01", "", family="CWI")
+        for ident in (5, 11):
+            body = conn.scalar(select(m.KifuAlbum.sgf_content).where(m.KifuAlbum.id == ident))
+            conn.execute(
+                update(m.KifuAlbum)
+                .where(m.KifuAlbum.id == ident)
+                .values(
+                    black_player_id=13,
+                    player_black="棋手丙",
+                    sgf_content=body.replace("PB[棋手甲]", "PB[棋手丙]"),
+                )
+            )
+        conn.execute(update(m.KifuAlbum).where(m.KifuAlbum.id == 12).values(black_player_id=12))
+        # One owner's complete cohort fits; the valid two-owner subgroup exceeds the cap.
+        monkeypatch.setattr(ranks, "MAX_SCALAR_ROWS", 10)
+        for ident in (10, 11, 13):
+            decision = ranks.prepare_rank_decisions(conn, [target(conn, ident)], matched_at=MATCHED)["decisions"][0]
+            assert decision["origin"] == "historical_prior"
+        manifest = prepare(conn, album_ids=list(range(10, 14)))
+        changes = [change for part in manifest["parts"] for change in part["changes"]]
+        assert [(change["album_id"], change["snapshot_after"]["display_rank"]) for change in changes] == [(13, "8p")]
+        assert manifest["refusals"] == {"resource_deferred": 2, "invalid_original_binding": 1}
+        assert manifest["census"]["qualified_missing_slots"] == 1
+        apply(conn, manifest)
+        assert conn.scalars(select(m.KifuAlbumRankSnapshot.album_id)).all() == [13]
+
+
 def test_apply_retry_and_undo_restore_exact_rows_and_leave_raw_and_journals(engine):
     with engine.begin() as conn:
         raw = [dict(r) for r in conn.execute(select(m.KifuAlbum.__table__)).mappings()]

@@ -319,6 +319,65 @@ def test_invalid_legacy_current_afterimage_is_preserved_as_a_refusal(engine):
         assert all(c["album_id"] != 3 for p in manifest["parts"] for c in p["changes"])
 
 
+@pytest.mark.parametrize("damage", [None, "batch_hash", "journal_afterimage"])
+def test_source_legacy_preflight_avoids_unused_artifact_projection_and_keeps_cas(engine, damage):
+    from sqlalchemy import event
+    from katrain.web.kifu.source_rank_repair import prepare_rank_manifest, apply_rank_manifest, rank_manifest_sha256
+
+    with engine.begin() as conn:
+        old = prepare_rank_manifest(conn)
+        old_result = apply_rank_manifest(conn, old, expected_sha256=rank_manifest_sha256(old))
+        before = dict(conn.execute(select(m.KifuAlbumRankSnapshot.__table__)).mappings().one())
+        if damage == "batch_hash":
+            conn.execute(
+                update(m.KifuNameBatch)
+                .where(m.KifuNameBatch.id == old_result["batch_id"])
+                .values(bundle_sha256="e" * 64)
+            )
+        if damage == "journal_afterimage":
+            changed = {**before, "publication_key": "damaged"}
+            conn.execute(
+                update(m.KifuNameChange)
+                .where(m.KifuNameChange.batch_id == old_result["batch_id"])
+                .values(after_image=changed)
+            )
+        artifact = conn.scalar(
+            select(m.KifuNameBatch.reviewed_artifact).where(m.KifuNameBatch.id == old_result["batch_id"])
+        )
+        journal = [
+            dict(r)
+            for r in conn.execute(
+                select(m.KifuNameChange.__table__).where(m.KifuNameChange.batch_id == old_result["batch_id"])
+            ).mappings()
+        ]
+        queries = []
+
+        def observe(conn, cursor, statement, parameters, context, executemany):
+            if "FROM kifu_name_batches JOIN kifu_name_changes" in statement:
+                queries.append(statement)
+
+        event.listen(engine, "before_cursor_execute", observe)
+        try:
+            manifest = prepare(conn, album_ids=[3])
+        finally:
+            event.remove(engine, "before_cursor_execute", observe)
+        assert queries and all("reviewed_artifact" not in sql for sql in queries)
+        assert manifest["census"]["changed_slots"] == (1 if damage is None else 0)
+        if damage:
+            assert manifest["refusals"]["invalid_legacy_afterimage"] == 1
+        assert dict(conn.execute(select(m.KifuAlbumRankSnapshot.__table__)).mappings().one()) == before
+        assert (
+            conn.scalar(select(m.KifuNameBatch.reviewed_artifact).where(m.KifuNameBatch.id == old_result["batch_id"]))
+            == artifact
+        )
+        assert [
+            dict(r)
+            for r in conn.execute(
+                select(m.KifuNameChange.__table__).where(m.KifuNameChange.batch_id == old_result["batch_id"])
+            ).mappings()
+        ] == journal
+
+
 def test_apply_never_commits_the_callers_transaction(engine):
     with engine.connect() as conn:
         transaction = conn.begin()

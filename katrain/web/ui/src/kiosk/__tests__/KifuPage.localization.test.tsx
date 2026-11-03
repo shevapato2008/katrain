@@ -60,8 +60,8 @@ describe('棋谱 kiosk 语言展示', () => {
     getAlbums.mockResolvedValue({ items: [{ ...record('cn'), black_rank: '7d', white_rank: '9d', display_black_rank: '7p', display_white_rank: '9p', result: 'b+' }], total: 1, page: 1, page_size: 20 });
     renderPage();
     const row = await screen.findByRole('button', { name: /cn-event.*cn-black.*cn-white/ });
-    expect(row).toHaveTextContent('职业七段');
-    expect(row).toHaveTextContent('职业九段');
+    expect(row).toHaveTextContent('七段');
+    expect(row).toHaveTextContent('九段');
     expect(row).toHaveTextContent('黑胜');
     expect(row).not.toHaveTextContent('中盘');
     expect(row.querySelector('.record-match__player.is-winner')).toHaveTextContent('cn-black');

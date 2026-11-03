@@ -87,7 +87,7 @@ export function formatKifuRank(displayRank: Rank, rawRank: Rank, t: Translate, l
     const sgf = typeof rank === 'string' ? SGF_RANK.exec(rank) : null;
     const unit = named ? (/职业|職業/.test(named[1]) ? 'p' : 'd') : sgf?.[2].toLowerCase();
     const number = named ? rankNumber(named[2]) : sgf ? Number(sgf[1]) : null;
-    if (number != null && unit === 'p') return (lang === 'tw' ? '職業' : '职业') + chineseNumber(number) + '段';
+    if (number != null && unit === 'p') return chineseNumber(number) + '段';
     if (number != null && unit === 'd' && (index === 0 || named)) return (lang === 'tw' ? '業餘' : '业余') + number + '段';
     const bare = label.match(/^([一二三四五六七八九]|\d{1,2})段$/);
     if (index === 0 && bare) return chineseNumber(rankNumber(bare[1])) + '段';

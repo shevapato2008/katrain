@@ -68,7 +68,7 @@ describe('ReportLibraryImportDialog data flow', () => {
     }]));
     renderDialog();
     const card = await screen.findByRole('button', { name: '赛事 1 / 黑棋 1 versus 白棋 1' });
-    expect(card).toHaveTextContent('黑棋 1 职业七段 · 白棋 1 七段');
+    expect(card).toHaveTextContent('黑棋 1 七段 · 白棋 1 七段');
     expect(card).not.toHaveTextContent('业余');
   });
 

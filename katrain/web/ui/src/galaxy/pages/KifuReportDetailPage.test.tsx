@@ -41,7 +41,7 @@ it.each([false, true])('formats normalized kifu ranks in report/replay details (
   await screen.findByTestId('report-meta-panel');
   fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
   const dialog = screen.getByRole('dialog');
-  expect(dialog).toHaveTextContent('黑棋手 职业七段');
+  expect(dialog).toHaveTextContent('黑棋手 七段');
   expect(dialog).toHaveTextContent('白棋手 七段');
   expect(dialog).not.toHaveTextContent('业余');
 });

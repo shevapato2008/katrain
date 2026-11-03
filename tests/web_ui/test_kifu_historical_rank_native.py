@@ -421,66 +421,71 @@ def test_native_derived_rank_and_source_only_date_keep_original_semantics(tmp_pa
         assert card.sgf_content == sgf and card.black_rank == game["metadata"].get("black_rank")
 
 
+def seed_professional_black_identity(engine):
+    """Seed independent approved identity evidence for one synthetic target DB."""
+    from datetime import datetime, timezone
+    from katrain.web.kifu import player_ranks
+    from tests.test_kifu_rank_sources import CAPTURES
+
+    # The local synthetic owner has an independently approved official
+    # subject capture. Keep existing five-language fixture proofs intact.
+    capture = deepcopy(next(item for item in CAPTURES if item["canonical_name"] == "高星"))
+    with engine.begin() as conn:
+        registry_id = conn.execute(
+            m.KifuNameSourceRegistry.__table__.insert().values(
+                version="supersession-official-fixture", sha256="d" * 64, registry={}
+            )
+        ).inserted_primary_key[0]
+        owner = {"kind": "player", "id": 17}
+        payload = {
+            "candidate": {"owner": owner, "display_name": capture["approved_name"]},
+            "research": {
+                "owner": owner,
+                "candidate_name": capture["approved_name"],
+                "original_name": capture["original_name"],
+                "source_checks": [{"identity_bridges": [capture["capture"]]}],
+            },
+        }
+        evidence_id = conn.execute(
+            m.KifuNameResearchEvidence.__table__.insert().values(
+                player_id=17,
+                lang="xx",
+                revision=1,
+                source_registry_id=registry_id,
+                candidate_name=capture["approved_name"],
+                decision_kind="conventional",
+                generation_rule_version="none",
+                research_payload=payload,
+                producer_id="fixture-producer",
+                producer_model="test",
+                reviewer_id="fixture-reviewer",
+                reviewer_model="test",
+                reviewed_at=datetime(2026, 11, 3, tzinfo=timezone.utc),
+                review_status="approved",
+            )
+        ).inserted_primary_key[0]
+        conn.execute(
+            m.KifuPlayerName.__table__.insert().values(
+                player_id=17,
+                lang="xx",
+                display_name=capture["approved_name"],
+                status="verified",
+                revision=1,
+                evidence_id=evidence_id,
+                decision_kind="conventional",
+                generation_rule_version="none",
+            )
+        )
+        return {"Black": player_ranks.lookup_professional_identity_evidence(conn, [17])[17]}
+
+
 def repaired_legacy_publication(
     engine, *, games=1, source_metadata=None, before_repair=None, repair_games=None, professional_black=True
 ):
     """Publish frozen V1 slots, then apply an actual reviewed historical repair."""
-    from datetime import datetime, timezone
-    from katrain.web.kifu import historical_rank_repair as repair, player_ranks
-    from tests.test_kifu_rank_sources import CAPTURES
+    from katrain.web.kifu import historical_rank_repair as repair
 
-    identity_evidence = {}
-    if professional_black:
-        # The local synthetic owner has an independently approved official
-        # subject capture. Keep existing five-language fixture proofs intact.
-        capture = deepcopy(next(item for item in CAPTURES if item["canonical_name"] == "高星"))
-        with engine.begin() as conn:
-            registry_id = conn.execute(
-                m.KifuNameSourceRegistry.__table__.insert().values(
-                    version="supersession-official-fixture", sha256="d" * 64, registry={}
-                )
-            ).inserted_primary_key[0]
-            owner = {"kind": "player", "id": 17}
-            payload = {
-                "candidate": {"owner": owner, "display_name": capture["approved_name"]},
-                "research": {
-                    "owner": owner,
-                    "candidate_name": capture["approved_name"],
-                    "original_name": capture["original_name"],
-                    "source_checks": [{"identity_bridges": [capture["capture"]]}],
-                },
-            }
-            evidence_id = conn.execute(
-                m.KifuNameResearchEvidence.__table__.insert().values(
-                    player_id=17,
-                    lang="xx",
-                    revision=1,
-                    source_registry_id=registry_id,
-                    candidate_name=capture["approved_name"],
-                    decision_kind="conventional",
-                    generation_rule_version="none",
-                    research_payload=payload,
-                    producer_id="fixture-producer",
-                    producer_model="test",
-                    reviewer_id="fixture-reviewer",
-                    reviewer_model="test",
-                    reviewed_at=datetime(2026, 11, 3, tzinfo=timezone.utc),
-                    review_status="approved",
-                )
-            ).inserted_primary_key[0]
-            conn.execute(
-                m.KifuPlayerName.__table__.insert().values(
-                    player_id=17,
-                    lang="xx",
-                    display_name=capture["approved_name"],
-                    status="verified",
-                    revision=1,
-                    evidence_id=evidence_id,
-                    decision_kind="conventional",
-                    generation_rule_version="none",
-                )
-            )
-            identity_evidence["Black"] = player_ranks.lookup_professional_identity_evidence(conn, [17])[17]
+    identity_evidence = seed_professional_black_identity(engine) if professional_black else {}
     values = []
     for index in range(games):
         value = prepared(engine, item=str(99600 + index), raw="九段")

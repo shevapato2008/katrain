@@ -492,6 +492,8 @@ def _qualification(owner, day, observations, source_grade):
             x
             for x in nearer_bare
             if x["grade"]["rank_value"] > source_grade["rank_value"]
+            or x["day"] == day
+            and x["grade"]["rank_value"] != source_grade["rank_value"]
             or pro_max is not None
             and x["grade"]["rank_value"] < pro_max
         ]
@@ -548,6 +550,35 @@ def _observation(album, side, source_ref, owner, grade, *, resource=None):
     return result
 
 
+def _incoming_rank_refusal(day, grade, invalid, decision):
+    """Check an original only as a disqualifier of an existing typed basis."""
+    # The professional maximum also covers originals before the latest basis;
+    # all remaining checks use the narrower nearest-observation interval.
+    if grade and grade["rank_system"] == decision["rank_system"] == "professional_dan":
+        if grade["rank_value"] > decision["rank_value"]:
+            return "professional_grade_decrease"
+    if day < decision["qualification"]["latest_day"]:
+        return None
+    if invalid == "root_name_rank_conflict":
+        return invalid
+    if grade is None:
+        return None
+    value, system = grade["rank_value"], grade["rank_system"]
+    if decision["origin"] == "historical_prior":
+        compatible = value == decision["rank_value"] and (
+            system == decision["rank_system"] or system == "dan_unspecified" and decision["rank_system"] != "kyu"
+        )
+    else:
+        compatible = system in {"professional_dan", "dan_unspecified"} and (
+            decision["qualification"]["professional_max"] <= value <= decision["rank_value"]
+        )
+        if day == decision["target_date"]:
+            compatible = compatible and value == decision["rank_value"]
+    if not compatible:
+        return "incompatible_bare_observation" if system == "dan_unspecified" else "typed_boundary"
+    return None
+
+
 def prepare_rank_decisions(conn, targets, *, matched_at, resource=None):
     """Return ``{decisions: [v3, ...], refusals: [{source_ref, reason}, ...]}``.
 
@@ -555,7 +586,7 @@ def prepare_rank_decisions(conn, targets, *, matched_at, resource=None):
     Existing IDs are local bindings only. A proposed incoming album uses id=None
     and its source links use album_id=None; its resolved portable owner may be
     provided in player_ref. Only already stored original albums provide
-    historical evidence in this version.
+    positive historical evidence; incoming originals can only disqualify it.
     """
     resource = resource or EvidenceBudget()
     require(isinstance(targets, (list, tuple)) and len(targets) <= 200, "rank target limit exceeded")
@@ -612,6 +643,35 @@ def prepare_rank_decisions(conn, targets, *, matched_at, resource=None):
                     and not (x["album"]["id"] == album.get("id") and x["side"] == side)
                 ]
                 qual, candidate, reason = _qualification(owner, day, cohort, grade)
+                if candidate and not reason:
+                    proposed = {
+                        "origin": "historical_type" if grade else "historical_prior",
+                        "rank_value": grade["rank_value"] if grade else candidate["grade"]["rank_value"],
+                        "rank_system": "professional_dan" if grade else candidate["grade"]["rank_system"],
+                        "target_date": day,
+                        "qualification": qual,
+                    }
+                    incoming_refusals = set()
+                    for (other_owner, _), (other_ref, other_grade, other_invalid, _, other_root_day) in zip(
+                        owners, original
+                    ):
+                        other_day = _inference_day(other_root_day)
+                        if other_owner != owner or other_ref == ref or not other_day or other_day > day:
+                            continue
+                        incoming_refusals.add(_incoming_rank_refusal(other_day, other_grade, other_invalid, proposed))
+                    reason = next(
+                        (
+                            refusal
+                            for refusal in (
+                                "root_name_rank_conflict",
+                                "professional_grade_decrease",
+                                "incompatible_bare_observation",
+                                "typed_boundary",
+                            )
+                            if refusal in incoming_refusals
+                        ),
+                        None,
+                    )
                 if candidate and not reason:
                     chosen = candidate["album"]
                     try:
@@ -1019,31 +1079,13 @@ def _verify_incoming_rank_observations(conn, targets, historical, *, resource, a
         for _, frozen in historical:
             if owner != frozen["player_ref"] or ref == frozen["source_ref"] or day > frozen["target_date"]:
                 continue
-            # A professional maximum spans all earlier originals, even those
-            # predating the chosen latest typed basis. Nearest-observation
-            # checks below have the narrower interval.
-            if grade and grade["rank_system"] == frozen["rank_system"] == "professional_dan":
-                require(
-                    grade["rank_value"] <= frozen["rank_value"],
-                    "rank incoming professional grade decrease changed qualification",
-                )
-            if day < frozen["qualification"]["latest_day"]:
-                continue
-            require(invalid != "root_name_rank_conflict", "rank incoming original conflict changed qualification")
-            if grade is None:
-                continue
-            value, system = grade["rank_value"], grade["rank_system"]
-            if frozen["origin"] == "historical_prior":
-                compatible = value == frozen["rank_value"] and (
-                    system == frozen["rank_system"] or system == "dan_unspecified" and frozen["rank_system"] != "kyu"
-                )
-            else:
-                compatible = system in {"professional_dan", "dan_unspecified"} and (
-                    frozen["qualification"]["professional_max"] <= value <= frozen["rank_value"]
-                )
-                if day == frozen["target_date"]:
-                    compatible = compatible and value == frozen["rank_value"]
-            require(compatible, "rank incoming original changed qualification")
+            reason = _incoming_rank_refusal(day, grade, invalid, frozen)
+            require(
+                reason != "professional_grade_decrease",
+                "rank incoming professional grade decrease changed qualification",
+            )
+            require(reason != "root_name_rank_conflict", "rank incoming original conflict changed qualification")
+            require(reason is None, "rank incoming original changed qualification")
 
 
 def _bind_target(conn, target, decision, *, resource=None):

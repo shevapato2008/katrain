@@ -71,6 +71,44 @@ def seed_prior(engine, raw="7p", day="2026-01-01", ident=12):
         )
 
 
+@pytest.mark.parametrize(
+    "other_day,other_rank,expected",
+    [
+        ("2024-11-03", "7段", (("source", "7段"), ("source", "9段"))),
+        ("2024-11-02", "7段", (("historical_type", "7p"), ("historical_type", "9p"))),
+        ("2024-11-03", "9段", (("historical_type", "9p"), ("historical_type", "9p"))),
+    ],
+)
+def test_native_batch_preparation_publishes_original_bare_consistency(tmp_path, other_day, other_rank, expected):
+    engine = make_engine(tmp_path / "bare-consistency.db")
+    seed_prior(engine, raw="6p", day="2000-01-06")
+    values = [
+        prepared(engine, item="99701", raw=other_rank, day=other_day),
+        prepared(engine, item="99702", raw="9段", day="2024-11-03"),
+    ]
+    games = [value["games"][0] for value in values]
+    with engine.connect() as conn:
+        frozen = ranks.freeze_historical_game_ranks(conn, games, matched_at=WHEN)
+    for game, result, grade in zip(games, frozen, expected):
+        game.update({key: result[key] for key in ("rank_snapshots", "rank_observations")})
+        snapshot = game["rank_snapshots"]["black"]
+        assert (snapshot["origin"], snapshot["display_rank"]) == grade
+        if snapshot["origin"] == "source":
+            assert snapshot["refusal_reason"] == "incompatible_bare_observation" and not snapshot["basis"]
+    manifest = {
+        **values[0],
+        "games": games,
+        "rank_facts": ranks.merge_rank_facts(*(result["rank_facts"] for result in frozen)),
+    }
+    receipt = publish(engine, manifest)
+    with Session(engine) as db:
+        for published, grade, game in zip(receipt["games"], expected, games):
+            card = detail(db, published["album_id"])
+            assert (card.black_rank_origin, card.display_black_rank) == grade
+            assert card.sgf_content == game["sgf_content"]
+    assert publish(engine, manifest) == receipt
+
+
 def test_native_v3_test_prod_replay_and_api_share_frozen_asof(tmp_path):
     engines = [make_engine(tmp_path / f"{name}.db") for name in ("test", "prod")]
     for engine in engines:

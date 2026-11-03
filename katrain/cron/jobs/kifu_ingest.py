@@ -26,6 +26,7 @@ from sqlalchemy.exc import NoResultFound
 from katrain.cron import config
 from katrain.cron.db import engine
 from katrain.cron.jobs.base import BaseJob
+from katrain.kifu_ingest import catalog as rank_catalog, sync as rank_transport
 from katrain.kifu_ingest.catalog import (
     lookup_qualified_identities,
     publish_manifest,
@@ -39,6 +40,7 @@ from katrain.kifu_ingest.orchestration import (
     prepare_staged_games,
 )
 from katrain.kifu_ingest.names import NameRejected, NameServiceError, NeedsCredentials, QwenNameService
+from katrain.kifu_ingest.ranks import FORMAT_V2
 from katrain.kifu_ingest.source_19x19 import Source19x19
 from katrain.kifu_ingest.recent import discover_recent, match_time
 from katrain.kifu_ingest.staging import Stage, staging_writer_lock
@@ -47,6 +49,7 @@ from katrain.kifu_ingest.sync import (
     _receiver_command,
     check_production_identities,
     send_verified_manifest,
+    validate_test_verification,
     verify_album_api,
 )
 from katrain.web.kifu.name_candidates import canonical_sha256
@@ -497,6 +500,11 @@ async def resume_batch(
     if status == "test_published" and (deadline is None or time.monotonic() < deadline):
         result = await _call(test_verify, manifest, row["test_receipt"])
         result = {**result, "manifest_sha256": digest}
+        validate_test_verification(manifest, digest, result)
+        if manifest.get("format") == FORMAT_V2 and result.get("receipt_sha256") != canonical_sha256(
+            row["test_receipt"]
+        ):
+            raise ValueError("TEST verification receipt differs from original publication")
         row = await asyncio.to_thread(
             store.advance_batch, key, "test_verified", expected_status="test_published", receipt=result
         )
@@ -688,6 +696,21 @@ class KifuIngestJob(BaseJob):
                     timeout=_receiver_timeout(deadline),
                 )
 
+            def test_rank_context(manifest_sha256, receipt_sha256, *, timeout):
+                return rank_catalog.resolve_rank_publication_context(
+                    engine, manifest_sha256, receipt_sha256, deadline=time.monotonic() + timeout
+                )
+
+            def prod_rank_context(manifest_sha256, receipt_sha256, *, timeout):
+                return rank_transport.read_rank_publication_context(
+                    host=config.KIFU_INGEST_SSH_HOST,
+                    key_path=config.KIFU_INGEST_SSH_KEY,
+                    known_hosts=config.KIFU_INGEST_KNOWN_HOSTS,
+                    manifest_sha256=manifest_sha256,
+                    receipt_sha256=receipt_sha256,
+                    timeout=timeout,
+                )
+
             package_dir = stage_root / "packages"
             if package_dir.is_symlink():
                 raise ValueError("package directory symlink is unsafe")
@@ -703,6 +726,7 @@ class KifuIngestJob(BaseJob):
                         receipt,
                         deadline=verify_deadline,
                         checkpoint_dir=stage_root / "api-verification",
+                        rank_context_loader=test_rank_context,
                     )
 
                 async def prod_verify(package, receipt):
@@ -713,6 +737,7 @@ class KifuIngestJob(BaseJob):
                         receipt,
                         deadline=verify_deadline,
                         checkpoint_dir=stage_root / "api-verification",
+                        rank_context_loader=prod_rank_context,
                     )
 
                 digest = _validated(manifest)

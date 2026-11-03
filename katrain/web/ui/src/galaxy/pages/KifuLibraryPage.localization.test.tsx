@@ -56,6 +56,20 @@ beforeEach(() => {
 });
 
 describe('Galaxy 棋谱库语言展示', () => {
+  it('omits a raw invalid rank when the API display rank is explicitly empty', async () => {
+    const ranks = { display_black_rank: '', black_rank: '前人',
+      display_white_rank: '9p', white_rank: '9p' };
+    getAlbums.mockResolvedValue({ items: [{ ...record('cn'), ...ranks }],
+      total: 1, page: 2, page_size: 20 });
+    getAlbum.mockResolvedValue({ ...detail('cn'), ...ranks });
+    render(page());
+    await screen.findByTestId('board');
+    expect(screen.getByText('cn-black')).toBeInTheDocument();
+    expect(screen.getByText('cn-white')).toBeInTheDocument();
+    expect(screen.queryByText('前人')).not.toBeInTheDocument();
+    expect(screen.getByText('九段')).toBeInTheDocument();
+  });
+
   it('uses normalized historical professional ranks and a bare winner in the card and preview', async () => {
     const normalized = { black_rank: '7d', white_rank: '9d', display_black_rank: '7p', display_white_rank: '9p', result: 'b+' };
     getAlbums.mockResolvedValue({ items: [{ ...record('cn'), ...normalized }], total: 1, page: 2, page_size: 20 });
@@ -200,7 +214,6 @@ describe('Galaxy 棋谱库语言展示', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
       const view = render(page());
-      fireEvent.click(await screen.findByText('cn-black'));
       expect(await screen.findByTestId('board')).toBeInTheDocument();
       getAlbum.mockRejectedValueOnce(new Error('offline'));
       language.current = 'en';

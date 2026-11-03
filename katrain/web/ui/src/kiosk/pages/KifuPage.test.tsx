@@ -98,6 +98,20 @@ it('mirrors historical ranks around complete accessible names and uses this reco
   await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
 });
 
+it('omits a raw invalid rank when the API display rank is explicitly empty', async () => {
+  api.list.mockResolvedValue({ items: [{ ...albums[0],
+    display_black_rank: '', black_rank: '前人',
+    display_white_rank: '9p', white_rank: '9p',
+  }], total: 1 });
+  render(<MemoryRouter><KifuPage /></MemoryRouter>);
+  const card = await screen.findByRole('button', { name: /赛事 1/ });
+  expect(card).toHaveTextContent('黑棋手');
+  expect(card).toHaveTextContent('白棋手');
+  expect(card).not.toHaveTextContent('前人');
+  expect(card.querySelectorAll('.record-match__rank')).toHaveLength(1);
+  expect(within(card).getByText('九段')).toBeInTheDocument();
+});
+
 it('omits absent historical ranks and highlights black when white resigns', async () => {
   api.list.mockResolvedValue({ items: [{ ...albums[0], result: '白认输' }, { ...albums[1], result: '白棋结果待核实', display_white_rank: '6k' }], total: 2 });
   render(<MemoryRouter><KifuPage /></MemoryRouter>);

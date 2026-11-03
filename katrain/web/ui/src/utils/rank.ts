@@ -77,8 +77,13 @@ export function formatRank(value: Rank, t: Translate): string {
   return `${m[1]}${m[2].toLowerCase() === 'd' ? u.d : u.k}`;
 }
 
-/** Validated API display ranks win; a raw legacy d fallback does not prove amateur status. */
+/**
+ * Validated API display ranks win; a raw legacy d fallback does not prove amateur status.
+ * An exact '' is authoritative absence; null/undefined and noncanonical whitespace retain legacy fallback.
+ */
 export function formatKifuRank(displayRank: Rank, rawRank: Rank, t: Translate, lang = 'cn'): string | null {
+  if (displayRank === '') return null;
+
   for (const [index, rank] of [displayRank, rawRank].entries()) {
     const label = formatRank(rank, t);
     if (!label || UNKNOWN_RANK.test(label)) continue;

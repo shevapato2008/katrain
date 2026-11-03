@@ -64,6 +64,7 @@ _QUAL_FIELDS = {
     "professional_max",
     "grade_decrease",
     "incompatible_bare_ranks",
+    "original_rank_conflict",
 }
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _SUFFIX = {"professional_dan": "p", "amateur_dan": "d", "kyu": "k", "dan_unspecified": "段"}
@@ -408,7 +409,7 @@ def _cohort(conn, owner_dates):
             if not _name_bound(album[f"player_{side}"], owners.get(pid), pid, index):
                 continue
             grade, reason = _grade(album[f"player_{side}"], album[f"{side}_rank"] or "", link["source_key"])
-            if grade and reason is None:
+            if grade and reason is None or reason == "root_name_rank_conflict":
                 observations.append(
                     {
                         "album": album,
@@ -417,6 +418,7 @@ def _cohort(conn, owner_dates):
                         "owner": owners[pid],
                         "player_id": pid,
                         "grade": grade,
+                        "refusal_reason": reason,
                         "day": album["date_played"],
                     }
                 )
@@ -444,9 +446,12 @@ def _conflict(observations):
 
 
 def _qualification(owner, day, observations, source_grade):
+    conflicts = [x for x in observations if x.get("refusal_reason") == "root_name_rank_conflict"]
+    observations = [x for x in observations if x["grade"] is not None]
     typed = [x for x in observations if x["grade"]["rank_system"] != "dan_unspecified"]
     latest_day = max((x["day"] for x in typed), default=None)
     latest = [x for x in observations if x["day"] == latest_day]
+    original_rank_conflict = any(latest_day is None or x["day"] >= latest_day for x in conflicts)
     if source_grade and latest_day == day:
         latest = [*latest, {"grade": source_grade}]
     professional = [x for x in typed if x["grade"]["rank_system"] == "professional_dan"]
@@ -500,9 +505,12 @@ def _qualification(owner, day, observations, source_grade):
         "professional_max": pro_max,
         "grade_decrease": decrease,
         "incompatible_bare_ranks": _rank_set(incompatible_bare),
+        "original_rank_conflict": original_rank_conflict,
     }
     reason = None
-    if candidate is None:
+    if original_rank_conflict:
+        reason = "root_name_rank_conflict"
+    elif candidate is None:
         reason = "no_prior_original"
     elif _conflict(latest):
         reason = "same_day_conflict"
@@ -790,6 +798,7 @@ def validate_rank_decision(decision):
         )
         require(
             type(qual["grade_decrease"]) is bool
+            and type(qual["original_rank_conflict"]) is bool
             and (
                 qual["professional_max"] is None
                 or type(qual["professional_max"]) is int
@@ -872,6 +881,7 @@ def validate_rank_decision(decision):
             and qual["latest_original"] == decision["basis"][0]
             and not qual["grade_decrease"]
             and not qual["incompatible_bare_ranks"]
+            and not qual["original_rank_conflict"]
             and len({r["rank_value"] for r in qual["same_day_ranks"]}) == 1
             and len({r["rank_system"] for r in qual["same_day_ranks"] if r["rank_system"] != "dan_unspecified"}) == 1,
             "rank historical qualification invalid",
@@ -929,7 +939,7 @@ def _live_target(conn, target, *, lock=True, resource=None, expected_sha=None):
     return {**target, "album": live, "source_links": _links(conn, [album["id"]]).get(album["id"], [])}
 
 
-def verify_initial_rank_decisions(conn, targets, decisions, *, resource=None):
+def verify_initial_rank_decisions(conn, targets, decisions, *, resource=None, incoming_targets=None):
     """Under the caller's writer lock, reject changed first-apply qualification.
 
     Source/unknown decisions are frozen as such; newly available evidence does
@@ -957,6 +967,13 @@ def verify_initial_rank_decisions(conn, targets, decisions, *, resource=None):
         if decision["origin"] in {"historical_type", "historical_prior"}
     ]
     if historical:
+        # All originals in the incoming package may disqualify an old frozen
+        # basis, including legacy-checkpoint games without a v3 decision. They
+        # never supply a new positive basis or use an inferred snapshot's rank.
+        incoming = live_targets if incoming_targets is None else incoming_targets
+        _verify_incoming_rank_observations(
+            conn, incoming, historical, resource=resource, already_live=incoming_targets is None
+        )
         # All use a single shared frozen timestamp in a normal batch; supporting
         # legacy mixed freezes does not let wall-clock time influence rank facts.
         for timestamp in sorted({decision["matched_at"] for _, decision in historical}):
@@ -967,6 +984,44 @@ def verify_initial_rank_decisions(conn, targets, decisions, *, resource=None):
             for current, (_, frozen) in zip(fresh, subset):
                 require(current == frozen, "rank initial qualification/cohort changed")
     return decisions
+
+
+def _verify_incoming_rank_observations(conn, targets, historical, *, resource, already_live):
+    require(isinstance(targets, (list, tuple)) and len(targets) <= 200, "rank incoming target limit exceeded")
+    live = list(targets) if already_live else [_live_target(conn, x, resource=resource) for x in targets]
+    owners = [_owner(conn, entry) for entry in live]
+    index = _identities(
+        conn, [x["album"].get(f"player_{x['side']}") or "" for x in live], [owner for owner, _ in owners]
+    )
+    for entry, (owner, pid) in zip(live, owners):
+        ref, grade, invalid, _, root_day = _validate_original(
+            entry["album"], entry["side"], entry["source_links"], owner, pid, index
+        )
+        day = _inference_day(root_day)
+        if not owner or pid is None or not day:
+            continue
+        for _, frozen in historical:
+            if (
+                owner != frozen["player_ref"]
+                or ref == frozen["source_ref"]
+                or not frozen["qualification"]["latest_day"] <= day <= frozen["target_date"]
+            ):
+                continue
+            require(invalid != "root_name_rank_conflict", "rank incoming original conflict changed qualification")
+            if grade is None:
+                continue
+            value, system = grade["rank_value"], grade["rank_system"]
+            if frozen["origin"] == "historical_prior":
+                compatible = value == frozen["rank_value"] and (
+                    system == frozen["rank_system"] or system == "dan_unspecified" and frozen["rank_system"] != "kyu"
+                )
+            else:
+                compatible = system in {"professional_dan", "dan_unspecified"} and (
+                    frozen["qualification"]["professional_max"] <= value <= frozen["rank_value"]
+                )
+                if day == frozen["target_date"]:
+                    compatible = compatible and value == frozen["rank_value"]
+            require(compatible, "rank incoming original changed qualification")
 
 
 def _bind_target(conn, target, decision):

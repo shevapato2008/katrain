@@ -724,3 +724,61 @@ def test_shared_cache_rechecks_same_length_original_sha_drift(conn):
     )
     with pytest.raises(ValueError, match="source|basis"):
         h.bind_rank_decision(conn, entry, decision, resource=resource)
+
+
+def test_original_root_name_rank_conflict_cannot_disappear_behind_older_basis(conn):
+    from katrain.web.kifu import historical_ranks as h
+
+    game(conn, 1, "1960-01-01", "9p")
+    entry = game(conn, 2, "1968-01-01", "", family="CWI")
+    frozen = resolve(conn, entry)
+    game(conn, 3, "1967-01-01", "8p", name="棋手甲七段")
+    current = resolve(conn, entry)
+    assert current["origin"] == "unknown" and current["display_rank"] == ""
+    assert current["refusal_reason"] == "root_name_rank_conflict"
+    assert current["qualification"]["original_rank_conflict"] is True
+    with pytest.raises(ValueError, match="qualification|cohort"):
+        h.verify_initial_rank_decisions(conn, [entry], [frozen])
+    # Applied replay binds its original frozen source; it never reruns initial
+    # qualification just because a newer conflicting observation now exists.
+    assert h.bind_rank_decision(conn, entry, frozen)["target"]["snapshot_sha256"] == frozen["content_sha256"]
+    assert frozen["display_rank"] == "9p"
+
+
+def _incoming_rank_entry(day, rank, item):
+    entry = _derived_incoming(f"(;PB[棋手甲]PW[棋手乙]BR[{rank}]EV[比赛]DT[{day}];B[aa])")
+    path = f"data/kifu-album/19x19/{item}.sgf"
+    entry["album"]["source_path"] = path
+    entry["source_links"][0]["origin_path"] = path
+    return entry
+
+
+def test_initial_recheck_rejects_same_incoming_batch_original_contradiction(conn):
+    from katrain.web.kifu import historical_ranks as h
+
+    game(conn, 1, "1960-01-01", "7p")
+    source = _incoming_rank_entry("1967-01-01", "9d", "source")
+    missing = _incoming_rank_entry("1967-02-01", "", "missing")
+    decisions = h.prepare_rank_decisions(conn, [source, missing], matched_at=MATCHED)["decisions"]
+    assert decisions[0]["display_rank"] == "9d" and decisions[0]["origin"] == "source"
+    assert decisions[1]["display_rank"] == "7p"
+    with pytest.raises(ValueError, match="incoming|qualification|cohort"):
+        h.verify_initial_rank_decisions(conn, [source, missing], decisions)
+    # Legacy frozen source slots can be supplied solely as disqualifiers,
+    # without pretending they carry a new v3 snapshot.
+    with pytest.raises(ValueError, match="incoming|qualification|cohort"):
+        h.verify_initial_rank_decisions(conn, [missing], [decisions[1]], incoming_targets=[source, missing])
+
+
+@pytest.mark.parametrize("day,rank", [("1969-01-01", "9d"), ("1967-01-01", ""), ("1967-01-01", "7p")])
+def test_incoming_future_inferred_or_compatible_original_does_not_change_frozen_basis(conn, day, rank):
+    from katrain.web.kifu import historical_ranks as h
+
+    game(conn, 1, "1960-01-01", "7p")
+    other = _incoming_rank_entry(day, rank, "other")
+    missing = _incoming_rank_entry("1968-02-01", "", "missing")
+    decisions = h.prepare_rank_decisions(conn, [other, missing], matched_at=MATCHED)["decisions"]
+    original_hash = decisions[1]["content_sha256"]
+    h.verify_initial_rank_decisions(conn, [other, missing], decisions)
+    assert decisions[1]["basis"][0]["raw_date"] == "1960-01-01"
+    assert decisions[1]["content_sha256"] == original_hash

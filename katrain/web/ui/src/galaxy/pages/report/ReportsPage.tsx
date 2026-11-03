@@ -77,6 +77,7 @@ export default function ReportsPage() {
     queueSummary,
     reportStatesByGame,
     error: reportTasksError,
+    billingError: reportBillingError,
     clearError: clearReportTasksError,
     refresh: refreshTasks,
     createReport,
@@ -244,16 +245,18 @@ export default function ReportsPage() {
       const action: ImportAction = reportType || 'save';
       setLocalImporting(action);
       setTaskError(null);
+      let reportStarted = false;
       try {
         const createdGame = await UserGamesAPI.create(token, toLocalUserGameParams(payload));
         await focusImportedGame(createdGame);
         if (reportType) {
+          reportStarted = true;
           await createReportForGame(createdGame, reportType);
         }
         setLocalImportOpen(false);
         await refreshTasks();
       } catch (error) {
-        setTaskError(error instanceof Error ? error.message : translationRef.current('report:import_failed', 'Failed to import SGF'));
+        if (!reportStarted) setTaskError(error instanceof Error ? error.message : translationRef.current('report:import_failed', 'Failed to import SGF'));
       } finally {
         setLocalImporting(null);
       }
@@ -267,17 +270,19 @@ export default function ReportsPage() {
       const action: ImportAction = reportType || 'save';
       setLibraryImporting(action);
       setTaskError(null);
+      let reportStarted = false;
       try {
         const detail = await KifuAPI.getAlbum(album.id);
         const createdGame = await UserGamesAPI.create(token, toLibraryUserGameParams(album, detail.sgf_content));
         await focusImportedGame(createdGame);
         if (reportType) {
+          reportStarted = true;
           await createReportForGame(createdGame, reportType);
         }
         setLibraryImportOpen(false);
         await refreshTasks();
       } catch (error) {
-        setTaskError(error instanceof Error ? error.message : translationRef.current('report:library_import_failed', 'Failed to import from library'));
+        if (!reportStarted) setTaskError(error instanceof Error ? error.message : translationRef.current('report:library_import_failed', 'Failed to import from library'));
       } finally {
         setLibraryImporting(null);
       }
@@ -600,7 +605,7 @@ export default function ReportsPage() {
         onSubmit={handleLocalImport}
       />
 
-      <ConsumptionQuoteDialog quote={pendingQuote?.quote ?? null} busy={quoteBusy} error={reportTasksError} onCancel={cancelQuote}
+      <ConsumptionQuoteDialog quote={pendingQuote?.quote ?? null} busy={quoteBusy} error={reportBillingError ? reportTasksError : null} onCancel={cancelQuote}
         onConfirm={() => { void confirmQuote().catch(() => undefined); }} />
       <ReportLibraryImportDialog
         open={libraryImportOpen}

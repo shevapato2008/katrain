@@ -10,6 +10,7 @@ Requirements:
     pip install polib
 """
 
+import json
 import os
 import polib
 from pathlib import Path
@@ -10509,6 +10510,12 @@ GALAXY_TRANSLATIONS = {
     "vision:reuse_blocked_moved": {"en": "The board has moved and the last calibration no longer matches — use “Align frame” (no lights, works with stones on the board) or recalibrate", "cn": "棋盘挪动过，上次的标定对不上了 —— 用「对齐外框」（不亮灯，盘上有子也能对）或重新标定", "tw": "棋盤挪動過，上次的標定對不上了 —— 用「對齊外框」（不亮燈，盤上有子也能對）或重新標定", "jp": "碁盤が動いたため、前回の校正が合わなくなりました —— 「外枠合わせ」（LEDは光らず、盤上に石があっても大丈夫）を使うか、再校正してください", "ko": "바둑판이 옮겨져서 지난번 보정이 맞지 않습니다 —— 「테두리 정렬」(LED가 켜지지 않고 판 위에 돌이 있어도 가능)을 쓰거나 다시 보정하세요", "de": "Das Brett wurde verschoben, die letzte Kalibrierung passt nicht mehr — nutzen Sie „Rahmen ausrichten“ (keine LEDs, funktioniert mit Steinen auf dem Brett) oder kalibrieren Sie neu", "es": "El tablero se movió y la última calibración ya no coincide — usa «Alinear marco» (sin luces, funciona con piedras en el tablero) o vuelve a calibrar", "fr": "Le goban a bougé et le dernier calibrage ne correspond plus — utilisez « Aligner cadre » (sans LED, fonctionne avec des pierres sur le plateau) ou recalibrez", "ru": "Доска сдвинулась, прошлая калибровка больше не подходит — используйте «Выровнять рамку» (без подсветки, работает даже с камнями на доске) или откалибруйте заново", "tr": "Tahta yerinden oynadı, son kalibrasyon artık uymuyor — «Çerçeve hizala»yı kullanın (ışık yakmaz, tahtada taş varken de çalışır) ya da yeniden kalibre edin", "ua": "Дошка зсунулася, минуле калібрування більше не підходить — скористайтеся «Вирівняти рамку» (без підсвітки, працює навіть із каменями на дошці) або відкалібруйте знову"},
     "vision:led_serial_note": {"en": "The “LED” status only means the serial port is connected — not that every lamp lights up; if a spot doesn't light during guidance, that section of the strip is probably broken.", "cn": "LED 那一格只说串口通了，不代表每颗灯都亮；引导时发现某处不亮，多半是灯带那一段坏了。", "tw": "LED 那一格只說序列埠通了，不代表每顆燈都亮；引導時發現某處不亮，多半是燈條那一段壞了。", "jp": "「LED」の項目はシリアル接続ができているという意味で、すべてのランプが点灯するとは限りません。案内中にどこかが点灯しない場合、その区間のテープが故障している可能性が高いです。", "ko": "'LED' 항목은 시리얼 연결만을 뜻하며, 모든 램프가 켜진다는 뜻은 아닙니다. 안내 중 어딘가 켜지지 않으면 그 구간의 LED 스트립이 고장났을 가능성이 큽니다.", "de": "Der Status „LED“ zeigt nur, dass die serielle Verbindung steht — nicht, dass jede Lampe leuchtet; leuchtet während der Führung eine Stelle nicht, ist meist dieser Abschnitt des LED-Streifens defekt.", "es": "El estado «LED» solo indica que el puerto serie está conectado, no que cada lámpara encienda; si durante la guía algún punto no se enciende, probablemente ese tramo de la tira LED esté dañado.", "fr": "L'indicateur « LED » signale seulement que le port série est connecté, pas que chaque lampe s'allume ; si un point ne s'allume pas pendant le guidage, ce tronçon de la bande LED est probablement défectueux.", "ru": "Статус «LED» означает только то, что последовательный порт подключён, а не что горит каждая лампа; если во время подсказки где-то не загорается, скорее всего, неисправен этот участок ленты.", "tr": "«LED» durumu yalnızca seri portun bağlı olduğunu gösterir, her lambanın yandığını değil; rehberlik sırasında bir nokta yanmazsa büyük olasılıkla şeridin o bölümü arızalıdır.", "ua": "Статус «LED» означає лише, що послідовний порт під'єднано, а не що горить кожна лампа; якщо під час підказки десь не загоряється, найімовірніше несправна саме та ділянка стрічки."},
 }
+
+
+# Keep the complete membership journey together; callers still use the same
+# GALAXY_TRANSLATIONS/update_po_file workflow for all eleven supported locales.
+MEMBERSHIP_TRANSLATIONS = json.loads((PROJECT_ROOT / "scripts" / "membership_translations.json").read_text(encoding="utf-8"))
+GALAXY_TRANSLATIONS.update(MEMBERSHIP_TRANSLATIONS)
 
 
 def update_po_file(lang_code: str, translations: dict):

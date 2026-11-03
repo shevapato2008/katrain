@@ -1,10 +1,16 @@
 import { accessMetadata, type AccessFeature } from './accessPolicy';
+import { useMembershipI18n } from '../../features/membership/useMembershipI18n';
 
 const GhostRow = () => <div className="access-ghost-row"><span className="access-ghost-avatar" /><span className="access-ghost-copy"><i /><i /></span><span className="access-ghost-spacer" /><span className="access-ghost-copy"><i /><i /></span></div>;
 /** Static public shape only. Never render protected children or business records underneath blur. */
 export function ProtectedOutline({ surface, feature }: { surface: 'galaxy' | 'kiosk'; feature: AccessFeature }) {
+  const { t } = useMembershipI18n();
   const metadata = accessMetadata[feature];
   const kiosk = surface === 'kiosk';
+  if (feature === 'membership') return <div className={`access-outline access-${surface}`} data-testid="protected-outline" aria-hidden="true">
+    <header className="access-page-head"><span className="access-back">←{kiosk && ` ${t('membership:back_to_play', '返回对弈')}`}</span><div><h1>{t('membership:auth_label', '会员与用量')}</h1>{!kiosk && <p>{t('membership:auth_description', '登录后查看会员用量、API 积分与订单。')}</p>}</div></header>
+    <section className="access-panel access-stage"><div><h2>{t('membership:auth_label', '会员与用量')}</h2><div className="access-stage-lines"><i /><i /><i /><i /></div></div><div><h2>{t('membership:auth_after_login', '登录后使用')}</h2><span className="access-ghost-avatar" /><div className="access-stage-lines"><i /><i /><i /></div></div></section>
+  </div>;
   return <div className={`access-outline access-${surface}`} data-testid="protected-outline" aria-hidden="true">
     <header className="access-page-head"><span className="access-back">←{kiosk && ' 返回对弈'}</span><div><h1>{kiosk && feature === 'hall' ? '在线大厅' : metadata.label}</h1>{!kiosk && <p>{feature === 'hall' ? '选择空闲棋友，或一键匹配同段位对手。所有大厅对局均不计升降段位。' : metadata.description}</p>}</div></header>
     {feature === 'hall' ? <>

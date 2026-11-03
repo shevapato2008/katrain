@@ -26,7 +26,7 @@ export const getGalaxyNavigation = (t: Translate): GalaxyNavigationItem[] => [
   { key: 'review', label: t('analysis:report', 'Review'), path: '/galaxy/report', icon: <AssessmentIcon /> },
   { key: 'live', label: t('Live', 'Live'), path: '/galaxy/live', icon: <LiveTvIcon /> },
   { key: 'kifu', label: t('kifu:library', 'Kifu'), path: '/galaxy/kifu', icon: <LibraryBooksIcon /> },
-  { key: 'membership', label: t('membership:title', '会员与用量'), path: '/galaxy/membership', icon: <CardMembershipIcon /> },
+  { key: 'membership', label: t('membership:galaxy_title', '会员与用量'), path: '/galaxy/membership', icon: <CardMembershipIcon /> },
   { key: 'tutorials', label: t('Tutorials', 'Tutorials'), path: '/galaxy/tutorials', icon: <MenuBookIcon /> },
 ];
 

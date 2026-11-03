@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { identityPresentation, type ShellIdentity } from './identityPresentation';
+import { useMembershipI18n } from '../../features/membership/useMembershipI18n';
 
 function clockText(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
@@ -47,6 +48,7 @@ export function KioskTopbar({ identity, onHome, onAccount, homeBusy = false }: {
   onAccount?: () => void;
   homeBusy?: boolean;
 }) {
+  const { t } = useMembershipI18n();
   const clock = clockText(useMinuteClock());
   const presented = identityPresentation(identity);
 
@@ -80,7 +82,7 @@ export function KioskTopbar({ identity, onHome, onAccount, homeBusy = false }: {
         {onAccount ? <button
           type="button"
           className="kiosk-topbar__account"
-          aria-label="账户、会员与充值"
+          aria-label={t('membership:kiosk_account_entry_aria', '账户、会员与充值')}
           onClick={onAccount}
           style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: 0, border: 0, background: 'transparent', color: 'inherit', font: 'inherit', cursor: 'pointer' }}
         >

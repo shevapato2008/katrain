@@ -7069,3 +7069,998 @@ msgstr "終了後、棋譜ページからこの棋譜を再度開けます。"
 
 msgid "baipu:exit_anyway"
 msgstr "そのまま終了"
+
+msgid "membership:account_checking"
+msgstr "アカウントを確認中"
+
+msgid "membership:account_entry"
+msgstr "使用量・APIポイント・会員特典"
+
+msgid "membership:account_identity_help"
+msgstr "アカウントの本人確認後に、会員特典、Freeの利用資格、APIポイント残高を表示します。"
+
+msgid "membership:account_retry"
+msgstr "アカウント確認を再試行"
+
+msgid "membership:account_unconfirmed"
+msgstr "アカウントの状態は未確認です"
+
+msgid "membership:advanced"
+msgstr "高度"
+
+msgid "membership:advanced_depth_ratio"
+msgstr "高度レポートの消費量は約{ratio}倍です。"
+
+msgid "membership:advanced_depth_rule"
+msgstr "高度レポートの消費量は、サーバー側の解析深度によって決まります。"
+
+msgid "membership:advanced_position_cost"
+msgstr "高度：約{points} APIポイント／手"
+
+msgid "membership:analysis_depth"
+msgstr "解析深度"
+
+msgid "membership:api_balance"
+msgstr "APIポイント残高"
+
+msgid "membership:api_on_demand"
+msgstr "必要な分だけAPI解析"
+
+msgid "membership:api_prices"
+msgstr "API解析料金"
+
+msgid "membership:api_topup"
+msgstr "APIポイントをチャージ"
+
+msgid "membership:auth_after_login"
+msgstr "ログインして利用"
+
+msgid "membership:auth_box_login"
+msgstr "StellaBoxのホームでログイン"
+
+msgid "membership:auth_box_note"
+msgstr "StellaBoxのホームでログインし、囲碁の入口からこの画面に戻ってください。"
+
+msgid "membership:auth_checking_action"
+msgstr "確認中"
+
+msgid "membership:auth_checking_description"
+msgstr "しばらくお待ちください。確認後に自動で続行します。"
+
+msgid "membership:auth_checking_note"
+msgstr "確認中はアカウント内の情報を読み込みません。"
+
+msgid "membership:auth_checking_title"
+msgstr "ログイン状態を確認中"
+
+msgid "membership:auth_description"
+msgstr "ログインすると、会員使用量、APIポイント、注文を確認できます。"
+
+msgid "membership:auth_expired_description"
+msgstr "ログインの有効期限が切れました。会員プランと使用量に含まれる個人情報の読み込みを停止しています。ログインすると利用を再開できます。"
+
+msgid "membership:auth_expired_title"
+msgstr "再ログインしてください"
+
+msgid "membership:auth_label"
+msgstr "会員プランと使用量"
+
+msgid "membership:auth_login_continue"
+msgstr "ログインして続行"
+
+msgid "membership:auth_login_title"
+msgstr "ログインして会員プランと使用量を確認"
+
+msgid "membership:auth_return_note"
+msgstr "ログイン後はこのページに戻るため、入口を探し直す必要はありません。"
+
+msgid "membership:auth_unavailable_description"
+msgstr "ネットワークまたはサービスを一時的に利用できません。再試行してください。ログイン認証情報は保持されます。"
+
+msgid "membership:auth_unavailable_note"
+msgstr "ログアウトする必要はありません。接続が回復してから再試行できます。"
+
+msgid "membership:auth_unavailable_title"
+msgstr "現在、ログイン状態を確認できません"
+
+msgid "membership:back_to_play"
+msgstr "対局に戻る"
+
+msgid "membership:billing_rules"
+msgstr "会員プランとAPIの課金ルール"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"会員枠を優先して使います。いずれかの残り枠で今回の解析をまかなえない場合は、リクエスト全体に保有APIポイントを使い、支払い元を分割しません。ポイント不足時はチャージするか、枠のリセットをお待ちください。ポイントの自動購入や人民元の自動決済は行いません。"
+
+msgid "membership:cancel"
+msgstr "キャンセル"
+
+msgid "membership:checkout_renewal_rule"
+msgstr "現在の会員期間が終了してから適用され、現在の利用枠はリセットされません。適用日は支払い後のサーバー発行の領収情報で確定します。"
+
+msgid "membership:choose_topup"
+msgstr "チャージ金額を選択"
+
+msgid "membership:close"
+msgstr "閉じる"
+
+msgid "membership:compare_membership_api"
+msgstr "会員プランとAPIを比較"
+
+msgid "membership:compare_plans"
+msgstr "会員プランを比較"
+
+msgid "membership:compute"
+msgstr "計算量"
+
+msgid "membership:confirm_consumption"
+msgstr "確認して開始"
+
+msgid "membership:confirm_position"
+msgstr "現在の局面の解析を確認"
+
+msgid "membership:confirm_purchase"
+msgstr "購入を確定"
+
+msgid "membership:confirm_report"
+msgstr "レポート作成を確認"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "APIポイントを使用（上限{points}）"
+
+msgid "membership:confirming"
+msgstr "確認中"
+
+msgid "membership:consumption_policy"
+msgstr "会員枠を優先し、不足時は全体にAPIポイントを使用します。上限は{points}ポイントです。"
+
+msgid "membership:countdown_days"
+msgstr "{days}日{hours}時間{minutes}分"
+
+msgid "membership:countdown_hours"
+msgstr "{hours}時間{minutes}分"
+
+msgid "membership:create_order"
+msgstr "注文を作成"
+
+msgid "membership:create_report"
+msgstr "検討レポートを作成"
+
+msgid "membership:creating_order"
+msgstr "作成中…"
+
+msgid "membership:current_plan"
+msgstr "現在の会員プラン"
+
+msgid "membership:date_pending"
+msgstr "確認待ち"
+
+msgid "membership:done"
+msgstr "完了"
+
+msgid "membership:entitlement_pending"
+msgstr "アカウント特典の確認待ち"
+
+msgid "membership:error_analysis_login_required"
+msgstr "解析を利用するにはログインしてください。"
+
+msgid "membership:error_insufficient"
+msgstr "会員枠とAPIポイントが不足しています。会員ページをご確認ください。"
+
+msgid "membership:error_operation_running"
+msgstr "解析中です。しばらくしてから再度ご確認ください。"
+
+msgid "membership:error_position_failed"
+msgstr "解析が完了しませんでした。再試行してください。"
+
+msgid "membership:error_position_refunded"
+msgstr "解析が完了しませんでした。今回の消費分は返還されました。再試行してください。"
+
+msgid "membership:error_position_unavailable"
+msgstr "このサービスでは単一局面の解析を利用できません。"
+
+msgid "membership:error_quote_expired"
+msgstr "見積もりの期限が切れたか、現在のリクエストと一致しません。最新の見積もりを確認して再試行してください。"
+
+msgid "membership:error_quote_failed"
+msgstr "見積もりを取得できませんでした。再試行してください。"
+
+msgid "membership:error_report_failed"
+msgstr "レポートを作成できませんでした。再試行してください。"
+
+msgid "membership:error_report_login_required"
+msgstr "レポートを作成するにはログインしてください。"
+
+msgid "membership:error_report_missing"
+msgstr "レポートが見つかりません。更新して再試行してください。"
+
+msgid "membership:error_result_expired"
+msgstr "解析結果の期限が切れたか、一時的に利用できません。再解析してください。"
+
+msgid "membership:error_service_busy"
+msgstr "リクエストが混み合っています。しばらくしてから再試行してください。"
+
+msgid "membership:error_service_paused"
+msgstr "解析サービスは休止中です。しばらくしてから再試行してください。"
+
+msgid "membership:error_service_unavailable"
+msgstr "解析サービスを一時的に利用できません。しばらくしてから再試行してください。"
+
+msgid "membership:error_verification_required"
+msgstr "ログイン認証を完了してから再試行してください。"
+
+msgid "membership:example_depth"
+msgstr "解析深度の例"
+
+msgid "membership:free_eligibility_rule"
+msgstr "暦週ごとに標準レポート{count}件を受け取れる独立した利用資格です。本人確認の条件を満たす必要があり、汎用の解析枠としては使えません。"
+
+msgid "membership:free_pending"
+msgstr "Free利用資格の確認待ち"
+
+msgid "membership:free_remaining"
+msgstr "今週あと{count}件"
+
+msgid "membership:free_reset_countdown"
+msgstr "{time}後にリセット · {date}（北京時間）"
+
+msgid "membership:free_unavailable"
+msgstr "現在Freeの利用資格を利用できません"
+
+msgid "membership:free_unavailable_rule"
+msgstr ""
+"Freeの標準レポートには、信頼できる本人確認が必要です。現在、受け取り可能件数は表示できません。有料会員にFreeのレポート利用資格は追加されません。"
+
+msgid "membership:free_weekly_eligibility"
+msgstr "暦週ごとの独立した標準レポート利用資格"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · 今週の標準レポート利用資格"
+
+msgid "membership:fulfillment_pending"
+msgstr "特典の適用情報は確認待ちです。使用量を更新してご確認ください。"
+
+msgid "membership:full_use_days"
+msgstr "{days}日間の枠を全て使う場合"
+
+msgid "membership:full_use_savings_rule"
+msgstr "割引額は今期の枠を全て使う場合の計算です。実際のお得さは使用量によって変わります。更新分は現在の会員期間の終了後に適用されます。"
+
+msgid "membership:galaxy_api_help"
+msgstr "APIに定期契約は不要です。1人民元＝1 APIポイント。解析開始前にサーバーの見積もりをご確認ください。"
+
+msgid "membership:galaxy_choose_membership"
+msgstr "使用量に合う会員プランを選択"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr "同じ標準解析量で、今期の枠を全て使う場合の比較です。"
+
+msgid "membership:galaxy_intro"
+msgstr "解析の使用量を確認し、都度チャージか会員プランを選べます。"
+
+msgid "membership:galaxy_membership_savings"
+msgstr "よく解析するなら会員プランがお得"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "ときどき使うなら必要な分だけチャージ"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount}／{days}日"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · {days}日間の会員プラン"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr "初期局面を含む300手の対局を基準にした目安で、今期の残り枠によって制限されます。"
+
+msgid "membership:galaxy_report_example_title"
+msgstr "300手の対局の料金は？"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr "週の枠は毎週月曜00:00（北京時間）にリセットされます。今期の残り枠は期間終了時に失効します。"
+
+msgid "membership:galaxy_tabs"
+msgstr "会員ページ"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr "{date}（北京時間）まで有効。月曜のリセットで今期の枠が増えることはありません。"
+
+msgid "membership:galaxy_title"
+msgstr "会員プランと使用量"
+
+msgid "membership:history_unavailable"
+msgstr "注文履歴を一時的に利用できません"
+
+msgid "membership:kiosk_account_actions"
+msgstr "アカウント操作"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "アカウント・会員プラン・チャージ"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "高度解析"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr "高度：{points} APIポイント。いずれも初期局面を含みます"
+
+msgid "membership:kiosk_api_balance"
+msgstr "API残高"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "APIチャージ · 従量制"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "APIポイントのチャージ"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "会員枠の不足時はAPIポイントを使用"
+
+msgid "membership:kiosk_back"
+msgstr "戻る"
+
+msgid "membership:kiosk_back_settings"
+msgstr "設定に戻る"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "アカウント特典の確認後に表示"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "支払い前に注文金額を確認"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "{plan}を選択"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "クラウドと同期済み"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "会員プランを比較"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "先にアカウントを確認してください"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "解析前に支払い元と見積もりを確認"
+
+msgid "membership:kiosk_creating_order"
+msgstr "注文を作成中…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "付与：{points} APIポイント"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "現在のAPI残高"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "現在の特典"
+
+msgid "membership:kiosk_current_plan"
+msgstr "現在の会員プラン"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "予定：{start}～{end} · 北京時間"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount}＝{points} APIポイント"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "無料レポートの利用資格はクラウドでの確認結果に従います"
+
+msgid "membership:kiosk_free_pending"
+msgstr "無料レポート利用資格の確認待ち"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "標準レポートのみ。汎用の解析枠は付きません"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "残り{remaining}／{limit}件"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr "先にアカウント認証を完了してください。確認後に今週の利用資格を表示します。"
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "よく使うなら会員プランがお得"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "枠を全て使えばAPIよりお得"
+
+msgid "membership:kiosk_history_error"
+msgstr "注文履歴がまだ同期されていません。しばらくしてから再試行してください。"
+
+msgid "membership:kiosk_member_first"
+msgstr "解析は会員枠を優先して使用"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "会員枠を優先、不足時はAPIポイント"
+
+msgid "membership:kiosk_membership_extension"
+msgstr "既に会員の場合、購入済みの期間が全て終了してから適用されます。現在の使用量は引き継がれ、最終的な日時は支払いの確認情報で確定します。"
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "会員プランの購入"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr "有効期間：{start}～{end} · 北京時間 · この確認情報が確定内容です"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "会員サービスを一時的に利用できません"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr "テスト環境ではサーバーが決済結果を模擬します。このページ自体が決済を開始したり、特典を付与したりすることはありません。"
+
+msgid "membership:kiosk_next_plan"
+msgstr "次期 {plan} · {date}開始 · 北京時間"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr "解析前に支払い元と見積もりを確認します。自動チャージは行いません。"
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr "このページ自体が特典を付与することはありません。必要に応じて戻って選び直してください。"
+
+msgid "membership:kiosk_no_orders"
+msgstr "注文履歴はまだありません"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "標準解析"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "{moves}手のレポート · 標準：{points} APIポイント"
+
+msgid "membership:kiosk_not_available"
+msgstr "未提供"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "注文の確認"
+
+msgid "membership:kiosk_order_expired"
+msgstr "注文の期限切れ"
+
+msgid "membership:kiosk_order_failed"
+msgstr "注文未完了"
+
+msgid "membership:kiosk_order_history"
+msgstr "注文履歴"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "注文 {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "注文の返金済み"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "サーバーが支払いを確認済み"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr "注文状況がまだ同期されていません。再試行中です。重複して注文しないでください。"
+
+msgid "membership:kiosk_order_uncertain"
+msgstr "注文結果は未確認です。重複を避けるため、再注文の前に注文履歴をご確認ください。"
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "注文の確認待ち"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "注文有効期限：{date} · 北京時間"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "サーバーの支払い確認待ち"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr "取得済みの結果は何度でも閲覧できます。地の評価と候補手は同じ結果に含まれます。"
+
+msgid "membership:kiosk_paid_time"
+msgstr "確認日時：{date} · 北京時間"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr "決済機能はまだ接続されていません。後ほど注文状況をご確認ください。"
+
+msgid "membership:kiosk_pending_no_order"
+msgstr "確認が済むまで残りの割合は表示せず、注文も作成しません。"
+
+msgid "membership:kiosk_period_pending"
+msgstr "期間の確認待ち"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "期間の利用枠を確認待ち"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "プラン一覧の確認後に料金と特典を表示します。"
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "会員プラン一覧の同期待ち"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan} {reports}局"
+
+msgid "membership:kiosk_plan_term"
+msgstr "／{days}日"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "有効期限：{date} · 北京時間"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} APIポイント"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "{points} APIポイント／手"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr ""
+"今期と今週の両方の会員枠で今回の解析をまかなえる必要があります。不足時は全体にAPIポイントを使い、支払いを分割しません。人民元での自動チャージは行いません。"
+
+msgid "membership:kiosk_pricing_help"
+msgstr "API料金について"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr "N手のレポートは初期局面を含む計N+1局面です。実際の料金は解析前に表示する棋譜の見積もりに従います。"
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr ""
+"残高は{precision} APIポイント単位の精度で表示します。1局面あたり標準{normal}、高度{advanced} APIポイントです。"
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr "オフライン時や枠が不明な場合は先に同期してください。取得済みの結果は繰り返し閲覧でき、地の評価と候補手も同じ結果に含まれます。"
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "アカウントと利用枠の確認後に購入できます"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "利用枠を確認中"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr ""
+"両方の残り枠が十分な場合に会員枠を使います。不足時は全体にAPIポイントを使い、支払いを分割しません。解析前に支払い元と見積もりを確認してください。ポイント不足時は手動でチャージするか、枠のリセットをお待ちください。"
+
+msgid "membership:kiosk_quota_help"
+msgstr "会員枠と割引について"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "利用枠は未確認です"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr ""
+"週の上限局数は{moves}手の標準レポートを基準にした目安で、今期の残り枠によって制限されます。今期の標準レポートの目安：{references}。"
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr ""
+"会員資格は購入した期間の終了時に失効します。週の枠は月曜00:00（北京時間）にリセットされます。今期と今週の残りの割合は別々に計算し、進行中の解析の使用量も計上済みです。"
+
+msgid "membership:kiosk_quota_result_help"
+msgstr "同じ結果に地の評価と候補手が含まれ、再閲覧で追加料金はかかりません。高度解析は標準解析の{multiplier}倍の枠を消費します。"
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr ""
+"割引はAPIの標準解析と比較し、今期の枠を全て使う場合の計算です。使い切らない場合、実際のお得さは使用量によって変わります。Freeには無料の標準レポート利用資格のみが付き、汎用の解析枠は付きません。"
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "クラウドによる利用枠の確認待ち"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr "アカウントの使用量を再同期中です。残高と特典はクラウド上の記録を基準とします。"
+
+msgid "membership:kiosk_remaining"
+msgstr "残り"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "残り枠は未確認です"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "{plan}を更新"
+
+msgid "membership:kiosk_report_estimate"
+msgstr "{moves}手を基準にした目安で、今期の残り枠により制限されます。高度は約{multiplier}倍を消費します。"
+
+msgid "membership:kiosk_reserved_included"
+msgstr "進行中の解析の使用量も計上済み"
+
+msgid "membership:kiosk_result_reuse"
+msgstr "1つの結果に地の評価と候補手が含まれ、再閲覧で追加料金はかかりません。"
+
+msgid "membership:kiosk_resync"
+msgstr "再同期"
+
+msgid "membership:kiosk_return_selection"
+msgstr "選択に戻る"
+
+msgid "membership:kiosk_return_usage"
+msgstr "使用量に戻る"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "APIより約{percent}お得"
+
+msgid "membership:kiosk_savings_condition"
+msgstr "割引は今期の枠を全て使う場合の計算です。使い切らない場合、実際のお得さは使用量によって変わります。"
+
+msgid "membership:kiosk_select_topup"
+msgstr "APIのチャージ金額を選択"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "サービスを一時的に利用できません"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "同期に失敗"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "同期待ち"
+
+msgid "membership:kiosk_synced"
+msgstr "同期済み"
+
+msgid "membership:kiosk_syncing"
+msgstr "同期中"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "注文を同期中…"
+
+msgid "membership:kiosk_term"
+msgstr "今期"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "今期の期限 · 北京時間"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "今期の残りの割合"
+
+msgid "membership:kiosk_term_reports"
+msgstr "標準レポート · {days}日間で計約{reports}局"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · テスト環境"
+
+msgid "membership:kiosk_test_order"
+msgstr "TEST模擬注文 · 実際の決済は行いません"
+
+msgid "membership:kiosk_title"
+msgstr "会員プランとチャージ"
+
+msgid "membership:kiosk_topup"
+msgstr "チャージ"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "{amount}をチャージ"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "チャージ一覧の同期待ち"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr "両方の残り枠が十分なら会員枠を優先し、不足時はリクエスト全体にAPIポイントを使います。"
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} · {points} APIポイント"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points} APIポイント"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "未確認"
+
+msgid "membership:kiosk_understood"
+msgstr "了解"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr "両方の残り枠で今回の解析をまかなう必要があります。不足時は全体にAPIポイントを使います。"
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "現在、使用量を同期できません"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "使用済み・解析中：{percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "先にアカウントの本人確認を行ってください"
+
+msgid "membership:kiosk_view_order"
+msgstr "注文{id}を見る"
+
+msgid "membership:kiosk_view_plans"
+msgstr "会員プランを見る"
+
+msgid "membership:kiosk_week"
+msgstr "今週"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "今週の残りの割合"
+
+msgid "membership:kiosk_week_reports"
+msgstr "週に最大約{reports}局"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "月曜00:00にリセット · 北京時間"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "毎週の無料標準レポート"
+
+msgid "membership:loading"
+msgstr "会員プランと使用量を読み込み中…"
+
+msgid "membership:login"
+msgstr "ログイン"
+
+msgid "membership:login_to_view"
+msgstr "ログインして会員プランと使用量を確認"
+
+msgid "membership:membership_first"
+msgstr "会員枠を優先して使用"
+
+msgid "membership:membership_free_pending_help"
+msgstr "会員プランとFree利用資格は未確認です。再読み込みしてご確認ください。"
+
+msgid "membership:membership_order"
+msgstr "会員プランの注文"
+
+msgid "membership:next_membership"
+msgstr "購入済み：{plan} · {date}開始"
+
+msgid "membership:no_orders"
+msgstr "注文はまだありません"
+
+msgid "membership:normal"
+msgstr "標準"
+
+msgid "membership:normal_position_cost"
+msgstr "標準：約{points} APIポイント／手"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "必要な分だけ購入、定期契約不要"
+
+msgid "membership:open"
+msgstr "見る"
+
+msgid "membership:order_actual_end"
+msgstr "確定した終了日時：{date}（北京時間）"
+
+msgid "membership:order_actual_points"
+msgstr "実際の付与数：{points} APIポイント"
+
+msgid "membership:order_actual_start"
+msgstr "確定した開始日時：{date}（北京時間）"
+
+msgid "membership:order_estimated_dates"
+msgstr "開始予定：{start}、終了予定：{end}（北京時間）。最終的な日時は支払いの確認情報で確定します。"
+
+msgid "membership:order_expired"
+msgstr "注文の期限切れ"
+
+msgid "membership:order_expires_at"
+msgstr "注文の有効期限は{date}（北京時間）です。"
+
+msgid "membership:order_failed"
+msgstr "注文未完了"
+
+msgid "membership:order_history"
+msgstr "注文履歴"
+
+msgid "membership:order_id"
+msgstr "注文番号"
+
+msgid "membership:order_paid"
+msgstr "支払い済み"
+
+msgid "membership:order_pending"
+msgstr "支払い待ち"
+
+msgid "membership:order_poll_error"
+msgstr "現在、支払い状況を確認できません。再試行中です。再度支払わないでください。"
+
+msgid "membership:order_refunded"
+msgstr "返金済み"
+
+msgid "membership:order_result_unknown"
+msgstr "注文結果はまだ確認できていません。重複注文を避けるため、先に注文履歴をご確認ください。"
+
+msgid "membership:order_topup"
+msgstr "APIポイントのチャージ"
+
+msgid "membership:payment_account_pending"
+msgstr "アカウントと使用量の確認後に、支払い注文を作成できます。"
+
+msgid "membership:payment_channel_unavailable"
+msgstr "決済手段はまだ提供されていません。このページ以外で不明な口座に支払わないでください。"
+
+msgid "membership:payments_disabled"
+msgstr "決済はまだ利用できません"
+
+msgid "membership:payments_unavailable"
+msgstr "決済はまだ利用できません。現在、支払い注文は作成できません。"
+
+msgid "membership:pending_order_notice"
+msgstr "支払い待ちです。このページがサーバーの状態を自動確認します。"
+
+msgid "membership:plan_pending"
+msgstr "会員特典の確認待ち"
+
+msgid "membership:plan_term"
+msgstr "／{days}日"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan}はまだ利用できません"
+
+msgid "membership:plans"
+msgstr "会員プラン"
+
+msgid "membership:points"
+msgstr "APIポイント"
+
+msgid "membership:points_amount"
+msgstr "{points} APIポイント"
+
+msgid "membership:points_exchange_rate"
+msgstr "1人民元＝1 APIポイント"
+
+msgid "membership:position_cost"
+msgstr "1手あたりの料金"
+
+msgid "membership:position_pricing_rule"
+msgstr "単一局面と一局全体の解析は同じ単価です。一局全体では手数に初期局面を加えて課金します。"
+
+msgid "membership:processing"
+msgstr "処理中…"
+
+msgid "membership:quota"
+msgstr "会員枠"
+
+msgid "membership:quota_dual_rule"
+msgstr ""
+"今期と今週の残りの割合はそれぞれの枠を基準に表示します。1回の解析に両方の残り枠が必要です。進行中の解析の予約分は使用済みに計上し、失敗時に返還します。"
+
+msgid "membership:quota_expires_in"
+msgstr "{time}後に失効"
+
+msgid "membership:quota_pending"
+msgstr "利用枠の確認待ち"
+
+msgid "membership:quota_recovers_in"
+msgstr "{time}後にリセット"
+
+msgid "membership:quota_refresh_pending"
+msgstr "最新の利用枠を確認中"
+
+msgid "membership:quota_reservation_help"
+msgstr "2つの残り枠は別々に計算し、1回の解析に両方の枠が必要です。進行中の解析の予約分は使用率に計上済みで、失敗時に返還します。"
+
+msgid "membership:quote_and_owned_rule"
+msgstr ""
+"解析開始前にサーバーの見積もりと支払い元を表示します。アカウントと使用量の状態が確認されるまで解析は開始できません。取得済みの結果の再閲覧や、地の評価と候補手の切り替えで追加料金はかかりません。"
+
+msgid "membership:refresh"
+msgstr "更新"
+
+msgid "membership:reload"
+msgstr "再読み込み"
+
+msgid "membership:remaining_percent"
+msgstr "残り{percent}"
+
+msgid "membership:renew_plan"
+msgstr "{plan}を更新"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"更新分は現在の会員期間の終了後に適用され、現在の使用済み・予約済みの使用量はリセットしません。支払い前の日付は予定であり、最終的な有効期間は支払い後のサーバー発行の確認情報で確定します。有料会員にFreeの標準レポート利用資格は追加されません。"
+
+msgid "membership:report_estimate_limit"
+msgstr "300手の対局を基準にした目安で、今期の残り枠によって制限されます。"
+
+msgid "membership:report_example_rule"
+msgstr "初期局面を含む計301局面を解析します。実際の料金は送信前に表示するサーバーの見積もりに従います。"
+
+msgid "membership:retry"
+msgstr "再試行"
+
+msgid "membership:savings_approx"
+msgstr "約{percent}お得"
+
+msgid "membership:savings_vs_api"
+msgstr "APIより約{percent}お得"
+
+msgid "membership:select_plan"
+msgstr "{plan}を選択"
+
+msgid "membership:server_authority"
+msgstr "残高と特典はサーバーの確認結果に従います。"
+
+msgid "membership:service_unavailable"
+msgstr "現在、このサービスでは会員使用量を提供していません。特典と残高は確認待ちです。"
+
+msgid "membership:source_free"
+msgstr "現在の予定：週の無料レポート利用資格を使用"
+
+msgid "membership:source_membership"
+msgstr "現在の予定：会員枠を使用"
+
+msgid "membership:source_owned"
+msgstr "この結果は取得済みです"
+
+msgid "membership:source_pending"
+msgstr "支払い元の確認待ち"
+
+msgid "membership:source_wallet"
+msgstr "現在の予定：APIポイントを使用"
+
+msgid "membership:stale"
+msgstr "更新待ち"
+
+msgid "membership:stale_warning"
+msgstr "前回読み込んだデータを表示しています。アカウントと支払い元の再確認が必要です。現在、購入はできません。"
+
+msgid "membership:synced"
+msgstr "同期済み"
+
+msgid "membership:temporarily_unavailable"
+msgstr "一時的に利用不可"
+
+msgid "membership:term_remaining"
+msgstr "今期の残り"
+
+msgid "membership:term_report_reference"
+msgstr "{plan}：{days}日間の期間あたり標準レポート約{reports}局が目安です。"
+
+msgid "membership:term_total_reports"
+msgstr "{days}日間で計約{reports}局"
+
+msgid "membership:test_order_warning"
+msgstr "TESTの模擬注文です。実際の決済は行いません。"
+
+msgid "membership:time_pending"
+msgstr "日時の確認待ち"
+
+msgid "membership:topup_amount"
+msgstr "{amount}をチャージ"
+
+msgid "membership:topup_arrival"
+msgstr "付与：{points} APIポイント"
+
+msgid "membership:topup_arrival_rule"
+msgstr "支払い確認後にポイントを付与します。会員枠の不足時は保有APIポイントを使います。自動チャージは行いません。"
+
+msgid "membership:topup_option"
+msgstr "{amount}で{points} APIポイントを付与"
+
+msgid "membership:unavailable"
+msgstr "未提供"
+
+msgid "membership:unavailable_title"
+msgstr "会員プランと使用量は一時的に利用できません"
+
+msgid "membership:unconfirmed_help"
+msgstr "アカウントの特典と残高は未確認です。しばらくしてから再試行してください。"
+
+msgid "membership:usage"
+msgstr "使用量"
+
+msgid "membership:used_and_reserved"
+msgstr "使用済み・解析中：{percent}"
+
+msgid "membership:valid_until"
+msgstr "有効期限：{date}（北京時間）"
+
+msgid "membership:view_api_topup"
+msgstr "APIチャージを見る"
+
+msgid "membership:view_plans"
+msgstr "会員プランを見る"
+
+msgid "membership:visits"
+msgstr "探索回数 {count} 回"
+
+msgid "membership:week_remaining"
+msgstr "今週の残り"
+
+msgid "membership:weekly_report_reference"
+msgstr "標準レポート、週に最大約{reports}局"
+
+msgid "membership:weekly_reports"
+msgstr "週に最大約{reports}局"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "週に最大約{reports}局 · 未提供"
+
+msgid "membership:weekly_reset_rule"
+msgstr "週の枠は毎週月曜00:00（北京時間）にリセットされます。"
+
+msgid "membership:whole_request_fallback"
+msgstr "会員枠で今回の解析をまかなえない場合は、リクエスト全体に保有APIポイントを使います。"

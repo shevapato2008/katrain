@@ -176,6 +176,15 @@ def _batch_scope(conn, batch_id):
             except (ValueError, KeyError, TypeError) as exc:
                 raise SearchIndexPending({"batch_id": batch_id}, "original publication dedup child changed") from exc
             scope.album_ids.update(repairs["affected_album_ids"])
+        if "rank_dispositions" in artifact or "rank_dispositions_sha256" in guard:
+            from katrain.kifu_ingest.catalog import _check_rank_dispositions
+
+            try:
+                _check_rank_dispositions(
+                    conn, artifact.get("logical_manifest", {}), artifact, resource=None, check_current=False
+                )
+            except (ValueError, TypeError, KeyError) as exc:
+                raise SearchIndexPending({"batch_id": batch_id}, "original retained rank artifact changed") from exc
     else:
         original = artifact.get("bundle", artifact.get("plan"))
         if not isinstance(original, dict) or canonical_sha256(original) != batch["bundle_sha256"]:

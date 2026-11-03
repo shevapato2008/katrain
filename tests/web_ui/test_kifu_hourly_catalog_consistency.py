@@ -166,9 +166,37 @@ def test_native_rank_exact_and_semantic_share_one_cumulative_body_budget(tmp_pat
         return resource
 
     monkeypatch.setattr(historical_ranks, "EvidenceBudget", bounded_resource)
-    receipt = publish(engine, value)
+    fetched = []
+    query = {}
+
+    def statement(conn, cursor, sql, parameters, context, many):
+        query.update(sql=sql, parameters=parameters)
+
+    def observed_rows(cursor, row):
+        names = [column[0] for column in cursor.description]
+        body_name = next((name for name in ("sgf_content", "kifu_albums_sgf_content") if name in names), None)
+        if body_name:
+            id_name = next((name for name in ("id", "kifu_albums_id") if name in names), None)
+            album_id = row[names.index(id_name)] if id_name else query["parameters"][0]
+            fetched.append((album_id, len(row[names.index(body_name)].encode())))
+        return row
+
+    event.listen(engine, "before_cursor_execute", statement)
+    with engine.connect() as conn:
+        driver = conn.connection.driver_connection
+        previous_factory = driver.row_factory
+        driver.row_factory = observed_rows
+    try:
+        receipt = publish(engine, value)
+    finally:
+        driver.row_factory = previous_factory
+        event.remove(engine, "before_cursor_execute", statement)
     assert len(resources) == 1
     assert resources[0].used_bytes == len(game["sgf_content"].encode()) + len(basis.encode())
+    # Count actual returned raw SGF columns, including accidental full ORM rows.
+    # New-row native audit images are distinct from these original evidence IDs.
+    assert [amount for album_id, amount in fetched if album_id == 12] == [len(basis.encode())]
+    assert not [amount for album_id, amount in fetched if album_id == existing["games"][0]["album_id"]]
     with engine.connect() as conn:
         artifact = conn.scalar(select(KifuNameBatch.reviewed_artifact).where(KifuNameBatch.id == receipt["batch_id"]))
         assert artifact["catalog_repairs"]["dedup"]["manifest"]["summary"]["resource_deferred_cohorts"] == 1

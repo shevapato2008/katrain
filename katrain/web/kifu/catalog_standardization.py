@@ -11,7 +11,8 @@ from hashlib import sha256
 import json
 import re
 
-from sqlalchemy import delete, insert, select, text, update
+from sqlalchemy import delete, func, insert, select, text, update
+from sqlalchemy.exc import DBAPIError
 
 from katrain.core.sgf_parser import SGF, ParseError
 from katrain.web.core.models_db import (
@@ -25,6 +26,17 @@ from katrain.web.core.models_db import (
     KifuSource,
 )
 from katrain.web.kifu.identity import normalize_alias
+from katrain.web.kifu.historical_ranks import (
+    MAX_INCOMING_GAMES,
+    MAX_OWNERS,
+    MAX_BODY_ROWS,
+    MAX_SGF_BYTES,
+    MAX_BODY_BYTES,
+    MAX_SCALAR_ROWS,
+    MAX_SCALAR_BYTES,
+    _body_length,
+    _bounded_queries,
+)
 
 VERSION = "kifu-reviewed-dedup-v1"
 _ALBUM_FIELDS = tuple(c.name for c in KifuAlbum.__table__.columns if c.name not in ("created_at", "search_text"))
@@ -143,16 +155,29 @@ def _image(conn, album_id):
     return dict(row) if row else None
 
 
-def _identities(conn):
+def _identities(conn, tokens=None):
     index = defaultdict(set)
-    for name, owner in conn.execute(select(KifuPlayer.canonical_name, KifuPlayer.id)):
-        index[normalize_alias(name)].add(owner)
-    for name, owner in conn.execute(select(KifuPlayerAlias.normalized_alias, KifuPlayerAlias.player_id)):
-        index[normalize_alias(name)].add(owner)
+    if tokens == set():
+        return index
+    for name, owner in conn.execute(select(KifuPlayer.canonical_name, KifuPlayer.id).execution_options(yield_per=500)):
+        token = normalize_alias(name)
+        if tokens is None or token in tokens:
+            index[token].add(owner)
+    aliases = select(KifuPlayerAlias.normalized_alias, KifuPlayerAlias.player_id)
+    if tokens is not None:
+        aliases = aliases.where(KifuPlayerAlias.normalized_alias.in_(tokens))
+    for name, owner in conn.execute(aliases.execution_options(yield_per=500)):
+        token = normalize_alias(name)
+        if tokens is None or token in tokens:
+            index[token].add(owner)
     for name, owner in conn.execute(
-        select(KifuPlayerName.display_name, KifuPlayerName.player_id).where(KifuPlayerName.status == "verified", KifuPlayerName.reference_url.isnot(None))
+        select(KifuPlayerName.display_name, KifuPlayerName.player_id)
+        .where(KifuPlayerName.status == "verified", KifuPlayerName.reference_url.isnot(None))
+        .execution_options(yield_per=500)
     ):
-        index[normalize_alias(name)].add(owner)
+        token = normalize_alias(name)
+        if tokens is None or token in tokens:
+            index[token].add(owner)
     return index
 
 
@@ -279,18 +304,131 @@ def _canonical_preference(member, source_keys):
     return (not starpoint, member["album"]["id"])
 
 
-def prepare_dedup_manifest(conn, *, reviewed_pairs=()):
-    """Scan DB content only; freeze eligible pairs and exclusions, never write."""
-    identities = _identities(conn)
-    canonical_names = dict(conn.execute(select(KifuPlayer.id, KifuPlayer.canonical_name)).all())
+def _finite_rows(conn, candidate_album_ids):
+    """Read complete exact-date/ordered-FK cohorts, refusing truncated evidence."""
+    ids = set(candidate_album_ids)
+    _require(
+        len(ids) <= MAX_INCOMING_GAMES and all(type(i) is int and i > 0 for i in ids), "finite incoming album limit"
+    )
+    fields = ("id", "date_played", "black_player_id", "white_player_id")
+    with _bounded_queries(conn):
+        incoming = [
+            dict(row)
+            for row in conn.execute(
+                select(*(getattr(KifuAlbum, f) for f in fields)).where(KifuAlbum.id.in_(ids))
+            ).mappings()
+        ]
+    _require({row["id"] for row in incoming} == ids, "finite incoming album missing")
+    owners = {row[f"{side}_player_id"] for row in incoming for side in ("black", "white")} - {None}
+    _require(len(owners) <= MAX_OWNERS, "finite incoming owner limit")
+    cohorts = defaultdict(list)
+    excluded = []
+    for row in incoming:
+        key = (_precise_date(row["date_played"]), row["black_player_id"], row["white_player_id"])
+        if key[0] and all(type(value) is int and value > 0 for value in key[1:]):
+            cohorts[key].append(row["id"])
+        else:
+            excluded.append({"album_ids": [row["id"]], "reason": "precise_date_ordered_bound_identity_required"})
+    rows, used = [], 0
+    for (day, black, white), incoming_ids in sorted(cohorts.items()):
+        predicate = (
+            KifuAlbum.date_played == day,
+            KifuAlbum.black_player_id == black,
+            KifuAlbum.white_player_id == white,
+        )
+        try:
+            with _bounded_queries(conn):
+                length = _body_length(conn, KifuAlbum.sgf_content)
+                count, maximum, size = conn.execute(
+                    select(func.count(), func.coalesce(func.max(length), 0), func.coalesce(func.sum(length), 0)).where(
+                        *predicate
+                    )
+                ).one()
+                if count > MAX_BODY_ROWS or maximum > MAX_SGF_BYTES or used + size > MAX_BODY_BYTES:
+                    excluded.append(
+                        {
+                            "album_ids": sorted(incoming_ids),
+                            "reason": "resource_deferred",
+                            "cohort": {"date": day, "ordered_player_ids": [black, white], "row_count": count},
+                        }
+                    )
+                    continue
+                selected = [
+                    dict(row)
+                    for row in conn.execute(
+                        select(*(getattr(KifuAlbum, f) for f in _ALBUM_FIELDS)).where(*predicate).order_by(KifuAlbum.id)
+                    ).mappings()
+                ]
+                # Counts/lengths precede bodies; protect callers without native table locks too.
+                actual = sum(len(row["sgf_content"].encode()) for row in selected)
+                if (
+                    len(selected) != count
+                    or any(len(row["sgf_content"].encode()) > MAX_SGF_BYTES for row in selected)
+                    or used + actual > MAX_BODY_BYTES
+                ):
+                    excluded.append({"album_ids": sorted(incoming_ids), "reason": "resource_deferred"})
+                    continue
+                rows.extend(selected)
+                used += actual
+        except DBAPIError as exc:
+            if getattr(exc.orig, "sqlstate", None) != "57014" and getattr(exc.orig, "pgcode", None) != "57014":
+                raise
+            excluded.append({"album_ids": sorted(incoming_ids), "reason": "resource_deferred"})
+    return rows, excluded
+
+
+def prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None):
+    if candidate_album_ids is not None:
+        with _bounded_queries(conn):
+            return _prepare_dedup_manifest(conn, reviewed_pairs=reviewed_pairs, candidate_album_ids=candidate_album_ids)
+    return _prepare_dedup_manifest(conn, reviewed_pairs=reviewed_pairs)
+
+
+def _prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None):
+    """Freeze eligible DB pairs; optional IDs restrict hourly evidence cohorts."""
+    finite = candidate_album_ids is not None
+    if finite:
+        candidate_album_ids = set(candidate_album_ids)
+    rows, deferred = _finite_rows(conn, candidate_album_ids) if finite else (None, [])
+    tokens = None
+    if finite:
+        tokens = {normalize_alias(row[f"player_{side}"] or "") for row in rows for side in ("black", "white")}
+        for row in rows:
+            try:
+                root = SGF.parse_sgf(row["sgf_content"])
+                tokens.update(normalize_alias(root.get_property(prop) or "") for prop in ("PB", "PW"))
+            except (ParseError, ValueError, TypeError, IndexError):
+                pass
+    if finite:
+        with _bounded_queries(conn):
+            identities = _identities(conn, tokens)
+    else:
+        identities = _identities(conn)
+    names_query = select(KifuPlayer.id, KifuPlayer.canonical_name)
+    if finite:
+        names_query = names_query.where(
+            KifuPlayer.id.in_({row[f"{side}_player_id"] for row in rows for side in ("black", "white")})
+        )
+    canonical_names = dict(conn.execute(names_query).all())
     sources = _source_image(conn)
     source_keys = {s["id"]: s["source_key"] for s in sources}
     source_links = defaultdict(list)
     source_rows = defaultdict(list)
+    links_query = select(
+        KifuAlbumSource.album_id, KifuAlbumSource.id, *(getattr(KifuAlbumSource, f) for f in _LINK_FIELDS)
+    )
+    if finite:
+        links_query = links_query.where(KifuAlbumSource.album_id.in_([row["id"] for row in rows]))
+        with _bounded_queries(conn):
+            sub = links_query.subquery()
+            length = sum(func.coalesce(func.length(sub.c[field]), 0) for field in ("origin_path", "match_method"))
+            count, size = conn.execute(select(func.count(), func.coalesce(func.sum(length), 0)).select_from(sub)).one()
+            _require(
+                count <= MAX_SCALAR_ROWS and size * 4 + count * 128 <= MAX_SCALAR_BYTES,
+                "finite source link integrity resource limit",
+            )
     for row in conn.execute(
-        select(
-            KifuAlbumSource.album_id, KifuAlbumSource.id, *(getattr(KifuAlbumSource, f) for f in _LINK_FIELDS)
-        ).order_by(
+        links_query.order_by(
             KifuAlbumSource.album_id,
             KifuAlbumSource.source_id,
             KifuAlbumSource.origin_path,
@@ -300,8 +438,11 @@ def prepare_dedup_manifest(conn, *, reviewed_pairs=()):
         source_links[row["album_id"]].append({f: row[f] for f in _LINK_FIELDS})
         source_rows[row["album_id"]].append(dict(row))
     _require(not reviewed_pairs, "caller review flags cannot grant identity authority")
-    collisions, rows_by_id, exclusions, counters = defaultdict(list), {}, [], Counter()
-    for raw in conn.execute(select(*(getattr(KifuAlbum, f) for f in _ALBUM_FIELDS))).mappings():
+    collisions, rows_by_id, exclusions, counters = defaultdict(list), {}, deferred, Counter()
+    if finite:
+        counters["resource_deferred_cohorts"] = sum(row["reason"] == "resource_deferred" for row in deferred)
+    album_rows = rows if finite else conn.execute(select(*(getattr(KifuAlbum, f) for f in _ALBUM_FIELDS))).mappings()
+    for raw in album_rows:
         row = dict(raw)
         counters["albums_scanned"] += 1
         if row["duplicate_of_id"] is not None or row["list_hidden_reason"] is not None:
@@ -343,6 +484,8 @@ def prepare_dedup_manifest(conn, *, reviewed_pairs=()):
             if len(members) != 2 or not played or not all(type(v) is int and v > 0 for v in player_ids):
                 continue
             if set(members) & accepted:
+                continue
+            if finite and not set(members) & set(candidate_album_ids):
                 continue
             rows = [rows_by_id[i] for i in members]
             if not _metadata_compatible(rows) or any(

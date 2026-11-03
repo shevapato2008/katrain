@@ -487,17 +487,37 @@ def _coverage(conn, ids, *, resource=None):
         )
         from katrain.web.kifu.catalog_standardization import verified_display_duplicate
 
-        retained = []
+        # Frozen raw-name scopes can still contain aliases hidden by a later
+        # reviewed dedup. Coverage belongs to their verified public display.
+        retained, canonical_ids = {}, set()
         for album in albums:
             if album.list_hidden_reason is not None:
                 continue
             if album.duplicate_of_id is not None:
                 try:
-                    verified_display_duplicate(conn, album.id, resource=resource)
+                    proof = verified_display_duplicate(conn, album.id, resource=resource)
                 except ValueError:
                     continue
-            retained.append(album)
-        albums = retained
+                if proof is not None:
+                    canonical_ids.add(proof["canonical_album_id"])
+            else:
+                retained[album.id] = album
+        if canonical_ids:
+            canonical = (
+                db.query(KifuAlbum)
+                .options(defer(KifuAlbum.sgf_content, raiseload=True))
+                .filter(
+                    KifuAlbum.id.in_(canonical_ids),
+                    KifuAlbum.duplicate_of_id.is_(None),
+                    KifuAlbum.list_hidden_reason.is_(None),
+                )
+                .all()
+            )
+            _require(
+                {album.id for album in canonical} == canonical_ids, "verified display canonical is missing or nonpublic"
+            )
+            retained.update((album.id, album) for album in canonical)
+        albums = [retained[album_id] for album_id in sorted(retained)]
         selected = live_event_selections(db, albums)
         for lang in LANGUAGES:
             approvals = strict_slot_approvals(db, albums, lang, selected_events=selected)

@@ -128,6 +128,56 @@ def test_ordinary_hourly_publish_never_parses_unrelated_library(tmp_path, monkey
     assert publish(engine, hourly_game(700))["status"] == "applied"
 
 
+def test_native_rank_exact_and_semantic_share_one_cumulative_body_budget(tmp_path, monkeypatch):
+    from katrain.kifu_ingest import ranks
+    from katrain.web.kifu import historical_ranks
+    from tests.web_ui.test_kifu_historical_rank_native import seed_prior, WHEN
+
+    engine = make_engine(tmp_path / "shared-budget.db")
+    seed_prior(engine)
+
+    def named_game(item, comment):
+        result = hourly_game(item, comment=comment)
+        game = result["games"][0]
+        game["sgf_content"] = game["sgf_content"].replace("PW[White]", "PW[White Alias]")
+        game["sgf_sha256"] = game["raw_sha256"] = sha256(game["sgf_content"].encode()).hexdigest()
+        game["metadata"]["player_white"] = "White Alias"
+        return result
+
+    existing = publish(engine, named_game(970, "existing semantic game"))
+    value = named_game(971, "incoming semantic game")
+    game = value["games"][0]
+    game["origin_path"] = "data/kifu-album/19x19/971.sgf"
+    game["identities"] = {"black": {"canonical_name": "Black"}, "white": {"canonical_name": "White"}}
+    with engine.connect() as conn:
+        frozen = ranks.freeze_historical_game_ranks(conn, [game], matched_at=WHEN)[0]
+        basis = conn.scalar(select(KifuAlbum.sgf_content).where(KifuAlbum.id == 12))
+        old_body = conn.scalar(select(KifuAlbum.sgf_content).where(KifuAlbum.id == existing["games"][0]["album_id"]))
+    game.update({key: frozen[key] for key in ("rank_snapshots", "rank_observations")})
+    value.update(format=ranks.FORMAT_V2, rank_facts=frozen["rank_facts"])
+    assert game["rank_snapshots"]["black"]["origin"] == "historical_prior"
+    resources = []
+    original = historical_ranks.EvidenceBudget
+    cap = len(game["sgf_content"].encode()) + len(basis.encode()) + len(old_body.encode()) - 1
+
+    def bounded_resource():
+        resource = original(max_bytes=cap)
+        resources.append(resource)
+        return resource
+
+    monkeypatch.setattr(historical_ranks, "EvidenceBudget", bounded_resource)
+    receipt = publish(engine, value)
+    assert len(resources) == 1
+    assert resources[0].used_bytes == len(game["sgf_content"].encode()) + len(basis.encode())
+    with engine.connect() as conn:
+        artifact = conn.scalar(select(KifuNameBatch.reviewed_artifact).where(KifuNameBatch.id == receipt["batch_id"]))
+        assert artifact["catalog_repairs"]["dedup"]["manifest"]["summary"]["resource_deferred_cohorts"] == 1
+        assert (
+            conn.scalar(select(KifuAlbum.duplicate_of_id).where(KifuAlbum.id == receipt["games"][0]["album_id"]))
+            is None
+        )
+
+
 def test_hourly_es_failure_recovers_original_pending_and_child_scope(tmp_path, monkeypatch):
     engine = make_engine(tmp_path / "es-hourly.db")
     first, second = hourly_game(800), hourly_game(801, comment="other source")
@@ -267,6 +317,27 @@ def test_finite_manifest_source_registry_scope_survives_unrelated_source(engine)
         dedup.apply_dedup_manifest(conn, manifest, expected_sha256=digest)
         conn.execute(KifuSource.__table__.insert().values(source_key="unrelated-later"))
         assert dedup.apply_dedup_manifest(conn, manifest, expected_sha256=digest)["idempotent"]
+
+
+def test_proved_exact_original_reuses_provided_body_without_second_reservation(engine):
+    from katrain.kifu_ingest import catalog
+    from katrain.web.kifu.historical_ranks import EvidenceBudget
+
+    body = catalog._canonical_sgf(sgf(comment="25055"))
+    resource = EvidenceBudget(max_bytes=len(body.encode()))
+    resource.remember_body(body)
+    game = {
+        "source_key": "19x19",
+        "source_item_id": "991",
+        "sgf_content": body,
+        "sgf_sha256": sha256(body.encode()).hexdigest(),
+        "metadata": {"player_black": "Black", "player_white": "White", "date_played": "1989-01-17"},
+    }
+    with engine.begin() as conn:
+        conn.execute(update(KifuAlbum).where(KifuAlbum.id == 25055).values(sgf_content=body))
+        matches = catalog._bounded_exact_matches(conn, game, body, {25055}, resource, [])
+        assert matches == {25055}
+        assert resource.used_bytes == len(body.encode())
 
 
 def test_finite_legacy_null_fk_uses_identity_evidence_not_a_guess(engine):

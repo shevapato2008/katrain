@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import time
 from uuid import uuid4
+from urllib.parse import urlsplit
 
 import httpx
 from sqlalchemy import select, text
@@ -42,7 +43,12 @@ from katrain.kifu_ingest.source_19x19 import Source19x19
 from katrain.kifu_ingest.recent import discover_recent, match_time
 from katrain.kifu_ingest.staging import Stage, staging_writer_lock
 from katrain.kifu_ingest.state import StateStore, batches, items
-from katrain.kifu_ingest.sync import check_production_identities, send_verified_manifest, verify_album_api
+from katrain.kifu_ingest.sync import (
+    _receiver_command,
+    check_production_identities,
+    send_verified_manifest,
+    verify_album_api,
+)
 from katrain.web.kifu.name_candidates import canonical_sha256
 
 
@@ -464,7 +470,11 @@ async def resume_batch(
     row = _batch_row(store, key)
     status = row["status"]
     repair_search = sync_mode() == "enabled"
-    if repair_search and status in {"test_published", "test_verified"} and (deadline is None or time.monotonic() < deadline):
+    if (
+        repair_search
+        and status in {"test_published", "test_verified"}
+        and (deadline is None or time.monotonic() < deadline)
+    ):
         if test_publish is None:
             raise ValueError("original TEST publisher is required for search repair")
         replay = await _call(test_publish, manifest, digest)
@@ -569,6 +579,53 @@ def _receiver_timeout(deadline):
     return max(1, deadline - time.monotonic())
 
 
+def _publication_preflight():
+    """Configured hourly admission must have both native and search writers."""
+    if not config.KIFU_INGEST_ENABLED:
+        return
+    from katrain.web.kifu.search_sync import sync_mode
+    from katrain.web.kifu.search_es import SearchSettings
+
+    try:
+        if sync_mode() != "enabled":
+            raise ValueError()
+    except ValueError:
+        raise ValueError("kifu_ingest_preflight: KIFU_SEARCH_SYNC_MODE, KIFU_SEARCH_BACKEND") from None
+    try:
+        SearchSettings.from_env(role="writer").client_options()
+    except (ValueError, OSError):
+        raise ValueError(
+            "kifu_ingest_preflight: KIFU_ES_URL, KIFU_ES_WRITER_*, KIFU_ES_CA_CERT, KIFU_ES_INDEX_ALIAS"
+        ) from None
+    try:
+        _receiver_command(config.KIFU_INGEST_SSH_HOST, config.KIFU_INGEST_SSH_KEY, config.KIFU_INGEST_KNOWN_HOSTS)
+    except (ValueError, TypeError):
+        raise ValueError(
+            "kifu_ingest_preflight: CRON_KIFU_INGEST_SSH_HOST, CRON_KIFU_INGEST_SSH_KEY, CRON_KIFU_INGEST_KNOWN_HOSTS"
+        ) from None
+    for field in ("KIFU_INGEST_SSH_KEY", "KIFU_INGEST_KNOWN_HOSTS"):
+        try:
+            if not Path(getattr(config, field)).is_file():
+                raise ValueError()
+        except (OSError, ValueError):
+            raise ValueError("kifu_ingest_preflight: CRON_" + field) from None
+    for field in ("KIFU_INGEST_TEST_API_URL", "KIFU_INGEST_PROD_API_URL"):
+        try:
+            parsed = urlsplit(getattr(config, field))
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not parsed.hostname
+                or parsed.username
+                or parsed.password
+                or parsed.query
+                or parsed.fragment
+            ):
+                raise ValueError()
+            parsed.port
+        except (ValueError, TypeError):
+            raise ValueError("kifu_ingest_preflight: CRON_" + field) from None
+
+
 class KifuIngestJob(BaseJob):
     name = "kifu_ingest"
     interval_seconds = 3600
@@ -577,6 +634,7 @@ class KifuIngestJob(BaseJob):
         await asyncio.to_thread(self._run_lock)
 
     def _run_lock(self):
+        _publication_preflight()
         # An async loop and its DB/network calls execute in this worker thread;
         # the main cron event loop remains free for analysis and other jobs.
         with _session_lock(engine) as acquired:
@@ -592,6 +650,7 @@ class KifuIngestJob(BaseJob):
                 asyncio.run(self._run_locked())
 
     async def _run_locked(self):
+        _publication_preflight()
         stage_root = Path(config.KIFU_INGEST_STAGING_DIR)
         stage = Stage(stage_root)
         store = StateStore(engine)

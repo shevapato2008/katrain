@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 from sqlalchemy import Text, and_, cast, func, or_, select, text, true, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 from katrain.core.sgf_parser import ParseError, SGF
 from katrain.kifu_ingest.exclusions import assert_source_allowed
@@ -390,25 +390,31 @@ def _require_public(conn, ids):
     _require(public == set(ids), "requested album is missing, hidden or duplicate; publication requires public albums")
 
 
-def _require_source_publication(conn, ids):
+def _require_source_publication(conn, ids, *, resource=None):
     """Original receipts remain exact; only proved display dedup may hide them."""
     from katrain.web.kifu.catalog_standardization import verified_display_duplicate
 
     for album_id in ids:
-        album = name_batch._image(conn, KifuAlbum.__table__, album_id)
+        album = (
+            conn.execute(
+                select(KifuAlbum.list_hidden_reason, KifuAlbum.duplicate_of_id).where(KifuAlbum.id == album_id)
+            )
+            .mappings()
+            .one_or_none()
+        )
         _require(
             album is not None and album["list_hidden_reason"] is None,
             "requested album is missing, hidden or duplicate; publication requires public albums",
         )
         if album["duplicate_of_id"] is not None:
             try:
-                proof = verified_display_duplicate(conn, album_id)
+                proof = verified_display_duplicate(conn, album_id, resource=resource)
             except ValueError as exc:
                 raise PublicationError("duplicate album has no verified same-game dedup journal") from exc
             _require_public(conn, {proof["canonical_album_id"]})
 
 
-def _select_source_owner(conn, game, matches, origin_owners):
+def _select_source_owner(conn, game, matches, origin_owners, *, resource=None):
     """An aggregated provenance link cannot replace the original SGF owner."""
     from katrain.web.kifu.catalog_standardization import verified_display_duplicate
 
@@ -434,7 +440,7 @@ def _select_source_owner(conn, game, matches, origin_owners):
             continue
         _require(chosen is not None, "existing source path content changed")
         try:
-            proof = verified_display_duplicate(conn, chosen)
+            proof = verified_display_duplicate(conn, chosen, resource=resource)
         except ValueError as exc:
             raise PublicationError("existing source path content changed") from exc
         _require(proof and proof["canonical_album_id"] == owner, "existing source path content changed")
@@ -445,7 +451,15 @@ def _check_reused_identity_instructions(conn, game, album_id, indexes):
     instructions = game.get("identities", {})
     if not instructions:
         return
-    album = name_batch._image(conn, KifuAlbum.__table__, album_id)
+    album = (
+        conn.execute(
+            select(KifuAlbum.black_player_id, KifuAlbum.white_player_id, KifuAlbum.event_id).where(
+                KifuAlbum.id == album_id
+            )
+        )
+        .mappings()
+        .one_or_none()
+    )
     _require(album is not None, "reused identity album is missing")
     for slot in ("black", "white", "event"):
         if slot not in instructions:
@@ -457,11 +471,16 @@ def _check_reused_identity_instructions(conn, game, album_id, indexes):
         _require(album[id_field] == expected, "explicit identity instruction differs from reused album identity")
 
 
-def _coverage(conn, ids):
+def _coverage(conn, ids, *, resource=None):
     if not ids:
         return
     with Session(bind=conn) as db:
-        albums = db.query(KifuAlbum).filter(KifuAlbum.id.in_(ids)).all()
+        albums = (
+            db.query(KifuAlbum)
+            .options(defer(KifuAlbum.sgf_content, raiseload=True))
+            .filter(KifuAlbum.id.in_(ids))
+            .all()
+        )
         from katrain.web.kifu.catalog_standardization import verified_display_duplicate
 
         retained = []
@@ -470,7 +489,7 @@ def _coverage(conn, ids):
                 continue
             if album.duplicate_of_id is not None:
                 try:
-                    verified_display_duplicate(conn, album.id)
+                    verified_display_duplicate(conn, album.id, resource=resource)
                 except ValueError:
                     continue
             retained.append(album)
@@ -923,7 +942,16 @@ def _apply_decisions(
         bound_members = []
         for member in decision["source_items"]:
             game = indexed_games[(member["source_key"], member["source_item_id"])]
-            album = name_batch._image(conn, KifuAlbum.__table__, game["album_id"])
+            fields = set(CONTEXT_FIELDS) | {"id", "list_hidden_reason"}
+            album = (
+                conn.execute(
+                    select(*(getattr(KifuAlbum, field) for field in sorted(fields))).where(
+                        KifuAlbum.id == game["album_id"]
+                    )
+                )
+                .mappings()
+                .one()
+            )
             slot = member["slot"]
             expected_owner = album["event_id" if slot == "event" else f"{slot}_player_id"]
             _require(
@@ -1149,7 +1177,7 @@ def _source_records(conn, source_keys):
     return result
 
 
-def _bounded_exact_matches(conn, game, canonical, origin_owners, budget, deferred):
+def _bounded_exact_matches(conn, game, canonical, origin_owners, resource, deferred):
     """Keep SQL exact equality and conservative metadata fallback, never warm SGFs.
 
     Content equality is deliberately not described as indexed: its statement
@@ -1159,7 +1187,7 @@ def _bounded_exact_matches(conn, game, canonical, origin_owners, budget, deferre
     """
     matches, seen = set(), set()
 
-    def read(predicate, *, integrity=False):
+    def read(predicate, *, integrity=False, expected_sha=None):
         with historical_ranks._bounded_queries(conn):
             length = historical_ranks._body_length(conn, KifuAlbum.sgf_content)
             count, maximum, size = conn.execute(
@@ -1170,21 +1198,44 @@ def _bounded_exact_matches(conn, game, canonical, origin_owners, budget, deferre
             over = (
                 count > historical_ranks.MAX_BODY_ROWS
                 or maximum > historical_ranks.MAX_SGF_BYTES
-                or budget[0] + size > historical_ranks.MAX_BODY_BYTES
+                or size > historical_ranks.MAX_BODY_BYTES
             )
             if over:
                 _require(not integrity, "original source ownership SGF resource limit")
                 return False
             cohort_matches, cohort_seen = set(), set()
-            for row in conn.execute(
-                select(KifuAlbum.id, KifuAlbum.sgf_content).where(predicate, KifuAlbum.id.not_in(seen))
+            scalar_rows = [
+                dict(row)
+                for row in conn.execute(
+                    select(
+                        KifuAlbum.id,
+                        length.label("sgf_bytes"),
+                        (KifuAlbum.sgf_content == game["sgf_content"]).label("incoming_body_exact"),
+                    ).where(predicate, KifuAlbum.id.not_in(seen))
+                ).mappings()
+            ]
+            expected = {
+                row["id"]: game["sgf_sha256"] if row["incoming_body_exact"] else expected_sha for row in scalar_rows
+            }
+            missing = [
+                row
+                for row in scalar_rows
+                if resource.cached_body(row["id"]) is None and expected[row["id"]] not in resource.body_cache
+            ]
+            needed = sum(row["sgf_bytes"] for row in missing)
+            missing_count = len(missing)
+            if (
+                needed > resource.remaining_bytes
+                or len(resource.body_cache) + missing_count > historical_ranks.MAX_BODY_ROWS
             ):
-                budget[0] += len(row.sgf_content.encode())
-                _require(budget[0] <= historical_ranks.MAX_BODY_BYTES, "original source ownership SGF resource limit")
-                cohort_seen.add(row.id)
+                _require(not integrity, "original source ownership SGF resource limit")
+                return False
+            for row in scalar_rows:
+                body = historical_ranks.load_rank_body(conn, row, resource=resource, expected_sha=expected[row["id"]])
+                cohort_seen.add(row["id"])
                 try:
-                    if _canonical_sgf(row.sgf_content) == canonical:
-                        cohort_matches.add(row.id)
+                    if _canonical_sgf(body) == canonical:
+                        cohort_matches.add(row["id"])
                 except (ParseError, ValueError, TypeError, IndexError):
                     _require(not integrity, "original source ownership SGF invalid")
             seen.update(cohort_seen)
@@ -1196,16 +1247,19 @@ def _bounded_exact_matches(conn, game, canonical, origin_owners, budget, deferre
     resource_deferred = False
     metadata = game["metadata"]
     predicates = [
-        KifuAlbum.sgf_content == canonical,
-        and_(
-            KifuAlbum.player_black == metadata["player_black"],
-            KifuAlbum.player_white == metadata["player_white"],
-            KifuAlbum.date_played == metadata.get("date_played"),
+        (KifuAlbum.sgf_content == canonical, sha256(canonical.encode()).hexdigest()),
+        (
+            and_(
+                KifuAlbum.player_black == metadata["player_black"],
+                KifuAlbum.player_white == metadata["player_white"],
+                KifuAlbum.date_played == metadata.get("date_played"),
+            ),
+            None,
         ),
     ]
-    for predicate in predicates:
+    for predicate, expected_sha in predicates:
         try:
-            complete = read(predicate)
+            complete = read(predicate, expected_sha=expected_sha)
         except DBAPIError as exc:
             if getattr(exc.orig, "sqlstate", None) != "57014" and getattr(exc.orig, "pgcode", None) != "57014":
                 raise
@@ -1222,9 +1276,24 @@ def _bounded_exact_matches(conn, game, canonical, origin_owners, budget, deferre
     return owner_matches if resource_deferred else matches
 
 
-def _check_source_receipts(conn, receipts):
+def _check_source_receipts(conn, receipts, *, resource=None):
+    resource = resource or historical_ranks.EvidenceBudget()
     for source in receipts:
-        content = conn.scalar(select(KifuAlbum.sgf_content).where(KifuAlbum.id == source["album_id"]))
+        with historical_ranks._bounded_queries(conn):
+            album = (
+                conn.execute(
+                    select(
+                        KifuAlbum.id, historical_ranks._body_length(conn, KifuAlbum.sgf_content).label("sgf_bytes")
+                    ).where(KifuAlbum.id == source["album_id"])
+                )
+                .mappings()
+                .one_or_none()
+            )
+            content = (
+                historical_ranks.load_rank_body(conn, album, resource=resource, expected_sha=source["album_sgf_sha256"])
+                if album
+                else None
+            )
         _require(
             content is not None and sha256(content.encode("utf-8")).hexdigest() == source["album_sgf_sha256"],
             "published SGF differs from its source receipt",
@@ -1346,16 +1415,16 @@ def _dedup_journal(conn, batch_id):
     ]
 
 
-def _apply_catalog_repairs(conn, album_ids, *, body_budget):
+def _apply_catalog_repairs(conn, album_ids, *, resource):
     """Only incoming display dedup; existing frozen ranks use the CAS repair tool."""
     with historical_ranks._bounded_queries(conn):
         manifest = catalog_standardization.prepare_dedup_manifest(
-            conn, candidate_album_ids=album_ids, body_budget=body_budget
+            conn, candidate_album_ids=album_ids, resource=resource
         )
         digest = catalog_standardization.dedup_manifest_sha256(manifest)
         batch_id = None
         if manifest["groups"]:
-            catalog_standardization.apply_dedup_manifest(conn, manifest, expected_sha256=digest)
+            catalog_standardization.apply_dedup_manifest(conn, manifest, expected_sha256=digest, resource=resource)
             batch_id = conn.scalar(
                 select(KifuDedupBatch.id).where(KifuDedupBatch.batch_key == "reviewed-same-game:" + digest)
             )
@@ -1374,7 +1443,7 @@ def _apply_catalog_repairs(conn, album_ids, *, body_budget):
         }
 
 
-def _validate_catalog_repairs(conn, artifact, *, undone=False, check_current=True, strict=False):
+def _validate_catalog_repairs(conn, artifact, *, undone=False, check_current=True, strict=False, resource=None):
     """Validate the saved child, never select or refreeze publication candidates."""
     repairs = artifact.get("catalog_repairs")
     guard = artifact.get("undo_guard") or {}
@@ -1462,12 +1531,16 @@ def _validate_catalog_repairs(conn, artifact, *, undone=False, check_current=Tru
         )
         catalog_standardization._journal_check(conn, batch, manifest, changes=changes)
         if check_current and not undone:
+            if resource is not None:
+                for group in manifest["groups"]:
+                    for member in group["members"]:
+                        resource.remember_body(member["album"]["sgf_content"], album_id=member["album"]["id"])
             if strict:
-                catalog_standardization._check_images(conn, manifest, after=True)
+                catalog_standardization._check_images(conn, manifest, after=True, resource=resource)
             else:
                 for group in manifest["groups"]:
                     for duplicate in group["duplicate_album_ids"]:
-                        proof = catalog_standardization.verified_display_duplicate(conn, duplicate)
+                        proof = catalog_standardization.verified_display_duplicate(conn, duplicate, resource=resource)
                         _require(proof["manifest_sha256"] == digest, "publication dedup original proof changed")
     return repairs
 
@@ -1533,7 +1606,7 @@ def _check_retained_publication_receipts(conn, batch_id, journals):
             )
 
 
-def _check_retained_rank_dependencies(conn, batch_ids, journals):
+def _check_retained_rank_dependencies(conn, batch_ids, journals, *, resource=None):
     """Reject all dependencies before the first compensation write."""
     created_facts, created_snapshots = set(), set()
     for changes in journals:
@@ -1568,7 +1641,7 @@ def _check_retained_rank_dependencies(conn, batch_ids, journals):
                 # Restoring a changed row can invalidate an original just as a
                 # deletion can. Check all touched exact local bindings first.
                 removed.append({field: change["target_row_id"]})
-    historical_ranks.assert_retained_rank_basis(conn, removed, excluding_batch_ids=batch_ids)
+    historical_ranks.assert_retained_rank_basis(conn, removed, excluding_batch_ids=batch_ids, resource=resource)
     if not created_facts and not created_snapshots:
         return
     for artifact in conn.scalars(
@@ -1594,6 +1667,7 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
     later edits or dependencies reject the entire transaction. This explicit
     entry point is never called automatically after an uncertain API response.
     """
+    resource = historical_ranks.EvidenceBudget()
     tables = {
         **name_batch._UNDO_TABLES,
         KifuSource.__tablename__: KifuSource.__table__,
@@ -1647,7 +1721,9 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
                     "publication batch status changed",
                 )
                 journals.append(changes)
-            repairs = _validate_catalog_repairs(conn, artifact, undone=batch["status"] == "undone", strict=True)
+            repairs = _validate_catalog_repairs(
+                conn, artifact, undone=batch["status"] == "undone", strict=True, resource=resource
+            )
             if batch["status"] == "undone":
                 outcome = artifact.get("undo_receipt")
                 _require(
@@ -1657,8 +1733,8 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
                     "publication undo receipt changed",
                 )
                 return deepcopy(outcome)
-            _check_source_receipts(conn, artifact["sources"])
-            _check_retained_rank_dependencies(conn, batch_ids, journals)
+            _check_source_receipts(conn, artifact["sources"], resource=resource)
+            _check_retained_rank_dependencies(conn, batch_ids, journals, resource=resource)
             _check_retained_publication_receipts(conn, batch_id, journals)
             deleted_albums = {
                 change["target_row_id"]
@@ -1706,7 +1782,9 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
                                     )
                                 )
                                 removed.append({"source_link_id": link_id})
-                historical_ranks.assert_retained_rank_basis(conn, removed, excluding_batch_ids=batch_ids)
+                historical_ranks.assert_retained_rank_basis(
+                    conn, removed, excluding_batch_ids=batch_ids, resource=resource
+                )
             for changes in journals:
                 for change in changes:
                     table = tables.get(change["target_table"])
@@ -1729,7 +1807,10 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
                     )
             if repairs and repairs["dedup"]["batch_id"] is not None:
                 catalog_standardization.undo_dedup_manifest(
-                    conn, repairs["dedup"]["manifest"], expected_sha256=repairs["dedup"]["manifest_sha256"]
+                    conn,
+                    repairs["dedup"]["manifest"],
+                    expected_sha256=repairs["dedup"]["manifest_sha256"],
+                    resource=resource,
                 )
                 if deleted_albums & set(child_before):
                     _archive_compensated_dedup(conn, repairs)
@@ -1748,7 +1829,7 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
             conn.execute(
                 KifuNameBatch.__table__.update().where(KifuNameBatch.id.in_(batch_ids)).values(status="undone")
             )
-            _coverage(conn, set(guard["affected_album_ids"]))
+            _coverage(conn, set(guard["affected_album_ids"]), resource=resource)
             outcome = {
                 "batch_id": batch_id,
                 "status": "undone",
@@ -1805,7 +1886,7 @@ def _publication_guard(engine):
             connection.close()
 
 
-def _verify_initial_manifest_ranks(conn, manifest, *, results=None, indexes=None):
+def _verify_initial_manifest_ranks(conn, manifest, *, results=None, indexes=None, resource=None):
     games = [
         game
         for game in manifest["games"]
@@ -1832,14 +1913,18 @@ def _verify_initial_manifest_ranks(conn, manifest, *, results=None, indexes=None
                         indexes,
                     )
     decisions = [game["rank_snapshots"][side] for game in games for side in ("black", "white")]
-    historical_ranks.verify_initial_rank_decisions(conn, targets, decisions)
+    historical_ranks.verify_initial_rank_decisions(conn, targets, decisions, resource=resource)
 
 
-def _manifest_basis_bindings(conn, manifest, results):
+def _manifest_basis_bindings(conn, manifest, results, *, resource=None):
+    resource = resource or historical_ranks.EvidenceBudget()
     by_source = {(x["source_key"], x["source_item_id"]): x["album_id"] for x in results}
     return [
         historical_ranks.bind_rank_decision(
-            conn, {"album": {"id": by_source[game["source_key"], game["source_item_id"]]}, "side": side}, snapshot
+            conn,
+            {"album": {"id": by_source[game["source_key"], game["source_item_id"]]}, "side": side},
+            snapshot,
+            resource=resource,
         )
         for game in manifest["games"]
         for side, snapshot in game.get("rank_snapshots", {}).items()
@@ -1852,7 +1937,9 @@ def _rank_local_owners(conn, manifest, results):
     albums = {
         row["id"]: row
         for row in conn.execute(
-            select(KifuAlbum.__table__).where(KifuAlbum.id.in_([result["album_id"] for result in results]))
+            select(KifuAlbum.id, KifuAlbum.black_player_id, KifuAlbum.white_player_id).where(
+                KifuAlbum.id.in_([result["album_id"] for result in results])
+            )
         ).mappings()
     }
     players = {
@@ -1868,7 +1955,8 @@ def _rank_local_owners(conn, manifest, results):
     owners = {}
     for game in manifest["games"]:
         album = albums[by_source[game["source_key"], game["source_item_id"]]]
-        _require(album["sgf_content"] == game["sgf_content"], "rank snapshot requires exact album SGF")
+        same = conn.scalar(select(KifuAlbum.sgf_content == game["sgf_content"]).where(KifuAlbum.id == album["id"]))
+        _require(same is True, "rank snapshot requires exact album SGF")
         for side in ("black", "white"):
             owner, player_id = game["rank_snapshots"][side]["player_ref"], album[f"{side}_player_id"]
             _require(
@@ -1990,7 +2078,8 @@ def _apply_manifest_ranks(conn, manifest, results, batch_id, sequence, *, correc
     return sequence, bindings
 
 
-def _check_rank_replay(conn, manifest, results, bindings, *, identity_index=None, basis_bindings=None):
+def _check_rank_replay(conn, manifest, results, bindings, *, identity_index=None, basis_bindings=None, resource=None):
+    resource = resource or historical_ranks.EvidenceBudget()
     if manifest["format"] != FORMAT_V2:
         return
     by_source, owners = _rank_local_owners(conn, manifest, results)
@@ -2049,7 +2138,9 @@ def _check_rank_replay(conn, manifest, results, bindings, *, identity_index=None
             ]
             _require(
                 len(frozen) == 1
-                and historical_ranks.bind_rank_decision(conn, {"album": {"id": key[0]}, "side": key[1]}, snapshot)
+                and historical_ranks.bind_rank_decision(
+                    conn, {"album": {"id": key[0]}, "side": key[1]}, snapshot, resource=resource
+                )
                 == frozen[0],
                 "frozen historical rank basis binding changed",
             )
@@ -2075,7 +2166,8 @@ def _check_rank_replay(conn, manifest, results, bindings, *, identity_index=None
             )
 
 
-def _rank_correction_sources(conn, manifest, *, check_cas):
+def _rank_correction_sources(conn, manifest, *, check_cas, resource=None):
+    resource = resource or historical_ranks.EvidenceBudget()
     """Read exact prior native batches and members only; never discover a library."""
     results, sources, seen = [], [], set()
     for game in manifest["games"]:
@@ -2130,11 +2222,27 @@ def _rank_correction_sources(conn, manifest, *, check_cas):
             ),
             "rank correction original canonical identity changed",
         )
-        _check_source_receipts(conn, [source])
+        _check_source_receipts(conn, [source], resource=resource)
         album_id = source["album_id"]
         _require(album_id not in seen, "rank correction repeats local album")
         seen.add(album_id)
-        album = name_batch._image(conn, KifuAlbum.__table__, album_id)
+        album = dict(
+            conn.execute(
+                select(
+                    KifuAlbum.id,
+                    KifuAlbum.player_black,
+                    KifuAlbum.player_white,
+                    KifuAlbum.black_rank,
+                    KifuAlbum.white_rank,
+                    historical_ranks._body_length(conn, KifuAlbum.sgf_content).label("sgf_bytes"),
+                ).where(KifuAlbum.id == album_id)
+            )
+            .mappings()
+            .one()
+        )
+        album["sgf_content"] = historical_ranks.load_rank_body(
+            conn, album, resource=resource, expected_sha=source["album_sgf_sha256"]
+        )
         _require(
             album is not None and album["sgf_content"] == game["sgf_content"], "rank correction original SGF changed"
         )
@@ -2201,11 +2309,14 @@ def _rank_correction_sources(conn, manifest, *, check_cas):
         sources.append(deepcopy(source))
     _rank_local_owners(conn, manifest, results)
     _require_public(conn, seen)
-    _coverage(conn, seen)
+    _coverage(conn, seen, resource=resource)
     return results, sources
 
 
 def _publish_rank_correction(engine, manifest, manifest_hash, lock_timeout_ms):
+    resource = historical_ranks.EvidenceBudget()
+    for game in manifest["games"]:
+        resource.remember_body(game["sgf_content"])
     with name_batch._locked_write(
         engine,
         lock_timeout_ms=lock_timeout_ms,
@@ -2219,7 +2330,7 @@ def _publish_rank_correction(engine, manifest, manifest_hash, lock_timeout_ms):
             .mappings()
             .one_or_none()
         )
-        results, sources = _rank_correction_sources(conn, manifest, check_cas=previous is None)
+        results, sources = _rank_correction_sources(conn, manifest, check_cas=previous is None, resource=resource)
         rank_identity_index = (
             player_ranks.build_rank_identity_index(
                 conn,
@@ -2252,6 +2363,7 @@ def _publish_rank_correction(engine, manifest, manifest_hash, lock_timeout_ms):
                 artifact.get("rank_bindings"),
                 identity_index=rank_identity_index,
                 basis_bindings=artifact.get("basis_bindings"),
+                resource=resource,
             )
             return deepcopy(artifact["receipt"])
         _require(
@@ -2263,7 +2375,7 @@ def _publish_rank_correction(engine, manifest, manifest_hash, lock_timeout_ms):
             is None,
             "publication key already names a different manifest",
         )
-        _verify_initial_manifest_ranks(conn, manifest, results=results)
+        _verify_initial_manifest_ranks(conn, manifest, results=results, resource=resource)
         registry_id, _ = name_batch._source_registry_for_batch(
             conn, _REGISTRY, {"registry_sha256": canonical_sha256(_REGISTRY)}
         )
@@ -2298,7 +2410,7 @@ def _publish_rank_correction(engine, manifest, manifest_hash, lock_timeout_ms):
             "receipt": receipt,
             "rank_bindings": bindings,
             **(
-                {"basis_bindings": _manifest_basis_bindings(conn, manifest, results)}
+                {"basis_bindings": _manifest_basis_bindings(conn, manifest, results, resource=resource)}
                 if any(
                     is_historical_snapshot(x) for g in manifest["games"] for x in g.get("rank_snapshots", {}).values()
                 )
@@ -2351,6 +2463,9 @@ def publish_manifest(engine, manifest, *, expected_manifest_sha256, lock_timeout
 
 def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock_timeout_ms, sgf_cache):
     manifest_hash = expected_manifest_sha256
+    resource = historical_ranks.EvidenceBudget()
+    for game, _ in prepared:
+        resource.remember_body(game["sgf_content"])
     try:
         with name_batch._locked_write(
             engine,
@@ -2379,19 +2494,19 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                     and artifact.get("manifest_sha256") == manifest_hash,
                     "publication receipt is not applied",
                 )
-                _check_source_receipts(conn, artifact["sources"])
+                _check_source_receipts(conn, artifact["sources"], resource=resource)
                 games_by_source = {(game["source_key"], game["source_item_id"]): game for game, _ in prepared}
                 sources_by_key = {
                     (source["source_key"], source["source_item_id"]): source for source in artifact["sources"]
                 }
                 _require(set(games_by_source) == set(sources_by_key), "publication receipt source membership changed")
                 requested_ids = {game["album_id"] for game in artifact["receipt"]["games"]}
-                _validate_catalog_repairs(conn, artifact)
+                _validate_catalog_repairs(conn, artifact, resource=resource)
                 _require(
                     requested_ids == {source["album_id"] for source in artifact["sources"]},
                     "publication receipt album membership changed",
                 )
-                _require_source_publication(conn, requested_ids)
+                _require_source_publication(conn, requested_ids, resource=resource)
                 for key, game in games_by_source.items():
                     _check_reused_identity_instructions(conn, game, sources_by_key[key]["album_id"], identity_indexes)
                 _check_rank_replay(
@@ -2401,8 +2516,9 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                     artifact.get("rank_bindings"),
                     identity_index=identity_indexes["player"],
                     basis_bindings=artifact.get("basis_bindings"),
+                    resource=resource,
                 )
-                _coverage(conn, requested_ids)
+                _coverage(conn, requested_ids, resource=resource)
                 return deepcopy(artifact["receipt"])
             conflict = conn.scalar(
                 select(KifuNameBatch.id).where(
@@ -2427,13 +2543,13 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
             for prior in raw_players.values():
                 if prior["scope"]:
                     affected.update(row["album_id"] for row in prior["scope"]["content"]["slots"])
-            _coverage(conn, affected)
+            _coverage(conn, affected, resource=resource)
             source_records = _source_records(
                 conn, {(game["source_key"], game["source_item_id"]) for game, _ in prepared}
             )
             exact = {}
-            body_budget, lookup_deferred = [0], []
-            _verify_initial_manifest_ranks(conn, manifest, indexes=identity_indexes)
+            lookup_deferred = []
+            _verify_initial_manifest_ranks(conn, manifest, indexes=identity_indexes, resource=resource)
             registry_id, _ = name_batch._source_registry_for_batch(
                 conn, _REGISTRY, {"registry_sha256": canonical_sha256(_REGISTRY)}
             )
@@ -2453,7 +2569,7 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                 source_identity = (game["source_key"], game["source_item_id"])
                 old_source = source_records.get(source_identity)
                 if old_source:
-                    _check_source_receipts(conn, [old_source])
+                    _check_source_receipts(conn, [old_source], resource=resource)
                     _require(
                         all(old_source[key] == game[key] for key in ("raw_sha256", "sgf_sha256", "origin_path")),
                         "source ID content changed; explicit revision required",
@@ -2479,9 +2595,9 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                             conn.scalars(select(KifuAlbum.id).where(KifuAlbum.source_path == game["origin_path"]))
                         )
                     matches = set(exact.get(canonical, ())) | _bounded_exact_matches(
-                        conn, game, canonical, origin_owners, body_budget, lookup_deferred
+                        conn, game, canonical, origin_owners, resource, lookup_deferred
                     )
-                    source_owner = _select_source_owner(conn, game, matches, origin_owners)
+                    source_owner = _select_source_owner(conn, game, matches, origin_owners, resource=resource)
                     if source_owner is not None:
                         album_id, action = source_owner, "reused"
                     else:
@@ -2500,13 +2616,14 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                         )
                         metadata.update(sgf_content=game["sgf_content"], source_path=game["origin_path"])
                         album_id, after = name_batch._insert(conn, KifuAlbum, metadata)
+                        resource.remember_body(game["sgf_content"], album_id=album_id)
                         name_batch._record_change(conn, batch_id, sequence, KifuAlbum, album_id, None, after)
                         sequence += 1
                         exact.setdefault(canonical, []).append(album_id)
                         action = "inserted"
                         if metadata.get("event"):
                             new_raws.add(metadata["event"])
-                _require_source_publication(conn, {album_id})
+                _require_source_publication(conn, {album_id}, resource=resource)
                 if action == "reused":
                     _check_reused_identity_instructions(conn, game, album_id, identity_indexes)
                 source_id = conn.scalar(select(KifuSource.id).where(KifuSource.source_key == game["source_key"]))
@@ -2534,11 +2651,13 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                     )
                     name_batch._record_change(conn, batch_id, sequence, KifuAlbumSource, link_id, None, after)
                     sequence += 1
-                original = name_batch._image(conn, KifuAlbum.__table__, album_id)
+                original = (
+                    conn.execute(select(KifuAlbum.duplicate_of_id).where(KifuAlbum.id == album_id)).mappings().one()
+                )
                 if original["duplicate_of_id"] is not None:
                     from katrain.web.kifu.catalog_standardization import verified_display_duplicate
 
-                    canonical_id = verified_display_duplicate(conn, album_id)["canonical_album_id"]
+                    canonical_id = verified_display_duplicate(conn, album_id, resource=resource)["canonical_album_id"]
                     aggregate = conn.scalar(
                         select(KifuAlbumSource.id).where(
                             KifuAlbumSource.album_id == canonical_id,
@@ -2569,6 +2688,15 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                         "action": action,
                     }
                 )
+                source_scalar = {
+                    "id": album_id,
+                    "sgf_bytes": conn.scalar(
+                        select(historical_ranks._body_length(conn, KifuAlbum.sgf_content)).where(
+                            KifuAlbum.id == album_id
+                        )
+                    ),
+                }
+                source_body = historical_ranks.load_rank_body(conn, source_scalar, resource=resource)
                 receipts.append(
                     {
                         **{
@@ -2576,9 +2704,7 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                             for key in ("source_key", "source_item_id", "origin_path", "raw_sha256", "sgf_sha256")
                         },
                         "album_id": album_id,
-                        "album_sgf_sha256": sha256(
-                            conn.scalar(select(KifuAlbum.sgf_content).where(KifuAlbum.id == album_id)).encode("utf-8")
-                        ).hexdigest(),
+                        "album_sgf_sha256": sha256(source_body.encode()).hexdigest(),
                     }
                 )
             sequence, rank_bindings = _apply_manifest_ranks(
@@ -2596,11 +2722,9 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                 sequence,
             )
             name_batch_id = _renew_events(conn, captured, new_raws, after_inventory, manifest_hash)
-            repairs = _apply_catalog_repairs(
-                conn, {row["album_id"] for row in results}, body_budget=historical_ranks.MAX_BODY_BYTES - body_budget[0]
-            )
+            repairs = _apply_catalog_repairs(conn, {row["album_id"] for row in results}, resource=resource)
             affected.update(repairs["affected_album_ids"])
-            _coverage(conn, affected)
+            _coverage(conn, affected, resource=resource)
             receipt = {
                 "status": "applied",
                 "batch_id": batch_id,
@@ -2622,7 +2746,7 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                         "sources": receipts,
                         **({"rank_bindings": rank_bindings} if manifest["format"] == FORMAT_V2 else {}),
                         **(
-                            {"basis_bindings": _manifest_basis_bindings(conn, manifest, results)}
+                            {"basis_bindings": _manifest_basis_bindings(conn, manifest, results, resource=resource)}
                             if any(
                                 is_historical_snapshot(x)
                                 for g in manifest["games"]

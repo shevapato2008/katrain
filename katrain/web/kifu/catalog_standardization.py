@@ -11,7 +11,7 @@ from hashlib import sha256
 import json
 import re
 
-from sqlalchemy import delete, func, insert, or_, select, text, update
+from sqlalchemy import and_, delete, func, insert, or_, select, text, update
 from sqlalchemy.exc import DBAPIError
 
 from katrain.core.sgf_parser import SGF, ParseError
@@ -36,6 +36,7 @@ from katrain.web.kifu.historical_ranks import (
     MAX_SCALAR_BYTES,
     _body_length,
     _bounded_queries,
+    load_rank_body,
 )
 
 VERSION = "kifu-reviewed-dedup-v1"
@@ -146,13 +147,19 @@ def _check_original_source_ids(conn, member):
     )
 
 
-def _image(conn, album_id):
-    row = (
-        conn.execute(select(*(getattr(KifuAlbum, f) for f in _ALBUM_FIELDS)).where(KifuAlbum.id == album_id))
-        .mappings()
-        .one_or_none()
-    )
-    return dict(row) if row else None
+def _image(conn, album_id, *, resource=None):
+    fields = _ALBUM_FIELDS if resource is None else tuple(field for field in _ALBUM_FIELDS if field != "sgf_content")
+    columns = [getattr(KifuAlbum, field) for field in fields]
+    if resource is not None:
+        columns.append(_body_length(conn, KifuAlbum.sgf_content).label("sgf_bytes"))
+    row = conn.execute(select(*columns).where(KifuAlbum.id == album_id)).mappings().one_or_none()
+    if row is None:
+        return None
+    result = dict(row)
+    if resource is not None:
+        result["sgf_content"] = load_rank_body(conn, result, resource=resource)
+        result.pop("sgf_bytes")
+    return result
 
 
 def _identities(conn, tokens=None):
@@ -304,7 +311,7 @@ def _canonical_preference(member, source_keys):
     return (not starpoint, member["album"]["id"])
 
 
-def _finite_rows(conn, candidate_album_ids, body_budget):
+def _finite_rows(conn, candidate_album_ids, body_budget, resource):
     """Read complete exact-date/ordered-FK cohorts, refusing truncated evidence."""
     ids = set(candidate_album_ids)
     _require(
@@ -344,7 +351,7 @@ def _finite_rows(conn, candidate_album_ids, body_budget):
                         *predicate
                     )
                 ).one()
-                if count > MAX_BODY_ROWS or maximum > MAX_SGF_BYTES or used + size > body_budget:
+                if count > MAX_BODY_ROWS or maximum > MAX_SGF_BYTES or resource is None and used + size > body_budget:
                     excluded.append(
                         {
                             "album_ids": sorted(incoming_ids),
@@ -353,47 +360,97 @@ def _finite_rows(conn, candidate_album_ids, body_budget):
                         }
                     )
                     continue
+                fields = (
+                    _ALBUM_FIELDS
+                    if resource is None
+                    else tuple(field for field in _ALBUM_FIELDS if field != "sgf_content")
+                )
+                columns = [getattr(KifuAlbum, field) for field in fields]
+                if resource is not None:
+                    columns.append(length.label("sgf_bytes"))
                 selected = [
                     dict(row)
-                    for row in conn.execute(
-                        select(*(getattr(KifuAlbum, f) for f in _ALBUM_FIELDS)).where(*predicate).order_by(KifuAlbum.id)
-                    ).mappings()
+                    for row in conn.execute(select(*columns).where(*predicate).order_by(KifuAlbum.id)).mappings()
                 ]
+                if resource is not None:
+                    missing = {
+                        row["id"]: row["sgf_bytes"] for row in selected if resource.cached_body(row["id"]) is None
+                    }
+                    needed = sum(missing.values())
+                    if (
+                        len(selected) != count
+                        or needed > min(body_budget - used, resource.remaining_bytes)
+                        or len(resource.body_cache) + len(missing) > MAX_BODY_ROWS
+                    ):
+                        excluded.append({"album_ids": sorted(incoming_ids), "reason": "resource_deferred"})
+                        continue
+                    for row in selected:
+                        if row["id"] not in missing:
+                            row["sgf_content"] = load_rank_body(conn, row, resource=resource)
+                    if missing:
+                        resource.reserve(needed)
+                        bodies = dict(
+                            conn.execute(
+                                select(KifuAlbum.id, KifuAlbum.sgf_content).where(
+                                    or_(
+                                        *(
+                                            and_(KifuAlbum.id == album_id, length == amount)
+                                            for album_id, amount in missing.items()
+                                        )
+                                    )
+                                )
+                            ).all()
+                        )
+                        _require(set(bodies) == set(missing), "finite candidate body length changed")
+                        for row in selected:
+                            if row["id"] in missing:
+                                body = bodies[row["id"]]
+                                _require(len(body.encode()) == row["sgf_bytes"], "finite candidate body length changed")
+                                row["sgf_content"] = resource.remember_body(body, album_id=row["id"], reserved=True)
+                    for row in selected:
+                        row.pop("sgf_bytes")
+                    used += needed
                 # Counts/lengths precede bodies; protect callers without native table locks too.
                 actual = sum(len(row["sgf_content"].encode()) for row in selected)
                 if (
                     len(selected) != count
                     or any(len(row["sgf_content"].encode()) > MAX_SGF_BYTES for row in selected)
-                    or used + actual > body_budget
+                    or resource is None
+                    and used + actual > body_budget
                 ):
                     excluded.append({"album_ids": sorted(incoming_ids), "reason": "resource_deferred"})
                     continue
                 rows.extend(selected)
-                used += actual
+                if resource is None:
+                    used += actual
         except DBAPIError as exc:
             if getattr(exc.orig, "sqlstate", None) != "57014" and getattr(exc.orig, "pgcode", None) != "57014":
                 raise
             excluded.append({"album_ids": sorted(incoming_ids), "reason": "resource_deferred"})
-    return rows, excluded
+    return list({row["id"]: row for row in rows}.values()), excluded
 
 
-def prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None, body_budget=None):
+def prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None, body_budget=None, resource=None):
     if candidate_album_ids is not None:
         body_budget = MAX_BODY_BYTES if body_budget is None else body_budget
         _require(type(body_budget) is int and 0 <= body_budget <= MAX_BODY_BYTES, "invalid finite body budget")
         with _bounded_queries(conn):
             return _prepare_dedup_manifest(
-                conn, reviewed_pairs=reviewed_pairs, candidate_album_ids=candidate_album_ids, body_budget=body_budget
+                conn,
+                reviewed_pairs=reviewed_pairs,
+                candidate_album_ids=candidate_album_ids,
+                body_budget=body_budget,
+                resource=resource,
             )
     return _prepare_dedup_manifest(conn, reviewed_pairs=reviewed_pairs)
 
 
-def _prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None, body_budget=None):
+def _prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None, body_budget=None, resource=None):
     """Freeze eligible DB pairs; optional IDs restrict hourly evidence cohorts."""
     finite = candidate_album_ids is not None
     if finite:
         candidate_album_ids = set(candidate_album_ids)
-    rows, deferred = _finite_rows(conn, candidate_album_ids, body_budget) if finite else (None, [])
+    rows, deferred = _finite_rows(conn, candidate_album_ids, body_budget, resource) if finite else (None, [])
     tokens = None
     if finite:
         tokens = {normalize_alias(row[f"player_{side}"] or "") for row in rows for side in ("black", "white")}
@@ -681,7 +738,7 @@ def _expected_after(group):
     return result
 
 
-def _check_images(conn, manifest, *, after=False):
+def _check_images(conn, manifest, *, after=False, resource=None):
     identities = _identities(conn)
     canonical_names = dict(conn.execute(select(KifuPlayer.id, KifuPlayer.canonical_name)).all())
     source_ids = [row["id"] for row in manifest["sources"]] if "scope" in manifest else None
@@ -716,7 +773,8 @@ def _check_images(conn, manifest, *, after=False):
             _check_original_source_ids(conn, original_member)
         for album_id, member in expected.items():
             _require(
-                _image(conn, album_id) == member["album"] and _links(conn, album_id) == member["source_links"],
+                _image(conn, album_id, resource=resource) == member["album"]
+                and _links(conn, album_id) == member["source_links"],
                 f'album {album_id} {"afterimage" if after else "preimage"} changed',
             )
 
@@ -745,7 +803,7 @@ def _journal_check(conn, batch, manifest, *, group=None, changes=None):
         )
 
 
-def apply_dedup_manifest(conn, manifest, *, expected_sha256):
+def apply_dedup_manifest(conn, manifest, *, expected_sha256, resource=None):
     validate_dedup_manifest(manifest)
     digest = dedup_manifest_sha256(manifest)
     _require(digest == expected_sha256, "dedup manifest hash mismatch")
@@ -761,10 +819,10 @@ def apply_dedup_manifest(conn, manifest, *, expected_sha256):
             and previous["summary"] == {"manifest": manifest, "manifest_sha256": digest},
             "dedup immutable batch evidence changed",
         )
-        _check_images(conn, manifest, after=True)
+        _check_images(conn, manifest, after=True, resource=resource)
         _journal_check(conn, previous, manifest)
         return {"batch_key": key, "duplicates_hidden": manifest["summary"]["duplicates_to_hide"], "idempotent": True}
-    _check_images(conn, manifest)
+    _check_images(conn, manifest, resource=resource)
     # All validation completes before the first write; caller rolls back any DB error.
     batch_id = conn.execute(
         insert(KifuDedupBatch)
@@ -804,7 +862,7 @@ def apply_dedup_manifest(conn, manifest, *, expected_sha256):
     return {"batch_key": key, "duplicates_hidden": manifest["summary"]["duplicates_to_hide"], "idempotent": False}
 
 
-def undo_dedup_manifest(conn, manifest, *, expected_sha256):
+def undo_dedup_manifest(conn, manifest, *, expected_sha256, resource=None):
     validate_dedup_manifest(manifest)
     digest = dedup_manifest_sha256(manifest)
     _require(digest == expected_sha256, "dedup manifest hash mismatch")
@@ -819,10 +877,10 @@ def undo_dedup_manifest(conn, manifest, *, expected_sha256):
         "immutable dedup evidence missing",
     )
     if batch["status"] == "undone":
-        _check_images(conn, manifest)
+        _check_images(conn, manifest, resource=resource)
         return {"idempotent": True}
     _require(batch["status"] == "complete", "dedup batch is not complete")
-    _check_images(conn, manifest, after=True)
+    _check_images(conn, manifest, after=True, resource=resource)
     _journal_check(conn, batch, manifest)
     for group in manifest["groups"]:
         for member in group["members"]:
@@ -851,9 +909,9 @@ def undo_dedup_manifest(conn, manifest, *, expected_sha256):
     return {"idempotent": False}
 
 
-def verified_display_duplicate(conn, album_id):
+def verified_display_duplicate(conn, album_id, *, resource=None):
     """Return bounded public proof only after verifying immutable journal ancestry."""
-    album = _image(conn, album_id)
+    album = _image(conn, album_id, resource=resource)
     _require(album is not None, "dedup journal album missing")
     canonical_id = album["duplicate_of_id"]
     if canonical_id is None:
@@ -886,7 +944,7 @@ def verified_display_duplicate(conn, album_id):
             for original_member in group["members"]:
                 _check_original_source_ids(conn, original_member)
             for owner_id, expected in after.items():
-                current = _image(conn, owner_id)
+                current = _image(conn, owner_id, resource=resource)
                 # Later exact imports may add sources. Original journal links must remain intact.
                 _require(
                     current == expected["album"]

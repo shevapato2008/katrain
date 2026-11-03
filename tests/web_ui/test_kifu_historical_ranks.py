@@ -794,3 +794,67 @@ def test_earlier_incoming_higher_professional_grade_still_blocks_decrease(conn):
     assert decisions[1]["display_rank"] == "7p"
     with pytest.raises(ValueError, match="incoming.*professional|grade.*decrease"):
         h.verify_initial_rank_decisions(conn, [earlier, missing], decisions)
+
+
+def test_root_literals_parse_once_per_body_across_shared_operation(conn, monkeypatch):
+    from collections import Counter
+    from hashlib import sha256
+    from katrain.web.kifu import historical_ranks as h
+
+    game(conn, 1, "1960-01-01", "9p")
+    entries = [game(conn, ident, "1968-08-01", "", family="CWI") for ident in (2, 3)]
+    original_parse = h.SGF.parse_sgf
+    parsed = Counter()
+
+    def parse_once(body):
+        parsed[sha256(body.encode()).hexdigest()] += 1
+        return original_parse(body)
+
+    monkeypatch.setattr(h.SGF, "parse_sgf", parse_once)
+    resource = h.EvidenceBudget()
+    decisions = h.prepare_rank_decisions(conn, entries, matched_at=MATCHED, resource=resource)["decisions"]
+    h.verify_initial_rank_decisions(conn, entries, decisions, resource=resource)
+    for entry, decision in zip(entries, decisions):
+        h.bind_rank_decision(conn, entry, decision, resource=resource)
+    assert parsed and set(parsed.values()) == {1}
+    used = resource.used_bytes
+    # A new operation owns a new cache and charges its bodies independently.
+    fresh = h.EvidenceBudget()
+    h.bind_rank_decision(conn, entries[0], decisions[0], resource=fresh)
+    assert max(parsed.values()) == 2 and fresh.used_bytes > 0 and resource.used_bytes == used
+
+
+def test_cached_root_literals_still_validate_fresh_database_metadata(conn, monkeypatch):
+    from katrain.web.kifu import historical_ranks as h
+
+    entry = game(conn, 1, "1968-08-01", "9pro")
+    original_parse = h.SGF.parse_sgf
+    parses = []
+
+    def count(body):
+        parses.append(True)
+        return original_parse(body)
+
+    monkeypatch.setattr(h.SGF, "parse_sgf", count)
+    resource = h.EvidenceBudget()
+    decision = h.prepare_rank_decisions(conn, [entry], matched_at=MATCHED, resource=resource)["decisions"][0]
+    conn.execute(update(m.KifuAlbum).where(m.KifuAlbum.id == 1).values(black_rank="8pro"))
+    with pytest.raises(ValueError, match="root.*grade"):
+        h.bind_rank_decision(conn, entry, decision, resource=resource)
+    assert len(parses) == 1
+
+
+def test_metadata_cache_cannot_skip_body_budget_or_preserve_invalid_acceptance(conn):
+    from katrain.web.kifu import historical_ranks as h
+
+    entry = game(conn, 1, "1968-08-01", "9pro")
+    album = entry["album"]
+    with pytest.raises(ValueError, match="resource"):
+        h.validate_rank_source_metadata(album, resource=h.EvidenceBudget(max_bytes=1))
+    resource = h.EvidenceBudget()
+    invalid = {**album, "black_rank": "8pro"}
+    with pytest.raises(ValueError, match="root.*grade"):
+        h.validate_rank_source_metadata(invalid, resource=resource)
+    assert h.validate_rank_source_metadata(album, resource=resource)["raw_ranks"]["black"] == "9pro"
+    with pytest.raises(ValueError, match="root.*grade"):
+        h.validate_rank_source_metadata(invalid, resource=resource)

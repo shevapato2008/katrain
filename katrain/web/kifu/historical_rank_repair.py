@@ -136,15 +136,18 @@ def _legacy_afterimage_valid(conn, before):
     if before is None:
         return True
     b, j = m.KifuNameBatch.__table__, m.KifuNameChange.__table__
-    row = (
-        conn.execute(
-            select(
-                b.c.bundle_sha256,
-                b.c.status,
+    source_snapshot = before["snapshot"]["version"] == SOURCE_VERSION
+    columns = [b.c.bundle_sha256, b.c.status, j.c.after_image]
+    if not source_snapshot:
+        columns.extend(
+            [
                 b.c.reviewed_artifact["publication_format"].as_string().label("publication_format"),
                 b.c.reviewed_artifact["publication_key"].as_string().label("publication_key"),
-                j.c.after_image,
-            )
+            ]
+        )
+    row = (
+        conn.execute(
+            select(*columns)
             .join(j, j.c.batch_id == b.c.id)
             .where(
                 b.c.id == before["native_batch_id"],
@@ -157,7 +160,7 @@ def _legacy_afterimage_valid(conn, before):
     )
     if row is None or row["status"] != "applied" or row["after_image"] != before:
         return False
-    if before["snapshot"]["version"] == SOURCE_VERSION:
+    if source_snapshot:
         return before["publication_key"] == "source-rank:" + row["bundle_sha256"]
     return (
         row["publication_format"] == "kifu-incremental-manifest-v2"

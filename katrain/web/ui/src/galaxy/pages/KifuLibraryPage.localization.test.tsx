@@ -187,8 +187,9 @@ describe('Galaxy 棋谱库语言展示', () => {
 
   it('重复点击已选卡仍保留棋盘预览', async () => {
     render(page());
-    fireEvent.click(await screen.findByText('cn-black'));
     expect(await screen.findByTestId('board')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('cn-black'));
+    expect(screen.getByTestId('board')).toBeInTheDocument();
     fireEvent.click(screen.getByText('cn-black'));
     expect(screen.getByTestId('board')).toBeInTheDocument();
     expect(getAlbum).toHaveBeenCalledTimes(1);

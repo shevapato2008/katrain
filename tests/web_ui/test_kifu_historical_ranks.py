@@ -782,3 +782,15 @@ def test_incoming_future_inferred_or_compatible_original_does_not_change_frozen_
     h.verify_initial_rank_decisions(conn, [other, missing], decisions)
     assert decisions[1]["basis"][0]["raw_date"] == "1960-01-01"
     assert decisions[1]["content_sha256"] == original_hash
+
+
+def test_earlier_incoming_higher_professional_grade_still_blocks_decrease(conn):
+    from katrain.web.kifu import historical_ranks as h
+
+    game(conn, 1, "1960-01-01", "7p")
+    earlier = _incoming_rank_entry("1950-01-01", "9p", "earlier")
+    missing = _incoming_rank_entry("1968-02-01", "", "missing")
+    decisions = h.prepare_rank_decisions(conn, [earlier, missing], matched_at=MATCHED)["decisions"]
+    assert decisions[1]["display_rank"] == "7p"
+    with pytest.raises(ValueError, match="incoming.*professional|grade.*decrease"):
+        h.verify_initial_rank_decisions(conn, [earlier, missing], decisions)

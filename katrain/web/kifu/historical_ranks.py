@@ -1001,11 +1001,17 @@ def _verify_incoming_rank_observations(conn, targets, historical, *, resource, a
         if not owner or pid is None or not day:
             continue
         for _, frozen in historical:
-            if (
-                owner != frozen["player_ref"]
-                or ref == frozen["source_ref"]
-                or not frozen["qualification"]["latest_day"] <= day <= frozen["target_date"]
-            ):
+            if owner != frozen["player_ref"] or ref == frozen["source_ref"] or day > frozen["target_date"]:
+                continue
+            # A professional maximum spans all earlier originals, even those
+            # predating the chosen latest typed basis. Nearest-observation
+            # checks below have the narrower interval.
+            if grade and grade["rank_system"] == frozen["rank_system"] == "professional_dan":
+                require(
+                    grade["rank_value"] <= frozen["rank_value"],
+                    "rank incoming professional grade decrease changed qualification",
+                )
+            if day < frozen["qualification"]["latest_day"]:
                 continue
             require(invalid != "root_name_rank_conflict", "rank incoming original conflict changed qualification")
             if grade is None:

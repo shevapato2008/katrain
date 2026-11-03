@@ -12,14 +12,16 @@ from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime, timezone
 from hashlib import sha256
+import json
 import re
 from urllib.parse import urlparse
 
-from sqlalchemy import or_, select, text
+from sqlalchemy import Text, and_, cast, func, or_, select, text, true, update
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from katrain.core.sgf_parser import SGF
+from katrain.core.sgf_parser import ParseError, SGF
 from katrain.kifu_ingest.exclusions import assert_source_allowed
 from katrain.kifu_ingest.preparation import derive_metadata
 from katrain.kifu_ingest.ranks import (
@@ -48,9 +50,12 @@ from katrain.web.core.models_db import (
     KifuRawPlayerName,
     KifuRawPlayerValue,
     KifuSource,
+    KifuDedupBatch,
+    KifuDedupChange,
 )
 from katrain.web.kifu import name_batch, name_first_pass
 from katrain.web.kifu import player_ranks
+from katrain.web.kifu import catalog_standardization
 from katrain.web.kifu.identity import (
     _approved_names,
     _qualified_name_rows,
@@ -1103,21 +1108,118 @@ def _apply_decisions(
     return _write_name_batch(conn, candidates, records, declarations, inventory_sha, manifest_hash), sequence
 
 
-def _source_records(conn):
-    """Read committed source identities from atomic publication receipts."""
+def _source_records(conn, source_keys):
+    """Read only incoming source identities from original committed receipts."""
     result = {}
-    for artifact in conn.scalars(
-        select(KifuNameBatch.reviewed_artifact).where(
+    if conn.dialect.name == "postgresql":
+        entries = func.json_array_elements(KifuNameBatch.reviewed_artifact["sources"]).table_valued("value")
+        key, item = entries.c.value.op("->>")("source_key"), entries.c.value.op("->>")("source_item_id")
+    else:
+        entries = func.json_each(KifuNameBatch.reviewed_artifact, "$.sources").table_valued("value")
+        key, item = func.json_extract(entries.c.value, "$.source_key"), func.json_extract(
+            entries.c.value, "$.source_item_id"
+        )
+    query = (
+        select(entries.c.value)
+        .select_from(KifuNameBatch.__table__.join(entries, true()))
+        .where(
             KifuNameBatch.status == "applied",
             KifuNameBatch.reviewed_artifact["publication_format"].as_string().in_(FORMATS),
+            or_(*(and_(key == source_key, item == source_item) for source_key, source_item in source_keys)),
         )
-    ):
-        if isinstance(artifact, dict) and artifact.get("publication_format") in FORMATS:
-            for source in artifact.get("sources", ()):
-                key = (source["source_key"], source["source_item_id"])
-                _require(key not in result or result[key] == source, "conflicting committed source receipts")
-                result[key] = source
+    )
+    with historical_ranks._bounded_queries(conn):
+        sub = query.subquery()
+        count, size = conn.execute(
+            select(func.count(), func.coalesce(func.sum(func.length(cast(sub.c.value, Text))), 0)).select_from(sub)
+        ).one()
+        _require(
+            count <= historical_ranks.MAX_SCALAR_ROWS and size * 4 + count * 128 <= historical_ranks.MAX_SCALAR_BYTES,
+            "original source receipt integrity resource limit",
+        )
+        used = 0
+        for raw in conn.scalars(query):
+            source = json.loads(raw) if isinstance(raw, str) else raw
+            used += len(json.dumps(source, ensure_ascii=False).encode())
+            _require(used <= historical_ranks.MAX_SCALAR_BYTES, "original source receipt integrity resource limit")
+            source_key = (source["source_key"], source["source_item_id"])
+            _require(source_key in source_keys, "source receipt SQL membership changed")
+            _require(source_key not in result or result[source_key] == source, "conflicting committed source receipts")
+            result[source_key] = source
     return result
+
+
+def _bounded_exact_matches(conn, game, canonical, origin_owners, budget, deferred):
+    """Keep SQL exact equality and conservative metadata fallback, never warm SGFs.
+
+    Content equality is deliberately not described as indexed: its statement
+    timeout and body ceilings bound refusal, while raw names use existing indexes.
+    Original path owners must always be checked, even when a candidate cohort is
+    deferred. They cannot be skipped or reassigned because of a resource limit.
+    """
+    matches, seen = set(), set()
+
+    def read(predicate, *, integrity=False):
+        with historical_ranks._bounded_queries(conn):
+            length = historical_ranks._body_length(conn, KifuAlbum.sgf_content)
+            count, maximum, size = conn.execute(
+                select(func.count(), func.coalesce(func.max(length), 0), func.coalesce(func.sum(length), 0)).where(
+                    predicate
+                )
+            ).one()
+            over = (
+                count > historical_ranks.MAX_BODY_ROWS
+                or maximum > historical_ranks.MAX_SGF_BYTES
+                or budget[0] + size > historical_ranks.MAX_BODY_BYTES
+            )
+            if over:
+                _require(not integrity, "original source ownership SGF resource limit")
+                return False
+            cohort_matches, cohort_seen = set(), set()
+            for row in conn.execute(
+                select(KifuAlbum.id, KifuAlbum.sgf_content).where(predicate, KifuAlbum.id.not_in(seen))
+            ):
+                budget[0] += len(row.sgf_content.encode())
+                _require(budget[0] <= historical_ranks.MAX_BODY_BYTES, "original source ownership SGF resource limit")
+                cohort_seen.add(row.id)
+                try:
+                    if _canonical_sgf(row.sgf_content) == canonical:
+                        cohort_matches.add(row.id)
+                except (ParseError, ValueError, TypeError, IndexError):
+                    _require(not integrity, "original source ownership SGF invalid")
+            seen.update(cohort_seen)
+            matches.update(cohort_matches)
+            return True
+
+    read(KifuAlbum.id.in_(origin_owners), integrity=True)
+    owner_matches = set(matches)
+    resource_deferred = False
+    metadata = game["metadata"]
+    predicates = [
+        KifuAlbum.sgf_content == canonical,
+        and_(
+            KifuAlbum.player_black == metadata["player_black"],
+            KifuAlbum.player_white == metadata["player_white"],
+            KifuAlbum.date_played == metadata.get("date_played"),
+        ),
+    ]
+    for predicate in predicates:
+        try:
+            complete = read(predicate)
+        except DBAPIError as exc:
+            if getattr(exc.orig, "sqlstate", None) != "57014" and getattr(exc.orig, "pgcode", None) != "57014":
+                raise
+            complete = False
+        if not complete:
+            resource_deferred = True
+            deferred.append(
+                {
+                    "source_key": game["source_key"],
+                    "source_item_id": game["source_item_id"],
+                    "reason": "resource_deferred",
+                }
+            )
+    return owner_matches if resource_deferred else matches
 
 
 def _check_source_receipts(conn, receipts):
@@ -1232,6 +1334,172 @@ def _publication_undo_guard(conn, receipt, sources, affected):
             for batch_id in _publication_batch_ids(receipt)
         ],
     }
+
+
+def _dedup_journal(conn, batch_id):
+    columns = [column for column in KifuDedupChange.__table__.columns if column.name != "created_at"]
+    return [
+        dict(row)
+        for row in conn.execute(
+            select(*columns).where(KifuDedupChange.batch_id == batch_id).order_by(KifuDedupChange.id)
+        ).mappings()
+    ]
+
+
+def _apply_catalog_repairs(conn, album_ids, *, body_budget):
+    """Only incoming display dedup; existing frozen ranks use the CAS repair tool."""
+    with historical_ranks._bounded_queries(conn):
+        manifest = catalog_standardization.prepare_dedup_manifest(
+            conn, candidate_album_ids=album_ids, body_budget=body_budget
+        )
+        digest = catalog_standardization.dedup_manifest_sha256(manifest)
+        batch_id = None
+        if manifest["groups"]:
+            catalog_standardization.apply_dedup_manifest(conn, manifest, expected_sha256=digest)
+            batch_id = conn.scalar(
+                select(KifuDedupBatch.id).where(KifuDedupBatch.batch_key == "reviewed-same-game:" + digest)
+            )
+        affected = set(album_ids) | {
+            member["album"]["id"] for group in manifest["groups"] for member in group["members"]
+        }
+        return {
+            "version": "kifu-catalog-repairs-v1",
+            "dedup": {
+                "manifest": manifest,
+                "manifest_sha256": digest,
+                "batch_id": batch_id,
+                "journal_sha256": canonical_sha256(_dedup_journal(conn, batch_id)),
+            },
+            "affected_album_ids": sorted(affected),
+        }
+
+
+def _validate_catalog_repairs(conn, artifact, *, undone=False, check_current=True, strict=False):
+    """Validate the saved child, never select or refreeze publication candidates."""
+    repairs = artifact.get("catalog_repairs")
+    guard = artifact.get("undo_guard") or {}
+    if repairs is None:
+        _require("catalog_repairs_sha256" not in guard, "publication dedup child missing")
+        return None
+    _require(
+        isinstance(repairs, dict)
+        and set(repairs) == {"version", "dedup", "affected_album_ids"}
+        and repairs.get("version") == "kifu-catalog-repairs-v1"
+        and guard.get("catalog_repairs_sha256") == canonical_sha256(repairs),
+        "publication dedup child artifact changed",
+    )
+    child = repairs["dedup"]
+    _require(
+        isinstance(child, dict) and set(child) == {"manifest", "manifest_sha256", "batch_id", "journal_sha256"},
+        "publication dedup child contract changed",
+    )
+    manifest, digest = child["manifest"], child["manifest_sha256"]
+    catalog_standardization.validate_dedup_manifest(manifest)
+    _require(catalog_standardization.dedup_manifest_sha256(manifest) == digest, "publication dedup manifest changed")
+    originals = {row["album_id"] for row in artifact["receipt"]["games"]}
+    members = {member["album"]["id"] for group in manifest["groups"] for member in group["members"]}
+    _require(
+        manifest.get("scope") == {"candidate_album_ids": sorted(originals)}
+        and repairs["affected_album_ids"] == sorted(originals | members),
+        "publication dedup child membership changed",
+    )
+    if not manifest["groups"]:
+        _require(
+            child["batch_id"] is None and child["journal_sha256"] == canonical_sha256([]),
+            "empty publication dedup journal changed",
+        )
+        return repairs
+    _require(type(child["batch_id"]) is int and child["batch_id"] > 0, "publication dedup batch missing")
+    with historical_ranks._bounded_queries(conn):
+        batch = (
+            conn.execute(select(KifuDedupBatch.__table__).where(KifuDedupBatch.id == child["batch_id"]))
+            .mappings()
+            .one_or_none()
+        )
+        _require(
+            batch is not None
+            and batch["batch_key"] == "reviewed-same-game:" + digest
+            and batch["status"] == ("undone" if undone else "complete"),
+            "publication dedup batch changed",
+        )
+        summary = batch["summary"]
+        base = {"manifest": manifest, "manifest_sha256": digest}
+        archive = summary.get("compensated_journal") if isinstance(summary, dict) else None
+        changes = _dedup_journal(conn, child["batch_id"])
+        if archive is not None:
+            _require(
+                undone
+                and summary == {**base, "compensated_journal": archive}
+                and not changes
+                and isinstance(archive, dict)
+                and set(archive) == {"version", "manifest_sha256", "journal_sha256", "album_ids", "changes"}
+                and archive["version"] == "kifu-compensated-dedup-journal-v1"
+                and archive["manifest_sha256"] == digest
+                and archive["journal_sha256"] == child["journal_sha256"]
+                and archive["album_ids"] == sorted(members),
+                "publication compensated dedup archive changed",
+            )
+            changes = archive["changes"]
+            fields = {column.name for column in KifuDedupChange.__table__.columns if column.name != "created_at"}
+            _require(
+                isinstance(changes, list)
+                and all(
+                    isinstance(row, dict)
+                    and set(row) == fields
+                    and row["batch_id"] == child["batch_id"]
+                    and type(row["id"]) is int
+                    and row["id"] > 0
+                    for row in changes
+                )
+                and [row["id"] for row in changes] == sorted({row["id"] for row in changes}),
+                "publication compensated dedup journal members changed",
+            )
+        else:
+            _require(summary == base, "publication dedup immutable summary changed")
+        _require(
+            canonical_sha256(changes) == child["journal_sha256"],
+            "publication dedup journal changed",
+        )
+        catalog_standardization._journal_check(conn, batch, manifest, changes=changes)
+        if check_current and not undone:
+            if strict:
+                catalog_standardization._check_images(conn, manifest, after=True)
+            else:
+                for group in manifest["groups"]:
+                    for duplicate in group["duplicate_album_ids"]:
+                        proof = catalog_standardization.verified_display_duplicate(conn, duplicate)
+                        _require(proof["manifest_sha256"] == digest, "publication dedup original proof changed")
+    return repairs
+
+
+def _archive_compensated_dedup(conn, repairs):
+    """Release this new child's album FKs, retaining its original immutable audit."""
+    child = repairs["dedup"]
+    batch = (
+        conn.execute(select(KifuDedupBatch.__table__).where(KifuDedupBatch.id == child["batch_id"])).mappings().one()
+    )
+    changes = _dedup_journal(conn, child["batch_id"])
+    _require(
+        batch["status"] == "undone" and canonical_sha256(changes) == child["journal_sha256"],
+        "compensated dedup journal changed before archive",
+    )
+    archive = {
+        "version": "kifu-compensated-dedup-journal-v1",
+        "manifest_sha256": child["manifest_sha256"],
+        "journal_sha256": child["journal_sha256"],
+        "album_ids": sorted(
+            {member["album"]["id"] for group in child["manifest"]["groups"] for member in group["members"]}
+        ),
+        "changes": changes,
+    }
+    existing = batch["summary"].get("compensated_journal")
+    _require(existing is None or existing == archive, "compensated dedup archive already differs")
+    conn.execute(
+        update(KifuDedupBatch)
+        .where(KifuDedupBatch.id == child["batch_id"])
+        .values(summary={**batch["summary"], "compensated_journal": archive})
+    )
+    conn.execute(KifuDedupChange.__table__.delete().where(KifuDedupChange.batch_id == child["batch_id"]))
 
 
 def _check_retained_publication_receipts(conn, batch_id, journals):
@@ -1379,6 +1647,7 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
                     "publication batch status changed",
                 )
                 journals.append(changes)
+            repairs = _validate_catalog_repairs(conn, artifact, undone=batch["status"] == "undone", strict=True)
             if batch["status"] == "undone":
                 outcome = artifact.get("undo_receipt")
                 _require(
@@ -1391,12 +1660,65 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
             _check_source_receipts(conn, artifact["sources"])
             _check_retained_rank_dependencies(conn, batch_ids, journals)
             _check_retained_publication_receipts(conn, batch_id, journals)
+            deleted_albums = {
+                change["target_row_id"]
+                for changes in journals
+                for change in changes
+                if change["target_table"] == KifuAlbum.__tablename__ and change["before_image"] is None
+            }
+            child_batch_id = repairs["dedup"]["batch_id"] if repairs else None
+            foreign_dedup = select(KifuDedupChange.id).where(
+                or_(
+                    KifuDedupChange.album_id.in_(deleted_albums),
+                    KifuDedupChange.duplicate_of_id_before.in_(deleted_albums),
+                    KifuDedupChange.duplicate_of_id_after.in_(deleted_albums),
+                )
+            )
+            if child_batch_id is not None:
+                foreign_dedup = foreign_dedup.where(KifuDedupChange.batch_id != child_batch_id)
+            _require(
+                conn.scalar(foreign_dedup.limit(1)) is None, "retained dedup journal blocks publication compensation"
+            )
+            child_before = {}
+            if repairs:
+                child_manifest = repairs["dedup"]["manifest"]
+                child_before = {
+                    member["album"]["id"]: member["album"]
+                    for group in child_manifest["groups"]
+                    for member in group["members"]
+                }
+                removed = [
+                    {"album_id": album_id}
+                    for group in child_manifest["groups"]
+                    for album_id in group["duplicate_album_ids"]
+                ]
+                for group in child_manifest["groups"]:
+                    for member in group["members"]:
+                        album_id = member["album"]["id"]
+                        old_keys = {(link["source_id"], link["origin_path"]) for link in member["source_links"]}
+                        for link in catalog_standardization._expected_after(group)[album_id]["source_links"]:
+                            if (link["source_id"], link["origin_path"]) not in old_keys:
+                                link_id = conn.scalar(
+                                    select(KifuAlbumSource.id).where(
+                                        KifuAlbumSource.album_id == album_id,
+                                        KifuAlbumSource.source_id == link["source_id"],
+                                        KifuAlbumSource.origin_path == link["origin_path"],
+                                    )
+                                )
+                                removed.append({"source_link_id": link_id})
+                historical_ranks.assert_retained_rank_basis(conn, removed, excluding_batch_ids=batch_ids)
             for changes in journals:
                 for change in changes:
                     table = tables.get(change["target_table"])
                     _require(table is not None, "publication journal target is not allowlisted")
+                    current_image = name_batch._image(conn, table, change["target_row_id"])
+                    if table is KifuAlbum.__table__ and change["target_row_id"] in child_before and current_image:
+                        current_image = {
+                            **current_image,
+                            "duplicate_of_id": child_before[change["target_row_id"]]["duplicate_of_id"],
+                        }
                     _require(
-                        name_batch._image(conn, table, change["target_row_id"]) == change["after_image"],
+                        current_image == change["after_image"],
                         "publication after-image changed",
                     )
                     _require(
@@ -1405,6 +1727,12 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
                         ),
                         "later composed evidence changed publication dependencies",
                     )
+            if repairs and repairs["dedup"]["batch_id"] is not None:
+                catalog_standardization.undo_dedup_manifest(
+                    conn, repairs["dedup"]["manifest"], expected_sha256=repairs["dedup"]["manifest_sha256"]
+                )
+                if deleted_albums & set(child_before):
+                    _archive_compensated_dedup(conn, repairs)
             for changes in reversed(journals):
                 for change in reversed(changes):
                     table = tables[change["target_table"]]
@@ -2023,13 +2351,6 @@ def publish_manifest(engine, manifest, *, expected_manifest_sha256, lock_timeout
 
 def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock_timeout_ms, sgf_cache):
     manifest_hash = expected_manifest_sha256
-    sgf_cache = {} if sgf_cache is None else sgf_cache
-    # This is only an optimization. The applied receipt, source bytes, names,
-    # membership and public coverage are all revalidated under the write lock.
-    with engine.connect() as connection:
-        previous_id = connection.scalar(select(KifuNameBatch.id).where(KifuNameBatch.bundle_sha256 == manifest_hash))
-    if not sgf_cache and previous_id is None:
-        warm_sgf_cache(engine, sgf_cache)
     try:
         with name_batch._locked_write(
             engine,
@@ -2065,6 +2386,7 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                 }
                 _require(set(games_by_source) == set(sources_by_key), "publication receipt source membership changed")
                 requested_ids = {game["album_id"] for game in artifact["receipt"]["games"]}
+                _validate_catalog_repairs(conn, artifact)
                 _require(
                     requested_ids == {source["album_id"] for source in artifact["sources"]},
                     "publication receipt album membership changed",
@@ -2106,20 +2428,11 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                 if prior["scope"]:
                     affected.update(row["album_id"] for row in prior["scope"]["content"]["slots"])
             _coverage(conn, affected)
-            source_records = _source_records(conn)
-            exact = {}
-            wanted = {sha256(canonical.encode("utf-8")).hexdigest(): canonical for _, canonical in prepared}
-            originals = (
-                conn.execution_options(stream_results=True)
-                .execute(select(KifuAlbum.id, KifuAlbum.sgf_content))
-                .yield_per(500)
+            source_records = _source_records(
+                conn, {(game["source_key"], game["source_item_id"]) for game, _ in prepared}
             )
-            for old in originals.mappings():
-                canonical_hash = _cached_canonical_sha(old["sgf_content"], sgf_cache)
-                if canonical_hash in wanted and _canonical_sgf(old["sgf_content"]) == wanted[canonical_hash]:
-                    exact.setdefault(wanted[canonical_hash], []).append(old["id"])
-            # PostgreSQL server-side cursors are for the streaming read only.
-            conn.execution_options(stream_results=False)
+            exact = {}
+            body_budget, lookup_deferred = [0], []
             _verify_initial_manifest_ranks(conn, manifest, indexes=identity_indexes)
             registry_id, _ = name_batch._source_registry_for_batch(
                 conn, _REGISTRY, {"registry_sha256": canonical_sha256(_REGISTRY)}
@@ -2147,8 +2460,8 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                     )
                     album_id, action = old_source["album_id"], "reused"
                 else:
-                    origin_owners = set(
-                        conn.scalars(
+                    with historical_ranks._bounded_queries(conn):
+                        owner_query = (
                             select(KifuAlbumSource.album_id)
                             .join(KifuSource, KifuSource.id == KifuAlbumSource.source_id)
                             .where(
@@ -2156,11 +2469,18 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                                 KifuAlbumSource.origin_path == game["origin_path"],
                             )
                         )
+                        _require(
+                            conn.scalar(select(func.count()).select_from(owner_query.subquery()))
+                            <= historical_ranks.MAX_BODY_ROWS,
+                            "original source ownership resource limit",
+                        )
+                        origin_owners = set(conn.scalars(owner_query))
+                        origin_owners.update(
+                            conn.scalars(select(KifuAlbum.id).where(KifuAlbum.source_path == game["origin_path"]))
+                        )
+                    matches = set(exact.get(canonical, ())) | _bounded_exact_matches(
+                        conn, game, canonical, origin_owners, body_budget, lookup_deferred
                     )
-                    origin_owners.update(
-                        conn.scalars(select(KifuAlbum.id).where(KifuAlbum.source_path == game["origin_path"]))
-                    )
-                    matches = set(exact.get(canonical, ()))
                     source_owner = _select_source_owner(conn, game, matches, origin_owners)
                     if source_owner is not None:
                         album_id, action = source_owner, "reused"
@@ -2276,6 +2596,10 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                 sequence,
             )
             name_batch_id = _renew_events(conn, captured, new_raws, after_inventory, manifest_hash)
+            repairs = _apply_catalog_repairs(
+                conn, {row["album_id"] for row in results}, body_budget=historical_ranks.MAX_BODY_BYTES - body_budget[0]
+            )
+            affected.update(repairs["affected_album_ids"])
             _coverage(conn, affected)
             receipt = {
                 "status": "applied",
@@ -2307,7 +2631,12 @@ def _publish_prepared(engine, manifest, expected_manifest_sha256, prepared, lock
                             else {}
                         ),
                         "receipt": receipt,
-                        "undo_guard": _publication_undo_guard(conn, receipt, receipts, affected),
+                        "catalog_repairs": repairs,
+                        "catalog_lookup_deferred": lookup_deferred,
+                        "undo_guard": {
+                            **_publication_undo_guard(conn, receipt, receipts, affected),
+                            "catalog_repairs_sha256": canonical_sha256(repairs),
+                        },
                         "logical_manifest": {
                             **manifest,
                             "games": [

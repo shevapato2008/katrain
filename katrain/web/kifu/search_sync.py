@@ -166,6 +166,16 @@ def _batch_scope(conn, batch_id):
             ]
             if digest != journal.get("bundle_sha256") or canonical_sha256(changes) != journal.get("journal_sha256"):
                 raise SearchIndexPending({"batch_id": batch_id}, "original publication journal changed")
+        if "catalog_repairs" in artifact or "catalog_repairs_sha256" in guard:
+            from katrain.kifu_ingest.catalog import _validate_catalog_repairs
+
+            try:
+                repairs = _validate_catalog_repairs(
+                    conn, artifact, undone=batch["status"] == "undone", check_current=False
+                )
+            except (ValueError, KeyError, TypeError) as exc:
+                raise SearchIndexPending({"batch_id": batch_id}, "original publication dedup child changed") from exc
+            scope.album_ids.update(repairs["affected_album_ids"])
     else:
         original = artifact.get("bundle", artifact.get("plan"))
         if not isinstance(original, dict) or canonical_sha256(original) != batch["bundle_sha256"]:

@@ -11,7 +11,7 @@ from hashlib import sha256
 import json
 import re
 
-from sqlalchemy import delete, func, insert, select, text, update
+from sqlalchemy import delete, func, insert, or_, select, text, update
 from sqlalchemy.exc import DBAPIError
 
 from katrain.core.sgf_parser import SGF, ParseError
@@ -243,11 +243,11 @@ def _metadata_compatible(rows):
     return True
 
 
-def _source_image(conn):
-    return [
-        dict(row)
-        for row in conn.execute(select(KifuSource.id, KifuSource.source_key).order_by(KifuSource.id)).mappings()
-    ]
+def _source_image(conn, source_ids=None):
+    query = select(KifuSource.id, KifuSource.source_key)
+    if source_ids is not None:
+        query = query.where(KifuSource.id.in_(source_ids))
+    return [dict(row) for row in conn.execute(query.order_by(KifuSource.id)).mappings()]
 
 
 def _reviewed_yoda(rows, canonical_names):
@@ -304,7 +304,7 @@ def _canonical_preference(member, source_keys):
     return (not starpoint, member["album"]["id"])
 
 
-def _finite_rows(conn, candidate_album_ids):
+def _finite_rows(conn, candidate_album_ids, body_budget):
     """Read complete exact-date/ordered-FK cohorts, refusing truncated evidence."""
     ids = set(candidate_album_ids)
     _require(
@@ -333,8 +333,8 @@ def _finite_rows(conn, candidate_album_ids):
     for (day, black, white), incoming_ids in sorted(cohorts.items()):
         predicate = (
             KifuAlbum.date_played == day,
-            KifuAlbum.black_player_id == black,
-            KifuAlbum.white_player_id == white,
+            or_(KifuAlbum.black_player_id == black, KifuAlbum.black_player_id.is_(None)),
+            or_(KifuAlbum.white_player_id == white, KifuAlbum.white_player_id.is_(None)),
         )
         try:
             with _bounded_queries(conn):
@@ -344,7 +344,7 @@ def _finite_rows(conn, candidate_album_ids):
                         *predicate
                     )
                 ).one()
-                if count > MAX_BODY_ROWS or maximum > MAX_SGF_BYTES or used + size > MAX_BODY_BYTES:
+                if count > MAX_BODY_ROWS or maximum > MAX_SGF_BYTES or used + size > body_budget:
                     excluded.append(
                         {
                             "album_ids": sorted(incoming_ids),
@@ -364,7 +364,7 @@ def _finite_rows(conn, candidate_album_ids):
                 if (
                     len(selected) != count
                     or any(len(row["sgf_content"].encode()) > MAX_SGF_BYTES for row in selected)
-                    or used + actual > MAX_BODY_BYTES
+                    or used + actual > body_budget
                 ):
                     excluded.append({"album_ids": sorted(incoming_ids), "reason": "resource_deferred"})
                     continue
@@ -377,19 +377,23 @@ def _finite_rows(conn, candidate_album_ids):
     return rows, excluded
 
 
-def prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None):
+def prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None, body_budget=None):
     if candidate_album_ids is not None:
+        body_budget = MAX_BODY_BYTES if body_budget is None else body_budget
+        _require(type(body_budget) is int and 0 <= body_budget <= MAX_BODY_BYTES, "invalid finite body budget")
         with _bounded_queries(conn):
-            return _prepare_dedup_manifest(conn, reviewed_pairs=reviewed_pairs, candidate_album_ids=candidate_album_ids)
+            return _prepare_dedup_manifest(
+                conn, reviewed_pairs=reviewed_pairs, candidate_album_ids=candidate_album_ids, body_budget=body_budget
+            )
     return _prepare_dedup_manifest(conn, reviewed_pairs=reviewed_pairs)
 
 
-def _prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None):
+def _prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None, body_budget=None):
     """Freeze eligible DB pairs; optional IDs restrict hourly evidence cohorts."""
     finite = candidate_album_ids is not None
     if finite:
         candidate_album_ids = set(candidate_album_ids)
-    rows, deferred = _finite_rows(conn, candidate_album_ids) if finite else (None, [])
+    rows, deferred = _finite_rows(conn, candidate_album_ids, body_budget) if finite else (None, [])
     tokens = None
     if finite:
         tokens = {normalize_alias(row[f"player_{side}"] or "") for row in rows for side in ("black", "white")}
@@ -410,8 +414,6 @@ def _prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None
             KifuPlayer.id.in_({row[f"{side}_player_id"] for row in rows for side in ("black", "white")})
         )
     canonical_names = dict(conn.execute(names_query).all())
-    sources = _source_image(conn)
-    source_keys = {s["id"]: s["source_key"] for s in sources}
     source_links = defaultdict(list)
     source_rows = defaultdict(list)
     links_query = select(
@@ -437,6 +439,10 @@ def _prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None
     ).mappings():
         source_links[row["album_id"]].append({f: row[f] for f in _LINK_FIELDS})
         source_rows[row["album_id"]].append(dict(row))
+    sources = _source_image(
+        conn, {link["source_id"] for links in source_links.values() for link in links} if finite else None
+    )
+    source_keys = {s["id"]: s["source_key"] for s in sources}
     _require(not reviewed_pairs, "caller review flags cannot grant identity authority")
     collisions, rows_by_id, exclusions, counters = defaultdict(list), {}, deferred, Counter()
     if finite:
@@ -508,6 +514,12 @@ def _prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None
                     {"album": rows_by_id[album_id], "source_links": source_links[album_id]}, source_keys
                 ),
             )
+            if finite and conn.scalar(
+                select(func.count())
+                .select_from(KifuAlbum)
+                .where(KifuAlbum.duplicate_of_id.in_(set(members) - {canonical}))
+            ):
+                continue
             groups.append(
                 {
                     "canonical_album_id": canonical,
@@ -542,7 +554,16 @@ def _prepare_dedup_manifest(conn, *, reviewed_pairs=(), candidate_album_ids=None
         duplicates_to_hide=sum(len(g["duplicate_album_ids"]) for g in groups),
         excluded_candidate_groups=len(exclusions),
     )
-    return {"version": VERSION, "sources": sources, "groups": groups, "excluded": exclusions, "summary": dict(counters)}
+    result = {
+        "version": VERSION,
+        "sources": sources,
+        "groups": groups,
+        "excluded": exclusions,
+        "summary": dict(counters),
+    }
+    if finite:
+        result["scope"] = {"candidate_album_ids": sorted(candidate_album_ids)}
+    return result
 
 
 def dedup_manifest_sha256(manifest):
@@ -551,11 +572,24 @@ def dedup_manifest_sha256(manifest):
 
 def validate_dedup_manifest(manifest):
     _require(isinstance(manifest, dict) and manifest.get("version") == VERSION, "invalid dedup manifest version")
+    if "scope" in manifest:
+        scope = manifest["scope"]
+        _require(isinstance(scope, dict) and set(scope) == {"candidate_album_ids"}, "invalid finite dedup scope")
+        ids = scope["candidate_album_ids"]
+        _require(
+            isinstance(ids, list)
+            and len(ids) <= MAX_INCOMING_GAMES
+            and all(type(i) is int and i > 0 for i in ids)
+            and ids == sorted(set(ids)),
+            "invalid finite dedup incoming IDs",
+        )
     used = set()
     for group in manifest["groups"]:
         members = group["members"]
         ids = {m["album"]["id"] for m in members}
         canonical = group["canonical_album_id"]
+        if "scope" in manifest:
+            _require(set(manifest["scope"]["candidate_album_ids"]) & ids, "finite dedup group outside incoming scope")
         _require(
             len(members) == len(ids) == 2
             and canonical in ids
@@ -650,8 +684,18 @@ def _expected_after(group):
 def _check_images(conn, manifest, *, after=False):
     identities = _identities(conn)
     canonical_names = dict(conn.execute(select(KifuPlayer.id, KifuPlayer.canonical_name)).all())
-    _require(_source_image(conn) == manifest["sources"], "source registry preimage changed")
+    source_ids = [row["id"] for row in manifest["sources"]] if "scope" in manifest else None
+    _require(_source_image(conn, source_ids) == manifest["sources"], "source registry preimage changed")
     for group in manifest["groups"]:
+        if "scope" in manifest:
+            _require(
+                not conn.scalar(
+                    select(func.count())
+                    .select_from(KifuAlbum)
+                    .where(KifuAlbum.duplicate_of_id.in_(group["duplicate_album_ids"]))
+                ),
+                "existing duplicate dependents prevent canonical chain",
+            )
         rows = [m["album"] for m in group["members"]]
         _require(all(_sgf_identity_bound(row, identities) for row in rows), "raw SGF ordered identity binding changed")
         reviewed = _reviewed_yoda(rows, canonical_names)
@@ -677,14 +721,17 @@ def _check_images(conn, manifest, *, after=False):
             )
 
 
-def _journal_check(conn, batch, manifest, *, group=None):
+def _journal_check(conn, batch, manifest, *, group=None, changes=None):
     groups = [group] if group else manifest["groups"]
     expected = {m["album"]["id"]: (m, _expected_after(g)[m["album"]["id"]]) for g in groups for m in g["members"]}
     query = select(KifuDedupChange.__table__).where(KifuDedupChange.batch_id == batch["id"])
     if group:
         query = query.where(KifuDedupChange.album_id.in_(expected))
-    changes = list(conn.execute(query).mappings())
-    _require(len(changes) == len(expected), "dedup journal membership changed")
+    changes = list(conn.execute(query).mappings()) if changes is None else changes
+    _require(
+        len(changes) == len(expected) and {row["album_id"] for row in changes} == set(expected),
+        "dedup journal membership changed",
+    )
     for change in changes:
         _require(change["album_id"] in expected, "dedup journal owner changed")
         before, after = expected[change["album_id"]]

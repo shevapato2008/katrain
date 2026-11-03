@@ -425,6 +425,7 @@ async def test_supersession_hourly_uses_real_window_scope_and_preserves_original
 ):
     from katrain.web.kifu import search_sync
     from katrain.web.core import models_db as models
+    from tests.web_ui.test_kifu_historical_rank_native import seed_professional_black_identity
 
     h = superseded_hourly
     if expired:
@@ -435,6 +436,11 @@ async def test_supersession_hourly_uses_real_window_scope_and_preserves_original
         }
     manifest, receipt, part, _ = await asyncio.to_thread(h.pins.prepare)
     assert len(manifest["games"]) == 5 and len(part["changes"]) == 10
+    assert {game["rank_snapshots"]["black"]["rank_system"] for game in manifest["games"]} == {"professional_dan"}
+    assert {change["snapshot_after"]["rank_system"] for change in part["changes"]} == {"dan_unspecified"}
+    if not expired:
+        # PROD independently approves the same identity capture before its first native publication.
+        seed_professional_black_identity(h.pins.prod_db)
     journal_superseded_package(h, manifest, receipt)
     original = deepcopy((manifest, receipt, h.pins.original_report))
     before_test = h.authority_state(h.database)

@@ -72,14 +72,18 @@
 
 ### Task 7: Four-step integration and selective deployment
 
-- [ ] Fetch latest develop again; merge into feature, resolve conflicts, verify combined relevant checks/build, commit and push feature.
-- [ ] Merge feature into develop and push. Work with the existing develop worktree safely or an isolated integration ref if dirty; never overwrite unrelated work.
-- [ ] Update `smartbox-software/vendor/katrain` to published develop commit, preserve unrelated parent changes, commit/push main.
-- [ ] Use current `server-deploy` skill and fresh runtime/config snapshots. Deploy only Web/static and compiled catalogs needed here, first TEST `home-ubuntu`, then new PROD `ucloud-v100` (`117.50.177.254`). Never retired PROD `117.50.183.169`; do not restart Cron/GPU/DB/MinIO for copy work.
-- [ ] Preserve all current runtime configuration, especially paused membership, disabled payments, billing enforcement, Free0 and Max gate. No schema migration, merchant credentials or real charge.
-- [ ] Verify actual source/static/catalog version, all11 `/api/translations` responses, service health, representative authenticated Galaxy/Kiosk pages and unchanged unrelated containers. Report physical box state separately; publishing Kiosk assets/parent pointer is not a physical-device update.
-- [ ] Write release receipt with feature/develop/parent commits, actual deployed image/software identity, review/test results, URLs and a short next-day acceptance checklist. Clean up only task-owned temporary processes/tunnels.
+- [x] Fetch latest develop again; merge into feature, resolve conflicts, verify combined relevant checks/build, commit and push feature.
+- [x] Merge feature into develop and push. Work with the existing develop worktree safely or an isolated integration ref if dirty; never overwrite unrelated work.
+- [x] Update `smartbox-software/vendor/katrain` to published develop commit, preserve unrelated parent changes, commit/push main.
+- [x] Use current `server-deploy` skill and fresh runtime/config snapshots. Deploy only Web/static and compiled catalogs needed here, first TEST `home-ubuntu`, then new PROD `ucloud-v100` (`117.50.177.254`). Never retired PROD `117.50.183.169`; do not restart Cron/GPU/DB/MinIO for copy work.
+- [x] Preserve all current runtime configuration, especially paused membership, disabled payments, billing enforcement, Free0 and Max gate. No schema migration, merchant credentials or real charge.
+- [x] Verify actual source/static/catalog version, all11 `/api/translations` responses, service health, representative authenticated Galaxy/Kiosk pages and unchanged unrelated containers. Report physical box state separately; publishing Kiosk assets/parent pointer is not a physical-device update.
+- [x] Write release receipt with feature/develop/parent commits, actual deployed image/software identity, review/test results, URLs and a short next-day acceptance checklist. Clean up only task-owned temporary processes/tunnels.
 
 ## Progress communication
 
 Report stage start/completion and at least every30 minutes: current step, completed work, blockers and remaining estimate. Continue work autonomously; user will review tomorrow. Routine commentary stays concise during ongoing tools.
+
+## Completion
+
+Completed 2026-11-04: [actual release receipt](../../operations/membership-i18n-release-2026-11-04.md). Software `959800a4679447b871c7ad6ef89d062e93cd15bb` is live on TEST and new PROD; documentation-only follow-up does not change that software identity.

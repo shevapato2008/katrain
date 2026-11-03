@@ -36,4 +36,17 @@ The repair tool now bisects only a group that raises a validation error. A faili
 
 Resource-deferred decisions do not raise and therefore never trigger subdivision. A valid subgroup can exceed a combined scalar limit even when its individual owners would each fit. Such a subgroup remains explicitly deferred; the tool does not retry smaller pieces to obtain a more permissive decision. This can conservatively reduce the qualified scope relative to the former single-slot fallback and must remain visible in census/refusal review.
 
-Regressions compare all decisions and refusals for 100 targets with two invalid owners against the original single-target public resolver reference, while requiring at most 24 cohort calls. A separate combined-resource case proves that two newly deferred targets are not reported as repaired, that the invalid leaf remains refused, and that the remaining frozen decision passes the unchanged first-apply CAS path. Post-commit real-data comparison is controller-owned read-only evidence; no production application is authorized by this addendum.
+Regressions compare all decisions and refusals for 100 targets with two invalid owners against the original single-target public resolver reference, while requiring at most 24 cohort calls. A separate combined-resource case proves that two newly deferred targets are not reported as repaired, that the invalid leaf remains refused, and that the remaining frozen decision passes the unchanged first-apply CAS path. The two repair suites passed **63 tests, with 2 disposable-PostgreSQL opt-in skips**.
+
+After commit `6e7fd527ede926e894c81f40a6bb289ceee2826b`, an authorized independent HOME process compared the deployed baseline and a private copy of the candidate against the **same REPEATABLE READ / READ ONLY snapshot** for IDs 4501–4600. Both public calls performed the complete 176,949-album census and returned exactly the same 23 historical-prior snapshots, including their hashes, refusal counts and census. Nothing was applied.
+
+| Real public comparison | Baseline | Candidate |
+| --- | ---: | ---: |
+| Prepare calls | 201 | 29 |
+| Cohort calls | 198 | 13 |
+| Cumulative observation rows | 54,763 | 43,185 |
+| Target preparation, seconds | 9.800 | 6.015 |
+| Entire public call including full census, seconds | 30.263 | 26.914 |
+| SQL calls | 9,667 | 7,071 |
+
+Grouped owner/date bounds make each remaining cohort larger, so fewer calls do not imply a proportional wall-time reduction. The measured target phase improved 1.63×; the scoped public call, dominated by the same full census, improved 1.12×. These results do not establish a whole-corpus ETA. Numeric evidence is retained privately at `output/kifu-rank-hourly-20261103/repair-fallback-profile-6e7fd527e.json`; the candidate code SHA was `e377bc2d47179f7a088d5035b0fb74938cf0a887548df97c864e8458c5656866`. No production application is authorized by this addendum.

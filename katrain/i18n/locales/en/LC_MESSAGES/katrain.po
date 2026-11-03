@@ -7395,3 +7395,1128 @@ msgstr "After exiting, you can reopen this record from the game records page."
 
 msgid "baipu:exit_anyway"
 msgstr "Exit anyway"
+
+msgid "membership:account_checking"
+msgstr "Checking your account"
+
+msgid "membership:account_entry"
+msgstr "Usage, API points and membership benefits"
+
+msgid "membership:account_identity_help"
+msgstr ""
+"Once your account identity is confirmed, your membership benefits, Free "
+"eligibility and API points balance will appear."
+
+msgid "membership:account_retry"
+msgstr "Retry account verification"
+
+msgid "membership:account_unconfirmed"
+msgstr "Account status is not yet confirmed"
+
+msgid "membership:advanced"
+msgstr "Advanced"
+
+msgid "membership:advanced_depth_ratio"
+msgstr "Advanced reports use about {ratio} times as much."
+
+msgid "membership:advanced_depth_rule"
+msgstr ""
+"Advanced report usage depends on the analysis depth set by the server."
+
+msgid "membership:advanced_position_cost"
+msgstr "Advanced: about {points} API points per move"
+
+msgid "membership:analysis_depth"
+msgstr "Analysis depth"
+
+msgid "membership:api_balance"
+msgstr "API points balance"
+
+msgid "membership:api_on_demand"
+msgstr "On-demand API analysis"
+
+msgid "membership:api_prices"
+msgstr "API analysis pricing"
+
+msgid "membership:api_topup"
+msgstr "Top up API points"
+
+msgid "membership:auth_after_login"
+msgstr "Sign in to use"
+
+msgid "membership:auth_box_login"
+msgstr "Sign in on the StellaBox home screen"
+
+msgid "membership:auth_box_note"
+msgstr ""
+"Sign in on the StellaBox home screen, then return to this module through the"
+" Go entry."
+
+msgid "membership:auth_checking_action"
+msgstr "Confirming"
+
+msgid "membership:auth_checking_description"
+msgstr ""
+"Please wait. You will continue automatically once confirmation is complete."
+
+msgid "membership:auth_checking_note"
+msgstr "Account content is not read during confirmation."
+
+msgid "membership:auth_checking_title"
+msgstr "Checking sign-in status"
+
+msgid "membership:auth_description"
+msgstr "Sign in to view membership usage, API points and orders."
+
+msgid "membership:auth_expired_description"
+msgstr ""
+"Your sign-in session has expired. Access to personal content in membership "
+"and usage has been paused. Sign in to continue."
+
+msgid "membership:auth_expired_title"
+msgstr "Sign in again"
+
+msgid "membership:auth_label"
+msgstr "Membership and usage"
+
+msgid "membership:auth_login_continue"
+msgstr "Sign in and continue"
+
+msgid "membership:auth_login_title"
+msgstr "Sign in to view membership and usage"
+
+msgid "membership:auth_return_note"
+msgstr ""
+"After signing in, you will return to this page without having to find it "
+"again."
+
+msgid "membership:auth_unavailable_description"
+msgstr ""
+"The network or service is temporarily unavailable. Please retry. Your sign-"
+"in credentials are retained."
+
+msgid "membership:auth_unavailable_note"
+msgstr "You do not need to sign out. Retry once the connection is restored."
+
+msgid "membership:auth_unavailable_title"
+msgstr "Sign-in status cannot be confirmed right now"
+
+msgid "membership:back_to_play"
+msgstr "Back to play"
+
+msgid "membership:billing_rules"
+msgstr "Membership and API billing rules"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"Membership allowance is used first. If either remaining allowance cannot "
+"cover this analysis, the entire request uses your existing API points, "
+"without splitting the charge between sources. If you lack points, top up or "
+"wait for your allowance to reset. Points are never purchased automatically, "
+"and no CNY payment is taken automatically."
+
+msgid "membership:cancel"
+msgstr "Cancel"
+
+msgid "membership:checkout_renewal_rule"
+msgstr ""
+"This purchase starts after your existing membership expires and does not "
+"reset your current allowance. The server receipt after payment confirms the "
+"effective dates."
+
+msgid "membership:choose_topup"
+msgstr "Choose a top-up amount"
+
+msgid "membership:close"
+msgstr "Close"
+
+msgid "membership:compare_membership_api"
+msgstr "Compare membership and API"
+
+msgid "membership:compare_plans"
+msgstr "Compare membership plans"
+
+msgid "membership:compute"
+msgstr "Compute usage"
+
+msgid "membership:confirm_consumption"
+msgstr "Confirm and start"
+
+msgid "membership:confirm_position"
+msgstr "Confirm analysis of this position"
+
+msgid "membership:confirm_purchase"
+msgstr "Confirm purchase"
+
+msgid "membership:confirm_report"
+msgstr "Confirm report generation"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "Use API points, up to {points}"
+
+msgid "membership:confirming"
+msgstr "Confirming"
+
+msgid "membership:consumption_policy"
+msgstr ""
+"Membership first; if insufficient, the entire request uses API points, up to"
+" {points}."
+
+msgid "membership:countdown_days"
+msgstr "{days}d {hours}h {minutes}m"
+
+msgid "membership:countdown_hours"
+msgstr "{hours}h {minutes}m"
+
+msgid "membership:create_order"
+msgstr "Create order"
+
+msgid "membership:create_report"
+msgstr "Create game review report"
+
+msgid "membership:creating_order"
+msgstr "Creating…"
+
+msgid "membership:current_plan"
+msgstr "Current membership"
+
+msgid "membership:date_pending"
+msgstr "To be confirmed"
+
+msgid "membership:done"
+msgstr "Done"
+
+msgid "membership:entitlement_pending"
+msgstr "Account benefits awaiting confirmation"
+
+msgid "membership:error_analysis_login_required"
+msgstr "Sign in before using analysis."
+
+msgid "membership:error_insufficient"
+msgstr ""
+"Your membership allowance and API points are insufficient. See the "
+"membership page."
+
+msgid "membership:error_operation_running"
+msgstr "Analysis is still running. Check again shortly."
+
+msgid "membership:error_position_failed"
+msgstr "Analysis did not complete. Please retry."
+
+msgid "membership:error_position_refunded"
+msgstr ""
+"Analysis did not complete. This usage has been refunded. Please retry."
+
+msgid "membership:error_position_unavailable"
+msgstr "Single-position analysis is not available on this service."
+
+msgid "membership:error_quote_expired"
+msgstr ""
+"The quote has expired or does not match this request. Confirm the latest "
+"quote and retry."
+
+msgid "membership:error_quote_failed"
+msgstr "Could not get a quote. Please retry."
+
+msgid "membership:error_report_failed"
+msgstr "Could not create the report. Please retry."
+
+msgid "membership:error_report_login_required"
+msgstr "Sign in before creating a report."
+
+msgid "membership:error_report_missing"
+msgstr "Report not found. Refresh and retry."
+
+msgid "membership:error_result_expired"
+msgstr ""
+"This analysis result has expired or is temporarily unavailable. Run the "
+"analysis again."
+
+msgid "membership:error_service_busy"
+msgstr "The service is busy. Please retry shortly."
+
+msgid "membership:error_service_paused"
+msgstr "Analysis is paused. Please retry shortly."
+
+msgid "membership:error_service_unavailable"
+msgstr "Analysis is temporarily unavailable. Please retry shortly."
+
+msgid "membership:error_verification_required"
+msgstr "Complete sign-in verification before retrying."
+
+msgid "membership:example_depth"
+msgstr "Example analysis depth"
+
+msgid "membership:free_eligibility_rule"
+msgstr ""
+"Separate eligibility for {count} standard reports per calendar week. "
+"Identity verification requirements apply. This is not a general analysis "
+"allowance."
+
+msgid "membership:free_pending"
+msgstr "Free eligibility awaiting confirmation"
+
+msgid "membership:free_remaining"
+msgstr "{count} remaining this week"
+
+msgid "membership:free_reset_countdown"
+msgstr "Resets in {time} · {date} (Beijing time)"
+
+msgid "membership:free_unavailable"
+msgstr "Free eligibility is currently unavailable"
+
+msgid "membership:free_unavailable_rule"
+msgstr ""
+"Free standard reports require a trusted, verified identity. No claimable "
+"count is currently available. Paid membership does not add Free report "
+"eligibility."
+
+msgid "membership:free_weekly_eligibility"
+msgstr "Separate weekly standard report eligibility"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · This week's standard reports"
+
+msgid "membership:fulfillment_pending"
+msgstr "Benefit confirmation is pending. Refresh usage to check."
+
+msgid "membership:full_use_days"
+msgstr "Assumes full use of the {days}-day allowance"
+
+msgid "membership:full_use_savings_rule"
+msgstr ""
+"Savings assume full use of this period's allowance; actual savings vary with"
+" usage. Renewal starts after your existing membership expires."
+
+msgid "membership:galaxy_api_help"
+msgstr ""
+"API requires no subscription. CNY 1 = 1 API point. Confirm the server quote "
+"before analysis starts."
+
+msgid "membership:galaxy_choose_membership"
+msgstr "Choose a membership for your usage"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr ""
+"For equivalent standard analysis usage, assuming full use of this period's "
+"allowance."
+
+msgid "membership:galaxy_intro"
+msgstr "Check your analysis usage and choose API top-ups or membership."
+
+msgid "membership:galaxy_membership_savings"
+msgstr "Frequent analysis can cost less with membership"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "For occasional analysis, top up as needed"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount} / {days} days"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · {days}-day membership"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr ""
+"Estimated for 300-move games, including the initial position, and limited by"
+" the remaining allowance for this period."
+
+msgid "membership:galaxy_report_example_title"
+msgstr "How much does a 300-move game cost?"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr ""
+"The weekly allowance resets every Monday at 00:00 Beijing time. Any "
+"remaining period allowance expires at the end of the period."
+
+msgid "membership:galaxy_tabs"
+msgstr "Membership page"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr ""
+"Expires {date} (Beijing time). Monday's reset does not increase the period "
+"allowance."
+
+msgid "membership:galaxy_title"
+msgstr "Membership and usage"
+
+msgid "membership:history_unavailable"
+msgstr "Order history is temporarily unavailable"
+
+msgid "membership:kiosk_account_actions"
+msgstr "Account actions"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "Account, membership and top-ups"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "Advanced analysis"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr "Advanced: {points} API points; both include the initial position"
+
+msgid "membership:kiosk_api_balance"
+msgstr "API balance"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "API top-ups · Pay for what you use"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "Top up API points"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "Use API points when membership allowance is insufficient"
+
+msgid "membership:kiosk_back"
+msgstr "Back"
+
+msgid "membership:kiosk_back_settings"
+msgstr "Back to settings"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "Shown after account benefits are confirmed"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "Check the order amount before paying"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "Choose {plan}"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "Synced with the cloud"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "Compare plans"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "Confirm your account first"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "Confirm source and quote before analysis"
+
+msgid "membership:kiosk_creating_order"
+msgstr "Creating order…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "Credit: {points} API points"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "Current API balance"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "Current benefits"
+
+msgid "membership:kiosk_current_plan"
+msgstr "Current membership"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "Estimated {start} to {end} · Beijing time"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount} = {points} API points"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "Free report eligibility is verified in the cloud"
+
+msgid "membership:kiosk_free_pending"
+msgstr "Free report eligibility awaiting verification"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "Standard report eligibility only; no general analysis allowance"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "{remaining} / {limit} reports remaining"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr ""
+"Verify your account first. This week's eligibility will appear after "
+"verification."
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "Frequent use can cost less with membership"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "Costs less than API when the allowance is fully used"
+
+msgid "membership:kiosk_history_error"
+msgstr "Order history has not synced yet. Please retry shortly."
+
+msgid "membership:kiosk_member_first"
+msgstr "Membership allowance is used first for analysis"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "Membership first; API points if insufficient"
+
+msgid "membership:kiosk_membership_extension"
+msgstr ""
+"If you already have membership, this purchase starts after your purchased "
+"periods end. Current usage is preserved. The final dates are confirmed by "
+"the payment receipt."
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "Buy membership"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr "Valid {start} to {end} · Beijing time · This receipt is authoritative"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "Membership is temporarily unavailable"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr ""
+"In the test environment, the server simulates payment results. This page "
+"does not initiate payment or grant benefits itself."
+
+msgid "membership:kiosk_next_plan"
+msgstr "Next: {plan} · Starts {date} · Beijing time"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr "Confirm source and quote before analysis. No automatic top-ups."
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr ""
+"This page does not grant benefits itself. Go back to choose again if needed."
+
+msgid "membership:kiosk_no_orders"
+msgstr "No order history yet"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "Standard analysis"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "{moves}-move report · Standard: {points} API points"
+
+msgid "membership:kiosk_not_available"
+msgstr "Not yet available"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "Order confirmation"
+
+msgid "membership:kiosk_order_expired"
+msgstr "Order expired"
+
+msgid "membership:kiosk_order_failed"
+msgstr "Order not completed"
+
+msgid "membership:kiosk_order_history"
+msgstr "Order history"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "Order {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "Order refunded"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "Payment confirmed by server"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr ""
+"Order status has not synced yet. Retrying; do not place another order."
+
+msgid "membership:kiosk_order_uncertain"
+msgstr ""
+"The order outcome is unconfirmed. Check order history before creating "
+"another order to avoid duplicates."
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "Order awaiting confirmation"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "Order valid until {date} · Beijing time"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "Waiting for server payment confirmation"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr ""
+"You can view owned results repeatedly. Territory and move suggestions are "
+"included in the same result."
+
+msgid "membership:kiosk_paid_time"
+msgstr "Confirmed {date} · Beijing time"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr "Payment is not connected yet. Check order status later."
+
+msgid "membership:kiosk_pending_no_order"
+msgstr ""
+"Until confirmation, remaining percentages are hidden and no orders are "
+"created."
+
+msgid "membership:kiosk_period_pending"
+msgstr "Period awaiting verification"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "Period allowance awaiting verification"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "Prices and benefits appear after the catalog is confirmed."
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "Membership catalog awaiting sync"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan}: {reports} games"
+
+msgid "membership:kiosk_plan_term"
+msgstr "/ {days} days"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "Valid until {date} · Beijing time"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} API points"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "{points} API points / move"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr ""
+"Both the period and weekly membership allowances must cover this analysis. "
+"Otherwise, the entire request uses API points, without splitting the charge."
+" No automatic CNY top-ups."
+
+msgid "membership:kiosk_pricing_help"
+msgstr "API pricing explained"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr ""
+"An N-move report includes the initial position, for N+1 positions in total. "
+"The actual charge follows the game-record quote shown before analysis."
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr ""
+"The balance is shown to a precision of {precision} API points. Per position:"
+" standard {normal}, advanced {advanced} API points."
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr ""
+"Sync first if offline or allowance is unknown. Owned results can be viewed "
+"repeatedly; territory and move suggestions are included in the same result."
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "Purchase is available after your account and allowance are confirmed"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "Confirming allowance"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr ""
+"Membership is used only if both remaining allowances are sufficient. "
+"Otherwise, the entire request uses API points, without splitting the charge."
+" Confirm the source and quote before analysis. If points are insufficient, "
+"top up manually or wait for the allowance to reset."
+
+msgid "membership:kiosk_quota_help"
+msgstr "Membership allowance and savings explained"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "Allowance not yet confirmed"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr ""
+"The estimated weekly maximum assumes {moves}-move standard reports and is "
+"limited by the remaining period allowance. Standard report reference for "
+"this period: {references}."
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr ""
+"Membership expires at the end of the purchased period. The weekly allowance "
+"resets on Monday at 00:00 Beijing time. Period and weekly remaining "
+"percentages are calculated separately. Usage for analyses in progress is "
+"already included."
+
+msgid "membership:kiosk_quota_result_help"
+msgstr ""
+"Territory and move suggestions are included in the same result. Viewing it "
+"again incurs no additional charge. Advanced analysis uses {multiplier} times"
+" the allowance of standard analysis."
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr ""
+"Savings are compared with standard API analysis and assume full use of this "
+"period's allowance. If you use less, actual savings vary with usage. Free "
+"provides only free standard report eligibility, not a general analysis "
+"allowance."
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "Allowance awaiting cloud verification"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr ""
+"Account usage is syncing again. The cloud snapshot is authoritative for your"
+" balance and benefits."
+
+msgid "membership:kiosk_remaining"
+msgstr "Remaining"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "Remaining allowance not yet confirmed"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "Renew {plan}"
+
+msgid "membership:kiosk_report_estimate"
+msgstr ""
+"Estimated for {moves} moves, limited by the remaining period allowance. "
+"Advanced uses about {multiplier} times as much."
+
+msgid "membership:kiosk_reserved_included"
+msgstr "Includes analyses in progress"
+
+msgid "membership:kiosk_result_reuse"
+msgstr ""
+"One result includes territory and move suggestions. Viewing it again incurs "
+"no additional charge."
+
+msgid "membership:kiosk_resync"
+msgstr "Sync again"
+
+msgid "membership:kiosk_return_selection"
+msgstr "Back to selection"
+
+msgid "membership:kiosk_return_usage"
+msgstr "Back to usage"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "Save about {percent} vs API"
+
+msgid "membership:kiosk_savings_condition"
+msgstr ""
+"Savings assume full use of this period's allowance. Otherwise, actual "
+"savings vary with usage."
+
+msgid "membership:kiosk_select_topup"
+msgstr "Choose an API top-up amount"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "Service temporarily unavailable"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "Sync failed"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "Awaiting sync"
+
+msgid "membership:kiosk_synced"
+msgstr "Synced"
+
+msgid "membership:kiosk_syncing"
+msgstr "Syncing"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "Syncing orders…"
+
+msgid "membership:kiosk_term"
+msgstr "This period"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "Period expires · Beijing time"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "Remaining percentage for this period"
+
+msgid "membership:kiosk_term_reports"
+msgstr "Standard reports · About {reports} games over {days} days"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · Test environment"
+
+msgid "membership:kiosk_test_order"
+msgstr "TEST simulated order · No real payment"
+
+msgid "membership:kiosk_title"
+msgstr "Membership and top-ups"
+
+msgid "membership:kiosk_topup"
+msgstr "Top up"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "Top up {amount}"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "Top-up catalog awaiting sync"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr ""
+"Use membership first when both remaining allowances are sufficient; "
+"otherwise, the entire request uses API points."
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} · {points} API points"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points} API points"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "Not yet confirmed"
+
+msgid "membership:kiosk_understood"
+msgstr "Got it"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr ""
+"Both remaining allowances must cover this analysis. If insufficient, the "
+"entire request uses API points."
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "Usage cannot be synced right now"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "Used and in progress: {percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "Confirm your account identity first"
+
+msgid "membership:kiosk_view_order"
+msgstr "View order {id}"
+
+msgid "membership:kiosk_view_plans"
+msgstr "View membership"
+
+msgid "membership:kiosk_week"
+msgstr "This week"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "Remaining percentage for this week"
+
+msgid "membership:kiosk_week_reports"
+msgstr "Up to about {reports} games per week"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "Resets Monday 00:00 · Beijing time"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "Free standard reports each week"
+
+msgid "membership:loading"
+msgstr "Loading membership and usage…"
+
+msgid "membership:login"
+msgstr "Sign in"
+
+msgid "membership:login_to_view"
+msgstr "Sign in to view membership and usage"
+
+msgid "membership:membership_first"
+msgstr "Use membership allowance first"
+
+msgid "membership:membership_free_pending_help"
+msgstr ""
+"Membership and Free eligibility are not yet confirmed. Reload to check."
+
+msgid "membership:membership_order"
+msgstr "Membership order"
+
+msgid "membership:next_membership"
+msgstr "Purchased: {plan} · Starts {date}"
+
+msgid "membership:no_orders"
+msgstr "No orders yet"
+
+msgid "membership:normal"
+msgstr "Standard"
+
+msgid "membership:normal_position_cost"
+msgstr "Standard: about {points} API points per move"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "Buy as needed, no subscription required"
+
+msgid "membership:open"
+msgstr "View"
+
+msgid "membership:order_actual_end"
+msgstr "Actual expiry: {date} (Beijing time)"
+
+msgid "membership:order_actual_points"
+msgstr "Actual credit: {points} API points"
+
+msgid "membership:order_actual_start"
+msgstr "Actual start: {date} (Beijing time)"
+
+msgid "membership:order_estimated_dates"
+msgstr ""
+"Estimated start: {start}; estimated expiry: {end} (Beijing time). Final "
+"dates are confirmed by the payment receipt."
+
+msgid "membership:order_expired"
+msgstr "Order expired"
+
+msgid "membership:order_expires_at"
+msgstr "Order valid until {date} (Beijing time)."
+
+msgid "membership:order_failed"
+msgstr "Order not completed"
+
+msgid "membership:order_history"
+msgstr "Order history"
+
+msgid "membership:order_id"
+msgstr "Order ID"
+
+msgid "membership:order_paid"
+msgstr "Paid"
+
+msgid "membership:order_pending"
+msgstr "Awaiting payment"
+
+msgid "membership:order_poll_error"
+msgstr ""
+"Payment status cannot be confirmed right now. Retrying. Do not pay again."
+
+msgid "membership:order_refunded"
+msgstr "Refunded"
+
+msgid "membership:order_result_unknown"
+msgstr ""
+"The order outcome is not yet confirmed. Check order history first to avoid "
+"creating duplicate orders."
+
+msgid "membership:order_topup"
+msgstr "API points top-up"
+
+msgid "membership:payment_account_pending"
+msgstr ""
+"Your account and usage must be confirmed before a payment order can be "
+"created."
+
+msgid "membership:payment_channel_unavailable"
+msgstr ""
+"The payment channel is not available yet. Do not pay unknown accounts "
+"outside this page."
+
+msgid "membership:payments_disabled"
+msgstr "Payments are not yet available"
+
+msgid "membership:payments_unavailable"
+msgstr ""
+"Payments are not yet available. Payment orders cannot be created right now."
+
+msgid "membership:pending_order_notice"
+msgstr ""
+"Awaiting payment. This page will automatically check the server status."
+
+msgid "membership:plan_pending"
+msgstr "Membership benefits awaiting confirmation"
+
+msgid "membership:plan_term"
+msgstr "/ {days} days"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan} is not yet available"
+
+msgid "membership:plans"
+msgstr "Membership"
+
+msgid "membership:points"
+msgstr "API points"
+
+msgid "membership:points_amount"
+msgstr "{points} API points"
+
+msgid "membership:points_exchange_rate"
+msgstr "CNY 1 = 1 API point"
+
+msgid "membership:position_cost"
+msgstr "Cost per move"
+
+msgid "membership:position_pricing_rule"
+msgstr ""
+"Single-position and full-game analyses use the same unit price. Full games "
+"are charged for the move count plus the initial position."
+
+msgid "membership:processing"
+msgstr "Processing…"
+
+msgid "membership:quota"
+msgstr "Membership allowance"
+
+msgid "membership:quota_dual_rule"
+msgstr ""
+"The period and weekly remaining percentages each use their own allowance. "
+"Each analysis must fit within both remaining allowances. Reserved usage for "
+"analyses in progress counts as used and is returned on failure."
+
+msgid "membership:quota_expires_in"
+msgstr "Expires in {time}"
+
+msgid "membership:quota_pending"
+msgstr "Allowance awaiting confirmation"
+
+msgid "membership:quota_recovers_in"
+msgstr "Resets in {time}"
+
+msgid "membership:quota_refresh_pending"
+msgstr "Confirming the latest allowance"
+
+msgid "membership:quota_reservation_help"
+msgstr ""
+"The two remaining allowances are calculated separately, and each analysis "
+"must fit within both. Reserved usage for analyses in progress is included in"
+" the used percentage and is returned on failure."
+
+msgid "membership:quote_and_owned_rule"
+msgstr ""
+"The server quote and charge source are shown before analysis starts. "
+"Analysis cannot start until account and usage status are confirmed. Viewing "
+"owned results again or switching between territory and move suggestions "
+"incurs no additional charge."
+
+msgid "membership:refresh"
+msgstr "Refresh"
+
+msgid "membership:reload"
+msgstr "Reload"
+
+msgid "membership:remaining_percent"
+msgstr "{percent} remaining"
+
+msgid "membership:renew_plan"
+msgstr "Renew {plan}"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"Renewal starts after your existing membership expires and does not reset "
+"current used or reserved usage. Dates shown before payment are estimates; "
+"the final effective period is confirmed by the server receipt after payment."
+" Paid membership does not add Free standard report eligibility."
+
+msgid "membership:report_estimate_limit"
+msgstr ""
+"Estimated for 300-move games, limited by the remaining period allowance."
+
+msgid "membership:report_example_rule"
+msgstr ""
+"Includes the initial position, for 301 analysis positions in total. The "
+"actual charge follows the server quote shown before submission."
+
+msgid "membership:retry"
+msgstr "Retry"
+
+msgid "membership:savings_approx"
+msgstr "Save about {percent}"
+
+msgid "membership:savings_vs_api"
+msgstr "Save about {percent} vs API"
+
+msgid "membership:select_plan"
+msgstr "Choose {plan}"
+
+msgid "membership:server_authority"
+msgstr "Your balance and benefits are determined by server confirmation."
+
+msgid "membership:service_unavailable"
+msgstr ""
+"This service does not currently provide membership usage. Benefits and "
+"balances are awaiting confirmation."
+
+msgid "membership:source_free"
+msgstr "Expected source: weekly free report eligibility"
+
+msgid "membership:source_membership"
+msgstr "Expected source: membership allowance"
+
+msgid "membership:source_owned"
+msgstr "You already own this result"
+
+msgid "membership:source_pending"
+msgstr "Charge source awaiting confirmation"
+
+msgid "membership:source_wallet"
+msgstr "Expected source: API points"
+
+msgid "membership:stale"
+msgstr "Awaiting update"
+
+msgid "membership:stale_warning"
+msgstr ""
+"Showing previously loaded data. Account and charge source need "
+"reconfirmation. Purchases are temporarily unavailable."
+
+msgid "membership:synced"
+msgstr "Synced"
+
+msgid "membership:temporarily_unavailable"
+msgstr "Temporarily unavailable"
+
+msgid "membership:term_remaining"
+msgstr "Remaining this period"
+
+msgid "membership:term_report_reference"
+msgstr "{plan}: about {reports} standard game reports per {days}-day period."
+
+msgid "membership:term_total_reports"
+msgstr "About {reports} games over {days} days"
+
+msgid "membership:test_order_warning"
+msgstr "TEST simulated order. No real payment will be taken."
+
+msgid "membership:time_pending"
+msgstr "Time awaiting confirmation"
+
+msgid "membership:topup_amount"
+msgstr "Top up {amount}"
+
+msgid "membership:topup_arrival"
+msgstr "Credit: {points} API points"
+
+msgid "membership:topup_arrival_rule"
+msgstr ""
+"Points are credited after payment confirmation. When membership allowance is"
+" insufficient, existing API points are used. There are no automatic top-ups."
+
+msgid "membership:topup_option"
+msgstr "{amount}, credits {points} API points"
+
+msgid "membership:unavailable"
+msgstr "Not yet available"
+
+msgid "membership:unavailable_title"
+msgstr "Membership and usage temporarily unavailable"
+
+msgid "membership:unconfirmed_help"
+msgstr ""
+"Account benefits and balance are not yet confirmed. Please retry shortly."
+
+msgid "membership:usage"
+msgstr "Usage"
+
+msgid "membership:used_and_reserved"
+msgstr "Used and in progress: {percent}"
+
+msgid "membership:valid_until"
+msgstr "Valid until {date} (Beijing time)"
+
+msgid "membership:view_api_topup"
+msgstr "View API top-ups"
+
+msgid "membership:view_plans"
+msgstr "View membership plans"
+
+msgid "membership:visits"
+msgstr "{count} search visits"
+
+msgid "membership:week_remaining"
+msgstr "Remaining this week"
+
+msgid "membership:weekly_report_reference"
+msgstr "Standard reports, up to about {reports} games per week"
+
+msgid "membership:weekly_reports"
+msgstr "Up to about {reports} games per week"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "Up to about {reports} games per week · Not yet available"
+
+msgid "membership:weekly_reset_rule"
+msgstr "The weekly allowance resets every Monday at 00:00 Beijing time."
+
+msgid "membership:whole_request_fallback"
+msgstr ""
+"If membership allowance cannot cover this analysis, the entire request uses "
+"existing API points."

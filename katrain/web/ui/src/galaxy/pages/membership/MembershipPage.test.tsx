@@ -27,7 +27,40 @@ const mocks = vi.hoisted(() => ({
   getOrder: vi.fn(),
   getOrders: vi.fn(),
   changed: vi.fn(),
+  language: "cn",
+  languageListeners: new Set<() => void>(),
 }));
+vi.mock("../../../hooks/useTranslation", async () => {
+  const { useSyncExternalStore } = await import("react");
+  const english: Record<string, string> = {
+    "membership:galaxy_title": "Membership & usage",
+    "membership:galaxy_plan_selection": "{plan} · {days}-day membership",
+    "membership:weekly_report_reference": "Normal reports, up to about {reports} games per week",
+    "membership:order_result_unknown": "Order result unconfirmed. Check order history before creating another.",
+    "membership:order_pending": "Awaiting payment",
+    "membership:order_poll_error": "Unable to confirm payment; retrying. Do not pay again.",
+  };
+  return {
+    useTranslation: () => {
+      const lang = useSyncExternalStore(
+        (listener) => {
+          mocks.languageListeners.add(listener);
+          return () => mocks.languageListeners.delete(listener);
+        },
+        () => mocks.language,
+      );
+      return {
+        lang,
+        t: (key: string, fallback: string) =>
+          lang === "en" ? (english[key] ?? fallback) : fallback,
+      };
+    },
+  };
+});
+const switchLanguage = (language: string) => act(() => {
+  mocks.language = language;
+  mocks.languageListeners.forEach((listener) => listener());
+});
 vi.mock("../../../context/AuthContext", () => ({ useAuth: () => mocks.auth }));
 vi.mock("../../../features/membership/useMembership", () => ({
   useMembership: () => mocks.membership,
@@ -202,6 +235,7 @@ const startOrder = async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.language = "cn";
   mocks.auth.identityKey = "account-a";
   mocks.auth.status = "authenticated";
   mocks.auth.token = null;
@@ -219,6 +253,32 @@ beforeEach(() => {
 });
 
 describe("Galaxy membership", () => {
+  it("updates an open selection and existing error on language change without recreating orders", async () => {
+    mocks.createOrder.mockRejectedValue(new Error("untrusted server text"));
+    show("plans");
+    fireEvent.click(screen.getByRole("button", { name: "选择 Plus" }));
+    fireEvent.click(screen.getByRole("button", { name: "创建订单" }));
+    await screen.findByText("订单结果暂未确认，请先查看订单记录，避免重复创建。");
+    switchLanguage("en");
+    expect(screen.getByRole("dialog")).toHaveTextContent("Plus · 30-day membership");
+    expect(screen.getByRole("dialog")).toHaveTextContent("Normal reports, up to about 10 games per week");
+    expect(screen.getByRole("dialog")).toHaveTextContent("Order result unconfirmed. Check order history before creating another.");
+    expect(mocks.createOrder).toHaveBeenCalledOnce();
+    expect(mocks.getOrder).not.toHaveBeenCalled();
+  });
+
+  it("localizes comma-decimal usage while keeping progress values numeric", () => {
+    const usage = makeUsage();
+    usage.term!.percent = 65.6;
+    mocks.membership.usage = usage;
+    show();
+    switchLanguage("de");
+    expect(screen.getByText(/65,6\s?%/)).toBeInTheDocument();
+    const progress = screen.getByRole("progressbar", { name: "本期剩余" });
+    expect(progress).toHaveAttribute("aria-valuenow", "65.6");
+    expect(progress.querySelector(".MuiLinearProgress-bar")).toHaveStyle({ transform: "translateX(-34.400000000000006%)" });
+  });
+
   it("shows each period percentage, server countdowns and integer-credit wallet without internal units", () => {
     show();
     expect(
@@ -272,7 +332,7 @@ describe("Galaxy membership", () => {
     expect(screen.getByText("0.02")).toBeInTheDocument();
     expect(screen.getByText(/6.02/)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /30 元.*30.00 积分/ }),
+      screen.getByRole("button", { name: /¥30.*30.00 积分/ }),
     ).toBeInTheDocument();
   });
 

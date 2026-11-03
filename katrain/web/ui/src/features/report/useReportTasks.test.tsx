@@ -27,6 +27,8 @@ vi.mock('../../api/reportApi', async (importOriginal) => {
 });
 
 import { useReportTasks } from './useReportTasks';
+import { i18n } from '../../i18n';
+import { API } from '../../api';
 
 const emptySummary: ReportQueueSummary = { pending: 0, running: 0, completed: 0, failed: 0 };
 
@@ -375,7 +377,7 @@ describe('useReportTasks', () => {
       await expect(result.current.createReport({ userGameId: 'game-2', totalMoves: 80 })).rejects.toThrow();
     });
 
-    expect(result.current.error).toBe(`Request failed 402: ${body}`);
+    expect(result.current.error).toBe('会员额度和API积分不足，请前往会员页查看');
     expect(result.current.errorKind).toBe('no_credits');
 
     act(() => result.current.clearError());
@@ -511,6 +513,23 @@ describe('quoted report authorization', () => {
     mockCatalog.mockResolvedValue({ membership_mode: 'enabled', capabilities: { quotes: true } });
     mockQuote.mockResolvedValue(quote);
     mockCreate.mockResolvedValue(task());
+  });
+  it('translates an existing quote error on language change without reloading or requoting', async () => {
+    vi.spyOn(API, 'getTranslations').mockResolvedValue({ translations: {} });
+    vi.spyOn(i18n, 'loadLiveTranslations').mockResolvedValue(undefined);
+    await act(async () => { await i18n.loadTranslations('cn'); });
+    mockQuote.mockRejectedValueOnce(Object.assign(new Error('private billing traceback'), { status: 402, detail: { code: 'insufficient_credits' } }));
+    const { result } = renderHook(() => useReportTasks(null, true, 'person-a'));
+    await settle();
+    await act(async () => { await expect(result.current.createReport({ userGameId: 'game-1', totalMoves: 120 })).rejects.toThrow(); });
+    expect(result.current.error).toBe('会员额度和API积分不足，请前往会员页查看');
+    const requests = [mockCatalog.mock.calls.length, mockList.mock.calls.length, mockQuote.mock.calls.length];
+    vi.spyOn(API, 'getTranslations').mockResolvedValue({ translations: { 'membership:error_insufficient': 'Insufficient membership allowance and API points.' } });
+    await act(async () => { await i18n.loadTranslations('en'); });
+    expect(result.current.error).toBe('Insufficient membership allowance and API points.');
+    expect([mockCatalog.mock.calls.length, mockList.mock.calls.length, mockQuote.mock.calls.length]).toEqual(requests);
+    vi.spyOn(API, 'getTranslations').mockResolvedValue({ translations: {} });
+    await act(async () => { await i18n.loadTranslations('cn'); });
   });
   it('quotes before creation, requires confirmation, and sends the signed token and one key', async () => {
     const { result } = renderHook(() => useReportTasks(null, true, 'person-a'));

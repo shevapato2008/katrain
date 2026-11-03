@@ -9,7 +9,8 @@ import {
 import { membershipApi } from '../../api/membershipApi';
 import { notifyMembershipChanged } from '../membership/useMembership';
 import type { BillingQuote, MembershipCatalog } from '../membership/types';
-import { useTranslation } from '../../hooks/useTranslation';
+import { useMembershipI18n } from '../membership/useMembershipI18n';
+import { membershipErrorCode, membershipErrorText, type MembershipErrorCode } from '../membership/presentation';
 import {
   buildReportStatesByGame,
   createOptimisticReportTask,
@@ -37,9 +38,10 @@ export interface UseReportTasksResult {
   reportStatesByGame: ReportStatesByGame;
   loading: boolean;
   error: string | null;
+  billingError?: boolean;
   /**
    * 这条错属于哪一类(`utils/requestFailure.ts`)。**屏上说什么由调用方按它定** ——
-   * `error` 是原文(列表 / 创建 / 重试任一处失败),盒上断网时是 `Request failed 503: {…}`。
+   * 旧列表/导入错误沿用原有分类；会员消耗错误已映射为安全的本地化文案。
    */
   errorKind: RequestFailureKind | null;
   clearError: () => void;
@@ -55,12 +57,16 @@ export interface UseReportTasksResult {
 interface Failure {
   message: string;
   kind: RequestFailureKind;
+  membershipCode?: MembershipErrorCode;
 }
 
-function failureOf(error: unknown, fallback: string): Failure {
-  const detail = error as { status?: number; detail?: { code?: string } };
-  return { message: error instanceof Error ? error.message : fallback,
-    kind: detail?.status === 402 && detail.detail?.code === 'insufficient_credits' ? 'no_credits' : requestFailureKind(error) };
+function failureOf(error: unknown, fallback: string, billingFallback?: MembershipErrorCode): Failure {
+  const carrier = (error && typeof error === 'object' ? error : {}) as { detail?: unknown; body?: unknown; message?: unknown };
+  // Legacy list/import failures keep their historical presentation unless a billing code is explicit.
+  const code = membershipErrorCode(billingFallback ? error : { detail: carrier.detail, body: carrier.body, message: carrier.message }, billingFallback ?? 'report_failed');
+  const membershipCode = billingFallback || code !== 'report_failed' ? code : undefined;
+  return { message: membershipCode ? '' : error instanceof Error ? error.message : fallback, membershipCode,
+    kind: membershipCode === 'insufficient' ? 'no_credits' : requestFailureKind(error) };
 }
 
 export function useReportTasks(
@@ -78,7 +84,7 @@ export function useReportTasks(
   authStatus: string = isAuthenticated ? 'authenticated' : 'anonymous',
 ): UseReportTasksResult {
   const enabled = isAuthenticated && authStatus === 'authenticated' && identityKey != null;
-  const { t } = useTranslation();
+  const { t } = useMembershipI18n();
   const translationRef = useRef(t);
   translationRef.current = t;
   const scope = JSON.stringify([identityKey, authStatus, enabled, token]);
@@ -286,6 +292,7 @@ export function useReportTasks(
       setFailure(failureOf(
         createError,
         translationRef.current('report:create_task_failed', 'Failed to create report task'),
+        authorization ? 'report_failed' : undefined,
       ));
       throw createError;
     }
@@ -305,6 +312,7 @@ export function useReportTasks(
       setFailure(failureOf(
         retryError,
         translationRef.current('report:retry_failed', 'Failed to retry report'),
+        authorization ? 'report_failed' : undefined,
       ));
       throw retryError;
     }
@@ -319,13 +327,13 @@ export function useReportTasks(
       if (scopeRef.current !== scope || lifecycleGenerationRef.current !== generation) return null;
       catalogRef.current = { scope, catalog };
       if (catalog.membership_mode === 'legacy') return taskId === undefined ? executeCreate(params) : executeRetry(taskId);
-      if (catalog.membership_mode !== 'enabled' || !catalog.capabilities.quotes) throw new Error('分析服务暂不可用，请稍后重试');
+      if (catalog.membership_mode !== 'enabled' || !catalog.capabilities.quotes) throw new Error(catalog.membership_mode === 'paused' ? 'membership_paused' : 'membership_disabled');
       const quote = await membershipApi.createQuote({ kind: 'report', profile: params.reportType === 'deep' ? 'advanced' : 'normal', game_id: params.userGameId }, token);
       if (scopeRef.current !== scope || lifecycleGenerationRef.current !== generation) return null;
       updatePending({ quote, params, taskId, idempotencyKey: crypto.randomUUID(), scope });
       return null;
     } catch (error) {
-      if (scopeRef.current === scope && lifecycleGenerationRef.current === generation) setFailure(failureOf(error, '报价失败，请重试'));
+      if (scopeRef.current === scope && lifecycleGenerationRef.current === generation) setFailure(failureOf(error, '', 'quote_failed'));
       throw error;
     }
   }, [enabled, executeCreate, executeRetry, scope, token, updatePending]);
@@ -338,7 +346,10 @@ export function useReportTasks(
   const retryReport = useCallback((taskId: number) => {
     if (catalogRef.current?.scope === scope && catalogRef.current.catalog.membership_mode === 'legacy') return executeRetry(taskId);
     const task = serverTasks.find((entry) => entry.id === taskId);
-    if (!task) return Promise.reject(new Error('报告不存在，请刷新后重试'));
+    if (!task) {
+      setFailure({ message: '', kind: 'not_found', membershipCode: 'report_missing' });
+      return Promise.reject(new Error('report_not_found'));
+    }
     return prepareQuote({ userGameId: task.user_game_id, reportType: task.report_type, totalMoves: task.total_moves }, taskId);
   }, [executeRetry, prepareQuote, scope, serverTasks]);
   const confirmQuote = useCallback((): Promise<ReportTaskSummary | null> => {
@@ -376,7 +387,8 @@ export function useReportTasks(
     queueSummary: dataScope === scope ? queueSummary : null,
     reportStatesByGame: dataScope === scope ? reportStatesByGame : {},
     loading,
-    error: dataScope === scope ? failure?.message ?? null : null,
+    error: dataScope === scope && failure ? failure.membershipCode ? membershipErrorText(failure.membershipCode, t) : failure.message : null,
+    billingError: dataScope === scope && !!failure?.membershipCode,
     errorKind: dataScope === scope ? failure?.kind ?? null : null,
     clearError,
     refresh,

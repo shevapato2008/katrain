@@ -1,6 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePaidPosition } from './usePaidPosition';
+import { i18n } from '../../i18n';
+import { API } from '../../api';
 
 const api = vi.hoisted(() => ({ getCatalog: vi.fn(), createQuote: vi.fn(), createPosition: vi.fn(), getPosition: vi.fn() }));
 vi.mock('../../api/membershipApi', () => ({ membershipApi: api }));
@@ -15,6 +17,25 @@ beforeEach(() => {
 });
 
 describe('usePaidPosition', () => {
+  it('updates an existing safe billing error on language change without requesting another quote', async () => {
+    vi.spyOn(API, 'getTranslations').mockResolvedValue({ translations: {} });
+    vi.spyOn(i18n, 'loadLiveTranslations').mockResolvedValue(undefined);
+    await act(async () => { await i18n.loadTranslations('cn'); });
+    api.createQuote.mockRejectedValueOnce(Object.assign(new Error('private server detail'), { status: 402, detail: { code: 'insufficient_credits' } }));
+    const { result } = renderHook(() => usePaidPosition(options));
+    await act(async () => { await result.current.toggle('hints'); });
+    expect(result.current.error).toBe('会员额度和API积分不足，请前往会员页查看');
+    vi.spyOn(API, 'getTranslations').mockResolvedValue({ translations: { 'membership:error_insufficient': 'Insufficient membership allowance and API points.' } });
+    await act(async () => { await i18n.loadTranslations('en'); });
+    expect(result.current.error).toBe('Insufficient membership allowance and API points.');
+    expect(api.createQuote).toHaveBeenCalledTimes(1);
+  });
+  it('does not claim an unknown terminal state was refunded', async () => {
+    api.createPosition.mockResolvedValueOnce({ operation_id: 'op-1', state: 'failed' });
+    const { result } = renderHook(() => usePaidPosition(options));
+    await act(async () => { await result.current.toggle('hints'); await result.current.confirm(); });
+    expect(result.current.error).not.toMatch(/退还|退回|refund/);
+  });
   it('does nothing automatically and shares one confirmed result between hints and territory', async () => {
     const { result } = renderHook(() => usePaidPosition(options));
     expect(api.createPosition).not.toHaveBeenCalled();

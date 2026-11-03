@@ -44,7 +44,7 @@
 .kiosk .km-page button.km-primary:disabled { color: var(--dim); background: var(--raise); border-color: var(--hair); }
 .km-page .kiosk-pagebar { min-width: 0; }
 .kiosk .km-page .kiosk-pagebar__iconbtn { padding: 0; }
-.km-page .kiosk-pagebar__title { font-size: 28px; white-space: nowrap; }
+.km-page .kiosk-pagebar__title { min-width: 0; font-size: 28px; white-space: normal; line-height: 1.1; }
 .km-page .kiosk-pagebar__status { font-size: 18px; }
 .km-header-status { color: var(--warn); }
 .km-header-ready { color: var(--km-green); }
@@ -62,14 +62,14 @@
 .km-resource { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .km-available { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--km-green); }
 .km-limit { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; border: 1px solid var(--km-line); border-radius: 12px; background: var(--panel); }
-.km-limit-heading, .km-limit-detail { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.km-limit-heading, .km-limit-detail { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .km-limit-heading { font-size: 22px; line-height: 1.2; }
 .km-limit-heading > span { display: flex; align-items: baseline; gap: 8px; color: var(--km-green); font-size: 18px; white-space: nowrap; }
 .km-limit-heading > span > strong { font-size: 28px; }
 .km-progress { height: 8px; flex: none; overflow: hidden; border-radius: 6px; background: var(--hair); }
 .km-progress i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
 .km-limit-detail, .km-limit-reset { font-size: 18px; color: var(--km-sub); line-height: 1.2; }
-.km-limit-reset { display: flex; justify-content: space-between; gap: 10px; }
+.km-limit-reset { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
 .km-limit-reset time { white-space: nowrap; }
 .km-resource > .km-footnote { margin-top: auto; }
 .km-aside { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--km-line); border-radius: 12px; background: var(--panel); }
@@ -79,7 +79,7 @@
 .km-wallet { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 6px; padding: 10px 0; border-top: 1px solid var(--km-line); border-bottom: 1px solid var(--km-line); }
 .km-wallet > span { color: var(--km-sub); font-size: 18px; }
 .km-wallet > span:last-child { grid-column: 1/-1; }
-.km-wallet strong { font-size: 28px; white-space: nowrap; }
+.km-wallet strong { font-size: 28px; overflow-wrap: anywhere; }
 .km-sync { display: flex; gap: 8px; color: var(--km-sub); font-size: 18px; white-space: nowrap; }
 .km-sync.is-stale { color: var(--warn); }
 .kiosk .km-page .km-account-actions { display: grid; grid-auto-flow: row; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
@@ -89,12 +89,13 @@
 .km-empty p, .km-free p { font-size: 18px; color: var(--km-sub); }
 .km-free .km-free-count { font-size: 28px; color: var(--km-green); }
 .km-free > .km-footnote { margin-top: auto; }
-.km-plans { display: flex; flex-direction: column; gap: 12px; height: 100%; }
-.km-plan-grid { display: grid; flex: 1; min-height: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); gap: 12px; }
-.km-plan { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; padding: 12px 16px; border: 1px solid var(--km-line); border-radius: 12px; background: var(--panel); }
+.km-plans { display: flex; flex-direction: column; gap: 12px; min-height: 100%; }
+/* Longer translations grow the cards and the existing scroll zone, rather than overflowing a fixed row. */
+.km-plan-grid { display: grid; flex: 1; min-height: min-content; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(min-content, 1fr); gap: 12px; }
+.km-plan { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px 16px; border: 1px solid var(--km-line); border-radius: 12px; background: var(--panel); }
 .km-plan.is-current { border-color: var(--km-green); background: color-mix(in srgb, var(--accent) 13%, var(--panel)); }
 .km-plan.is-unavailable { background: var(--raise); }
-.km-plan-head { display: flex; align-items: center; justify-content: space-between; height: 26px; font-size: 22px; }
+.km-plan-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; min-height: 26px; font-size: 22px; }
 .km-plan-head > span { color: var(--km-sub); font-size: 18px; }
 .km-plan.is-current .km-plan-head > span { color: var(--km-green); }
 .km-plan-price { font-size: 28px; line-height: 1.15; }
@@ -103,21 +104,21 @@
 .km-report-reference { display: flex; flex-direction: column; gap: 4px; padding-top: 2px; line-height: 1.25; }
 .km-report-reference > span { color: var(--km-sub); font-size: 18px; }
 .km-report-reference > strong { font-size: 22px; }
-.km-plan > button { flex: none; width: 100%; height: 44px; margin-top: auto; }
+.km-plan > button { flex: none; width: 100%; min-height: 44px; padding-block: 6px; margin-top: auto; }
 .km-plan-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; color: var(--km-sub); font-size: 18px; line-height: 1.4; }
-.km-plan-footer > span { color: var(--warn); white-space: nowrap; }
+.km-plan-footer > span { color: var(--warn); }
 .km-topup { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; height: 100%; }
 .km-api-rates, .km-recharge { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 16px 18px; border: 1px solid var(--km-line); border-radius: 12px; background: var(--panel); }
-.km-rate { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 22px; }
+.km-rate { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 22px; }
 .km-rate > span { color: var(--km-sub); font-size: 18px; }
-.km-rate strong { color: var(--km-green); white-space: nowrap; }
+.km-rate strong { color: var(--km-green); }
 .km-report-quote { padding-top: 12px !important; border-top: 1px solid var(--km-line); color: var(--km-sub); font-size: 18px; line-height: 1.5; }
 .km-alternative { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; color: var(--km-sub); font-size: 18px; }
 .kiosk .km-page .km-alternative button { padding: 0 12px; }
 .km-recharge { border-color: var(--km-green); background: color-mix(in srgb, var(--accent) 13%, var(--panel)); }
 .km-recharge-balance { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .km-recharge-balance > span { color: var(--km-sub); font-size: 18px; }
-.km-recharge-balance strong { font-size: 28px; white-space: nowrap; }
+.km-recharge-balance strong { font-size: 28px; overflow-wrap: anywhere; }
 .km-exchange { color: var(--km-sub); font-size: 18px; }
 .km-amounts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .kiosk .km-page .km-amounts button { min-height: 82px; flex-direction: column; gap: 5px; padding: 8px 4px; }

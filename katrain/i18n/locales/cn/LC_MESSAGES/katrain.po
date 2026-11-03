@@ -6966,3 +6966,990 @@ msgstr "退出后，可从棋谱页重新打开这份谱。"
 
 msgid "baipu:exit_anyway"
 msgstr "仍然退出"
+
+msgid "membership:account_checking"
+msgstr "正在确认账户"
+
+msgid "membership:account_entry"
+msgstr "用量、API积分与会员权益"
+
+msgid "membership:account_identity_help"
+msgstr "确认账户身份后，显示会员权益、Free 资格与 API 积分余额。"
+
+msgid "membership:account_retry"
+msgstr "重试账户验证"
+
+msgid "membership:account_unconfirmed"
+msgstr "账户状态暂未确认"
+
+msgid "membership:advanced"
+msgstr "高级"
+
+msgid "membership:advanced_depth_ratio"
+msgstr "高级报告消耗约 {ratio} 倍。"
+
+msgid "membership:advanced_depth_rule"
+msgstr "高级报告按服务端分析深度消耗。"
+
+msgid "membership:advanced_position_cost"
+msgstr "高级约 {points} 积分/手"
+
+msgid "membership:analysis_depth"
+msgstr "分析深度"
+
+msgid "membership:api_balance"
+msgstr "API 积分余额"
+
+msgid "membership:api_on_demand"
+msgstr "API 按需分析"
+
+msgid "membership:api_prices"
+msgstr "API 分析价格"
+
+msgid "membership:api_topup"
+msgstr "API充值"
+
+msgid "membership:auth_after_login"
+msgstr "登录后使用"
+
+msgid "membership:auth_box_login"
+msgstr "去盒子主页登录"
+
+msgid "membership:auth_box_note"
+msgstr "将在智星盒主页完成登录，再从围棋入口回到此模块。"
+
+msgid "membership:auth_checking_action"
+msgstr "正在确认"
+
+msgid "membership:auth_checking_description"
+msgstr "请稍候，确认完成后将自动继续。"
+
+msgid "membership:auth_checking_note"
+msgstr "确认期间不读取账号内容。"
+
+msgid "membership:auth_checking_title"
+msgstr "正在确认登录状态"
+
+msgid "membership:auth_description"
+msgstr "登录后查看会员用量、API 积分与订单。"
+
+msgid "membership:auth_expired_description"
+msgstr "登录状态已失效。已暂停读取会员与用量中的个人内容。登录后可继续使用。"
+
+msgid "membership:auth_expired_title"
+msgstr "请重新登录"
+
+msgid "membership:auth_label"
+msgstr "会员与用量"
+
+msgid "membership:auth_login_continue"
+msgstr "登录并继续"
+
+msgid "membership:auth_login_title"
+msgstr "登录后查看会员与用量"
+
+msgid "membership:auth_return_note"
+msgstr "登录完成后回到当前页面，无需重新寻找入口。"
+
+msgid "membership:auth_unavailable_description"
+msgstr "网络或服务暂时不可用，请重试。你的登录凭据仍会保留。"
+
+msgid "membership:auth_unavailable_note"
+msgstr "无需退出账号，可在连接恢复后重试。"
+
+msgid "membership:auth_unavailable_title"
+msgstr "暂时无法确认登录状态"
+
+msgid "membership:back_to_play"
+msgstr "返回对弈"
+
+msgid "membership:billing_rules"
+msgstr "会员与 API 计费规则"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"优先使用会员额度；任一项会员剩余不足以完成本次分析时，整次使用已有 API "
+"积分，不拆分扣费来源。积分不足时需充值或等待额度恢复，不自动购买积分或扣人民币。"
+
+msgid "membership:cancel"
+msgstr "取消"
+
+msgid "membership:checkout_renewal_rule"
+msgstr "在已有会员到期后顺延，不重置当前额度。生效日期以付款后的服务端回执为准。"
+
+msgid "membership:choose_topup"
+msgstr "选择充值金额"
+
+msgid "membership:close"
+msgstr "关闭"
+
+msgid "membership:compare_membership_api"
+msgstr "比较会员与 API"
+
+msgid "membership:compare_plans"
+msgstr "比较会员方案"
+
+msgid "membership:compute"
+msgstr "计算量"
+
+msgid "membership:confirm_consumption"
+msgstr "确认并开始"
+
+msgid "membership:confirm_position"
+msgstr "确认分析当前局面"
+
+msgid "membership:confirm_purchase"
+msgstr "确认购买"
+
+msgid "membership:confirm_report"
+msgstr "确认生成报告"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "使用API积分，最多扣{points}"
+
+msgid "membership:confirming"
+msgstr "正在确认"
+
+msgid "membership:consumption_policy"
+msgstr "会员优先，不足时整次使用API积分，最多 {points} 积分"
+
+msgid "membership:countdown_days"
+msgstr "{days}天{hours}小时{minutes}分钟"
+
+msgid "membership:countdown_hours"
+msgstr "{hours}小时{minutes}分钟"
+
+msgid "membership:create_order"
+msgstr "创建订单"
+
+msgid "membership:create_report"
+msgstr "创建复盘报告"
+
+msgid "membership:creating_order"
+msgstr "正在创建…"
+
+msgid "membership:current_plan"
+msgstr "当前会员"
+
+msgid "membership:date_pending"
+msgstr "待确认"
+
+msgid "membership:done"
+msgstr "完成"
+
+msgid "membership:entitlement_pending"
+msgstr "账户权益待确认"
+
+msgid "membership:error_analysis_login_required"
+msgstr "请先登录后使用分析"
+
+msgid "membership:error_insufficient"
+msgstr "会员额度和API积分不足，请前往会员页查看"
+
+msgid "membership:error_operation_running"
+msgstr "分析仍在进行，请稍后重试查询"
+
+msgid "membership:error_position_failed"
+msgstr "分析未完成，请重试"
+
+msgid "membership:error_position_refunded"
+msgstr "分析未完成，已退还本次消耗，请重试"
+
+msgid "membership:error_position_unavailable"
+msgstr "当前服务未开放单局面分析"
+
+msgid "membership:error_quote_expired"
+msgstr "报价已过期或与当前请求不一致，请确认最新报价后重试"
+
+msgid "membership:error_quote_failed"
+msgstr "报价失败，请重试"
+
+msgid "membership:error_report_failed"
+msgstr "创建报告失败，请重试"
+
+msgid "membership:error_report_login_required"
+msgstr "请先登录后创建报告"
+
+msgid "membership:error_report_missing"
+msgstr "报告不存在，请刷新后重试"
+
+msgid "membership:error_result_expired"
+msgstr "分析结果已过期或暂不可用，请重新分析"
+
+msgid "membership:error_service_busy"
+msgstr "当前请求较多，请稍后重试"
+
+msgid "membership:error_service_paused"
+msgstr "分析服务暂停，请稍后重试"
+
+msgid "membership:error_service_unavailable"
+msgstr "分析服务暂不可用，请稍后重试"
+
+msgid "membership:error_verification_required"
+msgstr "请先完成登录验证后重试"
+
+msgid "membership:example_depth"
+msgstr "示例分析深度"
+
+msgid "membership:free_eligibility_rule"
+msgstr "每自然周 {count} 份普通报告的独立领取资格；需满足身份验证条件，不作为通用分析额度。"
+
+msgid "membership:free_pending"
+msgstr "Free 资格待确认"
+
+msgid "membership:free_remaining"
+msgstr "本周剩余 {count} 份"
+
+msgid "membership:free_reset_countdown"
+msgstr "{time}后恢复 · {date}（北京时间）"
+
+msgid "membership:free_unavailable"
+msgstr "Free 资格当前不可用"
+
+msgid "membership:free_unavailable_rule"
+msgstr "Free 普通报告需先满足可信身份条件。当前不提供可领取数量，付费会员不叠加 Free 报告资格。"
+
+msgid "membership:free_weekly_eligibility"
+msgstr "每自然周的独立普通报告资格"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · 本周普通报告资格"
+
+msgid "membership:fulfillment_pending"
+msgstr "权益回执待确认，请刷新用量查看。"
+
+msgid "membership:full_use_days"
+msgstr "按 {days} 天额度用满计算"
+
+msgid "membership:full_use_savings_rule"
+msgstr "按本期额度用满计算优惠；实际优惠随用量变化。续费在已有会员到期后顺延。"
+
+msgid "membership:galaxy_api_help"
+msgstr "API 无需订阅，1 元 = 1 积分。分析开始前确认服务端报价。"
+
+msgid "membership:galaxy_choose_membership"
+msgstr "按你的用量，选择会员"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr "同等普通分析量，按本期额度用满计算。"
+
+msgid "membership:galaxy_intro"
+msgstr "查看分析用量，选择按需充值或会员。"
+
+msgid "membership:galaxy_membership_savings"
+msgstr "常用分析，会员更省"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "偶尔分析，也可以按需充值"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount} / {days} 天"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · {days} 天会员"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr "按每盘 300 手、含初始局面估算，受本期剩余限制。"
+
+msgid "membership:galaxy_report_example_title"
+msgstr "一盘 300 手，花费多少？"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr "每周一 00:00（北京时间）恢复本周额度；本期剩余到期结束。"
+
+msgid "membership:galaxy_tabs"
+msgstr "会员页面"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr "至 {date} 到期（北京时间）；周一恢复不增加本期额度。"
+
+msgid "membership:galaxy_title"
+msgstr "会员与用量"
+
+msgid "membership:history_unavailable"
+msgstr "订单记录暂不可用"
+
+msgid "membership:kiosk_account_actions"
+msgstr "账户操作"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "账户、会员与充值"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "高级分析"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr "高级 {points} 积分，均含初始局面"
+
+msgid "membership:kiosk_api_balance"
+msgstr "API余额"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "API充值 · 按用量付费"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "API积分充值"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "会员额度不足时使用API积分"
+
+msgid "membership:kiosk_back"
+msgstr "返回"
+
+msgid "membership:kiosk_back_settings"
+msgstr "返回设置"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "账号权益确认后显示"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "付款前核对订单金额"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "选择 {plan}"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "云端已同步"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "比较会员"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "请先确认账户"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "分析前确认来源与报价"
+
+msgid "membership:kiosk_creating_order"
+msgstr "正在创建订单…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "到账 {points} 积分"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "当前API余额"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "当前权益"
+
+msgid "membership:kiosk_current_plan"
+msgstr "当前会员"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "预计 {start} 至 {end} · 北京时间"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount} = {points}积分"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "免费报告资格以云端核验为准"
+
+msgid "membership:kiosk_free_pending"
+msgstr "免费报告资格待核验"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "普通报告资格，不赠通用分析额度"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "剩余 {remaining} / {limit} 份"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr "请先完成账户验证，核验通过后显示本周资格。"
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "经常使用，会员可更省"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "额度用满时，比API更省"
+
+msgid "membership:kiosk_history_error"
+msgstr "订单记录暂未同步，请稍后重试。"
+
+msgid "membership:kiosk_member_first"
+msgstr "会员额度优先用于分析"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "会员优先，API积分接续"
+
+msgid "membership:kiosk_membership_extension"
+msgstr "已有会员将顺延至已购周期结束后生效；现有用量保留，最终时间以支付回执为准。"
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "会员购买"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr "生效 {start} 至 {end} · 北京时间 · 以此回执为准"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "会员服务暂不可用"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr "测试环境由服务端模拟支付结果，此页不会触发支付或自行发放权益。"
+
+msgid "membership:kiosk_next_plan"
+msgstr "下期 {plan} · {date}生效 · 北京时间"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr "分析前确认来源与报价，不自动充值。"
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr "本页不会自行发放权益；需要时返回重新选择。"
+
+msgid "membership:kiosk_no_orders"
+msgstr "暂无订单记录"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "普通分析"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "{moves}手报告 · 普通 {points} 积分"
+
+msgid "membership:kiosk_not_available"
+msgstr "暂未开放"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "订单确认"
+
+msgid "membership:kiosk_order_expired"
+msgstr "订单已过期"
+
+msgid "membership:kiosk_order_failed"
+msgstr "订单未完成"
+
+msgid "membership:kiosk_order_history"
+msgstr "订单记录"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "订单 {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "订单已退款"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "服务端已确认支付"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr "订单状态暂未同步，正在重试；请勿重复下单。"
+
+msgid "membership:kiosk_order_uncertain"
+msgstr "订单结果未确认，请先查看订单记录，避免重复创建。"
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "订单待确认"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "订单有效至 {date} · 北京时间"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "等待服务端支付确认"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr "已拥有结果可反复查看；领地与支招含在同一结果内。"
+
+msgid "membership:kiosk_paid_time"
+msgstr "确认时间 {date} · 北京时间"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr "支付入口尚未接通，请稍后查看订单状态。"
+
+msgid "membership:kiosk_pending_no_order"
+msgstr "确认前不显示剩余比例，也不创建订单。"
+
+msgid "membership:kiosk_period_pending"
+msgstr "周期待核对"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "周期额度待核对"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "目录确认后显示价格与权益。"
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "会员目录待同步"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan}{reports}盘"
+
+msgid "membership:kiosk_plan_term"
+msgstr "/ {days}天"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "有效至 {date} · 北京时间"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} 积分"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "{points} 积分 / 手"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr "会员本期、本周两项剩余须同时足够本次分析，否则整次使用API积分，不拆分扣费。不自动充值人民币。"
+
+msgid "membership:kiosk_pricing_help"
+msgstr "API计价说明"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr "N手报告含初始局面，共N+1个局面；实际扣费以分析前的棋谱报价为准。"
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr "余额以{precision}积分精度显示。普通每局面{normal}积分，高级每局面{advanced}积分。"
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr "离线或额度未知时先同步。已拥有结果可重复查看，领地与支招包含在同一结果内。"
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "账号和额度确认后才可购买"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "额度正在确认"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr "两项剩余都足够才使用会员，否则整次使用API积分，不拆分扣费。分析前确认来源与报价，积分不足时需手动充值或等待重置。"
+
+msgid "membership:kiosk_quota_help"
+msgstr "会员额度与优惠说明"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "额度尚未确认"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr "每周最多盘数按{moves}手普通报告估算，受本期剩余限制。本期普通报告参考：{references}。"
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr "会员按购买周期到期，每周在北京时间周一零点重置。本期与本周的剩余比例分别计算；分析中的用量已计入。"
+
+msgid "membership:kiosk_quota_result_help"
+msgstr "同一结果包含领地与支招，重复查看不重复扣费。高级分析消耗普通分析的{multiplier}倍额度。"
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr "优惠与API普通分析相比，按本期额度全部用满计算；未用满时实际优惠随用量变化。Free仅有免费普通报告资格，不赠通用分析额度。"
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "额度待云端核对"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr "账户用量正在重新同步，余额与权益以云端快照为准。"
+
+msgid "membership:kiosk_remaining"
+msgstr "剩余"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "剩余尚未确认"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "续费 {plan}"
+
+msgid "membership:kiosk_report_estimate"
+msgstr "按{moves}手估算，受本期剩余限制；高级约{multiplier}倍消耗"
+
+msgid "membership:kiosk_reserved_included"
+msgstr "分析中的用量已计入"
+
+msgid "membership:kiosk_result_reuse"
+msgstr "一次结果含领地与支招，重复查看不重复扣费。"
+
+msgid "membership:kiosk_resync"
+msgstr "重新同步"
+
+msgid "membership:kiosk_return_selection"
+msgstr "返回选择"
+
+msgid "membership:kiosk_return_usage"
+msgstr "返回用量"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "比API约省 {percent}"
+
+msgid "membership:kiosk_savings_condition"
+msgstr "优惠按本期额度用满计算；未用满时，实际优惠随用量变化"
+
+msgid "membership:kiosk_select_topup"
+msgstr "选择API充值金额"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "服务暂不可用"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "同步失败"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "待同步"
+
+msgid "membership:kiosk_synced"
+msgstr "已同步"
+
+msgid "membership:kiosk_syncing"
+msgstr "正在同步"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "正在同步订单…"
+
+msgid "membership:kiosk_term"
+msgstr "本期"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "本期到期 · 北京时间"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "本期剩余比例"
+
+msgid "membership:kiosk_term_reports"
+msgstr "普通报告 · {days}天共约{reports}盘"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · 测试环境"
+
+msgid "membership:kiosk_test_order"
+msgstr "TEST模拟订单 · 不会真实收款"
+
+msgid "membership:kiosk_title"
+msgstr "会员与充值"
+
+msgid "membership:kiosk_topup"
+msgstr "充值"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "充值 {amount}"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "充值目录待同步"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr "两项会员剩余足够时优先使用会员额度，否则整次使用API积分。"
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} {points}积分"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points}积分"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "尚未确认"
+
+msgid "membership:kiosk_understood"
+msgstr "知道了"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr "两项剩余须同时足够本次分析；不足时整次使用API积分。"
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "暂时无法同步用量"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "已用及分析中 {percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "请先确认账户身份"
+
+msgid "membership:kiosk_view_order"
+msgstr "查看订单 {id}"
+
+msgid "membership:kiosk_view_plans"
+msgstr "查看会员"
+
+msgid "membership:kiosk_week"
+msgstr "本周"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "本周剩余比例"
+
+msgid "membership:kiosk_week_reports"
+msgstr "每周最多约 {reports} 盘"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "周一零点重置 · 北京时间"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "每周免费普通报告"
+
+msgid "membership:loading"
+msgstr "正在读取会员与用量…"
+
+msgid "membership:login"
+msgstr "登录账户"
+
+msgid "membership:login_to_view"
+msgstr "登录后查看会员与用量"
+
+msgid "membership:membership_first"
+msgstr "优先使用会员额度"
+
+msgid "membership:membership_free_pending_help"
+msgstr "会员与 Free 资格尚未确认，请重新载入后查看。"
+
+msgid "membership:membership_order"
+msgstr "会员订单"
+
+msgid "membership:next_membership"
+msgstr "已购 {plan} · {date} 生效"
+
+msgid "membership:no_orders"
+msgstr "暂无订单"
+
+msgid "membership:normal"
+msgstr "普通"
+
+msgid "membership:normal_position_cost"
+msgstr "普通约 {points} 积分/手"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "按需购买，无需订阅"
+
+msgid "membership:open"
+msgstr "查看"
+
+msgid "membership:order_actual_end"
+msgstr "实际到期 {date}（北京时间）"
+
+msgid "membership:order_actual_points"
+msgstr "实际到账 {points} 积分"
+
+msgid "membership:order_actual_start"
+msgstr "实际生效 {date}（北京时间）"
+
+msgid "membership:order_estimated_dates"
+msgstr "预计生效 {start}，预计到期 {end}（北京时间）；最终日期以付款回执为准。"
+
+msgid "membership:order_expired"
+msgstr "订单已过期"
+
+msgid "membership:order_expires_at"
+msgstr "订单有效期至 {date}（北京时间）。"
+
+msgid "membership:order_failed"
+msgstr "订单未完成"
+
+msgid "membership:order_history"
+msgstr "订单记录"
+
+msgid "membership:order_id"
+msgstr "订单编号"
+
+msgid "membership:order_paid"
+msgstr "已支付"
+
+msgid "membership:order_pending"
+msgstr "等待付款"
+
+msgid "membership:order_poll_error"
+msgstr "暂时无法确认付款状态，正在重试。请勿重复付款。"
+
+msgid "membership:order_refunded"
+msgstr "已退款"
+
+msgid "membership:order_result_unknown"
+msgstr "订单结果暂未确认，请先查看订单记录，避免重复创建。"
+
+msgid "membership:order_topup"
+msgstr "API 积分充值"
+
+msgid "membership:payment_account_pending"
+msgstr "账户与用量确认后，才能创建付款订单。"
+
+msgid "membership:payment_channel_unavailable"
+msgstr "支付渠道接入尚未开放，请勿在页面外向未知账户付款。"
+
+msgid "membership:payments_disabled"
+msgstr "支付暂未开放"
+
+msgid "membership:payments_unavailable"
+msgstr "支付暂未开放，当前不能创建付款订单。"
+
+msgid "membership:pending_order_notice"
+msgstr "等待付款，页面将自动确认服务端状态。"
+
+msgid "membership:plan_pending"
+msgstr "会员权益待确认"
+
+msgid "membership:plan_term"
+msgstr "/ {days} 天"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan} 暂未开放"
+
+msgid "membership:plans"
+msgstr "会员"
+
+msgid "membership:points"
+msgstr "积分"
+
+msgid "membership:points_amount"
+msgstr "{points} 积分"
+
+msgid "membership:points_exchange_rate"
+msgstr "1 元 = 1 积分"
+
+msgid "membership:position_cost"
+msgstr "每手费用"
+
+msgid "membership:position_pricing_rule"
+msgstr "单局面与整盘使用相同单价；整盘按手数加初始局面计费。"
+
+msgid "membership:processing"
+msgstr "处理中…"
+
+msgid "membership:quota"
+msgstr "会员额度"
+
+msgid "membership:quota_dual_rule"
+msgstr "本期、本周分别按各自额度显示剩余比例，一次分析需同时满足两项剩余。分析中的预留计入已用，失败后归还。"
+
+msgid "membership:quota_expires_in"
+msgstr "{time}后到期"
+
+msgid "membership:quota_pending"
+msgstr "额度待确认"
+
+msgid "membership:quota_recovers_in"
+msgstr "{time}后恢复"
+
+msgid "membership:quota_refresh_pending"
+msgstr "正在确认最新额度"
+
+msgid "membership:quota_reservation_help"
+msgstr "两项剩余分别计算，一次分析需同时满足。分析中的预留已计入使用比例，失败后归还。"
+
+msgid "membership:quote_and_owned_rule"
+msgstr "开始分析前展示服务端报价与扣费来源。账户或用量状态未确认时暂不可开始分析。重复查看已拥有的结果、切换领地与支招，不重复收费。"
+
+msgid "membership:refresh"
+msgstr "刷新"
+
+msgid "membership:reload"
+msgstr "重新载入"
+
+msgid "membership:remaining_percent"
+msgstr "剩余 {percent}"
+
+msgid "membership:renew_plan"
+msgstr "续费 {plan}"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"续费在已有会员到期后顺延，不重置当前已用与预留；待付款日期仅为预计，最终生效区间以付款后的服务端回执为准。付费会员不叠加 Free 普通报告资格。"
+
+msgid "membership:report_estimate_limit"
+msgstr "按每盘 300 手估算，受本期剩余限制。"
+
+msgid "membership:report_example_rule"
+msgstr "含初始局面，共 301 个分析局面。实际费用以提交前服务端报价为准。"
+
+msgid "membership:retry"
+msgstr "重试"
+
+msgid "membership:savings_approx"
+msgstr "约省 {percent}"
+
+msgid "membership:savings_vs_api"
+msgstr "比 API 约省 {percent}"
+
+msgid "membership:select_plan"
+msgstr "选择 {plan}"
+
+msgid "membership:server_authority"
+msgstr "余额与权益以服务端确认结果为准。"
+
+msgid "membership:service_unavailable"
+msgstr "当前服务未开放会员用量，权益与余额待确认。"
+
+msgid "membership:source_free"
+msgstr "当前预计使用每周免费报告资格"
+
+msgid "membership:source_membership"
+msgstr "当前预计使用会员额度"
+
+msgid "membership:source_owned"
+msgstr "本次结果已拥有"
+
+msgid "membership:source_pending"
+msgstr "扣费来源待确认"
+
+msgid "membership:source_wallet"
+msgstr "当前预计使用API积分"
+
+msgid "membership:stale"
+msgstr "待更新"
+
+msgid "membership:stale_warning"
+msgstr "当前显示上次载入的数据；账户与扣费来源待重新确认，购买暂不可用。"
+
+msgid "membership:synced"
+msgstr "已同步"
+
+msgid "membership:temporarily_unavailable"
+msgstr "暂不可用"
+
+msgid "membership:term_remaining"
+msgstr "本期剩余"
+
+msgid "membership:term_report_reference"
+msgstr "{plan} 每{days}天本期普通报告参考约{reports}盘。"
+
+msgid "membership:term_total_reports"
+msgstr "{days}天共约{reports}盘"
+
+msgid "membership:test_order_warning"
+msgstr "TEST 模拟订单，不会真实收款"
+
+msgid "membership:time_pending"
+msgstr "时间待确认"
+
+msgid "membership:topup_amount"
+msgstr "充值 {amount}"
+
+msgid "membership:topup_arrival"
+msgstr "到账 {points} 积分"
+
+msgid "membership:topup_arrival_rule"
+msgstr "付款确认后到账。会员不足时使用已有 API 积分，不自动充值。"
+
+msgid "membership:topup_option"
+msgstr "{amount}，到账 {points} 积分"
+
+msgid "membership:unavailable"
+msgstr "暂未开放"
+
+msgid "membership:unavailable_title"
+msgstr "会员与用量暂不可用"
+
+msgid "membership:unconfirmed_help"
+msgstr "账户权益与余额尚未确认，请稍后重试。"
+
+msgid "membership:usage"
+msgstr "用量"
+
+msgid "membership:used_and_reserved"
+msgstr "已用及分析中 {percent}"
+
+msgid "membership:valid_until"
+msgstr "有效期至 {date}（北京时间）"
+
+msgid "membership:view_api_topup"
+msgstr "查看 API 充值"
+
+msgid "membership:view_plans"
+msgstr "查看会员方案"
+
+msgid "membership:visits"
+msgstr "{count} 次访问"
+
+msgid "membership:week_remaining"
+msgstr "本周剩余"
+
+msgid "membership:weekly_report_reference"
+msgstr "普通报告，每周最多约{reports}盘"
+
+msgid "membership:weekly_reports"
+msgstr "每周最多约 {reports} 盘"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "每周最多约 {reports} 盘 · 暂未开放"
+
+msgid "membership:weekly_reset_rule"
+msgstr "每周一 00:00（北京时间）恢复本周额度。"
+
+msgid "membership:whole_request_fallback"
+msgstr "会员不足以完成本次分析时，整次使用已有 API 积分。"

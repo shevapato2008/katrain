@@ -7041,3 +7041,991 @@ msgstr "退出後，可從棋譜頁重新開啟這份棋譜。"
 
 msgid "baipu:exit_anyway"
 msgstr "仍要退出"
+
+msgid "membership:account_checking"
+msgstr "正在確認帳戶"
+
+msgid "membership:account_entry"
+msgstr "用量、API 積分與會員權益"
+
+msgid "membership:account_identity_help"
+msgstr "確認帳戶身分後，顯示會員權益、Free 資格與 API 積分餘額。"
+
+msgid "membership:account_retry"
+msgstr "重試帳戶驗證"
+
+msgid "membership:account_unconfirmed"
+msgstr "帳戶狀態暫未確認"
+
+msgid "membership:advanced"
+msgstr "進階"
+
+msgid "membership:advanced_depth_ratio"
+msgstr "進階報告約消耗 {ratio} 倍額度。"
+
+msgid "membership:advanced_depth_rule"
+msgstr "進階報告依伺服器設定的分析深度消耗額度。"
+
+msgid "membership:advanced_position_cost"
+msgstr "進階約 {points} API 積分／手"
+
+msgid "membership:analysis_depth"
+msgstr "分析深度"
+
+msgid "membership:api_balance"
+msgstr "API 積分餘額"
+
+msgid "membership:api_on_demand"
+msgstr "API 隨需分析"
+
+msgid "membership:api_prices"
+msgstr "API 分析價格"
+
+msgid "membership:api_topup"
+msgstr "API 積分儲值"
+
+msgid "membership:auth_after_login"
+msgstr "登入後使用"
+
+msgid "membership:auth_box_login"
+msgstr "前往盒子主頁登入"
+
+msgid "membership:auth_box_note"
+msgstr "請在智星盒主頁完成登入，再從圍棋入口回到此模組。"
+
+msgid "membership:auth_checking_action"
+msgstr "正在確認"
+
+msgid "membership:auth_checking_description"
+msgstr "請稍候，確認完成後將自動繼續。"
+
+msgid "membership:auth_checking_note"
+msgstr "確認期間不會讀取帳戶內容。"
+
+msgid "membership:auth_checking_title"
+msgstr "正在確認登入狀態"
+
+msgid "membership:auth_description"
+msgstr "登入後查看會員用量、API 積分與訂單。"
+
+msgid "membership:auth_expired_description"
+msgstr "登入狀態已失效，已暫停讀取會員與用量中的個人內容。登入後即可繼續使用。"
+
+msgid "membership:auth_expired_title"
+msgstr "請重新登入"
+
+msgid "membership:auth_label"
+msgstr "會員與用量"
+
+msgid "membership:auth_login_continue"
+msgstr "登入並繼續"
+
+msgid "membership:auth_login_title"
+msgstr "登入後查看會員與用量"
+
+msgid "membership:auth_return_note"
+msgstr "登入完成後會回到目前頁面，無需重新尋找入口。"
+
+msgid "membership:auth_unavailable_description"
+msgstr "網路或服務暫時無法使用，請重試。您的登入憑證仍會保留。"
+
+msgid "membership:auth_unavailable_note"
+msgstr "無需登出，可在連線恢復後重試。"
+
+msgid "membership:auth_unavailable_title"
+msgstr "暫時無法確認登入狀態"
+
+msgid "membership:back_to_play"
+msgstr "返回對弈"
+
+msgid "membership:billing_rules"
+msgstr "會員與 API 計費規則"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"優先使用會員額度；任一項會員剩餘不足以完成本次分析時，整次使用現有 API "
+"積分，不拆分扣費來源。積分不足時需儲值或等待額度恢復，不會自動購買積分或扣人民幣。"
+
+msgid "membership:cancel"
+msgstr "取消"
+
+msgid "membership:checkout_renewal_rule"
+msgstr "在現有會員到期後接續生效，不重置目前額度。生效日期以付款後的伺服器回執為準。"
+
+msgid "membership:choose_topup"
+msgstr "選擇儲值金額"
+
+msgid "membership:close"
+msgstr "關閉"
+
+msgid "membership:compare_membership_api"
+msgstr "比較會員與 API"
+
+msgid "membership:compare_plans"
+msgstr "比較會員方案"
+
+msgid "membership:compute"
+msgstr "計算量"
+
+msgid "membership:confirm_consumption"
+msgstr "確認並開始"
+
+msgid "membership:confirm_position"
+msgstr "確認分析目前局面"
+
+msgid "membership:confirm_purchase"
+msgstr "確認購買"
+
+msgid "membership:confirm_report"
+msgstr "確認產生報告"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "使用 API 積分，最多扣 {points}"
+
+msgid "membership:confirming"
+msgstr "正在確認"
+
+msgid "membership:consumption_policy"
+msgstr "會員優先，不足時整次使用 API 積分，最多 {points} 積分"
+
+msgid "membership:countdown_days"
+msgstr "{days} 天 {hours} 小時 {minutes} 分鐘"
+
+msgid "membership:countdown_hours"
+msgstr "{hours} 小時 {minutes} 分鐘"
+
+msgid "membership:create_order"
+msgstr "建立訂單"
+
+msgid "membership:create_report"
+msgstr "建立復盤報告"
+
+msgid "membership:creating_order"
+msgstr "正在建立…"
+
+msgid "membership:current_plan"
+msgstr "目前會員"
+
+msgid "membership:date_pending"
+msgstr "待確認"
+
+msgid "membership:done"
+msgstr "完成"
+
+msgid "membership:entitlement_pending"
+msgstr "帳戶權益待確認"
+
+msgid "membership:error_analysis_login_required"
+msgstr "請先登入後使用分析。"
+
+msgid "membership:error_insufficient"
+msgstr "會員額度與 API 積分不足，請前往會員頁查看。"
+
+msgid "membership:error_operation_running"
+msgstr "分析仍在進行，請稍後重試查詢。"
+
+msgid "membership:error_position_failed"
+msgstr "分析未完成，請重試。"
+
+msgid "membership:error_position_refunded"
+msgstr "分析未完成，已退還本次消耗，請重試。"
+
+msgid "membership:error_position_unavailable"
+msgstr "目前服務未開放單局面分析。"
+
+msgid "membership:error_quote_expired"
+msgstr "報價已過期或與目前請求不符，請確認最新報價後重試。"
+
+msgid "membership:error_quote_failed"
+msgstr "報價失敗，請重試。"
+
+msgid "membership:error_report_failed"
+msgstr "建立報告失敗，請重試。"
+
+msgid "membership:error_report_login_required"
+msgstr "請先登入後建立報告。"
+
+msgid "membership:error_report_missing"
+msgstr "報告不存在，請重新整理後重試。"
+
+msgid "membership:error_result_expired"
+msgstr "分析結果已過期或暫時無法使用，請重新分析。"
+
+msgid "membership:error_service_busy"
+msgstr "目前請求較多，請稍後重試。"
+
+msgid "membership:error_service_paused"
+msgstr "分析服務暫停，請稍後重試。"
+
+msgid "membership:error_service_unavailable"
+msgstr "分析服務暫時無法使用，請稍後重試。"
+
+msgid "membership:error_verification_required"
+msgstr "請先完成登入驗證後重試。"
+
+msgid "membership:example_depth"
+msgstr "範例分析深度"
+
+msgid "membership:free_eligibility_rule"
+msgstr "每個自然週有 {count} 份標準報告的獨立領取資格；須符合身分驗證條件，不作為通用分析額度。"
+
+msgid "membership:free_pending"
+msgstr "Free 資格待確認"
+
+msgid "membership:free_remaining"
+msgstr "本週剩餘 {count} 份"
+
+msgid "membership:free_reset_countdown"
+msgstr "{time} 後恢復 · {date}（北京時間）"
+
+msgid "membership:free_unavailable"
+msgstr "Free 資格目前無法使用"
+
+msgid "membership:free_unavailable_rule"
+msgstr "Free 標準報告須先符合可信身分條件。目前不提供可領取數量，付費會員不另加 Free 報告資格。"
+
+msgid "membership:free_weekly_eligibility"
+msgstr "每個自然週的獨立標準報告資格"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · 本週標準報告資格"
+
+msgid "membership:fulfillment_pending"
+msgstr "權益回執待確認，請重新整理用量查看。"
+
+msgid "membership:full_use_days"
+msgstr "以 {days} 天額度全部用完計算"
+
+msgid "membership:full_use_savings_rule"
+msgstr "優惠以本期額度全部用完計算；實際優惠隨用量變化。續費在現有會員到期後接續生效。"
+
+msgid "membership:galaxy_api_help"
+msgstr "API 無需訂閱，人民幣 1 元 = 1 API 積分。分析開始前請確認伺服器報價。"
+
+msgid "membership:galaxy_choose_membership"
+msgstr "依用量選擇會員方案"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr "以相同標準分析量、本期額度全部用完計算。"
+
+msgid "membership:galaxy_intro"
+msgstr "查看分析用量，選擇隨需儲值或會員方案。"
+
+msgid "membership:galaxy_membership_savings"
+msgstr "經常分析，會員可更省"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "偶爾分析，也能隨需儲值"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount}／{days} 天"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · {days} 天會員"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr "以每盤 300 手、含初始局面估算，受本期剩餘額度限制。"
+
+msgid "membership:galaxy_report_example_title"
+msgstr "一盤 300 手，要花多少？"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr "每週一 00:00（北京時間）恢復本週額度；本期剩餘額度在到期時失效。"
+
+msgid "membership:galaxy_tabs"
+msgstr "會員頁面"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr "於 {date} 到期（北京時間）；週一重置不增加本期額度。"
+
+msgid "membership:galaxy_title"
+msgstr "會員與用量"
+
+msgid "membership:history_unavailable"
+msgstr "訂單紀錄暫時無法使用"
+
+msgid "membership:kiosk_account_actions"
+msgstr "帳戶操作"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "帳戶、會員與儲值"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "進階分析"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr "進階 {points} API 積分，兩者均含初始局面"
+
+msgid "membership:kiosk_api_balance"
+msgstr "API 餘額"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "API 儲值 · 依用量付費"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "API 積分儲值"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "會員額度不足時使用 API 積分"
+
+msgid "membership:kiosk_back"
+msgstr "返回"
+
+msgid "membership:kiosk_back_settings"
+msgstr "返回設定"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "確認帳戶權益後顯示"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "付款前請核對訂單金額"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "選擇 {plan}"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "已與雲端同步"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "比較會員"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "請先確認帳戶"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "分析前確認來源與報價"
+
+msgid "membership:kiosk_creating_order"
+msgstr "正在建立訂單…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "入帳：{points} API 積分"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "目前 API 餘額"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "目前權益"
+
+msgid "membership:kiosk_current_plan"
+msgstr "目前會員"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "預計 {start} 至 {end} · 北京時間"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount} = {points} API 積分"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "免費報告資格以雲端核驗為準"
+
+msgid "membership:kiosk_free_pending"
+msgstr "免費報告資格待核驗"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "僅有標準報告資格，不贈通用分析額度"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "剩餘 {remaining}／{limit} 份"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr "請先完成帳戶驗證，通過核驗後顯示本週資格。"
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "經常使用，會員可更省"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "額度全部用完時，比 API 更省"
+
+msgid "membership:kiosk_history_error"
+msgstr "訂單紀錄尚未同步，請稍後重試。"
+
+msgid "membership:kiosk_member_first"
+msgstr "分析優先使用會員額度"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "會員優先，不足時改用 API 積分"
+
+msgid "membership:kiosk_membership_extension"
+msgstr "已有會員時，新購期間將接續在已購期間結束後生效；保留現有用量，最終時間以付款回執為準。"
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "購買會員"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr "生效 {start} 至 {end} · 北京時間 · 以此回執為準"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "會員服務暫時無法使用"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr "測試環境由伺服器模擬付款結果，此頁不會觸發付款或自行發放權益。"
+
+msgid "membership:kiosk_next_plan"
+msgstr "下期 {plan} · {date} 生效 · 北京時間"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr "分析前確認來源與報價，不會自動儲值。"
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr "本頁不會自行發放權益；需要時請返回重新選擇。"
+
+msgid "membership:kiosk_no_orders"
+msgstr "尚無訂單紀錄"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "標準分析"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "{moves} 手報告 · 標準 {points} API 積分"
+
+msgid "membership:kiosk_not_available"
+msgstr "尚未開放"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "訂單確認"
+
+msgid "membership:kiosk_order_expired"
+msgstr "訂單已過期"
+
+msgid "membership:kiosk_order_failed"
+msgstr "訂單未完成"
+
+msgid "membership:kiosk_order_history"
+msgstr "訂單紀錄"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "訂單 {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "訂單已退款"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "伺服器已確認付款"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr "訂單狀態尚未同步，正在重試；請勿重複下單。"
+
+msgid "membership:kiosk_order_uncertain"
+msgstr "訂單結果尚未確認，請先查看訂單紀錄，避免重複建立。"
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "訂單待確認"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "訂單有效至 {date} · 北京時間"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "等待伺服器確認付款"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr "已擁有的結果可反覆查看；領地與建議著手包含在同一結果內。"
+
+msgid "membership:kiosk_paid_time"
+msgstr "確認時間 {date} · 北京時間"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr "付款入口尚未串接，請稍後查看訂單狀態。"
+
+msgid "membership:kiosk_pending_no_order"
+msgstr "確認前不顯示剩餘比例，也不建立訂單。"
+
+msgid "membership:kiosk_period_pending"
+msgstr "週期待核對"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "週期額度待核對"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "目錄確認後顯示價格與權益。"
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "會員目錄待同步"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan} {reports} 盤"
+
+msgid "membership:kiosk_plan_term"
+msgstr "／{days} 天"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "有效至 {date} · 北京時間"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} API 積分"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "{points} API 積分／手"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr "會員本期與本週兩項剩餘須同時足夠本次分析，否則整次使用 API 積分，不拆分扣費。不會自動以人民幣儲值。"
+
+msgid "membership:kiosk_pricing_help"
+msgstr "API 計價說明"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr "N 手報告含初始局面，共 N+1 個局面；實際扣費以分析前的棋譜報價為準。"
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr "餘額以 {precision} API 積分精度顯示。每局面標準 {normal}、進階 {advanced} API 積分。"
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr "離線或額度未知時請先同步。已擁有的結果可重複查看，領地與建議著手包含在同一結果內。"
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "帳戶與額度確認後才可購買"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "正在確認額度"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr "兩項剩餘都足夠才使用會員，否則整次使用 API 積分，不拆分扣費。分析前確認來源與報價，積分不足時需手動儲值或等待重置。"
+
+msgid "membership:kiosk_quota_help"
+msgstr "會員額度與優惠說明"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "額度尚未確認"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr "每週最多盤數以 {moves} 手標準報告估算，受本期剩餘額度限制。本期標準報告參考：{references}。"
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr "會員在已購週期結束時到期，每週於北京時間週一零點重置額度。本期與本週的剩餘比例分別計算；分析中的用量已計入。"
+
+msgid "membership:kiosk_quota_result_help"
+msgstr "同一結果包含領地與建議著手，重複查看不重複扣費。進階分析消耗標準分析 {multiplier} 倍的額度。"
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr "優惠與 API 標準分析相比，以本期額度全部用完計算；未用完時，實際優惠隨用量變化。Free 僅有免費標準報告資格，不贈通用分析額度。"
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "額度待雲端核對"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr "帳戶用量正在重新同步，餘額與權益以雲端快照為準。"
+
+msgid "membership:kiosk_remaining"
+msgstr "剩餘"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "剩餘額度尚未確認"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "續費 {plan}"
+
+msgid "membership:kiosk_report_estimate"
+msgstr "以 {moves} 手估算，受本期剩餘額度限制；進階約消耗 {multiplier} 倍。"
+
+msgid "membership:kiosk_reserved_included"
+msgstr "已計入分析中的用量"
+
+msgid "membership:kiosk_result_reuse"
+msgstr "一次結果包含領地與建議著手，重複查看不重複扣費。"
+
+msgid "membership:kiosk_resync"
+msgstr "重新同步"
+
+msgid "membership:kiosk_return_selection"
+msgstr "返回選擇"
+
+msgid "membership:kiosk_return_usage"
+msgstr "返回用量"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "比 API 約省 {percent}"
+
+msgid "membership:kiosk_savings_condition"
+msgstr "優惠以本期額度全部用完計算；未用完時，實際優惠隨用量變化。"
+
+msgid "membership:kiosk_select_topup"
+msgstr "選擇 API 儲值金額"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "服務暫時無法使用"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "同步失敗"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "待同步"
+
+msgid "membership:kiosk_synced"
+msgstr "已同步"
+
+msgid "membership:kiosk_syncing"
+msgstr "正在同步"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "正在同步訂單…"
+
+msgid "membership:kiosk_term"
+msgstr "本期"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "本期到期 · 北京時間"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "本期剩餘比例"
+
+msgid "membership:kiosk_term_reports"
+msgstr "標準報告 · {days} 天共約 {reports} 盤"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · 測試環境"
+
+msgid "membership:kiosk_test_order"
+msgstr "TEST 模擬訂單 · 不會實際收款"
+
+msgid "membership:kiosk_title"
+msgstr "會員與儲值"
+
+msgid "membership:kiosk_topup"
+msgstr "儲值"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "儲值 {amount}"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "儲值目錄待同步"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr "兩項會員剩餘都足夠時優先使用會員額度，否則整次使用 API 積分。"
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} · {points} API 積分"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points} API 積分"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "尚未確認"
+
+msgid "membership:kiosk_understood"
+msgstr "知道了"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr "兩項剩餘須同時足夠本次分析；不足時整次使用 API 積分。"
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "暫時無法同步用量"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "已用及分析中 {percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "請先確認帳戶身分"
+
+msgid "membership:kiosk_view_order"
+msgstr "查看訂單 {id}"
+
+msgid "membership:kiosk_view_plans"
+msgstr "查看會員"
+
+msgid "membership:kiosk_week"
+msgstr "本週"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "本週剩餘比例"
+
+msgid "membership:kiosk_week_reports"
+msgstr "每週最多約 {reports} 盤"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "週一零點重置 · 北京時間"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "每週免費標準報告"
+
+msgid "membership:loading"
+msgstr "正在讀取會員與用量…"
+
+msgid "membership:login"
+msgstr "登入帳戶"
+
+msgid "membership:login_to_view"
+msgstr "登入後查看會員與用量"
+
+msgid "membership:membership_first"
+msgstr "優先使用會員額度"
+
+msgid "membership:membership_free_pending_help"
+msgstr "會員與 Free 資格尚未確認，請重新載入後查看。"
+
+msgid "membership:membership_order"
+msgstr "會員訂單"
+
+msgid "membership:next_membership"
+msgstr "已購 {plan} · {date} 生效"
+
+msgid "membership:no_orders"
+msgstr "尚無訂單"
+
+msgid "membership:normal"
+msgstr "標準"
+
+msgid "membership:normal_position_cost"
+msgstr "標準約 {points} API 積分／手"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "隨需購買，無需訂閱"
+
+msgid "membership:open"
+msgstr "查看"
+
+msgid "membership:order_actual_end"
+msgstr "實際到期 {date}（北京時間）"
+
+msgid "membership:order_actual_points"
+msgstr "實際入帳 {points} API 積分"
+
+msgid "membership:order_actual_start"
+msgstr "實際生效 {date}（北京時間）"
+
+msgid "membership:order_estimated_dates"
+msgstr "預計生效 {start}，預計到期 {end}（北京時間）；最終日期以付款回執為準。"
+
+msgid "membership:order_expired"
+msgstr "訂單已過期"
+
+msgid "membership:order_expires_at"
+msgstr "訂單有效至 {date}（北京時間）。"
+
+msgid "membership:order_failed"
+msgstr "訂單未完成"
+
+msgid "membership:order_history"
+msgstr "訂單紀錄"
+
+msgid "membership:order_id"
+msgstr "訂單編號"
+
+msgid "membership:order_paid"
+msgstr "已支付"
+
+msgid "membership:order_pending"
+msgstr "等待付款"
+
+msgid "membership:order_poll_error"
+msgstr "暫時無法確認付款狀態，正在重試。請勿重複付款。"
+
+msgid "membership:order_refunded"
+msgstr "已退款"
+
+msgid "membership:order_result_unknown"
+msgstr "訂單結果尚未確認，請先查看訂單紀錄，避免重複建立。"
+
+msgid "membership:order_topup"
+msgstr "API 積分儲值"
+
+msgid "membership:payment_account_pending"
+msgstr "帳戶與用量確認後，才能建立付款訂單。"
+
+msgid "membership:payment_channel_unavailable"
+msgstr "付款管道尚未開放，請勿在頁面外向不明帳戶付款。"
+
+msgid "membership:payments_disabled"
+msgstr "付款尚未開放"
+
+msgid "membership:payments_unavailable"
+msgstr "付款尚未開放，目前無法建立付款訂單。"
+
+msgid "membership:pending_order_notice"
+msgstr "等待付款，頁面會自動確認伺服器狀態。"
+
+msgid "membership:plan_pending"
+msgstr "會員權益待確認"
+
+msgid "membership:plan_term"
+msgstr "／{days} 天"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan} 尚未開放"
+
+msgid "membership:plans"
+msgstr "會員"
+
+msgid "membership:points"
+msgstr "API 積分"
+
+msgid "membership:points_amount"
+msgstr "{points} API 積分"
+
+msgid "membership:points_exchange_rate"
+msgstr "人民幣 1 元 = 1 API 積分"
+
+msgid "membership:position_cost"
+msgstr "每手費用"
+
+msgid "membership:position_pricing_rule"
+msgstr "單局面與整盤使用相同單價；整盤按手數加初始局面計費。"
+
+msgid "membership:processing"
+msgstr "處理中…"
+
+msgid "membership:quota"
+msgstr "會員額度"
+
+msgid "membership:quota_dual_rule"
+msgstr "本期與本週分別依各自額度顯示剩餘比例，一次分析須同時符合兩項剩餘。分析中的預留計入已用，失敗後退還。"
+
+msgid "membership:quota_expires_in"
+msgstr "{time} 後到期"
+
+msgid "membership:quota_pending"
+msgstr "額度待確認"
+
+msgid "membership:quota_recovers_in"
+msgstr "{time} 後恢復"
+
+msgid "membership:quota_refresh_pending"
+msgstr "正在確認最新額度"
+
+msgid "membership:quota_reservation_help"
+msgstr "兩項剩餘分別計算，一次分析須同時符合。分析中的預留已計入使用比例，失敗後退還。"
+
+msgid "membership:quote_and_owned_rule"
+msgstr "分析開始前會顯示伺服器報價與扣費來源。帳戶或用量狀態未確認時，暫時無法開始分析。重複查看已擁有的結果、切換領地與建議著手，不重複收費。"
+
+msgid "membership:refresh"
+msgstr "重新整理"
+
+msgid "membership:reload"
+msgstr "重新載入"
+
+msgid "membership:remaining_percent"
+msgstr "剩餘 {percent}"
+
+msgid "membership:renew_plan"
+msgstr "續費 {plan}"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"續費在現有會員到期後接續生效，不重置目前已用與預留用量；付款前日期僅為預估，最終生效期間以付款後的伺服器回執為準。付費會員不另加 Free "
+"標準報告資格。"
+
+msgid "membership:report_estimate_limit"
+msgstr "以每盤 300 手估算，受本期剩餘額度限制。"
+
+msgid "membership:report_example_rule"
+msgstr "包含初始局面，共 301 個分析局面。實際費用以提交前的伺服器報價為準。"
+
+msgid "membership:retry"
+msgstr "重試"
+
+msgid "membership:savings_approx"
+msgstr "約省 {percent}"
+
+msgid "membership:savings_vs_api"
+msgstr "比 API 約省 {percent}"
+
+msgid "membership:select_plan"
+msgstr "選擇 {plan}"
+
+msgid "membership:server_authority"
+msgstr "餘額與權益以伺服器確認結果為準。"
+
+msgid "membership:service_unavailable"
+msgstr "目前服務未開放會員用量，權益與餘額待確認。"
+
+msgid "membership:source_free"
+msgstr "目前預計使用每週免費報告資格"
+
+msgid "membership:source_membership"
+msgstr "目前預計使用會員額度"
+
+msgid "membership:source_owned"
+msgstr "已擁有本次結果"
+
+msgid "membership:source_pending"
+msgstr "扣費來源待確認"
+
+msgid "membership:source_wallet"
+msgstr "目前預計使用 API 積分"
+
+msgid "membership:stale"
+msgstr "待更新"
+
+msgid "membership:stale_warning"
+msgstr "目前顯示上次載入的資料；帳戶與扣費來源待重新確認，暫時無法購買。"
+
+msgid "membership:synced"
+msgstr "已同步"
+
+msgid "membership:temporarily_unavailable"
+msgstr "暫時無法使用"
+
+msgid "membership:term_remaining"
+msgstr "本期剩餘"
+
+msgid "membership:term_report_reference"
+msgstr "{plan} 每 {days} 天期間，標準報告參考約 {reports} 盤。"
+
+msgid "membership:term_total_reports"
+msgstr "{days} 天共約 {reports} 盤"
+
+msgid "membership:test_order_warning"
+msgstr "TEST 模擬訂單，不會實際收款。"
+
+msgid "membership:time_pending"
+msgstr "時間待確認"
+
+msgid "membership:topup_amount"
+msgstr "儲值 {amount}"
+
+msgid "membership:topup_arrival"
+msgstr "入帳：{points} API 積分"
+
+msgid "membership:topup_arrival_rule"
+msgstr "付款確認後入帳。會員額度不足時使用現有 API 積分，不會自動儲值。"
+
+msgid "membership:topup_option"
+msgstr "{amount}，入帳 {points} API 積分"
+
+msgid "membership:unavailable"
+msgstr "尚未開放"
+
+msgid "membership:unavailable_title"
+msgstr "會員與用量暫時無法使用"
+
+msgid "membership:unconfirmed_help"
+msgstr "帳戶權益與餘額尚未確認，請稍後重試。"
+
+msgid "membership:usage"
+msgstr "用量"
+
+msgid "membership:used_and_reserved"
+msgstr "已用及分析中 {percent}"
+
+msgid "membership:valid_until"
+msgstr "有效至 {date}（北京時間）"
+
+msgid "membership:view_api_topup"
+msgstr "查看 API 儲值"
+
+msgid "membership:view_plans"
+msgstr "查看會員方案"
+
+msgid "membership:visits"
+msgstr "{count} 次搜尋"
+
+msgid "membership:week_remaining"
+msgstr "本週剩餘"
+
+msgid "membership:weekly_report_reference"
+msgstr "標準報告，每週最多約 {reports} 盤"
+
+msgid "membership:weekly_reports"
+msgstr "每週最多約 {reports} 盤"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "每週最多約 {reports} 盤 · 尚未開放"
+
+msgid "membership:weekly_reset_rule"
+msgstr "每週一 00:00（北京時間）恢復本週額度。"
+
+msgid "membership:whole_request_fallback"
+msgstr "會員額度不足以完成本次分析時，整次使用現有 API 積分。"

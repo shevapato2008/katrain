@@ -25,15 +25,15 @@
 - [x] Read AGENTS.md, `katrain-i18n-expert` skill and previous release receipt. Reuse prepared worktree; no worktree recreation.
 - [x] Fetch/merge published develop before edits (fast-forward baseline `8cc4b6dcdd236bd8339643043f176708ff499503`). Do not enter Elasticsearch worktree.
 - [x] Complete exact feature-copy inventory, including remaining `membership:*` keys and hardcoded copy/reason strings. Read-only independent audit found no existing membership catalog entries; estimated220–260 keys after sharing. The existing membership UI baseline is45 passing tests.
-- [ ] Independent Astra Max reviews this plan, at most two rounds; fix material gaps before implementation. Scope review proportionately to localization and release risks.
+- [x] Independent Astra Max reviews this plan, at most two rounds; fix material gaps before implementation. Scope review proportionately to localization and release risks.
 
 ### Task 2: Shared copy and consumption journey (one implementer)
 
 **Files:** `katrain/web/ui/src/features/membership/{presentation.ts,ConsumptionQuoteDialog.tsx}`; a small `useMembershipI18n.ts` if it removes duplicate formatting; `katrain/web/ui/src/features/analysis/usePaidPosition.ts`; `katrain/web/ui/src/features/report/useReportTasks.ts`; the membership-specific rendered messages in `galaxy/pages/{ResearchPage.tsx,report/ReportsPage.tsx}` and `kiosk/pages/{ResearchPage.tsx,ReportsPage.tsx}`; `components/auth/{AccessPrompt.tsx,ProtectedOutline.tsx}`. Tests adjacent to changed files. `useMembership.ts` diagnostics are internal and need no translation; inspect but do not change unnecessarily.
 
-- [ ] Keep `useTranslation()` subscriptions in every affected rendered component/hook. Frozen shared helper contract: `{t, lang, locale, date(value, full?), countdown(seconds), money(fen), number(value, options?)}` from `useMembershipI18n.ts`. `t(key, defaultText, values?)` performs named interpolation without unsafe HTML; helpers use Beijing timezone. `number` is display-only. Keep `usagePercent()` as the existing ASCII machine value; never parse a localized display string. Galaxy progress values and Kiosk CSS width/ARIA take the raw bounded numeric `period.percent`. Render localized percentages separately from that number. Add a German comma-decimal regression asserting display localization while CSS width and `aria-valuenow` remain numeric and correct. No hook or UI callback may depend on unstable `t` identity.
-- [ ] Replace shared feature copy with `membership:*` keys and whole templates; store message codes instead of frozen translated error strings, translate at return/render time. Preserve raw diagnostics only in existing developer channels.
-- [ ] Add focused switching/error/formatting coverage, preserve existing consumption and account-switch tests. No billing backend behavior changes.
+- [x] Keep `useTranslation()` subscriptions in every affected rendered component/hook. Frozen shared helper contract: `{t, lang, locale, date(value, full?), countdown(seconds), money(fen), number(value, options?)}` from `useMembershipI18n.ts`. `t(key, defaultText, values?)` performs named interpolation without unsafe HTML; helpers use Beijing timezone. `number` is display-only. Keep `usagePercent()` as the existing ASCII machine value; never parse a localized display string. Galaxy progress values and Kiosk CSS width/ARIA take the raw bounded numeric `period.percent`. Render localized percentages separately from that number. Add a German comma-decimal regression asserting display localization while CSS width and `aria-valuenow` remain numeric and correct. No hook or UI callback may depend on unstable `t` identity.
+- [x] Replace shared feature copy with `membership:*` keys and whole templates; store message codes instead of frozen translated error strings, translate at return/render time. Preserve raw diagnostics only in existing developer channels.
+- [x] Add focused switching/error/formatting coverage, preserve existing consumption and account-switch tests. No billing backend behavior changes.
 
 ## Chunk 2: Parallel UI extraction, then translations
 
@@ -41,34 +41,34 @@
 
 **Files:** `katrain/web/ui/src/galaxy/pages/membership/{MembershipPage.tsx,useMembershipCheckout.ts}` and adjacent tests; `galaxy/components/layout/galaxyNavigation.tsx`. Audit confirmed billing admin is a separate legacy credits/redeem module and is excluded.
 
-- [ ] Extract visible/accessible copy, including helpers/subcomponents/status maps/selection summaries and history; subscribe all rendered subcomponents. Reuse shared `membership:*` keys for identical semantics; otherwise use `membership:galaxy_*`.
-- [ ] Open checkout and error language switching must not create/refresh an order or alter account/environment boundaries. Render translated selections from frozen data/keys, not a frozen translated sentence.
-- [ ] Run focused Galaxy tests; report new keys/default texts and changed files. No catalog edits in this parallel task.
+- [x] Extract visible/accessible copy, including helpers/subcomponents/status maps/selection summaries and history; subscribe all rendered subcomponents. Reuse shared `membership:*` keys for identical semantics; otherwise use `membership:galaxy_*`.
+- [x] Open checkout and error language switching must not create/refresh an order or alter account/environment boundaries. Render translated selections from frozen data/keys, not a frozen translated sentence.
+- [x] Run focused Galaxy tests; report new keys/default texts and changed files. No catalog edits in this parallel task.
 
 ### Task 4: Kiosk (one implementer, disjoint files)
 
 **Files:** `katrain/web/ui/src/kiosk/pages/membership/{MembershipPage.tsx,useKioskMembershipOrder.ts,membership.css}` and tests; `kiosk/components/settings/AccountSection.tsx`; membership-related aria label in `kiosk/shell/KioskTopbar.tsx`.
 
-- [ ] Extract visible/accessible copy with complete templates, dynamic units, statuses and modal/history copy. Use shared helpers and subscription; `membership:kiosk_*` only where semantics differ.
-- [ ] Preserve scaled-canvas dialogs, scroll zones/focus/touch targets, status guards, identity cleanup and async cancellation. Wrap longer copy without hiding warnings or controls.
-- [ ] Run focused Kiosk tests and a translated language-switch check; report keys/defaults. No catalog edits in this parallel task.
+- [x] Extract visible/accessible copy with complete templates, dynamic units, statuses and modal/history copy. Use shared helpers and subscription; `membership:kiosk_*` only where semantics differ.
+- [x] Preserve scaled-canvas dialogs, scroll zones/focus/touch targets, status guards, identity cleanup and async cancellation. Wrap longer copy without hiding warnings or controls.
+- [x] Run focused Kiosk tests and a translated language-switch check; report keys/defaults. No catalog edits in this parallel task.
 
 ### Task 5: All 11 catalogs (parallel disjoint language groups)
 
 **Files:** `scripts/batch_translate_galaxy.py`; optionally `scripts/membership_translations.json` loaded/merged into `GALAXY_TRANSLATIONS` to keep this large data set maintainable without module import-path changes; `katrain/i18n/locales/*/LC_MESSAGES/katrain.po` and compiled `.mo`; focused translation tests under `tests/`.
 
-- [ ] Freeze the extracted key/default/placeholder inventory after Tasks2–4. Translators own disjoint language sets or temporary output files; only one integrator edits the common batch dictionary/POs. Avoid conflicting file rewrites.
-- [ ] Human-quality whole-sentence translations for every feature key, including existing membership keys. Keep weekly/30-day caps, full-use savings conditions, membership-first whole-request API fallback, no automatic RMB recharge, expiry, pending-versus-paid and TEST-only simulation meanings accurate.
-- [ ] Merge data into the existing batch workflow. Apply only the membership subset while developing so unrelated existing translations are not overwritten; run `python i18n.py` as required by skill, inspect and retain only changes needed by this task (record unrelated legacy warnings). Compile/verify all11 MO catalogs, including Spanish.
-- [ ] Verify all extracted keys exist and are nonempty/nonfuzzy, placeholders match English, no duplicate feature keys, and real gettext loading returns the translated values. Use one focused durable test, not a second translation platform.
+- [x] Freeze the extracted key/default/placeholder inventory after Tasks2–4. Translators own disjoint language sets or temporary output files; only one integrator edits the common batch dictionary/POs. Avoid conflicting file rewrites.
+- [x] Human-quality whole-sentence translations for every feature key, including existing membership keys. Keep weekly/30-day caps, full-use savings conditions, membership-first whole-request API fallback, no automatic RMB recharge, expiry, pending-versus-paid and TEST-only simulation meanings accurate.
+- [x] Merge data into the existing batch workflow. Apply only the membership subset while developing so unrelated existing translations are not overwritten; run `python i18n.py` as required by skill, inspect and retain only changes needed by this task (record unrelated legacy warnings). Compile/verify all11 MO catalogs, including Spanish.
+- [x] Verify all extracted keys exist and are nonempty/nonfuzzy, placeholders match English, no duplicate feature keys, and real gettext loading returns the translated values. Use one focused durable test, not a second translation platform.
 
 ## Chunk 3: Verification, independent review and release
 
 ### Task 6: Focused validation and independent Astra Max
 
-- [ ] Run affected UI/API presentation tests plus feature catalog tests, ordinary frontend build and strict Kiosk build. Billing backend regression only if touched; no GPU/payment/capacity request required for copy changes.
-- [ ] Reuse existing Playwright membership fixtures for representative populated usage/checkout/receipt/error states. Load actual PO-derived catalogs; check all11 resolve the module's messages, actual language changes and representative geometry/screenshots. Do not add fixture data to product code.
-- [ ] Independently review spec compliance then code/translation/representative visual quality with Astra Max, fix material feedback via implementers until Approved. Independent review must actually occur; save concise report/evidence.
+- [x] Run affected UI/API presentation tests plus feature catalog tests, ordinary frontend build and strict Kiosk build. Billing backend regression only if touched; no GPU/payment/capacity request required for copy changes.
+- [x] Reuse existing Playwright membership fixtures for representative populated usage/checkout/receipt/error states. Load actual PO-derived catalogs; check all11 resolve the module's messages, actual language changes and representative geometry/screenshots. Do not add fixture data to product code.
+- [x] Independently review spec compliance then code/translation/representative visual quality with Astra Max, fix material feedback via implementers until Approved. Independent review must actually occur; save concise report/evidence.
 
 ### Task 7: Four-step integration and selective deployment
 

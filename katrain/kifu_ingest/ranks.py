@@ -7,6 +7,7 @@ to reproduce an old card.
 
 from copy import deepcopy
 from datetime import datetime, timezone
+from hashlib import sha256
 import json
 import re
 
@@ -77,10 +78,10 @@ def merge_rank_facts(*fact_maps):
     return merged
 
 
-def rank_decision_request(game):
+def rank_decision_request(game, *, historical=False):
     """The independent disk cache key intentionally excludes mutable profiles."""
     return {
-        "policy_version": POLICY_VERSION,
+        "policy_version": "historical-rank-as-of-v1" if historical else POLICY_VERSION,
         "source_key": game["source_key"],
         "source_item_id": game["source_item_id"],
         "sgf_sha256": game["sgf_sha256"],
@@ -211,8 +212,90 @@ def freeze_game_ranks(game, *, library_facts=None, identity_evidence=None, match
     return {"rank_snapshots": snapshots, "rank_observations": observations, "rank_facts": deepcopy(facts)}
 
 
+def is_historical_snapshot(snapshot):
+    return isinstance(snapshot, dict) and snapshot.get("version") == "kifu-rank-snapshot-v3"
+
+
+def historical_game_targets(games):
+    """Portable proposed slots; pending rows deliberately carry no local IDs."""
+    targets = []
+    for game in games:
+        album = {**game["metadata"], "id": None, "sgf_content": game["sgf_content"], "source_path": game["origin_path"]}
+        links = [
+            {
+                "source_key": game["source_key"],
+                "origin_path": game["origin_path"],
+                "album_id": None,
+                "id": None,
+                "source_id": None,
+            }
+        ]
+        for side in ("black", "white"):
+            owner = game.get("identities", {}).get(side)
+            targets.append(
+                {
+                    "album": album,
+                    "side": side,
+                    "source_links": links,
+                    "player_ref": owner if isinstance(owner, dict) else None,
+                }
+            )
+    return targets
+
+
+def freeze_historical_game_ranks(conn, games, *, matched_at=None):
+    """Freeze a bounded incoming batch from existing original evidence only."""
+    from katrain.web.kifu.historical_ranks import prepare_rank_decisions
+
+    when = _utc(matched_at)
+    decisions = prepare_rank_decisions(conn, historical_game_targets(games), matched_at=when)["decisions"]
+    result = []
+    for index, game in enumerate(games):
+        # Inferences are never promoted to original rank facts. Keep only true
+        # source observations under the existing immutable fact contract.
+        source = freeze_game_ranks(game, matched_at=when)
+        result.append({**source, "rank_snapshots": dict(zip(("black", "white"), decisions[2 * index : 2 * index + 2]))})
+    return result
+
+
+def _validate_historical_slot(game, side, snapshot, observations, facts, used):
+    from katrain.web.kifu.historical_ranks import validate_rank_source_metadata
+
+    source = validate_rank_source_metadata({**game["metadata"], "sgf_content": game["sgf_content"]})
+    _require(
+        sha256(game["sgf_content"].encode()).hexdigest() == game["sgf_sha256"]
+        and snapshot["source_ref"]
+        == {
+            "source_key": game["source_key"],
+            "origin_path": game["origin_path"],
+            "sgf_sha256": game["sgf_sha256"],
+            "slot": side,
+        }
+        and snapshot["player_ref"] == game.get("identities", {}).get(side)
+        and snapshot["raw_rank"] == (game["metadata"].get(f"{side}_rank") or "")
+        and snapshot["raw_name"] == game["metadata"].get(f"player_{side}")
+        and snapshot["target_date"] == source["target_date"],
+        "rank snapshot source/slot/owner/raw/date binding mismatch",
+    )
+    original = freeze_game_ranks(game, matched_at=snapshot["matched_at"])
+    observation = observations[side]
+    _require(observation == original["rank_observations"][side], "original rank observation changed")
+    if observation:
+        _require(
+            observation in facts
+            and {k: v for k, v in facts[observation].items() if k != "observed_at"}
+            == {k: v for k, v in original["rank_facts"][observation].items() if k != "observed_at"},
+            "original rank observation source mismatch",
+        )
+        used.add(observation)
+
+
 def validate_rank_snapshot(snapshot):
     """Validate standalone snapshot shape and self hash (not its DB authority)."""
+    if is_historical_snapshot(snapshot):
+        from katrain.web.kifu.historical_ranks import validate_rank_decision
+
+        return validate_rank_decision(snapshot)
     _require(isinstance(snapshot, dict) and set(snapshot) == _FIELDS, "rank snapshot shape invalid")
     _require(
         snapshot["version"] == SNAPSHOT_VERSION
@@ -365,6 +448,9 @@ def validate_manifest_ranks(manifest):
         )
         for side, snapshot in snapshots.items():
             validate_rank_snapshot(snapshot)
+            if is_historical_snapshot(snapshot):
+                _validate_historical_slot(game, side, snapshot, observations, facts, used)
+                continue
             owner = game.get("identities", {}).get(side)
             raw, original_display = _raw_rank(
                 game, side, source_policy=snapshot["policy_version"] == SOURCE_POLICY_VERSION
@@ -487,6 +573,21 @@ def display_rank_for_game_slot(snapshot, raw_rank=""):
     if snapshot is None:
         return {"rank": raw_rank or "", "rank_origin": "source" if raw_rank else "unknown", "rank_source": None}
     validate_rank_snapshot(snapshot)
+    if is_historical_snapshot(snapshot):
+        basis = snapshot["basis"]
+        return {
+            "rank": snapshot["display_rank"],
+            "rank_origin": snapshot["origin"],
+            "rank_source": {
+                "policy_version": snapshot["policy_version"],
+                "snapshot_sha256": snapshot["content_sha256"],
+                "rank_system": snapshot["rank_system"],
+                "origin": snapshot["origin"],
+                "source_ref": deepcopy(snapshot["source_ref"]),
+                "source_as_of": basis[0]["raw_date"] if basis else snapshot["target_date"],
+                "refusal_reason": snapshot["refusal_reason"],
+            },
+        }
     proof = snapshot["source_proof"] or {}
     source = {
         key: snapshot[key]

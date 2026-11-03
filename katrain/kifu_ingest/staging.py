@@ -107,11 +107,11 @@ class Stage:
     def items(self):
         return list(self.manifest["items"].values())
 
-    def _rank_decision_path(self, game):
+    def _rank_decision_path(self, game, *, historical=False):
         from katrain.kifu_ingest.ranks import rank_decision_request
         from katrain.web.kifu.name_candidates import canonical_sha256
 
-        request = rank_decision_request(game)
+        request = rank_decision_request(game, historical=historical)
         digest = canonical_sha256(request)
         directory = self.root / "rank-snapshots"
         if directory.is_symlink() or directory.exists() and not directory.is_dir():
@@ -137,9 +137,18 @@ class Stage:
 
     def load_rank_decision(self, game):
         """Load the entire immutable decision, including an explicit unknown."""
+        # Historical checkpoints must be discovered before the new policy key;
+        # an old unknown or current-profile decision is immutable on retry.
+        for historical in (False, True):
+            decision = self._load_rank_decision(game, historical=historical)
+            if decision is not None:
+                return decision
+        return None
+
+    def _load_rank_decision(self, game, *, historical):
         from katrain.web.kifu.name_candidates import canonical_sha256
 
-        path, request, digest = self._rank_decision_path(game)
+        path, request, digest = self._rank_decision_path(game, historical=historical)
         try:
             fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         except FileNotFoundError:
@@ -174,7 +183,10 @@ class Stage:
         """Persist once; a retry must reuse rather than replace a frozen grade."""
         from katrain.web.kifu.name_candidates import canonical_sha256
 
-        path, request, digest = self._rank_decision_path(game)
+        from katrain.kifu_ingest.ranks import is_historical_snapshot
+
+        historical = all(is_historical_snapshot(x) for x in decision.get("rank_snapshots", {}).values())
+        path, request, digest = self._rank_decision_path(game, historical=historical)
         existing = self.load_rank_decision(game)
         if existing is not None:
             if existing != decision:

@@ -240,24 +240,40 @@ def _ref(album, side, link):
     }
 
 
-def _validate_original(album, side, links, owner, player_id, index, *, expected_ref=None):
-    link = trusted_source_link(album, links)
-    require(link is not None, "rank source ownership invalid")
+def validate_rank_source_metadata(album):
+    """Validate original root literals and deterministic embedded-rank columns.
+
+    A missing root DT may have a source-supplied album date, but it never supplies
+    an inference date. Returned raw ranks/date always come from the original SGF.
+    Names and nonempty root ranks/dates must still match the album exactly.
+    """
     body = album.get("sgf_content")
     require(isinstance(body, str) and 0 < len(body.encode()) <= MAX_SGF_BYTES, "rank source SGF resource limit")
     try:
         root = SGF.parse_sgf(body)
     except ParseError as exc:
         raise ValueError("rank source SGF invalid") from exc
-    # Every literal root binding is checked, including the opposite player.
-    for prop, key in (
-        ("PB", "player_black"),
-        ("PW", "player_white"),
-        ("BR", "black_rank"),
-        ("WR", "white_rank"),
-        ("DT", "date_played"),
-    ):
-        require((root.get_property(prop, "") or "") == (album.get(key) or ""), "rank source root binding mismatch")
+    raw_ranks = {}
+    for side, name_prop, rank_prop in (("black", "PB", "BR"), ("white", "PW", "WR")):
+        raw_name = root.get_property(name_prop, "") or ""
+        raw_rank = root.get_property(rank_prop, "") or ""
+        album_rank = album.get(f"{side}_rank") or ""
+        require(raw_name == (album.get(f"player_{side}") or ""), "rank source root name binding mismatch")
+        embedded = parse_player(raw_name, None).embedded_rank
+        require(
+            raw_rank == album_rank or not raw_rank and embedded is not None and album_rank == embedded,
+            "rank source root grade binding mismatch",
+        )
+        raw_ranks[side] = raw_rank
+    raw_date = root.get_property("DT", "") or ""
+    require(not raw_date or raw_date == (album.get("date_played") or ""), "rank source root date binding mismatch")
+    return {"raw_date": raw_date, "target_date": _day(raw_date), "raw_ranks": raw_ranks}
+
+
+def _validate_original(album, side, links, owner, player_id, index, *, expected_ref=None):
+    link = trusted_source_link(album, links)
+    require(link is not None, "rank source ownership invalid")
+    metadata = validate_rank_source_metadata(album)
     require(
         owner is None or _name_bound(album.get(f"player_{side}") or "", owner, player_id, index),
         "rank source owner mismatch",
@@ -265,7 +281,7 @@ def _validate_original(album, side, links, owner, player_id, index, *, expected_
     source_ref = _ref(album, side, link)
     require(expected_ref is None or source_ref == expected_ref, "rank basis source SHA binding mismatch")
     grade, reason = _grade(album.get(f"player_{side}") or "", album.get(f"{side}_rank") or "", link["source_key"])
-    return source_ref, grade, reason, link
+    return source_ref, grade, reason, link, metadata["target_date"]
 
 
 def _cohort(conn, owner_dates):
@@ -421,12 +437,13 @@ def _qualification(owner, day, observations, source_grade):
 
 
 def _observation(album, side, source_ref, owner, grade):
+    metadata = validate_rank_source_metadata(album)
     result = {
         "source_ref": source_ref,
         "player_ref": deepcopy(owner),
         "raw_name": album[f"player_{side}"],
-        "raw_rank": album.get(f"{side}_rank") or "",
-        "raw_date": album.get("date_played") or "",
+        "raw_rank": metadata["raw_ranks"][side],
+        "raw_date": metadata["raw_date"],
         "rank_value": grade["rank_value"],
         "rank_system": grade["rank_system"],
     }
@@ -463,8 +480,8 @@ def prepare_rank_decisions(conn, targets, *, matched_at):
         body_bytes += len(entry["album"].get("sgf_content", "").encode())
         require(body_bytes <= MAX_BODY_BYTES, "rank target SGF resource limit")
         original.append(_validate_original(entry["album"], entry["side"], entry["source_links"], owner, pid, index))
-    for entry, (_, pid), (_, grade, invalid, _) in zip(targets, owners, original):
-        day = _inference_day(entry["album"].get("date_played"))
+    for entry, (_, pid), (_, grade, invalid, _, root_day) in zip(targets, owners, original):
+        day = _inference_day(root_day)
         if pid and day and not invalid and (not grade or grade["rank_system"] == "dan_unspecified"):
             owner_dates[pid] = max(day, owner_dates.get(pid, day))
     deferred = False
@@ -474,9 +491,9 @@ def prepare_rank_decisions(conn, targets, *, matched_at):
     except _Deferred:
         observations, links, cohort_index, deferred = [], {}, {}, True
     decisions, refusals, bodies = [], [], {}
-    for entry, (owner, pid), (ref, grade, invalid, _) in zip(targets, owners, original):
+    for entry, (owner, pid), (ref, grade, invalid, _, root_day) in zip(targets, owners, original):
         album, side = entry["album"], entry["side"]
-        day = _inference_day(album.get("date_played"))
+        day = _inference_day(root_day)
         result_grade, origin, basis, qual, reason = grade, "source" if grade else "unknown", [], None, invalid
         needs_history = not invalid and (grade is None or grade["rank_system"] == "dan_unspecified")
         if needs_history:
@@ -513,10 +530,11 @@ def prepare_rank_decisions(conn, targets, *, matched_at):
                             body_bytes += len(body.encode())
                             bodies[ident] = body
                         chosen = {**chosen, "sgf_content": bodies[ident]}
-                        other_ref, other_grade, other_invalid, _ = _validate_original(
+                        other_ref, other_grade, other_invalid, _, other_day = _validate_original(
                             chosen, candidate["side"], links[ident], owner, pid, cohort_index
                         )
                         require(not other_invalid and other_grade == candidate["grade"], "rank basis grade invalid")
+                        require(_inference_day(other_day) == candidate["day"], "rank basis original root date invalid")
                         proof = _observation(chosen, candidate["side"], other_ref, owner, other_grade)
                         qual["latest_original"] = deepcopy(proof)
                         basis = [proof]
@@ -540,7 +558,7 @@ def prepare_rank_decisions(conn, targets, *, matched_at):
             "rank_value": result_grade["rank_value"] if result_grade else None,
             "rank_system": result_grade["rank_system"] if result_grade else None,
             "origin": origin,
-            "target_date": _day(album.get("date_played")),
+            "target_date": root_day,
             "basis": basis,
             "qualification": qual,
             "refusal_reason": reason,
@@ -554,7 +572,7 @@ def prepare_rank_decisions(conn, targets, *, matched_at):
     # A body-budget overflow defers all attempted historical decisions, never an
     # order-dependent partial cohort. Explicit source grades still survive.
     if any(x["refusal_reason"] == "resource_deferred" for x in decisions):
-        for result, (_, grade, _, _) in zip(decisions, original):
+        for result, (_, grade, _, _, _) in zip(decisions, original):
             if result["origin"] in {"historical_type", "historical_prior"}:
                 result.update(
                     origin="source" if grade else "unknown",
@@ -825,20 +843,17 @@ def validate_rank_decision(decision):
     return decision
 
 
-def _live_target(conn, target):
+def _live_target(conn, target, *, lock=True):
     album = target["album"]
     if album.get("id") is None:
         return target
     a = m.KifuAlbum.__table__
-    live = (
-        conn.execute(
-            select(*[a.c[k] for k in _SCALARS], _body_length(conn, a.c.sgf_content).label("sgf_bytes"))
-            .where(a.c.id == album["id"])
-            .with_for_update()
-        )
-        .mappings()
-        .one_or_none()
+    query = select(*[a.c[k] for k in _SCALARS], _body_length(conn, a.c.sgf_content).label("sgf_bytes")).where(
+        a.c.id == album["id"]
     )
+    if lock:
+        query = query.with_for_update()
+    live = conn.execute(query).mappings().one_or_none()
     require(live is not None, "rank target binding missing")
     require(0 < live["sgf_bytes"] <= MAX_SGF_BYTES, "rank target SGF resource limit")
     live = dict(live)
@@ -884,14 +899,14 @@ def _bind_target(conn, target, decision):
     owner, pid = _owner(conn, target)
     album, side = target["album"], target["side"]
     index = _identities(conn, [album.get(f"player_{side}") or ""], [owner])
-    ref, _, _, link = _validate_original(
+    ref, _, _, link, root_day = _validate_original(
         album, side, target["source_links"], owner, pid, index, expected_ref=decision["source_ref"]
     )
     require(
         owner == decision["player_ref"]
         and (album.get(f"{side}_rank") or "") == decision["raw_rank"]
         and (album.get(f"player_{side}") or "") == decision["raw_name"]
-        and _day(album.get("date_played")) == decision["target_date"],
+        and root_day == decision["target_date"],
         "rank target owner/raw/date binding mismatch",
     )
     return {
@@ -905,26 +920,26 @@ def _bind_target(conn, target, decision):
     }
 
 
-def bind_rank_decision(conn, target, decision):
+def bind_rank_decision(conn, target, decision, *, lock=True):
     """Resolve exact frozen portable proofs to local IDs, without as-of reselection.
 
     Store returned objects at applied_artifact['basis_bindings']. Target IDs must
     be populated by the caller after insertion. No IDs enter snapshot bytes.
+    Read-only preparation may pass lock=False; apply/replay/undo retain row locks.
     """
     validate_rank_decision(decision)
-    target_binding = _bind_target(conn, _live_target(conn, target), decision)
+    target_binding = _bind_target(conn, _live_target(conn, target, lock=lock), decision)
     bindings = []
     used = 0
     for proof in decision["basis"]:
         ref = proof["source_ref"]
         a = m.KifuAlbum.__table__
-        candidates = list(
-            conn.execute(
-                select(*[a.c[k] for k in _SCALARS], _body_length(conn, a.c.sgf_content).label("sgf_bytes"))
-                .where(a.c.source_path == ref["origin_path"])
-                .with_for_update()
-            ).mappings()
+        query = select(*[a.c[k] for k in _SCALARS], _body_length(conn, a.c.sgf_content).label("sgf_bytes")).where(
+            a.c.source_path == ref["origin_path"]
         )
+        if lock:
+            query = query.with_for_update()
+        candidates = list(conn.execute(query).mappings())
         require(len(candidates) == 1, "rank basis source missing/ambiguous")
         album = dict(candidates[0])
         used += album["sgf_bytes"]
@@ -936,9 +951,14 @@ def bind_rank_decision(conn, target, decision):
         require(album.get(f"{side}_player_id") is not None, "rank basis owner binding missing")
         index = _identities(conn, [album[f"player_{side}"]], [owner])
         links = _links(conn, [album["id"]]).get(album["id"], [])
-        actual_ref, grade, invalid, link = _validate_original(album, side, links, owner, pid, index, expected_ref=ref)
+        actual_ref, grade, invalid, link, root_day = _validate_original(
+            album, side, links, owner, pid, index, expected_ref=ref
+        )
         require(
-            not invalid and grade and _observation(album, side, actual_ref, owner, grade) == proof,
+            not invalid
+            and grade
+            and _inference_day(root_day) == proof["raw_date"]
+            and _observation(album, side, actual_ref, owner, grade) == proof,
             "rank basis observation binding mismatch",
         )
         bindings.append(

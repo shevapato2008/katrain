@@ -507,7 +507,11 @@ def test_disposable_postgresql_initial_cohort_and_query_timeout_restore():
     import os
     from uuid import uuid4
     from sqlalchemy import text
-    from katrain.web.kifu.historical_ranks import prepare_rank_decisions, verify_initial_rank_decisions
+    from katrain.web.kifu.historical_ranks import (
+        bind_rank_decision,
+        prepare_rank_decisions,
+        verify_initial_rank_decisions,
+    )
 
     dsn = os.getenv("KIFU_STANDARDIZATION_TEST_PG_DSN")
     if not dsn:
@@ -536,6 +540,16 @@ def test_disposable_postgresql_initial_cohort_and_query_timeout_restore():
             frozen = prepare_rank_decisions(first, [entry], matched_at=MATCHED)["decisions"]
             assert first.exec_driver_sql("SHOW statement_timeout").scalar_one() == previous
             assert frozen[0]["display_rank"] == "8p"
+            with pg.connect() as readonly:
+                readonly.exec_driver_sql("SET TRANSACTION READ ONLY")
+                readonly_entry = target(readonly, 2)
+                readonly_decision = prepare_rank_decisions(readonly, [readonly_entry], matched_at=MATCHED)["decisions"][
+                    0
+                ]
+                assert readonly_decision == frozen[0]
+                binding = bind_rank_decision(readonly, readonly_entry, readonly_decision, lock=False)
+                assert binding["target"]["album_id"] == 2 and binding["basis"][0]["album_id"] == 1
+                assert readonly.exec_driver_sql("SHOW transaction_read_only").scalar_one() == "on"
             # Another committed connection's new original is visible at the
             # READ COMMITTED recheck after taking the relevant table locks.
             with pg.begin() as second:
@@ -548,3 +562,79 @@ def test_disposable_postgresql_initial_cohort_and_query_timeout_restore():
         with control.begin() as admin:
             admin.execute(text(f"DROP SCHEMA {schema} CASCADE"))
         control.dispose()
+
+
+def _derived_incoming(body, source_metadata=None):
+    from katrain.kifu_ingest.preparation import derive_metadata
+
+    path = "data/kifu-album/19x19/incoming.sgf"
+    return {
+        "album": {
+            "id": None,
+            "source_path": path,
+            "sgf_content": body,
+            "black_player_id": 11,
+            "white_player_id": 12,
+            **derive_metadata(body, source_metadata),
+        },
+        "side": "black",
+        "source_links": [
+            {
+                "id": None,
+                "album_id": None,
+                "source_id": 4,
+                "source_key": "19x19",
+                "origin_path": path,
+                "match_method": "source_path",
+            }
+        ],
+    }
+
+
+def test_native_deterministically_derived_embedded_rank_can_refine(conn):
+    game(conn, 1, "1960-01-01", "9p")
+    entry = _derived_incoming("(;PB[棋手甲九段]PW[棋手乙]EV[比赛]DT[1968-08-01];B[aa])")
+    assert entry["album"]["black_rank"] == "九段"
+    decision = resolve(conn, entry)
+    assert decision["display_rank"] == "9p" and decision["origin"] == "historical_type"
+    entry["album"]["black_rank"] = "八段"
+    with pytest.raises(ValueError, match="root"):
+        resolve(conn, entry)
+
+
+@pytest.mark.parametrize(
+    "root_rank,name,display,origin",
+    [("9p", "棋手甲", "9p", "source"), ("", "棋手甲九段", "9段", "source"), ("", "棋手甲", "", "unknown")],
+)
+def test_source_date_cannot_replace_missing_root_date_for_inference(conn, root_rank, name, display, origin):
+    from katrain.web.kifu.historical_ranks import bind_rank_decision, verify_initial_rank_decisions
+
+    game(conn, 1, "1960-01-01", "9p")
+    entry = _derived_incoming(
+        f"(;PB[{name}]PW[棋手乙]BR[{root_rank}]EV[比赛];B[aa])",
+        {"playTime": {"date": {"year": 1968, "month": 8, "day": 1}}},
+    )
+    assert entry["album"]["date_played"] == "1968-08-01"
+    decision = resolve(conn, entry)
+    assert (decision["display_rank"], decision["origin"]) == (display, origin)
+    assert decision["target_date"] is None and decision["qualification"] is None and decision["basis"] == []
+    if root_rank != "9p":
+        assert decision["refusal_reason"] == "untrusted_target_date"
+    verify_initial_rank_decisions(conn, [entry], [decision])
+    bind_rank_decision(conn, entry, decision)
+
+
+def test_source_date_without_original_dt_cannot_be_historical_basis(conn):
+    game(conn, 1, "1960-01-01", "9p", sgf="(;PB[棋手甲]PW[棋手乙]BR[9p]WR[1p];B[aa])")
+    decision = resolve(conn, game(conn, 2, "1968-08-01", "", family="CWI"))
+    assert decision["origin"] == "unknown" and decision["basis"] == []
+    assert decision["refusal_reason"] == "invalid_original_evidence"
+
+
+def test_binding_can_omit_row_locks_for_readonly_preparation(conn):
+    from katrain.web.kifu.historical_ranks import bind_rank_decision
+
+    game(conn, 1, "1960-01-01", "9p")
+    entry = game(conn, 2, "1968-08-01", "", family="CWI")
+    decision = resolve(conn, entry)
+    assert bind_rank_decision(conn, entry, decision, lock=False) == bind_rank_decision(conn, entry, decision)

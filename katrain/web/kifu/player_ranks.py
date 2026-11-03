@@ -1012,7 +1012,8 @@ def lookup_album_rank_snapshots(conn, album_ids):
     source_rows = {
         row["id"]: row
         for row in result.values()
-        if isinstance(row["snapshot"], dict) and row["snapshot"].get("version") == SOURCE_SNAPSHOT_VERSION
+        if isinstance(row["snapshot"], dict)
+        and row["snapshot"].get("version") in {SOURCE_SNAPSHOT_VERSION, "kifu-rank-snapshot-v3"}
     }
     if source_rows:
         # Existing native v1 pages retain their original proof-free read path.
@@ -1021,6 +1022,10 @@ def lookup_album_rank_snapshots(conn, album_ids):
                 t.c.id,
                 batch.c.bundle_sha256.label("_batch_sha256"),
                 batch.c.status.label("_batch_status"),
+                batch.c.reviewed_artifact["publication_format"].as_string().label("_batch_publication_format"),
+                batch.c.reviewed_artifact["publication_key"].as_string().label("_batch_publication_key"),
+                batch.c.reviewed_artifact["format"].as_string().label("_batch_artifact_format"),
+                batch.c.reviewed_artifact["manifest_sha256"].as_string().label("_batch_manifest_sha256"),
                 journal.c.after_image.label("_journal_after"),
             )
             .outerjoin(batch, batch.c.id == t.c.native_batch_id)
@@ -1034,8 +1039,33 @@ def lookup_album_rank_snapshots(conn, album_ids):
             )
             .where(t.c.id.in_(source_rows))
         )
+        seen_journals = set()
         for row in conn.execute(query).mappings():
-            source_rows[row["id"]].update(dict(row))
+            target = source_rows[row["id"]]
+            if row["id"] in seen_journals:
+                # Ambiguous journal membership cannot authorize an overlay.
+                target["_journal_after"] = None
+                target["_journal_ambiguous"] = True
+            elif not target.get("_journal_ambiguous"):
+                target.update(dict(row))
+            seen_journals.add(row["id"])
+    # Canonical ownership is checked against the current side FK in one bounded
+    # page query. No original basis albums or whole reviewed artifacts are read.
+    a, p = KifuAlbum.__table__, KifuPlayer.__table__
+    pb, pw = p.alias("rank_black_owner"), p.alias("rank_white_owner")
+    for owner in conn.execute(
+        select(
+            a.c.id,
+            a.c.black_player_id,
+            a.c.white_player_id,
+            pb.c.canonical_name.label("black_canonical"),
+            pw.c.canonical_name.label("white_canonical"),
+        )
+        .outerjoin(pb, pb.c.id == a.c.black_player_id)
+        .outerjoin(pw, pw.c.id == a.c.white_player_id)
+        .where(a.c.id.in_(album_ids))
+    ).mappings():
+        result[(owner["id"], "owners")] = dict(owner)
     links, sources = KifuAlbumSource.__table__, KifuSource.__table__
     for row in conn.execute(
         select(

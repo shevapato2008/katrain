@@ -55,8 +55,8 @@ describe('kiosk 棋谱详情语言展示', () => {
     getAlbum.mockResolvedValue({ ...detail('cn'), black_rank: '7d', white_rank: '9d', display_black_rank: '7p', display_white_rank: '9p', result: 'b+' });
     render(page());
     const hero = await screen.findByTestId('kifu-detail-hero');
-    expect(hero).toHaveTextContent('职业七段');
-    expect(hero).toHaveTextContent('职业九段');
+    expect(hero).toHaveTextContent('七段');
+    expect(hero).toHaveTextContent('九段');
     expect(hero).toHaveTextContent('黑胜');
     expect(hero).not.toHaveTextContent('中盘');
   });

@@ -82,17 +82,42 @@ S3_BUCKET=tutorial-assets
 
 ## Execution Steps
 
+### 0. Preserve the actual service configuration
+
+Before recreating Web or Cron, capture their current Docker Config, mounts,
+networks, image and health privately. Determine the complete role-specific
+Compose file chain; labels alone are insufficient when a container was replaced
+with a configuration-preserving native helper. Compare the effective candidate
+configuration with the captured container before applying it.
+
+The TEST hourly collector requires `docker-compose.kifu-ingest.yml` plus its
+protected runtime settings: collector/LLM switches and daily token cap, original
+stage, restricted SSH key and known_hosts mounts, TEST/PROD API URLs, ES writer
+credentials, CA mount and `kifu-search-private` network. Preserve an active
+collector's complete configuration; missing variables must not silently become
+`false / false / 0`. Keep PROD's collector disabled and its receiver's ES sync
+enabled. Reuse protected writer credentials only; do not inject an entire
+admin/read/writer secret file into Cron.
+
+If using Compose, define `KATRAIN_COMPOSE_FILES` as a shell array of the **verified
+complete file arguments**, including applicable role overlays, then use it for
+every recreation below. If actual configuration is maintained by an audited
+native Docker replacement helper, use that helper with an explicit private
+beforeimage and validated delta instead. Never replace an active collector with
+a bare main-file Compose command. A requested pause/restoration must be an
+explicit recorded delta; unrelated memberships, budgets, mounts and identities
+stay unchanged. Inspect only allowlisted nonsecret settings and presence/hash
+checks, never print `.env`, Docker Env, provider keys or database URLs.
+
 ### 1. Ensure .env exists & is complete
 
-```bash
-cat /home/fan/Repositories/katrain/.env   # must have DASHSCOPE_API_KEY, POSTGRES_PASSWORD, and storage keys above
-```
+Check the required keys in memory and report presence only; do not `cat .env`.
 
 If a key is missing, copy it from the running container before recreating (recreate re-substitutes `.env`):
 
-```bash
-docker inspect katrain-web --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -E 'DASHSCOPE|DATABASE_URL'
-```
+Read only the required values into a private deployment process/file with 0600
+permissions; never print the source Env or DSN. Use the captured configuration
+from step 0 so replacement does not drop unrelated settings.
 
 ### 2. Rebuild KataGo image (~2-20 min) — only if /home/fan/Repositories/KataGo changed
 
@@ -150,12 +175,14 @@ PY
 
 ```bash
 cd /home/fan/Repositories/katrain
-docker compose up -d --build katrain-web katrain-cron
+(( ${#KATRAIN_COMPOSE_FILES[@]} > 0 )) || { echo 'Resolve the complete Compose file chain first' >&2; exit 1; }
+docker compose "${KATRAIN_COMPOSE_FILES[@]}" up -d --build katrain-web katrain-cron
 ```
 
 `--build` rebuilds Dockerfile.web (includes `npm run build`, ~60s) and Dockerfile.cron.
-`katrain-web` waits for `minio` healthy (so step 5 must have run). Bare `docker compose up -d --build`
-also (re)creates minio/minio-setup — fine, but never recreates KataGo/postgres.
+`katrain-web` waits for `minio` healthy (so step 5 must have run). Use the verified
+file chain from step 0 and target only the intended services; do not recreate
+unrelated MinIO, KataGo or Postgres services for a code-only release.
 
 ### 8. Verify all services
 
@@ -165,6 +192,12 @@ curl http://localhost:8001/api/v1/health
 docker exec katrain-web sh -c 'echo BACKEND=$KATRAIN_STORAGE_BACKEND'   # confirm intended backend (local/s3)
 docker logs katrain-cron --tail 20
 ```
+
+For TEST hourly collection, verify the effective safe switches/daily cap,
+original stage and restricted SSH/CA mounts, writer network, native receiver and
+ES ready gate after replacement. A fresh heartbeat alone is not a collector
+acceptance: check its recorded run/batch progress, API verification and indexed
+visibility. Distinguish whole-round duration from projection/bulk/refresh times.
 
 For `local` backend, also confirm an asset still streams (Range):
 
@@ -176,8 +209,8 @@ curl -s -o /dev/null -w 'asset %{http_code}\n' -H 'Range: bytes=0-1023' \
 ## Selective Deployment
 
 - **KataGo changes only**: steps 2-4
-- **KaTrain code/frontend changes only**: steps 1, 7-8
-- **Cron-only changes**: `docker compose up -d --build katrain-cron`
+- **KaTrain code/frontend changes only**: steps 0-1, 7-8
+- **Cron-only changes**: step 0, then `docker compose "${KATRAIN_COMPOSE_FILES[@]}" up -d --build katrain-cron`, followed by the actual collector/receiver checks above.
 - **First MinIO bring-up**: step 5, then step 6 (full migration), then recreate web/cron (step 7)
 - **New tutorial assets generated** (write-through already uploads on `s3`; on `local` MinIO isn't touched): re-run step 6 to sync
 - **Flip to s3 (Stage B)**: set `MEDIA_PUBLIC_BASE_URL` + `KATRAIN_STORAGE_BACKEND=s3` in `.env`, then step 7

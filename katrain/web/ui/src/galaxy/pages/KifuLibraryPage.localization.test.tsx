@@ -62,8 +62,8 @@ describe('Galaxy 棋谱库语言展示', () => {
     getAlbum.mockResolvedValue({ ...detail('cn'), ...normalized });
     render(page());
     await screen.findByTestId('board');
-    expect(screen.getByText('职业七段')).toBeInTheDocument();
-    expect(screen.getByText('职业九段')).toBeInTheDocument();
+    expect(screen.getByText('七段')).toBeInTheDocument();
+    expect(screen.getByText('九段')).toBeInTheDocument();
     expect(screen.getAllByText('黑胜')).toHaveLength(2);
     expect(getComputedStyle(screen.getByText('cn-black')).fontWeight).toBe('700');
   });

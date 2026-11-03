@@ -1017,6 +1017,9 @@ def _rank_displays(record, black, white, snapshots):
             "white_rank",
             "black_player_id",
             "white_player_id",
+            "player_black",
+            "player_white",
+            "date_played",
         )
     }
     source_links = snapshots.get((record.id, "sources"), [])
@@ -1036,7 +1039,62 @@ def _rank_displays(record, black, white, snapshots):
         if row is not None:
             try:
                 snapshot = row["snapshot"]
-                if snapshot.get("version") == SNAPSHOT_VERSION:
+                if snapshot.get("version") == "kifu-rank-snapshot-v3":
+                    from katrain.web.kifu.historical_ranks import validate_rank_decision, validate_rank_source_metadata
+
+                    validate_rank_decision(snapshot)
+                    original = validate_rank_source_metadata(album)
+                    owner = snapshots.get((record.id, "owners"), {})
+                    player_id = album[f"{side}_player_id"]
+                    canonical = owner.get(f"{side}_canonical")
+                    journal = row.get("_journal_after")
+                    expected_row = {
+                        key: row[key]
+                        for key in (
+                            "id",
+                            "album_id",
+                            "side",
+                            "rank_fact_id",
+                            "snapshot",
+                            "snapshot_sha256",
+                            "publication_key",
+                            "native_batch_id",
+                        )
+                    }
+                    authority = row.get("_batch_manifest_sha256") == row.get("_batch_sha256") and (
+                        (
+                            row.get("_batch_publication_format") == "kifu-incremental-manifest-v2"
+                            and row.get("_batch_publication_key") == row["publication_key"]
+                        )
+                        or (
+                            row.get("_batch_artifact_format") == "kifu-historical-rank-repair-v1"
+                            and row["publication_key"] == "historical-rank:" + (row.get("_batch_sha256") or "")
+                        )
+                    )
+                    if (
+                        authority
+                        and row.get("_batch_status") == "applied"
+                        and journal == expected_row
+                        and row["album_id"] == record.id
+                        and row["side"] == side
+                        and row["rank_fact_id"] is None
+                        and row["snapshot_sha256"] == snapshot["content_sha256"]
+                        and source is not None
+                        and snapshot["source_ref"]
+                        == {
+                            "source_key": source["source_key"],
+                            "origin_path": source["origin_path"],
+                            "slot": side,
+                            "sgf_sha256": hashlib.sha256(record.sgf_content.encode()).hexdigest(),
+                        }
+                        and snapshot["player_ref"] == ({"canonical_name": canonical} if player_id is not None else None)
+                        and (player_id is None or canonical is not None)
+                        and snapshot["raw_rank"] == (raw or "")
+                        and snapshot["raw_name"] == album[f"player_{side}"]
+                        and snapshot["target_date"] == original["target_date"]
+                    ):
+                        rendered = display_rank_for_game_slot(snapshot)
+                elif snapshot.get("version") == SNAPSHOT_VERSION:
                     validate_source_snapshot(snapshot, album=album, side=side, source_links=source_links)
                     journal = row.get("_journal_after") or {}
                     if (

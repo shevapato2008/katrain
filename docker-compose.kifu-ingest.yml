@@ -5,12 +5,30 @@ services:
       CRON_KIFU_INGEST_ENABLED: ${CRON_KIFU_INGEST_ENABLED:-false}
       CRON_KIFU_INGEST_LLM_ENABLED: ${CRON_KIFU_INGEST_LLM_ENABLED:-false}
       CRON_KIFU_INGEST_MAX_TOKENS: ${CRON_KIFU_INGEST_MAX_TOKENS:-0}
+      CRON_KIFU_INGEST_INTERVAL: ${CRON_KIFU_INGEST_INTERVAL:-3600}
+      CRON_KIFU_INGEST_MAX_GAMES: ${CRON_KIFU_INGEST_MAX_GAMES:-100}
+      CRON_KIFU_INGEST_MAX_NEW_NAMES: ${CRON_KIFU_INGEST_MAX_NEW_NAMES:-20}
       CRON_KIFU_INGEST_STAGING_DIR: /app/data/kifu_ingest
+      CRON_KIFU_INGEST_TEST_API_URL: ${CRON_KIFU_INGEST_TEST_API_URL:-http://host.docker.internal:8001}
       CRON_KIFU_INGEST_SSH_HOST: ${CRON_KIFU_INGEST_SSH_HOST:-}
       CRON_KIFU_INGEST_PROD_API_URL: ${CRON_KIFU_INGEST_PROD_API_URL:-}
       CRON_KIFU_INGEST_SSH_KEY: /run/secrets/kifu_ingest_key
       CRON_KIFU_INGEST_KNOWN_HOSTS: /run/secrets/kifu_ingest_known_hosts
+      KIFU_SEARCH_SYNC_MODE: enabled
+      KIFU_ES_URL: ${KIFU_ES_URL:-https://elasticsearch:9200}
+      KIFU_ES_INDEX_ALIAS: ${KIFU_ES_INDEX_ALIAS:-kifu-search}
+      KIFU_ES_CA_CERT: /etc/ssl/certs/kifu-es-ca.crt
+      KIFU_ES_WRITER_API_KEY: ${KIFU_ES_WRITER_API_KEY:?load only the restricted Elasticsearch writer key}
     volumes:
       - ${KIFU_INGEST_STAGE_DIR:-./data/kifu_ingest}:/app/data/kifu_ingest
       - ${KIFU_INGEST_KEY_FILE:?set a dedicated SSH key path}:/run/secrets/kifu_ingest_key:ro
       - ${KIFU_INGEST_KNOWN_HOSTS_FILE:?set a known_hosts path}:/run/secrets/kifu_ingest_known_hosts:ro
+      - ${KIFU_INGEST_ES_CA_FILE:?set an Elasticsearch CA path}:/etc/ssl/certs/kifu-es-ca.crt:ro
+    networks:
+      - default
+      - kifu-search-private
+
+networks:
+  kifu-search-private:
+    external: true
+    name: kifu-search-private

@@ -44,10 +44,19 @@ describe('formatRank', () => {
 });
 
 describe('formatKifuRank', () => {
+  it.each(['cn', 'tw'])('uses the same ninth-dan wording for professional and unspecified ranks in %s', (lang) => {
+    for (const rank of ['9p', ' 9P ', '职业九段', '職業九段', '职业9段', '職業9段', '9段', '九段']) {
+      expect(formatKifuRank(rank, null, t, lang)).toBe('九段');
+    }
+    expect(formatKifuRank(null, '9p', t, lang)).toBe('九段');
+    expect(formatKifuRank('9d', null, t, lang)).toBe(lang === 'tw' ? '業餘9段' : '业余9段');
+    expect(formatRank('9p', t)).toBe('职业九段');
+  });
+
   it('uses the normalized display rank without reclassifying it from raw legacy dan', () => {
     expect(formatKifuRank('7段', '7d', t, 'cn')).toBe('七段');
     expect(formatKifuRank('七段', '7p', t, 'cn')).toBe('七段');
-    expect(formatKifuRank('7p', '7d', t, 'cn')).toBe('职业七段');
+    expect(formatKifuRank('7p', '7d', t, 'cn')).toBe('七段');
     expect(formatKifuRank('7d', '7d', t, 'cn')).toBe('业余7段');
     expect(formatKifuRank('7d', null, t, 'tw')).toBe('業餘7段');
     expect(formatKifuRank('7段', '7d', (key, fallback) => key === 'strength:dan' ? ' dan' : fallback ?? '', 'en')).toBe('7 dan');
@@ -56,7 +65,7 @@ describe('formatKifuRank', () => {
   it('keeps unqualified raw dan honest while retaining explicit amateur and kyu', () => {
     expect(formatKifuRank(null, '7d', t, 'cn')).toBe('7段');
     expect(formatKifuRank(null, '业余七段', t, 'cn')).toBe('业余7段');
-    expect(formatKifuRank(null, '7p', t, 'tw')).toBe('職業七段');
+    expect(formatKifuRank(null, '7p', t, 'tw')).toBe('七段');
     expect(formatKifuRank('6k', '7d', t, 'cn')).toBe('6级');
     expect(formatKifuRank('?', 'unknown', t, 'cn')).toBeNull();
     expect(formatRank('7d', t)).toBe('7段');

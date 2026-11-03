@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { stoneRotationDegrees, stoneSpriteUrl } from './board/stoneAppearance';
 import { Box } from '@mui/material';
 
 interface MiniBoardProps {
@@ -190,29 +191,18 @@ const MiniBoard = ({ size = 100, boardSize = 19, blackStones, whiteStones }: Min
           />
         ))}
 
-        {/* Black stones */}
-        {blackCoords.map(([x, y], i) => (
-          <circle
-            key={`b${i}`}
-            cx={(x - minX + 0.5) * cellSize}
-            cy={(maxY - y + 0.5) * cellSize}
-            r={stoneRadius}
-            fill="#1a1a1a"
+        {/* Coordinate variants stay stable when the thumbnail crop changes. */}
+        {(['B', 'W'] as const).map(color => (color === 'B' ? blackCoords : whiteCoords).map(([x, y], i) => (
+          <image
+            key={`${color}${i}`}
+            href={stoneSpriteUrl(color, boardSize, x, boardSize - 1 - y)}
+            transform={`rotate(${stoneRotationDegrees(boardSize, x, boardSize - 1 - y)} ${(x - minX + 0.5) * cellSize} ${(maxY - y + 0.5) * cellSize})`}
+            x={(x - minX + 0.5) * cellSize - stoneRadius}
+            y={(maxY - y + 0.5) * cellSize - stoneRadius}
+            width={stoneRadius * 2}
+            height={stoneRadius * 2}
           />
-        ))}
-
-        {/* White stones */}
-        {whiteCoords.map(([x, y], i) => (
-          <circle
-            key={`w${i}`}
-            cx={(x - minX + 0.5) * cellSize}
-            cy={(maxY - y + 0.5) * cellSize}
-            r={stoneRadius}
-            fill="#f5f5f5"
-            stroke="#333"
-            strokeWidth={0.5}
-          />
-        ))}
+        )))}
       </svg>
     </Box>
   );

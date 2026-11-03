@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { stoneRotationDegrees, stoneSpriteUrl } from '../../components/board/stoneAppearance';
 import { BOARD_ASSETS } from '../../components/board/boardUtils';
 import { boardExtent, coordToXY, lineAt, starsFor, windowViewBox, type GoWindow } from './goBoard';
 
@@ -98,13 +99,12 @@ export function GoBoardSvg({
 
   const stone = (c: string, isBlack: boolean) => {
     const p = P(c);
+    const { x: col, y: row } = coordToXY(c, size);
     return (
-      // `data-stone` / `data-at`:**给测试和几何闸用的把手**。子是画出来的圆,DOM 上问不出
+      // `data-stone` / `data-at`:**给测试和几何闸用的把手**。子是绘制的图片,DOM 上问不出
       // 「Q16 上有没有黑子」—— 没有把手就只能去数 circle,而数出来的数字换个装饰就变。
       <g key={`${isBlack ? 'b' : 'w'}${c}`} data-stone={isBlack ? 'b' : 'w'} data-at={c}>
-        {/* 落影:往下偏 3%,不是模糊 —— 7″ 屏上高斯模糊看不出来,只吃 GPU */}
-        <circle cx={p.x} cy={p.y + U * 0.03} r={STONE_R} fill="rgba(40,20,8,.34)" />
-        <circle cx={p.x} cy={p.y} r={STONE_R} fill={`url(#s${isBlack ? 'b' : 'w'}-${uid})`} />
+        <image href={stoneSpriteUrl(isBlack ? 'B' : 'W', size, col, row)} transform={`rotate(${stoneRotationDegrees(size, col, row)} ${p.x} ${p.y})`} x={p.x - STONE_R} y={p.y - STONE_R} width={STONE_R * 2} height={STONE_R * 2} />
       </g>
     );
   };
@@ -140,12 +140,6 @@ export function GoBoardSvg({
           <rect width={W} height={W} fill={`url(#gw-${uid})`} />
           <image href={BOARD_ASSETS.board} x="0" y="0" width={W} height={W} preserveAspectRatio="none" />
         </pattern>
-        <radialGradient id={`sb-${uid}`} cx="34%" cy="30%">
-          <stop offset="0" stopColor="#585862" /><stop offset="1" stopColor="#0A0A0C" />
-        </radialGradient>
-        <radialGradient id={`sw-${uid}`} cx="34%" cy="30%">
-          <stop offset="0" stopColor="#FFFFFF" /><stop offset="1" stopColor="#CFC9BB" />
-        </radialGradient>
       </defs>
       <rect width={W} height={W} fill={`url(#gr-${uid})`} />
       {lines}

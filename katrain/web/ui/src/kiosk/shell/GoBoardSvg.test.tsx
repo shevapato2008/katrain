@@ -1,3 +1,4 @@
+import { stoneSpriteUrl } from '../../components/board/stoneAppearance';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { GoBoardSvg } from './GoBoardSvg';
@@ -26,4 +27,13 @@ describe('GoBoardSvg last stone', () => {
     rerender(<GoBoardSvg black={['D4']} last="pass" />);
     expect(container.querySelector('circle.mark')).toBeNull();
   });
+});
+
+it('renders shared sprites for real and pending stones without changing their diameter', () => {
+  const { container } = render(<GoBoardSvg white={['D4']} pending={{ at: 'Q16', color: 'B' }} />);
+  const white = container.querySelector('[data-stone="w"][data-at="D4"] image');
+  expect(white).toHaveAttribute('href', stoneSpriteUrl('W', 19, 3, 15));
+  expect(white).toHaveAttribute('width', '94');
+  expect(container.querySelector('[data-stone="b"][data-at="Q16"] image')).toHaveAttribute('href', stoneSpriteUrl('B', 19, 15, 3));
+  expect(container.querySelector('.pending-ring')).toBeInTheDocument();
 });

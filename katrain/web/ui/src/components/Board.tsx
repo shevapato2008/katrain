@@ -1,3 +1,4 @@
+import { drawStoneSprite, loadBoardImages, stoneImage } from './board/boardUtils';
 import React, { useEffect, useRef, useState } from 'react';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
@@ -57,8 +58,18 @@ const ASSETS = {
   topMove: "/assets/img/topmove.png",
 };
 
-// Module-level image cache — survives component unmount/remount (3D toggle)
-const imageCache: Record<string, HTMLImageElement> = {};
+
+function drawFallbackStone(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, player: string) {
+  ctx.beginPath();
+  ctx.arc(x, y, radius * 0.95, 0, Math.PI * 2);
+  ctx.fillStyle = player === 'B' ? '#000' : '#fff';
+  ctx.fill();
+  if (player !== 'B') {
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
 
 const EVAL_COLORS = [
   "rgba(150, 50, 140, 0.85)", // Purple > 12 (blunder)
@@ -93,34 +104,13 @@ const Board: React.FC<BoardProps> = ({
   };
 
   useEffect(() => {
-    // Use cached images if available (survives unmount/remount from 3D toggle)
-    const assetKeys = Object.keys(ASSETS);
-    if (assetKeys.every(k => imageCache[k])) {
-      imagesRef.current = { ...imageCache };
-      setImagesReady(true);
-      return;
-    }
     let cancelled = false;
-    const loadImages = async () => {
-      const entries = Object.entries(ASSETS);
-      await Promise.all(
-        entries.map(
-          ([key, src]) =>
-            new Promise<void>((resolve, reject) => {
-              const img = new Image();
-              img.onload = () => {
-                imagesRef.current[key] = img;
-                imageCache[key] = img;
-                resolve();
-              };
-              img.onerror = () => reject(new Error(`Failed to load ${src}`));
-              img.src = src;
-            })
-        )
-      );
-      if (!cancelled) setImagesReady(true);
-    };
-    loadImages();
+    loadBoardImages(ASSETS).then(images => {
+      if (!cancelled) {
+        imagesRef.current = images;
+        setImagesReady(true);
+      }
+    });
     return () => { cancelled = true; };
   }, []);
 
@@ -376,8 +366,9 @@ const Board: React.FC<BoardProps> = ({
     gameState.stones.forEach(([player, coords, scoreLoss, moveNumber], index) => {
       if (!coords) return;
       const pos = gridToCanvas(layout, coords[0], coords[1], boardSize);
-      const img = player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
-      if (img) ctx.drawImage(img, pos.x - stoneSize, pos.y - stoneSize, stoneSize * 2, stoneSize * 2);
+      const img = stoneImage(player === "B" ? "B" : "W", coords[0], coords[1], boardSize, player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone);
+      if (img) drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, coords[0], coords[1]);
+      else drawFallbackStone(ctx, pos.x, pos.y, stoneSize, player);
 
       // Move numbers for all stones
       if (analysisToggles.numbers) {
@@ -477,8 +468,9 @@ const Board: React.FC<BoardProps> = ({
       gameState.ghost_stones.forEach(([player, coords]) => {
         if (!coords) return;
         const pos = gridToCanvas(layout, coords[0], coords[1], boardSize);
-        const img = player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
-        if (img) ctx.drawImage(img, pos.x - stoneSize, pos.y - stoneSize, stoneSize * 2, stoneSize * 2);
+        const img = stoneImage(player === "B" ? "B" : "W", coords[0], coords[1], boardSize, player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone);
+        if (img) drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, coords[0], coords[1]);
+        else drawFallbackStone(ctx, pos.x, pos.y, stoneSize, player);
       });
       ctx.globalAlpha = 1.0;
     }
@@ -518,9 +510,9 @@ const Board: React.FC<BoardProps> = ({
           const pos = gridToCanvas(layout, hx, hy, boardSize);
           ctx.save();
           ctx.globalAlpha = 0.5;
-          const img = ghostColor === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
+          const img = stoneImage(ghostColor, hx, hy, boardSize, ghostColor === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone);
           if (img) {
-            ctx.drawImage(img, pos.x - stoneSize, pos.y - stoneSize, stoneSize * 2, stoneSize * 2);
+            drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, hx, hy);
           } else {
             ctx.beginPath();
             ctx.arc(pos.x, pos.y, stoneSize * 0.95, 0, Math.PI * 2);
@@ -536,8 +528,9 @@ const Board: React.FC<BoardProps> = ({
       const pos = gridToCanvas(layout, previewMove.x, previewMove.y, boardSize);
       ctx.save();
       ctx.globalAlpha = 0.75;
-      const img = previewMove.color === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
-      if (img) ctx.drawImage(img, pos.x - stoneSize, pos.y - stoneSize, stoneSize * 2, stoneSize * 2);
+      const img = stoneImage(previewMove.color, previewMove.x, previewMove.y, boardSize, previewMove.color === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone);
+      if (img) drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, previewMove.x, previewMove.y);
+      else drawFallbackStone(ctx, pos.x, pos.y, stoneSize, previewMove.color);
       ctx.globalAlpha = 1;
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, layout.gridSize * 0.35, 0, Math.PI * 2);

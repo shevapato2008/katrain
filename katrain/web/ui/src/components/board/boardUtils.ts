@@ -1,3 +1,5 @@
+import { getStoneAppearance, stoneRotationDegrees, stoneSpriteUrl } from "./stoneAppearance";
+
 /**
  * Shared board drawing utilities.
  *
@@ -12,6 +14,56 @@ export const BOARD_ASSETS = {
   lastMove: "/assets/img/inner.png",
   topMove: "/assets/img/topmove.png",
 };
+
+// One promise per URL keeps remounts and concurrent boards from fetching per stone.
+const spriteImages = new Map<string, HTMLImageElement>();
+const imageLoads = new Map<string, Promise<HTMLImageElement | null>>();
+function loadBoardImage(src: string): Promise<HTMLImageElement | null> {
+  let pending = imageLoads.get(src);
+  if (!pending) {
+    pending = new Promise(resolve => {
+      const image = new Image();
+      image.onload = () => { spriteImages.set(src, image); resolve(image); };
+      image.onerror = () => resolve(null);
+      image.src = src;
+    });
+    imageLoads.set(src, pending);
+    // Evict after settlement so synchronous image mocks and concurrent consumers
+    // also share the initial attempt, while a later mount can retry failures.
+    void pending.then(image => {
+      if (!image && imageLoads.get(src) === pending) imageLoads.delete(src);
+    });
+  }
+  return pending;
+}
+
+/** Preload the finite sprite set once; legacy images remain available on failure. */
+export async function loadBoardImages(assets: Record<string, string> = BOARD_ASSETS): Promise<Record<string, HTMLImageElement>> {
+  const appearance = getStoneAppearance();
+  const sprites = [appearance.sprites.B, ...appearance.sprites.W];
+  const spritesLoaded = Promise.all(sprites.map(loadBoardImage));
+  const entries = await Promise.all(Object.entries(assets).map(async ([key, src]) => [key, await loadBoardImage(src)] as const));
+  await spritesLoaded;
+  return Object.fromEntries(entries.filter((entry): entry is readonly [string, HTMLImageElement] => entry[1] !== null));
+}
+
+/** Coordinate-based selection is stable across replay, hover, and board remounts. */
+export function stoneImage(color: 'B' | 'W', col: number, row: number, boardSize: number, fallback: HTMLImageElement | null | undefined): HTMLImageElement | null {
+  return spriteImages.get(stoneSpriteUrl(color, boardSize, col, boardSize - 1 - row)) ?? fallback ?? null;
+}
+
+/** Rotate only the stone artwork; move labels and selection rings stay upright. */
+export function drawStoneSprite(
+  ctx: CanvasRenderingContext2D, image: HTMLImageElement,
+  centerX: number, centerY: number, radius: number,
+  boardSize: number, col: number, rowFromBottom: number,
+): void {
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(stoneRotationDegrees(boardSize, col, boardSize - 1 - rowFromBottom) * Math.PI / 180);
+  ctx.drawImage(image, -radius, -radius, radius * 2, radius * 2);
+  ctx.restore();
+}
 
 export interface BoardLayout {
   gridMargins: { x: [number, number]; y: [number, number] };
@@ -221,10 +273,10 @@ export function drawStone(
 ): void {
   const pos = gridToCanvas(layout, x, y, boardSize);
   const stoneSize = layout.gridSize * 0.505;
-  const img = player === 'B' ? blackImg : whiteImg;
+  const img = stoneImage(player, x, y, boardSize, player === 'B' ? blackImg : whiteImg);
 
   if (img) {
-    ctx.drawImage(img, pos.x - stoneSize, pos.y - stoneSize, stoneSize * 2, stoneSize * 2);
+    drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, x, y);
   } else {
     // Fallback circle
     ctx.beginPath();

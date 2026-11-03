@@ -326,6 +326,21 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(screen.getByTestId('about-engine-cloud')).toHaveTextContent('没配置');
   });
 
+  it('模型行只显示服务端返回的当前模型', async () => {
+    mockHealth({ status: 'ok', katago_model: 'kata1-b28c512-s123', engines: { local: 'reachable', cloud: 'reachable' } });
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('about-katago-model')).toHaveTextContent('kata1-b28c512-s123'));
+    expect(screen.getByTestId('about-katago-model')).toHaveTextContent('KataGo 模型');
+    expect(screen.queryByText(/报告模型|对弈模型/)).toBeNull();
+  });
+
+  it('模型不可用时如实说明', async () => {
+    mockHealth({ status: 'ok', katago_model: null, engines: { local: 'reachable', cloud: 'reachable' } });
+    renderPage();
+    await waitFor(() => expect(health.engineHealth).toHaveBeenCalled());
+    expect(screen.getByTestId('about-katago-model')).toHaveTextContent('暂时无法获取');
+  });
+
   it('引擎回了错误码:说「连不上」,码写在那一行的小字里', async () => {
     mockHealth({ status: 'ok', version: '1.17.1', engines: { local: 'unreachable', cloud: 'error_502' } });
     renderPage();

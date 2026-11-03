@@ -1,3 +1,4 @@
+import { drawStoneSprite, loadBoardImages, stoneImage } from '../board/boardUtils';
 import { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import {
@@ -158,10 +159,10 @@ function drawPvStone(
   ctx.save();
   ctx.globalAlpha = 0.6; // Semi-transparent
 
-  const img = color === 'B' ? blackImg : whiteImg;
+  const img = stoneImage(color, x, y, boardSize, color === 'B' ? blackImg : whiteImg);
   if (img) {
     // Draw stone image (matching drawStone in boardUtils.ts)
-    ctx.drawImage(img, cx - stoneSize, cy - stoneSize, stoneSize * 2, stoneSize * 2);
+    drawStoneSprite(ctx, img, cx, cy, stoneSize, boardSize, x, y);
   } else {
     // Fallback: draw circle
     ctx.beginPath();
@@ -228,25 +229,14 @@ export default function LiveBoard({
 
   // Load images
   useEffect(() => {
-    const loadImages = async () => {
-      const entries = Object.entries(BOARD_ASSETS);
-      await Promise.all(
-        entries.map(
-          ([key, src]) =>
-            new Promise<void>((resolve) => {
-              const img = new Image();
-              img.onload = () => {
-                imagesRef.current[key] = img;
-                resolve();
-              };
-              img.onerror = () => resolve(); // Continue even if image fails
-              img.src = src;
-            })
-        )
-      );
-      setImagesLoaded(true);
-    };
-    loadImages();
+    let cancelled = false;
+    loadBoardImages(BOARD_ASSETS).then(images => {
+      if (!cancelled) {
+        imagesRef.current = images;
+        setImagesLoaded(true);
+      }
+    });
+    return () => { cancelled = true; };
   }, []);
 
   // Track container size
@@ -415,9 +405,9 @@ export default function LiveBoard({
         // ghost of the stone to be placed
         ctx.save();
         ctx.globalAlpha = 0.45;
-        const img = color === 'B' ? blackImg : whiteImg;
+        const img = stoneImage(color, x, y, boardSize, color === 'B' ? blackImg : whiteImg);
         if (img) {
-          ctx.drawImage(img, cx - stoneSize, cy - stoneSize, stoneSize * 2, stoneSize * 2);
+          drawStoneSprite(ctx, img, cx, cy, stoneSize, boardSize, x, y);
         } else {
           ctx.beginPath();
           ctx.arc(cx, cy, stoneSize * 0.95, 0, Math.PI * 2);
@@ -489,9 +479,9 @@ export default function LiveBoard({
         const stoneSize = layout.gridSize * 0.505;
         ctx.save();
         ctx.globalAlpha = 0.5;
-        const img = ghostColor === 'B' ? blackImg : whiteImg;
+        const img = stoneImage(ghostColor, hx, hy, boardSize, ghostColor === 'B' ? blackImg : whiteImg);
         if (img) {
-          ctx.drawImage(img, cx - stoneSize, cy - stoneSize, stoneSize * 2, stoneSize * 2);
+          drawStoneSprite(ctx, img, cx, cy, stoneSize, boardSize, hx, hy);
         } else {
           ctx.beginPath();
           ctx.arc(cx, cy, stoneSize * 0.95, 0, Math.PI * 2);

@@ -69,7 +69,7 @@ function notifySize(width = 380, height = 380) {
 }
 
 beforeEach(() => {
-  requestedAssets.length = 0;
+
   fillText.mockClear();
   drawLastMoveMarker.mockClear();
   ResizeObserverMock.callback = undefined;
@@ -154,7 +154,7 @@ describe('LiveBoard responsive sizing', () => {
   it.each([
     ['default floor', {}],
     ['opt-in responsive floor', { minimumCanvasSize: 0, minContainerHeight: 0 }],
-  ])('keeps requesting the board and both stone assets in %s mode', async (_name, props) => {
+  ])('preloads or reuses the board and both fallback stone assets in %s mode', async (_name, props) => {
     render(<LiveBoard moves={[]} currentMove={0} {...props} />);
 
     await waitFor(() => {

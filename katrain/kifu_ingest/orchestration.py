@@ -565,8 +565,13 @@ def main(argv=None):
             digest = _validated(manifest, expected)
             if expected != digest:
                 raise ValueError("manifest hash mismatch")
-            validate_test_verification(manifest, digest, payload.get("test_verification"))
-            receipt = publish_manifest(_engine(), manifest, expected_manifest_sha256=digest)
+            verification = payload.get("test_verification")
+            validate_test_verification(manifest, digest, verification)
+            test_receipt = verification.get("publication_receipt") or {}
+            rank_expectation = (
+                {"expected_rank_outcomes": test_receipt["rank_outcomes"]} if "rank_outcomes" in test_receipt else {}
+            )
+            receipt = publish_manifest(_engine(), manifest, expected_manifest_sha256=digest, **rank_expectation)
             _output({"status": "applied", "manifest_sha256": digest, "receipt": receipt})
         else:
             _output({"status": "ok", **StateStore(_engine()).snapshot_status()})

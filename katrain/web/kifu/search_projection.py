@@ -508,7 +508,49 @@ def build_projection_context(db, strict_mode, *, records=None, owner_refs=None, 
     return context
 
 
-def _maps(context, albums, lang, raw_players, raw_events, selected, selected_ids, linked_members, *, approvals=False):
+def _raw_event_record_index(albums, selected_events):
+    """Index both literal slots, preserving record order and repeated inputs."""
+    records = defaultdict(list)
+    for album in albums:
+        records[album.event].append(album)
+        selected = selected_events.get(album.id)
+        if selected is not None and selected[0] != album.event:
+            records[selected[0]].append(album)
+    return records
+
+
+def _indexed_raw_event_map(
+    rows, records, selected_events, *, approvals=False, selected_ids=frozenset(), linked_members=frozenset()
+):
+    """Keep original row precedence and unscoped entries, including empty buckets."""
+    result = {}
+    for row in rows:
+        result.update(
+            identity._raw_event_map(
+                [row],
+                records.get(row[1], ()),
+                selected_events,
+                approvals=approvals,
+                selected_ids=selected_ids,
+                linked_members=linked_members,
+            )
+        )
+    return result
+
+
+def _maps(
+    context,
+    albums,
+    lang,
+    raw_players,
+    raw_events,
+    selected,
+    selected_ids,
+    linked_members,
+    *,
+    approvals=False,
+    raw_event_records,
+):
     def value(name):
         return (name.decision_kind, name.evidence_id) if approvals else name.display_name
 
@@ -528,9 +570,9 @@ def _maps(context, albums, lang, raw_players, raw_events, selected, selected_ids
     }
     canonical = {owner_id: context.events[owner_id] for owner_id in events}
     raw_player_map = {raw: (value(name), scope) for name, raw, scope in raw_players if name.lang == lang}
-    raw_event_map = identity._raw_event_map(
+    raw_event_map = _indexed_raw_event_map(
         [row for row in raw_events if row[0].lang == lang],
-        albums,
+        raw_event_records,
         selected,
         approvals=approvals,
         selected_ids=selected_ids,
@@ -644,6 +686,7 @@ def project_album_batch(context, records):
     raw_event_values = {album.event or "" for album in records} | {raw for raw, _ in selected.values()}
     raw_players = [row for raw in raw_player_values for row in context.raw_players_by_value.get(raw, ())]
     raw_events = [row for raw in raw_event_values for row in context.raw_events_by_value.get(raw, ())]
+    raw_event_records = _raw_event_record_index(records, selected)
     linked = identity._linked_live_members(db, raw_events, candidate_ids=ids)
     sources = defaultdict(set)
     for album_id, source_key in (
@@ -663,9 +706,28 @@ def project_album_batch(context, records):
     }
     approvals = {}
     for lang in sorted(approval_languages):
-        maps = _maps(context, records, lang, raw_players, raw_events, selected, selected_ids, linked)
+        maps = _maps(
+            context,
+            records,
+            lang,
+            raw_players,
+            raw_events,
+            selected,
+            selected_ids,
+            linked,
+            raw_event_records=raw_event_records,
+        )
         approval_maps = _maps(
-            context, records, lang, raw_players, raw_events, selected, selected_ids, linked, approvals=True
+            context,
+            records,
+            lang,
+            raw_players,
+            raw_events,
+            selected,
+            selected_ids,
+            linked,
+            approvals=True,
+            raw_event_records=raw_event_records,
         )
         approvals[lang] = {album.id: _slot_approval(album, approval_maps, obscured, selected) for album in records}
         if lang not in NAME_LANGUAGES:
@@ -679,13 +741,14 @@ def project_album_batch(context, records):
     direct_name_ids = defaultdict(set)
     selected_name_ids = defaultdict(set)
     selected_raw_allowed = set()
-    for name, raw, proof in raw_events:
-        # Per-name eligibility is small and finite; no evidence/batch checker
-        # runs here. Reuse the original raw slot map semantics.
+    for row in raw_events:
+        name, raw, proof = row
+        matching_records = raw_event_records.get(raw, ())
+        # Reuse the original proof checks on this literal's direct and selected records.
         per_name = identity._raw_event_map(
-            [(name, raw, proof)], records, selected, selected_ids=selected_ids, linked_members=linked
+            [row], matching_records, selected, selected_ids=selected_ids, linked_members=linked
         )
-        for album in records:
+        for album in matching_records:
             if album.event == raw:
                 if identity._raw_event_value(per_name, album.id, raw, album.event_id) is not None:
                     direct_name_ids[album.id].add(name.id)

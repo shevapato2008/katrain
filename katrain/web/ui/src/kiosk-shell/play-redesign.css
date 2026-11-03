@@ -86,7 +86,8 @@
 }
 .kiosk-play-home .kiosk-play-choice {
   padding: 0 11px;
-  justify-content: space-between;
+  gap: 10px;
+  justify-content: flex-start;
 }
 .kiosk-play-home .kiosk-play-choice__title {
   overflow: hidden;
@@ -96,15 +97,17 @@
   font-size: 22px;
   line-height: 1.2;
 }
-.kiosk-play-home .kiosk-play-choice > .kiosk-icon {
-  width: 20px;
-  height: 20px;
-  flex: none;
-  color: #91cda3;
-}
 .kiosk-play-home .kiosk-play-choice > .kiosk-icon svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  color: inherit;
+}
+.kiosk-play-home .kiosk-play-choice > .kiosk-icon:last-child svg {
   width: 20px;
   height: 20px;
+  margin-left: auto;
+  color: #91cda3;
 }
 .kiosk-play-home .kiosk-play-choice__description,
 .kiosk-play-home .is-soon .kiosk-card__t em {

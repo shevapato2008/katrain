@@ -62,6 +62,16 @@ beforeEach(() => {
 });
 
 describe('ReportLibraryImportDialog data flow', () => {
+  it('formats professional and unspecified historical dan without inferring from legacy raw ranks', async () => {
+    vi.mocked(KifuAPI.getAlbums).mockResolvedValue(response([{
+      ...album(1), black_rank: '7d', white_rank: '7d', display_black_rank: '7p', display_white_rank: '7段',
+    }]));
+    renderDialog();
+    const card = await screen.findByRole('button', { name: '赛事 1 / 黑棋 1 versus 白棋 1' });
+    expect(card).toHaveTextContent('黑棋 1 职业七段 · 白棋 1 七段');
+    expect(card).not.toHaveTextContent('业余');
+  });
+
   it('keeps the selected game when its language-specific list reloads', async () => {
     const user = userEvent.setup();
     const view = renderDialog();

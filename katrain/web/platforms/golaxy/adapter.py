@@ -1306,6 +1306,12 @@ class GolaxyAdapter(PlatformAdapter):
             ranked=False,
             handicap=config.handicap,
             komi=config.komi,
+            player_ranks={
+                config.human_color: None,
+                ("W" if config.human_color == "B" else "B"): (
+                    level_row.get("level_name") if level_row is not None else None
+                ),
+            },
         )
 
         first_ai_move: Optional[PlatformEngineReply] = None

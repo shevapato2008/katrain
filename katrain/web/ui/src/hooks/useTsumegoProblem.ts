@@ -2,6 +2,7 @@
  * Custom hook for managing tsumego problem solving logic
  */
 
+import type { BoardVariant } from '../types/boardVariant';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   parseSGF,
@@ -24,6 +25,7 @@ export interface ProblemDetail {
   initialBlack: string[];
   initialWhite: string[];
   sgfContent: string;
+  board_variant?: BoardVariant;
 }
 
 export interface Stone {
@@ -200,7 +202,8 @@ export interface UseTsumegoProblemReturn extends TsumegoProblemState {
 }
 
 
-export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
+export function useTsumegoProblem(problemId: string, options?: { boardVariant?: 'kiosk19' }): UseTsumegoProblemReturn {
+  const boardVariant = options?.boardVariant;
   // Unified progress source (safe default when no Provider — see TsumegoProgressContext).
   const { markProgress, progress } = useTsumegoProgress();
   const progressRef = useRef(progress);
@@ -214,6 +217,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
   // Parsed SGF
   const parsedSGFRef = useRef<ParsedSGF | null>(null);
+  const initialStonesRef = useRef<Stone[]>([]);
 
   // Board state
   const [boardSize, setBoardSize] = useState(19);
@@ -295,7 +299,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     setProblem(null);
     touchedRef.current = false;
 
-    fetch(`/api/v1/tsumego/problems/${problemId}`)
+    fetch(`/api/v1/tsumego/problems/${problemId}${boardVariant ? `?board_variant=${boardVariant}` : ''}`)
       .then(res => {
         // 只有 404 才是「题不存在」。盒上连不上云端是 503(N9)—— 一律说成 not found 等于
         // 把「没网」讲成「没这道题」。其它状态码照各页 fetch 的惯例抛 `HTTP <status>`。
@@ -324,7 +328,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       cancelPendingReplies();
       flushProgress();
     };
-  }, [problemId]);
+  }, [problemId, boardVariant]);
 
   // Account history can finish loading after the problem details.
   useEffect(() => {
@@ -370,6 +374,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       }
     }
 
+    initialStonesRef.current = initialStones;
     setStones(initialStones);
     setMoveHistory([]);
     setLastMove(null);
@@ -379,6 +384,9 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     setHintCoords(null);
     failedRecoveryRef.current = null;
 
+    parsedSGFRef.current = null;
+    setCurrentNode(null);
+    setNextPlayer('B');
     // Parse SGF if available
     if (data.sgfContent) {
       try {
@@ -409,6 +417,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
   // Place a stone and validate against SGF tree
   const placeStone = useCallback((x: number, y: number): MoveResult | null => {
+    if (pendingRepliesRef.current.size > 0) return null;
     // In normal mode, don't allow moves after solved/failed
     if (!isTryMode && (isSolved || isFailed)) return null;
 
@@ -579,6 +588,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   // Undo last move
   const undo = useCallback(() => {
     if (isSolved) return;
+    cancelPendingReplies();
     // A wrong FIRST move leaves moveHistory empty (incorrect moves are never pushed) but
     // isFailed=true. Guard on history alone would strand isFailed forever — the isFailed
     // recovery branch below must still run (kiosk physical 'removing' recovery depends on it).
@@ -644,7 +654,10 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       }
 
       const newHistory = moveHistory.slice(0, -movesToRemove);
-      const newStones = stones.slice(0, -movesToRemove);
+      let newStones = [...initialStonesRef.current];
+      for (const move of newHistory) {
+        newStones = removeCaptures([...newStones, move], move.player, boardSize);
+      }
 
       setMoveHistory(newHistory);
       setStones(newStones);
@@ -665,11 +678,9 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       // Update hint
       const validMoves = getValidMoves(newNode);
       const correctMove = validMoves.find(m => m.isCorrect);
-      if (correctMove) {
-        setHintCoords(correctMove.coords);
-      }
+      setHintCoords(correctMove?.coords ?? null);
     }
-  }, [moveHistory, stones, currentNode, nextPlayer, isSolved, isFailed, isTryMode, boardSize]);
+  }, [cancelPendingReplies, moveHistory, stones, currentNode, nextPlayer, isSolved, isFailed, isTryMode, boardSize]);
 
   // Reset problem
   const reset = useCallback(() => {
@@ -690,7 +701,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
   // Enter try mode - save current state and allow free exploration
   const enterTryMode = useCallback(() => {
-    if (isTryMode || isSolved) return;
+    if (isTryMode || isSolved || pendingRepliesRef.current.size > 0) return;
 
     // Save current state
     tryModeSnapshotRef.current = {

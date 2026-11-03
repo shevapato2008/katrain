@@ -84,3 +84,9 @@ def report_availability(db, records, model_sha256, visits):
         digest = hashlib.sha256(record.sgf_content.encode("utf-8")).hexdigest()
         result[record.id] = (canonical.id, digest, canonical.move_count) in complete
     return result
+
+
+def begin_read_snapshot(db):
+    """Keep bounded PG reads coherent without consulting derived search tables."""
+    if db.get_bind().dialect.name == "postgresql" and not db.in_transaction():
+        db.connection(execution_options={"isolation_level": "REPEATABLE READ", "postgresql_readonly": True})

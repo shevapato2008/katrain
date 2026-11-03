@@ -15,6 +15,7 @@ from katrain.web.kifu.name_candidates import canonical_sha256
 
 
 ALGORITHM_VERSION = "album-api-five-languages-public-card-v1"
+RANK_ALGORITHM_VERSION = "album-api-five-languages-public-card-ranks-v2"
 CHECKPOINT_TTL = 24 * 60 * 60
 _MAX_CHECKPOINT_BYTES = 8 * 1024 * 1024
 _TRANSIENT = (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError)
@@ -89,14 +90,14 @@ class AlbumCheckpoint:
     its entries are validated again before they can contribute returned checks.
     """
 
-    def __init__(self, directory, manifest, receipt, target, languages, validate, wall_clock):
+    def __init__(self, directory, manifest, receipt, target, languages, validate, wall_clock, *, algorithm=None):
         self.directory = Path(directory) if directory is not None else None
         self.wall_clock, self.validate = wall_clock, validate
         self.binding = {
             "manifest_sha256": canonical_sha256(manifest),
             "receipt_sha256": canonical_sha256(receipt),
             "target": target,
-            "algorithm": ALGORITHM_VERSION,
+            "algorithm": ALGORITHM_VERSION if algorithm is None else algorithm,
             "languages": list(languages),
         }
         self.completed = {}

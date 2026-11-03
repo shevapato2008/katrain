@@ -17,6 +17,26 @@ const step = (o: Partial<BaipuStep>): BaipuStep => ({
 } as BaipuStep);
 
 describe('replayBaipuSteps —— 照 steps 播,不算规则', () => {
+  test('v2 applies pre-removal before assignment and post-removal afterwards', () => {
+    const steps = [
+      step({ row: 0, col: 0, color: 'W' }),
+      step({ row: 0, col: 1, color: 'W' }),
+      step({ row: 0, col: 0, color: 'B', pre_removed: [{ row: 0, col: 0 }, { row: 0, col: 1 }], requires_placement: true }),
+    ];
+    expect(replayBaipuSteps(steps, 3, 9)).toEqual({ black: ['A9'], white: [], last: 'A9' });
+    expect(replayBaipuMatrix(steps, 3, 9)[0].slice(0, 2)).toEqual([1, 0]);
+
+    const selfCapture = [...steps, step({ row: 0, col: 0, color: 'B', requires_placement: false, removed: [{ row: 0, col: 0 }] })];
+    expect(replayBaipuSteps(selfCapture, 4, 9)).toEqual({ black: [], white: [], last: 'A9' });
+    expect(replayBaipuMatrix(selfCapture, 4, 9)[0][0]).toBe(0);
+  });
+
+  test('requires_placement describes physical work and does not suppress recorded assignment', () => {
+    const steps = [step({ row: 0, col: 0, color: 'B', requires_placement: false })];
+    expect(replayBaipuSteps(steps, 1, 9).black).toEqual(['A9']);
+    expect(replayBaipuMatrix(steps, 1, 9)[0][0]).toBe(1);
+  });
+
   test('放子:row 从上往下,0 是第 19 line', () => {
     const b = replayBaipuSteps([step({ row: 3, col: 15, color: 'B' })], 1, 19);
     expect(b.black).toEqual(['Q16']);

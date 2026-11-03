@@ -56,6 +56,12 @@ beforeEach(() => {
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
+it.each([undefined, null, 9, {}])('keeps the board and shows unknown for non-label grade %s', async (rank) => {
+  vi.mocked(fetch).mockResolvedValue(reply({ ...snapshot, player_b_rank_label: rank, player_w_rank_label: '  ' }));
+  await open(); expect(screen.getAllByText('等级未知')).toHaveLength(2); expect(screen.queryByText('尚未定级')).toBeNull();
+  expect(screen.getByTitle('黑方棋友')).toBeInTheDocument();
+});
+
 it('sounds once for a new live stone and keeps initial, duplicate and older snapshots silent', async () => {
   await open();
   expect(playSound).not.toHaveBeenCalled();

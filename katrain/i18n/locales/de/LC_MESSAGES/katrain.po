@@ -7319,3 +7319,99 @@ msgstr "Kein Stein"
 
 msgid "report:score_difference"
 msgstr "Punktedifferenz"
+
+msgid "kifu:history_guest"
+msgstr "Nur für diese Gastsitzung"
+
+msgid "kifu:history_local_cache"
+msgstr "Kontocache auf diesem Gerät"
+
+msgid "kifu:history_this_node"
+msgstr "Auf diesem Gerät gespeichert"
+
+msgid "kifu:history_cloud"
+msgstr "Cloudverlauf des Kontos"
+
+msgid "kifu:history_loading"
+msgstr "Nachspielverlauf wird geladen"
+
+msgid "kifu:history_error"
+msgstr "Nachspielverlauf ist nicht verfügbar"
+
+msgid "kifu:history_cache_empty"
+msgstr "Auf diesem Gerät ist kein Kontoverlauf zwischengespeichert"
+
+msgid "kifu:history_empty"
+msgstr "Noch kein Nachspielverlauf"
+
+msgid "kifu:history_guest_hint"
+msgstr "Der Gastverlauf wird am Ende der Sitzung gelöscht."
+
+msgid "kifu:history_account_hint"
+msgstr ""
+"Beim Start des Nachspielens am physischen Brett wird der Fortschritt im "
+"aktuellen Konto gespeichert."
+
+msgid "kifu:history_pending"
+msgstr "Auf diesem Gerät gespeichert; wartet auf Synchronisierung"
+
+msgid "kifu:history_conflict"
+msgstr "Fortschrittskonflikt; zu behaltende Kopie wählen"
+
+msgid "kifu:history_refused"
+msgstr "Auf diesem Gerät gespeichert; Synchronisierung abgelehnt"
+
+msgid "kifu:history_saving"
+msgstr "Fortschritt wird gespeichert"
+
+msgid "kifu:history_save_error"
+msgstr "Fortschritt nicht gespeichert; bitte erneut versuchen"
+
+msgid "kifu:history_saved"
+msgstr "Fortschritt gespeichert"
+
+msgid "kifu:history_use_cloud"
+msgstr "Cloudfortschritt verwenden"
+
+msgid "kifu:history_keep_local"
+msgstr "Gerätefortschritt behalten"
+
+msgid "kifu:history_resolve_error"
+msgstr "Konflikt konnte nicht gelöst werden; Fortschritt erneut prüfen"
+
+msgid "baipu:operator_manual"
+msgstr "Zur manuellen Bestätigung gewechselt"
+
+msgid "baipu:pre_remove_title"
+msgstr "Zuerst den vorhandenen Stein am Ziel entfernen"
+
+msgid "baipu:pre_remove_hint"
+msgstr ""
+"Steine an den blauen Lichtern entfernen, dann die aufgezeichneten Farben "
+"setzen"
+
+msgid "baipu:pre_remove_done"
+msgstr "Vorhandene Steine entfernt"
+
+msgid "baipu:entry_confirm"
+msgstr "Brett stimmt überein"
+
+msgid "baipu:manual_entry_hint"
+msgstr "Das Brett wie angezeigt aufbauen, dann „Brett stimmt überein“ drücken"
+
+msgid "baipu:recheck"
+msgstr "Brett erneut erkennen"
+
+msgid "baipu:switch_manual"
+msgstr "Manuell bestätigen"
+
+msgid "baipu:done_hint_saved"
+msgstr "{n} Schritte abgeschlossen · Mit der Taste oben links zurück"
+
+msgid "baipu:exit_body_neutral"
+msgstr ""
+"Nach dem Beenden können Sie diese Partie auf der Seite mit den "
+"Spielaufzeichnungen erneut öffnen."
+
+msgid "baipu:exit_anyway"
+msgstr "Trotzdem beenden"

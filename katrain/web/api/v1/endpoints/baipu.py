@@ -1,7 +1,7 @@
 """摆谱 (baipu / stone-placement guidance) HTTP endpoints.
 
 `POST /baipu/load` is the **backend-authoritative** per-step truth source
-(decision ②): it replays an SGF with the existing KaTrain engine and emits
+(decision ②): it interprets recorded FF4 SGF operations and emits
 per-step canonical-coordinate truth. The heavy lifting lives in
 `katrain.core.baipu` (pure, CI-testable); this module is the thin HTTP layer.
 
@@ -12,14 +12,8 @@ import asyncio
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from katrain.web.kivy_compat import ensure_kivy
-
-# Baipu replays SGF through core.game, which still imports Kivy-backed i18n.
-# The web process has no Kivy; install the existing headless compatibility shim
-# before importing the replay code, as web.interface does for other routes.
-ensure_kivy()
 from katrain.core.baipu import build_steps_from_sgf
 
 router = APIRouter()
@@ -37,7 +31,9 @@ class BaipuStep(BaseModel):
     row: Optional[int] = None
     col: Optional[int] = None
     color: Optional[str] = None
-    removed: List[BaipuPoint] = []
+    pre_removed: List[BaipuPoint] = Field(default_factory=list)
+    requires_placement: bool = True
+    removed: List[BaipuPoint] = Field(default_factory=list)
     board_hash: str
 
 
@@ -56,6 +52,7 @@ class BaipuLoadRequest(BaseModel):
 
 
 class BaipuLoadResponse(BaseModel):
+    replay_version: int
     board_size: int
     steps: List[BaipuStep]
     meta: BaipuMeta

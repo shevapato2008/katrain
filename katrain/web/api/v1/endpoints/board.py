@@ -5,8 +5,10 @@ Board-side: live match proxy to remote server (when KATRAIN_MODE=board).
 """
 
 import logging
+from typing import Literal, Optional
 
 import httpx
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
@@ -60,9 +62,19 @@ async def proxy_ogs_source(request: Request):
 
 
 @router.get("/tutorials/ogs-course/steps/{page}")
-async def proxy_ogs_step(request: Request, page: int, lang: str = "zh-cn"):
+async def proxy_ogs_step(
+    request: Request,
+    page: int,
+    lang: str = "zh-cn",
+    board_variant: Optional[Literal["kiosk19"]] = None,
+):
     c = _get_remote_client(request)
-    return await _proxy(lambda: c.get_ogs_step(page, lang), "OGS step")
+    result = await _proxy(lambda: c.get_ogs_step(page, lang), "OGS step")
+    if board_variant == "kiosk19":
+        from katrain.web.content.board_variants import adapt_ogs_step
+
+        return adapt_ogs_step(result)
+    return result
 
 
 @router.get("/tutorials/categories")

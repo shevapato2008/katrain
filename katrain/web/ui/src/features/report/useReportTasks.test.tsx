@@ -8,6 +8,9 @@ const mockList = vi.fn();
 const mockSummary = vi.fn();
 const mockCreate = vi.fn();
 const mockRetry = vi.fn();
+const mockCatalog = vi.fn();
+const mockQuote = vi.fn();
+vi.mock('../../api/membershipApi', () => ({ membershipApi: { getCatalog: (...args: unknown[]) => mockCatalog(...args), createQuote: (...args: unknown[]) => mockQuote(...args) } }));
 
 vi.mock('../../api/reportApi', async (importOriginal) => {
   const original = await importOriginal<typeof import('../../api/reportApi')>();
@@ -61,6 +64,7 @@ async function settle() {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
+  mockCatalog.mockResolvedValue({ membership_mode: 'legacy', capabilities: { quotes: false } });
   mockList.mockResolvedValue([]);
   mockSummary.mockResolvedValue(emptySummary);
 });
@@ -211,8 +215,8 @@ describe('useReportTasks', () => {
     const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
-    let firstPromise!: Promise<ReportTaskSummary>;
-    let secondPromise!: Promise<ReportTaskSummary>;
+    let firstPromise!: Promise<ReportTaskSummary | null>;
+    let secondPromise!: Promise<ReportTaskSummary | null>;
     act(() => {
       firstPromise = result.current.createReport({ userGameId: 'game-1', reportType: 'normal', totalMoves: 120 });
       secondPromise = result.current.createReport({ userGameId: 'game-1', reportType: 'normal', totalMoves: 120 });
@@ -300,7 +304,7 @@ describe('useReportTasks', () => {
     await settle();
 
     const staleRefreshPromise = result.current.refresh();
-    let retryPromise!: Promise<ReportTaskSummary>;
+    let retryPromise!: Promise<ReportTaskSummary | null>;
     act(() => {
       retryPromise = result.current.retryReport(4);
     });
@@ -385,7 +389,7 @@ describe('useReportTasks', () => {
     const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
-    let createPromise!: Promise<ReportTaskSummary>;
+    let createPromise!: Promise<ReportTaskSummary | null>;
     act(() => {
       createPromise = result.current.createReport({ userGameId: 'game-2', reportType: 'deep', totalMoves: 80 });
     });
@@ -434,7 +438,7 @@ describe('useReportTasks', () => {
     });
     await settle();
 
-    let createPromise!: Promise<ReportTaskSummary>;
+    let createPromise!: Promise<ReportTaskSummary | null>;
     act(() => {
       createPromise = result.current.createReport({ userGameId: 'game-a', totalMoves: 20 });
     });
@@ -481,7 +485,7 @@ describe('useReportTasks', () => {
     const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
-    let createPromise!: Promise<ReportTaskSummary>;
+    let createPromise!: Promise<ReportTaskSummary | null>;
     act(() => {
       createPromise = result.current.createReport({ userGameId: 'game-1', totalMoves: 120 });
     });
@@ -498,4 +502,114 @@ describe('useReportTasks', () => {
     expect(result.current.tasks.map(({ id }) => id)).toContain(20);
     expect(result.current.queueSummary).toEqual({ ...emptySummary, failed: 1 });
   });
+});
+
+
+describe('quoted report authorization', () => {
+  const quote = { token: 'signed-quote', wallet_max_display_points: '3.01', expires_at: '2099-01-01T00:00:00Z', source: 'membership', fingerprint: 'position-a' };
+  beforeEach(() => {
+    mockCatalog.mockResolvedValue({ membership_mode: 'enabled', capabilities: { quotes: true } });
+    mockQuote.mockResolvedValue(quote);
+    mockCreate.mockResolvedValue(task());
+  });
+  it('quotes before creation, requires confirmation, and sends the signed token and one key', async () => {
+    const { result } = renderHook(() => useReportTasks(null, true, 'person-a'));
+    await settle();
+    await act(async () => { await result.current.createReport({ userGameId: 'game-1', totalMoves: 9999 }); });
+    expect(mockQuote).toHaveBeenCalledWith({ kind: 'report', profile: 'normal', game_id: 'game-1' }, null);
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(result.current.pendingQuote?.quote).toEqual(quote);
+    const deferredCreate = deferred<ReportTaskSummary>();
+    mockCreate.mockReturnValueOnce(deferredCreate.promise);
+    let first!: Promise<ReportTaskSummary | null>;
+    let duplicate!: Promise<ReportTaskSummary | null>;
+    act(() => { first = result.current.confirmQuote(); duplicate = result.current.confirmQuote(); });
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockCreate).toHaveBeenCalledWith(null, expect.objectContaining({ quote_token: 'signed-quote', idempotency_key: expect.any(String) }));
+    deferredCreate.resolve(task());
+    await act(async () => { await Promise.all([first, duplicate]); });
+    expect(result.current.pendingQuote).toBeNull();
+  });
+  it('cancels without creating a task', async () => {
+    const { result } = renderHook(() => useReportTasks(null, true, 'person-a'));
+    await settle();
+    await act(async () => { await result.current.createReport({ userGameId: 'game-1', totalMoves: 120 }); });
+    act(() => result.current.cancelQuote());
+    expect(result.current.pendingQuote).toBeNull();
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+  it('requotes an expired authorization and leaves 402 visible without auto-purchase', async () => {
+    const { result } = renderHook(() => useReportTasks(null, true, 'person-a'));
+    await settle();
+    await act(async () => { await result.current.createReport({ userGameId: 'game-1', totalMoves: 120 }); });
+    mockCreate.mockRejectedValueOnce(Object.assign(new Error('invalid_or_expired_quote'), { status: 409 }));
+    await act(async () => { await expect(result.current.confirmQuote()).rejects.toThrow(); });
+    expect(mockQuote).toHaveBeenCalledTimes(2);
+    expect(result.current.pendingQuote).not.toBeNull();
+    mockCreate.mockRejectedValueOnce(Object.assign(new Error('insufficient_credits'), { status: 402, body: '{"detail":{"code":"insufficient_credits"}}' }));
+    await act(async () => { await expect(result.current.confirmQuote()).rejects.toThrow(); });
+    expect(result.current.errorKind).toBe('no_credits');
+  });
+  it('invalidates pending quotes and old requests on cookie identity switch', async () => {
+    const old = deferred<typeof quote>();
+    mockQuote.mockReturnValueOnce(old.promise);
+    const { result, rerender } = renderHook(({ identity }) => useReportTasks(null, true, identity), { initialProps: { identity: 'a' } });
+    await settle();
+    let pending!: Promise<ReportTaskSummary | null>;
+    act(() => { pending = result.current.createReport({ userGameId: 'game-a', totalMoves: 30 }); });
+    rerender({ identity: 'b' });
+    await settle();
+    old.resolve(quote);
+    await act(async () => { await pending; });
+    expect(result.current.pendingQuote).toBeNull();
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+  it('does not turn a catalog outage into legacy authorization', async () => {
+    mockCatalog.mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useReportTasks(null, true, 'person-a'));
+    await settle();
+    await act(async () => { await expect(result.current.createReport({ userGameId: 'game-1', totalMoves: 120 })).rejects.toThrow(); });
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+  it('quotes a failed task again and retries with a fresh authorization key', async () => {
+    mockList.mockResolvedValue([task({ id: 4, status: 'failed', report_type: 'deep' })]);
+    mockRetry.mockResolvedValue(task({ id: 4, status: 'pending', report_type: 'deep' }));
+    const { result } = renderHook(() => useReportTasks(null, true, 'person-a'));
+    await settle();
+    await act(async () => { await result.current.retryReport(4); });
+    expect(mockRetry).not.toHaveBeenCalled();
+    expect(mockQuote).toHaveBeenCalledWith({ kind: 'report', profile: 'advanced', game_id: 'game-1' }, null);
+    await act(async () => { await result.current.confirmQuote(); });
+    expect(mockRetry).toHaveBeenCalledWith(null, 4, { quote_token: 'signed-quote', idempotency_key: expect.any(String) });
+  });
+  it('replays one lost response with exactly the same token and key', async () => {
+    const { result } = renderHook(() => useReportTasks(null, true, 'person-a'));
+    await settle();
+    await act(async () => { await result.current.createReport({ userGameId: 'game-1', totalMoves: 120 }); });
+    mockCreate.mockRejectedValueOnce(new TypeError('network response lost')).mockResolvedValueOnce(task());
+    await act(async () => { await result.current.confirmQuote(); });
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect(mockCreate.mock.calls[0]).toEqual(mockCreate.mock.calls[1]);
+  });
+  it('blocks consumption when paused or when retained credentials have not been verified', async () => {
+    mockCatalog.mockResolvedValue({ membership_mode: 'paused', capabilities: { quotes: false } });
+    const { result, rerender } = renderHook(({ status }) => useReportTasks('retained', true, 'person-a', status), { initialProps: { status: 'checking' } });
+    await settle();
+    await act(async () => { await expect(result.current.createReport({ userGameId: 'game-1', totalMoves: 120 })).rejects.toThrow(); });
+    expect(mockList).not.toHaveBeenCalled();
+    rerender({ status: 'authenticated' });
+    await settle();
+    await act(async () => { await expect(result.current.createReport({ userGameId: 'game-1', totalMoves: 120 })).rejects.toThrow(); });
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockQuote).not.toHaveBeenCalled();
+  });
+
+  it('does not send requests without the confirmed identity key', async () => {
+    const { result } = renderHook(() => useReportTasks(null, true, null, 'authenticated'));
+    await settle();
+    expect(mockList).not.toHaveBeenCalled();
+    await act(async () => { await expect(result.current.createReport({ userGameId: 'game-1', totalMoves: 120 })).rejects.toThrow(); });
+    expect(mockQuote).not.toHaveBeenCalled();
+  });
+
 });

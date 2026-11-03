@@ -1,0 +1,265 @@
+{
+  "cohort_comparison": {
+    "environment_specific_id_pairs": 9,
+    "environments_have_same_exact_sgf_sha_pairs": true,
+    "home_only_id_pairs": [
+      [
+        175126,
+        176610
+      ],
+      [
+        175484,
+        177159
+      ],
+      [
+        175645,
+        177999
+      ],
+      [
+        175715,
+        177977
+      ],
+      [
+        175741,
+        175766
+      ],
+      [
+        176371,
+        178541
+      ],
+      [
+        176967,
+        176970
+      ],
+      [
+        177994,
+        178003
+      ],
+      [
+        178424,
+        178425
+      ]
+    ],
+    "partially_eligible_operation_groups": 4,
+    "prod_only_id_pairs": [
+      [
+        175106,
+        176590
+      ],
+      [
+        175464,
+        177039
+      ],
+      [
+        175625,
+        177779
+      ],
+      [
+        175695,
+        177757
+      ],
+      [
+        175721,
+        175746
+      ],
+      [
+        176351,
+        178221
+      ],
+      [
+        176847,
+        176850
+      ],
+      [
+        177774,
+        177783
+      ],
+      [
+        178104,
+        178105
+      ]
+    ],
+    "production_matches_186_frozen_pairs_plus_reviewed_target": true,
+    "source_pair_cohorts": {
+      "19x19 ↔ 19x19": 98,
+      "19x19 ↔ CWI": 86,
+      "CWI ↔ CWI": 3
+    }
+  },
+  "environments": {
+    "home": {
+      "compressed_file_sha256": "e9a243e81a8c116e2009559ee80346185aecd4205cbae5e9ff574944086b1902",
+      "database_identity": {
+        "database": "katrain_db",
+        "dialect": "postgresql"
+      },
+      "dedup": {
+        "albums_scanned": 176949,
+        "duplicates_to_hide": 187,
+        "eligible_groups": 187,
+        "excluded_candidate_groups": 1702,
+        "full_operation_candidate_groups": 1885,
+        "invalid_operations_report_only": 10,
+        "preexisting_hidden_preserved": 259,
+        "short_or_branched_report_only": 35,
+        "visible_scanned": 176690
+      },
+      "historical_cohorts": 11,
+      "manifest_sha256": "db5d53d30689b6ae4bdc17b22d2b6028a025f51ece0a3f260f29b5000f59133f",
+      "preparation_evidence": {
+        "code_sha256": {
+          "katrain.web.kifu.catalog_standardization": "b067edde2fe9666bc46f518dbf74a2a6b368a8efd22984ed38e599c61fec195d",
+          "katrain.web.kifu.source_rank_normalization": "bd19cadf2b86ba8e1af98db650a93fef6dc1164ef1982499db7db5d4cdada7cd",
+          "katrain.web.kifu.source_rank_repair": "b03a31d86d5b29191bde8c06ebedb3e5a91e612d3caa600908d8558db43627a1"
+        },
+        "deployed_writer_compatibility": {
+          "build_sha": "7f2ff0c65381250e41a9dc959d8cac9201c3a86b",
+          "checks": {
+            "http_display_duplicate": false,
+            "native_original_receipt": false,
+            "source_rank_v2_reader": false
+          },
+          "status": "incompatible"
+        },
+        "operation_cache": {
+          "hits": 179903,
+          "misses": 0
+        },
+        "operation_cache_source_rows": 176949,
+        "transaction_read_only": "on"
+      },
+      "rank_changes": 5571,
+      "rank_systems": {
+        "19x19:amateur_dan": 9637,
+        "19x19:dan_unspecified": 219848,
+        "19x19:empty": 47393,
+        "19x19:kyu": 3,
+        "19x19:professional_dan": 29010,
+        "19x19:unparsed": 2571,
+        "CWI:amateur_dan": 109,
+        "CWI:dan_unspecified": 5571,
+        "CWI:empty": 3370,
+        "CWI:kyu": 13,
+        "CWI:professional_dan": 35834,
+        "CWI:unparsed": 539
+      },
+      "ranks": {
+        "albums": 176949,
+        "existing_snapshot_slots": 184,
+        "professional_refinements": 21,
+        "reviewed_target_slots": 2,
+        "slots": 353898,
+        "unspecified_repairs": 5550
+      },
+      "source_albums": {
+        "19x19": 154231,
+        "CWI": 22718
+      },
+      "target": {
+        "canonical_album_id": 140858,
+        "duplicate_album_ids": [
+          25055
+        ],
+        "ordered_player_ids": [
+          57,
+          1
+        ]
+      },
+      "uncached_manifest_validation": "passed",
+      "unresolved": {
+        "counterpart ordered identity mismatch": 31,
+        "counterpart precise date mismatch": 10,
+        "counterpart professional grade mismatch": 3,
+        "slots_without_qualified_historical_proof": 5550
+      }
+    },
+    "prod": {
+      "compressed_file_sha256": "f20ee4617c559202e53bdd9380a0d2bc315890be5483c80d866c902b6f3ea3d5",
+      "database_identity": {
+        "database": "katrain_prod_20260725",
+        "dialect": "postgresql"
+      },
+      "dedup": {
+        "albums_scanned": 176949,
+        "duplicates_to_hide": 187,
+        "eligible_groups": 187,
+        "excluded_candidate_groups": 1702,
+        "full_operation_candidate_groups": 1885,
+        "invalid_operations_report_only": 10,
+        "preexisting_hidden_preserved": 259,
+        "short_or_branched_report_only": 35,
+        "visible_scanned": 176690
+      },
+      "historical_cohorts": 11,
+      "manifest_sha256": "8af6346f74815843ff51294df90e53273eb39dfd433dfaec1f31354f54f984f6",
+      "preparation_evidence": {
+        "code_sha256": {
+          "katrain.web.kifu.catalog_standardization": "b067edde2fe9666bc46f518dbf74a2a6b368a8efd22984ed38e599c61fec195d",
+          "katrain.web.kifu.source_rank_normalization": "bd19cadf2b86ba8e1af98db650a93fef6dc1164ef1982499db7db5d4cdada7cd",
+          "katrain.web.kifu.source_rank_repair": "b03a31d86d5b29191bde8c06ebedb3e5a91e612d3caa600908d8558db43627a1"
+        },
+        "deployed_writer_compatibility": {
+          "build_sha": "7f2ff0c65381250e41a9dc959d8cac9201c3a86b",
+          "checks": {
+            "http_display_duplicate": false,
+            "native_original_receipt": false,
+            "source_rank_v2_reader": false
+          },
+          "status": "incompatible"
+        },
+        "operation_cache": {
+          "hits": 179903,
+          "misses": 0
+        },
+        "operation_cache_source_rows": 176949,
+        "transaction_read_only": "on"
+      },
+      "rank_changes": 5571,
+      "rank_systems": {
+        "19x19:amateur_dan": 9637,
+        "19x19:dan_unspecified": 219848,
+        "19x19:empty": 47393,
+        "19x19:kyu": 3,
+        "19x19:professional_dan": 29010,
+        "19x19:unparsed": 2571,
+        "CWI:amateur_dan": 109,
+        "CWI:dan_unspecified": 5571,
+        "CWI:empty": 3370,
+        "CWI:kyu": 13,
+        "CWI:professional_dan": 35834,
+        "CWI:unparsed": 539
+      },
+      "ranks": {
+        "albums": 176949,
+        "existing_snapshot_slots": 184,
+        "professional_refinements": 21,
+        "reviewed_target_slots": 2,
+        "slots": 353898,
+        "unspecified_repairs": 5550
+      },
+      "source_albums": {
+        "19x19": 154231,
+        "CWI": 22718
+      },
+      "target": {
+        "canonical_album_id": 140858,
+        "duplicate_album_ids": [
+          25055
+        ],
+        "ordered_player_ids": [
+          57,
+          1
+        ]
+      },
+      "uncached_manifest_validation": "passed",
+      "unresolved": {
+        "counterpart ordered identity mismatch": 29,
+        "counterpart precise date mismatch": 10,
+        "counterpart professional grade mismatch": 5,
+        "slots_without_qualified_historical_proof": 5550
+      }
+    }
+  },
+  "production_applied": false,
+  "status": "dry-run-only"
+}

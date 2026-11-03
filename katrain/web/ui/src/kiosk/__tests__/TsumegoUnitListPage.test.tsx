@@ -459,3 +459,14 @@ it('shows a dash for untouched problems and labels unresolved attempted ones as 
   expect(cells()[0].querySelector('em')).toHaveTextContent('—');
   expect(cells()[1]).toHaveAccessibleName('第 2 题，做错过，2 次');
 });
+
+
+it('requests the same derived detail for the selected preview and exposes its source size', async () => {
+  seedSequence('15k', 'capturing', ['q0']);
+  vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ id: 'q0', boardSize: 19, initialBlack: ['ar'], initialWhite: ['as'],
+    board_variant: { status: 'adapted', source_size: 9, target_size: 19, policy_version: 'test', source_sha256: 'test', offset: [0, 10], reason: '局部提子' },
+  }) } as Response);
+  renderPage();
+  expect(await screen.findByText('19路版（原9路）')).toBeInTheDocument();
+  expect(fetch).toHaveBeenCalledWith('/api/v1/tsumego/problems/q0?board_variant=kiosk19', expect.objectContaining({ signal: expect.any(AbortSignal) }));
+});

@@ -1,0 +1,350 @@
+{
+  "ai-free": {
+    "group": {
+      "x": 548,
+      "y": 140,
+      "width": 460,
+      "height": 104,
+      "top": 140,
+      "right": 1008,
+      "bottom": 244,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 786,
+        "bottom": 244,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 1008,
+        "bottom": 244,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "Shin Jin-seo不限时等待黑方 · 执白提子 0王星昊第 1 手不限时轮到你 · 执黑提子 0",
+    "documentOverflow": false
+  },
+  "lobby": {
+    "group": {
+      "x": 548,
+      "y": 140,
+      "width": 460,
+      "height": 104,
+      "top": 140,
+      "right": 1008,
+      "bottom": 244,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 786,
+        "bottom": 244,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 1008,
+        "bottom": 244,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "白 · Shin Jin-seo不限时等待中提子 0黑 · 王星昊（你）第 1 手轮到你提子 0",
+    "documentOverflow": false
+  },
+  "pvp-spectator": {
+    "group": {
+      "x": 515,
+      "y": 175,
+      "width": 480,
+      "height": 136,
+      "top": 175,
+      "right": 995,
+      "bottom": 311,
+      "left": 515
+    },
+    "cards": [
+      {
+        "x": 515,
+        "y": 175,
+        "width": 236,
+        "height": 136,
+        "top": 175,
+        "right": 751,
+        "bottom": 311,
+        "left": 515
+      },
+      {
+        "x": 759,
+        "y": 175,
+        "width": 236,
+        "height": 136,
+        "top": 175,
+        "right": 995,
+        "bottom": 311,
+        "left": 759
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 32.205133891366586,
+        "visibleGap": 30.671445902958112,
+        "edges": [
+          {
+            "pathX": 744.1923017285142,
+            "outerX": 744.9591457227184,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.3974356198808,
+            "outerX": 775.6305916256765,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 32.20512772657298,
+        "visibleGap": 30.67143973816451,
+        "edges": [
+          {
+            "pathX": 738.8974362223714,
+            "outerX": 739.6642802165757,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 771.1025639489444,
+            "outerX": 770.3357199547402,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 32.20512258963777,
+        "visibleGap": 30.671434601229294,
+        "edges": [
+          {
+            "pathX": 733.6025690204449,
+            "outerX": 734.3694130146491,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 765.8076916100827,
+            "outerX": 765.0408476158784,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "黑方棋友执黑业余 2 段轮到落子白方棋友执白业余 3 段对局棋手",
+    "documentOverflow": false
+  },
+  "golaxy-spectator": {
+    "group": {
+      "x": 513,
+      "y": 157,
+      "width": 484,
+      "height": 97,
+      "top": 157,
+      "right": 997,
+      "bottom": 254,
+      "left": 513
+    },
+    "cards": [
+      {
+        "x": 513,
+        "y": 157,
+        "width": 238,
+        "height": 97,
+        "top": 157,
+        "right": 751,
+        "bottom": 254,
+        "left": 513
+      },
+      {
+        "x": 759,
+        "y": 157,
+        "width": 238,
+        "height": 97,
+        "top": 157,
+        "right": 997,
+        "bottom": 254,
+        "left": 759
+      }
+    ],
+    "svgPositions": [
+      null,
+      null
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": null,
+        "visibleGap": null,
+        "edges": [
+          null,
+          null
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": null,
+        "visibleGap": null,
+        "edges": [
+          null,
+          null
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": null,
+        "visibleGap": null,
+        "edges": [
+          null,
+          null
+        ]
+      }
+    ],
+    "text": "黑 · 黑方棋友7 段04:47读秒 30 秒 · 剩余 3 次白 · 白方棋友6 段04:55读秒 30 秒 · 剩余 3 次",
+    "documentOverflow": false
+  }
+}

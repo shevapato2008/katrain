@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import type { ActiveSession } from '../utils/activeSession';
 import type { PlatformInfo } from '../../api';
+import { Icon, type IconName } from '../shell/icons';
 import PlayPage from './PlayPage';
 
 const mockNavigate = vi.fn();
@@ -133,25 +134,35 @@ describe('PlayPage', () => {
     }
   });
 
-  it('keeps equal mode choices and their routes without explanatory icon tiles', async () => {
+  it('keeps equal choices with leading semantic icons, trailing carets, and their routes', async () => {
     let view!: ReturnType<typeof renderPage>;
     await act(async () => { view = renderPage(); });
-    const choices = [
-      ['自由对弈', '/kiosk/play/ai/setup/free'],
-      ['升降级对弈', '/kiosk/play/ai/setup/ranked'],
-      ['本地对局', '/kiosk/play/pvp/setup'],
-      ['在线大厅', '/kiosk/play/pvp/lobby'],
+    const choices: [string, string, IconName][] = [
+      ['自由对弈', '/kiosk/play/ai/setup/free', 'robot'],
+      ['升降级对弈', '/kiosk/play/ai/setup/ranked', 'trophy'],
+      ['本地对局', '/kiosk/play/pvp/setup', 'users'],
+      ['在线大厅', '/kiosk/play/pvp/lobby', 'globe-hemisphere-west'],
+      ['全部对局', '/kiosk/report', 'clock-counter-clockwise'],
     ];
     const buttons = choices.map(([label]) => screen.getByText(label).closest('button')!);
-    expect(new Set(buttons)).toHaveLength(4);
+    expect(new Set(buttons)).toHaveLength(5);
     expect(new Set(buttons.map((button) => button.className))).toHaveLength(1);
     buttons.forEach((button, index) => {
       expect(button.querySelector('.kiosk-card__tile')).toBeNull();
+      const icons = button.querySelectorAll('svg');
+      const title = button.querySelector('.kiosk-play-choice__title')!;
+      expect(icons).toHaveLength(2);
+      const expected = render(<><Icon name={choices[index][2]} /><Icon name="caret-right" /></>);
+      const expectedIcons = expected.container.querySelectorAll('svg');
+      expect(icons[0].innerHTML).toBe(expectedIcons[0].innerHTML);
+      expect(icons[1].innerHTML).toBe(expectedIcons[1].innerHTML);
+      expect(icons[0].compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(title.compareDocumentPosition(icons[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expected.unmount();
       expect(button).toBeEnabled();
       fireEvent.click(button);
       expect(mockNavigate).toHaveBeenLastCalledWith(choices[index][1]);
     });
-    expect(screen.getByText('全部对局').closest('button')!.querySelector('.kiosk-card__tile')).toBeNull();
     platformButtons().forEach((button) => expect(button.querySelector('img')).toBeInTheDocument());
 
     useEngineReadinessMock.mockReturnValue('warming');

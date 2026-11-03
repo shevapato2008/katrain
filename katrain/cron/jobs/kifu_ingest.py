@@ -457,10 +457,25 @@ def quarantine_staged_item(stage, store, source_id, reason):
 async def resume_batch(
     store, manifest, digest, *, test_verify, sync, prod_verify, test_publish=None, deadline=None, allow_prod=True
 ):
-    """Recover at durable boundaries; an API timeout never repeats publication."""
+    """Repair search at durable boundaries by replaying the original native operation."""
+    from katrain.web.kifu.search_sync import sync_mode
+
     key = manifest["publication_key"]
     row = _batch_row(store, key)
     status = row["status"]
+    repair_search = sync_mode() == "enabled"
+    if repair_search and status in {"test_published", "test_verified"} and (deadline is None or time.monotonic() < deadline):
+        if test_publish is None:
+            raise ValueError("original TEST publisher is required for search repair")
+        replay = await _call(test_publish, manifest, digest)
+        if replay != row["test_receipt"]:
+            raise ValueError("TEST repair receipt differs from original publication")
+    if repair_search and status == "prod_published" and (deadline is None or time.monotonic() < deadline):
+        # Reuse the already authorized restricted receiver and original TEST
+        # verification for this exact manifest. TEST never reaches PROD ES/DB.
+        replay = await _call(sync, manifest, digest, row["test_verification"])
+        if replay["receipt"] != row["prod_receipt"]:
+            raise ValueError("PROD repair receipt differs from original publication")
     if status == "names_ready" and (deadline is None or time.monotonic() < deadline):
         if test_publish is None:
             raise ValueError("test publisher is required")

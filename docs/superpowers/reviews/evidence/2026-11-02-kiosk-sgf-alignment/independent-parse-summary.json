@@ -1,0 +1,12 @@
+{
+  "counts": {
+    "records": 176949,
+    "warning:multiple_GN_values": 115470,
+    "records_with_parse_or_move_property_issues": 16,
+    "issue:ValueError: ": 5,
+    "issue:ValueError: unexpected end of SGF data": 6,
+    "issue:ValueError: too many values to unpack (expected 2)": 1,
+    "issue:overlapping_setup_properties": 4
+  },
+  "seconds": 76.2
+}

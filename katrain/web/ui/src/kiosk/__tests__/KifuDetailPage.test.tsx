@@ -4,16 +4,12 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import KifuDetailPage from '../pages/KifuDetailPage';
-import type { BaipuStep } from '../../api/baipuApi';
 import { ApiError } from '../../api';
 
 /**
  * 屏 16 · 棋谱详情 `/kiosk/kifu/:kifuId`(计划外补的一屏,记作 Task 15b)。
  *
- * **这份文件里最要紧的一条是提子那条。** 这一屏的盘不自己算气、不自己判提 ——
- * 它把 `/api/v1/baipu/load` 每一步给的 `removed[]` 原样执行。所以造的数据里有一步带
- * `removed`,断言的是「那颗子从盘上没了」:如果哪天有人在前端补一份提子实现、
- * 或者把 `removed` 忘了播,这条就红。
+ * 用真实 SGF 着手验证共享的屏幕回放，包括提子、退回、初始摆子和虚手。
  *
  * ⚠️ **jsdom 没有布局引擎**,所以这里一条几何都不断言。盘线和刻度带对不对齐、右栏装不装得下,
  * 判据在 `tests/kiosk-shell-geometry.spec.ts`(真浏览器量)。这里只管「哪颗子在盘上」。
@@ -27,6 +23,7 @@ vi.mock('react-router-dom', async () => {
 
 const { getAlbum, play } = vi.hoisted(() => ({ getAlbum: vi.fn(), play: vi.fn() }));
 vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play }) }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ isLoading: false, isGuest: false, identityKey: 'kifu-detail-owner', token: 'test-token', isAuthenticated: true }) }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbum } }));
 
 const { baipuLoad, cacheSgfMock } = vi.hoisted(() => ({ baipuLoad: vi.fn(), cacheSgfMock: vi.fn() }));
@@ -35,20 +32,8 @@ vi.mock('../../api/baipuApi', async (importOriginal) => {
   return { ...actual, BaipuAPI: { ...actual.BaipuAPI, load: baipuLoad }, cacheSgf: cacheSgfMock };
 });
 
-const step = (over: Partial<BaipuStep>): BaipuStep => ({
-  kind: 'move', move_index: 0, property: 'B',
-  row: null, col: null, color: null, removed: [], board_hash: '',
-  ...over,
-});
-
-// 坐标全是 canonical(row=0 在**上**)。19 路:row 3 → 16 线,col 15 → Q。
-// 第 4 手白子落 Q4,同时把第 1 手那颗 Q16 提掉 —— 提子那条断言就靠它。
-const STEPS: BaipuStep[] = [
-  step({ move_index: 0, property: 'B', row: 3, col: 15, color: 'B' }),   // Q16
-  step({ move_index: 1, property: 'W', row: 3, col: 3, color: 'W' }),    // D16
-  step({ move_index: 2, property: 'B', row: 15, col: 3, color: 'B' }),   // D4
-  step({ move_index: 3, property: 'W', row: 15, col: 15, color: 'W', removed: [{ row: 3, col: 15 }] }), // Q4 提 Q16
-];
+// 第 4 手白 A18 与白 B19 围住黑 A19，真实提掉角上的黑子。
+const MOVES = ';B[aa];W[ba];B[dd];W[ab]';
 
 const ALBUM = {
   id: 7,
@@ -63,7 +48,7 @@ const ALBUM = {
   date_played: '2026-06-30', board_size: 19, handicap: 0,
   komi: 7.5, rules: 'chinese',
   place: null, source: null,
-  sgf_content: '(;FF[4]GM[1]SZ[19];B[pd])',
+  sgf_content: `(;FF[4]GM[1]SZ[19]${MOVES})`,
 };
 
 const renderPage = () =>
@@ -87,7 +72,7 @@ beforeEach(() => {
   // 补在这里,不在页面里加 `if (typeof ... === 'function')`。
   Element.prototype.scrollIntoView = vi.fn();
   getAlbum.mockResolvedValue(ALBUM);
-  baipuLoad.mockResolvedValue({ board_size: 19, steps: STEPS, meta: {} });
+  baipuLoad.mockRejectedValue(new Error('screen replay must not load physical steps'));
 });
 
 describe('屏 16 棋谱详情 · 三种状态', () => {
@@ -156,37 +141,36 @@ describe('屏 16 棋谱详情 · 逐手回放', () => {
     await waitLoaded();
     expect(board().querySelectorAll('[data-stone]')).toHaveLength(3);
     expect(screen.getByTestId('kifu-detail-moves').textContent).toContain('第 4 / 4 手');
+    expect(baipuLoad).not.toHaveBeenCalled();
   });
 
-  it('下一手走一步,第一手那颗黑子出现在 Q16', async () => {
+  it('下一手走一步,第一手那颗黑子出现在 A19', async () => {
     renderPage();
     await waitLoaded();
     fireEvent.click(screen.getByRole('button', { name: '回到开局' }));
     fireEvent.click(screen.getByRole('button', { name: '下一手' }));
-    expect(stoneAt('Q16')).toHaveAttribute('data-stone', 'b');
+    expect(stoneAt('A19')).toHaveAttribute('data-stone', 'b');
     expect(screen.getByTestId('kifu-detail-moves').textContent).toContain('第 1 / 4 手');
   });
 
-  // ⚠️ 本文件的重点:提子**不在前端算**,播的是后端给的 `removed[]`。
-  // 走到第 4 手,Q16 必须从盘上消失 —— 而 Q4 的白子在。
-  it('走到带提子的那一手时,被提的子从盘上消失', async () => {
+  it('走到围住角上黑子的那一手时,被提的子从盘上消失', async () => {
     renderPage();
     await waitLoaded();
     fireEvent.click(screen.getByRole('button', { name: '跳到最后' }));
-    expect(stoneAt('Q16')).toBeNull();
-    expect(stoneAt('Q4')).toHaveAttribute('data-stone', 'w');
-    expect(stoneAt('D16')).toHaveAttribute('data-stone', 'w');
-    expect(stoneAt('D4')).toHaveAttribute('data-stone', 'b');
+    expect(stoneAt('A19')).toBeNull();
+    expect(stoneAt('A18')).toHaveAttribute('data-stone', 'w');
+    expect(stoneAt('B19')).toHaveAttribute('data-stone', 'w');
+    expect(stoneAt('D16')).toHaveAttribute('data-stone', 'b');
   });
 
   it('退回去那颗被提的子要回来 —— 回放是可逆的,不是一路盖上去', async () => {
     renderPage();
     await waitLoaded();
     fireEvent.click(screen.getByRole('button', { name: '跳到最后' }));
-    expect(stoneAt('Q16')).toBeNull();
+    expect(stoneAt('A19')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '上一手' }));
-    expect(stoneAt('Q16')).toHaveAttribute('data-stone', 'b');
-    expect(stoneAt('Q4')).toBeNull();
+    expect(stoneAt('A19')).toHaveAttribute('data-stone', 'b');
+    expect(stoneAt('A18')).toBeNull();
   });
 
   it('开局时前两个键灰、末手时后两个键灰', async () => {
@@ -207,19 +191,15 @@ describe('屏 16 棋谱详情 · 逐手回放', () => {
     await waitLoaded();
     const moves = screen.getByTestId('kifu-detail-moves');
     expect([...moves.querySelectorAll('.kifu-replay-move-grid button')].map(button => button.textContent))
-      .toEqual(['1Q16', '2D16', '3D4', '4Q4']);
+      .toEqual(['1A19', '2B19', '3D16', '4A18']);
     fireEvent.click(moves.querySelectorAll('.kifu-replay-move-grid button')[2]);
     expect(screen.getByTestId('kifu-detail-moves').textContent).toContain('第 3 / 4 手');
-    expect(stoneAt('D4')).toHaveAttribute('data-stone', 'b');
-    expect(stoneAt('Q4')).toBeNull();
+    expect(stoneAt('D16')).toHaveAttribute('data-stone', 'b');
+    expect(stoneAt('A18')).toBeNull();
   });
 
   it('让子的 setup 不算一手 —— 它在开局就在盘上,但手数还是 0', async () => {
-    baipuLoad.mockResolvedValue({
-      board_size: 19,
-      steps: [step({ kind: 'setup', property: 'AB', row: 9, col: 9, color: 'B' }), ...STEPS],
-      meta: {},
-    });
+    getAlbum.mockResolvedValue({ ...ALBUM, sgf_content: `(;SZ[19]AB[jj]${MOVES})` });
     renderPage();
     await waitLoaded();
     fireEvent.click(screen.getByRole('button', { name: '回到开局' }));
@@ -247,7 +227,7 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
     renderPage();
     await waitLoaded();
     fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
-    expect(cacheSgfMock).toHaveBeenCalledWith('kifu_7', '第 29 届三星杯 · 半决赛', ALBUM.sgf_content);
+    expect(cacheSgfMock).toHaveBeenCalledWith('kifu_7', '第 29 届三星杯 · 半决赛', ALBUM.sgf_content, expect.objectContaining({ getItem: expect.any(Function), setItem: expect.any(Function), removeItem: expect.any(Function) }));
     expect(mockNavigate).toHaveBeenCalledWith(
       '/kiosk/baipu/session/kifu_7',
       // backTo:摆谱会话的返回键回这一局的详情页(2026-09-22),不是一律回摆谱列表
@@ -270,10 +250,7 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
   });
 
   it('13 路的谱「摆到实体盘」灰着,并说明实体盘只摆得了 19 路', async () => {
-    baipuLoad.mockResolvedValue({
-      board_size: 13, meta: {},
-      steps: [step({ move_index: 0, property: 'B', row: 3, col: 3, color: 'B' })],
-    });
+    getAlbum.mockResolvedValue({ ...ALBUM, board_size: 13, sgf_content: '(;SZ[13];B[dd])' });
     renderPage();
     await waitLoaded();
     const btn = screen.getByRole('button', { name: '实体盘' });
@@ -283,7 +260,7 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
 });
 
 it('keeps archive load, pass and start silent while explicit forward/backward/jump replay sounds once', async () => {
-  baipuLoad.mockResolvedValue({ board_size: 19, steps: [...STEPS, step({ kind: 'pass', color: 'B' })], meta: {} });
+  getAlbum.mockResolvedValue({ ...ALBUM, sgf_content: `(;SZ[19]${MOVES};B[])` });
   renderPage(); await waitLoaded();
   expect(play).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '回到开局' }));

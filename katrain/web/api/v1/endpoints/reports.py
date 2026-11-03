@@ -1,17 +1,28 @@
 from typing import Any
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import func as sa_func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
+from katrain.web.api.v1.endpoints.billing import get_trusted_free_eligibility
 from katrain.core import move_grade
 from katrain.web.core import analysis_cost, billing, models_db, quota
+from katrain.web.core import billing_operations
+from katrain.web.core.billing_catalog import CATALOG_VERSION, report_units, wallet_display_points
+from katrain.web.core.billing_quotes import canonical_analysis_input
+from katrain.web.core.report_settlement import (
+    is_membership_report,
+    membership_report_readable,
+    reconcile_membership_report_in_transaction,
+)
 from katrain.web.core.config import settings
 from katrain.web.core.db import SessionLocal
 from katrain.web.core.repository import RemoteServiceUnavailableError
+from katrain.web.core.ranked_session_guard import guard_user_has_no_pending_ranked_game
 from katrain.web.models import User
 
 router = APIRouter()
@@ -72,6 +83,13 @@ class ReportTaskCreate(BaseModel):
     user_game_id: str
     report_type: str = "normal"
     force: bool = False
+    quote_token: str | None = None
+    idempotency_key: str | None = None
+
+
+class ReportTaskRetry(BaseModel):
+    quote_token: str | None = None
+    idempotency_key: str | None = None
 
 
 class ReportTaskStatus(BaseModel):
@@ -82,6 +100,13 @@ class ReportTaskStatus(BaseModel):
     total_moves: int
     analyzed_moves: int
     requested_visits: int
+    operation_id: int | None = None
+    authorization_operation_id: int | None = None
+    operation_status: str | None = None
+    billing_version: str | None = None
+    source: str | None = None
+    wallet_credits: int = 0
+    wallet_display_points: str = "0.00"
     # ISO 8601, or null when the attempt has not started / not finished.
     #
     # `started_at` is when the *current* attempt series began, not when the row was
@@ -133,7 +158,10 @@ def get_report_db(request: Request):
         db.close()
 
 
-def _task_to_dict(task: models_db.ReportTask) -> dict[str, Any]:
+def _task_to_dict(task: models_db.ReportTask, receipt=None) -> dict[str, Any]:
+    db = object_session(task)
+    op = receipt or (db.get(models_db.BillingOperation, task.operation_id) if db and task.operation_id else None)
+    wallet_credits = op.units if op and op.source == "wallet" and op.status != "refunded" else 0
     return {
         "id": task.id,
         "user_game_id": task.user_game_id,
@@ -142,6 +170,13 @@ def _task_to_dict(task: models_db.ReportTask) -> dict[str, Any]:
         "total_moves": task.total_moves,
         "analyzed_moves": task.analyzed_moves,
         "requested_visits": task.requested_visits,
+        "operation_id": op.id if op else task.operation_id,
+        "authorization_operation_id": task.operation_id,
+        "operation_status": op.status if op else None,
+        "billing_version": task.billing_version,
+        "source": op.source if op else None,
+        "wallet_credits": wallet_credits,
+        "wallet_display_points": wallet_display_points(wallet_credits),
         "started_at": task.started_at.isoformat() if task.started_at else None,
         "completed_at": task.completed_at.isoformat() if task.completed_at else None,
     }
@@ -230,19 +265,223 @@ async def _dispatch_remote_only(call):
         ) from exc
 
 
+def _membership_http_error(exc):
+    return HTTPException(status_code=exc.status_code, detail={"code": exc.code, "message": exc.detail})
+
+
+def _reconcile_paid_report(db, *, task_id, user_id):
+    try:
+        task, op = reconcile_membership_report_in_transaction(db, task_id=task_id, user_id=user_id)
+        if task is None:
+            raise HTTPException(status_code=404, detail="Report task not found")
+        return task, op
+    except billing_operations.MembershipError as exc:
+        raise _membership_http_error(exc) from exc
+
+
+def _membership_user(db, user_id, *, app=None):
+    from katrain.web.core.paid_analysis import legacy_analysis_allowed
+
+    user = db.get(models_db.User, user_id)
+    return not legacy_analysis_allowed(user=user, app=app)
+
+
+def _report_input(game, report_type):
+    profile = "advanced" if report_type == "deep" else report_type
+    try:
+        canonical = canonical_analysis_input(game.sgf_content, "report", profile)
+        units = report_units(canonical["move_count"], profile)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=422, detail={"code": "invalid_analysis_request", "message": str(exc)}) from exc
+    return canonical, profile, units
+
+
+def _reserve_report(db, *, user_id, game, report_type, body, trusted_free_eligible=False):
+    canonical, profile, units = _report_input(game, report_type)
+    try:
+        op = billing_operations.reserve_operation_in_transaction(
+            db,
+            user_id=user_id,
+            now=datetime.now(timezone.utc),
+            kind="report",
+            fingerprint=canonical["fingerprint"],
+            profile=profile,
+            units=units,
+            environment=settings.KATRAIN_ENVIRONMENT,
+            secret=settings.SECRET_KEY,
+            quote_token=body.quote_token,
+            idempotency_key=body.idempotency_key,
+            membership_mode=settings.MEMBERSHIP_MODE,
+            trusted_free_eligible=trusted_free_eligible,
+            report_queue_limit=settings.MEMBERSHIP_REPORT_QUEUE_LIMIT,
+            game_id=game.id,
+        )
+    except billing_operations.MembershipError as exc:
+        raise _membership_http_error(exc) from exc
+    # A library edit/delete can commit between the initial SGF read and the
+    # admission lock. Freeze the current authoritative row before publishing work.
+    fresh = (
+        db.query(models_db.UserGame)
+        .filter_by(id=game.id, user_id=user_id)
+        .with_for_update()
+        .populate_existing()
+        .one_or_none()
+    )
+    if fresh is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+    current, _, _ = _report_input(fresh, report_type)
+    if current["fingerprint"] != canonical["fingerprint"]:
+        raise HTTPException(status_code=409, detail={"code": "quote_mismatch"})
+    canonical = current
+    return op, canonical
+
+
+def _bind_paid_attempt(db, task, op, game, canonical):
+    task.status, task.operation_id = "pending", op.id
+    task.billing_version, task.model_sha256 = CATALOG_VERSION, op.model_sha256
+    task.total_moves, task.analyzed_moves, task.settled_moves = canonical["move_count"], 0, 0
+    task.analysis_sgf, task.sgf_hash = canonical["canonical_sgf"], sgf_fingerprint(game.sgf_content)
+    task.generation = max(task.generation or 0, op.generation or 0)
+    op.generation = task.generation
+    task.retry_count, task.error_message = 0, None
+    task.started_at, task.completed_at = None, None
+    task.charge_ref, task.free_grant_period, task.billing_exempt_reason = None, None, None
+    db.flush()
+    op.task_id, op.game_id = task.id, game.id
+    db.flush()
+
+
+def _retry_original_legacy_authorization(db, *, task_id, user_id):
+    """A migration may resume an unexpired old authorization, never issue another."""
+    from katrain.web.core.membership import utc
+
+    billing_operations.acquire_admission_lock(db)
+    db.query(models_db.User).filter_by(id=user_id).with_for_update().populate_existing().one()
+    task = (
+        db.query(models_db.ReportTask)
+        .filter_by(id=task_id, user_id=user_id)
+        .with_for_update()
+        .populate_existing()
+        .one()
+    )
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=settings.REPORT_RETRY_GRACE_SEC)
+    reserved = bool(task.charge_ref and billing.transaction_status(db, task.charge_ref) == "reserved")
+    original_free = bool(
+        task.free_grant_period
+        and db.query(models_db.QuotaBucket.id)
+        .filter(
+            models_db.QuotaBucket.user_id == user_id,
+            models_db.QuotaBucket.kind == "free_report",
+            models_db.QuotaBucket.period_key == task.free_grant_period,
+            models_db.QuotaBucket.used > 0,
+        )
+        .first()
+    )
+    if (
+        is_membership_report(task)
+        or task.status != "failed"
+        or not task.updated_at
+        or utc(task.updated_at) < cutoff
+        or not (reserved or original_free)
+    ):
+        # Old expired reservations retain their original price and grace settlement.
+        from katrain.web.core.report_settlement import settle_finished_reports
+
+        settle_finished_reports(db, user_id=user_id)
+        raise HTTPException(status_code=409, detail={"code": "legacy_report_requires_new_request"})
+    try:
+        billing_operations._check_slots(
+            db,
+            user_id=user_id,
+            kind="report",
+            report_queue_limit=settings.MEMBERSHIP_REPORT_QUEUE_LIMIT,
+            position_queue_limit=settings.MEMBERSHIP_POSITION_QUEUE_LIMIT,
+        )
+    except billing_operations.MembershipError as exc:
+        raise _membership_http_error(exc) from exc
+    task.status, task.retry_count, task.error_message = "pending", 0, None
+    task.started_at, task.completed_at = None, None
+    task.generation = (task.generation or 0) + 1
+    db.commit()
+    return _task_to_dict(task)
+
+
+def _existing_report_for_operation(db, op, *, user_id):
+    try:
+        original = billing_operations.resolve_owned_operation(db, op)
+    except billing_operations.MembershipError as exc:
+        raise _membership_http_error(exc) from exc
+    existing = (
+        db.query(models_db.ReportTask).filter_by(id=op.task_id, user_id=user_id, operation_id=original.id).first()
+    )
+    if existing is None:
+        raise HTTPException(status_code=409, detail={"code": "report_attempt_superseded"})
+    if original.status == "committed" and not membership_report_readable(db, existing, original):
+        raise HTTPException(status_code=409, detail={"code": "report_result_unavailable"})
+    return existing
+
+
+def _create_paid_report(db, *, body, game, user_id, trusted_free_eligible=False):
+    canonical, _, _ = _report_input(game, body.report_type)
+    # A repeat view of an already owned report requires no fresh acceptance.
+    # Do not bypass the operation identity check when a caller supplied a key.
+    if not body.idempotency_key:
+        for existing in (
+            db.query(models_db.ReportTask)
+            .filter_by(user_id=user_id, user_game_id=game.id, report_type=body.report_type, status="completed")
+            .order_by(models_db.ReportTask.id.desc())
+        ):
+            original = db.get(models_db.BillingOperation, existing.operation_id) if existing.operation_id else None
+            if (
+                is_membership_report(existing)
+                and original
+                and original.fingerprint == canonical["fingerprint"]
+                and membership_report_readable(db, existing, original)
+            ):
+                return _task_to_dict(existing)
+        raise HTTPException(status_code=422, detail={"code": "quote_and_idempotency_required"})
+    op, canonical = _reserve_report(
+        db,
+        user_id=user_id,
+        game=game,
+        report_type=body.report_type,
+        body=body,
+        trusted_free_eligible=trusted_free_eligible,
+    )
+    if op.task_id:
+        existing = _existing_report_for_operation(db, op, user_id=user_id)
+        db.commit()
+        return _task_to_dict(existing, op)
+    report = models_db.ReportTask(
+        user_id=user_id,
+        user_game_id=game.id,
+        report_type=body.report_type,
+        requested_visits=REPORT_VISITS[body.report_type],
+        generation=0,
+    )
+    db.add(report)
+    _bind_paid_attempt(db, report, op, game, canonical)
+    db.commit()
+    return _task_to_dict(report)
+
+
 @router.post("/", response_model=ReportTaskStatus)
 async def create_report_task(
     task: ReportTaskCreate,
     request: Request,
     current_user: User = Depends(require_writable_user),
     db: Session = Depends(get_report_db),
+    trusted_free: bool = Depends(get_trusted_free_eligibility),
 ):
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "create report")
     if task.report_type not in REPORT_VISITS:
         raise HTTPException(status_code=400, detail="Unsupported report_type")
 
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await _dispatch_remote_only(lambda: dispatcher.reports_create(task.model_dump()))
+        return await _dispatch_remote_only(
+            lambda: dispatcher.reports_create(task.model_dump(), expected_user_id=current_user.id)
+        )
 
     game = (
         db.query(models_db.UserGame)
@@ -254,6 +493,11 @@ async def create_report_task(
     )
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
+
+    if settings.MEMBERSHIP_MODE != "legacy" or _membership_user(db, current_user.id, app=request.app):
+        return _create_paid_report(
+            db, body=task, game=game, user_id=current_user.id, trusted_free_eligible=trusted_free
+        )
 
     if not task.force:
         existing = (
@@ -325,9 +569,7 @@ async def create_report_task(
     if task.report_type == "normal" and settings.FREE_WEEKLY_REPORTS > 0:
         report_task.free_grant_period = period
         db.commit()
-        if quota.try_consume(
-            db, current_user.id, "free_report:week", allowance=settings.FREE_WEEKLY_REPORTS
-        ):
+        if quota.try_consume(db, current_user.id, "free_report:week", allowance=settings.FREE_WEEKLY_REPORTS):
             pass  # 免费额度拿到了,不扣积分
         else:
             report_task.free_grant_period = None
@@ -366,7 +608,7 @@ async def list_report_tasks(
 ):
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await _dispatch_remote_only(dispatcher.reports_list)
+        return await _dispatch_remote_only(lambda: dispatcher.reports_list(expected_user_id=current_user.id))
 
     tasks = (
         db.query(models_db.ReportTask)
@@ -385,7 +627,7 @@ async def get_report_summary(
 ):
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await _dispatch_remote_only(dispatcher.reports_summary)
+        return await _dispatch_remote_only(lambda: dispatcher.reports_summary(expected_user_id=current_user.id))
 
     rows = (
         db.query(models_db.ReportTask.status, sa_func.count())
@@ -406,12 +648,19 @@ async def get_report_summary(
 async def retry_report_task(
     task_id: int,
     request: Request,
+    body: ReportTaskRetry | None = None,
     current_user: User = Depends(require_writable_user),
     db: Session = Depends(get_report_db),
+    trusted_free: bool = Depends(get_trusted_free_eligibility),
 ):
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "retry report")
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await _dispatch_remote_only(lambda: dispatcher.reports_retry(task_id))
+        return await _dispatch_remote_only(
+            lambda: dispatcher.reports_retry(
+                task_id, (body or ReportTaskRetry()).model_dump(), expected_user_id=current_user.id
+            )
+        )
 
     task = (
         db.query(models_db.ReportTask)
@@ -423,6 +672,53 @@ async def retry_report_task(
     )
     if not task:
         raise HTTPException(status_code=404, detail="Report task not found")
+    if is_membership_report(task):
+        body = body or ReportTaskRetry()
+        if settings.MEMBERSHIP_MODE != "enabled":
+            raise HTTPException(status_code=503, detail={"code": f"membership_{settings.MEMBERSHIP_MODE}"})
+        # Admission lock must precede every user lock, including the old attempt's refund.
+        billing_operations.acquire_admission_lock(db)
+        task, old = _reconcile_paid_report(db, task_id=task.id, user_id=current_user.id)
+        game = db.query(models_db.UserGame).filter_by(id=task.user_game_id, user_id=current_user.id).one_or_none()
+        if game is None:
+            raise HTTPException(status_code=404, detail="Game not found")
+        # HTTP replay after a successful retry returns the same newly admitted attempt.
+        if body.idempotency_key and old.idempotency_key == body.idempotency_key:
+            _reserve_report(
+                db,
+                user_id=current_user.id,
+                game=game,
+                report_type=task.report_type,
+                body=body,
+                trusted_free_eligible=trusted_free,
+            )
+            db.commit()
+            return _task_to_dict(task)
+        if task.status != "failed" or old.status != "refunded":
+            raise HTTPException(status_code=409, detail={"code": "report_not_retryable"})
+        op, canonical = _reserve_report(
+            db,
+            user_id=current_user.id,
+            game=game,
+            report_type=task.report_type,
+            body=body,
+            trusted_free_eligible=trusted_free,
+        )
+        if op.task_id:
+            existing = _existing_report_for_operation(db, op, user_id=current_user.id)
+            db.commit()
+            return _task_to_dict(existing, op)
+        task.generation += 1
+        db.query(models_db.ReportTaskMove).filter_by(task_id=task.id).delete(synchronize_session=False)
+        _bind_paid_attempt(db, task, op, game, canonical)
+        db.commit()
+        return _task_to_dict(task)
+    if settings.MEMBERSHIP_MODE == "paused":
+        raise HTTPException(status_code=503, detail={"code": "membership_paused"})
+    if settings.MEMBERSHIP_MODE == "enabled":
+        return _retry_original_legacy_authorization(db, task_id=task.id, user_id=current_user.id)
+    if _membership_user(db, current_user.id, app=request.app):
+        raise HTTPException(status_code=503, detail={"code": "membership_legacy"})
     if task.status != "failed":
         raise HTTPException(status_code=400, detail="Only failed tasks can be retried")
 
@@ -493,7 +789,7 @@ async def get_report_status(
 ):
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await _dispatch_remote_only(lambda: dispatcher.reports_get(task_id))
+        return await _dispatch_remote_only(lambda: dispatcher.reports_get(task_id, expected_user_id=current_user.id))
 
     task = (
         db.query(models_db.ReportTask)
@@ -505,6 +801,9 @@ async def get_report_status(
     )
     if not task:
         raise HTTPException(status_code=404, detail="Report task not found")
+    if is_membership_report(task):
+        task, _ = _reconcile_paid_report(db, task_id=task.id, user_id=current_user.id)
+        db.commit()
     return _task_to_dict(task)
 
 
@@ -515,9 +814,10 @@ async def get_report_moves(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_report_db),
 ):
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "report analysis")
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await _dispatch_remote_only(lambda: dispatcher.reports_moves(task_id))
+        return await _dispatch_remote_only(lambda: dispatcher.reports_moves(task_id, expected_user_id=current_user.id))
 
     task = (
         db.query(models_db.ReportTask)
@@ -529,6 +829,12 @@ async def get_report_moves(
     )
     if not task:
         raise HTTPException(status_code=404, detail="Report task not found")
+
+    if is_membership_report(task):
+        task, op = _reconcile_paid_report(db, task_id=task.id, user_id=current_user.id)
+        db.commit()
+        if not membership_report_readable(db, task, op):
+            raise HTTPException(status_code=409, detail={"code": "report_not_committed"})
 
     moves = (
         db.query(models_db.ReportTaskMove)

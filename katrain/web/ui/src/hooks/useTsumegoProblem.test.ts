@@ -4,6 +4,8 @@ import { useTsumegoProblem } from './useTsumegoProblem';
 import type { MoveResult } from './useTsumegoProblem';
 import * as progressContext from '../context/TsumegoProgressContext';
 import { sgfToCoords } from '../utils/sgfParser';
+import { stonesToVisionBoard } from '../kiosk/hooks/usePhysicalTsumego';
+import adaptedCapture from './__fixtures__/kiosk19-capture.json';
 
 // 9x9 board. Initial stones: black ba, white aa (white's only liberty is ab).
 // Off-tree B[ab] fills that liberty -> captures white aa -> judged incorrect.
@@ -222,6 +224,125 @@ describe('restart cancels pending state', () => {
     expect(result.current.isFailed).toBe(false);
     expect(result.current.moveHistory).toEqual([]);
     expect(result.current.lastMove).toBeNull();
+  });
+});
+
+describe('ordinary undo and pending replies', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('replays initial setup when undoing a correct capture and its reply', async () => {
+    const captureProblem = { ...problemJson,
+      sgfContent: '(;GM[1]SZ[9]AB[ba]AW[aa]PL[B];B[ab];W[dd];B[ee]C[正解])',
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => captureProblem })));
+    const { result } = await setup();
+    const initial = result.current.stones;
+    const root = result.current.currentNode;
+    const hint = result.current.hintCoords;
+    vi.useFakeTimers();
+    act(() => { result.current.placeStone(...sgfToCoords('ab', 9)!); });
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current.moveHistory).toHaveLength(2);
+    expect(result.current.stones).not.toContainEqual({ player: 'W', coords: sgfToCoords('aa', 9) });
+    act(() => result.current.undo());
+    expect(result.current.stones).toEqual(initial);
+    expect(result.current.moveHistory).toEqual([]);
+    expect(result.current.currentNode).toBe(root);
+    expect(result.current.nextPlayer).toBe('B');
+    expect(result.current.lastMove).toBeNull();
+    expect(result.current.hintCoords).toEqual(hint);
+  });
+
+  it('rejects another screen move while an automatic reply is pending', async () => {
+    const { result } = await setup();
+    vi.useFakeTimers();
+    act(() => { result.current.placeStone(...sgfToCoords('cc', 9)!); });
+    const waiting = result.current.stones;
+    let duplicate: MoveResult | null = null;
+    act(() => { duplicate = result.current.placeStone(...sgfToCoords('gg', 9)!); });
+    expect(duplicate).toBeNull();
+    expect(result.current.isFailed).toBe(false);
+    expect(result.current.stones).toEqual(waiting);
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current.moveHistory).toHaveLength(2);
+    expect(result.current.lastMove).toEqual(sgfToCoords('dd', 9));
+  });
+
+  it('does not snapshot an incomplete turn when try mode is pressed during the reply delay', async () => {
+    const { result } = await setup();
+    vi.useFakeTimers();
+    act(() => { result.current.placeStone(...sgfToCoords('cc', 9)!); });
+    act(() => result.current.enterTryMode());
+    expect(result.current.isTryMode).toBe(false);
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current.moveHistory).toHaveLength(2);
+    act(() => result.current.enterTryMode());
+    expect(result.current.isTryMode).toBe(true);
+    act(() => result.current.exitTryMode());
+    expect(result.current.moveHistory).toHaveLength(2);
+    expect(result.current.currentNode?.move?.coords).toEqual(sgfToCoords('dd', 9));
+  });
+
+  it('undo before the reply cancels the timer and restores the original board', async () => {
+    const { result } = await setup();
+    const initial = result.current.stones;
+    vi.useFakeTimers();
+    act(() => { result.current.placeStone(...sgfToCoords('cc', 9)!); });
+    act(() => result.current.undo());
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current.stones).toEqual(initial);
+    expect(result.current.moveHistory).toEqual([]);
+    expect(result.current.lastMove).toBeNull();
+    expect(result.current.nextPlayer).toBe('B');
+  });
+});
+
+describe('opt-in 19-line derived detail journey', () => {
+  it('keeps Galaxy reads original and opts Kiosk into the variant', async () => {
+    const normal = await setup();
+    expect(fetch).toHaveBeenCalledWith('/api/v1/tsumego/problems/p1');
+    normal.unmount();
+    const kiosk = renderHook(() => useTsumegoProblem('p1', { boardVariant: 'kiosk19' }));
+    await waitFor(() => expect(kiosk.result.current.problem).not.toBeNull());
+    expect(fetch).toHaveBeenLastCalledWith('/api/v1/tsumego/problems/p1?board_variant=kiosk19');
+  });
+
+  it('judges a real translated multi-branch capture, maps to vision, resets and changes source ID', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => adaptedCapture })));
+    const { result, rerender } = renderHook(({ id }) => useTsumegoProblem(id, { boardVariant: 'kiosk19' }), { initialProps: { id: adaptedCapture.id } });
+    await waitFor(() => expect(result.current.problem?.id).toBe(adaptedCapture.id));
+    expect(result.current.boardSize).toBe(19);
+    const initial = result.current.stones;
+    // SGF top-left rj => drawing bottom-left [17,9] => vision row 9, col 17.
+    expect(sgfToCoords('rj', 19)).toEqual([17, 9]);
+    expect(stonesToVisionBoard(initial, 19)[9][17]).toBe(2);
+    act(() => { result.current.placeStone(...sgfToCoords('sk', 19)!); });
+    await waitFor(() => expect(result.current.moveHistory).toHaveLength(2));
+    expect(result.current.lastMove).toEqual(sgfToCoords('sj', 19));
+    expect(stonesToVisionBoard(result.current.stones, 19)[9][18]).toBe(2);
+    act(() => result.current.undo());
+    expect(result.current.stones).toEqual(initial);
+    expect(result.current.lastMove).toBeNull();
+    act(() => { result.current.placeStone(...sgfToCoords('sk', 19)!); });
+    await waitFor(() => expect(result.current.moveHistory).toHaveLength(2));
+    act(() => { result.current.placeStone(...sgfToCoords('si', 19)!); });
+    expect(result.current.isSolved).toBe(true);
+    const solved = stonesToVisionBoard(result.current.stones, 19);
+    expect(solved[9][16]).toBe(0); expect(solved[9][17]).toBe(0); expect(solved[9][18]).toBe(0);
+    expect(solved[8][18]).toBe(1);
+    expect(result.current.problem?.id).toBe('124386');
+    act(() => result.current.reset());
+    expect(result.current.stones).toEqual(initial);
+    expect(result.current.isSolved).toBe(false);
+    expect(result.current.hintCoords).toEqual(sgfToCoords('sj', 19));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ ...problemJson, id: 'next-source' }) })));
+    rerender({ id: 'next-source' });
+    await waitFor(() => expect(result.current.problem?.id).toBe('next-source'));
+    expect(result.current.boardSize).toBe(9);
+    expect(result.current.stones).toHaveLength(2);
+    expect(result.current.moveHistory).toEqual([]);
+    expect(result.current.lastMove).toBeNull();
+    expect(result.current.hintCoords).toEqual(sgfToCoords('cc', 9));
   });
 });
 

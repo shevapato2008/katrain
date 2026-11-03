@@ -1,0 +1,20 @@
+{
+  "observed_at_utc": "2026-10-26T08:19:04Z",
+  "viewport": [
+    1280,
+    720
+  ],
+  "enter": 135133.3,
+  "listVisible": 137401.0,
+  "requestStart": 135148.2,
+  "responseStart": 137376.3,
+  "responseEnd": 137376.8,
+  "resourceStart": 135147.8,
+  "resourceDuration": 2229.0,
+  "submitToVisibleMs": 2267.7,
+  "responseEndToVisibleMs": 24.2,
+  "searchTotal": 504,
+  "previewSubtitleAfterSearch": "羽根直树 vs 田中伸幸 · 133 手",
+  "searchFirstRow": "申真谞 vs 王星昊 · 219 手",
+  "initialListResourceDuration": 4808.3
+}

@@ -1,3 +1,5 @@
+import type { BoardVariant } from './boardVariant';
+
 /** Public, localized OGS course reads. Coordinates are zero-based on the full board. */
 export type OgsPoint = [number, number];
 export type OgsPlayer = 'B' | 'W';
@@ -61,6 +63,7 @@ export type OgsExercise =
   | { kind: 'finish' };
 
 export interface OgsStep {
+  board_variant?: BoardVariant;
   book_id: number;
   figure_id: number;
   source_id: string;

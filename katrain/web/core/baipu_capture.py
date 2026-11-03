@@ -4,8 +4,8 @@ One ``run_capture`` call corresponds to "the operator just placed move ``move_in
 (``move_index == -1`` is the forced initial empty+LED frame). The sequence:
 
   1. Trust the operator confirmation as the placement ground truth.
-  2. Light the NEXT physical move (strict, skipping passes) → ``shown_at``; or, if
-     there is none, blackout (final, no-LED frame).
+  2. Light the next safe placement (strict, skipping only physical no-ops) → ``shown_at``; or, if
+     a removal is pending, blackout (nonfinal or final, no-LED frame).
   3. Sync barrier: grab the frame read *after* ``shown_at + settle`` (timestamp
      gate) so the lit LED is in-frame and no pre-LED frame slips through.
   4. Write the frame + a rich manifest entry (atomic, idempotent, recoverable);
@@ -24,7 +24,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from katrain.core.baipu import next_placement_index
+from katrain.core.baipu import _board_hash, next_guided_placement_index, validate_capture_archive
+from katrain.core.baipu_identity import BAIPU_REPLAY_VERSION, sgf_sha256
 
 log = logging.getLogger("katrain_web")
 
@@ -60,8 +61,10 @@ def _read_manifest(path: Path) -> Optional[dict]:
     try:
         with open(path, "r", encoding="utf-8") as fh:
             return json.load(fh)
-    except Exception:
-        return None
+    except Exception as exc:
+        raise ValueError(
+            "incompatible baipu archive: unreadable manifest; preserve archive and start a new game_id"
+        ) from exc
 
 
 def _write_manifest_atomic(path: Path, data: dict) -> None:
@@ -367,15 +370,28 @@ def run_capture(
     manifest_path = game_dir / "manifest.json"
 
     with _game_lock(game_id):
-        manifest = _read_manifest(manifest_path) or {
-            "game_id": game_id,
-            "session_timestamp": _now_iso(),
-            "board_size": board_size,
-            "sgf_path": "game.sgf",
-            "geometry_path": "geometry.npz",
-            "total_moves": sum(1 for s in steps if s["kind"] != "pass"),
-            "frames": [],
-        }
+        manifest = _read_manifest(manifest_path)
+        if manifest is not None:
+            try:
+                frozen = game_dir / (manifest.get("sgf_path") or "game.sgf")
+                with open(frozen, "r", encoding="utf-8", newline="") as fh:
+                    archived_sgf = fh.read()
+            except (OSError, AttributeError, TypeError) as exc:
+                raise ValueError("incompatible baipu archive: frozen SGF unavailable; preserve archive") from exc
+            validate_capture_archive(manifest, sgf, steps, board_size, archived_sgf)
+        elif game_dir.exists() and any(game_dir.iterdir()):
+            raise ValueError("incompatible baipu archive: files without manifest; preserve archive")
+        else:
+            manifest = {
+                "game_id": game_id,
+                "session_timestamp": _now_iso(),
+                "board_size": board_size,
+                "sgf_path": "game.sgf",
+                "geometry_path": "geometry.npz",
+                "total_moves": sum(1 for s in steps if s["kind"] != "pass"),
+                "frames": [],
+            }
+        manifest.update(replay_version=BAIPU_REPLAY_VERSION, sgf_sha256=sgf_sha256(sgf), total_steps=len(steps))
         frames = manifest["frames"]
 
         # Idempotency requires both the manifest entry and its captured file. If
@@ -404,7 +420,7 @@ def run_capture(
         # Machine recognition is deliberately outside this capture decision path.
         qa_status = "operator_confirmed"
 
-        next_idx = next_placement_index(steps, move_index)
+        next_idx = next_guided_placement_index(steps, move_index)
         guidance_point = (
             {"row": steps[next_idx]["row"], "col": steps[next_idx]["col"]} if next_idx is not None else None
         )
@@ -460,11 +476,18 @@ def run_capture(
             led_point = {"row": ns["row"], "col": ns["col"], "color": color}
             frame_kind = "initial_led" if move_index < 0 else "after_move"
         else:
-            if led is not None:
-                led.clear(strict=True)
             show_at = None
+            if led is not None:
+                show = led.clear(strict=True)
+                if not show.get("ok"):
+                    raise LedUnavailable(f"LED CLEAR failed: {show.get('errors')}")
+                show_at = show.get("shown_at")
             led_point = None
-            frame_kind = "final_no_led"
+            frame_kind = (
+                "final_no_led"
+                if move_index == len(steps) - 1
+                else "initial_no_led" if move_index < 0 else "after_move_no_led"
+            )
 
         # 3. Sync barrier: grab the frame captured after the LED settled, then write it.
         ordinal = repair_index if repair_index is not None else len(frames)
@@ -477,10 +500,14 @@ def run_capture(
             from katrain.vision.geometry_lock import save_geometry_lock
 
             save_geometry_lock(geometry, game_dir / "geometry.npz")
-            with open(game_dir / "game.sgf", "w", encoding="utf-8") as fh:
+            with open(game_dir / "game.sgf", "w", encoding="utf-8", newline="") as fh:
                 fh.write(sgf)
 
-        board_hash = steps[move_index]["board_hash"] if 0 <= move_index < len(steps) else None
+        board_hash = (
+            steps[move_index]["board_hash"]
+            if move_index >= 0
+            else _board_hash([[None] * board_size for _ in range(board_size)])
+        )
         entry = {
             "file": frame_file,
             "seq": fseq,

@@ -38,7 +38,7 @@ export default function OgsCourseExercisePage() {
   useEffect(() => {
     if (expectedPage == null) return;
     let live = true;
-    TutorialReadAPI.getOgsStep(expectedPage).then((data) => {
+    TutorialReadAPI.getOgsStep(expectedPage, 'zh-cn', 'kiosk19').then((data) => {
       if (!live) return;
       if (data.lesson_id !== lessonId || data.page !== expectedPage) { setStepError(true); return; }
       setStep(data); setStepError(false);
@@ -87,7 +87,7 @@ export default function OgsCourseExercisePage() {
     <section className="ogs-exercise-rail"><div className="ogs-exercise-title"><button className="ogs-key" onClick={back}>‹ 课目</button><h2>{lesson.title}</h2></div>
       <div className="ogs-breadcrumb"><span>第 {chapter.number} 章 · 第 {lesson.order} 课</span><span>第 {index + 1} / {lesson.step_count} 步</span></div>
       <div className="ogs-progress">{Array.from({ length: Math.min(lesson.step_count, 20) }, (_, i) => <i key={i} className={Math.floor(index * Math.min(lesson.step_count, 20) / lesson.step_count) === i ? 'is-current' : ''} />)}</div>
-      <section className="ogs-card ogs-instruction"><span className="ogs-instruction-label">这一题</span><p>{currentStep.locale.text.instruction || currentStep.locale.text.title}</p></section>
+      <section className="ogs-card ogs-instruction"><span className="ogs-instruction-label">这一题{currentStep.board_variant?.status === 'adapted' ? ` · 19路版（原${currentStep.board_variant.source_size}路）` : ''}</span><p>{currentStep.locale.text.instruction || currentStep.locale.text.title}</p>{currentStep.board_variant?.status === 'unavailable' && <p data-testid="ogs-original-board-reason">{`原${currentStep.board_variant.source_size}路题：${currentStep.board_variant.reason}`}</p>}</section>
       <section className={`ogs-card ogs-interaction ${!physicalBusy && status === 'correct' ? 'is-success' : status === 'wrong' ? 'is-error' : ''}`}>
         <strong>{physicalBusy ? phase === 'clearing' || phase === 'setup' ? '准备实体盘' : phase === 'replying' ? '同步实体盘' : phase === 'removing' ? '拿除错子' : '核对实体盘' : status === 'correct' ? '回答正确' : status === 'wrong' ? '再试一次' : kind === 'choice' ? '选出答案' : kind === 'remove' ? '点选要拿除的棋块' : kind === 'pass' ? '请停一手' : kind === 'finish' ? '请确认终局' : '轮到你落子'}</strong>
         {kind === 'choice' && status === 'active' && <div className="ogs-choice-row">{currentStep.exercise.kind === 'choice' && currentStep.exercise.choices.map((choice) => <button key={choice.value} className="ogs-key" onClick={() => choose(choice.value)}>{currentStep.locale.text.choices?.[choice.value] ?? choice.label_key ?? choice.value}</button>)}</div>}

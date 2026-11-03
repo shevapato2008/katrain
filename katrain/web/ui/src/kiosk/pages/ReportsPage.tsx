@@ -1,3 +1,4 @@
+import { ConsumptionQuoteDialog } from '../../features/membership/ConsumptionQuoteDialog';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -18,6 +19,7 @@ import type { KifuAlbumSummary } from '../../types/kifu';
 import { replayBaipuSteps, type BoardState } from '../../utils/baipuReplay';
 import { cacheBackedReadFailureKind, requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 import ReportImportMenu from '../components/report/ReportImportMenu';
+import RecordMatchLine from '../components/records/RecordMatchLine';
 import ReportLibraryImportDialog from '../components/report/ReportLibraryImportDialog';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
@@ -31,6 +33,7 @@ import { KioskSecLabel } from '../shell/KioskSecLabel';
 import type { StatusCell } from '../shell/KioskStatusCells';
 import { interpolate } from '../utils/interpolate';
 import { whenLabel } from '../utils/whenLabel';
+import { getListRank, listResult } from '../utils/listRecordPresentation';
 
 /**
  * 屏 19 · 复盘 `/kiosk/report` —— L1 布局 A(镜像栏 296 + 16 + 右栏 680),**形态 2**:
@@ -79,8 +82,8 @@ const savedAt = (game: UserGameSummary): number | null => {
 export default function ReportsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token, isAuthenticated, user } = useAuth();
-  const { t } = useTranslation();
+  const { token, isAuthenticated, user, identityKey, status } = useAuth();
+  const { t, lang } = useTranslation();
   const translationRef = useRef(t);
   translationRef.current = t;
 
@@ -126,7 +129,8 @@ export default function ReportsPage() {
   const {
     reportStatesByGame, error: tasksError, errorKind: tasksErrorKind, clearError: clearTasksError,
     refresh: refreshTasks, createReport, retryReport,
-  } = useReportTasks(token, isAuthenticated);
+    pendingQuote, quoteBusy, confirmQuote, cancelQuote,
+  } = useReportTasks(token, isAuthenticated, identityKey, status);
 
   // 屏上只说分出来的类别,原文不印 —— 但排障时总得有个地方能看见它。
   useEffect(() => {
@@ -522,6 +526,7 @@ export default function ReportsPage() {
                       selected={game.id === selectedGameId}
                       username={user?.username}
                       t={t}
+                      lang={lang}
                       onSelect={() => setSelectedGameId(game.id)}
                       onDelete={() => setDeleteTarget(game.id)}
                     />
@@ -562,6 +567,8 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      <ConsumptionQuoteDialog kiosk quote={pendingQuote?.quote ?? null} busy={quoteBusy} error={tasksError ? (tasksErrorKind === 'no_credits' ? '会员额度和API积分不足，请前往会员页查看' : '操作失败，请重试') : null} onCancel={cancelQuote}
+        onConfirm={() => { void confirmQuote().catch(() => undefined); }} />
       <ReportLibraryImportDialog
         open={libraryImportOpen}
         loading={libraryImporting !== null}
@@ -607,17 +614,22 @@ export default function ReportsPage() {
  * 「跳转和干活分在两个手势上」(Fan 2026-07-28)。
  * 整行做不成一个 `<button>`:按钮里套按钮是非法 DOM。
  */
-function ReviewRow({ game, state, selected, username, t, onSelect, onDelete }: {
+function ReviewRow({ game, state, selected, username, t, lang, onSelect, onDelete }: {
   game: UserGameSummary;
   state: RowState;
   selected: boolean;
   username?: string | null;
   t: (key: string, fallback?: string) => string;
+  lang: string;
   onSelect: () => void;
   onDelete: () => void;
 }) {
   const mine = yourColor(game, username);
   const ts = savedAt(game);
+  const rawResult = game.result?.trim();
+  const result = (lang !== 'cn' && lang !== 'tw') || !rawResult || /^void$/i.test(rawResult)
+    ? historyResult(game, t)
+    : listResult(rawResult, t, game.rules, lang).label;
   // 没下完的那句话自己就带着手数(「下到第 22 手就退出了」),再挂一段「22 手」是同一个数说两遍。
   // 只有对弈局会念那一句;导入的谱没写结果时念「谱里没写结果」,手数照常挂在后面。
   const sub = [
@@ -639,11 +651,10 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onDelete }: {
             : state.kind === 'unfinished' ? t('review:tag_unfinished', '未终局') : t('review:tag_unanalyzed', '未分析')}</span>
           <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))} · {game.move_count} {t('report:moves_unit', '手')}</small>
         </span>
-        <span className="personal-game-match">
-          <span><i className="personal-game-stone" />{game.player_black || t('game:black_side', '黑方')}</span>
-          <em>{historyResult(game, t)}</em>
-          <span>{game.player_white || t('game:white_side', '白方')}<i className="personal-game-stone is-white" /></span>
-        </span>
+        <RecordMatchLine variant="history"
+          black={{ name: game.player_black || t('game:black_side', '黑方'), rank: getListRank(null, game.black_rank, t, lang) }}
+          white={{ name: game.player_white || t('game:white_side', '白方'), rank: getListRank(null, game.white_rank, t, lang) }}
+          result={result} />
       </button>
       {selected && game.source !== 'kifu_library' && (
         <button type="button" className="personal-game-delete" aria-label={t('review:delete_game', '删除对局')} title={t('review:delete_game', '删除对局')} onClick={onDelete}>

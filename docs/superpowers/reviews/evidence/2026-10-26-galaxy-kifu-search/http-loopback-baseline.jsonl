@@ -1,0 +1,2 @@
+{"label": "search", "samples_ms": [2172.19, 2508.5, 2422.844, 2279.381, 2324.66], "p50_ms": 2324.66, "p95_nearest_rank_ms": 2508.5, "n": 5, "bytes": 15651, "total": 504}
+{"label": "all", "samples_ms": [4420.977, 4413.719, 4355.009], "p50_ms": 4413.719, "p95_nearest_rank_ms": 4420.977, "n": 3, "bytes": 26271, "total": 176622}

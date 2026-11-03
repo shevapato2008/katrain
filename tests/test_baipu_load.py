@@ -124,6 +124,14 @@ class TestDeterminism:
         assert data["meta"]["komi"] == 7.5
         assert data["meta"]["result"] == "W+R"
 
+    def test_rank_metadata_preserves_sgf_labels_without_name_lookup(self):
+        meta = _steps("(;SZ[19]PB[Lee]PW[AlphaGo]BR[9p]WR[职业九段];B[pd])")["meta"]
+        assert meta["player_black_rank"] == "9p"
+        assert meta["player_white_rank"] == "职业九段"
+        missing = _steps("(;SZ[19]PB[Lee]PW[AlphaGo];B[pd])")["meta"]
+        assert missing["player_black_rank"] is None
+        assert missing["player_white_rank"] is None
+
 
 class TestExpectedBoardAndNext:
     def test_expected_board_applies_and_captures(self):
@@ -194,3 +202,126 @@ class TestRealGame:
         assert [s["move_index"] for s in steps] == list(range(len(steps)))
         # at least one capture occurs in a full game
         assert any(s["removed"] for s in steps)
+
+
+class TestFF4RecordReplay:
+    def test_replacement_and_repeat_preserve_dense_operations(self):
+        data = _steps("(;SZ[19];B[aa];W[aa];W[aa])")
+        assert data["replay_version"] == 2
+        first, replacement, repeat = data["steps"]
+        assert first["pre_removed"] == [] and first["requires_placement"] is True
+        assert replacement["pre_removed"] == [{"row": 0, "col": 0}]
+        assert replacement["removed"] == [] and replacement["requires_placement"] is True
+        assert repeat["pre_removed"] == [] and repeat["requires_placement"] is False
+        assert [s["move_index"] for s in data["steps"]] == [0, 1, 2]
+        assert expected_board_from_steps(data["steps"], 2)[0][0] == "W"
+        assert repeat["board_hash"] == replacement["board_hash"]
+
+    @pytest.mark.parametrize(
+        "sgf,removed",
+        [
+            ("(;SZ[9]AW[ba][ab];B[aa])", {(0, 0)}),
+            ("(;SZ[9]AB[aa]AW[ba][bb][ac];B[ab])", {(0, 0), (1, 0)}),
+        ],
+    )
+    def test_own_zero_liberty_group_removed_after_placement(self, sgf, removed):
+        data = _steps(sgf)
+        last = data["steps"][-1]
+        assert last["requires_placement"] is True
+        assert {(p["row"], p["col"]) for p in last["removed"]} == removed
+        board = expected_board_from_steps(data["steps"], len(data["steps"]) - 1, 9)
+        assert all(board[r][c] is None for r, c in removed)
+
+    def test_opponents_removed_before_own_liberty_check(self):
+        data = _steps("(;SZ[9]AB[ca][bb]AW[ba][ab];B[aa])")
+        last = data["steps"][-1]
+        assert last["removed"] == [{"row": 0, "col": 1}]
+        assert expected_board_from_steps(data["steps"], len(data["steps"]) - 1, 9)[0][0] == "B"
+
+    def test_setup_assignment_does_not_capture_or_remove_own_group(self):
+        data = _steps("(;SZ[9]AB[aa]AW[ba][ab];AB[ba][ba];AE[ba][ii])")
+        steps = data["steps"]
+        assert all(s["removed"] == [] for s in steps if s["kind"] == "setup")
+        assert expected_board_from_steps(steps, 2, 9)[0][0] == "B"
+        assert steps[3]["pre_removed"] == [{"row": 0, "col": 1}]
+        assert steps[4]["requires_placement"] is False
+        assert steps[5]["kind"] == "clear" and steps[5]["requires_placement"] is False
+        assert steps[5]["removed"] == [{"row": 0, "col": 1}]
+        assert expected_board_from_steps(steps, 5, 9)[0][0] == "B"
+
+    def test_compressed_setup_preserves_raw_order_and_repeats(self):
+        data = _steps("(;SZ[9]AB[cc][aa:bb][cc])")
+        assert [(s["row"], s["col"]) for s in data["steps"]] == [
+            (2, 2),
+            (0, 0),
+            (1, 0),
+            (0, 1),
+            (1, 1),
+            (2, 2),
+        ]
+        assert data["steps"][-1]["requires_placement"] is False
+
+    @pytest.mark.parametrize(
+        "props",
+        [
+            "B[sa]",
+            "B[as]",
+            "B[a]",
+            "B[aaa]",
+            "AB[tt]",
+            "AE[]",
+            "AB[aa:zz]",
+            "AB[bb:aa]",
+            "AB[aa]AW[aa]",
+            "AB[aa:bb]AW[bb]",
+        ],
+    )
+    def test_bad_coordinates_and_conflicting_setup_are_parse_errors(self, props):
+        with pytest.raises(ValueError, match="coordinate|setup"):
+            _steps(f"(;SZ[9];{props})")
+
+    def test_ko_record_retake_is_viewable_without_weakening_game_rules(self):
+        data = _steps("(;SZ[9]AB[ba][ab][bc]AW[ca][bb][cc][db];B[cb];W[bb])")
+        assert data["steps"][-1]["removed"] == [{"row": 1, "col": 2}]
+        assert data["steps"][-2]["removed"] == [{"row": 1, "col": 1}]
+
+    def test_pass_has_recorded_player_and_no_physical_action(self):
+        step = _steps("(;SZ[9];W[])")["steps"][0]
+        assert step["property"] == "W" and step["color"] is None
+        assert step["requires_placement"] is False and step["pre_removed"] == []
+
+    def test_expected_board_applies_pre_removal_before_assignment(self):
+        steps = [
+            {"kind": "move", "row": 0, "col": 0, "color": "W", "pre_removed": [{"row": 0, "col": 0}], "removed": []}
+        ]
+        assert expected_board_from_steps(steps, 0)[0][0] == "W"
+
+    def test_ordinary_hash_stays_compatible(self):
+        import hashlib
+
+        assert (
+            _steps("(;SZ[19];B[pd])")["steps"][0]["board_hash"]
+            == hashlib.sha1(repr([(15, 15, "B")]).encode()).hexdigest()[:16]
+        )
+
+
+@pytest.mark.parametrize("game_id", [140859, 124442, 118394])
+def test_real_ff4_every_dense_state_matches_independent_oracle(game_id):
+    import hashlib
+    import json
+    from pathlib import Path
+
+    golden = json.loads((Path(DATA_DIR) / "baipu_ff4_golden.json").read_text())
+    game = next(g for g in golden["games"] if g["id"] == game_id)
+    text = (Path(__file__).parents[1] / f"katrain/web/ui/src/utils/__fixtures__/kifu-{game_id}.sgf").read_text()
+    assert hashlib.sha256(text.encode()).hexdigest() == game["sgf_sha256"]
+    data = _steps(text)
+    assert len(data["steps"]) == game["steps"]
+    columns = "ABCDEFGHJKLMNOPQRST"
+    for k, reference in enumerate(game["hashes"]):
+        board = expected_board_from_steps(data["steps"], k - 1)
+        stones = sorted(
+            f"{color}:{columns[c]}{19-r}" for r, row in enumerate(board) for c, color in enumerate(row) if color
+        )
+        assert hashlib.sha256("\n".join(stones).encode()).hexdigest() == reference, f"{game_id} step {k - 1}"
+    assert len(stones) == {140859: 232, 124442: 259, 118394: 202}[game_id]

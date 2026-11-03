@@ -474,6 +474,15 @@ describe('屏 26 棋盘标定', () => {
     expect(voiceSpeak).toHaveBeenCalledWith('calibration_obstructed');
   });
 
+  it('网格未识别只提示 LED 定位，不显示遮挡暂停', () => {
+    status = { ...status, phase: 'flashing_corners', grid_warning: 'grid_not_visible' };
+    renderScreen();
+    expect(screen.getByText('网格暂未识别，将通过 LED 定位棋盘')).toBeInTheDocument();
+    expect(screen.getByTestId('calib-preview-banner')).toHaveTextContent('正在标定');
+    expect(screen.queryByText('检测到遮挡，标定已暂停')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it.each([
     ['frame_overexposed', '画面过亮', '拉上窗帘'],
     ['frame_underexposed', '画面过暗', '打开室内灯'],

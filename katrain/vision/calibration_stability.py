@@ -106,6 +106,12 @@ class CalibrationStabilityGate:
         self.stable_frames = 0
         self.quad: np.ndarray | None = None
         self.anchor_quad: np.ndarray | None = None
+        self.grid_visible = False
+        self._frame_scale = 1.0
+        self._anchor_frame: np.ndarray | None = None
+        self._led_corners = []
+        self._led_drift = None
+        self._led_bounds = None
         self.last_motion_ratios: tuple[float | None, float] = (None, 0.0)
 
     @staticmethod
@@ -119,13 +125,40 @@ class CalibrationStabilityGate:
         self.capture_motion.reset()
         self.stable_frames = 0
 
-    def confirm_anchor(self) -> None:
+    def confirm_anchor(self, row=None, col=None, point=None) -> None:
         """Keep the board position of the first confirmed LED point across transient resets."""
         if self.anchor_quad is None and self.quad is not None:
             self.anchor_quad = self.quad.copy()
+        if self._anchor_frame is None and self.capture_motion.prev_frame is not None:
+            self._anchor_frame = self.capture_motion.prev_frame.copy()
+        if point is not None and (row, col) in ((0, 0), (0, 18), (18, 18), (18, 0)):
+            self._led_corners.append(np.asarray(point, np.float32) * self._frame_scale)
+            if len(self._led_corners) == 4 and self._anchor_frame is not None:
+                from katrain.vision.geometry_drift import GeometryDriftMonitor
+
+                corners = np.asarray(self._led_corners, np.float32)
+                spacing = float(np.median(np.linalg.norm(np.roll(corners, -1, axis=0) - corners, axis=1))) / 18
+                height, width = self._anchor_frame.shape[:2]
+                x0, y0 = np.maximum(np.floor(corners.min(axis=0)).astype(int), 0)
+                x1, y1 = np.minimum(np.ceil(corners.max(axis=0)).astype(int) + 1, (width, height))
+                if x1 <= x0 or y1 <= y0:
+                    return  # final corner geometry validation will reject invalid points
+                self._led_bounds = (x0, y0, x1, y1)
+                self._led_drift = GeometryDriftMonitor(
+                    self._anchor_frame[y0:y1, x0:x1], cell_spacing_px=spacing,
+                    threshold_cells=0.25, consecutive_frames=1,
+                )
+
+    def _led_displaced(self, small: np.ndarray) -> bool:
+        if self._led_drift is None:
+            return False
+        x0, y0, x1, y1 = self._led_bounds
+        return self._led_drift.update(small[y0:y1, x0:x1]).degraded
 
     def anchors_displaced(self) -> bool:
         """A newly stable board must still align with the already confirmed LED points."""
+        if self.motion.prev_frame is not None and self._led_displaced(self.motion.prev_frame):
+            return True
         if self.anchor_quad is None or self.quad is None:
             return False
         edges = np.linalg.norm(np.roll(self.anchor_quad, -1, axis=0) - self.anchor_quad, axis=1)
@@ -146,14 +179,14 @@ class CalibrationStabilityGate:
     def observe(self, frame: np.ndarray) -> tuple[bool, str | None]:
         quad = find_visible_grid(frame, self.quad)
         small = self._small(frame)
-        mask = self._board_mask(small, frame, quad)
+        self._frame_scale = small.shape[1] / frame.shape[1]
+        self.grid_visible = quad is not None
+        if quad is not None:
+            self.quad = quad
+        mask = self._board_mask(small, frame, self.quad)
         first = self.motion.prev_frame is None
         stable, roi_ratio, full_ratio = self.motion.is_stable_with_regions(small, mask)
         self.last_motion_ratios = (roi_ratio, full_ratio)
-        if quad is None:
-            self.stable_frames = 0
-            return False, "board_occluded"
-        self.quad = quad
         if first or not stable:
             self.stable_frames = 0
             return False, "board_motion"
@@ -167,17 +200,19 @@ class CalibrationStabilityGate:
 
     def capture_reason(self, frame: np.ndarray) -> str | None:
         quad = find_visible_grid(frame, self.quad)
-        if quad is None:
-            return "board_occluded"
-        self.quad = quad
+        self.grid_visible = quad is not None
+        if quad is not None:
+            self.quad = quad
         small = self._small(frame)
+        if self._led_displaced(small):
+            return "board_moved"
         stable, _roi_ratio, _full_ratio = self.capture_motion.is_stable_with_regions(
-            small, self._board_mask(small, frame, quad)
+            small, self._board_mask(small, frame, self.quad)
         )
         return None if stable else "board_motion"
 
     def anchor_roi(self, row: int, col: int) -> tuple[float, float, float] | None:
-        if self.quad is None:
+        if self.quad is None or not self.grid_visible:
             return None
         # Human coordinates: (0,0)=bottom-left in the camera, (0,18)=top-left.
         src = np.array([[0, 0], [18, 0], [18, 18], [0, 18]], np.float32)

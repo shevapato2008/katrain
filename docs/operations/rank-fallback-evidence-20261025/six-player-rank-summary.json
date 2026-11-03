@@ -1,0 +1,691 @@
+{
+  "baseline": "2e7640d892e311f3fc8ed70d4dc5a32e470d2ddf",
+  "scope": "read-only schema and six public kifu-player entities; no account/game private data; no source/profile HTTP or model/ingest/publish jobs in this new investigation",
+  "environments": {
+    "test": {
+      "observed_at": "2026-10-25 12:18:07.207925+00:00",
+      "recent_rank_candidates": [
+        {
+          "id": 178825,
+          "player_id": 9,
+          "side": "white",
+          "raw_name": "上野梨纱",
+          "rank": "四段",
+          "date_sort": "2026-10-15",
+          "date_played": "2026-10-15",
+          "source_path": "data/kifu-album/19x19/91284570.sgf",
+          "n": 1,
+          "library_sgf_sha256": "05fcf2e6e71b6114e3f37425c1ac257b7fd00d42bd548d0cfb1eb5c488d011d6",
+          "library_sgf_rank": "四段"
+        },
+        {
+          "id": 179090,
+          "player_id": 30,
+          "side": "white",
+          "raw_name": "藤泽里菜",
+          "rank": "七段",
+          "date_sort": "2026-10-19",
+          "date_played": "2026-10-19",
+          "source_path": "data/kifu-album/19x19/91664767.sgf",
+          "n": 1,
+          "library_sgf_sha256": "3b572eece08387ec1d8a592ebf250abe68e8a425f90c9b4419a7bcc1119523b4",
+          "library_sgf_rank": "七段"
+        },
+        {
+          "id": 176188,
+          "player_id": 196,
+          "side": "black",
+          "raw_name": "周泓余",
+          "rank": "七段",
+          "date_sort": "2026-10-01",
+          "date_played": "2026-10-01",
+          "source_path": "data/kifu-album/19x19/90521040.sgf",
+          "n": 1,
+          "library_sgf_sha256": "83fcf1493087c6da1a175fe46712c04a481f42ff51608e071a09a25ed7c41892",
+          "library_sgf_rank": "七段"
+        },
+        {
+          "id": 179009,
+          "player_id": 483,
+          "side": "white",
+          "raw_name": "唐奕",
+          "rank": "五段",
+          "date_sort": "2026-10-11",
+          "date_played": "2026-10-11",
+          "source_path": "data/kifu-album/19x19/91116424.sgf",
+          "n": 1,
+          "library_sgf_sha256": "36c9c39d3d81126d4e8ca34da802e23c0ff4c3567d1efe7143254ecf54356826",
+          "library_sgf_rank": "五段"
+        },
+        {
+          "id": 173971,
+          "player_id": 503,
+          "side": "black",
+          "raw_name": "高星",
+          "rank": "五段",
+          "date_sort": "2026-09-16",
+          "date_played": "2026-09-16",
+          "source_path": "data/kifu-album/19x19/89651576.sgf",
+          "n": 1,
+          "library_sgf_sha256": "8818cc69bbd65091f569389b219e0b0a635f0f850a406f4fb322b913e9758536",
+          "library_sgf_rank": "五段"
+        },
+        {
+          "id": 176027,
+          "player_id": 575,
+          "side": "white",
+          "raw_name": "王爽",
+          "rank": "五段",
+          "date_sort": "2026-09-05",
+          "date_played": "2026-09-05",
+          "source_path": "data/kifu-album/19x19/88955900.sgf",
+          "n": 1,
+          "library_sgf_sha256": "71913fc2fdda3ed3eef11a5c36763bd5ed90382d8c36967e5dc21ba610eed523",
+          "library_sgf_rank": "五段"
+        }
+      ],
+      "six_player_coverage": [
+        {
+          "player_id": 9,
+          "games": 307,
+          "with_rank": 199,
+          "last_game_date": "2026-10-25",
+          "last_rank_game_date": "2026-10-15"
+        },
+        {
+          "player_id": 30,
+          "games": 801,
+          "with_rank": 594,
+          "last_game_date": "2026-10-25",
+          "last_rank_game_date": "2026-10-19"
+        },
+        {
+          "player_id": 196,
+          "games": 522,
+          "with_rank": 293,
+          "last_game_date": "2026-10-24",
+          "last_rank_game_date": "2026-10-01"
+        },
+        {
+          "player_id": 483,
+          "games": 447,
+          "with_rank": 341,
+          "last_game_date": "2026-10-24",
+          "last_rank_game_date": "2026-10-11"
+        },
+        {
+          "player_id": 503,
+          "games": 336,
+          "with_rank": 226,
+          "last_game_date": "2026-10-24",
+          "last_rank_game_date": "2026-09-16"
+        },
+        {
+          "player_id": 575,
+          "games": 288,
+          "with_rank": 212,
+          "last_game_date": "2026-10-24",
+          "last_rank_game_date": "2026-09-05"
+        }
+      ],
+      "grade_facts_are_not_yet_verified_current_profiles": true,
+      "name_evidence_rank_mentions": [
+        {
+          "evidence_id": 1709,
+          "player_id": 9,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 16:25:23.484839+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".candidate.review_conclusion",
+              "excerpt": "egistry并重建25research，root两库pending validate零错误后重新审签。未新增身份/FK/别名或改段位。"
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].excerpt",
+              "excerpt": "・免状 日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 "
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].excerpt",
+              "excerpt": "日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 2022"
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].excerpt",
+              "excerpt": "東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 2022年二段、2024年三段、2026年四段。 上野愛咲美六段 は実姉。 東京本院所属 棋士成績（直近のテレビ棋戦を除く） 更新日時： 対局数 勝数 負数 持碁 無勝負 "
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].body_excerpt",
+              "excerpt": "・免状 日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 "
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].body_excerpt",
+              "excerpt": "日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 2022"
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].body_excerpt",
+              "excerpt": "東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 2022年二段、2024年三段、2026年四段。 上野愛咲美六段 は実姉。 東京本院所属 棋士成績（直近のテレビ棋戦を除く） 更新日時： 対局数 勝数 負数 持碁 無勝負 "
+            },
+            {
+              "path": ".research.original_language_evidence.body_excerpt",
+              "excerpt": "・免状 日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 "
+            }
+          ]
+        },
+        {
+          "evidence_id": 742,
+          "player_id": 30,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 11:21:08.566765+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": " りな ， 罗马化： Fujisawa Rina ，1998年9月18日—），生于日本 埼玉县 所泽市 ，日本职业围棋棋士，现为七段，隶属 日本棋院 。其祖父为名誉棋圣 藤泽秀行 ，父亲则是曾任日本棋院常务理事的 藤泽一就 八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "所泽市 ，日本职业围棋棋士，现为七段，隶属 日本棋院 。其祖父为名誉棋圣 藤泽秀行 ，父亲则是曾任日本棋院常务理事的 藤泽一就 八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日语 ： 横塚力 ） 八段 [ 3 ] 。至今已累计获得26次头衔，为日本女子棋士历史第二，并已取"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日语 ： 横塚力 ） 八段 [ 3 ] 。至今已累计获得26次头衔，为日本女子棋士历史第二，并已取得了 名誉女流名人 、 名誉女流本因坊 、 名誉女流立葵杯 称号资格。\n藤泽里菜 （ 日语： 藤沢 里菜 ／ ふじさわ りな ，"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": " りな ， 罗马化： Fujisawa Rina ，1998年9月18日—），生于日本 埼玉县 所泽市 ，日本职业围棋棋士，现为七段，隶属 日本棋院 。其祖父为名誉棋圣 藤泽秀行 ，父亲则是曾任日本棋院常务理事的 藤泽一就 八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "所泽市 ，日本职业围棋棋士，现为七段，隶属 日本棋院 。其祖父为名誉棋圣 藤泽秀行 ，父亲则是曾任日本棋院常务理事的 藤泽一就 八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日语 ： 横塚力 ） 八段 [ 3 ] 。至今已累计获得26次头衔，为日本女子棋士历史第二，并已取"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日语 ： 横塚力 ） 八段 [ 3 ] 。至今已累计获得26次头衔，为日本女子棋士历史第二，并已取得了 名誉女流名人 、 名誉女流本因坊 、 名誉女流立葵杯 称号资格。"
+            },
+            {
+              "path": ".research.source_checks[0].identity_corroboration.body_excerpt",
+              "excerpt": "本棋院ホーム 棋士 藤沢　里菜 藤沢　里菜 （フジサワ　リナ / FUJISAWA, Rina） ファンメッセージ 性別 女 棋士段位 七段 出身地 埼玉県 所属 日本棋院東京本院 タイトル数 27 タイトル/称号 女流本因坊 ナショナルチーム 参加棋士 プロフィール 1998年（平成10年）9月18日生。埼玉県出身。故 藤沢秀行"
+            },
+            {
+              "path": ".research.source_checks[0].identity_corroboration.body_excerpt",
+              "excerpt": "ーム 棋士 藤沢　里菜 藤沢　里菜 （フジサワ　リナ / FUJISAWA, Rina） ファンメッセージ 性別 女 棋士段位 七段 出身地 埼玉県 所属 日本棋院東京本院 タイトル数 27 タイトル/称号 女流本因坊 ナショナルチーム 参加棋士 プロフィール 1998年（平成10年）9月18日生。埼玉県出身。故 藤沢秀行名誉棋聖"
+            }
+          ]
+        },
+        {
+          "evidence_id": 1232,
+          "player_id": 483,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 14:21:15.122279+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "唐奕 (围棋棋手)\n唐奕 （1988年1月22日—）， 中国 职业 围棋 棋手， 上海 人，1995年开始学习围棋，2002年入段，2007和2009年两次夺得 全国围棋个人赛 女子组冠军。2010年获得 广州亚运会围棋 女团银牌。\n2016年5月升为三段。 [ 2 ] 同年击败上届四强 安国铉 ，成为 第三届百灵杯世界围棋公开"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "年入段，2007和2009年两次夺得 全国围棋个人赛 女子组冠军。2010年获得 广州亚运会围棋 女团银牌。\n2016年5月升为三段。 [ 2 ] 同年击败上届四强 安国铉 ，成为 第三届百灵杯世界围棋公开赛 32强唯一女棋手。 [ 3 ]\n唐奕 （1988年1月22日—）， 中国 职业 围棋 棋手， 上海 人，1995年开始学习"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "女棋手。 [ 3 ]\n唐奕 （1988年1月22日—）， 中国 职业 围棋 棋手， 上海 人，1995年开始学习围棋，2002年入段，2007和2009年两次夺得 全国围棋个人赛 女子组冠军。2010年获得 广州亚运会围棋 女团银牌。\n2016年5月升为三段。 [ 2 ] 同年击败上届四强 安国铉 ，成为 第三届百灵杯世界围棋公开"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "唐奕 （1988年1月22日—）， 中国 职业 围棋 棋手， 上海 人，1995年开始学习围棋，2002年入段，2007和2009年两次夺得 全国围棋个人赛 女子组冠军。2010年获得 广州亚运会围棋 女团银牌。\n2016年5月升为三段。 [ 2 ] 同年击败上届四强 安国铉 ，成为 第三届百灵杯世界围棋公开"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "年入段，2007和2009年两次夺得 全国围棋个人赛 女子组冠军。2010年获得 广州亚运会围棋 女团银牌。\n2016年5月升为三段。 [ 2 ] 同年击败上届四强 安国铉 ，成为 第三届百灵杯世界围棋公开赛 32强唯一女棋手。 [ 3 ]"
+            },
+            {
+              "path": ".research.source_checks[0].identity_corroboration.body_excerpt",
+              "excerpt": "ing\":\"2400.00\"},{\"playerNo\":\"CWA000149\",\"playerName\":\"唐奕\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://www.cwql.org.cn/file/player/17266548795863114564000.png\",\"playerGende"
+            },
+            {
+              "path": ".research.source_checks[0].identity_corroboration.body_excerpt",
+              "excerpt": "ng\":\"2258.70\"},{\"playerNo\":\"CWA000851\",\"playerName\":\"涂季康\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://cwa-web.oss-cn-beijing.aliyuncs.com/player/17794248238601742937192.pn"
+            },
+            {
+              "path": ".research.source_checks[0].identity_corroboration.body_excerpt",
+              "excerpt": "ng\":\"2347.80\"},{\"playerNo\":\"CWA001097\",\"playerName\":\"唐锦潮\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1949-07-07\"},{\"playerNo\":\"CWA001100\",\"pl"
+            }
+          ]
+        },
+        {
+          "evidence_id": 1942,
+          "player_id": 575,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 18:02:07.974249+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".research.source_checks[0].identity_basis",
+              "excerpt": "album link is proposed. Both pages report 王爽, China, professional dan rank and birth date 1995-05-16."
+            },
+            {
+              "path": ".research.original_language_evidence.identity_basis",
+              "excerpt": "album link is proposed. Both pages report 王爽, China, professional dan rank and birth date 1995-05-16."
+            }
+          ]
+        },
+        {
+          "evidence_id": 1177,
+          "player_id": 196,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 12:40:36.756102+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "周泓余\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "周泓余\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "周泓余\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            }
+          ]
+        },
+        {
+          "evidence_id": 1574,
+          "player_id": 503,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 15:15:52.290555+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".research.original_language_evidence.body_excerpt",
+              "excerpt": "ing\":\"2365.60\"},{\"playerNo\":\"CWA000548\",\"playerName\":\"高星\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://www.cwql.org.cn/file/player/17262162655391215303560.PNG\",\"playerGende"
+            },
+            {
+              "path": ".research.original_language_evidence.body_excerpt",
+              "excerpt": "ng\":\"2327.50\"},{\"playerNo\":\"CWA001101\",\"playerName\":\"郭春林\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1966-02-15\"},{\"playerNo\":\"CWA001317\",\"pl"
+            },
+            {
+              "path": ".research.original_language_evidence.body_excerpt",
+              "excerpt": "\":\"1966-02-15\"},{\"playerNo\":\"CWA001317\",\"playerName\":\"郭鹃\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":2,\"playerBirthday\":\"1960-05-06\"},{\"playerNo\":\"CWA001392\",\"pl"
+            }
+          ]
+        }
+      ]
+    },
+    "prod": {
+      "observed_at": "2026-10-25 12:14:33.768558+00:00",
+      "recent_rank_candidates": [
+        {
+          "id": 178489,
+          "player_id": 9,
+          "side": "white",
+          "raw_name": "上野梨纱",
+          "rank": "四段",
+          "date_sort": "2026-10-15",
+          "date_played": "2026-10-15",
+          "source_path": "data/kifu-album/19x19/91284570.sgf",
+          "n": 1,
+          "library_sgf_sha256": "05fcf2e6e71b6114e3f37425c1ac257b7fd00d42bd548d0cfb1eb5c488d011d6",
+          "library_sgf_rank": "四段"
+        },
+        {
+          "id": 178754,
+          "player_id": 30,
+          "side": "white",
+          "raw_name": "藤泽里菜",
+          "rank": "七段",
+          "date_sort": "2026-10-19",
+          "date_played": "2026-10-19",
+          "source_path": "data/kifu-album/19x19/91664767.sgf",
+          "n": 1,
+          "library_sgf_sha256": "3b572eece08387ec1d8a592ebf250abe68e8a425f90c9b4419a7bcc1119523b4",
+          "library_sgf_rank": "七段"
+        },
+        {
+          "id": 176168,
+          "player_id": 195,
+          "side": "black",
+          "raw_name": "周泓余",
+          "rank": "七段",
+          "date_sort": "2026-10-01",
+          "date_played": "2026-10-01",
+          "source_path": "data/kifu-album/19x19/90521040.sgf",
+          "n": 1,
+          "library_sgf_sha256": "83fcf1493087c6da1a175fe46712c04a481f42ff51608e071a09a25ed7c41892",
+          "library_sgf_rank": "七段"
+        },
+        {
+          "id": 178673,
+          "player_id": 482,
+          "side": "white",
+          "raw_name": "唐奕",
+          "rank": "五段",
+          "date_sort": "2026-10-11",
+          "date_played": "2026-10-11",
+          "source_path": "data/kifu-album/19x19/91116424.sgf",
+          "n": 1,
+          "library_sgf_sha256": "36c9c39d3d81126d4e8ca34da802e23c0ff4c3567d1efe7143254ecf54356826",
+          "library_sgf_rank": "五段"
+        },
+        {
+          "id": 173951,
+          "player_id": 502,
+          "side": "black",
+          "raw_name": "高星",
+          "rank": "五段",
+          "date_sort": "2026-09-16",
+          "date_played": "2026-09-16",
+          "source_path": "data/kifu-album/19x19/89651576.sgf",
+          "n": 1,
+          "library_sgf_sha256": "8818cc69bbd65091f569389b219e0b0a635f0f850a406f4fb322b913e9758536",
+          "library_sgf_rank": "五段"
+        },
+        {
+          "id": 176007,
+          "player_id": 574,
+          "side": "white",
+          "raw_name": "王爽",
+          "rank": "五段",
+          "date_sort": "2026-09-05",
+          "date_played": "2026-09-05",
+          "source_path": "data/kifu-album/19x19/88955900.sgf",
+          "n": 1,
+          "library_sgf_sha256": "71913fc2fdda3ed3eef11a5c36763bd5ed90382d8c36967e5dc21ba610eed523",
+          "library_sgf_rank": "五段"
+        }
+      ],
+      "six_player_coverage": [
+        {
+          "player_id": 9,
+          "games": 307,
+          "with_rank": 199,
+          "last_game_date": "2026-10-25",
+          "last_rank_game_date": "2026-10-15"
+        },
+        {
+          "player_id": 30,
+          "games": 801,
+          "with_rank": 594,
+          "last_game_date": "2026-10-25",
+          "last_rank_game_date": "2026-10-19"
+        },
+        {
+          "player_id": 195,
+          "games": 522,
+          "with_rank": 293,
+          "last_game_date": "2026-10-24",
+          "last_rank_game_date": "2026-10-01"
+        },
+        {
+          "player_id": 482,
+          "games": 447,
+          "with_rank": 341,
+          "last_game_date": "2026-10-24",
+          "last_rank_game_date": "2026-10-11"
+        },
+        {
+          "player_id": 502,
+          "games": 336,
+          "with_rank": 226,
+          "last_game_date": "2026-10-24",
+          "last_rank_game_date": "2026-09-16"
+        },
+        {
+          "player_id": 574,
+          "games": 288,
+          "with_rank": 212,
+          "last_game_date": "2026-10-24",
+          "last_rank_game_date": "2026-09-05"
+        }
+      ],
+      "grade_facts_are_not_yet_verified_current_profiles": true,
+      "name_evidence_rank_mentions": [
+        {
+          "evidence_id": 1714,
+          "player_id": 9,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 16:25:23.484839+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".candidate.review_conclusion",
+              "excerpt": "egistry并重建25research，root两库pending validate零错误后重新审签。未新增身份/FK/别名或改段位。"
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].excerpt",
+              "excerpt": "・免状 日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 "
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].excerpt",
+              "excerpt": "日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 2022"
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].excerpt",
+              "excerpt": "東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 2022年二段、2024年三段、2026年四段。 上野愛咲美六段 は実姉。 東京本院所属 棋士成績（直近のテレビ棋戦を除く） 更新日時： 対局数 勝数 負数 持碁 無勝負 "
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].body_excerpt",
+              "excerpt": "・免状 日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 "
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].body_excerpt",
+              "excerpt": "日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 2022"
+            },
+            {
+              "path": ".research.source_checks[0].identity_bridges[0].body_excerpt",
+              "excerpt": "東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 2022年二段、2024年三段、2026年四段。 上野愛咲美六段 は実姉。 東京本院所属 棋士成績（直近のテレビ棋戦を除く） 更新日時： 対局数 勝数 負数 持碁 無勝負 "
+            },
+            {
+              "path": ".research.original_language_evidence.body_excerpt",
+              "excerpt": "・免状 日本棋院ホーム 棋士 上野　梨紗 上野　梨紗 （ウエノ　リサ / UENO, Risa） ファンメッセージ 性別 女 棋士段位 四段 出身地 東京都 所属 日本棋院東京本院 タイトル数 4 ナショナルチーム 参加棋士 プロフィール 2006年（平成18年）6月24日生。東京都出身。 藤澤一就八段 門下。 2019年入段。 "
+            }
+          ]
+        },
+        {
+          "evidence_id": 747,
+          "player_id": 30,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 11:21:08.566765+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": " りな ， 罗马化： Fujisawa Rina ，1998年9月18日—），生于日本 埼玉县 所泽市 ，日本职业围棋棋士，现为七段，隶属 日本棋院 。其祖父为名誉棋圣 藤泽秀行 ，父亲则是曾任日本棋院常务理事的 藤泽一就 八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "所泽市 ，日本职业围棋棋士，现为七段，隶属 日本棋院 。其祖父为名誉棋圣 藤泽秀行 ，父亲则是曾任日本棋院常务理事的 藤泽一就 八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日语 ： 横塚力 ） 八段 [ 3 ] 。至今已累计获得26次头衔，为日本女子棋士历史第二，并已取"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日语 ： 横塚力 ） 八段 [ 3 ] 。至今已累计获得26次头衔，为日本女子棋士历史第二，并已取得了 名誉女流名人 、 名誉女流本因坊 、 名誉女流立葵杯 称号资格。\n藤泽里菜 （ 日语： 藤沢 里菜 ／ ふじさわ りな ，"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": " りな ， 罗马化： Fujisawa Rina ，1998年9月18日—），生于日本 埼玉县 所泽市 ，日本职业围棋棋士，现为七段，隶属 日本棋院 。其祖父为名誉棋圣 藤泽秀行 ，父亲则是曾任日本棋院常务理事的 藤泽一就 八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "所泽市 ，日本职业围棋棋士，现为七段，隶属 日本棋院 。其祖父为名誉棋圣 藤泽秀行 ，父亲则是曾任日本棋院常务理事的 藤泽一就 八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日语 ： 横塚力 ） 八段 [ 3 ] 。至今已累计获得26次头衔，为日本女子棋士历史第二，并已取"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "八段 [ 1 ] ，妹妹为藤泽奈奈美（同父异母） [ a ] [ 2 ] ，丈夫为职业围棋手 横冢力 （ 日语 ： 横塚力 ） 八段 [ 3 ] 。至今已累计获得26次头衔，为日本女子棋士历史第二，并已取得了 名誉女流名人 、 名誉女流本因坊 、 名誉女流立葵杯 称号资格。"
+            },
+            {
+              "path": ".research.source_checks[0].identity_corroboration.body_excerpt",
+              "excerpt": "本棋院ホーム 棋士 藤沢　里菜 藤沢　里菜 （フジサワ　リナ / FUJISAWA, Rina） ファンメッセージ 性別 女 棋士段位 七段 出身地 埼玉県 所属 日本棋院東京本院 タイトル数 27 タイトル/称号 女流本因坊 ナショナルチーム 参加棋士 プロフィール 1998年（平成10年）9月18日生。埼玉県出身。故 藤沢秀行"
+            },
+            {
+              "path": ".research.source_checks[0].identity_corroboration.body_excerpt",
+              "excerpt": "ーム 棋士 藤沢　里菜 藤沢　里菜 （フジサワ　リナ / FUJISAWA, Rina） ファンメッセージ 性別 女 棋士段位 七段 出身地 埼玉県 所属 日本棋院東京本院 タイトル数 27 タイトル/称号 女流本因坊 ナショナルチーム 参加棋士 プロフィール 1998年（平成10年）9月18日生。埼玉県出身。故 藤沢秀行名誉棋聖"
+            }
+          ]
+        },
+        {
+          "evidence_id": 1237,
+          "player_id": 482,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 14:21:15.122279+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "唐奕 (围棋棋手)\n唐奕 （1988年1月22日—）， 中国 职业 围棋 棋手， 上海 人，1995年开始学习围棋，2002年入段，2007和2009年两次夺得 全国围棋个人赛 女子组冠军。2010年获得 广州亚运会围棋 女团银牌。\n2016年5月升为三段。 [ 2 ] 同年击败上届四强 安国铉 ，成为 第三届百灵杯世界围棋公开"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "年入段，2007和2009年两次夺得 全国围棋个人赛 女子组冠军。2010年获得 广州亚运会围棋 女团银牌。\n2016年5月升为三段。 [ 2 ] 同年击败上届四强 安国铉 ，成为 第三届百灵杯世界围棋公开赛 32强唯一女棋手。 [ 3 ]\n唐奕 （1988年1月22日—）， 中国 职业 围棋 棋手， 上海 人，1995年开始学习"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "女棋手。 [ 3 ]\n唐奕 （1988年1月22日—）， 中国 职业 围棋 棋手， 上海 人，1995年开始学习围棋，2002年入段，2007和2009年两次夺得 全国围棋个人赛 女子组冠军。2010年获得 广州亚运会围棋 女团银牌。\n2016年5月升为三段。 [ 2 ] 同年击败上届四强 安国铉 ，成为 第三届百灵杯世界围棋公开"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "唐奕 （1988年1月22日—）， 中国 职业 围棋 棋手， 上海 人，1995年开始学习围棋，2002年入段，2007和2009年两次夺得 全国围棋个人赛 女子组冠军。2010年获得 广州亚运会围棋 女团银牌。\n2016年5月升为三段。 [ 2 ] 同年击败上届四强 安国铉 ，成为 第三届百灵杯世界围棋公开"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "年入段，2007和2009年两次夺得 全国围棋个人赛 女子组冠军。2010年获得 广州亚运会围棋 女团银牌。\n2016年5月升为三段。 [ 2 ] 同年击败上届四强 安国铉 ，成为 第三届百灵杯世界围棋公开赛 32强唯一女棋手。 [ 3 ]"
+            },
+            {
+              "path": ".research.source_checks[0].identity_corroboration.body_excerpt",
+              "excerpt": "ing\":\"2400.00\"},{\"playerNo\":\"CWA000149\",\"playerName\":\"唐奕\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://www.cwql.org.cn/file/player/17266548795863114564000.png\",\"playerGende"
+            },
+            {
+              "path": ".research.source_checks[0].identity_corroboration.body_excerpt",
+              "excerpt": "ng\":\"2258.70\"},{\"playerNo\":\"CWA000851\",\"playerName\":\"涂季康\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://cwa-web.oss-cn-beijing.aliyuncs.com/player/17794248238601742937192.pn"
+            },
+            {
+              "path": ".research.source_checks[0].identity_corroboration.body_excerpt",
+              "excerpt": "ng\":\"2347.80\"},{\"playerNo\":\"CWA001097\",\"playerName\":\"唐锦潮\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1949-07-07\"},{\"playerNo\":\"CWA001100\",\"pl"
+            }
+          ]
+        },
+        {
+          "evidence_id": 1579,
+          "player_id": 502,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 15:15:52.290555+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".research.original_language_evidence.body_excerpt",
+              "excerpt": "ing\":\"2365.60\"},{\"playerNo\":\"CWA000548\",\"playerName\":\"高星\",\"playerGrade\":\"Z05\",\"playerImage\":\"https://www.cwql.org.cn/file/player/17262162655391215303560.PNG\",\"playerGende"
+            },
+            {
+              "path": ".research.original_language_evidence.body_excerpt",
+              "excerpt": "ng\":\"2327.50\"},{\"playerNo\":\"CWA001101\",\"playerName\":\"郭春林\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1966-02-15\"},{\"playerNo\":\"CWA001317\",\"pl"
+            },
+            {
+              "path": ".research.original_language_evidence.body_excerpt",
+              "excerpt": "\":\"1966-02-15\"},{\"playerNo\":\"CWA001317\",\"playerName\":\"郭鹃\",\"playerGrade\":\"Z05\",\"playerImage\":\"\",\"playerGender\":2,\"playerBirthday\":\"1960-05-06\"},{\"playerNo\":\"CWA001392\",\"pl"
+            }
+          ]
+        },
+        {
+          "evidence_id": 1947,
+          "player_id": 574,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 18:02:07.974249+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".research.source_checks[0].identity_basis",
+              "excerpt": "album link is proposed. Both pages report 王爽, China, professional dan rank and birth date 1995-05-16."
+            },
+            {
+              "path": ".research.original_language_evidence.identity_basis",
+              "excerpt": "album link is proposed. Both pages report 王爽, China, professional dan rank and birth date 1995-05-16."
+            }
+          ]
+        },
+        {
+          "evidence_id": 1182,
+          "player_id": 195,
+          "review_status": "approved",
+          "reviewed_at": "2026-10-05 12:40:36.756102+00:00",
+          "top_keys": [
+            "candidate",
+            "research"
+          ],
+          "rank_mentions": [
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "周泓余\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "周泓余\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            },
+            {
+              "path": ".research.source_checks[0].body_excerpt",
+              "excerpt": "周泓余\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。\n周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            },
+            {
+              "path": ".research.source_checks[0].article_evidence.passage",
+              "excerpt": "周泓余 （2002年7月1日—）， 湖南 长沙 人， 中国 围棋 职业七段棋手。她2015年入段，2023年4月升为七段。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "same_six_library_sgf_hashes_across_envs": true
+}

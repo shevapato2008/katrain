@@ -7,6 +7,7 @@ import KifuReportDetailPage from './KifuReportDetailPage';
 
 const mocks = vi.hoisted(() => ({ getAlbum: vi.fn(), navigate: vi.fn(), board: {} as Record<string, unknown> }));
 vi.mock('react-router-dom', async (original) => ({ ...(await original<typeof import('react-router-dom')>()), useNavigate: () => mocks.navigate }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ isLoading: false, isGuest: false, identityKey: 'kifu-detail-owner', token: 'test-token', isAuthenticated: true }) }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbum: mocks.getAlbum } }));
 const candidate = { move: 'Q10', visits: 800, winrate: 0.64, score_lead: 4.1, prior: 0.5, pv: ['Q10', 'D10'], psv: 1 };
 const analysis: MoveAnalysis = {
@@ -135,10 +136,20 @@ describe('职业报告固定右栏', () => {
     renderPage(); await loaded();
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog', { name: '对局详情' });
-    for (const value of ['赛事甲', '2026-10-01', 'W+R', '9p', '8p', 'japanese', '6.5', '分析中', 'archive', 'source-b']) expect(dialog).toHaveTextContent(value);
+    for (const value of ['赛事甲', '2026-10-01', 'W+R', '职业九段', '职业八段', 'japanese', '6.5', '分析中', 'archive', 'source-b']) expect(dialog).toHaveTextContent(value);
     expect(dialog).not.toHaveTextContent('已核验');
     fireEvent.click(screen.getByRole('button', { name: '查看棋谱' }));
     expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/kifu/7/replay');
+  });
+
+  it('详情共用棋谱段位展示，保留规范化裸段的系统未知含义', async () => {
+    mocks.getAlbum.mockResolvedValue({ ...album, black_rank: '7d', white_rank: '7d', display_black_rank: '7p', display_white_rank: '7段' });
+    renderPage(); await loaded();
+    fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+    const dialog = screen.getByRole('dialog', { name: '对局详情' });
+    expect(dialog).toHaveTextContent('黑棋手 · 职业七段');
+    expect(dialog).toHaveTextContent('白棋手 · 七段');
+    expect(dialog).not.toHaveTextContent('业余');
   });
 
   it('读取棋谱失败提供重试，分析读取失败也提供重试', async () => {

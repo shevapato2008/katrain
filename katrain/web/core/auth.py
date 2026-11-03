@@ -119,23 +119,31 @@ class SQLAlchemyUserRepository(UserRepository):
         # With SQLAlchemy, we typically use Alembic for migrations.
         # But for simplicity/dev, we can use Base.metadata.create_all
         from sqlalchemy import inspect, text
-        from katrain.web.core import ledger_immutability, migrations
+        from katrain.web.core import billing_environment, ledger_immutability, migrations
 
         engine = self._bind()
+        billing_environment.validate_runtime_environment(engine, settings)
         # An existing application database must run the explicit catalog CLI
         # before these authoritative name tables appear. A truly empty database
         # is bootstrapped with its history triggers in one transaction.
         fresh_database = not inspect(engine).get_table_names()
+        rank_tables = migrations.KIFU_RANK_TABLES
         startup_tables = [
             table for table in models_db.Base.metadata.sorted_tables
-            if table.name not in migrations.KIFU_NAME_TABLES | migrations.KIFU_EVENT_SELECTION_TABLES
+            if table.name not in (
+                migrations.KIFU_NAME_TABLES | migrations.KIFU_EVENT_SELECTION_TABLES | rank_tables
+            )
         ]
         if fresh_database:
             with engine.begin() as conn:
                 if engine.dialect.name == "sqlite":
                     # sqlite3 legacy transaction mode does not begin for DDL.
                     conn.exec_driver_sql("BEGIN")
-                models_db.Base.metadata.create_all(bind=conn)
+                # Rank tables are explicit-only even for a new application database.
+                models_db.Base.metadata.create_all(
+                    bind=conn,
+                    tables=[table for table in models_db.Base.metadata.sorted_tables if table.name not in rank_tables],
+                )
                 migrations.install_kifu_name_change_immutability(conn)
         else:
             # Refuse an unmigrated existing database before any startup DDL.
@@ -168,6 +176,7 @@ class SQLAlchemyUserRepository(UserRepository):
         # post-deploy operation via validate_kifu_album_foreign_keys().
         migrations.migrate_kifu_catalog_schema(engine)
         migrations.add_missing_columns(engine)
+        migrations.migrate_membership_schema(engine)
         migrations.backfill_ai_ladder_decisions(engine)
         migrations.verify_kifu_album_identity_indexes(engine)
         migrations.create_missing_indexes(engine)
@@ -214,6 +223,10 @@ class SQLAlchemyUserRepository(UserRepository):
         #   1. `backfill_ai_ladder_decisions`(:122)要对存量行发 UPDATE,得先跑完;
         #   2. 上面的漂移重建走 drop+create,会把触发器一并带走 —— 虽然账本在
         #      PROTECTED_TABLES 里不会被重建,但顺序放在后面就不必依赖那个事实。
+        if settings.MEMBERSHIP_MODE in {"enabled", "paused"}:
+            with self.session_factory() as session:
+                billing_environment.activate_membership_mode(session, settings)
+                session.commit()
         ledger_immutability.install(engine)
 
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:

@@ -7,6 +7,7 @@ import OgsCourseHomePage from './OgsCourseHomePage';
 import OgsCourseChapterPage from './OgsCourseChapterPage';
 import OgsCourseExercisePage from './OgsCourseExercisePage';
 import TutorialCategoriesPage from './TutorialCategoriesPage';
+import derivedMultiCapture from '../tutorial/__fixtures__/kiosk19-ogs-capture.json';
 
 const mocks = vi.hoisted(() => ({
   getCourse: vi.fn(), getStep: vi.fn(), getCategories: vi.fn(),
@@ -82,6 +83,68 @@ describe('OGS course journey', () => {
     expect(screen.getByRole('button', { name: /下一步/ })).toBeEnabled();
   });
 
+  it('explains a retained original board and keeps screen answering available', async () => {
+    mocks.getStep.mockResolvedValueOnce({ ...base, size: 9, viewport: null,
+      board_variant: { status: 'unavailable', source_size: 9, target_size: 19, policy_version: 'test', source_sha256: 'test', offset: [0, 0], reason: '本题需要保留两侧边界' },
+    });
+    renderAt('/kiosk/tutorial/lesson/bl4-opening-4');
+    expect(await screen.findByText('原9路题：本题需要保留两侧边界')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('ogs-point-2-3'));
+    expect(screen.getByText('回答正确')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '实体盘' })).toBeDisabled();
+  });
+
+  it('renders a translated corner capture with marks and uses top-left vision coordinates', async () => {
+    mocks.vision.enabled = true; mocks.vision.recognitionReady = true;
+    mocks.geometry = { status: { phase: 'ready', session_calibrated: true, capabilities: { geometry_ready: true } } };
+    mocks.getStep.mockResolvedValueOnce({ ...base, size: 19, viewport: null, initial_player: 'B', stones: { B: [[0, 17]], W: [[0, 18]] }, letters: {}, shapes: { '0,18': 'triangle' },
+      exercise: { kind: 'puzzle', tree: { point: null, correct: false, wrong: false, children: [{ point: [1, 18], correct: true, wrong: false, children: [] }] } },
+      board_variant: { status: 'adapted', source_size: 9, target_size: 19, policy_version: 'test', source_sha256: 'test', offset: [0, 10], reason: '局部提子' },
+    });
+    renderAt('/kiosk/tutorial/lesson/bl4-opening-4');
+    expect(await screen.findByText('这一题 · 19路版（原9路）')).toBeInTheDocument();
+    expect(screen.getByTestId('ogs-board')).toHaveAttribute('data-window', '19x19');
+    fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
+    expect(mocks.physicalOptions?.stones).toContainEqual({ player: 'W', coords: [0, 0] });
+    act(() => { expect(mocks.physicalOptions?.placeStone(1, 0)?.type).toBe('correct'); });
+    expect(mocks.physicalOptions?.stones).not.toContainEqual({ player: 'W', coords: [0, 0] });
+    expect(mocks.physicalOptions?.stones).toContainEqual({ player: 'B', coords: [1, 0] });
+  });
+
+  it('converges a real derived multi-step capture through the shared physical adapter before completing', async () => {
+    const derived = derivedMultiCapture as OgsStep;
+    mocks.getCourse.mockResolvedValue({ ...course, lessons: [{ ...course.lessons[0], id: derived.lesson_id, first_page: derived.page, step_count: 1 }] });
+    mocks.getStep.mockResolvedValue(derived);
+    mocks.vision.enabled = true; mocks.vision.recognitionReady = true;
+    mocks.geometry = { status: { phase: 'ready', session_calibrated: true, capabilities: { geometry_ready: true } } };
+    mocks.screenMove.mockImplementation((result: { type: string }) => { if (result.type === 'correct') mocks.physicalPhase = 'replying'; });
+    const view = renderAt(`/kiosk/tutorial/lesson/${derived.lesson_id}`);
+    await screen.findByText(derived.locale.text.instruction);
+    fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
+    const confirmPhysical = () => {
+      mocks.physicalPhase = 'ready';
+      view.rerender(<MemoryRouter initialEntries={[`/kiosk/tutorial/lesson/${derived.lesson_id}`]}><Routes><Route path="/kiosk/tutorial/lesson/:lessonId" element={<OgsCourseExercisePage />} /></Routes></MemoryRouter>);
+    };
+    fireEvent.click(screen.getByTestId('ogs-point-2-10'));
+    expect(mocks.screenMove.mock.calls.at(-1)?.[0].scheduledReply).toEqual({ player: 'W', coords: [0, 11] });
+    expect(mocks.physicalOptions?.stones).toContainEqual({ player: 'W', coords: [0, 11] });
+    confirmPhysical();
+    fireEvent.click(screen.getByTestId('ogs-point-0-10'));
+    expect(mocks.screenMove.mock.calls.at(-1)?.[0].scheduledReply).toEqual({ player: 'W', coords: [0, 10] });
+    confirmPhysical();
+    fireEvent.click(screen.getByTestId('ogs-point-0-6'));
+    expect(mocks.screenMove.mock.calls.at(-1)?.[0].captured).toBe(6);
+    for (const [x, row] of [[0, 9], [1, 9], [2, 9], [1, 10], [0, 7], [0, 8]]) {
+      expect(mocks.physicalOptions?.stones).not.toContainEqual({ player: 'W', coords: [x, 18 - row] });
+    }
+    expect(screen.getByText('同步实体盘')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /完成本课/ })).toBeDisabled();
+    expect(mocks.physicalOptions?.isSolved).toBe(false);
+    confirmPhysical();
+    expect(mocks.physicalOptions?.isSolved).toBe(true);
+    expect(screen.getByRole('button', { name: /完成本课/ })).toBeEnabled();
+  });
+
   it('handles choice, pass, remove, finish, retry and previous step', async () => {
     renderAt('/kiosk/tutorial/lesson/bl4-opening-4');
     await screen.findByText('白先，点 A 位。');
@@ -137,7 +200,7 @@ describe('OGS course journey', () => {
     act(() => { expect(mocks.physicalOptions?.placeStone(2, 15)?.type).toBe('correct'); mocks.physicalPhase = 'replying'; });
     expect(screen.getByText('同步实体盘')).toBeInTheDocument();
     expect(mocks.physicalOptions?.isSolved).toBe(false);
-    expect(mocks.getStep).toHaveBeenCalledWith(1);
+    expect(mocks.getStep).toHaveBeenCalledWith(1, 'zh-cn', 'kiosk19');
   });
 
   it.each([9, 13])('keeps physical board unavailable for a %i-line puzzle', async (size) => {

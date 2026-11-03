@@ -7296,3 +7296,102 @@ msgstr "Ce n'est pas une pierre"
 
 msgid "report:score_difference"
 msgstr "Écart de points"
+
+msgid "kifu:history_guest"
+msgstr "Uniquement pour cette session invité"
+
+msgid "kifu:history_local_cache"
+msgstr "Cache du compte sur cet appareil"
+
+msgid "kifu:history_this_node"
+msgstr "Enregistré sur cet appareil"
+
+msgid "kifu:history_cloud"
+msgstr "Historique du compte dans le cloud"
+
+msgid "kifu:history_loading"
+msgstr "Chargement de l’historique de reproduction"
+
+msgid "kifu:history_error"
+msgstr "L’historique de reproduction est indisponible"
+
+msgid "kifu:history_cache_empty"
+msgstr "Aucun historique du compte en cache sur cet appareil"
+
+msgid "kifu:history_empty"
+msgstr "Aucun historique de reproduction pour le moment"
+
+msgid "kifu:history_guest_hint"
+msgstr "L’historique invité est effacé à la fin de la session."
+
+msgid "kifu:history_account_hint"
+msgstr ""
+"Démarrer une reproduction sur le plateau physique enregistre la progression "
+"dans le compte actuel."
+
+msgid "kifu:history_pending"
+msgstr "Enregistré sur cet appareil ; synchronisation en attente"
+
+msgid "kifu:history_conflict"
+msgstr "Conflit de progression ; choisissez la copie à conserver"
+
+msgid "kifu:history_refused"
+msgstr "Enregistré sur cet appareil ; synchronisation refusée"
+
+msgid "kifu:history_saving"
+msgstr "Enregistrement de la progression"
+
+msgid "kifu:history_save_error"
+msgstr "Progression non enregistrée ; veuillez réessayer"
+
+msgid "kifu:history_saved"
+msgstr "Progression enregistrée"
+
+msgid "kifu:history_use_cloud"
+msgstr "Utiliser la progression du cloud"
+
+msgid "kifu:history_keep_local"
+msgstr "Conserver la progression de l’appareil"
+
+msgid "kifu:history_resolve_error"
+msgstr "Impossible de résoudre le conflit ; vérifiez à nouveau la progression"
+
+msgid "baipu:operator_manual"
+msgstr "Passage à la confirmation manuelle effectué"
+
+msgid "baipu:pre_remove_title"
+msgstr "Retirez d’abord la pierre qui occupe le point visé"
+
+msgid "baipu:pre_remove_hint"
+msgstr ""
+"Retirez les pierres aux voyants bleus, puis placez les couleurs indiquées "
+"dans le registre"
+
+msgid "baipu:pre_remove_done"
+msgstr "Anciennes pierres retirées"
+
+msgid "baipu:entry_confirm"
+msgstr "Le plateau correspond"
+
+msgid "baipu:manual_entry_hint"
+msgstr ""
+"Disposez les pierres comme à l’écran, puis appuyez sur « Le plateau "
+"correspond »"
+
+msgid "baipu:recheck"
+msgstr "Reconnaître à nouveau le plateau"
+
+msgid "baipu:switch_manual"
+msgstr "Utiliser la confirmation manuelle"
+
+msgid "baipu:done_hint_saved"
+msgstr ""
+"{n} étapes terminées · Utilisez le bouton en haut à gauche pour revenir"
+
+msgid "baipu:exit_body_neutral"
+msgstr ""
+"Après avoir quitté, vous pourrez rouvrir cette partie depuis la page des "
+"enregistrements."
+
+msgid "baipu:exit_anyway"
+msgstr "Quitter quand même"

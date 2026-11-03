@@ -107,6 +107,290 @@ class AlbumAPI:
         return [call for call in self.calls if call[0].endswith("/albums")]
 
 
+def test_v2_rejects_legacy_count_only_report_even_with_full_manifest_hash():
+    api = AlbumAPI()
+    api.manifest["format"] = "kifu-incremental-manifest-v2"
+    digest = canonical_sha256(api.manifest)
+    legacy = {
+        "status": "verified",
+        "manifest_sha256": digest,
+        "games": 1,
+        "checks": [{"album_id": 7, "lang": lang} for lang in sync.LANGUAGES],
+    }
+    with pytest.raises(ValueError, match="rank-aware"):
+        sync.validate_test_verification(api.manifest, digest, legacy)
+
+
+def rank_api(count=1, raw=None):
+    from katrain.kifu_ingest.ranks import FORMAT_V2, display_rank_for_game_slot, freeze_game_ranks
+    from katrain.web.kifu.player_ranks import build_source_rank_fact
+
+    api = AlbumAPI(count)
+    api.manifest.update(format=FORMAT_V2, rank_facts={})
+    for index, game in enumerate(api.manifest["games"]):
+        album_id = index + 7
+        black = game["metadata"]["player_black"]
+        sgf = SGF.parse_sgf(
+            f"(;PB[{black}]PW[White]EV[Event]DT[2026-10-22]" + (f"BR[{raw}]" if raw else "") + ";B[aa])"
+        ).sgf()
+        game.update(
+            sgf_content=sgf,
+            sgf_sha256=sync.sha256(sgf.encode()).hexdigest(),
+            identities={"black": {"canonical_name": black}},
+        )
+        game["metadata"].update(black_rank=raw, white_rank="")
+        for decision in api.manifest["decisions"]:
+            if decision["key"] == black:
+                decision["kind"] = "player"
+        fact = build_source_rank_fact(
+            canonical_name=black,
+            raw_rank="7p",
+            sgf_content=f"(;PB[{black}]BR[7p]DT[2026-10-01])",
+            slot="black",
+            source_ref={"source_key": "19x19", "source_item_id": str(index + 100)},
+            observed_at="2026-10-25T01:00:00+00:00",
+        )
+        frozen = freeze_game_ranks(game, library_facts={black: fact}, matched_at="2026-10-25T01:00:00+00:00")
+        api.manifest["rank_facts"].update(frozen.pop("rank_facts"))
+        game.update(frozen)
+        for lang in sync.LANGUAGES:
+            value = api.details[album_id, lang]
+            value.update(sgf_content=sgf, black_rank=raw, white_rank="")
+            for side in ("black", "white"):
+                rendered = display_rank_for_game_slot(game["rank_snapshots"][side], game["metadata"][f"{side}_rank"])
+                value.update(
+                    {
+                        f"display_{side}_rank": rendered["rank"],
+                        f"{side}_rank_origin": rendered["rank_origin"],
+                        f"{side}_rank_source": rendered["rank_source"],
+                    }
+                )
+    api.listing["items"] = [deepcopy(api.details[row["album_id"], "cn"]) for row in api.receipt["games"]]
+    return api
+
+
+def validate_rank_report(api, result):
+    digest = canonical_sha256(api.manifest)
+    sync.validate_test_verification(api.manifest, digest, {**result, "manifest_sha256": digest})
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("raw", [None, "9p", "6d", "6k"])
+async def test_v2_keeps_complete_rank_evidence_for_every_language_and_public_card(raw):
+    from katrain.kifu_ingest.verification import RANK_ALGORITHM_VERSION
+
+    api = rank_api(2, raw)
+    result = await api.verify()
+    assert result["algorithm"] == RANK_ALGORITHM_VERSION
+    assert len(result["checks"]) == 10 and len(result["public_cards"]) == 2
+    for checked in result["checks"]:
+        assert checked["source_item_id"] in {"1", "2"}
+        assert checked["metadata"]["black_rank"] == raw
+        assert checked["ranks"]["black"]["display_rank"] == (raw or "7p")
+        assert checked["ranks"]["white"]["display_rank"] == ""
+        assert checked["ranks"]["white"]["source"]["source_ref"]["slot"] == "white"
+    validate_rank_report(api, result)
+    assert len(api.list_calls()) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "field,damage",
+    [
+        ("black_rank", "8p"),
+        ("display_black_rank", "8p"),
+        ("black_rank_origin", "source"),
+        ("black_rank_source", None),
+        ("white_rank_source", None),
+        ("snapshot_sha256", "a" * 64),
+        ("origin", "unknown"),
+        ("rank_fact_sha256", "b" * 64),
+        ("source_item_id", "999"),
+        ("slot", "white"),
+        ("sgf_sha256", "c" * 64),
+    ],
+)
+async def test_v2_rejects_raw_display_and_snapshot_disagreement_in_last_language(field, damage):
+    api = rank_api()
+    value = api.details[7, "en"]
+    if field in {"source_item_id", "slot", "sgf_sha256"}:
+        value["black_rank_source"]["source_ref"][field] = damage
+    elif field in {"snapshot_sha256", "origin", "rank_fact_sha256"}:
+        value["black_rank_source"][field] = damage
+    else:
+        value[field] = damage
+    with pytest.raises(ValueError, match="rank"):
+        await api.verify()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("field", ["black_rank", "display_black_rank", "black_rank_origin", "black_rank_source"])
+async def test_v2_public_card_must_match_raw_rank_and_snapshot_provenance(field):
+    api = rank_api()
+    api.listing["items"][0][field] = None if field.endswith("source") else "wrong"
+    with pytest.raises(ValueError, match="public list card"):
+        await api.verify()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "count_only",
+        "language",
+        "duplicate",
+        "public",
+        "source_id",
+        "album_id",
+        "slot",
+        "origin",
+        "source_hash",
+        "raw",
+        "display",
+        "manifest_hash",
+        "mapping",
+        "duplicate_mapping",
+        "receipt",
+        "oversized",
+    ],
+)
+async def test_v2_report_validation_rechecks_exact_finite_coverage_and_rank_assertions(damage):
+    api = rank_api(2)
+    result = await api.verify()
+    if damage == "count_only":
+        result["checks"] = [{"album_id": row["album_id"], "lang": row["lang"]} for row in result["checks"]]
+    elif damage == "language":
+        result["checks"].pop()
+    elif damage == "duplicate":
+        result["checks"][-1] = deepcopy(result["checks"][0])
+    elif damage == "public":
+        result["public_cards"].pop()
+    elif damage in {"source_id", "album_id"}:
+        result["checks"][0]["source_item_id" if damage == "source_id" else "album_id"] = (
+            "999" if damage == "source_id" else 999
+        )
+    elif damage == "slot":
+        result["checks"][0]["ranks"].pop("white")
+    elif damage == "origin":
+        result["checks"][0]["ranks"]["black"]["origin"] = "source"
+    elif damage == "source_hash":
+        result["checks"][0]["ranks"]["black"]["source"]["source_ref"]["sgf_sha256"] = "a" * 64
+    elif damage == "raw":
+        result["checks"][0]["metadata"]["black_rank"] = "8p"
+    elif damage == "display":
+        result["checks"][0]["ranks"]["black"]["display_rank"] = "8p"
+    elif damage == "mapping":
+        result["album_mappings"][0]["album_id"] = 999
+    elif damage == "duplicate_mapping":
+        result["album_mappings"][1]["album_id"] = result["album_mappings"][0]["album_id"]
+    elif damage == "receipt":
+        result.pop("receipt_sha256")
+    elif damage == "oversized":
+        result["padding"] = "x" * (4 * 1024 * 1024)
+    else:
+        api.manifest["publication_key"] = "changed"
+        with pytest.raises(ValueError):
+            sync.validate_test_verification(api.manifest, "a" * 64, {**result, "manifest_sha256": "a" * 64})
+        return
+    with pytest.raises(ValueError):
+        validate_rank_report(api, result)
+
+
+@pytest.mark.asyncio
+async def test_v2_checkpoint_uses_new_algorithm_and_revalidates_rank_evidence(tmp_path):
+    from katrain.kifu_ingest.verification import RANK_ALGORITHM_VERSION
+
+    api = rank_api()
+    result = await api.verify(checkpoint_dir=tmp_path)
+    path = next(tmp_path.glob("*.json"))
+    record = json.loads(path.read_text())
+    assert record["binding"]["algorithm"] == RANK_ALGORITHM_VERSION
+    api.calls.clear()
+    assert await api.verify(checkpoint_dir=tmp_path) == result
+    assert api.calls == []
+    completed = next(iter(record["completed"].values()))
+    completed["details"][0]["ranks"]["black"]["origin"] = "source"
+    record["content_sha256"] = canonical_sha256(
+        {key: value for key, value in record.items() if key != "content_sha256"}
+    )
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="checkpoint"):
+        await api.verify(checkpoint_dir=tmp_path)
+    assert api.calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("old_algorithm", [True, False])
+async def test_v2_never_reuses_legacy_algorithm_or_names_only_completed_object(tmp_path, old_algorithm):
+    from katrain.kifu_ingest.verification import RANK_ALGORITHM_VERSION
+
+    legacy, api = AlbumAPI(), rank_api()
+    await legacy.verify(checkpoint_dir=tmp_path)
+    original_path = next(tmp_path.glob("*.json"))
+    record = json.loads(original_path.read_text())
+    record["binding"]["manifest_sha256"] = canonical_sha256(api.manifest)
+    if not old_algorithm:
+        record["binding"]["algorithm"] = RANK_ALGORITHM_VERSION
+    record["content_sha256"] = canonical_sha256(
+        {key: value for key, value in record.items() if key != "content_sha256"}
+    )
+    path = tmp_path / f"{canonical_sha256(record['binding'])}.json"
+    path.write_text(json.dumps(record))
+    if old_algorithm:
+        assert (await api.verify(checkpoint_dir=tmp_path))["status"] == "verified"
+        assert len(api.calls) == 6
+    else:
+        with pytest.raises(ValueError, match="checkpoint"):
+            await api.verify(checkpoint_dir=tmp_path)
+        assert api.calls == []
+
+
+@pytest.mark.asyncio
+async def test_v2_transient_list_failure_recovers_once_with_same_finite_budget():
+    api = rank_api()
+
+    async def fault(request):
+        assert set(request.extensions["timeout"].values()) == {30}
+        if request.url.path.endswith("/albums") and len(api.list_calls()) == 1:
+            raise httpx.ReadTimeout("temporary", request=request)
+
+    api.fault = fault
+    result = await api.verify(sleep=Clock().sleep)
+    validate_rank_report(api, result)
+    assert len(api.list_calls()) == 2
+
+
+@pytest.mark.asyncio
+async def test_v2_unknown_display_allows_null_without_inventing_a_grade():
+    api = rank_api()
+    for value in (*api.details.values(), *api.listing["items"]):
+        value["display_white_rank"] = None
+    result = await api.verify()
+    assert all(row["ranks"]["white"]["display_rank"] is None for row in result["checks"])
+    validate_rank_report(api, result)
+
+
+def test_sender_rejects_oversized_encoded_envelope_before_ssh(monkeypatch):
+    api = AlbumAPI()
+    api.manifest["padding"] = "x" * (16 * 1024 * 1024)
+    digest = canonical_sha256(api.manifest)
+    report = {
+        "status": "verified",
+        "manifest_sha256": digest,
+        "games": 1,
+        "checks": [{"album_id": 7, "lang": lang} for lang in sync.LANGUAGES],
+    }
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("oversized payload must be rejected before SSH")
+
+    monkeypatch.setattr(sync.subprocess, "run", forbidden)
+    with pytest.raises(ValueError, match="payload budget"):
+        sync.send_verified_manifest(
+            api.manifest, digest, report, host="synthetic", key_path="/key", known_hosts="/known"
+        )
+
+
 @pytest.mark.asyncio
 async def test_transient_list_timeout_retries_once_and_uses_finite_default():
     api = AlbumAPI()

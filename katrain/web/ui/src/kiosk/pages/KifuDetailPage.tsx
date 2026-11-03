@@ -4,10 +4,10 @@ import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
-import { BaipuAPI, canonToGtp, type BaipuStep } from '../../api/baipuApi';
-import { replayBaipuSteps } from '../../utils/baipuReplay';
+import { buildReplayPosition } from '../../utils/goReplay';
+import { sgfToMoves } from '../../utils/sgfSerializer';
 import { translateResult } from '../../utils/resultTranslation';
-import { formatRank } from '../../utils/rank';
+import { formatKifuRank } from '../../utils/rank';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { KioskPagebar } from '../shell/KioskPagebar';
@@ -20,7 +20,6 @@ interface MoveEntry {
   n: number;
   coord: string | null;
   color: 'B' | 'W';
-  stepIndex: number;
 }
 
 /** Professional SGF replay keeps the recorded moves separate from AI analysis. */
@@ -40,12 +39,12 @@ const KifuDetailPage = () => {
   const navigate = useNavigate();
   const { t, lang } = useTranslation();
 
-  const [loadedAlbum, setLoadedAlbum] = useState<KifuAlbumDetail | null>(null);
-  const [loadedLang, setLoadedLang] = useState<string | null>(null);
-  const [steps, setSteps] = useState<BaipuStep[] | null>(null);
-  const [boardSize, setBoardSize] = useState(19);
-  const [error, setError] = useState<string | null>(null);
-  const [failure, setFailure] = useState<'unreachable' | 'service' | 'other'>('other');
+  const [loadedGame, setLoadedGame] = useState<{
+    album: KifuAlbumDetail; parsed: ReturnType<typeof sgfToMoves>; lang: string;
+  } | null>(null);
+  const [loadError, setLoadError] = useState<{
+    id: number; lang: string; message: string; failure: 'unreachable' | 'service' | 'other';
+  } | null>(null);
   const [reload, setReload] = useState(0);
   const [infoOpen, setInfoOpen] = useState(false);
   const [cursor, setCursor] = useState(0);   // 已经走到第几手(0 = 开局)
@@ -55,64 +54,57 @@ const KifuDetailPage = () => {
     if (!kifuId) return;
     let cancelled = false;
     // ⚠️ 清空只能发生在异步回调里(`react-hooks/set-state-in-effect`) —— 效应体里同步
-    // setState 会连锁重渲染。重试时那句 `setError(null)` 挂在按钮的点击处理里,那是事件不是效应。
+    // setState 会连锁重渲染。重试时那句 `setLoadError(null)` 挂在按钮的点击处理里,那是事件不是效应。
     KifuAPI.getAlbum(Number(kifuId), lang)
-      .then(async (detail) => {
+      .then((detail) => {
         if (cancelled) return;
-        if (!detail.sgf_content) throw new Error('empty sgf');
-        const loaded = await BaipuAPI.load({ sgf: detail.sgf_content });
-        if (cancelled) return;
-        setError(null);
-        setLoadedAlbum(detail);
-        setLoadedLang(lang);
-        setSteps(loaded.steps);
-        setBoardSize(loaded.board_size || detail.board_size || 19);
-        if (loadedIdRef.current !== detail.id) setCursor(loaded.steps.filter(step => step.kind === 'move' || step.kind === 'pass').length);
+        if (!detail.sgf_content?.trim()) throw new Error('empty sgf');
+        const parsed = sgfToMoves(detail.sgf_content);
+        if (!parsed.moves.length) throw new Error('empty sgf');
+        setLoadError(null);
+        setLoadedGame({ album: detail, parsed, lang });
+        if (loadedIdRef.current !== detail.id) setCursor(parsed.moves.length - parsed.setupCount);
         loadedIdRef.current = detail.id;
       })
       .catch((e: Error) => {
         if (!cancelled) {
-          setError(e.message);
           const detail = e instanceof ApiError ? e.detail : null;
           const unreachable = e instanceof ApiError && e.status === 503
             && typeof detail === 'object' && detail !== null
             && 'code' in detail && detail.code === 'kifu_cloud_unreachable';
-          setFailure(unreachable ? 'unreachable' : e instanceof ApiError && e.status >= 500 ? 'service' : 'other');
+          setLoadError({ id: Number(kifuId), lang, message: e.message,
+            failure: unreachable ? 'unreachable' : e instanceof ApiError && e.status >= 500 ? 'service' : 'other' });
         }
       });
     return () => { cancelled = true; };
   }, [kifuId, reload, lang]);
 
-  const album = loadedLang === lang ? loadedAlbum : null;
+  const visibleError = loadError?.id === Number(kifuId) && loadError.lang === lang ? loadError : null;
+  const error = visibleError?.message;
+  const failure = visibleError?.failure;
+  const game = loadedGame?.lang === lang && loadedGame.album.id === Number(kifuId) && !visibleError ? loadedGame : null;
+  const album = game?.album ?? null;
+  const parsed = game?.parsed ?? null;
+  const boardSize = parsed?.metadata.boardSize || album?.board_size || 19;
 
-  // 手数表:只有 `move` / `pass` 算一手,让子的 setup 不算。
+  // 初始摆子保留在盘上,从逐手列表和游标里排除。
   const entries = useMemo<MoveEntry[]>(() => {
-    if (!steps) return [];
-    const out: MoveEntry[] = [];
-    steps.forEach((s, i) => {
-      if (s.kind !== 'move' && s.kind !== 'pass') return;
-      const color = s.color ?? (out.length % 2 === 0 ? 'B' : 'W');
-      out.push({
-        n: out.length + 1,
-        coord: s.row != null && s.col != null ? canonToGtp(s.row, s.col, boardSize) : null,
-        color,
-        stepIndex: i,
-      });
-    });
-    return out;
-  }, [steps, boardSize]);
+    if (!parsed) return [];
+    return parsed.moves.slice(parsed.setupCount).map((move, i) => ({
+      n: i + 1,
+      coord: move.toLowerCase() === 'pass' ? null : move,
+      color: parsed.stoneColors[parsed.setupCount + i],
+    }));
+  }, [parsed]);
 
   const total = entries.length;
   const at = Math.min(cursor, total);
   useReplayStoneSound({ identity: album?.id ?? null, cursor: at, move: entries[at - 1]?.coord ?? undefined,
-    ready: !!album && album.id === Number(kifuId) && steps !== null, selected: true, boardSize });
-  // 走到第 `at` 手 = 播到那一手所在的 step(含),开局则只播它前面的 setup。
-  const stepCount = at === 0
-    ? (entries[0]?.stepIndex ?? steps?.length ?? 0)
-    : entries[at - 1].stepIndex + 1;
+    ready: !!parsed, selected: true, boardSize });
   const board = useMemo(
-    () => (steps ? replayBaipuSteps(steps, stepCount, boardSize) : { black: [], white: [] }),
-    [steps, stepCount, boardSize],
+    () => (parsed ? buildReplayPosition(parsed.moves, parsed.setupCount + at, boardSize, parsed.stoneColors, parsed.setupCount)
+      : { black: [], white: [] }),
+    [parsed, at, boardSize],
   );
 
   const cols = colsFor(boardSize);
@@ -120,6 +112,8 @@ const KifuDetailPage = () => {
   const title = album
     ? [album.display_event ?? album.event, album.display_round_name ?? album.round_name].filter(Boolean).join(' · ') || t('kifu:untitled_game', '无题名的一局')
     : t('kifu:back_kifu', '棋谱');
+  const blackRank = formatKifuRank(album?.display_black_rank, album?.black_rank, t, lang);
+  const whiteRank = formatKifuRank(album?.display_white_rank, album?.white_rank, t, lang);
 
   const meta = album
     ? [
@@ -191,7 +185,7 @@ const KifuDetailPage = () => {
             <button
               type="button"
               className="kiosk-btn kiosk-btn--pill pill"
-              onClick={() => { setError(null); setReload((v) => v + 1); }}
+              onClick={() => { setLoadError(null); setReload((v) => v + 1); }}
             >
               {t('kifu:retry', '重试')}
             </button>
@@ -206,9 +200,9 @@ const KifuDetailPage = () => {
             <section className="kifu-replay-match" data-testid="kifu-detail-hero" title={meta}>
               <strong>{title}</strong>
               <div className="kifu-replay-players">
-                <span><i className="kifu-record__stone kifu-record__stone--black" />{album.display_player_black ?? album.player_black ?? t('game:black_side', '黑方')}{album.display_black_rank && <small>{formatRank(album.display_black_rank, t)}</small>}</span>
+                <span><i className="kifu-record__stone kifu-record__stone--black" />{album.display_player_black ?? album.player_black ?? t('game:black_side', '黑方')}{blackRank && <small>{blackRank}</small>}</span>
                 <em>{t('kifu:versus', '对')}</em>
-                <span>{album.display_player_white ?? album.player_white ?? t('game:white_side', '白方')}{album.display_white_rank && <small>{formatRank(album.display_white_rank, t)}</small>}<i className="kifu-record__stone kifu-record__stone--white" /></span>
+                <span>{album.display_player_white ?? album.player_white ?? t('game:white_side', '白方')}{whiteRank && <small>{whiteRank}</small>}<i className="kifu-record__stone kifu-record__stone--white" /></span>
               </div>
               <small>{[album.date_played, `${total} ${t('kifu:moves_unit', '手')}`, translateResult(album.result, t, album.rules)].filter(Boolean).join(' · ')}</small>
             </section>

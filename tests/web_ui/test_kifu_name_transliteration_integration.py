@@ -276,9 +276,7 @@ def test_display_search_and_coverage_use_persisted_batch_approval_in_bounded_que
 
             event.listen(engine, "before_cursor_execute", record_sql)
             try:
-                page = asyncio.run(
-                    kifu.list_kifu_albums(_request(), q="Ли Юаньхэ", page=1, page_size=20, lang="ru", db=db)
-                )
+                page = kifu.read_album_page(db, q="Ли Юаньхэ", page=1, page_size=20, lang="ru")
             finally:
                 event.remove(engine, "before_cursor_execute", record_sql)
             assert page.total == 20
@@ -287,9 +285,7 @@ def test_display_search_and_coverage_use_persisted_batch_approval_in_bounded_que
             assert all(getattr(item, slot) == "Ли Юаньхэ" for item in page.items)
             detail = asyncio.run(kifu.get_kifu_album(_request(), page.items[0].id, lang="ru", db=db))
             assert getattr(detail, slot) == "Ли Юаньхэ"
-            other_language = asyncio.run(
-                kifu.list_kifu_albums(_request(), q="Ли Юаньхэ", page=1, page_size=20, lang="cn", db=db)
-            )
+            other_language = kifu.read_album_page(db, q="Ли Юаньхэ", page=1, page_size=20, lang="cn")
             assert other_language.total == 20
             assert all(
                 getattr(item, slot) == ("棋手姓名待核实" if "player" in kind else "赛事名称待核实")
@@ -304,7 +300,7 @@ def test_display_search_and_coverage_use_persisted_batch_approval_in_bounded_que
                 .values(status="partial_undo")
             )
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q="Ли Юаньхэ", page=1, page_size=20, lang="ru", db=db))
+            page = kifu.read_album_page(db, q="Ли Юаньхэ", page=1, page_size=20, lang="ru")
             assert page.total == 0
             albums = db.query(KifuAlbum).all()
             approvals = identity.strict_slot_approvals(db, albums, "ru")
@@ -350,7 +346,7 @@ def test_persisted_dependency_drift_is_rejected_for_display_search_and_coverage(
             evidence.research_payload = payload
             db.commit()
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q="Ли Юаньхэ", page=1, page_size=20, lang="ru", db=db))
+            page = kifu.read_album_page(db, q="Ли Юаньхэ", page=1, page_size=20, lang="ru")
             assert page.total == 0
             album = db.query(KifuAlbum).one()
             detail = asyncio.run(kifu.get_kifu_album(_request(), album.id, lang="ru", db=db))

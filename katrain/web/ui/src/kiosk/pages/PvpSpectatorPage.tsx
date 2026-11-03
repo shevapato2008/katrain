@@ -1,3 +1,4 @@
+import { knownRank } from '../utils/playerRank';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { verifiedSpectatorCount, type GameState } from '../../api';
@@ -6,6 +7,7 @@ import { useSound } from '../../hooks/useSound';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { GO_COLS } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
+import { PlayerCardSurface } from '../shell/PlayerCardSurface';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import '../../kiosk-shell/golaxy-spectator.css';
 
@@ -18,8 +20,8 @@ type Snapshot = {
   player_w: string;
   player_b_id: number;
   player_w_id: number;
-  player_b_rank_label: string | null;
-  player_w_rank_label: string | null;
+  player_b_rank_label?: string | null;
+  player_w_rank_label?: string | null;
   state: Pick<GameState, 'game_id' | 'board_size' | 'stones' | 'last_move' | 'current_node_index' | 'player_to_move'
     | 'end_result' | 'terminal_result' | 'awaiting_count'>;
 };
@@ -42,7 +44,6 @@ function validSnapshot(value: unknown, sessionId: string): value is Snapshot {
   return snapshot.session_id === sessionId && snapshot.public_lobby === true && typeof snapshot.game_ended === 'boolean'
     && typeof snapshot.player_b === 'string' && typeof snapshot.player_w === 'string'
     && Number.isSafeInteger(snapshot.player_b_id) && Number.isSafeInteger(snapshot.player_w_id)
-    && [snapshot.player_b_rank_label, snapshot.player_w_rank_label].every((label) => label === null || typeof label === 'string')
     && !!state && Array.isArray(state.board_size) && state.board_size[0] === 19 && state.board_size[1] === 19
     && Number.isSafeInteger(state.current_node_index) && state.current_node_index >= 0
     && (state.player_to_move === 'B' || state.player_to_move === 'W')
@@ -176,22 +177,12 @@ export default function PvpSpectatorPage() {
       </div>
       <aside className="golaxy-spectator__panel" aria-label="对局与观战信息">
         <div className="golaxy-spectator__watch-head"><b>在线大厅</b><span>只读观战</span><span className="golaxy-spectator__sync">{phase}</span></div>
-        <div className="golaxy-spectator__clocks">{(['b', 'w'] as const).map((color) => <div key={color}
-          className={`golaxy-spectator__clock-card${playing && snapshot.state.player_to_move === color.toUpperCase() ? ' is-turn' : ''}`}>
-          <svg className="pvp-spectator__card-surface" viewBox="0 0 234 126" preserveAspectRatio="none" aria-hidden="true">
-            <defs><linearGradient id={`pvp-spectator-${color}-surface`} x2="0.8" y2="1">
-              <stop stopColor={playing && snapshot.state.player_to_move === color.toUpperCase() ? '#2b6244' : '#26362c'} />
-              <stop offset="1" stopColor={playing && snapshot.state.player_to_move === color.toUpperCase() ? '#1c432f' : '#15231b'} />
-            </linearGradient></defs>
-            <path d={color === 'b'
-              ? 'M14 1 H218 Q233 1 230 15 L214 111 Q211 125 197 125 H14 Q1 125 1 112 V14 Q1 1 14 1 Z'
-              : 'M36 1 H220 Q233 1 233 14 V112 Q233 125 220 125 H17 Q1 125 4 111 L20 15 Q22 1 36 1 Z'}
-              fill={`url(#pvp-spectator-${color}-surface)`}
-              stroke={playing && snapshot.state.player_to_move === color.toUpperCase() ? '#69c98a' : '#405948'} strokeWidth="1.5" />
-          </svg>
+        <div className="golaxy-spectator__clocks kiosk-player-pair">{(['b', 'w'] as const).map((color) => <div key={color}
+          className={`golaxy-spectator__clock-card kiosk-player-card${playing && snapshot.state.player_to_move === color.toUpperCase() ? ' is-turn' : ''}`}>
+          <PlayerCardSurface left={color === 'b'} />
           <div className="golaxy-spectator__clock-name"><i className={`golaxy-spectator__stone${color === 'w' ? ' golaxy-spectator__stone--white' : ''}`} />
-            <b>{snapshot?.[`player_${color}`] ?? '等待棋手信息'}</b><span>{color === 'b' ? '执黑' : '执白'}</span></div>
-          <strong>{snapshot?.[`player_${color}_rank_label`] ?? (snapshot ? '尚未定级' : '—')}</strong>
+            <b title={snapshot?.[`player_${color}`]}>{snapshot?.[`player_${color}`] ?? '等待棋手信息'}</b><span className="kiosk-player-rank">{knownRank(snapshot?.[`player_${color}_rank_label`]).label}</span></div>
+          <strong>{color === 'b' ? '执黑' : '执白'}</strong>
           <small>{playing && snapshot.state.player_to_move === color.toUpperCase() ? '轮到落子' : '对局棋手'}</small>
         </div>)}</div>
         <div className="golaxy-spectator__latest" aria-live="polite"><span>

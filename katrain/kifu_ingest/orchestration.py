@@ -5,9 +5,11 @@ from __future__ import annotations
 import argparse
 import asyncio
 from dataclasses import asdict
+from datetime import date, datetime, timezone
 from hashlib import sha256
 import inspect
 import json
+import logging
 import os
 from pathlib import Path
 import sys
@@ -31,12 +33,30 @@ from katrain.kifu_ingest.exclusions import assert_source_allowed, historical_exc
 from katrain.kifu_ingest.inventory import scan_inventory
 from katrain.kifu_ingest.names import NameRejected, NeedsCredentials, QwenNameService, wiki_sources
 from katrain.kifu_ingest.preparation import derive_metadata
+from katrain.kifu_ingest.ranks import FORMAT_V2, freeze_game_ranks, merge_rank_facts, preflight_manifest_budget
 from katrain.kifu_ingest.state import StateStore
 from katrain.kifu_ingest.sync import IdentityCheckUnavailable, validate_test_verification
 from katrain.web.kifu.name_candidates import canonical_sha256
+from katrain.web.kifu.search_sync import SearchIndexPending
+from katrain.web.kifu.player_ranks import lookup_library_rank_facts, lookup_professional_identity_evidence
 
 
 MAX_RECEIVE_BYTES = 16 * 1024 * 1024
+logger = logging.getLogger(__name__)
+_RANK_LOOKUP_REASONS = frozenset(
+    {
+        "identity_not_unique",
+        "local_owner_mismatch",
+        "current_conflict",
+        "current_system_unspecified",
+        "stored_fact_invalid",
+        "same_day_raw_rank_conflict",
+        "no_verifiable_raw_rank",
+        "professional_identity_unverified",
+        "official_grade_above_library_grade",
+        "recent_raw_rank_conflict",
+    }
+)
 
 
 def _engine():
@@ -156,6 +176,34 @@ async def isolate_unportable_identities(games, resolved, check_identities, isola
     return excluded
 
 
+def _professional_identity_evidence(engine, player_ids):
+    if not player_ids:
+        return {}
+    with engine.connect() as conn:
+        return lookup_professional_identity_evidence(conn, player_ids)
+
+
+async def _freeze_ranks(games, resolved, decision_store):
+    """Read immutable per-game checkpoints before consulting today's profiles."""
+    decisions, pending, requested = {}, [], {}
+    for game in games:
+        decision = (
+            await asyncio.to_thread(decision_store.load_rank_decision, game) if decision_store is not None else None
+        )
+        if decision is None:
+            pending.append(game)
+            for side in ("black", "white"):
+                match = resolved["player"].get(game["metadata"][f"player_{side}"], {})
+                if (
+                    match.get("status") in {"qualified", "missing_qualified_five_languages"}
+                    and type(match.get("id")) is int
+                ):
+                    requested[match["id"]] = match
+        else:
+            decisions[game["source_item_id"]] = decision
+    return decisions, pending, requested
+
+
 async def prepare_staged_games(
     items, *, engine, client, names, isolated=None, check_identities=None, decision_store=None
 ):
@@ -208,6 +256,83 @@ async def prepare_staged_games(
             continue
         for name_key, members in game_pending.items():
             pending.setdefault(name_key, []).extend(members)
+    # Freeze source observations and fallbacks before any paid name calls.
+    rank_games = [game for game in games if game["source_item_id"] not in excluded]
+    rank_decisions, unfrozen, requested = await _freeze_ranks(rank_games, resolved, decision_store)
+    library = await asyncio.to_thread(lookup_library_rank_facts, engine, list(requested.values())) if requested else {}
+    identity_proofs = await asyncio.to_thread(_professional_identity_evidence, engine, list(requested))
+    portable_facts = {
+        requested[player_id]["canonical_name"]: result["fact"]
+        for player_id, result in library.items()
+        if player_id in requested
+        and isinstance(result, dict)
+        and result.get("status") == "qualified"
+        and isinstance(result.get("fact"), dict)
+    }
+    portable_proofs = {
+        requested[player_id]["canonical_name"]: proof
+        for player_id, proof in identity_proofs.items()
+        if player_id in requested
+    }
+    for game in unfrozen:
+        decision = freeze_game_ranks(game, library_facts=portable_facts, identity_evidence=portable_proofs)
+        if decision_store is not None:
+            await asyncio.to_thread(decision_store.save_rank_decision, game, decision)
+        rank_decisions[game["source_item_id"]] = decision
+    rank_facts = merge_rank_facts(*(rank_decisions[game["source_item_id"]]["rank_facts"] for game in rank_games))
+    for game in rank_games:
+        decision = rank_decisions[game["source_item_id"]]
+        game.update({key: decision[key] for key in ("rank_snapshots", "rank_observations")})
+    rank_counts = {
+        key: 0
+        for key in ("cached", "source", "library_current", "unknown", "unknown_identity", "unknown_system", "conflict")
+    }
+    rank_counts["cached"] = 2 * (len(rank_games) - len(unfrozen))
+    lookup_reasons, lookup_failures = {}, {}
+    for player_id, result in library.items():
+        if isinstance(result, dict) and result.get("status") in {"unknown_identity", "unknown_system", "conflict"}:
+            rank_counts[result["status"]] += 1
+            reason = result.get("reason")
+            if not isinstance(reason, str) or reason not in _RANK_LOOKUP_REASONS:
+                reason = "lookup_reason_unavailable"
+            lookup_reasons[reason] = lookup_reasons.get(reason, 0) + 1
+            lookup_failures[player_id] = reason
+    ages, unresolved_slots = [], []
+    unfrozen_ids = {game["source_item_id"] for game in unfrozen}
+    for game in rank_games:
+        for side, snapshot in game["rank_snapshots"].items():
+            rank_counts[snapshot["origin"]] += 1
+            if snapshot["source_as_of"]:
+                ages.append((datetime.now(timezone.utc).date() - date.fromisoformat(snapshot["source_as_of"])).days)
+            if snapshot["origin"] != "unknown" or len(unresolved_slots) >= 200:
+                continue
+            # A frozen unknown is historical, even if a new game queried this owner.
+            reason = "frozen_unknown"
+            if game["source_item_id"] in unfrozen_ids:
+                match = resolved["player"].get(game["metadata"][f"player_{side}"], {})
+                reason = "identity_not_unique"
+                if (
+                    match.get("status") in {"qualified", "missing_qualified_five_languages"}
+                    and type(match.get("id")) is int
+                ):
+                    reason = lookup_failures.get(match["id"], "rank_fact_unavailable")
+            unresolved_slots.append({"source_item_id": game["source_item_id"], "side": side, "reason": reason})
+    logger.info(
+        "kifu_rank_decisions %s",
+        json.dumps(
+            {
+                **rank_counts,
+                "lookup_reasons": lookup_reasons,
+                "unresolved_slots": unresolved_slots,
+                "profile_refresh_deferred": True,
+                "external_rank_refreshes": 0,
+                "source_age_days_min": min(ages) if ages else None,
+                "source_age_days_max": max(ages) if ages else None,
+            },
+            sort_keys=True,
+        ),
+    )
+    preflight_manifest_budget({"format": FORMAT_V2, "games": rank_games, "rank_facts": rank_facts, "decisions": []})
     decisions = []
     raw_event_keys = {key for kind, key in pending if kind == "raw_event"}
     reusable_events = {"templates": {}}
@@ -327,7 +452,7 @@ async def prepare_staged_games(
     if not games:
         raise NameRejected("all staged games require isolated name review")
     manifest = {
-        "format": FORMAT,
+        "format": FORMAT_V2,
         "publication_key": (
             f"19x19-{games[0]['source_item_id']}-{games[0]['raw_sha256'][:16]}"
             if len(games) == 1
@@ -335,6 +460,18 @@ async def prepare_staged_games(
         ),
         "games": games,
         "decisions": decisions,
+        "rank_facts": {
+            digest: fact
+            for digest, fact in rank_facts.items()
+            if any(
+                digest
+                in (
+                    *game["rank_observations"].values(),
+                    *(snap["rank_fact_sha256"] for snap in game["rank_snapshots"].values()),
+                )
+                for game in games
+            )
+        },
     }
     _validated(manifest)
     return manifest
@@ -424,6 +561,9 @@ def main(argv=None):
         else:
             _output({"status": "ok", **StateStore(_engine()).snapshot_status()})
         return 0
+    except SearchIndexPending as exc:
+        _output({"status": "search_index_pending", "operation_ref": exc.operation_ref, "error": "search projection requires repair"})
+        return 3
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
         _output({"status": "error", "error": str(exc)})
         return 2

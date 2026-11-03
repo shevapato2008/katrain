@@ -1,0 +1,2161 @@
+{
+  "ai-free": {
+    "internal": [
+      {
+        "className": "kiosk-layout-a",
+        "box": {
+          "x": 16,
+          "y": 70,
+          "width": 992,
+          "height": 516,
+          "top": 70,
+          "right": 1008,
+          "bottom": 586,
+          "left": 16
+        },
+        "scrollWidth": 992,
+        "clientWidth": 992,
+        "scrollHeight": 516,
+        "clientHeight": 516
+      },
+      {
+        "className": "kiosk-rail",
+        "box": {
+          "x": 548,
+          "y": 70,
+          "width": 460,
+          "height": 516,
+          "top": 70,
+          "right": 1008,
+          "bottom": 586,
+          "left": 548
+        },
+        "scrollWidth": 460,
+        "clientWidth": 460,
+        "scrollHeight": 516,
+        "clientHeight": 516
+      }
+    ],
+    "group": {
+      "x": 548,
+      "y": 140,
+      "width": 460,
+      "height": 104,
+      "top": 140,
+      "right": 1008,
+      "bottom": 244,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 786,
+        "bottom": 244,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 1008,
+        "bottom": 244,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "Shin Jin-seo20级不限时等待黑方 · 执白提子 0王星昊4段第 1 手不限时轮到你 · 执黑提子 0",
+    "ranks": [
+      {
+        "text": "20级",
+        "box": {
+          "x": 712.7578125,
+          "y": 150.203125,
+          "width": 41.2421875,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 754,
+          "bottom": 171.796875,
+          "left": 712.7578125
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "4段",
+        "box": {
+          "x": 912,
+          "y": 150.203125,
+          "width": 29.453125,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 941.453125,
+          "bottom": 171.796875,
+          "left": 912
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "ai-ladder": {
+    "group": {
+      "x": 548,
+      "y": 140,
+      "width": 460,
+      "height": 104,
+      "top": 140,
+      "right": 1008,
+      "bottom": 244,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 786,
+        "bottom": 244,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 1008,
+        "bottom": 244,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "Shin Jin-seo业余 3 段不限时等待黑方 · 执白提子 0王星昊4段第 1 手不限时轮到你 · 执黑提子 0",
+    "ranks": [
+      {
+        "text": "业余 3 段",
+        "box": {
+          "x": 679.9609375,
+          "y": 150.203125,
+          "width": 74.0390625,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 754,
+          "bottom": 171.796875,
+          "left": 679.9609375
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "4段",
+        "box": {
+          "x": 912,
+          "y": 150.203125,
+          "width": 29.453125,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 941.453125,
+          "bottom": 171.796875,
+          "left": 912
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "ai-placement": {
+    "group": {
+      "x": 548,
+      "y": 140,
+      "width": 460,
+      "height": 104,
+      "top": 140,
+      "right": 1008,
+      "bottom": 244,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 786,
+        "bottom": 244,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 1008,
+        "bottom": 244,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "Shin Jin-seo业余 3 段不限时等待黑方 · 执白提子 0王星昊尚未定级第 1 手不限时轮到你 · 执黑提子 0",
+    "ranks": [
+      {
+        "text": "业余 3 段",
+        "box": {
+          "x": 679.9609375,
+          "y": 150.203125,
+          "width": 74.0390625,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 754,
+          "bottom": 171.796875,
+          "left": 679.9609375
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "尚未定级",
+        "box": {
+          "x": 912,
+          "y": 150.203125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 984,
+          "bottom": 171.796875,
+          "left": 912
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "ogs": {
+    "group": {
+      "x": 548,
+      "y": 126,
+      "width": 460,
+      "height": 104,
+      "top": 126,
+      "right": 1008,
+      "bottom": 230,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 126,
+        "width": 238,
+        "height": 104,
+        "top": 126,
+        "right": 786,
+        "bottom": 230,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 126,
+        "width": 238,
+        "height": 104,
+        "top": 126,
+        "right": 1008,
+        "bottom": 230,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "Shin Jin-seo3k—等待 OGS 计时等待黑方 · 执白提子 0王星昊1d—等待 OGS 计时轮到你 · 执黑提子 0",
+    "ranks": [
+      {
+        "text": "3k",
+        "box": {
+          "x": 718.359375,
+          "y": 136.203125,
+          "width": 21.6796875,
+          "height": 21.59375,
+          "top": 136.203125,
+          "right": 740.0390625,
+          "bottom": 157.796875,
+          "left": 718.359375
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "1d",
+        "box": {
+          "x": 912,
+          "y": 136.203125,
+          "width": 17.359375,
+          "height": 21.59375,
+          "top": 136.203125,
+          "right": 929.359375,
+          "bottom": 157.796875,
+          "left": 912
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "local-long": {
+    "group": {
+      "x": 548,
+      "y": 126,
+      "width": 460,
+      "height": 104,
+      "top": 126,
+      "right": 1008,
+      "bottom": 230,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 126,
+        "width": 238,
+        "height": 104,
+        "top": 126,
+        "right": 786,
+        "bottom": 230,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 126,
+        "width": 238,
+        "height": 104,
+        "top": 126,
+        "right": 1008,
+        "bottom": 230,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "Alexander Dinerchtein等级未知10:00读秒 30秒×3等待黑方 · 执白提子 0亚历山大·迪纳斯塔因等级未知10:00读秒 30秒×3轮到你 · 执黑提子 0",
+    "ranks": [
+      {
+        "text": "等级未知",
+        "box": {
+          "x": 682,
+          "y": 136.203125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 136.203125,
+          "right": 754,
+          "bottom": 157.796875,
+          "left": 682
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "等级未知",
+        "box": {
+          "x": 926,
+          "y": 136.203125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 136.203125,
+          "right": 998,
+          "bottom": 157.796875,
+          "left": 926
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "golaxy-engine": {
+    "group": {
+      "x": 548,
+      "y": 140,
+      "width": 460,
+      "height": 104,
+      "top": 140,
+      "right": 1008,
+      "bottom": 244,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 786,
+        "bottom": 244,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 1008,
+        "bottom": 244,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "星阵机器人业余5段10:00剩余等待黑方 · 执白提子 0亚历山大·迪纳斯塔因等级未知10:00剩余轮到你 · 执黑提子 0",
+    "ranks": [
+      {
+        "text": "业余5段",
+        "box": {
+          "x": 688.7265625,
+          "y": 150.203125,
+          "width": 65.2734375,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 754,
+          "bottom": 171.796875,
+          "left": 688.7265625
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "等级未知",
+        "box": {
+          "x": 926,
+          "y": 150.203125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 998,
+          "bottom": 171.796875,
+          "left": 926
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "lobby": {
+    "names": [
+      {
+        "name": "Shin Jin-seo",
+        "title": "Shin Jin-seo",
+        "width": 123,
+        "scrollWidth": 126,
+        "font": "22px"
+      },
+      {
+        "name": "王星昊",
+        "title": "王星昊",
+        "width": 66,
+        "scrollWidth": 66,
+        "font": "22px"
+      }
+    ],
+    "group": {
+      "x": 548,
+      "y": 140,
+      "width": 460,
+      "height": 104,
+      "top": 140,
+      "right": 1008,
+      "bottom": 244,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 786,
+        "bottom": 244,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 1008,
+        "bottom": 244,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "Shin Jin-seo3段不限时等待中提子 0王星昊2段第 1 手轮到你提子 0",
+    "ranks": [
+      {
+        "text": "3段",
+        "box": {
+          "x": 725.1953125,
+          "y": 150.203125,
+          "width": 28.8046875,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 754,
+          "bottom": 171.796875,
+          "left": 725.1953125
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "2段",
+        "box": {
+          "x": 912,
+          "y": 150.203125,
+          "width": 28.8046875,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 940.8046875,
+          "bottom": 171.796875,
+          "left": 912
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "lobby-long": {
+    "names": [
+      {
+        "name": "Alexander Dinerchtein",
+        "title": "Alexander Dinerchtein",
+        "width": 123,
+        "scrollWidth": 231,
+        "font": "22px"
+      },
+      {
+        "name": "亚历山大·迪纳斯塔因",
+        "title": "亚历山大·迪纳斯塔因",
+        "width": 123,
+        "scrollWidth": 206,
+        "font": "22px"
+      }
+    ],
+    "group": {
+      "x": 548,
+      "y": 140,
+      "width": 460,
+      "height": 104,
+      "top": 140,
+      "right": 1008,
+      "bottom": 244,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 786,
+        "bottom": 244,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 1008,
+        "bottom": 244,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "Alexander Dinerchtein3段不限时等待中提子 0亚历山大·迪纳斯塔因2段第 1 手轮到你提子 0",
+    "ranks": [
+      {
+        "text": "3段",
+        "box": {
+          "x": 725.1953125,
+          "y": 150.203125,
+          "width": 28.8046875,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 754,
+          "bottom": 171.796875,
+          "left": 725.1953125
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "2段",
+        "box": {
+          "x": 969.1953125,
+          "y": 150.203125,
+          "width": 28.8046875,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 998,
+          "bottom": 171.796875,
+          "left": 969.1953125
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "lobby-unknown": {
+    "names": [
+      {
+        "name": "Alexander Dinerchtein",
+        "title": "Alexander Dinerchtein",
+        "width": 80,
+        "scrollWidth": 231,
+        "font": "22px"
+      },
+      {
+        "name": "王星昊",
+        "title": "王星昊",
+        "width": 66,
+        "scrollWidth": 66,
+        "font": "22px"
+      }
+    ],
+    "group": {
+      "x": 548,
+      "y": 140,
+      "width": 460,
+      "height": 104,
+      "top": 140,
+      "right": 1008,
+      "bottom": 244,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 786,
+        "bottom": 244,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 140,
+        "width": 238,
+        "height": 104,
+        "top": 140,
+        "right": 1008,
+        "bottom": 244,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "Alexander Dinerchtein等级未知不限时等待中提子 0王星昊等级未知第 1 手轮到你提子 0",
+    "ranks": [
+      {
+        "text": "等级未知",
+        "box": {
+          "x": 682,
+          "y": 150.203125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 754,
+          "bottom": 171.796875,
+          "left": 682
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "等级未知",
+        "box": {
+          "x": 912,
+          "y": 150.203125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 150.203125,
+          "right": 984,
+          "bottom": 171.796875,
+          "left": 912
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "lobby-legacy-free": {
+    "names": [],
+    "group": {
+      "x": 548,
+      "y": 126,
+      "width": 460,
+      "height": 104,
+      "top": 126,
+      "right": 1008,
+      "bottom": 230,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 126,
+        "width": 238,
+        "height": 104,
+        "top": 126,
+        "right": 786,
+        "bottom": 230,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 126,
+        "width": 238,
+        "height": 104,
+        "top": 126,
+        "right": 1008,
+        "bottom": 230,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "Alexander Dinerchtein3段不限时等待黑方 · 执白提子 0王星昊2段第 1 手不限时轮到你 · 执黑提子 0",
+    "ranks": [
+      {
+        "text": "3段",
+        "box": {
+          "x": 724.9609375,
+          "y": 136.203125,
+          "width": 29.0390625,
+          "height": 21.59375,
+          "top": 136.203125,
+          "right": 754,
+          "bottom": 157.796875,
+          "left": 724.9609375
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "2段",
+        "box": {
+          "x": 912,
+          "y": 136.203125,
+          "width": 29.1484375,
+          "height": 21.59375,
+          "top": 136.203125,
+          "right": 941.1484375,
+          "bottom": 157.796875,
+          "left": 912
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "pvp-spectator": {
+    "internal": [
+      {
+        "className": "golaxy-spectator__panel",
+        "box": {
+          "x": 502,
+          "y": 114,
+          "width": 506,
+          "height": 472,
+          "top": 114,
+          "right": 1008,
+          "bottom": 586,
+          "left": 502
+        },
+        "scrollWidth": 504,
+        "clientWidth": 504,
+        "scrollHeight": 470,
+        "clientHeight": 470
+      }
+    ],
+    "group": {
+      "x": 515,
+      "y": 175,
+      "width": 480,
+      "height": 136,
+      "top": 175,
+      "right": 995,
+      "bottom": 311,
+      "left": 515
+    },
+    "cards": [
+      {
+        "x": 515,
+        "y": 175,
+        "width": 248.5390625,
+        "height": 136,
+        "top": 175,
+        "right": 763.5390625,
+        "bottom": 311,
+        "left": 515
+      },
+      {
+        "x": 746.4609375,
+        "y": 175,
+        "width": 248.5390625,
+        "height": 136,
+        "top": 175,
+        "right": 995,
+        "bottom": 311,
+        "left": 746.4609375
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.413066885793341,
+        "visibleGap": 6.79789156881634,
+        "edges": [
+          {
+            "pathX": 756.3696601856866,
+            "outerX": 757.1772478441751,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 764.7827270714799,
+            "outerX": 763.9751394129914,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.413060393454316,
+        "visibleGap": 6.797885076477314,
+        "edges": [
+          {
+            "pathX": 750.7934698934819,
+            "outerX": 751.6010575519704,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 759.2065302869362,
+            "outerX": 758.3989426284477,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.413054983585198,
+        "visibleGap": 6.797879666608196,
+        "edges": [
+          {
+            "pathX": 745.2172778153938,
+            "outerX": 746.0248654738823,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 753.630332798979,
+            "outerX": 752.8227451404905,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "黑方棋友业余 2 段执黑轮到落子白方棋友业余 3 段执白对局棋手",
+    "ranks": [
+      {
+        "text": "业余 2 段",
+        "box": {
+          "x": 665.09375,
+          "y": 187.453125,
+          "width": 72.4453125,
+          "height": 21.59375,
+          "top": 187.453125,
+          "right": 737.5390625,
+          "bottom": 209.046875,
+          "left": 665.09375
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "业余 3 段",
+        "box": {
+          "x": 912.5546875,
+          "y": 187.453125,
+          "width": 72.4453125,
+          "height": 21.59375,
+          "top": 187.453125,
+          "right": 985,
+          "bottom": 209.046875,
+          "left": 912.5546875
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "pvp-spectator-unknown": {
+    "group": {
+      "x": 515,
+      "y": 175,
+      "width": 480,
+      "height": 136,
+      "top": 175,
+      "right": 995,
+      "bottom": 311,
+      "left": 515
+    },
+    "cards": [
+      {
+        "x": 515,
+        "y": 175,
+        "width": 248.5390625,
+        "height": 136,
+        "top": 175,
+        "right": 763.5390625,
+        "bottom": 311,
+        "left": 515
+      },
+      {
+        "x": 746.4609375,
+        "y": 175,
+        "width": 248.5390625,
+        "height": 136,
+        "top": 175,
+        "right": 995,
+        "bottom": 311,
+        "left": 746.4609375
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.413066885793341,
+        "visibleGap": 6.79789156881634,
+        "edges": [
+          {
+            "pathX": 756.3696601856866,
+            "outerX": 757.1772478441751,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 764.7827270714799,
+            "outerX": 763.9751394129914,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.413060393454316,
+        "visibleGap": 6.797885076477314,
+        "edges": [
+          {
+            "pathX": 750.7934698934819,
+            "outerX": 751.6010575519704,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 759.2065302869362,
+            "outerX": 758.3989426284477,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.413054983585198,
+        "visibleGap": 6.797879666608196,
+        "edges": [
+          {
+            "pathX": 745.2172778153938,
+            "outerX": 746.0248654738823,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 753.630332798979,
+            "outerX": 752.8227451404905,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "黑方棋友等级未知执黑轮到落子白方棋友等级未知执白对局棋手",
+    "ranks": [
+      {
+        "text": "等级未知",
+        "box": {
+          "x": 665.5390625,
+          "y": 187.453125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 187.453125,
+          "right": 737.5390625,
+          "bottom": 209.046875,
+          "left": 665.5390625
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "等级未知",
+        "box": {
+          "x": 913,
+          "y": 187.453125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 187.453125,
+          "right": 985,
+          "bottom": 209.046875,
+          "left": 913
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "golaxy-spectator": {
+    "internal": [
+      {
+        "className": "golaxy-spectator__panel",
+        "box": {
+          "x": 502,
+          "y": 114,
+          "width": 506,
+          "height": 472,
+          "top": 114,
+          "right": 1008,
+          "bottom": 586,
+          "left": 502
+        },
+        "scrollWidth": 504,
+        "clientWidth": 504,
+        "scrollHeight": 470,
+        "clientHeight": 470
+      }
+    ],
+    "group": {
+      "x": 513,
+      "y": 157,
+      "width": 484,
+      "height": 104,
+      "top": 157,
+      "right": 997,
+      "bottom": 261,
+      "left": 513
+    },
+    "cards": [
+      {
+        "x": 513,
+        "y": 157,
+        "width": 250.6484375,
+        "height": 104,
+        "top": 157,
+        "right": 763.6484375,
+        "bottom": 261,
+        "left": 513
+      },
+      {
+        "x": 746.3515625,
+        "y": 157,
+        "width": 250.6484375,
+        "height": 104,
+        "top": 157,
+        "right": 997,
+        "bottom": 261,
+        "left": 746.3515625
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410663090463231,
+        "visibleGap": 6.781779624755018,
+        "edges": [
+          {
+            "pathX": 756.4181877766129,
+            "outerX": 757.232629509467,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 764.8288508670761,
+            "outerX": 764.014409134222,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410656543023038,
+        "visibleGap": 6.781773077314824,
+        "edges": [
+          {
+            "pathX": 750.7946718194631,
+            "outerX": 751.6091135523172,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 759.2053283624862,
+            "outerX": 758.3908866296321,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410651087240012,
+        "visibleGap": 6.781767621531799,
+        "edges": [
+          {
+            "pathX": 745.171154061273,
+            "outerX": 745.9855957941271,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 753.581805148513,
+            "outerX": 752.7673634156589,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "黑 · 黑方棋友7 段04:47读秒 30 秒 · 剩余 3 次白 · 白方棋友6 段04:55读秒 30 秒 · 剩余 3 次",
+    "ranks": [
+      {
+        "text": "7 段",
+        "box": {
+          "x": 704.6171875,
+          "y": 169.203125,
+          "width": 33.03125,
+          "height": 21.59375,
+          "top": 169.203125,
+          "right": 737.6484375,
+          "bottom": 190.796875,
+          "left": 704.6171875
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "6 段",
+        "box": {
+          "x": 953.265625,
+          "y": 169.203125,
+          "width": 33.734375,
+          "height": 21.59375,
+          "top": 169.203125,
+          "right": 987,
+          "bottom": 190.796875,
+          "left": 953.265625
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "golaxy-spectator-long": {
+    "group": {
+      "x": 513,
+      "y": 157,
+      "width": 484,
+      "height": 104,
+      "top": 157,
+      "right": 997,
+      "bottom": 261,
+      "left": 513
+    },
+    "cards": [
+      {
+        "x": 513,
+        "y": 157,
+        "width": 250.6484375,
+        "height": 104,
+        "top": 157,
+        "right": 763.6484375,
+        "bottom": 261,
+        "left": 513
+      },
+      {
+        "x": 746.3515625,
+        "y": 157,
+        "width": 250.6484375,
+        "height": 104,
+        "top": 157,
+        "right": 997,
+        "bottom": 261,
+        "left": 746.3515625
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410663090463231,
+        "visibleGap": 6.781779624755018,
+        "edges": [
+          {
+            "pathX": 756.4181877766129,
+            "outerX": 757.232629509467,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 764.8288508670761,
+            "outerX": 764.014409134222,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410656543023038,
+        "visibleGap": 6.781773077314824,
+        "edges": [
+          {
+            "pathX": 750.7946718194631,
+            "outerX": 751.6091135523172,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 759.2053283624862,
+            "outerX": 758.3908866296321,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410651087240012,
+        "visibleGap": 6.781767621531799,
+        "edges": [
+          {
+            "pathX": 745.171154061273,
+            "outerX": 745.9855957941271,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 753.581805148513,
+            "outerX": 752.7673634156589,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "黑 · 亚历山大·迪纳斯塔因7 段04:47读秒 30 秒 · 剩余 3 次白 · Alexander Dinerchtein等级未知04:55读秒 30 秒 · 剩余 3 次",
+    "ranks": [
+      {
+        "text": "7 段",
+        "box": {
+          "x": 704.6171875,
+          "y": 169.203125,
+          "width": 33.03125,
+          "height": 21.59375,
+          "top": 169.203125,
+          "right": 737.6484375,
+          "bottom": 190.796875,
+          "left": 704.6171875
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "等级未知",
+        "box": {
+          "x": 915,
+          "y": 169.203125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 169.203125,
+          "right": 987,
+          "bottom": 190.796875,
+          "left": 915
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "baipu": {
+    "internal": [
+      {
+        "className": "kiosk-layout-a baipu-layout",
+        "box": {
+          "x": 16,
+          "y": 70,
+          "width": 992,
+          "height": 516,
+          "top": 70,
+          "right": 1008,
+          "bottom": 586,
+          "left": 16
+        },
+        "scrollWidth": 992,
+        "clientWidth": 992,
+        "scrollHeight": 516,
+        "clientHeight": 516
+      },
+      {
+        "className": "kiosk-rail",
+        "box": {
+          "x": 548,
+          "y": 70,
+          "width": 460,
+          "height": 516,
+          "top": 70,
+          "right": 1008,
+          "bottom": 586,
+          "left": 548
+        },
+        "scrollWidth": 460,
+        "clientWidth": 460,
+        "scrollHeight": 516,
+        "clientHeight": 516
+      }
+    ],
+    "group": {
+      "x": 548,
+      "y": 202,
+      "width": 460,
+      "height": 76,
+      "top": 202,
+      "right": 1008,
+      "bottom": 278,
+      "left": 548
+    },
+    "cards": [
+      {
+        "x": 548,
+        "y": 202,
+        "width": 238,
+        "height": 76,
+        "top": 202,
+        "right": 786,
+        "bottom": 278,
+        "left": 548
+      },
+      {
+        "x": 770,
+        "y": 202,
+        "width": 238,
+        "height": 76,
+        "top": 202,
+        "right": 1008,
+        "bottom": 278,
+        "left": 770
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.410262144683315,
+        "visibleGap": 6.86357680044091,
+        "edges": [
+          {
+            "pathX": 779.1346093702812,
+            "outerX": 779.9079520424024,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 787.5448715149645,
+            "outerX": 786.7715288428433,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.410255927645721,
+        "visibleGap": 6.863570583403316,
+        "edges": [
+          {
+            "pathX": 773.794872122561,
+            "outerX": 774.5682147946821,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 782.2051280502067,
+            "outerX": 781.4317853780855,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.410250747176974,
+        "visibleGap": 6.863565402934569,
+        "edges": [
+          {
+            "pathX": 768.455133164686,
+            "outerX": 769.2284758368072,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 776.865383911863,
+            "outerX": 776.0920412397418,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "王星昊9p执黑 · Q16申真谞职业九段执白",
+    "ranks": [
+      {
+        "text": "9p",
+        "box": {
+          "x": 670,
+          "y": 216.546875,
+          "width": 20.3515625,
+          "height": 21.59375,
+          "top": 216.546875,
+          "right": 690.3515625,
+          "bottom": 238.140625,
+          "left": 670
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "职业九段",
+        "box": {
+          "x": 912,
+          "y": 216.546875,
+          "width": 72,
+          "height": 21.59375,
+          "top": 216.546875,
+          "right": 984,
+          "bottom": 238.140625,
+          "left": 912
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  },
+  "pvp-spectator-long": {
+    "group": {
+      "x": 515,
+      "y": 175,
+      "width": 480,
+      "height": 136,
+      "top": 175,
+      "right": 995,
+      "bottom": 311,
+      "left": 515
+    },
+    "cards": [
+      {
+        "x": 515,
+        "y": 175,
+        "width": 248.5390625,
+        "height": 136,
+        "top": 175,
+        "right": 763.5390625,
+        "bottom": 311,
+        "left": 515
+      },
+      {
+        "x": 746.4609375,
+        "y": 175,
+        "width": 248.5390625,
+        "height": 136,
+        "top": 175,
+        "right": 995,
+        "bottom": 311,
+        "left": 746.4609375
+      }
+    ],
+    "svgPositions": [
+      "absolute",
+      "absolute"
+    ],
+    "levels": [
+      {
+        "fraction": 0.25,
+        "pathGap": 8.413066885793341,
+        "visibleGap": 6.79789156881634,
+        "edges": [
+          {
+            "pathX": 756.3696601856866,
+            "outerX": 757.1772478441751,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 764.7827270714799,
+            "outerX": 763.9751394129914,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.5,
+        "pathGap": 8.413060393454316,
+        "visibleGap": 6.797885076477314,
+        "edges": [
+          {
+            "pathX": 750.7934698934819,
+            "outerX": 751.6010575519704,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 759.2065302869362,
+            "outerX": 758.3989426284477,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      },
+      {
+        "fraction": 0.75,
+        "pathGap": 8.413054983585198,
+        "visibleGap": 6.797879666608196,
+        "edges": [
+          {
+            "pathX": 745.2172778153938,
+            "outerX": 746.0248654738823,
+            "strokeWidth": "1.5px"
+          },
+          {
+            "pathX": 753.630332798979,
+            "outerX": 752.8227451404905,
+            "strokeWidth": "1.5px"
+          }
+        ]
+      }
+    ],
+    "text": "亚历山大·迪纳斯塔因等级未知执黑轮到落子Alexander Dinerchtein等级未知执白对局棋手",
+    "ranks": [
+      {
+        "text": "等级未知",
+        "box": {
+          "x": 665.5390625,
+          "y": 187.453125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 187.453125,
+          "right": 737.5390625,
+          "bottom": 209.046875,
+          "left": 665.5390625
+        },
+        "font": "18px",
+        "shrink": "0"
+      },
+      {
+        "text": "等级未知",
+        "box": {
+          "x": 913,
+          "y": 185.203125,
+          "width": 72,
+          "height": 21.59375,
+          "top": 185.203125,
+          "right": 985,
+          "bottom": 206.796875,
+          "left": 913
+        },
+        "font": "18px",
+        "shrink": "0"
+      }
+    ],
+    "documentOverflow": false
+  }
+}

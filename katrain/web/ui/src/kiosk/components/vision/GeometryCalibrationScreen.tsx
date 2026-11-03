@@ -619,6 +619,9 @@ export function GeometryCalibrationScreen({
             <p className="setnote calib-note">
               {/* 第一行**永远在**:这是 Fan 定的硬规矩,不因为屏上正在发生什么而消失。 */}
               <b data-testid="geometry-led-advisory">LED 只在你按下之后才亮，不会自动点亮 LED</b>
+              {active && status.grid_warning === 'grid_not_visible' && (
+                <><br /><span role="status">{t('vision:grid_not_visible', '网格暂未识别，将通过 LED 定位棋盘')}</span></>
+              )}
               {allowExistingReuse && reuseBlockedWhy && status.last_valid && (
                 <><br />「沿用上次标定」此刻按不了：{reuseBlockedWhy}。</>
               )}

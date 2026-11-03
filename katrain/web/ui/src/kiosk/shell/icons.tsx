@@ -39,7 +39,7 @@ export const ICON_NAMES = [
   'arrow-clockwise', 'arrow-counter-clockwise', 'arrow-left', 'arrow-right',
   'arrows-clockwise', 'book-open', 'books', 'broadcast', 'camera',
   'caret-double-left', 'caret-double-right', 'caret-down', 'caret-left', 'caret-right',
-  'circuitry', 'corners-out', 'crown-simple', 'cube', 'eraser', 'flag', 'floppy-disk',
+  'circuitry', 'clock-counter-clockwise', 'corners-out', 'crown-simple', 'cube', 'eraser', 'flag', 'floppy-disk',
   'game-controller', 'gear', 'globe-hemisphere-west', 'grid-nine', 'hand-pointing', 'handshake', 'house', 'info',
   'lightbulb', 'list-numbers', 'magnifying-glass', 'map-trifold', 'puzzle-piece', 'qr-code',
   'robot', 'skip-forward',

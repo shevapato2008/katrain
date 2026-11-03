@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatRank, withRank } from './rank';
+import { formatKifuRank, formatRank, withRank } from './rank';
 
 const t = (key: string, fallback?: string) => ({
   'strength:kyu': '级',
@@ -16,8 +16,11 @@ describe('formatRank', () => {
   });
 
   it('localizes SGF professional dan ranks distinctly from amateur dan', () => {
-    expect(formatRank('5p', t)).toBe('职业5段');
-    expect(formatRank(' 4P ', t)).toBe('职业4段');
+    expect(formatRank('5p', t)).toBe('职业五段');
+    expect(formatRank(' 4P ', t)).toBe('职业四段');
+    expect(formatRank('职业七段', t)).toBe('职业七段');
+    expect(formatRank('職業7段', (key, fallback) => key === 'strength:professional_dan_format' ? '職業{rank}段' : fallback ?? '')).toBe('職業七段');
+    expect(formatRank('7p', (key, fallback) => key === 'strength:professional_dan_format' ? 'Professional {rank} dan' : fallback ?? '')).toBe('Professional 7 dan');
   });
 
   it('localizes a Chinese numeral dan field while retaining Chinese spelling', () => {
@@ -37,5 +40,26 @@ describe('formatRank', () => {
     expect(formatRank(Number.NaN, t)).toBe('');
     expect(withRank('AI', undefined, t)).toBe('AI');
     expect(withRank('AI', '6k', t)).toBe('AI · 6级');
+  });
+});
+
+describe('formatKifuRank', () => {
+  it('uses the normalized display rank without reclassifying it from raw legacy dan', () => {
+    expect(formatKifuRank('7段', '7d', t, 'cn')).toBe('七段');
+    expect(formatKifuRank('七段', '7p', t, 'cn')).toBe('七段');
+    expect(formatKifuRank('7p', '7d', t, 'cn')).toBe('职业七段');
+    expect(formatKifuRank('7d', '7d', t, 'cn')).toBe('业余7段');
+    expect(formatKifuRank('7d', null, t, 'tw')).toBe('業餘7段');
+    expect(formatKifuRank('7段', '7d', (key, fallback) => key === 'strength:dan' ? ' dan' : fallback ?? '', 'en')).toBe('7 dan');
+  });
+
+  it('keeps unqualified raw dan honest while retaining explicit amateur and kyu', () => {
+    expect(formatKifuRank(null, '7d', t, 'cn')).toBe('7段');
+    expect(formatKifuRank(null, '业余七段', t, 'cn')).toBe('业余7段');
+    expect(formatKifuRank(null, '7p', t, 'tw')).toBe('職業七段');
+    expect(formatKifuRank('6k', '7d', t, 'cn')).toBe('6级');
+    expect(formatKifuRank('?', 'unknown', t, 'cn')).toBeNull();
+    expect(formatRank('7d', t)).toBe('7段');
+    expect(formatRank(7, t)).toBe('7段');
   });
 });

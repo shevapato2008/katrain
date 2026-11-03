@@ -1,12 +1,13 @@
 import { useId } from 'react';
+import './playerCards.css';
 
 /** The rounded diagonal seam shared by Kiosk player pairs. */
 export function PlayerCardSurface({ left }: { left: boolean }) {
   const id = useId();
-  return <svg className="ai-player-card__surface" viewBox="0 0 234 126" preserveAspectRatio="none" aria-hidden="true">
+  return <svg className="kiosk-player-card__surface ai-player-card__surface" viewBox="0 0 234 126" preserveAspectRatio="none" aria-hidden="true">
     <defs><linearGradient id={id} x2="0.8" y2="1">
-      <stop className="ai-player-card__gradient-start" />
-      <stop className="ai-player-card__gradient-end" offset="1" />
+      <stop className="kiosk-player-card__gradient-start" />
+      <stop className="kiosk-player-card__gradient-end" offset="1" />
     </linearGradient></defs>
     <path d={left
       ? 'M14 1 H218 Q233 1 230 15 L214 111 Q211 125 197 125 H14 Q1 125 1 112 V14 Q1 1 14 1 Z'

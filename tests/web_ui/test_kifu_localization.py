@@ -80,8 +80,8 @@ def test_exact_player_aliases_find_the_same_games_and_localize_the_card():
         )
         db.commit()
 
-        cn = asyncio.run(kifu.list_kifu_albums(_request(), q="吴清源", page=1, page_size=20, lang="cn", db=db))
-        en = asyncio.run(kifu.list_kifu_albums(_request(), q="Go Seigen", page=1, page_size=20, lang="en", db=db))
+        cn = kifu.read_album_page(db, q="吴清源", page=1, page_size=20, lang="cn")
+        en = kifu.read_album_page(db, q="Go Seigen", page=1, page_size=20, lang="en")
         assert cn.total == en.total == 1
         assert [item.id for item in cn.items] == [item.id for item in en.items] == [game.id]
         assert cn.items[0].display_player_black == "吴清源"
@@ -121,8 +121,8 @@ def test_cwi_oteai_edition_is_localized_but_unknown_event_is_preserved():
             ),
         ])
         db.commit()
-        cn = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
-        en = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="en", db=db))
+        cn = kifu.read_album_page(db, q=None, page=1, page_size=20, lang="cn")
+        en = kifu.read_album_page(db, q=None, page=1, page_size=20, lang="en")
         cn_by_event = {item.event: item for item in cn.items}
         en_by_event = {item.event: item for item in en.items}
         assert cn_by_event["JapanPromotionTournament,1934,Fall"].display_event == "1934年秋季大手合"
@@ -152,7 +152,7 @@ def test_cwi_edition_requires_both_link_and_verified_translation():
                       sgf_content="(;B[cc])", source_path="unlinked.sgf"),
         ])
         db.commit()
-        result = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
+        result = kifu.read_album_page(db, q=None, page=1, page_size=20, lang="cn")
         by_source = {db.get(KifuAlbum, item.id).source_path: item for item in result.items}
         assert by_source["approved.sgf"].display_event == "1934年秋季大手合"
         assert by_source["unapproved.sgf"].display_event == raw
@@ -177,7 +177,7 @@ def test_cwi_edition_rejects_a_verified_translation_from_the_wrong_event():
                       sgf_content="(;B[bb])", source_path="ordinary-event.sgf"),
         ])
         db.commit()
-        result = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
+        result = kifu.read_album_page(db, q=None, page=1, page_size=20, lang="cn")
         by_source = {db.get(KifuAlbum, item.id).source_path: item for item in result.items}
         assert by_source["wrong-event.sgf"].display_event == raw
         assert by_source["ordinary-event.sgf"].display_event == "三星杯"
@@ -197,7 +197,7 @@ def test_unverified_ordinary_event_name_falls_back_to_original_sgf_text():
             sgf_content="(;EV[大手合];B[dd])", source_path="cwi/ordinary.sgf",
         ))
         db.commit()
-        result = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="ru", db=db))
+        result = kifu.read_album_page(db, q=None, page=1, page_size=20, lang="ru")
         assert result.items[0].display_event == "大手合"
     engine.dispose()
 
@@ -215,7 +215,7 @@ def test_embedded_player_dan_has_separate_display_fields_and_preserves_raw_sgf()
         )
         db.add(album)
         db.commit()
-        response = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
+        response = kifu.read_album_page(db, q=None, page=1, page_size=20, lang="cn")
         item = response.items[0]
         assert item.player_black == "吴清源六段"
         assert item.black_rank is None
@@ -238,7 +238,7 @@ def test_invalid_explicit_ranks_never_fall_through_to_raw_frontend_fields():
                       white_rank="黑中盘胜", sgf_content="(;B[pp])", source_path="rank-empty.sgf"),
         ])
         db.commit()
-        result = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
+        result = kifu.read_album_page(db, q=None, page=1, page_size=20, lang="cn")
         by_source = {db.get(KifuAlbum, item.id).source_path: item for item in result.items}
         fallback = by_source["rank-fallback.sgf"]
         assert fallback.black_rank == "白九目半胜"
@@ -273,7 +273,7 @@ def test_duplicate_copy_is_hidden_from_list_but_detail_remains_available():
         db.add(copy)
         db.commit()
 
-        listing = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
+        listing = kifu.read_album_page(db, q=None, page=1, page_size=20, lang="cn")
         assert listing.total == 1
         assert [item.id for item in listing.items] == [original.id]
         assert asyncio.run(kifu.get_kifu_album(_request(), album_id=copy.id, lang="cn", db=db)).id == copy.id
@@ -308,8 +308,8 @@ def test_fuzzy_search_treats_sql_wildcards_as_literal_characters():
         db.add_all([literal, unrelated])
         db.commit()
 
-        percent = asyncio.run(kifu.list_kifu_albums(_request(), q="%", page=1, page_size=20, lang="cn", db=db))
-        underscore = asyncio.run(kifu.list_kifu_albums(_request(), q="_", page=1, page_size=20, lang="cn", db=db))
+        percent = kifu.read_album_page(db, q="%", page=1, page_size=20, lang="cn")
+        underscore = kifu.read_album_page(db, q="_", page=1, page_size=20, lang="cn")
         assert percent.total == 0
         assert [item.id for item in underscore.items] == [literal.id]
 

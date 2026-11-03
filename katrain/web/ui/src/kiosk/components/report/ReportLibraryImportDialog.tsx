@@ -21,6 +21,7 @@ import { KifuAPI } from '../../../api/kifuApi';
 import type { ReportType } from '../../../api/reportApi';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { KifuAlbumSummary } from '../../../types/kifu';
+import { formatKifuRank } from '../../../utils/rank';
 
 interface ReportLibraryImportDialogProps {
   open: boolean;
@@ -221,7 +222,7 @@ export default function ReportLibraryImportDialog({
                       <Box sx={{ minWidth: 0 }}>
                         <Typography noWrap variant="body2" sx={{ fontWeight: 600, color: selected ? '#10251a' : undefined }}>{title}</Typography>
                         <Typography noWrap variant="caption" sx={{ color: selected ? '#254733' : 'text.secondary' }}>
-                          {black} {item.display_black_rank || ''} · {white} {item.display_white_rank || ''}
+                          {black} {formatKifuRank(item.display_black_rank, item.black_rank, t, lang)} · {white} {formatKifuRank(item.display_white_rank, item.white_rank, t, lang)}
                         </Typography>
                       </Box>
                       <Typography variant="caption" sx={{ color: selected ? '#254733' : 'text.secondary', textAlign: 'right', whiteSpace: 'normal' }}>

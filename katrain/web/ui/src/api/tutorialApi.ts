@@ -97,7 +97,8 @@ export const TutorialAPI = {
 // Enforced by src/api/__tests__/tutorialReadonly.guard.test.ts.
 export const TutorialReadAPI = {
   getOgsCourse: TutorialAPI.getOgsCourse,
-  getOgsStep: TutorialAPI.getOgsStep,
+  getOgsStep: (page: number, lang = 'zh-cn', boardVariant?: 'kiosk19'): Promise<OgsStep> =>
+    apiGet(`/ogs-course/steps/${page}?lang=${encodeURIComponent(lang)}${boardVariant ? `&board_variant=${boardVariant}` : ''}`),
   getCategories: TutorialAPI.getCategories,
   getBooks: TutorialAPI.getBooks,
   getBook: TutorialAPI.getBook,

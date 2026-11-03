@@ -4,7 +4,7 @@ Authoring routes live in the separate admin application.
 """
 
 import mimetypes
-from typing import List
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse, Response
@@ -83,7 +83,12 @@ def get_public_ogs_source(db: Session = Depends(get_db)):
 
 
 @router.get("/ogs-course/steps/{page}")
-def get_public_ogs_step(page: int, lang: str = "zh-cn", db: Session = Depends(get_db)):
+def get_public_ogs_step(
+    page: int,
+    lang: str = "zh-cn",
+    db: Session = Depends(get_db),
+    board_variant: Optional[Literal["kiosk19"]] = None,
+):
     from katrain.web.tutorials.ogs_course import public_step_output
     from katrain.web.tutorials.ogs_models import TutorialOgsStep
 
@@ -102,7 +107,12 @@ def get_public_ogs_step(page: int, lang: str = "zh-cn", db: Session = Depends(ge
         )
         if step is None:
             raise HTTPException(status_code=404, detail="OGS step not found")
-        return public_step_output(book.id, step, lang)
+        result = public_step_output(book.id, step, lang)
+        if board_variant == "kiosk19":
+            from katrain.web.content.board_variants import adapt_ogs_step
+
+            return adapt_ogs_step(result)
+        return result
     except (OperationalError, ProgrammingError, KeyError, TypeError, ValueError) as exc:
         raise _ogs_unavailable() from exc
 

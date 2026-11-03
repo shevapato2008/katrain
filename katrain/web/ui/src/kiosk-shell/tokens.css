@@ -11,6 +11,7 @@
  * 只统一结构。各棋类自己给下面这组语义色变量赋值即可。
  */
 
+body[data-kiosk-typography],
 .kiosk {
   /* ---------- 字族(§9 分工规则) ----------
      栈的第一族只管拉丁与数字(带 latin unicode-range),中文码点在那儿匹配不到面,
@@ -20,7 +21,9 @@
   --font-serif: "SmartBox Serif", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", Georgia, serif;
   --font-sans: "SmartBox Sans", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", system-ui, sans-serif;
   --font-mono: "SmartBox IBM Plex Mono", "SmartBox Mono", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", ui-monospace, monospace;
+}
 
+.kiosk {
   /* ---------- 画布 ---------- */
   --kiosk-w: 1024px;
   --kiosk-h: 600px;

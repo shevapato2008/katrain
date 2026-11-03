@@ -156,6 +156,12 @@ class WebGame(Game):
         if blocked:
             self.katrain.controls.set_status(i18n._("finish inserting before navigating"), STATUS_ERROR)
 
+    def analyze_all_nodes(self, *args, **kwargs):
+        from katrain.web.core.paid_analysis import legacy_analysis_allowed
+
+        if legacy_analysis_allowed(runtime=self.katrain):
+            return super().analyze_all_nodes(*args, **kwargs)
+
     def play(self, move, ignore_ko=False, analyze=True):
         # r1:整段进对局提交锁(RLock 可重入:`_do_play` 与 AI 提交段调到这里时已经拿着它)。
         with self.katrain.ai_ladder_commit_lock:
@@ -197,6 +203,9 @@ class WebKaTrain(KaTrainBase):
         self.message_callback: Optional[Callable] = None
         self.enable_engine = enable_engine
         self.user_id = user_id
+        self.account_user_id = None
+        self._rank_owner_session_eligible = False
+        self._rank_owner_game_eligible = False
         self.ai_lock = threading.Lock()
         self.ai_ladder_commit_lock = threading.RLock()
         self._ai_move_pending = False
@@ -240,6 +249,7 @@ class WebKaTrain(KaTrainBase):
         # a Player) so it is immune to player-side mutation and survives later
         # edit_game calls that don't mention it.
         self.platform_engine_color = None
+        self.platform_player_ranks = {}
         # Task 4: per-game ladder rung, injected (non-persisted) via POST /api/new-game
         # ladder_rung=N. None until a caller explicitly sets it via _do_new_game; reset to
         # None by every _do_new_game call that doesn't pass one (see resolve_ladder_rung).
@@ -325,7 +335,11 @@ class WebKaTrain(KaTrainBase):
         and server (galaxy) mode keep their analysis behaviour. Explicit, user-triggered
         analysis (paid analysis, on-demand nav) goes through separate paths and is unaffected.
         """
-        return getattr(self, "suppress_auto_eval", False) and self.play_analyze_mode == MODE_PLAY
+        from katrain.web.core.paid_analysis import legacy_analysis_allowed
+
+        return not legacy_analysis_allowed(runtime=self) or (
+            getattr(self, "suppress_auto_eval", False) and self.play_analyze_mode == MODE_PLAY
+        )
 
     #: Every value that may appear in `user_games.game_type`, and what it means.
     #: This tuple is the whole vocabulary -- there is no other place that decides
@@ -505,8 +519,10 @@ class WebKaTrain(KaTrainBase):
         else:
             logger.info(message)
 
-        # In the future, we might want to push logs to the client via WebSocket
-        if self.message_callback:
+        # AI diagnostics contain policy, PV and evaluations. They remain server logs.
+        from katrain.web.core.paid_analysis import legacy_analysis_allowed
+
+        if self.message_callback and legacy_analysis_allowed(runtime=self):
             self.message_callback("log", {"message": message, "level": level})
 
     def _ladder_rank_display(self, p):
@@ -526,6 +542,28 @@ class WebKaTrain(KaTrainBase):
                 from katrain.core.ladder import get_level
 
                 return get_level(rung_info["rung"]).rank_name
+        return None
+
+    def _rank_owner(self):
+        """Only identify the account's seat; its fresh grade is fetched separately."""
+        account_id = self.account_user_id
+        if (
+            type(account_id) is not int
+            or account_id <= 0
+            or not self._rank_owner_session_eligible
+            or not self._rank_owner_game_eligible
+            or self.game_type not in ("free", "ranked", "ai_ladder_ranked")
+            or any(
+                getattr(self, marker, None) is not None
+                for marker in ("platform_engine_color", "platform_my_color", "platform_phase")
+            )
+            or self.platform_player_ranks
+        ):
+            return None
+        humans = [color for color, player in self.players_info.items() if player.human]
+        ais = [color for color, player in self.players_info.items() if player.ai]
+        if len(humans) == len(ais) == 1 and humans[0] != ais[0]:
+            return {"user_id": account_id, "color": humans[0]}
         return None
 
     def get_state(self):
@@ -745,6 +783,8 @@ class WebKaTrain(KaTrainBase):
             "degraded": bool(getattr(self, "pvp_lobby_degraded", False)),
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
+            "platform_player_ranks": dict(self.platform_player_ranks),
+            "rank_owner": self._rank_owner(),
             "platform_my_color": getattr(self, "platform_my_color", None),
             "platform_phase": getattr(
                 getattr(self, "platform_phase", None), "value", getattr(self, "platform_phase", None)
@@ -767,6 +807,10 @@ class WebKaTrain(KaTrainBase):
             state["end_result"] = remote_result
             state["terminal_result"] = remote_result
             state["awaiting_count"] = False
+        from katrain.web.core.paid_analysis import legacy_analysis_allowed, strip_private_analysis
+
+        if not legacy_analysis_allowed(runtime=self):
+            return strip_private_analysis(state)
         if not getattr(self, "deliver_analysis", True):
             state["analysis"] = None
             state["commentary"] = ""
@@ -808,6 +852,9 @@ class WebKaTrain(KaTrainBase):
             # a casual game against a hand-picked weak AI would be stored as a rated one
             # and settled into the promotion ledger.
             self.game_type = game_type if game_type is not None else "free"
+            self._rank_owner_game_eligible = (
+                self._rank_owner_session_eligible and move_tree is None and not sgf_filename
+            )
             self.local_confirmation_in_progress = False
             self.local_geometry_paused = False
             self.local_geometry_pause_epoch = 0
@@ -820,6 +867,7 @@ class WebKaTrain(KaTrainBase):
             self.platform_engine_color = None
             self.platform_my_color = None
             self.platform_phase = None
+            self.platform_player_ranks = {}
             # Task 4: fail-closed lifecycle reset. A brand new game is never a ladder game
             # until the caller explicitly injects a rung (POST /api/new-game ladder_rung=...).
             # Any new-game / load_sgf call that omits it (including a plain reset) clears a
@@ -901,14 +949,20 @@ class WebKaTrain(KaTrainBase):
                 player_info.calculated_rank = None
                 self.update_player(bw, player_type=player_info.player_type, player_subtype=player_info.player_subtype)
 
-        self.update_state()
+        # A source change must immediately replace cached last_state, especially
+        # when loading someone else's SGF into an existing private play session.
+        self.update_state(_force=True)
 
-    def _do_edit_game(self, size=None, handicap=None, komi=None, rules=None, platform_engine_color=None):
+    def _do_edit_game(
+        self, size=None, handicap=None, komi=None, rules=None, platform_engine_color=None, platform_player_ranks=None
+    ):
         # G1/G2: set independently of the board-config `changed` gate below, and only
         # when explicitly provided, so a later plain edit_game call (e.g. a board-size
         # tweak) never clears a previously-set value (M6 persistence).
         if platform_engine_color is not None:
             self.platform_engine_color = platform_engine_color
+        if platform_player_ranks is not None:
+            self.platform_player_ranks = dict(platform_player_ranks)
 
         changed = False
         if size and list(self.game.board_size) != [size, size]:
@@ -938,6 +992,8 @@ class WebKaTrain(KaTrainBase):
             if not self.should_suppress_auto_eval():
                 self.game.analyze_all_nodes(analyze_fast=True)
             self.update_state()
+        elif platform_player_ranks is not None:
+            self.update_state()
 
     @staticmethod
     def _run_post_broadcast(callbacks, state):
@@ -962,6 +1018,7 @@ class WebKaTrain(KaTrainBase):
         delivered by the immediate or trailing broadcast, after the state callback.
         """
         post_broadcast = _kwargs.pop("_post_broadcast", None)
+        force = _kwargs.pop("_force", False)
         now = time.time()
 
         # --- Diagnostic: log call frequency every 5s ---
@@ -987,7 +1044,7 @@ class WebKaTrain(KaTrainBase):
             broadcast_now = None
             schedule_delayed = False
             with self._broadcast_lock:
-                if now - self._last_broadcast_time < 0.25:
+                if not force and now - self._last_broadcast_time < 0.25:
                     if post_broadcast is not None:
                         self._pending_post_broadcast.append(post_broadcast)
                     # Too soon – schedule a trailing broadcast so the final state is always sent
@@ -1053,7 +1110,13 @@ class WebKaTrain(KaTrainBase):
                     self._ai_move_pending = True
                     threading.Thread(target=self._do_ai_move_and_broadcast, args=(cn,), daemon=True).start()
 
-        if self.game.end_result and not getattr(self, "_game_end_reported", False):
+        from katrain.web.core.paid_analysis import legacy_analysis_allowed
+
+        if (
+            self.game.end_result
+            and not getattr(self, "_game_end_reported", False)
+            and legacy_analysis_allowed(runtime=self)
+        ):
             self._game_end_reported = True
             sum_stats, histogram, player_ptloss = self._do_game_report()
             self.message_callback(
@@ -1170,7 +1233,11 @@ class WebKaTrain(KaTrainBase):
         """
         # R3/R5: anti-cheat chokepoint — rated/ranked games forbid ALL analysis. Every
         # analysis action funnels through here, so one guard covers all REST routes.
-        if message in self.ANALYSIS_ACTIONS and not self.analysis_allowed:
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        if message.replace("-", "_") in self.ANALYSIS_ACTIONS:
+            require_legacy_analysis(runtime=self)
+        if message.replace("-", "_") in self.ANALYSIS_ACTIONS and not self.analysis_allowed:
             self.log(f"Analysis action '{message}' blocked in {self.game_type} game", OUTPUT_INFO)
             self.controls.set_status(i18n._("analysis disabled in rated games"), OUTPUT_INFO)
             return
@@ -1187,6 +1254,15 @@ class WebKaTrain(KaTrainBase):
     # Actions that perform/expose analysis — blocked in rated/ranked games.
     ANALYSIS_ACTIONS = frozenset(
         {
+            "game_analysis",
+            "tsumego_frame",
+            "selfplay",
+            "selfplay_setup",
+            "reset_analysis",
+            "extract_analysis",
+            "game_report",
+            "analysis_progress",
+            "select_box",
             "analyze_extra",
             "analyze_all",
             "analyze_current",
@@ -1249,7 +1325,9 @@ class WebKaTrain(KaTrainBase):
         if node:
             self.game.set_current_node(node)
             # On-demand analysis: if this node has no analysis yet, trigger deep analysis
-            if not node.analysis_exists:
+            from katrain.web.core.paid_analysis import legacy_analysis_allowed
+
+            if not node.analysis_exists and legacy_analysis_allowed(runtime=self):
                 engine = self.game.engines[node.next_player]
                 node.analyze(engine, priority=PRIORITY_DEFAULT, visits=500)
         else:
@@ -1415,6 +1493,16 @@ class WebKaTrain(KaTrainBase):
                 if settings is not None:
                     from katrain.core.ai import generate_ai_move, LadderUnavailable
 
+                    from katrain.web.core.paid_analysis import legacy_analysis_allowed
+
+                    if (
+                        mode != AI_LADDER
+                        and not legacy_analysis_allowed(runtime=self)
+                        and not game.current_node.analysis_exists
+                    ):
+                        # Policy strategies wait on a regular node result. Generate it
+                        # only for an actual AI turn; get_state never publishes it.
+                        game.current_node.analyze(game.engines[game.current_node.next_player], analyze_fast=True)
                     try:
                         result = generate_ai_move(game, mode, settings)  # local `game`, not self.game
                     except LadderUnavailable as e:
@@ -2002,6 +2090,31 @@ class WebKaTrain(KaTrainBase):
     def get_sgf(self):
         if not self.game or not self.game.root:
             return ""
+        from katrain.web.core.paid_analysis import legacy_analysis_allowed
+
+        if not legacy_analysis_allowed(runtime=self):
+            # GameNode also adds engine feedback when a node has a manual note,
+            # even with all save toggles off. Serialize detached nodes with no
+            # analysis so user comments and branches survive without that feedback.
+            export_root = None
+            pending = [(self.game.root, None)]
+            while pending:
+                source, parent = pending.pop()
+                node = copy.copy(source)
+                node.properties = copy.deepcopy(source.properties)
+                node.properties.pop("KT", None)
+                node.parent, node.children = parent, []
+                node.shortcut_from, node.shortcuts_to = None, []
+                node.analysis_from_sgf = None
+                node.clear_analysis()
+                if parent is None:
+                    export_root = node
+                else:
+                    parent.children.append(node)
+                pending.extend((child, node) for child in reversed(source.children))
+            return export_root.sgf(
+                save_comments_player={}, save_comments_class=None, save_analysis=False, save_marks=False
+            )
         trainer_config = self.config("trainer", {})
         return self.game.root.sgf(
             save_comments_player={"B": True, "W": True},

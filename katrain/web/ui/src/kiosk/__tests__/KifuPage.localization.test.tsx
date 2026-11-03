@@ -6,7 +6,9 @@ import KifuPage from '../pages/KifuPage';
 import { kioskTheme } from '../theme';
 
 const { getAlbums, language } = vi.hoisted(() => ({ getAlbums: vi.fn(), language: { current: 'cn' } }));
-vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums } }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ isLoading: false, isGuest: true, identityKey: null, token: null, status: 'guest' }) }));
+vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums, getAlbum: () => Promise.resolve({ sgf_content: '(;SZ[19])' }) } }));
+vi.mock('../../api/baipuApi', () => ({ BaipuAPI: { load: () => Promise.resolve({ board_size: 19, steps: [] }) }, listRecent: () => [] }));
 vi.mock('../../hooks/useTranslation', () => ({
   useTranslation: () => ({
     lang: language.current,
@@ -54,6 +56,17 @@ beforeEach(() => {
 });
 
 describe('棋谱 kiosk 语言展示', () => {
+  it('uses normalized historical professional ranks and a bare winner on the card', async () => {
+    getAlbums.mockResolvedValue({ items: [{ ...record('cn'), black_rank: '7d', white_rank: '9d', display_black_rank: '7p', display_white_rank: '9p', result: 'b+' }], total: 1, page: 1, page_size: 20 });
+    renderPage();
+    const row = await screen.findByRole('button', { name: /cn-event.*cn-black.*cn-white/ });
+    expect(row).toHaveTextContent('职业七段');
+    expect(row).toHaveTextContent('职业九段');
+    expect(row).toHaveTextContent('黑胜');
+    expect(row).not.toHaveTextContent('中盘');
+    expect(row.querySelector('.record-match__player.is-winner')).toHaveTextContent('cn-black');
+  });
+
   it('keeps the searched page through Settings and reloads it in English', async () => {
     getAlbums.mockImplementation(({ lang, page }: { lang: string; page: number }) =>
       Promise.resolve(response(`${lang}-page${page}`)));
@@ -87,7 +100,7 @@ describe('棋谱 kiosk 语言展示', () => {
     const view = renderPage();
     const row = await screen.findByRole('button', { name: /cn-event.*cn-black.*cn-white/ });
     expect(row).toHaveTextContent('9段');
-    expect(row).toHaveTextContent('黑胜中盘');
+    expect(row).toHaveTextContent('黑中盘胜');
     expect(within(row).getByRole('img', { name: '查看分析报告' })).toBeInTheDocument();
     expect(within(row).queryByText('来源')).not.toBeInTheDocument();
 

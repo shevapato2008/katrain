@@ -5,10 +5,13 @@
  * - Session lifecycle (create/destroy research sessions)
  * - Analysis toggle controls
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useSessionBase } from './useSessionBase';
 import { API, apiPost, authHeaders } from '../api';
 import type { GameState } from '../api';
+import { useAuth } from '../context/AuthContext';
+import { usePaidPosition } from '../features/analysis/usePaidPosition';
+import type { BillingQuote } from '../features/membership/types';
 
 export interface UseResearchSessionReturn {
     // Session state
@@ -33,6 +36,11 @@ export interface UseResearchSessionReturn {
     toggleMoveNumbers: () => Promise<void>;
     toggleCoordinates: () => Promise<void>;
 
+    pendingAnalysisQuote: BillingQuote | null;
+    analysisBusy: boolean;
+    confirmAnalysis: () => Promise<void>;
+    cancelAnalysis: () => void;
+
     // Game analysis
     analyzeGame: (visits?: number) => Promise<void>;
     analysisScan: (visits?: number) => Promise<void>;
@@ -49,6 +57,7 @@ export interface UseResearchSessionOptions {
 
 export function useResearchSession(options: UseResearchSessionOptions = {}): UseResearchSessionReturn {
     const { token } = options;
+    const auth = useAuth();
     const [isConnected, setIsConnected] = useState(false);
 
     const base = useSessionBase({
@@ -76,7 +85,7 @@ export function useResearchSession(options: UseResearchSessionOptions = {}): Use
                 await apiPost('/api/sgf/load', {
                     session_id: data.session_id,
                     sgf,
-                    skip_analysis: options?.skipAnalysis ?? false,
+                    skip_analysis: true,
                 });
 
                 // Navigate to the target move (SGF loads at root by default)
@@ -111,15 +120,36 @@ export function useResearchSession(options: UseResearchSessionOptions = {}): Use
         setIsConnected(false);
     }, [base]);
 
-    const toggleHints = useCallback(async () => {
-        if (!base.sessionId) return;
-        await API.toggleUI(base.sessionId, 'show_hints');
-    }, [base.sessionId]);
-
-    const toggleOwnership = useCallback(async () => {
-        if (!base.sessionId) return;
-        await API.toggleUI(base.sessionId, 'show_ownership');
-    }, [base.sessionId]);
+    const rawState = base.gameState;
+    const snapshotKey = JSON.stringify([base.sessionId, rawState?.game_id, rawState?.current_node_id,
+        rawState?.current_node_index, rawState?.history.map(({ move, player }) => [move, player]), rawState?.stones,
+        rawState?.board_size, rawState?.komi, rawState?.ruleset]);
+    const paid = usePaidPosition({ identityKey: auth.identityKey, status: auth.status, token: auth.token,
+        snapshotKey, input: { session_id: base.sessionId ?? undefined }, enabled: !!base.sessionId });
+    const gameState = useMemo(() => {
+        if (!rawState) return null;
+        const result = paid.result;
+        const [width, height] = rawState.board_size;
+        const letters = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
+        const root = result?.rootInfo;
+        return { ...rawState,
+            history: rawState.history.map((node) => ({ ...node,
+                score: result && node.node_id === rawState.current_node_id ? root?.scoreLead ?? null : null,
+                winrate: result && node.node_id === rawState.current_node_id ? root?.winrate ?? null : null,
+            })),
+            stones: rawState.stones.map(([player, coords, , moveNumber]) => [player, coords, null, moveNumber] as GameState['stones'][number]),
+            analysis: result ? { visits: root?.visits, winrate: root?.winrate, score: root?.scoreLead,
+                ownership: result.ownership.length === width * height ? Array.from({ length: height }, (_, y) => result.ownership.slice(y * width, (y + 1) * width)) : null,
+                moves: result.moves.map((move) => ({ ...move, scoreLead: move.score_lead,
+                    coords: move.move.toLowerCase() === 'pass' ? null : [letters.indexOf(move.move[0]), Number(move.move.slice(1)) - 1],
+                    scoreLoss: root ? Math.max(0, (root.scoreLead - move.score_lead) * (rawState.player_to_move === 'W' ? -1 : 1)) : undefined,
+                })),
+            } : { moves: [], ownership: null },
+            ui_state: { ...rawState.ui_state, show_hints: paid.showHints && !!result, show_ownership: paid.showOwnership && !!result },
+        };
+    }, [paid.result, paid.showHints, paid.showOwnership, rawState]);
+    const toggleHints = useCallback(() => paid.toggle('hints'), [paid.toggle]);
+    const toggleOwnership = useCallback(() => paid.toggle('ownership'), [paid.toggle]);
 
     const toggleMoveNumbers = useCallback(async () => {
         if (!base.sessionId) return;
@@ -131,20 +161,13 @@ export function useResearchSession(options: UseResearchSessionOptions = {}): Use
         await API.toggleUI(base.sessionId, 'show_coordinates');
     }, [base.sessionId]);
 
-    const analyzeGame = useCallback(async (visits?: number) => {
-        if (!base.sessionId) return;
-        await API.analyzeGame(base.sessionId, visits);
-    }, [base.sessionId]);
-
-    const analysisScan = useCallback(async (visits?: number) => {
-        if (!base.sessionId) return;
-        await API.analysisScan(base.sessionId, visits);
-    }, [base.sessionId]);
+    const analyzeGame = useCallback(async () => { throw new Error('请在复盘报告页创建全盘报告'); }, []);
+    const analysisScan = analyzeGame;
 
     return {
         sessionId: base.sessionId,
-        gameState: base.gameState,
-        error: base.error,
+        gameState,
+        error: paid.error ?? base.error,
         isConnected,
         createSession,
         destroySession,
@@ -158,5 +181,6 @@ export function useResearchSession(options: UseResearchSessionOptions = {}): Use
         toggleCoordinates,
         analyzeGame,
         analysisScan,
+        pendingAnalysisQuote: paid.pendingQuote, analysisBusy: paid.busy, confirmAnalysis: paid.confirm, cancelAnalysis: paid.cancel,
     };
 }

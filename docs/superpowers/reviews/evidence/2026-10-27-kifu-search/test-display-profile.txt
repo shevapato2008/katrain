@@ -1,0 +1,88 @@
+{'sample': 0, 'wall_ms': 826.1264497414231, 'total': 504, 'items': 20, 'timings': {'kifu_candidate': 91.3566080853343, 'kifu_count': 7.779383100569248, 'kifu_page': 9.526905603706837, 'kifu_display': 620.9336156025529, 'kifu_report': 8.441416546702385, 'kifu_rank': 2.819742076098919}}
+{'sample': 1, 'wall_ms': 647.2997050732374, 'total': 504, 'items': 20, 'timings': {'kifu_candidate': 41.63795243948698, 'kifu_count': 1.650409772992134, 'kifu_page': 2.62533500790596, 'kifu_display': 585.9867092221975, 'kifu_report': 3.227466717362404, 'kifu_rank': 0.9750258177518845}}
+         1270608 function calls (1032945 primitive calls) in 0.638 seconds
+
+   Ordered by: cumulative time
+   List reduced from 696 to 45 due to restriction <45>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.639    0.639 kifu.py:330(read_album_page)
+        1    0.000    0.000    0.581    0.581 identity.py:1122(strict_display_maps)
+        6    0.001    0.000    0.573    0.095 identity.py:121(_qualified_name_rows)
+        1    0.006    0.006    0.555    0.555 identity.py:520(_approved_raw_event_names)
+        6    0.000    0.000    0.461    0.077 identity.py:306(<dictcomp>)
+       11    0.000    0.000    0.461    0.042 identity.py:243(batch_context)
+219520/11    0.188    0.000    0.341    0.031 copy.py:128(deepcopy)
+       11    0.000    0.000    0.341    0.031 copy.py:210(_deepcopy_tuple)
+       11    0.000    0.000    0.341    0.031 copy.py:211(<listcomp>)
+ 16126/11    0.056    0.000    0.340    0.031 copy.py:227(_deepcopy_dict)
+   108/44    0.003    0.000    0.340    0.008 copy.py:201(_deepcopy_list)
+     2570    0.003    0.000    0.122    0.000 name_candidates.py:228(canonical_sha256)
+       11    0.000    0.000    0.120    0.011 identity.py:295(first_pass_membership)
+     2570    0.003    0.000    0.104    0.000 __init__.py:183(dumps)
+     2570    0.003    0.000    0.100    0.000 encoder.py:182(encode)
+     2570    0.096    0.000    0.096    0.000 encoder.py:204(iterencode)
+       28    0.000    0.000    0.092    0.003 base.py:1377(execute)
+       28    0.000    0.000    0.092    0.003 elements.py:517(_execute_on_connection)
+       25    0.000    0.000    0.092    0.004 query.py:2859(_iter)
+       28    0.000    0.000    0.092    0.003 base.py:1593(_execute_clauseelement)
+       25    0.000    0.000    0.091    0.004 session.py:2313(execute)
+       25    0.000    0.000    0.091    0.004 session.py:2141(_execute_internal)
+       25    0.000    0.000    0.090    0.004 context.py:296(orm_execute_statement)
+       28    0.000    0.000    0.086    0.003 base.py:1793(_execute_context)
+       28    0.000    0.000    0.083    0.003 base.py:1852(_exec_single_context)
+       28    0.000    0.000    0.082    0.003 default.py:951(do_execute)
+       28    0.081    0.003    0.082    0.003 {method 'execute' of 'psycopg2.extensions.cursor' objects}
+      163    0.000    0.000    0.078    0.000 query.py:2849(__iter__)
+       11    0.001    0.000    0.061    0.006 identity.py:301(<setcomp>)
+        9    0.000    0.000    0.054    0.006 query.py:2689(all)
+        1    0.000    0.000    0.053    0.053 identity.py:241(<dictcomp>)
+       50    0.000    0.000    0.041    0.001 loading.py:208(chunks)
+        1    0.000    0.000    0.041    0.041 library_search.py:22(unique_exact_player_id)
+   446629    0.041    0.000    0.041    0.000 {method 'get' of 'dict' objects}
+       25    0.000    0.000    0.039    0.002 result.py:576(_raw_all_rows)
+       27    0.000    0.000    0.039    0.001 cursor.py:2260(_fetchall_impl)
+       27    0.000    0.000    0.039    0.001 cursor.py:1195(fetchall)
+       27    0.002    0.000    0.039    0.001 {method 'fetchall' of 'psycopg2.extensions.cursor' objects}
+       97    0.000    0.000    0.037    0.000 result.py:550(iterrows)
+      233    0.000    0.000    0.037    0.000 _json.py:159(typecast_json)
+      177    0.000    0.000    0.037    0.000 __init__.py:299(loads)
+      177    0.000    0.000    0.036    0.000 decoder.py:332(decode)
+      177    0.036    0.000    0.036    0.000 decoder.py:343(raw_decode)
+   252234    0.022    0.000    0.022    0.000 {built-in method builtins.id}
+   203275    0.019    0.000    0.019    0.000 copy.py:182(_deepcopy_atomic)
+
+
+         1270608 function calls (1032945 primitive calls) in 0.638 seconds
+
+   Ordered by: internal time
+   List reduced from 696 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+219520/11    0.188    0.000    0.341    0.031 copy.py:128(deepcopy)
+     2570    0.096    0.000    0.096    0.000 encoder.py:204(iterencode)
+       28    0.081    0.003    0.082    0.003 {method 'execute' of 'psycopg2.extensions.cursor' objects}
+ 16126/11    0.056    0.000    0.340    0.031 copy.py:227(_deepcopy_dict)
+   446629    0.041    0.000    0.041    0.000 {method 'get' of 'dict' objects}
+      177    0.036    0.000    0.036    0.000 decoder.py:343(raw_decode)
+   252234    0.022    0.000    0.022    0.000 {built-in method builtins.id}
+   203275    0.019    0.000    0.019    0.000 copy.py:182(_deepcopy_atomic)
+    16245    0.007    0.000    0.011    0.000 copy.py:243(_keep_alive)
+     2592    0.007    0.000    0.007    0.000 {method 'encode' of 'str' objects}
+     2590    0.006    0.000    0.006    0.000 {built-in method _hashlib.openssl_sha256}
+        1    0.006    0.006    0.555    0.555 identity.py:520(_approved_raw_event_names)
+     2570    0.003    0.000    0.122    0.000 name_candidates.py:228(canonical_sha256)
+   800/28    0.003    0.000    0.005    0.000 cache_key.py:221(_gen_cache_key)
+     2570    0.003    0.000    0.104    0.000 __init__.py:183(dumps)
+    16246    0.003    0.000    0.003    0.000 {method 'items' of 'dict' objects}
+     2570    0.003    0.000    0.100    0.000 encoder.py:182(encode)
+   108/44    0.003    0.000    0.340    0.008 copy.py:201(_deepcopy_list)
+     5540    0.002    0.000    0.002    0.000 attributes.py:555(__get__)
+    23938    0.002    0.000    0.002    0.000 {method 'append' of 'list' objects}
+      681    0.002    0.000    0.007    0.000 coercions.py:314(expect)
+       27    0.002    0.000    0.039    0.001 {method 'fetchall' of 'psycopg2.extensions.cursor' objects}
+    11617    0.002    0.000    0.002    0.000 {built-in method builtins.isinstance}
+     2570    0.001    0.000    0.001    0.000 encoder.py:104(__init__)
+     2590    0.001    0.000    0.001    0.000 {method 'hexdigest' of '_hashlib.HASH' objects}
+
+

@@ -4,6 +4,7 @@ from sqlalchemy import (
     Integer,
     String,
     DateTime,
+    Date,
     Float,
     ForeignKey,
     ForeignKeyConstraint,
@@ -83,15 +84,68 @@ class User(Base):
     )  # integer credit balance (single pool); server-authoritative. New accounts start at 0 —
     # any signup grant is a real, auditable ledger row (settings.BILLING_SIGNUP_GRANT), not a
     # column default nobody can trace.
+    membership_revision = Column(Integer, nullable=False, default=0, server_default="0")
+    membership_migrated_at = Column(DateTime(timezone=True), nullable=True)
     is_admin = Column(Boolean, default=False, nullable=False)
     avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    __table_args__ = (CheckConstraint("membership_revision >= 0", name="ck_user_membership_revision"),)
+
     followers = relationship("Relationship", foreign_keys="[Relationship.following_id]", back_populates="following")
     following = relationship("Relationship", foreign_keys="[Relationship.follower_id]", back_populates="follower")
     tsumego_progress = relationship("UserTsumegoProgress", back_populates="user")
     ai_ladder_profile = relationship("AiLadderProfile", back_populates="user", uselist=False)
+
+
+def _hex64_check(column):
+    # Portable to both SQLite and PostgreSQL; no dialect-specific regex operator.
+    remaining = column
+    for char in "0123456789abcdef":
+        remaining = f"replace({remaining}, '{char}', '')"
+    return f"length({column}) = 64 AND length({remaining}) = 0"
+
+
+class BaipuHistory(Base):
+    """One account cursor per exact, versioned replay snapshot; also the board outbox."""
+
+    __tablename__ = "baipu_history"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    record_id = Column(String(64), primary_key=True)
+    source_id = Column(String(128), nullable=False, default="")
+    name = Column(String(512), nullable=False, default="")
+    sgf_content = Column(Text, nullable=False)
+    sgf_sha256 = Column(String(64), nullable=False)
+    replay_version = Column(Integer, nullable=False)
+    total = Column(Integer, nullable=False)
+    k = Column(Integer, nullable=False, default=0)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+    local_revision = Column(Integer, nullable=False, default=0)
+    writer_id = Column(String(128), nullable=False)
+    writer_seq = Column(Integer, nullable=False, default=0)
+    cloud_revision = Column(Integer, nullable=False, default=0)
+    pending_base_revision = Column(Integer, nullable=True)
+    sync_state = Column(String(16), nullable=False, default="synced")
+    conflict_remote = Column(JSON(none_as_null=True), nullable=True)
+    last_mutation_id = Column(String(128), nullable=True)
+    last_mutation_payload = Column(JSON(none_as_null=True), nullable=True)
+    last_sync_expected_revision = Column(Integer, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "sgf_sha256", "replay_version", name="uq_baipu_history_identity"),
+        Index("ix_baipu_history_owner_updated", "user_id", "updated_at"),
+        CheckConstraint(_hex64_check("record_id"), name="ck_baipu_history_id"),
+        CheckConstraint(_hex64_check("sgf_sha256"), name="ck_baipu_history_hash"),
+        CheckConstraint("length(source_id) <= 128 AND length(name) <= 512", name="ck_baipu_history_labels"),
+        CheckConstraint("length(sgf_content) BETWEEN 1 AND 1048576", name="ck_baipu_history_sgf"),
+        CheckConstraint("replay_version > 0 AND total > 0 AND k BETWEEN 0 AND total", name="ck_baipu_history_cursor"),
+        CheckConstraint("local_revision >= 0 AND writer_seq >= 0 AND cloud_revision >= 0", name="ck_baipu_history_revisions"),
+        CheckConstraint("pending_base_revision IS NULL OR pending_base_revision >= 0", name="ck_baipu_history_base"),
+        CheckConstraint("sync_state IN ('synced', 'pending', 'conflict', 'refused')", name="ck_baipu_history_state"),
+        CheckConstraint("length(writer_id) BETWEEN 1 AND 128", name="ck_baipu_history_writer"),
+    )
 
 
 class Relationship(Base):
@@ -1103,6 +1157,73 @@ def _lower_sha256_check(column: str) -> str:
     return f"length({column}) = 64 AND length({remainder}) = 0"
 
 
+class KifuPlayerRankHistory(Base):
+    """Immutable rank observations; the single active row may signal a conflict."""
+
+    __tablename__ = "kifu_player_rank_history"
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=False)
+    rank_value = Column(Integer, nullable=False)
+    rank_system = Column(String(24), nullable=False)
+    source_as_of = Column(Date, nullable=True)
+    valid_from = Column(Date, nullable=True)
+    observed_at = Column(DateTime(timezone=True), nullable=False)
+    last_checked_at = Column(DateTime(timezone=True), nullable=True)
+    source_kind = Column(String(32), nullable=False)
+    source_ref = Column(JSON, nullable=False)
+    evidence = Column(JSON, nullable=False)
+    content_sha256 = Column(String(64), nullable=False)
+    status = Column(String(16), nullable=False)
+    is_current = Column(Boolean, nullable=False, default=False, server_default=text("false"))
+
+    __table_args__ = (
+        UniqueConstraint("player_id", "content_sha256", name="uq_kifu_player_rank_fact"),
+        CheckConstraint(
+            "rank_system IN ('professional_dan', 'amateur_dan', 'kyu', 'dan_unspecified')",
+            name="ck_kifu_player_rank_system",
+        ),
+        CheckConstraint(
+            "rank_value >= 1 AND ((rank_system = 'kyu' AND rank_value <= 30) OR "
+            "(rank_system <> 'kyu' AND rank_value <= 9))",
+            name="ck_kifu_player_rank_value",
+        ),
+        CheckConstraint("status IN ('qualified', 'conflict')", name="ck_kifu_player_rank_status"),
+        CheckConstraint(_lower_sha256_check("content_sha256"), name="ck_kifu_player_rank_sha256"),
+        Index(
+            "uq_kifu_player_rank_current",
+            "player_id",
+            unique=True,
+            postgresql_where=text("is_current"),
+            sqlite_where=text("is_current"),
+        ),
+        Index("ix_kifu_player_rank_date", "player_id", "source_as_of"),
+    )
+
+
+class KifuAlbumRankSnapshot(Base):
+    """Frozen per-game overlay; deleting a referenced rank fact is forbidden."""
+
+    __tablename__ = "kifu_album_rank_snapshots"
+
+    id = Column(Integer, primary_key=True)
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=False)
+    side = Column(String(5), nullable=False)
+    rank_fact_id = Column(
+        Integer, ForeignKey("kifu_player_rank_history.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
+    snapshot = Column(JSON, nullable=False)
+    snapshot_sha256 = Column(String(64), nullable=False)
+    publication_key = Column(String(160), nullable=False)
+    native_batch_id = Column(Integer, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("album_id", "side", name="uq_kifu_album_rank_side"),
+        CheckConstraint("side IN ('black', 'white')", name="ck_kifu_album_rank_side"),
+        CheckConstraint(_lower_sha256_check("snapshot_sha256"), name="ck_kifu_album_rank_sha256"),
+    )
+
+
 class KifuEventSelectionBatch(Base):
     """Auditable batch of reviewed per-album event selections."""
 
@@ -1360,7 +1481,11 @@ class ReportTask(Base):
     # 授权那一刻棋谱内容的指纹。cron 认领时比对，不一致就失败而不是拼一份
     # 「旧棋谱前缀 + 新棋谱后缀」的报告出来。
     sgf_hash = Column(String(64), nullable=True)
+    analysis_sgf = Column(Text, nullable=True)
     model_sha256 = Column(String(64), nullable=True)
+    billing_version = Column(String(64), nullable=True)
+    operation_id = Column(Integer, nullable=True, index=True)
+    generation = Column(Integer, nullable=False, default=0, server_default="0")
     # 已经结算过的手数水位。结算按**增量**收费：actual = cost(analyzed_moves - settled_moves)。
     # 不记水位的话，/retry 之后的第二次结算会把第一次已结清的前缀再收一遍 ——
     # retry 的预扣只覆盖增量（total_moves - analyzed_moves），而 analyzed_moves 是累计值，
@@ -1392,6 +1517,7 @@ class ReportTask(Base):
     moves = relationship("ReportTaskMove", back_populates="task", cascade="all, delete-orphan")
 
     __table_args__ = (
+        CheckConstraint("generation >= 0", name="ck_report_task_generation"),
         Index("ix_report_tasks_user_created", "user_id", "created_at"),
         Index("ix_report_tasks_game_type_created", "user_game_id", "report_type", "created_at"),
         Index("ix_report_tasks_status_created", "status", "created_at"),
@@ -1590,6 +1716,95 @@ class RechargeOrder(Base):
     confirm_note = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     settled_at = Column(DateTime(timezone=True), nullable=True)
+    # Nullable distinguishes historical orders, whose original snapshots remain authoritative.
+    catalog_version = Column(String(64), nullable=True)
+    sku_snapshot = Column(JSON(none_as_null=True), nullable=True)
+    environment = Column(String(24), nullable=True)
+    provider_tx_id = Column(String(128), nullable=True)
+    idempotency_key = Column(String(128), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    fulfilled_at = Column(DateTime(timezone=True), nullable=True)
+    refunded_at = Column(DateTime(timezone=True), nullable=True)
+    refund_ref = Column(String(160), nullable=True)
+
+    __table_args__ = (
+        Index("uq_recharge_order_user_key", "user_id", "idempotency_key", unique=True),
+        Index("uq_recharge_order_provider_tx", "environment", "provider", "provider_tx_id", unique=True),
+        Index("uq_recharge_order_refund_ref", "refund_ref", unique=True),
+    )
+
+
+class MembershipTerm(Base):
+    """One paid, non-overlapping 30-day entitlement; never a second wallet."""
+
+    __tablename__ = "membership_terms"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    plan_id = Column(String(24), nullable=False)
+    starts_at = Column(DateTime(timezone=True), nullable=False)
+    ends_at = Column(DateTime(timezone=True), nullable=False)
+    limit = Column(Integer, nullable=False)
+    used = Column(Integer, nullable=False, default=0, server_default="0")
+    reserved = Column(Integer, nullable=False, default=0, server_default="0")
+    order_id = Column(Integer, ForeignKey("recharge_orders.id"), nullable=False, unique=True)
+    catalog_version = Column(String(64), nullable=False)
+    status = Column(String(24), nullable=False, default="active")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            '"limit" >= 0 AND used >= 0 AND reserved >= 0 AND used + reserved <= "limit"',
+            name="ck_membership_term_budget",
+        ),
+        CheckConstraint("ends_at > starts_at", name="ck_membership_term_window"),
+        Index("ix_membership_term_user_window", "user_id", "starts_at", "ends_at"),
+    )
+
+
+class BillingOperation(Base):
+    """Durable authorization receipt, retained when a game/task is deleted.
+
+    Mutable product-content references intentionally have no foreign keys or
+    ORM cascades. A receipt keeps its identity after its bounded result expires.
+    """
+
+    __tablename__ = "billing_operations"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    kind = Column(String(24), nullable=False)
+    idempotency_key = Column(String(128), nullable=False)
+    fingerprint = Column(String(64), nullable=False)
+    source = Column(String(24), nullable=False)
+    profile = Column(String(24), nullable=False)
+    model_sha256 = Column(String(64), nullable=False)
+    units = Column(Integer, nullable=False)
+    wallet_ref = Column(String(160), nullable=True)
+    term_id = Column(Integer, ForeignKey("membership_terms.id"), nullable=True)
+    week_bucket_id = Column(Integer, ForeignKey("quota_buckets.id"), nullable=True)
+    status = Column(String(24), nullable=False, default="reserved")
+    generation = Column(Integer, nullable=False, default=0, server_default="0")
+    lease_expires_at = Column(DateTime(timezone=True), nullable=True)
+    task_id = Column(Integer, nullable=True, index=True)
+    game_id = Column(String(64), nullable=True, index=True)
+    result = Column(JSON(none_as_null=True), nullable=True)
+    result_expires_at = Column(DateTime(timezone=True), nullable=True)
+    catalog_version = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "kind", "idempotency_key", name="uq_billing_operation_identity"),
+        CheckConstraint("units >= 0 AND generation >= 0", name="ck_billing_operation_nonnegative"),
+        CheckConstraint(
+            "result IS NULL OR octet_length(CAST(result AS TEXT)) <= 65536", name="ck_billing_operation_result_bytes"
+        ).ddl_if(dialect="postgresql"),
+        CheckConstraint(
+            "result IS NULL OR length(CAST(result AS BLOB)) <= 65536", name="ck_billing_operation_result_bytes_sqlite"
+        ).ddl_if(dialect="sqlite"),
+        Index("ix_billing_operation_status_lease", "kind", "status", "lease_expires_at"),
+    )
 
 
 class QuotaBucket(Base):
@@ -1608,9 +1823,14 @@ class QuotaBucket(Base):
     period_key = Column(String(32), nullable=False)
     allowance = Column(Integer, nullable=False)
     used = Column(Integer, nullable=False, default=0)
+    reserved = Column(Integer, nullable=False, default=0, server_default="0")
+    starts_at = Column(DateTime(timezone=True), nullable=True)
+    ends_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
+        CheckConstraint("allowance >= 0 AND used >= 0 AND reserved >= 0", name="ck_quota_bucket_nonnegative"),
+        CheckConstraint("starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at", name="ck_quota_bucket_window"),
         UniqueConstraint("user_id", "kind", "period_key", name="uq_quota_bucket"),
         Index("ix_quota_bucket_lookup", "user_id", "kind", "period_key"),
     )

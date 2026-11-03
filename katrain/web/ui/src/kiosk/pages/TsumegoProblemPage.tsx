@@ -79,7 +79,7 @@ const TsumegoProblemPage = () => {
     enterTryMode,
     exitTryMode,
     flushProgress,
-  } = useTsumegoProblem(problemId || '');
+  } = useTsumegoProblem(problemId || '', { boardVariant: 'kiosk19' });
 
   const { visionStatus } = useVision();
   const geometry = useOptionalGeometry();
@@ -553,7 +553,7 @@ const TsumegoProblemPage = () => {
         />
 
         <div className="panel">
-          <h3>{t('tsumego:thisProblem', '这一题')}</h3>
+          <h3>{t('tsumego:thisProblem', '这一题')}{problem?.board_variant?.status === 'adapted' ? ` · 19路版（原${problem.board_variant.source_size}路）` : ''}</h3>
           <p className="qtext" data-testid="puzzle-statement">
             {problem?.hint ? <b>{problem.hint}。</b> : null}
             {t(
@@ -561,6 +561,7 @@ const TsumegoProblemPage = () => {
               '找出那一手 —— 落子即判，走错当场退回。',
             )}
           </p>
+          {problem?.board_variant?.status === 'unavailable' && <p className="qtext" data-testid="puzzle-original-board-reason">{`原${problem.board_variant.source_size}路题：${problem.board_variant.reason}`}</p>}
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <span className="kiosk-tag">{categoryName}</span>
             <span className="kiosk-tag">{levelName}</span>

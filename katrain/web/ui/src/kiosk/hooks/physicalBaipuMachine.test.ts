@@ -1,185 +1,93 @@
 import { describe, expect, it } from 'vitest';
-import {
-  initialState, reduce, setupLeds,
-  type Board, type BaipuMachineState, type Command, type NextStone,
-} from './physicalBaipuMachine';
-
-/**
- * 摆谱识别状态机(纯函数)。规则编号对应 `plan-2026-09-23-baipu-camera.md` Task 2。
- *
- * 变异记录(2026-09-23,两处都已还原):
- *  · 规则 6 只比坐标不比颜色 ⇒「坐标对、颜色错」那条红。
- *  · 规则 10 把 `pause(false)` 挪到 `setupMode` 之前 ⇒「RESUME 顺序」那条红。
- */
-
-const empty = (): Board => Array.from({ length: 19 }, () => Array<number>(19).fill(0));
-const withStone = (b: Board, r: number, c: number, v: number): Board => {
-  const x = b.map((row) => [...row]);
-  x[r][c] = v;
-  return x;
+import { initialState, reduce, setupLeds, type Board, type PhysicalTransaction, type BaipuMachineState } from './physicalBaipuMachine';
+const empty = (): Board => Array.from({ length: 3 }, () => Array(3).fill(0));
+const stone = (b: Board, r: number, c: number, v: number) => { const n = b.map(row => [...row]); n[r][c] = v; return n; };
+const transaction = (extra: Partial<PhysicalTransaction> = {}): PhysicalTransaction => {
+  const before = empty(), placed = stone(before, 1, 1, 1);
+  return { before, cleared: before, placed, final: placed, next: { row: 1, col: 1, color: 1 }, preRemoved: [], postRemoved: [], requiresPlacement: true, ...extra };
 };
-const C7: NextStone = { row: 12, col: 2, color: 1 };
-const kinds = (cmds: Command[]) => cmds.map((c) => c.kind);
-const OFF = { kind: 'leds', steady: [], blink: [] };
-const awaiting = (board = empty(), next: NextStone | null = C7) => reduce(initialState, { type: 'AWAIT', board, next }).state;
-const settingUp = (reason: BaipuMachineState['reason'], board = empty(), next: NextStone | null = C7) =>
-  reduce(initialState, { type: 'SETUP', board, next, reason: reason! }).state;
+const begin = (tx = transaction()) => reduce(initialState, { type: 'START', id: 'session:0', transaction: tx, reason: 'entry' }).state;
+const complete = (s: BaipuMachineState) => reduce(s, { type: 'SETUP_COMPLETE', setupId: s.setupId! });
+const progress = (s: BaipuMachineState, missing: Array<[number, number]>, extra: Array<[number, number, number]>) => reduce(s, { type: 'SETUP_PROGRESS', setupId: s.setupId!, missing, extra });
+const place = (s: BaipuMachineState) => reduce(s, { type: 'MOVE_CONFIRMED', row: 1, col: 1, color: 1 });
 
-describe('摆谱识别状态机', () => {
-  it('规则 1 · SETUP:撤臂 → 清灯 → setupMode,按这个顺序', () => {
-    const board = empty();
-    const { state, commands } = reduce(initialState, { type: 'SETUP', board, next: C7, reason: 'entry' });
-    expect(state).toMatchObject({ phase: 'setup', reason: 'entry', target: board, next: C7, wrong: null });
-    expect(commands).toEqual([{ kind: 'armMoves', armed: false }, OFF, { kind: 'setupMode', board }]);
+describe('authoritative physical replay transactions', () => {
+  it('restores entry before arming the exact coordinate and color', () => {
+    const s = begin();
+    expect(s).toMatchObject({ phase: 'setup', stage: 'entry', target: empty() });
+    const r = complete(s);
+    expect(r.state).toMatchObject({ phase: 'await', stage: 'place' });
+    expect(r.commands.map(c => c.kind)).toEqual(['armMoves', 'expectedBoard', 'armMoves', 'leds']);
+    expect(reduce(r.state, { type: 'MOVE_CONFIRMED', row: 1, col: 1, color: 2 }).state.reason).toBe('wrong');
+    expect(place(r.state).commands.filter(c => c.kind === 'matched')).toHaveLength(1);
   });
-
-  it('规则 2 · 提升:setup 里只多出正确的下一手 → 直接算落子(C6 直接挪到 C7)', () => {
-    const { state, commands } = reduce(settingUp('wrong'), { type: 'SETUP_PROGRESS', missing: [], extra: [[12, 2, 1]] });
-    expect(state.phase).toBe('advancing');
-    expect(commands).toEqual([OFF, { kind: 'matched', promoted: true }]);
+  it('replacement keeps entry, pre-clear, placement and final removal separate', () => {
+    const before = stone(empty(), 1, 1, 2), cleared = empty(), placed = stone(cleared, 1, 1, 1);
+    const tx = transaction({ before, cleared, placed, final: empty(), preRemoved: [{ row: 1, col: 1 }], postRemoved: [{ row: 1, col: 1 }] });
+    const pre = complete(begin(tx));
+    expect(pre.state).toMatchObject({ stage: 'pre', reason: 'pre_remove', target: cleared });
+    expect(setupLeds(pre.state).blink).toEqual([{ row: 1, col: 1, color: 'remove' }]);
+    const awaiting = complete(pre.state).state;
+    expect(awaiting.phase).toBe('await');
+    const post = place(awaiting);
+    expect(post.state).toMatchObject({ stage: 'post', phase: 'setup', target: empty() });
+    expect(post.commands.some(c => c.kind === 'matched')).toBe(false);
+    expect(complete(post.state).commands.filter(c => c.kind === 'matched')).toHaveLength(1);
   });
-
-  it('规则 2 · 多出的是下一手那一点但颜色不对 → 不提升,闪蓝', () => {
-    const { state, commands } = reduce(settingUp('wrong'), { type: 'SETUP_PROGRESS', missing: [], extra: [[12, 2, 2]] });
-    expect(state.phase).toBe('setup');
-    expect(commands).toEqual([{ kind: 'leds', steady: [], blink: [{ row: 12, col: 2, color: 'remove' }] }]);
-  });
-
-  it('规则 2 · 还缺子时不提升(提子没拿干净 / 撤回没放回)', () => {
-    const target = withStone(empty(), 3, 3, 2);
-    const s = settingUp('undo', target);
-    const { state } = reduce(s, { type: 'SETUP_PROGRESS', missing: [[3, 3]], extra: [[12, 2, 1]] });
-    expect(state.phase).toBe('setup');
-  });
-
-  it('规则 2 · adopt 不提升(盘上现状就是新的目标)', () => {
-    const { state } = reduce(settingUp('adopt'), { type: 'SETUP_PROGRESS', missing: [], extra: [[12, 2, 1]] });
-    expect(state.phase).toBe('setup');
-  });
-
-  it('规则 2 · 没有下一手(摆到最后 / pass)时不提升', () => {
-    const { state } = reduce(settingUp('capture', empty(), null), { type: 'SETUP_PROGRESS', missing: [], extra: [[12, 2, 1]] });
-    expect(state.phase).toBe('setup');
-  });
-
-  it('规则 3 · setupLeds:缺的按目标色常亮,多的闪蓝,正确的下一手那颗不闪、也不另点', () => {
-    const target = withStone(empty(), 3, 3, 2);
-    const s: BaipuMachineState = {
-      ...initialState, phase: 'setup', reason: 'capture', target, next: C7,
-      missing: [[3, 3]], extra: [[12, 2, 1], [0, 0, 1]],
-    };
-    expect(setupLeds(s)).toEqual({
-      steady: [{ row: 3, col: 3, color: 'white' }],
-      blink: [{ row: 0, col: 0, color: 'remove' }],
-    });
-  });
-
-  it('规则 3 · 放错(wrong)也不点下一手的灯 —— 压在灯上的子会被认成 led_red', () => {
-    const s = { ...settingUp('wrong'), extra: [[13, 2, 1]] as Array<[number, number, number]> };
-    expect(setupLeds(s)).toEqual({ steady: [], blink: [{ row: 13, col: 2, color: 'remove' }] });
-  });
-
-  it('规则 4 · SETUP_COMPLETE:撤臂 → 推期望盘面 → 布臂 → 点下一手的灯(黑 = 红)', () => {
-    const board = empty();
-    const { state, commands } = reduce(settingUp('entry', board), { type: 'SETUP_COMPLETE' });
-    expect(state).toMatchObject({ phase: 'await', reason: null, target: board, missing: [], extra: [] });
-    expect(commands).toEqual([
-      { kind: 'armMoves', armed: false }, { kind: 'expectedBoard', board }, { kind: 'armMoves', armed: true },
-      { kind: 'leds', steady: [{ row: 12, col: 2, color: 'black' }], blink: [] },
-    ]);
-  });
-
-  it('规则 4 · 不在 setup 时的 SETUP_COMPLETE 忽略', () => {
-    expect(reduce(awaiting(), { type: 'SETUP_COMPLETE' }).commands).toEqual([]);
-  });
-
-  it('规则 5 · AWAIT:白子的下一手点绿灯', () => {
-    const W: NextStone = { row: 3, col: 3, color: 2 };
-    const { state, commands } = reduce(initialState, { type: 'AWAIT', board: empty(), next: W });
-    expect(state.phase).toBe('await');
-    expect(kinds(commands)).toEqual(['armMoves', 'expectedBoard', 'armMoves', 'leds']);
-    expect(commands.at(-1)).toEqual({ kind: 'leds', steady: [{ row: 3, col: 3, color: 'white' }], blink: [] });
-  });
-
-  it('规则 5 · 没有下一手时不点灯', () => {
-    const { commands } = reduce(initialState, { type: 'AWAIT', board: empty(), next: null });
-    expect(commands.at(-1)).toEqual(OFF);
-  });
-
-  it('规则 6 · MOVE_CONFIRMED 坐标对、颜色对 → advancing + matched(promoted:false)', () => {
-    const { state, commands } = reduce(awaiting(), { type: 'MOVE_CONFIRMED', row: 12, col: 2, color: 1 });
-    expect(state.phase).toBe('advancing');
-    expect(commands).toEqual([{ kind: 'armMoves', armed: false }, OFF, { kind: 'matched', promoted: false }]);
-  });
-
-  it('规则 6 · 坐标对、颜色错(白子放在黑子该放的点)= 放错,不推进', () => {
-    const { state, commands } = reduce(awaiting(), { type: 'MOVE_CONFIRMED', row: 12, col: 2, color: 2 });
-    expect(state).toMatchObject({ phase: 'setup', reason: 'wrong', wrong: [12, 2] });
-    expect(kinds(commands)).not.toContain('matched');
-  });
-
-  it('规则 6 · 放错到 C6 → setup(wrong),目标仍是第 k 手的局面,记下错点', () => {
-    const board = empty();
-    const { state, commands } = reduce(awaiting(board), { type: 'MOVE_CONFIRMED', row: 13, col: 2, color: 1 });
-    expect(state).toMatchObject({ phase: 'setup', reason: 'wrong', wrong: [13, 2], target: board, next: C7 });
-    expect(commands).toEqual([{ kind: 'armMoves', armed: false }, OFF, { kind: 'setupMode', board }]);
-  });
-
-  it('规则 6 · 非 await 时的 MOVE_CONFIRMED 一律忽略', () => {
-    for (const phase of ['setup', 'advancing', 'paused', 'off'] as const) {
-      const s: BaipuMachineState = { ...initialState, phase, next: C7, target: empty() };
-      const r = reduce(s, { type: 'MOVE_CONFIRMED', row: 12, col: 2, color: 1 });
-      expect(r.commands).toEqual([]);
-      expect(r.state).toBe(s);
+  it('acknowledges one-motion replacement with pending or partially removed captures', () => {
+    const before = stone(stone(stone(empty(), 1, 1, 2), 0, 0, 2), 0, 1, 2);
+    const cleared = stone(before, 1, 1, 0), placed = stone(cleared, 1, 1, 1);
+    const tx = transaction({ before, cleared, placed, final: stone(stone(placed, 0, 0, 0), 0, 1, 0), preRemoved: [{ row: 1, col: 1 }], postRemoved: [{ row: 0, col: 0 }, { row: 0, col: 1 }] });
+    const pre = complete(begin(tx)).state;
+    for (const missing of [[], [[0, 0]] as Array<[number, number]>, [[0, 0], [0, 1]] as Array<[number, number]>]) {
+      const r = progress(pre, missing, [[1, 1, 1]]);
+      expect(r.state.stage).toBe('post');
+      expect(r.commands.some(c => c.kind === 'matched')).toBe(false);
     }
   });
-
-  it('规则 7 · MOVE_PENDING 在目标点 → 先熄灯,3 秒后再点;别的点不理', () => {
-    expect(reduce(awaiting(), { type: 'MOVE_PENDING', row: 12, col: 2 }).commands)
-      .toEqual([OFF, { kind: 'relightLater', ms: 3000 }]);
-    expect(reduce(awaiting(), { type: 'MOVE_PENDING', row: 0, col: 0 }).commands).toEqual([]);
-    expect(reduce(settingUp('entry'), { type: 'MOVE_PENDING', row: 12, col: 2 }).commands).toEqual([]);
+  it('self-capture final equality never proves the transient placement', () => {
+    const tx = transaction({ final: empty(), postRemoved: [{ row: 1, col: 1 }] });
+    const r = complete(begin(tx));
+    expect(r.state.phase).toBe('await');
+    expect(r.commands.some(c => c.kind === 'matched')).toBe(false);
+    expect(progress(begin(tx), [], []).state.phase).toBe('setup');
+    const post = place(r.state).state;
+    expect(post.stage).toBe('post');
+    expect(complete(post).state.phase).toBe('advancing');
   });
-
-  it('规则 8 · RELIGHT:await 点下一手;setup 重放收敛灯;其余无命令', () => {
-    expect(reduce(awaiting(), { type: 'RELIGHT' }).commands)
-      .toEqual([{ kind: 'leds', steady: [{ row: 12, col: 2, color: 'black' }], blink: [] }]);
-    const s = { ...settingUp('capture'), extra: [[0, 0, 1]] as Array<[number, number, number]> };
-    expect(reduce(s, { type: 'RELIGHT' }).commands)
-      .toEqual([{ kind: 'leds', steady: [], blink: [{ row: 0, col: 0, color: 'remove' }] }]);
-    expect(reduce(initialState, { type: 'RELIGHT' }).commands).toEqual([]);
+  it('same-color repeat completes after entry verification; clear requires removal', () => {
+    const board = stone(empty(), 1, 1, 1);
+    const repeat = transaction({ before: board, cleared: board, placed: board, final: board, requiresPlacement: false });
+    expect(complete(begin(repeat)).state.phase).toBe('advancing');
+    const clear = transaction({ before: board, cleared: board, placed: board, final: empty(), next: null, requiresPlacement: false, postRemoved: [{ row: 1, col: 1 }] });
+    const post = complete(begin(clear));
+    expect(post.state.stage).toBe('post');
+    expect(post.commands.some(c => c.kind === 'matched')).toBe(false);
+    expect(complete(post.state).state.phase).toBe('advancing');
   });
-
-  it('规则 9 · PAUSE:撤臂 → 暂停识别 → 只点支招白灯(闪)', () => {
-    const hint = [{ row: 12, col: 2, color: 'hint' as const }];
-    const { state, commands } = reduce(awaiting(), { type: 'PAUSE', leds: hint });
-    expect(state.phase).toBe('paused');
-    expect(commands).toEqual([
-      { kind: 'armMoves', armed: false }, { kind: 'pause', paused: true }, { kind: 'leds', steady: [], blink: hint },
-    ]);
+  it('post-removal never promotes and completion fires once', () => {
+    const post = place(complete(begin(transaction({ final: empty(), postRemoved: [{ row: 1, col: 1 }] }))).state).state;
+    expect(progress(post, [], [[1, 1, 1]]).state.phase).toBe('setup');
+    expect(setupLeds(progress(post, [], [[1, 1, 1]]).state).blink).toEqual([{ row: 1, col: 1, color: 'remove' }]);
+    const done = complete(post);
+    expect(complete(done.state).commands).toEqual([]);
+    expect(place(done.state).commands).toEqual([]);
   });
-
-  it('规则 10 · RESUME:清灯 → 撤臂 → setupMode → 解除暂停(解除暂停不重建基线,顺序不能换)', () => {
-    const p = reduce(awaiting(), { type: 'PAUSE', leds: [] }).state;
-    const board = withStone(empty(), 3, 15, 1);
-    const { state, commands } = reduce(p, { type: 'RESUME', board, next: C7 });
-    expect(state).toMatchObject({ phase: 'setup', reason: 'restore', target: board, next: C7 });
-    expect(commands).toEqual([
-      OFF, { kind: 'armMoves', armed: false }, { kind: 'setupMode', board }, { kind: 'pause', paused: false },
-    ]);
+  it('rejects stale setup IDs and rechecks unchanged authoritative target with a fresh ID', () => {
+    const s = begin();
+    expect(reduce(s, { type: 'SETUP_COMPLETE', setupId: 'old' }).state).toBe(s);
+    expect(reduce(s, { type: 'SETUP_PROGRESS', setupId: 'old', missing: [], extra: [[1, 1, 1]] }).state).toBe(s);
+    const retry = reduce(s, { type: 'RECHECK' });
+    expect(retry.state.target).toEqual(s.target);
+    expect(retry.state.setupId).not.toBe(s.setupId);
+    expect(complete(retry.state).state.phase).toBe('await');
   });
-
-  it('规则 10 · 没暂停时的 RESUME 忽略', () => {
-    expect(reduce(awaiting(), { type: 'RESUME', board: empty(), next: C7 }).commands).toEqual([]);
-  });
-
-  it('规则 11 · STOP 回到初态,无命令', () => {
-    expect(reduce(awaiting(), { type: 'STOP' })).toEqual({ state: initialState, commands: [] });
-  });
-
-  it('暂停中 setup 事件不理(识别层暂停时本来就不喂,这里再挡一道)', () => {
-    const p = reduce(awaiting(), { type: 'PAUSE', leds: [] }).state;
-    expect(reduce(p, { type: 'SETUP_PROGRESS', missing: [], extra: [[12, 2, 1]] }).commands).toEqual([]);
-    expect(reduce(p, { type: 'SETUP_COMPLETE' }).commands).toEqual([]);
+  it('pause disarms and resume restores completed entry instead of unfinished actions', () => {
+    const paused = reduce(complete(begin()).state, { type: 'PAUSE', leds: [] });
+    expect(paused.state.phase).toBe('paused');
+    expect(place(paused.state).commands).toEqual([]);
+    const resumed = reduce(paused.state, { type: 'RESUME' });
+    expect(resumed.state).toMatchObject({ stage: 'entry', reason: 'restore', target: empty() });
+    expect(resumed.commands.map(c => c.kind)).toEqual(['armMoves', 'leds', 'setupMode', 'pause']);
   });
 });

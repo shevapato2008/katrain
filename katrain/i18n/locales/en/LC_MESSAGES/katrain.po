@@ -7305,3 +7305,93 @@ msgstr "Physical board"
 
 msgid "report:back_report"
 msgstr "Report"
+
+msgid "kifu:history_guest"
+msgstr "This guest session only"
+
+msgid "kifu:history_local_cache"
+msgstr "Account cache on this device"
+
+msgid "kifu:history_this_node"
+msgstr "Saved on this device"
+
+msgid "kifu:history_cloud"
+msgstr "Account cloud history"
+
+msgid "kifu:history_loading"
+msgstr "Loading replay history"
+
+msgid "kifu:history_error"
+msgstr "Replay history is unavailable"
+
+msgid "kifu:history_cache_empty"
+msgstr "No account history is cached on this device"
+
+msgid "kifu:history_empty"
+msgstr "No replay history yet"
+
+msgid "kifu:history_guest_hint"
+msgstr "Guest history is cleared when the session ends."
+
+msgid "kifu:history_account_hint"
+msgstr "Starting physical replay saves progress to your current account."
+
+msgid "kifu:history_pending"
+msgstr "Saved on this device; waiting to sync"
+
+msgid "kifu:history_conflict"
+msgstr "Progress conflict; choose which copy to keep"
+
+msgid "kifu:history_refused"
+msgstr "Saved on this device; sync was refused"
+
+msgid "kifu:history_saving"
+msgstr "Saving progress"
+
+msgid "kifu:history_save_error"
+msgstr "Progress was not saved; please retry"
+
+msgid "kifu:history_saved"
+msgstr "Progress saved"
+
+msgid "kifu:history_use_cloud"
+msgstr "Use cloud progress"
+
+msgid "kifu:history_keep_local"
+msgstr "Keep device progress"
+
+msgid "kifu:history_resolve_error"
+msgstr "Could not resolve the conflict; review progress again"
+
+msgid "baipu:operator_manual"
+msgstr "Switched to manual confirmation"
+
+msgid "baipu:pre_remove_title"
+msgstr "Remove the old stone at the target first"
+
+msgid "baipu:pre_remove_hint"
+msgstr "Remove stones at the blue lights, then place the recorded colors"
+
+msgid "baipu:pre_remove_done"
+msgstr "Old stones removed"
+
+msgid "baipu:entry_confirm"
+msgstr "Board matches"
+
+msgid "baipu:manual_entry_hint"
+msgstr "Arrange the board as shown, then press “Board matches”"
+
+msgid "baipu:recheck"
+msgstr "Recheck board"
+
+msgid "baipu:switch_manual"
+msgstr "Use manual confirmation"
+
+msgid "baipu:done_hint_saved"
+msgstr "{n} steps completed · Use the top-left button to return"
+
+msgid "baipu:exit_body_neutral"
+msgstr "After exiting, you can reopen this record from the game records page."
+
+msgid "baipu:exit_anyway"
+msgstr "Exit anyway"

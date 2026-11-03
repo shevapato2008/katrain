@@ -7,6 +7,40 @@ from types import SimpleNamespace
 import pytest
 
 
+def test_cron_publisher_syncs_after_real_commit_including_native_replay(tmp_path, monkeypatch):
+    from sqlalchemy import select
+    from katrain.cron.jobs import kifu_ingest
+    from katrain.kifu_ingest import catalog
+    from katrain.web.core.models_db import KifuNameBatch
+    from katrain.web.kifu import search_sync
+    from katrain.web.kifu.name_candidates import canonical_sha256
+    from tests.web_ui.test_kifu_incremental_catalog import make_engine, manifest
+
+    engine = make_engine(tmp_path / "cron-search.db")
+    calls = []
+    try:
+        def begin(conn, kind, ref):
+            assert kind == "catalog_publish" and ref["manifest_sha256"] == digest
+            calls.append("pending")
+            return object()
+
+        def finish(conn, token):
+            with engine.connect() as observer:
+                assert observer.scalar(select(KifuNameBatch.id).where(KifuNameBatch.bundle_sha256 == digest)) is not None
+            calls.append("sync committed")
+
+        monkeypatch.setattr(search_sync, "begin_sync", begin)
+        monkeypatch.setattr(search_sync, "finish_sync", finish)
+        assert kifu_ingest.publish_manifest is catalog.publish_manifest
+        value = manifest()
+        digest = canonical_sha256(value)
+        receipt = kifu_ingest.publish_manifest(engine, value, expected_manifest_sha256=digest)
+        assert kifu_ingest.publish_manifest(engine, value, expected_manifest_sha256=digest) == receipt
+        assert calls == ["pending", "sync committed", "pending", "sync committed"]
+    finally:
+        engine.dispose()
+
+
 def test_fully_reusable_games_are_prepared_before_paid_names():
     from katrain.cron.jobs.kifu_ingest import group_staged_items, select_review_items
 

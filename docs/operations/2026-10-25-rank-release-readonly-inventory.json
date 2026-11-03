@@ -1,0 +1,1844 @@
+{
+  "recorded_at": "2026-10-25T13:13:59.605826+00:00",
+  "readonly": true,
+  "source_baseline": "2e7640d892e311f3fc8ed70d4dc5a32e470d2ddf",
+  "hosts": {
+    "home-ubuntu": {
+      "containers": [
+        {
+          "container": "/katrain-web",
+          "image_id": "sha256:1bd07cff3d4c659972dafe837ae4dfe3c94418d12682e6b076f86b015ec55a70",
+          "image_tag": "katrain-ogs-release:68db3ba5e-20261024",
+          "created": "2026-10-24T09:03:03.335030598Z",
+          "started": "2026-10-24T09:03:04.41730393Z",
+          "status": "running",
+          "labels": {
+            "com.docker.compose.config-hash": "2b6488d86c723e3f9ec5f62a241b9e49f081e2f1c1228916b66d28f87cff254a",
+            "com.docker.compose.container-number": "1",
+            "com.docker.compose.depends_on": "",
+            "com.docker.compose.image": "sha256:1bd07cff3d4c659972dafe837ae4dfe3c94418d12682e6b076f86b015ec55a70",
+            "com.docker.compose.oneoff": "False",
+            "com.docker.compose.project": "katrain",
+            "com.docker.compose.project.config_files": "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json,/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json,/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml,/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json,/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json,/mnt/disk1/fan/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json,/mnt/disk1/fan/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json,/mnt/disk1/fan/full-develop-495d0284c-20261024/full-develop.override.json,/mnt/disk1/fan/katrain-release-68db3ba5e/release.override.json",
+            "com.docker.compose.project.working_dir": "/mnt/disk1/fan/kifu-hourly-incremental-20261019",
+            "com.docker.compose.replace": "katrain-web",
+            "com.docker.compose.service": "katrain-web",
+            "com.docker.compose.version": "2.40.3",
+            "org.opencontainers.image.revision": "68db3ba5ef2aeccaa921684725ce5a484fbe06a9"
+          },
+          "safe_env": {
+            "KATRAIN_BUILD_SHA": "68db3ba5ef2aeccaa921684725ce5a484fbe06a9",
+            "KATRAIN_STORAGE_BACKEND": "s3"
+          },
+          "command": [
+            "python3",
+            "-m",
+            "katrain",
+            "--ui",
+            "web",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "8001"
+          ],
+          "entrypoint": [
+            "/opt/nvidia/nvidia_entrypoint.sh"
+          ],
+          "user": "root",
+          "restart": {
+            "Name": "no",
+            "MaximumRetryCount": 0
+          },
+          "ports": {
+            "8001/tcp": [
+              {
+                "HostIp": "",
+                "HostPort": "8001"
+              }
+            ]
+          },
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/fan/Repositories/katrain/data/tutorial_assets",
+              "Destination": "/app/data/tutorial_assets",
+              "RW": true
+            }
+          ],
+          "filesystem": {
+            "source_hashes": {
+              "katrain/web/server.py": "d7525ae106b1fc1347565231902fe4340b28572065135a5fbfd8a06575c2315a",
+              "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+              "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+              "katrain/cron/scheduler.py": "bc8a2e5ee36da5ec859eb56b088bbe9680eaead2f7020d2b6aa1b03e8e7b5e6a",
+              "katrain/web/api/v1/endpoints/kifu.py": "e4415009ee320dacd1f80446d24204282644d4dad4e7914e9508dfc9101a92f9",
+              "katrain/web/kifu/library.py": "052a01fbdb5c1808a6ef0b86ac9811291ed0c3b05b5ac8fb8cd7a033294fa6dc",
+              "katrain/web/ui/src/kiosk/pages/KifuPage.tsx": "839892d6d2c7d2b574ed055f1880d19a20b15454c6616f2b69578a69c5fb70f0",
+              "katrain/web/ui/src/kiosk/pages/ReportsPage.tsx": "52ca918dc5b6a67a9115cf72492f5e79d8e466563bc693dbbc04a7610e95945a",
+              "katrain/web/ui/src/kiosk/utils/playerRank.ts": null,
+              "katrain/web/ui/src/utils/rank.ts": "a6763f31de16956c99c08abcafa4a47d62c5d498618a2ec907fa24bc9a4f3960",
+              "katrain/kifu_ingest/__init__.py": "e3580e699bd74d8cf82262883e492e2123df4d966edded1c5703e4e132fe531b",
+              "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+              "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+              "katrain/kifu_ingest/inventory.py": "b27b9088a11aa2a2a8726c88ac0d53fab5ddb381b2c7671fc301915249bf2f1f",
+              "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+              "katrain/kifu_ingest/name_reuse.py": "9c8813e41b838e700148106b6f4e52a22169911ae0e539ca6a0b88da283c89c4",
+              "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+              "katrain/kifu_ingest/orchestration.py": "856925207cbec38a9ab981cc3f4e3eb947957a3f10856e4acb7da3c50535356a",
+              "katrain/kifu_ingest/preparation.py": "79611f491d5dd36b7b0068a52c7a29dcd6b4e0853ee91a78729a35ce64cbe857",
+              "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+              "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+              "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+              "katrain/kifu_ingest/state.py": "7bd2a5047f3804dd9a82f7344a06e3ae0c6fef625d6fef34ef1232ef47b1c24e",
+              "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+              "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a",
+              "katrain/web/kifu/name_parse.py": "1fbd3212d7d10b62785e6341f83683c552ad1a2526d7b681905d69d1a685809b",
+              "katrain/web/kifu/identity.py": "54e4281bb247c102b47bba5068e87ea7ac6cef972856065390c3b22961c74d5e",
+              "katrain/core/sgf_parser.py": "59a4d743d0d36ddc22ad1a21ce789110fc56c29b3356d9fe2e0cc5e9f9961cb5",
+              "katrain/web/ui/src/kiosk/utils/listRecordPresentation.ts": null,
+              "katrain/web/ui/src/kiosk/components/records/RecordMatchLine.tsx": null
+            },
+            "static": {
+              "katrain/web/static": {
+                "exists": true,
+                "index_sha256": "a305ffd54c7cc2a3d6c2155472e714c18203cef1e06528be4513f397b5c294ae",
+                "entry_assets": {
+                  "/assets/index-B3OAldA_.js": "506757268939c667b4b37b666983d4a522ea4844dcd21f9ef338b37f56eec1e0",
+                  "/assets/rolldown-runtime-QTnfLwEv.js": "5db5ba82eef00d1dee7e86e663098c9427d01183a88d357437daff295aec3e75",
+                  "/assets/ui-core-KixCoRFD.js": "384b6f4b0671da7babf94eacd483def695ef856b7d658163873bc27c99a60c18",
+                  "/assets/api-F4MBphUX.js": "d3d3a134c1f589b29b66a7f922002f1f32519bd3c458671b998b3406aa13932c",
+                  "/assets/index-DFEU3Joj.css": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+                },
+                "unrecorded_assets": [
+                  {
+                    "asset": "kifuRules-an0Tonsh.js",
+                    "sha256": "1838525040d6ecf884b3b0104612ed08b96cbdd6a963594e43db5337f2231dd4",
+                    "unrecorded_count": 2,
+                    "rank_unrecorded_count": 0
+                  }
+                ]
+              },
+              "katrain/web/static-kiosk-2d": {
+                "exists": true,
+                "index_sha256": "5713a6ded293d007dfcc85c216a826ea3fd08c1d4778b746bb6b21a5d863daa7",
+                "entry_assets": {
+                  "/assets/index-e5phPigk.js": "58904ed2320d6a9dc49a916a21da753f49f803de76a5a0d2110d4554a25cd699",
+                  "/assets/rolldown-runtime-Bh1tDfsg.js": "1b13387cb23dc39bf70e31677c21f6db5cad3377b96f286b6ee444496e5bfea7",
+                  "/assets/ui-core-DWidQbO6.js": "d3d66401e8512bb88e6bda15524dd09ee4c4b68d444e5db2d5c5ed2e36a75f8e",
+                  "/assets/api-4JrHKzSS.js": "eaa2de978b403272082fb8bc575e83f3dc336ebd03becff46a82476b5d60fb8c",
+                  "/assets/index-DFEU3Joj.css": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+                },
+                "unrecorded_assets": [
+                  {
+                    "asset": "KioskReportPlayback-Bg3s7f9a.js",
+                    "sha256": "02d5e95678c6a34779c6fa9b75bcc3fedfce73ddd16a078d60f03d42f635a2b0",
+                    "unrecorded_count": 2,
+                    "rank_unrecorded_count": 0
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "container": "/katrain-cron",
+          "image_id": "sha256:9c414726fa56da734e7f47f6fb409d6373e747a9198c4c80bb31fc4606bccb98",
+          "image_tag": "katrain-golaxy:4bf9a699a-cron",
+          "created": "2026-10-23T18:32:20.796084861Z",
+          "started": "2026-10-23T18:32:20.87269849Z",
+          "status": "running",
+          "labels": {
+            "com.docker.compose.config-hash": "e434ea25f4b4b9f6474e20d97264ac9de2ef3825bd608a93339e56a28f134310",
+            "com.docker.compose.container-number": "1",
+            "com.docker.compose.depends_on": "",
+            "com.docker.compose.image": "sha256:9c414726fa56da734e7f47f6fb409d6373e747a9198c4c80bb31fc4606bccb98",
+            "com.docker.compose.oneoff": "False",
+            "com.docker.compose.project": "katrain",
+            "com.docker.compose.project.config_files": "/home/fan/Repositories/katrain/docker-compose.yml,/mnt/disk1/fan/kifu-hourly-incremental-20261019/cron-kifu.override.yml,/mnt/disk1/fan/golaxy-hourly-repair-ef96a50a7-20261024/cron-release.override.json,/mnt/disk1/fan/golaxy-receiver-662b6a250-20261024/cron-second.override.json,/mnt/disk1/fan/golaxy-name-quality-4bf9a699a-20261024/cron-name-quality.override.json",
+            "com.docker.compose.project.environment_file": "/home/fan/Repositories/katrain/.env",
+            "com.docker.compose.project.working_dir": "/home/fan/Repositories/katrain",
+            "com.docker.compose.replace": "katrain-cron",
+            "com.docker.compose.service": "katrain-cron",
+            "com.docker.compose.version": "2.40.3",
+            "org.opencontainers.image.revision": "d6a93073930b24117c66e9b693617c2f9c84115d"
+          },
+          "safe_env": {
+            "KATRAIN_BUILD_SHA": "4bf9a699a35ecdf025f5ec2f414425e3f2a13693",
+            "CRON_KIFU_INGEST_ENABLED": "true",
+            "CRON_KIFU_INGEST_INTERVAL": "3600",
+            "CRON_KIFU_INGEST_STAGING_DIR": "/app/data/kifu_ingest",
+            "CRON_KIFU_INGEST_MAX_GAMES": "100",
+            "CRON_KIFU_INGEST_MAX_NEW_NAMES": "20",
+            "CRON_KIFU_INGEST_LLM_ENABLED": "true",
+            "CRON_KIFU_INGEST_MAX_TOKENS": "100000"
+          },
+          "command": [
+            "python",
+            "-m",
+            "katrain.cron"
+          ],
+          "entrypoint": null,
+          "user": "root",
+          "restart": {
+            "Name": "unless-stopped",
+            "MaximumRetryCount": 0
+          },
+          "ports": {},
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/mnt/disk1/fan/kifu-hourly-incremental-20261019/ingest-stage",
+              "Destination": "/app/data/kifu_ingest",
+              "RW": true
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/fan/.local/share/kifu-hourly-incremental/ssh/id_ed25519",
+              "Destination": "/run/secrets/kifu_ingest_key",
+              "RW": false
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/fan/.local/share/kifu-hourly-incremental/ssh/known_hosts",
+              "Destination": "/run/secrets/kifu_ingest_known_hosts",
+              "RW": false
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/fan/Repositories/katrain/data/tutorial_backups",
+              "Destination": "/app/data/tutorial_backups",
+              "RW": true
+            }
+          ],
+          "filesystem": {
+            "source_hashes": {
+              "katrain/web/server.py": null,
+              "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+              "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+              "katrain/cron/scheduler.py": "bc8a2e5ee36da5ec859eb56b088bbe9680eaead2f7020d2b6aa1b03e8e7b5e6a",
+              "katrain/web/api/v1/endpoints/kifu.py": null,
+              "katrain/web/kifu/library.py": "052a01fbdb5c1808a6ef0b86ac9811291ed0c3b05b5ac8fb8cd7a033294fa6dc",
+              "katrain/web/ui/src/kiosk/pages/KifuPage.tsx": null,
+              "katrain/web/ui/src/kiosk/pages/ReportsPage.tsx": null,
+              "katrain/web/ui/src/kiosk/utils/playerRank.ts": null,
+              "katrain/web/ui/src/utils/rank.ts": null,
+              "katrain/kifu_ingest/__init__.py": "e3580e699bd74d8cf82262883e492e2123df4d966edded1c5703e4e132fe531b",
+              "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+              "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+              "katrain/kifu_ingest/inventory.py": "b27b9088a11aa2a2a8726c88ac0d53fab5ddb381b2c7671fc301915249bf2f1f",
+              "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+              "katrain/kifu_ingest/name_reuse.py": "9c8813e41b838e700148106b6f4e52a22169911ae0e539ca6a0b88da283c89c4",
+              "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+              "katrain/kifu_ingest/orchestration.py": "856925207cbec38a9ab981cc3f4e3eb947957a3f10856e4acb7da3c50535356a",
+              "katrain/kifu_ingest/preparation.py": "79611f491d5dd36b7b0068a52c7a29dcd6b4e0853ee91a78729a35ce64cbe857",
+              "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+              "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+              "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+              "katrain/kifu_ingest/state.py": "7bd2a5047f3804dd9a82f7344a06e3ae0c6fef625d6fef34ef1232ef47b1c24e",
+              "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+              "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a",
+              "katrain/web/kifu/name_parse.py": "1fbd3212d7d10b62785e6341f83683c552ad1a2526d7b681905d69d1a685809b",
+              "katrain/web/kifu/identity.py": "54e4281bb247c102b47bba5068e87ea7ac6cef972856065390c3b22961c74d5e",
+              "katrain/core/sgf_parser.py": "59a4d743d0d36ddc22ad1a21ce789110fc56c29b3356d9fe2e0cc5e9f9961cb5",
+              "katrain/web/ui/src/kiosk/utils/listRecordPresentation.ts": null,
+              "katrain/web/ui/src/kiosk/components/records/RecordMatchLine.tsx": null
+            },
+            "static": {
+              "katrain/web/static": {
+                "exists": false
+              },
+              "katrain/web/static-kiosk-2d": {
+                "exists": false
+              }
+            }
+          }
+        }
+      ],
+      "images": [
+        {
+          "id": "sha256:1bd07cff3d4c659972dafe837ae4dfe3c94418d12682e6b076f86b015ec55a70",
+          "tags": [
+            "katrain-ogs-release:68db3ba5e-20261024"
+          ],
+          "created": "2026-10-24T17:02:31.347336295+08:00",
+          "oci_labels": {
+            "org.opencontainers.image.revision": "68db3ba5ef2aeccaa921684725ce5a484fbe06a9"
+          }
+        },
+        {
+          "id": "sha256:9c414726fa56da734e7f47f6fb409d6373e747a9198c4c80bb31fc4606bccb98",
+          "tags": [
+            "katrain-golaxy:4bf9a699a-cron"
+          ],
+          "created": "2026-10-24T02:32:17.638775696+08:00",
+          "oci_labels": {
+            "org.opencontainers.image.revision": "d6a93073930b24117c66e9b693617c2f9c84115d"
+          }
+        }
+      ],
+      "config_files": [
+        {
+          "path": "/home/fan/Repositories/katrain/docker-compose.yml",
+          "exists": true,
+          "sha256": "949736c147112e8b39ad725ae966b313a4e6420eb17ed183e6054c2529494a10"
+        },
+        {
+          "path": "/mnt/disk1/fan/full-develop-495d0284c-20261024/full-develop.override.json",
+          "exists": true,
+          "sha256": "6784a78d1600680b03687b62d978e08940997d5c0e429b8100f9e7fa2040eb9f"
+        },
+        {
+          "path": "/mnt/disk1/fan/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+          "exists": true,
+          "sha256": "451e37fcbe6ca77e7940dd00f108e5723301e6851c851b6857d8bf224b4017f3"
+        },
+        {
+          "path": "/mnt/disk1/fan/golaxy-hourly-repair-ef96a50a7-20261024/cron-release.override.json",
+          "exists": true,
+          "sha256": "c26ac33363afefc9349086162ebd1296e6935ef035bdfa536502cc7977104599"
+        },
+        {
+          "path": "/mnt/disk1/fan/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+          "exists": true,
+          "sha256": "94d784758675f763dceae57ffb06d08818419dc6b091a8569e366645c482bb96"
+        },
+        {
+          "path": "/mnt/disk1/fan/golaxy-name-quality-4bf9a699a-20261024/cron-name-quality.override.json",
+          "exists": true,
+          "sha256": "ec0d4da3adf7a135ede87876be70ed9c5a2fe1c3f83130ca8dab272fc402c9b4"
+        },
+        {
+          "path": "/mnt/disk1/fan/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+          "exists": true,
+          "sha256": "4527ff4e0a57a4efc2b5fda54258468f3750fadc63b6bb3d33203282107c87d0"
+        },
+        {
+          "path": "/mnt/disk1/fan/golaxy-receiver-662b6a250-20261024/cron-second.override.json",
+          "exists": true,
+          "sha256": "0ad866fda4d6b5ee74185df1bca41657a3eb11d561bb22b416b35014266ac624"
+        },
+        {
+          "path": "/mnt/disk1/fan/katrain-release-68db3ba5e/release.override.json",
+          "exists": true,
+          "sha256": "3e7d8321a14f758846b25e3d2ec5168335e33f3b4630987bc413a96be74243b8"
+        },
+        {
+          "path": "/mnt/disk1/fan/kifu-hourly-incremental-20261019/cron-kifu.override.yml",
+          "exists": true,
+          "sha256": "70ccb2e3c8572b0f06feb2f0175c11c5fb22505de50ae248df5dc802744b043c"
+        },
+        {
+          "path": "/mnt/disk1/fan/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+          "exists": true,
+          "sha256": "8a08521fd3119d3013471ca9f5ed08ac20ce72355bd13385767433a605e71154"
+        },
+        {
+          "path": "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-base.private.json",
+          "exists": true,
+          "sha256": "c41f3fed3c3103b456e23905492233ba84fe6070dfdf06ea8bb584bb2c67125c"
+        },
+        {
+          "path": "/mnt/disk1/fan/kifu-hourly-incremental-20261019/web-final.override.yml",
+          "exists": true,
+          "sha256": "41976977cb2a876bf798cfdc7aaf130fd73fb25d0d78b409ec55ed9a7e7bffd5"
+        },
+        {
+          "path": "/mnt/disk1/fan/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+          "exists": true,
+          "sha256": "7f3d53bdd81eb4bb5047374a28a0608d81d3ff143b6f933bdbe0ee78e3470cd9"
+        }
+      ],
+      "checkouts": [
+        {
+          "path": "/home/fan/Repositories/katrain",
+          "realpath": "/home/fan/Repositories/katrain",
+          "commit": "bb3c2bb3d4715f2fe3115ef4bc98577ff05b2bf2",
+          "branch": "feature/admin-console",
+          "tracked_dirty_count": 0
+        }
+      ],
+      "read_only_state": {
+        "status": [
+          {
+            "job_name": "kifu_ingest",
+            "kind": "interval",
+            "interval_seconds": 3600,
+            "enabled": true,
+            "process_started_at": "2026-10-23 18:32:21.925135+00:00",
+            "heartbeat_at": "2026-10-25 13:15:53.818876+00:00",
+            "last_started_at": "2026-10-25 12:54:49.507743+00:00",
+            "last_finished_at": "2026-10-25 12:59:53.220860+00:00",
+            "last_success_at": "2026-10-25 12:59:53.220860+00:00",
+            "last_status": "success",
+            "last_duration_ms": 303713,
+            "consecutive_failures": 0,
+            "updated_at": "2026-10-25 13:15:53.818876+00:00"
+          }
+        ],
+        "latest_runs": [
+          {
+            "id": 75611,
+            "job_name": "kifu_ingest",
+            "started_at": "2026-10-25 12:54:49.507743+00:00",
+            "finished_at": "2026-10-25 12:59:53.220860+00:00",
+            "status": "success",
+            "duration_ms": 303713,
+            "error_count": 0
+          },
+          {
+            "id": 75504,
+            "job_name": "kifu_ingest",
+            "started_at": "2026-10-25 11:54:49.505914+00:00",
+            "finished_at": "2026-10-25 12:00:13.942432+00:00",
+            "status": "success",
+            "duration_ms": 324436,
+            "error_count": 0
+          }
+        ],
+        "running_runs": [],
+        "pause_control_table_present": true,
+        "pause_control": [],
+        "item_status_counts": [
+          {
+            "status": "discovered",
+            "count": 7
+          },
+          {
+            "status": "prod_synced",
+            "count": 328
+          },
+          {
+            "status": "quarantined",
+            "count": 322
+          }
+        ],
+        "latest_published_empty_rank_sample": {
+          "external_id": "91694911",
+          "status": "prod_synced",
+          "publication_key": "19x19-91694911-b044277aaac3223d",
+          "test_album_id": 179093,
+          "prod_album_id": 178757,
+          "raw_sha256": "b044277aaac3223d3304fee2b958358418a83624d8c817fedb850c1994d845c2",
+          "sgf_sha256": "b044277aaac3223d3304fee2b958358418a83624d8c817fedb850c1994d845c2",
+          "test_receipt": {
+            "status": "applied",
+            "batch_id": 925,
+            "manifest_sha256": "0dbd77cb3a4290768ad9955542a51a8dc85cc6517231a0778faf06b42417d8fb",
+            "games": [
+              {
+                "source_key": "19x19",
+                "source_item_id": "91694911",
+                "album_id": 179093,
+                "action": "inserted"
+              }
+            ],
+            "name_batch_id": null,
+            "reviewed_name_batch_id": 926
+          },
+          "test_verification": {
+            "status": "verified",
+            "games": 1,
+            "checks": [
+              {
+                "album_id": 179093,
+                "lang": "cn"
+              },
+              {
+                "album_id": 179093,
+                "lang": "tw"
+              },
+              {
+                "album_id": 179093,
+                "lang": "jp"
+              },
+              {
+                "album_id": 179093,
+                "lang": "ko"
+              },
+              {
+                "album_id": 179093,
+                "lang": "en"
+              }
+            ],
+            "manifest_sha256": "0dbd77cb3a4290768ad9955542a51a8dc85cc6517231a0778faf06b42417d8fb"
+          },
+          "prod_receipt": {
+            "batch_id": 918,
+            "games": [
+              {
+                "action": "inserted",
+                "album_id": 178757,
+                "source_item_id": "91694911",
+                "source_key": "19x19"
+              }
+            ],
+            "manifest_sha256": "0dbd77cb3a4290768ad9955542a51a8dc85cc6517231a0778faf06b42417d8fb",
+            "name_batch_id": null,
+            "reviewed_name_batch_id": 919,
+            "status": "applied"
+          },
+          "prod_verification": {
+            "status": "verified",
+            "games": 1,
+            "checks": [
+              {
+                "album_id": 178757,
+                "lang": "cn"
+              },
+              {
+                "album_id": 178757,
+                "lang": "tw"
+              },
+              {
+                "album_id": 178757,
+                "lang": "jp"
+              },
+              {
+                "album_id": 178757,
+                "lang": "ko"
+              },
+              {
+                "album_id": 178757,
+                "lang": "en"
+              }
+            ],
+            "manifest_sha256": "0dbd77cb3a4290768ad9955542a51a8dc85cc6517231a0778faf06b42417d8fb"
+          },
+          "updated_at": "2026-10-25 09:30:43.378755+00:00",
+          "source_metadata_keys": [
+            "analyzePo",
+            "analyzeShare",
+            "analyzeStatus",
+            "analyzeTime",
+            "blackLevel",
+            "blackUserCode",
+            "boardSize",
+            "countdownNum",
+            "countdownTime",
+            "createTime",
+            "deleteFlag",
+            "explainStatus",
+            "favourite",
+            "gameResult",
+            "gameRound",
+            "gameType",
+            "gamename",
+            "gameroomId",
+            "guess",
+            "handicap",
+            "id",
+            "komi",
+            "mainTime",
+            "moveNum",
+            "pb",
+            "playTime",
+            "predictStatus",
+            "pw",
+            "rule",
+            "startMoveNum",
+            "stone",
+            "userCode",
+            "username",
+            "visibleFlag",
+            "whiteLevel",
+            "whiteUserCode"
+          ],
+          "source_rank_presence": {
+            "black_rank": false,
+            "white_rank": false,
+            "br": false,
+            "wr": false,
+            "BR": false,
+            "WR": false
+          },
+          "source_level_values": {
+            "blackLevel": 3002,
+            "whiteLevel": 3002
+          }
+        },
+        "active_database_work": [
+          {
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "count": 13
+          },
+          {
+            "state": "idle in transaction",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "count": 1
+          }
+        ],
+        "kifu_advisory_lock_holders": [],
+        "stage_root_present": true,
+        "model_ledger": {
+          "qwen-usage-20261019.json": {
+            "sha256": "8cda8297e89e84a80bd8b2c2ee2c09b8150082af1a8160dcc3401c7cb610565a",
+            "entry_count": 30,
+            "call_entries": 10,
+            "spent_upper_tokens": 6324
+          },
+          "qwen-usage-20261020.json": {
+            "sha256": "6c85469b1ee805151f39f597d8627c51599402237dd4768a51d9973f00bfc514",
+            "entry_count": 312,
+            "call_entries": 104,
+            "spent_upper_tokens": 94513
+          },
+          "qwen-usage-20261021.json": {
+            "sha256": "d763806f7c8b50d979627f2ef4abae732e8ba4bb563bceafd3cc9eac76974dfb",
+            "entry_count": 298,
+            "call_entries": 99,
+            "spent_upper_tokens": 94238
+          },
+          "qwen-usage-20261022.json": {
+            "sha256": "1095d74ea88560cbbab1c492c06d45db9196c75f2080bc721813fb7bd50a4404",
+            "entry_count": 207,
+            "call_entries": 69,
+            "spent_upper_tokens": 59616
+          },
+          "qwen-usage-20261023.json": {
+            "sha256": "f1298062bb1d4c9393abc8fe5b58611601db060ca00c15b406659ac2688e6cb9",
+            "entry_count": 57,
+            "call_entries": 19,
+            "spent_upper_tokens": 16477
+          },
+          "qwen-usage-20261024.json": {
+            "sha256": "ef658418d3dccae26e285ddde33a512714035faf59fd908d677382639c4cce41",
+            "entry_count": 107,
+            "call_entries": 36,
+            "spent_upper_tokens": 55416
+          },
+          "qwen-usage-20261025.json": {
+            "sha256": "2f2b2b17ac6c56121e55f8c2ff0f1f17f00633e5c8695df2b1dc3187a1325b90",
+            "entry_count": 25,
+            "call_entries": 9,
+            "spent_upper_tokens": 17493
+          }
+        },
+        "process_threads": {
+          "1": {
+            "comm": "python",
+            "thread_count": 12,
+            "thread_wchan_counts": {
+              "ep_poll": 1,
+              "futex_do_wait": 10,
+              "poll_schedule_timeout.constprop.0": 1
+            }
+          }
+        }
+      },
+      "effective_compose": [
+        {
+          "container": "/katrain-web",
+          "project": "katrain",
+          "working_dir": "/mnt/disk1/fan/kifu-hourly-incremental-20261019",
+          "service": "katrain-web",
+          "returncode": 0,
+          "safe_effective_config": {
+            "image": "katrain-ogs-release:68db3ba5e-20261024",
+            "command": null,
+            "entrypoint": null,
+            "restart": "no",
+            "ports": [
+              {
+                "mode": "ingress",
+                "target": 8001,
+                "published": "8001",
+                "protocol": "tcp"
+              }
+            ],
+            "volumes": [
+              {
+                "type": "bind",
+                "source": "/home/fan/Repositories/katrain/data/tutorial_assets",
+                "target": "/app/data/tutorial_assets",
+                "bind": {
+                  "create_host_path": true
+                }
+              }
+            ],
+            "container_name": "katrain-web",
+            "environment": {
+              "KATRAIN_BUILD_SHA": "68db3ba5ef2aeccaa921684725ce5a484fbe06a9",
+              "KATRAIN_STORAGE_BACKEND": "s3"
+            },
+            "build": {}
+          }
+        },
+        {
+          "container": "/katrain-cron",
+          "project": "katrain",
+          "working_dir": "/home/fan/Repositories/katrain",
+          "service": "katrain-cron",
+          "returncode": 0,
+          "safe_effective_config": {
+            "image": "katrain-golaxy:4bf9a699a-cron",
+            "command": null,
+            "entrypoint": null,
+            "restart": "unless-stopped",
+            "volumes": [
+              {
+                "type": "bind",
+                "source": "/home/fan/Repositories/katrain/data/tutorial_backups",
+                "target": "/app/data/tutorial_backups",
+                "bind": {
+                  "create_host_path": true
+                }
+              },
+              {
+                "type": "bind",
+                "source": "/mnt/disk1/fan/kifu-hourly-incremental-20261019/ingest-stage",
+                "target": "/app/data/kifu_ingest"
+              },
+              {
+                "type": "bind",
+                "source": "/home/fan/.local/share/kifu-hourly-incremental/ssh/id_ed25519",
+                "target": "/run/secrets/kifu_ingest_key",
+                "read_only": true
+              },
+              {
+                "type": "bind",
+                "source": "/home/fan/.local/share/kifu-hourly-incremental/ssh/known_hosts",
+                "target": "/run/secrets/kifu_ingest_known_hosts",
+                "read_only": true
+              }
+            ],
+            "container_name": "katrain-cron",
+            "environment": {
+              "CRON_KIFU_INGEST_ENABLED": "true",
+              "CRON_KIFU_INGEST_INTERVAL": "3600",
+              "CRON_KIFU_INGEST_LLM_ENABLED": "true",
+              "CRON_KIFU_INGEST_MAX_GAMES": "100",
+              "CRON_KIFU_INGEST_MAX_NEW_NAMES": "20",
+              "CRON_KIFU_INGEST_MAX_TOKENS": "100000",
+              "KATRAIN_BUILD_SHA": "4bf9a699a35ecdf025f5ec2f414425e3f2a13693"
+            },
+            "build": {
+              "context": "/home/fan/Repositories/katrain",
+              "dockerfile": "Dockerfile.cron"
+            }
+          }
+        }
+      ],
+      "active_static_graph": {
+        "katrain/web/static": {
+          "reachable_js_count": 172,
+          "active_card_modules": [
+            "KioskApp-CdMhgxdC.js",
+            "ReportsPage-BJLqxk6c.js",
+            "ReportsPage-Cc46Plxe.js"
+          ],
+          "active_unrecorded_assets": [
+            {
+              "asset": "kifuRules-an0Tonsh.js",
+              "sha256": "1838525040d6ecf884b3b0104612ed08b96cbdd6a963594e43db5337f2231dd4",
+              "rank_unrecorded_count": 0,
+              "unrecorded_count": 2
+            }
+          ]
+        },
+        "katrain/web/static-kiosk-2d": {
+          "reachable_js_count": 107,
+          "active_card_modules": [
+            "KioskApp-BvEpT27h.js",
+            "ReportsPage-BfJZ4VQV.js"
+          ],
+          "active_unrecorded_assets": [
+            {
+              "asset": "KioskReportPlayback-Bg3s7f9a.js",
+              "sha256": "02d5e95678c6a34779c6fa9b75bcc3fedfce73ddd16a078d60f03d42f635a2b0",
+              "rank_unrecorded_count": 0,
+              "unrecorded_count": 2
+            }
+          ]
+        }
+      },
+      "http": {
+        "/api/v1/health": {
+          "status": 200,
+          "body_sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f",
+          "cache_control": null,
+          "safe_body": {
+            "status": "ok",
+            "version": "1.17.1"
+          }
+        },
+        "/galaxy/kifu": {
+          "status": 200,
+          "body_sha256": "a305ffd54c7cc2a3d6c2155472e714c18203cef1e06528be4513f397b5c294ae",
+          "cache_control": "no-cache",
+          "asset_refs": [
+            "/assets/index-B3OAldA_.js",
+            "/assets/rolldown-runtime-QTnfLwEv.js",
+            "/assets/ui-core-KixCoRFD.js",
+            "/assets/api-F4MBphUX.js",
+            "/assets/index-DFEU3Joj.css"
+          ]
+        },
+        "/kiosk/login": {
+          "status": 200,
+          "body_sha256": "a305ffd54c7cc2a3d6c2155472e714c18203cef1e06528be4513f397b5c294ae",
+          "cache_control": "no-cache",
+          "asset_refs": [
+            "/assets/index-B3OAldA_.js",
+            "/assets/rolldown-runtime-QTnfLwEv.js",
+            "/assets/ui-core-KixCoRFD.js",
+            "/assets/api-F4MBphUX.js",
+            "/assets/index-DFEU3Joj.css"
+          ]
+        }
+      }
+    },
+    "ucloud-v100": {
+      "containers": [
+        {
+          "container": "/katrain-ucloud-katrain-web-1",
+          "image_id": "sha256:971bec56c6e7515fca8b0450d8899834053d873da9ebfe09f44a23fd6dc011bd",
+          "image_tag": "katrain-ogs-release:68db3ba5e-20261024",
+          "created": "2026-10-24T09:04:22.104051866Z",
+          "started": "2026-10-24T09:04:24.157321785Z",
+          "status": "running",
+          "labels": {
+            "com.docker.compose.config-hash": "916f706b91d826354ca5877d90ef7bb87a32a9d70c04f0002e851ed6fd23e023",
+            "com.docker.compose.container-number": "1",
+            "com.docker.compose.depends_on": "",
+            "com.docker.compose.image": "sha256:971bec56c6e7515fca8b0450d8899834053d873da9ebfe09f44a23fd6dc011bd",
+            "com.docker.compose.oneoff": "False",
+            "com.docker.compose.project": "katrain-ucloud",
+            "com.docker.compose.project.config_files": "/home/ubuntu/kifu-hourly-incremental-20261019/web-base.private.json,/home/ubuntu/kifu-hourly-incremental-20261019/release-a/release-final.override.json,/home/ubuntu/kifu-hourly-incremental-20261019/web-final.override.yml,/home/ubuntu/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json,/home/ubuntu/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json,/home/ubuntu/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json,/home/ubuntu/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json,/home/ubuntu/full-develop-495d0284c-20261024/full-develop.override.json,/home/ubuntu/katrain-release-68db3ba5e/release.override.json",
+            "com.docker.compose.project.working_dir": "/home/ubuntu/kifu-hourly-incremental-20261019",
+            "com.docker.compose.replace": "katrain-web-1",
+            "com.docker.compose.service": "katrain-web",
+            "com.docker.compose.version": "5.1.4",
+            "org.opencontainers.image.revision": "68db3ba5ef2aeccaa921684725ce5a484fbe06a9"
+          },
+          "safe_env": {
+            "KATRAIN_BUILD_SHA": "68db3ba5ef2aeccaa921684725ce5a484fbe06a9",
+            "KATRAIN_STORAGE_BACKEND": "s3"
+          },
+          "command": [
+            "python3",
+            "-m",
+            "katrain",
+            "--ui",
+            "web",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "8001"
+          ],
+          "entrypoint": null,
+          "user": "10001:10001",
+          "restart": {
+            "Name": "unless-stopped",
+            "MaximumRetryCount": 0
+          },
+          "ports": {
+            "8001/tcp": [
+              {
+                "HostIp": "127.0.0.1",
+                "HostPort": "8001"
+              },
+              {
+                "HostIp": "10.8.0.3",
+                "HostPort": "8001"
+              }
+            ]
+          },
+          "mounts": [
+            {
+              "Type": "volume",
+              "Source": "/var/lib/docker/volumes/katrain-ucloud_katrain-state-production/_data",
+              "Destination": "/home/katrain/.katrain",
+              "RW": true
+            }
+          ],
+          "filesystem": {
+            "source_hashes": {
+              "katrain/web/server.py": "d7525ae106b1fc1347565231902fe4340b28572065135a5fbfd8a06575c2315a",
+              "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+              "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+              "katrain/cron/scheduler.py": "bc8a2e5ee36da5ec859eb56b088bbe9680eaead2f7020d2b6aa1b03e8e7b5e6a",
+              "katrain/web/api/v1/endpoints/kifu.py": "e4415009ee320dacd1f80446d24204282644d4dad4e7914e9508dfc9101a92f9",
+              "katrain/web/kifu/library.py": "052a01fbdb5c1808a6ef0b86ac9811291ed0c3b05b5ac8fb8cd7a033294fa6dc",
+              "katrain/web/ui/src/kiosk/pages/KifuPage.tsx": "839892d6d2c7d2b574ed055f1880d19a20b15454c6616f2b69578a69c5fb70f0",
+              "katrain/web/ui/src/kiosk/pages/ReportsPage.tsx": "52ca918dc5b6a67a9115cf72492f5e79d8e466563bc693dbbc04a7610e95945a",
+              "katrain/web/ui/src/kiosk/utils/playerRank.ts": null,
+              "katrain/web/ui/src/utils/rank.ts": "a6763f31de16956c99c08abcafa4a47d62c5d498618a2ec907fa24bc9a4f3960",
+              "katrain/kifu_ingest/__init__.py": "e3580e699bd74d8cf82262883e492e2123df4d966edded1c5703e4e132fe531b",
+              "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+              "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+              "katrain/kifu_ingest/inventory.py": "b27b9088a11aa2a2a8726c88ac0d53fab5ddb381b2c7671fc301915249bf2f1f",
+              "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+              "katrain/kifu_ingest/name_reuse.py": "9c8813e41b838e700148106b6f4e52a22169911ae0e539ca6a0b88da283c89c4",
+              "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+              "katrain/kifu_ingest/orchestration.py": "856925207cbec38a9ab981cc3f4e3eb947957a3f10856e4acb7da3c50535356a",
+              "katrain/kifu_ingest/preparation.py": "79611f491d5dd36b7b0068a52c7a29dcd6b4e0853ee91a78729a35ce64cbe857",
+              "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+              "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+              "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+              "katrain/kifu_ingest/state.py": "7bd2a5047f3804dd9a82f7344a06e3ae0c6fef625d6fef34ef1232ef47b1c24e",
+              "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+              "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a",
+              "katrain/web/kifu/name_parse.py": "1fbd3212d7d10b62785e6341f83683c552ad1a2526d7b681905d69d1a685809b",
+              "katrain/web/kifu/identity.py": "54e4281bb247c102b47bba5068e87ea7ac6cef972856065390c3b22961c74d5e",
+              "katrain/core/sgf_parser.py": "59a4d743d0d36ddc22ad1a21ce789110fc56c29b3356d9fe2e0cc5e9f9961cb5",
+              "katrain/web/ui/src/kiosk/utils/listRecordPresentation.ts": null,
+              "katrain/web/ui/src/kiosk/components/records/RecordMatchLine.tsx": null
+            },
+            "static": {
+              "katrain/web/static": {
+                "exists": true,
+                "index_sha256": "a305ffd54c7cc2a3d6c2155472e714c18203cef1e06528be4513f397b5c294ae",
+                "entry_assets": {
+                  "/assets/index-B3OAldA_.js": "506757268939c667b4b37b666983d4a522ea4844dcd21f9ef338b37f56eec1e0",
+                  "/assets/rolldown-runtime-QTnfLwEv.js": "5db5ba82eef00d1dee7e86e663098c9427d01183a88d357437daff295aec3e75",
+                  "/assets/ui-core-KixCoRFD.js": "384b6f4b0671da7babf94eacd483def695ef856b7d658163873bc27c99a60c18",
+                  "/assets/api-F4MBphUX.js": "d3d3a134c1f589b29b66a7f922002f1f32519bd3c458671b998b3406aa13932c",
+                  "/assets/index-DFEU3Joj.css": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+                },
+                "unrecorded_assets": [
+                  {
+                    "asset": "kifuRules-an0Tonsh.js",
+                    "sha256": "1838525040d6ecf884b3b0104612ed08b96cbdd6a963594e43db5337f2231dd4",
+                    "unrecorded_count": 2,
+                    "rank_unrecorded_count": 0
+                  }
+                ]
+              },
+              "katrain/web/static-kiosk-2d": {
+                "exists": true,
+                "index_sha256": "5713a6ded293d007dfcc85c216a826ea3fd08c1d4778b746bb6b21a5d863daa7",
+                "entry_assets": {
+                  "/assets/index-e5phPigk.js": "58904ed2320d6a9dc49a916a21da753f49f803de76a5a0d2110d4554a25cd699",
+                  "/assets/rolldown-runtime-Bh1tDfsg.js": "1b13387cb23dc39bf70e31677c21f6db5cad3377b96f286b6ee444496e5bfea7",
+                  "/assets/ui-core-DWidQbO6.js": "d3d66401e8512bb88e6bda15524dd09ee4c4b68d444e5db2d5c5ed2e36a75f8e",
+                  "/assets/api-4JrHKzSS.js": "eaa2de978b403272082fb8bc575e83f3dc336ebd03becff46a82476b5d60fb8c",
+                  "/assets/index-DFEU3Joj.css": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+                },
+                "unrecorded_assets": [
+                  {
+                    "asset": "KioskReportPlayback-Bg3s7f9a.js",
+                    "sha256": "02d5e95678c6a34779c6fa9b75bcc3fedfce73ddd16a078d60f03d42f635a2b0",
+                    "unrecorded_count": 2,
+                    "rank_unrecorded_count": 0
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "container": "/katrain-ucloud-katrain-cron-1",
+          "image_id": "sha256:9b28e8be9b77deb63f99cac2b076aac9df584a521f9b00989d6cc2bc920adb79",
+          "image_tag": "katrain-cron:board-consistency-56f53fa4",
+          "created": "2026-10-10T18:04:33.451480696Z",
+          "started": "2026-10-10T18:04:39.203555945Z",
+          "status": "running",
+          "labels": {
+            "com.docker.compose.config-hash": "d454113e9a749712a7486e53ea582c35cce05d8511d87bb8e641d9815ca5ac07",
+            "com.docker.compose.container-number": "1",
+            "com.docker.compose.depends_on": "",
+            "com.docker.compose.image": "sha256:9b28e8be9b77deb63f99cac2b076aac9df584a521f9b00989d6cc2bc920adb79",
+            "com.docker.compose.oneoff": "False",
+            "com.docker.compose.project": "katrain-ucloud",
+            "com.docker.compose.project.config_files": "/opt/katrain/releases/kifu-42d28292/deploy/ucloud/compose.yml,/opt/katrain/releases/kifu-42d28292/deploy/ucloud/compose.production.yml,/home/ubuntu/kifu-name-incremental-wu-20261003/ucloud.wu-five.override.yml,/home/ubuntu/kifu-cn-prod-overlay-20261005/compose.override.yml,/home/ubuntu/kifu-cn-event-batch-20261005/compose.override.yml,/home/ubuntu/analysis-report-ui-8286c2a7/compose.override.yml,/home/ubuntu/kifu-hidden-tail-20261005/compose.override.yml,/home/ubuntu/kifu-event-translation-20261005/compose.override.yml,/home/ubuntu/analysis-report-ui-8286c2a7/compose.cache.override.yml,/tmp/kifu-raw2134-test-search-20261006/PROD/compose.search.override.yml,/tmp/kifu-raw-title-deploy-20261006/PROD/compose.search.override.yml,/tmp/kifu-geographic39-title-deploy-20261006/PROD/compose.search.override.yml,/home/ubuntu/kifu-library-fast-20261006/compose.prod.yml,/tmp/kifu-tokyo11-title-deploy-20261006/PROD/compose.search.override.yml,/tmp/kifu-national15-title-deploy-20261006/PROD/compose.search.override.yml,/tmp/kifu-bulk150-title-deploy-20261006/PROD/compose.search.override.yml,/tmp/kifu-mixed150-title-deploy-20261006/PROD/compose.search.override.yml,/home/ubuntu/kifu-report-verified-20261007/release/compose.web.verified.yml,/home/ubuntu/kifu-default-rules-20261007/release/compose.web.default.yml,/tmp/kifu-hanja-reader-deploy-20261007/PROD/compose.search.override.yml,/tmp/kifu-normative-ja-ko-reader-backport-20261007/PROD/compose.search.override.yml,/home/ubuntu/kifu-help-20261007/compose.help.yml,/home/ubuntu/kifu-polish-20261008/compose.polish.yml,/tmp/kifu-exact-player-search-deploy-20261008/PROD/compose.exact-player.override.yml,/home/ubuntu/katrain-develop-4a911bb5/web/compose.develop.yml,/tmp/kifu-literal-game-round-release-20261008/PROD/compose.literal-game-round.override.yml,/tmp/kifu-verified-cn-display-deploy-20261008/PROD/compose.search.override.yml,/tmp/kifu-jp-display-r2-prod-20261009/compose.jp-display.override.yml,/tmp/kifu-review-target-prod-20261009/compose.review-target.override.yml,/tmp/kifu-reader-r4-root-20261009/PROD/compose.kifu-reader-r4.override.yml,/opt/katrain/releases/kifu-name-r7-20261009/compose.kifu-name-r7.override.yml,/opt/katrain/releases/kifu-name-r8-20261009/PROD-web/compose.kifu-name-r8.override.yml,/opt/katrain/releases/kifu-event-r9-20261009/PROD-web/compose.kifu-event-r9.override.yml,/home/ubuntu/pvp-ws-c0483a6a/compose.release.yml,/opt/katrain/releases/kifu-http-r13-20261009/PROD-web/compose.kifu-name-r13.override.yml,/home/ubuntu/kifu-list-report-d7e2318e/compose.release.json,/home/ubuntu/pvp-clock-9f28d43d/compose.release.json,/opt/katrain/releases/kifu-reader-r14-20261009/PROD-web/compose.kifu-name-r14.override.yml,/opt/katrain/releases/kifu-reader-r15-20261009/PROD-web/compose.kifu-name-r15.override.yml,/opt/katrain/releases/kifu-reader-r16-20261009/PROD-web/compose.kifu-name-r16.override.yml,/opt/katrain/releases/kifu-reader-r17-20261010/PROD-web/compose.kifu-name-r17.override.yml,/home/ubuntu/play-consistency-3c47ec20/compose.release.json,/home/ubuntu/guest-sound-28325ebb/compose.release.json,/opt/katrain/releases/kifu-catalog-cn-r21-both-rebind-20261010/PROD-web/compose.r21.override.yml,/opt/katrain/releases/kifu-prod-kifu-api-r22-20261010/PROD-web/compose.r22.override.yml,/opt/katrain/releases/kifu-prod-kifu-api-r23-20261010/PROD-web/compose.r23.override.yml,/home/ubuntu/board-consistency-56f53fa4/compose.release.json",
+            "com.docker.compose.project.environment_file": "/etc/katrain/ucloud.env",
+            "com.docker.compose.project.working_dir": "/opt/katrain/releases/kifu-42d28292/deploy/ucloud",
+            "com.docker.compose.replace": "katrain-cron-1",
+            "com.docker.compose.service": "katrain-cron",
+            "com.docker.compose.version": "5.1.4"
+          },
+          "safe_env": {
+            "KATRAIN_BUILD_SHA": "56f53fa4d29ee041faa39f00d5b27a12613ee0e5"
+          },
+          "command": [
+            "python",
+            "-m",
+            "katrain.cron"
+          ],
+          "entrypoint": null,
+          "user": "",
+          "restart": {
+            "Name": "unless-stopped",
+            "MaximumRetryCount": 0
+          },
+          "ports": {},
+          "mounts": [],
+          "filesystem": {
+            "source_hashes": {
+              "katrain/web/server.py": null,
+              "katrain/cron/jobs/kifu_ingest.py": null,
+              "katrain/cron/config.py": "dc897ff260daa05da4fed0e0c7a19113f2d0699a3570f20344224ec1f19b033b",
+              "katrain/cron/scheduler.py": "6fe13c718c170bc49af9cffed4229ad8b9c442ded74da2fe7a34d8088487cb2a",
+              "katrain/web/api/v1/endpoints/kifu.py": "8dc52ae0b4364ca3106890ba052fdfc1bf406facb3780ff8d3c24d16528bc140",
+              "katrain/web/kifu/library.py": "ffa31ae27fab1b46b11325b4b470a0b8b275e0925e7f0cf491236086a7390239",
+              "katrain/web/ui/src/kiosk/pages/KifuPage.tsx": null,
+              "katrain/web/ui/src/kiosk/pages/ReportsPage.tsx": null,
+              "katrain/web/ui/src/kiosk/utils/playerRank.ts": null,
+              "katrain/web/ui/src/utils/rank.ts": null,
+              "katrain/kifu_ingest/__init__.py": null,
+              "katrain/kifu_ingest/catalog.py": null,
+              "katrain/kifu_ingest/exclusions.py": null,
+              "katrain/kifu_ingest/inventory.py": null,
+              "katrain/kifu_ingest/maintenance.py": null,
+              "katrain/kifu_ingest/name_reuse.py": null,
+              "katrain/kifu_ingest/names.py": null,
+              "katrain/kifu_ingest/orchestration.py": null,
+              "katrain/kifu_ingest/preparation.py": null,
+              "katrain/kifu_ingest/recent.py": null,
+              "katrain/kifu_ingest/source_19x19.py": null,
+              "katrain/kifu_ingest/staging.py": null,
+              "katrain/kifu_ingest/state.py": null,
+              "katrain/kifu_ingest/sync.py": null,
+              "katrain/kifu_ingest/verification.py": null,
+              "katrain/web/kifu/name_parse.py": null,
+              "katrain/web/kifu/identity.py": null,
+              "katrain/core/sgf_parser.py": null,
+              "katrain/web/ui/src/kiosk/utils/listRecordPresentation.ts": null,
+              "katrain/web/ui/src/kiosk/components/records/RecordMatchLine.tsx": null
+            },
+            "static": {
+              "katrain/web/static": {
+                "exists": false
+              },
+              "katrain/web/static-kiosk-2d": {
+                "exists": false
+              }
+            }
+          }
+        }
+      ],
+      "images": [
+        {
+          "id": "sha256:971bec56c6e7515fca8b0450d8899834053d873da9ebfe09f44a23fd6dc011bd",
+          "tags": [
+            "katrain-ogs-release:68db3ba5e-20261024"
+          ],
+          "created": "2026-10-24T17:03:56.500347053+08:00",
+          "oci_labels": {
+            "org.opencontainers.image.revision": "68db3ba5ef2aeccaa921684725ce5a484fbe06a9"
+          }
+        },
+        {
+          "id": "sha256:9b28e8be9b77deb63f99cac2b076aac9df584a521f9b00989d6cc2bc920adb79",
+          "tags": [
+            "katrain-cron:board-consistency-56f53fa4"
+          ],
+          "created": "2026-10-11T01:56:36.539360411+08:00",
+          "oci_labels": {}
+        }
+      ],
+      "config_files": [
+        {
+          "path": "/home/ubuntu/analysis-report-ui-8286c2a7/compose.cache.override.yml",
+          "exists": true,
+          "sha256": "2caf28d221008b7ffcb773f0719d314d58506b3baf560a62f243cab6527d8500"
+        },
+        {
+          "path": "/home/ubuntu/analysis-report-ui-8286c2a7/compose.override.yml",
+          "exists": true,
+          "sha256": "e47fbfd963f08ed4368c03122e5c4f0faddeef9f78d8bc38ce2bbc4c6a6b435c"
+        },
+        {
+          "path": "/home/ubuntu/board-consistency-56f53fa4/compose.release.json",
+          "exists": true,
+          "sha256": "b84af774b591fb1cee2e92dcaab4bca182f0be84c65a415bde69f11aec401db1"
+        },
+        {
+          "path": "/home/ubuntu/full-develop-495d0284c-20261024/full-develop.override.json",
+          "exists": true,
+          "sha256": "6784a78d1600680b03687b62d978e08940997d5c0e429b8100f9e7fa2040eb9f"
+        },
+        {
+          "path": "/home/ubuntu/golaxy-hourly-overlay-ef96a50a7-20261024/golaxy-web.override.json",
+          "exists": true,
+          "sha256": "451e37fcbe6ca77e7940dd00f108e5723301e6851c851b6857d8bf224b4017f3"
+        },
+        {
+          "path": "/home/ubuntu/golaxy-name-guard-overlay-4bf9a699a-20261024/golaxy-web.override.json",
+          "exists": true,
+          "sha256": "94d784758675f763dceae57ffb06d08818419dc6b091a8569e366645c482bb96"
+        },
+        {
+          "path": "/home/ubuntu/golaxy-publication-guard-overlay-662b6a250-20261024/golaxy-web.override.json",
+          "exists": true,
+          "sha256": "4527ff4e0a57a4efc2b5fda54258468f3750fadc63b6bb3d33203282107c87d0"
+        },
+        {
+          "path": "/home/ubuntu/guest-sound-28325ebb/compose.release.json",
+          "exists": true,
+          "sha256": "92ee00c4f80db7a36797b2c6c399e21a8d60a601d0ba99811e840b9798f7dcdf"
+        },
+        {
+          "path": "/home/ubuntu/katrain-develop-4a911bb5/web/compose.develop.yml",
+          "exists": true,
+          "sha256": "886e202964803e71158694ba48dec470abf536169db9deb6e1ef026575e597c3"
+        },
+        {
+          "path": "/home/ubuntu/katrain-release-68db3ba5e/release.override.json",
+          "exists": true,
+          "sha256": "3e7d8321a14f758846b25e3d2ec5168335e33f3b4630987bc413a96be74243b8"
+        },
+        {
+          "path": "/home/ubuntu/kifu-cn-event-batch-20261005/compose.override.yml",
+          "exists": true,
+          "sha256": "0f0502ef0e1d6fafc4bff0b064b6c7ccc3622fdf6a0cb172f5e4b08af19ca761"
+        },
+        {
+          "path": "/home/ubuntu/kifu-cn-prod-overlay-20261005/compose.override.yml",
+          "exists": true,
+          "sha256": "359edc16c243d0798d70f6c0acb05a9a11a9596fe9eb55d86bdd34163d5137a7"
+        },
+        {
+          "path": "/home/ubuntu/kifu-default-rules-20261007/release/compose.web.default.yml",
+          "exists": true,
+          "sha256": "28810c11c6a85428e92b36e8f1b79c36acc52c68647c2e35d27b64375864bdaa"
+        },
+        {
+          "path": "/home/ubuntu/kifu-event-translation-20261005/compose.override.yml",
+          "exists": true,
+          "sha256": "d4b11e46d7b767372fd53c67ccd75fb8ccef7cb15934bc1ae4906ff69fb312fd"
+        },
+        {
+          "path": "/home/ubuntu/kifu-help-20261007/compose.help.yml",
+          "exists": true,
+          "sha256": "10270465f2588aaa367c114ca7bc25400cd0cb11c8646b6effe59b932c1624f6"
+        },
+        {
+          "path": "/home/ubuntu/kifu-hidden-tail-20261005/compose.override.yml",
+          "exists": true,
+          "sha256": "7a2d0f5ad17c49b66d85117c1485e4dbc84a765aa5d67e2761cd6ffcb3e71da5"
+        },
+        {
+          "path": "/home/ubuntu/kifu-hourly-incremental-20261019/release-a/release-final.override.json",
+          "exists": true,
+          "sha256": "8a08521fd3119d3013471ca9f5ed08ac20ce72355bd13385767433a605e71154"
+        },
+        {
+          "path": "/home/ubuntu/kifu-hourly-incremental-20261019/web-base.private.json",
+          "exists": true,
+          "sha256": "b03a307954cd07e925ae20b2b993923e4f17e6c30b00ab73d5562a1c0aeb71ab"
+        },
+        {
+          "path": "/home/ubuntu/kifu-hourly-incremental-20261019/web-final.override.yml",
+          "exists": true,
+          "sha256": "41976977cb2a876bf798cfdc7aaf130fd73fb25d0d78b409ec55ed9a7e7bffd5"
+        },
+        {
+          "path": "/home/ubuntu/kifu-library-fast-20261006/compose.prod.yml",
+          "exists": true,
+          "sha256": "2c4118e734c13d079437951f6fd584ddef3f379d36e65fd678e668e4bea985f7"
+        },
+        {
+          "path": "/home/ubuntu/kifu-list-report-d7e2318e/compose.release.json",
+          "exists": true,
+          "sha256": "bfd6d08ccdf33691884cfb18a9a76c9388246c0aa12c765e207503af857e5aca"
+        },
+        {
+          "path": "/home/ubuntu/kifu-name-incremental-wu-20261003/ucloud.wu-five.override.yml",
+          "exists": true,
+          "sha256": "af667dcfbe25e7a6b369e40960f57c2be8e85664eb94910589154fc4bb0f8cb4"
+        },
+        {
+          "path": "/home/ubuntu/kifu-polish-20261008/compose.polish.yml",
+          "exists": true,
+          "sha256": "7dc623974b1746141023e6567d274312f8922eaf7c0392f78b4c487a7e26f802"
+        },
+        {
+          "path": "/home/ubuntu/kifu-report-verified-20261007/release/compose.web.verified.yml",
+          "exists": true,
+          "sha256": "47df9f578e5ab2b0f422778ccfc4a102ea085b4736351d3320ec7c751d771977"
+        },
+        {
+          "path": "/home/ubuntu/lobby-backend-overlay-0ac3190d8-20261023/lobby-web.override.json",
+          "exists": true,
+          "sha256": "7f3d53bdd81eb4bb5047374a28a0608d81d3ff143b6f933bdbe0ee78e3470cd9"
+        },
+        {
+          "path": "/home/ubuntu/play-consistency-3c47ec20/compose.release.json",
+          "exists": true,
+          "sha256": "b941d4b11cd6fba90147472c74bdb1f11b4362d049ccb4452f0b5ba7c9f6c156"
+        },
+        {
+          "path": "/home/ubuntu/pvp-clock-9f28d43d/compose.release.json",
+          "exists": true,
+          "sha256": "f70a0d22ba1352eb67db91d0c1e4344aa788ad09a9cbed21d7d9b62147767016"
+        },
+        {
+          "path": "/home/ubuntu/pvp-ws-c0483a6a/compose.release.yml",
+          "exists": true,
+          "sha256": "66986e93b6d7700bb5c598e545cb202361aa470e0c28962f3884682364908b5d"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-42d28292/deploy/ucloud/compose.production.yml",
+          "exists": true,
+          "sha256": "4371637db4106841f08e356ae78e8252356f4c6d68f726bb2829cd16952ef16c"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-42d28292/deploy/ucloud/compose.yml",
+          "exists": true,
+          "sha256": "ddf0dd2009c25edeaeff94e0948fb79480f76111c880113d6bfc8a37a56812b1"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-catalog-cn-r21-both-rebind-20261010/PROD-web/compose.r21.override.yml",
+          "exists": true,
+          "sha256": "60404c44c4efea69b5b0f0fb4e7ae55dcfa09bbb816c49e7f6c2af30d2af5eca"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-event-r9-20261009/PROD-web/compose.kifu-event-r9.override.yml",
+          "exists": true,
+          "sha256": "8e3dbac5c85643688827a5c2b07fb0af7137d9205439a065e102580c11964c13"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-http-r13-20261009/PROD-web/compose.kifu-name-r13.override.yml",
+          "exists": true,
+          "sha256": "558376720f457a5a8199e2fa3564117dec60b55256782d32f651182c347ce79d"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-name-r7-20261009/compose.kifu-name-r7.override.yml",
+          "exists": true,
+          "sha256": "ac51dcc33f0dddd961a7b6a4642faad934a9e44021d0e92922625ff0061f799f"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-name-r8-20261009/PROD-web/compose.kifu-name-r8.override.yml",
+          "exists": true,
+          "sha256": "aec8be09b03ff62870b57fcdbe3ccd852f2526f8bff23cc3e1101b1fb82bc71d"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-prod-kifu-api-r22-20261010/PROD-web/compose.r22.override.yml",
+          "exists": true,
+          "sha256": "99a5ccf66d8f8a65966c9b6ef517a214eaf1df79c6e73e0be58f60b198cfaa78"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-prod-kifu-api-r23-20261010/PROD-web/compose.r23.override.yml",
+          "exists": true,
+          "sha256": "44d39557cbaa24970ff496a777f13b6b8255662328e1f67d6a1c50363cd0b63e"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-reader-r14-20261009/PROD-web/compose.kifu-name-r14.override.yml",
+          "exists": true,
+          "sha256": "07775cac81702ec5212be084f15c3097ad63b204f2cbd1b11bb3e76173df2846"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-reader-r15-20261009/PROD-web/compose.kifu-name-r15.override.yml",
+          "exists": true,
+          "sha256": "2aa1a39542953a281718c2bf91b1883963cd793ef936c9a57cb2c372c0422ec5"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-reader-r16-20261009/PROD-web/compose.kifu-name-r16.override.yml",
+          "exists": true,
+          "sha256": "094f16bc56793370a9aa152008594ac639e4852f0d0de269b8b03e520d153969"
+        },
+        {
+          "path": "/opt/katrain/releases/kifu-reader-r17-20261010/PROD-web/compose.kifu-name-r17.override.yml",
+          "exists": true,
+          "sha256": "fcab75bb8454269c4d2ae11e36ea50302e61bf2860ef2974209ab6c7d9e8bbe8"
+        },
+        {
+          "path": "/tmp/kifu-bulk150-title-deploy-20261006/PROD/compose.search.override.yml",
+          "exists": true,
+          "sha256": "1cd1f422655b7934ede2bd466853befc541ac259fce8e75956d95ac457667c0b"
+        },
+        {
+          "path": "/tmp/kifu-exact-player-search-deploy-20261008/PROD/compose.exact-player.override.yml",
+          "exists": true,
+          "sha256": "0ae4746db7d0d4c05185875e0670dcac8d6f7902d09d437e7ea7cda3a172f765"
+        },
+        {
+          "path": "/tmp/kifu-geographic39-title-deploy-20261006/PROD/compose.search.override.yml",
+          "exists": true,
+          "sha256": "75aa6679ae5fe15ca6612dd0087fa1fe5dfecd0b6e99a7c000333f5a8a1c5f91"
+        },
+        {
+          "path": "/tmp/kifu-hanja-reader-deploy-20261007/PROD/compose.search.override.yml",
+          "exists": true,
+          "sha256": "571f8f3c5db283d445f1a4b5f8eae417254da82ea62507446f1ca59f42a227a4"
+        },
+        {
+          "path": "/tmp/kifu-jp-display-r2-prod-20261009/compose.jp-display.override.yml",
+          "exists": true,
+          "sha256": "b52c8b762ead310793250953ee52ec49beeca0990dffbab0510a51359f021321"
+        },
+        {
+          "path": "/tmp/kifu-literal-game-round-release-20261008/PROD/compose.literal-game-round.override.yml",
+          "exists": true,
+          "sha256": "75fed809cc0fda8d1aa1e867f43204cb51687188fbec54ef157875f7cbf23e14"
+        },
+        {
+          "path": "/tmp/kifu-mixed150-title-deploy-20261006/PROD/compose.search.override.yml",
+          "exists": true,
+          "sha256": "11ecac7ec7b30bd55052ee22c8b3e33f910dde031e8591db8a82f49329897c74"
+        },
+        {
+          "path": "/tmp/kifu-national15-title-deploy-20261006/PROD/compose.search.override.yml",
+          "exists": true,
+          "sha256": "42a84846e12dd4ba720dfb76281aa208865e7ac82a4ad0ad8884ae12a2c52912"
+        },
+        {
+          "path": "/tmp/kifu-normative-ja-ko-reader-backport-20261007/PROD/compose.search.override.yml",
+          "exists": true,
+          "sha256": "1a6ad26674c860011eee32e19b3957e1eb4a42c5105ab86006566d90efa42a2b"
+        },
+        {
+          "path": "/tmp/kifu-raw-title-deploy-20261006/PROD/compose.search.override.yml",
+          "exists": true,
+          "sha256": "83e08ca75a859b5945bac84595c4a7e86a24191fb454b5970f67998b6800d953"
+        },
+        {
+          "path": "/tmp/kifu-raw2134-test-search-20261006/PROD/compose.search.override.yml",
+          "exists": true,
+          "sha256": "dbb2380ea8e990ad4dfef5398a43ab63eed7a16ffc10e5eede8df0c0444585ca"
+        },
+        {
+          "path": "/tmp/kifu-reader-r4-root-20261009/PROD/compose.kifu-reader-r4.override.yml",
+          "exists": true,
+          "sha256": "a770d9ed300cb362015f5a24fac41a3b0c0b48d797e7f6bcb17672a740304479"
+        },
+        {
+          "path": "/tmp/kifu-review-target-prod-20261009/compose.review-target.override.yml",
+          "exists": true,
+          "sha256": "5000a3b06443d600f67f0cfad4ed768559efe98422f60aa0264d3fe6835c3e55"
+        },
+        {
+          "path": "/tmp/kifu-tokyo11-title-deploy-20261006/PROD/compose.search.override.yml",
+          "exists": true,
+          "sha256": "192585944a7c7dbdf3de7434dff07cf2994b158ea3c2468e63d885c079569b96"
+        },
+        {
+          "path": "/tmp/kifu-verified-cn-display-deploy-20261008/PROD/compose.search.override.yml",
+          "exists": true,
+          "sha256": "d77cb8b2f76523adc978bd2835ae6c4e35830c4177c0c6ba41162046b77e0834"
+        }
+      ],
+      "checkouts": [
+        {
+          "path": "/opt/katrain/current",
+          "realpath": "/opt/katrain/releases/kifu-42d28292",
+          "commit": null,
+          "branch": null,
+          "tracked_dirty_count": null
+        },
+        {
+          "path": "/home/ubuntu/Repositories/katrain",
+          "realpath": "/home/ubuntu/Repositories/katrain",
+          "commit": null,
+          "branch": null,
+          "tracked_dirty_count": null
+        }
+      ],
+      "read_only_state": {
+        "status": [],
+        "latest_runs": [],
+        "running_runs": [],
+        "pause_control_table_present": true,
+        "pause_control": [],
+        "item_status_counts": [],
+        "active_database_work": [
+          {
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "count": 11
+          },
+          {
+            "state": "idle in transaction",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "count": 2
+          }
+        ],
+        "kifu_advisory_lock_holders": [],
+        "stage_root_present": false,
+        "model_ledger": {},
+        "process_threads": {}
+      },
+      "effective_compose": [
+        {
+          "container": "/katrain-ucloud-katrain-web-1",
+          "project": "katrain-ucloud",
+          "working_dir": "/home/ubuntu/kifu-hourly-incremental-20261019",
+          "service": "katrain-web",
+          "returncode": 0,
+          "safe_effective_config": {
+            "image": "katrain-ogs-release:68db3ba5e-20261024",
+            "user": "10001:10001",
+            "command": null,
+            "entrypoint": null,
+            "restart": "unless-stopped",
+            "ports": [
+              {
+                "mode": "ingress",
+                "host_ip": "127.0.0.1",
+                "target": 8001,
+                "published": "8001",
+                "protocol": "tcp"
+              },
+              {
+                "mode": "ingress",
+                "host_ip": "10.8.0.3",
+                "target": 8001,
+                "published": "8001",
+                "protocol": "tcp"
+              }
+            ],
+            "volumes": [
+              {
+                "type": "volume",
+                "source": "katrain-state-production",
+                "target": "/home/katrain/.katrain",
+                "volume": {}
+              }
+            ],
+            "environment": {
+              "KATRAIN_BUILD_SHA": "68db3ba5ef2aeccaa921684725ce5a484fbe06a9",
+              "KATRAIN_STORAGE_BACKEND": "s3"
+            },
+            "build": {}
+          }
+        }
+      ],
+      "active_static_graph": {
+        "katrain/web/static": {
+          "reachable_js_count": 172,
+          "active_card_modules": [
+            "KioskApp-CdMhgxdC.js",
+            "ReportsPage-BJLqxk6c.js",
+            "ReportsPage-Cc46Plxe.js"
+          ],
+          "active_unrecorded_assets": [
+            {
+              "asset": "kifuRules-an0Tonsh.js",
+              "sha256": "1838525040d6ecf884b3b0104612ed08b96cbdd6a963594e43db5337f2231dd4",
+              "rank_unrecorded_count": 0,
+              "unrecorded_count": 2
+            }
+          ]
+        },
+        "katrain/web/static-kiosk-2d": {
+          "reachable_js_count": 107,
+          "active_card_modules": [
+            "KioskApp-BvEpT27h.js",
+            "ReportsPage-BfJZ4VQV.js"
+          ],
+          "active_unrecorded_assets": [
+            {
+              "asset": "KioskReportPlayback-Bg3s7f9a.js",
+              "sha256": "02d5e95678c6a34779c6fa9b75bcc3fedfce73ddd16a078d60f03d42f635a2b0",
+              "rank_unrecorded_count": 0,
+              "unrecorded_count": 2
+            }
+          ]
+        }
+      },
+      "http": {
+        "/api/v1/health": {
+          "status": 200,
+          "body_sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f",
+          "cache_control": null,
+          "safe_body": {
+            "status": "ok",
+            "version": "1.17.1"
+          }
+        },
+        "/galaxy/kifu": {
+          "status": 200,
+          "body_sha256": "a305ffd54c7cc2a3d6c2155472e714c18203cef1e06528be4513f397b5c294ae",
+          "cache_control": "no-cache",
+          "asset_refs": [
+            "/assets/index-B3OAldA_.js",
+            "/assets/rolldown-runtime-QTnfLwEv.js",
+            "/assets/ui-core-KixCoRFD.js",
+            "/assets/api-F4MBphUX.js",
+            "/assets/index-DFEU3Joj.css"
+          ]
+        },
+        "/kiosk/login": {
+          "status": 200,
+          "body_sha256": "a305ffd54c7cc2a3d6c2155472e714c18203cef1e06528be4513f397b5c294ae",
+          "cache_control": "no-cache",
+          "asset_refs": [
+            "/assets/index-B3OAldA_.js",
+            "/assets/rolldown-runtime-QTnfLwEv.js",
+            "/assets/ui-core-KixCoRFD.js",
+            "/assets/api-F4MBphUX.js",
+            "/assets/index-DFEU3Joj.css"
+          ]
+        }
+      }
+    },
+    "rk3562-local": {
+      "identity": {
+        "hostname": "gzpeite",
+        "model": "GZPEITE RK3562 P04 Board"
+      },
+      "checkouts": [
+        {
+          "path": "/root/smartbox-software",
+          "realpath": "/root/smartbox-software",
+          "commit": null,
+          "branch": null,
+          "tracked_dirty_count": null
+        },
+        {
+          "path": "/root/smartbox-software/vendor/katrain",
+          "realpath": "/root/smartbox-software/vendor/katrain",
+          "commit": null,
+          "branch": null,
+          "tracked_dirty_count": null
+        }
+      ],
+      "source_hashes": {
+        "katrain/web/server.py": "d7525ae106b1fc1347565231902fe4340b28572065135a5fbfd8a06575c2315a",
+        "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+        "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+        "katrain/cron/scheduler.py": "bc8a2e5ee36da5ec859eb56b088bbe9680eaead2f7020d2b6aa1b03e8e7b5e6a",
+        "katrain/web/api/v1/endpoints/kifu.py": "e4415009ee320dacd1f80446d24204282644d4dad4e7914e9508dfc9101a92f9",
+        "katrain/web/kifu/library.py": "052a01fbdb5c1808a6ef0b86ac9811291ed0c3b05b5ac8fb8cd7a033294fa6dc",
+        "katrain/web/ui/src/kiosk/pages/KifuPage.tsx": "839892d6d2c7d2b574ed055f1880d19a20b15454c6616f2b69578a69c5fb70f0",
+        "katrain/web/ui/src/kiosk/pages/ReportsPage.tsx": "52ca918dc5b6a67a9115cf72492f5e79d8e466563bc693dbbc04a7610e95945a",
+        "katrain/web/ui/src/kiosk/utils/playerRank.ts": null,
+        "katrain/web/ui/src/utils/rank.ts": "a6763f31de16956c99c08abcafa4a47d62c5d498618a2ec907fa24bc9a4f3960",
+        "katrain/kifu_ingest/__init__.py": "e3580e699bd74d8cf82262883e492e2123df4d966edded1c5703e4e132fe531b",
+        "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+        "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+        "katrain/kifu_ingest/inventory.py": "b27b9088a11aa2a2a8726c88ac0d53fab5ddb381b2c7671fc301915249bf2f1f",
+        "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+        "katrain/kifu_ingest/name_reuse.py": "9c8813e41b838e700148106b6f4e52a22169911ae0e539ca6a0b88da283c89c4",
+        "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+        "katrain/kifu_ingest/orchestration.py": "856925207cbec38a9ab981cc3f4e3eb947957a3f10856e4acb7da3c50535356a",
+        "katrain/kifu_ingest/preparation.py": "79611f491d5dd36b7b0068a52c7a29dcd6b4e0853ee91a78729a35ce64cbe857",
+        "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+        "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+        "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+        "katrain/kifu_ingest/state.py": "7bd2a5047f3804dd9a82f7344a06e3ae0c6fef625d6fef34ef1232ef47b1c24e",
+        "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+        "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a",
+        "katrain/web/kifu/name_parse.py": "1fbd3212d7d10b62785e6341f83683c552ad1a2526d7b681905d69d1a685809b",
+        "katrain/web/kifu/identity.py": "54e4281bb247c102b47bba5068e87ea7ac6cef972856065390c3b22961c74d5e",
+        "katrain/core/sgf_parser.py": "59a4d743d0d36ddc22ad1a21ce789110fc56c29b3356d9fe2e0cc5e9f9961cb5",
+        "katrain/web/ui/src/kiosk/utils/listRecordPresentation.ts": null,
+        "katrain/web/ui/src/kiosk/components/records/RecordMatchLine.tsx": null
+      },
+      "static": {
+        "katrain/web/static": {
+          "exists": true,
+          "realpath": "/root/smartbox-software/vendor/katrain/katrain/web/static",
+          "index_sha256": "7303afced6577862fc6576c44dc2710227c8ba594947baf30c147a453e932ec3",
+          "entry_assets": {
+            "/assets/index-DKV5ewBW.js": "ff0ea6cce731f2688b67c66e92128f2e90dfa0c4746c9390364b784ee1702447",
+            "/assets/rolldown-runtime-hePW80VL.js": "580ad8c58061a4dde99bde0a56905e382f0568516ee2f5b84dbfb52085709021",
+            "/assets/ui-core-CSCtnxX2.js": "1215b1d6fb4c8bc4e3c6c16fb71731049b257f4a2486332a5a65b60259086c19",
+            "/assets/api-F4MBphUX.js": "d3d3a134c1f589b29b66a7f922002f1f32519bd3c458671b998b3406aa13932c",
+            "/assets/index-DFEU3Joj.css": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+          },
+          "unrecorded_assets": [
+            {
+              "asset": "ReportsPage-DLutSJP1.js",
+              "sha256": "ad49b6d303c4f37c29a7bf70d32770d1650b84522d807fe0d8162bfee2dab7f6",
+              "unrecorded_count": 2,
+              "rank_unrecorded_count": 1
+            },
+            {
+              "asset": "KioskApp-DemmgZBy.js",
+              "sha256": "989e118f25cb416f41d46b71b0eca140ea8a4a99e18e99ab77f9b40f446a6a28",
+              "unrecorded_count": 2,
+              "rank_unrecorded_count": 1
+            },
+            {
+              "asset": "kifuRules-an0Tonsh.js",
+              "sha256": "1838525040d6ecf884b3b0104612ed08b96cbdd6a963594e43db5337f2231dd4",
+              "unrecorded_count": 2,
+              "rank_unrecorded_count": 0
+            }
+          ]
+        },
+        "katrain/web/static-kiosk-2d": {
+          "exists": true,
+          "realpath": "/root/smartbox-software/vendor/katrain/katrain/web/static-kiosk-2d",
+          "index_sha256": "55312355401b4e8c1df5e2bfed90a131b7340023ef89f35e9986becb60e82cb1",
+          "entry_assets": {
+            "/assets/index-DRVGXi41.js": "b20c8825b6868d5ab6d416ea4d640b9184933b2171775f5aae0edfcb172a7081",
+            "/assets/rolldown-runtime-hePW80VL.js": "580ad8c58061a4dde99bde0a56905e382f0568516ee2f5b84dbfb52085709021",
+            "/assets/ui-core-DucyrTSP.js": "3549f6c885dc28824274e2b123dee46114ad0e54b749886969f716c05c12d690",
+            "/assets/api-4JrHKzSS.js": "eaa2de978b403272082fb8bc575e83f3dc336ebd03becff46a82476b5d60fb8c",
+            "/assets/index-DFEU3Joj.css": "aec29907534e53c5743acbdd4f44f2ab26ed13cb430bbd5386aa85e3d7da927e"
+          },
+          "unrecorded_assets": [
+            {
+              "asset": "ReportsPage-CPJ-5qpz.js",
+              "sha256": "f963019036f8297b801fff0100def324f63b101a26e67c0a17dbf2ef1c60e535",
+              "unrecorded_count": 2,
+              "rank_unrecorded_count": 1
+            },
+            {
+              "asset": "KioskReportPlayback-BL3y0Men.js",
+              "sha256": "5d8f5686a615f3b7501dbc01802177a4fd86a947d3db7a956f6b2d258d030e67",
+              "unrecorded_count": 2,
+              "rank_unrecorded_count": 0
+            },
+            {
+              "asset": "KioskApp-D4Vj6g5x.js",
+              "sha256": "967776e25c69c493c6f11aa609efda96083fa1e142659798e091d3f0ab39f45f",
+              "unrecorded_count": 2,
+              "rank_unrecorded_count": 1
+            }
+          ]
+        }
+      },
+      "release_paths": [],
+      "service": {
+        "Restart": "on-failure",
+        "MainPID": "591004",
+        "ExecStart": "{ path=/opt/smartbox/venv-katrain/bin/python ; argv[]=/opt/smartbox/venv-katrain/bin/python -m katrain.web.server --host 127.0.0.1 --port 8081 --vision-backend rknn --vision-model /opt/smartbox/share/katrain-vision/go4_s.rknn --vision-camera /dev/smartbox-cam --vision-resolution 1920x1080 --capture-camera /dev/smartbox-cam --capture-resolution 1920x1080 --vision-confidence 0.40 --vision-confidence-keep 0.30 --vision-ambiguous-confidence 0.42 --vision-enhance clahe --vision-auto-exposure hardware --vision-ae-target 145 --vision-reference-check on --hardware-vision-dir /var/lib/smartbox/hardware/vision --led-serial-port /dev/smartbox-led --led-baud-rate 115200 --hint-engine local --hint-top-n 3 ; ignore_errors=no ; start_time=[Sun 2026-10-25 19:44:10 CST] ; stop_time=[n/a] ; pid=591004 ; code=(null) ; status=0/0 }",
+        "WorkingDirectory": "/root/smartbox-software/vendor/katrain",
+        "User": "",
+        "ActiveState": "active",
+        "SubState": "running",
+        "FragmentPath": "/etc/systemd/system/smartbox-katrain.service",
+        "DropInPaths": "/etc/systemd/system/smartbox-katrain.service.d/10-dataoffload.conf /etc/systemd/system/smartbox-katrain.service.d/20-vision-led.conf /etc/systemd/system/smartbox-katrain.service.d/90-kifu-release.conf /etc/systemd/system/smartbox-katrain.service.d/90-play-consistency-release.conf /etc/systemd/system/smartbox-katrain.service.d/99-kifu-translation-release.conf /etc/systemd/system/smartbox-katrain.service.d/ladder-provisional.conf /etc/systemd/system/smartbox-katrain.service.d/override.conf /etc/systemd/system/smartbox-katrain.service.d/zz-kiosk-ui-release.conf /etc/systemd/system/smartbox-katrain.service.d/zzz-lobby-game-release.conf /etc/systemd/system/smartbox-katrain.service.d/zzzz-ogs-course-release.conf /etc/systemd/system/smartbox-katrain.service.d/zzzzz-kiosk-player-cards-release.conf /etc/systemd/system/smartbox-katrain.service.d/zzzzzz-ogs-public-release.conf /etc/systemd/system/smartbox-katrain.service.d/zzzzzzz-kiosk-tutorial-19x19-release.conf /etc/systemd/system/smartbox-katrain.service.d/zzzzzzzz-kiosk-player-spacing-ranks-release.conf /etc/systemd/system/smartbox-katrain.service.d/zzzzzzzzz-kiosk-dialog-typography-release.conf /etc/systemd/system/smartbox-katrain.service.d/zzzzzzzzzz-kiosk-dialog-typography-final-release.conf /etc/systemd/system/smartbox-katrain.service.d/zzzzzzzzzzz-kiosk-list-ranks-results-release.conf /etc/systemd/system/smartbox-katrain.service.d/zzzzzzzzzzzz-kiosk-rank-identity-release.conf",
+        "safe_env": {
+          "KATRAIN_MODE": "board",
+          "KATRAIN_BUILD_SHA": "2e7640d892e311f3fc8ed70d4dc5a32e470d2ddf"
+        },
+        "cwd": "/root/smartbox-software/vendor/katrain",
+        "argv": [
+          "/opt/smartbox/venv-katrain/bin/python",
+          "-m",
+          "katrain.web.server",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "8081",
+          "--vision-backend",
+          "rknn",
+          "--vision-model",
+          "/opt/smartbox/share/katrain-vision/go4_s.rknn",
+          "--vision-camera",
+          "/dev/smartbox-cam",
+          "--vision-resolution",
+          "1920x1080",
+          "--capture-camera",
+          "/dev/smartbox-cam",
+          "--capture-resolution",
+          "1920x1080",
+          "--vision-confidence",
+          "0.40",
+          "--vision-confidence-keep",
+          "0.30",
+          "--vision-ambiguous-confidence",
+          "0.42",
+          "--vision-enhance",
+          "clahe",
+          "--vision-auto-exposure",
+          "hardware",
+          "--vision-ae-target",
+          "145",
+          "--vision-reference-check",
+          "on",
+          "--hardware-vision-dir",
+          "/var/lib/smartbox/hardware/vision",
+          "--led-serial-port",
+          "/dev/smartbox-led",
+          "--led-baud-rate",
+          "115200",
+          "--hint-engine",
+          "local",
+          "--hint-top-n",
+          "3"
+        ]
+      },
+      "http": {
+        "/api/v1/health": {
+          "status": 200,
+          "body_sha256": "82956ca4f7e98d2a99610d651b9a5a674429879ad01da8658a6fe962e9d1749f",
+          "cache_control": null,
+          "safe_body": {
+            "status": "ok",
+            "version": "1.17.1"
+          }
+        },
+        "/kiosk/login": {
+          "status": 200,
+          "body_sha256": "55312355401b4e8c1df5e2bfed90a131b7340023ef89f35e9986becb60e82cb1",
+          "cache_control": "no-cache",
+          "asset_refs": [
+            "/assets/index-DRVGXi41.js",
+            "/assets/rolldown-runtime-hePW80VL.js",
+            "/assets/ui-core-DucyrTSP.js",
+            "/assets/api-4JrHKzSS.js",
+            "/assets/index-DFEU3Joj.css"
+          ]
+        }
+      },
+      "active_static_graph": {
+        "katrain/web/static": {
+          "reachable_js_count": 153,
+          "active_card_modules": [
+            "KioskApp-DemmgZBy.js",
+            "ReportsPage-CTc1xrW_.js",
+            "ReportsPage-DLutSJP1.js"
+          ],
+          "active_unrecorded_assets": [
+            {
+              "asset": "kifuRules-an0Tonsh.js",
+              "sha256": "1838525040d6ecf884b3b0104612ed08b96cbdd6a963594e43db5337f2231dd4",
+              "rank_unrecorded_count": 0,
+              "unrecorded_count": 2
+            },
+            {
+              "asset": "KioskApp-DemmgZBy.js",
+              "sha256": "989e118f25cb416f41d46b71b0eca140ea8a4a99e18e99ab77f9b40f446a6a28",
+              "rank_unrecorded_count": 1,
+              "unrecorded_count": 2
+            },
+            {
+              "asset": "ReportsPage-DLutSJP1.js",
+              "sha256": "ad49b6d303c4f37c29a7bf70d32770d1650b84522d807fe0d8162bfee2dab7f6",
+              "rank_unrecorded_count": 1,
+              "unrecorded_count": 2
+            }
+          ]
+        },
+        "katrain/web/static-kiosk-2d": {
+          "reachable_js_count": 88,
+          "active_card_modules": [
+            "KioskApp-D4Vj6g5x.js",
+            "ReportsPage-CPJ-5qpz.js"
+          ],
+          "active_unrecorded_assets": [
+            {
+              "asset": "KioskApp-D4Vj6g5x.js",
+              "sha256": "967776e25c69c493c6f11aa609efda96083fa1e142659798e091d3f0ab39f45f",
+              "rank_unrecorded_count": 1,
+              "unrecorded_count": 2
+            },
+            {
+              "asset": "KioskReportPlayback-BL3y0Men.js",
+              "sha256": "5d8f5686a615f3b7501dbc01802177a4fd86a947d3db7a956f6b2d258d030e67",
+              "rank_unrecorded_count": 0,
+              "unrecorded_count": 2
+            },
+            {
+              "asset": "ReportsPage-CPJ-5qpz.js",
+              "sha256": "f963019036f8297b801fff0100def324f63b101a26e67c0a17dbf2ef1c60e535",
+              "rank_unrecorded_count": 1,
+              "unrecorded_count": 2
+            }
+          ]
+        }
+      },
+      "deployment_provenance": {
+        "git_executable": "/usr/bin/git",
+        "git_markers": {
+          "/root/smartbox-software": {
+            "git_marker_exists": false
+          },
+          "/root/smartbox-software/vendor/katrain": {
+            "git_marker_exists": false
+          }
+        },
+        "deployment_stamps": {
+          "/root/smartbox-software/.smartbox-deploy-revisions": {
+            "main": "350c927bade41104670fbe4b414a8ceb60e5bb62",
+            "vendor/katrain": "2e7640d892e311f3fc8ed70d4dc5a32e470d2ddf"
+          }
+        },
+        "final_sha_dropin": [
+          {
+            "path": "/etc/systemd/system/smartbox-katrain.service.d/zzzzzzzzzzzz-kiosk-rank-identity-release.conf",
+            "line": "Environment=KATRAIN_BUILD_SHA=2e7640d892e311f3fc8ed70d4dc5a32e470d2ddf"
+          }
+        ]
+      }
+    }
+  },
+  "expected_source_hashes": {
+    "katrain/web/server.py": "d7525ae106b1fc1347565231902fe4340b28572065135a5fbfd8a06575c2315a",
+    "katrain/cron/jobs/kifu_ingest.py": "f3d81d0f1d4f41d0518b00806b869f9b1786f6832d4c07d2b7c24f0450f8ee4f",
+    "katrain/cron/config.py": "8663e183f71f47c44a9fba3b6004df31c475774831ddb0aa5a2fd4ce79cddffe",
+    "katrain/cron/scheduler.py": "bc8a2e5ee36da5ec859eb56b088bbe9680eaead2f7020d2b6aa1b03e8e7b5e6a",
+    "katrain/web/api/v1/endpoints/kifu.py": "e4415009ee320dacd1f80446d24204282644d4dad4e7914e9508dfc9101a92f9",
+    "katrain/web/kifu/library.py": "052a01fbdb5c1808a6ef0b86ac9811291ed0c3b05b5ac8fb8cd7a033294fa6dc",
+    "katrain/web/ui/src/kiosk/pages/KifuPage.tsx": "bc4686a9866e5bf2993f7964ca807f4e5fa0ec69dae5daaadf8878acb5699c97",
+    "katrain/web/ui/src/kiosk/pages/ReportsPage.tsx": "175d96ccfa79f316b4b490ab0e4c7bca8668b0ed5797a734041c74e1643fc69a",
+    "katrain/web/ui/src/kiosk/utils/playerRank.ts": "83cd655d1e1eaf87b900ba4befefa7848f2177d919de84e31f25e7fc0b9546a9",
+    "katrain/web/ui/src/utils/rank.ts": "a6763f31de16956c99c08abcafa4a47d62c5d498618a2ec907fa24bc9a4f3960",
+    "katrain/kifu_ingest/__init__.py": "e3580e699bd74d8cf82262883e492e2123df4d966edded1c5703e4e132fe531b",
+    "katrain/kifu_ingest/catalog.py": "81452cddd30692bf557d38bcef1571e03333d44f2851768c7201f889b85d0b3f",
+    "katrain/kifu_ingest/exclusions.py": "e27c507d5b1aee8c610a72a0262b55c096e110695de03bf94fc0077d9ad211f7",
+    "katrain/kifu_ingest/inventory.py": "b27b9088a11aa2a2a8726c88ac0d53fab5ddb381b2c7671fc301915249bf2f1f",
+    "katrain/kifu_ingest/maintenance.py": "ea7a3366661e51106fd271e342480bb06b19ce65a1a7e1d40e7beb811a14d756",
+    "katrain/kifu_ingest/name_reuse.py": "9c8813e41b838e700148106b6f4e52a22169911ae0e539ca6a0b88da283c89c4",
+    "katrain/kifu_ingest/names.py": "745e0359f1de75edde29db27ef1ff394042f3b15d1cdebcdfafb1cacd7731093",
+    "katrain/kifu_ingest/orchestration.py": "856925207cbec38a9ab981cc3f4e3eb947957a3f10856e4acb7da3c50535356a",
+    "katrain/kifu_ingest/preparation.py": "79611f491d5dd36b7b0068a52c7a29dcd6b4e0853ee91a78729a35ce64cbe857",
+    "katrain/kifu_ingest/recent.py": "581395793ee374f41a4a79b3395b125b5d51ef10ac8fce3beb8562ed31b46c3c",
+    "katrain/kifu_ingest/source_19x19.py": "f26cf6d1a160472b2159a498ec954bb010d430998a94c17fefc7022d04a358de",
+    "katrain/kifu_ingest/staging.py": "0eed901bdb56ed4edaeb44245659932ae8a73c2f0b09128dad182fff870e0654",
+    "katrain/kifu_ingest/state.py": "7bd2a5047f3804dd9a82f7344a06e3ae0c6fef625d6fef34ef1232ef47b1c24e",
+    "katrain/kifu_ingest/sync.py": "70d243831a45460d644cc72895ffc9a2e17500b83f0ef17e110f811d3543b022",
+    "katrain/kifu_ingest/verification.py": "8803d2b28e1863786a647975ac711118c2664f0f3a24c6060eff37f1ee6f519a",
+    "katrain/web/kifu/name_parse.py": "1fbd3212d7d10b62785e6341f83683c552ad1a2526d7b681905d69d1a685809b",
+    "katrain/web/kifu/identity.py": "54e4281bb247c102b47bba5068e87ea7ac6cef972856065390c3b22961c74d5e",
+    "katrain/core/sgf_parser.py": "59a4d743d0d36ddc22ad1a21ce789110fc56c29b3356d9fe2e0cc5e9f9961cb5",
+    "katrain/web/ui/src/kiosk/utils/listRecordPresentation.ts": "d5dace6538a407ed291bdb6e251a41dcdb255a949629d20f6209d5c365b03c2a",
+    "katrain/web/ui/src/kiosk/components/records/RecordMatchLine.tsx": "f1417f6c6b70f4237ab61b56383611867d8978d31e5de0de2ce6fed082f64908"
+  },
+  "state_recorded_at": "2026-10-25T13:16:18.391085+00:00",
+  "candidate_ui_commit": "1704114fa4f7dc4f693402f57a99c02cccc8088d",
+  "candidate_ui_hashes": {
+    "katrain/web/ui/src/kiosk/pages/KifuPage.tsx": "25e25541b5924e0bf5bd08bcfab164dc8a298d7ffe079b393d6dfe8ceaf7eb9e",
+    "katrain/web/ui/src/kiosk/pages/ReportsPage.tsx": "3eef002c5a5db0e4f45b4437f2e6e6cafdb7e8ff5ee980498846d2a21f40c152",
+    "katrain/web/ui/src/kiosk/utils/playerRank.ts": "83cd655d1e1eaf87b900ba4befefa7848f2177d919de84e31f25e7fc0b9546a9",
+    "katrain/web/ui/src/utils/rank.ts": "a6763f31de16956c99c08abcafa4a47d62c5d498618a2ec907fa24bc9a4f3960",
+    "katrain/web/ui/src/kiosk/utils/listRecordPresentation.ts": "23a6354ce2825c08d6bfe488a3e338241fdc857ee95064eaa142bf917036afee",
+    "katrain/web/ui/src/kiosk/components/records/RecordMatchLine.tsx": "755b0bf5b9600824ea80afb508811db0b2d00e8d7f59dfb8f22ed1a18eb1b1d4"
+  },
+  "completed_at": "2026-10-25T13:22:45.574073+00:00",
+  "scope": {
+    "remote_mutations": false,
+    "database_transactions": "SET TRANSACTION READ ONLY; SET LOCAL statement_timeout=8s; rollback",
+    "model_calls": 0,
+    "source_downloads": 0,
+    "imports": 0,
+    "full_sgf_scans": 0,
+    "secret_environment_output": false,
+    "local_written_file": "docs/operations/2026-10-25-rank-release-readonly-inventory.json"
+  },
+  "findings": {
+    "cloud_live_web_revision": "68db3ba5ef2aeccaa921684725ce5a484fbe06a9",
+    "cloud_web_backend_baseline_match": "All 24 selected non-UI source files match 2e7640d89 on both current Web containers; this does not claim whole-image source parity.",
+    "test_cron_baseline_match": "All selected kifu_ingest modules plus ingest job/config/scheduler/parser/name helpers match 2e; server.py and Web kifu endpoint differ, consistent with a cron-specific image.",
+    "rk_provenance": "Runtime KATRAIN_BUILD_SHA, final rank-identity drop-in and .smartbox-deploy-revisions vendor/katrain all say 2e7640d89; parent stamp main=350c927bade41104670fbe4b414a8ceb60e5bb62. RK is an exported tree without .git, not a live Git checkout.",
+    "rk_live_ui": "HTTP /kiosk/login body SHA equals strict index 55312355401b4e8c1df5e2bfed90a131b7340023ef89f35e9986becb60e82cb1; reachable KioskApp-D4Vj6g5x and ReportsPage-CPJ-5qpz contain the previous rank-unrecorded wording. This is a served-bundle check, not an authenticated DOM claim.",
+    "ui_source_staleness": "Cloud and RK directories contain older KifuPage/ReportsPage TSX and do not contain current playerRank/listRecordPresentation/RecordMatchLine source paths; use published source and built artifact hashes, not runtime directory TSX, for UI deployment.",
+    "ingest_idle_snapshot": "At state_recorded_at TEST latest runs75611/75504 are successful, no running run rows, no kifu advisory lock, no standalone SSH receiver/writer process. PID1 threads observed waiting. Snapshot requires recheck immediately before a later deployment.",
+    "prod_cron": "Existing production analysis cron remains 56f53fa4, with no ingest modules/stage/ingest status. It must not be repurposed or enabled as collector.",
+    "old_checkout_warning": "TEST /home/fan/Repositories/katrain is clean tracked feature/admin-console bb3c2bb3d4715f2fe3115ef4bc98577ff05b2bf2, older than deployed Web source; Compose cron build.context still points there. Do not use --build from this stale context."
+  },
+  "minimum_safe_deployment_sequence": [
+    "Finish integration/publish and build full plus strict static artifacts from the same final source SHA. Treat 1704114fa as a UI candidate until the UI owner supplies its final published SHA/artifact receipts.",
+    "Immediately before changes recheck current image IDs, running ingest run/advisory locks and current receiver/writer processes. Coordinate any pause/resume only in the root task non-concurrent deployment window; this inventory changed no controls or locks.",
+    "If backend rank modules change, build precise overlays on each current live image ID: TEST Web sha256:1bd07cff3d4c659972dafe837ae4dfe3c94418d12682e6b076f86b015ec55a70; TEST cron sha256:9c414726fa56da734e7f47f6fb409d6373e747a9198c4c80bb31fc4606bccb98. Append service-specific override to the exact current Compose chain, preserve stage/secrets mounts, budgets, users, ports and restart policy; use service-scoped --no-deps and avoid rebuilding the old host checkout.",
+    "Verify TEST existing sample179093/source91694911 and new response/display semantics with focused read-only requests. No source re-download, SGF rewrite, catalog re-import or model call is needed for a display/derivation-only release.",
+    "Release PROD Web overlay based on its own live sha256:971bec56c6e7515fca8b0450d8899834053d873da9ebfe09f44a23fd6dc011bd and current Compose chain; leave production analysis cron, GPU engines, DB and MinIO untouched. Verify existing sample178757 and health/Galaxy/kiosk pages.",
+    "For RK use the existing KaTrain-only incremental recipe documented in docs/design/local-confirm-2026-10-11/RELEASE-DECISION.md; build from the published SHA, preserve unrelated source/other games/device configuration, send new assets before index for full and strict outputs and retain old hashed assets. Only if changed Python/runtime build environment requires it, restart smartbox-katrain.service in a verified safe idle window; do not run the all-four-games deploy-main-to-rk3562.sh push.",
+    "After switching, record actual served index/entry/module hashes, runtime BUILD_SHA, representative read-only pages and preserved ingest scheduling/budgets; restore only controls intentionally changed by the root task."
+  ],
+  "known_limits": [
+    "This is a time-bounded read-only snapshot; it does not reserve a deployment window and cannot certify future idle state.",
+    "Selected source-file parity and build labels do not establish whole-image source parity. Effective Web Compose chains were evaluated successfully; PROD analysis cron effective configuration was intentionally not evaluated or changed.",
+    "No separate rank-identity receipt file was located in bounded depth3 search of /root, /opt, /var/lib/smartbox and /tmp; actual final systemd drop-in and .smartbox-deploy-revisions provide current RK provenance instead.",
+    "No authenticated browser interaction, gameplay/vision action or Python thread-stack attachment was performed. All HTTP checks were read-only health or SPA entry GETs."
+  ],
+  "rk_existing_standard_deploy_references": {
+    "production_owner": "smartbox-software/provisioning/provision.sh --section katrain",
+    "targeted_recipe": "docs/design/local-confirm-2026-10-11/RELEASE-DECISION.md",
+    "broad_script": "/Users/fan/Repositories/smartbox-software/scripts/deploy-main-to-rk3562.sh",
+    "broad_script_note": "Read only; push builds/deploys four games and changes runtime/services, beyond this task. Do not invoke for this narrow release.",
+    "final_runtime_dropin": "/etc/systemd/system/smartbox-katrain.service.d/zzzzzzzzzzzz-kiosk-rank-identity-release.conf",
+    "deploy_stamp": "/root/smartbox-software/.smartbox-deploy-revisions"
+  }
+}

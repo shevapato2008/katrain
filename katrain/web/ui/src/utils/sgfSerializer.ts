@@ -30,7 +30,7 @@ function parseDisplayMove(move: string, boardSize: number): [number, number] | n
 
 /** Convert SGF coord pair "dp" to (x, y) board coords, or 'pass' for pass notation */
 function fromSgfCoord(sgf: string, boardSize: number): [number, number] | 'pass' | null {
-  if (!sgf || sgf.length < 2) return null;
+  if (!sgf || sgf.length !== 2) return null;
   // "tt" is a standard SGF pass notation for boards ≤ 19×19
   if (sgf === 'tt' && boardSize <= 19) return 'pass';
   const x = sgf.charCodeAt(0) - 97;
@@ -63,7 +63,13 @@ export interface SGFMetadata {
   whiteRank?: string;
   /** `RE[]` —— 棋谱自己写的胜负。本地导入靠它，没有别的来源。 */
   result?: string;
+  /** Initial stones are the first setupCount entries in the display arrays, never game moves. */
+  setupCount?: number;
+  initialPlayer?: 'B' | 'W';
 }
+
+export interface ResearchSerializationOptions { position?: boolean }
+
 
 // ── Serialization: moves[] → SGF ──
 
@@ -71,7 +77,7 @@ export interface SGFMetadata {
  * Serialize a moves array + metadata into a valid SGF string.
  *
  * For standard alternating play, generates ;B[xx];W[yy] nodes.
- * For continuous same-color play (place mode), uses AB[]/AW[] setup properties.
+ * Only explicitly marked initial stones use AB[]/AW[]; move history is never repaired.
  * Handles passes as B[] / W[].
  */
 export function movesToSGF(
@@ -91,30 +97,22 @@ export function movesToSGF(
   // Determine how many leading moves are handicap setup stones.
   // These are emitted as AB[] in the root node (per SGF standard),
   // not as B[] move nodes.
-  let setupCount = 0;
-  if (handicap > 0 && stoneColors) {
+  let setupCount = Math.min(metadata.setupCount ?? 0, moves.length);
+  if (metadata.setupCount === undefined && handicap > 0 && stoneColors) {
     for (let i = 0; i < Math.min(handicap, moves.length); i++) {
-      if (stoneColors[i] === 'B' && moves[i].toLowerCase() !== 'pass') {
-        setupCount++;
-      } else {
-        break;
-      }
+      if (stoneColors[i] === 'B' && moves[i].toLowerCase() !== 'pass') setupCount++;
+      else break;
     }
   }
-
-  // Emit handicap stones as AB[] in root node
-  if (setupCount > 0) {
-    const abCoords: string[] = [];
-    for (let i = 0; i < setupCount; i++) {
-      const coords = parseDisplayMove(moves[i], boardSize);
-      if (coords) {
-        abCoords.push(toSgfCoord(coords[0], coords[1], boardSize));
-      }
-    }
-    if (abCoords.length > 0) {
-      root += `AB${abCoords.map(c => `[${c}]`).join('')}`;
-    }
+  for (const color of ['B', 'W'] as const) {
+    const points = moves.slice(0, setupCount).flatMap((move, index) => {
+      if ((stoneColors?.[index] ?? 'B') !== color) return [];
+      const coords = parseDisplayMove(move, boardSize);
+      return coords ? [toSgfCoord(coords[0], coords[1], boardSize)] : [];
+    });
+    if (points.length) root += `A${color}${points.map(point => `[${point}]`).join('')}`;
   }
+  if (metadata.initialPlayer) root += `PL[${metadata.initialPlayer}]`;
 
   // Build move nodes (skip handicap setup stones)
   const nodes: string[] = [];
@@ -124,9 +122,8 @@ export function movesToSGF(
     const move = moves[i];
     // In handicap games (setupCount > 0), first game move = White.
     // In non-handicap games, first move = Black (standard alternation).
-    const player = stoneColors?.[i] ?? (setupCount > 0
-      ? ((i - setupCount) % 2 === 0 ? 'W' : 'B')
-      : (i % 2 === 0 ? 'B' : 'W'));
+    const firstPlayer = metadata.initialPlayer ?? (setupCount > 0 ? 'W' : 'B');
+    const player = stoneColors?.[i] ?? ((i - setupCount) % 2 === 0 ? firstPlayer : firstPlayer === 'B' ? 'W' : 'B');
 
     if (move.toLowerCase() === 'pass') {
       nodes.push(`;${player}[]`);
@@ -171,6 +168,7 @@ export function sgfToMoves(sgfContent: string): {
    * 报告页拿这个数把两套下标对齐;只关心盘面的调用方不用理它。
    */
   setupCount: number;
+  unsupportedSetup: boolean;
 } {
   const nodes = extractMainLine(sgfContent);
   const moves: string[] = [];
@@ -178,9 +176,18 @@ export function sgfToMoves(sgfContent: string): {
   const metadata: Partial<SGFMetadata> = {};
   let setupCount = 0;
   let sawMove = false;
+  let unsupportedSetup = false;
 
-  for (const node of nodes) {
+  for (const [nodeIndex, node] of nodes.entries()) {
     const props = parseNode(node);
+    if (nodeIndex > 0 && ['GM', 'FF', 'SZ', 'RU', 'KM', 'HA'].some(key => props[key])) unsupportedSetup = true;
+    if (sawMove && (props.AB || props.AW || props.AE || props.PL)) unsupportedSetup = true;
+    if ((props.B || props.W) && (props.AB || props.AW || props.AE || props.PL)) unsupportedSetup = true;
+    if (props.PL && !sawMove) {
+      const player = props.PL[0]?.toUpperCase();
+      if (props.PL.length !== 1 || (player !== 'B' && player !== 'W') || (metadata.initialPlayer && metadata.initialPlayer !== player)) unsupportedSetup = true;
+      else metadata.initialPlayer = player;
+    }
 
     // Extract metadata from root node
     if (props.SZ) metadata.boardSize = parseInt(props.SZ[0], 10);
@@ -195,17 +202,29 @@ export function sgfToMoves(sgfContent: string): {
 
     const boardSize = metadata.boardSize || 19;
 
-    // Process setup stones (AB/AW) BEFORE moves — handicap stones get lower numbers
+    // Preserve the initial setup separately from the B/W history. Compressed setup
+    // ranges expand to their exact points; initial AE removes only named stones.
+    const setupPoints = (raw: string): [number, number][] => {
+      const parts = raw.split(':');
+      const first = fromSgfCoord(parts[0], boardSize);
+      if (!first || first === 'pass') { unsupportedSetup = true; return []; }
+      if (parts.length === 1) return [first];
+      const last = parts.length === 2 ? fromSgfCoord(parts[1], boardSize) : null;
+      if (!last || last === 'pass' || last[0] < first[0] || last[1] > first[1]) { unsupportedSetup = true; return []; }
+      const points: [number, number][] = [];
+      for (let y = first[1]; y >= last[1]; y--) for (let x = first[0]; x <= last[0]; x++) points.push([x, y]);
+      return points;
+    };
     for (const [prop, color] of [['AB', 'B'], ['AW', 'W']] as const) {
-      if (props[prop]) {
-        for (const val of props[prop]) {
-          const coords = fromSgfCoord(val, boardSize);
-          if (coords && coords !== 'pass') {
-            moves.push(toDisplayMove(coords[0], coords[1]));
-            stoneColors.push(color);
-            if (!sawMove) setupCount++;
-          }
-        }
+      for (const value of props[prop] ?? []) for (const [x, y] of setupPoints(value)) {
+        moves.push(toDisplayMove(x, y)); stoneColors.push(color);
+        if (!sawMove) setupCount++;
+      }
+    }
+    if (!sawMove) for (const value of props.AE ?? []) for (const [x, y] of setupPoints(value)) {
+      const move = toDisplayMove(x, y);
+      for (let index = setupCount - 1; index >= 0; index--) if (moves[index] === move) {
+        moves.splice(index, 1); stoneColors.splice(index, 1); setupCount--;
       }
     }
 
@@ -226,13 +245,17 @@ export function sgfToMoves(sgfContent: string): {
             moves.push(toDisplayMove(coords[0], coords[1]));
             stoneColors.push(color);
           }
-          // If coords is null (unparseable), skip both to keep arrays in sync
+          else unsupportedSetup = true;
+          // Display readers keep arrays in sync; research refuses invalid snapshots.
         }
       }
     }
   }
 
-  return { moves, stoneColors, metadata, setupCount };
+  metadata.setupCount = setupCount;
+  metadata.initialPlayer ??= stoneColors[setupCount]
+    ?? (setupCount > 0 && stoneColors.slice(0, setupCount).every(color => color === 'B') ? 'W' : 'B');
+  return { moves, stoneColors, metadata, setupCount, unsupportedSetup };
 }
 
 // ── Round-trip validation ──

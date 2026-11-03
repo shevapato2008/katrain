@@ -37,6 +37,7 @@ from katrain.cron.models import ReportTaskDB, ReportTaskMoveDB
 
 logger = logging.getLogger("katrain_cron.requeue_reports")
 
+
 def _task_has_human_prior(db, task_id: int) -> bool | None:
     """True=全都有；False=有一行没有；None=判不了（这份报告一行候选表都没有）。
 
@@ -65,22 +66,20 @@ def _task_has_human_prior(db, task_id: int) -> bool | None:
 def requeue(commit: bool = False, limit: int | None = None) -> dict[str, int]:
     # 没配 profile 的话重跑出来还是没有人类倾向 —— 白删一遍数据、白烧一轮 GPU。
     if not config.HUMAN_SL_PROFILE:
-        raise SystemExit(
-            "CRON_HUMAN_SL_PROFILE 是空的：重跑出来仍然不会有人类倾向。先配好再来。"
-        )
+        raise SystemExit("CRON_HUMAN_SL_PROFILE 是空的：重跑出来仍然不会有人类倾向。先配好再来。")
 
     stats = {"completed": 0, "already_has": 0, "no_candidates": 0, "requeued": 0, "rows_deleted": 0}
 
     with SessionLocal() as db:
-        tasks = (
-            db.query(ReportTaskDB)
-            .filter(ReportTaskDB.status == "completed")
-            .order_by(ReportTaskDB.id.asc())
-            .all()
-        )
+        tasks = db.query(ReportTaskDB).filter(ReportTaskDB.status == "completed").order_by(ReportTaskDB.id.asc()).all()
         stats["completed"] = len(tasks)
 
         for task in tasks:
+            # Paid receipts promise immutable complete results. Regeneration needs
+            # a new user authorization; this legacy maintenance tool cannot supply it.
+            if task.billing_version is not None or task.operation_id is not None:
+                logger.info("Skipping paid report task %d", task.id)
+                continue
             if limit is not None and stats["requeued"] >= limit:
                 break
 
@@ -94,9 +93,7 @@ def requeue(commit: bool = False, limit: int | None = None) -> dict[str, int]:
                 logger.warning("Task %d has no stored candidates at all; skipping", task.id)
                 continue
 
-            row_count = (
-                db.query(ReportTaskMoveDB).filter(ReportTaskMoveDB.task_id == task.id).count()
-            )
+            row_count = db.query(ReportTaskMoveDB).filter(ReportTaskMoveDB.task_id == task.id).count()
             stats["requeued"] += 1
             stats["rows_deleted"] += row_count
             logger.info(
@@ -108,9 +105,7 @@ def requeue(commit: bool = False, limit: int | None = None) -> dict[str, int]:
             )
 
             if commit:
-                db.query(ReportTaskMoveDB).filter(ReportTaskMoveDB.task_id == task.id).delete(
-                    synchronize_session=False
-                )
+                db.query(ReportTaskMoveDB).filter(ReportTaskMoveDB.task_id == task.id).delete(synchronize_session=False)
                 task.status = "pending"
                 task.analyzed_moves = 0
                 task.completed_at = None

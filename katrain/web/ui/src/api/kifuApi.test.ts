@@ -66,3 +66,49 @@ it('首次预加载网络失败后重试发起新的请求', async () => {
   expect(await request()).toEqual({ items: [], total: 0 });
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
+
+it('列表与详情将AbortSignal透传给fetch', async () => {
+  const signal = new AbortController().signal;
+  const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response('{}')));
+  vi.stubGlobal('fetch', fetchMock);
+  await KifuAPI.getAlbums({ q: 'signal', signal });
+  await KifuAPI.getAlbum(81291, 'cn', signal);
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/v1/kifu/albums?q=signal', { signal });
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/v1/kifu/albums/81291?lang=cn', { signal });
+});
+
+it('旧列表晚到不能清空或替换新列表的preview缓存', async () => {
+  let resolveOld!: (response: Response) => void;
+  const old = new Promise<Response>((resolve) => { resolveOld = resolve; });
+  const preview = { id: 81292, sgf_content: '(;SZ[19];B[dd])' };
+  const fetchMock = vi.fn().mockReturnValueOnce(old)
+    .mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ preview }))));
+  vi.stubGlobal('fetch', fetchMock);
+  const first = KifuAPI.getAlbums({ q: 'old', lang: 'cn' });
+  await KifuAPI.getAlbums({ q: 'current', lang: 'cn' });
+  resolveOld(new Response(JSON.stringify({ preview: { id: 81293, sgf_content: '(;SZ[19];B[aa])' } })));
+  await first;
+  expect(await KifuAPI.getAlbum(preview.id, 'cn')).toEqual(preview);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+it('已取消的列表在JSON晚到时不发布preview，详情也不接受已取消的缓存读取', async () => {
+  const controller = new AbortController();
+  const preview = { id: 81294, sgf_content: '(;SZ[19];B[dd])' };
+  let resolveJson!: (value: unknown) => void;
+  const json = new Promise((resolve) => { resolveJson = resolve; });
+  const fetchMock = vi.fn().mockResolvedValueOnce({ ok: true, json: () => json })
+    .mockImplementation(() => Promise.resolve(new Response('{}')));
+  vi.stubGlobal('fetch', fetchMock);
+  const pending = KifuAPI.getAlbums({ q: 'cancelled', lang: 'cn', signal: controller.signal });
+  await Promise.resolve();
+  controller.abort();
+  resolveJson({ preview });
+  await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  await KifuAPI.getAlbum(preview.id, 'cn');
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ preview })));
+  await KifuAPI.getAlbums({ lang: 'cn' });
+  await expect(KifuAPI.getAlbum(preview.id, 'cn', controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+});

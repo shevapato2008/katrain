@@ -9,6 +9,7 @@ import { EmojiEvents } from '@mui/icons-material';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
+import { usePlayerRanks } from '../hooks/usePlayerRanks';
 import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
 import LobbyGamePanel from '../components/game/LobbyGamePanel';
@@ -187,7 +188,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { token, user, isAuthenticated } = useAuth();
+  const { token, user, isAuthenticated, isGuest } = useAuth();
   const { pathname } = useLocation();
   const centralRoom = pathname.includes('/play/pvp/room/');
   const [centralUserId, setCentralUserId] = useState<number | null>(isStrictBoxKiosk ? null : user?.id ?? null);
@@ -725,6 +726,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     sessionId, session.gameState?.game_type, session.gameState?.end_result, token ?? undefined,
     String(user?.id ?? user?.username ?? 'anonymous'),
   );
+  const playerRanks = usePlayerRanks({ sessionId, gameState: session.gameState, user, token, isAuthenticated, isGuest, engineMode, lobbyRoom: centralRoom,
+    settlement: settlementFeedback?.status && settlementFeedback.kind !== 'pending' && settlementFeedback.kind !== 'error'
+      ? JSON.stringify(settlementFeedback.status.placement_state) : '',
+  });
   const celebrating = useGameCelebration(
     sessionId, session.gameState, session.gameState ? deriveHumanColor(session.gameState) : null,
   );
@@ -1481,7 +1486,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               (`GameControlPanel`),平时不占地方 —— 比三颗一直亮着的灯说得还清楚。 */}
       {localConfirmationLayout ? (
         <LocalConfirmGame key={`${sessionId}|${gameState.game_id}`}
-          gameState={gameState} input={physicalPlay ? 'physical' : 'screen'}
+          gameState={gameState} playerRanks={playerRanks} input={physicalPlay ? 'physical' : 'screen'}
           point={localConfirmation.point} busy={localConfirmation.busy} failed={localConfirmation.failed}
           physicalPreparation={physicalPlay ? physicalPreparation : undefined}
           onRetryPreparation={!session.connectionLost && !counting && visionStatus.cameraConnected ? (localPhysicalGame ? retryLocalRecovery : visionSync.retryBind) : undefined}
@@ -1534,7 +1539,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
         <div className={`kiosk-rail${lobbyGame ? ' lobby-game' : ''}`}>
           {lobbyGame ? <LobbyGamePanel
-            gameState={gameState} setupLine={gameSetupLine} connected={session.connected === true && !session.connectionLost}
+            gameState={gameState} sessionId={sessionId} playerRanks={playerRanks} setupLine={gameSetupLine} connected={session.connected === true && !session.connectionLost}
             isGameOver={isGameOver} physicalPlay={physicalPlay}
             blocked={countPending || !!opponentCountRequest} countDisabled={countIdentityError || centralUserId === null}
             counting={counting || lobbyAutoCountPending}
@@ -1552,6 +1557,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             sub={gameSetupLine}
           />
           <GameControlPanel
+            playerRanks={playerRanks}
             onTimeout={localGame || onlineGame ? undefined : handleClockExpired}
             onTimeExpired={localGame ? handleTimeExpired : undefined}
             gameState={gameState}

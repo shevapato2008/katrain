@@ -1,5 +1,5 @@
 /* OGS course design preview, 1024 × 600. Uses the existing StellaBox shell. */
-.u-ogs{position:absolute;inset:56px 0 0;background:#0b1413;color:#eaf2e8;font-family:"SmartBox Kai",serif;overflow:hidden}
+.u-ogs{position:absolute;inset:56px 0 0;background:#0b1413;color:#eaf2e8;font-family:var(--font-sans);overflow:hidden}
 .u-ogs *{box-sizing:border-box}
 .u-ogs button{font-family:inherit}
 .u-ogs .ogs-muted{color:#a6bdae}
@@ -19,7 +19,7 @@
 .u-ogs .ogs-hero p{font-size:22px;line-height:1.35;margin:27px 0 0;max-width:290px}
 .u-ogs .ogs-hero .ogs-metrics{display:flex;gap:12px;margin-top:auto;margin-bottom:18px}
 .u-ogs .ogs-hero .ogs-metrics span{flex:1;display:flex;flex-direction:column;align-items:center;border:1px solid #55745c;border-radius:10px;background:#0e2119a8;padding:8px 3px;font-size:18px;color:#aacaaf}
-.u-ogs .ogs-hero .ogs-metrics strong{font:700 22px "Kiosk Plex Mono",monospace;color:#eaf4e9}
+.u-ogs .ogs-hero .ogs-metrics strong{font:700 22px var(--font-mono);color:#eaf4e9}
 .u-ogs .ogs-hero .ogs-key{width:100%;height:55px;font-size:22px}
 .u-ogs .ogs-home-right{min-width:0;display:flex;flex-direction:column}
 .u-ogs .ogs-section-head{height:50px;display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -28,7 +28,7 @@
 .u-ogs .ogs-chapter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,88px);gap:10px;min-height:0}
 .u-ogs .ogs-chapter{position:relative;min-width:0;text-align:left;padding:9px 14px;display:flex;align-items:center;gap:11px;color:#e8f1e7;border:1px solid #3a6048;border-radius:14px;background:linear-gradient(#263f31,#162b21);box-shadow:inset 0 2px 1px #ffffff1b,inset 0 -4px 0 #0b1b14,0 4px 0 #07140e,0 7px 11px #0008}
 .u-ogs .ogs-chapter:hover,.u-ogs .ogs-lesson:hover{border-color:#81cc96}
-.u-ogs .ogs-chapter-no{display:grid;place-items:center;width:42px;height:42px;flex:none;border-radius:11px;background:#0c2117;border:1px solid #4c7656;color:#77cf94;font:700 22px "Kiosk Plex Mono",monospace}
+.u-ogs .ogs-chapter-no{display:grid;place-items:center;width:42px;height:42px;flex:none;border-radius:11px;background:#0c2117;border:1px solid #4c7656;color:#77cf94;font:700 22px var(--font-mono)}
 .u-ogs .ogs-chapter-copy{display:flex;flex-direction:column;min-width:0;line-height:1.15}
 .u-ogs .ogs-chapter-copy strong{font-size:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .u-ogs .ogs-chapter-copy em{font-size:18px;font-style:normal;color:#aac2af;margin-top:6px;white-space:nowrap}
@@ -39,7 +39,7 @@
 .u-ogs .ogs-rail-head{font-size:22px;padding:0 7px 9px;border-bottom:1px solid #49624e;margin-bottom:8px}
 .u-ogs .ogs-chapter-tabs{overflow:auto;min-height:0;padding-bottom:5px;scrollbar-width:thin;scrollbar-color:#52735c transparent}
 .u-ogs .ogs-chapter-tab{height:57px;width:100%;border:1px solid #294839;border-radius:11px;background:linear-gradient(#20372b,#14271e);color:#bdcfbf;font-size:22px;text-align:left;padding:0 10px;display:flex;align-items:center;gap:9px;box-shadow:inset 0 1px 1px #ffffff14,inset 0 -3px 0 #0b1a12,0 3px 5px #0005}
-.u-ogs .ogs-chapter-tab strong{font:600 18px "Kiosk Plex Mono",monospace;color:#77bc8d}
+.u-ogs .ogs-chapter-tab strong{font:600 18px var(--font-mono);color:#77bc8d}
 .u-ogs .ogs-chapter-tab.is-current{background:linear-gradient(#436c50,#294b36);border-color:#75bf89;color:#fff;box-shadow:inset 0 2px 1px #ffffff32,inset 0 -3px 0 #173222,0 4px 8px #0007}
 .u-ogs .ogs-lesson-main{min-width:0;display:flex;flex-direction:column}
 .u-ogs .ogs-lesson-head{min-height:57px;display:flex;align-items:center;gap:12px}
@@ -48,7 +48,7 @@
 .u-ogs .ogs-lesson-sub{height:44px;border-top:1px solid #344c3c;display:flex;align-items:center;justify-content:space-between;color:#b6c8b9;font-size:18px}
 .u-ogs .ogs-lesson-list{min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:91px;gap:12px;padding:5px 6px 14px 0;scrollbar-width:thin;scrollbar-color:#50775e transparent}
 .u-ogs .ogs-lesson{border:1px solid #3b6049;border-radius:14px;background:linear-gradient(#274536,#182d22);color:#edf4e9;text-align:left;display:flex;align-items:center;gap:12px;padding:10px 12px;box-shadow:inset 0 2px 1px #ffffff20,inset 0 -4px 0 #0b1a12,0 5px 0 #07140d,0 9px 13px #0008;min-width:0}
-.u-ogs .ogs-lesson-number{width:47px;height:47px;border-radius:12px;border:1px solid #638b6b;background:#10251a;color:#90d9a5;display:grid;place-items:center;font:600 18px "Kiosk Plex Mono",monospace;white-space:nowrap;flex:none}
+.u-ogs .ogs-lesson-number{width:47px;height:47px;border-radius:12px;border:1px solid #638b6b;background:#10251a;color:#90d9a5;display:grid;place-items:center;font:600 18px var(--font-mono);white-space:nowrap;flex:none}
 .u-ogs .ogs-lesson-copy{min-width:0;display:flex;flex-direction:column;line-height:1.12}
 .u-ogs .ogs-lesson-copy strong{font-size:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .u-ogs .ogs-lesson-copy span{font-size:18px;color:#adc5b1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:6px}
@@ -90,7 +90,7 @@
 .kiosk .u-ogs .ogs-board-wrap::before{content:"";position:absolute;inset:17px;border:3px solid #eec580;border-radius:5px;background:linear-gradient(155deg,#e8bd77,#d49a56);box-shadow:inset 0 0 0 2px #9d6835;pointer-events:none}
 .kiosk .u-ogs .ogs-board-wrap>*{position:relative;z-index:1}
 .kiosk .u-ogs .ogs-board-svg{grid-column:2;grid-row:2;width:var(--ogs-board-width);height:var(--ogs-board-height);justify-self:center;align-self:center}
-.kiosk .u-ogs .ogs-board-axis{display:flex;align-items:center;justify-content:space-around;color:#f3d69f;font:600 16px "Kiosk Plex Mono",monospace}
+.kiosk .u-ogs .ogs-board-axis{display:flex;align-items:center;justify-content:space-around;color:#f3d69f;font:600 16px var(--font-mono)}
 .kiosk .u-ogs .ogs-board-axis--top{grid-column:2;grid-row:1}
 .kiosk .u-ogs .ogs-board-axis--bottom{grid-column:2;grid-row:3}
 .kiosk .u-ogs .ogs-board-axis--left,.kiosk .u-ogs .ogs-board-axis--right{flex-direction:column;grid-row:2}
@@ -114,9 +114,9 @@
 .kiosk .u-ogs button:focus-visible,.kiosk .u-ogs .ogs-hit:focus-visible{outline:3px solid #baf2c7;outline-offset:2px}
 .kiosk .u-ogs .ogs-calibrate{border:1px solid #79c996;background:#244b32;color:#d7f4de;border-radius:8px;margin-left:8px;min-height:35px;padding:0 8px;font-size:16px}
 
-.u-ogs .ogs-source-card{border:1px solid #3a6048;border-radius:14px;background:#14271e;color:#b9d7c2;font:16px/1.6 sans-serif;text-align:center;padding:6px;cursor:pointer}
+.u-ogs .ogs-source-card{border:1px solid #3a6048;border-radius:14px;background:#14271e;color:#b9d7c2;font:16px/1.6 var(--font-sans);text-align:center;padding:6px;cursor:pointer}
 .u-ogs .ogs-notice-backdrop{position:fixed;inset:0;z-index:1000;background:#000b;display:grid;place-items:center}
-.u-ogs .ogs-notice{width:720px;max-height:550px;overflow:auto;border:1px solid #6e9b7c;border-radius:16px;padding:24px;background:#192e24;font:20px/1.5 sans-serif;color:#eaf2e8}
+.u-ogs .ogs-notice{width:720px;max-height:550px;overflow:auto;border:1px solid #6e9b7c;border-radius:16px;padding:24px;background:#192e24;font:20px/1.5 var(--font-sans);color:#eaf2e8}
 .u-ogs .ogs-notice h2{margin:0 0 12px}.u-ogs .ogs-notice .ogs-key{font-size:20px;margin:8px 16px 0 0;text-decoration:none}
 
 .u-ogs .ogs-notice p a{color:#96e9b3}

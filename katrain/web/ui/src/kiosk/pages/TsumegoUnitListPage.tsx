@@ -158,7 +158,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
   useEffect(() => {
     if (!previewId || previewCache[previewId]) return;
     const controller = new AbortController();
-    fetch(`/api/v1/tsumego/problems/${previewId}`, { signal: controller.signal })
+    fetch(`/api/v1/tsumego/problems/${previewId}?board_variant=kiosk19`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(res.status === 404 ? 'Problem not found' : `HTTP ${res.status}`);
         return res.json() as Promise<ProblemDetail>;
@@ -381,7 +381,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
             <span className="tsumego-browser__selection-dot" />
             <b>{interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: selectedNumberText })}</b>
             <span>{selectedState}</span>
-            <span className="tsumego-browser__selection-hint">{t('tsumego:boardPreview', '左侧为棋形预览')}</span>
+            <span className="tsumego-browser__selection-hint">{preview?.board_variant?.status === 'unavailable' ? `原${preview.board_variant.source_size}路题：${preview.board_variant.reason}` : preview?.board_variant?.status === 'adapted' ? `19路版（原${preview.board_variant.source_size}路）` : t('tsumego:boardPreview', '左侧为棋形预览')}</span>
           </div>}
           <button type="button" className="tsumego-browser__enter" data-testid="problem-enter" disabled={!previewId} onClick={() => previewId && openProblem(previewId)}>
             <small>{previewId ? interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: selectedNumberText }) : unitWrongUnknown ? '做题记录没读到' : '没有可做的错题'}</small>

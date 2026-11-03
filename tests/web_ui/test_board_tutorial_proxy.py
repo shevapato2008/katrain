@@ -135,3 +135,49 @@ async def test_ogs_remote_client_calls_public_paths_without_auth():
         )
     finally:
         await client.close()
+
+
+@pytest.mark.asyncio
+async def test_ogs_kiosk_variant_is_applied_after_old_cloud_read(board_app, monkeypatch):
+    import sys
+    from types import SimpleNamespace
+
+    source = {"page": 2, "size": 9, "source_id": "ogs-learning:basics:2"}
+    derived = {**source, "size": 19, "board_variant": {"status": "adapted"}}
+    board_app.state.remote_client.get_ogs_step.return_value = source
+    calls = []
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.content.board_variants",
+        SimpleNamespace(
+            adapt_ogs_step=lambda step: calls.append(step) or derived,
+        ),
+    )
+    normal = await _get(board_app, "/api/v1/board/tutorials/ogs-course/steps/2?lang=en")
+    assert normal.json() == source and calls == []
+    response = await _get(board_app, "/api/v1/board/tutorials/ogs-course/steps/2?lang=en&board_variant=kiosk19")
+    assert response.status_code == 200 and response.json() == derived
+    assert calls == [source]
+    # The installed cloud can predate this query contract.
+    assert board_app.state.remote_client.get_ogs_step.await_args_list[-1].args == (2, "en")
+    assert board_app.state.remote_client.get_ogs_step.await_args_list[-1].kwargs == {}
+
+
+@pytest.mark.asyncio
+async def test_real_ogs_corner_variant_maps_stones_marks_and_answer_together(board_app):
+    import copy
+    import json
+    from pathlib import Path
+
+    sources = json.loads((Path(__file__).parent / "data/kiosk19_sources.json").read_text())
+    source = next(item for item in sources["ogs"] if item["page"] == 73)
+    before = copy.deepcopy(source)
+    board_app.state.remote_client.get_ogs_step.return_value = source
+    response = await _get(board_app, "/api/v1/board/tutorials/ogs-course/steps/73?board_variant=kiosk19")
+    assert response.status_code == 200
+    result = response.json()
+    assert result["size"] == 19 and result["viewport"] is None
+    assert result["stones"] == {"B": [[0, 17]], "W": [[0, 18]]}
+    assert result["shapes"] == {"0,18": "triangle"}
+    assert result["exercise"]["tree"]["children"][0]["point"] == [1, 18]
+    assert result["source_id"] == source["source_id"] and source == before

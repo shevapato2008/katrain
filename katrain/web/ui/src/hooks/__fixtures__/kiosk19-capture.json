@@ -1,0 +1,36 @@
+{
+  "id": "124386",
+  "level": "15k",
+  "category": "capturing",
+  "hint": "黑先",
+  "boardSize": 19,
+  "initialBlack": [
+    "qi",
+    "ql",
+    "qk",
+    "ri",
+    "rk",
+    "pj"
+  ],
+  "initialWhite": [
+    "pl",
+    "qj",
+    "rl",
+    "pk",
+    "qm",
+    "rj"
+  ],
+  "sgfContent": "(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]GN[Q-113464]AN[快乐小笛子]SO[https://www.101weiqi.com/15K/124386/]GC[吃子题 | 15K | 正确率: 96.0% (16253/16924)]C[黑先 吃子题]AB[qi][ql][qk][ri][rk][pj]AW[pl][qj][rl][pk][qm][rj]PL[B](;B[sj]C[✓ 正确])(;B[sk];W[sj];B[si]C[✓ 正确])(;B[rm];W[sk]C[✗ 失败]))",
+  "board_variant": {
+    "status": "adapted",
+    "source_size": 9,
+    "target_size": 19,
+    "policy_version": "kiosk19-local-v1",
+    "source_sha256": "95291306ce93fcc5667e7c6c5cf2bdb8f5095dfeebea3c280161c93024b75150",
+    "offset": [
+      10,
+      5
+    ],
+    "reason": "已核对源题与全部记录分支的局部提吃目标"
+  }
+}

@@ -35,3 +35,11 @@ Exit code   0
 Independent test log: `/tmp/kifu-empty-rank-astra-green.log`. The scoped commit diff also passes `git diff --check`.
 
 No product files were changed during review; no merge or deployment was performed. The restricted album data directory was not accessed. The planned actual-page preview remains with the parent release task after deployment.
+
+## Post-merge test follow-up (2026-11-04)
+
+**Decision: APPROVED.** The approval of `e2f549af44b39a92437851e3ea34024963db9f4d` remains valid.
+
+Reviewed the complete diff of `bd5a48a4d0c268437917e9e7fa26d9fe53dd4a5e`: it changes only the existing Galaxy repeat-click test. Waiting for the automatic initial board before exercising an already selected card makes the test precondition explicit. Both subsequent same-card clicks, both board-presence checks, and the exact `getAlbum` call-count assertion of one remain intact. This does not weaken the tested behavior and changes no production code.
+
+The parent reports the four targeted files pass all 60 tests after this change. Per the bounded follow-up request, this review inspected the diff without repeating that test run or expanding regression scope. No blocking findings.

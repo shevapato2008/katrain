@@ -14,11 +14,13 @@ vi.mock("../../../hooks/useTranslation", () => ({
 beforeEach(() => vi.clearAllMocks());
 describe("membership navigation", () => {
   it("adds the membership destination to the shared sidebar navigation", () => {
+    const translate = vi.fn((_, fallback) => fallback);
     expect(
-      getGalaxyNavigation((_, fallback) => fallback).find(
+      getGalaxyNavigation(translate).find(
         (item) => item.key === "membership",
       )?.path,
     ).toBe("/galaxy/membership");
+    expect(translate).toHaveBeenCalledWith("membership:galaxy_title", "会员与用量");
   });
   it("keeps membership in More without adding another mobile destination", () => {
     render(

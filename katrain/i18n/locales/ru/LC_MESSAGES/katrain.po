@@ -7272,3 +7272,1131 @@ msgstr ""
 
 msgid "baipu:exit_anyway"
 msgstr "Всё равно выйти"
+
+msgid "membership:account_checking"
+msgstr "Проверяем аккаунт"
+
+msgid "membership:account_entry"
+msgstr "Использование, баллы API и преимущества подписки"
+
+msgid "membership:account_identity_help"
+msgstr ""
+"После подтверждения личности будут показаны преимущества подписки, право на "
+"Free и баланс баллов API."
+
+msgid "membership:account_retry"
+msgstr "Повторить проверку аккаунта"
+
+msgid "membership:account_unconfirmed"
+msgstr "Статус аккаунта пока не подтверждён"
+
+msgid "membership:advanced"
+msgstr "Расширенный"
+
+msgid "membership:advanced_depth_ratio"
+msgstr "Расширенный отчёт расходует примерно в {ratio} раза больше."
+
+msgid "membership:advanced_depth_rule"
+msgstr "Расход на расширенный отчёт зависит от глубины анализа на сервере."
+
+msgid "membership:advanced_position_cost"
+msgstr "Расширенный: ≈ {points} балла/ход"
+
+msgid "membership:analysis_depth"
+msgstr "Глубина анализа"
+
+msgid "membership:api_balance"
+msgstr "Баланс баллов API"
+
+msgid "membership:api_on_demand"
+msgstr "Анализ API по запросу"
+
+msgid "membership:api_prices"
+msgstr "Цены на анализ API"
+
+msgid "membership:api_topup"
+msgstr "Пополнение API"
+
+msgid "membership:auth_after_login"
+msgstr "Доступно после входа"
+
+msgid "membership:auth_box_login"
+msgstr "Войти на главной странице устройства"
+
+msgid "membership:auth_box_note"
+msgstr ""
+"Войдите на главной странице устройства Zhixing, затем вернитесь в этот "
+"раздел через вход в го."
+
+msgid "membership:auth_checking_action"
+msgstr "Проверяем"
+
+msgid "membership:auth_checking_description"
+msgstr "Подождите. После проверки работа продолжится автоматически."
+
+msgid "membership:auth_checking_note"
+msgstr "Во время проверки содержимое аккаунта не загружается."
+
+msgid "membership:auth_checking_title"
+msgstr "Проверяем статус входа"
+
+msgid "membership:auth_description"
+msgstr ""
+"Войдите, чтобы просматривать использование подписки, баллы API и заказы."
+
+msgid "membership:auth_expired_description"
+msgstr ""
+"Сеанс истёк. Загрузка личных данных о подписке и использовании "
+"приостановлена. Войдите снова, чтобы продолжить."
+
+msgid "membership:auth_expired_title"
+msgstr "Войдите снова"
+
+msgid "membership:auth_label"
+msgstr "Подписка и использование"
+
+msgid "membership:auth_login_continue"
+msgstr "Войти и продолжить"
+
+msgid "membership:auth_login_title"
+msgstr "Войдите для просмотра подписки и использования"
+
+msgid "membership:auth_return_note"
+msgstr ""
+"После входа вы вернётесь на эту страницу; искать её заново не придётся."
+
+msgid "membership:auth_unavailable_description"
+msgstr ""
+"Сеть или сервис временно недоступны. Повторите попытку. Данные входа "
+"сохранены."
+
+msgid "membership:auth_unavailable_note"
+msgstr ""
+"Выходить из аккаунта не нужно. Повторите попытку после восстановления связи."
+
+msgid "membership:auth_unavailable_title"
+msgstr "Пока не удаётся проверить статус входа"
+
+msgid "membership:back_to_play"
+msgstr "Вернуться к игре"
+
+msgid "membership:billing_rules"
+msgstr "Правила оплаты подписки и API"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"Сначала используется лимит подписки. Если хотя бы одного из оставшихся "
+"лимитов недостаточно для этого анализа, он целиком оплачивается имеющимися "
+"баллами API; источники оплаты не смешиваются. Если баллов недостаточно, "
+"пополните баланс или дождитесь восстановления лимита. Баллы не покупаются "
+"автоматически, списания в юанях не происходит."
+
+msgid "membership:cancel"
+msgstr "Отмена"
+
+msgid "membership:checkout_renewal_rule"
+msgstr ""
+"Продление начнётся после окончания текущей подписки без сброса её лимитов. "
+"Даты действия определяются квитанцией сервера после оплаты."
+
+msgid "membership:choose_topup"
+msgstr "Выберите сумму пополнения"
+
+msgid "membership:close"
+msgstr "Закрыть"
+
+msgid "membership:compare_membership_api"
+msgstr "Сравнить подписку и API"
+
+msgid "membership:compare_plans"
+msgstr "Сравнить тарифы подписки"
+
+msgid "membership:compute"
+msgstr "Объём вычислений"
+
+msgid "membership:confirm_consumption"
+msgstr "Подтвердить и начать"
+
+msgid "membership:confirm_position"
+msgstr "Подтвердить анализ текущей позиции"
+
+msgid "membership:confirm_purchase"
+msgstr "Подтвердить покупку"
+
+msgid "membership:confirm_report"
+msgstr "Подтвердить создание отчёта"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "Использовать баллы API, не более {points}"
+
+msgid "membership:confirming"
+msgstr "Проверяем"
+
+msgid "membership:consumption_policy"
+msgstr ""
+"Сначала подписка; при нехватке весь анализ оплачивается баллами API, не "
+"более {points} баллов"
+
+msgid "membership:countdown_days"
+msgstr "{days} дн. {hours} ч {minutes} мин"
+
+msgid "membership:countdown_hours"
+msgstr "{hours} ч {minutes} мин"
+
+msgid "membership:create_order"
+msgstr "Создать заказ"
+
+msgid "membership:create_report"
+msgstr "Создать отчёт по партии"
+
+msgid "membership:creating_order"
+msgstr "Создаём…"
+
+msgid "membership:current_plan"
+msgstr "Текущая подписка"
+
+msgid "membership:date_pending"
+msgstr "Ожидает подтверждения"
+
+msgid "membership:done"
+msgstr "Готово"
+
+msgid "membership:entitlement_pending"
+msgstr "Права аккаунта ожидают подтверждения"
+
+msgid "membership:error_analysis_login_required"
+msgstr "Войдите, чтобы пользоваться анализом"
+
+msgid "membership:error_insufficient"
+msgstr ""
+"Недостаточно лимита подписки и баллов API. Подробнее на странице подписки."
+
+msgid "membership:error_operation_running"
+msgstr "Анализ ещё выполняется. Повторите запрос позже."
+
+msgid "membership:error_position_failed"
+msgstr "Анализ не завершён. Повторите попытку."
+
+msgid "membership:error_position_refunded"
+msgstr "Анализ не завершён. Списание за него отменено. Повторите попытку."
+
+msgid "membership:error_position_unavailable"
+msgstr "Анализ отдельной позиции сейчас недоступен"
+
+msgid "membership:error_quote_expired"
+msgstr ""
+"Расчёт цены устарел или не соответствует текущему запросу. Подтвердите новый"
+" расчёт и повторите попытку."
+
+msgid "membership:error_quote_failed"
+msgstr "Не удалось рассчитать цену. Повторите попытку."
+
+msgid "membership:error_report_failed"
+msgstr "Не удалось создать отчёт. Повторите попытку."
+
+msgid "membership:error_report_login_required"
+msgstr "Войдите, чтобы создать отчёт"
+
+msgid "membership:error_report_missing"
+msgstr "Отчёт не найден. Обновите страницу и повторите попытку."
+
+msgid "membership:error_result_expired"
+msgstr ""
+"Результат анализа устарел или временно недоступен. Выполните анализ заново."
+
+msgid "membership:error_service_busy"
+msgstr "Сейчас много запросов. Повторите попытку позже."
+
+msgid "membership:error_service_paused"
+msgstr "Сервис анализа приостановлен. Повторите попытку позже."
+
+msgid "membership:error_service_unavailable"
+msgstr "Сервис анализа временно недоступен. Повторите попытку позже."
+
+msgid "membership:error_verification_required"
+msgstr "Завершите проверку входа и повторите попытку"
+
+msgid "membership:example_depth"
+msgstr "Глубина анализа в примере"
+
+msgid "membership:free_eligibility_rule"
+msgstr ""
+"Отдельное право на {count} стандартных отчёта за календарную неделю при "
+"соблюдении условий проверки личности. Не является общим лимитом анализа."
+
+msgid "membership:free_pending"
+msgstr "Право на Free ожидает подтверждения"
+
+msgid "membership:free_remaining"
+msgstr "Осталось на неделю: {count}"
+
+msgid "membership:free_reset_countdown"
+msgstr "Восстановление через {time} · {date} (пекинское время)"
+
+msgid "membership:free_unavailable"
+msgstr "Право на Free сейчас недоступно"
+
+msgid "membership:free_unavailable_rule"
+msgstr ""
+"Для стандартных отчётов Free требуется подтверждённая личность. Сейчас "
+"количество доступных отчётов не предоставляется. Платная подписка не "
+"добавляет право на отчёты Free."
+
+msgid "membership:free_weekly_eligibility"
+msgstr "Отдельное право на стандартные отчёты за календарную неделю"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · Стандартные отчёты на эту неделю"
+
+msgid "membership:fulfillment_pending"
+msgstr ""
+"Квитанция о предоставлении прав ещё не подтверждена. Обновите данные "
+"использования."
+
+msgid "membership:full_use_days"
+msgstr "При полном использовании лимита за {days} дней"
+
+msgid "membership:full_use_savings_rule"
+msgstr ""
+"Экономия рассчитана при полном использовании лимита периода; фактическая "
+"экономия зависит от использования. Продление начнётся после окончания "
+"текущей подписки."
+
+msgid "membership:galaxy_api_help"
+msgstr ""
+"API без подписки: 1 юань = 1 балл. Перед анализом подтвердите расчёт цены "
+"сервера."
+
+msgid "membership:galaxy_choose_membership"
+msgstr "Выберите подписку по своему объёму использования"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr ""
+"Для одинакового объёма стандартного анализа, при полном использовании лимита"
+" периода."
+
+msgid "membership:galaxy_intro"
+msgstr ""
+"Проверяйте использование анализа и выбирайте пополнение по мере "
+"необходимости или подписку."
+
+msgid "membership:galaxy_membership_savings"
+msgstr "Часто анализируете? Подписка выгоднее"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "Для редкого анализа можно пополнять баланс по мере необходимости"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount} / {days} дней"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · Подписка на {days} дней"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr ""
+"Оценка для партии в 300 ходов с начальной позицией, в пределах остатка "
+"лимита периода."
+
+msgid "membership:galaxy_report_example_title"
+msgstr "Сколько стоит партия в 300 ходов?"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr ""
+"Недельный лимит восстанавливается по понедельникам в 00:00 по пекинскому "
+"времени; остаток периода сгорает по его окончании."
+
+msgid "membership:galaxy_tabs"
+msgstr "Страница подписки"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr ""
+"Действует до {date} (пекинское время); восстановление по понедельникам не "
+"увеличивает лимит периода."
+
+msgid "membership:galaxy_title"
+msgstr "Подписка и использование"
+
+msgid "membership:history_unavailable"
+msgstr "История заказов временно недоступна"
+
+msgid "membership:kiosk_account_actions"
+msgstr "Действия с аккаунтом"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "Аккаунт, подписка и пополнение"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "Расширенный анализ"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr "Расширенный: {points} баллов; оба варианта включают начальную позицию"
+
+msgid "membership:kiosk_api_balance"
+msgstr "Баланс API"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "Пополнение API · Оплата по использованию"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "Пополнение баллов API"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "Баллы API при нехватке лимита подписки"
+
+msgid "membership:kiosk_back"
+msgstr "Назад"
+
+msgid "membership:kiosk_back_settings"
+msgstr "Назад к настройкам"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "Появятся после подтверждения прав аккаунта"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "Проверьте сумму заказа перед оплатой"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "Выбрать {plan}"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "Синхронизировано с облаком"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "Сравнить подписки"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "Сначала подтвердите аккаунт"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "Подтвердите источник оплаты и цену до анализа"
+
+msgid "membership:kiosk_creating_order"
+msgstr "Создаём заказ…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "Зачисление: {points} баллов"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "Текущий баланс API"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "Текущие преимущества"
+
+msgid "membership:kiosk_current_plan"
+msgstr "Текущая подписка"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "Ожидаемый период: {start} — {end} · Пекинское время"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount} = {points} баллов"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "Право на бесплатные отчёты определяется проверкой в облаке"
+
+msgid "membership:kiosk_free_pending"
+msgstr "Право на бесплатные отчёты ожидает проверки"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "Только стандартные отчёты, без общего лимита анализа"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "Осталось {remaining} / {limit}"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr ""
+"Сначала пройдите проверку аккаунта. После её завершения появится право на "
+"отчёты этой недели."
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "При частом использовании подписка может быть выгоднее"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "При полном использовании лимита выгоднее API"
+
+msgid "membership:kiosk_history_error"
+msgstr "История заказов ещё не синхронизирована. Повторите попытку позже."
+
+msgid "membership:kiosk_member_first"
+msgstr "Для анализа сначала используется лимит подписки"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "Сначала подписка, затем баллы API"
+
+msgid "membership:kiosk_membership_extension"
+msgstr ""
+"Новая подписка начнётся после окончания уже оплаченного периода. Текущее "
+"использование сохраняется; окончательные даты определяются квитанцией об "
+"оплате."
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "Покупка подписки"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr ""
+"Действует с {start} по {end} · Пекинское время · Даты по этой квитанции"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "Сервис подписки временно недоступен"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr ""
+"В тестовой среде результат оплаты моделируется сервером. Эта страница не "
+"запускает оплату и не предоставляет права самостоятельно."
+
+msgid "membership:kiosk_next_plan"
+msgstr "Следующий период: {plan} · С {date} · Пекинское время"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr ""
+"Перед анализом подтвердите источник оплаты и цену. Автоматического "
+"пополнения нет."
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr ""
+"Эта страница не предоставляет права самостоятельно. При необходимости "
+"вернитесь к выбору."
+
+msgid "membership:kiosk_no_orders"
+msgstr "История заказов пуста"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "Стандартный анализ"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "Отчёт на {moves} ходов · Стандартный: {points} баллов"
+
+msgid "membership:kiosk_not_available"
+msgstr "Пока недоступно"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "Подтверждение заказа"
+
+msgid "membership:kiosk_order_expired"
+msgstr "Срок заказа истёк"
+
+msgid "membership:kiosk_order_failed"
+msgstr "Заказ не завершён"
+
+msgid "membership:kiosk_order_history"
+msgstr "История заказов"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "Заказ {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "Возврат по заказу выполнен"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "Сервер подтвердил оплату"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr ""
+"Статус заказа ещё не синхронизирован. Повторяем попытку; не создавайте заказ"
+" повторно."
+
+msgid "membership:kiosk_order_uncertain"
+msgstr ""
+"Результат заказа не подтверждён. Сначала проверьте историю заказов, чтобы "
+"избежать повторного создания."
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "Заказ ожидает подтверждения"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "Заказ действителен до {date} · Пекинское время"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "Ожидаем подтверждение оплаты сервером"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr ""
+"Полученный результат можно просматривать повторно. Территория и подсказки "
+"ходов входят в тот же результат."
+
+msgid "membership:kiosk_paid_time"
+msgstr "Подтверждено {date} · Пекинское время"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr "Оплата ещё не подключена. Проверьте статус заказа позже."
+
+msgid "membership:kiosk_pending_no_order"
+msgstr "До подтверждения доля остатка не отображается и заказ не создаётся."
+
+msgid "membership:kiosk_period_pending"
+msgstr "Период ожидает проверки"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "Лимит периода ожидает проверки"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "Цены и преимущества появятся после подтверждения каталога."
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "Каталог подписок ожидает синхронизации"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan}: {reports} партий"
+
+msgid "membership:kiosk_plan_term"
+msgstr "/ {days} дней"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "Действует до {date} · Пекинское время"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} баллов"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "{points} балла / ход"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr ""
+"Для анализа должно хватать обоих остатков подписки: за период и за неделю. "
+"Иначе весь анализ оплачивается баллами API, без разделения источников. "
+"Автоматического пополнения за юани нет."
+
+msgid "membership:kiosk_pricing_help"
+msgstr "Как рассчитывается цена API"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr ""
+"Отчёт на N ходов включает начальную позицию: всего N+1 позиций. Фактическое "
+"списание определяется расчётом цены для записи партии перед анализом."
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr ""
+"Баланс отображается с точностью до {precision} балла. Стандартный анализ: "
+"{normal} балла за позицию; расширенный: {advanced} балла за позицию."
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr ""
+"Без сети или при неизвестном лимите сначала выполните синхронизацию. "
+"Полученные результаты можно просматривать повторно; территория и подсказки "
+"ходов входят в один результат."
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "Покупка доступна после подтверждения аккаунта и лимита"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "Проверяем лимит"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr ""
+"Подписка используется, только если хватает обоих остатков. Иначе весь анализ"
+" оплачивается баллами API, без разделения источников. Перед анализом "
+"подтвердите источник оплаты и цену. Если баллов недостаточно, пополните "
+"баланс вручную или дождитесь сброса лимита."
+
+msgid "membership:kiosk_quota_help"
+msgstr "Лимиты подписки и экономия"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "Лимит ещё не подтверждён"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr ""
+"Недельный максимум оценён для стандартных отчётов на {moves} ходов и "
+"ограничен остатком лимита периода. Ориентир стандартных отчётов за период: "
+"{references}."
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr ""
+"Подписка заканчивается по окончании купленного периода. Недельный лимит "
+"сбрасывается по понедельникам в 00:00 по пекинскому времени. Доли остатка за"
+" период и неделю считаются отдельно; выполняемый анализ уже учтён в расходе."
+
+msgid "membership:kiosk_quota_result_help"
+msgstr ""
+"Один результат включает территорию и подсказки ходов; повторный просмотр не "
+"оплачивается. Расширенный анализ расходует в {multiplier} раза больше "
+"лимита, чем стандартный."
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr ""
+"Экономия относительно стандартного анализа API рассчитана при полном "
+"использовании лимита периода. При неполном использовании фактическая "
+"экономия зависит от расхода. Free даёт право только на бесплатные "
+"стандартные отчёты, без общего лимита анализа."
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "Лимит ожидает проверки в облаке"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr ""
+"Данные использования синхронизируются заново. Баланс и права определяются "
+"данными облака."
+
+msgid "membership:kiosk_remaining"
+msgstr "Осталось"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "Остаток ещё не подтверждён"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "Продлить {plan}"
+
+msgid "membership:kiosk_report_estimate"
+msgstr ""
+"Оценка для {moves} ходов, в пределах остатка периода; расширенный анализ "
+"расходует примерно в {multiplier} раза больше"
+
+msgid "membership:kiosk_reserved_included"
+msgstr "Выполняемый анализ уже учтён"
+
+msgid "membership:kiosk_result_reuse"
+msgstr ""
+"Территория и подсказки ходов входят в один результат. Повторный просмотр не "
+"оплачивается."
+
+msgid "membership:kiosk_resync"
+msgstr "Синхронизировать снова"
+
+msgid "membership:kiosk_return_selection"
+msgstr "Вернуться к выбору"
+
+msgid "membership:kiosk_return_usage"
+msgstr "К использованию"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "Примерно на {percent} дешевле API"
+
+msgid "membership:kiosk_savings_condition"
+msgstr ""
+"Экономия рассчитана при полном использовании лимита периода; иначе "
+"фактическая экономия зависит от использования"
+
+msgid "membership:kiosk_select_topup"
+msgstr "Выберите сумму пополнения API"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "Сервис временно недоступен"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "Ошибка синхронизации"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "Ожидает синхронизации"
+
+msgid "membership:kiosk_synced"
+msgstr "Синхронизировано"
+
+msgid "membership:kiosk_syncing"
+msgstr "Синхронизация"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "Синхронизируем заказы…"
+
+msgid "membership:kiosk_term"
+msgstr "Период"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "Конец периода · Пекинское время"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "Доля остатка за период"
+
+msgid "membership:kiosk_term_reports"
+msgstr "Стандартные отчёты · ≈ {reports} партий за {days} дней"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · Тестовая среда"
+
+msgid "membership:kiosk_test_order"
+msgstr "Тестовый заказ TEST · Реальной оплаты нет"
+
+msgid "membership:kiosk_title"
+msgstr "Подписка и пополнение"
+
+msgid "membership:kiosk_topup"
+msgstr "Пополнить"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "Пополнить на {amount}"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "Каталог пополнения ожидает синхронизации"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr ""
+"Если хватает обоих остатков подписки, сначала используется её лимит. Иначе "
+"весь анализ оплачивается баллами API."
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} · {points} баллов"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points} баллов"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "Пока не подтверждено"
+
+msgid "membership:kiosk_understood"
+msgstr "Понятно"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr ""
+"Для анализа должно хватать обоих остатков. Иначе весь анализ оплачивается "
+"баллами API."
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "Пока не удаётся синхронизировать использование"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "Использовано и в анализе: {percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "Сначала подтвердите личность аккаунта"
+
+msgid "membership:kiosk_view_order"
+msgstr "Посмотреть заказ {id}"
+
+msgid "membership:kiosk_view_plans"
+msgstr "Посмотреть подписки"
+
+msgid "membership:kiosk_week"
+msgstr "Неделя"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "Доля остатка за неделю"
+
+msgid "membership:kiosk_week_reports"
+msgstr "До ≈ {reports} партий в неделю"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "Сброс в понедельник в 00:00 · Пекинское время"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "Бесплатные стандартные отчёты за неделю"
+
+msgid "membership:loading"
+msgstr "Загружаем подписку и использование…"
+
+msgid "membership:login"
+msgstr "Войти в аккаунт"
+
+msgid "membership:login_to_view"
+msgstr "Войдите для просмотра подписки и использования"
+
+msgid "membership:membership_first"
+msgstr "Сначала использовать лимит подписки"
+
+msgid "membership:membership_free_pending_help"
+msgstr ""
+"Подписка и право на Free ещё не подтверждены. Загрузите данные заново."
+
+msgid "membership:membership_order"
+msgstr "Заказ подписки"
+
+msgid "membership:next_membership"
+msgstr "Куплено: {plan} · Начало {date}"
+
+msgid "membership:no_orders"
+msgstr "Заказов пока нет"
+
+msgid "membership:normal"
+msgstr "Стандартный"
+
+msgid "membership:normal_position_cost"
+msgstr "Стандартный: ≈ {points} балла/ход"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "Покупка по мере необходимости, без подписки"
+
+msgid "membership:open"
+msgstr "Посмотреть"
+
+msgid "membership:order_actual_end"
+msgstr "Фактическое окончание: {date} (пекинское время)"
+
+msgid "membership:order_actual_points"
+msgstr "Фактически зачислено: {points} баллов"
+
+msgid "membership:order_actual_start"
+msgstr "Фактическое начало: {date} (пекинское время)"
+
+msgid "membership:order_estimated_dates"
+msgstr ""
+"Ожидаемое начало: {start}, окончание: {end} (пекинское время). Окончательные"
+" даты определяются квитанцией об оплате."
+
+msgid "membership:order_expired"
+msgstr "Срок заказа истёк"
+
+msgid "membership:order_expires_at"
+msgstr "Заказ действителен до {date} (пекинское время)."
+
+msgid "membership:order_failed"
+msgstr "Заказ не завершён"
+
+msgid "membership:order_history"
+msgstr "История заказов"
+
+msgid "membership:order_id"
+msgstr "Номер заказа"
+
+msgid "membership:order_paid"
+msgstr "Оплачен"
+
+msgid "membership:order_pending"
+msgstr "Ожидает оплаты"
+
+msgid "membership:order_poll_error"
+msgstr ""
+"Пока не удаётся подтвердить оплату. Повторяем попытку. Не оплачивайте "
+"повторно."
+
+msgid "membership:order_refunded"
+msgstr "Возврат выполнен"
+
+msgid "membership:order_result_unknown"
+msgstr ""
+"Результат заказа пока не подтверждён. Сначала проверьте историю заказов, "
+"чтобы избежать повторного создания."
+
+msgid "membership:order_topup"
+msgstr "Пополнение баллов API"
+
+msgid "membership:payment_account_pending"
+msgstr ""
+"Заказ на оплату можно создать только после подтверждения аккаунта и "
+"использования."
+
+msgid "membership:payment_channel_unavailable"
+msgstr ""
+"Канал оплаты ещё не подключён. Не переводите деньги неизвестным получателям "
+"за пределами этой страницы."
+
+msgid "membership:payments_disabled"
+msgstr "Оплата пока недоступна"
+
+msgid "membership:payments_unavailable"
+msgstr "Оплата пока недоступна; создать заказ на оплату сейчас нельзя."
+
+msgid "membership:pending_order_notice"
+msgstr "Ожидаем оплату. Страница автоматически проверит статус на сервере."
+
+msgid "membership:plan_pending"
+msgstr "Преимущества подписки ожидают подтверждения"
+
+msgid "membership:plan_term"
+msgstr "/ {days} дней"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan} пока недоступен"
+
+msgid "membership:plans"
+msgstr "Подписка"
+
+msgid "membership:points"
+msgstr "Баллы"
+
+msgid "membership:points_amount"
+msgstr "{points} баллов"
+
+msgid "membership:points_exchange_rate"
+msgstr "1 юань = 1 балл"
+
+msgid "membership:position_cost"
+msgstr "Цена за ход"
+
+msgid "membership:position_pricing_rule"
+msgstr ""
+"Цена за позицию одинакова для отдельной позиции и всей партии. Для партии "
+"оплачиваются позиции после каждого хода и начальная позиция."
+
+msgid "membership:processing"
+msgstr "Обработка…"
+
+msgid "membership:quota"
+msgstr "Лимит подписки"
+
+msgid "membership:quota_dual_rule"
+msgstr ""
+"Остатки за период и неделю показаны как доли соответствующих лимитов. Для "
+"анализа должно хватать обоих остатков. Резерв выполняемого анализа учтён в "
+"расходе и возвращается при неудаче."
+
+msgid "membership:quota_expires_in"
+msgstr "Истекает через {time}"
+
+msgid "membership:quota_pending"
+msgstr "Лимит ожидает подтверждения"
+
+msgid "membership:quota_recovers_in"
+msgstr "Восстановление через {time}"
+
+msgid "membership:quota_refresh_pending"
+msgstr "Проверяем актуальный лимит"
+
+msgid "membership:quota_reservation_help"
+msgstr ""
+"Два остатка считаются отдельно; для анализа должно хватать обоих. Резерв "
+"выполняемого анализа уже учтён в доле использования и возвращается при "
+"неудаче."
+
+msgid "membership:quote_and_owned_rule"
+msgstr ""
+"До начала анализа показываются расчёт цены сервера и источник оплаты. Пока "
+"статус аккаунта или использования не подтверждён, начать анализ нельзя. "
+"Повторный просмотр полученных результатов и переключение между территорией и"
+" подсказками ходов не оплачиваются."
+
+msgid "membership:refresh"
+msgstr "Обновить"
+
+msgid "membership:reload"
+msgstr "Загрузить заново"
+
+msgid "membership:remaining_percent"
+msgstr "Осталось {percent}"
+
+msgid "membership:renew_plan"
+msgstr "Продлить {plan}"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"Продление начнётся после окончания текущей подписки без сброса "
+"использованного и зарезервированного объёма. До оплаты даты предварительные;"
+" окончательный период определяется квитанцией сервера после оплаты. Платная "
+"подписка не добавляет право на стандартные отчёты Free."
+
+msgid "membership:report_estimate_limit"
+msgstr "Оценка для партий в 300 ходов, в пределах остатка лимита периода."
+
+msgid "membership:report_example_rule"
+msgstr ""
+"С начальной позицией — всего 301 позиция для анализа. Фактическая стоимость "
+"определяется расчётом сервера перед отправкой."
+
+msgid "membership:retry"
+msgstr "Повторить"
+
+msgid "membership:savings_approx"
+msgstr "Экономия ≈ {percent}"
+
+msgid "membership:savings_vs_api"
+msgstr "Примерно на {percent} дешевле API"
+
+msgid "membership:select_plan"
+msgstr "Выбрать {plan}"
+
+msgid "membership:server_authority"
+msgstr "Баланс и права определяются подтверждёнными данными сервера."
+
+msgid "membership:service_unavailable"
+msgstr ""
+"Данные использования подписки сейчас недоступны; права и баланс ожидают "
+"подтверждения."
+
+msgid "membership:source_free"
+msgstr "Предполагается использование права на еженедельный бесплатный отчёт"
+
+msgid "membership:source_membership"
+msgstr "Предполагается использование лимита подписки"
+
+msgid "membership:source_owned"
+msgstr "Этот результат уже получен"
+
+msgid "membership:source_pending"
+msgstr "Источник оплаты ожидает подтверждения"
+
+msgid "membership:source_wallet"
+msgstr "Предполагается использование баллов API"
+
+msgid "membership:stale"
+msgstr "Требует обновления"
+
+msgid "membership:stale_warning"
+msgstr ""
+"Показаны ранее загруженные данные. Аккаунт и источник оплаты нужно "
+"подтвердить заново; покупка временно недоступна."
+
+msgid "membership:synced"
+msgstr "Синхронизировано"
+
+msgid "membership:temporarily_unavailable"
+msgstr "Временно недоступно"
+
+msgid "membership:term_remaining"
+msgstr "Остаток за период"
+
+msgid "membership:term_report_reference"
+msgstr ""
+"{plan}: ориентировочно {reports} стандартных отчётов за период в {days} "
+"дней."
+
+msgid "membership:term_total_reports"
+msgstr "≈ {reports} партий за {days} дней"
+
+msgid "membership:test_order_warning"
+msgstr "Тестовый заказ TEST, реальной оплаты нет"
+
+msgid "membership:time_pending"
+msgstr "Время ожидает подтверждения"
+
+msgid "membership:topup_amount"
+msgstr "Пополнить на {amount}"
+
+msgid "membership:topup_arrival"
+msgstr "Будет зачислено {points} баллов"
+
+msgid "membership:topup_arrival_rule"
+msgstr ""
+"Баллы зачисляются после подтверждения оплаты. При нехватке лимита подписки "
+"используются имеющиеся баллы API; автоматического пополнения нет."
+
+msgid "membership:topup_option"
+msgstr "{amount}, будет зачислено {points} баллов"
+
+msgid "membership:unavailable"
+msgstr "Пока недоступно"
+
+msgid "membership:unavailable_title"
+msgstr "Подписка и использование временно недоступны"
+
+msgid "membership:unconfirmed_help"
+msgstr "Права и баланс аккаунта ещё не подтверждены. Повторите попытку позже."
+
+msgid "membership:usage"
+msgstr "Использование"
+
+msgid "membership:used_and_reserved"
+msgstr "Использовано и в анализе: {percent}"
+
+msgid "membership:valid_until"
+msgstr "Действует до {date} (пекинское время)"
+
+msgid "membership:view_api_topup"
+msgstr "Посмотреть пополнение API"
+
+msgid "membership:view_plans"
+msgstr "Посмотреть тарифы подписки"
+
+msgid "membership:visits"
+msgstr "{count} посещений поиска"
+
+msgid "membership:week_remaining"
+msgstr "Остаток за неделю"
+
+msgid "membership:weekly_report_reference"
+msgstr "Стандартные отчёты: до ≈ {reports} партий в неделю"
+
+msgid "membership:weekly_reports"
+msgstr "До ≈ {reports} партий в неделю"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "До ≈ {reports} партий в неделю · Пока недоступно"
+
+msgid "membership:weekly_reset_rule"
+msgstr ""
+"Недельный лимит восстанавливается по понедельникам в 00:00 по пекинскому "
+"времени."
+
+msgid "membership:whole_request_fallback"
+msgstr ""
+"Если лимита подписки не хватает на весь анализ, он целиком оплачивается "
+"имеющимися баллами API."

@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BillingOrder, MembershipCatalog, MembershipUsage } from '../../../features/membership/types';
+import { API } from '../../../api';
+import { i18n } from '../../../i18n';
 import MembershipPage from './MembershipPage';
 
 const { auth, api } = vi.hoisted(() => ({
@@ -41,7 +43,7 @@ const flush = async () => { await act(async () => { await Promise.resolve(); awa
 const mount = () => render(<MemoryRouter><MembershipPage /></MemoryRouter>);
 const openTopup = () => fireEvent.click(screen.getByRole('tab', { name: 'API充值' }));
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.useFakeTimers();
   Object.assign(auth, { identityKey: 'account-a', status: 'authenticated', token: null });
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
@@ -51,10 +53,77 @@ beforeEach(() => {
   api.createOrder.mockResolvedValue(order());
   api.getOrder.mockResolvedValue(order());
   api.getOrders.mockResolvedValue({ orders: [] });
+  vi.spyOn(API, 'getTranslations').mockResolvedValue({ lang: 'cn', translations: {} });
+  vi.spyOn(i18n, 'loadLiveTranslations').mockResolvedValue();
+  await i18n.loadTranslations('cn');
 });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe('Kiosk membership', () => {
+  const switchLanguage = async (lang: string, translations: Record<string, string>) => {
+    vi.mocked(API.getTranslations).mockResolvedValue({ lang, translations });
+    await act(async () => { await i18n.loadTranslations(lang); });
+  };
+
+  it('localizes a comma-decimal display while keeping raw numeric progress and the current account snapshot', async () => {
+    api.getUsage.mockResolvedValue({ ...usage(), term: { ...usage().term!, percent: 65.6 } });
+    mount();
+    await flush();
+    await switchLanguage('de', { 'membership:kiosk_term_remaining_aria': 'Verbleibendes Kontingent im Zeitraum' });
+    const progress = screen.getByRole('progressbar', { name: 'Verbleibendes Kontingent im Zeitraum' });
+    expect(progress).toHaveAttribute('aria-valuenow', '65.6');
+    expect(progress.firstElementChild).toHaveStyle({ width: '65.6%' });
+    expect(screen.getByText(/^65,6\s*%$/)).toBeInTheDocument();
+    expect(api.getCatalog).toHaveBeenCalledTimes(1);
+    expect(api.getUsage).toHaveBeenCalledTimes(1);
+  });
+
+  it('updates an open order receipt and controls when language changes without recreating its order', async () => {
+    mount();
+    await flush();
+    openTopup();
+    fireEvent.click(screen.getByRole('button', { name: /^充值/ }));
+    await flush();
+    await switchLanguage('en', {
+      'membership:kiosk_order_confirmation': 'Order confirmation',
+      'membership:kiosk_order_waiting_server': 'Waiting for server payment confirmation',
+      'membership:kiosk_return_selection': 'Back to selection',
+      'membership:close': 'Close',
+    });
+    const dialog = screen.getByRole('dialog', { name: 'Order confirmation' });
+    expect(dialog).toHaveTextContent('Waiting for server payment confirmation');
+    expect(within(dialog).getByRole('button', { name: 'Back to selection' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    expect(api.createOrder).toHaveBeenCalledTimes(1);
+    expect(api.getUsage).toHaveBeenCalledTimes(1);
+    expect(api.getOrder).not.toHaveBeenCalled();
+  });
+
+  it('translates an already-present uncertain order error without retrying a purchase', async () => {
+    api.createOrder.mockRejectedValue(new Error('offline'));
+    mount();
+    await flush();
+    openTopup();
+    fireEvent.click(screen.getByRole('button', { name: /^充值/ }));
+    await flush();
+    expect(screen.getByRole('dialog')).toHaveTextContent('订单结果未确认，请先查看订单记录，避免重复创建。');
+    await switchLanguage('en', { 'membership:kiosk_order_uncertain': 'Order result unknown. Check order history before trying again.' });
+    expect(screen.getByRole('dialog')).toHaveTextContent('Order result unknown. Check order history before trying again.');
+    expect(api.createOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('translates an open history error without requesting history again', async () => {
+    api.getOrders.mockRejectedValue(new Error('offline'));
+    mount();
+    await flush();
+    fireEvent.click(screen.getByRole('button', { name: '订单记录' }));
+    await flush();
+    expect(screen.getByRole('dialog')).toHaveTextContent('订单记录暂未同步，请稍后重试。');
+    await switchLanguage('en', { 'membership:kiosk_history_error': 'Order history could not sync. Try again later.' });
+    expect(screen.getByRole('dialog')).toHaveTextContent('Order history could not sync. Try again later.');
+    expect(api.getOrders).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps unknown balances and percentages unknown and blocks purchases', async () => {
     api.getUsage.mockRejectedValue(new Error('offline'));
     mount();
@@ -127,7 +196,7 @@ describe('Kiosk membership', () => {
     fireEvent.click(screen.getByRole('button', { name: '选择 Max' }));
     await flush();
     expect(api.createOrder).toHaveBeenCalledWith({ sku: 'membership_max', provider: 'mock', idempotency_key: expect.any(String) }, null, expect.any(AbortSignal));
-    expect(screen.getByRole('dialog')).toHaveTextContent('¥199.00');
+    expect(screen.getByRole('dialog')).toHaveTextContent('¥199');
   });
 
   it('blocks a live or production mock checkout in this TEST-only release', async () => {
@@ -157,8 +226,8 @@ describe('Kiosk membership', () => {
     mount();
     await flush();
     openTopup();
-    fireEvent.click(screen.getByRole('button', { name: '¥30.00 30.00积分' }));
-    fireEvent.click(screen.getByRole('button', { name: '充值 ¥30.00' }));
+    fireEvent.click(screen.getByRole('button', { name: '¥30 30.00积分' }));
+    fireEvent.click(screen.getByRole('button', { name: '充值 ¥30' }));
     await flush();
     expect(api.createOrder).toHaveBeenCalledWith({ sku: 'topup_30', provider: 'mock', idempotency_key: expect.any(String) }, null, expect.any(AbortSignal));
     expect(screen.getByRole('dialog')).toHaveTextContent('TEST模拟订单 · 不会真实收款');
@@ -172,7 +241,7 @@ describe('Kiosk membership', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent('服务端已确认支付');
     expect(api.getUsage).toHaveBeenCalledTimes(2);
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '返回用量' }));
-    expect(screen.getByText('40.00')).toBeInTheDocument();
+    expect(screen.getByText('40.00 积分')).toBeInTheDocument();
   });
 
   it('clears private orders on an identity switch and aborts/ignores the previous poll', async () => {

@@ -19,6 +19,7 @@ import { accessAllowed } from '../../components/auth/accessPolicy';
 import { usePaidPosition } from '../../features/analysis/usePaidPosition';
 import { useReportTasks } from '../../features/report/useReportTasks';
 import { ConsumptionQuoteDialog } from '../../features/membership/ConsumptionQuoteDialog';
+import { membershipErrorCode, membershipErrorText, type MembershipErrorCode } from '../../features/membership/presentation';
 
 const ResearchPage = () => {
     const [searchParams] = useSearchParams();
@@ -30,12 +31,13 @@ const ResearchPage = () => {
     const [authPromptOpen, setAuthPromptOpen] = useState(false);
     const [libraryOpen, setLibraryOpen] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const [reportPreparationError, setReportPreparationError] = useState<MembershipErrorCode | null>(null);
     const [reportBusy, setReportBusy] = useState(false);
     const [boardEdge, setBoardEdge] = useState(0);
     const coordinates = useBoardCoordinates(boardEdge);
     const positionSgf = board.serializeToSGF({ position: true }).sgf;
     const paid = usePaidPosition({ token, status, identityKey, snapshotKey: positionSgf, input: { sgf: positionSgf } });
-    const { createReport, pendingQuote: reportQuote, quoteBusy, confirmQuote, cancelQuote, error: reportError } = useReportTasks(token, isAuthenticated, identityKey, status);
+    const { createReport, pendingQuote: reportQuote, quoteBusy, confirmQuote, cancelQuote, error: reportError, billingError: reportBillingError } = useReportTasks(token, isAuthenticated, identityKey, status);
     const l1ShowHints = paid.showHints && !!paid.result;
     const l1ShowTerritory = paid.showOwnership && !!paid.result;
     const l1AnalysisPending = paid.busy;
@@ -65,20 +67,20 @@ const ResearchPage = () => {
     }, [board, token]);
     const handleSaveToCloud = useCallback(async () => {
         if (!isAuthenticated) { setAuthPromptOpen(true); return; }
-        setSaveError(null);
+        setSaveError(null); setReportPreparationError(null);
         try { await saveBoard(); } catch (error) { setSaveError(error instanceof Error ? error.message : '保存失败'); }
     }, [isAuthenticated, saveBoard]);
     const handleCreateReport = useCallback(async () => {
         if (!isAuthenticated || status !== 'authenticated') { setAuthPromptOpen(true); return; }
         if (reportBusy) return;
         const requestedIdentity = identityKey;
-        setReportBusy(true); setSaveError(null);
+        setReportBusy(true); setSaveError(null); setReportPreparationError(null);
         try {
             const game = await saveBoard();
             if (liveIdentity.current !== requestedIdentity) return;
             const task = await createReport({ userGameId: game.id, totalMoves: game.move_count });
             if (task && liveIdentity.current === requestedIdentity) navigate('/galaxy/report');
-        } catch (error) { if (liveIdentity.current === requestedIdentity) setSaveError(error instanceof Error ? error.message : '创建报告失败'); }
+        } catch (error) { if (liveIdentity.current === requestedIdentity) setReportPreparationError(membershipErrorCode(error, 'report_failed')); }
         finally { setReportBusy(false); }
     }, [createReport, identityKey, isAuthenticated, navigate, reportBusy, saveBoard, status]);
     const handleOpenFromCloud = useCallback(() => setLibraryOpen(true), []);
@@ -198,7 +200,7 @@ const ResearchPage = () => {
                 railBody={(
                     <>
                     {board.editedSetup && <Alert severity="info" sx={{ mb: 1 }}>{t('research:new_setup_notice', '摆子编辑已建立新局面，原行棋历史已清除。')}</Alert>}
-                    {(paid.error || reportError || saveError) && <Alert severity="error" sx={{ mb: 1 }}>{paid.error || reportError || saveError}</Alert>}
+                    {(paid.error || reportError || reportPreparationError || saveError) && <Alert severity="error" sx={{ mb: 1 }}>{paid.error || reportError || (reportPreparationError ? membershipErrorText(reportPreparationError, t) : saveError)}</Alert>}
                     <ResearchSetupPanel
                         playerBlack={board.playerBlack}
                         playerWhite={board.playerWhite}
@@ -291,13 +293,13 @@ const ResearchPage = () => {
                             </Button>
                         </Box>
                         <Box sx={{ p: 2 }}><Button fullWidth variant="contained" size="large" onClick={() => void handleCreateReport()} disabled={reportBusy}>
-                            {t('research:create_report', '创建复盘报告')}
+                            {t('membership:create_report', '创建复盘报告')}
                         </Button></Box>
                     </>
                 )}
             />
             <ConsumptionQuoteDialog quote={paid.pendingQuote} busy={paid.busy} error={paid.error} onCancel={paid.cancel} onConfirm={() => void paid.confirm()} />
-            <ConsumptionQuoteDialog quote={reportQuote?.quote ?? null} busy={quoteBusy} error={reportError} onCancel={cancelQuote}
+            <ConsumptionQuoteDialog quote={reportQuote?.quote ?? null} busy={quoteBusy} error={reportBillingError ? reportError : null} onCancel={cancelQuote}
                 onConfirm={() => { void confirmQuote().then((task) => { if (task) navigate('/galaxy/report'); }).catch(() => undefined); }} />
             <GameLibraryModal open={libraryOpen} onClose={() => setLibraryOpen(false)} onLoadGame={handleLoadFromLibrary} />
             <AuthRequiredDialog

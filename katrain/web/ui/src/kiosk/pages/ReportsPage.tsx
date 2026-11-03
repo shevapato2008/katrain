@@ -127,7 +127,7 @@ export default function ReportsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const {
-    reportStatesByGame, error: tasksError, errorKind: tasksErrorKind, clearError: clearTasksError,
+    reportStatesByGame, error: tasksError, billingError: tasksBillingError, errorKind: tasksErrorKind, clearError: clearTasksError,
     refresh: refreshTasks, createReport, retryReport,
     pendingQuote, quoteBusy, confirmQuote, cancelQuote,
   } = useReportTasks(token, isAuthenticated, identityKey, status);
@@ -548,7 +548,7 @@ export default function ReportsPage() {
                   {/* 报告任务那条错可能来自列表、创建或重试,前半句说不准是哪件 ⇒ 前半句固定说
                       「报告任务出错了」,后半句按类别接原因;分不出原因时只说前半句,不能只剩
                       一句「已经不在了」没有主语。不印原文(盒上断网时是 Request failed 503: {…})。 */}
-                  {actionError || failureLine(t('review:tasks_failed', '报告任务出错了'), tasksErrorKind ?? 'other', t)}
+                  {actionError || (tasksBillingError ? tasksError : failureLine(t('review:tasks_failed', '报告任务出错了'), tasksErrorKind ?? 'other', t))}
                   <button
                     type="button" className="kiosk-btn kiosk-btn--pill"
                     onClick={() => { setActionError(null); clearTasksError(); void refreshTasks(); }}
@@ -567,7 +567,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <ConsumptionQuoteDialog kiosk quote={pendingQuote?.quote ?? null} busy={quoteBusy} error={tasksError ? (tasksErrorKind === 'no_credits' ? '会员额度和API积分不足，请前往会员页查看' : '操作失败，请重试') : null} onCancel={cancelQuote}
+      <ConsumptionQuoteDialog kiosk quote={pendingQuote?.quote ?? null} busy={quoteBusy} error={tasksBillingError ? tasksError : null} onCancel={cancelQuote}
         onConfirm={() => { void confirmQuote().catch(() => undefined); }} />
       <ReportLibraryImportDialog
         open={libraryImportOpen}

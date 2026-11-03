@@ -7350,3 +7350,1131 @@ msgstr ""
 
 msgid "baipu:exit_anyway"
 msgstr "Усе одно вийти"
+
+msgid "membership:account_checking"
+msgstr "Перевіряємо обліковий запис"
+
+msgid "membership:account_entry"
+msgstr "Використання, бали API та переваги передплати"
+
+msgid "membership:account_identity_help"
+msgstr ""
+"Після підтвердження особи буде показано переваги передплати, право на Free і"
+" баланс балів API."
+
+msgid "membership:account_retry"
+msgstr "Повторити перевірку облікового запису"
+
+msgid "membership:account_unconfirmed"
+msgstr "Статус облікового запису ще не підтверджено"
+
+msgid "membership:advanced"
+msgstr "Поглиблений"
+
+msgid "membership:advanced_depth_ratio"
+msgstr "Поглиблений звіт витрачає приблизно в {ratio} раза більше."
+
+msgid "membership:advanced_depth_rule"
+msgstr "Витрати на поглиблений звіт залежать від глибини аналізу на сервері."
+
+msgid "membership:advanced_position_cost"
+msgstr "Поглиблений: ≈ {points} бала/хід"
+
+msgid "membership:analysis_depth"
+msgstr "Глибина аналізу"
+
+msgid "membership:api_balance"
+msgstr "Баланс балів API"
+
+msgid "membership:api_on_demand"
+msgstr "Аналіз API на вимогу"
+
+msgid "membership:api_prices"
+msgstr "Ціни на аналіз API"
+
+msgid "membership:api_topup"
+msgstr "Поповнення API"
+
+msgid "membership:auth_after_login"
+msgstr "Доступно після входу"
+
+msgid "membership:auth_box_login"
+msgstr "Увійти на головній сторінці пристрою"
+
+msgid "membership:auth_box_note"
+msgstr ""
+"Увійдіть на головній сторінці пристрою Zhixing, потім поверніться до цього "
+"розділу через вхід у ґо."
+
+msgid "membership:auth_checking_action"
+msgstr "Перевіряємо"
+
+msgid "membership:auth_checking_description"
+msgstr "Зачекайте. Після перевірки робота продовжиться автоматично."
+
+msgid "membership:auth_checking_note"
+msgstr "Під час перевірки вміст облікового запису не завантажується."
+
+msgid "membership:auth_checking_title"
+msgstr "Перевіряємо стан входу"
+
+msgid "membership:auth_description"
+msgstr ""
+"Увійдіть, щоб переглядати використання передплати, бали API та замовлення."
+
+msgid "membership:auth_expired_description"
+msgstr ""
+"Сеанс завершився. Завантаження особистих даних про передплату та "
+"використання призупинено. Увійдіть знову, щоб продовжити."
+
+msgid "membership:auth_expired_title"
+msgstr "Увійдіть знову"
+
+msgid "membership:auth_label"
+msgstr "Передплата й використання"
+
+msgid "membership:auth_login_continue"
+msgstr "Увійти й продовжити"
+
+msgid "membership:auth_login_title"
+msgstr "Увійдіть для перегляду передплати й використання"
+
+msgid "membership:auth_return_note"
+msgstr ""
+"Після входу ви повернетеся на цю сторінку; шукати її знову не доведеться."
+
+msgid "membership:auth_unavailable_description"
+msgstr ""
+"Мережа або сервіс тимчасово недоступні. Спробуйте знову. Дані входу "
+"збережено."
+
+msgid "membership:auth_unavailable_note"
+msgstr ""
+"Виходити з облікового запису не потрібно. Спробуйте знову після відновлення "
+"зв’язку."
+
+msgid "membership:auth_unavailable_title"
+msgstr "Поки не вдається перевірити стан входу"
+
+msgid "membership:back_to_play"
+msgstr "Повернутися до гри"
+
+msgid "membership:billing_rules"
+msgstr "Правила оплати передплати та API"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"Спочатку використовується ліміт передплати. Якщо хоча б одного із залишкових"
+" лімітів недостатньо для цього аналізу, він повністю оплачується наявними "
+"балами API; джерела оплати не поєднуються. Якщо балів недостатньо, поповніть"
+" баланс або дочекайтеся відновлення ліміту. Бали не купуються автоматично, "
+"списання в юанях не відбувається."
+
+msgid "membership:cancel"
+msgstr "Скасувати"
+
+msgid "membership:checkout_renewal_rule"
+msgstr ""
+"Продовження почнеться після завершення поточної передплати без скидання її "
+"лімітів. Дати дії визначаються квитанцією сервера після оплати."
+
+msgid "membership:choose_topup"
+msgstr "Виберіть суму поповнення"
+
+msgid "membership:close"
+msgstr "Закрити"
+
+msgid "membership:compare_membership_api"
+msgstr "Порівняти передплату й API"
+
+msgid "membership:compare_plans"
+msgstr "Порівняти плани передплати"
+
+msgid "membership:compute"
+msgstr "Обсяг обчислень"
+
+msgid "membership:confirm_consumption"
+msgstr "Підтвердити й почати"
+
+msgid "membership:confirm_position"
+msgstr "Підтвердити аналіз поточної позиції"
+
+msgid "membership:confirm_purchase"
+msgstr "Підтвердити купівлю"
+
+msgid "membership:confirm_report"
+msgstr "Підтвердити створення звіту"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "Використати бали API, не більше {points}"
+
+msgid "membership:confirming"
+msgstr "Перевіряємо"
+
+msgid "membership:consumption_policy"
+msgstr ""
+"Спочатку передплата; якщо її недостатньо, весь аналіз оплачується балами "
+"API, не більше {points} балів"
+
+msgid "membership:countdown_days"
+msgstr "{days} дн. {hours} год {minutes} хв"
+
+msgid "membership:countdown_hours"
+msgstr "{hours} год {minutes} хв"
+
+msgid "membership:create_order"
+msgstr "Створити замовлення"
+
+msgid "membership:create_report"
+msgstr "Створити звіт за партією"
+
+msgid "membership:creating_order"
+msgstr "Створюємо…"
+
+msgid "membership:current_plan"
+msgstr "Поточна передплата"
+
+msgid "membership:date_pending"
+msgstr "Очікує підтвердження"
+
+msgid "membership:done"
+msgstr "Готово"
+
+msgid "membership:entitlement_pending"
+msgstr "Права облікового запису очікують підтвердження"
+
+msgid "membership:error_analysis_login_required"
+msgstr "Увійдіть, щоб користуватися аналізом"
+
+msgid "membership:error_insufficient"
+msgstr ""
+"Недостатньо ліміту передплати й балів API. Докладніше на сторінці "
+"передплати."
+
+msgid "membership:error_operation_running"
+msgstr "Аналіз ще виконується. Повторіть запит пізніше."
+
+msgid "membership:error_position_failed"
+msgstr "Аналіз не завершено. Спробуйте знову."
+
+msgid "membership:error_position_refunded"
+msgstr "Аналіз не завершено. Списання за нього скасовано. Спробуйте знову."
+
+msgid "membership:error_position_unavailable"
+msgstr "Аналіз окремої позиції зараз недоступний"
+
+msgid "membership:error_quote_expired"
+msgstr ""
+"Розрахунок ціни застарів або не відповідає поточному запиту. Підтвердьте "
+"новий розрахунок і спробуйте знову."
+
+msgid "membership:error_quote_failed"
+msgstr "Не вдалося розрахувати ціну. Спробуйте знову."
+
+msgid "membership:error_report_failed"
+msgstr "Не вдалося створити звіт. Спробуйте знову."
+
+msgid "membership:error_report_login_required"
+msgstr "Увійдіть, щоб створити звіт"
+
+msgid "membership:error_report_missing"
+msgstr "Звіт не знайдено. Оновіть сторінку й спробуйте знову."
+
+msgid "membership:error_result_expired"
+msgstr ""
+"Результат аналізу застарів або тимчасово недоступний. Виконайте аналіз "
+"знову."
+
+msgid "membership:error_service_busy"
+msgstr "Зараз багато запитів. Спробуйте пізніше."
+
+msgid "membership:error_service_paused"
+msgstr "Сервіс аналізу призупинено. Спробуйте пізніше."
+
+msgid "membership:error_service_unavailable"
+msgstr "Сервіс аналізу тимчасово недоступний. Спробуйте пізніше."
+
+msgid "membership:error_verification_required"
+msgstr "Завершіть перевірку входу й спробуйте знову"
+
+msgid "membership:example_depth"
+msgstr "Глибина аналізу в прикладі"
+
+msgid "membership:free_eligibility_rule"
+msgstr ""
+"Окреме право на {count} стандартних звітів за календарний тиждень за умови "
+"виконання вимог перевірки особи. Не є загальним лімітом аналізу."
+
+msgid "membership:free_pending"
+msgstr "Право на Free очікує підтвердження"
+
+msgid "membership:free_remaining"
+msgstr "Залишилося на тиждень: {count}"
+
+msgid "membership:free_reset_countdown"
+msgstr "Відновлення через {time} · {date} (пекінський час)"
+
+msgid "membership:free_unavailable"
+msgstr "Право на Free зараз недоступне"
+
+msgid "membership:free_unavailable_rule"
+msgstr ""
+"Для стандартних звітів Free потрібна підтверджена особа. Зараз кількість "
+"доступних звітів не надається. Платна передплата не додає права на звіти "
+"Free."
+
+msgid "membership:free_weekly_eligibility"
+msgstr "Окреме право на стандартні звіти за календарний тиждень"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · Стандартні звіти на цей тиждень"
+
+msgid "membership:fulfillment_pending"
+msgstr ""
+"Квитанцію про надання прав ще не підтверджено. Оновіть дані використання."
+
+msgid "membership:full_use_days"
+msgstr "За повного використання ліміту за {days} днів"
+
+msgid "membership:full_use_savings_rule"
+msgstr ""
+"Економію розраховано за повного використання ліміту періоду; фактична "
+"економія залежить від використання. Продовження почнеться після завершення "
+"поточної передплати."
+
+msgid "membership:galaxy_api_help"
+msgstr ""
+"API без передплати: 1 юань = 1 бал. Перед аналізом підтвердьте розрахунок "
+"ціни сервера."
+
+msgid "membership:galaxy_choose_membership"
+msgstr "Виберіть передплату відповідно до використання"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr ""
+"Для однакового обсягу стандартного аналізу, за повного використання ліміту "
+"періоду."
+
+msgid "membership:galaxy_intro"
+msgstr ""
+"Переглядайте використання аналізу й вибирайте поповнення за потреби або "
+"передплату."
+
+msgid "membership:galaxy_membership_savings"
+msgstr "Часто аналізуєте? Передплата вигідніша"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "Для зрідка потрібного аналізу можна поповнювати баланс за потреби"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount} / {days} днів"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · Передплата на {days} днів"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr ""
+"Оцінка для партії на 300 ходів із початковою позицією, у межах залишку "
+"ліміту періоду."
+
+msgid "membership:galaxy_report_example_title"
+msgstr "Скільки коштує партія на 300 ходів?"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr ""
+"Тижневий ліміт відновлюється щопонеділка о 00:00 за пекінським часом; "
+"залишок періоду згорає після його завершення."
+
+msgid "membership:galaxy_tabs"
+msgstr "Сторінка передплати"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr ""
+"Діє до {date} (пекінський час); відновлення щопонеділка не збільшує ліміт "
+"періоду."
+
+msgid "membership:galaxy_title"
+msgstr "Передплата й використання"
+
+msgid "membership:history_unavailable"
+msgstr "Історія замовлень тимчасово недоступна"
+
+msgid "membership:kiosk_account_actions"
+msgstr "Дії з обліковим записом"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "Обліковий запис, передплата й поповнення"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "Поглиблений аналіз"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr ""
+"Поглиблений: {points} балів; обидва варіанти включають початкову позицію"
+
+msgid "membership:kiosk_api_balance"
+msgstr "Баланс API"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "Поповнення API · Оплата за використання"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "Поповнення балів API"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "Бали API за браку ліміту передплати"
+
+msgid "membership:kiosk_back"
+msgstr "Назад"
+
+msgid "membership:kiosk_back_settings"
+msgstr "Назад до налаштувань"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "З’являться після підтвердження прав облікового запису"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "Перевірте суму замовлення перед оплатою"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "Вибрати {plan}"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "Синхронізовано з хмарою"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "Порівняти передплати"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "Спочатку підтвердьте обліковий запис"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "Підтвердьте джерело оплати й ціну до аналізу"
+
+msgid "membership:kiosk_creating_order"
+msgstr "Створюємо замовлення…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "Зарахування: {points} балів"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "Поточний баланс API"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "Поточні переваги"
+
+msgid "membership:kiosk_current_plan"
+msgstr "Поточна передплата"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "Очікуваний період: {start} — {end} · Пекінський час"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount} = {points} балів"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "Право на безкоштовні звіти визначається перевіркою в хмарі"
+
+msgid "membership:kiosk_free_pending"
+msgstr "Право на безкоштовні звіти очікує перевірки"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "Лише стандартні звіти, без загального ліміту аналізу"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "Залишилося {remaining} / {limit}"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr ""
+"Спочатку пройдіть перевірку облікового запису. Після її завершення з’явиться"
+" право на звіти цього тижня."
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "За частого використання передплата може бути вигіднішою"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "За повного використання ліміту вигідніше за API"
+
+msgid "membership:kiosk_history_error"
+msgstr "Історію замовлень ще не синхронізовано. Спробуйте пізніше."
+
+msgid "membership:kiosk_member_first"
+msgstr "Для аналізу спочатку використовується ліміт передплати"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "Спочатку передплата, потім бали API"
+
+msgid "membership:kiosk_membership_extension"
+msgstr ""
+"Нова передплата почнеться після завершення вже оплаченого періоду. Поточне "
+"використання зберігається; остаточні дати визначаються квитанцією про "
+"оплату."
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "Купівля передплати"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr "Діє з {start} до {end} · Пекінський час · Дати за цією квитанцією"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "Сервіс передплати тимчасово недоступний"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr ""
+"У тестовому середовищі результат оплати моделюється сервером. Ця сторінка не"
+" запускає оплату й не надає права самостійно."
+
+msgid "membership:kiosk_next_plan"
+msgstr "Наступний період: {plan} · З {date} · Пекінський час"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr ""
+"Перед аналізом підтвердьте джерело оплати й ціну. Автоматичного поповнення "
+"немає."
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr ""
+"Ця сторінка не надає права самостійно. За потреби поверніться до вибору."
+
+msgid "membership:kiosk_no_orders"
+msgstr "Історія замовлень порожня"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "Стандартний аналіз"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "Звіт на {moves} ходів · Стандартний: {points} балів"
+
+msgid "membership:kiosk_not_available"
+msgstr "Поки недоступно"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "Підтвердження замовлення"
+
+msgid "membership:kiosk_order_expired"
+msgstr "Строк замовлення минув"
+
+msgid "membership:kiosk_order_failed"
+msgstr "Замовлення не завершено"
+
+msgid "membership:kiosk_order_history"
+msgstr "Історія замовлень"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "Замовлення {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "Повернення за замовленням виконано"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "Сервер підтвердив оплату"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr ""
+"Статус замовлення ще не синхронізовано. Повторюємо спробу; не створюйте "
+"замовлення повторно."
+
+msgid "membership:kiosk_order_uncertain"
+msgstr ""
+"Результат замовлення не підтверджено. Спочатку перевірте історію замовлень, "
+"щоб уникнути повторного створення."
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "Замовлення очікує підтвердження"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "Замовлення дійсне до {date} · Пекінський час"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "Очікуємо підтвердження оплати сервером"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr ""
+"Отриманий результат можна переглядати повторно. Територія та підказки ходів "
+"входять до того самого результату."
+
+msgid "membership:kiosk_paid_time"
+msgstr "Підтверджено {date} · Пекінський час"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr "Оплату ще не підключено. Перевірте статус замовлення пізніше."
+
+msgid "membership:kiosk_pending_no_order"
+msgstr ""
+"До підтвердження частка залишку не відображається й замовлення не "
+"створюється."
+
+msgid "membership:kiosk_period_pending"
+msgstr "Період очікує перевірки"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "Ліміт періоду очікує перевірки"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "Ціни й переваги з’являться після підтвердження каталогу."
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "Каталог передплат очікує синхронізації"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan}: {reports} партій"
+
+msgid "membership:kiosk_plan_term"
+msgstr "/ {days} днів"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "Діє до {date} · Пекінський час"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} балів"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "{points} бала / хід"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr ""
+"Для аналізу має вистачати обох залишків передплати: за період і за тиждень. "
+"Інакше весь аналіз оплачується балами API, без поділу джерел. Автоматичного "
+"поповнення за юані немає."
+
+msgid "membership:kiosk_pricing_help"
+msgstr "Як розраховується ціна API"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr ""
+"Звіт на N ходів включає початкову позицію: усього N+1 позицій. Фактичне "
+"списання визначається розрахунком ціни для запису партії перед аналізом."
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr ""
+"Баланс відображається з точністю до {precision} бала. Стандартний аналіз: "
+"{normal} бала за позицію; поглиблений: {advanced} бала за позицію."
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr ""
+"Без мережі або за невідомого ліміту спочатку виконайте синхронізацію. "
+"Отримані результати можна переглядати повторно; територія та підказки ходів "
+"входять до одного результату."
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "Купівля доступна після підтвердження облікового запису й ліміту"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "Перевіряємо ліміт"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr ""
+"Передплата використовується, лише якщо вистачає обох залишків. Інакше весь "
+"аналіз оплачується балами API, без поділу джерел. Перед аналізом підтвердьте"
+" джерело оплати й ціну. Якщо балів недостатньо, поповніть баланс вручну або "
+"дочекайтеся скидання ліміту."
+
+msgid "membership:kiosk_quota_help"
+msgstr "Ліміти передплати й економія"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "Ліміт ще не підтверджено"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr ""
+"Тижневий максимум оцінено для стандартних звітів на {moves} ходів і обмежено"
+" залишком ліміту періоду. Орієнтир стандартних звітів за період: "
+"{references}."
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr ""
+"Передплата завершується після закінчення придбаного періоду. Тижневий ліміт "
+"скидається щопонеділка о 00:00 за пекінським часом. Частки залишку за період"
+" і тиждень обчислюються окремо; поточний аналіз уже враховано у витратах."
+
+msgid "membership:kiosk_quota_result_help"
+msgstr ""
+"Один результат включає територію та підказки ходів; повторний перегляд не "
+"оплачується. Поглиблений аналіз витрачає в {multiplier} раза більше ліміту, "
+"ніж стандартний."
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr ""
+"Економію порівняно зі стандартним аналізом API розраховано за повного "
+"використання ліміту періоду. За неповного використання фактична економія "
+"залежить від витрат. Free дає право лише на безкоштовні стандартні звіти, "
+"без загального ліміту аналізу."
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "Ліміт очікує перевірки в хмарі"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr ""
+"Дані використання синхронізуються знову. Баланс і права визначаються даними "
+"хмари."
+
+msgid "membership:kiosk_remaining"
+msgstr "Залишилося"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "Залишок ще не підтверджено"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "Продовжити {plan}"
+
+msgid "membership:kiosk_report_estimate"
+msgstr ""
+"Оцінка для {moves} ходів, у межах залишку періоду; поглиблений аналіз "
+"витрачає приблизно в {multiplier} раза більше"
+
+msgid "membership:kiosk_reserved_included"
+msgstr "Поточний аналіз уже враховано"
+
+msgid "membership:kiosk_result_reuse"
+msgstr ""
+"Територія та підказки ходів входять до одного результату. Повторний перегляд"
+" не оплачується."
+
+msgid "membership:kiosk_resync"
+msgstr "Синхронізувати знову"
+
+msgid "membership:kiosk_return_selection"
+msgstr "Повернутися до вибору"
+
+msgid "membership:kiosk_return_usage"
+msgstr "До використання"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "Приблизно на {percent} дешевше за API"
+
+msgid "membership:kiosk_savings_condition"
+msgstr ""
+"Економію розраховано за повного використання ліміту періоду; інакше фактична"
+" економія залежить від використання"
+
+msgid "membership:kiosk_select_topup"
+msgstr "Виберіть суму поповнення API"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "Сервіс тимчасово недоступний"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "Помилка синхронізації"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "Очікує синхронізації"
+
+msgid "membership:kiosk_synced"
+msgstr "Синхронізовано"
+
+msgid "membership:kiosk_syncing"
+msgstr "Синхронізація"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "Синхронізуємо замовлення…"
+
+msgid "membership:kiosk_term"
+msgstr "Період"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "Кінець періоду · Пекінський час"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "Частка залишку за період"
+
+msgid "membership:kiosk_term_reports"
+msgstr "Стандартні звіти · ≈ {reports} партій за {days} днів"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · Тестове середовище"
+
+msgid "membership:kiosk_test_order"
+msgstr "Тестове замовлення TEST · Реальної оплати немає"
+
+msgid "membership:kiosk_title"
+msgstr "Передплата й поповнення"
+
+msgid "membership:kiosk_topup"
+msgstr "Поповнити"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "Поповнити на {amount}"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "Каталог поповнення очікує синхронізації"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr ""
+"Якщо вистачає обох залишків передплати, спочатку використовується її ліміт. "
+"Інакше весь аналіз оплачується балами API."
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} · {points} балів"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points} балів"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "Поки не підтверджено"
+
+msgid "membership:kiosk_understood"
+msgstr "Зрозуміло"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr ""
+"Для аналізу має вистачати обох залишків. Інакше весь аналіз оплачується "
+"балами API."
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "Поки не вдається синхронізувати використання"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "Використано й в аналізі: {percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "Спочатку підтвердьте особу облікового запису"
+
+msgid "membership:kiosk_view_order"
+msgstr "Переглянути замовлення {id}"
+
+msgid "membership:kiosk_view_plans"
+msgstr "Переглянути передплати"
+
+msgid "membership:kiosk_week"
+msgstr "Тиждень"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "Частка залишку за тиждень"
+
+msgid "membership:kiosk_week_reports"
+msgstr "До ≈ {reports} партій на тиждень"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "Скидання в понеділок о 00:00 · Пекінський час"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "Безкоштовні стандартні звіти за тиждень"
+
+msgid "membership:loading"
+msgstr "Завантажуємо передплату й використання…"
+
+msgid "membership:login"
+msgstr "Увійти в обліковий запис"
+
+msgid "membership:login_to_view"
+msgstr "Увійдіть для перегляду передплати й використання"
+
+msgid "membership:membership_first"
+msgstr "Спочатку використовувати ліміт передплати"
+
+msgid "membership:membership_free_pending_help"
+msgstr "Передплату й право на Free ще не підтверджено. Завантажте дані знову."
+
+msgid "membership:membership_order"
+msgstr "Замовлення передплати"
+
+msgid "membership:next_membership"
+msgstr "Придбано: {plan} · Початок {date}"
+
+msgid "membership:no_orders"
+msgstr "Замовлень поки немає"
+
+msgid "membership:normal"
+msgstr "Стандартний"
+
+msgid "membership:normal_position_cost"
+msgstr "Стандартний: ≈ {points} бала/хід"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "Купівля за потреби, без передплати"
+
+msgid "membership:open"
+msgstr "Переглянути"
+
+msgid "membership:order_actual_end"
+msgstr "Фактичне завершення: {date} (пекінський час)"
+
+msgid "membership:order_actual_points"
+msgstr "Фактично зараховано: {points} балів"
+
+msgid "membership:order_actual_start"
+msgstr "Фактичний початок: {date} (пекінський час)"
+
+msgid "membership:order_estimated_dates"
+msgstr ""
+"Очікуваний початок: {start}, завершення: {end} (пекінський час). Остаточні "
+"дати визначаються квитанцією про оплату."
+
+msgid "membership:order_expired"
+msgstr "Строк замовлення минув"
+
+msgid "membership:order_expires_at"
+msgstr "Замовлення дійсне до {date} (пекінський час)."
+
+msgid "membership:order_failed"
+msgstr "Замовлення не завершено"
+
+msgid "membership:order_history"
+msgstr "Історія замовлень"
+
+msgid "membership:order_id"
+msgstr "Номер замовлення"
+
+msgid "membership:order_paid"
+msgstr "Оплачено"
+
+msgid "membership:order_pending"
+msgstr "Очікує оплати"
+
+msgid "membership:order_poll_error"
+msgstr ""
+"Поки не вдається підтвердити оплату. Повторюємо спробу. Не оплачуйте "
+"повторно."
+
+msgid "membership:order_refunded"
+msgstr "Повернення виконано"
+
+msgid "membership:order_result_unknown"
+msgstr ""
+"Результат замовлення поки не підтверджено. Спочатку перевірте історію "
+"замовлень, щоб уникнути повторного створення."
+
+msgid "membership:order_topup"
+msgstr "Поповнення балів API"
+
+msgid "membership:payment_account_pending"
+msgstr ""
+"Замовлення на оплату можна створити лише після підтвердження облікового "
+"запису й використання."
+
+msgid "membership:payment_channel_unavailable"
+msgstr ""
+"Канал оплати ще не підключено. Не переказуйте гроші невідомим отримувачам "
+"поза цією сторінкою."
+
+msgid "membership:payments_disabled"
+msgstr "Оплата поки недоступна"
+
+msgid "membership:payments_unavailable"
+msgstr "Оплата поки недоступна; створити замовлення на оплату зараз не можна."
+
+msgid "membership:pending_order_notice"
+msgstr "Очікуємо оплату. Сторінка автоматично перевірить статус на сервері."
+
+msgid "membership:plan_pending"
+msgstr "Переваги передплати очікують підтвердження"
+
+msgid "membership:plan_term"
+msgstr "/ {days} днів"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan} поки недоступний"
+
+msgid "membership:plans"
+msgstr "Передплата"
+
+msgid "membership:points"
+msgstr "Бали"
+
+msgid "membership:points_amount"
+msgstr "{points} балів"
+
+msgid "membership:points_exchange_rate"
+msgstr "1 юань = 1 бал"
+
+msgid "membership:position_cost"
+msgstr "Ціна за хід"
+
+msgid "membership:position_pricing_rule"
+msgstr ""
+"Ціна за позицію однакова для окремої позиції та всієї партії. Для партії "
+"оплачуються позиції після кожного ходу й початкова позиція."
+
+msgid "membership:processing"
+msgstr "Обробка…"
+
+msgid "membership:quota"
+msgstr "Ліміт передплати"
+
+msgid "membership:quota_dual_rule"
+msgstr ""
+"Залишки за період і тиждень показано як частки відповідних лімітів. Для "
+"аналізу має вистачати обох залишків. Резерв поточного аналізу враховано у "
+"витратах і повертається в разі невдачі."
+
+msgid "membership:quota_expires_in"
+msgstr "Завершиться через {time}"
+
+msgid "membership:quota_pending"
+msgstr "Ліміт очікує підтвердження"
+
+msgid "membership:quota_recovers_in"
+msgstr "Відновлення через {time}"
+
+msgid "membership:quota_refresh_pending"
+msgstr "Перевіряємо актуальний ліміт"
+
+msgid "membership:quota_reservation_help"
+msgstr ""
+"Два залишки обчислюються окремо; для аналізу має вистачати обох. Резерв "
+"поточного аналізу вже враховано в частці використання й повертається в разі "
+"невдачі."
+
+msgid "membership:quote_and_owned_rule"
+msgstr ""
+"До початку аналізу показуються розрахунок ціни сервера й джерело оплати. "
+"Поки статус облікового запису або використання не підтверджено, почати "
+"аналіз не можна. Повторний перегляд отриманих результатів і перемикання між "
+"територією та підказками ходів не оплачуються."
+
+msgid "membership:refresh"
+msgstr "Оновити"
+
+msgid "membership:reload"
+msgstr "Завантажити знову"
+
+msgid "membership:remaining_percent"
+msgstr "Залишилося {percent}"
+
+msgid "membership:renew_plan"
+msgstr "Продовжити {plan}"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"Продовження почнеться після завершення поточної передплати без скидання "
+"використаного й зарезервованого обсягу. До оплати дати попередні; остаточний"
+" період визначається квитанцією сервера після оплати. Платна передплата не "
+"додає права на стандартні звіти Free."
+
+msgid "membership:report_estimate_limit"
+msgstr "Оцінка для партій на 300 ходів, у межах залишку ліміту періоду."
+
+msgid "membership:report_example_rule"
+msgstr ""
+"Із початковою позицією — усього 301 позиція для аналізу. Фактична вартість "
+"визначається розрахунком сервера перед надсиланням."
+
+msgid "membership:retry"
+msgstr "Повторити"
+
+msgid "membership:savings_approx"
+msgstr "Економія ≈ {percent}"
+
+msgid "membership:savings_vs_api"
+msgstr "Приблизно на {percent} дешевше за API"
+
+msgid "membership:select_plan"
+msgstr "Вибрати {plan}"
+
+msgid "membership:server_authority"
+msgstr "Баланс і права визначаються підтвердженими даними сервера."
+
+msgid "membership:service_unavailable"
+msgstr ""
+"Дані використання передплати зараз недоступні; права й баланс очікують "
+"підтвердження."
+
+msgid "membership:source_free"
+msgstr "Передбачається використання права на щотижневий безкоштовний звіт"
+
+msgid "membership:source_membership"
+msgstr "Передбачається використання ліміту передплати"
+
+msgid "membership:source_owned"
+msgstr "Цей результат уже отримано"
+
+msgid "membership:source_pending"
+msgstr "Джерело оплати очікує підтвердження"
+
+msgid "membership:source_wallet"
+msgstr "Передбачається використання балів API"
+
+msgid "membership:stale"
+msgstr "Потребує оновлення"
+
+msgid "membership:stale_warning"
+msgstr ""
+"Показано раніше завантажені дані. Обліковий запис і джерело оплати потрібно "
+"підтвердити знову; купівля тимчасово недоступна."
+
+msgid "membership:synced"
+msgstr "Синхронізовано"
+
+msgid "membership:temporarily_unavailable"
+msgstr "Тимчасово недоступно"
+
+msgid "membership:term_remaining"
+msgstr "Залишок за період"
+
+msgid "membership:term_report_reference"
+msgstr ""
+"{plan}: орієнтовно {reports} стандартних звітів за період у {days} днів."
+
+msgid "membership:term_total_reports"
+msgstr "≈ {reports} партій за {days} днів"
+
+msgid "membership:test_order_warning"
+msgstr "Тестове замовлення TEST, реальної оплати немає"
+
+msgid "membership:time_pending"
+msgstr "Час очікує підтвердження"
+
+msgid "membership:topup_amount"
+msgstr "Поповнити на {amount}"
+
+msgid "membership:topup_arrival"
+msgstr "Буде зараховано {points} балів"
+
+msgid "membership:topup_arrival_rule"
+msgstr ""
+"Бали зараховуються після підтвердження оплати. За браку ліміту передплати "
+"використовуються наявні бали API; автоматичного поповнення немає."
+
+msgid "membership:topup_option"
+msgstr "{amount}, буде зараховано {points} балів"
+
+msgid "membership:unavailable"
+msgstr "Поки недоступно"
+
+msgid "membership:unavailable_title"
+msgstr "Передплата й використання тимчасово недоступні"
+
+msgid "membership:unconfirmed_help"
+msgstr ""
+"Права й баланс облікового запису ще не підтверджено. Спробуйте пізніше."
+
+msgid "membership:usage"
+msgstr "Використання"
+
+msgid "membership:used_and_reserved"
+msgstr "Використано й в аналізі: {percent}"
+
+msgid "membership:valid_until"
+msgstr "Діє до {date} (пекінський час)"
+
+msgid "membership:view_api_topup"
+msgstr "Переглянути поповнення API"
+
+msgid "membership:view_plans"
+msgstr "Переглянути плани передплати"
+
+msgid "membership:visits"
+msgstr "{count} відвідувань пошуку"
+
+msgid "membership:week_remaining"
+msgstr "Залишок за тиждень"
+
+msgid "membership:weekly_report_reference"
+msgstr "Стандартні звіти: до ≈ {reports} партій на тиждень"
+
+msgid "membership:weekly_reports"
+msgstr "До ≈ {reports} партій на тиждень"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "До ≈ {reports} партій на тиждень · Поки недоступно"
+
+msgid "membership:weekly_reset_rule"
+msgstr "Тижневий ліміт відновлюється щопонеділка о 00:00 за пекінським часом."
+
+msgid "membership:whole_request_fallback"
+msgstr ""
+"Якщо ліміту передплати не вистачає на весь аналіз, він повністю оплачується "
+"наявними балами API."

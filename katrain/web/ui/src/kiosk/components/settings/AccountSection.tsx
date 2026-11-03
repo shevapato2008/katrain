@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../../context/AuthContext';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useMembershipI18n } from '../../../features/membership/useMembershipI18n';
 import { useAiLadderStatus } from '../../../features/aiLadder/useAiLadderStatus';
 import { LAUNCHER_LOGIN_URL, LAUNCHER_REGISTER_URL, isStrictBoxKiosk, leaveToLauncher } from '../../shell/boxUrls';
 import KioskAiLadderRows from './KioskAiLadderRows';
@@ -20,6 +21,7 @@ export default function AccountSection() {
   const { user, logout, token, isGuest } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { t: membershipT } = useMembershipI18n();
   const { status, retry } = useAiLadderStatus(token ?? undefined, Boolean(user) && !isGuest);
 
   /**
@@ -96,8 +98,8 @@ export default function AccountSection() {
       </div>
 
       {user && !isGuest && <div className="kiosk-row">
-        <span className="kiosk-row__t"><b>{t('membership:title', '会员与充值')}</b><em>{t('membership:account_entry', '用量、API积分与会员权益')}</em></span>
-        <span className="kiosk-row__end"><button type="button" className="kiosk-btn kiosk-btn--secondary" onClick={() => navigate('/kiosk/membership')}>{t('membership:open', '查看')}</button></span>
+        <span className="kiosk-row__t"><b>{membershipT('membership:kiosk_title', '会员与充值')}</b><em>{membershipT('membership:account_entry', '用量、API积分与会员权益')}</em></span>
+        <span className="kiosk-row__end"><button type="button" className="kiosk-btn kiosk-btn--secondary" onClick={() => navigate('/kiosk/membership')}>{membershipT('membership:open', '查看')}</button></span>
       </div>}
 
       {/* 游客 / 未登录不请求段位(`useAiLadderStatus` 第二个参数),这里也不画。 */}

@@ -23,6 +23,7 @@ import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage'
 import { usePaidPosition } from '../../features/analysis/usePaidPosition';
 import { useReportTasks } from '../../features/report/useReportTasks';
 import { ConsumptionQuoteDialog } from '../../features/membership/ConsumptionQuoteDialog';
+import { membershipErrorCode, membershipErrorText, type MembershipErrorCode } from '../../features/membership/presentation';
 
 interface AiRow {
   move: string;
@@ -89,12 +90,12 @@ const ResearchPage = () => {
   const board = useResearchBoard();
   const { play } = useSound();
   const [confirmClear, setConfirmClear] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<MembershipErrorCode | null>(null);
   const [reportBusy, setReportBusy] = useState(false);
   const positionSgf = board.serializeToSGF({ position: true }).sgf;
   const positionKey = positionSgf;
   const paid = usePaidPosition({ token, status, identityKey, snapshotKey: positionKey, input: { sgf: positionSgf } });
-  const { createReport, pendingQuote: reportQuote, quoteBusy, confirmQuote, cancelQuote, error: reportError } = useReportTasks(token, isAuthenticated, identityKey, status);
+  const { createReport, pendingQuote: reportQuote, quoteBusy, confirmQuote, cancelQuote, error: reportError, billingError: reportBillingError } = useReportTasks(token, isAuthenticated, identityKey, status);
   const mover: 'B' | 'W' = board.currentMove <= board.handicapCount ? board.initialPlayer ?? 'B'
     : board.stoneColors[board.currentMove - 1] === 'B' ? 'W' : 'B';
   const rows = paid.result ? toRows(paid.result.moves.map((move) => ({ ...move, winrate: move.winrate, scoreLead: move.score_lead })), mover) : null;
@@ -109,7 +110,7 @@ const ResearchPage = () => {
   const liveIdentity = useRef(identityKey);
   liveIdentity.current = identityKey;
   const handleCreateReport = useCallback(async () => {
-    if (!isAuthenticated || status !== 'authenticated') { setSaveError('请先登录后创建报告'); return; }
+    if (!isAuthenticated || status !== 'authenticated') { setSaveError('report_login_required'); return; }
     if (reportBusy) return;
     const requestedIdentity = identityKey;
     setReportBusy(true); setSaveError(null);
@@ -121,7 +122,7 @@ const ResearchPage = () => {
       if (liveIdentity.current !== requestedIdentity) return;
       const task = await createReport({ userGameId: game.id, totalMoves: game.move_count });
       if (task && liveIdentity.current === requestedIdentity) navigate('/kiosk/report');
-    } catch (error) { if (liveIdentity.current === requestedIdentity) setSaveError(error instanceof Error ? error.message : '创建报告失败'); }
+    } catch (error) { if (liveIdentity.current === requestedIdentity) setSaveError(membershipErrorCode(error, 'report_failed')); }
     finally { setReportBusy(false); }
   }, [board, createReport, identityKey, isAuthenticated, navigate, reportBusy, status, token, totalMoves]);
   const editGuard = useCallback((fn: () => void) => fn(), []);
@@ -288,7 +289,7 @@ const ResearchPage = () => {
     { key: 'save', icon: 'floppy-disk', label: t('research:save', '保存'), onClick: board.saveLocalSGF },
     { key: 'pass', icon: 'hand-pointing', label: t('research:pass', '停一手'), onClick: board.handlePass },
     { key: 'clear', icon: 'eraser', label: t('research:clear', '清空'), onClick: () => setConfirmClear(true) },
-    { key: 'report', icon: 'magnifying-glass', label: t('research:create_report', '创建复盘报告'), disabled: reportBusy, onClick: () => void handleCreateReport() },
+    { key: 'report', icon: 'magnifying-glass', label: t('membership:create_report', '创建复盘报告'), disabled: reportBusy, onClick: () => void handleCreateReport() },
   ];
   const boardSize = board.boardSize;
 
@@ -333,7 +334,7 @@ const ResearchPage = () => {
 
       <div className="kiosk-rail">
         {board.editedSetup && <p className="kiosk-opthint">{t('research:new_setup_notice', '摆子编辑已建立新局面，原行棋历史已清除。')}</p>}
-        {(saveError || reportError) && <p role="alert">{saveError || reportError}</p>}
+        {(saveError || reportError) && <p role="alert">{reportError || (saveError ? membershipErrorText(saveError, t) : null)}</p>}
         <KioskPagebar
           testId="research-pagebar"
           backLabel={provenance?.backLabel ?? backTo.label}
@@ -416,7 +417,7 @@ const ResearchPage = () => {
       </div>
 
       <ConsumptionQuoteDialog kiosk quote={paid.pendingQuote} busy={paid.busy} error={paid.error} onCancel={paid.cancel} onConfirm={() => void paid.confirm()} />
-      <ConsumptionQuoteDialog kiosk quote={reportQuote?.quote ?? null} busy={quoteBusy} error={reportError} onCancel={cancelQuote}
+      <ConsumptionQuoteDialog kiosk quote={reportQuote?.quote ?? null} busy={quoteBusy} error={reportBillingError ? reportError : null} onCancel={cancelQuote}
         onConfirm={() => { void confirmQuote().then((task) => { if (task) navigate('/kiosk/report'); }).catch(() => undefined); }} />
 
       {/* 清空补确认:上一版是**一点就把整盘擦掉、没有任何确认**,而「停一手」这个两下就能

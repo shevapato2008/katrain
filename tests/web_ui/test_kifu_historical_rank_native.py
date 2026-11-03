@@ -419,3 +419,474 @@ def test_native_derived_rank_and_source_only_date_keep_original_semantics(tmp_pa
         card = detail(db, receipt["games"][0]["album_id"])
         assert (card.display_black_rank, card.black_rank_origin) == (expected, origin)
         assert card.sgf_content == sgf and card.black_rank == game["metadata"].get("black_rank")
+
+
+def repaired_legacy_publication(
+    engine, *, games=1, source_metadata=None, before_repair=None, repair_games=None, professional_black=True
+):
+    """Publish frozen V1 slots, then apply an actual reviewed historical repair."""
+    from datetime import datetime, timezone
+    from katrain.web.kifu import historical_rank_repair as repair, player_ranks
+    from tests.test_kifu_rank_sources import CAPTURES
+
+    identity_evidence = {}
+    if professional_black:
+        # The local synthetic owner has an independently approved official
+        # subject capture. Keep existing five-language fixture proofs intact.
+        capture = deepcopy(next(item for item in CAPTURES if item["canonical_name"] == "高星"))
+        with engine.begin() as conn:
+            registry_id = conn.execute(
+                m.KifuNameSourceRegistry.__table__.insert().values(
+                    version="supersession-official-fixture", sha256="d" * 64, registry={}
+                )
+            ).inserted_primary_key[0]
+            owner = {"kind": "player", "id": 17}
+            payload = {
+                "candidate": {"owner": owner, "display_name": capture["approved_name"]},
+                "research": {
+                    "owner": owner,
+                    "candidate_name": capture["approved_name"],
+                    "original_name": capture["original_name"],
+                    "source_checks": [{"identity_bridges": [capture["capture"]]}],
+                },
+            }
+            evidence_id = conn.execute(
+                m.KifuNameResearchEvidence.__table__.insert().values(
+                    player_id=17,
+                    lang="xx",
+                    revision=1,
+                    source_registry_id=registry_id,
+                    candidate_name=capture["approved_name"],
+                    decision_kind="conventional",
+                    generation_rule_version="none",
+                    research_payload=payload,
+                    producer_id="fixture-producer",
+                    producer_model="test",
+                    reviewer_id="fixture-reviewer",
+                    reviewer_model="test",
+                    reviewed_at=datetime(2026, 11, 3, tzinfo=timezone.utc),
+                    review_status="approved",
+                )
+            ).inserted_primary_key[0]
+            conn.execute(
+                m.KifuPlayerName.__table__.insert().values(
+                    player_id=17,
+                    lang="xx",
+                    display_name=capture["approved_name"],
+                    status="verified",
+                    revision=1,
+                    evidence_id=evidence_id,
+                    decision_kind="conventional",
+                    generation_rule_version="none",
+                )
+            )
+            identity_evidence["Black"] = player_ranks.lookup_professional_identity_evidence(conn, [17])[17]
+    values = []
+    for index in range(games):
+        value = prepared(engine, item=str(99600 + index), raw="九段")
+        game = value["games"][0]
+        sgf = game["sgf_content"].replace("DT[2026-02-01]", f"WR[七段]C[fixture-{index}]")
+        game.update(
+            sgf_content=sgf,
+            raw_sha256=sha256(sgf.encode()).hexdigest(),
+            sgf_sha256=sha256(sgf.encode()).hexdigest(),
+            source_metadata=(
+                deepcopy(source_metadata)
+                if source_metadata is not None
+                else {"playTime": {"date": {"year": 2026, "month": 2, "day": 1}}}
+            ),
+        )
+        game["metadata"] = derive_metadata(sgf, game["source_metadata"])
+        frozen = ranks.freeze_game_ranks(game, matched_at=WHEN, identity_evidence=identity_evidence)
+        game.update({key: frozen[key] for key in ("rank_snapshots", "rank_observations")})
+        values.append((value, frozen))
+    value = {
+        **values[0][0],
+        "games": [entry[0]["games"][0] for entry in values],
+        "rank_facts": ranks.merge_rank_facts(*(entry[1]["rank_facts"] for entry in values)),
+    }
+    receipt = publish(engine, value)
+    if before_repair is not None:
+        before_repair(value, receipt)
+    with engine.begin() as conn:
+        envelope = repair.prepare_manifest(
+            conn,
+            matched_at="2026-11-04T00:00:00Z",
+            album_ids=[game["album_id"] for game in receipt["games"][:repair_games]],
+        )
+        assert len(envelope["parts"]) == 1
+        part = envelope["parts"][0]
+        assert len(part["changes"]) == (games if repair_games is None else repair_games) * 2
+        result = repair.apply_in_transaction(conn, part, expected_sha256=repair.manifest_sha256(part))
+    return value, receipt, part, result
+
+
+def authority_state(engine):
+    from tests.web_ui.test_kifu_incremental_catalog import state
+    from tests.web_ui.test_kifu_rank_publication import rank_state
+
+    return state(engine), rank_state(engine)
+
+
+def test_supersession_exact_applied_historical_repair_replays_original_without_writes(tmp_path):
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    engine = make_engine(tmp_path / "supersession.db")
+    value, receipt, part, _ = repaired_legacy_publication(engine, games=5)
+    original = deepcopy(value), deepcopy(receipt), canonical_sha256(value)
+    assert value["games"][0]["rank_snapshots"]["black"]["rank_system"] == "professional_dan"
+    assert all(change["snapshot_after"]["rank_system"] == "dan_unspecified" for change in part["changes"])
+    assert all(change["snapshot_after"]["target_date"] is None for change in part["changes"])
+    assert all(change["snapshot_after"]["refusal_reason"] == "untrusted_target_date" for change in part["changes"])
+    before = authority_state(engine)
+    assert publish(engine, value) == receipt
+    assert authority_state(engine) == before
+    assert (value, receipt, canonical_sha256(value)) == original
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "original_journal",
+        "missing_journal",
+        "missing_successor",
+        "second_hop",
+        "before",
+        "after",
+        "part",
+        "binding",
+        "pending",
+        "undone",
+        "generic",
+        "owner",
+        "raw",
+        "sgf",
+        "fact",
+    ],
+)
+def test_supersession_rejects_inexact_authority_and_keeps_original_fact_guard(tmp_path, damage):
+    engine = make_engine(tmp_path / f"supersession-{damage}.db")
+    value, receipt, part, result = repaired_legacy_publication(engine)
+    change = part["changes"][0]
+    with engine.begin() as conn:
+        journal = m.KifuNameChange.__table__
+        slot = (journal.c.target_table == m.KifuAlbumRankSnapshot.__tablename__) & (
+            journal.c.target_row_id == change["snapshot_before"]["id"]
+        )
+        if damage in {"original_journal", "missing_journal"}:
+            query = journal.delete() if damage == "missing_journal" else journal.update().values(after_image={})
+            conn.execute(query.where(slot, journal.c.batch_id == receipt["batch_id"]))
+        elif damage == "missing_successor":
+            conn.execute(journal.delete().where(slot, journal.c.batch_id == result["batch_id"]))
+        elif damage == "second_hop":
+            from katrain.web.kifu import historical_rank_repair as repair
+
+            forged = deepcopy(part)
+            # Even a self-consistent applied part may not skip through an
+            # intermediate successor to reach the original native journal.
+            first_after = conn.scalar(
+                select(journal.c.after_image).where(slot, journal.c.batch_id == result["batch_id"])
+            )
+            forged["changes"][0]["snapshot_before"] = first_after
+            forged_sha = repair.manifest_sha256(forged)
+            conn.execute(
+                m.KifuNameBatch.__table__.update()
+                .where(m.KifuNameBatch.id == result["batch_id"])
+                .values(bundle_sha256=forged_sha, reviewed_artifact=repair._artifact(forged))
+            )
+            conn.execute(
+                m.KifuAlbumRankSnapshot.__table__.update()
+                .where(m.KifuAlbumRankSnapshot.native_batch_id == result["batch_id"])
+                .values(publication_key="historical-rank:" + forged_sha)
+            )
+            for row in conn.execute(select(journal).where(journal.c.batch_id == result["batch_id"])).mappings():
+                after = {**row["after_image"], "publication_key": "historical-rank:" + forged_sha}
+                conn.execute(
+                    journal.update()
+                    .where(journal.c.id == row["id"])
+                    .values(
+                        after_image=after,
+                        **(
+                            {"before_image": first_after}
+                            if row["target_row_id"] == change["snapshot_before"]["id"]
+                            else {}
+                        ),
+                    )
+                )
+        elif damage in {"before", "after"}:
+            conn.execute(
+                journal.update().where(slot, journal.c.batch_id == result["batch_id"]).values(**{damage + "_image": {}})
+            )
+        elif damage in {"part", "binding", "generic"}:
+            artifact = deepcopy(
+                conn.scalar(select(m.KifuNameBatch.reviewed_artifact).where(m.KifuNameBatch.id == result["batch_id"]))
+            )
+            if damage == "generic":
+                artifact["format"] = ranks.FORMAT_V2
+            elif damage == "part":
+                artifact["part"]["changes"][0]["snapshot_before"]["publication_key"] = "forged"
+            else:
+                artifact["part"]["basis_bindings"][0]["target"]["source_id"] += 1
+                artifact["part"]["basis_bindings"][0]["content_sha256"] = ranks.snapshot_sha256(
+                    artifact["part"]["basis_bindings"][0]
+                )
+            conn.execute(
+                m.KifuNameBatch.__table__.update()
+                .where(m.KifuNameBatch.id == result["batch_id"])
+                .values(reviewed_artifact=artifact)
+            )
+        elif damage in {"pending", "undone"}:
+            conn.execute(
+                m.KifuNameBatch.__table__.update().where(m.KifuNameBatch.id == result["batch_id"]).values(status=damage)
+            )
+        elif damage == "fact":
+            conn.execute(m.KifuPlayerRankHistory.__table__.update().values(rank_value=1))
+        else:
+            changes = {
+                "owner": {"black_player_id": 18},
+                "raw": {"black_rank": "8段"},
+                "sgf": {"sgf_content": value["games"][0]["sgf_content"].replace("B[bb]", "B[dd]")},
+            }
+            conn.execute(
+                m.KifuAlbum.__table__.update()
+                .where(m.KifuAlbum.id == receipt["games"][0]["album_id"])
+                .values(**changes[damage])
+            )
+    before = authority_state(engine)
+    with pytest.raises(ValueError, match="rank fact content/hash mismatch" if damage == "fact" else None):
+        publish(engine, value)
+    assert authority_state(engine) == before
+
+
+def test_publication_context_is_db_derived_and_read_only(tmp_path, monkeypatch):
+    from katrain.kifu_ingest import catalog
+    from katrain.web.kifu import historical_rank_repair as repair
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    engine = make_engine(tmp_path / "context.db")
+    value, receipt, _, _ = repaired_legacy_publication(engine, games=2)
+    resolver = getattr(catalog, "resolve_rank_publication_context", None)
+    assert callable(resolver), "bounded read-only publication context resolver is missing"
+    before = authority_state(engine)
+    monkeypatch.setattr(repair, "_lock_writer", lambda *a, **kw: pytest.fail("context acquired writer lock"))
+    monkeypatch.setattr(
+        historical_ranks := __import__("katrain.web.kifu.historical_ranks", fromlist=[""]),
+        "verify_initial_rank_decisions",
+        lambda *a, **kw: pytest.fail("context reselected initial decisions"),
+    )
+    context = resolver(engine, canonical_sha256(value), canonical_sha256(receipt))
+    assert context["version"] == "kifu-rank-publication-context-v1"
+    assert context["manifest_sha256"] == canonical_sha256(value)
+    assert context["receipt_sha256"] == canonical_sha256(receipt)
+    assert context["content_sha256"] == ranks.snapshot_sha256(context)
+    assert len(context["slots"]) == 4
+    assert {slot["expected"]["rank"] for slot in context["slots"]} == {"9段", "7段"}
+    assert all(slot["predecessor_after_sha256"] == slot["successor_before_sha256"] for slot in context["slots"])
+    assert authority_state(engine) == before
+    with pytest.raises(ValueError):
+        resolver(engine, canonical_sha256(value), "a" * 64)
+
+
+def test_supersession_partial_repair_keeps_unchanged_slots_exact(tmp_path):
+    from katrain.kifu_ingest import catalog
+    from katrain.web.kifu import historical_rank_repair as repair
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    engine = make_engine(tmp_path / "partial.db")
+    captured = {}
+
+    def before_repair(value, receipt):
+        # Keep only four games in the legitimate finite repair below.
+        captured.update(value=value, receipt=receipt)
+        context = catalog.resolve_rank_publication_context(engine, canonical_sha256(value), canonical_sha256(receipt))
+        assert context["slots"] == []
+
+    value, receipt, part, result = repaired_legacy_publication(
+        engine, games=18, before_repair=before_repair, repair_games=4
+    )
+    before = authority_state(engine)
+    assert publish(engine, value) == receipt
+    context = catalog.resolve_rank_publication_context(engine, canonical_sha256(value), canonical_sha256(receipt))
+    assert len(context["slots"]) == 8
+    assert len(receipt["games"]) * 2 - len(context["slots"]) == 28
+    assert authority_state(engine) == before
+
+
+def test_supersession_rejects_self_consistently_rehashed_false_binding(tmp_path):
+    from katrain.web.kifu import historical_rank_repair as repair
+
+    engine = make_engine(tmp_path / "rehashed.db")
+    value, _, part, result = repaired_legacy_publication(engine)
+    forged = deepcopy(part)
+    for change in forged["changes"]:
+        binding = change["basis_binding"]
+        binding["target"]["source_id"] += 100
+        binding["content_sha256"] = ranks.snapshot_sha256(binding)
+    forged["basis_bindings"] = [change["basis_binding"] for change in forged["changes"]]
+    forged_sha = repair.manifest_sha256(forged)
+    with engine.begin() as conn:
+        conn.execute(
+            m.KifuNameBatch.__table__.update()
+            .where(m.KifuNameBatch.id == result["batch_id"])
+            .values(bundle_sha256=forged_sha, reviewed_artifact=repair._artifact(forged))
+        )
+        conn.execute(
+            m.KifuAlbumRankSnapshot.__table__.update()
+            .where(m.KifuAlbumRankSnapshot.native_batch_id == result["batch_id"])
+            .values(publication_key="historical-rank:" + forged_sha)
+        )
+        for row in conn.execute(
+            select(m.KifuNameChange.__table__).where(m.KifuNameChange.batch_id == result["batch_id"])
+        ).mappings():
+            after = {**row["after_image"], "publication_key": "historical-rank:" + forged_sha}
+            conn.execute(
+                m.KifuNameChange.__table__.update().where(m.KifuNameChange.id == row["id"]).values(after_image=after)
+            )
+    before = authority_state(engine)
+    with pytest.raises(ValueError, match="exact target/basis binding changed"):
+        publish(engine, value)
+    assert authority_state(engine) == before
+
+
+def test_publication_context_shared_body_cache_and_pre_fetch_limits(tmp_path, monkeypatch):
+    import time
+    from sqlalchemy import event
+    from katrain.kifu_ingest import catalog
+    from katrain.web.kifu import historical_ranks
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    engine = make_engine(tmp_path / "resource.db")
+    value, receipt, _, _ = repaired_legacy_publication(engine, games=5)
+    budgets, reads, statements = [], [], []
+    original_init = historical_ranks.EvidenceBudget.__init__
+
+    def budget_init(self, **kwargs):
+        original_init(self, **kwargs)
+        budgets.append(self)
+
+    def observe(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+        if statement.splitlines()[0].strip() == "SELECT kifu_albums.sgf_content":
+            reads.append(parameters)
+        assert not statement.lstrip().upper().startswith(("INSERT ", "UPDATE ", "DELETE ", "LOCK "))
+        assert "FOR UPDATE" not in statement.upper()
+
+    monkeypatch.setattr(historical_ranks.EvidenceBudget, "__init__", budget_init)
+    event.listen(engine, "before_cursor_execute", observe)
+    try:
+        context = catalog.resolve_rank_publication_context(engine, canonical_sha256(value), canonical_sha256(receipt))
+        assert len(context["slots"]) == 10 and len(budgets) == 1
+        assert len(reads) == 5
+        assert budgets[0].used_bytes == sum(len(game["sgf_content"].encode()) for game in value["games"])
+        with pytest.raises(ValueError, match="deadline"):
+            catalog.resolve_rank_publication_context(
+                engine, canonical_sha256(value), canonical_sha256(receipt), deadline=time.monotonic() - 1
+            )
+        statements.clear()
+        monkeypatch.setattr(historical_ranks, "MAX_SCALAR_BYTES", 100)
+        with pytest.raises(ValueError, match="JSON resource"):
+            catalog.resolve_rank_publication_context(engine, canonical_sha256(value), canonical_sha256(receipt))
+        assert not any(statement.startswith("SELECT kifu_name_batches.id,") for statement in statements)
+    finally:
+        event.remove(engine, "before_cursor_execute", observe)
+
+
+def test_publication_context_disposable_postgresql_repeatable_read_only_snapshot(monkeypatch):
+    """Opt-in PostgreSQL proof stays consistent during a concurrent row change."""
+    import os
+    from uuid import uuid4
+    from sqlalchemy import create_engine, text
+    from katrain.kifu_ingest import catalog
+    from katrain.web.kifu import historical_rank_repair as repair
+    from katrain.web.kifu.name_candidates import canonical_sha256
+    from tests.web_ui import test_kifu_incremental_catalog as fixture_catalog
+
+    dsn = os.getenv("KIFU_STANDARDIZATION_TEST_PG_DSN")
+    if not dsn:
+        pytest.skip("set KIFU_STANDARDIZATION_TEST_PG_DSN for disposable PostgreSQL verification")
+    schema = "rank_publication_context_" + uuid4().hex
+    control = create_engine(dsn, hide_parameters=True)
+    with control.begin() as admin:
+        admin.execute(text(f"CREATE SCHEMA {schema}"))
+    engine = create_engine(
+        dsn, connect_args={"options": f"-csearch_path={schema}"}, isolation_level="READ COMMITTED", hide_parameters=True
+    )
+    try:
+        # Use the existing exact catalog fixture against this UUID schema.
+        with monkeypatch.context() as patch:
+            patch.setattr(fixture_catalog, "create_engine", lambda *args, **kwargs: engine)
+            fixture_catalog.make_engine("unused")
+        value, receipt, _, _ = repaired_legacy_publication(engine)
+        original_identity = repair._database_identity
+        observed = []
+
+        def identity(conn):
+            observed.append(
+                (
+                    conn.exec_driver_sql("SHOW transaction_isolation").scalar_one(),
+                    conn.exec_driver_sql("SHOW transaction_read_only").scalar_one(),
+                )
+            )
+            assert observed[-1] == ("repeatable read", "on")
+            result = original_identity(conn)
+            with engine.begin() as concurrent:
+                concurrent.execute(
+                    m.KifuAlbumRankSnapshot.__table__.update()
+                    .where(m.KifuAlbumRankSnapshot.album_id == receipt["games"][0]["album_id"])
+                    .values(snapshot_sha256="a" * 64)
+                )
+            return result
+
+        with monkeypatch.context() as patch:
+            patch.setattr(repair, "_database_identity", identity)
+            context = catalog.resolve_rank_publication_context(
+                engine, canonical_sha256(value), canonical_sha256(receipt)
+            )
+        assert len(context["slots"]) == 2 and observed == [("repeatable read", "on")]
+        with pytest.raises(ValueError):
+            catalog.resolve_rank_publication_context(engine, canonical_sha256(value), canonical_sha256(receipt))
+        with engine.connect() as conn:
+            assert conn.get_isolation_level() == "READ COMMITTED"
+            assert conn.exec_driver_sql("SHOW transaction_read_only").scalar_one() == "off"
+    finally:
+        engine.dispose()
+        with control.begin() as admin:
+            admin.execute(text(f"DROP SCHEMA {schema} CASCADE"))
+        control.dispose()
+
+
+@pytest.mark.parametrize("damage", ["oversized", "owner"])
+def test_publication_context_external_library_fact_preflights_before_legacy_body_read(tmp_path, monkeypatch, damage):
+    from katrain.kifu_ingest import catalog
+    from katrain.web.kifu import historical_ranks, player_ranks
+    from katrain.web.kifu.name_candidates import canonical_sha256
+    from tests.web_ui.test_kifu_rank_publication import ranked
+
+    engine = make_engine(tmp_path / f"external-{damage}.db")
+    source = ranked("99801", "7p", "2026-01-01")
+    source_receipt = publish(engine, source)
+    fact = next(iter(source["rank_facts"].values()))
+    value = ranked("99802", "", "2026-02-01", {"Black": fact})
+    receipt = publish(engine, value)
+    context = catalog.resolve_rank_publication_context(engine, canonical_sha256(value), canonical_sha256(receipt))
+    assert context["slots"] == []
+    with engine.begin() as conn:
+        if damage == "oversized":
+            conn.execute(
+                m.KifuAlbum.__table__.update()
+                .where(m.KifuAlbum.id == source_receipt["games"][0]["album_id"])
+                .values(sgf_content="x" * (historical_ranks.MAX_SGF_BYTES + 1))
+            )
+        else:
+            conn.execute(
+                m.KifuAlbum.__table__.update()
+                .where(m.KifuAlbum.id == source_receipt["games"][0]["album_id"])
+                .values(black_player_id=18)
+            )
+    monkeypatch.setattr(
+        player_ranks,
+        "verify_rank_fact_for_player",
+        lambda *a, **kw: pytest.fail("legacy full-body read called before finite source preflight"),
+    )
+    with pytest.raises(ValueError, match="resource|source"):
+        catalog.resolve_rank_publication_context(engine, canonical_sha256(value), canonical_sha256(receipt))

@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from hashlib import sha256
 import json
 import re
+import time
 from urllib.parse import urlparse
 
 from sqlalchemy import Text, and_, cast, func, or_, select, text, true, update
@@ -33,6 +34,7 @@ from katrain.kifu_ingest.ranks import (
     validate_rank_outcomes,
     portable_rank_outcomes,
     expected_rank_for_outcome,
+    display_rank_for_game_slot,
 )
 from katrain.web.kifu import historical_ranks
 from katrain.web.core.models_db import (
@@ -49,6 +51,7 @@ from katrain.web.core.models_db import (
     KifuPlayerRankHistory,
     KifuAlbumRankSnapshot,
     KifuPlayerAlias,
+    KifuPlayerName,
     KifuRawEventName,
     KifuRawEventValue,
     KifuRawPlayerName,
@@ -2559,6 +2562,342 @@ def _apply_manifest_ranks(
     return sequence, bindings
 
 
+class _RankPublicationProof:
+    """Finite authority reads shared by replay and the read-only context route."""
+
+    def __init__(self, conn, resource, *, lock=True, deadline=None):
+        self.conn, self.resource, self.lock, self.deadline = conn, resource, lock, deadline
+        self.scalar_bytes = 0
+        self.batches, self.journals, self.parts = {}, {}, {}
+        self.successor_ids = set()
+        self.selected_journals = 0
+        self.database_identity = None
+        self.original_batch_id = None
+        self.fact_owner_preflights = set()
+
+    def check_deadline(self):
+        _require(
+            self.deadline is None or time.monotonic() < self.deadline, "rank publication context deadline exceeded"
+        )
+
+    def rows(self, table, predicate, *, limit, columns=None, fetch=True):
+        """Measure count and UTF-8 scalar/JSON bytes before retrieving payloads."""
+        self.check_deadline()
+        columns = list(table.c if columns is None else columns)
+        lengths = [func.coalesce(historical_ranks._body_length(self.conn, cast(col, Text)), 0) for col in columns]
+        size = sum(lengths)
+        with historical_ranks._bounded_queries(self.conn):
+            count, nbytes = self.conn.execute(
+                select(func.count(), func.coalesce(func.sum(size), 0)).select_from(table).where(predicate)
+            ).one()
+            _require(count <= limit, "rank authority row resource limit")
+            _require(
+                self.scalar_bytes + nbytes <= historical_ranks.MAX_SCALAR_BYTES, "rank authority JSON resource limit"
+            )
+            self.scalar_bytes += nbytes
+            if not fetch:
+                self.check_deadline()
+                return count
+            rows = list(self.conn.execute(select(*columns).select_from(table).where(predicate)).mappings())
+        self.check_deadline()
+        _require(len(rows) == count, "rank authority membership changed")
+        return rows
+
+    def image(self, table, row_id):
+        rows = self.rows(table, table.c.id == row_id, limit=1)
+        if not rows:
+            return None
+        from katrain.web.kifu.historical_rank_repair import _json_image
+
+        return _json_image(rows[0])
+
+    def batch(self, batch_id):
+        if batch_id not in self.batches:
+            self.batches[batch_id] = self.image(KifuNameBatch.__table__, batch_id)
+        return self.batches[batch_id]
+
+    def journal(self, batch_id, snapshot_id):
+        key = batch_id, snapshot_id
+        if key not in self.journals:
+            t = KifuNameChange.__table__
+            rows = self.rows(
+                t,
+                and_(
+                    t.c.batch_id == batch_id,
+                    t.c.target_table == KifuAlbumRankSnapshot.__tablename__,
+                    t.c.target_row_id == snapshot_id,
+                ),
+                limit=1,
+            )
+            self.selected_journals += len(rows)
+            _require(self.selected_journals <= 400, "rank authority journal resource limit")
+            _require(len(rows) == 1, "rank authority exact slot journal missing")
+            self.journals[key] = dict(rows[0])
+        return self.journals[key]
+
+    def fact_identity_index(self, manifest):
+        """Keep the old NFKC/casefold collision check within the scalar budget."""
+        names = [fact["evidence"]["grade"]["raw_name"] for fact in manifest["rank_facts"].values()]
+        _require(all(isinstance(name, str) and len(name) <= 1024 for name in names), "rank raw identity limit exceeded")
+        tokens = {normalize_alias(player_identity_name(name)) for name in names} - {""}
+        index = {token: set() for token in tokens}
+        if not tokens:
+            return index
+        p, a = KifuPlayer.__table__, KifuPlayerAlias.__table__
+        # Canonical names have no normalized column. Only these two short
+        # scalars are read; original rank/profile/album discovery is excluded.
+        for row in self.rows(p, true(), limit=historical_ranks.MAX_SCALAR_ROWS, columns=[p.c.id, p.c.canonical_name]):
+            token = normalize_alias(row["canonical_name"])
+            if token in index:
+                index[token].add(row["id"])
+        for row in self.rows(
+            a,
+            a.c.normalized_alias.in_(tokens),
+            limit=historical_ranks.MAX_SCALAR_ROWS,
+            columns=[a.c.player_id, a.c.normalized_alias],
+        ):
+            index[row["normalized_alias"]].add(row["player_id"])
+        return index
+
+    def preflight_fact_owner(self, player_id):
+        """Budget the unchanged legacy guard's exact approved capture reads."""
+        if player_id in self.fact_owner_preflights:
+            return
+        n, e = KifuPlayerName.__table__, KifuNameResearchEvidence.__table__
+        joined = n.join(
+            e,
+            and_(
+                n.c.evidence_id == e.c.id,
+                n.c.player_id == e.c.player_id,
+                n.c.lang == e.c.lang,
+                n.c.revision == e.c.revision,
+                n.c.display_name == e.c.candidate_name,
+                n.c.decision_kind == e.c.decision_kind,
+                n.c.generation_rule_version == e.c.generation_rule_version,
+            ),
+        )
+        predicate = and_(
+            n.c.player_id == player_id,
+            n.c.status == "verified",
+            e.c.review_status == "approved",
+            e.c.reviewer_id.is_not(None),
+            e.c.reviewer_id != e.c.producer_id,
+            e.c.reviewed_at.is_not(None),
+            e.c.producer_model.is_not(None),
+            e.c.reviewer_model.is_not(None),
+        )
+        self.rows(
+            joined, predicate, limit=historical_ranks.MAX_SCALAR_ROWS, columns=[*n.c, e.c.research_payload], fetch=False
+        )
+        self.fact_owner_preflights.add(player_id)
+
+    def preflight_fact_source(self, fact, player_id, source_games):
+        """Bound the old guard's external source read without changing its proof."""
+        ref, grade = fact["source_ref"], fact["evidence"]["grade"]
+        if any(
+            (game["source_key"], game["source_item_id"]) == (ref["source_key"], ref["source_item_id"])
+            for game in source_games
+        ):
+            return
+        a = KifuAlbum.__table__
+        side = ref["slot"]
+        rows = self.rows(
+            a,
+            a.c.source_path == player_ranks._source_path(ref),
+            limit=1,
+            columns=[
+                a.c.id,
+                a.c[side + "_player_id"],
+                a.c[side + "_rank"],
+                a.c.date_sort,
+                historical_ranks._body_length(self.conn, a.c.sgf_content).label("sgf_bytes"),
+            ],
+        )
+        _require(
+            len(rows) == 1
+            and rows[0][side + "_player_id"] == player_id
+            and (rows[0][side + "_rank"] or "").strip() == grade["raw_rank"]
+            and (fact["source_as_of"] is None or rows[0]["date_sort"] == fact["source_as_of"]),
+            "immutable rank fact external source changed",
+        )
+        body = historical_ranks.load_rank_body(
+            self.conn, rows[0], resource=self.resource, expected_sha=ref["sgf_sha256"]
+        )
+        _require(body == grade["sgf_content"], "immutable rank fact external source body changed")
+        # The existing guard below may return this same bounded body once more.
+        # Its exact row cannot change within the resolver's repeatable snapshot.
+
+    def successor(self, manifest, binding, snapshot, current, original_batch):
+        from katrain.web.kifu import historical_rank_repair as repair
+
+        _require(
+            snapshot.get("version") == "kifu-rank-snapshot-v1", "only original legacy native ranks can be superseded"
+        )
+        _require(original_batch is not None, "original native rank authority missing")
+        original = original_batch["reviewed_artifact"]
+        if self.original_batch_id is None:
+            _require(
+                original_batch["status"] == "applied"
+                and original.get("publication_format") == FORMAT_V2
+                and original.get("manifest_sha256") == original_batch["bundle_sha256"] == canonical_sha256(manifest)
+                and original.get("publication_key") == manifest["publication_key"]
+                and original.get("receipt", {}).get("batch_id") == original_batch["id"]
+                and original.get("receipt", {}).get("manifest_sha256") == original_batch["bundle_sha256"]
+                and original.get("undo_guard", {}).get("receipt_sha256") == canonical_sha256(original.get("receipt"))
+                and original.get("logical_manifest")
+                == {
+                    **manifest,
+                    "games": [{k: v for k, v in game.items() if k != "sgf_content"} for game in manifest["games"]],
+                },
+                "original native rank authority changed",
+            )
+            self.original_batch_id = original_batch["id"]
+        _require(self.original_batch_id == original_batch["id"], "rank publication original authority changed")
+        members = [member for member in original["receipt"]["games"] if member["album_id"] == binding["album_id"]]
+        _require(len(members) == 1, "original native rank album mapping changed")
+        member = members[0]
+        games = [
+            game
+            for game in manifest["games"]
+            if (game["source_key"], game["source_item_id"]) == (member["source_key"], member["source_item_id"])
+        ]
+        sources = [
+            source
+            for source in original.get("sources", [])
+            if (source["source_key"], source["source_item_id"]) == (member["source_key"], member["source_item_id"])
+        ]
+        _require(
+            len(games) == len(sources) == 1
+            and sources[0]["album_id"] == binding["album_id"]
+            and all(sources[0][field] == games[0][field] for field in ("origin_path", "raw_sha256", "sgf_sha256")),
+            "original native rank source mapping changed",
+        )
+        game = games[0]
+        predecessor = self.journal(original_batch["id"], binding["snapshot_id"])["after_image"]
+        expected = {
+            "id": binding["snapshot_id"],
+            "album_id": binding["album_id"],
+            "side": binding["side"],
+            "snapshot": snapshot,
+            "snapshot_sha256": binding["snapshot_sha256"],
+            "rank_fact_id": binding["rank_fact_id"],
+            "publication_key": manifest["publication_key"],
+            "native_batch_id": original_batch["id"],
+        }
+        _require(
+            predecessor == expected and binding["snapshot_sha256"] == snapshot["content_sha256"],
+            "original native rank journal changed",
+        )
+        _require(
+            current is not None and all(current.get(k) == expected[k] for k in ("id", "album_id", "side")),
+            "superseded rank slot changed",
+        )
+        successor_id = current["native_batch_id"]
+        self.successor_ids.add(successor_id)
+        _require(len(self.successor_ids) <= 200, "rank successor batch resource limit")
+        batch = self.batch(successor_id)
+        _require(batch is not None and batch["status"] == "applied", "historical rank successor is not applied")
+        artifact = batch["reviewed_artifact"]
+        _require(
+            isinstance(artifact, dict) and artifact.get("format") == repair.FORMAT,
+            "historical rank successor authority invalid",
+        )
+        if successor_id not in self.parts:
+            part = repair._validate_part(artifact.get("part"))
+            part_sha = repair.manifest_sha256(part)
+            _require(
+                artifact == repair._artifact(part)
+                and artifact["manifest_sha256"] == batch["bundle_sha256"] == part_sha,
+                "historical rank successor immutable artifact changed",
+            )
+            self.parts[successor_id] = part, part_sha
+        part, part_sha = self.parts[successor_id]
+        _require(
+            current["publication_key"] == "historical-rank:" + part_sha,
+            "historical rank successor publication key changed",
+        )
+        if self.database_identity is None:
+            self.database_identity = repair._database_identity(self.conn)
+        _require(
+            part["database_identity"] == self.database_identity, "historical rank successor database identity changed"
+        )
+        changes = [c for c in part["changes"] if (c["album_id"], c["side"]) == (binding["album_id"], binding["side"])]
+        _require(len(changes) == 1, "historical rank successor slot membership changed")
+        change = changes[0]
+        journal = self.journal(successor_id, binding["snapshot_id"])
+        _require(
+            journal["sequence"] == part["changes"].index(change) + 1
+            and journal["before_image"] == predecessor == change["snapshot_before"]
+            and journal["after_image"] == current
+            and current["snapshot"] == change["snapshot_after"]
+            and current["snapshot_sha256"] == current["snapshot"]["content_sha256"]
+            and current["rank_fact_id"] is None,
+            "historical rank successor complete journal changed",
+        )
+        a, links_table, source_table = KifuAlbum.__table__, KifuAlbumSource.__table__, KifuSource.__table__
+        columns = [c for c in a.c if c.name != "sgf_content"]
+        albums = self.rows(
+            a,
+            a.c.id == binding["album_id"],
+            limit=1,
+            columns=[*columns, historical_ranks._body_length(self.conn, a.c.sgf_content).label("sgf_bytes")],
+        )
+        _require(len(albums) == 1, "historical rank successor source missing")
+        album = dict(albums[0])
+        _require(
+            album["source_path"] == game["origin_path"]
+            and all(album.get(field) == value for field, value in game["metadata"].items()),
+            "original native rank source/raw metadata changed",
+        )
+        album["sgf_content"] = historical_ranks.load_rank_body(
+            self.conn, album, resource=self.resource, expected_sha=game["sgf_sha256"]
+        )
+        joined = links_table.join(source_table, source_table.c.id == links_table.c.source_id)
+        links = [
+            repair._json_image(row)
+            for row in self.rows(
+                joined,
+                links_table.c.album_id == album["id"],
+                limit=200,
+                columns=[*links_table.c, source_table.c.source_key],
+            )
+        ]
+        links.sort(key=lambda row: row["id"])
+        _require(
+            repair._album_image(album, links) == change["album_before"],
+            "historical rank successor complete source changed",
+        )
+        _require(
+            historical_ranks.bind_rank_decision(
+                self.conn,
+                {"album": {"id": album["id"]}, "side": binding["side"]},
+                current["snapshot"],
+                lock=self.lock,
+                resource=self.resource,
+            )
+            == change["basis_binding"],
+            "historical rank successor exact target/basis binding changed",
+        )
+        _require(
+            self.image(KifuAlbumRankSnapshot.__table__, binding["snapshot_id"]) == current,
+            "historical rank successor current row changed",
+        )
+        self.check_deadline()
+        return {
+            "album_id": binding["album_id"],
+            "side": binding["side"],
+            "snapshot_id": binding["snapshot_id"],
+            "original_snapshot_sha256": snapshot["content_sha256"],
+            "current_snapshot_sha256": current["snapshot_sha256"],
+            "repair_part_sha256": part_sha,
+            "repair_batch_id": successor_id,
+            "predecessor_after_sha256": canonical_sha256(predecessor),
+            "successor_before_sha256": canonical_sha256(journal["before_image"]),
+            "successor_after_sha256": canonical_sha256(journal["after_image"]),
+            "expected": display_rank_for_game_slot(current["snapshot"], album.get(binding["side"] + "_rank") or ""),
+        }
+
+
 def _check_rank_replay(
     conn,
     manifest,
@@ -2569,8 +2908,13 @@ def _check_rank_replay(
     basis_bindings=None,
     resource=None,
     rank_dispositions=None,
+    original_batch=None,
+    authority=None,
+    lock=True,
 ):
     resource = resource or historical_ranks.EvidenceBudget()
+    authority = authority or _RankPublicationProof(conn, resource, lock=lock)
+    superseded = []
     if manifest["format"] != FORMAT_V2:
         return
     retained = {
@@ -2592,15 +2936,24 @@ def _check_rank_replay(
         _require(key in expected and key not in seen, "rank receipt slot mismatch")
         seen.add(key)
         snapshot = expected[key]
-        row = name_batch._image(conn, KifuAlbumRankSnapshot.__table__, binding["snapshot_id"])
-        _require(
+        row = (
+            authority.image(KifuAlbumRankSnapshot.__table__, binding["snapshot_id"])
+            if not lock
+            else name_batch._image(conn, KifuAlbumRankSnapshot.__table__, binding["snapshot_id"])
+        )
+        unchanged = (
             row is not None
             and (row["album_id"], row["side"]) == key
             and row["snapshot"] == snapshot
             and row["snapshot_sha256"] == binding["snapshot_sha256"] == snapshot["content_sha256"]
             and row["rank_fact_id"] == binding["rank_fact_id"]
-            and (is_historical_snapshot(snapshot) or snapshot["rank_fact_sha256"] == binding["rank_fact_sha256"]),
-            "frozen rank snapshot changed after publication",
+            and (is_historical_snapshot(snapshot) or snapshot["rank_fact_sha256"] == binding["rank_fact_sha256"])
+        )
+        if not unchanged:
+            superseded.append(authority.successor(manifest, binding, snapshot, row, original_batch))
+        _require(
+            is_historical_snapshot(snapshot) or snapshot["rank_fact_sha256"] == binding["rank_fact_sha256"],
+            "original rank fact binding changed",
         )
         if is_historical_snapshot(snapshot):
             _require(
@@ -2636,7 +2989,7 @@ def _check_rank_replay(
             _require(
                 len(frozen) == 1
                 and historical_ranks.bind_rank_decision(
-                    conn, {"album": {"id": key[0]}, "side": key[1]}, snapshot, resource=resource
+                    conn, {"album": {"id": key[0]}, "side": key[1]}, snapshot, lock=lock, resource=resource
                 )
                 == frozen[0],
                 "frozen historical rank basis binding changed",
@@ -2645,22 +2998,206 @@ def _check_rank_replay(
         digest = binding["rank_fact_sha256"]
         if digest:
             fact = manifest["rank_facts"][digest]
-            history = (
-                conn.execute(
-                    select(KifuPlayerRankHistory.__table__).where(KifuPlayerRankHistory.id == binding["rank_fact_id"])
+            if not lock or not unchanged:
+                resource.remember_body(fact["evidence"]["grade"]["sgf_content"])
+            if lock:
+                history = (
+                    conn.execute(
+                        select(KifuPlayerRankHistory.__table__).where(
+                            KifuPlayerRankHistory.id == binding["rank_fact_id"]
+                        )
+                    )
+                    .mappings()
+                    .one_or_none()
                 )
-                .mappings()
-                .one_or_none()
-            )
+            else:
+                facts = authority.rows(
+                    KifuPlayerRankHistory.__table__, KifuPlayerRankHistory.id == binding["rank_fact_id"], limit=1
+                )
+                history = facts[0] if facts else None
             _require(
                 history is not None
                 and history["player_id"] == owners[fact["player_ref"]["canonical_name"]]
                 and player_ranks._row_fact(history, fact["player_ref"]["canonical_name"])["content_sha256"] == digest,
                 "immutable rank fact changed after publication",
             )
+            if not lock:
+                authority.preflight_fact_source(fact, history["player_id"], manifest["games"])
+                authority.preflight_fact_owner(history["player_id"])
             player_ranks.verify_rank_fact_for_player(
                 conn, history["player_id"], fact, source_games=manifest["games"], identity_index=identity_index
             )
+
+    return superseded
+
+
+def resolve_rank_publication_context(engine, manifest_sha256, receipt_sha256, *, deadline=None):
+    """Derive finite current rank expectations from one immutable native receipt.
+
+    PostgreSQL authority is read in one repeatable, read-only snapshot. No caller
+    rank/path data, filesystem source, initial inference or writer is involved.
+    """
+    from katrain.web.kifu import historical_rank_repair as repair
+
+    _require(
+        all(isinstance(value, str) and _SHA.fullmatch(value) for value in (manifest_sha256, receipt_sha256)),
+        "rank publication context hash invalid",
+    )
+    _require(deadline is None or type(deadline) in (int, float), "rank publication context deadline invalid")
+    resource = historical_ranks.EvidenceBudget()
+    with engine.connect() as connection:
+        conn = (
+            connection.execution_options(isolation_level="REPEATABLE READ")
+            if connection.dialect.name == "postgresql"
+            else connection
+        )
+        with conn.begin():
+            if conn.dialect.name == "postgresql":
+                conn.exec_driver_sql("SET TRANSACTION READ ONLY")
+            proof = _RankPublicationProof(conn, resource, lock=False, deadline=deadline)
+            proof.check_deadline()
+            with historical_ranks._bounded_queries(conn):
+                batches = proof.rows(KifuNameBatch.__table__, KifuNameBatch.bundle_sha256 == manifest_sha256, limit=1)
+                _require(len(batches) == 1, "native rank publication missing")
+                batch = dict(batches[0])
+                artifact = batch["reviewed_artifact"]
+                _require(
+                    batch["status"] == "applied"
+                    and isinstance(artifact, dict)
+                    and artifact.get("publication_format") == FORMAT_V2
+                    and artifact.get("manifest_sha256") == manifest_sha256,
+                    "native rank publication authority invalid",
+                )
+                receipt = artifact.get("receipt")
+                _require(
+                    isinstance(receipt, dict)
+                    and canonical_sha256(receipt) == receipt_sha256
+                    and receipt.get("manifest_sha256") == manifest_sha256
+                    and receipt.get("batch_id") == batch["id"]
+                    and receipt.get("status") == "applied",
+                    "native rank publication receipt changed",
+                )
+                guard = artifact.get("undo_guard", {})
+                _require(
+                    guard.get("receipt_sha256") == receipt_sha256
+                    and guard.get("sources_sha256") == canonical_sha256(artifact.get("sources")),
+                    "native rank publication source/receipt guard changed",
+                )
+                manifest = deepcopy(artifact.get("logical_manifest"))
+                _require(
+                    isinstance(manifest, dict)
+                    and manifest.get("format") == FORMAT_V2
+                    and not manifest.get("mode")
+                    and manifest.get("publication_key") == artifact.get("publication_key"),
+                    "native rank publication frozen manifest missing",
+                )
+                games, sources, results = manifest.get("games"), artifact.get("sources"), receipt.get("games")
+                _require(
+                    all(isinstance(items, list) and 0 < len(items) <= 100 for items in (games, sources, results)),
+                    "native rank publication game resource limit",
+                )
+
+                def keyed(items):
+                    indexed = {(item["source_key"], item["source_item_id"]): item for item in items}
+                    _require(len(indexed) == len(items), "native rank publication duplicate source")
+                    return indexed
+
+                by_game, by_source, by_result = keyed(games), keyed(sources), keyed(results)
+                _require(
+                    set(by_game) == set(by_source) == set(by_result),
+                    "native rank publication source membership changed",
+                )
+                _require(
+                    len({result["album_id"] for result in results}) == len(results),
+                    "native rank publication album membership changed",
+                )
+                for key, game in by_game.items():
+                    proof.check_deadline()
+                    source, result = by_source[key], by_result[key]
+                    _require(
+                        source["album_id"] == result["album_id"]
+                        and all(source[field] == game[field] for field in ("origin_path", "raw_sha256", "sgf_sha256")),
+                        "native rank publication frozen source mapping changed",
+                    )
+                    _require(
+                        set(game.get("rank_snapshots", {})) == {"black", "white"}
+                        and all(
+                            slot.get("version") == "kifu-rank-snapshot-v1" for slot in game["rank_snapshots"].values()
+                        ),
+                        "rank publication context requires original legacy slots",
+                    )
+                    a = KifuAlbum.__table__
+                    albums = proof.rows(
+                        a,
+                        a.c.id == source["album_id"],
+                        limit=1,
+                        columns=[
+                            *[c for c in a.c if c.name != "sgf_content"],
+                            historical_ranks._body_length(conn, a.c.sgf_content).label("sgf_bytes"),
+                        ],
+                    )
+                    _require(len(albums) == 1, "native rank publication source album missing")
+                    album = dict(albums[0])
+                    _require(
+                        all(album.get(field) == value for field, value in game["metadata"].items()),
+                        "native rank publication raw metadata changed",
+                    )
+                    game["sgf_content"] = historical_ranks.load_rank_body(
+                        conn, album, resource=resource, expected_sha=source["album_sgf_sha256"]
+                    )
+                    _require(
+                        game["sgf_sha256"] == source["album_sgf_sha256"],
+                        "native rank publication exact original source required",
+                    )
+                _validate_manifest(manifest, manifest_sha256)
+                _check_source_receipts(conn, sources, resource=resource)
+                for fact in manifest["rank_facts"].values():
+                    resource.remember_body(fact["evidence"]["grade"]["sgf_content"])
+                _require(
+                    not artifact.get("rank_dispositions") and not receipt.get("rank_outcomes"),
+                    "legacy rank publication dispositions changed",
+                )
+                proof.database_identity = repair._database_identity(conn)
+                slots = _check_rank_replay(
+                    conn,
+                    manifest,
+                    results,
+                    artifact.get("rank_bindings"),
+                    original_batch=batch,
+                    authority=proof,
+                    resource=resource,
+                    identity_index=proof.fact_identity_index(manifest),
+                    lock=False,
+                )
+                mapping = sorted(
+                    (
+                        {field: result[field] for field in ("source_key", "source_item_id", "album_id")}
+                        for result in results
+                    ),
+                    key=lambda item: (item["source_key"], item["source_item_id"], item["album_id"]),
+                )
+                result_sources = {result["album_id"]: result for result in results}
+                for slot in slots:
+                    source = result_sources[slot["album_id"]]
+                    slot.update(source_key=source["source_key"], source_item_id=source["source_item_id"])
+                slots.sort(
+                    key=lambda item: (item["source_key"], item["source_item_id"], item["album_id"], item["side"])
+                )
+                context = {
+                    "version": "kifu-rank-publication-context-v1",
+                    "manifest_sha256": manifest_sha256,
+                    "receipt_sha256": receipt_sha256,
+                    "database_identity": proof.database_identity,
+                    "source_mapping_sha256": canonical_sha256(mapping),
+                    "slots": slots,
+                }
+                context["content_sha256"] = canonical_sha256(context)
+                _require(
+                    historical_ranks._json_size(context) <= 1024 * 1024,
+                    "rank publication context response resource limit",
+                )
+                proof.check_deadline()
+                return context
 
 
 def _rank_correction_sources(conn, manifest, *, check_cas, resource=None):
@@ -3028,6 +3565,7 @@ def _publish_prepared(
                     basis_bindings=artifact.get("basis_bindings"),
                     resource=resource,
                     rank_dispositions=dispositions,
+                    original_batch=previous,
                 )
                 _coverage(conn, requested_ids, resource=resource)
                 return deepcopy(artifact["receipt"])

@@ -638,3 +638,89 @@ def test_binding_can_omit_row_locks_for_readonly_preparation(conn):
     entry = game(conn, 2, "1968-08-01", "", family="CWI")
     decision = resolve(conn, entry)
     assert bind_rank_decision(conn, entry, decision, lock=False) == bind_rank_decision(conn, entry, decision)
+
+
+def test_shared_operation_caches_one_large_original_for_99_public_bindings(conn):
+    from sqlalchemy import event
+    from katrain.web.kifu import historical_ranks as h
+
+    game(conn, 1, "1960-01-01", "9p", sgf="(;PB[棋手甲]PW[棋手乙]BR[9p]WR[1p]DT[1960-01-01]C[" + "x" * 131000 + "])")
+    entries = [game(conn, ident, "1968-08-01", "", family="CWI") for ident in range(2, 101)]
+    decisions = h.prepare_rank_decisions(conn, entries, matched_at=MATCHED)["decisions"]
+    body_reads = []
+
+    def record_body_read(connection, clause, multiparams, params, execution_options):
+        columns = list(getattr(clause, "selected_columns", ()))
+        if len(columns) == 1 and columns[0] is m.KifuAlbum.__table__.c.sgf_content:
+            body_reads.append(params)
+
+    event.listen(conn, "before_execute", record_body_read)
+    try:
+        resource = h.EvidenceBudget()
+        h.verify_initial_rank_decisions(conn, entries, decisions, resource=resource)
+        for entry, decision in zip(entries, decisions):
+            h.bind_rank_decision(conn, entry, decision, resource=resource)
+        assert len(body_reads) == 1
+        assert resource.used_bytes <= h.MAX_BODY_BYTES
+    finally:
+        event.remove(conn, "before_execute", record_body_read)
+
+
+def test_shared_budget_reserves_unique_body_before_fetch_and_never_resets(conn):
+    from katrain.web.kifu import historical_ranks as h
+    from sqlalchemy import event
+
+    first = game(conn, 1, "1960-01-01", "9p")
+    entry = game(conn, 2, "1968-08-01", "", family="CWI")
+    decision = resolve(conn, entry)
+    resource = h.EvidenceBudget(max_bytes=len(entry["album"]["sgf_content"].encode()))
+    body_reads = []
+
+    def record_body_read(connection, clause, multiparams, params, execution_options):
+        columns = list(getattr(clause, "selected_columns", ()))
+        if len(columns) == 1 and columns[0] is m.KifuAlbum.__table__.c.sgf_content:
+            body_reads.append(params)
+
+    event.listen(conn, "before_execute", record_body_read)
+    try:
+        with pytest.raises(ValueError, match="resource"):
+            h.bind_rank_decision(conn, entry, decision, resource=resource)
+        assert body_reads == []
+        assert resource.used_bytes == len(entry["album"]["sgf_content"].encode())
+        assert resource.cached_body(first["album"]["id"]) is None
+        assert not list(conn.execute(select(m.KifuAlbumRankSnapshot.id)))
+    finally:
+        event.remove(conn, "before_execute", record_body_read)
+
+
+def test_budget_rejects_invalid_reservation_without_mutation_and_counts_provided_once():
+    from katrain.web.kifu.historical_ranks import EvidenceBudget
+
+    resource = EvidenceBudget(max_bytes=10)
+    for invalid in (-1, True, 11):
+        with pytest.raises(ValueError, match="resource|budget"):
+            resource.reserve(invalid)
+        assert resource.used_bytes == 0
+    resource.remember_body("abc", album_id=1)
+    resource.remember_body("abc", album_id=2)
+    assert resource.used_bytes == 3 and resource.remaining_bytes == 7
+    resource.reserve(3)
+    resource.remember_body("def", album_id=3, reserved=True)
+    assert resource.used_bytes == 6
+
+
+def test_shared_cache_rechecks_same_length_original_sha_drift(conn):
+    from katrain.web.kifu import historical_ranks as h
+
+    original = game(conn, 1, "1960-01-01", "9p")
+    entry = game(conn, 2, "1968-08-01", "", family="CWI")
+    decision = resolve(conn, entry)
+    resource = h.EvidenceBudget()
+    h.bind_rank_decision(conn, entry, decision, resource=resource)
+    conn.execute(
+        update(m.KifuAlbum)
+        .where(m.KifuAlbum.id == 1)
+        .values(sgf_content=original["album"]["sgf_content"].replace("BR[9p]", "BR[8p]"))
+    )
+    with pytest.raises(ValueError, match="source|basis"):
+        h.bind_rank_decision(conn, entry, decision, resource=resource)

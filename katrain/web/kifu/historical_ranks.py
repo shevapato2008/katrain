@@ -86,6 +86,48 @@ class _Deferred(ValueError):
     pass
 
 
+class EvidenceBudget:
+    """One operation's cumulative body allowance and finite content cache.
+
+    Share this object across preparation, first validation, binding and replay.
+    External DB readers reserve bytes before fetching, then remember_body with
+    reserved=True. Already provided staged bodies count once by content SHA.
+    Cached bodies are hints; load_rank_body rechecks exact live DB content.
+    """
+
+    def __init__(self, *, max_bytes=None, used_bytes=0):
+        max_bytes = MAX_BODY_BYTES if max_bytes is None else max_bytes
+        require(type(max_bytes) is int and 0 <= max_bytes <= MAX_BODY_BYTES, "rank resource budget invalid")
+        require(type(used_bytes) is int and 0 <= used_bytes <= max_bytes, "rank resource budget invalid")
+        self.max_bytes, self.used_bytes = max_bytes, used_bytes
+        self.body_cache, self.album_hashes = {}, {}
+
+    @property
+    def remaining_bytes(self):
+        return self.max_bytes - self.used_bytes
+
+    def reserve(self, nbytes):
+        if type(nbytes) is not int or nbytes < 0 or nbytes > self.remaining_bytes:
+            raise _Deferred("rank body resource budget exceeded")
+        self.used_bytes += nbytes
+
+    def remember_body(self, body, *, album_id=None, reserved=False):
+        require(isinstance(body, str) and 0 < len(body.encode()) <= MAX_SGF_BYTES, "rank source SGF resource limit")
+        key = sha256(body.encode()).hexdigest()
+        require(album_id is None or self.album_hashes.get(album_id, key) == key, "rank source cached body changed")
+        if key not in self.body_cache:
+            require(len(self.body_cache) < MAX_BODY_ROWS, "rank body resource row limit")
+            if not reserved:
+                self.reserve(len(body.encode()))
+            self.body_cache[key] = body
+        if album_id is not None:
+            self.album_hashes[album_id] = key
+        return body
+
+    def cached_body(self, album_id):
+        return self.body_cache.get(self.album_hashes.get(album_id))
+
+
 def _day(value):
     if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
         return None
@@ -132,6 +174,43 @@ def _bounded_queries(conn):
 
 def _body_length(conn, column):
     return func.octet_length(column) if conn.dialect.name == "postgresql" else func.length(cast(column, LargeBinary))
+
+
+def load_rank_body(conn, album, *, resource, expected_sha=None):
+    """Load one fresh scalar/locked album's body within an operation budget.
+
+    album supplies id and sgf_bytes from the caller's current scalar query; the
+    caller retains its normal row/table locks. Cache reuse checks an exact live
+    text equality scalar, so same-length mutations never reuse old source bytes.
+    """
+    a = m.KifuAlbum.__table__
+    size = album["sgf_bytes"]
+    if type(size) is not int or not 0 < size <= MAX_SGF_BYTES:
+        raise _Deferred("rank source SGF resource limit")
+    key = expected_sha or resource.album_hashes.get(album["id"])
+    cached = resource.body_cache.get(key)
+    with _bounded_queries(conn):
+        if cached is not None:
+            require(len(cached.encode()) == size, "rank source cached length changed")
+            same = conn.execute(
+                select(a.c.sgf_content == cached).where(
+                    a.c.id == album["id"], _body_length(conn, a.c.sgf_content) == size
+                )
+            ).scalar_one_or_none()
+            require(same is True, "rank source cached body changed")
+            return resource.remember_body(cached, album_id=album["id"], reserved=True)
+        if len(resource.body_cache) >= MAX_BODY_ROWS:
+            raise _Deferred("rank body resource row limit")
+        resource.reserve(size)
+        body = conn.execute(
+            select(a.c.sgf_content).where(a.c.id == album["id"], _body_length(conn, a.c.sgf_content) == size)
+        ).scalar_one_or_none()
+    require(isinstance(body, str) and len(body.encode()) == size, "rank source body length changed")
+    require(
+        expected_sha is None or sha256(body.encode()).hexdigest() == expected_sha,
+        "rank basis source SHA binding mismatch",
+    )
+    return resource.remember_body(body, album_id=album["id"], reserved=True)
 
 
 def _links(conn, ids, *, scalar_budget=MAX_SCALAR_BYTES):
@@ -451,7 +530,7 @@ def _observation(album, side, source_ref, owner, grade):
     return result
 
 
-def prepare_rank_decisions(conn, targets, *, matched_at):
+def prepare_rank_decisions(conn, targets, *, matched_at, resource=None):
     """Return ``{decisions: [v3, ...], refusals: [{source_ref, reason}, ...]}``.
 
     Targets are ``{album: full scalar/body dict, side, source_links, player_ref?}``.
@@ -460,6 +539,7 @@ def prepare_rank_decisions(conn, targets, *, matched_at):
     provided in player_ref. Only already stored original albums provide
     historical evidence in this version.
     """
+    resource = resource or EvidenceBudget()
     require(isinstance(targets, (list, tuple)) and len(targets) <= 200, "rank target limit exceeded")
     require(
         len({x["album"]["source_path"] for x in targets}) <= MAX_INCOMING_GAMES, "rank incoming game limit exceeded"
@@ -475,10 +555,8 @@ def prepare_rank_decisions(conn, targets, *, matched_at):
     index = _identities(conn, raw_names, [owner for owner, _ in owners])
     # Original ownership checks cannot be bypassed by a deferred inference.
     original = []
-    body_bytes = 0
     for entry, (owner, pid) in zip(targets, owners):
-        body_bytes += len(entry["album"].get("sgf_content", "").encode())
-        require(body_bytes <= MAX_BODY_BYTES, "rank target SGF resource limit")
+        resource.remember_body(entry["album"].get("sgf_content", ""), album_id=entry["album"].get("id"))
         original.append(_validate_original(entry["album"], entry["side"], entry["source_links"], owner, pid, index))
     for entry, (_, pid), (_, grade, invalid, _, root_day) in zip(targets, owners, original):
         day = _inference_day(root_day)
@@ -490,7 +568,7 @@ def prepare_rank_decisions(conn, targets, *, matched_at):
             observations, links, cohort_index = _cohort(conn, owner_dates)
     except _Deferred:
         observations, links, cohort_index, deferred = [], {}, {}, True
-    decisions, refusals, bodies = [], [], {}
+    decisions, refusals = [], []
     for entry, (owner, pid), (ref, grade, invalid, _, root_day) in zip(targets, owners, original):
         album, side = entry["album"], entry["side"]
         day = _inference_day(root_day)
@@ -516,20 +594,7 @@ def prepare_rank_decisions(conn, targets, *, matched_at):
                     chosen = candidate["album"]
                     try:
                         ident = chosen["id"]
-                        if ident not in bodies:
-                            if (
-                                chosen["sgf_bytes"] > MAX_SGF_BYTES
-                                or body_bytes + chosen["sgf_bytes"] > MAX_BODY_BYTES
-                                or len(bodies) >= MAX_BODY_ROWS
-                            ):
-                                raise _Deferred("rank evidence SGF resource limit")
-                            with _bounded_queries(conn):
-                                body = conn.execute(
-                                    select(m.KifuAlbum.sgf_content).where(m.KifuAlbum.id == ident)
-                                ).scalar_one()
-                            body_bytes += len(body.encode())
-                            bodies[ident] = body
-                        chosen = {**chosen, "sgf_content": bodies[ident]}
+                        chosen = {**chosen, "sgf_content": load_rank_body(conn, chosen, resource=resource)}
                         other_ref, other_grade, other_invalid, _, other_day = _validate_original(
                             chosen, candidate["side"], links[ident], owner, pid, cohort_index
                         )
@@ -843,8 +908,11 @@ def validate_rank_decision(decision):
     return decision
 
 
-def _live_target(conn, target, *, lock=True):
+def _live_target(conn, target, *, lock=True, resource=None, expected_sha=None):
+    resource = resource or EvidenceBudget()
     album = target["album"]
+    if "sgf_content" in album:
+        resource.remember_body(album["sgf_content"], album_id=album.get("id"))
     if album.get("id") is None:
         return target
     a = m.KifuAlbum.__table__
@@ -857,17 +925,18 @@ def _live_target(conn, target, *, lock=True):
     require(live is not None, "rank target binding missing")
     require(0 < live["sgf_bytes"] <= MAX_SGF_BYTES, "rank target SGF resource limit")
     live = dict(live)
-    live["sgf_content"] = conn.execute(select(a.c.sgf_content).where(a.c.id == album["id"])).scalar_one()
+    live["sgf_content"] = load_rank_body(conn, live, resource=resource, expected_sha=expected_sha)
     return {**target, "album": live, "source_links": _links(conn, [album["id"]]).get(album["id"], [])}
 
 
-def verify_initial_rank_decisions(conn, targets, decisions):
+def verify_initial_rank_decisions(conn, targets, decisions, *, resource=None):
     """Under the caller's writer lock, reject changed first-apply qualification.
 
     Source/unknown decisions are frozen as such; newly available evidence does
     not force an upgrade. Historical decisions must match fresh complete bounded
     qualification. This function makes no business writes and never reselects.
     """
+    resource = resource or EvidenceBudget()
     require(len(targets) == len(decisions), "rank target decision count mismatch")
     if conn.dialect.name == "postgresql":
         require(conn.get_isolation_level() == "READ COMMITTED", "rank initial qualification requires READ COMMITTED")
@@ -875,7 +944,10 @@ def verify_initial_rank_decisions(conn, targets, decisions):
             "LOCK TABLE kifu_albums, kifu_album_sources, kifu_sources, kifu_players, "
             "kifu_player_aliases, kifu_player_names, kifu_album_rank_snapshots IN SHARE ROW EXCLUSIVE MODE"
         )
-    live_targets = [_live_target(conn, target) for target in targets]
+    live_targets = [
+        _live_target(conn, target, resource=resource, expected_sha=decision["source_ref"]["sgf_sha256"])
+        for target, decision in zip(targets, decisions)
+    ]
     for target, decision in zip(live_targets, decisions):
         validate_rank_decision(decision)
         _bind_target(conn, target, decision)
@@ -889,7 +961,9 @@ def verify_initial_rank_decisions(conn, targets, decisions):
         # legacy mixed freezes does not let wall-clock time influence rank facts.
         for timestamp in sorted({decision["matched_at"] for _, decision in historical}):
             subset = [(target, decision) for target, decision in historical if decision["matched_at"] == timestamp]
-            fresh = prepare_rank_decisions(conn, [target for target, _ in subset], matched_at=timestamp)["decisions"]
+            fresh = prepare_rank_decisions(
+                conn, [target for target, _ in subset], matched_at=timestamp, resource=resource
+            )["decisions"]
             for current, (_, frozen) in zip(fresh, subset):
                 require(current == frozen, "rank initial qualification/cohort changed")
     return decisions
@@ -920,17 +994,21 @@ def _bind_target(conn, target, decision):
     }
 
 
-def bind_rank_decision(conn, target, decision, *, lock=True):
+def bind_rank_decision(conn, target, decision, *, lock=True, resource=None):
     """Resolve exact frozen portable proofs to local IDs, without as-of reselection.
 
     Store returned objects at applied_artifact['basis_bindings']. Target IDs must
     be populated by the caller after insertion. No IDs enter snapshot bytes.
     Read-only preparation may pass lock=False; apply/replay/undo retain row locks.
     """
+    resource = resource or EvidenceBudget()
     validate_rank_decision(decision)
-    target_binding = _bind_target(conn, _live_target(conn, target, lock=lock), decision)
+    target_binding = _bind_target(
+        conn,
+        _live_target(conn, target, lock=lock, resource=resource, expected_sha=decision["source_ref"]["sgf_sha256"]),
+        decision,
+    )
     bindings = []
-    used = 0
     for proof in decision["basis"]:
         ref = proof["source_ref"]
         a = m.KifuAlbum.__table__
@@ -942,9 +1020,7 @@ def bind_rank_decision(conn, target, decision, *, lock=True):
         candidates = list(conn.execute(query).mappings())
         require(len(candidates) == 1, "rank basis source missing/ambiguous")
         album = dict(candidates[0])
-        used += album["sgf_bytes"]
-        require(album["sgf_bytes"] <= MAX_SGF_BYTES and used <= MAX_BODY_BYTES, "rank basis SGF resource limit")
-        album["sgf_content"] = conn.execute(select(a.c.sgf_content).where(a.c.id == album["id"])).scalar_one()
+        album["sgf_content"] = load_rank_body(conn, album, resource=resource, expected_sha=ref["sgf_sha256"])
         side = ref["slot"]
         entry = {"album": album, "side": side, "player_ref": proof["player_ref"]}
         owner, pid = _owner(conn, entry)
@@ -976,7 +1052,7 @@ def bind_rank_decision(conn, target, decision, *, lock=True):
     return result
 
 
-def assert_retained_rank_basis(conn, removed_bindings, *, excluding_batch_ids=()):
+def assert_retained_rank_basis(conn, removed_bindings, *, excluding_batch_ids=(), resource=None):
     """Refuse compensation that would invalidate any applied v3 original basis.
 
     removed_bindings is a finite list of dictionaries containing album_id,
@@ -988,6 +1064,7 @@ def assert_retained_rank_basis(conn, removed_bindings, *, excluding_batch_ids=()
         isinstance(removed_bindings, (list, tuple)) and len(removed_bindings) <= MAX_SCALAR_ROWS,
         "rank removed binding limit exceeded",
     )
+    resource = resource or EvidenceBudget()
     removed = {key: set() for key in _LOCAL_FIELDS}
     for entry in removed_bindings:
         require(
@@ -1039,7 +1116,9 @@ def assert_retained_rank_basis(conn, removed_bindings, *, excluding_batch_ids=()
         require(len(matching) == 1, "retained rank basis local binding missing")
         binding = matching[0]
         require(binding.get("content_sha256") == snapshot_digest(binding), "retained rank basis binding hash invalid")
-        live = bind_rank_decision(conn, {"album": {"id": row["album_id"]}, "side": row["side"]}, snapshot)
+        live = bind_rank_decision(
+            conn, {"album": {"id": row["album_id"]}, "side": row["side"]}, snapshot, resource=resource
+        )
         require(live == binding, "retained rank basis local binding changed")
         for basis in binding["basis"]:
             require(

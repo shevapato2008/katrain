@@ -1,3 +1,4 @@
+import { drawStoneSprite, loadBoardImages, stoneImage } from '../board/boardUtils';
 /**
  * TsumegoBoard - Interactive board component for solving tsumego problems
  *
@@ -70,28 +71,14 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
 
   // Load images on mount
   useEffect(() => {
-    const loadImages = async () => {
-      const entries = Object.entries(ASSETS);
-      await Promise.all(
-        entries.map(
-          ([key, src]) =>
-            new Promise<void>((resolve) => {
-              const img = new Image();
-              img.onload = () => {
-                imagesRef.current[key] = img;
-                resolve();
-              };
-              img.onerror = () => {
-                console.warn(`Failed to load ${src}`);
-                resolve();
-              };
-              img.src = src;
-            })
-        )
-      );
-      setImagesLoaded(true);
-    };
-    loadImages();
+    let cancelled = false;
+    loadBoardImages(ASSETS).then(images => {
+      if (!cancelled) {
+        imagesRef.current = images;
+        setImagesLoaded(true);
+      }
+    });
+    return () => { cancelled = true; };
   }, []);
 
   // Track container size for responsive canvas
@@ -263,10 +250,10 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
     const stoneSize = layout.gridSize * 0.505;
     stones.forEach(stone => {
       const pos = gridToCanvas(layout, stone.coords[0], stone.coords[1]);
-      const img = stone.player === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
+      const img = stoneImage(stone.player, stone.coords[0], stone.coords[1], boardSize, stone.player === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone);
 
       if (img) {
-        ctx.drawImage(img, pos.x - stoneSize, pos.y - stoneSize, stoneSize * 2, stoneSize * 2);
+        drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, stone.coords[0], stone.coords[1]);
       } else {
         // Fallback circle
         ctx.fillStyle = stone.player === 'B' ? '#1a1a1a' : '#f5f5f5';

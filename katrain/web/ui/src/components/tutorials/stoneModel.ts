@@ -14,7 +14,10 @@ function random(seed: number) {
 }
 
 /** A closed, symmetric lens: a broad dome flowing into a narrow, rounded equator. */
-export function createStoneGeometry(color: StoneColor) {
+export function createStoneGeometry(
+  color: StoneColor,
+  detail: Partial<Pick<typeof recipe.geometry, 'radialSegments' | 'domeSegments' | 'edgeSegments'>> = {},
+) {
   const { diameter, thickness } = STONE_DIMENSIONS[color];
   const radius = diameter / STONE_DIMENSIONS.W.diameter;
   const halfHeight = thickness / STONE_DIMENSIONS.W.diameter;
@@ -27,10 +30,11 @@ export function createStoneGeometry(color: StoneColor) {
   const edge = new THREE.CubicBezierCurve(
     e0, e1, e2, e3,
   );
-  const upper = [...dome.getPoints(recipe.geometry.domeSegments), ...edge.getPoints(recipe.geometry.edgeSegments).slice(1)];
+  const upper = [...dome.getPoints(detail.domeSegments ?? recipe.geometry.domeSegments),
+    ...edge.getPoints(detail.edgeSegments ?? recipe.geometry.edgeSegments).slice(1)];
   // Lathe winds from the lower pole to the upper pole. Both poles lie on the rotation axis.
   const profile = [...upper.map(p => new THREE.Vector2(p.x, -p.y)), ...upper.slice(0, -1).reverse()];
-  const geometry = new THREE.LatheGeometry(profile, recipe.geometry.radialSegments);
+  const geometry = new THREE.LatheGeometry(profile, detail.radialSegments ?? recipe.geometry.radialSegments);
   const positions = geometry.getAttribute('position');
   const uv = geometry.getAttribute('uv');
   for (let i = 0; i < positions.count; i++) {
@@ -41,7 +45,7 @@ export function createStoneGeometry(color: StoneColor) {
 }
 
 interface ShellMaps { color: THREE.CanvasTexture; roughness: THREE.CanvasTexture; bump: THREE.CanvasTexture }
-const shellMaps = new Map<number, ShellMaps>();
+const shellMaps = new Map<string, ShellMaps>();
 
 function texture(canvas: HTMLCanvasElement, color = false) {
   const map = new THREE.CanvasTexture(canvas);
@@ -51,11 +55,11 @@ function texture(canvas: HTMLCanvasElement, color = false) {
 }
 
 /** Original shell growth lines, fixed in stone space: no photos, random frames, or polar rings. */
-function createShellMaps(seed: number): ShellMaps {
-  const existing = shellMaps.get(seed);
+function createShellMaps(seed: number, size = 768): ShellMaps {
+  const key = `${seed}:${size}`;
+  const existing = shellMaps.get(key);
   if (existing) return existing;
   const rng = random(seed);
-  const size = 768;
   const canvases = Array.from({ length: 3 }, () => Object.assign(document.createElement('canvas'), { width: size, height: size }));
   const contexts = canvases.map(c => c.getContext('2d')!);
   const images = contexts.map(c => c.createImageData(size, size));
@@ -80,7 +84,9 @@ function createShellMaps(seed: number): ShellMaps {
     const micro = (rng() - .5) * .6;
     const base = 246 + pearl + micro;
     const offset = (y * size + x) * 4;
-    images[0].data.set([base + 1.4 - grain * 18, base + 1.1 - grain * 23, base - 1.4 - grain * 39, 255], offset);
+    images[0].data.set([base + 1.4 - grain * 18,
+      base + 1.1 - grain * 23,
+      base - 1.4 - grain * 39, 255], offset);
     const roughness = 219 + grain * 4 + micro * 2;
     images[1].data.set([roughness, roughness, roughness, 255], offset);
     const relief = 128 + grain * 1.5;
@@ -88,17 +94,17 @@ function createShellMaps(seed: number): ShellMaps {
   }
   contexts.forEach((ctx, i) => ctx.putImageData(images[i], 0, 0));
   const maps = { color: texture(canvases[0], true), roughness: texture(canvases[1]), bump: texture(canvases[2]) };
-  shellMaps.set(seed, maps);
+  shellMaps.set(key, maps);
   return maps;
 }
 
-export function createStoneMaterial(color: StoneColor, seed = 17, plain = false) {
+export function createStoneMaterial(color: StoneColor, seed = 17, plain = false, textureSize = 768) {
   if (color === 'B') return new THREE.MeshPhysicalMaterial(recipe.materials.black);
   if (plain) return new THREE.MeshPhysicalMaterial({
     color: 0xf5f2e9, metalness: 0, roughness: .34,
     clearcoat: .18, clearcoatRoughness: .35, envMapIntensity: .75,
   });
-  const maps = createShellMaps(seed);
+  const maps = createShellMaps(seed, textureSize);
   return new THREE.MeshPhysicalMaterial({
     color: 0xffffff, map: maps.color, roughnessMap: maps.roughness, roughness: .36,
     emissive: 0xffffff, emissiveMap: maps.color, emissiveIntensity: .12,

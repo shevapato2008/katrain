@@ -61,6 +61,8 @@ describe('Board end-result overlay', () => {
   });
 
   test('acknowledges the latest node when images finish loading after a state update', async () => {
+    vi.resetModules();
+    const { default: Board } = await import('./Board');
     const { ctx } = mockContext();
     HTMLCanvasElement.prototype.getContext = vi.fn(() => ctx) as never;
     const onPaintedNode = vi.fn();
@@ -96,4 +98,27 @@ describe('Board end-result overlay', () => {
     expect(onPaintedNode).not.toHaveBeenCalledWith(41);
     expect(ctx.drawImage.mock.invocationCallOrder[0]).toBeLessThan(onPaintedNode.mock.invocationCallOrder[0]);
   });
+  test('keeps real, child, and preview stones visible when all images fail', async () => {
+    vi.resetModules();
+    const { default: Board } = await import('./Board');
+    class FailedImage {
+      onerror: (() => void) | null = null;
+      set src(_value: string) { queueMicrotask(() => this.onerror?.()); }
+    }
+    vi.stubGlobal('Image', FailedImage);
+    const { ctx, fillRectCalls } = mockContext();
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ctx) as never;
+    render(<Board
+      gameState={{ ...baseState, end_result: null, stones: [['B', [3, 3], null, 1], ['W', [4, 4], null, 2]], ghost_stones: [['W', [5, 5]]] } as unknown as GameState}
+      onMove={() => {}} analysisToggles={{ children: true }} previewMove={{ x: 6, y: 6, color: 'B' }}
+    />);
+    await act(async () => {});
+    // A 200px / 21-space board has a 9px grid; stone fallback radius is 9 * .505 * .95.
+    const stoneCircles = ctx.arc.mock.calls.filter(call => Math.abs(call[2] - 9 * .505 * .95) < .001);
+    expect(stoneCircles.length).toBeGreaterThanOrEqual(4);
+    expect(fillRectCalls).toContain('style:#000');
+    expect(fillRectCalls).toContain('style:#fff');
+    expect(ctx.drawImage).not.toHaveBeenCalled();
+  });
+
 });

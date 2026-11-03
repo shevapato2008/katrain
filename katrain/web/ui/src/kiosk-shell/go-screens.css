@@ -1345,6 +1345,10 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .settings-page .kiosk-row__lead { font-size: 18px; }
+.settings-page [data-group="about"] .kiosk-row__lead {
+  width: 128px;
+  white-space: nowrap;
+}
 .settings-page .kiosk-row__end { max-width: 50%; }
 .settings-page .kiosk-btn--secondary {
   height: 44px; font-size: 20px; border-radius: 9px;

@@ -1,3 +1,4 @@
+import { stoneRotationDegrees, stoneSpriteUrl } from '../../components/board/stoneAppearance';
 import type { OgsStep, OgsPoint } from '../../types/ogsCourse';
 import type { OgsExerciseState } from './ogsExercise';
 import { GO_COLS, starsFor } from '../shell/goBoard';
@@ -38,8 +39,6 @@ export function OgsCourseBoard({ step, state, onPoint, disabled = false, extra =
     <svg className="ogs-board-svg" viewBox={`${startX} ${startY} ${vp.cols * cell} ${vp.rows * cell}`} role="img" aria-label={`${size} 路互动棋盘`} preserveAspectRatio="xMidYMid meet">
       <defs>
         <linearGradient id="ogs-wood" x2=".9" y2="1"><stop stopColor="#e8bd77"/><stop offset=".48" stopColor="#e6b66d"/><stop offset="1" stopColor="#c98f4b"/></linearGradient>
-        <radialGradient id="ogs-black"><stop stopColor="#555a58"/><stop offset=".64" stopColor="#202524"/><stop offset="1" stopColor="#060808"/></radialGradient>
-        <radialGradient id="ogs-white"><stop stopColor="#fff"/><stop offset=".7" stopColor="#eff2eb"/><stop offset="1" stopColor="#bdc3b9"/></radialGradient>
       </defs>
       <rect x="0" y="0" width={size * cell} height={size * cell} fill="url(#ogs-wood)" />
       <g stroke="#674825" strokeWidth="3">
@@ -50,7 +49,7 @@ export function OgsCourseBoard({ step, state, onPoint, disabled = false, extra =
       </g>
       {starsFor(size).map(([x, y]) => <circle key={key(x, y)} cx={position(x)} cy={position(y)} r="7" fill="#50371c" />)}
       {state.board.flatMap((row, y) => row.map((stone, x) => stone && showPoint(x, y) ? <g key={key(x, y)}>
-        <circle cx={position(x)} cy={position(y)} r="39" fill={`url(#ogs-${stone === 'B' ? 'black' : 'white'})`} stroke={stone === 'B' ? '#111718' : '#d5d8d0'} strokeWidth="3" />
+        <image href={stoneSpriteUrl(stone, size, x, y)} transform={`rotate(${stoneRotationDegrees(size, x, y)} ${position(x)} ${position(y)})`} x={position(x) - 39} y={position(y) - 39} width="78" height="78" />
         {selected.has(key(x, y)) && <circle cx={position(x)} cy={position(y)} r="33" fill="none" stroke="#75e9a0" strokeWidth="7" />}
       </g> : null))}
       {extra.map(([x, y]) => showPoint(x, y) ? <text key={`extra-${key(x, y)}`} x={position(x)} y={position(y) + 20} textAnchor="middle" fontSize="64" fill="#ec635a">×</text> : null)}

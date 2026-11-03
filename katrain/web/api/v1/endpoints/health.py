@@ -1,9 +1,68 @@
+import re
+
 import httpx
 from fastapi import APIRouter, Request
 from katrain.core.constants import VERSION
 from katrain.web.core.config import settings
 
 router = APIRouter()
+
+
+def _safe_model_id(value):
+    """Accept only a bounded filename identifier, never a path or upstream metadata."""
+    if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.+-]{0,119}", value):
+        return None
+    return value
+
+
+def _analysis_model_id(payload):
+    if not isinstance(payload, dict):
+        return None
+    models = payload.get("models")
+    alias = payload.get("default_model")
+    if not isinstance(models, dict) or not isinstance(alias, str):
+        return None
+    model = models.get(alias)
+    if (
+        not isinstance(model, dict)
+        or model.get("running") is not True
+        or model.get("model_sha256_verified") is not True
+    ):
+        return None
+    path = model.get("model_path")
+    if not isinstance(path, str):
+        return None
+    name = path.replace("\\", "/").rsplit("/", 1)[-1]
+    for extension in (".bin.gz", ".txt.gz", ".bin", ".txt", ".gz"):
+        if name.endswith(extension):
+            name = name[: -len(extension)]
+            break
+    return _safe_model_id(name)
+
+
+async def _current_model_id():
+    board = settings.KATRAIN_MODE == "board"
+    if board:
+        base = settings.REMOTE_API_URL.rstrip("/")
+        if not base:
+            return None
+        if base.endswith("/api/v1"):
+            base = base[: -len("/api/v1")]
+        url = base + "/api/v1/health"
+    else:
+        url = settings.REPORT_ENGINE_HEALTH_URL
+    if not url:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=1.0) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            payload = response.json()
+        if board:
+            return _safe_model_id(payload.get("katago_model")) if isinstance(payload, dict) else None
+        return _analysis_model_id(payload)
+    except Exception:
+        return None
 
 
 @router.get("/health")
@@ -32,4 +91,5 @@ async def health(request: Request):
 
     # 盒子设置屏「关于」的版本号只能从这里拿(前端 package.json 是 0.0.0)。
     result = {"status": "ok", "version": VERSION, "engines": engines}
+    result["katago_model"] = await _current_model_id()
     return result

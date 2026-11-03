@@ -1,12 +1,18 @@
 import { useMemo, useEffect, memo, forwardRef } from 'react';
 import * as THREE from 'three';
 import type { Mesh } from 'three';
+import { DEFAULT_STONE_APPEARANCE, getStoneAppearance } from '../board/stoneAppearance';
+import { createStoneGeometry, createStoneMaterial } from '../tutorials/stoneModel';
 import { STONE_RADIUS, STONE_HEIGHT, BOARD_SURFACE_Y } from './constants';
+import { stoneMeshScale } from './stoneScale';
 
 interface StoneMeshProps {
   color: 'B' | 'W';
   position: [number, number, number];
   opacity?: number;
+  /** Stable full-board coordinate variation, shared by static, drop and ghost stones. */
+  variant?: number;
+  angle?: number;
   scale?: number;
   satinFinish?: boolean;
   contactOpacity?: number;
@@ -14,57 +20,17 @@ interface StoneMeshProps {
   diameterRatio?: number;
 }
 
-// Shared geometry — all stones use the same sphere (1 geometry, not 361)
-const sharedGeometry = new THREE.SphereGeometry(STONE_RADIUS, 48, 32);
+// Board-resolution copies of the existing clamshell/slate model's authored shape.
+// Each color shares one geometry across all stones; the full-detail tutorial model is unchanged.
+const boardDetail = { radialSegments: 48, domeSegments: 18, edgeSegments: 6 };
+const sharedGeometry = {
+  B: createStoneGeometry('B', boardDetail),
+  W: createStoneGeometry('W', boardDetail),
+};
 const sharedSpriteGeometry = new THREE.PlaneGeometry(STONE_RADIUS * 2, STONE_RADIUS * 2);
 
 // Noop raycast — prevents stones from intercepting pointer events
 const noopRaycast = () => {};
-
-/** Shell texture for Hamaguri white stones. Cached at module level. */
-let cachedShellTexture: THREE.CanvasTexture | null = null;
-
-function getShellTexture(): THREE.CanvasTexture {
-  if (cachedShellTexture) return cachedShellTexture;
-  const size = 512;
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#f5edd8';
-  ctx.fillRect(0, 0, size, size);
-
-  const cx = size * 0.48, cy = size * 0.7;
-  for (let i = 0; i < 40; i++) {
-    const r = 6 + i * (size * 0.024);
-    const dark = i % 2 === 0;
-    ctx.strokeStyle = dark
-      ? `rgba(110, 80, 30, ${0.7 + Math.random() * 0.3})`
-      : `rgba(150, 120, 60, ${0.5 + Math.random() * 0.3})`;
-    ctx.lineWidth = dark ? 3 + Math.random() * 3 : 1.5 + Math.random() * 2;
-    ctx.beginPath();
-    ctx.arc(cx + (Math.random() - 0.5) * 4, cy + (Math.random() - 0.5) * 3, r, Math.PI * 0.08, Math.PI * 0.92);
-    ctx.stroke();
-  }
-
-  const cx2 = size * 0.55, cy2 = size * 0.75;
-  for (let i = 0; i < 15; i++) {
-    const r = 10 + i * (size * 0.035);
-    ctx.strokeStyle = `rgba(130, 100, 45, ${0.2 + Math.random() * 0.2})`;
-    ctx.lineWidth = 1 + Math.random() * 1.5;
-    ctx.beginPath();
-    ctx.arc(cx2, cy2, r, Math.PI * 0.15, Math.PI * 0.85);
-    ctx.stroke();
-  }
-
-  const g = ctx.createRadialGradient(size * 0.38, size * 0.3, size * 0.02, size * 0.45, size * 0.4, size * 0.2);
-  g.addColorStop(0, 'rgba(255, 252, 240, 0.35)');
-  g.addColorStop(1, 'rgba(255, 252, 240, 0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, size, size);
-
-  cachedShellTexture = new THREE.CanvasTexture(canvas);
-  return cachedShellTexture;
-}
 
 /** Local contact shadow for the overhead still; shared by its stones only. */
 let contactTexture: THREE.CanvasTexture | null = null;
@@ -83,7 +49,7 @@ function getContactTexture() {
   return contactTexture;
 }
 
-const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, scale = 1, satinFinish = false, contactOpacity = 1, spriteTexture, diameterRatio = 1 }, ref) => {
+const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, variant = 0, angle = 0, scale = 1, satinFinish = false, contactOpacity = 1, spriteTexture, diameterRatio = 1 }, ref) => {
   const material = useMemo(() => {
     if (spriteTexture) return new THREE.MeshBasicMaterial({
       map: spriteTexture, transparent: true, opacity, depthWrite: false, toneMapped: false, fog: false,
@@ -94,25 +60,21 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
       clearcoat: .18, clearcoatRoughness: .35,
       transparent: opacity < 1, opacity,
     });
-    if (color === 'B') {
-      return new THREE.MeshStandardMaterial({
-        color: 0x0a0a0a, roughness: 0.06, metalness: 0.15,
-        transparent: opacity < 1, opacity,
-      });
-    } else {
-      return new THREE.MeshStandardMaterial({
-        map: getShellTexture(), color: 0xf5edd8, roughness: 0.1, metalness: 0.04,
-        transparent: opacity < 1, opacity,
-      });
+    const appearance = getStoneAppearance();
+    if (appearance.id === DEFAULT_STONE_APPEARANCE.id) {
+      const material = createStoneMaterial(color, variant % appearance.sprites.W.length, false, 256);
+      material.transparent = opacity < 1;
+      material.opacity = opacity;
+      return material;
     }
-  }, [color, opacity, satinFinish, spriteTexture]);
+    const recipe = appearance.material3d?.[color] ?? DEFAULT_STONE_APPEARANCE.material3d[color];
+    return new THREE.MeshPhysicalMaterial({ ...recipe, transparent: opacity < 1, opacity });
+  }, [color, opacity, variant, satinFinish, spriteTexture]);
 
-  // Dispose material on change/unmount (but NOT the shared shell texture)
+  // Dispose per-stone material, not the shared procedural maps.
   useEffect(() => {
     return () => { material.dispose(); };
   }, [material]);
-
-  const scaleY = STONE_HEIGHT / STONE_RADIUS;
 
   return (
     <>
@@ -123,9 +85,9 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
       <mesh
         ref={ref}
         position={spriteTexture ? [position[0], position[1] + STONE_HEIGHT * scale, position[2]] : position}
-        rotation={spriteTexture ? [-Math.PI / 2, 0, 0] : undefined}
-        scale={spriteTexture ? [scale * diameterRatio, scale * diameterRatio, 1] : [scale, scale * scaleY, scale]}
-        geometry={spriteTexture ? sharedSpriteGeometry : sharedGeometry}
+        rotation={spriteTexture ? [-Math.PI / 2, 0, -angle] : [0, -angle, 0]}
+        scale={spriteTexture ? [scale * diameterRatio, scale * diameterRatio, 1] : stoneMeshScale(color, scale)}
+        geometry={spriteTexture ? sharedSpriteGeometry : sharedGeometry[color]}
         material={material}
         castShadow={!spriteTexture}
         receiveShadow={!spriteTexture}

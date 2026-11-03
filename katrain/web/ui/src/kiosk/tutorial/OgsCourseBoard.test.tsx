@@ -1,3 +1,4 @@
+import { stoneSpriteUrl } from '../../components/board/stoneAppearance';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { OgsStep } from '../../types/ogsCourse';
@@ -23,6 +24,10 @@ describe('OGS board crop', () => {
     const svg = screen.getByRole('img', { name: '19 路互动棋盘' });
     expect(board).toHaveAttribute('data-window', '19x10');
     expect(svg).toHaveAttribute('viewBox', '0 900 1900 1000');
+    const sprites = svg.querySelectorAll('image');
+    expect(sprites).toHaveLength(10);
+    expect(sprites[0]).toHaveAttribute('href', stoneSpriteUrl('B', 19, 16, 12));
+    expect(sprites[0]).toHaveAttribute('width', '78');
     expect(svg).not.toHaveAttribute('preserveAspectRatio', 'none');
     expect(board.style.getPropertyValue('--ogs-board-width')).toBe('414px');
     expect(board.style.getPropertyValue('--ogs-board-height')).toBe(`${414 * 10 / 19}px`);

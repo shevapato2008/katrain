@@ -41,9 +41,9 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
  * **像是从别的应用里剪进来的**。2026-08-23 重排成两行:一行账号,一行 AI 段位;
  * 2026-09 段位详情也换成了就地展开的外壳行(`KioskAiLadderRows`),不再弹 MUI 对话框。
  *
- * ## 「关于」只画三行,一行都不编(Fan 2026-09-21)
+ * ## 「关于」显示服务端确认的信息
  *
- * 版本 + 本机引擎 + 云端引擎,全部来自 `/api/v1/health`;拿不到版本就不画那一行,不写「未知」。
+ * 版本、模型与引擎状态全部来自 `/api/v1/health`;拿不到版本就不画那一行,不写「未知」。
  * **设备名不画**:`settings.DEVICE_ID` 在没配 `KATRAIN_DEVICE_ID` 时是每次启动自铸的 uuid4
  * (`core/config.py`),不是出厂身份;出厂那份在 launcher 手里(`/etc/smartbox/device.json`),
  * 本仓读不到。显示一个自铸 id 就是编,所以等 launcher 给,不自己造。
@@ -404,6 +404,10 @@ const SettingsPage = () => {
                 <span className="kiosk-row__t"><b>{health.version}</b></span>
               </div>
             )}
+            <div className="kiosk-row" data-testid="about-katago-model">
+              <span className="kiosk-row__lead">{t('settings:about_katago_model', 'KataGo 模型')}</span>
+              <span className="kiosk-row__t"><b>{health?.katago_model || t('settings:about_model_unavailable', '暂时无法获取')}</b></span>
+            </div>
             {/* 两个引擎都是 KataGo(`LOCAL_KATAGO_URL` / `CLOUD_KATAGO_URL`),区别只在跑在哪儿。 */}
             {([
               ['local', t('settings:about_local', '本机'), health?.engines?.local],

@@ -415,6 +415,111 @@ def test_native_evidence_undo_waits_for_standalone_repair_undo(tmp_path):
     engine.dispose()
 
 
+@pytest.mark.parametrize("repair_kind", ["historical", "source"])
+def test_standalone_undo_preserves_snapshot_retained_by_later_native_receipt(tmp_path, monkeypatch, repair_kind):
+    """Preexisting exact source links must not bypass frozen receipt dependencies."""
+    from katrain.kifu_ingest.catalog import undo_publication
+    from katrain.web.kifu import source_rank_repair
+    from tests.web_ui.test_kifu_historical_rank_native import prepared
+    from tests.web_ui.test_kifu_incremental_catalog import make_engine, publish, _seed_names
+
+    # Defer only fixture seeding so the real approval binds the final raw scope.
+    with monkeypatch.context() as fixture_setup:
+        fixture_setup.setattr("tests.web_ui.test_kifu_incremental_catalog._seed_names", lambda *args: None)
+        engine = make_engine(tmp_path / f"retained-{repair_kind}.db")
+    incoming = prepared(engine, item="99602", raw="9d")
+    game = incoming["games"][0]
+    original_path = "data/kifu-album/Go_Seigen/99601.sgf"
+    with engine.begin() as conn:
+        conn.execute(
+            m.KifuSource.__table__.insert(),
+            [
+                {"id": 1, "source_key": "CWI"},
+                {"id": 2, "source_key": "19x19"},
+            ],
+        )
+        conn.execute(
+            m.KifuAlbum.__table__.update()
+            .where(m.KifuAlbum.id == 11)
+            .values(
+                **game["metadata"],
+                source_path=original_path,
+                sgf_content=game["sgf_content"],
+                black_player_id=17,
+                white_player_id=18,
+            )
+        )
+        conn.execute(
+            m.KifuAlbumSource.__table__.insert(),
+            [
+                {"album_id": 11, "source_id": 1, "origin_path": original_path, "match_method": "source_path"},
+                {"album_id": 11, "source_id": 2, "origin_path": game["origin_path"], "match_method": "source_path"},
+            ],
+        )
+    _seed_names(engine)
+    with engine.begin() as conn:
+        if repair_kind == "historical":
+            manifest = prepare(conn, album_ids=[11])
+            correction = apply(conn, manifest)
+            undo_repair = lambda conn: undo(conn, manifest)
+        else:
+            manifest = source_rank_repair.prepare_rank_manifest(conn)
+            correction = source_rank_repair.apply_rank_manifest(
+                conn,
+                manifest,
+                expected_sha256=source_rank_repair.rank_manifest_sha256(manifest),
+            )
+            undo_repair = lambda conn: source_rank_repair.undo_rank_manifest(
+                conn,
+                manifest,
+                expected_sha256=source_rank_repair.rank_manifest_sha256(manifest),
+            )
+        original = dict(conn.execute(select(m.KifuAlbum.__table__).where(m.KifuAlbum.id == 11)).mappings().one())
+        links = [
+            dict(row)
+            for row in conn.execute(
+                select(m.KifuAlbumSource.__table__).where(m.KifuAlbumSource.album_id == 11)
+            ).mappings()
+        ]
+        frozen = [dict(row) for row in conn.execute(select(m.KifuAlbumRankSnapshot.__table__)).mappings()]
+        old_journal = [
+            dict(row)
+            for row in conn.execute(
+                select(m.KifuNameChange.__table__).where(m.KifuNameChange.batch_id == correction["batch_id"])
+            ).mappings()
+        ]
+    receipt = publish(engine, incoming)
+    assert {item["status"] for item in receipt["rank_outcomes"]} == {"retained", "deferred"}
+    with engine.begin() as conn:
+        # The guard must be the frozen receipt, not incidental source/album drift.
+        assert (
+            dict(conn.execute(select(m.KifuAlbum.__table__).where(m.KifuAlbum.id == 11)).mappings().one()) == original
+        )
+        assert [
+            dict(row)
+            for row in conn.execute(
+                select(m.KifuAlbumSource.__table__).where(m.KifuAlbumSource.album_id == 11)
+            ).mappings()
+        ] == links
+        with pytest.raises(ValueError, match="dependent.*rank.*receipt|retained.*rank.*receipt"):
+            undo_repair(conn)
+        assert [dict(row) for row in conn.execute(select(m.KifuAlbumRankSnapshot.__table__)).mappings()] == frozen
+        assert (
+            conn.scalar(select(m.KifuNameBatch.status).where(m.KifuNameBatch.id == correction["batch_id"])) == "applied"
+        )
+        assert [
+            dict(row)
+            for row in conn.execute(
+                select(m.KifuNameChange.__table__).where(m.KifuNameChange.batch_id == correction["batch_id"])
+            ).mappings()
+        ] == old_journal
+    assert publish(engine, incoming) == receipt
+    assert undo_publication(engine, receipt["batch_id"])["status"] == "undone"
+    with engine.begin() as conn:
+        assert undo_repair(conn)["status"] == "undone"
+    engine.dispose()
+
+
 def test_corrupt_current_afterimage_refuses_retry_and_entire_undo(engine):
     with engine.begin() as conn:
         manifest = prepare(conn)

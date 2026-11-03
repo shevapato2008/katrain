@@ -682,6 +682,9 @@ def undo_in_transaction(conn, manifest, *, expected_sha256):
             return {"status": "already_undone", "batch_id": batch["id"], "changes": 0, "part_sha256": digest(part)}
         require(batch["status"] == "applied", "historical rank batch status changed")
         _targets_preflight(conn, part, initial=False)
+        from katrain.kifu_ingest.catalog import _check_retained_rank_dependencies
+
+        _check_retained_rank_dependencies(conn, [batch["id"]], [changes])
         table = m.KifuAlbumRankSnapshot.__table__
         for change in reversed(changes):
             if change["before_image"] is None:

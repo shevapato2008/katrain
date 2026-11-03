@@ -1064,11 +1064,25 @@ def _rank_displays(record, black, white, snapshots):
                     authority = row.get("_batch_manifest_sha256") == row.get("_batch_sha256") and (
                         (
                             row.get("_batch_publication_format") == "kifu-incremental-manifest-v2"
+                            and row.get("_batch_artifact_format") != "kifu-numadate-canonical-correction-v1"
                             and row.get("_batch_publication_key") == row["publication_key"]
                         )
                         or (
                             row.get("_batch_artifact_format") == "kifu-historical-rank-repair-v1"
                             and row["publication_key"] == "historical-rank:" + (row.get("_batch_sha256") or "")
+                        )
+                        or (
+                            row.get("_batch_artifact_format") == "kifu-numadate-canonical-correction-v1"
+                            and row["publication_key"] == "canonical-correction:" + (row.get("_batch_sha256") or "")
+                            and row.get("_canonical_correction_verified")
+                            == {
+                                "row_id": row["id"],
+                                "album_id": row["album_id"],
+                                "side": row["side"],
+                                "snapshot_sha256": row["snapshot_sha256"],
+                                "batch_id": row["native_batch_id"],
+                                "batch_sha256": row.get("_batch_sha256"),
+                            }
                         )
                     )
                     if (

@@ -1049,8 +1049,29 @@ def lookup_album_rank_snapshots(conn, album_ids):
             elif not target.get("_journal_ambiguous"):
                 target.update(dict(row))
             seen_journals.add(row["id"])
+        corrections = {}
+        for row in source_rows.values():
+            if row.get("_batch_artifact_format") == "kifu-numadate-canonical-correction-v1":
+                corrections.setdefault(row["native_batch_id"], []).append(row)
+        if corrections:
+            # Only this finite authority needs its full bounded DB proof. Pass
+            # exact current DB rows, never request parameters or attached flags.
+            from katrain.web.kifu.historical_ranks import EvidenceBudget
+            from katrain.web.kifu.numadate_canonical_correction import verify_correction
+
+            resource = EvidenceBudget()
+            for batch_id, rows in corrections.items():
+                expected = [{key: row[key] for key in t.c.keys()} for row in rows]
+                try:
+                    proof = verify_correction(conn, batch_id, expected_rows=expected, resource=resource)
+                except ValueError:
+                    # Missing, damaged or undone authority leaves source fallback
+                    # available. Unexpected verifier/DB faults remain visible.
+                    continue
+                for row in rows:
+                    row["_canonical_correction_verified"] = proof["rows"].get(row["id"])
     # Canonical ownership is checked against the current side FK in one bounded
-    # page query. No original basis albums or whole reviewed artifacts are read.
+    # page query. Ordinary pages need no basis albums or whole reviewed artifacts.
     a, p = KifuAlbum.__table__, KifuPlayer.__table__
     pb, pw = p.alias("rank_black_owner"), p.alias("rank_white_owner")
     for owner in conn.execute(

@@ -2188,7 +2188,13 @@ def _assert_retained_rank_row(conn, row, context, *, resource, current_batch_id=
             from katrain.web.kifu.source_rank_repair import rank_manifest_sha256
 
             source_repair = rank_manifest_sha256(artifact) == batch["bundle_sha256"]
-        _require(native or repaired or source_repair, "retained rank immutable authority changed")
+        canonical_correction = artifact.get("format") == "kifu-numadate-canonical-correction-v1"
+        if canonical_correction:
+            from katrain.web.kifu.numadate_canonical_correction import verify_correction
+
+            proof = verify_correction(conn, batch["id"], expected_rows=[row], resource=resource)
+            canonical_correction = proof["batch_id"] == batch["id"] and proof["batch_sha256"] == batch["bundle_sha256"]
+        _require(native or repaired or source_repair or canonical_correction, "retained rank immutable authority changed")
     if is_historical_snapshot(snapshot):
         validate_rank_snapshot(snapshot)
         _require(row["rank_fact_id"] is None, "retained historical rank fact changed")

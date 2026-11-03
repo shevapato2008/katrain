@@ -14,7 +14,7 @@
 
 ## 数据契约
 
-原始 SGF、原 rank、source owner、旧 manifest/receipt 不重写。规范层使用现有 `kifu_album_rank_snapshots`：职业 `Np`、业余 `Nd`、级位 `Nk`、类别待核 `N段`。两页面共用中文格式化，职业显示“职业九段”。
+原始 SGF、原 rank、source owner、旧 manifest/receipt 不重写。规范层使用现有 `kifu_album_rank_snapshots`：职业 `Np`、业余 `Nd`、级位 `Nk`、类别待核 `N段`。两页面共用中文格式化，棋谱中文显示统一为“九段”，保留职业/业余数据库类别。
 
 新 v3 决策与历史工具共用同一策略：精确人物和原始来源；不晚于目标局的可靠原始证据；不传播 inferred snapshot；保留来源日期，不能伪造升段日。内嵌段位也属于原始来源。部分/占位/已知上传式日期、系统冲突、较近数字矛盾和职业降段疑点保留待核。
 
@@ -74,3 +74,7 @@ TEST 是唯一采集者；PROD 仅接收同一验证包，不另开采集。
 本轮新 rank/exact/semantic 候选证据共享 8 MiB 操作预算；同证据缓存复用仍检查新鲜元数据和原文相等。候选数量/大小超限整 cohort 延后，不能截断后错误判定。此限额不冒称已有审计 afterimage、特殊名称证明和提交后 ES 投影的任意原文都只读取一次；保留这些既有校验，记录实际阶段成本。
 
 结构日志分别记录 projection、bulk（含打包/客户端）、refresh/ready、action 数与 outcome。旧整轮约 24–43 分钟包含准备/名称/验证/发布，不能算作 ES 增量耗时；实际当前数值以授权运行的日志和发布记录为准。
+
+## 生产投影内存
+
+实际恢复时，PROD 已提交批次 967 的 18 局在后续投影触及旧 Web 4 GiB cgroup 上限，11:25:10Z 被内核终止；原 pending gate 保持关闭，没有撤销或另建 publication key。相同工作负载 TEST 峰值 4,987,953,152 bytes。经独立运维审核，在确认主机约 44.9 GB 可用后，仅在线调整 PROD Web 为 8 GiB memory / 12 GiB memory+swap，无重启；完整前后像及明确策略位于该主机 release-fb970e488/private-memory。后续 native clone 或完整 Compose 角色配置必须保留该资源上限，不能重新落回 4 GiB。使用现有 recover_pending 恢复原已提交操作，禁止清 gate 或新 key 重导。

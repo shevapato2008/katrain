@@ -1,8 +1,8 @@
 # Membership i18n — independent Astra review
 
-Date: 2026-11-04  
-Baseline: `8cc4b6dcdd236bd8339643043f176708ff499503`  
-Plan: `docs/superpowers/plans/2026-11-04-membership-i18n.md`  
+Date: 2026-11-04
+Baseline: `8cc4b6dcdd236bd8339643043f176708ff499503`
+Plan: `docs/superpowers/plans/2026-11-04-membership-i18n.md`
 Final verdict: **Approved for integration and the scoped TEST → new PROD release.** No unresolved material code, translation or representative visual findings. This is implementation approval, not a claim that deployment has occurred.
 
 ## Resolved findings

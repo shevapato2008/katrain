@@ -81,4 +81,3 @@ export async function bootMembership(page: Page, options: { language?: string; a
   });
   return { requests, browserErrors, polls: () => polls, setAutoPay: (value: boolean) => { autoPay = value; }, setCreateError: (value: string | null) => { createError = value; } };
 }
-

@@ -136,7 +136,7 @@ describe('职业报告固定右栏', () => {
     renderPage(); await loaded();
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog', { name: '对局详情' });
-    for (const value of ['赛事甲', '2026-10-01', 'W+R', '职业九段', '职业八段', 'japanese', '6.5', '分析中', 'archive', 'source-b']) expect(dialog).toHaveTextContent(value);
+    for (const value of ['赛事甲', '2026-10-01', 'W+R', '九段', '八段', 'japanese', '6.5', '分析中', 'archive', 'source-b']) expect(dialog).toHaveTextContent(value);
     expect(dialog).not.toHaveTextContent('已核验');
     fireEvent.click(screen.getByRole('button', { name: '查看棋谱' }));
     expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/kifu/7/replay');
@@ -147,7 +147,7 @@ describe('职业报告固定右栏', () => {
     renderPage(); await loaded();
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog', { name: '对局详情' });
-    expect(dialog).toHaveTextContent('黑棋手 · 职业七段');
+    expect(dialog).toHaveTextContent('黑棋手 · 七段');
     expect(dialog).toHaveTextContent('白棋手 · 七段');
     expect(dialog).not.toHaveTextContent('业余');
   });

@@ -23,16 +23,16 @@ const cn = tFor('cn');
 
 describe('getListRank', () => {
   it('prefers the display rank and falls back only to the same record raw rank', () => {
-    expect(getListRank(' 9p ', '6k', cn)).toBe('职业九段');
+    expect(getListRank(' 9p ', '6k', cn)).toBe('九段');
     expect(getListRank(' ', '9d', cn)).toBe('9段');
     expect(getListRank('unknown', '6k', cn)).toBe('6级');
   });
 
   it('uses explicit identity and locale while preserving ambiguous saved ranks', () => {
-    expect(getListRank('9p', null, cn, 'cn')).toBe('职业九段');
+    expect(getListRank('9p', null, cn, 'cn')).toBe('九段');
     expect(getListRank(null, '6d', cn, 'cn')).toBe('业余6段');
     expect(getListRank(null, '6k', cn, 'cn')).toBe('6级');
-    expect(getListRank('职业9段', null, cn, 'tw')).toBe('職業九段');
+    expect(getListRank('职业9段', null, cn, 'tw')).toBe('九段');
     expect(getListRank('業餘六段', null, cn, 'tw')).toBe('業餘6段');
     expect(getListRank('九段', '9p', cn, 'cn')).toBe('九段');
     expect(getListRank('9段', '9d', cn, 'cn')).toBe('九段');

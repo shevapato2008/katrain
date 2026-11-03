@@ -26,6 +26,13 @@ def _stage_game(stage, source_id, *, black="Black", white="White", event="Match"
 
 
 def _mock_catalog(monkeypatch, *, unresolved_players=(), templates=None):
+    # These name-service tests isolate the rank resolver; legacy decisions remain
+    # accepted inputs, while real v3 preparation is exercised by native tests.
+    from katrain.kifu_ingest.ranks import freeze_game_ranks
+
+    monkeypatch.setattr(
+        orchestration, "_historical_rank_decisions", lambda _engine, games: [freeze_game_ranks(game) for game in games]
+    )
     monkeypatch.setattr(
         orchestration,
         "lookup_qualified_identities",

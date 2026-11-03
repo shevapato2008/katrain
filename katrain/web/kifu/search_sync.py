@@ -8,8 +8,12 @@ recovery authority; this module adds no business journal or database table.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from contextlib import contextmanager
+import logging
+import json
 import os
 import re
+from time import perf_counter
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -31,6 +35,7 @@ from katrain.web.kifu.name_candidates import canonical_sha256
 from katrain.web.kifu.search_documents import SCHEMA_VERSION
 
 STATE_ID = "sync-state"
+logger = logging.getLogger(__name__)
 
 
 class SearchIndexPending(RuntimeError):
@@ -161,6 +166,25 @@ def _batch_scope(conn, batch_id):
             ]
             if digest != journal.get("bundle_sha256") or canonical_sha256(changes) != journal.get("journal_sha256"):
                 raise SearchIndexPending({"batch_id": batch_id}, "original publication journal changed")
+        if "catalog_repairs" in artifact or "catalog_repairs_sha256" in guard:
+            from katrain.kifu_ingest.catalog import _validate_catalog_repairs
+
+            try:
+                repairs = _validate_catalog_repairs(
+                    conn, artifact, undone=batch["status"] == "undone", check_current=False
+                )
+            except (ValueError, KeyError, TypeError) as exc:
+                raise SearchIndexPending({"batch_id": batch_id}, "original publication dedup child changed") from exc
+            scope.album_ids.update(repairs["affected_album_ids"])
+        if "rank_dispositions" in artifact or "rank_dispositions_sha256" in guard:
+            from katrain.kifu_ingest.catalog import _check_rank_dispositions
+
+            try:
+                _check_rank_dispositions(
+                    conn, artifact.get("logical_manifest", {}), artifact, resource=None, check_current=False
+                )
+            except (ValueError, TypeError, KeyError) as exc:
+                raise SearchIndexPending({"batch_id": batch_id}, "original retained rank artifact changed") from exc
     else:
         original = artifact.get("bundle", artifact.get("plan"))
         if not isinstance(original, dict) or canonical_sha256(original) != batch["bundle_sha256"]:
@@ -372,20 +396,46 @@ def _ready(token):
     token.client.put_document(STATE_ID, state, index=state["target_index"], refresh=True)
 
 
+@contextmanager
+def _stage_timing(token, stage, counts, *, started=None):
+    started = perf_counter() if started is None else started
+    outcome = "error"
+    try:
+        yield
+        outcome = "ok"
+    finally:
+        fields = {
+            "stage": stage,
+            "operation_ref_sha256": canonical_sha256(token.state["operation_ref"]),
+            "action_count": counts["action_count"],
+            "bulk_batch": counts.get("bulk_batch", 0),
+            "elapsed_ms": round((perf_counter() - started) * 1000, 3),
+            "outcome": outcome,
+        }
+        logger.info("kifu_search_sync_stage %s", json.dumps(fields, sort_keys=True), extra=fields)
+
+
 def _apply_projection(conn, token):
-    scope = token.scope.merge(_operation_scope(conn, token.state["operation_type"], token.state["operation_ref"]))
-    actions = _project_actions(conn, scope)
+    counts = {"action_count": 0}
+    with _stage_timing(token, "projection", counts):
+        scope = token.scope.merge(_operation_scope(conn, token.state["operation_type"], token.state["operation_ref"]))
+        actions = _project_actions(conn, scope)
+        counts["action_count"] = len(actions)
     if actions:
         from katrain.web.kifu.search_es import iter_bulk_batches
 
-        for batch in iter_bulk_batches(actions):
-            response = token.client.bulk(batch, index=token.state["target_index"], retry_transient=True)
-            if response.get("errors") or any(
-                next(iter(item.values())).get("error") for item in response.get("items", [])
-            ):
-                raise RuntimeError("Elasticsearch bulk contains failed items")
-    token.client.refresh(index=token.state["target_index"])
-    _ready(token)
+        started = perf_counter()
+        for number, batch in enumerate(iter_bulk_batches(actions), 1):
+            with _stage_timing(token, "bulk", {"action_count": len(batch), "bulk_batch": number}, started=started):
+                response = token.client.bulk(batch, index=token.state["target_index"], retry_transient=True)
+                if response.get("errors") or any(
+                    next(iter(item.values())).get("error") for item in response.get("items", [])
+                ):
+                    raise RuntimeError("Elasticsearch bulk contains failed items")
+            started = perf_counter()
+    with _stage_timing(token, "refresh_ready", counts):
+        token.client.refresh(index=token.state["target_index"])
+        _ready(token)
     if token.state["operation_type"] == "manual_import":
         _summarize_manual(token.state["operation_ref"], scope)
 

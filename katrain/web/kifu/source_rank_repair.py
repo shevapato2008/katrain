@@ -681,6 +681,9 @@ def undo_rank_manifest(conn, manifest, *, expected_sha256):
         require(batch["status"] == "applied", "rank batch status changed")
         _live_preflight(conn, manifest, absent_snapshots=False)
         journal = _journal_preflight(conn, batch, manifest)
+        from katrain.kifu_ingest.catalog import _check_retained_rank_dependencies
+
+        _check_retained_rank_dependencies(conn, [batch["id"]], [journal])
         for change in reversed(journal):
             conn.execute(
                 m.KifuAlbumRankSnapshot.__table__.delete().where(m.KifuAlbumRankSnapshot.id == change["target_row_id"])

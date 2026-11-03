@@ -9,19 +9,30 @@ import pytest
 from katrain.web.kifu.name_candidates import canonical_sha256
 
 
-def test_actual_receiver_publication_and_replay_keep_prepared_coverage(tmp_path, monkeypatch, capsys):
-    from io import StringIO
+@pytest.fixture(autouse=True)
+def isolate_rank_resolution_in_name_and_transport_tests(monkeypatch):
     from katrain.kifu_ingest import orchestration
-    from katrain.web.kifu import prepare_search
-    from katrain.web.kifu.prepared_migration import apply_migration
+    from katrain.kifu_ingest.ranks import freeze_game_ranks
+
+    # Actual v3/DB rank preparation is covered by the native integration suite.
+    monkeypatch.setattr(
+        orchestration, "_historical_rank_decisions", lambda _engine, games: [freeze_game_ranks(game) for game in games]
+    )
+
+
+def test_actual_receiver_publication_and_replay_keep_public_api_coverage(tmp_path, monkeypatch, capsys):
+    from io import StringIO
+    from types import SimpleNamespace
+    import asyncio
+    from sqlalchemy.orm import Session
+    from katrain.kifu_ingest import orchestration
+    from katrain.web.api.v1.endpoints import kifu
     from tests.web_ui.test_kifu_incremental_catalog import make_engine, manifest
 
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    monkeypatch.setattr(kifu.settings, "KIFU_SEARCH_BACKEND", "legacy")
     engine = make_engine(tmp_path / "receiver-prepared.db")
     try:
-        apply_migration(engine)
-        with engine.begin() as conn:
-            prepare_search.prepare_all(conn)
         value = manifest()
         value["games"][0]["origin_path"] = "data/kifu-album/19x19/123.sgf"
         digest = canonical_sha256(value)
@@ -34,8 +45,23 @@ def test_actual_receiver_publication_and_replay_keep_prepared_coverage(tmp_path,
             monkeypatch.setattr(orchestration.sys, "stdin", StringIO(json.dumps(envelope)))
             assert orchestration.main(["receive"]) == 0
             responses.append(json.loads(capsys.readouterr().out))
-            with engine.connect() as conn:
-                assert prepare_search.verify_coverage(conn)["ready"]
+            album_id = responses[-1]["receipt"]["games"][0]["album_id"]
+            with Session(engine) as db:
+                page = kifu.read_album_page(db, q=None, page=1, page_size=100, lang="cn")
+                assert album_id in {item.id for item in page.items}
+                request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+                for lang in ("cn", "tw", "jp", "ko", "en"):
+                    detail = asyncio.run(kifu.get_kifu_album(request, album_id, lang=lang, db=db))
+                    assert detail.sgf_content == value["games"][0]["sgf_content"]
+                    assert all(
+                        getattr(detail, field) == value["games"][0]["metadata"][field]
+                        for field in ("player_black", "player_white", "event")
+                    )
+                    assert "19x19" in detail.sources
+                    assert all(
+                        getattr(detail, field)
+                        for field in ("display_player_black", "display_player_white", "display_event")
+                    )
         assert responses[0] == responses[1]
     finally:
         engine.dispose()

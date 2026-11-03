@@ -158,23 +158,19 @@ def test_unknown_and_library_checkpoint_are_immutable(tmp_path):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "lookup_status,lookup_reason,logged_reason",
-    [
-        ("unknown_system", "professional_identity_unverified", "professional_identity_unverified"),
-        ("conflict", "official_grade_above_library_grade", "official_grade_above_library_grade"),
-        ("unknown_system", "private evidence for White with credential=secret", "lookup_reason_unavailable"),
-    ],
-)
-async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile(
-    tmp_path, monkeypatch, caplog, lookup_status, lookup_reason, logged_reason
-):
+async def test_legacy_checkpoint_survives_name_failure_and_retry_without_current_lookup(tmp_path, monkeypatch, caplog):
     from katrain.kifu_ingest import orchestration
     from katrain.kifu_ingest.staging import Stage
     from tests.test_kifu_incremental_decision_resume import ReviewedNames, _qualified_target, _stage_game
 
     stage = Stage(tmp_path / "prepare")
     item = _stage_game(stage, "99999001")
+    game = await orchestration.derive_staged_record(item)
+    game["identities"] = {"black": {"canonical_name": "Black"}, "white": {"canonical_name": "White"}}
+    legacy = ranks().freeze_game_ranks(game, library_facts={"Black": fact()})
+    stage.save_rank_decision(game, legacy)
+    checkpoint = stage._rank_decision_path(game)[0]
+    frozen_bytes = checkpoint.read_bytes()
     monkeypatch.setattr(
         orchestration,
         "lookup_qualified_identities",
@@ -187,18 +183,11 @@ async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile
         },
     )
     monkeypatch.setattr(orchestration, "qualified_raw_event_templates", lambda *a, **kw: {"templates": {}})
-    calls = []
     monkeypatch.setattr(
-        orchestration,
-        "lookup_library_rank_facts",
-        lambda *a, **kw: calls.append(1)
-        or {
-            1: {"status": "qualified", "fact": fact()},
-            2: {"status": lookup_status, "reason": lookup_reason},
-        },
+        orchestration, "_historical_rank_decisions", lambda *a: pytest.fail("legacy checkpoint was refrozen")
     )
-    monkeypatch.setattr(orchestration, "_professional_identity_evidence", lambda *a: {})
-    failing = ReviewedNames("first", on_translate=lambda _request: (_ for _ in ()).throw(ValueError("name outage")))
+    monkeypatch.setattr(orchestration, "lookup_library_rank_facts", lambda *a, **kw: pytest.fail("current lookup"))
+    failing = ReviewedNames("first", on_translate=lambda _: (_ for _ in ()).throw(ValueError("name outage")))
     caplog.set_level("INFO", logger=orchestration.__name__)
     with pytest.raises(ValueError, match="name outage"):
         await orchestration.prepare_staged_games(
@@ -209,17 +198,6 @@ async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile
             check_identities=_qualified_target,
             decision_store=stage,
         )
-    first_counts = json.loads(caplog.records[-1].getMessage().split(" ", 1)[1])
-    assert first_counts[lookup_status] == 1
-    assert first_counts["lookup_reasons"] == {logged_reason: 1}
-    assert first_counts["unresolved_slots"] == [
-        {"source_item_id": "99999001", "side": "white", "reason": logged_reason}
-    ]
-    assert "White" not in caplog.records[-1].getMessage()
-    assert "credential" not in caplog.records[-1].getMessage()
-    monkeypatch.setattr(
-        orchestration, "lookup_library_rank_facts", lambda *a, **kw: pytest.fail("cached retry queried current ranks")
-    )
     result = await orchestration.prepare_staged_games(
         [item],
         engine=object(),
@@ -228,84 +206,57 @@ async def test_prepare_freezes_before_name_failure_and_retry_skips_today_profile
         check_identities=_qualified_target,
         decision_store=stage,
     )
-    assert len(calls) == 1
-    assert result["format"] == ranks().FORMAT_V2
-    assert result["games"][0]["rank_snapshots"]["black"]["display_rank"] == "7p"
+    assert result["games"][0]["rank_snapshots"] == legacy["rank_snapshots"]
+    assert checkpoint.read_bytes() == frozen_bytes
     counts = json.loads(caplog.records[-1].getMessage().split(" ", 1)[1])
-    assert {key: counts[key] for key in ("cached", "source", "library_current", "unknown")} == {
-        "cached": 2,
-        "source": 0,
-        "library_current": 1,
-        "unknown": 1,
-    }
-    assert counts["external_rank_refreshes"] == 0
-    assert counts["profile_refresh_deferred"] is True
-    assert counts["lookup_reasons"] == {}
-    assert counts["unresolved_slots"] == [{"source_item_id": "99999001", "side": "white", "reason": "frozen_unknown"}]
+    assert counts["cached"] == 2 and counts["library_current"] == 1
+    assert counts["external_rank_refreshes"] == 0 and counts["profile_refresh_deferred"] is True
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse", [False, True])
-async def test_cached_and_new_games_share_fact_without_rewriting_observation_times(tmp_path, monkeypatch, reverse):
+async def test_mixed_old_checkpoint_and_new_v3_keep_old_bytes_and_observation(tmp_path, monkeypatch, reverse):
     from katrain.kifu_ingest import orchestration
     from katrain.kifu_ingest.staging import Stage
     from tests.test_kifu_incremental_decision_resume import ReviewedNames, _qualified_target, _stage_game
+    from tests.web_ui.test_kifu_incremental_catalog import make_engine
 
-    stage = Stage(tmp_path / "mixed-observations")
-    cached = _stage_game(stage, "99999001")
-    fresh = _stage_game(stage, "99999002")
-    monkeypatch.setattr(
-        orchestration,
-        "lookup_qualified_identities",
-        lambda *a, **kw: {
-            "player": {
-                name: {"id": i, "canonical_name": name, "status": "qualified"}
-                for i, name in enumerate(("Black", "White"), 1)
-            },
-            "event": {"Match": {"status": "unresolved"}},
-        },
-    )
-    monkeypatch.setattr(orchestration, "qualified_raw_event_templates", lambda *a, **kw: {"templates": {}})
-    monkeypatch.setattr(orchestration, "_professional_identity_evidence", lambda *a: {})
-    observed = ["2026-10-01T00:00:00+00:00", "2026-10-02T00:00:00+00:00"]
-
-    def lookup(*args, **kwargs):
-        current = fact()
-        current["observed_at"] = observed.pop(0)
-        return {1: {"status": "qualified", "fact": current}}
-
-    monkeypatch.setattr(orchestration, "lookup_library_rank_facts", lookup)
-    names = ReviewedNames("mixed-times")
+    engine = make_engine(tmp_path / "mixed.db")
+    stage = Stage(tmp_path / "mixed-stage")
+    cached, fresh = [
+        _stage_game(stage, item, black="Black Alias", white="White Alias", event="Summer Cup")
+        for item in ("99999001", "99999002")
+    ]
+    game = await orchestration.derive_staged_record(cached)
+    game["identities"] = {"black": {"canonical_name": "Black"}, "white": {"canonical_name": "White"}}
+    legacy = ranks().freeze_game_ranks(game, library_facts={"Black": fact()}, matched_at="2026-10-01T00:00:00Z")
+    stage.save_rank_decision(game, legacy)
+    path = stage._rank_decision_path(game)[0]
+    frozen_bytes = path.read_bytes()
+    order = [fresh, cached] if reverse else [cached, fresh]
 
     async def prepare(items):
         return await orchestration.prepare_staged_games(
             items,
-            engine=object(),
+            engine=engine,
             client=object(),
-            names=names,
+            names=ReviewedNames("mixed"),
             check_identities=_qualified_target,
             decision_store=stage,
         )
 
-    first = await prepare([cached])
-    frozen_game = deepcopy(first["games"][0])
-    cached_path = stage._rank_decision_path(frozen_game)[0]
-    cached_bytes = cached_path.read_bytes()
-    order = [fresh, cached] if reverse else [cached, fresh]
     result = await prepare(order)
-    by_source = {item["source_item_id"]: item for item in result["games"]}
-    assert by_source["99999001"]["rank_snapshots"] == frozen_game["rank_snapshots"]
-    assert by_source["99999002"]["rank_snapshots"]["black"]["observed_at"] == "2026-10-02T00:00:00+00:00"
-    assert next(iter(result["rank_facts"].values()))["observed_at"] == "2026-10-01T00:00:00+00:00"
-    assert cached_path.read_bytes() == cached_bytes
-    all_paths = [stage._rank_decision_path(item)[0] for item in result["games"]]
-    all_bytes = {path: path.read_bytes() for path in all_paths}
+    by_source = {game["source_item_id"]: game for game in result["games"]}
+    assert by_source["99999001"]["rank_snapshots"] == legacy["rank_snapshots"]
+    assert by_source["99999002"]["rank_snapshots"]["black"]["version"] == "kifu-rank-snapshot-v3"
+    assert result["rank_facts"] == legacy["rank_facts"]
+    assert path.read_bytes() == frozen_bytes
     monkeypatch.setattr(
-        orchestration, "lookup_library_rank_facts", lambda *a, **kw: pytest.fail("cached retry queried ranks")
+        orchestration, "_historical_rank_decisions", lambda *a: pytest.fail("cached retry reread history")
     )
     replay = await prepare(list(reversed(order)))
     assert replay["rank_facts"] == result["rank_facts"]
-    assert {item["source_item_id"]: item["rank_snapshots"] for item in replay["games"]} == {
-        source_id: item["rank_snapshots"] for source_id, item in by_source.items()
+    assert {game["source_item_id"]: game["rank_snapshots"] for game in replay["games"]} == {
+        source: game["rank_snapshots"] for source, game in by_source.items()
     }
-    assert all(path.read_bytes() == content for path, content in all_bytes.items())
+    assert path.read_bytes() == frozen_bytes

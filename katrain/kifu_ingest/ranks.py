@@ -7,6 +7,7 @@ to reproduce an old card.
 
 from copy import deepcopy
 from datetime import datetime, timezone
+from hashlib import sha256
 import json
 import re
 
@@ -77,10 +78,10 @@ def merge_rank_facts(*fact_maps):
     return merged
 
 
-def rank_decision_request(game):
+def rank_decision_request(game, *, historical=False):
     """The independent disk cache key intentionally excludes mutable profiles."""
     return {
-        "policy_version": POLICY_VERSION,
+        "policy_version": "historical-rank-as-of-v1" if historical else POLICY_VERSION,
         "source_key": game["source_key"],
         "source_item_id": game["source_item_id"],
         "sgf_sha256": game["sgf_sha256"],
@@ -211,8 +212,90 @@ def freeze_game_ranks(game, *, library_facts=None, identity_evidence=None, match
     return {"rank_snapshots": snapshots, "rank_observations": observations, "rank_facts": deepcopy(facts)}
 
 
+def is_historical_snapshot(snapshot):
+    return isinstance(snapshot, dict) and snapshot.get("version") == "kifu-rank-snapshot-v3"
+
+
+def historical_game_targets(games):
+    """Portable proposed slots; pending rows deliberately carry no local IDs."""
+    targets = []
+    for game in games:
+        album = {**game["metadata"], "id": None, "sgf_content": game["sgf_content"], "source_path": game["origin_path"]}
+        links = [
+            {
+                "source_key": game["source_key"],
+                "origin_path": game["origin_path"],
+                "album_id": None,
+                "id": None,
+                "source_id": None,
+            }
+        ]
+        for side in ("black", "white"):
+            owner = game.get("identities", {}).get(side)
+            targets.append(
+                {
+                    "album": album,
+                    "side": side,
+                    "source_links": links,
+                    "player_ref": owner if isinstance(owner, dict) else None,
+                }
+            )
+    return targets
+
+
+def freeze_historical_game_ranks(conn, games, *, matched_at=None):
+    """Freeze a bounded incoming batch from existing original evidence only."""
+    from katrain.web.kifu.historical_ranks import prepare_rank_decisions
+
+    when = _utc(matched_at)
+    decisions = prepare_rank_decisions(conn, historical_game_targets(games), matched_at=when)["decisions"]
+    result = []
+    for index, game in enumerate(games):
+        # Inferences are never promoted to original rank facts. Keep only true
+        # source observations under the existing immutable fact contract.
+        source = freeze_game_ranks(game, matched_at=when)
+        result.append({**source, "rank_snapshots": dict(zip(("black", "white"), decisions[2 * index : 2 * index + 2]))})
+    return result
+
+
+def _validate_historical_slot(game, side, snapshot, observations, facts, used):
+    from katrain.web.kifu.historical_ranks import validate_rank_source_metadata
+
+    source = validate_rank_source_metadata({**game["metadata"], "sgf_content": game["sgf_content"]})
+    _require(
+        sha256(game["sgf_content"].encode()).hexdigest() == game["sgf_sha256"]
+        and snapshot["source_ref"]
+        == {
+            "source_key": game["source_key"],
+            "origin_path": game["origin_path"],
+            "sgf_sha256": game["sgf_sha256"],
+            "slot": side,
+        }
+        and snapshot["player_ref"] == game.get("identities", {}).get(side)
+        and snapshot["raw_rank"] == (game["metadata"].get(f"{side}_rank") or "")
+        and snapshot["raw_name"] == game["metadata"].get(f"player_{side}")
+        and snapshot["target_date"] == source["target_date"],
+        "rank snapshot source/slot/owner/raw/date binding mismatch",
+    )
+    original = freeze_game_ranks(game, matched_at=snapshot["matched_at"])
+    observation = observations[side]
+    _require(observation == original["rank_observations"][side], "original rank observation changed")
+    if observation:
+        _require(
+            observation in facts
+            and {k: v for k, v in facts[observation].items() if k != "observed_at"}
+            == {k: v for k, v in original["rank_facts"][observation].items() if k != "observed_at"},
+            "original rank observation source mismatch",
+        )
+        used.add(observation)
+
+
 def validate_rank_snapshot(snapshot):
     """Validate standalone snapshot shape and self hash (not its DB authority)."""
+    if is_historical_snapshot(snapshot):
+        from katrain.web.kifu.historical_ranks import validate_rank_decision
+
+        return validate_rank_decision(snapshot)
     _require(isinstance(snapshot, dict) and set(snapshot) == _FIELDS, "rank snapshot shape invalid")
     _require(
         snapshot["version"] == SNAPSHOT_VERSION
@@ -365,6 +448,9 @@ def validate_manifest_ranks(manifest):
         )
         for side, snapshot in snapshots.items():
             validate_rank_snapshot(snapshot)
+            if is_historical_snapshot(snapshot):
+                _validate_historical_slot(game, side, snapshot, observations, facts, used)
+                continue
             owner = game.get("identities", {}).get(side)
             raw, original_display = _raw_rank(
                 game, side, source_policy=snapshot["policy_version"] == SOURCE_POLICY_VERSION
@@ -487,6 +573,21 @@ def display_rank_for_game_slot(snapshot, raw_rank=""):
     if snapshot is None:
         return {"rank": raw_rank or "", "rank_origin": "source" if raw_rank else "unknown", "rank_source": None}
     validate_rank_snapshot(snapshot)
+    if is_historical_snapshot(snapshot):
+        basis = snapshot["basis"]
+        return {
+            "rank": snapshot["display_rank"],
+            "rank_origin": snapshot["origin"],
+            "rank_source": {
+                "policy_version": snapshot["policy_version"],
+                "snapshot_sha256": snapshot["content_sha256"],
+                "rank_system": snapshot["rank_system"],
+                "origin": snapshot["origin"],
+                "source_ref": deepcopy(snapshot["source_ref"]),
+                "source_as_of": basis[0]["raw_date"] if basis else snapshot["target_date"],
+                "refusal_reason": snapshot["refusal_reason"],
+            },
+        }
     proof = snapshot["source_proof"] or {}
     source = {
         key: snapshot[key]
@@ -517,3 +618,222 @@ def display_rank_for_game_slot(snapshot, raw_rank=""):
         "rank_origin": "source" if raw_rank else snapshot["origin"],
         "rank_source": deepcopy(source),
     }
+
+
+_OUTCOME_FIELDS = {
+    "source_key",
+    "source_item_id",
+    "album_id",
+    "side",
+    "status",
+    "requested_snapshot_sha256",
+    "original_source_ref",
+    "retained_snapshot",
+    "original_canonical_sgf_sha256",
+}
+
+
+def _retained_rank_display(game, side, snapshot, original_ref, album_id):
+    """Validate the original portable assertion, then reproduce its API projection."""
+    from katrain.web.kifu.source_rank_normalization import (
+        SNAPSHOT_VERSION as SOURCE_VERSION,
+        snapshot_digest,
+        validate_source_snapshot,
+    )
+
+    owner = game.get("identities", {}).get(side)
+    raw, display = _raw_rank(game, side)
+    if snapshot.get("version") == SOURCE_VERSION:
+        # v2 contains local IDs. Keep its signed bytes in the receipt, validate
+        # the policy with an equivalent canonical body, and retain its real raw
+        # body SHA in the API provenance. The HTTP verifier checks that SHA.
+        _require(snapshot.get("content_sha256") == snapshot_digest(snapshot), "retained rank hash mismatch")
+        ref = snapshot.get("source_ref")
+        _require(
+            isinstance(ref, dict)
+            and ref.get("album_id") == album_id
+            and all(type(ref.get(key)) is int and ref[key] > 0 for key in ("album_id", "source_link_id", "source_id")),
+            "retained source rank local binding invalid",
+        )
+        _require(
+            {
+                "source_key": ref.get("source_key"),
+                "origin_path": ref.get("source_path"),
+                "sgf_sha256": ref.get("sgf_sha256"),
+                "slot": ref.get("slot"),
+            }
+            == original_ref,
+            "retained rank source mismatch",
+        )
+        album = {
+            **game["metadata"],
+            "id": ref.get("album_id"),
+            "source_path": ref.get("source_path"),
+            "sgf_content": game["sgf_content"],
+            f"{side}_player_id": snapshot.get("player_id"),
+        }
+        link = {
+            "album_id": album["id"],
+            "id": ref.get("source_link_id"),
+            "source_id": ref.get("source_id"),
+            "origin_path": ref.get("source_path"),
+            "source_key": ref.get("source_key"),
+        }
+        shadow = deepcopy(snapshot)
+        shadow["source_ref"]["sgf_sha256"] = sha256(game["sgf_content"].encode()).hexdigest()
+        shadow["content_sha256"] = snapshot_digest(shadow)
+        validate_source_snapshot(shadow, album=album, side=side, source_links=[link])
+        return {
+            "rank": snapshot["display_rank"],
+            "rank_origin": "source",
+            "rank_source": {
+                "policy_version": snapshot["policy_version"],
+                "snapshot_sha256": snapshot["content_sha256"],
+                "rank_system": snapshot["rank_system"],
+                "source_ref": deepcopy(snapshot["source_ref"]),
+                "source_kind": snapshot["evidence"]["kind"],
+            },
+        }
+    validate_rank_snapshot(snapshot)
+    if is_historical_snapshot(snapshot):
+        from katrain.web.kifu.historical_ranks import validate_rank_source_metadata
+
+        _require(
+            snapshot["source_ref"] == original_ref
+            and snapshot["raw_rank"] == (game["metadata"].get(f"{side}_rank") or "")
+            and snapshot["raw_name"] == game["metadata"].get(f"player_{side}")
+            and snapshot["target_date"]
+            == validate_rank_source_metadata({**game["metadata"], "sgf_content": game["sgf_content"]})["target_date"],
+            "retained historical target mismatch",
+        )
+    else:
+        ref = snapshot["source_ref"]
+        _require(
+            original_ref
+            == {
+                "source_key": ref["source_key"],
+                "origin_path": f"data/kifu-album/{ref['source_key']}/{ref['source_item_id']}.sgf",
+                "sgf_sha256": ref["sgf_sha256"],
+                "slot": ref["slot"],
+            }
+            and snapshot["raw_rank"] == raw,
+            "retained native target mismatch",
+        )
+    _require(snapshot["player_ref"] == owner, "retained rank canonical owner mismatch")
+    return display_rank_for_game_slot(snapshot, display)
+
+
+def expected_rank_for_outcome(game, side, outcome):
+    """Derive a rank expectation; a disposition never bypasses rank validation."""
+    from katrain.core.sgf_parser import SGF
+    from katrain.web.kifu.source_rank_normalization import normalize_source_rank, trusted_source_link
+
+    requested = game["rank_snapshots"][side]
+    _require(is_historical_snapshot(requested), "rank outcome requires a v3 request")
+    _require(
+        isinstance(outcome, dict)
+        and set(outcome) == _OUTCOME_FIELDS
+        and outcome["source_key"] == game["source_key"]
+        and outcome["source_item_id"] == game["source_item_id"]
+        and outcome["side"] == side
+        and type(outcome["album_id"]) is int
+        and outcome["album_id"] > 0
+        and outcome["requested_snapshot_sha256"] == requested["content_sha256"],
+        "rank outcome request binding mismatch",
+    )
+    ref = outcome["original_source_ref"]
+    _require(
+        isinstance(ref, dict)
+        and set(ref) == {"source_key", "origin_path", "sgf_sha256", "slot"}
+        and isinstance(ref["sgf_sha256"], str)
+        and _SHA.fullmatch(ref["sgf_sha256"])
+        and ref["slot"] == side,
+        "rank outcome original source invalid",
+    )
+    link = {"album_id": outcome["album_id"], "origin_path": ref["origin_path"], "source_key": ref["source_key"]}
+    _require(
+        trusted_source_link({"id": outcome["album_id"], "source_path": ref["origin_path"]}, [link]) is not None,
+        "rank outcome original ownership invalid",
+    )
+    _require(
+        outcome["original_canonical_sgf_sha256"]
+        == sha256(SGF.parse_sgf(game["sgf_content"]).sgf().encode()).hexdigest(),
+        "rank outcome canonical SGF mismatch",
+    )
+    status, retained = outcome["status"], outcome["retained_snapshot"]
+    if status == "applied":
+        _require(ref == requested["source_ref"] and retained is None, "applied rank outcome differs from request")
+        return display_rank_for_game_slot(requested)
+    _require(ref != requested["source_ref"], "retained rank outcome still owns requested source")
+    if status == "retained":
+        _require(isinstance(retained, dict), "retained rank snapshot missing")
+        return _retained_rank_display(game, side, retained, ref, outcome["album_id"])
+    _require(status == "deferred" and retained is None, "rank outcome disposition invalid")
+    parsed = parse_player(game["metadata"].get(f"player_{side}"), game["metadata"].get(f"{side}_rank"))
+    raw = game["metadata"].get(f"{side}_rank")
+    normalized = normalize_source_rank(raw or parsed.display_rank, source_key=ref["source_key"])
+    fallback = normalized["display_rank"] if normalized else parsed.display_rank
+    value = display_rank_for_game_slot(None, fallback)
+    if raw:
+        value["rank_origin"] = "source"
+    return value
+
+
+def validate_rank_outcomes(manifest, receipt):
+    """Bind each optional new-v3 receipt slot to its actual, finite rank result."""
+    if "rank_outcomes" not in receipt:
+        return {}
+    outcomes = receipt["rank_outcomes"]
+    games = {(g["source_key"], g["source_item_id"]): g for g in manifest["games"]}
+    _require(
+        isinstance(receipt.get("games"), list) and 1 <= len(receipt["games"]) <= 100,
+        "rank outcome receipt game bounds invalid",
+    )
+    mappings = {}
+    for game in receipt["games"]:
+        _require(isinstance(game, dict), "rank outcome receipt mapping malformed")
+        key = game.get("source_key"), game.get("source_item_id")
+        _require(
+            key in games and key not in mappings and type(game.get("album_id")) is int and game["album_id"] > 0,
+            "rank outcome receipt mapping invalid",
+        )
+        mappings[key] = game["album_id"]
+    _require(set(mappings) == set(games), "rank outcome receipt source coverage invalid")
+    expected = {
+        (key[0], key[1], side)
+        for key, game in games.items()
+        for side, snapshot in game.get("rank_snapshots", {}).items()
+        if is_historical_snapshot(snapshot)
+    }
+    _require(
+        isinstance(outcomes, list) and len(outcomes) == len(expected) and bool(expected),
+        "rank outcome coverage invalid",
+    )
+    result = {}
+    for outcome in outcomes:
+        _require(isinstance(outcome, dict), "rank outcome malformed")
+        key = outcome.get("source_key"), outcome.get("source_item_id")
+        slot = (*key, outcome.get("side"))
+        _require(
+            slot in expected and slot not in result and mappings.get(key) == outcome.get("album_id"),
+            "rank outcome source/album/slot coverage invalid",
+        )
+        expected_rank_for_outcome(games[key], outcome["side"], outcome)
+        result[slot] = outcome
+    _require(set(result) == expected, "rank outcome slots incomplete")
+    for key in games:
+        refs = [
+            tuple(x["original_source_ref"][field] for field in ("source_key", "origin_path", "sgf_sha256"))
+            for slot, x in result.items()
+            if slot[:2] == key
+        ]
+        _require(len(set(refs)) <= 1, "rank outcome sides have different original owners or bodies")
+    return result
+
+
+def portable_rank_outcomes(outcomes):
+    """Allow target local IDs to differ; retained v2 internal IDs stay strict."""
+    return sorted(
+        ({key: value for key, value in outcome.items() if key != "album_id"} for outcome in outcomes),
+        key=lambda x: (x["source_key"], x["source_item_id"], x["side"]),
+    )

@@ -197,7 +197,13 @@ def test_native_publication_original_retry_and_new_source_survive_reviewed_dedup
     second_receipt = publish(engine, second)
     canonical = first_receipt["games"][0]["album_id"]
     original = second_receipt["games"][0]["album_id"]
-    manifest_dedup = prepare(engine)
+    from katrain.web.core.models_db import KifuNameBatch
+
+    with engine.connect() as conn:
+        artifact = conn.scalar(
+            select(KifuNameBatch.reviewed_artifact).where(KifuNameBatch.id == second_receipt["batch_id"])
+        )
+    manifest_dedup = artifact["catalog_repairs"]["dedup"]["manifest"]
     assert manifest_dedup["groups"][0]["canonical_album_id"] == canonical
     apply(engine, manifest_dedup)
     assert publish(engine, second) == second_receipt

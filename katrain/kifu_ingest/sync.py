@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter
+from copy import deepcopy
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -14,7 +15,14 @@ import time
 from katrain.core.sgf_parser import SGF
 from katrain.kifu_ingest.catalog import validate_identity_check_request, validate_identity_check_response
 from katrain.kifu_ingest.exclusions import assert_source_allowed
-from katrain.kifu_ingest.ranks import FORMAT_V2, display_rank_for_game_slot, validate_manifest_ranks
+from katrain.kifu_ingest.ranks import (
+    FORMAT_V2,
+    display_rank_for_game_slot,
+    validate_manifest_ranks,
+    validate_rank_outcomes,
+    expected_rank_for_outcome,
+    is_historical_snapshot,
+)
 from katrain.kifu_ingest.verification import AlbumCheckpoint, RANK_ALGORITHM_VERSION, VerificationGET, normalized_target
 from katrain.web.kifu.name_candidates import canonical_sha256
 from katrain.web.kifu.name_parse import parse_player
@@ -165,11 +173,15 @@ def send_verified_manifest(manifest, manifest_sha256, test_verification, *, host
     process = subprocess.run(command, input=payload, text=True, capture_output=True, timeout=timeout, check=False)
     if process.returncode == 3:
         from katrain.web.kifu.search_sync import SearchIndexPending
+
         try:
             pending = json.loads(process.stdout)
-            valid = (isinstance(pending, dict) and pending.get("status") == "search_index_pending"
-                     and pending.get("operation_ref") == {"manifest_sha256": manifest_sha256,
-                                                          "publication_key": manifest["publication_key"]})
+            valid = (
+                isinstance(pending, dict)
+                and pending.get("status") == "search_index_pending"
+                and pending.get("operation_ref")
+                == {"manifest_sha256": manifest_sha256, "publication_key": manifest["publication_key"]}
+            )
         except (ValueError, TypeError):
             valid = False
         if valid:
@@ -191,10 +203,43 @@ _DISPLAY_FIELDS = ("display_player_black", "display_player_white", "display_even
 _ORIGINAL_FIELDS = ("player_black", "player_white", "event")
 
 
-def _validate_detail_evidence(evidence, game, album_id, lang, decisions, rank_aware=False):
+def _game_outcomes(game, rank_outcomes):
+    return {
+        side: (rank_outcomes or {}).get((game["source_key"], game["source_item_id"], side))
+        for side in ("black", "white")
+    }
+
+
+def _validate_shared_album_mappings(games, mappings, rank_outcomes):
+    """Shared IDs require the same original source and actual rank decision."""
+    by_source = {(g["source_key"], g["source_item_id"]): g for g in games}
+    owners = {}
+    for key, album_id in mappings.items():
+        previous = owners.setdefault(album_id, key)
+        if previous == key:
+            continue
+        for side in ("black", "white"):
+            current = rank_outcomes.get((*key, side))
+            prior = rank_outcomes.get((*previous, side))
+            if (
+                current is None
+                or prior is None
+                or current["original_source_ref"] != prior["original_source_ref"]
+                or current["original_canonical_sgf_sha256"] != prior["original_canonical_sgf_sha256"]
+                or expected_rank_for_outcome(by_source[key], side, current)
+                != expected_rank_for_outcome(by_source[previous], side, prior)
+            ):
+                raise ValueError("album shared receipt source coverage is invalid")
+
+
+def _validate_detail_evidence(evidence, game, album_id, lang, decisions, rank_aware=False, *, rank_outcomes=None):
     fields = {"album_id", "lang", "sgf_sha256", "metadata", "source_key", "displays"}
+    actual_outcomes = _game_outcomes(game, rank_outcomes)
+    has_outcomes = any(actual_outcomes.values())
     if rank_aware:
         fields |= {"source_item_id", "ranks"}
+        if has_outcomes:
+            fields.add("original_sgf_sha256")
     if (
         not isinstance(evidence, dict)
         or set(evidence) != fields
@@ -203,8 +248,17 @@ def _validate_detail_evidence(evidence, game, album_id, lang, decisions, rank_aw
         or evidence["lang"] != lang
     ):
         raise ValueError("album API ID or language mismatch")
-    if evidence["sgf_sha256"] != game["sgf_sha256"]:
+    canonical_sha = (
+        sha256(SGF.parse_sgf(game["sgf_content"]).sgf().encode()).hexdigest() if has_outcomes else game["sgf_sha256"]
+    )
+    if evidence["sgf_sha256"] != canonical_sha:
         raise ValueError("album API SGF hash mismatch")
+    if has_outcomes and any(
+        evidence["original_sgf_sha256"] != outcome["original_source_ref"]["sgf_sha256"]
+        for outcome in actual_outcomes.values()
+        if outcome
+    ):
+        raise ValueError("album API original SGF SHA differs from retained rank source")
     original_fields = (*_ORIGINAL_FIELDS, "black_rank", "white_rank") if rank_aware else _ORIGINAL_FIELDS
     if not isinstance(evidence["metadata"], dict) or set(evidence["metadata"]) != set(original_fields):
         raise ValueError("album API original metadata is malformed")
@@ -221,7 +275,12 @@ def _validate_detail_evidence(evidence, game, album_id, lang, decisions, rank_aw
             raise ValueError("album API rank slots are malformed")
         for side in ("black", "white"):
             parsed = parse_player(game["metadata"].get(f"player_{side}"), game["metadata"].get(f"{side}_rank"))
-            expected = display_rank_for_game_slot(game["rank_snapshots"][side], parsed.display_rank)
+            outcome = actual_outcomes[side]
+            expected = (
+                expected_rank_for_outcome(game, side, outcome)
+                if outcome
+                else display_rank_for_game_slot(game["rank_snapshots"][side], parsed.display_rank)
+            )
             actual = ranks[side]
             if (
                 not isinstance(actual, dict)
@@ -247,7 +306,18 @@ def _validate_detail_evidence(evidence, game, album_id, lang, decisions, rank_aw
             raise ValueError(f"album API {field} mismatch for {lang}")
 
 
-def _detail_evidence(detail, game, album_id, lang, decisions, rank_aware=False, *, include_sgf=True):
+def _detail_evidence(
+    detail,
+    game,
+    album_id,
+    lang,
+    decisions,
+    rank_aware=False,
+    *,
+    include_sgf=True,
+    rank_outcomes=None,
+    original_sgf_sha256=None,
+):
     if not isinstance(detail, dict) or detail.get("id") != album_id:
         raise ValueError("album API ID mismatch")
     if include_sgf:
@@ -259,7 +329,11 @@ def _detail_evidence(detail, game, album_id, lang, decisions, rank_aware=False, 
     else:
         # List responses have no SGF body. Both frozen side references below
         # must independently bind the same hash as the verified detail.
-        sgf_sha256 = game["sgf_sha256"]
+        sgf_sha256 = (
+            sha256(SGF.parse_sgf(game["sgf_content"]).sgf().encode()).hexdigest()
+            if any(_game_outcomes(game, rank_outcomes).values())
+            else game["sgf_sha256"]
+        )
     sources = detail.get("sources")
     original_fields = (*_ORIGINAL_FIELDS, "black_rank", "white_rank") if rank_aware else _ORIGINAL_FIELDS
     evidence = {
@@ -271,6 +345,10 @@ def _detail_evidence(detail, game, album_id, lang, decisions, rank_aware=False, 
         "displays": {field: detail.get(field) for field in _DISPLAY_FIELDS},
     }
     if rank_aware:
+        if any(_game_outcomes(game, rank_outcomes).values()):
+            evidence["original_sgf_sha256"] = (
+                sha256(detail["sgf_content"].encode()).hexdigest() if include_sgf else original_sgf_sha256
+            )
         rank_fields = {
             field
             for side in ("black", "white")
@@ -289,7 +367,7 @@ def _detail_evidence(detail, game, album_id, lang, decisions, rank_aware=False, 
                 for side in ("black", "white")
             },
         )
-    _validate_detail_evidence(evidence, game, album_id, lang, decisions, rank_aware)
+    _validate_detail_evidence(evidence, game, album_id, lang, decisions, rank_aware, rank_outcomes=rank_outcomes)
     return evidence
 
 
@@ -327,7 +405,7 @@ def _validate_display_duplicate(proof, game, album_id, *, stored_sgf_sha256):
     return proof
 
 
-def _validate_public_card(card, game, album_id, cn_detail, decisions, rank_aware=False):
+def _validate_public_card(card, game, album_id, cn_detail, decisions, rank_aware=False, *, rank_outcomes=None):
     fields = {"album_id", "lang", "query", "page", "page_size", "displays"}
     duplicate = isinstance(card, dict) and "display_duplicate" in card
     if duplicate:
@@ -348,6 +426,8 @@ def _validate_public_card(card, game, album_id, cn_detail, decisions, rank_aware
             raise ValueError("album display duplicate canonical card is invalid")
     if rank_aware:
         fields |= {"source_key", "source_item_id", "sgf_sha256", "metadata", "ranks"}
+        if any(_game_outcomes(game, rank_outcomes).values()):
+            fields.add("original_sgf_sha256")
     if (
         not isinstance(card, dict)
         or set(card) != fields
@@ -367,9 +447,10 @@ def _validate_public_card(card, game, album_id, cn_detail, decisions, rank_aware
         evidence = {
             key: value
             for key, value in card.items()
-            if key not in {"query", "page", "page_size", "display_duplicate", "canonical_card", "original_sgf_sha256"}
+            if key not in {"query", "page", "page_size", "display_duplicate", "canonical_card"}
+            and (key != "original_sgf_sha256" or any(_game_outcomes(game, rank_outcomes).values()))
         }
-        _validate_detail_evidence(evidence, game, album_id, "cn", decisions, True)
+        _validate_detail_evidence(evidence, game, album_id, "cn", decisions, True, rank_outcomes=rank_outcomes)
         if evidence != cn_detail:
             raise ValueError("album public list card differs from verified detail")
 
@@ -389,6 +470,29 @@ def _validate_rank_report(manifest, digest, verification):
     ):
         raise ValueError("test rank-aware verification exceeds report payload budget")
     validate_manifest_ranks(manifest)
+    publication_receipt = verification.get("publication_receipt")
+    if (
+        manifest.get("mode", "publish") == "publish"
+        and any(
+            is_historical_snapshot(snapshot)
+            for game in manifest["games"]
+            for snapshot in game["rank_snapshots"].values()
+        )
+        and publication_receipt is None
+    ):
+        raise ValueError("test v3 verification requires the actual rank outcome receipt")
+    rank_outcomes = {}
+    if publication_receipt is not None:
+        if (
+            not isinstance(publication_receipt, dict)
+            or publication_receipt.get("status") != "applied"
+            or publication_receipt.get("manifest_sha256") != digest
+            or canonical_sha256(publication_receipt) != verification.get("receipt_sha256")
+        ):
+            raise ValueError("test rank outcome publication receipt changed")
+        rank_outcomes = validate_rank_outcomes(manifest, publication_receipt)
+        if not rank_outcomes:
+            raise ValueError("test rank outcome receipt is empty")
     games = {(game["source_key"], game["source_item_id"]): game for game in manifest["games"]}
     checks, cards, mappings = (
         verification.get("checks"),
@@ -421,9 +525,14 @@ def _validate_rank_report(manifest, digest, verification):
         ):
             raise ValueError("test rank-aware receipt mapping is invalid")
         key = mapping["source_key"], mapping["source_item_id"]
-        if key not in games or key in album_ids or mapping["album_id"] in album_ids.values():
+        if key not in games or key in album_ids:
             raise ValueError("test rank-aware receipt mapping coverage is invalid")
         album_ids[key] = mapping["album_id"]
+    _validate_shared_album_mappings(list(games.values()), album_ids, rank_outcomes)
+    if publication_receipt is not None:
+        actual_mappings = {(g["source_key"], g["source_item_id"]): g["album_id"] for g in publication_receipt["games"]}
+        if actual_mappings != album_ids or len(actual_mappings) != len(publication_receipt["games"]):
+            raise ValueError("test rank outcome receipt membership changed")
     for evidence in checks:
         if (
             not isinstance(evidence, dict)
@@ -438,7 +547,9 @@ def _validate_rank_report(manifest, digest, verification):
         slot = (*key, evidence["lang"])
         if key not in games or slot in checked or album_ids[key] != evidence["album_id"]:
             raise ValueError("test rank-aware game/language/album coverage is invalid")
-        _validate_detail_evidence(evidence, games[key], album_ids[key], evidence["lang"], decisions, True)
+        _validate_detail_evidence(
+            evidence, games[key], album_ids[key], evidence["lang"], decisions, True, rank_outcomes=rank_outcomes
+        )
         checked[slot] = evidence
     if set(checked) != {(*key, lang) for key in games for lang in LANGUAGES}:
         raise ValueError("test rank-aware language coverage is incomplete")
@@ -453,7 +564,9 @@ def _validate_rank_report(manifest, digest, verification):
         key = card["source_key"], card["source_item_id"]
         if key not in games or key in public:
             raise ValueError("test rank-aware public coverage is invalid")
-        _validate_public_card(card, games[key], album_ids[key], checked[(*key, "cn")], decisions, True)
+        _validate_public_card(
+            card, games[key], album_ids[key], checked[(*key, "cn")], decisions, True, rank_outcomes=rank_outcomes
+        )
         public.add(key)
 
 
@@ -481,8 +594,10 @@ async def verify_album_api(
     get.remaining()
     target = normalized_target(base_url)
     rank_aware = isinstance(manifest_or_games, dict) and manifest_or_games.get("format") == FORMAT_V2
+    rank_outcomes = {}
     if rank_aware:
         validate_manifest_ranks(manifest_or_games)
+        rank_outcomes = validate_rank_outcomes(manifest_or_games, receipt)
     games = manifest_or_games["games"] if isinstance(manifest_or_games, dict) else manifest_or_games
     decisions = _decision_map(manifest_or_games) if isinstance(manifest_or_games, dict) else {}
     mappings = {}
@@ -498,8 +613,10 @@ async def verify_album_api(
         if checkpoint_key in expected_albums or key not in mappings:
             raise ValueError("album manifest or receipt coverage is invalid")
         expected_albums[checkpoint_key] = (game, mappings[key])
-    if rank_aware and (len(mappings) != len(expected_albums) or len(set(mappings.values())) != len(mappings)):
-        raise ValueError("album receipt source coverage is invalid")
+    if rank_aware:
+        if len(mappings) != len(expected_albums):
+            raise ValueError("album receipt source coverage is invalid")
+        _validate_shared_album_mappings(games, mappings, rank_outcomes)
 
     def validate_completed(key, completed):
         if (
@@ -519,9 +636,11 @@ async def verify_album_api(
         ):
             raise ValueError("checkpoint album coverage is invalid")
         for lang, detail in zip(LANGUAGES, completed["details"]):
-            _validate_detail_evidence(detail, game, album_id, lang, decisions, rank_aware)
+            _validate_detail_evidence(detail, game, album_id, lang, decisions, rank_aware, rank_outcomes=rank_outcomes)
         cn_detail = next(detail for detail in completed["details"] if detail["lang"] == "cn")
-        _validate_public_card(completed["public_card"], game, album_id, cn_detail, decisions, rank_aware)
+        _validate_public_card(
+            completed["public_card"], game, album_id, cn_detail, decisions, rank_aware, rank_outcomes=rank_outcomes
+        )
 
     checkpoint = AlbumCheckpoint(
         checkpoint_dir,
@@ -558,7 +677,9 @@ async def verify_album_api(
                     duplicate_proof = observed
                 elif observed != duplicate_proof:
                     raise ValueError("album display duplicate proof changed between languages")
-                details.append(_detail_evidence(payload, game, album_id, lang, decisions, rank_aware))
+                details.append(
+                    _detail_evidence(payload, game, album_id, lang, decisions, rank_aware, rank_outcomes=rank_outcomes)
+                )
             cn_detail = next(detail for detail in details if detail["lang"] == "cn")
             cn_card = cn_detail["displays"]
             public_album_id = album_id
@@ -632,13 +753,37 @@ async def verify_album_api(
                                         cn_detail
                                         if duplicate_proof is not None
                                         else _detail_evidence(
-                                            row, game, album_id, "cn", decisions, True, include_sgf=False
+                                            row,
+                                            game,
+                                            album_id,
+                                            "cn",
+                                            decisions,
+                                            True,
+                                            include_sgf=False,
+                                            rank_outcomes=rank_outcomes,
+                                            original_sgf_sha256=cn_detail.get("original_sgf_sha256"),
                                         )
                                     )
-                                    _validate_public_card(public_card, game, album_id, cn_detail, decisions, True)
+                                    _validate_public_card(
+                                        public_card,
+                                        game,
+                                        album_id,
+                                        cn_detail,
+                                        decisions,
+                                        True,
+                                        rank_outcomes=rank_outcomes,
+                                    )
                                 except ValueError as exc:
                                     raise ValueError("album public list card rank or snapshot mismatch") from exc
-                            _validate_public_card(public_card, game, album_id, cn_detail, decisions, rank_aware)
+                            _validate_public_card(
+                                public_card,
+                                game,
+                                album_id,
+                                cn_detail,
+                                decisions,
+                                rank_aware,
+                                rank_outcomes=rank_outcomes,
+                            )
                             break
                     if public_card is not None or page * 100 >= listing["total"]:
                         break
@@ -673,6 +818,8 @@ async def verify_album_api(
                 for key, album_id in mappings.items()
             ],
         )
+        if rank_outcomes:
+            result["publication_receipt"] = deepcopy(receipt)
         digest = canonical_sha256(manifest_or_games)
         validate_test_verification(manifest_or_games, digest, {**result, "manifest_sha256": digest})
     else:

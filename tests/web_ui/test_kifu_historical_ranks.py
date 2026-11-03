@@ -451,3 +451,100 @@ def test_current_profile_and_inferred_snapshot_are_never_original_evidence(conn)
         )
     )
     assert resolve(conn, entry)["refusal_reason"] == "no_prior_original"
+
+
+@pytest.mark.parametrize("boundary", ["validate", "initial", "bind"])
+def test_unknown_cannot_invent_a_grade_even_with_recomputed_hash(conn, boundary):
+    from katrain.web.kifu import historical_ranks as h
+    from katrain.web.kifu.source_rank_normalization import snapshot_digest
+
+    entry = game(conn, 2, "1968-08-01", "", family="CWI")
+    decision = resolve(conn, entry)
+    assert decision["origin"] == "unknown" and decision["basis"] == []
+    decision.update(rank_value=9, rank_system="professional_dan", display_rank="9p")
+    decision["content_sha256"] = snapshot_digest(decision)
+    with pytest.raises(ValueError, match="unknown"):
+        if boundary == "validate":
+            h.validate_rank_decision(decision)
+        elif boundary == "initial":
+            h.verify_initial_rank_decisions(conn, [entry], [decision])
+        else:
+            h.bind_rank_decision(conn, entry, decision)
+
+
+@pytest.mark.parametrize("bare", ["7d", "9d"])
+def test_nearer_incompatible_original_bare_grade_blocks_missing_rank(conn, bare):
+    from katrain.web.kifu.historical_ranks import verify_initial_rank_decisions
+
+    game(conn, 1, "1960-01-01", "8p")
+    entry = game(conn, 2, "1968-08-01", "", family="CWI")
+    frozen = resolve(conn, entry)
+    assert frozen["display_rank"] == "8p"
+    game(conn, 3, "1967-01-01", bare, family="CWI")
+    current = resolve(conn, entry)
+    assert current["origin"] == "unknown" and current["display_rank"] == ""
+    assert current["refusal_reason"] in {"professional_grade_decrease", "incompatible_bare_observation"}
+    assert current["qualification"] != frozen["qualification"]
+    # The same receiver-only new observation invalidates a frozen sender decision.
+    with pytest.raises(ValueError, match="qualification|cohort"):
+        verify_initial_rank_decisions(conn, [entry], [frozen])
+
+
+def test_compatible_bare_grade_and_future_bare_contradiction_preserve_qualification(conn):
+    from katrain.web.kifu.historical_ranks import verify_initial_rank_decisions
+
+    game(conn, 1, "1960-01-01", "8p")
+    entry = game(conn, 2, "1968-08-01", "", family="CWI")
+    frozen = resolve(conn, entry)
+    game(conn, 3, "1967-01-01", "8d", family="CWI")
+    game(conn, 4, "1969-01-01", "7d", family="CWI")
+    assert resolve(conn, entry) == frozen
+    verify_initial_rank_decisions(conn, [entry], [frozen])
+
+
+def test_disposable_postgresql_initial_cohort_and_query_timeout_restore():
+    """Opt-in proof owns a UUID schema; never writes shared/public tables."""
+    import os
+    from uuid import uuid4
+    from sqlalchemy import text
+    from katrain.web.kifu.historical_ranks import prepare_rank_decisions, verify_initial_rank_decisions
+
+    dsn = os.getenv("KIFU_STANDARDIZATION_TEST_PG_DSN")
+    if not dsn:
+        pytest.skip("set KIFU_STANDARDIZATION_TEST_PG_DSN for disposable PostgreSQL verification")
+    schema = "kifu_rank_" + uuid4().hex
+    control = create_engine(dsn)
+    with control.begin() as admin:
+        admin.execute(text(f"CREATE SCHEMA {schema}"))
+    pg = create_engine(dsn, connect_args={"options": f"-csearch_path={schema}"}, isolation_level="READ COMMITTED")
+    try:
+        m.Base.metadata.create_all(pg)
+        with pg.begin() as setup:
+            setup.execute(
+                m.KifuPlayer.__table__.insert(),
+                [{"id": 11, "canonical_name": "棋手甲"}, {"id": 12, "canonical_name": "棋手乙"}],
+            )
+            setup.execute(
+                m.KifuSource.__table__.insert(), [{"id": 3, "source_key": "CWI"}, {"id": 4, "source_key": "19x19"}]
+            )
+            game(setup, 1, "1960-01-01", "8p")
+            game(setup, 2, "1968-08-01", "", family="CWI")
+        with pg.connect() as first:
+            first.exec_driver_sql("SET LOCAL statement_timeout = '13s'")
+            previous = first.exec_driver_sql("SHOW statement_timeout").scalar_one()
+            entry = target(first, 2)
+            frozen = prepare_rank_decisions(first, [entry], matched_at=MATCHED)["decisions"]
+            assert first.exec_driver_sql("SHOW statement_timeout").scalar_one() == previous
+            assert frozen[0]["display_rank"] == "8p"
+            # Another committed connection's new original is visible at the
+            # READ COMMITTED recheck after taking the relevant table locks.
+            with pg.begin() as second:
+                game(second, 3, "1967-01-01", "7d", family="CWI")
+            with pytest.raises(ValueError, match="qualification|cohort"):
+                verify_initial_rank_decisions(first, [entry], frozen)
+            assert first.exec_driver_sql("SHOW statement_timeout").scalar_one() == previous
+    finally:
+        pg.dispose()
+        with control.begin() as admin:
+            admin.execute(text(f"DROP SCHEMA {schema} CASCADE"))
+        control.dispose()

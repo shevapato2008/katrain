@@ -63,6 +63,7 @@ _QUAL_FIELDS = {
     "typed_boundary",
     "professional_max",
     "grade_decrease",
+    "incompatible_bare_ranks",
 }
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _SUFFIX = {"professional_dan": "p", "amateur_dan": "d", "kyu": "k", "dan_unspecified": "段"}
@@ -368,6 +369,31 @@ def _qualification(owner, day, observations, source_grade):
         and chosen_grade["rank_system"] in {"professional_dan", "dan_unspecified"}
         and chosen_grade["rank_value"] < pro_max
     )
+    # An intervening untyped observation still has an original numeric grade.
+    # It cannot silently disappear when choosing an older typed basis. Same
+    # grade remains compatible; no inferred snapshot or new basis chain is used.
+    nearer_bare = [
+        x
+        for x in observations
+        if candidate and x["day"] > latest_day and x["grade"]["rank_system"] == "dan_unspecified"
+    ]
+    if source_grade:
+        incompatible_bare = [
+            x
+            for x in nearer_bare
+            if x["grade"]["rank_value"] > source_grade["rank_value"]
+            or pro_max is not None
+            and x["grade"]["rank_value"] < pro_max
+        ]
+    else:
+        incompatible_bare = [
+            x
+            for x in nearer_bare
+            if candidate["grade"]["rank_system"] == "kyu"
+            or x["grade"]["rank_value"] != candidate["grade"]["rank_value"]
+        ]
+    if chosen_grade and chosen_grade["rank_system"] in {"professional_dan", "dan_unspecified"} and pro_max:
+        decrease = decrease or any(x["grade"]["rank_value"] < pro_max for x in nearer_bare)
     qualification = {
         "player_ref": deepcopy(owner),
         "target_date": day,
@@ -378,6 +404,7 @@ def _qualification(owner, day, observations, source_grade):
         "typed_boundary": boundary,
         "professional_max": pro_max,
         "grade_decrease": decrease,
+        "incompatible_bare_ranks": _rank_set(incompatible_bare),
     }
     reason = None
     if candidate is None:
@@ -386,6 +413,8 @@ def _qualification(owner, day, observations, source_grade):
         reason = "same_day_conflict"
     elif decrease:
         reason = "professional_grade_decrease"
+    elif incompatible_bare:
+        reason = "incompatible_bare_observation"
     elif source_grade and candidate["grade"]["rank_system"] != "professional_dan":
         reason = "typed_boundary"
     return qualification, candidate, reason
@@ -409,9 +438,10 @@ def prepare_rank_decisions(conn, targets, *, matched_at):
     """Return ``{decisions: [v3, ...], refusals: [{source_ref, reason}, ...]}``.
 
     Targets are ``{album: full scalar/body dict, side, source_links, player_ref?}``.
-    Existing IDs are local bindings only. A proposed incoming album may have no
-    ID; its resolved portable owner may be provided in player_ref. Only already
-    stored original albums provide historical evidence in this version.
+    Existing IDs are local bindings only. A proposed incoming album uses id=None
+    and its source links use album_id=None; its resolved portable owner may be
+    provided in player_ref. Only already stored original albums provide
+    historical evidence in this version.
     """
     require(isinstance(targets, (list, tuple)) and len(targets) <= 200, "rank target limit exceeded")
     require(
@@ -625,6 +655,15 @@ def validate_rank_decision(decision):
         and 0 < len(decision["refusal_reason"]) <= 64,
         "rank refusal invalid",
     )
+    if decision["origin"] == "unknown":
+        require(
+            decision["rank_value"] is None
+            and decision["rank_system"] is None
+            and decision["display_rank"] == ""
+            and decision["refusal_reason"]
+            and decision["basis"] == [],
+            "unknown rank decision invalid",
+        )
     if decision["rank_value"] is None:
         require(
             decision["rank_system"] is None
@@ -697,6 +736,28 @@ def validate_rank_decision(decision):
             ],
             "rank qualification grade set order invalid",
         )
+        bare_ranks = qual["incompatible_bare_ranks"]
+        require(
+            isinstance(bare_ranks, list)
+            and len(bare_ranks) <= 9
+            and all(
+                isinstance(rank, dict)
+                and set(rank) == {"rank_value", "rank_system"}
+                and rank["rank_system"] == "dan_unspecified"
+                and type(rank["rank_value"]) is int
+                and 1 <= rank["rank_value"] <= 9
+                for rank in bare_ranks
+            ),
+            "rank qualification incompatible bare grades invalid",
+        )
+        require(
+            bare_ranks
+            == [
+                {"rank_value": value, "rank_system": "dan_unspecified"}
+                for value in sorted({rank["rank_value"] for rank in bare_ranks})
+            ],
+            "rank qualification incompatible bare grade order invalid",
+        )
         boundary = qual["typed_boundary"]
         require(
             boundary is None
@@ -727,6 +788,7 @@ def validate_rank_decision(decision):
             and len(decision["basis"]) == 1
             and qual["latest_original"] == decision["basis"][0]
             and not qual["grade_decrease"]
+            and not qual["incompatible_bare_ranks"]
             and len({r["rank_value"] for r in qual["same_day_ranks"]}) == 1
             and len({r["rank_system"] for r in qual["same_day_ranks"] if r["rank_system"] != "dan_unspecified"}) == 1,
             "rank historical qualification invalid",

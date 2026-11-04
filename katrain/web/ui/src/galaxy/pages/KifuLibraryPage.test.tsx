@@ -69,6 +69,29 @@ beforeEach(() => {
 });
 
 describe('Galaxy 棋谱搜索请求一致性', () => {
+  it('首末页按钮沿用搜索条件，每次只请求目标页并禁用当前边界', async () => {
+    getAlbums.mockResolvedValue(list(a, 504));
+    renderPage();
+    await screen.findByTestId('board');
+    search('王星昊');
+    await waitFor(() => expect(getAlbums).toHaveBeenCalledTimes(2));
+    const first = await screen.findByRole('button', { name: '第一页' });
+    const last = screen.getByRole('button', { name: '最后一页' });
+    expect(first).toBeDisabled();
+    expect(last).toBeEnabled();
+    expect(first).toHaveAttribute('title', '第一页');
+    expect(last).toHaveAttribute('title', '最后一页');
+
+    fireEvent.click(last);
+    await waitFor(() => expect(getAlbums).toHaveBeenCalledTimes(3));
+    expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ q: '王星昊', page: 26, page_size: 20, lang: 'cn' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '最后一页' })).toBeDisabled());
+    fireEvent.click(screen.getByRole('button', { name: '第一页' }));
+    await waitFor(() => expect(getAlbums).toHaveBeenCalledTimes(4));
+    expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ q: '王星昊', page: 1, page_size: 20, lang: 'cn' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '第一页' })).toBeDisabled());
+  });
+
   it('搜索成功一起接受新列表、总数和首盘preview，即使旧选择仍在新结果内', async () => {
     const next = deferred<KifuAlbumListResponse>();
     getAlbums.mockResolvedValueOnce(list(a)).mockReturnValueOnce(next.promise);

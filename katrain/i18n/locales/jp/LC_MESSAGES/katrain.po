@@ -8064,3 +8064,9 @@ msgstr "週の枠は毎週月曜00:00（北京時間）にリセットされま�
 
 msgid "membership:whole_request_fallback"
 msgstr "会員枠で今回の解析をまかなえない場合は、リクエスト全体に保有APIポイントを使います。"
+
+msgid "kifu:first_page"
+msgstr "最初のページ"
+
+msgid "kifu:last_page"
+msgstr "最後のページ"

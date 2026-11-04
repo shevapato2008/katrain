@@ -8557,3 +8557,9 @@ msgid "membership:whole_request_fallback"
 msgstr ""
 "Si le quota de l’abonnement ne suffit pas à toute l’analyse, la demande est "
 "entièrement réglée avec les points API disponibles."
+
+msgid "kifu:first_page"
+msgstr "Première page"
+
+msgid "kifu:last_page"
+msgstr "Dernière page"

@@ -8499,3 +8499,9 @@ msgid "membership:whole_request_fallback"
 msgstr ""
 "Üyelik kotası bu analize yetmezse analizin tamamı mevcut API puanlarıyla "
 "karşılanır."
+
+msgid "kifu:first_page"
+msgstr "İlk sayfa"
+
+msgid "kifu:last_page"
+msgstr "Son sayfa"

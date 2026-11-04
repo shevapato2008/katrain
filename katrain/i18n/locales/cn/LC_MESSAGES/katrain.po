@@ -7953,3 +7953,9 @@ msgstr "每周一 00:00（北京时间）恢复本周额度。"
 
 msgid "membership:whole_request_fallback"
 msgstr "会员不足以完成本次分析时，整次使用已有 API 积分。"
+
+msgid "kifu:first_page"
+msgstr "第一页"
+
+msgid "kifu:last_page"
+msgstr "最后一页"

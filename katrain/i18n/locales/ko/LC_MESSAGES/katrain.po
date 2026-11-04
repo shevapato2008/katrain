@@ -8029,3 +8029,9 @@ msgstr "주간 한도는 매주 월요일 00:00(베이징 시간)에 초기화�
 
 msgid "membership:whole_request_fallback"
 msgstr "멤버십 한도가 이번 분석에 부족하면 요청 전체에 보유 API 포인트를 사용합니다."
+
+msgid "kifu:first_page"
+msgstr "첫 페이지"
+
+msgid "kifu:last_page"
+msgstr "마지막 페이지"

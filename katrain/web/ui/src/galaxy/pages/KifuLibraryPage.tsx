@@ -590,8 +590,10 @@ export default function KifuLibraryPage() {
           </Box>
 
           {totalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', px: 1, pb: 2 }}>
-              <CompactPagination
+            <Box sx={{ display: 'flex', justifyContent: 'center', px: 1, pb: 2,
+              '& > .compact-pagination': { flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' },
+            }}>
+              <CompactPagination showEdgeButtons
                 key={`${query}:${lang}`} page={page} totalPages={totalPages}
                 disabled={loading} onPageChange={handlePageChange}
               />

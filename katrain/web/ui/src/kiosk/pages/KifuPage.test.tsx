@@ -78,9 +78,18 @@ it('previews a setup-only SGF as a usable position', async () => {
 it('uses twenty-record server pagination and numeric page jump', async () => {
   render(<MemoryRouter><KifuPage /></MemoryRouter>);
   await screen.findByRole('button', { name: /赛事 1/ });
+  expect(screen.getByRole('button', { name: '第一页' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '最后一页' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '第一页' })).toHaveAttribute('title', '第一页');
+  expect(screen.getByRole('button', { name: '最后一页' })).toHaveAttribute('title', '最后一页');
   fireEvent.change(screen.getByRole('textbox', { name: '跳转页码' }), { target: { value: '2' } });
   fireEvent.click(screen.getByRole('button', { name: '跳转', exact: true }));
   await waitFor(() => expect(api.list).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, page_size: 20 })));
+  await waitFor(() => expect(screen.getByRole('button', { name: '第一页' })).toBeEnabled());
+  expect(screen.getByRole('button', { name: '最后一页' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '第一页' }));
+  await waitFor(() => expect(api.list).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, page_size: 20 })));
+  expect(api.list).toHaveBeenCalledTimes(3);
 });
 
 it('mirrors historical ranks around complete accessible names and uses this record raw rank as fallback', async () => {

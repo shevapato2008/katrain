@@ -8478,3 +8478,9 @@ msgid "membership:whole_request_fallback"
 msgstr ""
 "Якщо ліміту передплати не вистачає на весь аналіз, він повністю оплачується "
 "наявними балами API."
+
+msgid "kifu:first_page"
+msgstr "Перша сторінка"
+
+msgid "kifu:last_page"
+msgstr "Остання сторінка"

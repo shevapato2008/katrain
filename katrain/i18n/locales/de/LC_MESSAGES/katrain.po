@@ -8570,3 +8570,9 @@ msgid "membership:whole_request_fallback"
 msgstr ""
 "Reicht die Mitgliedschaft nicht für die gesamte Analyse, wird diese "
 "vollständig mit vorhandenen API-Punkten bezahlt."
+
+msgid "kifu:first_page"
+msgstr "Erste Seite"
+
+msgid "kifu:last_page"
+msgstr "Letzte Seite"

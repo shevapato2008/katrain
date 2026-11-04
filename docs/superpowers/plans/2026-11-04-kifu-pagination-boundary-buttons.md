@@ -14,7 +14,7 @@
 
 ### Findings and scope
 
-- Base: local `develop` at `2c66860d5b4439cb0289a2944a9b07cfb213fc12`; it contains `origin/develop` at `c507c7207e88a75182eeb0ef3770352f919a3a3a`. Refs were inspected read-only; no fetch/reset/push was performed.
+- Base: local `develop` at `2c66860d5b4439cb0289a2944a9b07cfb213fc12`; that local ref was later verified not to contain `c507c7207e88a75182eeb0ef3770352f919a3a3a`. The release preserves that local work and cherry-picks this reviewed change onto fresh remote `develop`; see the release integration review.
 - Worktree: `/Users/fan/.config/superpowers/worktrees/katrain-kiosk-debug/kifu-pagination-boundary-20261104`, branch `fix/kifu-pagination-boundary-20261104`. This global worktree is outside the repository. Its reused UI `node_modules` symlink is ignored by `katrain/web/ui/.gitignore`.
 - `katrain/web/ui/src/kiosk/pages/KifuPage.tsx:352` already passes `showEdgeButtons`; no Kiosk product-code change is needed.
 - `katrain/web/ui/src/galaxy/pages/KifuLibraryPage.tsx:594` omits the option, whose default is false.

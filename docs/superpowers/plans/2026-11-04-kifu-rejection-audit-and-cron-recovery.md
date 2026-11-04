@@ -75,3 +75,10 @@
 - One normal-protocol paid preview used 2 calls and 2,461 tokens; it approved. The historical rejection remains unproven because its original candidate/response were never retained. Safe exact evidence is retained locally under `output/kifu-rejection-resilience-20261104/` and in the HOME Stage diagnostic directory.
 - Current production maintenance pause, the source's existing quarantine, deployed containers and business data are unchanged. This commit is an implementation/review handoff, not a deployment or service restoration.
 - Operational boundary incident: the Task A author issued one empty-output `git status` with the restricted album-directory pathspec during final checks. No explicit content-reading command was issued, but Git-internal metadata traversal cannot be excluded. ROOT disclosed this and stopped further checks of that path.
+
+
+## Published-release integration
+
+The original local develop baseline diverged from the already-published canonical/rank fixes and included unrelated material work. It is preserved untouched in its original worktrees. The release is assembled from fresh `origin/develop` at `8c4b6296bbc445f88e5b9e2994b7681a5a0a27c0`, cherry-picking only the two reviewed changes. Existing identity/rank/supersession fixes and the latest published stone/UI work remain present.
+
+The current strict TEST verifier exposed an old incomplete test response on remote develop. Only that test fixture was supplied with its existing one-game/five-language report shape; the product verifier was not weakened. Final integrated checks passed: 435 backend tests, 1 optional PostgreSQL skip, and 46 frontend tests across the two kifu pages plus rank formatting. Independent Astra integration review approved both picks and merge boundaries. Deployment and controlled seven-item recovery proceed only against this exact integrated release.

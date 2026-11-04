@@ -666,7 +666,12 @@ async def test_resume_verifies_test_before_sync_and_retries_verification_only():
 
     async def test_verified(*args):
         calls.append("test_verify")
-        return {"status": "verified", "manifest_sha256": digest}
+        return {
+            "status": "verified",
+            "manifest_sha256": digest,
+            "games": 1,
+            "checks": [{"album_id": 3, "lang": lang} for lang in ("cn", "tw", "jp", "ko", "en")],
+        }
 
     async def synced(*args):
         calls.append("sync")

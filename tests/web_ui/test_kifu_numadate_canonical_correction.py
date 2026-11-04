@@ -354,7 +354,7 @@ def inputs(engine):
         identity_review=review,
         name_package=names_package(engine, owner, corrected=True),
         original_package={
-            "publication_key": "19x19-0ef14d803cd49221b37f4648",
+            "publication_key": "19x19-batch-0ef14d803cd49221b37f4648",
             "manifest_sha256": "c" * 64,
             "home_batch_id": 1438,
             "home_receipt_sha256": "d" * 64,
@@ -1120,4 +1120,27 @@ def test_cli_historical_read_pin_does_not_relax_apply(
     else:
         assert output.out == ""
         assert "refused" in output.err
+    assert state(correction_engine) == before
+
+
+@pytest.mark.parametrize(
+    "publication_key,accepted",
+    [
+        ("19x19-batch-0ef14d803cd49221b37f4648", True),
+        ("19x19-0ef14d803cd49221b37f4648", False),
+    ],
+)
+def test_original_package_requires_exact_published_batch_key(correction_engine, publication_key, accepted):
+    from katrain.web.kifu import numadate_canonical_correction as correction
+
+    arguments = inputs(correction_engine)
+    arguments["original_package"]["publication_key"] = publication_key
+    frozen_package = deepcopy(arguments["original_package"])
+    before = state(correction_engine)
+    if accepted:
+        plan = correction.prepare_correction(correction_engine, **arguments)
+        assert plan["original_package"] == frozen_package
+    else:
+        with pytest.raises(ValueError, match="original frozen publication pins"):
+            correction.prepare_correction(correction_engine, **arguments)
     assert state(correction_engine) == before

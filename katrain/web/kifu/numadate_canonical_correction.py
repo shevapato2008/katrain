@@ -879,7 +879,7 @@ def _validate_plan(plan, *, approved=True, require_current_operator=True):
             "home_report_sha256",
             "queue_phase",
         }
-        and original["publication_key"] == "19x19-0ef14d803cd49221b37f4648"
+        and original["publication_key"] == "19x19-batch-0ef14d803cd49221b37f4648"
         and original["home_batch_id"] == 1438
         and all(
             _SHA.fullmatch(str(original[k])) for k in ("manifest_sha256", "home_receipt_sha256", "home_report_sha256")

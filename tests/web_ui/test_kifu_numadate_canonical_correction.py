@@ -795,7 +795,9 @@ def test_cli_rejects_sqlite_target_and_private_inputs_are_bounded(tmp_path, monk
         cli.main(["undo"])
 
 
-def test_disposable_postgresql_readonly_binder_restores_timeout_and_takes_no_writer_locks(correction_engine):
+def test_disposable_postgresql_readonly_binder_restores_timeout_and_takes_no_writer_locks(
+    correction_engine, monkeypatch
+):
     """Reuse the project's opt-in disposable PostgreSQL boundary, never PROD."""
     import os
     from uuid import uuid4
@@ -846,6 +848,26 @@ def test_disposable_postgresql_readonly_binder_restores_timeout_and_takes_no_wri
                 ]
                 assert bindings == artifact["basis_bindings"]
                 assert conn.exec_driver_sql("SHOW statement_timeout").scalar_one() == "4321ms"
+
+                def proof_queries(connection, *_args, **_kwargs):
+                    assert connection.exec_driver_sql("SHOW transaction_read_only").scalar_one() == "on"
+                    assert connection.exec_driver_sql("SHOW statement_timeout").scalar_one() == "5s"
+                    assert connection.exec_driver_sql("SELECT 1").scalar_one() == 1
+                    return "bounded proof"
+
+                with monkeypatch.context() as patch:
+                    patch.setattr(correction, "_verify_correction", proof_queries)
+                    assert correction.verify_correction(conn, 0) == "bounded proof"
+                    assert conn.exec_driver_sql("SHOW statement_timeout").scalar_one() == "4321ms"
+
+                    def refuse(connection, *args, **kwargs):
+                        proof_queries(connection, *args, **kwargs)
+                        raise ValueError("synthetic bounded proof refusal")
+
+                    patch.setattr(correction, "_verify_correction", refuse)
+                    with pytest.raises(ValueError, match="synthetic bounded proof refusal"):
+                        correction.verify_correction(conn, 0)
+                    assert conn.exec_driver_sql("SHOW statement_timeout").scalar_one() == "4321ms"
                 conn.rollback()
         finally:
             event.remove(admin, "before_cursor_execute", observe)
@@ -892,3 +914,173 @@ def test_opposite_side_real_b009_snapshots_do_not_expand_correction_admission(co
     assert [r for r in original["kifu_name_changes"] if r["batch_id"] == opposite_batch] == [
         r for r in current["kifu_name_changes"] if r["batch_id"] == opposite_batch
     ]
+
+
+@pytest.mark.parametrize("target", ["evidence", "name"])
+def test_current_name_material_is_size_guarded_before_whole_row_fetch(correction_engine, target):
+    from katrain.web.kifu import numadate_canonical_correction as correction
+
+    plan = prepared(correction_engine)
+    receipt = correction.apply_correction(correction_engine, plan, expected_sha256=digest(plan))
+    with correction_engine.begin() as conn:
+        name = dict(
+            conn.execute(
+                select(m.KifuPlayerName.__table__).where(
+                    m.KifuPlayerName.player_id == 5364, m.KifuPlayerName.lang == "cn"
+                )
+            )
+            .mappings()
+            .one()
+        )
+        model, row_id = (
+            (m.KifuNameResearchEvidence, name["evidence_id"])
+            if target == "evidence"
+            else (m.KifuPlayerName, name["id"])
+        )
+        values = (
+            {"research_payload": {"oversized": "x" * (correction.MAX_NAME_BYTES + 1)}}
+            if target == "evidence"
+            else {"reference_url": "x" * (correction.MAX_NAME_BYTES + 1)}
+        )
+        conn.execute(update(model).where(model.id == row_id).values(**values))
+    fetched = []
+    prefix = f"SELECT {model.__tablename__}.id,"
+
+    def observe(conn, cursor, statement, parameters, *args):
+        if (
+            statement.lstrip().startswith(prefix)
+            and row_id in parameters
+            and all(
+                f"{model.__tablename__}.{column.name}" in statement.split("FROM", 1)[0] for column in model.__table__.c
+            )
+        ):
+            fetched.append(statement)
+
+    event.listen(correction_engine, "before_cursor_execute", observe)
+    try:
+        with correction_engine.connect() as conn, pytest.raises(ValueError, match="resource|budget"):
+            correction.verify_correction(conn, receipt["batch_id"])
+    finally:
+        event.remove(correction_engine, "before_cursor_execute", observe)
+    assert fetched == []
+
+
+def test_public_verifier_bounds_every_proof_select_and_exits_context_on_refusal(correction_engine, monkeypatch):
+    from contextlib import contextmanager
+    from katrain.web.kifu import numadate_canonical_correction as correction
+
+    plan = prepared(correction_engine)
+    receipt = correction.apply_correction(correction_engine, plan, expected_sha256=digest(plan))
+    state = {"depth": 0}
+    depths = []
+
+    @contextmanager
+    def bounded(conn):
+        state["depth"] += 1
+        try:
+            yield
+        finally:
+            state["depth"] -= 1
+
+    def observe(conn, cursor, statement, *args):
+        if statement.lstrip().startswith("SELECT"):
+            depths.append(state["depth"])
+
+    monkeypatch.setattr(ranks, "_bounded_queries", bounded)
+    event.listen(correction_engine, "before_cursor_execute", observe)
+    try:
+        with correction_engine.connect() as conn:
+            correction.verify_correction(conn, receipt["batch_id"])
+            assert state["depth"] == 0
+            with pytest.raises(ValueError):
+                correction.verify_correction(conn, -1)
+            assert state["depth"] == 0
+    finally:
+        event.remove(correction_engine, "before_cursor_execute", observe)
+    assert depths and min(depths) >= 1
+
+
+@pytest.mark.parametrize("change", ["album_id", "rank_fact_id", "side", "snapshot", "publication_key", "missing_field"])
+def test_supplied_rows_require_every_real_snapshot_column(correction_engine, change):
+    from katrain.web.kifu import numadate_canonical_correction as correction
+
+    plan = prepared(correction_engine)
+    receipt = correction.apply_correction(correction_engine, plan, expected_sha256=digest(plan))
+    with correction_engine.connect() as conn:
+        row = dict(
+            conn.execute(select(m.KifuAlbumRankSnapshot.__table__).where(m.KifuAlbumRankSnapshot.id == 186520))
+            .mappings()
+            .one()
+        )
+        # Readers add joined metadata; it does not substitute for real base fields.
+        row["_joined_metadata"] = {"album_id": "untrusted extra"}
+        assert (
+            correction.verify_correction(conn, receipt["batch_id"], expected_rows=[row])["batch_id"]
+            == receipt["batch_id"]
+        )
+        altered = deepcopy(row)
+        if change == "missing_field":
+            altered.pop("rank_fact_id")
+        elif change == "snapshot":
+            altered["snapshot"]["raw_name"] = "Different"
+        else:
+            altered[change] = {"album_id": 999, "rank_fact_id": 123, "side": "white", "publication_key": "changed"}[
+                change
+            ]
+        with pytest.raises(ValueError, match="supplied current rows"):
+            correction.verify_correction(conn, receipt["batch_id"], expected_rows=[altered])
+
+
+def test_applied_read_proof_retains_historical_operator_pin_while_apply_requires_running_code(
+    correction_engine, monkeypatch
+):
+    from katrain.web.kifu import numadate_canonical_correction as correction
+
+    plan = prepared(correction_engine)
+    receipt = correction.apply_correction(correction_engine, plan, expected_sha256=digest(plan))
+    original = state(correction_engine)
+    monkeypatch.setattr(correction, "operator_code_sha256", lambda: "f" * 64)
+    with correction_engine.connect() as conn:
+        assert correction.verify_correction(conn, receipt["batch_id"])["receipt"] == receipt
+    with pytest.raises(ValueError, match="operator code changed"):
+        correction.apply_correction(correction_engine, plan, expected_sha256=digest(plan))
+    assert state(correction_engine) == original
+
+
+def test_live_name_budget_uses_same_player_language_predicate_as_normal_qualifier(correction_engine):
+    from katrain.web.kifu import numadate_canonical_correction as correction
+
+    plan = prepared(correction_engine)
+    receipt = correction.apply_correction(correction_engine, plan, expected_sha256=digest(plan))
+    with correction_engine.begin() as conn:
+        original = dict(
+            conn.execute(
+                select(m.KifuPlayerName.__table__).where(
+                    m.KifuPlayerName.player_id == 5364, m.KifuPlayerName.lang == "cn"
+                )
+            )
+            .mappings()
+            .one()
+        )
+        conn.execute(m.KifuPlayer.__table__.insert().values(id=7777, canonical_name="Different"))
+        conn.execute(update(m.KifuPlayerName).where(m.KifuPlayerName.id == original["id"]).values(player_id=7777))
+        replacement = {key: value for key, value in original.items() if key != "id"}
+        replacement["reference_url"] = "x" * (correction.MAX_NAME_BYTES + 1)
+        replacement_id = conn.execute(m.KifuPlayerName.__table__.insert().values(**replacement)).inserted_primary_key[0]
+    fetched = []
+
+    def observe(conn, cursor, statement, parameters, *args):
+        if (
+            statement.lstrip().startswith("SELECT kifu_player_names.id,")
+            and replacement_id in parameters
+            and "kifu_player_names.reference_url" in statement.split("FROM", 1)[0]
+        ):
+            fetched.append(statement)
+
+    event.listen(correction_engine, "before_cursor_execute", observe)
+    try:
+        with correction_engine.connect() as conn, pytest.raises(ValueError, match="resource|budget"):
+            correction.verify_correction(conn, receipt["batch_id"])
+    finally:
+        event.remove(correction_engine, "before_cursor_execute", observe)
+    assert fetched == []

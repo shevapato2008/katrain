@@ -4,6 +4,7 @@ Only the two exact source/basis0 rows are superseded. Original repairs, names,
 SGFs and native publication receipts remain immutable historical evidence.
 """
 
+from collections.abc import Mapping
 from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -152,14 +153,21 @@ def _readonly(engine):
                 conn.rollback()
 
 
-def _check_codes(plan=None):
+def _check_codes(plan=None, *, require_current_operator=True):
     require(repair._code_sha256() == PROTECTED_CODE_SHA256, "canonical correction protected rank code changed")
     if plan is not None:
         require(
-            plan["protected_rank_code_sha256"] == PROTECTED_CODE_SHA256
-            and plan["operator_code_sha256"] == operator_code_sha256(),
-            "canonical correction operator code changed",
+            plan["protected_rank_code_sha256"] == PROTECTED_CODE_SHA256,
+            "canonical correction protected rank code changed",
         )
+        require(
+            _SHA.fullmatch(str(plan["operator_code_sha256"])) is not None,
+            "canonical correction historical operator code pin invalid",
+        )
+        if require_current_operator:
+            require(
+                plan["operator_code_sha256"] == operator_code_sha256(), "canonical correction operator code changed"
+            )
 
 
 def _independent(review, *, conclusion=None):
@@ -820,7 +828,7 @@ def prepare_correction(engine, **kwargs):
         return prepare_in_transaction(conn, **kwargs)
 
 
-def _validate_plan(plan, *, approved=True):
+def _validate_plan(plan, *, approved=True, require_current_operator=True):
     require(
         isinstance(plan, dict)
         and set(plan) == _PLAN_FIELDS
@@ -828,7 +836,7 @@ def _validate_plan(plan, *, approved=True):
         and ranks._json_size(plan) <= MAX_AUTHORITY_BYTES,
         "canonical correction plan shape/resource invalid",
     )
-    _check_codes(plan)
+    _check_codes(plan, require_current_operator=require_current_operator)
     require(
         ranks._json_size({k: plan[k] for k in ("identity_review", "old_names", "name_package")}) <= MAX_NAME_BYTES,
         "canonical correction combined names/captures resource limit",
@@ -1162,6 +1170,49 @@ def apply_correction(engine, plan, *, expected_sha256):
     return receipt
 
 
+def _guard_current_name_material(conn, plan, child_changes, budget):
+    """Bound every live name/evidence column before the normal qualifier reads it."""
+    names, evidence = m.KifuPlayerName.__table__, m.KifuNameResearchEvidence.__table__
+    name_ids = {cell["name"]["id"] for cell in plan["old_names"]}
+    name_changes = {
+        row["target_row_id"]: row["after_image"] for row in child_changes if row["target_table"] == names.name
+    }
+    require(set(name_changes) == name_ids, "canonical correction current name ledger membership changed")
+    predicate = (names.c.player_id == PLAYER_ID) & names.c.lang.in_(LANGUAGES)
+    size = sum((_bytes(conn, column) for column in names.c), 0)
+    count, name_bytes = conn.execute(
+        select(func.count(), func.coalesce(func.sum(size), 0)).select_from(names).where(predicate)
+    ).one()
+    require(count == 5 and name_bytes <= MAX_NAME_BYTES, "canonical correction current name material resource limit")
+    pointers = (
+        conn.execute(select(names.c.id, names.c.player_id, names.c.lang, names.c.evidence_id).where(predicate))
+        .mappings()
+        .all()
+    )
+    require(
+        len(pointers) == 5
+        and {row["id"] for row in pointers} == name_ids
+        and all(
+            all(row[key] == name_changes[row["id"]][key] for key in ("id", "player_id", "lang", "evidence_id"))
+            for row in pointers
+        ),
+        "canonical correction current name/evidence pointer changed",
+    )
+    evidence_ids = {row["evidence_id"] for row in pointers}
+    require(len(evidence_ids) == 5, "canonical correction current evidence membership changed")
+    size = sum((_bytes(conn, column) for column in evidence.c), 0)
+    count, evidence_bytes = conn.execute(
+        select(func.count(), func.coalesce(func.sum(size), 0))
+        .select_from(evidence)
+        .where(evidence.c.id.in_(evidence_ids))
+    ).one()
+    require(
+        count == 5 and name_bytes + evidence_bytes <= MAX_NAME_BYTES,
+        "canonical correction current name/evidence material resource limit",
+    )
+    budget.reserve(name_bytes + evidence_bytes)
+
+
 def _verify_correction(conn, batch_id, *, expected_rows=None, resource=None):
     """Independently prove exact current rows using bounded reads.
 
@@ -1181,7 +1232,9 @@ def _verify_correction(conn, batch_id, *, expected_rows=None, resource=None):
         set(artifact) == {"format", "manifest_sha256", "plan", "basis_bindings", "receipt"},
         "canonical correction applied artifact shape changed",
     )
-    plan = _validate_plan(artifact["plan"])
+    # The applied plan/approval retains its historical operator pin; future
+    # unrelated hook-file edits do not revoke this fully rechecked DB chain.
+    plan = _validate_plan(artifact["plan"], require_current_operator=False)
     plan_sha = digest(plan)
     require(
         batch["bundle_sha256"] == artifact["manifest_sha256"] == plan_sha
@@ -1226,7 +1279,7 @@ def _verify_correction(conn, batch_id, *, expected_rows=None, resource=None):
     )
     resource = resource if resource is not None else ranks.EvidenceBudget(max_bytes=512 * 1024)
     live = _live_targets(conn, budget, resource=resource)
-    rows, bindings = {}, []
+    rows, bindings, current_rows = {}, [], {}
     for scope, target, (entry, album, sources), journal in zip(SCOPE, plan["targets"], live, journals[2:]):
         require(
             album == target["album_before"] and sources == target["sources"],
@@ -1237,6 +1290,7 @@ def _verify_correction(conn, batch_id, *, expected_rows=None, resource=None):
             "canonical correction old repair historical authority changed",
         )
         current = _one(conn, m.KifuAlbumRankSnapshot, scope[7], budget, cap=MAX_NAME_BYTES)
+        current_rows[current["id"]] = current
         expected = dict(
             target["snapshot_before"],
             snapshot=target["expected_snapshot"],
@@ -1297,6 +1351,7 @@ def _verify_correction(conn, batch_id, *, expected_rows=None, resource=None):
         conn, m.KifuNameChange, m.KifuNameChange.batch_id == child["id"], limit=10, budget=budget, cap=MAX_NAME_BYTES
     )
     require(len(child_changes) == 10, "canonical correction child ledger count changed")
+    _guard_current_name_material(conn, plan, child_changes, budget)
     # Existing standard name verifier validates complete signed candidates,
     # research, real evidence rows and all ten exact current afterimages.
     name_batch._check_applied_v4(conn, child, package["bundle"])
@@ -1320,12 +1375,15 @@ def _verify_correction(conn, batch_id, *, expected_rows=None, resource=None):
     require(receipt == expected_receipt, "canonical correction receipt changed")
     if expected_rows is not None:
         supplied = list(expected_rows.values()) if isinstance(expected_rows, dict) else list(expected_rows)
+        base_fields = set(m.KifuAlbumRankSnapshot.__table__.c.keys())
         require(
             all(
-                r["id"] in rows
-                and r["snapshot_sha256"] == rows[r["id"]]["snapshot_sha256"]
-                and r["native_batch_id"] == batch_id
-                for r in supplied
+                isinstance(row, Mapping)
+                and base_fields.issubset(row)
+                and row["id"] in current_rows
+                and digest(repair._json_image({key: row[key] for key in base_fields}))
+                == digest(current_rows[row["id"]])
+                for row in supplied
             ),
             "canonical correction supplied current rows changed",
         )
@@ -1335,7 +1393,8 @@ def _verify_correction(conn, batch_id, *, expected_rows=None, resource=None):
 
 def verify_correction(conn, batch_id, *, expected_rows=None, resource=None):
     try:
-        return _verify_correction(conn, batch_id, expected_rows=expected_rows, resource=resource)
+        with ranks._bounded_queries(conn):
+            return _verify_correction(conn, batch_id, expected_rows=expected_rows, resource=resource)
     except (KeyError, TypeError, IndexError, AttributeError) as exc:
         raise ValueError("canonical correction malformed authority") from exc
 

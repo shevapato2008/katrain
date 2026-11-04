@@ -15,10 +15,18 @@ describe('publishable stone appearance', () => {
     expect(getStoneAppearance('shell-slate')).toBe(DEFAULT_STONE_APPEARANCE);
   });
 
-  it('keeps shell variants stable across replay order and uses every available variant', () => {
+  it('keeps all 32 shell orientations stable across replay order and resize', () => {
+    expect(DEFAULT_STONE_APPEARANCE.sprites.W).toHaveLength(32);
     const points = [[3, 3], [4, 7], [12, 2], [18, 18]] as const;
     const urls = points.map(([col, row]) => stoneSpriteUrl('W', 'board', col, row));
     expect([...points].reverse().map(([col, row]) => stoneSpriteUrl('W', 'board', col, row)).reverse()).toEqual(urls);
+    for (const viewportSize of [600, 1024]) {
+      expect(points.map(([col, row]) => {
+        const pixelX = (col + 0.5) * viewportSize / 19;
+        const pixelY = (row + 0.5) * viewportSize / 19;
+        return stoneSpriteUrl('W', 'board', Math.floor(pixelX * 19 / viewportSize), Math.floor(pixelY * 19 / viewportSize));
+      })).toEqual(urls);
+    }
     const board = Array.from({ length: 361 }, (_, i) => stoneSpriteUrl('W', 'board', i % 19, Math.floor(i / 19)));
     expect(new Set(board)).toEqual(new Set(DEFAULT_STONE_APPEARANCE.sprites.W));
     expect(stoneSpriteUrl('B', 'board', 2, 3, 'missing')).toBe(DEFAULT_STONE_APPEARANCE.sprites.B);

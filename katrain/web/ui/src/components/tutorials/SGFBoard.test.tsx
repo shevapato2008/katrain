@@ -30,6 +30,7 @@ it('uses shared stone images with stable absolute coordinates across crops', () 
   expect(stone()?.tagName.toLowerCase()).toBe('image');
   expect(stone()).toHaveAttribute('href', stoneSpriteUrl('W', 19, 4, 4));
   expect(stone()).toHaveAttribute('width', String(32 * .44 * 2));
+  expect([...container.querySelectorAll('[data-stone-color]')].every(sprite => !sprite.hasAttribute('transform'))).toBe(true);
   rerender(<SGFBoard payload={{ ...payload, viewport: { col: 3, row: 3, cols: 5, rows: 5 } } as any} />);
   expect(stone()).toHaveAttribute('href', stoneSpriteUrl('W', 19, 4, 4));
 });

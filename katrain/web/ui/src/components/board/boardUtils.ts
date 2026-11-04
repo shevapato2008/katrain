@@ -1,4 +1,4 @@
-import { getStoneAppearance, stoneRotationDegrees, stoneSpriteUrl } from "./stoneAppearance";
+import { getStoneAppearance, stoneSpriteUrl } from "./stoneAppearance";
 
 /**
  * Shared board drawing utilities.
@@ -52,17 +52,13 @@ export function stoneImage(color: 'B' | 'W', col: number, row: number, boardSize
   return spriteImages.get(stoneSpriteUrl(color, boardSize, col, boardSize - 1 - row)) ?? fallback ?? null;
 }
 
-/** Rotate only the stone artwork; move labels and selection rings stay upright. */
+/** Draw the lit sprite as exported; move labels and selection rings stay upright. */
 export function drawStoneSprite(
   ctx: CanvasRenderingContext2D, image: HTMLImageElement,
   centerX: number, centerY: number, radius: number,
-  boardSize: number, col: number, rowFromBottom: number,
+  _boardSize: number, _col: number, _rowFromBottom: number,
 ): void {
-  ctx.save();
-  ctx.translate(centerX, centerY);
-  ctx.rotate(stoneRotationDegrees(boardSize, col, boardSize - 1 - rowFromBottom) * Math.PI / 180);
-  ctx.drawImage(image, -radius, -radius, radius * 2, radius * 2);
-  ctx.restore();
+  ctx.drawImage(image, centerX - radius, centerY - radius, radius * 2, radius * 2);
 }
 
 export interface BoardLayout {

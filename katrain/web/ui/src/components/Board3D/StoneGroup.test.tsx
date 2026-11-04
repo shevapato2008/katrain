@@ -2,7 +2,7 @@ import { render } from '@testing-library/react';
 import { Texture } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { GameState } from '../../api';
-import { stoneVariant } from '../board/stoneAppearance';
+import { stoneRotationDegrees, stoneVariant } from '../board/stoneAppearance';
 import StoneGroup from './StoneGroup';
 import StoneMesh from './StoneMesh';
 
@@ -34,7 +34,10 @@ it('uses stable full-board material variation for normal and ghost stones', asyn
   } as unknown as GameState;
   const expected = stoneVariant(19, 15, 14);
   const { unmount } = render(<StoneGroup gameState={gameState} />);
-  expect(vi.mocked(StoneMesh).mock.calls[0][0]).toMatchObject({ variant: expected });
+  expect(vi.mocked(StoneMesh).mock.calls[0][0]).toMatchObject({
+    variant: expected,
+    angle: stoneRotationDegrees(19, 15, 14) * Math.PI / 180,
+  });
   unmount();
   vi.mocked(StoneMesh).mockClear();
   const { default: GhostStone } = await import('./GhostStone');

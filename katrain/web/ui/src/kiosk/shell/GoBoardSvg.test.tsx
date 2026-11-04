@@ -34,6 +34,8 @@ it('renders shared sprites for real and pending stones without changing their di
   const white = container.querySelector('[data-stone="w"][data-at="D4"] image');
   expect(white).toHaveAttribute('href', stoneSpriteUrl('W', 19, 3, 15));
   expect(white).toHaveAttribute('width', '94');
+  expect(white).not.toHaveAttribute('transform');
   expect(container.querySelector('[data-stone="b"][data-at="Q16"] image')).toHaveAttribute('href', stoneSpriteUrl('B', 19, 15, 3));
+  expect(container.querySelector('[data-stone="b"][data-at="Q16"] image')).not.toHaveAttribute('transform');
   expect(container.querySelector('.pending-ring')).toBeInTheDocument();
 });

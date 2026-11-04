@@ -1,4 +1,4 @@
-import { stoneRotationDegrees, stoneSpriteUrl } from '../board/stoneAppearance';
+import { stoneSpriteUrl } from '../board/stoneAppearance';
 
 export interface SGFPayload {
   size: number;
@@ -122,7 +122,7 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
     const { x, y } = toSvg(col, row);
     const key = `B-${col}-${row}`;
     stoneEls.push(
-      <image key={key} data-stone-color="B" data-point={`${col},${row}`} href={stoneSpriteUrl('B', size, col, row)} transform={`rotate(${stoneRotationDegrees(size, col, row)} ${x} ${y})`} x={x - STONE_R} y={y - STONE_R} width={STONE_R * 2} height={STONE_R * 2} />
+      <image key={key} data-stone-color="B" data-point={`${col},${row}`} href={stoneSpriteUrl('B', size, col, row)} x={x - STONE_R} y={y - STONE_R} width={STONE_R * 2} height={STONE_R * 2} />
     );
     const label = labels[`${col},${row}`];
     if (label && (maxMoveStep === undefined || parseInt(label, 10) <= (maxMoveStep ?? Infinity))) {
@@ -140,7 +140,7 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
     const { x, y } = toSvg(col, row);
     const key = `W-${col}-${row}`;
     stoneEls.push(
-      <image key={key} data-stone-color="W" data-point={`${col},${row}`} href={stoneSpriteUrl('W', size, col, row)} transform={`rotate(${stoneRotationDegrees(size, col, row)} ${x} ${y})`} x={x - STONE_R} y={y - STONE_R} width={STONE_R * 2} height={STONE_R * 2} />
+      <image key={key} data-stone-color="W" data-point={`${col},${row}`} href={stoneSpriteUrl('W', size, col, row)} x={x - STONE_R} y={y - STONE_R} width={STONE_R * 2} height={STONE_R * 2} />
     );
     const label = labels[`${col},${row}`];
     if (label && (maxMoveStep === undefined || parseInt(label, 10) <= (maxMoveStep ?? Infinity))) {

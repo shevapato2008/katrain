@@ -59,3 +59,13 @@ it('retries transient failures on the next load while retaining successful sprit
   expect(attempts.get(failedUrl)).toBe(2);
   expect([...attempts].filter(([url]) => url !== failedUrl).every(([, count]) => count === 1)).toBe(true);
 });
+
+it('draws the selected Canvas sprite at its board point without rotating the lit image', async () => {
+  const { drawStoneSprite } = await import('./boardUtils');
+  const image = {} as HTMLImageElement;
+  const ctx = { drawImage: vi.fn(), rotate: vi.fn(), translate: vi.fn(), save: vi.fn(), restore: vi.fn() };
+  drawStoneSprite(ctx as unknown as CanvasRenderingContext2D, image, 100, 120, 9, 19, 3, 7);
+  expect(ctx.drawImage).toHaveBeenCalledWith(image, 91, 111, 18, 18);
+  expect(ctx.rotate).not.toHaveBeenCalled();
+  expect(ctx.translate).not.toHaveBeenCalled();
+});

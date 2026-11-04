@@ -62,7 +62,8 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
     });
     const appearance = getStoneAppearance();
     if (appearance.id === DEFAULT_STONE_APPEARANCE.id) {
-      const material = createStoneMaterial(color, variant % appearance.sprites.W.length, false, 256);
+      // The 3D shell recipe has eight seeds, independent of the 2D sprite count.
+      const material = createStoneMaterial(color, variant % 8, false, 256);
       material.transparent = opacity < 1;
       material.opacity = opacity;
       return material;
@@ -85,7 +86,7 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
       <mesh
         ref={ref}
         position={spriteTexture ? [position[0], position[1] + STONE_HEIGHT * scale, position[2]] : position}
-        rotation={spriteTexture ? [-Math.PI / 2, 0, -angle] : [0, -angle, 0]}
+        rotation={spriteTexture ? [-Math.PI / 2, 0, 0] : [0, -angle, 0]}
         scale={spriteTexture ? [scale * diameterRatio, scale * diameterRatio, 1] : stoneMeshScale(color, scale)}
         geometry={spriteTexture ? sharedSpriteGeometry : sharedGeometry[color]}
         material={material}

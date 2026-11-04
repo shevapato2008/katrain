@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { stoneRotationDegrees, stoneSpriteUrl } from './board/stoneAppearance';
+import { stoneSpriteUrl } from './board/stoneAppearance';
 import { Box } from '@mui/material';
 
 interface MiniBoardProps {
@@ -196,7 +196,6 @@ const MiniBoard = ({ size = 100, boardSize = 19, blackStones, whiteStones }: Min
           <image
             key={`${color}${i}`}
             href={stoneSpriteUrl(color, boardSize, x, boardSize - 1 - y)}
-            transform={`rotate(${stoneRotationDegrees(boardSize, x, boardSize - 1 - y)} ${(x - minX + 0.5) * cellSize} ${(maxY - y + 0.5) * cellSize})`}
             x={(x - minX + 0.5) * cellSize - stoneRadius}
             y={(maxY - y + 0.5) * cellSize - stoneRadius}
             width={stoneRadius * 2}

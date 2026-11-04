@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { stoneRotationDegrees, stoneSpriteUrl } from '../../components/board/stoneAppearance';
+import { stoneSpriteUrl } from '../../components/board/stoneAppearance';
 import { BOARD_ASSETS } from '../../components/board/boardUtils';
 import { boardExtent, coordToXY, lineAt, starsFor, windowViewBox, type GoWindow } from './goBoard';
 
@@ -104,7 +104,7 @@ export function GoBoardSvg({
       // `data-stone` / `data-at`:**给测试和几何闸用的把手**。子是绘制的图片,DOM 上问不出
       // 「Q16 上有没有黑子」—— 没有把手就只能去数 circle,而数出来的数字换个装饰就变。
       <g key={`${isBlack ? 'b' : 'w'}${c}`} data-stone={isBlack ? 'b' : 'w'} data-at={c}>
-        <image href={stoneSpriteUrl(isBlack ? 'B' : 'W', size, col, row)} transform={`rotate(${stoneRotationDegrees(size, col, row)} ${p.x} ${p.y})`} x={p.x - STONE_R} y={p.y - STONE_R} width={STONE_R * 2} height={STONE_R * 2} />
+        <image href={stoneSpriteUrl(isBlack ? 'B' : 'W', size, col, row)} x={p.x - STONE_R} y={p.y - STONE_R} width={STONE_R * 2} height={STONE_R * 2} />
       </g>
     );
   };

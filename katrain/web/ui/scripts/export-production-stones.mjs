@@ -15,7 +15,7 @@ try {
   });
   const page = await browser.newPage();
   await page.goto('http://127.0.0.1:4183/preview/production-stones/export.html');
-  await page.waitForFunction(() => window.__productionStoneSprites && Object.keys(window.__productionStoneSprites).length === 9);
+  await page.waitForFunction(() => window.__productionStoneSprites && Object.keys(window.__productionStoneSprites).length === 33);
   const sprites = await page.evaluate(() => window.__productionStoneSprites);
   await mkdir(output, { recursive: true });
   for (const [name, dataUrl] of Object.entries(sprites)) {

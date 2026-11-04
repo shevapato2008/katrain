@@ -1,4 +1,4 @@
-import { stoneRotationDegrees, stoneSpriteUrl } from '../../components/board/stoneAppearance';
+import { stoneSpriteUrl } from '../../components/board/stoneAppearance';
 import type { OgsStep, OgsPoint } from '../../types/ogsCourse';
 import type { OgsExerciseState } from './ogsExercise';
 import { GO_COLS, starsFor } from '../shell/goBoard';
@@ -49,7 +49,7 @@ export function OgsCourseBoard({ step, state, onPoint, disabled = false, extra =
       </g>
       {starsFor(size).map(([x, y]) => <circle key={key(x, y)} cx={position(x)} cy={position(y)} r="7" fill="#50371c" />)}
       {state.board.flatMap((row, y) => row.map((stone, x) => stone && showPoint(x, y) ? <g key={key(x, y)}>
-        <image href={stoneSpriteUrl(stone, size, x, y)} transform={`rotate(${stoneRotationDegrees(size, x, y)} ${position(x)} ${position(y)})`} x={position(x) - 39} y={position(y) - 39} width="78" height="78" />
+        <image href={stoneSpriteUrl(stone, size, x, y)} x={position(x) - 39} y={position(y) - 39} width="78" height="78" />
         {selected.has(key(x, y)) && <circle cx={position(x)} cy={position(y)} r="33" fill="none" stroke="#75e9a0" strokeWidth="7" />}
       </g> : null))}
       {extra.map(([x, y]) => showPoint(x, y) ? <text key={`extra-${key(x, y)}`} x={position(x)} y={position(y) + 20} textAnchor="middle" fontSize="64" fill="#ec635a">×</text> : null)}

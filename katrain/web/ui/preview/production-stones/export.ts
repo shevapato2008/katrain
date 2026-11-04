@@ -21,11 +21,12 @@ function renderSprites(): Record<string, string> {
   const result: Record<string, string> = {};
   for (const color of ['B', 'W'] as const) {
     const geometry = createStoneGeometry(color);
-    const variants = color === 'W' ? 8 : 1;
+    const variants = color === 'W' ? 32 : 1;
     for (let variant = 0; variant < variants; variant++) {
-      const material = createStoneMaterial(color, variant, false, 256);
+      const material = createStoneMaterial(color, variant % 8, false, 256);
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.y = STONE_DIMENSIONS[color].thickness / STONE_DIMENSIONS.W.diameter;
+      if (color === 'W') mesh.rotation.y = variant * Math.PI * 2 / variants;
       scene.add(mesh);
       renderer.render(scene, camera);
       result[color === 'B' ? 'black.png' : `white-${String(variant).padStart(2, '0')}.png`] = renderer.domElement.toDataURL('image/png');

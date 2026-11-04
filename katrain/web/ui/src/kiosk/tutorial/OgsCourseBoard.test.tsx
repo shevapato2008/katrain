@@ -28,6 +28,7 @@ describe('OGS board crop', () => {
     expect(sprites).toHaveLength(10);
     expect(sprites[0]).toHaveAttribute('href', stoneSpriteUrl('B', 19, 16, 12));
     expect(sprites[0]).toHaveAttribute('width', '78');
+    expect([...sprites].every(sprite => !sprite.hasAttribute('transform'))).toBe(true);
     expect(svg).not.toHaveAttribute('preserveAspectRatio', 'none');
     expect(board.style.getPropertyValue('--ogs-board-width')).toBe('414px');
     expect(board.style.getPropertyValue('--ogs-board-height')).toBe(`${414 * 10 / 19}px`);
